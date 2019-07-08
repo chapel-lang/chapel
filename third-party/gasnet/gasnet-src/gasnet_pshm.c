@@ -57,6 +57,14 @@ static struct gasneti_pshm_info {
 
 static void (*gasnetc_pshm_abort_callback)(void);
 
+void gasneti_pshm_prefault(void *addr, size_t len) {
+  uint8_t *p = addr;
+  // Full pages:
+  for (size_t i = 0; i < len; i+= GASNET_PAGESIZE) { p[i] = 0; }
+  // Final byte, possibly redundant
+  p[len-1] = 0;
+}
+
 void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_sz) {
   size_t vnetsz, mmapsz;
   int discontig = 0;
@@ -67,16 +75,16 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
 
   gasneti_assert(snodebcastfn != NULL);  /* NULL snodebcastfn no longer supported */
 
-  gasneti_assert_always(gasneti_nodemap_local_count <= GASNETI_PSHM_MAX_NODES);
+  gasneti_assert_always_uint(gasneti_nodemap_local_count ,<=, GASNETI_PSHM_MAX_NODES);
     
   gasneti_pshm_nodes = gasneti_nodemap_local_count;
   gasneti_pshm_mynode = gasneti_nodemap_local_rank;
   gasneti_pshm_firstnode = gasneti_nodemap_local[0];
 
 #if GASNET_CONDUIT_SMP
-  gasneti_assert(gasneti_pshm_nodes == gasneti_nodes);
-  gasneti_assert(gasneti_pshm_mynode == gasneti_mynode);
-  gasneti_assert(gasneti_pshm_firstnode == 0);
+  gasneti_assert_uint(gasneti_pshm_nodes ,==, gasneti_nodes);
+  gasneti_assert_uint(gasneti_pshm_mynode ,==, gasneti_mynode);
+  gasneti_assert_uint(gasneti_pshm_firstnode ,==, 0);
 #else
   /* Determine if local supernode members are numbered contiguously */
   for (i = 1; i < gasneti_nodemap_local_count; ++i) {
@@ -92,23 +100,35 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   /* compute size of vnet shared memory region */
   vnetsz = gasneti_pshmnet_memory_needed(gasneti_pshm_nodes); 
   mmapsz = (2*vnetsz);
-  { /* gasneti_pshm_info contains multiple variable-length arrays in the same space */
-    size_t info_sz;
-    /* space for gasneti_pshm_firsts: */
-    info_sz = gasneti_nodemap_global_count * sizeof(gex_Rank_t);
-    /* optional space for gasneti_pshm_rankmap: */
+  size_t info_sz;
+  { // gasneti_pshm_info contains different data (of variable length) at different times
+
+    // 1. Space for the bootstrap barrier (long-lived)
+    // The later allocations assume alignment
+    size_t sz1 = offsetof(struct gasneti_pshm_info, early_barrier);
+    gasneti_assert_uint(sz1 ,==, GASNETI_ALIGNUP(sz1, GASNETI_CACHE_LINE_BYTES));
+    gasneti_assert_uint(sz1 ,==, GASNETI_ALIGNUP(sz1, sizeof(gasneti_pshm_rank_t)));
+
+    // 2a. Space for the early barrier (short-lived)
+    size_t sz2a = gasneti_pshm_nodes * sizeof(gasneti_pshm_info->early_barrier[0]);
+
+    // 2b. Space for long-lived data, recycling space from the early barrier
+    // gasneti_pshm_firsts:
+    size_t sz2b = (gasneti_nodemap_global_count * sizeof(gex_Rank_t));
+    // optional gasneti_pshm_rankmap[], properly aligned for its type
     if (discontig) {
-      info_sz = GASNETI_ALIGNUP(info_sz, sizeof(gasneti_pshm_rank_t));
-      info_sz += gasneti_nodes * sizeof(gasneti_pshm_rank_t);
+      sz2b = GASNETI_ALIGNUP(sz2b, sizeof(gasneti_pshm_rank_t));
+      sz2b += gasneti_nodes * sizeof(gasneti_pshm_rank_t);
     }
-    /* space for the PSHM intra-node barrier */
-    info_sz = GASNETI_ALIGNUP(info_sz, GASNETI_CACHE_LINE_BYTES);
-    info_sz += sizeof(gasneti_pshm_barrier_t) +
+    // PSHM intra-node barrier (cache aligned)
+    sz2b = GASNETI_ALIGNUP(sz2b, GASNETI_CACHE_LINE_BYTES);
+    sz2b += sizeof(gasneti_pshm_barrier_t) +
 	       (gasneti_pshm_nodes - 1) * sizeof(gasneti_pshm_barrier->node);
-    /* space for early barrier, sharing space with the items above: */
-    info_sz = MAX(info_sz, gasneti_pshm_nodes * sizeof(gasneti_pshm_info->early_barrier[0]));
-    info_sz += offsetof(struct gasneti_pshm_info, early_barrier);
-    /* final space requested: */
+
+    // final info_sz required:
+    info_sz = sz1 + MAX(sz2a, sz2b);
+
+    // total to request:
     mmapsz += round_up_to_pshmpage(info_sz);
   }
   mmapsz += round_up_to_pshmpage(aux_sz);
@@ -116,7 +136,7 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   /* setup vnet shared memory region for AM infrastructure and supernode barrier.
    */
   gasnetc_pshmnet_region = gasneti_mmap_vnet(mmapsz, snodebcastfn);
-  gasneti_assert_always((((uintptr_t)gasnetc_pshmnet_region) % GASNETI_PSHMNET_PAGESIZE) == 0);
+  gasneti_assert_always_uint((((uintptr_t)gasnetc_pshmnet_region) % GASNETI_PSHMNET_PAGESIZE) ,==, 0);
   if (gasnetc_pshmnet_region == NULL) {
     const int save_errno = errno;
     char buf[16];
@@ -128,10 +148,6 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   
   /* Prepare the shared info struct (including bootstrap barrier) */
   gasneti_pshm_info = (struct gasneti_pshm_info *)((uintptr_t)gasnetc_pshmnet_region + 2*vnetsz);
-  if (gasneti_pshm_mynode == 0) {
-    gasneti_atomic_set(&gasneti_pshm_info->bootstrap_barrier_cnt, gasneti_pshm_nodes, 0);
-    gasneti_atomic_set(&gasneti_pshm_info->bootstrap_barrier_gen, 0, 0);
-  }
 
   /* "early" barrier which protects initialization of the real barrier counter. */
   gasneti_local_wmb();
@@ -142,6 +158,12 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
     for (i = 1; i < gasneti_pshm_nodes; ++i) {
       gasneti_waituntil(gasneti_pshm_info->early_barrier[i].val != 0);
     }
+    // We prefault at init time to avoid risk of SIG{BUS,SEGV} later (part of bug 3693).
+    // We do so here to avoid colliding with `early_barrier` (the cause of bug 3943).
+    gasneti_pshm_prefault(gasneti_pshm_info, info_sz);
+    gasneti_atomic_set(&gasneti_pshm_info->bootstrap_barrier_cnt, gasneti_pshm_nodes, 0);
+    gasneti_atomic_set(&gasneti_pshm_info->bootstrap_barrier_gen, 0, 0);
+    gasneti_local_wmb();
     gasneti_pshm_info->early_barrier[0].val = 1;
   }
 
@@ -176,7 +198,7 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
     if (gasneti_nodemap[i] == i) {
       if (!gasneti_pshm_mynode) gasneti_pshm_firsts[j] = i;
       j += 1;
-      gasneti_assert(j <= gasneti_nodemap_global_count);
+      gasneti_assert_uint(j ,<=, gasneti_nodemap_global_count);
     }
   }
 #endif
@@ -184,8 +206,8 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   /* Validate gasneti_pshm_firsts[] */
   if (gasneti_pshm_mynode == 0) {
     for (i=0; i<gasneti_nodemap_global_count; ++i) {
-      gasneti_assert(!i || (gasneti_pshm_firsts[i] > gasneti_pshm_firsts[i-1]));
-      gasneti_assert(gasneti_nodemap[gasneti_pshm_firsts[i]] == gasneti_pshm_firsts[i]);
+      if (i) gasneti_assert_uint(gasneti_pshm_firsts[i] ,>, gasneti_pshm_firsts[i-1]);
+      gasneti_assert_uint(gasneti_nodemap[gasneti_pshm_firsts[i]] ,==, gasneti_pshm_firsts[i]);
     }
   }
 #endif
@@ -569,7 +591,7 @@ void * gasneti_pshmnet_get_send_buffer(gasneti_pshmnet_t *vnet, size_t nbytes,
   gasneti_pshmnet_payload_t *p;
   void *retval = NULL;
   
-  gasneti_assert(nbytes <= GASNETI_PSHMNET_MAX_PAYLOAD);
+  gasneti_assert_uint(nbytes ,<=, GASNETI_PSHMNET_MAX_PAYLOAD);
 
   p = gasneti_pshmnet_alloc(vnet->my_allocator, nbytes);
   if (p != NULL) {
@@ -697,13 +719,14 @@ static void do_pshmnet_barrier(int do_poll)
   gasneti_assert_always(target < GASNETI_PSHM_BSB_LIMIT); /* Die if we were ever to reach the limit */
 
   if (do_poll) {
-    gasneti_pollwhile((curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0)) < target);
+    gasneti_pollwhile((curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0)) == generation);
   } else {
-    gasneti_waitwhile((curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0)) < target);
+    gasneti_waitwhile((curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0)) == generation);
   }
+  gasneti_assert_uint(curr ,==, target);
   if_pf (curr >= GASNETI_PSHM_BSB_LIMIT) {
     if (gasnetc_pshm_abort_callback) gasnetc_pshm_abort_callback();
-    gasnet_exit(1);
+    gasneti_fatalerror("PSHM bootstrap barrier exceeded GASNETI_PSHM_BSB_LIMIT");
   }
 
   generation = target;
@@ -790,7 +813,7 @@ static void gasneti_pshm_abort_handler(int sig) {
     sigprocmask(SIG_UNBLOCK, &new_set, &old_set);
   }
 #endif
-  raise(sig);
+  gasneti_raise(sig);
 }
 
 void gasneti_pshm_cs_enter(void (*callback)(void))
@@ -856,7 +879,7 @@ void gasneti_pshmnet_bootstrapBroadcast(gasneti_pshmnet_t *vnet, void *src,
   size_t remain = len;
 
   gasneti_assert(vnet != NULL);
-  gasneti_assert(vnet->nodecount == gasneti_pshm_nodes);
+  gasneti_assert_uint(vnet->nodecount ,==, gasneti_pshm_nodes);
 
   while (remain) {
     size_t nbytes = MIN(remain, GASNETI_PSHMNET_MAX_PAYLOAD);
@@ -890,7 +913,7 @@ void gasneti_pshmnet_bootstrapExchange(gasneti_pshmnet_t *vnet, void *src,
   size_t remain = len;
 
   gasneti_assert(vnet != NULL);
-  gasneti_assert(vnet->nodecount == gasneti_pshm_nodes);
+  gasneti_assert_uint(vnet->nodecount ,==, gasneti_pshm_nodes);
 
   /* All nodes broadcast their contribution in turn */
   while (remain) {
@@ -927,7 +950,7 @@ void gasneti_pshmnet_bootstrapGather(gasneti_pshmnet_t *vnet, void *src,
   void *msg;
 
   gasneti_assert(vnet != NULL);
-  gasneti_assert(vnet->nodecount == gasneti_pshm_nodes);
+  gasneti_assert_uint(vnet->nodecount ,==, gasneti_pshm_nodes);
 
   /* All nodes send their contribution in chunks */
   while (remain) {
@@ -940,7 +963,7 @@ void gasneti_pshmnet_bootstrapGather(gasneti_pshmnet_t *vnet, void *src,
         size_t msg_len;
 
         gasneti_waitwhile (gasneti_pshmnet_recv(vnet, &msg, &msg_len, &msg_from));
-        gasneti_assert(msg_len == nbytes);
+        gasneti_assert_uint(msg_len ,==, nbytes);
         memcpy((void*)(dst_addr + (len * msg_from)), msg, msg_len);
         gasneti_pshmnet_recv_release(vnet, msg);
       }
@@ -982,6 +1005,9 @@ static gasneti_pshmnet_allocator_t *gasneti_pshmnet_init_allocator(void *region,
   gasneti_assert_align(GASNETI_PSHMNET_ALLOC_MAXSZ, GASNETI_PSHMNET_PAGESIZE);
   gasneti_assert_align(region, GASNETI_PSHMNET_PAGESIZE);
 
+  /* Ensure affinity to writer and prevent later starvation */
+  gasneti_pshm_prefault(region, len);
+
   /* Initial state is one large free block */
   a->next = 0;
   a->count = count;
@@ -1005,10 +1031,10 @@ gasneti_pshmnet_alloc(gasneti_pshmnet_allocator_t *a, size_t nbytes)
   void *region = a->region;
 
   nbytes += offsetof(gasneti_pshmnet_allocator_block_t, payload.data);
-  gasneti_assert(nbytes <= GASNETI_PSHMNET_ALLOC_MAXSZ);
+  gasneti_assert_uint(nbytes ,<=, GASNETI_PSHMNET_ALLOC_MAXSZ);
 
   needed = (nbytes + GASNETI_PSHMNET_PAGESIZE - 1) >> GASNETI_PSHMNET_PAGESHIFT;
-  gasneti_assert(needed <= GASNETI_PSHMNET_ALLOC_MAXPG);
+  gasneti_assert_uint(needed ,<=, GASNETI_PSHMNET_ALLOC_MAXPG);
 
   curr = a->next;
   remain = a->count;
@@ -1022,7 +1048,7 @@ gasneti_pshmnet_alloc(gasneti_pshmnet_allocator_t *a, size_t nbytes)
     if (!gasneti_atomic_read(&block->in_use, GASNETI_ATOMIC_ACQ)) {
       while (length < needed) {
         unsigned int next = curr + length;
-        gasneti_assert (next <= a->count);
+        gasneti_assert_uint(next ,<=, a->count);
         if (next == a->count) break; /* hit end of region */
         next_block = (gasneti_pshmnet_allocator_block_t*)
                      ((uintptr_t)block + (length << GASNETI_PSHMNET_PAGESHIFT));
@@ -1034,7 +1060,7 @@ gasneti_pshmnet_alloc(gasneti_pshmnet_allocator_t *a, size_t nbytes)
         unsigned int next = curr + needed;
 
         if (length > needed) { /* Split it */
-          gasneti_assert (next < a->count);
+          gasneti_assert_uint(next ,<, a->count);
           a->length[next] = length - needed;
           next_block = (gasneti_pshmnet_allocator_block_t*)
                        ((uintptr_t)block + (needed << GASNETI_PSHMNET_PAGESHIFT));
@@ -1066,9 +1092,9 @@ static void gasneti_pshmnet_free(gasneti_pshmnet_payload_t *p)
   gasneti_pshmnet_allocator_block_t *block = 
       pshmnet_get_struct_addr_from_field_addr(gasneti_pshmnet_allocator_block_t,
                                               payload, p);
-  gasneti_assert(p == &block->payload);
+  gasneti_assert_ptr(p ,==, &block->payload);
   /* assert block is page-aligned */
-  gasneti_assert( (((uintptr_t)block) % GASNETI_PSHMNET_PAGESIZE) == 0);
+  gasneti_assert_uint( (((uintptr_t)block) % GASNETI_PSHMNET_PAGESIZE) ,==, 0);
 
   gasneti_atomic_set(&block->in_use, 0, GASNETI_ATOMIC_REL);
 }
@@ -1094,10 +1120,14 @@ static void gasneti_pshmnet_free(gasneti_pshmnet_payload_t *p)
 #define GASNETI_AMPSHM_MSG_LONG_NUMBYTES(msg) (((gasneti_AMPSHM_longmsg_t*)msg)->numbytes)
 #define GASNETI_AMPSHM_MSG_LONG_DATA(msg)     (((gasneti_AMPSHM_longmsg_t*)msg)->longdata)
 
-// Free space after the long header
-#define GASNETI_AMPSHM_MSG_LONG_INLINE        (GASNETI_PSHMNET_MIN_PAYLOAD - \
-                                               sizeof(gasneti_AMPSHM_longmsg_t))
-#define GASNETI_AMPSHM_MSG_LONG_TMP(msg)      ((uint8_t*)((gasneti_AMPSHM_longmsg_t*)msg + 1))
+// Free space after the long header, GASNETI_MEDBUF_ALIGNMENT aligned for use by NP-AM Longs
+// Note "GASNETI_MEDBUF_ALIGNMENT-4" allows for either 4- or 8-byte natural alignment.
+#define GASNETI_AMPSHM_MSG_LONG_INLINE        (GASNETI_PSHMNET_MIN_PAYLOAD -       \
+                                               (sizeof(gasneti_AMPSHM_longmsg_t) + \
+                                                (GASNETI_MEDBUF_ALIGNMENT - 4)))
+#define GASNETI_AMPSHM_MSG_LONG_TMP(msg)      ((uint8_t*)                                          \
+                                               GASNETI_ALIGNUP((gasneti_AMPSHM_longmsg_t*)msg + 1, \
+                                                               GASNETI_MEDBUF_ALIGNMENT))
 
 #define GASNETI_AMPSHM_MAX_REPLY_PER_POLL 10
 #define GASNETI_AMPSHM_MAX_REQUEST_PER_POLL 10
@@ -1219,10 +1249,9 @@ static void * ampshm_buf_alloc(
       case gasneti_Long:
         msgsz = sizeof(gasneti_AMPSHM_longmsg_t);
         break;
-      default:
-        gasneti_unreachable();
+      default: gasneti_unreachable_error(("Invalid category=%i",(int)category));
     }
-    gasneti_assert(msgsz <= sizeof(gasneti_AMPSHM_maxmsg_t));
+    gasneti_assert_uint(msgsz ,<=, sizeof(gasneti_AMPSHM_maxmsg_t));
 
     /* Get buffer, poll if busy (unless IMMEDIATE)
        Lock serializes allocation so small messages can't starve large ones */
@@ -1297,7 +1326,7 @@ int ampshm_prepare_inner(
   sd->_pshm._pshmrank = pshmrank;
   sd->_pshm._jobrank = jobrank;
   GASNETI_AMPSHM_MSG_NUMARGS(msg) = nargs;
-  gasneti_assert( GASNETI_AMPSHM_MSG_NUMARGS(msg) == nargs ); // truncated?
+  gasneti_assert_uint( GASNETI_AMPSHM_MSG_NUMARGS(msg) ,==, nargs ); // truncated?
 
   // Outputs for the client
   sd->_size = size;
@@ -1335,7 +1364,7 @@ void ampshm_commit_inner(
 
   /* Fill in message header */
   GASNETI_AMPSHM_MSG_CATEGORY(msg)  = category;
-  gasneti_assert( GASNETI_AMPSHM_MSG_CATEGORY(msg) == category); // truncated?
+  gasneti_assert_uint( GASNETI_AMPSHM_MSG_CATEGORY(msg) ,==, category); // truncated?
   GASNETI_AMPSHM_MSG_HANDLERID(msg) = handler;
   GASNETI_AMPSHM_MSG_SOURCE(msg)    = gasneti_mynode;
   const int nargs = GASNETI_AMPSHM_MSG_NUMARGS(msg);
@@ -1350,7 +1379,7 @@ void ampshm_commit_inner(
         break;
     case gasneti_Medium: {
         GASNETI_AMPSHM_MSG_MED_NUMBYTES(msg) = nbytes;
-        gasneti_assert( GASNETI_AMPSHM_MSG_MED_NUMBYTES(msg) == nbytes ); // truncated?
+        gasneti_assert_uint( GASNETI_AMPSHM_MSG_MED_NUMBYTES(msg) ,==, nbytes ); // truncated?
         void *data = GASNETI_AMPSHM_MSG_MED_DATA(msg);
         if (isFixed || (data != sd->_addr)) GASNETI_MEMCPY_SAFE_EMPTY(data, sd->_addr, nbytes);
         break;
@@ -1358,13 +1387,12 @@ void ampshm_commit_inner(
     case gasneti_Long: {
         GASNETI_AMPSHM_MSG_LONG_DATA(msg) = dest_addr;
         GASNETI_AMPSHM_MSG_LONG_NUMBYTES(msg) = nbytes;
-        gasneti_assert( GASNETI_AMPSHM_MSG_LONG_NUMBYTES(msg) == nbytes ); // truncated?
+        gasneti_assert_uint( GASNETI_AMPSHM_MSG_LONG_NUMBYTES(msg) ,==, nbytes ); // truncated?
         void *data = gasneti_pshm_jobrank_addr2local(sd->_pshm._jobrank, dest_addr);
         GASNETI_MEMCPY_SAFE_EMPTY(data, sd->_addr, nbytes);
         break;
     }
-    default:
-        gasneti_unreachable();
+    default: gasneti_unreachable_error(("Invalid category=%i",(int)category));
   }
 
   /* Deliver message */

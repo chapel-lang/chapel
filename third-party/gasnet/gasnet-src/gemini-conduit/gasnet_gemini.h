@@ -64,18 +64,9 @@
 #endif
 
 /* debug support */
-#define gasnetc_GNIT_Abort(msg, args...) do {			  \
-    fprintf(stderr, "node %d error %s: " msg "\n", gasneti_mynode,	  \
-	    gasnett_current_loc, ##args);		  \
-    gasnett_fatalerror("fatalerror (see above)");	  \
-  } while(0)
+#define gasnetc_GNIT_Abort(...) gasneti_fatalerror(__VA_ARGS__)
 
-#define gasnetc_GNIT_Log(msg, args...) do {			  \
-    fprintf(stderr, "node %d log %s: " msg "\n", gasneti_mynode,	  \
-	    gasnett_current_loc, ##args);		  \
-    fflush(stderr); \
-  } while(0)
-
+#define gasnetc_GNIT_Log(...) gasneti_console_message("log", __VA_ARGS__)
 
 /* global vars from environment */
 extern int      gasnetc_dev_id;
@@ -107,6 +98,11 @@ extern gasnetc_gni_lock_t gasnetc_gni_lock;
 #endif
 
 extern gasnetc_gni_lock_t gasnetc_am_buffer_lock;
+
+// Certain features require GNI-level EP for self and PSHM_peers
+#if GASNETC_BUILD_GNIRATOMIC || GASNETC_BUILD_GNICE
+  #define GASNETC_LOCAL_GNI_EP 1
+#endif
 
 typedef uint64_t gasnetc_notify_t;
 
@@ -249,6 +245,8 @@ typedef union gasnetc_packet_u {
 #else
 #define GASNETC_GNI_MEMREG_DEFAULT 3072
 #endif
+/* Radix of inter-host CE tree */
+#define GASNETC_GNI_CE_RADIX_DEFAULT 2
 
 /* largest get that can be handled by gasnetc_rdma_get_unaligned() */
 extern size_t gasnetc_max_get_unaligned;
@@ -319,8 +317,6 @@ typedef struct am_rvous_t_ {
   volatile int          ready;
 } am_rvous_t;
 
-/* WARNING: if sizeof(gasnetc_post_descriptor_t) changes, then
- * you must update the value of GASNETC_SIZEOF_GDP below */
 struct gasnetc_post_descriptor {
   union { /* must be first for alignment */
     uint8_t immediate[GASNETC_GNI_IMMEDIATE_BOUNCE_SIZE];
@@ -348,14 +344,15 @@ struct gasnetc_post_descriptor {
   #define gpd_amo_cmd    pd.amo_cmd
   #define gpd_amo_op1    pd.first_operand
   #define gpd_amo_op2    pd.second_operand
+  #define gpd_ce_cmd     pd.ce_cmd
+  #define gpd_ce_mode    pd.ce_mode
+  #define gpd_ce_op1     pd.first_operand
+  #define gpd_ce_op2     pd.second_operand
   uint32_t gpd_flags;
 #if GASNETC_USE_MULTI_DOMAIN
   int domain_idx;
 #endif
 };
-
-/* This should be ALIGNUP(sizeof(gasnetc_post_descriptor_t), 64) */
-#define GASNETC_SIZEOF_GDP 320
 
 gasnetc_post_descriptor_t *
 gasnetc_alloc_post_descriptor(gex_Flags_t flags GASNETC_DIDX_FARG) GASNETI_MALLOC;
@@ -380,6 +377,41 @@ void gasnetc_init_segment(gasnet_seginfo_t seginfo);
 uintptr_t gasnetc_init_messaging(void);
 void gasnetc_shutdown(void); /* clean up all gni state */
 
+#if GASNETC_BUILD_GNICE
+void gasnete_init_ce(void);
+extern int gasnete_ce_available;
+
+// Type for Aries CE results (in registered memory)
+typedef struct gasnete_ce_result {
+  volatile int done;
+  char pad1[GASNETC_CACHELINE_SIZE - sizeof(int)];
+  gni_ce_result_t output;
+  char pad2[GASNETC_CACHELINE_SIZE - sizeof(gni_ce_result_t)];
+} gasnete_ce_result_t;
+
+// Post a CE operation, returning a result buffer
+gasnete_ce_result_t *gasnetc_post_ce(gasnetc_post_descriptor_t *gpd);
+
+// Test a CE operation
+GASNETI_INLINE(gasnete_test_ce)
+gni_return_t gasnete_test_ce(gasnete_ce_result_t *result)
+{
+  return result->done ? GNI_CeCheckResult(&result->output,0)
+                      : GNI_RC_NOT_DONE;
+}
+  #if GASNET_PSHM
+  typedef struct {
+    volatile int done_phase;
+    char pad[GASNETC_CACHELINE_SIZE - sizeof(int)];
+    struct {
+      volatile int phase;
+      char pad[GASNETC_CACHELINE_SIZE - sizeof(int)];
+    } rank[1]; // Used as flexible array member
+  } gasnete_ce_gate_t;
+  #define GASNETC_SIZEOF_CE_GATE_T(n) gasneti_offsetof(gasnete_ce_gate_t, rank[(n)])
+  extern gasnete_ce_gate_t *gasnete_ce_gate;
+  #endif
+#endif
 
 void gasnetc_poll_local_queue(GASNETC_DIDX_FARG_ALONE);
 void gasnetc_poll(GASNETI_THREAD_FARG_ALONE);

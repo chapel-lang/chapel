@@ -61,7 +61,7 @@ const char *gasneti_AMErrorName(int errval) {
  * else, set retval to zero
  */
 #define GASNETI_AM_SAFE_NORETURN(retval,fncall) do {                   \
-   gasneti_assert(AM_OK == 0);                                         \
+   gasneti_static_assert(AM_OK == 0);                                  \
    retval = (fncall);                                                  \
    if_pf (retval) {                                                    \
      if (gasneti_VerboseErrors) {                                      \

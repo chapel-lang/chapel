@@ -389,7 +389,6 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
     return; // No.
 
@@ -484,7 +483,8 @@ static void checkExternProcs() {
       continue;
 
     for_formals(formal, fn) {
-      if (formal->typeInfo() == dtString) {
+      if (formal->typeInfo() == dtString &&
+          !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
           USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
                              "type string, use c_string instead");

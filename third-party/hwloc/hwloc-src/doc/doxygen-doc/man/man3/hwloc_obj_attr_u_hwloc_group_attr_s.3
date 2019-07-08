@@ -1,4 +1,4 @@
-.TH "hwloc_obj_attr_u::hwloc_group_attr_s" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj_attr_u::hwloc_group_attr_s" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -14,6 +14,9 @@ hwloc_obj_attr_u::hwloc_group_attr_s
 .ti -1c
 .RI "unsigned \fBdepth\fP"
 .br
+.ti -1c
+.RI "unsigned char \fBdont_merge\fP"
+.br
 .in -1c
 .SH "Detailed Description"
 .PP 
@@ -24,6 +27,10 @@ Group-specific Object Attributes\&.
 
 .PP
 Depth of group object\&. 
+.SS "unsigned char hwloc_obj_attr_u::hwloc_group_attr_s::dont_merge"
+
+.PP
+Flag preventing groups from being automatically merged with identical parent or children\&. 
 
 .SH "Author"
 .PP 

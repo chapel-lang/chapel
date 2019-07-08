@@ -94,6 +94,8 @@ public:
   // pointer to references for non-reference types
   AggregateType*         refType;
 
+  // Methods on this type. Note that this can contain NULLs
+  // if a method was added and then removed.
   Vec<FnSymbol*>         methods;
 
   Symbol*                defaultValue;

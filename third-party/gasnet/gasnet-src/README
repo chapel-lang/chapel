@@ -1,7 +1,7 @@
 =======================================================================
 =======================================================================
 
-              *** GASNet-EX Software Preview ***
+              *** GASNet-EX Software Release ***
 
 GASNet-EX is the next generation of the GASNet-1 communication system. 
 The GASNet interfaces are being redesigned to accommodate the emerging
@@ -10,13 +10,12 @@ variety of PGAS programming models on current and future HPC architectures.
 This upgrade is being done over the next several years as part of the DOE
 Exascale Computing Program (ECP).
 
-This archive represents a lightly-tested snapshot of a work-in-progress.
-Many planned features remain to be specified and/or implemented.
-All interfaces and implementations are subject to change without notice.
+GASNet-EX is a work-in-progress.
+Many features remain to be specified, implemented, and/or tuned.
 
 Users interested in learning what's new in GASNet-EX are recommended to peruse 
 the ChangeLog file in this directory for a summary of recent developments.
-The docs/GASNet-EX.spec file provides more detailed information about
+The docs/GASNet-EX.txt file provides more detailed information about
 the evolving EX specification.
 
 GASNet-EX notably includes a backwards-compatibility layer to assist in
@@ -45,7 +44,7 @@ EX-Specific Implementation Notes:
 =======================================================================
 
 README file for GASNet
-http://gasnet.lbl.gov
+https://gasnet.lbl.gov
 
 This is a user manual for GASNet. Anyone planning on using GASNet (either
 directly or indirectly) should consult this file for usage instructions.
@@ -59,10 +58,10 @@ Other documentation:
  * For documentation on the communication-independent GASNet-tools library,
    see README-tools.
  * Additional information, including the GASNet specification and our bug
-   tracking database, is available from http://gasnet.lbl.gov
+   tracking database, is available from https://gasnet.lbl.gov
  * Anyone planning to modify or add to the GASNet code base should also read
    the developer documents, available in the GASNet git repository, which 
-   can be browsed online: http://bitbucket.org/berkeleylab/gasnet/src/develop
+   can be browsed online: https://bitbucket.org/berkeleylab/gasnet/src/develop
    + README-devel: GASNet design information and coding standards
    + README-git: Rules developers are expected to follow when committing
    + template-conduit: A fill-in-the-blanks conduit code skeleton
@@ -75,6 +74,7 @@ Contents of this file:
  * Single-node Development Options
  * Supported Platforms
  * Recognized Environment Variables
+ * GASNet exit
  * GASNet tracing & statistical collection
  * GASNet Collectives
  * GASNet debug malloc services
@@ -97,7 +97,7 @@ Space Networking".
 The GASNet API is defined in the specification, which is included with this 
 archive in docs/, and the definitive version is located on the GASNet webpage:
 
-  http://gasnet.lbl.gov/
+  https://gasnet.lbl.gov/
 
 This README accompanies the GASNet source distribution, which includes
 implementations of the GASNet API for various popular HPC and general-purpose
@@ -120,7 +120,7 @@ The minimum system requirements are:
  * A POSIX-like environment, e.g. Linux or another version of Unix.
    For Mac systems, the free 'XCode command-line tools' from the Apple Store.
    For Windows systems one needs either of two options:
-   + The free 'Cygwin' toolkit (http://www.cygwin.com/)
+   + The free 'Cygwin' toolkit (https://www.cygwin.com/)
    + Windows 10 Subsystem for Linux, a.k.a. WSL
      (https://docs.microsoft.com/en-us/windows/wsl/)
  * Make (we recommend GNU make version 3.79 or newer).
@@ -178,14 +178,6 @@ or similarly, if you want libgasnet to contain debugging symbols:
     --enable-debug-malloc - use GASNet debugging malloc (see usage info below)
     --enable-segment-{fast,large,everything} - select a GASNet segment 
       configuration (see the GASNet spec for more info)
-    --{enable,disable}-smp-safe - Build GASNet for an SMP or uni-processor.
-      These options are not normally necessary, since by default configure
-      will probe the machine to determine if it is an SMP.  However:
-      1) If you configure on a uni-processor and intend to use the resulting
-         libraries on an SMP, then you MUST specify --enable-smp-safe to
-         ensure correctness.
-      2) If you configure on an SMP for execution ONLY on uniprocessors, then
-         you MAY specify --disable-smp-safe for a performance improvement.
     --enable-pshm - Build GASNet with inter-Process SHared Memory (PSHM) support.
       This feature uses shared memory communication among the processes (aka
       GASNet nodes) within a single compute node (where the other alternatives
@@ -194,7 +186,7 @@ or similarly, if you want libgasnet to contain debugging symbols:
       Note that not all conduits and operating systems support this feature.
       For more information, see the section below entitled "GASNet inter-Process
       SHared Memory (PSHM)".
-    --with-max-segment=<val> - configure-time default value for GASNET_MAX_SEGSIZE,
+    --with-max-segsize=<val> - configure-time default value for GASNET_MAX_SEGSIZE,
       which is used when GASNET_MAX_SEGSIZE is not set at runtime. See the description 
       of the GASNET_MAX_SEGSIZE environment variable below for details.
       
@@ -426,15 +418,12 @@ mpi-conduit: MPI (Message Passing Interface)
  Intended as a reference implementation for systems lacking native conduit support.
  Rigorously tested and supported on most current platforms (see below).
 
-ofi-conduit: Open Fabrics Interfaces
+ofi-conduit: Open Fabrics Interfaces (*TEMPORARILY DISABLED*)
  GASNet over the Open Fabrics Interface framework (libfabric).
- Rigorously tested and supported over the portable/reference OFI sockets Provider.
- Believed to also work over the Intel Omni-Path psm2 Provider.
+ This conduit is currently being re-implemented for GASNet-EX.
+ Until that rewrite is complete, users are advised to use other conduits compatible
+ with their hardware, or to use the legacy GASNet-1 release (if EX-specific features are not required).
 
-portals4-conduit: Portals4   *BETA*
- GASNet over the Portals4 network API developed at Sandia National Lab.
- The core GASNet developers have been unable to test this conduit recently.
-  
 Native, high-performance conduits:
 ---------------------------------
 
@@ -452,16 +441,6 @@ ibv-conduit: InfiniBand Verbs
  Rigorously tested and supported over InfiniBand hardware on all supported systems (see below).
  Believed to also work on other hardware offering a standard-compliant Verbs layer.
 
-mxm-conduit: Mellanox InfiniBand Messaging Accelerator (MXM)
- GASNet over the MXM API for recent Mellanox InfiniBand adapters.
- The core GASNet developers have limited access to this hardware, but have completed 
- minimal validation on x86_64/Linux.
-
-psm-conduit: Intel Omni-Path PSM2
- GASNet over the PSM2 API for Intel Omni-Path adapters.
- The core GASNet developers have limited access to this hardware, but have completed 
- minimal validation on x86_64/Linux. 
- 
 Single-node Development Options
 ===============================
 
@@ -510,8 +489,8 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Linux/x86/IntelC/32:           smp, mpi, udp
     * Linux/x86/PortlandGroupC/32:   smp, mpi, udp
     * Linux/x86_64-Ethernet/{gcc,clang,PGI,SunC}/{32,64}: smp, mpi, udp, ofi
-    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,IntelC,SunC}/64: smp, mpi, udp, ibv, mxm
-    * Linux/x86_64-OmniPath/gcc/64: smp, mpi, udp, ofi, psm
+    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,IntelC,SunC}/64: smp, mpi, udp, ibv
+    * Linux/x86_64-OmniPath/gcc/64: smp, mpi, udp, ofi
     * Linux/x86_64/x86-Open64/64:   smp, udp, #
 
     * Linux/PowerPC-Ethernet/{gcc,xlc,clang}/{32,64}: smp, mpi, udp
@@ -642,6 +621,20 @@ application-specific support.
  most of GASNet's barrier implementations is to use a two-stage barrier which
  coordinates within each supernode before communicating across the network.
  This variable can be set to 0 to disable this optimization.
+
+* GASNET_CATCH_EXIT - set to 0 to prevent GASNet from forcing global job
+ termination (via atexit() or on_exit()) when a process calls exit() or returns
+ from main().  GASNet's default behavior helps prevent orphaned processes that
+ can occur in some systems after an incomplete job termination, but may interfere 
+ with some profiling tools that write output inside atexit handlers. Setting this
+ variable may allow those tools to operate, but the client code (or other entity) 
+ must assume responsibility for ensuring no orphan processes are left behind.
+
+ Note this variable does not affect the behavior of explicit calls to gasnet_exit() 
+ (either directly or indirectly via calls like upc_global_exit(), returning from 
+ UPC main(), or reaching the GASNet default fatal signal handler) which will still bypass
+ atexit handlers and kill the job. The recommended method to ensure the execution of 
+ atexit handlers is to run with GASNET_CATCH_EXIT=0 and collectively invoke libc exit().
 
 * GASNET_NO_CATCH_SIGNAL - specify a comma separated list of signals
  to exclude from GASNet default signal handling. Formats "SIGSEGV",
@@ -838,6 +831,21 @@ application-specific support.
  default size for thread stacks.
 
 * see conduit-specific documentation in conduit directories for more settings
+
+GASNet exit
+===========
+
+GASNet clients desiring robustness and portability should not call _exit().
+Normal process termination should be done using gasnet_exit(), exit() or
+return from main().  Use of these paths allows GASNet to ensure proper
+shutdown.  This includes efforts to avoid zombie/orphan processes in the case
+of non-collective exits, and proper release of network resources.  This second
+point is important because we are aware of multiple network stacks which can
+permanently leak system resources if they are not explicitly released.
+
+We acknowledge that this represents a restriction that may be hard to satisfy.
+We fully intend to separate library termination from process termination in a
+future release.
  
 GASNet tracing & statistical collection
 =======================================
@@ -1405,11 +1413,11 @@ Contact Info and Support
 
 For the latest GASNet downloads, publications, and specifications, please visit:
 
-  http://gasnet.lbl.gov
+  https://gasnet.lbl.gov
 
 For bug reports and feature requests, please submit a ticket in the GASNet Bugzilla:
 
-  http://gasnet-bugs.lbl.gov
+  https://gasnet-bugs.lbl.gov
 
 You may find an instant solution to your problem by searching the bug database!
 
@@ -1424,8 +1432,8 @@ GASNet has several mailing lists for support:
 
 --------------------------------------------------------------------------
   The canonical version of this document is located here:
-    http://bitbucket.org/berkeleylab/gasnet/src/master/README
+    https://bitbucket.org/berkeleylab/gasnet/src/master/README
 
   For more information, please email: gasnet-users@lbl.gov
-  or visit the GASNet home page at:   http://gasnet.lbl.gov
+  or visit the GASNet home page at:   https://gasnet.lbl.gov
 --------------------------------------------------------------------------

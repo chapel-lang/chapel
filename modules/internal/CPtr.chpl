@@ -260,6 +260,10 @@ module CPtr {
   inline proc _cast(type t:c_fn_ptr, x:_nilType) {
     return __primitive("cast", c_fn_ptr, nil);
   }
+  pragma "no doc"
+  inline proc _cast(type t:c_void_ptr, x:c_fn_ptr) {
+    return __primitive("cast", c_void_ptr, x);
+  }
 
   pragma "no doc"
   inline proc _cast(type t:c_ptr, x:c_ptr) {

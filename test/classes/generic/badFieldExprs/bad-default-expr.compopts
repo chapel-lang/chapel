@@ -1,0 +1,3 @@
+-scase=0 # bad-default-expr.type.good
+-scase=1 # bad-default-expr.param.good
+-scase=2 # bad-default-expr.value.good
