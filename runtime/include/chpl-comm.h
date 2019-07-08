@@ -478,17 +478,6 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_comm_on_bundle_t *arg, size_t arg_size,
                                int ln, int32_t fn);
 
-
-//
-// This call specifies the number of polling tasks that the
-// communication layer will need (see just below for a definition).
-// The value it returns is passed to chpl_task_init(), in order to
-// forewarn the tasking layer whether the comm layer will need a
-// polling task.  In the current implementation, it should only
-// return 0 or 1.
-//
-int chpl_comm_numPollingTasks(void);
-
 // This is a hook that's called when a task is ending. It allows for things
 // like say flushing task private buffers.
 void chpl_comm_task_end(void);

@@ -221,6 +221,4 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   chpl_ftable_call(fid, arg);
 }
 
-int chpl_comm_numPollingTasks(void) { return 0; }
-
 void chpl_comm_task_end(void) { }
