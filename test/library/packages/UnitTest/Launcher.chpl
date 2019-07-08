@@ -21,65 +21,75 @@ module Launcher {
         files: [1..0] string;
     var hadInvalidFile = false;
     var programName = args[0];
-
-    sys_getenv("CHPL_COMM", comm_c);
-    comm = comm_c: string;
-    
-    for a in args[1..] {
-      if a == "-h" || a == "--help" {
-        writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
-        printUsage();
-        exit(1); // returning 1 from main is also an option
-      }
-      else {
-        try! {
-          if isFile(a) {
-            files.push_back(a);
-          }
-          else if isDir(a) {
-            dirs.push_back(a);
+    try! {
+      var checkChpl = spawn(["which","chpl"],stdout = PIPE);
+      checkChpl.wait();
+      var line: string;
+      if checkChpl.stdout.readline(line) {
+        sys_getenv("CHPL_COMM", comm_c);
+        comm = comm_c: string;
+        
+        for a in args[1..] {
+          if a == "-h" || a == "--help" {
+            writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
+            printUsage();
+            exit(1); // returning 1 from main is also an option
           }
           else {
-            writeln("[Error: ", a, " is not a valid file or directory]");
-            hadInvalidFile = true;
+            try! {
+              if isFile(a) {
+                files.push_back(a);
+              }
+              else if isDir(a) {
+                dirs.push_back(a);
+              }
+              else {
+                writeln("[Error: ", a, " is not a valid file or directory]");
+                hadInvalidFile = true;
+              }
+            }
           }
         }
+
+        if hadInvalidFile && files.size == 0 && dirs.size == 0 {
+          exit(2);
+        }
+
+        if files.size == 0 && dirs.size == 0 {
+          dirs.push_back(".");
+        }
+        
+        var result =  new TestResult();
+
+        for tests in files {
+          try {
+            testFile(tests, result);
+          }
+          catch e {
+            writeln("Caught an Exception in Running Test File: ", tests);
+            writeln(e);
+          }
+        }
+
+        for dir in dirs {
+          try {
+            testDirectory(dir, result);
+          }
+          catch e {
+            writeln("Caught an Exception in Running Test Directory: ", dir);
+            writeln(e);
+          }
+        }
+          
+        result.printErrors();
+        writeln(result.separator2);
+        result.printResult();
       }
-    }
-
-    if hadInvalidFile && files.size == 0 && dirs.size == 0 {
-      exit(2);
-    }
-
-    if files.size == 0 && dirs.size == 0 {
-      dirs.push_back(".");
+      else {
+        writeln("chpl not found.");
+      } 
     }
     
-    var result =  new TestResult();
-
-    for tests in files {
-      try {
-        testFile(tests, result);
-      }
-      catch e {
-        writeln("Caught an Exception in Running Test File: ", tests);
-        writeln(e);
-      }
-    }
-
-    for dir in dirs {
-      try {
-        testDirectory(dir, result);
-      }
-      catch e {
-        writeln("Caught an Exception in Running Test Directory: ", dir);
-        writeln(e);
-      }
-    }
-      
-    result.printErrors();
-    writeln(result.separator2);
-    result.printResult();
   }
   
   pragma "no doc"
@@ -99,39 +109,33 @@ module Launcher {
         FileSystem.remove(executableReal);
       }
       if setComm != "" then comm = setComm;
-      var sub = spawn(["chpl", file, "-o", executable, " -M.",
-                    "--comm", comm], stderr = PIPE); //Compiling the file
-      if sub.exit_status >= 256 {
-        writeln("Unable to run the files.");
-        exit(sub.exit_status);
+      var sub = spawn(["chpl", file, "-o", executable, "-M.", 
+                      "--comm", comm], stderr = PIPE); //Compiling the file
+      var compError: string;
+      if sub.stderr.readline(line) {
+        compError = line;
+        while sub.stderr.readline(line) do compError += line;
+        compErr = true;
       }
-      else {
-        var compError: string;
-        if sub.stderr.readline(line) {
-          compError = line;
-          while sub.stderr.readline(line) do compError += line;
-          compErr = true;
-        }
-        sub.wait();
-        if !compErr {
-          var testNames: [1..0] string;
-          var dictDomain: domain(int);
-          var dict: [dictDomain] int;
-          runAndLog(executable, fileName, result, 0, numLocales,
-                    testNames, dictDomain, dict);
-          if !keepExec {
-            FileSystem.remove(executable);
-            if isFile(executableReal) {
-              FileSystem.remove(executableReal);
-            }
+      sub.wait();
+      if !compErr {
+        var testNames: [1..0] string;
+        var dictDomain: domain(int);
+        var dict: [dictDomain] int;
+        runAndLog(executable, fileName, result, 0, numLocales,
+                  testNames, dictDomain, dict);
+        if !keepExec {
+          FileSystem.remove(executable);
+          if isFile(executableReal) {
+            FileSystem.remove(executableReal);
           }
         }
-        else {
-          writeln("Compilation Error in ", fileName);
-          writeln("Possible Reasons can be passing a non-test ",
-                  "function to UnitTest.runTest()");
-          writeln(compError);
-        }
+      }
+      else {
+        writeln("Compilation Error in ", fileName);
+        writeln("Possible Reasons can be passing a non-test ",
+                "function to UnitTest.runTest()");
+        writeln(compError);
       }
     }
   }
