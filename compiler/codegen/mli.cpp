@@ -628,7 +628,7 @@ void MLIContext::verifyPrototype(FnSymbol* fn) {
 
   if (fn->retType != dtVoid && not isSupportedType(fn->retType)) {
     Type* t = fn->retType;
-    USR_FATAL(t, "Multi-locale libraries do not support return type: %s",
+    USR_FATAL(fn, "Multi-locale libraries do not support return type: %s",
               t->name());
   }
 
@@ -636,7 +636,7 @@ void MLIContext::verifyPrototype(FnSymbol* fn) {
     ArgSymbol* as = fn->getFormal(i);
     if (not this->isSupportedType(as->type)) {
       Type* t = as->type;
-      USR_FATAL(t, "Multi-locale libraries do not support formal type: %s",
+      USR_FATAL(fn, "Multi-locale libraries do not support formal type: %s",
                 t->name());
     }
   }
