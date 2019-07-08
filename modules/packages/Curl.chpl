@@ -726,18 +726,8 @@ private proc start_channel(cc:CurlChannel,
       return EINVAL;
   }
 
-  /** TODO -- removed this for setopt reasons
-  if writer == false {
-    // Start some action by calling multi_perform right away
-    cc.have_channel_lock = true;
-    merr = curl_multi_perform(curlm, cc.running_handles);
-    if merr != 0 then
-      return ENOSYS;
-    // TODO: temporarily try waiting here
-
-    // From here on, we'll wait for data in the reader function
-    cc.have_channel_lock = false;
-  }*/
+  // Note, this does not start the operation right away in order
+  // to give the user to modify the operation with setopt(channel) calls
 
   //writeln("finished start_channel");
 
@@ -888,20 +878,10 @@ private proc curl_read_buffered(contents: c_void_ptr, size:size_t, nmemb:size_t,
 
   // Write from the buffer's start position up until the start
   // of the user-visible data.
-  /*{
-    var space = qio_channel_nbytes_write_behind_unlocked(cc.qio_ch);
-    writeln("curl_read_buffered initiating ", realsize, " space=", space);
-  }*/
-
 
   var gotamt: ssize_t = 0;
   // copy the data from the channel's buffer
   err = qio_channel_copy_from_buffered_unlocked(cc.qio_ch, contents, amt, gotamt);
-
-  /*{
-    var space = qio_channel_nbytes_write_behind_unlocked(cc.qio_ch);
-    writeln("curl_read_buffered returning ", gotamt, " space=", space);
-  }*/
 
   // unlock the channel if we locked it
 
@@ -1002,12 +982,6 @@ private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
       if serr != 0 then
         return serr;
     }
-
-    /*{
-      space = qio_channel_nbytes_write_behind_unlocked(ch);
-      writeln("performing 4 offset=", qio_channel_offset_unlocked(ch),
-              " writebehind=", space);
-    }*/
 
     mcode = curl_multi_perform(curlm, cc.running_handles);
     if mcode != CURLM_OK then

@@ -74,6 +74,8 @@ typedef uint32_t qio_hint_t;
 // write(a,b,c) might call
 //    a.writeThis() which calls
 //        write(16) for example
+// UPDATE 3 -- I don't believe this is necessary anymore
+//             because of the way writeThis now works
 
 #ifdef __cplusplus
 } // end extern "C"
@@ -440,11 +442,6 @@ qioerr qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t
 qioerr qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, const qio_style_t* style);
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style);
-
-/*qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
-                        int flags, mode_t mode, qio_hint_t iohints, 
-                        const qio_style_t* style,
-                        void* fs_info);*/
 
 qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, 
                             int fdflags, const qio_style_t* style);

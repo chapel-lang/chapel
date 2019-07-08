@@ -1627,15 +1627,6 @@ proc _modestring(mode:iomode) {
 }
 
 /*
-var pluginFilesystems:[1..0] owned QioPluginFilesystem;
-
-pragma "no doc"
-chpl_register_io_plugin(owned plugin:QioPluginFilesystem) {
-  pluginFilesystems.push_back(plugin);
-}
-*/
-
-/*
 
 Open a file on a filesystem. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
