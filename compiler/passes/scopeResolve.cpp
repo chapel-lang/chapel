@@ -1016,7 +1016,7 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
 
   if (sym != NULL) {
     if (TypeSymbol* cts = toTypeSymbol(sym->defPoint->parentSymbol)) {
-      isAggr = isAggregateType(cts->type);
+      isAggr = isAggregateType(canonicalClassType(cts->type));
     }
   }
 
@@ -1674,7 +1674,8 @@ static void lookup(const char*           name,
       if (fn != NULL && fn->_this) {
         // If currently in a method, the next scope up is anything visible
         // within the aggregate type
-        if (AggregateType* ct = toAggregateType(fn->_this->type)) {
+        if (AggregateType* ct =
+            toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols);
         }
       }
@@ -1858,7 +1859,7 @@ static Symbol* inType(const char* name, BaseAST* scope) {
   Symbol* retval = NULL;
 
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
+    if (AggregateType* ct = toAggregateType(canonicalClassType(ts->type))) {
       if (Symbol* sym = ct->getField(name, false)) {
         retval = sym;
 
