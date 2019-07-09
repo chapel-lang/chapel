@@ -3,7 +3,7 @@ class C {
   var x: t;
 }
 
-var myC: unmanaged C;
+var myC: unmanaged C?;
 
 myC = new unmanaged C();
 

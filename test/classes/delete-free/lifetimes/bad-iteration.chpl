@@ -7,7 +7,7 @@ iter yieldLoopTmpBorrow() {
   }
 }
 proc badIteration1() {
-  var b: borrowed C;
+  var b: borrowed C?;
   for x in yieldLoopTmpBorrow() {
     b = x; // expecting error
   }
@@ -23,7 +23,7 @@ iter yieldIteratorTmpBorrow() {
   }
 }
 proc badIteration2() {
-  var b: borrowed C;
+  var b: borrowed C?;
   for x in yieldIteratorTmpBorrow() {
     b = x; // expecting error
   }
@@ -40,7 +40,7 @@ iter yieldGlobalBorrows() {
   }
 }
 proc maybeOkGlobalBorrow() {
-  var b: borrowed C;
+  var b: borrowed C?;
   for x in yieldGlobalBorrows() {
     b = x; // expecting error
   }
@@ -57,7 +57,7 @@ iter yieldRefX() ref {
   writeln(x);
 }
 proc okIterX() {
-  var b: C;
+  var b: C?;
   var first = true;
   for x in yieldRefX() {
     x = 2;

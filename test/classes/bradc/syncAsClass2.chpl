@@ -1,4 +1,4 @@
-var myObject: object;
+var myObject: object?;
 
 var mysync: sync int;
 

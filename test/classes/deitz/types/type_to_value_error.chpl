@@ -2,7 +2,7 @@ class C {
   var x: int;
 }
 
-var c: borrowed C;
+var c: borrowed C?;
 
 c = C();
 

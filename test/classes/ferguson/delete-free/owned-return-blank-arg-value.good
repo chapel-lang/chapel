@@ -8,5 +8,5 @@ in bar
  x={x = 1}
 after returnByValue
  x=nil
- y={x = 1} y type owned C
+ y={x = 1} y type owned C?
 Destroying C x=1

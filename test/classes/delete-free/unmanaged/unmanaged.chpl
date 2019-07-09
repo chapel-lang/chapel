@@ -1,6 +1,6 @@
 class Node {
   var data: real;
-  var next: unmanaged Node;
+  var next: unmanaged Node?;
   proc init(arg:real) {
     this.data = arg;
     this.next = nil;
@@ -11,16 +11,16 @@ config const n = 5;
 
 proc test1() {
   var head    = new unmanaged Node(0);
-  var current = head;
+  var current: unmanaged Node? = head;
   for i in 1..n-1 {
-    current.next = new unmanaged Node(i);
-    current      = current.next;
+    current!.next = new unmanaged Node(i);
+    current       = current!.next;
   }
 
   current = head;
   while current {
-    var ptr = current;
-    current = current.next;
+    var ptr = current!;
+    current = current!.next;
     writeln(ptr.data);
     delete ptr;
   }
