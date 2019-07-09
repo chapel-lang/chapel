@@ -626,6 +626,12 @@ module ChapelArray {
     return chpl__buildDomainExpr((...x));
   }
 
+  pragma "compiler generated"
+  pragma "last resort"
+  proc chpl__ensureDomainExpr(type t) {
+    compilerError("Got domain expression of type '", t:string, "' rather than a domain value/range list as expected");
+  }
+
   //
   // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
