@@ -1,0 +1,2 @@
+domainTypeAsDomainExpr.chpl:6: In function 'fn':
+domainTypeAsDomainExpr.chpl:6: error: Domain expression was a type ('domain(1,int(64),false)') rather than a domain value or range list as expected
