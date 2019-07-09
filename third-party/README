@@ -134,21 +134,6 @@ utf8-decoder/
   See also: utf8-decoder/README
 
 
-libhdfs3/
-
-  Summary: A pure C/C++ implementation of the libhdfs client library,
-           which can be used as an alternative to the libhdfs client
-           library provided in the Apache Hadoop distribution (Apache
-           Hadoop's libhdfs uses the JVM). libhdfs3 is developed by
-           Pivotal and is used in HAWQ.
-
-  License: Apache 2.0
-
-  Website: https://github.com/PivotalRD/libhdfs3
-
-  See also: libhdfs3/README
-
-
 libunwind/
   Summary: libunwind is a portable and efficient C programming
            interface (API) to determine the call-chain of a program

@@ -719,11 +719,6 @@ extern record qiovec_t {
 }
 
 pragma "no doc"
-extern type qio_file_functions_ptr_t; // pointer to function ptr struct
-pragma "no doc"
-extern type qio_file_functions_t;     // function ptr struct
-
-pragma "no doc"
 extern type qio_channel_ptr_t;
 private extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
@@ -1014,13 +1009,6 @@ private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t
 private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):syserr;
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):syserr;
 private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):syserr;
-
-// Same as qio_file_open_access in, except this time we pass though our
-// struct that will initialize the file with the appropriate functions for that FS
-pragma "no doc"
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
-                                     access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
-                                     fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 pragma "no doc"
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
