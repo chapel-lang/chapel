@@ -190,7 +190,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
           if (startsWith(useName, borrowed))
             useName = useName + strlen(borrowed);
 
-          //if (decorateAllClasses)
+          if (decorateAllClasses)
             useName = astr("borrowed ", useName);
 
           retval = useName;
