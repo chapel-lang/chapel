@@ -118,7 +118,7 @@ module Sets {
 
       :arg x: The element to add to this set.
     */
-    proc add(const ref x: eltType) {
+    proc add(in x: eltType) {
       return;
     }
 
@@ -140,7 +140,7 @@ module Sets {
       :arg other: The set to compare against.
       :return: Whether or not this set and `other` are disjoint.
     */
-    proc const disjoint(const ref other: set(eltType, ?)): bool {
+    proc const isDisjoint(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
@@ -151,53 +151,7 @@ module Sets {
       :arg other: The set to compare against.
       :return: Whether or not this set and `other` intersect.
     */
-    proc const intersect(const ref other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-      Returns `true` if the value of every element in this set is contained
-      in the set `other`.
-
-      :arg other: The set to compare against.
-      :return: Whether or not this set is a subset of `other`.
-    */
-    proc const subset(const ref other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-      Returns `true` if this set is a proper subset of `other`. That is,
-      the value of every element in this set is contained in `other`, and
-      this set does not equal `other`.
-
-      :arg other: The set to compare against.
-      :return: Whether or not this set is a proper subset of `other`.
-    */
-    proc const properSubset(const ref other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-      Returns `true` if the value of every element in the set `other` is
-      contained in this set.
-
-      :arg other: The set to compare against.
-      :return: Whether or not this set is a superset of `other`.
-    */
-    proc const superset(const ref other: set(eltType, ?)): bool {
-      return false;
-    }
-
-    /*
-      Returns `true` if this set is a proper superset of `other`. That is,
-      the value of every element in `other` is contained in this set, and
-      this set does not equal `other`.
-
-      :arg other: The set to compare against.
-      :return: Whether or not this set is a proper superset of `other`.
-    */
-    proc const properSuperset(const ref other: set(eltType, ?)): bool {
+    proc const isIntersecting(const ref other: set(eltType, ?)): bool {
       return false;
     }
 
@@ -281,8 +235,8 @@ module Sets {
 
     /*
       Returns a new DefaultRectangular array containing a copy of each of the
-      elements contained in this set. The returned array is not guaranteed
-      to follow any particular ordering.
+      elements contained in this set. The returned array is sorted according
+      to the default sort order of its elements.
     */
     proc const toArray(): [] eltType {
       return nil;
@@ -315,34 +269,7 @@ module Sets {
     :return: A new set containing the difference between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc setUnion(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
-  }
-
-  /*
-    Return a new set that contains the union of two sets.
-
-    :arg a: A set to take the difference of.
-    :arg b: A set to take the difference of.
-
-    :return: A new set containing the difference between `a` and `b`.
-    :rtype: `set(?t, ?)`
-  */
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return setUnion(a, b);
-  }
-
-  /*
-    Return a new set that contains the difference of two sets.
-
-    :arg a: A set to take the difference of.
-    :arg b: A set to take the difference of.
-
-    :return: A new set containing the difference between `a` and `b`.
-    :rtype: `set(?t, ?)`
-  */
-  proc setDifference(const ref a: set(?t, ?),
-                     const ref b: set(t, ?)): set(t, ?) {
     return new set(t, false);
   }
 
@@ -356,20 +283,6 @@ module Sets {
     :rtype: `set(?t, ?)`
   */
   proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return setDifference(a, b);
-  }
-
-  /*
-    Return a new set that contains the intersection of two sets.
-
-    :arg a: A set to take the intersection of.
-    :arg b: A set to take the intersection of.
-
-    :return: A new set containing the intersection of `a` and `b`.
-    :rtype: `set(?t, ?)`
-  */
-  proc setIntersection(const ref a: set(?t, ?),
-                     const ref b: set(t, ?)): set(t, ?) {
     return new set(t, false);
   }
 
@@ -384,20 +297,6 @@ module Sets {
   */
   proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return setIntersection(a, b);
-  }
-
-  /*
-    Return a new set that contains the symmetric difference of two sets.
-
-    :arg a: A set to take the symmetric difference of.
-    :arg b: A set to take the symmetric difference of.
-
-    :return: A new set containing the symmetric difference of `a` and `b`.
-    :rtype: `set(?t, ?)`
-  */
-  proc setSymmetricDiff(const ref a: set(?t, ?),
-                     const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
   }
 
   /*
@@ -485,7 +384,7 @@ module Sets {
     :arg a: A set to compare.
     :arg b: A set to compare.
 
-    :return `true` if `a` is a superset of `b`.
+    :return: `true` if `a` is a superset of `b`.
     :rtype: `bool`
   */
   proc >=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
