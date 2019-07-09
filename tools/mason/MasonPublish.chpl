@@ -64,13 +64,13 @@ proc masonPublish(args: [] string) throws {
         }
         else if args.size == 2 {
           var checkResult = usernameCheck(username);
-          if checkResult.exit_status == 0 {
+          if checkResult  == 0 {
             publishPackage(username);
           }
           else {
-            const badUsernameError = ' is not a valid GitHub username or mason-registry is not forked \n';
-            const badForkError = 'Make sure you are connected to the internet before publishing.'; 
-            throw new owned MasonError(username + badUsernameError + badForkError);
+            const badUsernameError = 'mason-registry is not forked or ' + username + ' is not a valid username \n';
+            const badForkError = 'Make sure you are connected to the internet before publishing.';
+            throw new owned MasonError(badUsernameError + badForkError);
           }
         }
         else if args.size == 4 && dry {
@@ -129,7 +129,7 @@ proc publishPackage(username: string) throws {
 private proc dryRun(username: string) throws {
   var fork = false;
   var remoteCheck = checkIfForkExists(username: string);
-  if remoteCheck.exit_status == 0 {
+  if remoteCheck == 0 {
     fork = true;
   }
   var git = false;
@@ -158,30 +158,28 @@ private proc dryRun(username: string) throws {
 
 /* Opens Spawn call to get username for the mason registry fork */
 private proc usernameCheck(username: string) {
-  const gitRemote = 'git ls-remote https://github/com';
-  var usernameCheck = (gitRemote + username + '/mason-registry').split();
-  var p = spawn(usernameCheck);
-  p.wait();
-  return p;
+  const gitRemote = 'git ls-remote https://github.com/';
+  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry');
+  return usernameCheck;
 }
+
 /* Runs Commands to see if Fork of mason-registry exists under the username */
 private proc checkIfForkExists(username: string) {
-  var getFork= ('git ls-remote https://github.com/' + username + '/mason-registry').split();
-  var p = spawn(getFork, stdout=PIPE);
-  p.wait();
+  var getFork= ('git ls-remote https://github.com/' + username + '/mason-registry');
+  var p = runWithStatus(getFork);
   return p;
 }
 
-/*Gets the GitHub username of the user, by parsing from the remote orgigin url.  */
+/*Gets the GitHub username of the user, by parsing from the remote origin url.  */
 private proc getUsername() {
-  var usernameurl = gitUrl();
-  var tail = usernameurl.find("/")-1: int;
-  var head = usernameurl.find(":")+1: int;
-  var username = usernameurl(head..tail);
+  var usernameUrl = gitUrl();
+  var tail = usernameUrl.find("/")-1: int;
+  var head = usernameUrl.find(":")+1: int;
+  var username = usernameUrl(head..tail);
   return username;
 }
 
-/* Clones the mason registery fork from the users repo. Takes username as input. */
+/* Clones the mason registry fork from the users repo. Takes username as input. */
 proc cloneMasonReg(username: string) throws {
   try! {
     const gitClone = 'git clone git@github.com:';
@@ -201,7 +199,7 @@ proc doesGitOriginExist() {
   return !urlExists.isEmpty();
 }
 
-/*Procedure that reutns the url of the git remote origin */
+/*Procedure that returns the url of the git remote origin */
 private proc gitUrl() {
   var url = runCommand("git config --get remote.origin.url", true);
   return url;
@@ -242,14 +240,14 @@ private proc getPackageName() throws {
   }
 }
 
-/* Adds package to the Bricks of the mason-registry branch and then vrares the version.toml
+/* Adds package to the Bricks of the mason-registry branch and then adds the version.toml
  with the source url of the package's GitHub repo.*/
 private proc addPackageToBricks(projectLocal: string, safeDir: string) : string {
   const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
   const url = gitUrl();
   var tomlFile = new owned(parseToml(toParse));
-  const packageName = tomlFile['brick']['name'].s;
-  const versionNum = tomlFile['brick']['version'].s;
+  const packageName = getPackageNameToml(tomlFile);
+  const versionNum = getPackageVersion(tomlFile);
   here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/");
   mkdir(packageName);
   here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/" + packageName + "/");
@@ -261,3 +259,13 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string) : string 
   tomlWriter.close();
   return packageName;
  }
+
+/* Gets the version from the toml file */
+private proc getPackageVersion(toml) {
+  return toml['brick']['version'].s;
+}
+
+/*Gets package name when Toml file is already open and parsed */
+private proc getPackageNameToml(toml) {
+  return toml['brick']['name'].s;
+}
