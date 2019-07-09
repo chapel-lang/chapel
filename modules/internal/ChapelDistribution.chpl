@@ -393,7 +393,26 @@ module ChapelDistribution {
       }
     }
 
+    override proc dsiBulkAddHere(inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false, preserveInds=true){
+
+      if !dataSorted && preserveInds {
+        var _inds = inds;
+        return bulkAddHere_help(_inds, dataSorted, isUnique);
+      }
+      else {
+        return bulkAddHere_help(inds, dataSorted, isUnique);
+      }
+    }
+
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+        dataSorted=false, isUnique=false){
+      halt("Helper function called on the BaseSparseDomImpl");
+
+      return -1;
+    }
+
+    proc bulkAddHere_help(inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false){
       halt("Helper function called on the BaseSparseDomImpl");
 
@@ -554,6 +573,12 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false, preserveInds=true){
+
+      halt("Bulk addition is not supported by this sparse domain");
+    }
+
+    proc dsiBulkAddHere(inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true){
 
       halt("Bulk addition is not supported by this sparse domain");

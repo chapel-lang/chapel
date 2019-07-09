@@ -183,6 +183,19 @@ class SparseBlockDom: BaseSparseDomImpl {
     return _retval;
   }
 
+  override proc bulkAddHere_help(inds: [] index(rank,idxType),
+      dataSorted=false, isUnique=false) {
+
+      const _retval = locDoms[here.id].mySparseBlock.bulkAdd(inds,
+          dataSorted=true, isUnique=false);
+
+      // this implementation is currently not parallel-safe. See bulkAdd_help
+      // for a parallel safe bulk addition. We can achieve parallel-safety by
+      // adding a flag to this method.
+      nnz += _retval;
+      return _retval;
+  }
+
   //
   // output domain
   //

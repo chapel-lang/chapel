@@ -1479,6 +1479,14 @@ module ChapelArray {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
+    pragma "no doc"
+    proc bulkAddHere(inds: [] _value.idxType, dataSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
+
+      if inds.size == 0 then return 0;
+
+      return _value.dsiBulkAddHere(inds, dataSorted, isUnique, preserveInds);
+    }
     /*
        Adds indices in ``inds`` to this domain in bulk.
 
@@ -1518,6 +1526,7 @@ module ChapelArray {
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
+
 
     /* Remove index ``i`` from this domain */
     proc remove(i) {
