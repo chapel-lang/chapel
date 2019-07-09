@@ -298,8 +298,10 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
             // Update previous and next destinations with this iteration's
             // val2 and val3
             const temp = w2 * val2 + w3 * val3;
-            dest.localAccess[i,j,k-1] += temp;
-            dest.localAccess[i,j,k+1] += temp;
+            if k-1>=klo then
+              dest.localAccess[i,j,k-1] += temp;
+            if k+1<=khi then
+              dest.localAccess[i,j,k+1] += temp;
           }
 
           dest.localAccess[i,j,khi] += w2 * valA(i,j,khi+1) +
