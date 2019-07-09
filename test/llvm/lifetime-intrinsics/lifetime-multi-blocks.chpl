@@ -9,11 +9,11 @@ proc mytest_multi_blocks() {
   // CHECK: %[[REG1:[0-9]+]] = bitcast double* %a_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG1]])
   // CHECK: %{{[0-9]+}} = bitcast double* %a_chpl to i8*
+  refidentity(a);
   var b = 11.11;
   // CHECK: %[[REG2:[0-9]+]] = bitcast double* %b_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG2]])
   // CHECK: %{{[0-9]+}} = bitcast double* %b_chpl to i8*
-  refidentity(a);
   refidentity(b);
   {
     var c = 4.0;
@@ -26,35 +26,25 @@ proc mytest_multi_blocks() {
       // CHECK: %[[REG4:[0-9]+]] = bitcast i64* %e_chpl to i8*
       // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG4]])
       e += e * 2;
-      // CHECK: %[[REG5:[0-9]+]] = bitcast i64** %i_lhs_chpl to i8*
-      // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG5]])
     }
   }
   {
     var test1 = 41.0 + b;
-    // CHECK: %[[REG6:[0-9]+]] = bitcast double* %test1_chpl to i8*
-    // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG6]])
+    // CHECK: %[[REG5:[0-9]+]] = bitcast double* %test1_chpl to i8*
+    // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG5]])
     // CHECK: %{{[0-9]+}} = bitcast double* %test1_chpl to i8*
     refidentity(test1);
   }
-  // CHECK: %[[REG7:[0-9]+]] = bitcast double* %call_tmp_chpl5 to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG7]])
-  // CHECK: %20 = bitcast double* %call_tmp_chpl5 to i8*
-
-  // CHECK: %[[REG8:[0-9]+]] = bitcast double* %a_chpl to i8*
+  // CHECK: %[[REG6:[0-9]+]] = bitcast double* %a_chpl to i8*
+  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG6]])
+  // CHECK: %[[REG7:[0-9]+]] = bitcast double* %b_chpl to i8*
+  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG7]])
+  // CHECK: %[[REG8:[0-9]+]] = bitcast double* %c_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG8]])
-  // CHECK: %[[REG9:[0-9]+]] = bitcast double* %b_chpl to i8*
+  // CHECK: %[[REG9:[0-9]+]] = bitcast i64* %e_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG9]])
-  // CHECK: %[[REG10:[0-9]+]] = bitcast double* %c_chpl to i8*
+  // CHECK: %[[REG10:[0-9]+]] = bitcast double* %test1_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG10]])
-  // CHECK: %[[REG11:[0-9]+]] = bitcast i64* %e_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG11]])
-  // CHECK: %[[REG12:[0-9]+]] = bitcast double* %test1_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG12]])
-  // CHECK: %[[REG13:[0-9]+]] = bitcast i64** %i_lhs_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG13]])
-  // CHECK: %[[REG14:[0-9]+]] = bitcast double* %call_tmp_chpl5 to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG14]])
   return a + b;
 }
 

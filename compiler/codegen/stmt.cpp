@@ -183,9 +183,9 @@ GenRet BlockStmt::codegen() {
       node->codegen();
       if (DefExpr* def = toDefExpr(node)) {
         Symbol* var = def->sym;
-        if (var->type && var->type != dtVoid && var->type != dtNothing) {
+        if (!isGlobal(var) && var->type && var->type != dtVoid && var->type != dtNothing) {
           GenRet ret = var->codegen();
-          if (!isGlobal(var) && ret.isLVPtr == GEN_PTR) {
+          if (ret.isLVPtr == GEN_PTR) {
             llvm::Value* declared = ret.val;
             llvm::Type* type = var->type->codegen().type;
             if (declared && type) {
