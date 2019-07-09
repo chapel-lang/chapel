@@ -414,6 +414,8 @@ tags
 
 /test/variables/bradc/docs/pragmaMultipleVars.doc.txt
 
+/test/visibility/only/test.dat
+
 /test/users/thom/returnGenericLineno/strassen
 
 # Third party ignores.
