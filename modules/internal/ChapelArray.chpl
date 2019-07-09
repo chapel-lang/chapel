@@ -629,7 +629,7 @@ module ChapelArray {
   pragma "compiler generated"
   pragma "last resort"
   proc chpl__ensureDomainExpr(type t) {
-    compilerError("Got domain expression of type '", t:string, "' rather than a domain value/range list as expected");
+    compilerError("Domain expression was a type ('", t:string, "') rather than a domain value or range list as expected");
   }
 
   //
