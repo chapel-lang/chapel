@@ -1,16 +1,24 @@
 // This test is used to verify that llvm.lifetime instrinsics are being emitted
 // for procedures that throw an exception
 
-// CHECK: call void @llvm.lifetime.start{{.*}}
-// CHECK: call void @llvm.lifetime.end{{.*}}
+// Simple hack to retain elements to show up in LLVM IR with lifetime instrinsics
+proc refidentity(const ref a) const ref { return a; }
 
 class EmptyStringError : Error {
   proc init() {}
 }
 
 proc mytest_throws(f: string) throws {
+  // CHECK: %[[REG1:[0-9]+]] = bitcast i64* %a_chpl to i8*
+  // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG1]])
+  // CHECK: %{{[0-9]+}} = bitcast i64* %a_chpl to i8*
   var a = 42;
+  refidentity(a);
+  // CHECK: %[[REG2:[0-9]+]] = bitcast i64* %b_chpl to i8*
+  // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG2]])
+  // CHECK: %{{[0-9]+}} = bitcast i64* %b_chpl to i8*
   var b = a + 42;
+  refidentity(b);
   if f.isEmpty() then
     throw new owned EmptyStringError();
   if b != 42 * 2 {
@@ -18,6 +26,10 @@ proc mytest_throws(f: string) throws {
   } else {
     return b;
   }
+  // CHECK: %[[REG3:[0-9]+]] = bitcast i64* %a_chpl to i8*
+  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG3]])
+  // CHECK: %[[REG4:[0-9]+]] = bitcast i64* %b_chpl to i8*
+  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG4]])
 }
 
 mytest_throws("");
