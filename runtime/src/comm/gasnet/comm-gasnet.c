@@ -1056,39 +1056,6 @@ void chpl_comm_pre_task_exit(int all) {
   }
 }
 
-static void exit_common(int status) {
-  static int loopback = 0;
-
-  stop_polling(/*wait*/ false);
-
-  if (chpl_nodeID == 0) {
-    if (loopback) {
-      gasnet_exit(2);
-    }
-  }
-
-  chpl_comm_barrier("exit_common_gasnet_exit"); 
-  //exit(); // depending on PAT exit strategy, maybe switch to this
-  gasnet_exit(status); // not a collective operation, but one locale will win and all locales will die.
-}
-
-static void exit_any_dirty(int status) {
-  // kill the polling task, but other than that...
-  // clean up nothing; just ask GASNet to exit
-  // GASNet will then kill all other locales.
-  static int loopback = 0;
-
-  stop_polling(/*wait*/ false);
-
-  if (chpl_nodeID == 0) {
-    if (loopback) {
-      gasnet_exit(2);
-    }
-  }
-
-  gasnet_exit(status);
-}
-
 #ifdef GASNET_NEEDS_EXIT_ANY_CLEAN
 // this is currently unused; it's intended to be used to implement
 // exit_any with cleanup on all nodes
@@ -1109,13 +1076,12 @@ static void exit_any_clean(int status) {
 #endif
 
 void chpl_comm_exit(int all, int status) {
-  if (all) {
-    exit_common(status);
-  }
-  else {
-    // when exit_any_clean is finished, consider switching to that.
-    exit_any_dirty(status); 
-  }
+  stop_polling(/*wait*/ false);
+
+  if (all)
+    chpl_comm_barrier("exit_comm_gasnet");
+
+  gasnet_exit(status);
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
