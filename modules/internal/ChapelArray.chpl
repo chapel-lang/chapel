@@ -880,6 +880,7 @@ module ChapelArray {
   pragma "syntactic distribution"
   record dmap { }
 
+  pragma "unsafe"
   proc chpl__buildDistType(type t) type where isSubtype(t, BaseDist) {
     var x: t;
     var y = new _distribution(x);

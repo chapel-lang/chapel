@@ -7,7 +7,7 @@ proc getGlobalHashtableElement (key: C) {
 }
 
 proc bad1() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   {
     var own = new owned C(2);
     var b = getGlobalHashtableElement(own.borrow());
@@ -37,7 +37,7 @@ proc returnOneOfThem (a: C, b: C) {
 }
 
 proc bad3() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   var outerOwn = new owned C(1);
   {
     var innerOwn = new owned C(2);
@@ -52,7 +52,7 @@ proc getGlobalHashtableElementGeneric (key) {
 }
 
 proc bad4() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   {
     var own = new owned C(2);
     var b = getGlobalHashtableElementGeneric(own.borrow());
@@ -66,7 +66,7 @@ proc returnOneOfThemGeneric (a, b) {
 }
 
 proc bad5() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   var outerOwn = new owned C(1);
   {
     var innerOwn = new owned C(2);

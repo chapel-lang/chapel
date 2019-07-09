@@ -30,7 +30,7 @@ proc setCbad(ref lhs: C, rhs: C) lifetime lhs > rhs {
 }
 
 proc badlt() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     setClt(b, own.borrow());
@@ -40,7 +40,7 @@ proc badlt() {
 badlt();
 
 proc badlt2() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     setClt2(b, own.borrow());
@@ -50,7 +50,7 @@ proc badlt2() {
 badlt2();
 
 proc badlte() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     setClte(b, own.borrow());
@@ -60,7 +60,7 @@ proc badlte() {
 badlte();
 
 proc badgt() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     setCgt(b, own.borrow());
@@ -70,7 +70,7 @@ proc badgt() {
 badgt();
 
 proc badgte() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     setCgte(b, own.borrow());
@@ -80,7 +80,7 @@ proc badgte() {
 badgte();
 
 proc callsBad() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     setCbad(b, own.borrow());
