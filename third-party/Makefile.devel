@@ -1,16 +1,3 @@
-armci: FORCE
-	cd armci && $(MAKE)
-
-mpich1: FORCE
-	cd mpich1 && $(MAKE)
-
-openmpi: FORCE
-	cd openmpi && $(MAKE)
-
-pvm: FORCE
-	cd pvm && $(MAKE)
-
 chplspell-venv: $(CHPL_VENV_CHPLSPELL_REQS)
 $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) chplspell-venv
-
