@@ -30,18 +30,18 @@ gasnet/
 
   Website: https://gasnet.lbl.gov/
 
-  See also: gasnet/README
+  See also: gasnet/README and gasnet/gasnet-src/README
 
 
 gmp/
   Summary: the GNU Multiple Precision Arithmetic Library
 
-  License: L-GPL (see gmp/gmp-<version>/COPYING and
-           gmp/gmp-<version>/COPYING.LESSERv3)
+  License: L-GPL (see gmp/gmp-src/COPYING and
+           gmp/gmp-src/COPYING.LESSERv3)
 
-  Website: http://gmplib.org
+  Website: https://gmplib.org/
 
-  See also: gmp/README and gmp/gmp-<version>/README
+  See also: gmp/README and gmp/gmp-src/README
 
 
 hwloc/
@@ -51,7 +51,7 @@ hwloc/
 
   License: BSD (see hwloc/hwloc-src/COPYING)
 
-  Website: http://www.open-mpi.org/projects/hwloc
+  Website: https://www.open-mpi.org/projects/hwloc/
 
   See also: hwloc/README and hwloc/hwloc-src/README
 
@@ -64,9 +64,9 @@ jemalloc/
   License: jemalloc is released under a BSD-derived License (see
            jemalloc/jemalloc-src/COPYING)
 
-  Website: http://www.canonware.com/jemalloc/
+  Website: http://jemalloc.net/
 
-  See also: jemalloc/README
+  See also: jemalloc/README and jemalloc/jemalloc-src/README
 
 
 llvm/
@@ -76,16 +76,12 @@ llvm/
            support "extern blocks" within Chapel -- a capability for
            embedding C code into a Chapel source file.
 
-  License: University of Illinois / NCSA (see llvm/llvm/LICENSE.TXT
-           and llvm/llvm/tools/clang/LICENSE.TXT)
+  License: University of Illinois / NCSA (see llvm/llvm-src/LICENSE.TXT
+           and llvm/llvm-src/tools/clang/LICENSE.TXT)
 
-  Website: http://llvm.org/
-             and
-           http://clang.llvm.org/
+  Website: https://llvm.org/ and http://clang.llvm.org/
 
-  See also: llvm/llvm/README.txt
-              and
-            llvm/llvm/tools/clang/README.txt)
+  See also: llvm/llvm-src/README.txt and llvm/llvm-src/tools/clang/README.txt
 
 
 massivethreads/
@@ -94,11 +90,11 @@ massivethreads/
 
   License: MassiveThreads is released under the Simplified BSD License,
            which can be found in:
-             massivethreads/massivethreads-<version>/COPYRIGHT
+             massivethreads/massivethreads-src/COPYRIGHT
 
-  Website: http://code.google.com/p/massivethreads/
+  Website: https://github.com/massivethreads/massivethreads
 
-  See also: massivethreads/massivethreads-<version>/README
+  See also: massivethreads/massivethreads-src/README
 
 
 qthread/ 
@@ -106,13 +102,13 @@ qthread/
            National Laboratory.
 
   License: Qthreads is released under the New BSD License, which can
-           be found in qthread/qthread-<version>/COPYING
+           be found in qthread/qthread-src/COPYING
 
-  Website: http://code.google.com/p/qthreads/
+  Website: https://github.com/Qthreads/qthreads
     and
            http://www.cs.sandia.gov/qthreads/
 
-  See also: qthread/qthread-<version>/README
+  See also: qthread/README and qthread/qthread-src/README.md
 
 
 re2/
@@ -120,11 +116,11 @@ re2/
            expression operations described in
            doc/rst/modules/standard/Regexp.rst
 
-  License: New BSD license (see re2/re2/LICENSE)
+  License: New BSD license (see re2/re2-src/LICENSE)
 
-  Website: https://code.google.com/p/re2/
+  Website: https://github.com/google/re2
 
-  See also: re2/re2/README
+  See also: re2/README and re2/re2-src/README
 
 
 utf8-decoder/
@@ -136,6 +132,7 @@ utf8-decoder/
   Website: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
 
   See also: utf8-decoder/README
+
 
 libhdfs3/
 
@@ -151,6 +148,7 @@ libhdfs3/
 
   See also: libhdfs3/README
 
+
 libunwind/
   Summary: libunwind is a portable and efficient C programming
            interface (API) to determine the call-chain of a program
@@ -158,6 +156,6 @@ libunwind/
   License: MIT (see libunwind/libunwind-<version>/COPYING and
            libunwind/libunwind-<version>/LICENSE)
 
-  Website: http://www.nongnu.org/libunwind/
+  Website: https://www.nongnu.org/libunwind/
 
   See also: libunwind/README and libunwind/libunwind-<version>/README
