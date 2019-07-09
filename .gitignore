@@ -305,6 +305,7 @@ tags
 /test/release/examples/primers/reductions
 /test/release/examples/primers/slices
 /test/release/examples/primers/sparse
+/test/release/examples/primers/specialMethods
 /test/release/examples/primers/syncsingle
 /test/release/examples/primers/taskParallel
 /test/release/examples/primers/timers
@@ -316,6 +317,8 @@ tags
 /test/release/examples/primers/chplvis/E2
 /test/release/examples/primers/chplvis/E3
 /test/release/examples/primers/chplvis/E4
+
+/test/release/examples/primers/tempfile.txt
 
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
