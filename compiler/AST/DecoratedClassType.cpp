@@ -157,7 +157,9 @@ Type* canonicalClassType(Type* t) {
 
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
-  if (isClassLike(t) && isClass(t)) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    return dt->getCanonicalClass()->getDecoratedClass(d);
+  } else if (isClassLike(t) && isClass(t)) {
     AggregateType* at = toAggregateType(t);
     return at->getDecoratedClass(d);
   } else if (isManagedPtrType(t)) {
