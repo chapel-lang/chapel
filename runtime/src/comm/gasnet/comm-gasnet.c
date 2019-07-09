@@ -248,7 +248,6 @@ typedef enum {
   PRIV_BCAST,           // put data at addr (used for private broadcast)
   PRIV_BCAST_LARGE,     // put data at addr (used for private broadcast)
   FREE,                 // free data at addr
-  EXIT_ANY,             // <unused> to be used for exit_any() cleanup
   SHUTDOWN,             // tell nodes to get ready for shutdown
   BCAST_SEGINFO,        // broadcast for segment info table
   DO_REPLY_PUT,         // do a PUT here from another locale
@@ -528,15 +527,6 @@ static void AM_free(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handler
   chpl_mem_free(to_free, 0, 0);
 }
 
-// this is currently unused; it's intended to be used to implement
-// exit_any with cleanup on all nodes. 
-static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
-//  int **status = (int**)buf; // Some compilers complain about unused variable 'status'.
-  chpl_internal_error("clean exit_any is not implemented.");
-  // here we basically need to call chpl_exit_all, but we need to
-  // ensure only one thread calls chpl_exit_all on this locale.
-}
-
 static chpl_bool can_shutdown = false;
 static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
@@ -602,7 +592,6 @@ static gasnet_handlerentry_t ftable[] = {
   {PRIV_BCAST,    AM_priv_bcast},
   {PRIV_BCAST_LARGE, AM_priv_bcast_large},
   {FREE,          AM_free},
-  {EXIT_ANY,      AM_exit_any},
   {SHUTDOWN,      AM_shutdown},
   {BCAST_SEGINFO, AM_bcast_seginfo},
   {DO_REPLY_PUT,  AM_reply_put},
@@ -1055,25 +1044,6 @@ void chpl_comm_pre_task_exit(int all) {
     stop_polling(/*wait*/ true);
   }
 }
-
-#ifdef GASNET_NEEDS_EXIT_ANY_CLEAN
-// this is currently unused; it's intended to be used to implement
-// exit_any with cleanup on all nodes
-static void exit_any_clean(int status) {
-  int* status_p = &status;
-  int node;
-
-  // notify all other nodes that this node is entering a clean exit_any
-  for (node = 0; node < chpl_numNodes; node++) {
-    if (node != chpl_nodeID) {
-      GASNET_Safe(gasnet_AMRequestMedium0(node, EXIT_ANY, &status_p, sizeof(status_p)));
-    }
-  }
-    
-  // (for code reuse) ask this node to perform a clean exit_any
-  GASNET_Safe(gasnet_AMRequestMedium0(chpl_nodeID, EXIT_ANY, &status_p, sizeof(status_p)));
-}
-#endif
 
 void chpl_comm_exit(int all, int status) {
   stop_polling(/*wait*/ false);
