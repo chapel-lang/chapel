@@ -1037,13 +1037,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
 
 AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg)
 {
-  INT_ASSERT(arg);
-  bool borrowConvert = false;
-  if (arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY) &&
-      !arg->getFunction()->hasFlag(FLAG_NO_BORROW_CONVERT))
-    borrowConvert = true;
-
-  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, borrowConvert);
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
 }
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
