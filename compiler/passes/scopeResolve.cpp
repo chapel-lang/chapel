@@ -111,6 +111,13 @@ static void handleReceiverFormals() {
         SET_LINENO(fn->_this);
 
         if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
+
+          if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
+            if (dt->getDecorator() == CLASS_TYPE_GENERIC_NONNIL) {
+              AggregateType* at = dt->getCanonicalClass();
+              ts = at->symbol; // converting this -> borrow type
+            }
+          }
           sym->replace(new SymExpr(ts));
 
           fn->_this->type = ts->type;
