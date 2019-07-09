@@ -1,0 +1,5 @@
+cannot-pass-c.chpl:4: In function 'test':
+cannot-pass-c.chpl:5: error: the type of the actual argument 'C' is generic
+note: generic actual arguments are not currently supported
+cannot-pass-c.chpl:5: note: 'C' now means non-nilable class with any management
+cannot-pass-c.chpl:5: note: to migrate old code, change it to 'borrowed C'
