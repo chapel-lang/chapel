@@ -6,13 +6,13 @@ class MyClass {
 }
 
 proc bad1() {
-  var x:MyClass;
+  var x:borrowed MyClass;
   x.method();
 }
 bad1();
 
 proc bad2() {
-  var x:MyClass;
+  var x:borrowed MyClass;
   x = nil;
   x.method();
 }

@@ -38,7 +38,7 @@ proc setit_on( ref lhs: C?, rhs: C ) lifetime lhs < rhs {
 
 
 proc test_begin() {
-  var bb: C?;
+  var bb: borrowed C?;
   {
     var a = new owned C(1);
     setit_begin(bb, a.borrow());

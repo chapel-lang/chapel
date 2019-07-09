@@ -8,7 +8,7 @@ record GenericCollection {
     var default:t;
     field = default;
   }
-  proc init(field:owned) {
+  proc init(in field:owned) {
     this.field = field;
   }
   proc init(field:borrowed) {

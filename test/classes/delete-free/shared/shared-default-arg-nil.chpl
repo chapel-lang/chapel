@@ -4,7 +4,7 @@ class MyClass {
   var x:int;
 }
 
-proc foo(arg:int, opt: shared MyClass? = nil ) {
+proc foo(arg:int, in opt: shared MyClass? = nil ) {
   writeln(arg, " ", opt);
 }
 
