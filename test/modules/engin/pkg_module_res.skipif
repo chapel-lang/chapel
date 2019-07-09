@@ -1,0 +1,3 @@
+# this test requires curl.h which isn't installed in nightly cygwin
+CHPL_TARGET_PLATFORM==cygwin64
+CHPL_TARGET_PLATFORM==cygwin32
