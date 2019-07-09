@@ -17,32 +17,33 @@ module TestResult {
     var shouldStop = false;
     var separator1 = "="* 70,
         separator2 = "-"* 70;
-    // called when a test if about to run
-    proc startTest() {
+    // called when a test ran
+    proc testRan() {
       this.testsRun += 1;
     }
     
-    /*Called when a test will be Re-Ran*/
-    proc testToBeReRan() {
-      this.testsRun -= 1;
-    }
     /*Called when an error has occurred.*/
     proc addError(testName: string, fileName: string, errMsg: string) {
+      this.testRan();
       var fileAdd = fileName + ": " + testName;
       this.errors.push_back((fileAdd, errMsg));
     }
 
     /*called when error occured */
     proc addFailure(testName: string, fileName: string, errMsg: string) {
+      this.testRan();
       var fileAdd = fileName + ": " + testName;
       this.failures.push_back((fileAdd, errMsg));
     }
 
     /*Called when a test has completed successfully*/
-    proc addSuccess(testName: string, fileName: string) { }
+    proc addSuccess(testName: string, fileName: string) {
+      this.testRan();
+    }
 
     /*Called when a test is skipped.*/
     proc addSkip(testName: string, fileName: string, errMsg: string) {
+      this.testRan();
       var fileAdd = fileName + ": " + testName;
       this.skipped.push_back((fileAdd, errMsg));
     }
