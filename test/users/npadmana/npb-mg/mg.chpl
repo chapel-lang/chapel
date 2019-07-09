@@ -286,7 +286,7 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
           dest.localAccess[i,j,klo] += w2 * valA(i,j,klo-1) +
                                        w3 * valB(i,j,klo-1);
 
-          for k in vectorizeOnly(klo..khi) {
+          for k in klo..khi {
             const val1 = locSrc[i,j,k];
             const val2 = valA(i,j,k);
             const val3 = valB(i,j,k);
