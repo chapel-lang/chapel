@@ -720,6 +720,7 @@ int32_t chpl_comm_getMaxThreads(void) {
 //
 static volatile int pollingRunning;
 static volatile int pollingQuit;
+static chpl_bool pollingRequired;
 
 static void polling(void* x) {
   pollingRunning = 1;
@@ -732,7 +733,18 @@ static void polling(void* x) {
   pollingRunning = 0;
 }
 
+static void setup_polling(void) {
+#if defined(GASNET_CONDUIT_IBV)
+  pollingRequired = false;
+  chpl_env_set("GASNET_RCV_THREAD", "1", 1);
+#else
+  pollingRequired = true;
+#endif
+}
+
 static void start_polling(void) {
+  if (!pollingRequired) return;
+
   pollingRunning = 0;
   pollingQuit = 0;
 
@@ -746,6 +758,8 @@ static void start_polling(void) {
 }
 
 static void stop_polling(chpl_bool wait) {
+  if (!pollingRequired) return;
+
   pollingQuit = 1;
 
   if (wait) {
@@ -789,6 +803,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   set_max_segsize();
   set_num_comm_domains();
+  setup_polling();
+
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
 
   gasnet_init(argc_p, argv_p);
@@ -881,9 +897,6 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_post_task_init(void) {
-  //
-  // Start a polling task on each locale.
-  //
   start_polling();
 
   // Initialize the caching layer, if it is active.
