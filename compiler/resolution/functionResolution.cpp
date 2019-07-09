@@ -1103,7 +1103,8 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
     actual = CLASS_TYPE_MANAGED_NONNIL;
 
   // Shouldn't have generic actuals right now.
-  INT_ASSERT(removeNilableFromDecorator(actual) != CLASS_TYPE_GENERIC);
+  if (removeNilableFromDecorator(actual) == CLASS_TYPE_GENERIC)
+    return false;
 
   switch (formal) {
     case CLASS_TYPE_BORROWED:
@@ -1163,7 +1164,8 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     actual = CLASS_TYPE_MANAGED_NONNIL;
 
   // Shouldn't have generic actuals right now.
-  INT_ASSERT(removeNilableFromDecorator(actual) != CLASS_TYPE_GENERIC);
+  if (removeNilableFromDecorator(actual) == CLASS_TYPE_GENERIC)
+    return false;
 
   switch (formal) {
     case CLASS_TYPE_BORROWED:
