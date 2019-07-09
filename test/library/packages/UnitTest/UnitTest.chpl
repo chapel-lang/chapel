@@ -826,63 +826,68 @@ module UnitTest {
   /*Runs the tests*/
   proc runTest(tests: argType ...?n) throws {
 
-    var runAllTests = true;
-    var testNameList: [1..0] string;
-    if testNames != "None" {
-      runAllTests = false;
-      for test in testNames.split(" ") do testNameList.push_back(test.strip());
-    }
+    var testNamesMap: domain(string);
+    var testStatus: [testNamesMap] bool;
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
     testSuite.addTests(tests);
-    var testResult = new TextTestResult();
+    
+    if testNames != "None" {
+      for test in testSuite {
+        testStatus[test: string] = true; // assuming that tests ran
+      }
+      for test in testNames.split(" ") {
+        testStatus[test.strip()] = false; // these didn't run
+      }
+    }
+    else {
+      for test in testSuite {
+        testStatus[test: string] = false; // no tests ran
+      }
+    }
+
     for indx in (skipId+1)..testSuite.testCount {
       var test = testSuite[indx];
-      try {
-        if runAllTests {
-          runTestMethod(testResult, test, indx);
-        }
-        else {
-          var checkStatus = testNameList.find(test: string);
-          if checkStatus[1] {
-            runTestMethod(testResult, test, indx);
-          }
-        }
-        
-      }
-      // A variety of catch statements will handle errors thrown
-      catch e: AssertionError {
-        testResult.addFailure(test: string, e: string);
-        // print info of the assertion error
-      }
-      catch e: TestSkipped {
-        testResult.addSkip(test: string, e: string);
-        // Print info on test skipped
-      }
-      catch e: TestDependencyNotMet {
-        // Pop test out of array and append to end
-      }
-      catch e: TestIncorrectNumLocales {
-        testResult.addIncorrectNumLocales(test: string, e: string);
-      }
-      catch e: UnexpectedLocales {
-        testResult.addFailure(test: string, e: string);
-      }
-      catch e { 
-        testResult.addError(test:string, e:string);
+      if !testStatus[test: string] {
+        runTestMethod(testStatus, test, indx);
       }
     }
   }
 
   private
-  proc runTestMethod(ref testResult, test, indx) throws {
-    // Create a test object per test
-    var testObject = new Test();
-    var testName = test: string;
-    //test is a FCF:
-    testResult.startTest(testName, indx);
-    test(testObject);
-    testResult.addSuccess(testName);
+  proc runTestMethod(ref testStatus, test, indx) throws {
+    var testResult = new TextTestResult();
+    try {
+      // Create a test object per test
+      var testObject = new Test();
+      var testName = test: string;
+      //test is a FCF:
+      testResult.startTest(testName, indx);
+      test(testObject);
+      testResult.addSuccess(testName);
+    }
+    // A variety of catch statements will handle errors thrown
+    catch e: AssertionError {
+      testResult.addFailure(test: string, e: string);
+      // print info of the assertion error
+    }
+    catch e: TestSkipped {
+      testResult.addSkip(test: string, e: string);
+      // Print info on test skipped
+    }
+    catch e: TestDependencyNotMet {
+      // Pop test out of array and append to end
+    }
+    catch e: TestIncorrectNumLocales {
+      testResult.addIncorrectNumLocales(test: string, e: string);
+    }
+    catch e: UnexpectedLocales {
+      testResult.addFailure(test: string, e: string);
+    }
+    catch e { 
+      testResult.addError(test:string, e:string);
+    }
+    testStatus[test: string] = true;
   }
 }
