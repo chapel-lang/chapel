@@ -527,15 +527,8 @@ static void AM_free(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handler
   chpl_mem_free(to_free, 0, 0);
 }
 
-static chpl_bool can_shutdown = false;
-static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-
 static void AM_shutdown(gasnet_token_t token) {
-  pthread_mutex_lock(&shutdown_mutex);
-  can_shutdown = true;
-  pthread_cond_signal(&shutdown_cond);
-  pthread_mutex_unlock(&shutdown_mutex);
+  chpl_signal_shutdown();
 }
 
 //
@@ -1022,18 +1015,11 @@ void chpl_comm_pre_task_exit(int all) {
   if (all) {
 
     if (chpl_nodeID == 0) {
-     int node;
-     for (node = 0; node < chpl_numNodes; node++) {
-       if (node != chpl_nodeID) {
-          GASNET_Safe(gasnet_AMRequestShort0(node, SHUTDOWN));
-        }
+     for (int node = 1; node < chpl_numNodes; node++) {
+        GASNET_Safe(gasnet_AMRequestShort0(node, SHUTDOWN));
       }
     } else {
-      pthread_mutex_lock(&shutdown_mutex);
-      while (!can_shutdown) {
-        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
-      }
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_wait_for_shutdown();
     }
 
     chpl_comm_barrier("stop polling");

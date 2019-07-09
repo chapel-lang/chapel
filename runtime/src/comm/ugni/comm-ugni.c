@@ -1446,14 +1446,6 @@ static chpl_bool polling_task_blocking_cq;
 
 
 //
-// These tell the state of, or give direction to, the main process
-//
-static chpl_bool can_shutdown = false;
-static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-
-
-//
 // Specialized argument type and values for the may_remote_proxy
 // argument to do_remote_put() and ..._get().
 //
@@ -4017,18 +4009,11 @@ void chpl_comm_pre_task_exit(int all)
 
   if (all) {
     if (chpl_nodeID == 0) {
-      int i;
-      for (i = 0; i < chpl_numNodes; i++) {
-        if (i != chpl_nodeID) {
-          fork_shutdown(i);
-        }
+      for (int i = 1; i < chpl_numNodes; i++) {
+        fork_shutdown(i);
       }
     } else {
-      pthread_mutex_lock(&shutdown_mutex);
-      while (!can_shutdown) {
-        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
-      }
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_wait_for_shutdown();
     }
 
     chpl_comm_barrier("chpl_comm_pre_task_exit");
@@ -4291,10 +4276,7 @@ void rf_handler(gni_cq_entry_t* ev)
 
     {
       release_req_buf(req_li, req_cdi, req_rbi);
-      pthread_mutex_lock(&shutdown_mutex);
-      can_shutdown = true;
-      pthread_cond_signal(&shutdown_cond);
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_signal_shutdown();
     }
     break;
 
