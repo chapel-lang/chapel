@@ -178,7 +178,8 @@ MLIContext::~MLIContext() {
 }
 
 bool MLIContext::shouldEmit(ModuleSymbol* md) {
-  return (md->modTag != MOD_INTERNAL);
+  return (md->modTag != MOD_INTERNAL &&
+          md->modTag != MOD_STANDARD);
 }
 
 bool MLIContext::shouldEmit(FnSymbol* fn) {
