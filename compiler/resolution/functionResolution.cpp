@@ -2663,12 +2663,10 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   Type* ret = NULL;
 
   SymExpr* ts = toSymExpr(call->baseExpr);
-  AggregateType* at = toAggregateType(ts->typeInfo());
+  AggregateType* at = toAggregateType(canonicalClassType(ts->typeInfo()));
   DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo());
 
-  if (dt != NULL) {
-    ret = resolveDefaultGenericTypeSymExpr(ts);
-  } else if (isPrimitiveType(ts->typeInfo())) {
+  if (isPrimitiveType(ts->typeInfo())) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
     USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", ts->typeInfo()->symbol->name);
     USR_STOP();
@@ -2679,6 +2677,10 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     }
   } else {
     ret = at->generateType(info.call, info.toString());
+    if (ret && dt) {
+      ret = getDecoratedClass(ret, dt->getDecorator());
+      INT_ASSERT(ret);
+    }
   }
 
   if (ret != NULL) {
