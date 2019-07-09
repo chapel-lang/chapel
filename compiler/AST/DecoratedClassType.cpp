@@ -50,7 +50,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
     case CLASS_TYPE_GENERIC_NONNIL:
       return astr(className); //, "!");
     case CLASS_TYPE_GENERIC_NILABLE:
-      return astr(className, "!");
+      return astr(className, "?");
     // no default for help from compilation errors
   }
   INT_FATAL("Case not handled");

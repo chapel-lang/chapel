@@ -9266,7 +9266,34 @@ static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbo
   USR_FATAL_CONT(call,
                  "Cannot default-initialize a variable with generic type");
   USR_PRINT(call, "'%s' has generic type '%s'", val->name, type->symbol->name);
+  printUndecoratedClassTypeNote(call, type);
   USR_STOP();
+}
+
+void printUndecoratedClassTypeNote(CallExpr* call, Type* type) {
+  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+    if (AggregateType* at = dt->getCanonicalClass()) {
+      if (!at->symbol->hasFlag(FLAG_GENERIC)) {
+        if (CLASS_TYPE_GENERIC ==
+            removeNilableFromDecorator(dt->getDecorator())) {
+          if (isDecoratorNilable(dt->getDecorator())) {
+            USR_PRINT(call, "'%s?' "
+                            "now means nilable class with any management",
+                      at->symbol->name);
+            USR_PRINT(call, "to migrate old code, change it to 'borrowed %s?'",
+                      at->symbol->name);
+          } else {
+            USR_PRINT(call, "'%s' "
+                            "now means non-nilable class with any management",
+                      at->symbol->name);
+            USR_PRINT(call, "to migrate old code, change it to 'borrowed %s'",
+                      at->symbol->name);
+          }
+        }
+      }
+    }
+  }
+
 }
 
 /************************************* | **************************************

@@ -23,6 +23,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "iterator.h"
+#include "resolution.h"
 #include "stringutil.h"
 
 CallInfo::CallInfo() {
@@ -135,6 +136,7 @@ void CallInfo::haltNotWellFormed() const {
                 "the type of the actual argument '%s' is generic",
                 sym->name);
       USR_PRINT("generic actual arguments are not currently supported");
+      printUndecoratedClassTypeNote(call, t);
       USR_STOP();
     }
   }
