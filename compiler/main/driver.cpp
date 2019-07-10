@@ -1321,14 +1321,6 @@ static void setupChplGlobals(const char* argv0) {
   setChapelEnvs();
 }
 
-static void postStackCheck() {
-  if (!fNoStackChecks && fUserSetStackChecks) {
-    if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
-      USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
-    }
-  }
-}
-
 static void postTaskTracking() {
   if (fEnableTaskTracking) {
     if (strcmp(CHPL_TASKS, "fifo") != 0) {
@@ -1463,8 +1455,6 @@ static void postprocess_args() {
   postVectorize();
 
   postTaskTracking();
-
-  postStackCheck();
 
   setMultiLocaleInterop();
 

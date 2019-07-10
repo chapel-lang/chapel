@@ -363,7 +363,6 @@ CHPL_TASKS
         ============== ===================================================
         qthreads       use Sandia's Qthreads package
         fifo           use POSIX threads
-        massivethreads use U Tokyo's MassiveThreads package
         ============== ===================================================
 
    If ``CHPL_TASKS`` is not set it defaults to ``qthreads`` in all cases
