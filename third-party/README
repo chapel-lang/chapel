@@ -84,19 +84,6 @@ llvm/
   See also: llvm/llvm-src/README.txt and llvm/llvm-src/tools/clang/README.txt
 
 
-massivethreads/
-  Summary: MassiveThreads is a lightweight thread library being
-           developed by the University of Tokyo.
-
-  License: MassiveThreads is released under the Simplified BSD License,
-           which can be found in:
-             massivethreads/massivethreads-src/COPYRIGHT
-
-  Website: https://github.com/massivethreads/massivethreads
-
-  See also: massivethreads/massivethreads-src/README
-
-
 qthread/ 
   Summary: the Qthreads user-level tasking package developed by Sandia
            National Laboratory.
