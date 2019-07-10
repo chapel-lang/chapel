@@ -30,39 +30,13 @@ typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
 chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, int32_t filename) {
-  if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID)
-    return string_copy(x->addr, lineno, filename);
-  else {
-    chpl_string s;
-    chpl_comm_wide_get_string(&s, x,
-                              -CHPL_TYPE_chpl_string /* this is unfortunate */,
-                              lineno, filename);
-    return s;
-  }
-}
+  if (x->addr == NULL) return NULL;
 
-// un-macro'd CHPL_COMM_WIDE_GET_STRING
-void
-chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, int32_t filename)
-{
-  char* chpl_macro_tmp;
-
-  if (x->addr == NULL)
-  {
-    *local = NULL;
-    return;
-  }
-
-  chpl_macro_tmp =
-      chpl_mem_calloc(1, x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
-  if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
-    chpl_memmove(chpl_macro_tmp, x->addr, x->size);
-  else
-    chpl_gen_comm_get((void *)&(*chpl_macro_tmp),
-                      chpl_rt_nodeFromLocaleID(x->locale), (void *)(x->addr),
-                      sizeof(char) * x->size, tid,
-                      CHPL_COMM_UNKNOWN_ID, lineno, filename);
-  *local = chpl_macro_tmp;
+  chpl_string s = chpl_mem_alloc(x->size, CHPL_RT_MD_STR_COPY_DATA, lineno, filename);
+  chpl_gen_comm_get((void *)s, chpl_rt_nodeFromLocaleID(x->locale),
+                    (void *)(x->addr), x->size, -1, CHPL_COMM_UNKNOWN_ID,
+                    lineno, filename);
+  return s;
 }
 
 uint8_t* chpl__getInPlaceBufferData(chpl__inPlaceBuffer* buf) {
