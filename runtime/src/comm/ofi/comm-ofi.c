@@ -1010,9 +1010,18 @@ static void exit_any(int);
 static void fini_amHandling(void);
 static void fini_ofi(void);
 
+static void amRequestShutdown(c_nodeid_t);
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
+    if (chpl_nodeID == 0) {
+      for (int node = 1; node < chpl_numNodes; node++) {
+        amRequestShutdown(node);
+      }
+    } else {
+      chpl_wait_for_shutdown();
+    }
+
     chpl_comm_barrier("chpl_comm_pre_task_exit");
     fini_amHandling();
   }
@@ -1376,6 +1385,7 @@ typedef enum {
   am_opGet,                             // do an RMA GET
   am_opPut,                             // do an RMA PUT
   am_opAMO,                             // do an AMO
+  am_opShutdown,                        // signal main process for shutdown
 } amOp_t;
 
 #ifdef CHPL_COMM_DEBUG
@@ -1602,6 +1612,16 @@ void amRequestAMO(c_nodeid_t node, void* object,
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
   }
+}
+
+static inline
+void amRequestShutdown(c_nodeid_t node) {
+  chpl_comm_on_bundle_t arg;
+  arg.comm.b = (struct chpl_comm_bundleData_base_t)
+                 { .op = am_opShutdown, .node = chpl_nodeID };
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm) + sizeof(arg.comm.b)),
+                  NULL);
 }
 
 
@@ -1896,6 +1916,10 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
       case am_opAMO:
         amHandleAMO(tcip, req);
+        break;
+
+      case am_opShutdown:
+        chpl_signal_shutdown();
         break;
 
       default:
@@ -3649,6 +3673,7 @@ const char* am_op2name(amOp_t op) {
   case am_opGet: return "opGet";
   case am_opPut: return "opPut";
   case am_opAMO: return "opAMO";
+  case am_opShutdown: return "opShutdown";
   }
   return "op???";
 }
