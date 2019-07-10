@@ -294,6 +294,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
       pt = resolveTypeAlias(parentExpr);
     }
 
+    if (classesWithSameKind(st, pt)) {
+      st = canonicalClassType(st);
+      pt = canonicalClassType(pt);
+    }
+
     if (st                                != dtUnknown &&
         pt                                != dtUnknown &&
 
