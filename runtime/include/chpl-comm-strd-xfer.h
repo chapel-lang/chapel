@@ -128,7 +128,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put_strd, chpl_nodeID, dstlocale,
          .iu.comm_strd={srcaddr_arg, srcstrides, dstaddr_arg, dststrides, count,
-                        stridelevels, elemSize, typeIndex, commID, ln, fn}};
+                        stridelevels, elemSize, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -275,7 +275,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_get_strd, chpl_nodeID, srclocale,
        .iu.comm_strd={srcaddr_arg, srcstrides, dstaddr_arg, dststrides, count,
-                      stridelevels, elemSize, typeIndex, commID, ln, fn}};
+                      stridelevels, elemSize, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
