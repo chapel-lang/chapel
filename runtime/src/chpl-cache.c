@@ -2864,13 +2864,8 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
   // do the strided get.
-#ifdef CHPL_TASK_COMM_GET_STRD
-  chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, commID, ln, fn);
-#else
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, typeIndex, commID, ln, fn);
-#endif
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
@@ -2887,13 +2882,8 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
   // do the strided put.
-#ifdef CHPL_TASK_COMM_PUT_STRD
-  chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, commID, ln, fn);
-#else
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, typeIndex, commID, ln, fn);
-#endif
 }
 
 // This is for debugging.
