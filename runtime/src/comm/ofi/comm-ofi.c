@@ -105,8 +105,7 @@ struct perTxCtxInfo_t {
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
-  int numTxsOut;
-  uint64_t txCount;
+  uint64_t numTxnsBegun;    // number of transactions ever initiated
 };
 
 static int tciTabLen;
@@ -152,10 +151,13 @@ static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
-static void waitForAmoComplete(struct perTxCtxInfo_t*);
-static void waitForTxCQ(struct perTxCtxInfo_t*, int, uint64_t);
-static void waitForTxCntr(struct perTxCtxInfo_t*, int);
+static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, int*);
+static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
+                                    chpl_comm_taskPrvData_t*);
+static inline void checkTxCQ(struct perTxCtxInfo_t*);
 static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
+static void waitForCntrAllTxns(struct perTxCtxInfo_t*);
+static inline uint64_t getTxCntr(struct perTxCtxInfo_t*);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -221,7 +223,7 @@ typedef enum {
   networkUnknown,
   networkAries,
   networkVerbs,
-} network_t ;
+} network_t;
 
 static network_t network = networkUnknown;
 
@@ -270,6 +272,68 @@ const char* getProviderName(void) {
 //
 static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
 static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
+
+
+////////////////////////////////////////
+//
+// transaction tracking
+//
+
+//
+// If we need to wait for an individual transaction's network completion
+// we give the address of a 'done' flag as the context pointer when we
+// initiate the transaction, and then just wait for the flag to become
+// true.  For transactions we don't need to wait for individually, such
+// as unordered AMOs, we instead give the address of the task-private
+// outstanding transaction counter, and then we can wait for that to
+// become zero as the network responses arrive.  We encode a flag with
+// the context pointer to differentiate between these two cases, and
+// checkTxCQ() figures out what to update, and how, based on this flag.
+//
+// For AM handler transactions things are even simpler.  The transmit
+// context it uses has only a transaction counter, not a CQ.  But in
+// the AM handler we only need to wait for all outstanding transactions
+// to complete, not specific ones, so we can just maintain a matching
+// counter in the AM handler's transmit context descriptor.  That also
+// saves us having to look up the AM handler's task private data block
+// address.
+//
+
+static __thread chpl_bool isAmHandler = false;
+
+typedef enum {
+  txnTrkDone,        // *ptr is int 'done' flag
+  txnTrkTskprvCntr,  // *ptr is initiator's chpl_comm_taskPrvData_t.txnCntr
+} txnTrkType_t;
+
+typedef struct {
+  txnTrkType_t typ;
+  void* ptr;
+} txnTrkCtx_t;
+
+static inline
+void* txnTrkEncode(txnTrkType_t typ, void* p) {
+  return (void*) (  ((uint64_t) typ << 63)
+                  | ((uint64_t) p & 0x7fffffffffffffffUL));
+}
+
+static inline
+txnTrkCtx_t txnTrkDecode(void* ctx) {
+  const uint64_t u = (uint64_t) ctx;
+  return (txnTrkCtx_t) { .typ = (u >> 63) & 1,
+                         .ptr = (void*) (u & 0x7fffffffffffffffUL) };
+}
+
+
+static inline
+chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
+  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
+  if (task_prvData != NULL) return &task_prvData->comm_data;
+
+  static chpl_comm_taskPrvData_t amHandlerCommData;
+  assert(isAmHandler);
+  return &amHandlerCommData;
+}
 
 
 ////////////////////////////////////////
@@ -1415,7 +1479,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
-                            chpl_comm_amDone_t**);
+                            chpl_comm_amDone_t**, chpl_bool);
 
 
 static inline
@@ -1535,7 +1599,8 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                        .subloc = subloc,
                        .pDone = NULL };
     amRequestCommon(node, arg, argSize,
-                    blocking ? &arg->comm.xo.pDone : NULL);
+                    blocking ? &arg->comm.xo.pDone : NULL,
+                    false);
   } else {
     arg->comm.xol = (struct chpl_comm_bundleData_execOnLrg_t)
                       { .b = (struct chpl_comm_bundleData_base_t)
@@ -1548,7 +1613,8 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                         .pDone = NULL };
     chpl_atomic_thread_fence(memory_order_release);
     amRequestCommon(node, arg, sizeof(*arg),
-                    blocking ? &arg->comm.xol.pDone : NULL);
+                    blocking ? &arg->comm.xol.pDone : NULL,
+                    false);
     if (!blocking) {
       //
       // Even if non-blocking, we cannot return until after the target
@@ -1577,7 +1643,7 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.rma)),
-                  &arg.comm.rma.pDone);
+                  &arg.comm.rma.pDone, false);
 }
 
 
@@ -1623,7 +1689,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.amo)),
-                  &arg.comm.amo.pDone);
+                  &arg.comm.amo.pDone, true);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
@@ -1637,14 +1703,14 @@ void amRequestShutdown(c_nodeid_t node) {
                  { .op = am_opShutdown, .node = chpl_nodeID };
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm) + sizeof(arg.comm.b)),
-                  NULL);
+                  NULL, false);
 }
 
 
 static inline
 void amRequestCommon(c_nodeid_t node,
                      chpl_comm_on_bundle_t* arg, size_t argSize,
-                     chpl_comm_amDone_t** ppDone) {
+                     chpl_comm_amDone_t** ppDone, chpl_bool ordered) {
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
@@ -1696,25 +1762,54 @@ void amRequestCommon(c_nodeid_t node,
     memcpy(myArg, arg, argSize);
   }
 
+  int done = 0;
+  void* ctx;
+
+  if (myArg->comm.b.op == am_opAMO) {
+    //
+    // For an ordered AMO, retire all our outstanding (unordered) ones
+    // before we initiate this one, and then wait for it specifically
+    // afterward.  For an unordered one, just initiate it straightaway
+    // and we'll wait for it later, if ever.
+    //
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (ordered) {
+      waitForCQAllTxns(tcip, prvData);
+      ctx = txnTrkEncode(txnTrkDone, &done);
+    } else {
+      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      prvData->numTxnsOut++;  // counting txn now allows smaller prvData scope
+    }
+  } else {
+    //
+    // Wait for non-AMOs individually after initiating them, but there's
+    // no need to synchronize beforehand with any (unordered) AMOs that
+    // might be outstanding.
+    //
+    ctx = txnTrkEncode(txnTrkDone, &done);
+  }
+
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
-             "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, pDone %p",
+             "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, "
+             "pDone %p, ctx %p",
              node, chpl_nodeID, myArg->comm.b.seq,
-             am_opName(myArg->comm.b.op), argSize, pDone);
+             am_opName(myArg->comm.b.op), argSize, pDone, ctx);
   OFI_RIDE_OUT_EAGAIN(fi_send(tcip->txCtx, myArg, argSize,
-                              mrDesc, rxMsgAddr(tcip, node),
-                              NULL));
-  tcip->numTxsOut++;
+                              mrDesc, rxMsgAddr(tcip, node), ctx));
+
+  //
+  // If this is an unordered AMO we already counted it; otherwise,
+  // wait for the network completion.
+  //
+  if (myArg->comm.b.op != am_opAMO || ordered) {
+    waitForCQThisTxn(tcip, &done);
+  }
+
+  tciFree(tcip);
 
   if (myArg != arg) {
     freeBounceBuf(myArg);
   }
-
-  //
-  // Wait for network completion.
-  //
-  waitForTxCQ(tcip, 1, FI_SEND);
-
-  tciFree(tcip);
 
   if (pDone != NULL) {
     //
@@ -1803,6 +1898,8 @@ void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc(true /*bindToAmHandler*/)) != NULL);
 
+  isAmHandler = true;
+
   DBG_PRINTF(DBG_THREADS, "AM handler running");
 
   //
@@ -1822,9 +1919,9 @@ void amHandler(void* argNil) {
     processRxAmReq(tcip);
 
     if (tcip->txCQ != NULL) {
-      waitForTxCQ(tcip, 0, 0);
+      checkTxCQ(tcip);
     } else {
-      waitForTxCntr(tcip, 0);
+      getTxCntr(tcip);
     }
 
     //
@@ -2152,11 +2249,11 @@ void amHandleAMO(struct perTxCtxInfo_t* tcip, chpl_comm_on_bundle_t* req) {
   doCpuAMO(amo->obj, &amo->operand1, &amo->operand2, &result,
            amo->ofiOp, amo->ofiType, amo->size);
 
-  //
-  // AMOs can be same-node; short-circuit responses in that case.
-  //
   if (amo->result != NULL) {
     if (amo->b.node == chpl_nodeID) {
+      //
+      // Short-circuit result delivery for same-node AMOs.
+      //
       memcpy(amo->result, &result, resSize);
       chpl_atomic_thread_fence(memory_order_release);
     } else {
@@ -2164,20 +2261,14 @@ void amHandleAMO(struct perTxCtxInfo_t* tcip, chpl_comm_on_bundle_t* req) {
       (void) ofi_put(&result, amo->b.node, amo->result, resSize);
 
       //
-      // TODO:
-      // HACK!!!  We need to make sure the result arrives before
-      //          telling the originator the AMO is done.  For now
-      //          we wait here for the tx counter to clear, but
-      //          there is surely a better way, perhaps a queue of
-      //          outbound writes or some such.
+      // We must guarantee the result has arrived at the destination
+      // before we send the 'done' indicator.  Currently ofi_put() does
+      // not return until it's seen the delivery completion event, so
+      // the guarantee holds.  But someday we might like to get better
+      // comm/compute overlap by starting the next AM while this result
+      // PUT is still in flight, and sending this 'done' later once we
+      // know the latter got there.
       //
-      if (tcip->numTxsOut > 0) {
-        if (tcip->txCQ != NULL) {
-          waitForTxCQ(tcip, tcip->numTxsOut, 0);
-        } else {
-          waitForTxCntr(tcip, tcip->numTxsOut);
-        }
-      }
     }
   }
 
@@ -2212,7 +2303,7 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
 // Interface: RMA
 //
 
-chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
+chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
                                        int32_t commID, int ln, int32_t fn) {
   chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
@@ -2472,21 +2563,29 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     //
     // The remote address is RMA-accessible; PUT directly to it.
     //
+    int done = 0;
+    void* ctx = txnTrkEncode(txnTrkDone, &done);
+
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
 
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-               "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64,
-               (int) node, raddr, myAddr, size, mrKey);
+               "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
+               (int) node, raddr, myAddr, size, mrKey, ctx);
     OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
-                                 (uint64_t) raddr, mrKey, 0));
-    tcip->numTxsOut++;
+                                 (uint64_t) raddr, mrKey, ctx));
 
     if (tcip->txCQ != NULL) {
-      waitForTxCQ(tcip, 1, FI_WRITE);
+      waitForCQThisTxn(tcip, &done);
     } else {
-      waitForTxCntr(tcip, 0);
+      //
+      // TODO: This is the AM handler and we could optimize this to
+      //       let us return more quickly and handle the completion
+      //       later.  But for now just wait for it.
+      //
+      tcip->numTxnsBegun++;
+      waitForCntrAllTxns(tcip);
     }
 
     tciFree(tcip);
@@ -2510,7 +2609,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 
 
 static /*inline*/
-chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
+chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
              "GET %p <= %d:%p, size %zd",
@@ -2529,16 +2628,18 @@ chpl_comm_nb_handle_t ofi_get(void *addr, c_nodeid_t node,
     //
     // The remote address is RMA-accessible; GET directly from it.
     //
+    int done = 0;
+    void* ctx = txnTrkEncode(txnTrkDone, &done);
+
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
-               "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64,
-               myAddr, (int) node, raddr, size, mrKey);
+               "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64 ", ctx %p",
+               myAddr, (int) node, raddr, size, mrKey, ctx);
     OFI_RIDE_OUT_EAGAIN(fi_read(tcip->txCtx, myAddr, size,
                                 mrDesc, rxRmaAddr(tcip, node),
-                                (uint64_t) raddr, mrKey, 0));
-    tcip->numTxsOut++;
-    waitForTxCQ(tcip, 1, FI_READ);
+                                (uint64_t) raddr, mrKey, ctx));
+    waitForCQThisTxn(tcip, &done);
     tciFree(tcip);
   } else {
     //
@@ -2601,12 +2702,46 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     memcpy(myOpnd2, operand2, size);
   }
 
+  chpl_bool ordered = true; // always true now, but soon we'll have unordered
+
+  //
+  // For an ordered AMO, retire all our outstanding (unordered) ones
+  // before we initiate this one, and then wait for it specifically
+  // afterward.  For an unordered one, just initiate it straightaway
+  // and we'll wait for it later, if ever.
+  //
+  int done = 0;
+  void* ctx;
+
+  if (tcip->txCQ != NULL) {
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (ordered) {
+      waitForCQAllTxns(tcip, prvData);
+      ctx = txnTrkEncode(txnTrkDone, &done);
+    } else {
+      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      prvData->numTxnsOut++;  // counting txn now allows smaller prvData scope
+    }
+  } else {
+    if (ordered) {
+      waitForCntrAllTxns(tcip);
+    }
+    ctx = NULL;
+  }
+
+  DBG_PRINTF(DBG_AMO,
+             "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, "
+             "op %s, typ %s, sz %zd, ctx %p",
+             (int) node, object,
+             DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType),
+             amo_opName(ofiOp), amo_typeName(ofiType), size, ctx);
+
   if (ofiOp == FI_CSWAP) {
     OFI_CHK(fi_compare_atomic(tcip->txCtx,
                               myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
                               myRes, mrDescRes,
                               rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
-                              ofiType, ofiOp, NULL));
+                              ofiType, ofiOp, ctx));
   } else if (result != NULL) {
     void* bufArg = myOpnd1;
     if (provCtl_readAmoNeedsOpnd) {
@@ -2619,16 +2754,27 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             bufArg, 1, mrDescOpnd1, myRes, mrDescRes,
                             rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
-                            ofiType, ofiOp, NULL));
+                            ofiType, ofiOp, ctx));
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
                       rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
-                      ofiType, ofiOp, NULL));
+                      ofiType, ofiOp, ctx));
   }
 
-  tcip->numTxsOut++;
-  waitForAmoComplete(tcip);
+  //
+  // Wait for network completion.
+  //
+  if (tcip->txCQ != NULL) {
+    if (ordered) {
+      waitForCQThisTxn(tcip, &done);
+    }
+  } else {
+    tcip->numTxnsBegun++;
+    if (ordered) {
+      waitForCntrAllTxns(tcip);
+    }
+  }
 
   if (ofiOp == FI_CSWAP) {
     *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
@@ -2642,21 +2788,11 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     }
   }
 
-  if (result == NULL) {
+  if (result != NULL) {
     DBG_PRINTF(DBG_AMO,
-               "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, "
-               "op %s, typ %s, sz %zd",
-               (int) node, object,
-               DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType),
-               amo_opName(ofiOp), amo_typeName(ofiType), size);
-  } else {
-    DBG_PRINTF(DBG_AMO,
-               "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p is %s, "
-               "op %s, typ %s, sz %zd",
-               (int) node, object,
-               DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType), result,
-               DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType),
-               amo_opName(ofiOp), amo_typeName(ofiType), size);
+               "  AMO result: %p is %s",
+               result,
+               DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType));
   }
 
   if (myOpnd1 != operand1) {
@@ -2671,65 +2807,51 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
 }
 
 
-static
-void waitForAmoComplete(struct perTxCtxInfo_t* tcip) {
-  //
-  // AMOs have to be done in order, so we need to wait for completion
-  // before proceeding.
-  //
-  if (tcip->txCQ != NULL) {
-    waitForTxCQ(tcip, 1, FI_ATOMIC);
-  } else {
-    waitForTxCntr(tcip, tcip->numTxsOut);
+static inline
+void waitForCQThisTxn(struct perTxCtxInfo_t* tcip, int* pDone) {
+  while (! *pDone) {
+    checkTxCQ(tcip);
   }
 }
 
 
-static
-void waitForTxCQ(struct perTxCtxInfo_t* tcip, int maxToConsume,
-                 uint64_t xpctFlags) {
-  const int readCount = (maxToConsume == 0) ? 1 : maxToConsume;
-  do {
-    struct fi_cq_msg_entry cqes[readCount];
-    const ssize_t numEvents = readCQ(tcip->txCQ, cqes, readCount);
-    CHK_TRUE(numEvents >= 0 || numEvents == -FI_EAGAIN);
-
-    if (numEvents == -EAGAIN) {
-      sched_yield();
-      ensure_progress();
-    } else {
-      maxToConsume -= numEvents;
-      tcip->numTxsOut -= numEvents;
-      for (int i = 0; i < numEvents; i++) {
-        DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", xpct %#" PRIx64,
-                   cqes[i].flags, xpctFlags);
-        if (xpctFlags != 0)
-          CHK_TRUE((cqes[i].flags & xpctFlags) == xpctFlags);
-      }
-    }
-  } while (maxToConsume > 0);
+static inline
+void waitForCQAllTxns(struct perTxCtxInfo_t* tcip,
+                      chpl_comm_taskPrvData_t* prvData) {
+  while (prvData->numTxnsOut > 0) {
+    checkTxCQ(tcip);
+  }
 }
 
 
-static
-void waitForTxCntr(struct perTxCtxInfo_t* tcip, int maxToConsume) {
-  do {
-    const uint64_t count = fi_cntr_read(tcip->txCntr);
-    const int countDiff = count - tcip->txCount;
-    if (countDiff == 0) {
-      sched_yield();
-      ensure_progress();
-    } else if (countDiff > 0) {
-      CHK_TRUE(countDiff <= tcip->numTxsOut);
-      tcip->numTxsOut -= countDiff;
-      maxToConsume -= countDiff;
-      tcip->txCount = count;
-      DBG_PRINTF(DBG_ACK, "Cntr ack tx, consumed %d", countDiff);
-    } else {
-      INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", txCount %" PRIu64,
-                       count, tcip->txCount);
+static inline
+void checkTxCQ(struct perTxCtxInfo_t* tcip) {
+  struct fi_cq_msg_entry cqes[5];
+  const int cqesSize = sizeof(cqes) / sizeof(cqes[0]);
+  const ssize_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
+  CHK_TRUE(numEvents >= 0 || numEvents == -FI_EAGAIN);
+
+  if (numEvents == -EAGAIN) {
+    sched_yield();
+    ensure_progress();
+  } else {
+    for (int i = 0; i < numEvents; i++) {
+      struct fi_cq_msg_entry* cqe = &cqes[i];
+      DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64, cqe->flags);
+      const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
+      switch (trk.typ) {
+      case txnTrkDone:
+        *((volatile int*) trk.ptr) = 1;
+        break;
+      case txnTrkTskprvCntr:
+        ((chpl_comm_taskPrvData_t*) trk.ptr)->numTxnsOut--;
+        break;
+      default:
+        INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
+        break;
+      }
     }
-  } while (maxToConsume > 0);
+  }
 }
 
 
@@ -2767,6 +2889,26 @@ ssize_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
   }
 
   return ret;
+}
+
+
+static
+void waitForCntrAllTxns(struct perTxCtxInfo_t* tcip) {
+  while (getTxCntr(tcip) < tcip->numTxnsBegun) {
+    sched_yield();
+    ensure_progress();
+  }
+}
+
+
+static inline
+uint64_t getTxCntr(struct perTxCtxInfo_t* tcip) {
+  const uint64_t count = fi_cntr_read(tcip->txCntr);
+  if (count > tcip->numTxnsBegun) {
+    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsBegun %" PRIu64,
+                     count, tcip->numTxnsBegun);
+  }
+  return count;
 }
 
 

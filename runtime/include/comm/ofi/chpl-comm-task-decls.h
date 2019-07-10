@@ -29,7 +29,7 @@
 #include "chpltypes.h"
 
 typedef struct {
-  int dummy;    // structs must be nonempty
+  int numTxnsOut;    // number of transactions outstanding
 } chpl_comm_taskPrvData_t;
 
 //
