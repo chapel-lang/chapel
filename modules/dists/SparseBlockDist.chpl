@@ -75,6 +75,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
+  var localePos: [LocaleSpace] dist.targetLocDom.rank*int;
 
   proc postinit() {
     setup();
@@ -91,6 +92,8 @@ class SparseBlockDom: BaseSparseDomImpl {
          locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType, stridable,
              sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
+         localePos[here.id] = chpl__tuplify(localeIdx);
+         
         }
       }
       //      writeln("Past coforall");
@@ -186,12 +189,8 @@ class SparseBlockDom: BaseSparseDomImpl {
   override proc bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
-      const _retval = locDoms[here.id].mySparseBlock.bulkAdd(inds,
+      const _retval = locDoms[localePos[here.id]].mySparseBlock.bulkAdd(inds,
           dataSorted=true, isUnique=false);
-
-      // this implementation is currently not parallel-safe. See bulkAdd_help
-      // for a parallel safe bulk addition. We can achieve parallel-safety by
-      // adding a flag to this method.
       nnz += _retval;
       return _retval;
   }

@@ -1527,6 +1527,15 @@ module ChapelArray {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
+    proc bulkAddHere(inds: [] _value.rank*_value.idxType, dataSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
+
+      if inds.size == 0 then return 0;
+
+      return _value.dsiBulkAddHere(inds, dataSorted, isUnique, preserveInds);
+
+    }
+
 
     /* Remove index ``i`` from this domain */
     proc remove(i) {
