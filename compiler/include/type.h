@@ -70,11 +70,6 @@ public:
   virtual void           codegenDef();
   virtual void           codegenPrototype();
 
-  // only used for heterogeneous compilations in which we need to define
-  // what our data structures are for the point of conversions
-  virtual int            codegenStructure(FILE*       outfile,
-                                          const char* baseoffset);
-
   virtual Symbol*        getField(const char* name, bool fatal = true)   const;
 
   const char*            name()                                          const;
@@ -326,7 +321,6 @@ class EnumType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenDef();
-  int codegenStructure(FILE* outfile, const char* baseoffset);
 
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
@@ -361,7 +355,6 @@ class PrimitiveType : public Type {
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
-  int codegenStructure(FILE* outfile, const char* baseoffset);
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -500,10 +493,7 @@ bool isRecordWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
 
-void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);
-void codegenTypeStructures(FILE* hdrfile);
-void codegenTypeStructureInclude(FILE* outfile);
 
 Type* getNamedType(std::string name);
 

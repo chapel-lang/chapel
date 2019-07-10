@@ -1406,7 +1406,6 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
           return; // Nothing in remainder of function should be done twice for LLVM
     #endif
   }
-  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, false);
   if( hdrfile ) {
     fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
     bool first = true;
@@ -1814,7 +1813,6 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
                               chpl_globals_registryGVar, GEN_PTR, true);
 #endif
   }
-  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, true);
   if( hdrfile ) {
       fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
     } else {
@@ -2300,8 +2298,6 @@ void codegen() {
 
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
-    if( fHeterogeneous )
-      INT_FATAL("fHeterogeneous not yet supported with LLVM");
 
     if(fIncrementalCompilation)
       USR_FATAL("Incremental compilation is not yet supported with LLVM");
@@ -2397,17 +2393,6 @@ void codegen() {
     finishCodegenLLVM();
 #endif
   } else {
-    if (fHeterogeneous) {
-      codegenTypeStructureInclude(mainfile.fptr);
-      forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-        if ((ts->type != dtOpaque) &&
-            (!toPrimitiveType(ts->type) ||
-             !toPrimitiveType(ts->type)->isInternalType)) {
-          registerTypeToStructurallyCodegen(ts);
-        }
-      }
-    }
-
     ChainHashMap<char*, StringHashFns, int> fileNameHashMap;
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       const char* filename = NULL;
@@ -2432,9 +2417,6 @@ void codegen() {
 
     fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");
     fprintf(strconfig.fptr, "chpl_string defaultStringValue=\"\";\n");
-
-    if (fHeterogeneous)
-      codegenTypeStructures(hdrfile.fptr);
 
     info->cfile = hdrfile.fptr;
     codegen_header_addons();

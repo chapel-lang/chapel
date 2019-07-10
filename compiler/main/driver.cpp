@@ -192,7 +192,6 @@ bool fIgnoreLocalClasses = false;
 bool fLifetimeChecking = true;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
-bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
@@ -1058,7 +1057,6 @@ static ArgumentDescription arg_desc[] = {
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
  {"legacy-nilable-classes", ' ', NULL, "Allow all variables of class type to store nil", "N", &fLegacyNilableClasses, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
- {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},

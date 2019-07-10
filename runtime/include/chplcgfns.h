@@ -101,12 +101,4 @@ extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 /* used for config vars: */
 extern void CreateConfigVarTable(void);
 
-/* These are defined in _type_structure.c if
-   --gen-communicated-structures is true and are used by a
-   communication layer to query types of communicated buffers */
-extern chplType chpl_getFieldType(int typeNum, int fieldNum);
-extern size_t chpl_getFieldOffset(int typeNum, int fieldNum);
-extern size_t chpl_getFieldSize(int typeNum);
-extern const int chpl_max_fields_per_type;
-
 #endif

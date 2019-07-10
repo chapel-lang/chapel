@@ -110,13 +110,6 @@ public:
 
   GenRet                      codegenClassStructType();
 
-  int                         codegenStructure(FILE*       outfile,
-                                               const char* baseoffset);
-
-  int                         codegenFieldStructure(FILE*       outfile,
-                                                    bool        nested,
-                                                    const char* baseOffset);
-
   bool                        setFirstGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index, Expr* insnPoint = NULL);

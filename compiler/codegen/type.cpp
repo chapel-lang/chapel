@@ -60,23 +60,7 @@ void Type::codegenDef() {
 void Type::codegenPrototype() { }
 
 
-int Type::codegenStructure(FILE* outfile, const char* baseoffset) {
-  INT_FATAL(this, "Unexpected type in codegenStructure: %s", symbol->name);
-  return 0;
-}
-
-
 void PrimitiveType::codegenDef() {
-}
-
-int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  if (!isInternalType) {
-    Symbol* cgsym = symbol;
-
-    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", cgsym->cname, baseoffset);
-  } else
-    INT_FATAL(this, "Cannot codegen an internal type");
-  return 1;
 }
 
 void EnumType::codegenDef() {
@@ -139,11 +123,6 @@ void EnumType::codegenDef() {
 #endif
   }
   return;
-}
-
-int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  fprintf(outfile, "{CHPL_TYPE_enum, %s},\n", baseoffset);
-  return 1;
 }
 
 #define CLASS_STRUCT_PREFIX "chpl_"
@@ -503,101 +482,6 @@ void AggregateType::codegenPrototype() {
   return;
 }
 
-int AggregateType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  switch (aggregateTag) {
-  case AGGREGATE_CLASS:
-    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, %s},\n", baseoffset);
-    return 1;
-  case AGGREGATE_RECORD:
-    return codegenFieldStructure(outfile, true, baseoffset);
-  case AGGREGATE_UNION:
-    INT_FATAL(this, "Don't know how to codegenStructure for unions yet");
-    return 0;
-  default:
-    INT_FATAL(this, "Unexpected case in AggregateType::codegenStructure");
-    return 0;
-  }
-}
-
-// BLC: I'm not understanding why special cases would need to be called
-// out here
-static const char* genUnderscore(Symbol* sym) {
-  AggregateType* classtype = toAggregateType(sym->type);
-  if (classtype && classtype->isClass() &&
-      !sym->hasFlag(FLAG_REF)) {
-    return "_";
-  } else {
-    return "";
-  }
-}
-
-
-static const char* genChplTypeEnumString(TypeSymbol* typesym) {
-  return astr("chpl_rt_type_id_", genUnderscore(typesym), typesym->cname);
-}
-
-
-static const char* genSizeofStr(TypeSymbol* typesym) {
-  return astr("sizeof(", genUnderscore(typesym), typesym->cname, ")");
-}
-
-
-static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
-                                          const char* baseoffset, Symbol* field,
-                                          AggregateType* classtype) {
-  if (classtype->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    char fieldnumstr[64];
-
-    sprintf(fieldnumstr, "%d", fieldnum);
-
-    return astr(baseoffset,
-                " + (",
-                fieldnumstr, "* ",
-                genSizeofStr(field->type->symbol),
-                ")");
-  } else {
-    return astr(baseoffset,
-                " + offsetof(",
-                genUnderscore(classtype->symbol),
-                classtype->symbol->cname,
-                ", ",
-                classtype->isUnion() ? "_u." : "",
-                field->cname, ")");
-  }
-}
-
-int AggregateType::codegenFieldStructure(FILE*       outfile,
-                                         bool        nested,
-                                         const char* baseoffset) {
-  // Handle ref types as pointers
-  if (symbol->hasFlag(FLAG_REF)) {
-    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, 0},\n");
-    fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
-    return 1;
-  }
-
-  int totfields = 0;
-  int locfieldnum = 0;
-
-  for_fields(field, this) {
-    const char* newbaseoffset = genNewBaseOffsetString(symbol,
-                                                       locfieldnum,
-                                                       baseoffset,
-                                                       field,
-                                                       this);
-    int         numfields = field->type->codegenStructure(outfile, newbaseoffset);
-
-    fprintf(outfile, " /* %s */\n", field->name);
-    totfields += numfields;
-    locfieldnum++;
-  }
-  if (!nested) {
-    fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
-    totfields += 1;
-  }
-  return totfields;
-}
-
 int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 #ifdef HAVE_LLVM
   if( symbol->hasFlag(FLAG_EXTERN) ) {
@@ -664,130 +548,18 @@ int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 *                                                                           *
 ************************************* | ************************************/
 
-static Vec<TypeSymbol*> typesToStructurallyCodegen;
-static Vec<TypeSymbol*> typesToStructurallyCodegenList;
-
-void registerTypeToStructurallyCodegen(TypeSymbol* type) {
-  //  printf("registering chpl_rt_type_id_%s\n", type->cname);
-  if (!typesToStructurallyCodegen.set_in(type)) {
-    typesToStructurallyCodegenList.add(type);
-    typesToStructurallyCodegen.set_add(type);
-  }
-}
-
+// TODO remove
 GenRet genTypeStructureIndex(TypeSymbol* typesym) {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if (fHeterogeneous) {
-    if( info->cfile )
-      ret.c = genChplTypeEnumString(typesym);
-    else {
+  if( info->cfile )
+    ret.c = "-1";
+  else {
 #ifdef HAVE_LLVM
-      ret = info->lvt->getValue(genChplTypeEnumString(typesym));
+    ret.val = llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(info->module->getContext()), -1, true);
 #endif
-    }
-  } else {
-    if( info->cfile )
-      ret.c = "-1";
-    else {
-#ifdef HAVE_LLVM
-      ret.val = llvm::ConstantInt::get(
-          llvm::Type::getInt32Ty(info->module->getContext()), -1, true);
-#endif
-    }
   }
   ret.chplType = dtInt[INT_SIZE_32];
   return ret;
-}
-
-// Compare the cnames of different types alphabetically
-static int compareCnames(const void* v1, const void* v2) {
-  int retval;
-  TypeSymbol* t1 = *(TypeSymbol* const *)v1;
-  TypeSymbol* t2 = *(TypeSymbol* const *)v2;
-  retval = strcmp(t1->cname, t2->cname);
-  if (retval > 0)
-    return 1;
-  else if (retval < 0)
-    return -1;
-  else
-    return 0;
-}
-
-#define TYPE_STRUCTURE_FILE "_type_structure.c"
-static int maxFieldsPerType = 0;
-
-void codegenTypeStructures(FILE* hdrfile) {
-  fileinfo typeStructFile;
-  openCFile(&typeStructFile, TYPE_STRUCTURE_FILE);
-  FILE* outfile = typeStructFile.fptr;
-
-  fprintf(outfile, "typedef enum {\n");
-  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
-    fprintf(outfile, "%s,\n", genChplTypeEnumString(typesym));
-  }
-  fprintf(outfile, "chpl_num_rt_type_ids\n");
-  fprintf(outfile, "} chpl_rt_types;\n\n");
-
-  fprintf(outfile,
-          "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
-
-  qsort(typesToStructurallyCodegenList.v,
-        typesToStructurallyCodegenList.n,
-        sizeof(typesToStructurallyCodegenList.v[0]),
-        compareCnames);
-
-  int num = 0;
-
-  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
-    if (num) {
-      fprintf(outfile, ",\n");
-    }
-    fprintf(outfile, "/* %s (%s) */\n", typesym->name, typesym->cname);
-    fprintf(outfile, "{\n");
-    if (AggregateType* classtype = toAggregateType(typesym->type)) {
-      int numfields = classtype->codegenFieldStructure(outfile, false, "0");
-      if (numfields > maxFieldsPerType) {
-        maxFieldsPerType = numfields;
-      }
-    } else {
-      typesym->type->codegenStructure(outfile, "0");
-      fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
-    }
-    fprintf(outfile, "}");
-    num++;
-  }
-  fprintf(outfile, "};\n\n");
-
-  fprintf(outfile, "size_t chpl_sizeType[] = {\n");
-  num = 0;
-  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
-    if (num) {
-      fprintf(outfile, ",\n");
-    }
-    fprintf(outfile, "%s", genSizeofStr(typesym));
-    num++;
-  }
-  fprintf(outfile, "\n};\n\n");
-
-  fprintf(outfile, "chplType chpl_getFieldType(int typeNum, int fieldNum) {\n");
-  fprintf(outfile, "return chpl_structType[typeNum][fieldNum].type;\n");
-  fprintf(outfile, "}\n\n");
-
-  fprintf(outfile, "size_t chpl_getFieldOffset(int typeNum, int fieldNum) {\n");
-  fprintf(outfile, "return chpl_structType[typeNum][fieldNum].offset;\n");
-  fprintf(outfile, "}\n\n");
-
-  fprintf(outfile, "size_t chpl_getFieldSize(int typeNum) {\n");
-  fprintf(outfile, "return chpl_sizeType[typeNum];\n");
-  fprintf(outfile, "}\n\n");
-  closeCFile(&typeStructFile);
-  fprintf(hdrfile, "#define CHPL_MAX_FIELDS_PER_TYPE %d\n", maxFieldsPerType);
-  fprintf(hdrfile, "const int chpl_max_fields_per_type = %d;\n",
-                   maxFieldsPerType);
-}
-
-
-void codegenTypeStructureInclude(FILE* outfile) {
-  fprintf(outfile, "#include \"" TYPE_STRUCTURE_FILE "\"\n");
 }
