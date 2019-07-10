@@ -36,10 +36,10 @@ static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<const char*, FnSymbol*> conversionCallMap;
 
 static void attemptFixups(FnSymbol* fn);
-static bool needsFixup(ArgSymbol* as);
+static Type* maybeUnwrapRef(Type* t);
 static bool needsFixup(Type* t);
-static void validateFormalIntent(FnSymbol* fn, int idx);
-static void validateReturnIntent(FnSymbol* fn);
+static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as);
+static bool validateReturnIntent(FnSymbol* fn);
 static FnSymbol* createWrapper(FnSymbol* fn);
 static Type* getTypeForFixup(Type* t, bool ret=false);
 static const char* getConversionCallName(Type* srctype, Type* dsttype);
@@ -56,22 +56,21 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
 // generating code in later passes.
 //
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
-  std::map<FnSymbol*, FnSymbol*>& m = wrapperMap;
-  if (m.find(wrapper) == m.end()) {
-    return NULL;
+  std::map<FnSymbol*, FnSymbol*>::iterator it;
+  if ((it = wrapperMap.find(wrapper)) != wrapperMap.end()) {
+    return it->second;
   }
-  return m[wrapper];
+  return NULL;
 }
 
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
-  for (size_t i = 0; i < fns.size(); i++) {
-    FnSymbol* fn = fns[i];
-    SET_LINENO(fn);
-    attemptFixups(fn);
+  for_vector(FnSymbol, fn, fns) {
+    fixupExportedFunction(fn);
   }
 }
 
 void fixupExportedFunction(FnSymbol* fn) {
+  SET_LINENO(fn);
   attemptFixups(fn);
 }
 
@@ -114,7 +113,7 @@ Type* getCharPtrType(void) {
   resolveExpr(rctx);
   rctx->remove();
 
-  INT_ASSERT(alias->type != NULL);
+  INT_ASSERT(alias->type != dtUnknown);
   result = alias->type;
 
   return result;
@@ -124,13 +123,12 @@ static void attemptFixups(FnSymbol* fn) {
   std::vector<VarSymbol*> tmps;
   FnSymbol* wrapper = NULL;
 
-  if (not fn->hasFlag(FLAG_EXPORT)) { return; }
+  if (!fn->hasFlag(FLAG_EXPORT)) { return; }
 
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
 
-    if (needsFixup(as)) {
-      validateFormalIntent(fn, i);
+    if (needsFixup(as->type) && validateFormalIntent(fn, as)) {
       if (wrapper == NULL) { wrapper = createWrapper(fn); }
       VarSymbol* tmp = fixupFormal(wrapper, i);
       INT_ASSERT(tmp != NULL);
@@ -141,8 +139,7 @@ static void attemptFixups(FnSymbol* fn) {
     }
   }
 
-  if (needsFixup(fn->retType)) {
-    validateReturnIntent(fn);
+  if (needsFixup(fn->retType) && validateReturnIntent(fn)) {
     if (wrapper == NULL) { wrapper = createWrapper(fn); }
     changeRetType(wrapper);
   }
@@ -157,21 +154,22 @@ static void attemptFixups(FnSymbol* fn) {
   return;
 }
 
-static bool needsFixup(ArgSymbol* as) {
-  return needsFixup(as->type);
+static Type* maybeUnwrapRef(Type* t) {
+  if (t->isRef()) { return t->getValType(); }
+  return t;
 }
 
 static bool needsFixup(Type* t) {
-  if (t == dtString) {
+  Type* actual = maybeUnwrapRef(t);
+  if (actual == dtString) {
     return true;
   }
 
   return false;
 }
 
-static void validateFormalIntent(FnSymbol* fn, int idx) {
-  ArgSymbol* as = fn->getFormal(idx);
-  Type* t = as->type;
+static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
+  Type* t = maybeUnwrapRef(as->type);
 
   //
   // TODO: If we ever add more types to these fixup routines, we really ought
@@ -185,44 +183,44 @@ static void validateFormalIntent(FnSymbol* fn, int idx) {
         tag != INTENT_CONST_REF &&
         tag != INTENT_BLANK) {
       SET_LINENO(fn);
-      USR_FATAL(as, "Formal %s of type \'%s\' in exported routine \'%s\' may "
-                    "only have the %s",
-                as->name, t->name(), fn->userString,
-                intentDescrString(INTENT_CONST_REF));
+      USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
+                          "\'%s\' may only have the %s",
+                          as->name, t->name(), fn->userString,
+                          intentDescrString(INTENT_CONST_REF));
+      return false;
     }
   }
 
-  return;
+  return true;
 }
 
-static void validateReturnIntent(FnSymbol* fn) {
-  Type* t = fn->retType;
+static bool validateReturnIntent(FnSymbol* fn) {
+  Type* t = maybeUnwrapRef(fn->retType);
+  RetTag tag = fn->retTag;
 
-  if (t == dtString) {
-    RetTag tag = fn->retTag;
-
-    if (tag != RET_VALUE) {
-      SET_LINENO(fn);
-      USR_FATAL(fn, "Return type %s of exported routine %s may only have "
-                    "return intent %s",
-                t->name(), fn->userString,
-                retTagDescrString(RET_VALUE));
-    }
+  if (t == dtString && tag != RET_VALUE) {
+    SET_LINENO(fn);
+    USR_FATAL_CONT(fn,  "Exported routine \'%s\' may only return the \'%s\' "
+                        "type by %s",
+                        fn->userString, t->name(),
+                        retTagDescrString(RET_VALUE));
+    return false;
   }
 
-  return;
+  return true;
 }
 
 static FnSymbol* createWrapper(FnSymbol* fn) {
   FnSymbol* result = fn->copy();
   fn->defPoint->insertAfter(new DefExpr(result));
-  // TODO: Is there a better way to empty the block body?
   result->body->replace(new BlockStmt());
-  INT_ASSERT(fn->hasFlag(FLAG_EXPORT));
   fn->removeFlag(FLAG_EXPORT);
   return result;
 }
 
+//
+// TODO: Do we need explicit cases for reference types here?
+//
 static Type* getTypeForFixup(Type* t, bool ret) {
   if (t == dtString) {
     Type* result = ret ? getCharPtrType() : dtStringC;
@@ -242,7 +240,15 @@ static Type* getTypeForFixup(Type* t, bool ret) {
 static const char* getConversionCallName(Type* srctype, Type* dsttype) {
   const char* result = NULL;
 
-  // TODO: We should probably maintain this in a table or the like.
+  //
+  // TODO (from @benharsh): An alternative to this is to have a single
+  // function and rely on formal constraints to resolve correctly. For
+  // example...
+  //
+  // proc chpl__exportWrapper(val: string, type ret:c_string): ret
+  // proc chpl__exportWrapper(val: string, type ret:c_ptr(c_char)): ret
+  // ...
+  //
   if (srctype == dtString && dsttype == dtStringC) {
     result = "chpl__exportStringToConstCharPtr";
   } else if (srctype == dtStringC && dsttype == dtString) {
@@ -262,19 +268,18 @@ static FnSymbol* getConversionCall(Type* srctype, Type* dsttype) {
   const char* name = getConversionCallName(srctype, dsttype);
   INT_ASSERT(name != NULL);
 
-  std::map<const char*, FnSymbol*>& m = conversionCallMap;
   std::map<const char*, FnSymbol*>::iterator it;
-  it = m.find(name);
-  if (it != m.end()) { return it->second; }
+  it = conversionCallMap.find(name);
+  if (it != conversionCallMap.end()) { return it->second; }
 
   FnSymbol* result = resolveConversionCall(srctype, dsttype);
-  m[name] = result;
+  conversionCallMap[name] = result;
 
   return result;
 }
 
 //
-// TODO: This assumes that the names of the conversion calls are unique and
+// This assumes that the names of the conversion calls are unique and
 // _are not_ being overloaded.
 //
 static FnSymbol* resolveConversionCall(Type* srctype, Type* dsttype) {
@@ -297,8 +302,7 @@ static FnSymbol* resolveConversionCall(Type* srctype, Type* dsttype) {
   INT_ASSERT(result != NULL);
 
   //
-  // These are not called by user code paths, so we must resolve them now or
-  // we will get AST errors during late stage checking.
+  // TODO: These calls may be redundant.
   //
   normalize(result);
   resolveFunction(result);
@@ -339,10 +343,7 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
 
 static void changeRetType(FnSymbol* wrapper) {
   Type* otype = wrapper->retType;
-  INT_ASSERT(needsFixup(otype));
-
   Type* wtype = getTypeForFixup(otype, true);
-  INT_ASSERT(wtype != NULL);
 
   wrapper->retType = wtype;
 
@@ -353,13 +354,13 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
                                 const std::vector<VarSymbol*>& tmps) {
   bool isVoid = (fn->retType == dtVoid);
 
-  VarSymbol* utmp = (not isVoid) ? newTemp(fn->retType) : NULL;
-  VarSymbol* rtmp = (not isVoid) ? newTemp(wrapper->retType) : NULL;
+  VarSymbol* utmp = isVoid ? NULL : newTemp(fn->retType);
+  VarSymbol* rtmp = isVoid ? NULL : newTemp(wrapper->retType);
 
   CallExpr* call = new CallExpr(fn);
   BlockStmt* wbody = wrapper->body;
 
-  if (not isVoid) {
+  if (!isVoid) {
     wbody->insertAtTail(new DefExpr(utmp));
     wbody->insertAtTail(new DefExpr(rtmp));
   }
@@ -380,7 +381,7 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
     }
   }
 
-  if (not isVoid) {
+  if (!isVoid) {
     CallExpr* move = new CallExpr(PRIM_MOVE, utmp, call);
     wbody->insertAtTail(move);
   } else {

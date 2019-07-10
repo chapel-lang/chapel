@@ -21,7 +21,8 @@ module ExternalString {
   use CPtr;
 
   //
-  // Use this as a convenient way to get a handle to "char*" during resolution.
+  // TODO: This shouldn't be necessary, and the compiler should figure this
+  // type out on its own.
   //
   type chpl__exportTypeCharPtr = c_ptr(c_char);
 
