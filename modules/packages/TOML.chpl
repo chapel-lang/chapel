@@ -179,7 +179,7 @@ module TomlParser {
               getToken(source);
             }
             else {
-              throw new owned TomlError("Line "+ debugCounter +": Unexpected Token -> " + getToken(source));
+              throw new owned TomlError("Line "+ debugCounter:string +": Unexpected Token -> " + getToken(source));
             }
             debugCounter += 1;
             if debugTomlParser {
@@ -424,12 +424,12 @@ module TomlParser {
         }
         // Error
         else {
-          throw new owned TomlError("Line "+ debugCounter +": Unexpected Token -> " + getToken(source));
+          throw new owned TomlError("Line "+ debugCounter:string +": Unexpected Token -> " + getToken(source));
           return val;
         }
       }
       catch e: IllegalArgumentError {
-        writeln("Line "+ debugCounter +": Illegal Value -> " + val);
+        writeln("Line "+ debugCounter:string +": Illegal Value -> " + val);
         exit(1);
       }
       catch e: TomlError {

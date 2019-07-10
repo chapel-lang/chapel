@@ -146,8 +146,8 @@ module CPtr {
     inline proc ref this(i: integral) ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
-                                       "(indices are 0.." + (size-1) + ")");
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                       "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
@@ -155,8 +155,8 @@ module CPtr {
     inline proc const ref this(i: integral) const ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
-                                       "(indices are 0.." + (size-1) + ")");
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                       "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
@@ -166,16 +166,16 @@ module CPtr {
     */
     inline proc ref this(param i: integral) ref : eltType {
       if i < 0 || i >= size then
-        compilerError("c array index out of bounds " + i +
-                      "(indices are 0.." + (size-1) + ")");
+        compilerError("c array index out of bounds " + i:string +
+                      "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
     pragma "no doc"
     inline proc const ref this(param i: integral) const ref : eltType {
       if i < 0 || i >= size then
-        compilerError("c array index out of bounds " + i +
-                      "(indices are 0.." + (size-1) + ")");
+        compilerError("c array index out of bounds " + i:string +
+                      "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }

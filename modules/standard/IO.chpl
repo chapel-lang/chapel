@@ -628,7 +628,7 @@ proc stringStyleWithLength(lengthBytes:int) throws {
     otherwise
       throw SystemError.fromSyserr(EINVAL,
                                    "Invalid string length prefix " +
-                                   lengthBytes);
+                                   lengthBytes:string);
   }
   return x;
 }
@@ -3667,11 +3667,11 @@ inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits:string +
                                                  " > bits in v:" + v.type:string);
     // Error if reading negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits:string + " < 0");
   }
 
   var tmp:ioBits;
@@ -3695,11 +3695,11 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits:string +
                                                  " > bits in v:" + v.type:string);
     // Error if writing negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
   }
 
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
@@ -6371,8 +6371,8 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                 }
               }
             } otherwise {
-              throw new owned IllegalArgumentError("args(" + i + ")",
-                                             "readf internal error " + argType(i));
+              throw new owned IllegalArgumentError("args(" + i:string + ")",
+                                                   "readf internal error " + argType(i):string);
             }
           }
         }

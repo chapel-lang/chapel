@@ -1033,7 +1033,7 @@ module Spawn {
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }
-    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal);
+    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal:string);
   }
 
   // documented in the throws version

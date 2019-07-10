@@ -410,7 +410,7 @@ module DateTime {
 
     const extraSpace = if day < 10 then " " else "";
     return wday + " " + month +
-           " " + extraSpace + day + " 00:00:00 " + year;
+           " " + extraSpace + day:string + " 00:00:00 " + year: string;
   }
 
   /* Return a formatted `string` matching the `format` argument and the date */
