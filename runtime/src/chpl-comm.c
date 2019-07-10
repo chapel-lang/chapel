@@ -80,8 +80,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     size_t size = chpl_numGlobalsOnHeap * sizeof(*buf);
     buf = (wide_ptr_t*)
           chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-    chpl_comm_get(buf, 0, buf_on_0, size,
-                  -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
+    chpl_comm_get(buf, 0, buf_on_0, size, CHPL_COMM_UNKNOWN_ID, 0, -1);
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       *chpl_globals_registry[i] = buf[i];
     }

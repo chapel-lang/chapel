@@ -61,14 +61,14 @@
 static inline
 void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
                                                     size_t,
-                                                    int32_t, int32_t,
+                                                    int32_t,
                                                     int, int32_t),
                     void* localAddr, int32_t remoteLocale, void* remoteAddr,
                     size_t cnt,
                     chpl_comm_nb_handle_t* handles, size_t* pCurrHandles,
                     size_t maxOutstandingXfers,
                     void (yieldFn)(void),
-                    int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+                    int32_t commID, int ln, int32_t fn)
 {
   size_t currHandles = *pCurrHandles;
 
@@ -94,7 +94,7 @@ void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
   }
 
   handles[currHandles] = (*xferFn)(localAddr, remoteLocale, remoteAddr, cnt,
-                                   typeIndex, commID, ln, fn);
+                                   commID, ln, fn);
   if (handles[currHandles] != NULL)
     currHandles++;
 
@@ -107,7 +107,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
                      void* srcaddr_arg, size_t* srcstrides,
                      size_t* count, int32_t stridelevels, size_t elemSize,
                      size_t maxOutstandingXfers, void (yieldFn)(void),
-                     int32_t typeIndex, int32_t commID, int ln, int32_t fn) {
+                     int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
   size_t i,j,k,t,total,off,x,carry;
 
@@ -148,8 +148,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
 
   switch (strlvls) {
   case 0:
-    chpl_comm_put(srcaddr_arg, dstlocale, dstaddr_arg, cnt[0],
-                  typeIndex, commID, ln, fn);
+    chpl_comm_put(srcaddr_arg, dstlocale, dstaddr_arg, cnt[0], commID, ln, fn);
     break;
 
   case 1:
@@ -159,7 +158,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
       strd_nb_helper(chpl_comm_put_nb,
                      srcaddr, dstlocale, dstaddr, cnt[0],
                      handles, &currHandles, maxOutstandingXfers, yieldFn,
-                     typeIndex, commID, ln, fn);
+                     commID, ln, fn);
       srcaddr+=srcstr[0];
       dstaddr+=dststr[0];
     }
@@ -173,7 +172,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
         strd_nb_helper(chpl_comm_put_nb,
                        srcaddr, dstlocale, dstaddr, cnt[0],
                        handles, &currHandles, maxOutstandingXfers, yieldFn,
-                       typeIndex, commID, ln, fn);
+                       commID, ln, fn);
         srcaddr+=srcstr[0];
         dstaddr+=dststr[0];
       }
@@ -191,7 +190,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
           strd_nb_helper(chpl_comm_put_nb,
                          srcaddr, dstlocale, dstaddr, cnt[0],
                          handles, &currHandles, maxOutstandingXfers, yieldFn,
-                         typeIndex, commID, ln, fn);
+                         commID, ln, fn);
           srcaddr+=srcstr[0];
           dstaddr+=dststr[0];
         }
@@ -230,7 +229,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
                          srcaddr+srcdisp[j], dstlocale, dstaddr+dstdisp[j],
                          cnt[0],
                          handles, &currHandles, maxOutstandingXfers, yieldFn,
-                         typeIndex, commID, ln, fn);
+                         commID, ln, fn);
           break;
 
         } else { //ELSE 1
@@ -254,7 +253,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                      void* srcaddr_arg, size_t* srcstrides,
                      size_t* count, int32_t stridelevels, size_t elemSize,
                      size_t maxOutstandingXfers, void (yieldFn)(void),
-                     int32_t typeIndex, int32_t commID, int ln, int32_t fn) {
+                     int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
   size_t i,j,k,t,total,off,x,carry;
 
@@ -298,7 +297,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
     dstaddr=(int8_t*)dstaddr_arg;
     srcaddr=(int8_t*)srcaddr_arg;
     chpl_comm_get(dstaddr, srclocale, srcaddr, cnt[0],
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
     break;
 
   case 1:
@@ -308,7 +307,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
       strd_nb_helper(chpl_comm_get_nb,
                      dstaddr, srclocale, srcaddr, cnt[0],
                      handles, &currHandles, maxOutstandingXfers, yieldFn,
-                     typeIndex, commID, ln, fn);
+                     commID, ln, fn);
       srcaddr+=srcstr[0];
       dstaddr+=dststr[0];
     }
@@ -322,7 +321,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
         strd_nb_helper(chpl_comm_get_nb,
                        dstaddr, srclocale, srcaddr, cnt[0],
                        handles, &currHandles, maxOutstandingXfers, yieldFn,
-                       typeIndex, commID, ln, fn);
+                       commID, ln, fn);
         srcaddr+=srcstr[0];
         dstaddr+=dststr[0];
       }
@@ -340,7 +339,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
           strd_nb_helper(chpl_comm_get_nb,
                          dstaddr, srclocale, srcaddr, cnt[0],
                          handles, &currHandles, maxOutstandingXfers, yieldFn,
-                         typeIndex, commID, ln, fn);
+                         commID, ln, fn);
           srcaddr+=srcstr[0];
           dstaddr+=dststr[0];
         }
@@ -379,7 +378,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                          dstaddr+dstdisp[j], srclocale, srcaddr+srcdisp[j],
                          cnt[0],
                          handles, &currHandles, maxOutstandingXfers, yieldFn,
-                         typeIndex, commID, ln, fn);
+                         commID, ln, fn);
           break;
 
         } else {  //ELSE 1

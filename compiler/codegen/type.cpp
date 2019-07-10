@@ -535,31 +535,3 @@ int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 #endif
   return -1;
 }
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-// TODO remove
-GenRet genTypeStructureIndex(TypeSymbol* typesym) {
-  GenInfo* info = gGenInfo;
-  GenRet ret;
-  if( info->cfile )
-    ret.c = "-1";
-  else {
-#ifdef HAVE_LLVM
-    ret.val = llvm::ConstantInt::get(
-        llvm::Type::getInt32Ty(info->module->getContext()), -1, true);
-#endif
-  }
-  ret.chplType = dtInt[INT_SIZE_32];
-  return ret;
-}

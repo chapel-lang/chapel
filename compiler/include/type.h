@@ -493,8 +493,6 @@ bool isRecordWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
 
-GenRet genTypeStructureIndex(TypeSymbol* typesym);
-
 Type* getNamedType(std::string name);
 
 bool needsCapture(Type* t);

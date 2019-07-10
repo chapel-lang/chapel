@@ -118,15 +118,15 @@ void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn);
+                                       size_t size, int32_t commID,
+                                       int ln, int32_t fn);
 
 // Do a PUT in a nonblocking fashion, returning a handle which can be used to
 // wait for the PUT to complete. The source buffer must not be modified before
 // the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn);
+                                       size_t size, int32_t commID,
+                                       int ln, int32_t fn);
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
@@ -339,13 +339,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 // values, and during execution to do things like enabling and disabling
 // memory tracking/reporting and comm diagnostics.
 //
-// The third argument, 'tid' (type ID) is intended for use when
-// targeting heterogeneous architectures where byte swapping may be
-// required rather than just copying the 'size' bytes.  It is not
-// currently in use on any platforms, but is being retained in the
-// event that we wish to re-enable this capability in the future.
-// 
-void chpl_comm_broadcast_private(int id, size_t size, int32_t tid);
+void chpl_comm_broadcast_private(int id, size_t size);
 
 //
 // Barrier for synchronization between all top-level locales; currently
@@ -391,9 +385,8 @@ void chpl_comm_exit(int all, int status);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
-                    int32_t commID, int ln, int32_t fn);
+void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
+                   size_t size, int32_t commID, int ln, int32_t fn);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -402,9 +395,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
-                    int32_t commID, int ln, int32_t fn);
+void chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
+                    size_t size, int32_t commID, int ln, int32_t fn);
 
 //
 // put the number of elements pointed out by count array, with strides pointed
@@ -418,18 +410,18 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
-void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
-                     void* srcaddr, size_t* srcstrides, size_t* count,
-                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int32_t commID, int ln, int32_t fn);
+void chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
+                        void* srcaddr, size_t* srcstrides, size_t* count,
+                        int32_t stridelevels, size_t elemSize, int32_t commID,
+                        int ln, int32_t fn);
 
 //
 // same as chpl_comm_puts(), but do get instead
 //
-void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
-                     void* srcaddr, size_t* srcstrides, size_t* count,
-                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int32_t commID, int ln, int32_t fn);
+void chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
+                        void* srcaddr, size_t* srcstrides, size_t* count,
+                        int32_t stridelevels, size_t elemSize, int32_t commID,
+                        int ln, int32_t fn);
 
 //
 // Runs a function f on a remote locale, passing it
