@@ -605,7 +605,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, node,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+       .iu.comm={addr, raddr, size, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
     
@@ -639,7 +639,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, node,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+       .iu.comm={addr, raddr, size, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -1052,7 +1052,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
@@ -1128,7 +1128,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
@@ -1269,7 +1269,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_get_strd, chpl_nodeID, srcnode_id,
        .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
-                      stridelevels, elemSize, typeIndex, commID, ln, fn}};
+                      stridelevels, elemSize, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
   
@@ -1314,7 +1314,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put_strd, chpl_nodeID, dstnode_id,
          .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
-                        stridelevels, elemSize, typeIndex, commID, ln, fn}};
+                        stridelevels, elemSize, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
