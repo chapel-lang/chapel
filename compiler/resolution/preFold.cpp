@@ -765,10 +765,13 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
         } else if (varSym                            != NULL &&
                    (intent & INTENT_FLAG_IN)         !=    0 &&
-                   varSym->isConstValWillNotChange() == true) {
+                   (varSym->isConstValWillNotChange() == true ||
+                    varSym->hasFlag(FLAG_TYPE_VARIABLE))) {
           // don't take address of outer variables declared to be const
           // (otherwise, after flattenFunctions, we will take the
-          //  address of a by-value argument).
+          //  address of a by-value argument). An outer variable might be a
+          //  type if the symbol represents a field, and taking the address of
+          //  a type does not make sense.
 
         } else {
           Expr* stmt = call->getStmtExpr();
