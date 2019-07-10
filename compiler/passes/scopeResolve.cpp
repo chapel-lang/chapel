@@ -112,12 +112,13 @@ static void handleReceiverFormals() {
 
         if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
 
+          /*
           if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
             if (dt->getDecorator() == CLASS_TYPE_GENERIC_NONNIL) {
               AggregateType* at = dt->getCanonicalClass();
               ts = at->symbol; // converting this -> borrow type
             }
-          }
+          }*/
           sym->replace(new SymExpr(ts));
 
           fn->_this->type = ts->type;
@@ -945,6 +946,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   }
 }
 
+// usymExpr is the UnresolveSymExpr and sym is what we
+// have resolved it to with scope resolution.
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                      Symbol* sym) {
   FnSymbol* fn = toFnSymbol(sym);
@@ -952,16 +955,29 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   if (fn == NULL) {
     SymExpr* symExpr = NULL;
 
-    if (sym->hasFlag(FLAG_MANAGED_POINTER) && isTypeSymbol(sym)) {
-      AggregateType* at = toAggregateType(sym->type);
-      INT_ASSERT(at);
-      Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
-      INT_ASSERT(t);
-      symExpr = new SymExpr(t->symbol);
-    } else {
-      symExpr = new SymExpr(sym);
+    // Adjust class type symbols for generic management / generic nilability
+    if (isTypeSymbol(sym)) {
+      if (sym->hasFlag(FLAG_MANAGED_POINTER)) {
+	// e.g. 'owned' becomes 'owned with any nilability'
+        AggregateType* at = toAggregateType(sym->type);
+        INT_ASSERT(at);
+        Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
+        INT_ASSERT(t);
+        sym = t->symbol;
+      } else if (isClass(sym->type)) {
+        // e.g. 'MyClass' becomes 'MyClass with any management'
+
+        // TODO: remove constraint for user code only
+        if (usymExpr->getModule()->modTag == MOD_USER) {
+	  // Switch to using the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+	  ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+	  Type* t = getDecoratedClass(sym->type, d);
+	  sym = t->symbol;
+        }
+      }
     }
 
+    symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
 
     if (fWarnUnstable)

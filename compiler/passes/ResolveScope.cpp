@@ -397,16 +397,7 @@ bool ResolveScope::extend(Symbol* newSym) {
     }
 
   } else {
-    Symbol* useSym = newSym;
-    if (isTypeSymbol(useSym) && isClass(useSym->type) &&
-        // TODO: remove constraint for user code only
-        useSym->defPoint->getModule()->modTag == MOD_USER) {
-      // Switch to using the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-      ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
-      Type* useType = getDecoratedClass(useSym->type, d);
-      useSym = useType->symbol;
-    }
-    mBindings[name] = useSym;
+    mBindings[name] = newSym;
     retval          = true;
   }
 
