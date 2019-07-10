@@ -1499,6 +1499,10 @@ module ChapelArray {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
+    inline proc getIndexBuffer(size) {
+      return _value.dsiGetIndexBuffer(size);
+    }
+
     /*
        Adds indices in ``inds`` to this domain in bulk.
 
