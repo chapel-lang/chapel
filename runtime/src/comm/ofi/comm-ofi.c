@@ -2607,12 +2607,6 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                               myRes, mrDescRes,
                               rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
                               ofiType, ofiOp, NULL));
-    tcip->numTxsOut++;
-    waitForAmoComplete(tcip);
-    *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
-    if (myRes != &ofiCmpRes) {
-      freeBounceBuf(myRes);
-    }
   } else if (result != NULL) {
     void* bufArg = myOpnd1;
     if (provCtl_readAmoNeedsOpnd) {
@@ -2626,19 +2620,26 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                             bufArg, 1, mrDescOpnd1, myRes, mrDescRes,
                             rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
                             ofiType, ofiOp, NULL));
-    tcip->numTxsOut++;
-    waitForAmoComplete(tcip);
-    if (myRes != result) {
-      memcpy(result, myRes, size);
-      freeBounceBuf(myRes);
-    }
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
                       rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
                       ofiType, ofiOp, NULL));
-    tcip->numTxsOut++;
-    waitForAmoComplete(tcip);
+  }
+
+  tcip->numTxsOut++;
+  waitForAmoComplete(tcip);
+
+  if (ofiOp == FI_CSWAP) {
+    *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
+    if (myRes != &ofiCmpRes) {
+      freeBounceBuf(myRes);
+    }
+  } else if (result != NULL) {
+    if (myRes != result) {
+      memcpy(result, myRes, size);
+      freeBounceBuf(myRes);
+    }
   }
 
   if (result == NULL) {
