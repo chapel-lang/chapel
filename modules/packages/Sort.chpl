@@ -904,30 +904,71 @@ module MergeSort {
 
     var Scratch: Data.type;
 
-    _MergeSort(Data, Scratch, Dom.alignedLow, Dom.alignedHigh, minlen, comparator);
+    _MergeSort(Data, Scratch, Dom.alignedLow, Dom.alignedHigh, minlen, comparator, 0);
   }
 
-  private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
+  /*
+   * Use Scratch[lo..hi] as scratch space to sort the Data[lo..hi].
+   *
+   * Rather than copy our portion of Data into Scratch to start off
+   * each _Merge(), the recursive levels will alternate merging from
+   * Data into Scratch, and merging from Scratch into Data.
+   *
+   * At even depths -- including the initial one -- we leave the
+   * sorted data in Data.  At odd depths, we leave the sorted data in
+   * Scratch.
+   *
+   * The data stays in Data "all they way down" until the first
+   * _Merge(), then is moved back and forth as we return up the chain.
+   */
+  private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
-    if (hi-lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
-      return;
-    }
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1,
           size = (hi - lo) / stride,
           mid = lo + (size/2) * stride;
 
+    /*
+     * When we return from an even depth, the data must be in Data.
+     * When we return from an odd depth, the data must be in Scratch.
+     * At the point we dispatch to insertionSort, the data is still in
+     * Data.  So, if we get here at an odd depth, we'd have to sort
+     * Data and then copy to Scratch.  Avoid the copy by doing the
+     * sort one level before that, while we're still even.
+     *
+     * "size" is a misnomer.  For 1..10, size works out to 9.  That's
+     * the value we want to base the calculation of mid on, but for
+     * the loop control, we really need to consider the size as 10.
+     */
+    if ((size+1) < minlen || (((depth & 1) == 0) && (size+1) < 2 * minlen)) {
+      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
+
+      if depth & 1 {
+        // At odd depths, we need to return the results in Scratch.
+        // But if the test above is correct, we'll never reach this point.
+        if Dom.stridable then
+          Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
+        else
+          Scratch[lo..hi] = Data[lo..hi];
+      }
+      return;
+    }
+
     if(here.runningTasks() < here.numPUs(logical=true)) {
       cobegin {
-        { _MergeSort(Data, Scratch, lo, mid, minlen, comparator); }
-        { _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator); }
+        { _MergeSort(Data, Scratch, lo, mid, minlen, comparator, depth+1); }
+        { _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator, depth+1); }
       }
     } else {
-      _MergeSort(Data, Scratch, lo, mid, minlen, comparator);
-      _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator);
+      _MergeSort(Data, Scratch, lo, mid, minlen, comparator, depth+1);
+      _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator, depth+1);
     }
-    _Merge(Data, Scratch, lo, mid, hi, comparator);
+
+    if depth & 1 == 0 {
+      _Merge(Data, Scratch, lo, mid, hi, comparator);
+    } else {
+      _Merge(Scratch, Data, lo, mid, hi, comparator);
+    }
   }
 
   private proc _Merge(Data: [?Dom] ?eltType, Scratch: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
@@ -942,9 +983,6 @@ module MergeSort {
 
     ref A1 = Scratch[a1range];
     ref A2 = Scratch[a2range];
-
-    Scratch[a1range] = Data[a1range];
-    Scratch[a2range] = Data[a2range];
 
     var a1 = a1range.first;
     var a2 = a2range.first;
