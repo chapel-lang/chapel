@@ -41,26 +41,6 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, int32_t filen
   }
 }
 
-// un-macro'd CHPL_WIDEN_STRING
-void
-chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno, int32_t filename)
-{
-  size_t len;
-
-  x->locale = chpl_gen_getLocaleID();
-  if (from == NULL)
-  {
-    x->addr = NULL;
-    x->size = 0;
-    return;
-  }
-    
-  len = strlen(from) + 1;
-  x->addr = chpl_mem_calloc(1, len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
-  strncpy((char*)x->addr, from, len);
-  x->size = len;    // This size includes the terminating NUL.
-}
-
 // un-macro'd CHPL_COMM_WIDE_GET_STRING
 void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, int32_t filename)
