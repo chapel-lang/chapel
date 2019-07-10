@@ -108,7 +108,7 @@ if { [string match gemini $network] } {
 if { [string match aarch64 $CHPL_HOST_ARCH] } {
     # ARM-based CPU, 2018-06-08
 } elseif { [string match x86_64 $CHPL_HOST_ARCH] } {
-    # Legacy Cray-XC/XE only
+    # Cray-XC/XE/Shasta
 
     # Load/unload cray-mpich if not previously loaded
 
