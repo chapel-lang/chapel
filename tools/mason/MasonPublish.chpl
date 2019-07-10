@@ -107,11 +107,11 @@ proc publishPackage(username: string) throws {
     cloneMasonReg(username);
     here.chdir(packageLocation);
     branchMasonReg(username, name, safeDir);
-    const package = addPackageToBricks(packageLocation, safeDir);
+    addPackageToBricks(packageLocation, safeDir, name);
     here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry");
     runCommand("git add .");
-    runCommand("git commit -m '" + package + "'");
-    runCommand('git push --set-upstream origin ' + package, true);
+    runCommand("git commit -m '" + name + "'");
+    runCommand('git push --set-upstream origin ' + name, true);
     here.chdir(MASON_HOME + '/tmp');
     rmTree(safeDir);
     writeln('--------------------------------------------------------------------');
@@ -242,30 +242,18 @@ private proc getPackageName() throws {
 
 /* Adds package to the Bricks of the mason-registry branch and then adds the version.toml
  with the source url of the package's GitHub repo.*/
-private proc addPackageToBricks(projectLocal: string, safeDir: string) : string {
+private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string) {
   const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
   const url = gitUrl();
   var tomlFile = new owned(parseToml(toParse));
-  const packageName = getPackageNameToml(tomlFile);
-  const versionNum = getPackageVersion(tomlFile);
+  const versionNum = tomlFile['brick']['version'].s;
   here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/");
-  mkdir(packageName);
-  here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/" + packageName + "/");
+  mkdir(name);
+  here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/" + name + "/");
   const baseToml = tomlFile;
   var newToml = open(versionNum + ".toml", iomode.cw);
   var tomlWriter = newToml.writer();
   baseToml["brick"]["source"] = url[1..url.length-1];
   tomlWriter.write(baseToml);
   tomlWriter.close();
-  return packageName;
  }
-
-/* Gets the version from the toml file */
-private proc getPackageVersion(toml) {
-  return toml['brick']['version'].s;
-}
-
-/*Gets package name when Toml file is already open and parsed */
-private proc getPackageNameToml(toml) {
-  return toml['brick']['name'].s;
-}
