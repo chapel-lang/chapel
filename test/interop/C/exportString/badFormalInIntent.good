@@ -1,0 +1,1 @@
+badFormalInIntent.chpl:6: error: Formal s of type 'string' in exported routine 'badFormalIntent(in s: string)' may only have the 'const ref' intent
