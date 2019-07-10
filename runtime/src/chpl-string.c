@@ -41,40 +41,6 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, int32_t filen
   }
 }
 
-// This copies the remote string data into a local wide string representation
-// of the same.
-// This routine performs a deep copy of the character array data 
-// after fetching the string descriptor from the remote node.  (The char*
-// field in the local copy of the remote descriptor has no meaning in the 
-// context of the local node, since it refers to elements in the address 
-// space on the remote node.)  
-// In chpl_comm_wide_get_string() a buffer of the right size is allocated 
-// to receive the bytes copied from the remote node.  This buffer will be leaked,
-// since no corresponding free is added to the generated code.
-void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
-                                   size_t size, int32_t typeIndex,
-                                   int ln, int32_t fn) {
-  // This part just copies the descriptor.
-  if (chpl_nodeID == node) {
-    chpl_memmove(addr, raddr, size);
-  } else {
-    chpl_gen_comm_get(addr, node, raddr, size, typeIndex, CHPL_COMM_UNKNOWN_ID, ln, fn);
-  }
-
-  // And now we copy the bytes in the string itself.
-  {
-    struct chpl_chpl____wide_chpl_string_s* local_str =
-      (struct chpl_chpl____wide_chpl_string_s*) addr;
-    // Accessing the addr field of the incomplete struct declaration
-    // would not work in this context except that this function
-    // is always inlined.
-    chpl_comm_wide_get_string((chpl_string*) &(local_str->addr),
-                              local_str, typeIndex, ln, fn);
-    // The bytes live locally, so we have to update the locale.
-    local_str->locale = chpl_gen_getLocaleID();
-  }
-}
-
 // un-macro'd CHPL_WIDEN_STRING
 void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno, int32_t filename)
