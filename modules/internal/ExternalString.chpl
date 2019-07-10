@@ -26,20 +26,12 @@ module ExternalString {
   //
   type chpl__exportTypeCharPtr = c_ptr(c_char);
 
-  //
-  // TODO: Look at `modules/internal/String.chpl` to make this copy faster.
-  // There is no point in calling `calloc` here when each byte is going to
-  // be set manually, anyhow.
-  //
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
     const bytes = s.length;
     const src = s.c_str():c_void_ptr;
-    var dst = c_calloc(c_char, bytes + 1);
-
-    c_memcpy(dst, src, bytes);
-
-    var result = dst:c_ptr(c_char);
-
+    var result = c_malloc(c_char, bytes + 1):c_ptr(c_char);
+    c_memcpy(result, src, bytes);
+    result[bytes] = 0;
     return result;
   }
 
