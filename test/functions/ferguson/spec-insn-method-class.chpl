@@ -10,7 +10,7 @@ proc C.foo() {
   writeln("in generic C.foo");
 }
 
-proc (C(int)).foo() {
+proc (borrowed C(int)).foo() {
   writeln("in specific C(int).foo");
 }
 
@@ -18,7 +18,7 @@ override proc Child.foo() {
   writeln("in generic Child.foo");
 }
 
-override proc (Child(int)).foo() {
+override proc (borrowed Child(int)).foo() {
   writeln("in specific Child(int).foo");
 }
 

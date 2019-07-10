@@ -3,7 +3,7 @@ class C {
 }
 
 proc getC() type {
-  return C;
+  return borrowed C;
 }
 
 var x = new unmanaged C(10);

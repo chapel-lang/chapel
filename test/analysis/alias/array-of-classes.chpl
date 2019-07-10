@@ -14,8 +14,8 @@ proc setupArrays(A, B, instance) lifetime A < instance, B < instance, B < A {
 }
 
 proc main() {
-  var A:[1..n] MyClass;
-  var B:[1..n] MyClass;
+  var A:[1..n] borrowed MyClass?;
+  var B:[1..n] borrowed MyClass?;
  
   var instance = new borrowed MyClass(0);
   setupArrays(A, B, instance);
