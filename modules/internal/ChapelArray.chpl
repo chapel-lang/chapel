@@ -1533,9 +1533,7 @@ module ChapelArray {
       if inds.size == 0 then return 0;
 
       return _value.dsiBulkAddHere(inds, dataSorted, isUnique, preserveInds);
-
     }
-
 
     /* Remove index ``i`` from this domain */
     proc remove(i) {

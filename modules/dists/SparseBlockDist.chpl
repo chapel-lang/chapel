@@ -191,10 +191,10 @@ class SparseBlockDom: BaseSparseDomImpl {
   override proc bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
-      const _retval = myLocDom.mySparseBlock.bulkAdd(inds, dataSorted=true,
-          isUnique=false);
-      nnz += _retval;
-      return _retval;
+    const _retval = myLocDom.mySparseBlock.bulkAdd(inds, dataSorted=true,
+        isUnique=false);
+    nnz += _retval;
+    return _retval;
   }
 
   //
