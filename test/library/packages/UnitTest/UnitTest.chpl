@@ -13,6 +13,7 @@ module UnitTest {
   use TestError;
   pragma "no doc"
   config const skipId: int = 0;
+  config const testNames: string = "None";
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: Test) throws { }
@@ -22,6 +23,9 @@ module UnitTest {
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
+    var numMaxLocales = max(int),
+        numMinLocales = min(int);
+    var dictDomain: domain(int);
     
     /* Unconditionally skip a test. */
     proc skip(reason: string = "") throws {
@@ -698,6 +702,50 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
+
+    /*Specify Max Number of Locales required to run the test*/
+    proc maxLocales(value: int) throws {
+      this.numMaxLocales = value;
+      if this.numMaxLocales < 1 {
+        throw new owned UnexpectedLocales("Max Locales is less than 1");
+      }
+      if this.numMaxLocales < this.numMinLocales {
+        throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
+      }
+      if value < numLocales {
+        throw new owned TestIncorrectNumLocales("Required Locales ="+value);
+      }
+    }
+
+    /*Specify Min Number of Locales required to run the test*/
+    proc minLocales(value: int) throws {
+      this.numMinLocales = value;
+      if this.numMaxLocales < this.numMinLocales {
+        throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
+      }
+      if value > numLocales {
+        throw new owned TestIncorrectNumLocales("Required Locales = "+value);
+      }
+    }
+
+    /*To add how many locales this test requires*/
+    proc addNumLocales(locales: int ...?n) throws {
+      var canRun =  false;
+      if this.dictDomain.size > 0 {
+        throw new owned UnexpectedLocales("Locales already added.");
+      }
+      for curLocale in locales {
+        this.dictDomain.add(curLocale);
+        if curLocale == numLocales {
+          canRun = true;
+        }
+      }
+      if !canRun {
+        var localesStr: string = this.dictDomain: string;
+        var localesErrorStr: string = "Required Locales = "+localesStr:string;
+        throw new owned TestIncorrectNumLocales(localesErrorStr);
+      }
+    }
   }
 
   pragma "no doc"
@@ -722,10 +770,17 @@ module UnitTest {
 
     proc addSuccess(test) throws {
       stdout.writeln("OK");
+      stdout.writeln(this.separator1);
+      stdout.writeln(this.separator2);
     }
 
     proc addSkip(test, reason) throws {
       stdout.writeln("SKIPPED");
+      PrintError(reason);
+    }
+
+    proc addIncorrectNumLocales(test, reason) throws {
+      stdout.writeln("IncorrectNumLocales");
       PrintError(reason);
     }
 
@@ -758,7 +813,7 @@ module UnitTest {
         this.addTest(test);
     }
 
-    proc this(i : int) ref: argType {
+    proc this(i: int) ref: argType {
       return this._tests[i];
     }
 
@@ -771,41 +826,63 @@ module UnitTest {
   /*Runs the tests*/
   proc runTest(tests: argType ...?n) throws {
 
+    var runAllTests = true;
+    var testNameList: [1..0] string;
+    if testNames != "None" {
+      runAllTests = false;
+      for test in testNames.split(" ") do testNameList.push_back(test.strip());
+    }
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
     testSuite.addTests(tests);
     var testResult = new TextTestResult();
-    // if skipId == 0 then
-    //   stdout.writeln("Found "+testSuite.testCount+" "+printTest(testSuite.testCount));
     for indx in (skipId+1)..testSuite.testCount {
       var test = testSuite[indx];
       try {
-        // Create a test object per test
-        var testObject = new Test();
-        //test is a FCF:
-        testResult.startTest(test: string, indx);
-        test(testObject);
-        testResult.addSuccess(test: string);
+        if runAllTests {
+          runTestMethod(testResult, test, indx);
+        }
+        else {
+          var checkStatus = testNameList.find(test: string);
+          if checkStatus[1] {
+            runTestMethod(testResult, test, indx);
+          }
+        }
+        
       }
       // A variety of catch statements will handle errors thrown
       catch e: AssertionError {
-        testResult.addFailure(test:string, e:string);
+        testResult.addFailure(test: string, e: string);
         // print info of the assertion error
       }
       catch e: TestSkipped {
-        testResult.addSkip(test:string, e:string);
+        testResult.addSkip(test: string, e: string);
         // Print info on test skipped
       }
       catch e: TestDependencyNotMet {
         // Pop test out of array and append to end
       }
+      catch e: TestIncorrectNumLocales {
+        testResult.addIncorrectNumLocales(test: string, e: string);
+      }
+      catch e: UnexpectedLocales {
+        testResult.addFailure(test: string, e: string);
+      }
       catch e { 
         testResult.addError(test:string, e:string);
       }
     }
-    // testResult.printErrors();
-    // stdout.writeln(testResult.separator2);
-    // testResult.PrintResult();
+  }
+
+  private
+  proc runTestMethod(ref testResult, test, indx) throws {
+    // Create a test object per test
+    var testObject = new Test();
+    var testName = test: string;
+    //test is a FCF:
+    testResult.startTest(testName, indx);
+    test(testObject);
+    testResult.addSuccess(testName);
   }
 }
