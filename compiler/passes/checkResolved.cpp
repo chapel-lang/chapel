@@ -389,7 +389,6 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
     return; // No.
 

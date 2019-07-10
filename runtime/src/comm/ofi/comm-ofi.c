@@ -1010,9 +1010,18 @@ static void exit_any(int);
 static void fini_amHandling(void);
 static void fini_ofi(void);
 
+static void amRequestShutdown(c_nodeid_t);
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
+    if (chpl_nodeID == 0) {
+      for (int node = 1; node < chpl_numNodes; node++) {
+        amRequestShutdown(node);
+      }
+    } else {
+      chpl_wait_for_shutdown();
+    }
+
     chpl_comm_barrier("chpl_comm_pre_task_exit");
     fini_amHandling();
   }
@@ -1376,6 +1385,7 @@ typedef enum {
   am_opGet,                             // do an RMA GET
   am_opPut,                             // do an RMA PUT
   am_opAMO,                             // do an AMO
+  am_opShutdown,                        // signal main process for shutdown
 } amOp_t;
 
 #ifdef CHPL_COMM_DEBUG
@@ -1392,13 +1402,8 @@ static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
                             chpl_comm_amDone_t**);
 
 
-int chpl_comm_numPollingTasks(void) {
-  return 1;
-}
-
-
-inline
-void chpl_comm_make_progress(void) {
+static inline
+void ensure_progress(void) {
   if (ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
     const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
     if (lockRet == 0) {
@@ -1535,7 +1540,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
       //
       while (!*(volatile chpl_comm_amDone_t*) &arg->comm.xol.gotArg) {
         local_yield();
-        chpl_comm_make_progress();
+        ensure_progress();
       }
     }
   }
@@ -1607,6 +1612,16 @@ void amRequestAMO(c_nodeid_t node, void* object,
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
   }
+}
+
+static inline
+void amRequestShutdown(c_nodeid_t node) {
+  chpl_comm_on_bundle_t arg;
+  arg.comm.b = (struct chpl_comm_bundleData_base_t)
+                 { .op = am_opShutdown, .node = chpl_nodeID };
+  amRequestCommon(node, &arg,
+                  (offsetof(chpl_comm_on_bundle_t, comm) + sizeof(arg.comm.b)),
+                  NULL);
 }
 
 
@@ -1692,7 +1707,7 @@ void amRequestCommon(c_nodeid_t node,
                "waiting for done indication in %p", pDone);
     while (!*(volatile chpl_comm_amDone_t*) pDone) {
       local_yield();
-      chpl_comm_make_progress();
+      ensure_progress();
     }
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw done indication in %p", pDone);
     if (pDone != &myDone)
@@ -1805,7 +1820,7 @@ void amHandler(void* argNil) {
     {
       static __thread int progressInterval;
       if ((++progressInterval & 0xff) == 0)
-        chpl_comm_make_progress();
+        ensure_progress();
     }
   }
 
@@ -1901,6 +1916,10 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
       case am_opAMO:
         amHandleAMO(tcip, req);
+        break;
+
+      case am_opShutdown:
+        chpl_signal_shutdown();
         break;
 
       default:
@@ -2650,7 +2669,7 @@ void waitForTxCQ(struct perTxCtxInfo_t* tcip, int maxToConsume,
 
     if (numEvents == -EAGAIN) {
       sched_yield();
-      chpl_comm_make_progress();
+      ensure_progress();
     } else {
       maxToConsume -= numEvents;
       tcip->numTxsOut -= numEvents;
@@ -2672,7 +2691,7 @@ void waitForTxCntr(struct perTxCtxInfo_t* tcip, int maxToConsume) {
     const int countDiff = count - tcip->txCount;
     if (countDiff == 0) {
       sched_yield();
-      chpl_comm_make_progress();
+      ensure_progress();
     } else if (countDiff > 0) {
       CHK_TRUE(countDiff <= tcip->numTxsOut);
       tcip->numTxsOut -= countDiff;
@@ -3654,6 +3673,7 @@ const char* am_op2name(amOp_t op) {
   case am_opGet: return "opGet";
   case am_opPut: return "opPut";
   case am_opAMO: return "opAMO";
+  case am_opShutdown: return "opShutdown";
   }
   return "op???";
 }

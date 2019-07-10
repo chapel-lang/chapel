@@ -8,7 +8,7 @@ on Locales[numLocales-1] {
   a = new shared MyClass(1);
   writeln(a.locale.id);
   
-  var b:shared MyClass;
+  var b:shared MyClass?;
   writeln(b.locale.id);
   on b {
     writeln(here.id);

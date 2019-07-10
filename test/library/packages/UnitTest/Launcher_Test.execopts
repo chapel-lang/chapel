@@ -1,0 +1,5 @@
+test_skip.chpl #launcher_Test.skipfile.good
+LauncherTest/test_ok.chpl #launcher_Test.folderok.good
+test_halt.chpl #launcher_Test.halt.good
+LauncherTest/test_fail.chpl #launcher_Test.fail.good
+LauncherTest/ #launcher_Test.folder.good 

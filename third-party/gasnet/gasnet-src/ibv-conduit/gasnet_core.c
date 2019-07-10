@@ -20,8 +20,21 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+// ntohs() should be in one of these:
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 GASNETI_IDENT(gasnetc_IdentString_Version, "$GASNetCoreLibraryVersion: " GASNET_CORE_VERSION_STR " $");
 GASNETI_IDENT(gasnetc_IdentString_Name,    "$GASNetCoreLibraryName: " GASNET_CORE_NAME_STR " $");
+#if GASNETC_IBV_SRQ
+  GASNETI_IDENT(gasnetc_IdentString_SRQ, "$GASNetIbvSRQ: 1 $");
+#endif
+#if GASNETC_IBV_XRC
+  GASNETI_IDENT(gasnetc_IdentString_XRC, "$GASNetIbvXRC: 1 $");
+#endif
+#if GASNETC_IBV_ODP
+  GASNETI_IDENT(gasnetc_IdentString_ODP, "$GASNetIbvODP: 1 $");
+#endif
 
 gex_AM_Entry_t const *gasnetc_get_handlertable(void);
 
@@ -49,7 +62,7 @@ gasnetc_EP_t gasnetc_ep0; // First EP created.  Used by init, sys AMs, and shutd
 #define GASNETC_DEFAULT_NETWORKDEPTH_PP		24	/* Max ops (RDMA + AM) outstanding to each peer */
 
 /* Limits on in-flight (queued but not acknowledged) AM Requests */
-#define GASNETC_DEFAULT_AM_CREDITS_TOTAL	MIN(256,gasneti_nodes*gasnetc_am_oust_pp)	/* Max AM requests outstanding at source, 0 = automatic */
+#define GASNETC_DEFAULT_AM_CREDITS_TOTAL	MIN(256,(gasneti_nodes-1)*gasnetc_am_oust_pp)	/* Max AM requests outstanding at source, 0 = automatic */
 #define GASNETC_DEFAULT_AM_CREDITS_PP		12	/* Max AM requests outstanding to each peer */
 #define GASNETC_DEFAULT_AM_CREDITS_SLACK	1	/* Max AM credits delayed by coalescing */
 
@@ -158,6 +171,13 @@ static char *gasnetc_ibv_ports;
 #endif
 
 static int gasnetc_did_firehose_init = 0;
+
+static const enum ibv_access_flags
+    gasneti_seg_access_flags =
+        (enum ibv_access_flags) (IBV_ACCESS_LOCAL_WRITE  |
+                                 IBV_ACCESS_REMOTE_WRITE |
+                                 IBV_ACCESS_REMOTE_READ  |
+                                 IBV_ACCESS_REMOTE_ATOMIC);
 
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -1021,6 +1041,37 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
   gasnetc_physmem_check("Probing O/S limits and HCA capabilities", limit);
 }
 
+GASNETI_NORETURN
+static void gasneti_segreg_failed(size_t size, const char *which, int why) {
+  const char *hint1 = "";
+  const char *hint2 = "";
+#if !GASNETI_PSHM_POSIX
+  // N/A
+#elif PLATFORM_OS_LINUX || PLATFORM_OS_CNL || PLATFORM_OS_WSL
+  #define GASNETC_PSHM_FS "/dev/shm"
+#elif PLATFORM_OS_NETBSD
+  #define GASNETC_PSHM_FS "/var/shm"
+#elif PLATFORM_OS_FREEBSD || PLATFORM_OS_OPENBSD
+  #define GASNETC_PSHM_FS "/tmp"
+#else
+  // Cygwin, macOS and Solaris are not believed to back with a filesystem
+  // Others are unknown
+#endif
+#ifdef GASNETC_PSHM_FS
+  if (why == EFAULT) {
+    hint1 = "\n        This could be caused by insufficient space in " GASNETC_PSHM_FS " (or similar).";
+  }
+#endif
+  if (! *which) { // empty string == NOT " aux"
+    hint2 = "\n        Reducing the value of environment variable GASNET_MAX_SEGSIZE may help.";
+  }
+  char sizestr[16];
+  gasneti_fatalerror("Unexpected error %s (errno=%d) when registering a %s%s segment%s%s",
+                     strerror(why), why,
+                     gasnett_format_number(size, sizestr, sizeof(sizestr), 1),
+                     which, hint1, hint2);
+}
+
 #if GASNET_TRACE
 static const char *mtu_to_str(enum ibv_mtu mtu) {
   switch (mtu) {
@@ -1105,6 +1156,7 @@ static int gasnetc_load_settings(void) {
   GASNETC_ENVINT(gasnetc_inline_limit, GASNET_INLINESEND_LIMIT, GASNETC_DEFAULT_INLINESEND_LIMIT, -1, 0);
   GASNETC_ENVINT(gasnetc_bounce_limit, GASNET_NONBULKPUT_BOUNCE_LIMIT, GASNETC_DEFAULT_NONBULKPUT_BOUNCE_LIMIT, 0, 1);
   GASNETC_ENVINT(gasnetc_packedlong_limit, GASNET_PACKEDLONG_LIMIT, GASNETC_DEFAULT_PACKEDLONG_LIMIT, 0, 1);
+#if GASNETC_IBV_AMRDMA
   GASNETC_ENVINT(gasnetc_amrdma_max_peers, GASNET_AMRDMA_MAX_PEERS, GASNETC_DEFAULT_AMRDMA_MAX_PEERS, 0, 0);
   GASNETC_ENVINT(gasnetc_amrdma_limit, GASNET_AMRDMA_LIMIT, GASNETC_DEFAULT_AMRDMA_LIMIT, 0, 1);
   if_pf (gasnetc_amrdma_limit > GASNETC_AMRDMA_LIMIT_MAX) {
@@ -1140,6 +1192,7 @@ static int gasnetc_load_settings(void) {
   if (!gasnetc_amrdma_limit || !gasnetc_amrdma_cycle) {
     gasnetc_amrdma_max_peers = 0;
   }
+#endif // GASNETC_IBV_AMRDMA
 
   #if GASNETC_PIN_SEGMENT
     GASNETC_ENVINT(gasnetc_pin_maxsz, GASNET_PIN_MAXSZ, 0, 0, 1);
@@ -1264,10 +1317,12 @@ static int gasnetc_load_settings(void) {
 #if !GASNETC_PIN_SEGMENT
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_PUTINMOVE_LIMIT          = %u", (unsigned int)gasnetc_putinmove_limit));
 #endif
+#if GASNETC_IBV_AMRDMA
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_MAX_PEERS         = %u", (unsigned int)gasnetc_amrdma_max_peers));
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_DEPTH             = %u", (unsigned int)gasnetc_amrdma_depth));
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_LIMIT             = %u", (unsigned int)gasnetc_amrdma_limit));
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_CYCLE             = %"PRIu64"", (uint64_t)gasnetc_amrdma_cycle));
+#endif
 #if GASNETC_USE_RCV_THREAD
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_RCV_THREAD               = %d (%sabled)", gasnetc_use_rcv_thread,
 				gasnetc_use_rcv_thread ? "en" : "dis"));
@@ -1450,6 +1505,17 @@ static void gasnetc_probe_ports(int max_ports) {
 		    "'gasnet/ibv-conduit/README'.\n", num_hcas, current, enable, num_hcas);
   }
 
+  int64_t pkey = gasnett_getenv_int_withdefault("GASNET_IBV_PKEY", -1, 0);
+  uint64_t pkey_mask = ~(uint64_t)0x8000;  // to strip membership bit
+  if (pkey == -1) {
+    // Nothing to do
+  } else {
+    pkey &= pkey_mask;
+    if ((pkey > 0x7fff) || (pkey < 2)) {
+      gasneti_fatalerror("Invalid GASNET_IBV_PKEY '%s'", gasnett_getenv("GASNET_IBV_PKEY"));
+    }
+  }
+
   /* Loop over list of HCAs */
   for (curr_hca = 0;
        (hca_count < GASNETC_IB_MAX_HCAS) && (port_count < max_ports) && (curr_hca < num_hcas);
@@ -1506,6 +1572,30 @@ static void gasnetc_probe_ports(int max_ports) {
         ++found;
         this_port->port_num = curr_port;
         this_port->hca_index = hca_count;
+        if (pkey < 0) {
+          GASNETI_TRACE_PRINTF(C,("Using default pkey_index=0 for HCA '%s', port %d",
+                                  hca_name, curr_port));
+          this_port->pkey_index = 0;
+        } else {
+          int i;
+          for (i = 0; i < hca_cap.max_pkeys; ++i) {
+            uint16_t pkey_val;
+            if (ibv_query_pkey(hca_handle, curr_port, i, &pkey_val)) {
+              gasneti_fatalerror("Failed to query pkeys for HCA '%s', port %d", hca_name, curr_port);
+            }
+            pkey_val = ntohs(pkey_val) & pkey_mask;
+            if (pkey_val == pkey) {
+              GASNETI_TRACE_PRINTF(C,("Using pkey_index %d for HCA '%s', port %d",
+                                      i, hca_name, curr_port));
+              this_port->pkey_index = i;
+              break;
+            }
+          }
+          if (i == hca_cap.max_pkeys) {
+            gasneti_fatalerror("Failed to locate index of requested pkey 0x%04x for HCA '%s', port %d",
+                               (unsigned int)pkey, hca_name, curr_port);
+          }
+        }
         if (gasnetc_qp_rd_atom) { /* Zero means use HCA/port limit */
           int limit = MIN(hca_cap.max_qp_init_rd_atom, hca_cap.max_qp_rd_atom);
           if (gasnetc_qp_rd_atom > limit) {
@@ -1550,6 +1640,17 @@ static void gasnetc_probe_ports(int max_ports) {
     /* Install or release the HCA */
     if (found) {
       gasnetc_hca_t *hca = &gasnetc_hca[hca_count];
+
+      if (gasneti_getenv_yesno_withdefault("GASNET_IBV_MODEL_WARN", 1)) {
+        if (!strncmp(hca_name, "hfi1_", 5)) {
+          fprintf(stderr,
+                  "WARNING: Use of ibv-conduit with Omni-Path NIC %s is not recommended.\n"
+                  "         See GASNet's ibv-conduit README for more information.\n"
+                  "         Alternatively, you may set environment variable\n"
+                  "         GASNET_IBV_MODEL_WARN=0 to silence this message.\n",
+                  hca_name);
+        }
+      }
 
       memset(hca, 0, sizeof(gasnetc_hca_t));
       hca->handle	= hca_handle;
@@ -1630,6 +1731,176 @@ static int gasnetc_hca_report(void) {
   return GASNET_OK;
 }
 
+#if GASNETC_IBV_ODP
+static void gasneti_odp_init(void) {
+  struct gasneti_odp_support {
+    uint8_t missing;
+    char    hca_id[15];
+  } my_odp_support[GASNETC_IB_MAX_HCAS];
+  enum gasneti_odp_missing {
+    missing_none = 0, // not missing anything == OK
+    missing_general,
+    missing_implicit,
+    missing_rc_read,
+    missing_rc_write
+  };
+  const char *message[] = {
+      "",
+      "general ODP",
+      "Implicit ODP",
+      "RC READ",
+      "RC WRITE"
+  };
+  // TODO: support heterogenous multi-rail with some HCAs having ODP and others not.
+  // This is not trivial because the RDMA logic picks ODP vs FH before picking an HCA.
+  gasnetc_hca_t	*hca;
+  GASNETC_FOR_ALL_HCA(hca) {
+    enum gasneti_odp_missing missing = missing_none;
+    struct ibv_exp_device_attr attr;
+    memset(&attr, 0, sizeof(attr));
+    attr.comp_mask = IBV_EXP_DEVICE_ATTR_ODP | IBV_EXP_DEVICE_ATTR_EXP_CAP_FLAGS;
+    int ret = ibv_exp_query_device(hca->handle, &attr);
+    if (! (attr.exp_device_cap_flags & IBV_EXP_DEVICE_ODP)) {
+      missing = missing_general;
+    } else if (! (attr.odp_caps.general_odp_caps & IBV_EXP_ODP_SUPPORT_IMPLICIT)) {
+      missing = missing_implicit;
+      // TODO-EX: maybe support older systems lacking this bit?
+      // Prior to ConnectX-4, implicit ODP was done in s/w and
+      //  + This can be identified because this caps bit was not set
+      //  + Implicit ODP emulation had 128MB limit
+      //  + Implicit ODP was valid for local only (invalid rkey)
+    } else if (! (attr.odp_caps.per_transport_caps.rc_odp_caps & IBV_EXP_ODP_SUPPORT_READ)) {
+      missing = missing_rc_read;
+    } else if (! (attr.odp_caps.per_transport_caps.rc_odp_caps & IBV_EXP_ODP_SUPPORT_WRITE)) {
+      missing = missing_rc_write;
+    }
+    if (missing != missing_none) {
+      GASNETI_TRACE_PRINTF(C,("Disabled ODP - %s: %s support is missing.",
+                              hca->hca_id, message[(int)missing]));
+      gasnetc_use_odp = 0;
+      size_t max_len = sizeof(my_odp_support[0].hca_id) - 1;
+      strncpy(my_odp_support[hca->hca_index].hca_id, hca->hca_id, max_len);
+      my_odp_support[hca->hca_index].hca_id[max_len] = '\0';
+    }
+    my_odp_support[hca->hca_index].missing = missing;
+  }
+  if (gasnetc_use_odp) {
+    // Create implict ODP registrations (currently only used locally)
+    GASNETC_FOR_ALL_HCA(hca) {
+      struct ibv_exp_reg_mr_in in;
+      memset(&in, 0, sizeof(in));
+      in.pd = hca->pd;
+      in.exp_access = (enum ibv_exp_access_flags)( IBV_EXP_ACCESS_ON_DEMAND |
+                                                   IBV_EXP_ACCESS_LOCAL_WRITE );
+      in.length = IBV_EXP_IMPLICIT_MR_SIZE;
+      hca->implicit_odp.handle = ibv_exp_reg_mr(&in);
+      GASNETC_IBV_CHECK_PTR(hca->implicit_odp.handle, "from ibv_exp_reg_mr(implicit)");
+      hca->implicit_odp.lkey = hca->implicit_odp.handle->lkey; // flatten for quick access
+    }
+  }
+  // Results by value of GASNET_ODP_VERBOSE:
+  //  0: No output (and no comms either)
+  //  1: Reports count of proceses missing support
+  //  2: Reports detail, w/ HCA ids IFF multi-hca
+  //  3: Reports detail w/ HCA ids unconditionally
+  int verbose = gasneti_getenv_int_withdefault("GASNET_ODP_VERBOSE", 1, 0);
+  if (verbose) {
+    // Will exchange just a single byte when not reporting HCA ids
+    // TODO: Only one process reports, so gather to 0 would be sufficient
+    int show_ids = (verbose > 2) || (gasnetc_num_hcas > 1);
+    size_t exchg_len = show_ids ? gasnetc_num_hcas * sizeof(struct gasneti_odp_support) : 1;
+    size_t stride = show_ids ? sizeof(struct gasneti_odp_support) : 1;
+    struct gasneti_odp_support *all_odp_support = gasneti_malloc(gasneti_nodes * exchg_len);
+    gasneti_bootstrapExchange(my_odp_support, exchg_len, all_odp_support);
+    if (! gasneti_mynode) {
+      struct gasneti_odp_support *p = all_odp_support;
+      // First just count the number of procs w/o OPD
+      int non_odp_procs = 0;
+      for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+        int non_odp = 0;
+        GASNETC_FOR_ALL_HCA(hca) {
+          non_odp |= (p->missing != missing_none);
+          p = (struct gasneti_odp_support *)((uintptr_t)p + stride);
+        }
+        non_odp_procs += non_odp;
+      }
+      if (non_odp_procs) {
+        const char *less_msg =
+                "         To suppress this message set environment variable\n"
+                "         GASNET_ODP_VERBOSE=0 or reconfigure with --disable-ibv-odp\n"
+                "         (see ibv-conduit's README for more information).\n";
+        const char *more_msg = (verbose > 1) ? "" :
+                "         To see additional details set environment variable\n"
+                "         GASNET_ODP_VERBOSE=2 (or higher).\n";
+        // report the summary information (verbose > 0)
+        fprintf(stderr,
+                "WARNING: ODP disabled on %d of %d processes which are missing support.\n%s%s",
+                (int)non_odp_procs, (int)gasneti_nodes, less_msg, more_msg);
+        // report detailed information (verbose > 1)
+        if (verbose > 1) {
+          p = all_odp_support;
+          for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+            GASNETC_FOR_ALL_HCA(hca) {
+              if (p->missing != missing_none) {
+                const char *msg = message[(int)p->missing];
+                if (show_ids) {
+                   fprintf(stderr, "    Process %d (hca '%s'): %s support is missing.\n",
+                           i, p->hca_id, msg);
+                } else {
+                   fprintf(stderr, "    Process %d: %s support is missing.\n",
+                           i, msg);
+                }
+              }
+              p = (struct gasneti_odp_support *)((uintptr_t)p + stride);
+            }
+          }
+        }
+      }
+    }
+    gasneti_free(all_odp_support);
+  }
+}
+
+static void gasnetc_odp_dereg(gasnetc_hca_t *hca) {
+  struct ibv_mr *handle;
+#if PLATFORM_ARCH_32
+  handle = (struct ibv_mr *) gasneti_atomic32_swap((gasneti_atomic32_t *) &hca->implicit_odp.handle, 0, 0);
+#else
+  handle = (struct ibv_mr *) gasneti_atomic64_swap((gasneti_atomic64_t *) &hca->implicit_odp.handle, 0, 0);
+#endif
+  if (handle) {
+    ibv_dereg_mr(handle);
+  }
+}
+
+// Testing shows that exiting without releasing the implicit ODP registration
+// leads to an (eventually fatal!) irreversible system memory leak.
+// So, we *must* do this for both normal and abnormal exits.
+static void gasnetc_odp_shutdown(void) {
+  if (gasnetc_use_odp) {
+    gasnetc_hca_t *hca;
+    GASNETC_FOR_ALL_HCA(hca) {
+      gasnetc_odp_dereg(hca);
+    }
+  }
+}
+extern void gasnetc_fatalsignal_cleanup_callback(int sig) {
+  // Note: caller has set SIGALRM handler
+  alarm(30);
+  gasnetc_odp_shutdown();
+  alarm(0);
+}
+#if HAVE_ON_EXIT
+  static void gasnetc_odp_on_exit(int exitcode, void *arg) {
+    gasnetc_odp_shutdown();
+  }
+#else
+  static void gasnetc_odp_atexit(void) {
+    gasnetc_odp_shutdown();
+  }
+#endif
+#endif // GASNETC_IBV_ODP
+
 static int gasnetc_init( gex_Client_t            *client_p,
                          gex_EP_t                *ep_p,
                          const char              *clientName,
@@ -1696,6 +1967,29 @@ static int gasnetc_init( gex_Client_t            *client_p,
     }
   }
 
+#if GASNETC_IB_MAX_HCAS > 1
+  gasnetc_use_fenced_puts = gasneti_getenv_yesno_withdefault("GASNET_USE_FENCED_PUTS", 0);
+  if (gasnetc_use_fenced_puts && (gasnetc_num_hcas == 1)) {
+    if (!gasneti_mynode) {
+      fprintf(stderr,
+              "WARNING: GASNET_USE_FENCED_PUTS requested, but ignored because only a single\n"
+              "         HCA was detected and/or enabled.  To suppress this message, you may\n"
+              "         either unset this environment variable or set it to '0'.\n"
+              "         Alternatively, you may configure using '--disable-ibv-multirail'\n"
+              "         if all nodes have only a single InfiniBand HCA.\n");
+    }
+    gasnetc_use_fenced_puts = 0;
+  }
+#else
+  if (!gasneti_mynode && gasneti_getenv_yesno_withdefault("GASNET_USE_FENCED_PUTS", 0)) {
+    fprintf(stderr,
+            "WARNING: GASNET_USE_FENCED_PUTS requested, but ignored because GASNet was\n"
+            "         configured without multi-rail support.  To suppress this message,\n"
+            "         you may either unset this environment variable or set it to '0'.\n"
+            "         Alternatively, you may configure using '--enable-ibv-multirail'.\n");
+  }
+#endif
+
   /* report hca/port properties */
   gasnetc_hca_report();
 
@@ -1761,6 +2055,116 @@ static int gasnetc_init( gex_Client_t            *client_p,
     }
   }
 #endif /* GASNETC_IBV_XRC */
+
+  // Detect configuration differences (likely to be) due to heterogeneous clusters
+  {
+    const uint32_t srq_flag = 0x80000000;
+    const uint32_t xrc_flag = 0x40000000;
+    uint32_t config_word =
+        (gasnetc_use_srq ? srq_flag : 0) |
+        (gasnetc_use_xrc ? xrc_flag : 0) |
+        ((gasnetc_num_hcas & 0xff) << 8) |
+        (gasnetc_num_ports & 0xff);
+    int srq_squashed = 0;
+    uint32_t *all_configs = gasneti_malloc(gasneti_nodes * sizeof(config_word));
+    gasneti_bootstrapExchange(&config_word, sizeof(config_word), all_configs);
+#if GASNETC_IBV_SRQ
+    // Auto-disable (with warning) SRQ if inhomogeneous
+    for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+      if (srq_flag & (config_word ^ all_configs[i])) {
+        gasnetc_use_srq = 0;
+      #if GASNETC_IBV_XRC
+        gasnetc_use_xrc = 0;
+        srq_squashed = 1;
+      #endif
+        GASNETI_TRACE_PRINTF(I, ("SRQ disabled because availability differs across nodes"));
+        if (!gasneti_mynode) {
+          fprintf(stderr,
+                  "WARNING: SRQ disabled because availability differs across nodes.\n"
+                  "         To suppress this message set environment variable\n"
+                  "         GASNET_USE_SRQ=0 or reconfigure with --disable-ibv-srq.\n");
+        }
+      }
+    }
+#endif // GASNETC_IBV_SRQ
+#if GASNETC_IBV_XRC
+    // Auto-disable (with warning) XRC if inhomogeneous
+    // Note that if SRQ was "squashed" above, then we won't complain about both
+    for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+      if (xrc_flag & (config_word ^ all_configs[i])) {
+        gasnetc_use_xrc = 0;
+        if (!srq_squashed) {
+          GASNETI_TRACE_PRINTF(I, ("XRC disabled because availability differs across nodes"));
+          if (!gasneti_mynode) {
+            fprintf(stderr,
+                    "WARNING: XRC disabled because availability differs across nodes.\n"
+                    "         To suppress this message set environment variable\n"
+                    "         GASNET_USE_XRC=0 or reconfigure with --disable-ibv-xrc.\n");
+          }
+        }
+      }
+    }
+#endif // GASNETC_IBV_XRC
+    // Fail gracefully if HCA or port counts are inhomogeneous
+    if (!gasneti_mynode) {
+      for (gex_Rank_t i = 1; i < gasneti_nodes; ++i) {
+        if (0xff00 & (config_word ^ all_configs[i])) {
+          gasneti_fatalerror("Inhomogeneous IB HCA count - cannot continue.\n"
+                             "See README for GASNet's ibv-conduit for more information, especially\n"
+                             "on multi-rail support and the GASNET_IBV_PORTS environment variable.\n"
+                             "First detected mismatch: proc 0: %d vs. proc %d: %d\n",
+                             gasnetc_num_hcas, (int)i, (int)(0xff & (all_configs[i] >> 8)));
+        }
+        if (0xff & (config_word ^ all_configs[i])) {
+          gasneti_fatalerror("Inhomogeneous IB PORT count - cannot continue.\n"
+                             "See README for GASNet's ibv-conduit for more information, especially\n"
+                             "on multi-rail support and the GASNET_IBV_PORTS environment variable.\n"
+                             "First detected mismatch: proc 0: %d vs. proc %d: %d\n",
+                             gasnetc_num_ports, (int)i, (int)(0xff & all_configs[i]));
+        }
+      }
+    }
+    gasneti_free(all_configs);
+  }
+
+#if GASNETC_IBV_ODP
+  gasnetc_use_odp = gasneti_getenv_int_withdefault("GASNET_USE_ODP", 1, 0);
+  if (gasnetc_use_odp) {
+    gasneti_odp_init();
+  }
+#elif !GASNETC_IBV_ODP_DISABLED
+  if (gasneti_getenv_int_withdefault("GASNET_ODP_VERBOSE", 1, 0)) {
+    uint8_t found_odp_hca = 0;
+    GASNETC_FOR_ALL_HCA(hca) {
+      // Assume hca_id starting with "mlx5" (or higher) has ODP support
+      if (!strncmp(hca->hca_id, "mlx", 3) && (atoi(hca->hca_id+3) >= 5)) {
+        found_odp_hca = 1;
+        break;
+      }
+    }
+    // TODO: Only one process reports, so gather to 0 would be sufficient and
+    //       a SUM reduction even would be even better.
+    uint8_t *all = gasneti_malloc(gasneti_nodes);
+    gasneti_bootstrapExchange(&found_odp_hca, 1, all);
+    if (!gasneti_mynode) {
+      gex_Rank_t count = 0;
+      for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+        count += all[i];
+      }
+      if (count) {
+        fprintf(stderr,
+                "WARNING: %d of %d processes have HCAs believed to support ODP.  However, the\n"
+                "         corresponding software support was not found at configure time.\n"
+                "         Please see the README for GASNet's ibv-conduit for more info on ODP.\n"
+                "         To suppress this message set environment variable\n"
+                "         GASNET_ODP_VERBOSE=0 or reconfigure with --disable-ibv-odp\n"
+                "         (see ibv-conduit's README for more information).\n",
+                (int)count, (int)gasneti_nodes);
+      }
+    }
+    gasneti_free(all);
+  }
+#endif // GASNETC_IBV_ODP
 
   /* Determine gasnetc_max_msg_sz and dependent variables */
   gasnetc_max_msg_sz = gasnetc_port_tbl[0].port.max_msg_sz;
@@ -1934,8 +2338,19 @@ static int gasnetc_init( gex_Client_t            *client_p,
   #endif
 
   #ifdef GASNETI_MMAP_OR_PSHM
-    mmap_limit = gasneti_mmapLimit(
-                                  local_limit, (uint64_t)-1,
+    // Bound per-host (sharedLimit) argument to gasneti_segmentLimit()
+    // while properly reserving space for aux segments.
+    uint64_t sharedLimit = gasneti_sharedLimit();
+    uint64_t hostAuxSegs = gasneti_myhost.node_count * gasneti_auxseg_preinit();
+    if (sharedLimit <= hostAuxSegs) {
+      gasneti_fatalerror("per-host segment limit %"PRIu64" is too small to accommodate %i aux segments, "
+                         "total size %"PRIu64". You may need to adjust OS shared memory limits.",
+                         sharedLimit, gasneti_myhost.node_count, hostAuxSegs);
+    }
+    sharedLimit -= hostAuxSegs;
+
+    mmap_limit = gasneti_segmentLimit(
+                                  local_limit, sharedLimit,
                                   &gasnetc_bootstrapExchange_ib,
                                   &gasnetc_bootstrapBarrier_ib);
   #else
@@ -1963,7 +2378,7 @@ static int gasnetc_init( gex_Client_t            *client_p,
 
   /* allocate and attach an aux segment */
 
-  gasneti_auxsegAttach(MIN(mmap_limit,gasnetc_pin_maxsz), &gasnetc_bootstrapExchange_ib);
+  gasneti_auxsegAttach(gasnetc_pin_maxsz, &gasnetc_bootstrapExchange_ib);
 
   void *auxbase = gasneti_seginfo_aux[gasneti_mynode].addr;
   uintptr_t auxsize = gasneti_seginfo_aux[gasneti_mynode].size;
@@ -1971,13 +2386,8 @@ static int gasnetc_init( gex_Client_t            *client_p,
   /* The auxseg will be statically pinned even if the segment is not */
   
   GASNETC_FOR_ALL_HCA(hca) {
-    if (0 != gasnetc_pin(hca, auxbase, auxsize,
-                         (enum ibv_access_flags)(IBV_ACCESS_LOCAL_WRITE |
-                                                 IBV_ACCESS_REMOTE_WRITE |
-                                                 IBV_ACCESS_REMOTE_READ),
-                         &hca->aux_reg)) {
-      gasneti_fatalerror("Unexpected error %s (errno=%d) when registering the aux segment",
-                         strerror(errno), errno);
+    if (0 != gasnetc_pin(hca, auxbase, auxsize, gasneti_seg_access_flags, &hca->aux_reg)) {
+      gasneti_segreg_failed(auxsize, " aux", errno);
     }
     // TODO_EX: need scalable and/or lazy storage of aux segments and their rkeys
     hca->aux_rkeys = gasneti_malloc(gasneti_nodes*sizeof(uint32_t));
@@ -2070,7 +2480,12 @@ static int gasnetc_attach_primary(void) {
 
   /* ------------------------------------------------------------------------------------ */
   /* Initialize firehose */
-  if (GASNETC_USE_FIREHOSE && (gasneti_nodes > 1)) {
+  int using_firehose = GASNETC_USE_FIREHOSE && (gasneti_nodes > 1);
+#if GASNETC_IBV_ODP && GASNETC_PIN_SEGMENT
+  // If using Impicit ODP for local addrs, then local firehose is unused
+  using_firehose &= ! gasnetc_use_odp;
+#endif
+  if (using_firehose) {
     int reg_count;
     firehose_region_t *prereg = gasnetc_prereg_list(&reg_count);
     size_t maxsz;
@@ -2258,11 +2673,8 @@ static int gasnetc_attach_segment(gex_Segment_t                 *segment_p,
 
         for (j = 0, addr = gasnetc_seg_start, remain = segsize; remain != 0; ++j) {
 	  size_t len = (gasnetc_max_regs == 1) ? remain : MIN(remain, gasnetc_pin_maxsz);
-          if (0 != gasnetc_pin(hca, (void *)addr, len,
-			      (enum ibv_access_flags)(IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ),
-			      &memreg)) {
-             gasneti_fatalerror("Unexpected error %s (errno=%d) when registering the segment",
-                                strerror(errno), errno);
+          if (0 != gasnetc_pin(hca, (void *)addr, len, gasneti_seg_access_flags, &memreg)) {
+             gasneti_segreg_failed(len, "", errno);
           }
 	  my_rkeys[j] = memreg.handle->rkey;
 	  hca->seg_lkeys[j] = memreg.handle->lkey;
@@ -2426,6 +2838,12 @@ extern int gasnetc_Segment_Attach(
   if (once) once = 0;
   else gasneti_fatalerror("gex_Segment_Attach: current implementation can be called at most once");
 
+  #if GASNET_SEGMENT_EVERYTHING
+    *segment_p = GEX_SEGMENT_INVALID;
+    gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+    return GASNET_OK; 
+  #endif
+
   /* create a segment collectively */
   // TODO-EX: this implementation only works *once*
   // TODO-EX: should be using the team's exchange function if possible
@@ -2518,6 +2936,11 @@ gasnetc_shutdown(void) {
       for (i=0; i<gasnetc_seg_regs; ++i) {
         gasnetc_unpin(hca, &hca->seg_regs[i]);
       }
+    }
+  #endif
+  #if GASNETC_IBV_ODP
+    if (gasnetc_use_odp) {
+      gasnetc_odp_dereg(hca);
     }
   #endif
 
@@ -2677,13 +3100,11 @@ void gasnetc_post_checkpoint(int is_restart) {
   /* REregister the segment and exchange the new rkeys */
 #if GASNETC_PIN_SEGMENT
   if (gasnetc_hca[0].seg_regs) {
-    const enum ibv_access_flags flags = (enum ibv_access_flags)
-                  (IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ);
     uint32_t *my_rkeys = gasneti_calloc(gasnetc_max_regs, sizeof(uint32_t));
     GASNETC_FOR_ALL_HCA(hca) {
       for (i=0; i<gasnetc_seg_regs; ++i) {
         gasnetc_memreg_t *reg = &hca->seg_regs[i];
-        if (0 != gasnetc_pin(hca, (void *)reg->addr, reg->len, flags, reg)) {
+        if (0 != gasnetc_pin(hca, (void *)reg->addr, reg->len, gasneti_seg_access_flags, reg)) {
           gasneti_fatalerror("Unexpected error %s (errno=%d) when (re)registering the segment",
                              strerror(errno), errno);
         }
@@ -3180,6 +3601,18 @@ static void gasnetc_exit_sighandler(int sig) {
   int exitcode = (int)gasneti_atomic_read(&gasnetc_exit_code, GASNETI_ATOMIC_RMB_PRE);
   static gasneti_atomic_t once = gasneti_atomic_init(1);
 
+#if GASNET_DEBUG || GASNETC_IBV_ODP
+  // protect until we reach reentrance check
+  GASNETC_EXIT_STATE("in exit sighandler");
+  gasneti_reghandler(SIGALRM, _exit);
+  gasneti_unblocksig(SIGALRM);
+  alarm(30);
+#endif
+
+#if GASNETC_IBV_ODP
+  gasnetc_odp_shutdown(); // Avoid possible system memory leak
+#endif
+
   #if GASNET_DEBUG
   /* note - can't call trace macros here, or even sprintf */
   if (sig == SIGALRM) {
@@ -3212,8 +3645,9 @@ static void gasnetc_exit_sighandler(int sig) {
 
   if (gasneti_atomic_decrement_and_test(&once, 0)) {
     /* We ask the bootstrap support to kill us, but only once */
-    gasneti_reghandler(SIGALRM, gasnetc_exit_sighandler);
     GASNETC_EXIT_STATE("in suicide timer");
+    gasneti_reghandler(SIGALRM, gasnetc_exit_sighandler);
+    gasneti_unblocksig(SIGALRM);
     alarm(5);
     gasneti_bootstrapAbort(exitcode);
   } else {
@@ -3468,6 +3902,13 @@ static void gasnetc_exit_body(void) {
     alarm(0);
   }
 
+#if GASNETC_IBV_ODP
+  // Always need to shutdown ODP (safe no-op if we did full shutdown above)
+  GASNETC_EXIT_STATE("odp shutdown");
+  alarm(30);
+  gasnetc_odp_shutdown(); // Avoid possible system memory leak
+#endif
+
   /* Try again to flush out any recent output, allowing upto 30s */
   GASNETC_EXIT_STATE("closing output");
   alarm(30);
@@ -3587,7 +4028,7 @@ static void gasnetc_exit_reph(gex_Token_t token) {
   gasneti_atomic_increment(&gasnetc_exit_reps, 0);
 }
   
-/* gasnetc_atexit OR gasnetc_on_exit
+/* gasnetc_atexit
  *
  * This is a simple (at,on_}exit() handler to achieve a hopefully graceful exit.
  * We use the functions gasnetc_exit_{head,body}() to coordinate the shutdown.
@@ -3603,31 +4044,29 @@ static void gasnetc_exit_reph(gex_Token_t token) {
  * expect to preserve a non-zero exit code for the GASNet job as a whole.  Of course
  * there is no _guarantee_ this will work with all bootstraps.
  */
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int exitcode, void *arg) {
+static void gasnetc_atexit(int exitcode) {
   /* Check return from _head to avoid reentrance */
   if (gasnetc_exit_head(exitcode)) {
     gasnetc_exit_body();
   }
   return;
 }
-#else
-static void gasnetc_atexit(void) {
-  /* Check return from _head to avoid reentrance */
-  if (gasnetc_exit_head(0)) { /* real exit code is outside our control */
-    gasnetc_exit_body();
-  }
-  return;
-}
-#endif
 
 static void gasnetc_exit_init(void) {
-  /* Handler for non-collective returns from main() */
+  // register an exit-time callback for ODP (needed for GASNET_CATCH_EXIT=0 case)
+#if GASNETC_IBV_ODP
+  if (gasnetc_use_odp) {
   #if HAVE_ON_EXIT
-    on_exit(gasnetc_on_exit, NULL);
+    on_exit(gasnetc_odp_on_exit, NULL);
   #else
-    atexit(gasnetc_atexit);
+    atexit(gasnetc_odp_atexit);
   #endif
+  }
+#endif
+
+  /* Handler for non-collective returns from main() */
+  // register process exit-time hook
+  gasneti_registerExitHandler(gasnetc_atexit);
 
 #if GASNET_PSHM
   /* Extract info from nodemap that we'll need at exit */
@@ -3663,6 +4102,7 @@ extern void gasnetc_exit(int exitcode) {
 
 /* ------------------------------------------------------------------------------------ */
 
+#if GASNETC_IBV_AMRDMA
 GASNETI_INLINE(gasnetc_amrdma_grant_reqh_inner)
 void gasnetc_amrdma_grant_reqh_inner(gex_Token_t token, int qpi, uint32_t rkey, void *addr) {
   gasnetc_cep_t *cep;
@@ -3677,6 +4117,7 @@ void gasnetc_amrdma_grant_reqh_inner(gex_Token_t token, int qpi, uint32_t rkey, 
 SHORT_HANDLER(gasnetc_amrdma_grant_reqh,3,4,
               (token, a0, a1, UNPACK(a2)    ),
               (token, a0, a1, UNPACK2(a2, a3)));
+#endif // GASNETC_IBV_AMRDMA
 
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -3781,7 +4222,9 @@ static gex_AM_Entry_t const gasnetc_handlers[] = {
   #endif
 
   /* ptr-width dependent handlers */
-  gasneti_handler_tableentry_with_bits(gasnetc_amrdma_grant_reqh,3,4,REQUEST,SHORT,0),
+  #if GASNETC_IBV_AMRDMA
+    gasneti_handler_tableentry_with_bits(gasnetc_amrdma_grant_reqh,3,4,REQUEST,SHORT,0),
+  #endif
 
   GASNETI_HANDLER_EOT
 };

@@ -37,7 +37,11 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
   call = callExpr;
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    name = se->symbol()->name;
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      name = se->typeInfo()->symbol->name;
+    } else {
+      name = se->symbol()->name;
+    }
 
   } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr)) {
     name = use->unresolved;
@@ -123,9 +127,11 @@ void CallInfo::haltNotWellFormed() const {
                 sym->name);
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      INT_FATAL(call,
+      USR_FATAL_CONT(call,
                 "the type of the actual argument '%s' is generic",
                 sym->name);
+      USR_PRINT("generic actual arguments are not currently supported");
+      USR_STOP();
     }
   }
 }
@@ -160,11 +166,7 @@ const char* CallInfo::toString() {
     }
   }
 
-  if (developer                                   == false &&
-      strncmp("_type_construct_", name, 16) == 0) {
-    retval = astr(retval, name+16);
-
-  } else if (_this == false) {
+  if (_this == false) {
     retval = astr(retval, name);
   }
 

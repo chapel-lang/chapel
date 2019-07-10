@@ -1,8 +1,8 @@
 class intList {
-  var head: unmanaged Node;
+  var head: unmanaged Node?;
   class Node {
     var value: int;
-    var next: unmanaged Node;
+    var next: unmanaged Node?;
   }
 
   proc insert(value: int) {

@@ -1214,6 +1214,11 @@ TypeSymbol::copyInner(SymbolMap* map) {
   new_type_symbol->copyFlags(this);
   new_type_symbol->cname = cname;
   new_type_symbol->instantiationPoint = instantiationPoint;
+  if (AggregateType* at = toAggregateType(new_type)) {
+    for_fields(field, at) {
+      insert_help(field->defPoint, NULL, new_type_symbol);
+    }
+  }
   return new_type_symbol;
 }
 

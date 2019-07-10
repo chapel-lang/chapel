@@ -89,12 +89,5 @@ module AllLocalesBarriers {
     }
   }
 
-  var allLocalesBarrier: unmanaged AllLocalesBarrier;
-
-  allLocalesBarrier = new unmanaged AllLocalesBarrier(1);
-
-  pragma "no doc"
-  proc deinit() {
-    delete allLocalesBarrier;
-  }
+  const allLocalesBarrier: AllLocalesBarrier = new AllLocalesBarrier(1);
 }

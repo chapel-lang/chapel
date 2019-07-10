@@ -72,7 +72,7 @@ proc main() {
 //
 class Tree {
   const item: int;
-  const left, right: unmanaged Tree;
+  const left, right: unmanaged Tree?;
 
   proc init(item, left, right) { // Leaves the type of left and right ambiguous
     this.item = item;
@@ -94,7 +94,7 @@ class Tree {
   proc sum(): int {
     var sum = item;
     if left {
-      sum += left.sum() - right.sum();
+      sum += left!.sum() - right!.sum();
       delete left;
       delete right;
     }

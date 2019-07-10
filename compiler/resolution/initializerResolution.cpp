@@ -516,7 +516,7 @@ static void doGatherInitCandidates(CallInfo&                  info,
       // function should be a no-parens function or a type constructor.
       // (a type constructor call without parens uses default arguments)
       if (info.call->methodTag) {
-        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
+        if (visibleFn->hasFlag(FLAG_NO_PARENS)) {
           // OK
 
         } else {

@@ -8,7 +8,7 @@ on Locales[numLocales-1] {
   a = new owned MyClass(1);
   writeln(a.locale.id);
   
-  var b:owned MyClass;
+  var b:owned MyClass?;
   writeln(b.locale.id);
   on b {
     writeln(here.id);

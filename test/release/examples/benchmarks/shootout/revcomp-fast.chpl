@@ -16,11 +16,8 @@ proc main(args: [] string) {
   // if the file isn't empty, wait for all tasks to complete before continuing
   if len then sync {
     do {
-      // capture the starting offset
-      const descOffset = input.offset();
-
-      // Mark where we start scanning (keep bytes in I/O buffer in input)
-      input.mark();
+      // Mark where we start scanning and capture the starting offset
+      const descOffset = input.mark();
 
       // Scan forward until we get to '\n' (end of description)
       input.advancePastByte("\n".byte(1));

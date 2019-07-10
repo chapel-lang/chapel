@@ -36,7 +36,7 @@ static void _freezeForDebugger(int depth)) {
 extern void AMX_freezeForDebugger(void) {
   char name[255];
   gethostname(name, sizeof(name));
-  AMX_Info("slave frozen for debugger: host=%s  pid=%i : Attach and set amx_frozen=0", name, getpid());
+  AMX_Info("slave frozen for debugger: host=%s  pid=%i : Attach and set amx_frozen=0", name, (int)getpid());
   _freezeForDebugger(0);
 }
 

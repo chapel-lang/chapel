@@ -8,7 +8,7 @@ class MyClass {
   }
 }
 
-var global: borrowed MyClass; // 'borrowed' optional here
+var global: borrowed MyClass?; // 'borrowed' optional here
 proc saveit(arg: borrowed MyClass) { // and here
   global = arg; // Error! trying to store borrow from local 'x' into 'global'
   delete arg;   // Error! trying to delete a borrow

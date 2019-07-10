@@ -262,7 +262,7 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 
 void AstDumpToNode::exitModSym(ModuleSymbol* node)
 {
-  if (node->modUseList.n > 0)
+  if (node->modUseList.size() > 0)
   {
     fputc('\n', mFP);
 

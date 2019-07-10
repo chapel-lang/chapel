@@ -1092,7 +1092,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   if (!llvmCodegen)
     clangArgs.push_back("-fsyntax-only");
 
-  if( printSystemCommands ) {
+  if( printSystemCommands && developer ) {
     for( size_t i = 0; i < clangArgs.size(); i++ ) {
       printf("%s ", clangArgs[i]);
     }
@@ -1131,7 +1131,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   INT_ASSERT(C->getJobs().size() == 1);
 
   clang::driver::Command& j = *C->getJobs().begin();
-  if( printSystemCommands ) {
+  if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
     for ( auto a : j.getArguments() ) {
       printf("%s ", a);
@@ -1215,7 +1215,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     }
     Args.push_back(NULL);
 
-    if (printSystemCommands) {
+    if (printSystemCommands && developer) {
       printf("# parsing llvm command line options: ");
       for (auto arg : Args) {
         if (arg != NULL)
@@ -1274,7 +1274,7 @@ static void setupModule()
     featuresString = features.getString();
   }
 
-  if (printSystemCommands) {
+  if (printSystemCommands && developer) {
     printf("# target features %s\n", featuresString.c_str());
   }
 
@@ -1768,7 +1768,11 @@ void runClang(const char* just_parse_filename) {
   }
 
   if( printSystemCommands ) {
-    printf("<internal clang> ");
+    if (just_parse_filename != NULL)
+      printf("<internal clang parsing %s> ", just_parse_filename);
+    else
+      printf("<internal clang code generation> ");
+
     for( size_t i = 0; i < clangCCArgs.size(); i++ ) {
       printf("%s ", clangCCArgs[i].c_str());
     }
@@ -2583,8 +2587,6 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
-static void tryPrintSystemCommand(const char* command);
-static void tryPrintSystemCommand(std::string &command);
 static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles);
@@ -2951,13 +2953,10 @@ void makeBinaryLLVM(void) {
     const char* inputFilename = gChplCompilationConfig.pathname;
     const char* objFilename = objectFileForCFile(inputFilename);
 
-    mysystem(astr(clangCC.c_str(),
-                  " -c -o ",
-                  objFilename,
-                  " ",
-                  inputFilename,
-                  cargs.c_str()),
-               "Compile C File");
+    std::string cmd = clangCC + " -c -o " + objFilename + " " +
+                      inputFilename + " " + cargs;
+
+    mysystem(cmd.c_str(), "Compile C File");
 
     dotOFiles.push_back(objFilename);
   }
@@ -2966,10 +2965,10 @@ void makeBinaryLLVM(void) {
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
-      mysystem(astr(clangCC.c_str(),
-                    " -c -o ", objFilename,
-                    " ", inputFilename, cargs.c_str()),
-               "Compile C File");
+      std::string cmd = clangCC + " -c -o " + objFilename + " " +
+                        inputFilename + " " + cargs;
+
+      mysystem(cmd.c_str(), "Compile C File");
       dotOFiles.push_back(objFilename);
     } else if( isObjFile(inputFilename) ) {
       dotOFiles.push_back(inputFilename);
@@ -3076,24 +3075,8 @@ void makeBinaryLLVM(void) {
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
 
-    tryPrintSystemCommand(makecmd);
-
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
   }
-}
-
-static void tryPrintSystemCommand(const char* command) {
-  if (!printSystemCommands) {
-    return;
-  }
-
-  printf("%s\n", command);
-  fflush(stdout);
-  fflush(stderr);
-}
-
-static void tryPrintSystemCommand(std::string &command) {
-  tryPrintSystemCommand(command.c_str());
 }
 
 static void makeLLVMStaticLibrary(std::string moduleFilename,
@@ -3110,8 +3093,6 @@ static void makeLLVMStaticLibrary(std::string moduleFilename,
     command += " ";
     command += dotOFiles[i];
   }
-
-  tryPrintSystemCommand(command);  
 
   mysystem(command.c_str(), "Make Static Library - Linking");
 }
@@ -3149,8 +3130,6 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
                                              moduleFilename, "", tmpbinname,
                                              dotOFiles, clangLDArgs,
                                              sawSysroot);
-
-  tryPrintSystemCommand(command);
 
   mysystem(command.c_str(), "Make Dynamic Library - Linking");
 }
@@ -3288,8 +3267,6 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                                              dotOFiles,
                                              clangLDArgs,
                                              sawSysroot);
-
-  tryPrintSystemCommand(command);  
 
   mysystem(command.c_str(), "Make Binary - Linking");
 }

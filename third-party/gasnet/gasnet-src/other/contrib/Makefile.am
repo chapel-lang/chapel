@@ -19,13 +19,8 @@ EXTRA_DIST = $(dotpl_DATA) $(vg_DATA) \
 	cross-configure-cray-aries-slurm \
 	cross-configure-intel-knc \
 	cross-configure-intel-knl
-# exclude these from distribution for now
-#	cross-configure-k42ppc64 \
+# exclude from distribution for now
 #	cross-configure-linux-arm \
-#	cross-configure-osxi686 \
-#	cross-configure-osxppc \
-#	cross-configure-osxppc64 \
-#	cross-configure-osxx86_64 \
 #
 
 dotpldir = $(bindir)

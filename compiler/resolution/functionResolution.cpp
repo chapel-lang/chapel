@@ -294,9 +294,9 @@ void makeRefType(Type* type) {
     return;
   }
 
-  CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
-  FnSymbol* fn   = resolveUninsertedCall(type, call);
-  type->refType  = toAggregateType(fn->retType);
+  CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
+  resolveUninsertedCall(type, call);
+  type->refType  = toAggregateType(call->typeInfo());
 
   type->refType->getField(1)->type = type;
 
@@ -2006,11 +2006,6 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   } else if (at->symbol->instantiationPoint != NULL) {
     retval = at->symbol->instantiationPoint;
 
-  } else if (at->typeConstructor &&
-             at->typeConstructor->instantiationPoint()) {
-    // This case can apply to generic types with initializers
-    retval = at->typeConstructor->instantiationPoint();
-
   } else {
     // This case applies to non-generic AggregateTypes and
     // possibly to generic AggregateTypes with default fields.
@@ -2115,6 +2110,7 @@ static void markArraysOfBorrows(AggregateType* at);
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
   at->initializerResolved = true;
+  at->resolveStatus = RESOLVED;
 
   // TODO: this is a hack to allow for further resolution of fields with very
   // simple type-exprs (e.g. "var x : T"). This allows the compiler to resolve
@@ -2506,6 +2502,66 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
                                        CallInfo&            info,
                                        bool                 followerChecks);
 
+static bool isTypeConstructionCall(CallExpr* call) {
+  bool ret = false;
+
+  if (SymExpr* se = toSymExpr(call->baseExpr)) {
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      // Compiler may represent accesses of instantiated tuple components in
+      // the same way as a type construction call, so skip that case here.
+      //
+      // A SymExpr of dtTuple indiciates tuple type construction.
+      // TODO: Shouldn't we see a call to 'this' as the baseExpr?
+      if (se->typeInfo()->symbol->hasFlag(FLAG_TUPLE) &&
+          se->typeInfo() != dtTuple) {
+        ret = false;
+      } else {
+        ret = true;
+      }
+    }
+  }
+
+  return ret;
+}
+
+static Type* resolveTypeSpecifier(CallInfo& info) {
+  CallExpr* call = info.call;
+  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
+  Type* ret = NULL;
+
+  SymExpr* ts = toSymExpr(call->baseExpr);
+  AggregateType* at = toAggregateType(ts->typeInfo());
+  DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo());
+
+  if (dt != NULL) {
+    ret = resolveDefaultGenericTypeSymExpr(ts);
+  } else if (isPrimitiveType(ts->typeInfo())) {
+    USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
+    USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", ts->typeInfo()->symbol->name);
+    USR_STOP();
+  } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    SymbolMap subs;
+    if (FnSymbol* fn = createTupleSignature(NULL, subs, call)) {
+      ret = fn->retType;
+    }
+  } else {
+    ret = at->generateType(info.call, info.toString());
+  }
+
+  if (ret != NULL) {
+    call->baseExpr->replace(new SymExpr(ret->symbol));
+  }
+
+  if (isAggregateType(ret) &&
+      ret->scalarPromotionType == NULL &&
+      ret->symbol->hasFlag(FLAG_REF) == false &&
+      ret->symbol->hasFlag(FLAG_GENERIC) == false) {
+    resolvePromotionType(toAggregateType(ret));
+  }
+
+  return ret;
+}
 
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
   CallInfo  info;
@@ -2521,9 +2577,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
 
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
-
   } else if (info.isWellFormed(call) == true) {
-    retval = resolveNormalCall(info, checkOnly);
+    if (isTypeConstructionCall(call)) {
+      resolveTypeSpecifier(info);
+    } else {
+      retval = resolveNormalCall(info, checkOnly);
+    }
 
   } else if (checkOnly == true) {
     retval = NULL;
@@ -2968,24 +3027,6 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         generateUnresolvedMsg(info, visibleFns);
       }
 
-    } else if (strcmp("_type_construct__tuple", info.name) == 0) {
-      if (info.call->argList.length == 0) {
-        USR_FATAL_CONT(call, "tuple size must be specified");
-
-      } else {
-        SymExpr* sym = toSymExpr(info.call->get(1));
-
-        if (sym == NULL) {
-          USR_FATAL_CONT(call, "tuple size must be static");
-
-        } else if (sym->symbol()->isParameter() == false) {
-          USR_FATAL_CONT(call, "tuple size must be static");
-
-        } else {
-          USR_FATAL_CONT(call, "invalid tuple");
-        }
-      }
-
     } else if (info.name == astrSequals) {
       if        (info.actuals.v[0]                              !=  NULL  &&
                  info.actuals.v[1]                              !=  NULL  &&
@@ -3123,10 +3164,6 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     const char* entity = "call";
     const char* str    = info.toString();
 
-    if (strncmp("_type_construct_", info.name, 16) == 0) {
-      entity = "type specifier";
-    }
-
     if (info.scope) {
       ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
 
@@ -3183,12 +3220,9 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     str = info.toString();
   }
 
-  if (strncmp("_type_construct_", info.name, 16) == 0) {
-    USR_FATAL_CONT(call, "unresolved type specifier '%s'", str);
-
-  } else if (info.actuals.n                              >  1             &&
-             info.actuals.v[0]->getValType()             == dtMethodToken &&
-             isEnumType(info.actuals.v[1]->getValType()) == true) {
+  if (info.actuals.n                              >  1             &&
+      info.actuals.v[0]->getValType()             == dtMethodToken &&
+      isEnumType(info.actuals.v[1]->getValType()) == true) {
     USR_FATAL_CONT(call,
                    "unresolved enumerated type symbol or call '%s'",
                    str);
@@ -3251,12 +3285,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     }
   } else {
     USR_PRINT(call, "because no functions named %s found in scope", info.name);
-  }
-
-  if (visibleFns.n                                == 1 &&
-      visibleFns.v[0]->numFormals()               == 0 &&
-      strncmp("_type_construct_", info.name, 16) == 0) {
-    USR_PRINT(call, "did you forget the 'new' keyword?");
   }
 }
 
@@ -3426,8 +3454,7 @@ static void gatherCandidates(CallInfo&                  info,
         filterCandidate(info, fn, candidates);
 
       } else {
-        if (fn->hasFlag(FLAG_NO_PARENS)        == true ||
-            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+        if (fn->hasFlag(FLAG_NO_PARENS) == true) {
           filterCandidate(info, fn, candidates);
         }
       }
@@ -4943,13 +4970,6 @@ static void resolveTupleExpand(CallExpr* call) {
   noop->replace(call); // put call back in ast for function resolution
 
   call->convertToNoop();
-
-  // increase tuple rank
-  if (parent != NULL && parent->isNamed("_type_construct__tuple") == true) {
-    Symbol* rank = new_IntSymbol(parent->numActuals() - 1);
-
-    parent->get(1)->replace(new SymExpr(rank));
-  }
 }
 
 /************************************* | **************************************
@@ -5475,8 +5495,6 @@ FnSymbol* findCopyInit(AggregateType* at) {
     Expr* point = NULL;
     if (BlockStmt* stmt = at->symbol->instantiationPoint) {
       point = stmt;
-    } else if (FnSymbol* fn = at->typeConstructor) {
-      point = fn->instantiationPoint();
     }
     ret->setInstantiationPoint(point);
   }
@@ -6488,7 +6506,7 @@ static Type* resolveGenericActual(SymExpr* se) {
 
       // Fix for complicated extern vars like
       //   extern var x: c_ptr(c_int);
-      if (vs->hasFlag(FLAG_EXTERN) == true &&
+      if ((vs->hasFlag(FLAG_EXTERN) == true || isGlobal(vs)) &&
           vs->defPoint             != NULL &&
           vs->defPoint->init       != NULL &&
           vs->getValType()         == dtUnknown ) {
@@ -6513,7 +6531,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) && at->isGenericWithDefaults()) {
-      CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
+      CallExpr*   cc    = new CallExpr(at->symbol);
 
       se->replace(cc);
 
@@ -7057,33 +7075,38 @@ static void resolveExprExpandGenerics(CallExpr* call) {
 
 static
 void resolveTypeConstructor(AggregateType* at) {
-  // Resolve the parents
   forv_Vec(AggregateType, pt, at->dispatchParents) {
-    if (pt->typeConstructor)
-      resolveTypeConstructor(pt);
+    resolveTypeConstructor(pt);
+  }
+  at->resolveConcreteType();
+  if (at->scalarPromotionType == NULL &&
+      at->symbol->hasFlag(FLAG_REF) == false) {
+    resolvePromotionType(at);
   }
 
-  // Resolve the current one
-  if (FnSymbol* fn = at->typeConstructor) {
-    if (hasPartialCopyData(fn) == true) {
-      instantiateBody(fn);
-    }
-
-    resolveSignatureAndFunction(fn);
+  if (at->hasDestructor() == false) {
+    resolveDestructor(at);
   }
 }
 
+// TODO: Why shouldn't this handle generics too?
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
-  Type* t = symExpr->typeInfo();
+  if (symExpr->typeInfo() == NULL) {
+    return;
+  }
+
+  Type* t = symExpr->getValType();
   AggregateType* at = toAggregateType(t);
 
   if (DecoratedClassType * dt = toDecoratedClassType(t))
     at = dt->getCanonicalClass();
 
-  if (at != NULL && at->typeConstructor) {
+  // Do not run on instantiated generics
+  if (at != NULL && at->instantiatedFrom == NULL) {
     if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
         at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
-        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
+        at->resolveStatus == UNRESOLVED) {
       CallExpr* parent = toCallExpr(symExpr->parentExpr);
       Symbol*   sym    = symExpr->symbol();
 
@@ -7519,10 +7542,8 @@ static void unmarkDefaultedGenerics() {
             formal->hasFlag(FLAG_MARKED_GENERIC) == false) {
           SET_LINENO(formal);
 
-          FnSymbol*      typeConstr = formalAt->typeConstructor;
-
           formal->type     = dtUnknown;
-          formal->typeExpr = new BlockStmt(new CallExpr(typeConstr));
+          formal->typeExpr = new BlockStmt(new CallExpr(formalAt->symbol));
 
           insert_help(formal->typeExpr, NULL, formal);
         }
@@ -7554,7 +7575,7 @@ static void resolveUses(ModuleSymbol* mod) {
       }
     }
 
-    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+    for_vector(ModuleSymbol, usedMod, mod->modUseList) {
       resolveUses(usedMod);
     }
 
@@ -7888,7 +7909,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
       VarSymbol* tmp   = newTemp(at);
       CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-      FnSymbol* fn = resolveUninsertedCall(at, call);
+      FnSymbol* fn = resolveUninsertedCall(at->symbol->defPoint, call, true);
       INT_ASSERT(fn);
 
       if (at->hasInitializers()) {
@@ -9069,19 +9090,13 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
   if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(type))) {
-    if (FnSymbol* typeCons = at->typeConstructor) {
-      SET_LINENO(call);
+    SET_LINENO(call);
+    CallExpr* typeCall = new CallExpr(at->symbol);
+    call->replace(typeCall);
 
-      // Swap in a call to the default type constructor and try to resolve it
-      CallExpr* typeConsCall = new CallExpr(typeCons->name);
+    retval = (tryResolveCall(typeCall) == NULL);
 
-      call->replace(typeConsCall);
-
-      retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
-
-      // Put things back the way they were.
-      typeConsCall->replace(call);
-    }
+    typeCall->replace(call);
   }
 
   return retval;

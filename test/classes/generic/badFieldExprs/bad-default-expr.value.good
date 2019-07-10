@@ -1,0 +1,2 @@
+bad-default-expr.chpl:20: error: error while resolving type 'BadValueDefault'
+bad-default-expr.chpl:21: note: field 'x' has a default expression that resolves to a type

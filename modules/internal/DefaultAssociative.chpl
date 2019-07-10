@@ -23,6 +23,8 @@ pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
   use DSIUtil;
+  private use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
+  private use ChapelBase, ChapelLocks, IO;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
 

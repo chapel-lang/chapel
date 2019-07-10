@@ -323,6 +323,9 @@ module LocaleModel {
     }
   }
 
+  const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
+
   //
   // The node model
   //
@@ -388,14 +391,6 @@ module LocaleModel {
 
     proc highBandwidthMemory() : locale {
       return hbm;
-    }
-
-
-    override proc writeThis(f) {
-      // Most classes will define it like this:
-      //      f <~> name;
-      // but here it is defined thus for backward compatibility.
-      f <~> new ioLiteral("LOCALE") <~> _node_id;
     }
 
     proc getChildSpace() return childSpace;

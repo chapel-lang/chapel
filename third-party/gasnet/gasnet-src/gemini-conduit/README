@@ -1,6 +1,19 @@
 GASNet gemini-conduit and aries-conduit documentation
 Larry Stewart <stewart@serissa.com> 
 
+
+=====================================================================
+=====================================================================
+
+The gemini-conduit is now DEPRECATED.
+No further development of gemini-conduit is anticipated.
+It will be removed in a future release.
+
+The aries-conduit remains supported and under active development.
+
+=====================================================================
+=====================================================================
+
 User Information:
 -----------------
 
@@ -21,6 +34,7 @@ The gemini-conduit runs on systems with Cray's "Gemini" interconnect,
 including their XE and XK series machines.  There is no known minimum version
 required of any hardware or software component, but it is likely that
 sufficiently old releases of the system software are not supported correctly.
+Support for Cray's Gemini interconnect is currently deprecated.
 
 The aries-conduit runs on systems with Cray's "Aries" interconnect, including
 their XC series machines.  To the best of our knowledge, there are no known
@@ -53,7 +67,8 @@ by "aries" or "gemini" (without the quotes), as appropriate.
    on Active Messages may be slowed.
 
    The following three environment variables are honored when
-   multi-domain support is enabled:
+   multi-domain support is enabled.  These three variables are not
+   required to be single-valued.
 
    GASNET_DOMAIN_COUNT
    This is the number of Communication Domains to create per process.
@@ -133,6 +148,9 @@ Recognized environment variables:
 
 * All the standard GASNet environment variables (see top-level README)
 
+All variable below must (unless otherwise noted) be single-valued
+(have the same value in all processes) or the behavior is undefined.
+
 GASNET_BARRIER - barrier algorithm selection
   In addition to the algorithms in the top-level README, there is an
   implementation specific to Gemini and Aries:
@@ -197,6 +215,7 @@ GASNET_GNI_NUM_PD - number of post descriptors
   allocated, and therefore limit the total number of operations which
   can be in-flight at any time.
   The default value is 512, and the minimum is 32.
+  This variable is not required to be single-valued.
 
 GASNET_GNI_GET_FMA_RDMA_CUTOVER
 GASNET_GNI_PUT_FMA_RDMA_CUTOVER
@@ -218,6 +237,7 @@ GASNET_GNI_PUT_FMA_RDMA_CUTOVER
   On Gemini networks both values default to 4096
   On Aries networks both values default to 1023
   The maximum supported value is 16384
+  These variables are not required to be single-valued.
 
 GASNET_GNI_GET_BOUNCE_REGISTER_CUTOVER  - default 4096, max 32768
 GASNET_GNI_PUT_BOUNCE_REGISTER_CUTOVER  - default 4096, max 32768
@@ -229,6 +249,7 @@ GASNET_GNI_PUT_BOUNCE_REGISTER_CUTOVER  - default 4096, max 32768
   Beyond these sizes, dynamic memory registration is used.
   The minimum allowed is GASNET_PAGESIZE (normally 4K) and lower values
   will be silently replaced by this value.
+  These variables are not required to be single-valued.
   
 GASNET_GNI_BOUNCE_SIZE      - default 256K, space for bounce buffers
   There is a pool of bounce buffers, each of a fixed size determined by the
@@ -246,6 +267,8 @@ GASNET_GNI_BOUNCE_SIZE      - default 256K, space for bounce buffers
   setting may limit the number of operations requiring use of a bounce
   buffer which can be in-flight at any time.
 
+  This variable is not required to be single-valued.
+
 GASNET_GNI_MEM_CONSISTENCY
   This controls the use of the flag GNI_MEM_STRICT_PI_ORDERING,
   GNI_MEM_RELAXED_PI_ORDERING, or neither when registering memory
@@ -259,6 +282,7 @@ GASNET_GNI_MEMREG
   registrations, used for RDMA transfers to and from addresses outside of
   the GASNet segment.
   The default value is 16 on Gemini, and is 3072 on Aries.
+  This variable is not required to be single-valued.
 
   If this vale is too large (possibly due to competition with MPI or
   another runtime library) you will see a fatal error at startup.  If
@@ -282,6 +306,7 @@ GASNET_GNI_FMA_SHARING
   The default is to use dedicated FMA resources (which are expected to give
   better performance) unless it can be determined that the required resources
   would exceed the available resources in dedicated mode.
+  This variable is not required to be single-valued.
 
 GASNET_GNI_MDD_SHARING
   This controls the use of shared versus dedicated MDD resources, used for
@@ -292,6 +317,7 @@ GASNET_GNI_MDD_SHARING
   The value is a boolean: "0" to disable or "1" to enable the use of shared
   MDD resources.
   The default is use of shared MDD resources.
+  This variable is not required to be single-valued.
 
 GASNET_GNI_BTE_MULTI_CHANNEL
   The value is a boolean: "0" to disable or "1" to enable the use of all
@@ -313,6 +339,7 @@ GASNET_PHYSMEM_MAX
   "G" and "T" suffixes accepted to indicate units of Megabytes, Gigabytes,
   and Terabytes, respectively.
   The default is "0.8" (80% of estimated physical memory).
+  This variable is not required to be single-valued.
 
 GASNET_USE_UDREG
   AVAILABLE UNLESS CONFIGURED WITH --disable-[CONDUIT]-udreg.
@@ -320,11 +347,41 @@ GASNET_USE_UDREG
   UDREG library for caching of local memory registrations, and is
   intended primarily for debugging purposes.
   The default is enabled.
+  This variable is not required to be single-valued.
+
+GASNET_USE_CE
+  AVAILABLE ONLY ON ARIES NETWORK.
+  This gives a boolean: "0" to disable or "1" to enable the use of the Aries
+  Collective Engine (CE) for acceleration of certain collective operations
+  (barrier in particular).
+  The default is enabled.
+
+GASNET_USE_CE_PSHM
+  AVAILABLE ONLY ON ARIES NETWORK.
+  This gives a boolean: "0" to disable or "1" to enable the use of the Aries
+  CE when the count of processes per host exceeds what the CE can support
+  directly.  This uses a hybrid CE + shared-memory implementation when the
+  per-host process count is too large, but the per-host shared-memory
+  neighborhood count is not.
+  This setting is ignored if PSHM was disabled at configure time.
+  The default is enabled.
+
+GASNET_GNI_CE_RADIX
+  AVAILABLE ONLY ON ARIES NETWORK.
+  This gives an integer in the range 1 to 31 for the radix of the N-ary tree
+  tree used for inter-host communication by the Aries Collective Engine (CE).
+  Increased values of this parameter come at the expense of intra-host
+  communication.  If the sum of this value and the number of "leaves" per
+  host exceeds 32, then use of the Aries CE will be disabled.  Here "leaves"
+  means processes if GASNET_USE_CE_PSHM=0 at runtime (or PSHM was disabled at
+  configure time).  Otherwise it denotes shared-memory neighborhoods.
+  The default is 2.
 
 GASNET_DOMAIN_COUNT
 GASNET_GNI_PTHREADS_PER_DOMAIN
 GASNET_AM_DOMAIN_POLL_MASK
   AVAILABLE ONLY IF CONFIGURED WITH --enable-[CONDUIT]-multi-domain.
+  These three variables are not required to be single-valued.
   For their use, please see the multi-domain documentation under the
   "Optional configure-time settings" section, above.
 
@@ -388,11 +445,11 @@ Known problems:
   work-around, then you may pass the option --disable-bug3480-workaround to
   the cross-configure script.
   The most up-to-date information on this bug is maintained at:
-    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3480
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3480
   It is currently unknown if this problem is specific to Cray systems.
 
 * See the GASNet Bugzilla server for details on other known bugs:
-  http://gasnet-bugs.lbl.gov/
+  https://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

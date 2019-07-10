@@ -248,7 +248,6 @@ typedef enum {
   PRIV_BCAST,           // put data at addr (used for private broadcast)
   PRIV_BCAST_LARGE,     // put data at addr (used for private broadcast)
   FREE,                 // free data at addr
-  EXIT_ANY,             // <unused> to be used for exit_any() cleanup
   SHUTDOWN,             // tell nodes to get ready for shutdown
   BCAST_SEGINFO,        // broadcast for segment info table
   DO_REPLY_PUT,         // do a PUT here from another locale
@@ -528,24 +527,8 @@ static void AM_free(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handler
   chpl_mem_free(to_free, 0, 0);
 }
 
-// this is currently unused; it's intended to be used to implement
-// exit_any with cleanup on all nodes. 
-static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
-//  int **status = (int**)buf; // Some compilers complain about unused variable 'status'.
-  chpl_internal_error("clean exit_any is not implemented.");
-  // here we basically need to call chpl_exit_all, but we need to
-  // ensure only one thread calls chpl_exit_all on this locale.
-}
-
-static chpl_bool can_shutdown = false;
-static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-
 static void AM_shutdown(gasnet_token_t token) {
-  pthread_mutex_lock(&shutdown_mutex);
-  can_shutdown = true;
-  pthread_cond_signal(&shutdown_cond);
-  pthread_mutex_unlock(&shutdown_mutex);
+  chpl_signal_shutdown();
 }
 
 //
@@ -602,7 +585,6 @@ static gasnet_handlerentry_t ftable[] = {
   {PRIV_BCAST,    AM_priv_bcast},
   {PRIV_BCAST_LARGE, AM_priv_bcast_large},
   {FREE,          AM_free},
-  {EXIT_ANY,      AM_exit_any},
   {SHUTDOWN,      AM_shutdown},
   {BCAST_SEGINFO, AM_bcast_seginfo},
   {DO_REPLY_PUT,  AM_reply_put},
@@ -741,11 +723,36 @@ static volatile int pollingQuit;
 
 static void polling(void* x) {
   pollingRunning = 1;
+
   while (!pollingQuit) {
     (void) gasnet_AMPoll();
     chpl_task_yield();
   }
+
   pollingRunning = 0;
+}
+
+static void start_polling(void) {
+  pollingRunning = 0;
+  pollingQuit = 0;
+
+  if (chpl_task_createCommTask(polling, NULL)) {
+    chpl_internal_error("unable to start polling task for gasnet");
+  }
+
+  while (!pollingRunning) {
+    sched_yield();
+  }
+}
+
+static void stop_polling(chpl_bool wait) {
+  pollingQuit = 1;
+
+  if (wait) {
+    while (pollingRunning) {
+      sched_yield();
+    }
+  }
 }
 
 static void set_max_segsize_env_var(size_t size) {
@@ -866,10 +873,6 @@ void chpl_comm_post_mem_init(void) {
   chpl_comm_init_prv_bcast_tab();
 }
 
-int chpl_comm_numPollingTasks(void) {
-  return 1;
-}
-
 //
 // No support for gdb for now
 //
@@ -881,13 +884,7 @@ void chpl_comm_post_task_init(void) {
   //
   // Start a polling task on each locale.
   //
-  pollingRunning = 0;
-  pollingQuit = 0;
-  if (chpl_task_createCommTask(polling, NULL))
-    chpl_internal_error("unable to start polling task for gasnet");
-  while (!pollingRunning) {
-    sched_yield();
-  }
+  start_polling();
 
   // Initialize the caching layer, if it is active.
   chpl_cache_init();
@@ -1018,92 +1015,29 @@ void chpl_comm_pre_task_exit(int all) {
   if (all) {
 
     if (chpl_nodeID == 0) {
-     int node;
-     for (node = 0; node < chpl_numNodes; node++) {
-       if (node != chpl_nodeID) {
-          GASNET_Safe(gasnet_AMRequestShort0(node, SHUTDOWN));
-        }
+     for (int node = 1; node < chpl_numNodes; node++) {
+        GASNET_Safe(gasnet_AMRequestShort0(node, SHUTDOWN));
       }
     } else {
-      pthread_mutex_lock(&shutdown_mutex);
-      while (!can_shutdown) {
-        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
-      }
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_wait_for_shutdown();
     }
 
     chpl_comm_barrier("stop polling");
 
     //
-    // Tell the polling task to halt, then wait for it to do so.
+    // Tell the polling task to stop, then wait for it to do so.
     //
-    pollingQuit = 1;
-    while (pollingRunning) {
-      sched_yield();
-    }
+    stop_polling(/*wait*/ true);
   }
 }
-
-static void exit_common(int status) {
-  static int loopback = 0;
-
-  pollingQuit = 1;
-
-  if (chpl_nodeID == 0) {
-    if (loopback) {
-      gasnet_exit(2);
-    }
-  }
-
-  chpl_comm_barrier("exit_common_gasnet_exit"); 
-  //exit(); // depending on PAT exit strategy, maybe switch to this
-  gasnet_exit(status); // not a collective operation, but one locale will win and all locales will die.
-}
-
-static void exit_any_dirty(int status) {
-  // kill the polling task, but other than that...
-  // clean up nothing; just ask GASNet to exit
-  // GASNet will then kill all other locales.
-  static int loopback = 0;
-
-  pollingQuit = 1;
-
-  if (chpl_nodeID == 0) {
-    if (loopback) {
-      gasnet_exit(2);
-    }
-  }
-
-  gasnet_exit(status);
-}
-
-#ifdef GASNET_NEEDS_EXIT_ANY_CLEAN
-// this is currently unused; it's intended to be used to implement
-// exit_any with cleanup on all nodes
-static void exit_any_clean(int status) {
-  int* status_p = &status;
-  int node;
-
-  // notify all other nodes that this node is entering a clean exit_any
-  for (node = 0; node < chpl_numNodes; node++) {
-    if (node != chpl_nodeID) {
-      GASNET_Safe(gasnet_AMRequestMedium0(node, EXIT_ANY, &status_p, sizeof(status_p)));
-    }
-  }
-    
-  // (for code reuse) ask this node to perform a clean exit_any
-  GASNET_Safe(gasnet_AMRequestMedium0(chpl_nodeID, EXIT_ANY, &status_p, sizeof(status_p)));
-}
-#endif
 
 void chpl_comm_exit(int all, int status) {
-  if (all) {
-    exit_common(status);
-  }
-  else {
-    // when exit_any_clean is finished, consider switching to that.
-    exit_any_dirty(status); 
-  }
+  stop_polling(/*wait*/ false);
+
+  if (all)
+    chpl_comm_barrier("exit_comm_gasnet");
+
+  gasnet_exit(status);
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
@@ -1580,11 +1514,6 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     execute_on_common(node, subloc, fid, arg, arg_size,
                       /*fast*/ true, /*blocking*/ true);
   }
-}
-
-void chpl_comm_make_progress(void)
-{
-  gasnet_AMPoll();
 }
 
 void chpl_comm_task_end(void) { }

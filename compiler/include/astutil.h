@@ -193,6 +193,4 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 
 void convertToQualifiedRefs();
 
-bool isTupleTypeConstructor(FnSymbol* fn);
-
 #endif

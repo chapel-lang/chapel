@@ -11,7 +11,7 @@ proc returnsGlobalBorrow(arg: borrowed C) lifetime return globly {
 }
 
 proc ok0() {
-  var b: borrowed C;
+  var b: borrowed C?;
   {
     var own = new owned C(2);
     var bb = own.borrow();
@@ -27,7 +27,7 @@ proc getGlobalHashtableElement (key: C) lifetime return globalValue {
 }
 
 proc ok1() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   {
     var own = new owned C(2);
     var b = getGlobalHashtableElement(own.borrow());
@@ -58,7 +58,7 @@ proc returnOneOfThem (a: C, b: C) lifetime return b {
 }
 
 proc ok3() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   var outerOwn = new owned C(1);
   {
     var innerOwn = new owned C(2);
@@ -74,7 +74,7 @@ proc getGlobalHashtableElementGeneric (key) lifetime return globalValue {
 }
 
 proc ok4() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   {
     var own = new owned C(2);
     var b = getGlobalHashtableElementGeneric(own.borrow());
@@ -89,7 +89,7 @@ proc returnOneOfThemGeneric (a, b) lifetime return b {
 }
 
 proc ok5() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   var outerOwn = new owned C(1);
   {
     var innerOwn = new owned C(2);
