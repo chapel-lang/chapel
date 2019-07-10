@@ -53,7 +53,10 @@ record TargetLocaleComparator {
   type sparseLayoutType;
   var dist: unmanaged Block(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
-    return (dist.targetLocsIdx(a), a);
+    if sparseLayoutType == CS(compressRows=false) then
+      return (dist.targetLocsIdx(a), a[2], a[1]);
+    else
+      return (dist.targetLocsIdx(a), a[1], a[2]);
   }
 }
 
