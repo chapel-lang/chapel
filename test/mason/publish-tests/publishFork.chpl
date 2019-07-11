@@ -5,6 +5,6 @@ use TOML;
 use FileSystem;
 
 proc main(){
-  cloneMasonReg('test');
+  cloneMasonReg('test',here.cwd());
   return 0;
 }

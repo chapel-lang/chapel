@@ -97,28 +97,21 @@ proc publishPackage(username: string) throws {
   var stream = makeRandomStream(int);
   var uniqueDir = stream.getNext(): string;
   const name = getPackageName();
-  const safeDir = (name + '-' + uniqueDir);
+  const safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
   try! {
-    here.chdir(MASON_HOME);
-    if !exists('tmp') then mkdir('tmp');
-    here.chdir(MASON_HOME + '/tmp');
+    if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
     mkdir(safeDir);
-    here.chdir(absPath(safeDir));
-    cloneMasonReg(username);
-    here.chdir(packageLocation);
+    cloneMasonReg(username, safeDir);
     branchMasonReg(username, name, safeDir);
     addPackageToBricks(packageLocation, safeDir, name);
-    here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry");
-    runCommand("git add .");
-    runCommand("git commit -m '" + name + "'");
-    runCommand('git push --set-upstream origin ' + name, true);
-    here.chdir(MASON_HOME + '/tmp');
-    rmTree(safeDir);
+    gitC(safeDir + "/mason-registry", "git add .");
+    gitC(safeDir + "/mason-registry", "git commit -m '" + name + "'");
+    gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
+    rmTree(safeDir + '/');
     writeln('--------------------------------------------------------------------');
     writeln('Go to the above link to open up a Pull Request to the mason-registry');
   }
   catch {
-    here.chdir(MASON_HOME + '/tmp');
     rmTree(safeDir);
     writeln('Error publishing your package to the mason-registry');
   }
@@ -180,10 +173,10 @@ private proc getUsername() {
 }
 
 /* Clones the mason registry fork from the users repo. Takes username as input. */
-proc cloneMasonReg(username: string) throws {
+proc cloneMasonReg(username: string, safeDir : string) throws {
   try! {
     const gitClone = 'git clone git@github.com:';
-    var ret = runCommand(gitClone  + username + "/mason-registry mason-registry", true);
+    var ret = gitC(safeDir, gitClone  + username + "/mason-registry mason-registry", true);
     return ret;
   }
   catch {
@@ -209,13 +202,11 @@ private proc gitUrl() {
  name or branch is taken from the Mason.toml of the mason package.*/
 proc branchMasonReg(username: string, name: string, safeDir: string) throws {
   try! {
-    const masonReg = "/mason-registry/";
     const branchCommand = "git checkout -b "+ name: string;
-    var ret = gitC(MASON_HOME + '/tmp/' + safeDir + '/mason-registry', branchCommand, true);
+    var ret = gitC(safeDir + '/mason-registry', branchCommand, true);
     return ret;
   }
   catch {
-    here.chdir(MASON_HOME);
     rmTree(safeDir);
     writeln('Error branching mason-registry');
     exit(1);
@@ -225,16 +216,13 @@ proc branchMasonReg(username: string, name: string, safeDir: string) throws {
 /* Gets name from the Mason.toml */
 private proc getPackageName() throws {
   try! {
-    const cwd = absPath(getEnv("PWD"));
-    const projectHome = absPath(getProjectHome(cwd));
-    const toParse = open(projectHome + "/Mason.toml", iomode.r);
+    const toParse = open("Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
     const name = tomlFile['brick']['name'].s;
     return name;
   }
   catch {
-    here.chdir(MASON_HOME);
-    rmTree('/tmp');
+    rmTree(MASON_HOME + '/tmp');
     writeln('Error getting the name of your package, ensure your package is a mason project');
     exit(1);
   }
@@ -247,11 +235,9 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
   const url = gitUrl();
   var tomlFile = new owned(parseToml(toParse));
   const versionNum = tomlFile['brick']['version'].s;
-  here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/");
-  mkdir(name);
-  here.chdir(MASON_HOME + "/tmp/" + safeDir + "/mason-registry/Bricks/" + name + "/");
+  mkdir(safeDir + "/mason-registry/Bricks/" + name);
   const baseToml = tomlFile;
-  var newToml = open(versionNum + ".toml", iomode.cw);
+  var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
   var tomlWriter = newToml.writer();
   baseToml["brick"]["source"] = url[1..url.length-1];
   tomlWriter.write(baseToml);
