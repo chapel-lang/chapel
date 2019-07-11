@@ -3002,6 +3002,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_back(in val: this.eltType) lifetime this < val {
+      compilerWarning("push_back is deprecated - please use List.extend");
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 
@@ -3024,6 +3025,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_back(vals:_array) lifetime this < vals {
+      compilerWarning("push_back is deprecated - please use List.extend");
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 
@@ -3047,6 +3049,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc pop_back() {
+      compilerWarning("pop_back is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("pop_back() is only supported on dense 1D arrays");
 
@@ -3100,6 +3103,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_front(in val: this.eltType) lifetime this < val {
+      compilerWarning("push_front is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("push_front");
@@ -3117,6 +3121,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_front(vals:_array) lifetime this < vals {
+      compilerWarning("push_front is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
 
@@ -3141,6 +3146,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc pop_front() {
+      compilerWarning("pop_front is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("pop_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("pop_front");
@@ -3181,6 +3187,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc insert(pos: this.idxType, in val: this.eltType) {
+      compilerWarning("insert is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
@@ -3217,6 +3224,7 @@ module ChapelArray {
 
     */
     proc insert(pos: this.idxType, vals: []) {
+      compilerWarning("insert is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
@@ -3246,6 +3254,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType) {
+      compilerWarning("remove is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove");
@@ -3280,6 +3289,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType, count: this.idxType) {
+      compilerWarning("remove is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove count");
@@ -3318,6 +3328,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: range(this.idxType, stridable=false)) {
+      compilerWarning("remove has been deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove range");
@@ -3343,6 +3354,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc clear() {
+      compilerWarning("clear is deprecated - please use List.clear");
       if (!chpl__isDense1DArray()) then
         compilerError("clear() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("clear");
