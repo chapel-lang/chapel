@@ -535,6 +535,7 @@ private proc normalizeLeadingSlashCount(name: string): int {
   :rtype: `string`
 */
 proc normPath(name: string): string {
+  use Lists;
 
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
@@ -545,7 +546,7 @@ proc normPath(name: string): string {
   const leadingSlashes = normalizeLeadingSlashCount(name);
 
   var comps = name.split(pathSep);
-  var outComps : [1..0] string;
+  var outComps = new list(string);
 
   for comp in comps {
     if comp == "" || comp == curDir then
@@ -554,13 +555,13 @@ proc normPath(name: string): string {
     // Second case exists because we cannot go up past the top level.
     // Third case continues a chain of leading up-levels.
     if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
-        (!outComps.isEmpty() && outComps.back() == parentDir) then
-      outComps.push_back(comp);
+        (!outComps.isEmpty() && outComps[outComps.size] == parentDir) then
+      outComps.append(comp);
     else if !outComps.isEmpty() then
-      outComps.pop_back();
+      outComps.pop();
   }
 
-  var result = pathSep * leadingSlashes + pathSep.join(outComps);
+  var result = pathSep * leadingSlashes + pathSep.join(outComps.toArray());
 
   if result == "" then
     return curDir;
@@ -681,6 +682,8 @@ proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc relPath(name: string, start:string=curDir): string throws {
+  use Lists;
+
   const realstart = if start == "" then curDir else start;
 
   // NOTE: Reliance on locale.cwd() can't be avoided.
@@ -690,16 +693,18 @@ proc relPath(name: string, start:string=curDir): string throws {
   const prefixLen = commonPrefixLength(startComps, nameComps);
 
   // Append up-levels until we reach the point where the paths diverge.
-  var outComps : [1..(startComps.size - prefixLen)] string = parentDir;
+  var outComps = new list(string);
+  for i in 1..(startComps.size - prefixLen) do
+    outComps.append(parentDir);
 
   // Append the portion of name following the common prefix.
   if !nameComps.isEmpty() then
-    outComps.push_back(nameComps[(prefixLen + 1)..nameComps.size]);
+    outComps.append(nameComps[(prefixLen + 1)..nameComps.size]);
 
   if outComps.isEmpty() then
     return curDir;
 
-  return joinPath(outComps);
+  return joinPath(outComps.toArray());
 }
 
 /*
