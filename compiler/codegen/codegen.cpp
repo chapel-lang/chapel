@@ -1093,45 +1093,13 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
-
-//
-// Produce compilation-time configuration info into a .c file and
-// #include that .c into the current codegen output file.
-//
-// Only put C data objects into this file, not Chapel ones, as it may
-// also be #include'd into a launcher, and those are C/C++ code.
-//
-// New generated variables should be added to runtime/include/chplcgfns.h
-//
-static const char* sCfgFname = "chpl_compilation_config";
-
-static void codegen_header_compilation_config() {
+static void genConfigGlobalsAndAbout() {
   GenInfo* info = gGenInfo;
-  // We generate LLVM IR only when we are not using a launcher.
-  // For launchers, we generate C while using C or LLVM backends alike.
-  bool genConfigInLLVM = llvmCodegen && 0 == strcmp(CHPL_LAUNCHER, "none");
-  FILE* save_cfile = info->cfile;
-  fileinfo cfgfile = { NULL, NULL, NULL };
 
-  if (genConfigInLLVM) {
-    info->cfile = NULL;
-  } else {
-    openCFile(&cfgfile, sCfgFname, "c");
-
-    // follow convention of just not writing to the file if we can't open it
-    if (cfgfile.fptr) {
-#ifdef HAVE_LLVM
-      // So that the LLVM backend can use the config file with a launcher
-      gChplCompilationConfig = cfgfile;
-#endif
-      info->cfile = cfgfile.fptr;
-
-      genComment("Compilation Info");
-      fprintf(cfgfile.fptr, "\n#include <stdio.h>");
-      fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n\n");
-    } else {
-      return;
-    }
+  if (info->cfile) {
+    genComment("Compilation Info");
+    fprintf(info->cfile, "\n#include <stdio.h>");
+    fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
   }
 
   genGlobalString("chpl_compileCommand", compileCommand);
@@ -1155,8 +1123,10 @@ static void codegen_header_compilation_config() {
     }
   }
 
-  // generate the "chpl_program_about" function
-  if (genConfigInLLVM) {
+  if (info->cfile) {
+    fprintf(info->cfile, "\nvoid chpl_program_about(void);\n");
+    fprintf(info->cfile, "\nvoid chpl_program_about() {\n");
+  } else {
 #ifdef HAVE_LLVM
     llvm::FunctionType* programAboutType;
     llvm::Function* programAboutFunc;
@@ -1176,9 +1146,6 @@ static void codegen_header_compilation_config() {
     );
     info->irBuilder->SetInsertPoint(programAboutBlock);
 #endif
-  } else {
-    fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
-    fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
   }
 
   codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
@@ -1191,27 +1158,63 @@ static void codegen_header_compilation_config() {
     }
   }
 
-  if (genConfigInLLVM) {
+  if (info->cfile) {
+    fprintf(info->cfile, "}\n");
+  } else {
 #ifdef HAVE_LLVM
     info->irBuilder->CreateRetVoid();
 #endif
-  } else {
-    fprintf(cfgfile.fptr, "}\n");
   }
+}
 
+static void genFunctionTables() {
   genComment("Filename Lookup Table");
   genFilenameTable();
 
   genComment("Unwind symbol tables");
   genUnwindSymbolTable();
+}
 
-  if (!genConfigInLLVM) {
-    closeCFile(&cfgfile);
+//
+// Produce compilation-time configuration info into a .c file and
+// #include that .c into the current codegen output file.
+//
+// Only put C data objects into this file, not Chapel ones, as it may
+// also be #include'd into a launcher, and those are C/C++ code.
+//
+// New generated variables should be added to runtime/include/chplcgfns.h
+//
+static const char* sCfgFname = "chpl_compilation_config";
+
+static void codegen_header_compilation_config() {
+  const bool usingLauncher = 0 != strcmp(CHPL_LAUNCHER, "none");
+  // Generate C code only when not in LLVM mode or when using a launcher
+  const bool genCCode = usingLauncher || !llvmCodegen;
+
+  GenInfo* info = gGenInfo;
+  FILE* save_cfile = info->cfile;
+  fileinfo cfgfile = { NULL, NULL, NULL };
+
+  if (llvmCodegen) {
+    info->cfile = NULL;
+    genConfigGlobalsAndAbout();
+    genFunctionTables();
+  }
+
+  // Generate the about info and function tables for the C backend and for the launcher
+  if (genCCode) {
+    openCFile(&cfgfile, sCfgFname, "c");
+    // Follow convention of just not writing to the file if we can't open it
+    if (cfgfile.fptr) {
+      info->cfile = cfgfile.fptr;
+      genConfigGlobalsAndAbout();
+      genFunctionTables();
+      closeCFile(&cfgfile);
+    }
   }
 
   info->cfile = save_cfile;
 }
-
 
 static void protectNameFromC(Symbol* sym) {
   //
