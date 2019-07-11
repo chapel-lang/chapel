@@ -431,22 +431,6 @@ int minimumPrefix(const std::string& s) {
  * Find and remove same amount of whitespace from all lines of s.
  */
 std::string ltrimAllLines(std::string s) {
-  {
-    // Some little tests
-    std::string s;
-    s = "";
-    assert(isEmpty(s));
-    s = " ";
-    assert(isEmpty(s));
-    s = "  ";
-    assert(isEmpty(s));
-
-    s = " x";
-    assert(countLeadingSpaces(s) == 1);
-    s = "  x ";
-    assert(countLeadingSpaces(s) == 2);
-  }
-
   return erasePrefix(s, minimumPrefix(s));
 }
 
