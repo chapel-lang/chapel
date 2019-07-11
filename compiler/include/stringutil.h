@@ -69,11 +69,11 @@ uint64_t    hexStr2uint64(const char* str, bool userSupplied = false,
 
 // std::string utilities
        std::string erasePrefix(std::string s, int count);
-       std::string firstNonEmptyLine(std::string s);
-inline bool        isEmpty(std::string s);
+       std::string firstNonEmptyLine(const std::string& s);
+inline bool        isEmpty(const std::string& s);
 inline std::string ltrim(std::string s);
        std::string ltrimAllLines(std::string s);
-       int         minimumPrefix(std::string s);
+       int         minimumPrefix(const std::string& s);
 
 void readArgsFromString(std::string s, std::vector<std::string>& args);
 
