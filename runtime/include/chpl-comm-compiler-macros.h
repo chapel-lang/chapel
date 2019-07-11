@@ -44,24 +44,22 @@
 
 static inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                       size_t size, int32_t typeIndex,
-                       int32_t commID, int ln, int32_t fn)
+                       size_t size, int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
     chpl_memmove(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
+    chpl_cache_comm_get(addr, node, raddr, size, commID, ln, fn);
 #endif
   } else {
-    chpl_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
+    chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
   }
 }
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
-                            size_t size, int32_t typeIndex,
-                            int ln, int32_t fn)
+                            size_t size, int ln, int32_t fn)
 {
   const size_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   size_t offset;
@@ -76,7 +74,7 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
     }
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_prefetch(node, raddr, size, typeIndex, ln, fn);
+    chpl_cache_comm_prefetch(node, raddr, size, ln, fn);
 #endif
   } else {
     // Can't do anything if we don't have a remote data cache
@@ -87,49 +85,46 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                       size_t size, int32_t typeIndex,
-                       int32_t commID, int ln, int32_t fn)
+                       size_t size, int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
     chpl_memmove(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
+    chpl_cache_comm_put(addr, node, raddr, size, commID, ln, fn);
 #endif
   } else {
-    chpl_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
+    chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
   }
 }
 
 static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
-                       size_t elemSize, int32_t typeIndex,
-                       int32_t commID, int ln, int32_t fn)
+                       size_t elemSize, int32_t commID, int ln, int32_t fn)
 {
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
+    chpl_cache_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
 #endif
   } else {
-  chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
+    chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
   }
 }
 
 static inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
-                       size_t elemSize, int32_t typeIndex,
-                       int32_t commID, int ln, int32_t fn)
+                       size_t elemSize, int32_t commID, int ln, int32_t fn)
 {
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
+    chpl_cache_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
 #endif
   } else {
-  chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
+    chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
   }
 }
 

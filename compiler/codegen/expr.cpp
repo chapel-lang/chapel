@@ -2634,7 +2634,6 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
-/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7)
@@ -2649,7 +2648,6 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a7);
   codegenCall(fnName, args);
 }
-*/
 
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
@@ -2667,6 +2665,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -2684,6 +2683,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a9);
   codegenCall(fnName, args);
 }
+*/
 
 /*static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
@@ -2704,7 +2704,6 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }*/
 
-/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -2724,8 +2723,8 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a11);
   codegenCall(fnName, args);
 }
-*/
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -2746,6 +2745,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a12);
   codegenCall(fnName, args);
 }
+*/
 
 static
 GenRet codegenZero()
@@ -3276,7 +3276,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRnode(from),
                       codegenRaddr(from),
                       codegenSizeof(type),
-                      genTypeStructureIndex(type->symbol),
                       genCommID(info),
                       info->lineno, gFilenameLookupCache[info->filename]);
         }
@@ -3299,7 +3298,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRnode(to_ptr),
                       codegenRaddr(to_ptr),
                       codegenSizeof(type),
-                      genTypeStructureIndex(type->symbol),
                       genCommID(info),
                       info->lineno, gFilenameLookupCache[info->filename]);
         }
@@ -4098,7 +4096,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     // do an unordered GET
     // chpl_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
-    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
 
     dst = codegenValuePtr(dst);
@@ -4110,14 +4108,13 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 codegenRnode(src),
                 codegenRaddr(src),
                 size,
-                genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
                 ln, fn);
   } else if (lhsWide && !rhsWide) {
     // do an unordered PUT
     // chpl_comm_put_unordered(void *src,
     //   c_nodeid_t dst_locale, void* dst_raddr,
-    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
 
     src = codegenValuePtr(src);
@@ -4129,7 +4126,6 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 codegenRnode(dst),
                 codegenRaddr(dst),
                 size,
-                genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
                 ln, fn);
   } else {
@@ -4137,7 +4133,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     // chpl_comm_getput_unordered(
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   c_nodeid_t src_locale, void* src_raddr,
-    //   size_t size, int32_t typeIndex, int32_t commID,
+    //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
     codegenCall("chpl_comm_getput_unordered",
                 codegenRnode(dst),
@@ -4145,7 +4141,6 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 codegenRnode(src),
                 codegenRaddr(src),
                 size,
-                genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
                 ln, fn);
   }
@@ -4263,7 +4258,6 @@ DEFINE_PRIM(PRIM_MAX) {
 DEFINE_PRIM(PRIM_SETCID) {
     // get(1) is the object
     // (type=chpl__class_id,
-    //  tid=CHPL_TYPE_int32_t,
     //  wide=get(1),
     //  local=chpl__cid_<type>,
     //  stype=dtObject->typeInfo(),
@@ -4511,7 +4505,6 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
                   locale,
                   remoteAddr,
                   size,
-                  genTypeStructureIndex(dt),
                   genCommID(gGenInfo),
                   call->get(5),
                   call->get(6));
@@ -4710,7 +4703,6 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
                 codegenCastToVoidStar(count),
                 stridelevels,
                 eltSize,
-                genTypeStructureIndex(dt),
                 genCommID(gGenInfo),
                 call->get(8),
                 call->get(9));
@@ -4874,8 +4866,7 @@ DEFINE_PRIM(PRIM_BROADCAST_GLOBAL_VARS) {
 DEFINE_PRIM(PRIM_PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",
                 call->get(1),
-                codegenSizeof(call->get(2)->typeInfo()),
-                genTypeStructureIndex(call->get(2)->typeInfo()->symbol));
+                codegenSizeof(call->get(2)->typeInfo()));
 }
 
 DEFINE_PRIM(PRIM_INT_ERROR) {

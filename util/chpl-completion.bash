@@ -67,7 +67,6 @@ _chpl ()
 --help \
 --help-env \
 --help-settings \
---heterogeneous \
 --home \
 --html \
 --html-chpl-home \

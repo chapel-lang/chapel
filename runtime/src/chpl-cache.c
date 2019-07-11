@@ -1736,7 +1736,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
                              (void*)(entry->raddr+start),
-                             got_len /*size*/, -1/*typei*/,
+                             got_len /*size*/,
                              CHPL_COMM_UNKNOWN_ID, -1, 0);
 
           // Save the handle in the list of pending requests.
@@ -2475,7 +2475,7 @@ void cache_get(struct rdcache_s* cache,
     handle = 
       chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
                        node, (void*) ra_line,
-                       ra_line_end - ra_line /*size*/, -1/*typei*/,
+                       ra_line_end - ra_line /*size*/,
                        commID, ln, fn);
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get2);
@@ -2788,8 +2788,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 }
 
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t typeIndex,
-                         int32_t commID, int ln, int32_t fn)
+                         size_t size, int32_t commID, int ln, int32_t fn)
 {
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
@@ -2812,8 +2811,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t typeIndex,
-                         int32_t commID, int ln, int32_t fn)
+                         size_t size, int32_t commID, int ln, int32_t fn)
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
@@ -2836,8 +2834,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t size, int32_t typeIndex,
-                              int ln, int32_t fn)
+                              size_t size, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -2851,8 +2848,7 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
 void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t typeIndex, int32_t commID,
-                              int ln, int32_t fn) {
+                              int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
@@ -2864,13 +2860,12 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   chpl_cache_fence(1, 1, ln, fn);
   // do the strided get.
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, commID, ln, fn);
+                     elemSize, commID, ln, fn);
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t typeIndex, int32_t commID,
-                              int ln, int32_t fn) {
+                              int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
@@ -2882,7 +2877,7 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   chpl_cache_fence(1, 1, ln, fn);
   // do the strided put.
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, commID, ln, fn);
+                     elemSize, commID, ln, fn);
 }
 
 // This is for debugging.

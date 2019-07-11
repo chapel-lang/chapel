@@ -152,7 +152,6 @@ extern bool fIgnoreLocalClasses;
 extern bool fLifetimeChecking;
 extern bool fCompileTimeNilChecking;
 extern bool fOverrideChecking;
-extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 
