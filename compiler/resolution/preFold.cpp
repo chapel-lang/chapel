@@ -586,6 +586,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
 
+    if (isManagedPtrType(call->get(1)->typeInfo()))
+      INT_FATAL(call, "Cannot convert managed type");
+
     if (isTypeExpr(call->get(1))) {
       retval = new SymExpr(totype->symbol);
     } else {

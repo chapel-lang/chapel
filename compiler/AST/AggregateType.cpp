@@ -2504,8 +2504,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
     case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
     case CLASS_TYPE_GENERIC:           packedDecorator =  3; break;
-    case CLASS_TYPE_GENERIC_NONNIL:    packedDecorator =  3; break;
-    case CLASS_TYPE_GENERIC_NILABLE:   packedDecorator =  4; break;
+    case CLASS_TYPE_GENERIC_NONNIL:    packedDecorator =  4; break;
+    case CLASS_TYPE_GENERIC_NILABLE:   packedDecorator =  5; break;
       // intentionally no default
   }
 
@@ -2553,7 +2553,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
       tsDec->addFlag(FLAG_GENERIC);
     // Generic management is generic
-    if (removeNilableFromDecorator(d) == CLASS_TYPE_GENERIC)
+    if (isDecoratorUnknownManagement(d))
       tsDec->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsDec->cname = at->symbol->cname;

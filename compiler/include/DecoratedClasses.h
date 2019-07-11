@@ -39,7 +39,7 @@ typedef enum {
 #define NUM_DECORATED_CLASS_TYPES (11)
 #define CLASS_TYPE_MANAGEMENT_MASK (0xfc)
 #define CLASS_TYPE_NILABILITY_MASK (0x03)
-#define NUM_PACKED_DECORATED_TYPES 5
+#define NUM_PACKED_DECORATED_TYPES 6
 
 static inline ClassTypeDecorator removeNilableFromDecorator(ClassTypeDecorator d) {
   int tmp = d;
@@ -64,6 +64,12 @@ static inline bool isDecoratorNonNilable(ClassTypeDecorator d) {
 }
 static inline bool isDecoratorNilable(ClassTypeDecorator d) {
   return (d & CLASS_TYPE_NILABILITY_MASK) == 2;
+}
+static inline bool isDecoratorManaged(ClassTypeDecorator d) {
+  return removeNilableFromDecorator(d) == CLASS_TYPE_MANAGED;
+}
+static inline bool isDecoratorUnknownManagement(ClassTypeDecorator d) {
+  return removeNilableFromDecorator(d) == CLASS_TYPE_GENERIC;
 }
 
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className);

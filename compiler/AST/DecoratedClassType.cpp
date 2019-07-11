@@ -30,27 +30,51 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
     case CLASS_TYPE_BORROWED:
       return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NONNIL:
-      return astr("borrowed ", className); //, "!");
+      if (developer)
+        return astr("borrowed ", className, "!");
+      else
+        return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
     case CLASS_TYPE_UNMANAGED:
       return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NONNIL:
-      return astr("unmanaged ", className); //, "!");
+      if (developer)
+        return astr("unmanaged ", className, "!");
+      else
+        return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
     case CLASS_TYPE_MANAGED:
-      return astr(className);
+      if (developer)
+        return astr("managed ", className);
+      else
+        return astr(className);
     case CLASS_TYPE_MANAGED_NONNIL:
-      return astr(className, "!");
+      if (developer)
+        return astr("managed ", className, "!");
+      else
+        return astr(className, "!");
     case CLASS_TYPE_MANAGED_NILABLE:
-      return astr(className, "?");
+      if (developer)
+        return astr("managed ", className, "?");
+      else
+        return astr(className, "?");
     case CLASS_TYPE_GENERIC:
-      return astr(className);
+      if (developer)
+        return astr("anymanaged ", className);
+      else
+        return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
-      return astr(className); //, "!");
+      if (developer)
+        return astr("anymanaged ", className, "!");
+      else
+        return astr(className);
     case CLASS_TYPE_GENERIC_NILABLE:
-      return astr(className, "?");
+      if (developer)
+        return astr("anymanaged ", className, "?");
+      else
+        return astr(className, "?");
     // no default for help from compilation errors
   }
   INT_FATAL("Case not handled");

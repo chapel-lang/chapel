@@ -969,10 +969,31 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
         // TODO: remove constraint for user code only
         if (usymExpr->getModule()->modTag == MOD_USER) {
-	  // Switch to using the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-	  ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
-	  Type* t = getDecoratedClass(sym->type, d);
-	  sym = t->symbol;
+
+          bool defaultIsGenericHere = true;
+
+          // This exception is for type method calls e.g. MyClass.typeMethod()
+          // TODO: remove and replace with any-generic
+          if (CallExpr* inCall = toCallExpr(usymExpr->parentExpr)) {
+            if (inCall->isPrimitive(PRIM_GET_MEMBER) || inCall->isNamed(".")) {
+              if (CallExpr* parentCall = toCallExpr(inCall->parentExpr)) {
+                if (inCall == parentCall->baseExpr) {
+                  defaultIsGenericHere = false;
+                }
+              }
+              // TODO: exceptions for
+              //   - _owned(MyClass) - type ctor gets borrow type
+              //   - formal type for method receivers
+              //   - actual receiver for type methods
+            }
+          }
+
+          if (defaultIsGenericHere) {
+            // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+            ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+            Type* t = getDecoratedClass(sym->type, d);
+            sym = t->symbol;
+          }
         }
       }
     }
@@ -1525,10 +1546,10 @@ static void adjustTypeMethodsOnClasses() {
     }
 
     // Update the type of 'this'.
-    thisArg->type = dtAny;
+    thisArg->type = getDecoratedClass(thisType, CLASS_TYPE_GENERIC);
 
     // The desired where-expression. Clean up this.type for isSubtype().
-    SET_LINENO(thisArg);
+    /*SET_LINENO(thisArg);
     Expr* isSubtype = new_Expr(
      "'is_subtype'(%S,'to borrowed class'('to non nilable class'(%S)))",
      thisType->symbol, thisArg);
@@ -1542,7 +1563,7 @@ static void adjustTypeMethodsOnClasses() {
       fn->where = new BlockStmt(isSubtype);
       insert_help(fn->where, NULL, fn);
       fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
-    }
+    }*/
   }
 }
 

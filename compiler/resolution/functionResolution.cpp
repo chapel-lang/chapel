@@ -1103,7 +1103,7 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
     actual = CLASS_TYPE_MANAGED_NONNIL;
 
   // Shouldn't have generic actuals right now.
-  if (removeNilableFromDecorator(actual) == CLASS_TYPE_GENERIC)
+  if (isDecoratorUnknownManagement(actual))
     return false;
 
   switch (formal) {
@@ -1164,7 +1164,7 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     actual = CLASS_TYPE_MANAGED_NONNIL;
 
   // Shouldn't have generic actuals right now.
-  if (removeNilableFromDecorator(actual) == CLASS_TYPE_GENERIC)
+  if (isDecoratorUnknownManagement(actual))
     return false;
 
   switch (formal) {
@@ -6670,7 +6670,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type, bool decayToBorrow) {
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     type = dt->getCanonicalClass();
     decorator = dt->getDecorator();
-    if (CLASS_TYPE_GENERIC == removeNilableFromDecorator(decorator))
+    if (isDecoratorUnknownManagement(decorator))
       isDecoratedGeneric = true;
     if (decayToBorrow) {
       if (isDecoratorNilable(decorator))
@@ -9276,8 +9276,7 @@ void printUndecoratedClassTypeNote(CallExpr* call, Type* type) {
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     if (AggregateType* at = dt->getCanonicalClass()) {
       if (!at->symbol->hasFlag(FLAG_GENERIC)) {
-        if (CLASS_TYPE_GENERIC ==
-            removeNilableFromDecorator(dt->getDecorator())) {
+        if (isDecoratorUnknownManagement(dt->getDecorator())) {
           if (isDecoratorNilable(dt->getDecorator())) {
             USR_PRINT(call, "'%s?' "
                             "now means nilable class with any management",

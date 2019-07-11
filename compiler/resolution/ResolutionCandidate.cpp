@@ -417,10 +417,19 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
 
       // Adjust the formalDecorator to use when instantiating
       // according to the actual decorator, when formalDecorator is generic.
+      if (isDecoratorUnknownManagement(formalDecorator)) {
+        ClassTypeDecorator a = removeNilableFromDecorator(actualDecorator);
+        if (isDecoratorNilable(formalDecorator))
+          formalDecorator = addNilableToDecorator(a);
+        else if (isDecoratorNonNilable(formalDecorator))
+          formalDecorator = addNonNilToDecorator(a);
+        else
+          formalDecorator = a;
+      }
       if (isDecoratorUnknownNilability(formalDecorator)) {
         if (isDecoratorNilable(actualDecorator))
           formalDecorator = addNilableToDecorator(formalDecorator);
-        else
+        else if (isDecoratorNonNilable(actualDecorator))
           formalDecorator = addNonNilToDecorator(formalDecorator);
       }
 
@@ -436,9 +445,19 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
 
       // handle e.g. unmanaged MyClass actual -> borrowed MyClass? formal
       if (canInstantiate(canonicalActual, canonicalFormal)) {
+        // any-management formal -> return actual
+        if (isDecoratorManaged(formalDecorator)) {
+          // If these assertions fail, we'd have to compute
+          // another instantiation of owned etc...
+          INT_ASSERT(isDecoratorNilable(actualDecorator) ==
+                     isDecoratorNilable(formalDecorator));
+          INT_ASSERT(isDecoratorNonNilable(actualDecorator) ==
+                     isDecoratorNonNilable(formalDecorator));
+          return actualType;
+        }
+
         // Then compute the instantiation type as the actual
         // with the formal's decorator.
-        // This should return e.g. _owned? in certain cases.
         return getDecoratedClass(canonicalActual, formalDecorator);
       }
     }
