@@ -125,7 +125,6 @@ class SparseBlockDom: BaseSparseDomImpl {
     on dist.dsiIndexToLocale(ind) {
       _retval = locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
     }
-    nnz += _retval;
     return _retval;
   }
 
@@ -183,7 +182,6 @@ class SparseBlockDom: BaseSparseDomImpl {
       _totalAdded.add(_retval);
     }
     const _retval = _totalAdded.read();
-    nnz += _retval;
     return _retval;
   }
 
@@ -271,7 +269,6 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   override proc dsiClear() {
-    nnz = 0;
     coforall locDom in locDoms do
       on locDom do
         locDom.dsiClear();
