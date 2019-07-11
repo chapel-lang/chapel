@@ -113,6 +113,10 @@ class SparseBlockDom: BaseSparseDomImpl {
     }
   }
 
+  override proc getNNZ() {
+    return + reduce ([ld in locDoms] ld.mySparseBlock.size);
+  }
+
   // TODO: For some reason I have to make all the methods for these classes primary
   // rather than secondary methods.  This doesn't seem right, but I couldn't boil
   // it down to a smaller test case in the time I spent on it.
