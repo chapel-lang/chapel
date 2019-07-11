@@ -706,12 +706,10 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   CallExpr* newCall = new CallExpr(entry->defaultExprFn);
   bool throws = newCall->resolvedFunction()->throwsError();
 
-  // If the new call throws and it was in a 'try' or 'try!' before
-  // we moved it, put it into a new 'try' or 'try!'
-  if (throws && call->tryTag == TRY_TAG_IN_TRYBANG)
+  // If the new call throws and it was in a 'try!' before
+  // we moved it, put it into a new 'try!'
+  if (throws && call->tryTag == TRY_TAG_IN_TRYBANG) 
     newCall = new CallExpr(PRIM_TRYBANG_EXPR, newCall);
-  else if (throws && call->tryTag == TRY_TAG_IN_TRY)
-    newCall = new CallExpr(PRIM_TRY_EXPR, newCall);
 
   // Add method token, this if needed
   if (fn->hasFlag(FLAG_METHOD) &&
