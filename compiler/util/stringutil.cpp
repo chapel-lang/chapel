@@ -416,7 +416,7 @@ int minimumPrefix(const std::string& s) {
     }
 
     // Find the first non-space character. Record if it is the new minimum.
-    for (size_t i=0; i < minPrefix && i < line.length(); i++) {
+    for (size_t i=0; (int)i < minPrefix && i < line.length(); i++) {
       if (!std::isspace(line[i])) {
         minPrefix = i;
         break;
