@@ -3067,7 +3067,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
       }
       _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
     } else {
-      var notNilX = _to_nonnil(x.borrow());
+      var notNilX = x!;
       notNilX.writeThis(writer);
     }
   } else {
