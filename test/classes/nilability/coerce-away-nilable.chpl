@@ -1,6 +1,6 @@
 class MyClass { var x:int; }
 
-var nilable:MyClass?;
+var nilable:borrowed MyClass?;
 writeln(nilable);
 
-var notNilable:MyClass = nilable;
+var notNilable:borrowed MyClass = nilable;

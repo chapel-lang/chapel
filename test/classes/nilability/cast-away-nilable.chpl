@@ -1,12 +1,12 @@
 class MyClass { var x:int; }
 
-var nilable:MyClass?;
+var nilable:borrowed MyClass?;
 nilable = (new owned MyClass(2)).borrow();
 writeln(nilable);
 
-var notNilable = nilable:MyClass;
+var notNilable = nilable:borrowed MyClass;
 writeln(notNilable);
 
 nilable = nil;
-notNilable = nilable:MyClass;
+notNilable = nilable:borrowed MyClass;
 // Expecting an error thrown
