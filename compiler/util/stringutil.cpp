@@ -309,7 +309,7 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
 
 inline int countLeadingSpaces(const std::string& s) {
   int leadingSpaces = 0;
-  for (int i=0; i < s.length(); i++) {
+  for (size_t i=0; i < s.length(); i++) {
     if (std::isspace(s[i]))
       leadingSpaces++;
     else
@@ -416,7 +416,7 @@ int minimumPrefix(const std::string& s) {
     }
 
     // Find the first non-space character. Record if it is the new minimum.
-    for (int i=0; i < minPrefix && i < line.length(); i++) {
+    for (size_t i=0; i < minPrefix && i < line.length(); i++) {
       if (!std::isspace(line[i])) {
         minPrefix = i;
         break;
