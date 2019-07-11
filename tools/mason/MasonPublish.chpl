@@ -93,7 +93,7 @@ proc masonPublish(args: [] string) throws {
  Takes the package owners GitHub username as input will throw errors through command
 line git commands if any of the git calls fails.*/
 proc publishPackage(username: string) throws {
-  const packageLocation = here.cwd();
+  const packageLocation = absPath(here.cwd());
   var stream = makeRandomStream(int);
   var uniqueDir = stream.getNext(): string;
   const name = getPackageName();
@@ -103,7 +103,7 @@ proc publishPackage(username: string) throws {
     if !exists('tmp') then mkdir('tmp');
     here.chdir(MASON_HOME + '/tmp');
     mkdir(safeDir);
-    here.chdir(safeDir);
+    here.chdir(absPath(safeDir));
     cloneMasonReg(username);
     here.chdir(packageLocation);
     branchMasonReg(username, name, safeDir);
@@ -225,8 +225,8 @@ proc branchMasonReg(username: string, name: string, safeDir: string) throws {
 /* Gets name from the Mason.toml */
 private proc getPackageName() throws {
   try! {
-    const cwd = getEnv("PWD");
-    const projectHome = getProjectHome(cwd);
+    const cwd = absPath(getEnv("PWD"));
+    const projectHome = absPath(getProjectHome(cwd));
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
     const name = tomlFile['brick']['name'].s;
@@ -256,4 +256,4 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
   baseToml["brick"]["source"] = url[1..url.length-1];
   tomlWriter.write(baseToml);
   tomlWriter.close();
- }
+}
