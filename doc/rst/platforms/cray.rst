@@ -68,58 +68,56 @@ installed, do the following:
 
 
 2) Make sure you are using the Cray Gnu-based programming environment.
-   Unload any other PrgEnv first, if necessary.
+   Unload any other PrgEnv first, if necessary. ::
 
      module load PrgEnv-gnu
 
 
 3) Specify some interim settings.  We expect the need for these will
    disappear soon, but for now they're required.  First, unload the
-   ``cray-libsci`` module, if it's loaded:
+   ``cray-libsci`` module, if it's loaded::
 
      module unload cray-libsci
 
-   Then, set some environment variables:
+   Then, set some environment variables::
 
      export CHPL_LAUNCHER=slurm-srun
      export CRAYPE_LINK_TYPE=dynamic
      export LIBFABRIC_DIR=/opt/cray/libfabric/1.8.0a1-85f6e641a
      export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
 
-4) Compile an example program using::
+4) Compile an example program like this::
 
      chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-5) Execute the resulting executable (on 2 locales)::
+5) Execute the resulting executable on 2 locales::
 
      ./hello6-taskpar-dist -nl 2
 
 
 Note that currently the number of Chapel configurations available on
 Shasta systems is quite limited.  Only the following have been built
-into the module:
+into the module::
 
-    .. code-block:: sh
-
-      CHPL_TARGET_PLATFORM: cray-shasta
-      CHPL_TARGET_COMPILER: cray-prgenv-gnu
-      CHPL_TARGET_ARCH: x86_64
-      CHPL_TARGET_CPU: sandybridge
-      CHPL_LOCALE_MODEL: flat
-      CHPL_COMM: none, ofi
-      CHPL_TASKS: qthreads
-      CHPL_LAUNCHER: none
-      CHPL_TIMERS: generic
-      CHPL_UNWIND: none
-      CHPL_MEM: jemalloc
-      CHPL_ATOMICS: cstdlib
-        CHPL_NETWORK_ATOMICS: none, ofi
-      CHPL_GMP: none
-      CHPL_HWLOC: hwloc
-      CHPL_REGEXP: none
-      CHPL_LLVM: none
-      CHPL_AUX_FILESYS: none
+  CHPL_TARGET_PLATFORM: cray-shasta
+  CHPL_TARGET_COMPILER: cray-prgenv-gnu
+  CHPL_TARGET_ARCH: x86_64
+  CHPL_TARGET_CPU: sandybridge
+  CHPL_LOCALE_MODEL: flat
+  CHPL_COMM: none, ofi
+  CHPL_TASKS: qthreads
+  CHPL_LAUNCHER: none
+  CHPL_TIMERS: generic
+  CHPL_UNWIND: none
+  CHPL_MEM: jemalloc
+  CHPL_ATOMICS: cstdlib
+    CHPL_NETWORK_ATOMICS: none, ofi
+  CHPL_GMP: none
+  CHPL_HWLOC: hwloc
+  CHPL_REGEXP: none
+  CHPL_LLVM: none
+  CHPL_AUX_FILESYS: none
 
 You may be able to build Chapel from source on a Shasta system if you do
 not have a module already.  Generally you should be able to follow the
