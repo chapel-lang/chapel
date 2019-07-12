@@ -1240,9 +1240,13 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
    :type parents: `bool`
 
    :throws SystemError: Thrown to describe an error if one occurs.
+   :throws IllegalArgumentError: when `name` is empty.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
   extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
+
+  if name.isEmpty() then
+    throw new owned IllegalArgumentError("mkdir called with empty string");
 
   var err = chpl_fs_mkdir(name.localize().c_str(), mode, parents);
   if err then try ioerror(err, "in mkdir", name);
