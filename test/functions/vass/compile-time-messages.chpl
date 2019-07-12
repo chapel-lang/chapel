@@ -112,7 +112,7 @@ proc TEST_CLASS(type ARG_TYPE) {
   param LOC_ALIAS_PARAM1 = LOC_VAR1.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: string);
 
-  var LOC_VAR2: LOC_TYPE;
+  var LOC_VAR2: borrowed LOC_TYPE;
   compilerWarning(LOC_VAR2.type:string);
   compilerWarning(LOC_VAR2.FIELD_TYPE:string);
   compilerWarning(LOC_VAR2.METHOD_PARAM: string);
@@ -148,7 +148,7 @@ proc TEST_RECORD(type ARG_TYPE) {
   param LOC_ALIAS_PARAM1 = LOC_VAR1.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: string);
 
-  var LOC_VAR2: LOC_TYPE;
+  var LOC_VAR2: borrowed LOC_TYPE;
   compilerWarning(LOC_VAR2.type:string);
   compilerWarning(LOC_VAR2.FIELD_TYPE:string);
   compilerWarning(LOC_VAR2.METHOD_PARAM: string);

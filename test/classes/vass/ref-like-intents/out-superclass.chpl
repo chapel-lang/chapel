@@ -3,12 +3,12 @@ class D:C {
   proc procInD() { writeln("got a D"); }
 }
 
-proc procOutD(out arg: D?) {
+proc procOutD(out arg: borrowed D?) {
   arg = new D();
 }
 
-var c: C?;
-var d: D?;
+var c: borrowed C?;
+var d: borrowed D?;
 
 procOutD(d); // OK
 procOutD(c); // works; disallowed by the current implementation
