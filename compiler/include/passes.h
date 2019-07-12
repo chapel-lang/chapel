@@ -104,6 +104,9 @@ void deadBlockElimination();
 void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
+// foralls.cpp
+void checkTypeParamOuterVar(SymExpr* outerSE);
+
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 

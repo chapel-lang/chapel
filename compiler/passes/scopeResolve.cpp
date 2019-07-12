@@ -1301,6 +1301,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
       // The desired case.
       svar->outerVarSE = new SymExpr(ovar);
       insert_help(svar->outerVarSE, NULL, svar);
+      checkTypeParamOuterVar(svar->outerVarSE);
     }
   } else {
     USR_FATAL_CONT(svar,

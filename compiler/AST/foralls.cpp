@@ -155,6 +155,13 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
 ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
                                     Expr* nameExp, Expr* type, Expr* init)
 {
+  if (SymExpr* nameSE = toSymExpr(nameExp)) {
+    checkTypeParamOuterVar(nameSE);
+    // when can this happen?
+    USR_FATAL(nameSE, "forall and task intents on '%s' are not implemented",
+              nameSE->symbol()->name);
+  }
+
   const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
 
   if (type == NULL && init == NULL)
@@ -176,6 +183,12 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
 
 void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
   call->insertAtTail(svar->defPoint);
+}
+
+void checkTypeParamOuterVar(SymExpr* outerSE) {
+  Symbol* outerSym = outerSE->symbol();
+  if (outerSym->hasFlag(FLAG_TYPE_VARIABLE) || outerSym->hasFlag(FLAG_PARAM))
+    USR_FATAL(outerSE, "cannot apply a forall or task intent to a type or a param, here '%s'", outerSym->name);
 }
 
 
