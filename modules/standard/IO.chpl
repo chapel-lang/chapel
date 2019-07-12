@@ -3066,9 +3066,12 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
         iolit = new ioLiteral("nil");
       }
       _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
-    } else {
+    } else if isClassType(t) {
       var notNilX = x!;
       notNilX.writeThis(writer);
+    } else {
+      // ddata / cptr
+      x.writeThis(writer);
     }
   } else {
     x.writeThis(writer);
