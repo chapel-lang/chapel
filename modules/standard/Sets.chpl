@@ -123,6 +123,18 @@ module Sets {
     }
 
     /*
+      Add a copy of each element contained in `iterable` to this set. If an
+      element from `iterable` is already contained in this set, it will not
+      be added again. The formal `iterable` must be a type with an iterator
+      defined for it.
+
+      :arg iterable: A collection of elements to add to this set.
+    */
+    proc addBulk(iterable) {
+      return;
+    }
+
+    /*
       Returns `true` if the given element is a member of this set, and `false`
       otherwise.
 
@@ -235,8 +247,8 @@ module Sets {
 
     /*
       Returns a new DefaultRectangular array containing a copy of each of the
-      elements contained in this set. The returned array is sorted according
-      to the default sort order of its elements.
+      elements contained in this set. The elements of the returned array are
+      not guaranteed to follow any particular ordering.
     */
     proc const toArray(): [] eltType {
       return nil;
@@ -245,13 +257,13 @@ module Sets {
   } // End record "set".
 
   /*
-    Clear the contents of this set, then iterate through the contents of `rhs`
-    and add a copy of each element to this set.
+    Clear the contents of the set `lhs`, then iterate through the contents of
+    `rhs` and add a copy of each element to `lhs`.
 
     .. warning::
 
       This will invalidate any references to elements previously contained in
-      `lhs`.
+      the set `lhs`.
 
     :arg lhs: The set to assign to.
     :arg rhs: The set to assign from. 
@@ -263,13 +275,57 @@ module Sets {
   /*
     Return a new set that contains the union of two sets.
 
-    :arg a: A set to take the difference of.
-    :arg b: A set to take the difference of.
+    :arg a: A set to take the union of.
+    :arg b: A set to take the union of.
 
-    :return: A new set containing the difference between `a` and `b`.
+    :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
+    return new set(t, false);
+  }
+
+  /*
+    Assign to the set `lhs` the set that is the union of `lhs` and `rhs`.
+
+    .. warning::
+
+      This will invalidate any references to elements previously contained in
+      the set `lhs`.
+
+    :arg lhs: A set to take the union of and then assign to.
+    :arg rhs: A set to take the union of.
+  */
+  proc |=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+    return new set(t, false);
+  }
+
+  /*
+    Return a new set that contains the union of two sets. Alias for the `|`
+    operator.
+
+    :arg a: A set to take the union of.
+    :arg b: A set to take the union of.
+
+    :return: A new set containing the union between `a` and `b`.
+    :rtype: `set(?t, ?)`
+  */
+  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
+    return a | b;
+  }
+
+  /*
+    Assign to the set `lhs` the set that is the union of `lhs` and `rhs`.
+
+    .. warning::
+
+      This will invalidate any references to elements previously contained in
+      the set `lhs`.
+
+    :arg lhs: A set to take the union of and then assign to.
+    :arg rhs: A set to take the union of.
+  */
+  proc +=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     return new set(t, false);
   }
 
@@ -287,6 +343,21 @@ module Sets {
   }
 
   /*
+    Assign to the set `lhs` the set that is the difference of `lhs` and `rhs`.
+
+    .. warning::
+
+      This will invalidate any references to elements previously contained in
+      the set `lhs`.
+
+    :arg lhs: A set to take the difference of and then assign to.
+    :arg rhs: A set to take the difference of.
+  */
+  proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+    return new set(t, false);
+  }
+
+  /*
     Return a new set that contains the intersection of two sets.
 
     :arg a: A set to take the intersection of.
@@ -300,6 +371,22 @@ module Sets {
   }
 
   /*
+    Assign to the set `lhs` the set that is the intersection of `lhs` and
+    `rhs`.
+
+    .. warning::
+
+      This will invalidate any references to elements previously contained in
+      the set `lhs`.
+
+    :arg lhs: A set to take the intersection of and then assign to.
+    :arg rhs: A set to take the intersection of.
+  */
+  proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+    return new set(t, false);
+  }
+
+  /*
     Return the symmetric difference of two sets.
 
     :arg a: A set to take the symmetric difference of.
@@ -310,6 +397,22 @@ module Sets {
   */
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return setSymmetricDiff(a, b);
+  }
+
+  /*
+    Assign to the set `lhs` the set that is the symmetric difference of `lhs`
+    and `rhs`.
+
+    .. warning::
+
+      This will invalidate any references to elements previously contained in
+      the set `lhs`.
+
+    :arg lhs: A set to take the symmetric difference of and then assign to.
+    :arg rhs: A set to take the symmetric difference of.
+  */
+  proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+    return new set(t, false);
   }
 
   /*
