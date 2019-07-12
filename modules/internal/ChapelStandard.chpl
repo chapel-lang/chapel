@@ -72,8 +72,6 @@ module ChapelStandard {
   use HaltWrappers only ;
   use Types;
   use Math;
-  use SysBasic;
-  use SysError;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }
