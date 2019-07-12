@@ -159,7 +159,7 @@ private proc usernameCheck(username: string) {
 /* Runs Commands to see if Fork of mason-registry exists under the username */
 private proc checkIfForkExists(username: string) {
   var getFork= ('git ls-remote https://github.com/' + username + '/mason-registry');
-  var p = runWithStatus(getFork);
+  var p = runWithStatus(getFork, false);
   return p;
 }
 

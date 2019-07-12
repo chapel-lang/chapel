@@ -3,22 +3,21 @@ use MasonPublish;
 use MasonUtils;
 use MasonNew;
 
+
+const dir = here.cwd();
+
 proc main() throws {
-  const dir = here.cwd();
   try! {
-    masonNew(['mason', 'new' , 'publishCheck', '--no-vcs']);
+    masonNew(['mason', 'new' , 'publishCheck']);
     const args = ['mason', 'publish'];
-    here.chdir(dir + '/publishCheck'); 
+    here.chdir(dir + '/publishCheck');
     masonPublish(args);
     here.chdir(dir);
     rmTree('publishCheck');
   }
   catch {
     here.chdir(dir);
-    rmTree('publishCheck');
+    rmTree('publishCheck/');
     exit(1);
   }
 }
-
-
-
