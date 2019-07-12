@@ -1580,9 +1580,9 @@ module Sparse {
     ADom.startIdx = indptr;
     const (hasZero, zeroIndex) = indices.find(0);
     if hasZero {
-      ADom.nnz = zeroIndex-1;
+      ADom._nnz = zeroIndex-1;
     } else {
-      ADom.nnz = indices.size;
+      ADom._nnz = indices.size;
     }
     ADom.nnzDom = {1..indices.size};
     ADom.idx = indices;
