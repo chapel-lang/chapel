@@ -1,3 +1,6 @@
+popFrontLeak2.chpl:1: In function 'main':
+popFrontLeak2.chpl:8: warning: push_back is deprecated - please use List.extend
+popFrontLeak2.chpl:9: warning: pop_front is deprecated - please use List.pop
 
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             

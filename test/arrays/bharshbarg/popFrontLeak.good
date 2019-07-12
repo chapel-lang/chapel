@@ -1,0 +1,2 @@
+popFrontLeak.chpl:24: In function 'main':
+popFrontLeak.chpl:28: warning: pop_front is deprecated - please use List.pop
