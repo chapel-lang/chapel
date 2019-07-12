@@ -456,6 +456,8 @@ returnInfoToUnmanaged(CallExpr* call) {
     t = dt->getCanonicalClass();
     if (dt->isNilable())
       decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
 
   if (AggregateType* at = toAggregateType(t)) {
@@ -484,7 +486,6 @@ returnInfoToBorrowed(CallExpr* call) {
     if (isClass(at))
       t = at->getDecoratedClass(decorator);
 
-  // Canonical class type is borrow type
   return QualifiedType(t, QUAL_VAL);
 }
 

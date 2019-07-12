@@ -585,17 +585,29 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
+    Expr* e = call->get(1);
 
-    if (isManagedPtrType(call->get(1)->typeInfo()))
-      INT_FATAL(call, "Cannot convert managed type");
-
-    if (isTypeExpr(call->get(1))) {
+    if (isTypeExpr(e)) {
       retval = new SymExpr(totype->symbol);
+      call->replace(retval);
     } else {
-      retval = new CallExpr(PRIM_CAST, totype->symbol, call->get(1)->copy());
+      if (isManagedPtrType(e->typeInfo())) {
+        VarSymbol* tmp = newTemp("borrow_tmp");
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        CallExpr* c = new CallExpr("borrow", gMethodToken, e->remove());
+        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, c);
+        call->getStmtExpr()->insertBefore(move);
+        // so it is resolved
+        resolveExpr(c);
+        resolveExpr(move);
+        retval = new CallExpr(PRIM_CAST, totype->symbol, tmp);
+        call->replace(retval);
+      } else {
+        retval = new CallExpr(PRIM_CAST, totype->symbol, e->remove());
+        call->replace(retval);
+      }
     }
 
-    call->replace(retval);
 
     break;
   }
