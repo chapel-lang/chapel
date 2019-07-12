@@ -8,7 +8,7 @@ var tConcat: Timer;
 if timing then tConcat.start();
 var concat: string;
 for i in 1..n do
-  concat = "concat is short for " + "concatenation" + i;
+  concat = "concat is short for " + "concatenation" + i:string;
 if timing then tConcat.stop();
 
 // append
