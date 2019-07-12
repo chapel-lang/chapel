@@ -112,7 +112,7 @@ proc publishPackage(username: string) throws {
     writeln('Go to the above link to open up a Pull Request to the mason-registry');
   }
   catch {
-    rmTree(safeDir);
+    rmTree(safeDir + '/');
     writeln('Error publishing your package to the mason-registry');
   }
 }
