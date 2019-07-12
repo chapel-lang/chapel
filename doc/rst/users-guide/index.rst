@@ -1,7 +1,7 @@
 .. _users-guide-index:
 
-Chapel Users Guide (WIP)
-========================
+Chapel Users Guide (WIP, yo!)
+=============================
 
 Overview
 --------
@@ -47,6 +47,7 @@ support of parallelism and locality are removed.
    base/casts
    base/forloops
    base/zip
+   base/bogus
 
 (more to come...)
 
