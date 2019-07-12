@@ -956,8 +956,10 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     SymExpr* symExpr = NULL;
 
     // Adjust class type symbols for generic management / generic nilability
-    if (isTypeSymbol(sym)) {
-      if (sym->hasFlag(FLAG_MANAGED_POINTER)) {
+    if (isTypeSymbol(sym) && isClassLikeOrManaged(sym->type)) {
+      if (isDecoratedClassType(sym->type)) {
+        // Don't adjust already-decorated class types
+      } else if (isManagedPtrType(sym->type)) {
 	// e.g. 'owned' becomes 'owned with any nilability'
         AggregateType* at = toAggregateType(sym->type);
         INT_ASSERT(at);

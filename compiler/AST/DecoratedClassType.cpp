@@ -181,6 +181,9 @@ Type* canonicalClassType(Type* t) {
 
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
+  // no _ddata c_ptr etc
+  INT_ASSERT(isClassLikeOrManaged(t));
+
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     return dt->getCanonicalClass()->getDecoratedClass(d);
   } else if (isClassLike(t) && isClass(t)) {
