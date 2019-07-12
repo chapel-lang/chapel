@@ -1,1 +1,9 @@
-Must have remote origin set up in repository to publish
+Created new library project: publishCheck
+0b2ca3b7f4c4abdeefbeae769a83a9f32ecd29bd	HEAD
+eeb11caa0b529809762785021d2014493b5883cf	refs/heads/Gnuplot
+9475d69e936003117391abcf9b15734989ef0cd1	refs/heads/chapelTest
+0b2ca3b7f4c4abdeefbeae769a83a9f32ecd29bd	refs/heads/master
+7acb83622952ceb2463616b9807950591675d94e	refs/heads/pubtest
+6b2ea0a36042ec22c94c113ee44bea6156299ec0	refs/heads/travis
+38b6ee359335df89b28a4a0ad8e879274c39bcad	refs/heads/travisBuild
+Error publishing your package to the mason-registry
