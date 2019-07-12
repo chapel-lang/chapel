@@ -371,7 +371,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
-      newFn->tagIfGeneric();
+      newFn->tagIfGeneric(&subs);
 
       explainAndCheckInstantiation(newFn, fn);
 

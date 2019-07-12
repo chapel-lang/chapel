@@ -94,6 +94,10 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
       if (isInit && i == 2) {
         actuals.add(sym);
 
+      } else if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        // type formals can be generic
+        actuals.add(sym);
+
       } else {
         retval = false;
       }
