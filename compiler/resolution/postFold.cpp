@@ -323,7 +323,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     } else {
       USR_FATAL(call,
-                "Unable to perform subtype query: %s:%s",
+                "Unable to perform subtype query: %s <= %s",
                 st->symbol->name,
                 pt->symbol->name);
     }
