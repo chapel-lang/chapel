@@ -1256,32 +1256,32 @@ static void build_union_assignment_function(AggregateType* ct) {
 }
 
 static void buildClassBorrowMethod(AggregateType* ct) {
-  if (function_exists("borrow", dtMethodToken, ct))
-    return;
+  //if (function_exists("borrow", dtMethodToken, ct))
+    //return;
 
-  FnSymbol* fn = new FnSymbol("borrow");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
+  //FnSymbol* fn = new FnSymbol("borrow");
+  //fn->addFlag(FLAG_COMPILER_GENERATED);
 
-  if (ct->isClass() && ct != dtObject)
-    fn->addFlag(FLAG_OVERRIDE);
-  else
-    fn->addFlag(FLAG_INLINE);
+  //if (ct->isClass() && ct != dtObject)
+    //fn->addFlag(FLAG_OVERRIDE);
+  //else
+    //fn->addFlag(FLAG_INLINE);
 
-  fn->cname = astr("borrow");
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->setMethod(true);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->insertFormalAtTail(fn->_this);
+  //fn->cname = astr("borrow");
+  //fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  //fn->_this->addFlag(FLAG_ARG_THIS);
+  //fn->setMethod(true);
+  //fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  //fn->insertFormalAtTail(fn->_this);
 
-  fn->retType = ct;
+  //fn->retType = ct;
 
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
+  //fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, ct->symbol);
-  normalize(fn);
+  //DefExpr* def = new DefExpr(fn);
+  //ct->symbol->defPoint->insertBefore(def);
+  //reset_ast_loc(def, ct->symbol);
+  //normalize(fn);
 }
 
 /************************************* | **************************************
