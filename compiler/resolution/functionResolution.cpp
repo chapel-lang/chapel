@@ -2518,6 +2518,14 @@ static bool resolveBuiltinCastCall(CallExpr* call)
           AggregateType* at = toAggregateType(canonicalDecoratedClassType(valueType));
 
           ClassTypeDecorator d = classTypeDecorator(targetType);
+          // Combine class type information
+          if (isDecoratorUnknownNilability(d)) {
+            if (isNilableClassType(valueType))
+              d = addNilableToDecorator(d);
+            else if (isNonNilableClassType(valueType))
+              d = addNonNilToDecorator(d);
+          }
+
           Type* t = at->getDecoratedClass(d);
 
           // Replace the target type with the instantiated one.
