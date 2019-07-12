@@ -897,8 +897,11 @@ module ChapelArray {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistValue(x) where isSubtype(x.type, BaseDist) {
+  proc chpl__buildDistValue(x:unmanaged) where isSubtype(x.type, BaseDist) {
     return new _distribution(x);
+  }
+  proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
+    return new _distribution(x.release());
   }
 
   proc chpl__buildDistValue(x) {
