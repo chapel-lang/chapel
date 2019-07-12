@@ -887,8 +887,8 @@ module ChapelArray {
   record dmap { }
 
   pragma "unsafe"
-  proc chpl__buildDistType(type t) type where isSubtype(t, BaseDist) {
-    var x: t;
+  proc chpl__buildDistType(type t) type where isSubtype(borrowed t, BaseDist) {
+    var x: unmanaged t;
     var y = new _distribution(x);
     return y.type;
   }
@@ -897,7 +897,7 @@ module ChapelArray {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistValue(x:unmanaged) where isSubtype(x.type, BaseDist) {
+  proc chpl__buildDistValue(x:unmanaged) where isSubtype(x.borrow().type, BaseDist) {
     return new _distribution(x);
   }
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
