@@ -1,0 +1,3 @@
+IllegalArgumentError: mkdir called with illegal path: ''
+IllegalArgumentError: mkdir called with illegal path: ' '
+IllegalArgumentError: mkdir called with illegal path: ''
