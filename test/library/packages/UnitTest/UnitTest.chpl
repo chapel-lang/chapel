@@ -952,26 +952,24 @@ module UnitTest {
   */
   proc runTest(tests: argType ...?n) throws {
 
-    var testNamesMap: domain(string),
-        failedTestsMap: domain(string),
-        erroredTestMap: domain(string),
-        testsLocalMap: domain(string),
-        testsPassedMap: domain(string);
+    var testNamesMap: domain(string);
     var testStatus: [testNamesMap] bool,
-        testsFailed: [failedTestsMap] bool,
-        testsErrored: [erroredTestMap] bool,
-        testsLocalFails: [testsLocalMap] bool,
-        testsPassed: [testsPassedMap] bool;
+        testsFailed: [testNamesMap] bool,
+        testsErrored: [testNamesMap] bool,
+        testsLocalFails: [testNamesMap] bool,
+        testsPassed: [testNamesMap] bool;
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
     testSuite.addTests(tests);
     
     for test in testSuite {
-      testStatus[test: string] = false;
-      testsLocalFails[test: string] = false;
-      testsFailed[test: string] = false; // no tests failed
-      testsErrored[test: string] = false;
+      const testName = test: string;
+      testNamesMap += testName;
+      testStatus[testName] = false;
+      testsLocalFails[testName] = false;
+      testsFailed[testName] = false; // no tests failed
+      testsErrored[testName] = false;
     }
     if testNames != "None" {
       for test in testNames.split(" ") {
