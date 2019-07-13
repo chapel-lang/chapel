@@ -52,7 +52,7 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
 
 //
 // Some type information is lost during this pass (IE, converting `string`
-// formals to `c_string`, and this information might be useful when
+// formals to `c_string`), and this information might be useful when
 // generating code in later passes.
 //
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
@@ -301,10 +301,6 @@ static FnSymbol* resolveConversionCall(Type* srctype, Type* dsttype) {
   result = call->resolvedFunction();
   INT_ASSERT(result != NULL);
 
-  //
-  // TODO: These calls may be redundant.
-  //
-  normalize(result);
   resolveFunction(result);
 
   call->remove();
