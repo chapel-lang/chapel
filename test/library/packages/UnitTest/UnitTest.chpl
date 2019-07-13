@@ -7,14 +7,61 @@ Any function of the form
   proc funcName(test: Test) throws {}
 
 is treated as a test function.
+
+Example
+
+.. code-block:: chapel
+
+   use UnitTest;
+
+   proc test1(test: Test) throws {
+     test.assertTrue(True);
+   }
+
+   UnitTest.runTest(test1);
+
+Specifying locales
+
+.. code-block:: chapel
+
+   proc test2(test: Test) throws {
+     test.addNumLocales(16);
+   }
+
+   proc test3(test: Test) throws {
+     test.addNumLocales(16,8);
+   }
+  
+   proc test4(test: Test) throws {
+     test.maxLocales(4);
+     test.minLocales(2);
+   }
+
+Specifying Dependencies:
+
+.. code-block:: chapel
+
+   proc test5(test: Test) throws {
+     test.dependsOn(test3);
+   }
+
+   proc test6(test: Test) throws {
+     test.dependsOn(test2, test5);
+   }
+
+
+
 */
 module UnitTest {
   use Reflection;
   use TestError;
   pragma "no doc"
   config const testNames: string = "None";
+  pragma "no doc"
   config const failedTestNames: string = "None";
+  pragma "no doc"
   config const errorTestNames: string = "None";
+  pragma "no doc"
   config const ranTests: string = "None";
   // This is a dummy test to capture the function signature
   private
@@ -25,18 +72,31 @@ module UnitTest {
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
+    pragma "no doc"
     var numMaxLocales = max(int),
         numMinLocales = min(int);
+    pragma "no doc"
     var dictDomain: domain(int);
+    pragma "no doc"
     var testDependsOn: [1..0] argType;
 
-    /* Unconditionally skip a test. */
+    /* Unconditionally skip a test.
+
+      :arg reason: the reason for skipping
+      :type reason: `string` 
+    */
     proc skip(reason: string = "") throws {
       throw new owned TestSkipped(reason);
     }
 
     /*
     Skip a test if the condition is true.
+
+    :arg condition: the boolean condition
+    :type condition: `bool`
+
+    :arg reason: the reason for skipping
+    :type reason: `string`
    */
     proc skipIf(condition: bool, reason: string = "") throws {
       if condition then
@@ -265,6 +325,9 @@ module UnitTest {
     
     /*
       Fail if the two objects are unequal as determined by the '==' operator.
+      
+      :arg first: The first object to compare.
+      :arg second: The first object to compare. 
     */
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
@@ -293,7 +356,12 @@ module UnitTest {
 
     
     /*
-      Fail if the two objects are equal as determined by the '==' operator and type.
+      Assert that a first argument is not equal to second argument. If it is false, 
+      rasies AssertionError. Uses '==' operator and type to determine if both are equal
+      or not.
+
+      :arg first: The first object to compare.
+      :arg second: The first object to compare. 
     */
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
@@ -307,6 +375,9 @@ module UnitTest {
     /*
       Assert that a first argument is greater than second argument.  If it is false, prints
       'assert failed' and rasies AssertionError. 
+
+      :arg first: The first object to compare.
+      :arg second: The first object to compare. 
     */
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
@@ -506,8 +577,10 @@ module UnitTest {
     }
 
     /*
-      Assert that a first argument is less than second argument.  If it is false, prints
-      'assert failed' and rasies AssertionError. 
+      Assert that a first argument is less than second argument.  If it is false, rasies AssertionError. 
+
+      :arg first: The first object to compare.
+      :arg second: The first object to compare. 
     */
     proc assertLessThan(first, second) throws {
       if canResolve("<=",first, second) {
@@ -706,7 +779,14 @@ module UnitTest {
       }
     }
 
-    /*Specify Max Number of Locales required to run the test*/
+    /*
+      Specify Max Number of Locales required to run the test
+    
+      :arg value: Maximum number of locales with which the test can be ran.
+      :type value: `int`.
+
+      :throws UnexpectedLocalesError: If `value` is less than 1 or `minNumLocales` 
+    */
     proc maxLocales(value: int) throws {
       this.numMaxLocales = value;
       if this.numMaxLocales < 1 {
@@ -720,7 +800,14 @@ module UnitTest {
       }
     }
 
-    /*Specify Min Number of Locales required to run the test*/
+    /*
+      Specify Min Number of Locales required to run the test
+    
+      :arg value: Minimum number of locales with which the test can be ran.
+      :type value: `int`.
+
+      :throws UnexpectedLocalesError: If `value` is more than `maxNumLocales`
+    */
     proc minLocales(value: int) throws {
       this.numMinLocales = value;
       if this.numMaxLocales < this.numMinLocales {
@@ -731,7 +818,14 @@ module UnitTest {
       }
     }
 
-    /*To add how many locales this test requires*/
+    /*
+      To add locales in which test can be run.
+
+      :arg locales: Multiple `","` seperated locale values
+
+      :throws UnexpectedLocalesError: If `locales` are already added.
+    
+    */
     proc addNumLocales(locales: int ...?n) throws {
       var canRun =  false;
       if this.dictDomain.size > 0 {
@@ -750,7 +844,11 @@ module UnitTest {
       }
     }
 
-    /*To add the tests on which it depends on*/
+    /*Adds the tests in which the given test is depending.
+
+      :arg tests: Multiple `","` seperated First Class Test Functions.
+      
+    */
     proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
       if testDependsOn.size == 0 {
         for eachSuperTest in tests {
@@ -842,7 +940,16 @@ module UnitTest {
     }
   }
 
-  /*Runs the tests*/
+  /*Runs the tests
+  
+    :arg tests: Multiple `","` seperated First Class Test Functions.
+
+    Call this as 
+    
+    .. code-block:: chapel
+
+      UnitTest.runTest(test1, test2);
+  */
   proc runTest(tests: argType ...?n) throws {
 
     var testNamesMap: domain(string),
