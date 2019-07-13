@@ -73,6 +73,8 @@ class SystemError : Error {
     :arg err: the syserr to generate from
     :arg details: extra information to include with the error
   */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   proc type fromSyserr(err: syserr, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new owned BlockingIOError(details, err);
@@ -122,6 +124,8 @@ class SystemError : Error {
     :arg err: the number to generate from
     :arg details: extra information to include with the error
   */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   proc type fromSyserr(err: int, details: string = "") {
     return fromSyserr(err:syserr, details);
   }
@@ -397,6 +401,8 @@ private proc quote_string(s:string, len:ssize_t) {
    :throws SystemError: A subtype is thrown when the error argument indicates an
                         error occurred
  */
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
   if error {
@@ -408,6 +414,8 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 }
 
 pragma "no doc" // documented in the offset version
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if error {
@@ -418,6 +426,8 @@ proc ioerror(error:syserr, msg:string, path:string) throws
 }
 
 pragma "no doc" // documented in the offset version
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string) throws
 {
   if error then throw SystemError.fromSyserr(error, msg);
@@ -433,6 +443,8 @@ proc ioerror(error:syserr, msg:string) throws
 
    :throws IOError: always throws an IOError
  */
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
   const quotedpath = quote_string(path, path.length:ssize_t);

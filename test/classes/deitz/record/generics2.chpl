@@ -4,7 +4,7 @@ record C {
 }
 
 class D {
-  var c: C(borrowed D);
+  var c: C(borrowed D?);
 }
 
 var d = new borrowed D();

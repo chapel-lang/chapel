@@ -44,21 +44,8 @@ proc get_cdr(type car, type cdr...?k) type {
   return cdr;
 }
 
-proc isSubType(type sub, type sup) param {
-  proc isSubTypeHelp(v:sub = nil) param {
-    proc ist(v:sup) param {
-      return true;
-    }
-    proc ist(v) param {
-      return false;
-    }
-    return ist(v);
-  }
-  return isSubTypeHelp();
-}
-
 proc getSuperType(type t) type {
-  proc st(v:t = nil) type {
+  proc st(v:t? = nil) type {
     if (t == object) then
       return t;
     else
@@ -70,9 +57,9 @@ proc getSuperType(type t) type {
 proc nearestMutualParentClass(type t1, type t2) type {
   if t1 == t2 then
     return t1;
-  else if isSubType(t1, t2) then
+  else if isSubtype(t1, t2) then
     return t2;
-  else if isSubType(t2, t1) then
+  else if isSubtype(t2, t1) then
     return t1;
   else
     return nearestMutualParentClass(getSuperType(t1), getSuperType(t2));

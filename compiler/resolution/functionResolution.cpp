@@ -1452,16 +1452,17 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
   visited.set_add(block);
 
   //
-  // default to true if neither are visible
+  // return true unless fn2 is more visible,
+  // including the case where neither are visible
   //
-  bool moreVisible = true;
 
   //
   // ensure f2 is not more visible via parent block, and recurse
   //
   if (BlockStmt* parentBlock = getParentBlock(block))
     if (!visited.set_in(parentBlock))
-      moreVisible &= isMoreVisibleInternal(parentBlock, fn1, fn2, visited);
+      if (! isMoreVisibleInternal(parentBlock, fn1, fn2, visited))
+        return false;
 
   //
   // ensure f2 is not more visible via module uses, and recurse
@@ -1476,12 +1477,13 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
       // uses of enums.
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         if (!visited.set_in(mod->block))
-          moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
+          if (! isMoreVisibleInternal(mod->block, fn1, fn2, visited))
+            return false;
       }
     }
   }
 
-  return moreVisible;
+  return true;
 }
 
 
@@ -7575,7 +7577,7 @@ static void resolveUses(ModuleSymbol* mod) {
       }
     }
 
-    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+    for_vector(ModuleSymbol, usedMod, mod->modUseList) {
       resolveUses(usedMod);
     }
 

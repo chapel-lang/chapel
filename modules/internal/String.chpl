@@ -136,6 +136,7 @@ module String {
   use CString;
   use SysCTypes;
   use StringCasts;
+  private use SysBasic;
 
   // Growth factor to use when extending the buffer for appends
   private config param chpl_stringGrowthFactor = 1.5;

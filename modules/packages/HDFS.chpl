@@ -19,376 +19,508 @@
 
 /*
 
-Support for Hadoop Distributed Filesystem
-
-.. warning::
-
-  This module is currently not working. See
-  `#12627 <https://github.com/chapel-lang/chapel/issues/12627>`_
-  to track progress.
-
-
-
 This module implements support for the
 `Hadoop <http://hadoop.apache.org/>`_
 `Distributed Filesystem <http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html>`_ (HDFS).
 
-Dependencies
-------------
+.. note::
 
-See the :ref:`auxIO-HDFS-deps` documentation for details on setting up and
-enabling HDFS support in Chapel.
+  HDFS support in Chapel currently requires the use of ``CHPL_TASKS=fifo``.
+  There is a compatibility problem with qthreads.
 
 Using HDFS Support in Chapel
 ----------------------------
 
-There are three ways provided to open HDFS files within Chapel.
-
-Using an HDFS filesystem with open(url="hdfs://...")
-****************************************************
+To open an HDFS file in Chapel, first create an :class:`HDFSFileSystem` by
+connecting to an HDFS name node.
 
 .. code-block:: chapel
 
-  // Open a file on HDFS connecting to the default HDFS instance
-  var f = open(mode=iomode.r, url="hdfs://host:port/path");
+  use HDFS only;
 
-  // Open up a reader and read from the file
-  var reader = f.reader();
+  fs = HDFS.connect(); // can pass a nameNode host and port here,
+                       // otherwise uses HDFS default settings.
 
-  // ...
+The filesystem connection will be closed when `fs` and any files
+it refers to go out of scope.
 
-  reader.close();
+Once you have a :record:`hdfs`, you can open files within that
+filesystem using :proc:`HDFSFileSystem.open` and perform I/O on them using
+the usual functionality in the :mod:`IO` module:
 
+.. code-block:: chapel
+
+  var f = fs.open("/tmp/testfile.txt", iomode.cw);
+  var writer = f.writer();
+  writer.writeln("This is a test");
+  writer.close();
   f.close();
 
+.. note::
 
-Explicitly Using Replicated HDFS Connections and Files
-******************************************************
+  Please note that ``iomode.cwr`` and ``iomode.rw`` are not supported with HDFS
+  files due to limitations in HDFS itself. ``iomode.r`` and ``iomode.cw`` are
+  the only modes supported with HDFS.
 
-.. code-block:: chapel
+Dependencies
+------------
 
-  use HDFS;
+Please refer to the Hadoop and HDFS documentation for instructions on setting up
+HDFS.
 
-  // Connect to HDFS via the default username (or whichever you want)
-  //
-  var hdfs = hdfsChapelConnect("default", 0);
+Once you have a working HDFS, it's a good idea to test your HDFS installation
+with a C program before proceeding with Chapel HDFS support. Try compiling the
+below C program:
 
-  //
-  // Create a file per locale
-  //
-  var gfl  = hdfs.hdfsOpen("/user/johnDoe/isThisAfile.txt", iomode.r);
+.. code-block:: c
 
-  ...
-  //
-  // On any given locale, you can get the local file for the locale that
-  // the task is currently running on via:
-  //
-  var fl = gfl.getLocal();
+  // hdfs-test.c
 
-  // This file can be used as with a traditional file in Chapel, by
-  // creating reader channels on it.
+  #include <hdfs.h>
 
-  // When you are done and want to close the files and disconnect from
-  // HDFS, use:
+  #include <string.h>
+  #include <stdio.h>
+  #include <stdlib.h>
 
-  gfl.hdfsClose();
-  hdfs.hdfsChapelDisconnect();
+  int main(int argc, char **argv) {
 
-Explicitly Using Local HDFS Connections and Files
-*************************************************
-
-The HDFS module file also supports non-replicated values across
-locales. So if you only wanted to connect to HDFS and open a file on
-locale 1 you could do:
-
-.. code-block:: chapel
-
-  on Locales[1] {
-    var hdfs = hdfs_chapel_connect("default", 0);
-    var fl = hdfs.hdfs_chapel_open("/user/johnDoe/myFile.txt", iomode.cw);
-    ...
-    var read = fl.reader();
-    ...
-    fl.close();
-    hdfs.hdfs_chapel_disconnect();
+      hdfsFS fs = hdfsConnect("default", 0);
+      const char* writePath = "/tmp/testfile.txt";
+      hdfsFile writeFile = hdfsOpenFile(fs, writePath, O_WRONLY|O_CREAT, 0, 0, 0);
+      if(!writeFile) {
+            fprintf(stderr, "Failed to open %s for writing!\n", writePath);
+            exit(-1);
+      }
+      char* buffer = "Hello, World!";
+      tSize num_written_bytes = hdfsWrite(fs, writeFile, (void*)buffer, strlen(buffer)+1);
+      if (hdfsFlush(fs, writeFile)) {
+             fprintf(stderr, "Failed to 'flush' %s\n", writePath);
+            exit(-1);
+      }
+     hdfsCloseFile(fs, writeFile);
   }
 
-The only stipulations are that you cannot open a file in both read and
-write mode at the same time. (i.e iomode.r and iomode.cw are the only
-modes that are supported, due to HDFS limitations).
+This program will probably not compile without some special environment
+variables set.  The following commands worked for us to compile this program,
+but you will almost certainly need different settings depending on your HDFS
+installation.
+
+.. code-block:: bash
+
+  export JAVA_HOME=/usr/lib/jvm/default-java/lib
+  export HADOOP_HOME=/usr/local/hadoop/
+  gcc hdfs-test.c -I$HADOOP_HOME/include -L$HADOOP_HOME/lib/native -lhdfs
+  export CLASSPATH=`$HADOOP_HOME/bin/hadoop classpath --glob`
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native:$JAVA_HOME/lib
+  ./a.out
+
+  # verify that the new test file was created
+  $HADOOP_HOME/bin/hdfs dfs  -ls /tmp
 
 
 HDFS Support Types and Functions
 --------------------------------
 
-
  */
 module HDFS {
 
-use IO, SysBasic, SysError, ReplicatedVar;
+  use IO, SysBasic, SysError;
 
-pragma "no doc"
-extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings
-pragma "no doc"
-extern type char_ptr_ptr;             // char**
+  require "hdfs.h";
 
-private extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
-private extern const hdfs_function_struct:qio_file_functions_t;
-private extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
-
-pragma "no doc"
-extern record hdfs_block_byte_map_t {
-  var locale_id: int;
-  var start_byte: int(64);
-  var len: int(64);
-}
-
-// Connect to HDFS
-private extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr;
-
-// Disconnect from HDFS
-private extern proc hdfs_disconnect(fs: c_void_ptr): syserr;
-
-// Allocate an array for our locale mappings
-private extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
-
-// Create a mapping locale_name -> locale_id (need this due to hdfs and since
-// we cant pass strings inside extern records when multilocale)
-private extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name: c_string);
-
-// Return arr[i]
-private extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
-
-// Get block owners.
-// Returns an array of hdfs_block_byte_map_t's
-private extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
-
-// ********* For multilocale ************
-/* Holds a file per locale */
-record hdfsChapelFile {
   pragma "no doc"
-  var files: [rcDomain] file;
-}
-
-/* Holds a connection to HDFS per locale */
-record hdfsChapelFileSystem {
+  extern "struct hdfs_internal" record hdfs_internal { }
   pragma "no doc"
-  var home: locale;
+  extern "struct hdfsFile_internal" record hdfsFile_internal { }
+
   pragma "no doc"
-  var _internal_file: [rcDomain] c_void_ptr; // contains hdfsFS
-}
+  extern type hdfsFS = c_ptr(hdfs_internal);
+  pragma "no doc"
+  extern type hdfsFile = c_ptr(hdfsFile_internal);
 
-// --------- Connecting/disconnecting ---------
-
-/* Make a connection to HDFS for a single locale */
-proc hdfsChapelConnect(path: c_string, port: int): c_void_ptr throws {
-  var ret: c_void_ptr;
-  var err = hdfs_connect(ret, path, port);
-  if err then try ioerror(err, "Unable to connect to HDFS", path:string);
-  return ret;
-}
-
-pragma "no doc"
-proc hdfsChapelConnect(out error: syserr, path: c_string, port: int): c_void_ptr{
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret: c_void_ptr;
-  try {
-    ret = hdfsChapelConnect(path, port);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
+  pragma "no doc"
+  extern record hdfsFileInfo {
+    var mSize:tOffset;
+    var mBlockSize:tOffset;
   }
-  return ret;
-}
 
-/* Connect to HDFS and create a filesystem ptr per locale */
-proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem throws {
-  var ret: hdfsChapelFileSystem;
-  try {
-    forall loc in Locales with (ref ret) {
-      on loc {
-        var err: syserr;
-        const tmpstr = path.localize();
-        rcLocal(ret._internal_file) = hdfsChapelConnect(err, tmpstr.c_str(), port);
-        if err then try ioerror(err, "Unable to connect to HDFS", tmpstr);
-      }
+  pragma "no doc"
+  extern type tSize = int(32);
+  pragma "no doc"
+  extern type tOffset = int(64);
+  pragma "no doc"
+  extern type tPort = uint(16);
+
+  private extern proc hdfsConnect(nn:c_string, port:tPort):hdfsFS;
+  private extern proc hdfsDisconnect(fs:hdfsFS):c_int;
+  private extern proc hdfsOpenFile(fs:hdfsFS, path:c_string, flags:c_int,
+                                   bufferSize:c_int, replication:c_short,
+                                   blockSize:tSize):hdfsFile;
+  private extern proc hdfsCloseFile(fs:hdfsFS, file:hdfsFile):c_int;
+  private extern proc hdfsPread(fs:hdfsFS, file:hdfsFile, position:tOffset,
+                                buffer:c_void_ptr, length:tSize):tSize;
+  private extern proc hdfsWrite(fs:hdfsFS, file:hdfsFile,
+                                buffer:c_void_ptr, length:tSize):tSize;
+  private extern proc hdfsFlush(fs:hdfsFS, file:hdfsFile):c_int;
+  private extern proc hdfsGetPathInfo(fs:hdfsFS, path:c_string):c_ptr(hdfsFileInfo);
+  private extern proc hdfsFreeFileInfo(info:c_ptr(hdfsFileInfo), numEntries:c_int);
+
+  // QIO extern stuff
+  private extern proc qio_strdup(s: c_string): c_string;
+  private extern proc qio_mkerror_errno():syserr;
+  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
+  private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
+  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
+  private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
+
+  private param verbose = false;
+
+  /*
+
+  Connect to an HDFS filesystem. If ``nameNode`` or ``port`` are not provided,
+  the HDFS defaults will be used.
+
+  :arg nameNode: the hostname for an HDFS name node to connect to
+  :arg port: the port on which the HDFS service is running on the name node
+  :returns: a :record:`hdfs` representing the connected filesystem.
+  */
+
+  proc connect(nameNode: string = "default", port:int=0) throws {
+    var fs = new unmanaged HDFSFileSystem(nameNode, port);
+    if fs.hfs == c_nil {
+      var err = qio_mkerror_errno();
+      delete fs;
+      throw SystemError.fromSyserr(err, "in hdfsConnect");
+    }
+    return new hdfs(fs);
+  }
+
+  /*
+
+   Record storing an open HDFS filesystem. Please see :class:`HDFSFileSystem` for
+   the forwarded methods available, in particular :proc:`HDFSFileSystem.open`.
+
+  */
+  record hdfs {
+    pragma "no doc"
+    var instance:unmanaged HDFSFileSystem;
+    forwarding instance;
+
+    pragma "no doc"
+    proc init(instance:unmanaged HDFSFileSystem) {
+      this.instance = instance;
+    }
+    pragma "no doc"
+    proc deinit() {
+      var count = instance.release();
+      if count == 0 then
+        delete instance;
     }
   }
-  return ret;
-}
 
-/* Disconnect from the configured HDFS filesystem on each locale */
-proc hdfsChapelFileSystem.hdfsChapelDisconnect() throws {
-  try {
-    forall loc in Locales {
-      on loc {
-        var err: syserr;
-        err = hdfs_disconnect(rcLocal(this._internal_file));
-        if err then try ioerror(err, "Unable to disconnect from HDFS");
+  /*
+   Class representing a connected HDFS file system. This connected is
+   reference counted and shared by open files.
+   */
+  class HDFSFileSystem {
+    pragma "no doc"
+    var nameNode: string;
+    pragma "no doc"
+    var port: int;
+    pragma "no doc"
+    var hfs:hdfsFS;
+    pragma "no doc"
+    var refCount: atomic int;
+
+    /* nameNode is the name node hostname, can be 'default'
+       port is the port, can be '0' for default behavior */
+    pragma "no doc"
+    proc init(nameNode: string="default", port:int=0) {
+      if verbose then
+        writeln("hdfsConnect");
+
+      this.nameNode = nameNode;
+      this.port = port;
+      this.hfs = hdfsConnect(this.nameNode.c_str(), this.port.safeCast(uint(16)));
+      this.complete();
+      refCount.write(1);
+    }
+    pragma "no doc"
+    proc deinit() {
+      if verbose then
+        writeln("hdfsDisconnect");
+      if this.hfs != c_nil then
+        hdfsDisconnect(this.hfs);
+    }
+    pragma "no doc"
+    proc retain() {
+      refCount.add(1);
+    }
+    // should deallocate if the returned count is 0
+    pragma "no doc"
+    proc release() {
+      var oldValue = refCount.fetchSub(1);
+      return oldValue - 1;
+    }
+
+    /*
+
+      Open an HDFS file stored at a particular path.  Note that once the file is
+      open, you will need to use :proc:`IO.file.reader` or :proc:`IO.file.writer`
+      to create a channel to actually perform I/O operations.
+
+      :arg path: which file to open (for example, "some/file.txt").
+      :arg iomode: specify whether to open the file for reading or writing and whether or not to create the file if it doesn't exist.  See :type:`IO.iomode`.
+      :arg style: optional argument to specify I/O style associated with this file.  The provided style will be the default for any channels created for on this file, and that in turn will be the default for all I/O operations performed with those channels.
+      :arg flags: flags to pass to the HDFS open call. Uses flags appropriate for ``mode`` if not provided.
+      :arg bufferSize: buffer size to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+      :arg replication: replication factor to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+      :arg blockSize: blockSize to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+     */
+    proc open(path:string, mode:iomode,
+              style:iostyle = defaultIOStyle(),
+              in flags:c_int = 0, // default to based on mode
+              bufferSize:c_int = 0,    // 0 -> use hdfs default value
+              replication:c_short = 0, // 0 -> use hdfs default value
+              blockSize:tSize = 0      // 0 -> use hdfs default value
+             ) throws {
+
+      if flags == 0 {
+        // set flags based upon iomode
+        select mode {
+          when iomode.r {
+            flags |= O_RDONLY;
+          }
+          when iomode.cw {
+            flags |= O_CREAT | O_TRUNC | O_WRONLY;
+          }
+          when iomode.rw {
+            flags |= O_RDWR;
+          }
+          when iomode.cwr {
+            flags |= O_CREAT | O_TRUNC | O_RDWR;
+          }
+        }
       }
+
+      if verbose then
+        writeln("hdfsOpenFile");
+
+      var hfile = hdfsOpenFile(this.hfs, path.localize().c_str(),
+                               flags, bufferSize, replication, blockSize);
+
+      if verbose then
+        writeln("after hdfsOpenFile");
+
+      if hfile == c_nil {
+        throw SystemError.fromSyserr(qio_mkerror_errno(), "in hdfsOpenFile");
+      }
+
+      // Create an HDFSFile and return the QIO file containing it
+      // this initializer bumps the reference count to this
+      var fl = new unmanaged HDFSFile(this:unmanaged, hfile, path);
+
+      var ret: file;
+      try {
+        ret = openplugin(fl, mode, seekable=true, style);
+      } catch e {
+        fl.close();
+        delete fl;
+        throw e;
+      }
+
+      if verbose then
+        writeln("after openplugin");
+
+      return ret;
     }
   }
-}
 
-// ----- Opening/Closing ---------
+  pragma "no doc"
+  class HDFSFile : QioPluginFile {
+    var fs: unmanaged HDFSFileSystem;
+    var hfile: hdfsFile;
+    var path: string;
 
-/* Open a file on each locale */
-proc hdfsChapelFileSystem.hdfsOpen(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
-    defaultIOStyle()):hdfsChapelFile throws {
-  var ret: hdfsChapelFile;
-  try {
-    forall loc in Locales with (ref ret) {
-      on loc {
-        var err:syserr = ENOERR;
-        rcLocal(ret.files) = open(err, path, mode, hints, style, rcLocal(this._internal_file));
-        if err then try ioerror(err, "in foreign open", path);
+    proc init(fs:unmanaged HDFSFileSystem, hfile:hdfsFile, path:string) {
+      if verbose then
+        writeln("HDFSFile.init");
+
+      this.fs = fs;
+      this.fs.retain(); // bump reference count
+      this.hfile = hfile;
+      this.path = path;
+    }
+
+    override proc setupChannel(out pluginChannel:unmanaged QioPluginChannel?,
+                        start:int(64),
+                        end:int(64),
+                        qioChannelPtr:qio_channel_ptr_t):syserr {
+      if verbose then
+        writeln("HDFSFile.setupChannel");
+
+      var hdfsch = new unmanaged HDFSChannel(this:unmanaged, qioChannelPtr);
+      pluginChannel = hdfsch;
+      return ENOERR;
+    }
+
+    override proc filelength(out length:int(64)):syserr {
+      if verbose then
+        writeln("HDFSFile.filelength path=", path);
+      var fInfoPtr = hdfsGetPathInfo(fs.hfs, path.c_str());
+      if fInfoPtr == nil {
+        return EINVAL;
       }
+      length = fInfoPtr.deref().mSize;
+      hdfsFreeFileInfo(fInfoPtr, 1);
+      if verbose then
+        writeln("HDFSFile.filelength length=", length);
+      return ENOERR;
+    }
+    override proc getpath(out path:c_string, out len:int(64)):syserr {
+      if verbose then
+        writeln("HDFSFile.getpath path=", this.path);
+      path = qio_strdup(this.path.c_str());
+      len = this.path.size;
+      if verbose then
+        writeln("HDFSFile.getpath returning ", (path:string, len));
+      return ENOERR;
+    }
+
+    override proc fsync():syserr {
+      if verbose then
+        writeln("HDFSFile.fsync");
+      var rc = hdfsFlush(fs.hfs, hfile);
+      if rc < 0 then
+        return qio_mkerror_errno();
+      return ENOERR;
+    }
+    override proc getChunk(out length:int(64)):syserr {
+      if verbose then
+        writeln("HDFSFile.getChunk");
+      var fInfoPtr = hdfsGetPathInfo(fs.hfs, path.c_str());
+      if fInfoPtr == nil then
+        return EINVAL;
+      length = fInfoPtr.deref().mBlockSize;
+      hdfsFreeFileInfo(fInfoPtr, 1);
+      return ENOERR;
+    }
+    override proc getLocalesForRegion(start:int(64), end:int(64), out
+        localeNames:c_ptr(c_string), ref nLocales:int(64)):syserr {
+      if verbose then
+        writeln("HDFSFile.getLocalesForRegion");
+      return ENOSYS;
+    }
+
+    override proc close():syserr {
+      if verbose then
+        writeln("hdfsCloseFile");
+
+      var err:syserr = ENOERR;
+      var rc = hdfsCloseFile(fs.hfs, hfile);
+      if rc != 0 then
+        err = qio_mkerror_errno();
+
+      var count = fs.release();
+      if count == 0 {
+        delete fs;
+        fs = nil;
+      }
+      return ENOERR;
     }
   }
-  return ret;
-}
 
-pragma "no doc"
-proc hdfsChapelFile.hdfsClose(out err: syserr) {
-  err = qio_file_close(rcLocal(this.files)._file_internal);
-}
+  pragma "no doc"
+  class HDFSChannel : QioPluginChannel {
+    var file: unmanaged HDFSFile;
+    var qio_ch:qio_channel_ptr_t;
 
-/* Close a file opened with :proc:`hdfsChapelFileSystem.hdfsOpen` */
-proc hdfsChapelFile.hdfsClose() throws {
-  try {
-    forall loc in Locales {
-      on loc {
-        var err: syserr = ENOERR;
-        this.hdfsClose(err);
-        if err then try ioerror(err, "Unable to close HDFS file");
+    proc init(file: unmanaged HDFSFile, qio_ch:qio_channel_ptr_t) {
+      if verbose then
+        writeln("HDFSChannel.init");
+
+      this.file = file;
+      this.qio_ch = qio_ch;
+    }
+
+    override proc readAtLeast(amt:int(64)):syserr {
+      if verbose then
+        writeln("HDFSChannel.readAtLeast");
+
+      if amt == 0 then
+        return ENOERR;
+
+      var err:syserr = ENOERR;
+
+      var remaining = amt;
+      while remaining > 0 {
+        var ptr:c_void_ptr = c_nil;
+        var len = 0;
+        var offset = 0;
+        err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
+        if err then
+          return err;
+        if ptr == nil || len == 0 then
+          return EINVAL;
+
+        if len >= max(int(32)) then
+          len = max(int(32));
+
+        if verbose then
+          writeln("hdfsPread offset=", offset, " len=", len);
+
+        // Now read len bytes into ptr
+        var rc = hdfsPread(file.fs.hfs, file.hfile, offset, ptr, len:int(32));
+        if rc == 0 {
+          // end of file
+          return EEOF;
+        } else if rc < 0 {
+          // error
+          return qio_mkerror_errno();
+        }
+        // otherwise, rc is the number of bytes read.
+        // advance the available region by the amount read
+        qio_channel_advance_available_end_unlocked(qio_ch, rc);
+        remaining -= rc:int(64);
       }
+
+      return ENOERR;
+    }
+    override proc write(amt:int(64)):syserr {
+      if verbose then
+        writeln("HDFSChannel.write");
+
+      var err:syserr = ENOERR;
+      var remaining = amt;
+      while remaining > 0 {
+        var ptr:c_void_ptr = c_nil;
+        var len = 0;
+        var offset = 0;
+        err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);
+        if err then
+          return err;
+        if ptr == nil || len == 0 then
+          return EINVAL;
+
+        len = min(len, amt);
+        if len >= max(int(32)) then
+          len = max(int(32));
+
+        if verbose then
+          writeln("hdfsWrite");
+
+        var rc = hdfsWrite(file.fs.hfs, file.hfile, ptr, len:int(32));
+        if rc < 0 then
+          return qio_mkerror_errno();
+
+        qio_channel_advance_write_behind_unlocked(qio_ch, rc);
+        remaining -= rc:int(64);
+      }
+      return ENOERR;
+    }
+    override proc close():syserr {
+      return ENOERR;
     }
   }
-}
-
-// ------------- General Utils ----------
-/* Returns the file for the locale that we are on when we query */
-pragma "no doc"
-proc hdfsChapelFile.getLocal(): file {
-  return rcLocal(this.files);
-}
-
-/* Convenience function. Does the same as file.reader except that we don't have
-   to get our local file first */
-pragma "no doc"
-proc hdfsChapelFile.hdfsReader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE) {
-  return rcLocal(this.files).reader(kind, locking, start, end, hints);
-}
-
-// ------------- End multilocale ---------------
-
-pragma "no doc"
-record hdfsChapelFile_local {
-  var home: locale = here;
-  var _internal_:qio_locale_map_ptr_t = QIO_LOCALE_MAP_PTR_T_NULL;
-}
-
-pragma "no doc"
-record hdfsChapelFileSystem_local {
-  var home: locale;
-  var _internal_: c_void_ptr;
-}
-
-// this is used in hdfsChapelFileSystem_local.hdfs_chapel_open
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), fs:c_void_ptr):file throws {
-  var local_style = style;
-  var ret:file;
-  ret.home = here;
-  var err = qio_file_open_access_usr(ret._file_internal, path.localize().c_str(),
-                                     _modestring(mode).localize().c_str(),
-                                     hints, local_style, fs,
-                                     hdfs_function_struct_ptr);
-  if err then try ioerror(err, "in foreign open", path);
-  return ret;
-}
-
-pragma "no doc"
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), fs:c_void_ptr):file {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret:file;
-  ret.home = here;
-  try {
-    ret = open(path, mode, hints, style, fs);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
-/* Open a file on an HDFS filesystem for a single locale */
-proc hdfsChapelFileSystem_local.hdfs_chapel_open(
-    path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-    style:iostyle = defaultIOStyle()):file throws {
-  var ret: file;
-  try {
-    ret = open(path, mode, hints, style, this._internal_);
-  } catch e: SystemError {
-    try ioerror(e.err, "in foreign open", path);
-  } catch {
-    try ioerror(EINVAL:syserr, "in foreign open", path);
-  }
-  return ret;
-}
-
-pragma "no doc"
-proc hdfsChapelFileSystem_local.hdfs_chapel_disconnect() throws {
-  var err: syserr;
-  on this.home {
-    err = hdfs_disconnect(this._internal_);
-  }
-  if err then try ioerror(err, "Unable to disconnect from HDFS");
-}
-
-/* Connect to an HDFS filesystem on a single locale */
-proc hdfs_chapel_connect(path:string, port: int): hdfsChapelFileSystem_local throws {
-  var ret: hdfsChapelFileSystem_local;
-  ret.home = here;
-  var err = hdfs_connect(ret._internal_, path.localize().c_str(), port);
-  if err then try ioerror(err, "Unable to connect to HDFS", path);
-  return ret;
-}
-
-pragma "no doc"
-proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFileSystem_local {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret: hdfsChapelFileSystem_local;
-  try {
-    ret = hdfs_chapel_connect(path, port);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
-}
-
-pragma "no doc"
-proc getHosts(f: file) throws {
-  var ret: hdfsChapelFile_local;
-  var ret_num: c_int;
-  var arr: char_ptr_ptr = hdfs_alloc_array(numLocales);
-  for loc in Locales {
-    hdfs_create_locale_mapping(arr, loc.id, loc.name.localize().c_str());
-  }
-  var err = hdfs_get_owners(f._file_internal, ret._internal_, ret_num, arr, numLocales);
-  if err then try ioerror(err, "Unable to get owners for HDFS file");
-  return (ret, ret_num);
-}
-
-pragma "no doc"
-proc getLocaleBytes(g: hdfsChapelFile_local, i: int) {
-  var ret = hdfs_index_array(g._internal_, i);
-  return ret;
-}
 
 } /* end of module */

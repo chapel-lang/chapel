@@ -1,0 +1,8 @@
+[brick]
+name = "oldChplVersion"
+version = "1.0.0"
+chplVersion = "1.12.0..1.14.0"
+source = "nil"
+
+[dependencies]
+

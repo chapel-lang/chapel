@@ -193,12 +193,6 @@ tags
 
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
-/test/io/ferguson/asserteof.test.nums
-/test/io/ferguson/ctests/test.bin
-/test/io/ferguson/error.data
-/test/io/ferguson/binary-output.bin
-/test/io/ferguson/test.txt
-/test/io/ferguson/test_file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
 
@@ -311,6 +305,7 @@ tags
 /test/release/examples/primers/reductions
 /test/release/examples/primers/slices
 /test/release/examples/primers/sparse
+/test/release/examples/primers/specialMethods
 /test/release/examples/primers/syncsingle
 /test/release/examples/primers/taskParallel
 /test/release/examples/primers/timers
@@ -322,6 +317,8 @@ tags
 /test/release/examples/primers/chplvis/E2
 /test/release/examples/primers/chplvis/E3
 /test/release/examples/primers/chplvis/E4
+
+/test/release/examples/primers/tempfile.txt
 
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
@@ -419,6 +416,8 @@ tags
 /test/users/franzf/v2/chpl/chapel.hash
 
 /test/variables/bradc/docs/pragmaMultipleVars.doc.txt
+
+/test/visibility/only/test.dat
 
 /test/users/thom/returnGenericLineno/strassen
 

@@ -30,7 +30,7 @@ proc okSetInTask() {
 }
 okSetInTask();
 
-var global: unmanaged MyClass;
+var global: unmanaged MyClass?;
 proc setGlobal() {
   global = new unmanaged MyClass(1);
 }
@@ -43,7 +43,7 @@ proc okSetGlobalInFn() {
 okSetGlobalInFn();
 
 proc okDeleteNil() {
-  var x: unmanaged MyClass;
+  var x: unmanaged MyClass?;
   delete x;
 }
 okDeleteNil();

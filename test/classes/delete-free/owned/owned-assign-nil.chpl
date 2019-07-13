@@ -4,7 +4,7 @@ class MyClass {
 
 
 proc test() {
-  var s:owned MyClass = nil;
+  var s:owned MyClass? = nil;
   s = nil;
 
   writeln(s);
