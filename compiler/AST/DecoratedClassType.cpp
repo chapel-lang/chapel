@@ -271,8 +271,8 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
 
 ClassTypeDecorator classTypeDecorator(Type* t) {
-  if (!isClassLikeOrManaged(t))
-    INT_FATAL("classTypeDecorator called on non-class");
+  if (!isClassLikeOrManaged(t) && !isClassLikeOrPtr(t))
+    INT_FATAL("classTypeDecorator called on non-class non-ptr");
 
   if (isManagedPtrType(t) && !isDecoratedClassType(t)) {
     Type* bt = getManagedPtrBorrowType(t);
@@ -318,6 +318,18 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
     return CLASS_TYPE_UNMANAGED_NONNIL;
   if (t == dtUnmanagedNilable)
     return CLASS_TYPE_UNMANAGED_NILABLE;
+  if (t == dtAnyManagement)
+    return CLASS_TYPE_GENERIC;
+  if (t == dtAnyManagementNonNilable)
+    return CLASS_TYPE_GENERIC_NONNIL;
+  if (t == dtAnyManagementNilable)
+    return CLASS_TYPE_GENERIC_NILABLE;
+
+  if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+      t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+      t == dtCVoidPtr) {
+    return CLASS_TYPE_UNMANAGED_NILABLE;
+  }
 
   INT_FATAL("case not handled");
   return CLASS_TYPE_BORROWED;

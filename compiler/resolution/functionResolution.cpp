@@ -2520,42 +2520,43 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       return resolveBuiltinCastCall(call);
     }
 
-    // Handle some generic casts
+    // Handle some generic casts to 'unmanaged' etc
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
       // This case is here just because in the event
-      // that targetType is generic, we won't (currently)
-      // be able to resolve a call to a _cast with a generic actual.
-      if (isClassLike(targetType)) {
-        if (isClassLike(valueType)) {
-          AggregateType* at = toAggregateType(canonicalDecoratedClassType(valueType));
+      // that targetType is generic, we weren't able
+      // to resolve a call to a _cast with a generic actual.
+      // It could probably be removed.
+      if (isBuiltinGenericClassType(targetType) ||
+          isDecoratedClassType(targetType)) {
+        Type* t = canonicalDecoratedClassType(valueType);
+        AggregateType* at = toAggregateType(t);
 
-          // Compute the decorator combining generic properties
-          ClassTypeDecorator d;
-          d = combineDecorators(classTypeDecorator(targetType),
-                                classTypeDecorator(valueType));
-          Type* t = at->getDecoratedClass(d);
+        // Compute the decorator combining generic properties
+        ClassTypeDecorator d;
+        d = combineDecorators(classTypeDecorator(targetType),
+                              classTypeDecorator(valueType));
+        t = at->getDecoratedClass(d);
 
-          // Replace the target type with the instantiated one.
-          targetTypeSe->setSymbol(t->symbol);
+        // Replace the target type with the instantiated one.
+        targetTypeSe->setSymbol(t->symbol);
 
-          if (isTypeExpr(valueSe)) {
-            // Casts of type expressions e.g. t:unmanaged
-            // are useful but don't really work as calls to _cast.
-            // Change them to noop to work around other parts of resolution.
-            call->primitive = primitives[PRIM_NOOP];
-            call->baseExpr->remove();
-            if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-              if (parentCall->isPrimitive(PRIM_MOVE) ||
-                  parentCall->isPrimitive(PRIM_ASSIGN)) {
-                call->replace(new SymExpr(t->symbol));
-                parentCall->getStmtExpr()->insertBefore(call);
-              }
+        if (isTypeExpr(valueSe)) {
+          // Casts of type expressions e.g. t:unmanaged
+          // are useful but don't really work as calls to _cast.
+          // Change them to noop to work around other parts of resolution.
+          call->primitive = primitives[PRIM_NOOP];
+          call->baseExpr->remove();
+          if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+            if (parentCall->isPrimitive(PRIM_MOVE) ||
+                parentCall->isPrimitive(PRIM_ASSIGN)) {
+              call->replace(new SymExpr(t->symbol));
+              parentCall->getStmtExpr()->insertBefore(call);
             }
-            return true;
-          } else {
-            // Try again with proper type
-            return resolveBuiltinCastCall(call);
           }
+          return true;
+        } else {
+          // Try again with proper type
+          return resolveBuiltinCastCall(call);
         }
       }
 

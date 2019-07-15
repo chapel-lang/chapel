@@ -1037,9 +1037,8 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
-bool isClassLike(Type* t) {
-  return isDecoratedClassType(t) ||
-         t == dtBorrowed ||
+bool isBuiltinGenericClassType(Type* t) {
+  return t == dtBorrowed ||
          t == dtBorrowedNonNilable ||
          t == dtBorrowedNilable ||
          t == dtUnmanaged ||
@@ -1047,7 +1046,12 @@ bool isClassLike(Type* t) {
          t == dtUnmanagedNonNilable ||
          t == dtAnyManagement ||
          t == dtAnyManagementNonNilable ||
-         t == dtAnyManagementNilable ||
+         t == dtAnyManagementNilable;
+}
+
+bool isClassLike(Type* t) {
+  return isDecoratedClassType(t) ||
+         isBuiltinGenericClassType(t) ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));
@@ -1059,7 +1063,8 @@ bool isClassLikeOrManaged(Type* t) {
 
 bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
-                            t->symbol->hasFlag(FLAG_DATA_CLASS));
+                            t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+                            t == dtCVoidPtr);
 }
 
 bool isClassLikeOrNil(Type* t) {

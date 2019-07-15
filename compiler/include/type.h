@@ -449,6 +449,7 @@ int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
