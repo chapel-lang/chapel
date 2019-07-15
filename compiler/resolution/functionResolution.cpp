@@ -2356,6 +2356,7 @@ void resolveCall(CallExpr* call) {
 
   } else {
 
+    // TODO: Should these move to preFold?
     if (resolveTypeComparisonCall(call))
       return;
 
@@ -2380,12 +2381,14 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
     if (call->numActuals() == 2) {
       const char* name = urse->unresolved;
 
+      bool eq  = name == astrSeq;
+      bool ne  = name == astrSne;
       bool lt  = name == astrSlt;
       bool lte = name == astrSlte;
       bool gt  = name == astrSgt;
       bool gte = name == astrSgte;
 
-      if (lt || lte || gt || gte) {
+      if (eq || ne || lt || lte || gt || gte) {
         SymExpr* lhs = toSymExpr(call->get(1));
         SymExpr* rhs = toSymExpr(call->get(2));
 
@@ -2393,21 +2396,35 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
             rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
 
-          rhs->remove();
-          lhs->remove();
-          call->baseExpr->remove();
-
-          if (lte || gte)
-            call->primitive = primitives[PRIM_IS_SUBTYPE];
-          else
-            call->primitive = primitives[PRIM_IS_PROPER_SUBTYPE];
-
-          if (lt || lte) {
-            call->insertAtTail(rhs);
-            call->insertAtTail(lhs);
+          if (eq || ne) {
+            Symbol* value = gFalse;
+            bool sameType = lhs->symbol()->type == rhs->symbol()->type;
+            if (eq && sameType)
+              value = gTrue;
+            if (ne && !sameType)
+              value = gTrue;
+            SymExpr* se = new SymExpr(value);
+            call->convertToNoop();
+            call->replace(se);
+            // Put the call back in to aid traversal
+            se->getStmtExpr()->insertBefore(call);
           } else {
-            call->insertAtTail(lhs);
-            call->insertAtTail(rhs);
+            rhs->remove();
+            lhs->remove();
+            call->baseExpr->remove();
+
+            if (lte || gte)
+              call->primitive = primitives[PRIM_IS_SUBTYPE];
+            else
+              call->primitive = primitives[PRIM_IS_PROPER_SUBTYPE];
+
+            if (lt || lte) {
+              call->insertAtTail(rhs);
+              call->insertAtTail(lhs);
+            } else {
+              call->insertAtTail(lhs);
+              call->insertAtTail(rhs);
+            }
           }
 
           return true;

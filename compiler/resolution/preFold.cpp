@@ -1485,36 +1485,6 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
     }
 
-  } else if (call->isNamed("==")) {
-    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
-      Type* lt = call->get(1)->getValType();
-      Type* rt = call->get(2)->getValType();
-
-      if (lt                                != dtUnknown &&
-          rt                                != dtUnknown &&
-          lt->symbol->hasFlag(FLAG_GENERIC) == false     &&
-          rt->symbol->hasFlag(FLAG_GENERIC) == false) {
-        retval = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-        call->replace(retval);
-      }
-    }
-
-
-  } else if (call->isNamed("!=")) {
-    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
-      Type* lt = call->get(1)->getValType();
-      Type* rt = call->get(2)->getValType();
-
-      if (lt                                != dtUnknown &&
-          rt                                != dtUnknown &&
-          lt->symbol->hasFlag(FLAG_GENERIC) == false     &&
-          rt->symbol->hasFlag(FLAG_GENERIC) == false) {
-        retval = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-        call->replace(retval);
-      }
-    }
-
-
   } else if (call->isNamed("chpl__staticFastFollowCheck")  ||
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {
     if (! call->isResolved())
