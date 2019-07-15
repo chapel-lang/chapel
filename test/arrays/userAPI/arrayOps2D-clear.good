@@ -1,2 +1,3 @@
 ./arrayAPItest.chpl:121: In function 'testArrayAPI2D':
+./arrayAPItest.chpl:254: warning: clear is deprecated - please use List.clear
 ./arrayAPItest.chpl:254: error: clear() is only supported on dense 1D arrays
