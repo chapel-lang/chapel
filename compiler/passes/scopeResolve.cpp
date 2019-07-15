@@ -18,6 +18,7 @@
  */
 
 #include "scopeResolve.h"
+#include "view.h"
 
 #include "astutil.h"
 #include "build.h"
@@ -2404,6 +2405,18 @@ static void removeUnusedModules() {
   }
 }
 
+void detectUserDefinedBorrowMethods() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isMethod()) {
+      if (strncmp(fn->name, "borrow", 6) == 0) {
+        if (!fn->_this->type->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+          USR_FATAL("Classes cannot define a method named \"borrow\"");
+        }
+      }
+    }
+  }
+}
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2440,6 +2453,8 @@ void scopeResolve() {
   cleanupExternC();
 
   resolveUnmanagedBorrows();
+
+  detectUserDefinedBorrowMethods();
 
   removeUnusedModules();
 }
