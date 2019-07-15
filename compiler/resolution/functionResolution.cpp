@@ -2467,7 +2467,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 }
 
 static bool resolveClassBorrowMethod(CallExpr* call) {
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
+  if (isUnresolvedSymExpr(call->baseExpr)) {
     if (call->numActuals() == 2) { //mt, this
       if (call->isNamed("borrow") && dtMethodToken == call->get(1)->typeInfo()) {
         Type *t = call->get(2)->getValType();
