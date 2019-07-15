@@ -2283,12 +2283,10 @@ void resolveCall(CallExpr* call) {
 }
 
 
-
 FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
 
-// copy and rename
 static bool resolveTypeComparisonCall(CallExpr* call) {
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
