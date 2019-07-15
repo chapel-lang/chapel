@@ -18,7 +18,6 @@
  */
 
 #include "scopeResolve.h"
-#include "view.h"
 
 #include "astutil.h"
 #include "build.h"
