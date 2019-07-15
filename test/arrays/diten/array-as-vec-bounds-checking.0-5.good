@@ -1,1 +1,8 @@
+array-as-vec-bounds-checking.chpl:10: warning: pop_back is deprecated - please use List.pop
+array-as-vec-bounds-checking.chpl:14: warning: pop_front is deprecated - please use List.pop
+array-as-vec-bounds-checking.chpl:18: warning: insert is deprecated - please use List.insert
+array-as-vec-bounds-checking.chpl:22: warning: remove is deprecated - please use List.pop
+array-as-vec-bounds-checking.chpl:26: warning: remove is deprecated - please use List.pop
+array-as-vec-bounds-checking.chpl:30: warning: remove has been deprecated - please use List.pop
+array-as-vec-bounds-checking.chpl:30: warning: remove is deprecated - please use List.pop
 array-as-vec-bounds-checking.chpl:26: error: halt reached - remove at position 7 out of bounds

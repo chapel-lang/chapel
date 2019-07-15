@@ -1,3 +1,6 @@
+array-as-vec-start-idx.chpl:1: In function 'pushPop':
+array-as-vec-start-idx.chpl:4: warning: push_back is deprecated - please use List.extend
+array-as-vec-start-idx.chpl:8: warning: pop_front is deprecated - please use List.pop
 101
 81
 61

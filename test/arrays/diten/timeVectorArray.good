@@ -1,3 +1,18 @@
+timeVectorArray.chpl:14: In function 'run':
+timeVectorArray.chpl:16: warning: push_back is deprecated - please use List.extend
+timeVectorArray.chpl:34: In function 'run':
+timeVectorArray.chpl:36: warning: push_front is deprecated - please use List.insert
+timeVectorArray.chpl:42: In function 'run':
+timeVectorArray.chpl:44: warning: pop_back is deprecated - please use List.pop
+timeVectorArray.chpl:50: In function 'run':
+timeVectorArray.chpl:52: warning: pop_front is deprecated - please use List.pop
+timeVectorArray.chpl:60: In function 'run':
+timeVectorArray.chpl:65: warning: insert is deprecated - please use List.insert
+timeVectorArray.chpl:73: In function 'run':
+timeVectorArray.chpl:80: warning: insert is deprecated - please use List.insert
+timeVectorArray.chpl:88: In function 'run':
+timeVectorArray.chpl:91: warning: remove is deprecated - please use List.pop
+timeVectorArray.chpl:96: warning: remove is deprecated - please use List.pop
 PushBack
 SumElements
 PopBack

@@ -1,1 +1,4 @@
+vectorArray.chpl:11: warning: push_back is deprecated - please use List.extend
+vectorArray.chpl:14: warning: push_front is deprecated - please use List.insert
+vectorArray.chpl:18: warning: pop_back is deprecated - please use List.pop
 0

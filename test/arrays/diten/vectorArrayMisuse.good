@@ -1,1 +1,2 @@
+vectorArrayMisuse.chpl:6: warning: push_back is deprecated - please use List.extend
 vectorArrayMisuse.chpl:6: error: halt reached - cannot call push_back on an array defined over a domain with multiple arrays
