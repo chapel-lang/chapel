@@ -2469,16 +2469,11 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 }
 
 static bool resolveClassBorrowMethod(CallExpr* call) {
-
-  //call is not resolved
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
-    if (call->numActuals() == 2) { //2nd arg is method token
-      //metod token says it is a method not function
+    if (call->numActuals() == 2) { //mt, this
       if (call->isNamed("borrow") && dtMethodToken == call->get(1)->typeInfo()) {
         Type *t = call->get(2)->getValType();
-        if (isClassLike(t)) {//true for user class, ref/ddata/cptr are false
-                             //owned/shared are false. but tru if isClassLikeOrManaged
-
+        if (isClassLike(t)) {
           CallExpr *pe = toCallExpr(call->parentExpr);
           INT_ASSERT(call->methodTag && pe && pe->baseExpr == call);
 
@@ -2488,24 +2483,25 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
             d = CLASS_TYPE_BORROWED_NILABLE;
           }
 
+          // this works around a compiler bug
           AggregateType *at = toAggregateType(canonicalDecoratedClassType(t));
           Type *newType = at->getDecoratedClass(d);
-          //Type *newType = getDecoratedClass(t, d);
-          //if (newType == t) {
-            // we'd remove the call, but you shouldn't probably do that at this
-            // time.
-          //}
 
+          // make the call a PRIM_CAST
           call->baseExpr->remove();
           call->primitive = primitives[PRIM_CAST];
 
           call->get(1)->remove();  //remove method token
-          Expr *receiver = call->get(1)->remove(); // lookup replace
+          Expr *receiver = call->get(1)->remove(); // remove `this`
 
+          // add arguments to PRIM_CAST
           call->insertAtTail(newType->symbol);
           call->insertAtTail(receiver);
 
+          // put the cast before the parent
           pe->insertBefore(call->remove());
+
+          //make parent noop
           pe->convertToNoop();
 
           return true;
