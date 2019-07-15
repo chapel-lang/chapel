@@ -2404,7 +2404,7 @@ static void removeUnusedModules() {
   }
 }
 
-void detectUserDefinedBorrowMethods() {
+static void detectUserDefinedBorrowMethods() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isMethod()) {
       if (strncmp(fn->name, "borrow", 6) == 0) {
