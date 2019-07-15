@@ -1,1 +1,6 @@
 *_real
+test_fail
+test_halt
+test_locales
+test_ok
+test_skip
