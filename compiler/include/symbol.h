@@ -676,13 +676,15 @@ VarSymbol* newTempConst(QualifiedType qt);
 const char* intentDescrString(IntentTag intent);
 
 // cache some popular strings
-extern const char* astrSdot;
-extern const char* astrSequals;
-extern const char* astrSgt;
-extern const char* astrSgte;
-extern const char* astrSlt;
-extern const char* astrSlte;
-extern const char* astrSswap;
+extern const char* astrSassign; // =
+extern const char* astrSdot;    // .
+extern const char* astrSeq;     // ==
+extern const char* astrSne;     // !=
+extern const char* astrSgt;     // >
+extern const char* astrSgte;    // >=
+extern const char* astrSlt;     // <
+extern const char* astrSlte;    // <=
+extern const char* astrSswap;   // <=>
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;

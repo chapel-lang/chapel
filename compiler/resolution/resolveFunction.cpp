@@ -341,7 +341,7 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          formal->hasFlag(FLAG_TYPE_VARIABLE)   == false        &&
          isAtomicType(formal->type)            == true         &&
 
-         fn->name                              != astrSequals  &&
+         fn->name                              != astrSassign  &&
 
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }

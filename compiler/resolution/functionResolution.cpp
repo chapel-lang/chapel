@@ -1421,7 +1421,7 @@ bool doCanDispatch(Type*     actualType,
 
   // check if promotion is possible
   if (fn                              != NULL        &&
-      fn->name                        != astrSequals &&
+      fn->name                        != astrSassign &&
       strcmp(fn->name, "these")       != 0           &&
       fn->retTag                      != RET_TYPE    &&
       fn->retTag                      != RET_PARAM   &&
@@ -2022,7 +2022,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 // If 'fn' is the default assignment for a record type, return
 // the name of that record type; otherwise return NULL.
 static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
-  if (fn->name == astrSequals) {
+  if (fn->name == astrSassign) {
     if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
       Type* desttype = fn->getFormal(1)->type->getValType();
       INT_ASSERT(desttype != dtUnknown); // otherwise this test is unreliable
@@ -2850,7 +2850,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     retval = wrapAndCleanUpActuals(best, info, true);
 
     if (checkOnly == false &&
-        retval->name                         == astrSequals &&
+        retval->name                         == astrSassign &&
         isRecord(retval->getFormal(1)->type) == true        &&
         retval->getFormal(2)->type           == dtNil) {
       USR_FATAL(userCall(call),
@@ -2968,7 +2968,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     }
 
     if (checkOnly == false) {
-      if (best->fn->name                         == astrSequals &&
+      if (best->fn->name                         == astrSassign &&
           isRecord(best->fn->getFormal(1)->type) == true        &&
           best->fn->getFormal(2)->type           == dtNil) {
         USR_FATAL(userCall(call),
@@ -3172,7 +3172,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         generateUnresolvedMsg(info, visibleFns);
       }
 
-    } else if (info.name == astrSequals) {
+    } else if (info.name == astrSassign) {
       if        (info.actuals.v[0]                              !=  NULL  &&
                  info.actuals.v[1]                              !=  NULL  &&
                  info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
@@ -4949,7 +4949,7 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
       isAssign = true;
 
     if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr))
-      if (urse->unresolved == astrSequals)
+      if (urse->unresolved == astrSassign)
         isAssign = true;
 
     if (isAssign) {

@@ -2559,7 +2559,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
   //
   // (we assume that a user supplied = function for a class with owned
   //  pointers handles lifetimes in a reasonable manner)
-  if (calledFn && calledFn->name == astrSequals /* "=" */ ) {
+  if (calledFn && calledFn->name == astrSassign) {
     if (isClassLikeOrNil(call->get(1)->getValType()) &&
         isClassLikeOrNil(call->get(2)->getValType()))
       // Only consider same-type class assignment overloads
@@ -2665,7 +2665,7 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
   if (c != CONSTRAINT_UNKNOWN)
     return false;
   // TODO - make this exception more reasonable
-  if (fn->name == astrSequals)
+  if (fn->name == astrSassign)
     return false;
   if (fn->name == astrSswap)
     return false;

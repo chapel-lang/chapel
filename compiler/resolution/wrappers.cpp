@@ -1690,7 +1690,7 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
                          std::vector<ArgSymbol*>& actualFormals) {
   bool retval = false;
 
-  if (fn->name != astrSequals) {
+  if (fn->name != astrSassign) {
     int numActuals = actualFormals.size();
     for (int j = 0; j < numActuals; j++) {
       Symbol* actual     = info.actuals.v[j];

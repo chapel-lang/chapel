@@ -167,7 +167,7 @@ static Expr* postFoldNormal(CallExpr* call) {
     }
   }
 
-  if (call->isNamedAstr(astrSequals) == true) {
+  if (call->isNamedAstr(astrSassign) == true) {
     if (SymExpr* lhs = toSymExpr(call->get(1))) {
       if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) == true ||
           lhs->symbol()->isParameter()             == true) {
@@ -590,7 +590,7 @@ static Expr* postFoldMove(CallExpr* call) {
     } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
       FnSymbol* fn = rhs->resolvedFunction();
 
-      if (fn != NULL && fn->name == astrSequals && fn->retType == dtVoid) {
+      if (fn != NULL && fn->name == astrSassign && fn->retType == dtVoid) {
         call->replace(rhs->remove());
 
         retval = rhs;
@@ -739,7 +739,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
-        fn->name != astrSequals                                        &&
+        fn->name != astrSassign                                        &&
         fn->name != astr_defaultOf) {
       retval = true;
     }
@@ -783,7 +783,7 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
       //
       // The substitution usually happens before resolution, so for
       // assignment, we key off of the name :-(
-      if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSequals)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSassign)) {
         if (sym->symbol()->hasFlag(FLAG_RVV)) {
           call->convertToNoop();
         }
