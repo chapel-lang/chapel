@@ -1098,8 +1098,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = myLocArr!;
 
     local {
-      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type;
-      ref myElems = narrowArrSection.myElems;
+      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
+      ref myElems = narrowArrSection!.myElems;
       for i in myFollowThisDom do yield myElems[i];
     }
   } else {
