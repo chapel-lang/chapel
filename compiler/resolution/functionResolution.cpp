@@ -1265,11 +1265,13 @@ bool canCoerce(Type*     actualType,
     if (isManagedPtrType(formalType) &&
         actualOwnedShared == formalOwnedShared) {
       // e.g. Owned(Child) coerces to Owned(Parent)
-      return canDispatch(actualBaseType, NULL, formalBaseType, formalSym, fn,
+      return canDispatch(actualBaseType, actualSym,
+                         formalBaseType, formalSym, fn,
                          promotes, paramNarrows);
     } else if (isClassLike(formalType)) {
       // e.g. Owned(SomeClass) to SomeClass (borrow type)
-      return canDispatch(actualBaseType, NULL, formalType, formalSym, fn,
+      return canDispatch(actualBaseType, actualSym,
+                         formalType, formalSym, fn,
                          promotes, paramNarrows);
     }
   }
@@ -1287,7 +1289,7 @@ bool canCoerce(Type*     actualType,
 
   if (actualType->symbol->hasFlag(FLAG_REF))
     // ref can't store a param, so no need to propagate paramNarrows
-    return canDispatch(actualType->getValType(), NULL,
+    return canDispatch(actualType->getValType(), actualSym,
                        // MPF: Should this be formalType->getValType() ?
                        formalType, formalSym,
                        fn,
