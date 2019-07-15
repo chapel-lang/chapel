@@ -57,7 +57,7 @@ proc masonPublish(args: [] string) throws {
           dryRun(username);
         }
         else if !dry && args.size == 3 {
-          const badSyntaxMessage = 'does not meet the "mason publish [options]" syntax';
+          const badSyntaxMessage = ' does not meet the "mason publish [options]" syntax';
           writeln('"' + args[0]+ ' '  + args[1] + ' ' + args[2] + badSyntaxMessage);
           writeln('See "mason publish -h" for more details');
           exit(0);
@@ -158,7 +158,7 @@ private proc usernameCheck(username: string) {
 
 /* Runs Commands to see if Fork of mason-registry exists under the username */
 private proc checkIfForkExists(username: string) {
-  var getFork= ('git ls-remote https://github.com/' + username + '/mason-registry');
+  var getFork = ('git ls-remote https://github.com/' + username + '/mason-registry');
   var p = runWithStatus(getFork, false);
   return p;
 }
