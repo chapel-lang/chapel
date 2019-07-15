@@ -81,6 +81,34 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   return NULL;
 }
 
+ClassTypeDecorator combineDecorators(ClassTypeDecorator formalDecorator,
+                                     ClassTypeDecorator actualDecorator) {
+  ClassTypeDecorator d = formalDecorator;
+
+  // Combine management information
+  if (isDecoratorUnknownManagement(formalDecorator)) {
+    // Get the management from the other decorator, but get the
+    // nilability from this one if it's specified.
+    d = removeNilableFromDecorator(actualDecorator);
+    if (isDecoratorNilable(formalDecorator))
+      d = addNilableToDecorator(d);
+    else if (isDecoratorNonNilable(formalDecorator))
+      d = addNonNilToDecorator(d);
+  }
+
+  // Combine nilability information
+  if (isDecoratorUnknownNilability(d)) {
+    // If it's unknown, use the nilability from the other decorator
+    if (isDecoratorNilable(actualDecorator))
+      d = addNilableToDecorator(d);
+    else if (isDecoratorNonNilable(actualDecorator))
+      d = addNonNilToDecorator(d);
+  }
+
+  return d;
+}
+
+
 DecoratedClassType::DecoratedClassType(AggregateType* cls, ClassTypeDecorator d)
   : Type(E_DecoratedClassType, NULL) {
 

@@ -417,21 +417,7 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
 
       // Adjust the formalDecorator to use when instantiating
       // according to the actual decorator, when formalDecorator is generic.
-      if (isDecoratorUnknownManagement(formalDecorator)) {
-        ClassTypeDecorator a = removeNilableFromDecorator(actualDecorator);
-        if (isDecoratorNilable(formalDecorator))
-          formalDecorator = addNilableToDecorator(a);
-        else if (isDecoratorNonNilable(formalDecorator))
-          formalDecorator = addNonNilToDecorator(a);
-        else
-          formalDecorator = a;
-      }
-      if (isDecoratorUnknownNilability(formalDecorator)) {
-        if (isDecoratorNilable(actualDecorator))
-          formalDecorator = addNilableToDecorator(formalDecorator);
-        else if (isDecoratorNonNilable(actualDecorator))
-          formalDecorator = addNonNilToDecorator(formalDecorator);
-      }
+      formalDecorator = combineDecorators(formalDecorator, actualDecorator);
 
       // handle e.g. owned MyClass actual -> owned! formal
       if (AggregateType* formalAt = toAggregateType(canonicalFormal))

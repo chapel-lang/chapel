@@ -74,4 +74,7 @@ static inline bool isDecoratorUnknownManagement(ClassTypeDecorator d) {
 
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className);
 
+ClassTypeDecorator combineDecorators(ClassTypeDecorator formalDecorator,
+                                     ClassTypeDecorator actualDecorator);
+
 #endif

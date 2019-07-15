@@ -2525,25 +2525,14 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       // This case is here just because in the event
       // that targetType is generic, we won't (currently)
       // be able to resolve a call to a _cast with a generic actual.
-      if (targetType == dtBorrowed ||
-          targetType == dtBorrowedNonNilable ||
-          targetType == dtBorrowedNilable ||
-          targetType == dtUnmanaged ||
-          targetType == dtUnmanagedNonNilable ||
-          targetType == dtUnmanagedNilable) {
-
+      if (isClassLike(targetType)) {
         if (isClassLike(valueType)) {
           AggregateType* at = toAggregateType(canonicalDecoratedClassType(valueType));
 
-          ClassTypeDecorator d = classTypeDecorator(targetType);
-          // Combine class type information
-          if (isDecoratorUnknownNilability(d)) {
-            if (isNilableClassType(valueType))
-              d = addNilableToDecorator(d);
-            else if (isNonNilableClassType(valueType))
-              d = addNonNilToDecorator(d);
-          }
-
+          // Compute the decorator combining generic properties
+          ClassTypeDecorator d;
+          d = combineDecorators(classTypeDecorator(targetType),
+                                classTypeDecorator(valueType));
           Type* t = at->getDecoratedClass(d);
 
           // Replace the target type with the instantiated one.
