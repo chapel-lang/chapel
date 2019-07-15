@@ -1184,7 +1184,8 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_GENERIC_NONNIL:
       return isDecoratorNonNilable(actual);
     case CLASS_TYPE_GENERIC_NILABLE:
-      return isDecoratorNilable(actual);
+      // might be instantiation, or instantiation+coercion
+      return true;
 
     // no default for compiler warnings to know when to update it
   }
