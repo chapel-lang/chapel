@@ -230,16 +230,24 @@ private proc getPackageName() throws {
 
 /* Adds package to the Bricks of the mason-registry branch and then adds the version.toml
  with the source url of the package's GitHub repo.*/
-private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string) {
-  const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
-  const url = gitUrl();
-  var tomlFile = new owned(parseToml(toParse));
-  const versionNum = tomlFile['brick']['version'].s;
-  mkdir(safeDir + "/mason-registry/Bricks/" + name);
-  const baseToml = tomlFile;
-  var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
-  var tomlWriter = newToml.writer();
-  baseToml["brick"]["source"] = url[1..url.length-1];
-  tomlWriter.write(baseToml);
-  tomlWriter.close();
+private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string) throws {
+  try! {
+
+    const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
+    const url = gitUrl();
+    var tomlFile = new owned(parseToml(toParse));
+    const versionNum = tomlFile['brick']['version'].s;
+    mkdir(safeDir + "/mason-registry/Bricks/" + name);
+    const baseToml = tomlFile;
+    var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
+    var tomlWriter = newToml.writer();
+    baseToml["brick"]["source"] = url[1..url.length-1];
+    tomlWriter.write(baseToml);
+    tomlWriter.close();
+    }
+  catch {
+    writeln('ERROR: ' + name + ' already exists in the Bricks');
+    rmTree(safeDir + '/');
+    exit(1);
+  }
 }
