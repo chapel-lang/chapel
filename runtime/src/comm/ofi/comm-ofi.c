@@ -2450,13 +2450,12 @@ struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
     // re-allocated, use that.
     //
     if (tcip->bound) {
-      DBG_PRINTF(DBG_THREADS, "I re-have bound tciTab[%td]",
-                 tcip - tciTab);
+      DBG_PRINTF(DBG_TCIPS, "realloc bound tciTab[%td]", tcip - tciTab);
       return tcip;
     }
 
     if (!atomic_exchange_bool(&tcip->allocated, true)) {
-      DBG_PRINTF(DBG_THREADS, "I re-have tciTab[%td]", tcip - tciTab);
+      DBG_PRINTF(DBG_TCIPS, "realloc tciTab[%td]", tcip - tciTab);
       return tcip;
     }
   }
@@ -2471,7 +2470,7 @@ struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
       || (tciTabFixedAssignments && chpl_task_isFixedThread())) {
     tcip->bound = true;
   }
-  DBG_PRINTF(DBG_THREADS, "I have%s tciTab[%td]",
+  DBG_PRINTF(DBG_TCIPS, "alloc%s tciTab[%td]",
              tcip->bound ? " bound" : "", tcip - tciTab);
   return tcip;
 }
@@ -2536,7 +2535,7 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
   // Bound contexts stay bound.  We only release non-bound ones.
   //
   if (!tcip->bound) {
-    DBG_PRINTF(DBG_THREADS, "I free tciTab[%td]", tcip - tciTab);
+    DBG_PRINTF(DBG_TCIPS, "free tciTab[%td]", tcip - tciTab);
     atomic_store_bool(&tcip->allocated, false);
   }
 }
