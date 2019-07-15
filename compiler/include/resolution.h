@@ -102,10 +102,19 @@ bool explainCallMatch(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 
+bool allowImplicitNilabilityRemoval(Type* actualType,
+                                    Symbol* actualSym,
+                                    Type* formalType,
+                                    Symbol* formalSym);
+
 bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal);
+                         ClassTypeDecorator formal,
+                         bool implicitBang);
 bool canInstantiateDecorators(ClassTypeDecorator actual,
                               ClassTypeDecorator formal);
+bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
+                                      ClassTypeDecorator formal,
+                                      bool implicitBang);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
@@ -281,7 +290,8 @@ void resolveDestructor(AggregateType* at);
 
 void fixTypeNames(AggregateType* at);
 
-Type* getInstantiationType(Type* actualType, Type* formalType);
+Type* getInstantiationType(Type* actualType, Symbol* actualSym,
+                           Type* formalType, Symbol* formalSym);
 
 void resolveIfExprType(CondStmt* stmt);
 

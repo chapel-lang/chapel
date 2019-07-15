@@ -618,6 +618,9 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
 
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
+//
+// If coercions are also necessary, this function should return false.
+// Coercion+instantiation can be handled in getBasicInstantiationType.
 bool canInstantiate(Type* actualType, Type* formalType) {
   if (actualType == dtMethodToken) {
     return false;
@@ -679,108 +682,35 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtUnmanaged)
-    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isUnmanaged())
-        return true;
+  if (isClassLikeOrManaged(actualType) && isClassLike(formalType)) {
+    Type* actualC = canonicalClassType(actualType);
+    ClassTypeDecorator actualDec = classTypeDecorator(actualType);
 
-  if (formalType == dtUnmanagedNonNilable)
-    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isUnmanaged() && !dt->isNilable())
-        return true;
+    Type* formalC = canonicalClassType(formalType);
+    ClassTypeDecorator formalDec = classTypeDecorator(formalType);
 
-  if (formalType == dtUnmanagedNilable)
-    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isUnmanaged() && dt->isNilable())
-        return true;
+    if (canInstantiateDecorators(actualDec, formalDec)) {
+      // Now that the decorators are checked, verify that the
+      // types inside are OK
 
-  if (formalType == dtAnyManagement)
-    if (isClassLikeOrManaged(actualType))
-        return true;
-
-  if (formalType == dtAnyManagementNonNilable)
-    if (isNonNilableClassType(actualType))
-      return true;
-
-  if (formalType == dtAnyManagementNilable)
-    if (isNilableClassType(actualType))
-      return true;
-
-
-  if (formalType == dtBorrowed) {
-    if (isClass(actualType) &&
-        (actualType == dtObject ||
-         !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
-      return true;
-    else if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isBorrowed())
-        return true;
-  }
-
-  if (formalType == dtBorrowedNonNilable) {
-    if (isClass(actualType) &&
-        (actualType == dtObject ||
-         !actualType->symbol->hasFlag(FLAG_NO_OBJECT)))
-      return true;
-
-    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isBorrowed() && !dt->isNilable())
-        return true;
-  }
-
-  if (formalType == dtBorrowedNilable) {
-    if (DecoratedClassType* dt = toDecoratedClassType(actualType))
-      if (dt->isBorrowed() && dt->isNilable())
-        return true;
-  }
-
-  // handle unmanaged GenericClass(int) -> unmanaged GenericClass
-  if (isDecoratedClassType(formalType) && isDecoratedClassType(actualType))
-    if (classesWithSameKind(formalType, actualType))
-      if (canInstantiate(canonicalDecoratedClassType(actualType),
-                         canonicalDecoratedClassType(formalType)))
-        return true;
-
-  // e.g. passing owned MyClass? into owned?
-  if (DecoratedClassType* formalDt = toDecoratedClassType(formalType))
-    if (AggregateType* formalAt = formalDt->getCanonicalClass())
-      if (isManagedPtrType(formalAt) && formalAt->instantiatedFrom == NULL)
-        if (AggregateType* atActual = toAggregateType(actualType))
-          if (formalAt == atActual->instantiatedFrom)
-            if (classesWithSameKind(formalType, actualType))
-              return true;
-
-  // passing borrowed MyClass into undecorated MyClass (aka managed? MyClass)
-  if (isDecoratedClassType(formalType) && isClassLikeOrManaged(actualType)) {
-    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
-    AggregateType* actualC =
-      toAggregateType(canonicalDecoratedClassType(actualType));
-    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
-    AggregateType* formalC =
-      toAggregateType(canonicalDecoratedClassType(formalType));
-
-    if (canInstantiateDecorators(actualDecorator, formalDecorator)) {
       // are the decorated class types the same?
       if (actualC == formalC)
         return true;
-      // are we passing a subclass? instantiation?
-      if (canDispatch(actualC, NULL, formalC, NULL,
-                      NULL, NULL, NULL, false)) {
+
+      // These are all generic other than information in decorator
+      if (isBuiltinGenericClassType(formalC))
         return true;
-      }
+
+      //// are we passing a subclass? instantiation?
+      //if (canDispatch(actualC, NULL, formalC, NULL, NULL, NULL, NULL, false))
+      //  return true;
     }
   }
-
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
 
     if (AggregateType* atFrom = atActual->instantiatedFrom) {
       if (canInstantiate(atFrom, formalType) == true) {
-        return true;
-      }
-
-      if (formalType->symbol->hasFlag(FLAG_GENERIC)                 == true &&
-          getConcreteParentForGenericFormal(actualType, formalType) != NULL) {
         return true;
       }
     }
@@ -1087,13 +1017,8 @@ bool canCoerceTuples(Type*     actualType,
 }
 
 
-/* CLASS_TYPE_BORROWED e.g. can represent any nilability,
-   but this function assumes that an actual with type CLASS_TYPE_BORROWED
-   is actually the same as CLASS_TYPE_BORROWED_NONNIL.
- */
-bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal) {
-
+static
+ClassTypeDecorator removeGenericNilability(ClassTypeDecorator actual) {
   // Normalize actuals to remove generic-ness
   if (actual == CLASS_TYPE_BORROWED)
     actual = CLASS_TYPE_BORROWED_NONNIL;
@@ -1102,6 +1027,20 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
   if (actual == CLASS_TYPE_MANAGED)
     actual = CLASS_TYPE_MANAGED_NONNIL;
 
+  return actual;
+}
+
+/* CLASS_TYPE_BORROWED e.g. can represent any nilability,
+   but this function assumes that an actual with type CLASS_TYPE_BORROWED
+   is actually the same as CLASS_TYPE_BORROWED_NONNIL.
+ */
+bool canCoerceDecorators(ClassTypeDecorator actual,
+                         ClassTypeDecorator formal,
+                         bool implicitBang) {
+
+  // Normalize actuals to remove generic-ness
+  actual = removeGenericNilability(actual);
+
   // Shouldn't have generic actuals right now.
   if (isDecoratorUnknownManagement(actual))
     return false;
@@ -1109,34 +1048,39 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
   switch (formal) {
     case CLASS_TYPE_BORROWED:
       // borrowed but generic nilability
-      return true;
+      // This would be instantiation
+      return false;
     case CLASS_TYPE_BORROWED_NONNIL:
       // Can't coerce away nilable
       return actual == CLASS_TYPE_BORROWED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL;
+             actual == CLASS_TYPE_MANAGED_NONNIL ||
+             implicitBang;
     case CLASS_TYPE_BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
       return true;
     case CLASS_TYPE_UNMANAGED:
       // unmanaged but generic nilability
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE;
+      // This would be instantiation
+      return false;
     case CLASS_TYPE_UNMANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to unmanaged
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL;
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       // Can't coerce borrowed to unmanaged
       return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NILABLE;
     case CLASS_TYPE_MANAGED:
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
+      // managed but generic nilability
+      // this would be instantiation
+      return false;
     case CLASS_TYPE_MANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to managed
-      return actual == CLASS_TYPE_MANAGED_NONNIL;
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
     case CLASS_TYPE_MANAGED_NILABLE:
       // Can't coerce borrowed to managed
       return actual == CLASS_TYPE_MANAGED_NONNIL ||
@@ -1156,12 +1100,7 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
                               ClassTypeDecorator formal) {
 
   // Normalize actuals to remove generic-ness
-  if (actual == CLASS_TYPE_BORROWED)
-    actual = CLASS_TYPE_BORROWED_NONNIL;
-  if (actual == CLASS_TYPE_UNMANAGED)
-    actual = CLASS_TYPE_UNMANAGED_NONNIL;
-  if (actual == CLASS_TYPE_MANAGED)
-    actual = CLASS_TYPE_MANAGED_NONNIL;
+  actual = removeGenericNilability(actual);
 
   // Shouldn't have generic actuals right now.
   if (isDecoratorUnknownManagement(actual))
@@ -1169,12 +1108,20 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
 
   switch (formal) {
     case CLASS_TYPE_BORROWED:
+      return actual == CLASS_TYPE_BORROWED_NONNIL ||
+             actual == CLASS_TYPE_BORROWED_NILABLE;
     case CLASS_TYPE_BORROWED_NONNIL:
     case CLASS_TYPE_BORROWED_NILABLE:
+      return false;
     case CLASS_TYPE_UNMANAGED:
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE;
     case CLASS_TYPE_UNMANAGED_NONNIL:
     case CLASS_TYPE_UNMANAGED_NILABLE:
+      return false;
     case CLASS_TYPE_MANAGED:
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
     case CLASS_TYPE_MANAGED_NONNIL:
     case CLASS_TYPE_MANAGED_NILABLE:
       return false;
@@ -1182,9 +1129,68 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_GENERIC:
       return true;
     case CLASS_TYPE_GENERIC_NONNIL:
-      return isDecoratorNonNilable(actual);
+      return actual == CLASS_TYPE_BORROWED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_GENERIC_NILABLE:
-      // might be instantiation, or instantiation+coercion
+      return actual == CLASS_TYPE_BORROWED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NONNIL;
+
+    // no default for compiler warnings to know when to update it
+  }
+
+  return false;
+}
+
+// Can we instatiate or coerce or both?
+bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
+                                      ClassTypeDecorator formal,
+                                      bool implicitBang) {
+  // Normalize actuals to remove generic-ness
+  actual = removeGenericNilability(actual);
+
+  // Shouldn't have generic actuals right now.
+  if (isDecoratorUnknownManagement(actual))
+    return false;
+
+  switch (formal) {
+    case CLASS_TYPE_BORROWED:
+      // can borrow from anything, could instantiate as borrowed?
+      return true;
+    case CLASS_TYPE_BORROWED_NONNIL:
+      // can borrow from anything, but can't coerce away nilability
+      return isDecoratorNonNilable(actual) || implicitBang;
+    case CLASS_TYPE_BORROWED_NILABLE:
+      // can borrow from anything, can always coerce to nilable
+      return true;
+    case CLASS_TYPE_UNMANAGED:
+      // no coercions to unmanaged
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE;
+    case CLASS_TYPE_UNMANAGED_NONNIL:
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
+    case CLASS_TYPE_UNMANAGED_NILABLE:
+      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE;
+    case CLASS_TYPE_MANAGED:
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
+    case CLASS_TYPE_MANAGED_NONNIL:
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
+    case CLASS_TYPE_MANAGED_NILABLE:
+      return actual == CLASS_TYPE_MANAGED_NONNIL ||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
+
+    case CLASS_TYPE_GENERIC:
+      // accepts anything
+      return true;
+    case CLASS_TYPE_GENERIC_NONNIL:
+      // accepts anything nonnil
+      return isDecoratorNonNilable(actual) || implicitBang;
+    case CLASS_TYPE_GENERIC_NILABLE:
       return true;
 
     // no default for compiler warnings to know when to update it
@@ -1193,11 +1199,10 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
   return false;
 }
 
-static
-Type* actualTypeAfterNilabilityRemoval(Type* actualType,
-                                       Symbol* actualSym,
-                                       Type* formalType,
-                                       ArgSymbol* formalSym) {
+bool allowImplicitNilabilityRemoval(Type* actualType,
+                                    Symbol* actualSym,
+                                    Type* formalType,
+                                    Symbol* formalSym) {
 
   // Currently only applies to this arguments (method receivers)
   if (formalSym && actualSym && actualSym->defPoint &&
@@ -1208,37 +1213,13 @@ Type* actualTypeAfterNilabilityRemoval(Type* actualType,
     if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
         mod->hasFlag(FLAG_PROTOTYPE_MODULE)) {
 
-      // Check that it's a class type (or managed type)
-      // and the only issue is nilability.
-
-      Type* actualCt = actualType;
-      if (isManagedPtrType(actualCt))
-        actualCt = getManagedPtrBorrowType(actualCt);
-
-      if (isClassLike(actualCt) && isClassLike(formalType)) {
-        ClassTypeDecorator actualDecorator = classTypeDecorator(actualCt);
-        ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
-
-        if (actualDecorator != formalDecorator &&
-            !canCoerceDecorators(actualDecorator, formalDecorator)) {
-          actualDecorator = removeNilableFromDecorator(actualDecorator);
-          if (canCoerceDecorators(actualDecorator, formalDecorator)) {
-            // OK, get the non-nilable actual and try to dispatch.
-            actualCt = canonicalDecoratedClassType(actualCt);
-            if (AggregateType* at = toAggregateType(actualCt)) {
-              actualCt = at->getDecoratedClass(formalDecorator);
-
-              if (actualCt != actualType)
-                return actualCt;
-            }
-          }
-        }
-      }
+      return true;
     }
   }
 
-  return NULL;
+  return false;
 }
+
 
 //
 // returns true iff dispatching the actualType to the formalType
@@ -1266,14 +1247,6 @@ bool canCoerce(Type*     actualType,
     // propagate promotes / paramNarrows
     return canDispatch(baseType, NULL, formalType, formalSym, fn);
   }
-
-  // Handle nilability removal coercion
-  if (Type* at = actualTypeAfterNilabilityRemoval(actualType, actualSym,
-                                                  formalType, formalSym))
-    if (at != actualType)
-      if (canDispatch(at, actualSym, formalType, formalSym, fn,
-                      promotes, paramNarrows))
-        return true;
 
   if (isManagedPtrType(actualType)) {
     Type* actualBaseType = getManagedPtrBorrowType(actualType);
@@ -1345,8 +1318,11 @@ bool canCoerce(Type*     actualType,
       toAggregateType(canonicalDecoratedClassType(formalType));
     ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
 
+    bool implicitBang = allowImplicitNilabilityRemoval(actualType, actualSym,
+                                                       formalType, formalSym);
+
     // Check that the decorators allow coercion
-    if (canCoerceDecorators(actualDecorator, formalDecorator)) {
+    if (canCoerceDecorators(actualDecorator, formalDecorator, implicitBang)) {
       // are the decorated class types the same?
       if (actualC == formalC)
         return true;
@@ -5435,7 +5411,7 @@ static void resolveInitVar(CallExpr* call) {
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
-      Type* inst = getInstantiationType(srcType, targetType);
+      Type* inst = getInstantiationType(srcType, NULL, targetType, NULL);
 
       // Does not allow initializations of the form:
       //   var x : MyGenericType = <expr>;

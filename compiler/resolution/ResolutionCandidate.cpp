@@ -56,6 +56,9 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 bool ResolutionCandidate::isApplicable(CallInfo& info) {
   bool retval = false;
 
+  if (fn->id == 613695 && info.call->id == 180926)
+    gdbShouldBreakHere();
+
   if (fn->hasFlag(FLAG_GENERIC) == false) {
     retval = isApplicableConcrete(info);
   } else {
@@ -228,7 +231,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
+static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
+                                       Type* formalType, Symbol* formalSym);
 
 int ResolutionCandidate::computeSubstitutions() {
   bool exitForDefault = false;
@@ -301,7 +305,8 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
       // generic arg with a defaultExpr as though a substitution was going
       // to take place.
 
-    } else if (Type* type = getInstantiationType(actual->type, formal->type)) {
+    } else if (Type* type = getInstantiationType(actual->type, actual,
+                                                 formal->type, formal)) {
       // String literal actuals aligned with non-param generic formals of
       // type dtAny will result in an instantiation of dtStringC when the
       // function is extern. In other words, let us write:
@@ -353,19 +358,23 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal) {
     if (defaultType == dtTypeDefaultToken) {
       substitutions.put(formal, dtTypeDefaultToken->symbol);
 
-    } else if (Type* type = getInstantiationType(defaultType, formal->type)) {
+    } else if (Type* type = getInstantiationType(defaultType, NULL,
+                                                 formal->type, NULL)) {
       substitutions.put(formal, type->symbol);
     }
   }
 }
 
-Type* getInstantiationType(Type* actualType, Type* formalType) {
-  Type* ret = getBasicInstantiationType(actualType, formalType);
+Type* getInstantiationType(Type* actualType, Symbol* actualSym,
+                           Type* formalType, Symbol* formalSym) {
+  Type* ret = getBasicInstantiationType(actualType, actualSym,
+                                        formalType, formalSym);
 
   // If that didn't work, try it again with the value type.
   if (ret == NULL) {
     if (Type* vt = actualType->getValType()) {
-      ret = getBasicInstantiationType(vt, formalType);
+      ret = getBasicInstantiationType(vt, actualSym,
+                                      formalType, formalSym);
     }
   }
 
@@ -373,26 +382,28 @@ Type* getInstantiationType(Type* actualType, Type* formalType) {
   // with the promotion type.
   if (ret == NULL) {
     if (Type* st = actualType->getValType()->scalarPromotionType) {
-      ret = getBasicInstantiationType(st->getValType(), formalType);
+      ret = getBasicInstantiationType(st->getValType(), actualSym,
+                                      formalType, formalSym);
     }
   }
 
 
   // Now, if formalType is a generic parent type to actualType,
   // we should instantiate the parent actual type
-  if (AggregateType* at = toAggregateType(ret)) {
+  /*if (AggregateType* at = toAggregateType(ret)) {
     if (at->instantiatedFrom                      != NULL  &&
         formalType->symbol->hasFlag(FLAG_GENERIC) == true) {
       if (Type* concrete = getConcreteParentForGenericFormal(at, formalType)) {
         ret = concrete;
       }
     }
-  }
+  } Moved to getBasicInstantiationType */
 
   return ret;
 }
 
-static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
+static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
+                                       Type* formalType, Symbol* formalSym) {
   if (canInstantiate(actualType, formalType)) {
     return actualType;
   }
@@ -411,8 +422,12 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     Type* canonicalFormal = canonicalClassType(formalType);
     ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
 
-    if (canCoerceDecorators(actualDecorator, formalDecorator) ||
-        canInstantiateDecorators(actualDecorator, formalDecorator)) {
+    bool implicitBang = allowImplicitNilabilityRemoval(actualType, actualSym,
+                                                       formalType, formalSym);
+
+    if (canInstantiateOrCoerceDecorators(actualDecorator,
+                                         formalDecorator,
+                                         implicitBang)) {
       // Can the canonical formal type instantiate with the canonical actual?
 
       // Adjust the formalDecorator to use when instantiating
@@ -430,7 +445,24 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
               // - this will require creating owned MyClass?
 
       // handle e.g. unmanaged MyClass actual -> borrowed MyClass? formal
-      if (canInstantiate(canonicalActual, canonicalFormal)) {
+      bool instantiate = canInstantiate(canonicalActual, canonicalFormal) ||
+                         isBuiltinGenericClassType(canonicalFormal);
+
+      // Now, if formalType is a generic parent type to actualType,
+      // we should instantiate the parent actual type
+      if (!instantiate) {
+        if (AggregateType* at = toAggregateType(canonicalActual)) {
+          if (at->instantiatedFrom                           != NULL  &&
+              canonicalFormal->symbol->hasFlag(FLAG_GENERIC) == true) {
+            if (Type* c = getConcreteParentForGenericFormal(at, formalType)) {
+              canonicalActual = c;
+              instantiate = true;
+            }
+          }
+        }
+      }
+
+      if (instantiate) {
         // any-management formal -> return actual
         if (isDecoratorManaged(formalDecorator)) {
           // If these assertions fail, we'd have to compute
@@ -450,10 +482,8 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   }
 
   if (actualType == dtNil) {
-    if (formalType == dtBorrowedNilable ||
-        formalType == dtBorrowed ||
-        formalType == dtUnmanagedNilable ||
-        formalType == dtUnmanaged)
+    if (isBuiltinGenericClassType(formalType) &&
+        !isNonNilableClassType(formalType))
       return actualType;
   }
 
@@ -669,7 +699,8 @@ bool ResolutionCandidate::checkGenericFormals() {
           return false;
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-          Type* t = getInstantiationType(actual->type, formal->type);
+          Type* t = getInstantiationType(actual->type, actual,
+                                         formal->type, formal);
           if (t == NULL) {
             failingArgument = actual;
             reason = classifyTypeMismatch(actual->type, formal->type);

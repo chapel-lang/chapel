@@ -435,7 +435,10 @@ returnInfoCoerce(CallExpr* call) {
   if (t->symbol->hasFlag(FLAG_GENERIC)) {
     // Try to figure out what instantiation type we would use
     // and return that type.
-    t = getInstantiationType(call->get(1)->getValType(), t);
+    SymExpr* actualOne = toSymExpr(call->get(1));
+    SymExpr* actualTwo = toSymExpr(call->get(2));
+    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+                             t, actualTwo->symbol());
   }
 
   return QualifiedType(t, QUAL_VAL);

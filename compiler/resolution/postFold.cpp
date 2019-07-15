@@ -537,7 +537,7 @@ bool isSubTypeOrInstantiation(Type* sub, Type* super) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))
-    super = getInstantiationType(sub, super);
+    super = getInstantiationType(sub, NULL, super, NULL);
 
   bool promotes = false;
   bool dispatch = false;
