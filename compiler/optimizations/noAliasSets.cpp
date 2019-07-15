@@ -256,6 +256,8 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
           INT_ASSERT(!otherScopeInCall && !scopeInOtherCall);
 
         // analysis should be symmetric
+        // MPF: Is this assert right? slight variations in
+        // array-of-classes.chpl cause it to fail.
         INT_ASSERT(otherScopeInCall == scopeInOtherCall);
 
         // symTemp otherSymTemp
