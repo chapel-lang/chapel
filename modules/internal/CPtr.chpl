@@ -294,12 +294,16 @@ module CPtr {
   inline proc _cast(type t:string, x:c_ptr) {
     return new string(__primitive("ref to string", x), needToCopy=false);
   }
+  pragma "last resort"
   pragma "no doc"
-  inline proc _cast(type t:borrowed, x:c_void_ptr) {
+  inline proc _cast(type t:_anyManagement, x:c_void_ptr) {
+    compilerError("cast from c_void_ptr to " + t:string + " is deprecated");
+    compilerError("cast to " + t:unmanaged?:string + " instead");
     return __primitive("cast", t, x);
   }
+
   pragma "no doc"
-  inline proc _cast(type t:unmanaged, x:c_void_ptr) {
+  inline proc _cast(type t:unmanaged?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
