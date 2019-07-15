@@ -115,6 +115,7 @@ module ChapelBase {
   //
   // equality comparison on primitive types
   //
+  inline proc ==(a: _nilType, b: _nilType) param return true;
   inline proc ==(a: bool, b: bool) return __primitive("==", a, b);
   inline proc ==(a: int(?w), b: int(w)) return __primitive("==", a, b);
   inline proc ==(a: uint(?w), b: uint(w)) return __primitive("==", a, b);
@@ -131,6 +132,7 @@ module ChapelBase {
     return false;
   }
 
+  inline proc !=(a: _nilType, b: _nilType) param return false;
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
   inline proc !=(a: int(?w), b: int(w)) return __primitive("!=", a, b);
   inline proc !=(a: uint(?w), b: uint(w)) return __primitive("!=", a, b);
