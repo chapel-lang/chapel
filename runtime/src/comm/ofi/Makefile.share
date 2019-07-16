@@ -24,9 +24,6 @@ COMM_SRCS = \
 	comm-ofi.c
 
 #
-# By default, use PMI out-of-band support on Cray systems, else MPI
-# when the launcher is that, else "sockets".  Use hugepages only on
-# Cray X* systems.
 # By default, use PMI out-of-band support on Cray X* systems, else MPI
 # on other Cray systems or with an MPI-based launcher, else "sockets".
 # Use hugepages only on Cray X* systems.
