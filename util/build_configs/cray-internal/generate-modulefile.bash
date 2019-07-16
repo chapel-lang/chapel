@@ -171,27 +171,19 @@ if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
     # The PrgEnv stuff isn't picking up the right PMI library yet.
     prepend-path LD_LIBRARY_PATH /usr/lib64
 
-    # Work around libfabric module not setting everything we need yet.
-    set haveLibfabric 0
-    if { [info exists env(LOADEDMODULES)] } {
-        set lm $env(LOADEDMODULES)
-        if [string match *libfabric* $lm] {
-            set haveLibfabric 1
-        }
-    }
-    if { $haveLibfabric == 0 } {
+    # Work around libfabric module not setting everything we need yet:
+    # set LIBFABRIC_DIR to the parent of libfabric's PATH entry.
+    if { ! [info exists env(LOADEDMODULES)] ||
+         ! [string match *libfabric* $env(LOADEDMODULES)] } {
         module load libfabric
     }
-    set libfabPath ""
-    if { [info exists env(PATH)] } {
-        set path $env(PATH)
-        set libfabPath [regsub {^(.*:)?([^:]*libfabric[^:]*)/bin.*} $path {\2}]
+    if { [info exists env(PATH)] &&
+         [regsub {^(.*:)?([^:]*libfabric[^:]*)/bin.*} $env(PATH) {\2} lfp] == 1
+       } {
+        setenv LIBFABRIC_DIR $lfp
+    } else {
+        puts stderr "Error: Cannot find libfabric path"
     }
-    if { ! [string equal "" $libfabPath] } {
-       setenv LIBFABRIC_DIR $libfabPath
-   } else {
-       puts stderr "Error: Cannot find libfabric path"
-   }
 }
 
 set BASE_INSTALL_DIR    [BASE_INSTALL_DIR]
