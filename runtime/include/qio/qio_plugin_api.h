@@ -20,7 +20,7 @@
 #ifndef _QIO_PLUGIN_API_H_
 #define _QIO_PLUGIN_API_H_
 
-#include "chpltypes.h"
+#include "qio.h"
 
 // TODO: it would be nicer if these all had "plugin" in their name
 

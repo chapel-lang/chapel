@@ -3,8 +3,8 @@ class myclass {
   var y: real = 4.2;
 }
 
-var a: borrowed myclass;
-var b: unmanaged myclass;
+var a: borrowed myclass?;
+var b: unmanaged myclass?;
 
 writeln("a is: ", a);
 writeln("b is: ", b);

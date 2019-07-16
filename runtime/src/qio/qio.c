@@ -1232,7 +1232,8 @@ qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_st
 
   // The caller is responsible for freeing the returned file.
   // On error , file_out is NULL, so deleting it is harmless.
-  err = qio_file_init(file_out, fp, -1, iohints | QIO_HINT_OWNED, style, 0);
+  err = qio_file_init(file_out, fp, -1, iohints | QIO_HINT_OWNED, style,
+                      /* usefilestar */ 0);
   return err;
 }
 

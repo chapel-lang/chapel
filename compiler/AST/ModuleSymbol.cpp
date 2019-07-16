@@ -630,16 +630,8 @@ void ModuleSymbol::addDefaultUses() {
     if (parentModule->modTag != MOD_USER) {
       SET_LINENO(this);
 
-      UnresolvedSymExpr* modRef;
-
-      // If this is a Fortran compilation, we need to use ISO_Fortran_binding
-      if (fLibraryFortran) {
-        modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
-        block->insertAtHead(new UseStmt(modRef, false));
-      }
-
-      modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef, false));
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
+      block->insertAtHead(new UseStmt(modRef, /* isPrivate */ true));
     }
 
   // We don't currently have a good way to fetch the root module by name.
@@ -648,6 +640,15 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->useListAdd(rootModule, false);
+  }
+
+  if (fLibraryFortran && modTag == MOD_INTERNAL) {
+    if (this == standardModule) {
+      SET_LINENO(this);
+
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
+      block->insertAtTail(new UseStmt(modRef, /* isPrivate */ false));
+    }
   }
 }
 

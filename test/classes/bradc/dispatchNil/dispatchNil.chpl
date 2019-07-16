@@ -11,8 +11,8 @@ class C {
 }
 
 class D : C {
-  var DsC: unmanaged C;
-  var y: int = DsC.baz();
+  var DsC: unmanaged C?;
+  var y: int = DsC!.baz();
 
   override proc foo() {
     writeln("In D.foo(), y is ", y);

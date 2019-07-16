@@ -11,7 +11,7 @@ record R {
 
 class C {
   type ind_type;
-  var inds: unmanaged CC(R(ind_type));
+  var inds: unmanaged CC(R(ind_type))?;
 }
 
 var c: unmanaged C(real) = new unmanaged C(real);

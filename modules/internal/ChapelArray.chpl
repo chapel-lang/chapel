@@ -626,6 +626,12 @@ module ChapelArray {
     return chpl__buildDomainExpr((...x));
   }
 
+  pragma "compiler generated"
+  pragma "last resort"
+  proc chpl__ensureDomainExpr(type t) {
+    compilerError("Domain expression was a type ('", t:string, "') rather than a domain value or range list as expected");
+  }
+
   //
   // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
@@ -880,6 +886,7 @@ module ChapelArray {
   pragma "syntactic distribution"
   record dmap { }
 
+  pragma "unsafe"
   proc chpl__buildDistType(type t) type where isSubtype(t, BaseDist) {
     var x: t;
     var y = new _distribution(x);

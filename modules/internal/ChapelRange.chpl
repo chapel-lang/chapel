@@ -152,6 +152,8 @@
  */
 module ChapelRange {
 
+  private use ChapelBase, SysBasic;
+
   use Math;
 
   // Turns on range iterator debugging.

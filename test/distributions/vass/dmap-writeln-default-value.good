@@ -1,9 +1,0 @@
-compiling x.chpl
-starting a.out
-Block
--------
-distributes: [1..0, 1..0]
-across locales: 
-indexed via: [1..0, 1..0]
-resulting in: 
-

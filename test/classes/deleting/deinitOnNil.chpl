@@ -4,5 +4,5 @@ class C {
   }
 }
 
-var myC: unmanaged C;
+var myC: unmanaged C?;
 delete myC;

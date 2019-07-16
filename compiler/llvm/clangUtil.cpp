@@ -136,7 +136,6 @@ static void adjustLayoutForGlobalToWide();
 static void setupModule();
 
 fileinfo    gAllExternCode;
-fileinfo    gChplCompilationConfig;
 
 // forward declare
 class CCodeGenConsumer;
@@ -2945,20 +2944,6 @@ void makeBinaryLLVM(void) {
   for( size_t i = 0; i < clangInfo->clangCCArgs.size(); ++i ) {
     cargs += " ";
     cargs += clangInfo->clangCCArgs[i];
-  }
-
-  // Compile any C files.
-  {
-    // Start with configuration settings
-    const char* inputFilename = gChplCompilationConfig.pathname;
-    const char* objFilename = objectFileForCFile(inputFilename);
-
-    std::string cmd = clangCC + " -c -o " + objFilename + " " +
-                      inputFilename + " " + cargs;
-
-    mysystem(cmd.c_str(), "Compile C File");
-
-    dotOFiles.push_back(objFilename);
   }
 
   int filenum = 0;

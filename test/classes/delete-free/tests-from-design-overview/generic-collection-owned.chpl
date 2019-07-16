@@ -9,7 +9,7 @@ proc Collection.addElement(arg: owned) {
 }
 
 proc test() {
-  var c: Collection(owned MyClass);
+  var c: Collection(owned MyClass?);
   c.addElement(new owned MyClass()); // transferred to element
 }
 

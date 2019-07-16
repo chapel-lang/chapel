@@ -3,8 +3,8 @@ class MyClass {
 }
 
 proc test() {
-  var a:shared MyClass;
-  var b:shared MyClass;
+  var a:shared MyClass?;
+  var b:shared MyClass?;
 
   assert( (a == b) == true );
   assert( (a == nil) == true );
