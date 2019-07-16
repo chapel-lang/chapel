@@ -303,9 +303,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
         pt                                != dtUnknown &&
 
         st                                != dtAny     &&
-        pt                                != dtAny     &&
-
-        st->symbol->hasFlag(FLAG_GENERIC) == false) {
+        pt                                != dtAny) {
 
       bool result = isSubTypeOrInstantiation(st, pt);
 
