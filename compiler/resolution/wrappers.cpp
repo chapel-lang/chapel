@@ -1114,6 +1114,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
+    USR_FATAL_CONT(formal->getFunction(),
+                   "to function '%s' defined here",
+                   formal->getFunction()->name);
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
@@ -1129,6 +1132,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);
+      USR_FATAL_CONT(formal->getFunction(),
+                     "to function '%s' defined here",
+                     formal->getFunction()->name);
     }
   }
 }
