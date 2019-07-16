@@ -223,7 +223,7 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
         d != CLASS_TYPE_MANAGED_NILABLE) {
       Type* bt = getManagedPtrBorrowType(t);
       if (bt && bt != dtUnknown) {
-        AggregateType* a = toAggregateType(bt);
+        AggregateType* a = toAggregateType(canonicalClassType(bt));
         INT_ASSERT(a);
         return a->getDecoratedClass(d);
       }

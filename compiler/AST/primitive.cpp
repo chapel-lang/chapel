@@ -438,7 +438,7 @@ returnInfoCoerce(CallExpr* call) {
     SymExpr* actualOne = toSymExpr(call->get(1));
     SymExpr* actualTwo = toSymExpr(call->get(2));
     t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
-                             t, actualTwo->symbol());
+                             t, actualTwo->symbol(), call);
   }
 
   return QualifiedType(t, QUAL_VAL);

@@ -246,7 +246,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-bool isSubTypeOrInstantiation(Type* sub, Type* super);
+bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
@@ -291,7 +291,10 @@ void resolveDestructor(AggregateType* at);
 void fixTypeNames(AggregateType* at);
 
 Type* getInstantiationType(Type* actualType, Symbol* actualSym,
-                           Type* formalType, Symbol* formalSym);
+                           Type* formalType, Symbol* formalSym,
+                           Expr* ctx,
+                           bool allowCoercion=true,
+                           bool implicitBang=false);
 
 void resolveIfExprType(CondStmt* stmt);
 

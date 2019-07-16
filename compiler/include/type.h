@@ -465,6 +465,7 @@ bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
 bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
+AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);

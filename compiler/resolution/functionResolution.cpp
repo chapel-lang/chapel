@@ -1331,7 +1331,7 @@ bool canCoerce(Type*     actualType,
 
       // are we passing a subclass?
       AggregateType* actualParent = actualC;
-      while (true) {
+      while (actualParent != NULL) {
         if (actualParent == formalC)
           return true;
         if (actualParent == dtObject)
@@ -5413,7 +5413,7 @@ static void resolveInitVar(CallExpr* call) {
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
-      Type* inst = getInstantiationType(srcType, NULL, targetType, NULL);
+      Type* inst = getInstantiationType(srcType, NULL, targetType, NULL, call);
 
       // Does not allow initializations of the form:
       //   var x : MyGenericType = <expr>;
@@ -6459,14 +6459,15 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
   INT_ASSERT(newExpr->parentSymbol);
   Type* cType = canonicalDecoratedClassType(newType);
 
-  if (isClass(cType) && isSubTypeOrInstantiation(cType, dtError)) {
+  if (isClass(cType) && isSubTypeOrInstantiation(cType, dtError, newExpr)) {
 
     bool unmanaged = false;
     bool borrowed = false;
     bool owned = false;
     bool undecorated = false;
 
-    if (manager == dtOwned || isSubTypeOrInstantiation(newType, dtOwned))
+    if (manager == dtOwned ||
+        isSubTypeOrInstantiation(newType, dtOwned, newExpr))
       owned = true;
     else if (manager == dtUnmanaged ||
             (isDecoratedClassType(newType) &&

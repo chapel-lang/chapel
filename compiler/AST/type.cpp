@@ -1175,6 +1175,19 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   return borrowType;
 }
 
+AggregateType* getManagedPtrManagerType(Type* managedPtrType) {
+  INT_ASSERT(isManagedPtrType(managedPtrType));
+
+  if (DecoratedClassType* dt = toDecoratedClassType(managedPtrType))
+    managedPtrType = dt->getCanonicalClass();
+
+  AggregateType* at = toAggregateType(managedPtrType);
+  while (at && at->instantiatedFrom)
+    at = at->instantiatedFrom;
+
+  return at;
+}
+
 bool isSyncType(const Type* t) {
   return t->symbol->hasFlag(FLAG_SYNC);
 }

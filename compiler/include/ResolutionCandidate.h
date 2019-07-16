@@ -94,20 +94,22 @@ private:
 
   bool                      computeAlignment(CallInfo& info);
 
-  int                       computeSubstitutions();
+  int                       computeSubstitutions(Expr* ctx);
 
   bool                      verifyGenericFormal(ArgSymbol* formal)       const;
 
   void                      computeSubstitution(ArgSymbol* formal,
-                                                Symbol*    actual);
+                                                Symbol*    actual,
+                                                Expr*      ctx);
 
-  void                      computeSubstitution(ArgSymbol* formal);
+  void                      computeSubstitution(ArgSymbol* formal,
+                                                Expr*      ctx);
 
   void                      resolveTypedefedArgTypes();
 
   bool                      checkResolveFormalsWhereClauses(CallInfo& info);
 
-  bool                      checkGenericFormals();
+  bool                      checkGenericFormals(Expr* ctx);
 
   SymbolMap                 substitutions;
 };

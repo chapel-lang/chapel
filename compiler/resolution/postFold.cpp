@@ -305,7 +305,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
         st                                != dtAny     &&
         pt                                != dtAny) {
 
-      bool result = isSubTypeOrInstantiation(st, pt);
+      bool result = isSubTypeOrInstantiation(st, pt, call);
 
       if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
         result = result && (st != pt);
@@ -531,11 +531,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
 }
 
 // This function implements PRIM_IS_SUBTYPE
-bool isSubTypeOrInstantiation(Type* sub, Type* super) {
+bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))
-    super = getInstantiationType(sub, NULL, super, NULL);
+    super = getInstantiationType(sub, NULL, super, NULL, ctx);
 
   bool promotes = false;
   bool dispatch = false;

@@ -1030,7 +1030,8 @@ static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const 
 
   if (Type* fieldType = resolveFieldTypeForInstantiation(field, call, callString)) {
     if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
-      if (getInstantiationType(val->type, NULL, fieldType, NULL) == NULL) {
+      if (getInstantiationType(val->type, NULL,
+                               fieldType, NULL, call) == NULL) {
         USR_FATAL_CONT(call, "invalid type specifier '%s'", callString);
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
         USR_PRINT(call, "unable to instantiate field '%s : %s' with type '%s'", field->name, fieldType->symbol->name, val->type->symbol->name);
@@ -1087,7 +1088,7 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
 
           if (expected != NULL && value != NULL) {
             if (getInstantiationType(value->type, NULL,
-                                     expected, NULL) == NULL) {
+                                     expected, NULL, call) == NULL) {
               // TODO: pretty-print resolved value
               USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
               USR_PRINT(call, "param field '%s' has type '%s' but default value is of incompatible type '%s'",
