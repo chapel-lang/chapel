@@ -56,9 +56,6 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 bool ResolutionCandidate::isApplicable(CallInfo& info) {
   bool retval = false;
 
-  if (fn->id == 613695 && info.call->id == 180926)
-    gdbShouldBreakHere();
-
   if (fn->hasFlag(FLAG_GENERIC) == false) {
     retval = isApplicableConcrete(info);
   } else {
@@ -324,6 +321,19 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
         substitutions.put(formal, dtStringC->symbol);
 
       } else {
+        if (formal->type == type) {
+          // This error is a workaround to avoid infinite loops.
+          fPrintCallStackOnError = true;
+          USR_FATAL_CONT(actual->defPoint,
+                         "this pattern of passing a generic type "
+                         " is not yet supported");
+          USR_PRINT(actual->defPoint,
+                    "the generic type %s is passed",
+                    toString(type));
+          printUndecoratedClassTypeNote(actual->defPoint, type);
+          USR_STOP();
+        }
+
         substitutions.put(formal, type->symbol);
       }
     }
