@@ -1,14 +1,26 @@
 /*
-Module UnitTest provides support for automated testing in Chapel .
+Module UnitTest provides support for automated testing in Chapel.
 Any function of the form
 
 .. code-block:: chapel
   
   proc funcName(test: Test) throws {}
 
-is treated as a test function.
+is treated as a test function. These functions must accept an object of Test
+Class. We use :proc:`~UnitTest.runTest` to pass the tests.
 
-Example
+**Example**
+
+*Using Asserts*
+
+:proc:`~Test.skip`
+:proc:`~Test.skipIf`
+:proc:`~Test.assertTrue`
+:proc:`~Test.assertFalse`
+:proc:`~Test.assertEqual`
+:proc:`~Test.assertNotEqual`
+:proc:`~Test.assertGreaterThan`
+:proc:`~Test.assertLessThan`
 
 .. code-block:: chapel
 
@@ -20,7 +32,11 @@ Example
 
    UnitTest.runTest(test1);
 
-Specifying locales
+*Specifying locales*
+
+:proc:`~Test.addNumLocales`
+:proc:`~Test.maxLocales`
+:proc:`~Test.minLocales`
 
 .. code-block:: chapel
 
@@ -37,7 +53,9 @@ Specifying locales
      test.minLocales(2);
    }
 
-Specifying Dependencies:
+*Specifying Dependencies*
+
+:proc:`~Test.dependsOn`
 
 .. code-block:: chapel
 
@@ -61,6 +79,8 @@ module UnitTest {
   config const failedTestNames: string = "None";
   pragma "no doc"
   config const errorTestNames: string = "None";
+  pragma "no doc"
+  config const skippedTestNames: string = "None";
   pragma "no doc"
   config const ranTests: string = "None";
   // This is a dummy test to capture the function signature
@@ -105,7 +125,7 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is true.  If it is false, prints
-      'assert failed' and rasies AssertionError. 
+      ``assert failed`` and raises AssertionError. 
 
       :arg test: the boolean condition
       :type test: `bool`
@@ -119,7 +139,7 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is false.  If it is true, prints
-      'assert failed' and raises AssertionError.
+      ``assert failed`` and raises AssertionError.
 
       :arg test: the boolean condition
       :type test: `bool`
@@ -324,10 +344,10 @@ module UnitTest {
     }
     
     /*
-      Fail if the two objects are unequal as determined by the '==' operator.
+      Fail if the two objects are unequal as determined by the ``==`` operator.
       
       :arg first: The first object to compare.
-      :arg second: The first object to compare. 
+      :arg second: The second object to compare. 
     */
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
@@ -357,11 +377,11 @@ module UnitTest {
     
     /*
       Assert that a first argument is not equal to second argument. If it is false, 
-      rasies AssertionError. Uses '==' operator and type to determine if both are equal
+      raises AssertionError. Uses ``==`` operator and type to determine if both are equal
       or not.
 
       :arg first: The first object to compare.
-      :arg second: The first object to compare. 
+      :arg second: The second object to compare. 
     */
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
@@ -374,10 +394,10 @@ module UnitTest {
 
     /*
       Assert that a first argument is greater than second argument.  If it is false, prints
-      'assert failed' and rasies AssertionError. 
+      ``assert failed`` and raises AssertionError. 
 
       :arg first: The first object to compare.
-      :arg second: The first object to compare. 
+      :arg second: The second object to compare. 
     */
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
@@ -577,10 +597,10 @@ module UnitTest {
     }
 
     /*
-      Assert that a first argument is less than second argument.  If it is false, rasies AssertionError. 
+      Assert that a first argument is less than second argument.  If it is false, raises AssertionError. 
 
       :arg first: The first object to compare.
-      :arg second: The first object to compare. 
+      :arg second: The second object to compare. 
     */
     proc assertLessThan(first, second) throws {
       if canResolve("<=",first, second) {
@@ -821,7 +841,7 @@ module UnitTest {
     /*
       To add locales in which test can be run.
 
-      :arg locales: Multiple `","` seperated locale values
+      :arg locales: Multiple ``,`` separated locale values
 
       :throws UnexpectedLocalesError: If `locales` are already added.
     
@@ -846,7 +866,7 @@ module UnitTest {
 
     /*Adds the tests in which the given test is depending.
 
-      :arg tests: Multiple `","` seperated First Class Test Functions.
+      :arg tests: Multiple ``,`` separated First Class Test Functions.
       
     */
     proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
@@ -942,7 +962,7 @@ module UnitTest {
 
   /*Runs the tests
   
-    :arg tests: Multiple `","` seperated First Class Test Functions.
+    :arg tests: Multiple ``,`` separated First Class Test Functions.
 
     Call this as 
     
@@ -957,7 +977,8 @@ module UnitTest {
         testsFailed: [testNamesMap] bool,
         testsErrored: [testNamesMap] bool,
         testsLocalFails: [testNamesMap] bool,
-        testsPassed: [testNamesMap] bool;
+        testsPassed: [testNamesMap] bool,
+        testsSkipped: [testNamesMap] bool;
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
@@ -966,10 +987,6 @@ module UnitTest {
     for test in testSuite {
       const testName = test: string;
       testNamesMap += testName;
-      testStatus[testName] = false;
-      testsLocalFails[testName] = false;
-      testsFailed[testName] = false; // no tests failed
-      testsErrored[testName] = false;
     }
     if testNames != "None" {
       for test in testNames.split(" ") {
@@ -988,6 +1005,12 @@ module UnitTest {
         testStatus[test.strip()] = true;
       }
     }
+    if skippedTestNames != "None" {
+      for test in skippedTestNames.split(" ") {
+        testsSkipped[test.strip()] = true; // these tests failed or skipped
+        testStatus[test.strip()] = true;
+      }
+    }
     if ranTests != "None" {
       for test in ranTests.split(" ") {
         testsPassed[test.strip()] = true; // these tests failed or skipped
@@ -1001,16 +1024,16 @@ module UnitTest {
         var checkCircle: [1..0] string;
         var circleFound = false;
         var testObject = new Test();
-        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsLocalFails,
-                      test, checkCircle, circleFound);
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
+                      testsLocalFails, test, checkCircle, circleFound);
       }
     }
   }
 
   private
-  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed, ref testsErrored,
-                  ref testsLocalFails, test, ref checkCircle, ref circleFound) throws 
-  {
+  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed, ref testsErrored, 
+                      ref testsSkipped, ref testsLocalFails, test, ref checkCircle, 
+                      ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = test: string; //test is a FCF:
     checkCircle.push_back(testName);
@@ -1023,6 +1046,7 @@ module UnitTest {
     // A variety of catch statements will handle errors thrown
     catch e: AssertionError {
       testResult.addFailure(testName, e: string);
+      testsFailed[testName] = true;
       // print info of the assertion error
     }
     catch e: DependencyFound {
@@ -1031,26 +1055,39 @@ module UnitTest {
         var checkCircleStatus = checkCircle.find(superTest: string);
         // cycle is checked
         if checkCircleStatus[1]{
-          testsErrored[testName] = true;
+          testsSkipped[testName] = true;
           circleFound = true;
           var failReason = testName + " skipped as circular dependency found";
           testResult.addSkip(testName, failReason);
+          testStatus[testName] = true;
           return;
         }
-        // if super test didn't Error or Failed
-        if !testsErrored[superTest: string] && !testsFailed[superTest: string] {
+        // if super test didn't Error or Failed or skipped
+        if !testsErrored[superTest: string] && !testsFailed[superTest: string] && !testsSkipped[superTest: string]
+        {
           // checking if super test ran or not.
           if !testStatus[superTest: string] {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
             runTestMethod(testStatus, superTestObject, testsFailed, testsErrored, 
-                  testsLocalFails, superTest, checkCircle, circleFound);
-            
-            // if super test failed or skipped
+                          testsSkipped, testsLocalFails, superTest, checkCircle, 
+                          circleFound);
+            var removeSuperTest = checkCircle.find(superTest: string);
+            if removeSuperTest[1] {
+              checkCircle.remove(removeSuperTest[2]);
+            }
+            // if super test failed
             if testsFailed[superTest: string] {
-              testsFailed[testName] = true; // current test have failed or skipped
+              testsSkipped[testName] = true; // current test have failed or skipped
               var skipReason = testName + " skipped as " + superTest: string +" failed";
+              testResult.addSkip(testName, skipReason);
+              break;
+            }
+            // if super test failed
+            if testsSkipped[superTest: string] {
+              testsSkipped[testName] = true; // current test have failed or skipped
+              var skipReason = testName + " skipped as " + superTest: string +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
@@ -1058,50 +1095,60 @@ module UnitTest {
             if testsLocalFails[superTest: string] {
               allTestsRan = false;
             }
+
+            // if Circle Found running the superTests
+            if circleFound then break;
+
             // if superTest error then
             if testsErrored[superTest: string] {
-              testsFailed[testName] = true;
+              testsSkipped[testName] = true;
               var skipReason = testName + " skipped as " + superTest: string +" gave an Error";
               testResult.addSkip(testName, skipReason);
               break;
             }
-
-            // if Circle Found running the superTests
-            if circleFound then break;
           }
         }
         // super test Errored
         else if testsErrored[superTest: string] {
-          testsFailed[testName] = true;
+          testsSkipped[testName] = true;
           var skipReason = testName + " skipped as " + superTest: string +" gave an Error";
+          testResult.addSkip(testName, skipReason);
+          break;
+        }
+        // super test Skipped 
+        else if testsSkipped[superTest: string] {
+          testsSkipped[testName] = true;
+          var skipReason = testName + " skipped as " + superTest: string +" Skipped";
           testResult.addSkip(testName, skipReason);
           break;
         }
         //super test failed
         else {
-          testsFailed[testName] = true; // current test have failed or skipped
+          testsSkipped[testName] = true; // current test have failed or skipped
           var skipReason = testName + " skipped as " + superTest: string +" failed";
           testResult.addSkip(testName, skipReason);
         }
       }
       if circleFound {
-        testsFailed[testName] = true;
+        testsSkipped[testName] = true;
         var skipReason = testName + " skipped as circular dependency found";
-        testResult.addError(testName, skipReason);
+        testResult.addSkip(testName, skipReason);
       }
-      // Test is not having error or failures or dependency
-      else if !testsErrored[testName] && allTestsRan && !testsFailed[testName] {
+      // Test is not having error or failures or dependency or skipped
+      else if !testsErrored[testName] && allTestsRan && !testsFailed[testName] && !testsSkipped[testName]
+      {
         testObject.dictDomain.clear(); // clearing so that we don't get Locales already added
-        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsLocalFails, 
-                      test, checkCircle, circleFound);
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
+                      testsLocalFails, test, checkCircle, circleFound);
       }
-      else if !testsErrored[testName] && !allTestsRan && !testsFailed[testName] {
+      else if !testsErrored[testName] && !allTestsRan && !testsFailed[testName] && !testsSkipped[testName]
+      {
         testResult.dependencyNotMet(testName);
       }
     }
     catch e: TestSkipped {
       testResult.addSkip(testName, e: string);
-      testsFailed[testName] = true ;
+      testsSkipped[testName] = true ;
       // Print info on test skipped
     }
     catch e: TestIncorrectNumLocales {

@@ -119,14 +119,16 @@ module Launcher {
       }
       sub.wait();
       if !compErr {
-        var testNames: [1..0] string;
-        var failedTestNames: [1..0] string;
-        var erroredTestNames: [1..0] string;
-        var testsPassed: [1..0] string;
+        var testNames: [1..0] string,
+            failedTestNames: [1..0] string,
+            erroredTestNames: [1..0] string,
+            testsPassed: [1..0] string,
+            skippedTestNames: [1..0] string;
         var dictDomain: domain(int);
         var dict: [dictDomain] int;
         runAndLog(executable, fileName, result, numLocales, testsPassed,
-                  testNames, dictDomain, dict, failedTestNames, erroredTestNames);
+                  testNames, dictDomain, dict, failedTestNames, erroredTestNames,
+                  skippedTestNames);
         if !keepExec {
           FileSystem.remove(executable);
           if isFile(executableReal) {
@@ -154,8 +156,8 @@ module Launcher {
   pragma "no doc"
   /*Docs: Todo*/
   proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
-                  ref testsPassed, ref testNames, ref dictDomain, ref dict, 
-                  ref failedTestNames, ref erroredTestNames) throws 
+                ref testsPassed, ref testNames, ref dictDomain, ref dict, 
+                ref failedTestNames, ref erroredTestNames, ref skippedTestNames) throws 
   {
     var separator1 = result.separator1,
         separator2 = result.separator2;
@@ -165,19 +167,22 @@ module Launcher {
     var reqLocales = 0;
     var sep1Found = false,
         haltOccured = false;
-    var testNamesStr = "None",
-        failedTestNamesStr = "None",
-        erroredTestNamesStr = "None",
-        passedTestStr = "None";
+    var testNamesStr,
+        failedTestNamesStr,
+        erroredTestNamesStr,
+        passedTestStr,
+        skippedTestNamesStr = "None";
 
     var currentRunningTests: [1..0] string;
     if testNames.size != 0 then testNamesStr = testNames: string;
     if failedTestNames.size != 0 then failedTestNamesStr = failedTestNames: string;
     if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames: string;
     if testsPassed.size != 0 then passedTestStr = testsPassed: string;
+    if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames: string;
     var exec = spawn(["./"+executable, "-nl", reqNumLocales: string, "--testNames", 
               testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
-              erroredTestNamesStr, "--ranTests", passedTestStr], stdout = PIPE, 
+              erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
+              skippedTestNamesStr], stdout = PIPE, 
               stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
@@ -188,7 +193,8 @@ module Launcher {
         if checkStatus[1] then
           testNames.remove(checkStatus[2]);
         addTestResult(result, dictDomain, dict, testNames, flavour, fileName, 
-                  testName, testExecMsg, failedTestNames, erroredTestNames, testsPassed);
+                  testName, testExecMsg, failedTestNames, erroredTestNames, 
+                  skippedTestNames, testsPassed);
         testExecMsg = "";
         sep1Found = false;
       }
@@ -232,7 +238,8 @@ module Launcher {
     exec.wait();//wait till the subprocess is complete
     if haltOccured then
       runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
-                testNames, dictDomain, dict, failedTestNames, erroredTestNames);
+                testNames, dictDomain, dict, failedTestNames, erroredTestNames,
+                skippedTestNames);
     if testNames.size != 0 {
       var maxCount = -1;
       for key in dictDomain.sorted() {
@@ -243,7 +250,8 @@ module Launcher {
       }
       dictDomain.remove(reqLocales);
       runAndLog(executable, fileName, result, reqLocales, testsPassed,
-                testNames, dictDomain, dict, failedTestNames, erroredTestNames);
+                testNames, dictDomain, dict, failedTestNames, erroredTestNames, 
+                skippedTestNames);
     }
   }
 
@@ -251,7 +259,7 @@ module Launcher {
   /*Docs: Todo*/
   proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, 
                     flavour, fileName, testName, errMsg, ref failedTestNames, 
-                    ref erroredTestNames, ref testsPassed) throws 
+                    ref erroredTestNames, ref skippedTestNames, ref testsPassed) throws 
   {
     select flavour {
       when "OK" {
@@ -268,7 +276,7 @@ module Launcher {
       }
       when "SKIPPED" {
         result.addSkip(testName, fileName, errMsg);
-        failedTestNames.push_back(testName);
+        skippedTestNames.push_back(testName);
       }
       when "IncorrectNumLocales" {
         if comm != "none" {
