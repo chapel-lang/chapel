@@ -9272,22 +9272,22 @@ static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbo
   USR_STOP();
 }
 
-void printUndecoratedClassTypeNote(CallExpr* call, Type* type) {
+void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     if (AggregateType* at = dt->getCanonicalClass()) {
       if (!at->symbol->hasFlag(FLAG_GENERIC)) {
         if (isDecoratorUnknownManagement(dt->getDecorator())) {
           if (isDecoratorNilable(dt->getDecorator())) {
-            USR_PRINT(call, "'%s?' "
-                            "now means nilable class with any management",
+            USR_PRINT(ctx, "'%s?' "
+                           "now means nilable class with any management",
                       at->symbol->name);
-            USR_PRINT(call, "to migrate old code, change it to 'borrowed %s?'",
+            USR_PRINT(ctx, "to migrate old code, change it to 'borrowed %s?'",
                       at->symbol->name);
           } else {
-            USR_PRINT(call, "'%s' "
+            USR_PRINT(ctx, "'%s' "
                             "now means non-nilable class with any management",
                       at->symbol->name);
-            USR_PRINT(call, "to migrate old code, change it to 'borrowed %s'",
+            USR_PRINT(ctx, "to migrate old code, change it to 'borrowed %s'",
                       at->symbol->name);
           }
         }

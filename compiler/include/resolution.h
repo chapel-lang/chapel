@@ -234,7 +234,7 @@ void printResolutionErrorUnresolved(CallInfo&                  info,
 
 void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
-void printUndecoratedClassTypeNote(CallExpr* call, Type* type);
+void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 
