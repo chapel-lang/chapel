@@ -50,11 +50,3 @@ ifneq (, $(findstring mpi, $(CHPL_MAKE_LAUNCHER) $(CHPL_COMM_OFI_OOB)))
   endif
   LIBS += -l$(MPI_LIB_NAME)
 endif
-
-#
-# TODO: This is getting added too early by the PrgEnv/craype driver,
-#       so we need to add another one to the end.
-#
-ifneq (, $(findstring shasta, $(CHPL_MAKE_TARGET_PLATFORM)))
-  LIBS += -lpmi2
-endif
