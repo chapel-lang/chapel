@@ -2405,12 +2405,13 @@ static void removeUnusedModules() {
 }
 
 static void detectUserDefinedBorrowMethods() {
+  const char *astrBorrow = astr("borrow");
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isMethod()) {
-      if (strncmp(fn->name, "borrow", 6) == 0) {
-        if (!fn->_this->type->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
-          USR_FATAL("Classes cannot define a method named \"borrow\"");
-        }
+    if (fn->isMethod() && fn->name == astrBorrow) {
+      Type *thisType = fn->_this->type;
+      if (isClassLike(thisType) && 
+          !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+        USR_FATAL("Classes cannot define a method named \"borrow\"");
       }
     }
   }
