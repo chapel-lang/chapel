@@ -63,7 +63,7 @@ if { [file exists "$latest_module/admin/bin/modulefile-utils.tcl" ]} {
 proc ModulesHelp { } {
     puts stderr "This modulefile defines the system paths and"
     puts stderr "environment variables needed to use "
-    puts stderr "the Chapel compiler on XT. This module "
+    puts stderr "the Chapel compiler on Cray systems. This module "
     puts stderr "requires a PrgEnv environment to be loaded."
 }
 
@@ -97,7 +97,7 @@ if { [string match gemini $network] } {
     set CHPL_HOST_PLATFORM cray-cs
     if { [file exists /etc/opt/cray/release/cray-release] } {
         set CRAY_REL_INFO [exec cat /etc/opt/cray/release/cray-release]
-        if { [string match "PRODUCT=*[Ss]hasta*" $CRAY_REL_INFO] } {
+        if { [string match "PRODUCT=*Shasta*" $CRAY_REL_INFO] } {
             set CHPL_HOST_PLATFORM cray-shasta
         }
     }
@@ -145,6 +145,55 @@ if { ! [ info exists env(PE_ENV) ] } {
     module load PrgEnv-gnu
 }
 
+set compiler $env(PE_ENV)
+
+if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
+    # Interim settings for Shasta systems.
+
+    # So far we only have gnu-based Chapel for Shasta.
+    if { [string equal -nocase cray $compiler] } {
+        module swap PrgEnv-cray PrgEnv-gnu
+    } elseif { [string equal -nocase intel $compiler] } {
+        module swap PrgEnv-intel PrgEnv-gnu
+    } elseif { [string equal -nocase pgi $compiler] } {
+        module swap PrgEnv-pgi PrgEnv-gnu
+    }
+
+    # The cray-libsci module is loading hugepages, which we don't want (yet).
+    module unload cray-libsci
+
+    # We have to use the slurm-srun launcher.
+    setenv CHPL_LAUNCHER slurm-srun
+
+    # Some libraries are not yet available in static form.
+    setenv CRAYPE_LINK_TYPE dynamic
+
+    # The PrgEnv stuff isn't picking up the right PMI library yet.
+    prepend-path LD_LIBRARY_PATH /usr/lib64
+
+    # Work around libfabric module not setting everything we need yet.
+    set haveLibfabric 0
+    if { [info exists env(LOADEDMODULES)] } {
+        set lm $env(LOADEDMODULES)
+        if [string match *libfabric* $lm] {
+            set haveLibfabric 1
+        }
+    }
+    if { $haveLibfabric == 0 } {
+        module load libfabric
+    }
+    set libfabPath ""
+    if { [info exists env(PATH)] } {
+        set path $env(PATH)
+        set libfabPath [regsub {^(.*:)?([^:]*libfabric[^:]*)/bin.*} $path {\2}]
+    }
+    if { ! [string equal "" $libfabPath] } {
+       setenv LIBFABRIC_DIR $libfabPath
+   } else {
+       puts stderr "Error: Cannot find libfabric path"
+   }
+}
+
 set BASE_INSTALL_DIR    [BASE_INSTALL_DIR]
 PART_1
 
@@ -171,7 +220,6 @@ if { [ file exists $CHPL_LOC/release_info ] } {
 # in the environment or is set to ugni, make sure there is a craype-hugepages
 # module loaded. Use craype-hugepages16M if a craype-hugepages module is not
 # already loaded.
-set compiler $env(PE_ENV)
 if { [info exists env(CHPL_COMM)] } {
     set chpl_comm $env(CHPL_COMM)
 } elseif { [string match cray-x* $CHPL_HOST_PLATFORM] } {
