@@ -87,13 +87,15 @@ module Sets {
     }
 
     /*
-      Initializes a set containing elements that are copy initialized from
-      the elements contained in another set.
+      Initialize this set with a unique copy of each element contained in
+      `iterable`. If an element from `iterable` is already contained in this
+      set, it will not be added again. The formal `iterable` must be a type
+      with an iterator defined for it.
 
-      :arg other: The set to initialize from.
+      :arg iterable: A collection of elements to add to this set.
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
-    proc init=(const ref other: set(?t), param parSafe=other.parSafe) {
+    proc init=(iterable, param parSafe=other.parSafe) {
     }
 
     pragma "no doc"
@@ -119,18 +121,6 @@ module Sets {
       :arg x: The element to add to this set.
     */
     proc add(in x: eltType) {
-      return;
-    }
-
-    /*
-      Add a copy of each element contained in `iterable` to this set. If an
-      element from `iterable` is already contained in this set, it will not
-      be added again. The formal `iterable` must be a type with an iterator
-      defined for it.
-
-      :arg iterable: A collection of elements to add to this set.
-    */
-    proc addBulk(iterable) {
       return;
     }
 
@@ -251,7 +241,8 @@ module Sets {
       not guaranteed to follow any particular ordering.
     */
     proc const toArray(): [] eltType {
-      return nil;
+      var result: [1..0] eltType;
+      return result;
     }
 
   } // End record "set".
