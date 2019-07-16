@@ -357,7 +357,8 @@ static void addDefaultsAndReorder(FnSymbol *fn,
   }
 
   // Adjust AST location to be call site
-  reset_ast_loc(body, call);
+  if (fn->getModule()->modTag != MOD_USER)
+    reset_ast_loc(body, call);
 
   // Flatten body
   body->flattenAndRemove();
