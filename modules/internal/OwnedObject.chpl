@@ -475,7 +475,7 @@ module OwnedObject {
 
   pragma "no doc"
   pragma "always propagate line file info"
-  inline proc postfix!(x:_owned) {
+  inline proc postfix!(const ref x:_owned) {
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
