@@ -714,7 +714,8 @@ module ZMQ {
       .. warning::
          setsockopt(), :const:`LINGER`, :const:`SUBSCRIBE`, and
          :const:`UNSUBSCRIBE` have been deprecated.  Please use
-         :proc:`Socket.setLinger()` instead.
+         :proc:`Socket.setLinger()`, :proc:`Socket.setSubscribe()` or
+         :proc:`Socket.setUnsubscribe()` instead.
 
       Set socket options;
       see `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_
@@ -829,6 +830,86 @@ module ZMQ {
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
           throw new owned ZMQError("Error in Socket.setLinger(): " + errmsg);
+        }
+      }
+    }
+
+    /*
+      Set the message filter for the specified ZMQ_SUB socket; see
+      `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_ under
+      ZMQ_SUBSCRIBE.
+
+      :arg value: The new message filter for the socket.
+
+      :throws ZMQError: Thrown when an error occurs setting the message filter.
+    */
+    proc setSubscribe(value: ?T) throws where isPODType(T) {
+      on classRef.home {
+        var copy: T = value;
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
+                                 c_ptrTo(copy): c_void_ptr,
+                                 numBytes(value.type)): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setSubscribe(): " + errmsg);
+        }
+      }
+    }
+
+    pragma "no doc"
+    proc setSubscribe(value: string) throws {
+      on classRef.home {
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
+                                 value.c_str(): c_void_ptr,
+                                 value.length:size_t): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setSubscribe(): " + errmsg);
+        }
+      }
+    }
+
+    /*
+      Remove an existing message filter for the specified ZMQ_SUB socket; see
+      `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_ under
+      ZMQ_UNSUBSCRIBE.
+
+      :arg value: The message filter to remove from the socket.
+
+      :throws ZMQError: Thrown when an error occurs setting the message filter.
+    */
+    proc setUnsubscribe(value: ?T) throws where isPODType(T) {
+      on classRef.home {
+        var copy: T = value;
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
+                                 c_ptrTo(copy): c_void_ptr,
+                                 numBytes(value.type)): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setUnsubscribe(): " +
+                                   errmsg);
+        }
+      }
+    }
+
+    pragma "no doc"
+    proc setUnsubscribe(value: string) throws {
+      on classRef.home {
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
+                                 value.c_str(): c_void_ptr,
+                                 value.length:size_t): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setUnsubscribe(): " +
+                                   errmsg);
         }
       }
     }
