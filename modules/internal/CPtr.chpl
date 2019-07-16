@@ -551,6 +551,8 @@ module CPtr {
    */
   proc c_offsetof(type t, param fieldname : string): size_t where isRecordType(t) {
     use Reflection;
+    pragma "no auto destroy"
+    pragma "no init"
     var x: t;
 
     return c_ptrTo(getFieldRef(x, fieldname)):size_t - c_ptrTo(x):size_t;

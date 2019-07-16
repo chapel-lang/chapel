@@ -9103,7 +9103,10 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
 
     errorInvalidParamInit(call, val, at);
-    resolvePrimInitNonGenericRecordVar(call, val, at);
+    if (!val->hasFlag(FLAG_NO_INIT))
+      resolvePrimInitNonGenericRecordVar(call, val, at);
+    else
+      call->convertToNoop(); // let the memory be uninitialized
 
   // extern types (but not memory_order)
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
@@ -9118,7 +9121,10 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
             (at->isRecord() || at->isUnion())) {
 
     errorInvalidParamInit(call, val, at);
-    resolvePrimInitGenericRecordVar(call, val, at);
+    if (!val->hasFlag(FLAG_NO_INIT))
+      resolvePrimInitGenericRecordVar(call, val, at);
+    else
+      call->convertToNoop(); // let the memory be uninitialized
 
   // other types (sync, single, ..)
   } else {
