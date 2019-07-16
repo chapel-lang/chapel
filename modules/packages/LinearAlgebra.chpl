@@ -634,6 +634,7 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 /* Inner product of 2 vectors. */
 proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
+  // Replaces `+ reduce (A*B)` for improved distributed performance
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
@@ -642,7 +643,8 @@ proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
   var localResults: [Locales.domain] etype = 0;
   
   coforall l in Locales do on l {
-    const maxThreads = here.maxTaskPar;
+    const maxThreads = if dataParTasksPerLocale==0 then here.maxTaskPar
+      else dataParTasksPerLocale;
     const localDomain = X.localSubdomain();
     const iterPerThread = divceil(localDomain.size, maxThreads);
     var localResult: etype = 0; 
