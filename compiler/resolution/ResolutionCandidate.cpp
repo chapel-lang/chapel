@@ -35,6 +35,7 @@
 static ResolutionCandidateFailureReason
 classifyTypeMismatch(Type* actualType, Type* formalType);
 static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
+static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
 
 /************************************* | **************************************
 *                                                                             *
@@ -380,13 +381,38 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal, Expr* ctx) {
   }
 }
 
+static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
+  bool allowCoercions = true;
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    // Generally, do not allow coercions
+    allowCoercions = false;
+
+    // ... however, make an exception for class subtyping.
+    Type* actualType = actual->getValType();
+    Type* formalType = formal->getValType();
+    if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
+      Type* canonicalActual = canonicalClassType(actualType);
+      ClassTypeDecorator actualD = classTypeDecorator(actualType);
+
+      Type* canonicalFormal = canonicalClassType(formalType);
+      ClassTypeDecorator formalD = classTypeDecorator(formalType);
+
+      if ((actualD == formalD || canInstantiateDecorators(actualD, formalD)) &&
+          isDispatchParent(canonicalActual, canonicalFormal)) {
+        allowCoercions = true;
+      }
+    }
+  }
+
+  return allowCoercions;
+}
+
 // Uses formalSym and actualSym to compute allowCoercion and implicitBang
 // in a way that is appropriate for uses when resolving arguments
 static
 Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
-  bool allowCoercions = !formal->hasFlag(FLAG_TYPE_VARIABLE) ||
-                    isDispatchParent(canonicalClassType(actual->getValType()),
-                                     canonicalClassType(formal->getValType()));
+  bool allowCoercions = shouldAllowCoercions(actual, formal);
 
   bool implicitBang = allowImplicitNilabilityRemoval(actual->type, actual,
                                                      formal->type, formal);
@@ -664,8 +690,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
         return false;
 
       } else if (formalIsTypeAlias &&
-                 !isDispatchParent(actual->getValType(),
-                                   formal->getValType()) &&
+                 !shouldAllowCoercions(actual, formal) &&
                  actual->getValType() != formal->getValType()) {
         // coercions should not be allowed for type variables
         failingArgument = actual;

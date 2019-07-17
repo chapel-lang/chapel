@@ -1,0 +1,4 @@
+coercion-class-subtyping-generic.chpl:2: error: this pattern of passing a generic type  is not yet supported
+coercion-class-subtyping-generic.chpl:2: note: the generic type Parent is passed
+coercion-class-subtyping-generic.chpl:2: note: 'Parent' now means non-nilable class with any management
+coercion-class-subtyping-generic.chpl:2: note: to migrate old code, change it to 'borrowed Parent'
