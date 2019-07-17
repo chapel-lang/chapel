@@ -398,7 +398,7 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
       Type* canonicalFormal = canonicalClassType(formalType);
       ClassTypeDecorator formalD = classTypeDecorator(formalType);
 
-      if ((actualD == formalD || canInstantiateDecorators(actualD, formalD)) &&
+      if (canInstantiateDecorators(actualD, formalD) &&
           isDispatchParent(canonicalActual, canonicalFormal)) {
         allowCoercions = true;
       }
@@ -475,8 +475,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
     Type* canonicalFormal = canonicalClassType(formalType);
     ClassTypeDecorator formalDec = classTypeDecorator(formalType);
 
-    if (actualDec == formalDec ||
-        canInstantiateDecorators(actualDec, formalDec) ||
+    if (canInstantiateDecorators(actualDec, formalDec) ||
         (allowCoercion && canInstantiateOrCoerceDecorators(actualDec,
                                                            formalDec,
                                                            implicitBang))) {
@@ -499,7 +498,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
         if (AggregateType* at = toAggregateType(canonicalActual)) {
           if (at->instantiatedFrom                           != NULL  &&
               canonicalFormal->symbol->hasFlag(FLAG_GENERIC) == true) {
-            if (Type* c = getConcreteParentForGenericFormal(at, formalType)) {
+            if (Type* c = getConcreteParentForGenericFormal(at, canonicalFormal)) {
               useType = c;
             }
           }

@@ -617,7 +617,9 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
 }
 
 // Returns true iff dispatching the actualType to the formalType
-// results in an instantiation.
+// results in an instantiation. The special exception is that
+// it returns true when actualType == formalType (to simplify
+// common patterns).
 //
 // If coercions are also necessary, this function should return false.
 // Coercion+instantiation can be handled in getBasicInstantiationType.
@@ -701,17 +703,21 @@ bool canInstantiate(Type* actualType, Type* formalType) {
       if (isBuiltinGenericClassType(formalC))
         return true;
 
-      //// are we passing a subclass? instantiation?
-      //if (canDispatch(actualC, NULL, formalC, NULL, NULL, NULL, NULL, false))
-      //  return true;
+      if (AggregateType* atActual = toAggregateType(actualC)) {
+        if (AggregateType* atFrom = atActual->instantiatedFrom) {
+          if (canInstantiate(atFrom, formalC) == true) {
+            return true;
+          }
+        }
+      }
     }
-  }
-
-  if (AggregateType* atActual = toAggregateType(actualType)) {
-
-    if (AggregateType* atFrom = atActual->instantiatedFrom) {
-      if (canInstantiate(atFrom, formalType) == true) {
-        return true;
+  } else {
+    // Check for e.g. R(int) -> R (classes are handled above)
+    if (AggregateType* atActual = toAggregateType(actualType)) {
+      if (AggregateType* atFrom = atActual->instantiatedFrom) {
+        if (canInstantiate(atFrom, formalType) == true) {
+          return true;
+        }
       }
     }
   }
@@ -1038,12 +1044,14 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal,
                          bool implicitBang) {
 
+  if (actual == formal)
+    return true;
+
   // Normalize actuals to remove generic-ness
   actual = removeGenericNilability(actual);
 
-  // Shouldn't have generic actuals right now.
-  if (isDecoratorUnknownManagement(actual))
-    return false;
+  if (actual == formal)
+    return true;
 
   switch (formal) {
     case CLASS_TYPE_BORROWED:
@@ -1052,10 +1060,7 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
       return false;
     case CLASS_TYPE_BORROWED_NONNIL:
       // Can't coerce away nilable
-      return actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL ||
-             implicitBang;
+      return isDecoratorNonNilable(actual) || implicitBang;
     case CLASS_TYPE_BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
       return true;
@@ -1087,24 +1092,33 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
              actual == CLASS_TYPE_MANAGED_NILABLE;
 
     case CLASS_TYPE_GENERIC:
+      return false; // instantiation not coercion
     case CLASS_TYPE_GENERIC_NONNIL:
+      // generally instantiation
+      return implicitBang && actual == CLASS_TYPE_GENERIC_NILABLE;
     case CLASS_TYPE_GENERIC_NILABLE:
-      return false; // these would be instantiation, not coercion
+      // generally instantiation
+      return actual == CLASS_TYPE_GENERIC_NONNIL;
 
     // no default for compiler warnings to know when to update it
   }
 
   return false;
 }
+
+// Returns true if actual has the same meaning as formal or
+// if passing actual to formal should result in instantiation.
 bool canInstantiateDecorators(ClassTypeDecorator actual,
                               ClassTypeDecorator formal) {
+
+  if (actual == formal)
+    return true;
 
   // Normalize actuals to remove generic-ness
   actual = removeGenericNilability(actual);
 
-  // Shouldn't have generic actuals right now.
-  if (isDecoratorUnknownManagement(actual))
-    return false;
+  if (actual == formal)
+    return true;
 
   switch (formal) {
     case CLASS_TYPE_BORROWED:
@@ -1147,12 +1161,14 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
 bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
                                       ClassTypeDecorator formal,
                                       bool implicitBang) {
+  if (actual == formal)
+    return true;
+
   // Normalize actuals to remove generic-ness
   actual = removeGenericNilability(actual);
 
-  // Shouldn't have generic actuals right now.
-  if (isDecoratorUnknownManagement(actual))
-    return false;
+  if (actual == formal)
+    return true;
 
   switch (formal) {
     case CLASS_TYPE_BORROWED:
