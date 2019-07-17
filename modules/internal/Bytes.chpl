@@ -53,7 +53,7 @@ module Bytes {
   type byteType = uint(8);
   type bufferType = c_ptr(byteType);
 
-  record bytes { 
+  record bytes {  // _bytes when/if there is compiler support
     pragma "no doc"
     var len: int = 0;
     pragma "no doc"
