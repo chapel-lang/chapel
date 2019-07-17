@@ -1136,7 +1136,7 @@ static void insertFieldAccess(FnSymbol*          method,
   }
 
   if (isTypeSymbol(sym) == true) {
-    AggregateType* at = toAggregateType(sym->type);
+    AggregateType* at = toAggregateType(canonicalClassType(sym->type));
     if (at != NULL && at->hasInitializers()) {
       dot = new SymExpr(sym);
     } else {
