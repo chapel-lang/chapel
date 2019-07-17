@@ -2469,7 +2469,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 static bool resolveClassBorrowMethod(CallExpr* call) {
   if (isUnresolvedSymExpr(call->baseExpr)) {
     if (call->numActuals() == 2) { //mt, this
-      if (call->isNamed("borrow") && dtMethodToken == call->get(1)->typeInfo()) {
+      if (call->isNamedAstr(astrBorrow) && dtMethodToken == call->get(1)->typeInfo()) {
         Type *t = call->get(2)->getValType();
         if (isClassLike(t)) {
           CallExpr *pe = toCallExpr(call->parentExpr);

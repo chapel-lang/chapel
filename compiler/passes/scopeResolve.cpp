@@ -2405,7 +2405,6 @@ static void removeUnusedModules() {
 }
 
 static void detectUserDefinedBorrowMethods() {
-  const char *astrBorrow = astr("borrow");
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isMethod() && fn->name == astrBorrow) {
       Type *thisType = fn->_this->type;
