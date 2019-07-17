@@ -463,11 +463,11 @@ module Bytes {
      the result of casting the non-bytes argument to a bytes, and concatenating
      that result with `s`.
   */
-  inline proc +(s: bytes, x: numeric) return concatHelp(s, x);
-  inline proc +(x: numeric, s: bytes) return concatHelp(x, s);
-  inline proc +(s: bytes, x: enumerated) return concatHelp(s, x);
-  inline proc +(x: enumerated, s: bytes) return concatHelp(x, s);
-  inline proc +(s: bytes, x: bool) return concatHelp(s, x);
-  inline proc +(x: bool, s: bytes) return concatHelp(x, s);
+  inline proc +(s: bytes, x: numeric) {}
+  inline proc +(x: numeric, s: bytes) {}
+  inline proc +(s: bytes, x: enumerated) {}
+  inline proc +(x: enumerated, s: bytes) {}
+  inline proc +(s: bytes, x: bool) {}
+  inline proc +(x: bool, s: bytes) {}
 
 } // end of module Bytes
