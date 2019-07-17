@@ -1,0 +1,31 @@
+this is a bytes
+this is a string
+this is a c_string
+
+Initializer tests
+bytes object from string: this is a string
+bytes object from c_string: this is a c_string
+bytes object from c_ptr: ABC
+
+Length/size tests
+16 must be 16
+18 must be 18
+3 must be 3
+16 must be 16
+18 must be 18
+3 must be 3
+
+Accessor tests
+A as bytes
+B as bytes
+C as bytes
+
+Search tests
+true
+false
+false
+false
+false
+true
+
+bytes
