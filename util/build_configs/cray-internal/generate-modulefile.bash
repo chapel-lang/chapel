@@ -87,22 +87,21 @@ if { [ info exists env(CRAY_ACCEL_TARGET) ] } {
     set accel 1
 }
 
-
 setenv MPICH_GNI_DYNAMIC_CONN disabled
 if { [string match gemini $network] } {
     set CHPL_HOST_PLATFORM cray-xe
 } elseif { [string match aries $network] } {
     set CHPL_HOST_PLATFORM cray-xc
 } elseif { [string match ofi $network] } {
-    set CHPL_HOST_PLATFORM cray-cs
     if { [file exists /etc/opt/cray/release/cray-release] } {
         set CRAY_REL_INFO [exec cat /etc/opt/cray/release/cray-release]
         if { [string match "PRODUCT=*Shasta*" $CRAY_REL_INFO] } {
             set CHPL_HOST_PLATFORM cray-shasta
         }
     }
-} else {
-    set CHPL_HOST_PLATFORM cray-xt
+}
+if { ! [info exists CHPL_HOST_PLATFORM] } {
+    puts stderr "Cannot determine host platform"
 }
 
 if { [string match aarch64 $CHPL_HOST_ARCH] } {
@@ -161,9 +160,6 @@ if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
 
     # The cray-libsci module is loading hugepages, which we don't want (yet).
     module unload cray-libsci
-
-    # We have to use the slurm-srun launcher.
-    setenv CHPL_LAUNCHER slurm-srun
 
     # Some libraries are not yet available in static form.
     setenv CRAYPE_LINK_TYPE dynamic
