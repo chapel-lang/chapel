@@ -757,17 +757,9 @@ proc inv (in A: [?Adom] ?eltType) {
         info = 0;
         return (I, info);
       }
-
-      // Swapping rows swaprow and i
-      forall j in {1..n} {
-        var tmp = A[i, j];
-        A[i,j] = A[swaprow, j];
-        A[swaprow, j] = tmp;
-
-        tmp = I[i,j];
-        I[i,j] = I[swaprow, j];
-        I[swaprow, j] = tmp;
-      }
+      
+      A[i,..] <=> A[swaprow,..];
+      I[i,..] <=> I[swaprow,..];
     }
 
     var scale = A[i,i];
