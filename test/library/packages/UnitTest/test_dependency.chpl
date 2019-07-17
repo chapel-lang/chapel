@@ -11,4 +11,8 @@ proc C(test: Test) throws {
   test.dependsOn(A,B);
 }
 
-UnitTest.runTest(C,B,A);
+proc D(test: Test) throws {
+  test.dependsOn(B,A);
+}
+
+UnitTest.runTest(D,C,B,A);
