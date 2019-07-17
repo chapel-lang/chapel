@@ -26,6 +26,8 @@ def get(flag='host'):
         cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo')
         if not os.path.exists(cle_info_file):
             cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release')
+            if not os.path.exists(cle_info_file):
+                cle_info_file = os.path.abspath('/etc/opt/cray/release/cray-release')
 
         if os.path.exists(cle_info_file):
             with open(cle_info_file, 'r') as fp:
@@ -38,6 +40,11 @@ def get(flag='host'):
                     platform_val = 'cray-xe'
                 elif net.lower() == 'ari':
                     platform_val = 'cray-xc'
+            if not platform_val:
+                product_pattern = re.compile(r'^PRODUCT=.*\b[Ss]hasta\b', re.MULTILINE)
+                product_match = product_pattern.search(cle_info)
+                if product_match is not None:
+                    platform_val = 'cray-shasta'
 
     if not platform_val:
         # uname() -> (system, node, release, version, machine, processor)
