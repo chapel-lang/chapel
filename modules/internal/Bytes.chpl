@@ -19,25 +19,29 @@
  */
 
 /*
-The following documentation shows functions and methods used to
-manipulate and process Chapel bytes objects.
+The following document shows functions and methods used to
+manipulate and process Chapel bytes objects. The :record:`bytes` object is
+similar to astringbut allows arbitrary data to be stored in it. Methods onbytes`
+that interpret the data as characters assume that the bytes are ASCII characters
 
 Casts from bytes to a Numeric Type
 -----------------------------------
 
 This module supports casts from :record:`bytes` to numeric types. Such casts
-will convert the bytes to the numeric type and throw an error if the bytes
-is invalid. For example:
+will interpret the bytes as ASCII characters and convert it to the numeric type
+and throw an error if the bytes is invalid. For example:
 
 .. code-block:: chapel
 
-  var number = "a":int;
+  var b = bytes("a");
+  var number = b:int;
 
 throws an error when it is executed, but
 
 .. code-block:: chapel
 
-  var number = "1":int;
+  var b = bytes("1");
+  var number = b:int;
 
 stores the value ``1`` in ``number``.
 
@@ -53,11 +57,27 @@ module Bytes {
   type byteType = uint(8);
   type bufferType = c_ptr(byteType);
 
+  /*
+     ``DecodePolicy`` specifies what happens when there is malformed characters
+     when decoding the :record:`bytes` object into a UTF-8 `string`.
+       
+       - **Strict**: default policy; raise error
+       - **Replace**: replace with UTF-8 replacement character
+       - **Ignore**: silently drop data
+  */
+  enum DecodePolicy { Strict, Replace, Ignore }
+  use DecodePolicy;
+
   record bytes {  // _bytes when/if there is compiler support
     pragma "no doc"
     var len: int = 0;
     pragma "no doc"
     var buff: bufferType = nil;
+
+    // We use chpl_nodeID as a shortcut to get at here.id without actually
+    // constructing a locale object. Used when determining if we should make a
+    // remote transfer.
+    var locale_id = chpl_nodeID; // : chpl_nodeID_t
 
     pragma "no doc"
     proc init() {
@@ -79,6 +99,36 @@ module Bytes {
     pragma "no doc"
     proc init=(b: bytes) {
       this.init(b);
+    }
+
+    /*
+      Initialize a new :record:`bytes` from the `c_string` `cs`. If `isowned` is
+      set to true, the backing buffer will be freed when the new record is
+      destroyed.  If `needToCopy` is set to true, the `c_string` will be copied
+      into the record, otherwise it will be used directly. It is the
+      responsibility of the user to ensure that the underlying buffer is not
+      freed if the `c_string` is not copied in.
+     */
+
+    proc init(cs: c_string, length: int = cs.length,
+                isowned: bool = true, needToCopy:  bool = true) {
+
+    }
+
+    /*
+      Initialize a new :record:`bytes` from `buff` ( `c_ptr` ). `size` indicates
+      the total size of the buffer available, while `len` indicates the current
+      length of the string in the buffer (the common case would be `size-1` for
+      a C-style string). If `isowned` is set to true, the backing buffer will be
+      freed when the new record is destroyed. If `needToCopy` is set to true,
+      the `c_string` will be copied into the record, otherwise it will be used
+      directly. It is the responsibility of the user to ensure that the
+      underlying buffer is not freed if the `c_string` is not copied in.
+     */
+    // This initializer can cause a leak if isowned = false and needToCopy = true
+    proc init(buff: c_ptr, length: int, size: int,
+                isowned: bool = true, needToCopy: bool = true) {
+
     }
 
     /*
@@ -131,7 +181,8 @@ module Bytes {
 
     /*
       Slices the object. Halts if r is not completely inside the range
-      ``1..bytes.length``.
+      ``1..bytes.length`` when compiled with `--checks`. `--fast` disables this
+      check.
 
       :arg r: range of the indices the new bytes should be made from
 
@@ -252,8 +303,8 @@ module Bytes {
 
     /*
       Returns a new :record:`bytes` object, which is the concatenation of all of
-      the :record:`bytes` objects passed in with the receiving bytes inserted
-      between them.
+      the :record:`bytes` objects passed in with the contents of the method
+      receiver inserted between them.
     */
     proc join(const ref S: bytes ...) : bytes {
 
@@ -299,22 +350,25 @@ module Bytes {
       Returns a UTF-8 string from the given :record:`bytes` object. If the data
       is malformed for UTF-8, `errors` argument determines the action.
       
-      :arg errors: `strict` raises an error, `replace` replaces the malformed
-                   data, `ignore` drops the data silently.
+      :arg errors: `DecodePolicy.Strict` raises an error, `DecodePolicy.Replace`
+                   replaces the malformed character with UTF-8 replacement
+                   character, `DecodePolicy.Ignore` drops the data silently.
 
       :returns: A UTF-8 string.
     */
-    proc decode(errors: string): string {
+    // NOTE: In the future this could support more encodings.
+    proc decode(errors: DecodePolicy = Strict): string {
 
     }
 
     /*
-     Checks if all the characters in the object are either uppercase (A-Z) or
-     uncased (not a letter).
+     Checks if all the characters in the object are uppercase (A-Z) in ASCII.
 
       :returns: * `true`  -- if the object contains at least one uppercase
                              character and no lowercase characters, ignoring
-                             uncased characters.
+                             uncased (not a letter) and extended ASCII
+                             characters (decimal value is larger than 127)
+                            
                 * `false` -- otherwise
      */
     proc isUpper() : bool {
@@ -322,11 +376,13 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are either lowercase (a-z) or
-     uncased (not a letter).
+     Checks if all the characters in the object are lowercase (a-z) in ASCII.
 
-      :returns: * `true`  -- when there are no uppercase characters in the
-                             object
+      :returns: * `true`  -- if the object contains at least one lowercase
+                             character and no upper characters, ignoring
+                             uncased (not a letter) and extended ASCII
+                             characters (decimal value is larger than 127)
+                            
                 * `false` -- otherwise
      */
     proc isLower() : bool {
@@ -335,7 +391,7 @@ module Bytes {
 
     /*
      Checks if all the characters in the object are whitespace (' ', '\t',
-     '\n', '\v', '\f', '\r').
+     '\n', '\v', '\f', '\r') in ASCII.
 
       :returns: * `true`  -- when all the characters are whitespace.
                 * `false` -- otherwise
@@ -345,7 +401,8 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are alphabetic (a-zA-Z).
+     Checks if all the characters in the object are alphabetic (a-zA-Z) in
+     ASCII.
 
       :returns: * `true`  -- when the characters are alphabetic.
                 * `false` -- otherwise
@@ -355,7 +412,7 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are digits (0-9).
+     Checks if all the characters in the object are digits (0-9) in ASCII.
 
       :returns: * `true`  -- when the characters are digits.
                 * `false` -- otherwise
@@ -365,7 +422,8 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are alphanumeric (a-zA-Z0-9).
+     Checks if all the characters in the object are alphanumeric (a-zA-Z0-9) in
+     ASCII.
 
       :returns: * `true`  -- when the characters are alphanumeric.
                 * `false` -- otherwise
@@ -396,31 +454,41 @@ module Bytes {
     }
 
     /*
-      :returns: A new :record:`bytes` with all uppercase characters replaced
-                with their lowercase counterpart.
+      :returns: A new :record:`bytes` with all uppercase characters (A-Z)
+                replaced with their lowercase counterpart in ASCII. Other
+                characters remain untouched.
     */
     proc toLower() : bytes {
 
     }
 
     /*
-      :returns: A new bytes with all lowercase characters replaced with their
-                uppercase counterpart.
+      :returns: A new bytes with all lowercase characters (a-z) replaced with
+                their uppercase counterpart in ASCII. Other characters remain
+                untouched.
     */
     proc toUpper() : bytes {
 
     }
 
     /*
-      :returns: A new bytes with all cased characters following an uncased
-                character converted to uppercase, and all cased characters
-                following another cased character converted to lowercase.
+      :returns: A new bytes with all cased characters(a-zA-Z) following an
+                uncased character converted to uppercase, and all cased
+                characters following another cased character converted to
+                lowercase.
      */
     proc toTitle() : bytes {
 
     }
 
   } // end of record bytes
+
+  /*
+     Appends the bytes `rhs` to the bytes `lhs`.
+  */
+  proc +=(ref lhs: bytes, const ref rhs: bytes) : void {
+
+  }
 
   /*
      Copies the bytes `rhs` into the bytes `lhs`.
