@@ -8,8 +8,8 @@ chpl_comm="${CHPL_MAKE_COMM:-$2}"
 chpl_comm_substrate="${CHPL_MAKE_COMM_SUBSTRATE:-$3}"
 chpl_auxfs="${CHPL_MAKE_AUXFS:-$4}"
 
-if [[ -z $chpl_comm || -z $chpl_comm_substrate || -z $chpl_auxfs ]]; then
-  echo "Usage: $0 [\$CHPL_COMM \$CHPL_COMM_SUBSTRATE \$CHPL_AUXFS]"
+if [[ -z $chpl_target_platform || -z $chpl_comm || -z $chpl_comm_substrate || -z $chpl_auxfs ]]; then
+  echo "Usage: $0 [\$CHPL_TARGET_PLATFORM \$CHPL_COMM \$CHPL_COMM_SUBSTRATE \$CHPL_AUXFS]"
   echo "  CHPL_MAKE_* must be present if args are empty"
   exit 1
 fi
