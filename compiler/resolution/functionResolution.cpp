@@ -2497,21 +2497,47 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     if (isManagedPtrType(valueType) && !isManagedPtrType(targetType) &&
         isClassLike(targetType)) {
 
-      SET_LINENO(call);
+      if (isTypeExpr(valueSe) && isBuiltinGenericClassType(targetType)) {
+        // Casts of type expressions e.g. MyOwnedType:unmanaged
+        // are useful but don't really work as calls to _cast.
+        // Change them to noop to work around other parts of resolution.
+        Type* t = canonicalDecoratedClassType(valueType);
+        AggregateType* at = toAggregateType(t);
 
-      VarSymbol* tmp = newTempConst("cast_tmp");
-      CallExpr* c = new CallExpr("borrow", gMethodToken, valueSe->symbol());
-      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
-      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      call->getStmtExpr()->insertBefore(m);
-      resolveCallAndCallee(c);
-      resolveCall(m);
+        // Compute the decorator combining generic properties
+        ClassTypeDecorator d;
+        d = combineDecorators(classTypeDecorator(targetType),
+                              classTypeDecorator(valueType));
+        t = at->getDecoratedClass(d);
 
-      // Now update the cast call we have to cast
-      // the result of the borrow
-      valueSe->setSymbol(tmp);
-      // Try again with that
-      return resolveBuiltinCastCall(call);
+        gdbShouldBreakHere();
+        targetTypeSe->setSymbol(t->symbol);
+        call->primitive = primitives[PRIM_NOOP];
+        call->baseExpr->remove();
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE) ||
+              parentCall->isPrimitive(PRIM_ASSIGN)) {
+            call->replace(new SymExpr(t->symbol));
+            parentCall->getStmtExpr()->insertBefore(call);
+          }
+        }
+        return true;
+      } else {
+        SET_LINENO(call);
+        VarSymbol* tmp = newTempConst("cast_tmp");
+        CallExpr* c = new CallExpr("borrow", gMethodToken, valueSe->symbol());
+        CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(m);
+        resolveCallAndCallee(c);
+        resolveCall(m);
+
+        // Now update the cast call we have to cast
+        // the result of the borrow
+        valueSe->setSymbol(tmp);
+        // Try again with that
+        return resolveBuiltinCastCall(call);
+      }
     }
 
     // Handle some generic casts to 'unmanaged' etc
