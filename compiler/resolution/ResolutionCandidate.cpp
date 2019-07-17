@@ -34,6 +34,7 @@
 
 static ResolutionCandidateFailureReason
 classifyTypeMismatch(Type* actualType, Type* formalType);
+static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 
 /************************************* | **************************************
 *                                                                             *
@@ -286,13 +287,6 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
 void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
                                               Symbol*    actual,
                                               Expr*      ctx) {
-
-  bool implicitBang =
-    allowImplicitNilabilityRemoval(actual->type, actual,
-                                   formal->type, formal);
-
-  bool allowCoercions = !formal->hasFlag(FLAG_TYPE_VARIABLE);
-
   if (formal->intent == INTENT_PARAM) {
     if (actual->isParameter() == true) {
       if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
@@ -313,11 +307,7 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
       // generic arg with a defaultExpr as though a substitution was going
       // to take place.
 
-    } else if (Type* type = getInstantiationType(actual->type, actual,
-                                                 formal->type, formal,
-                                                 ctx,
-                                                 allowCoercions,
-                                                 implicitBang)) {
+    } else if (Type* type = getInstantiationType(actual, formal, ctx)) {
       // String literal actuals aligned with non-param generic formals of
       // type dtAny will result in an instantiation of dtStringC when the
       // function is extern. In other words, let us write:
@@ -389,6 +379,22 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal, Expr* ctx) {
     }
   }
 }
+
+// Uses formalSym and actualSym to compute allowCoercion and implicitBang
+// in a way that is appropriate for uses when resolving arguments
+static
+Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
+  bool allowCoercions = !formal->hasFlag(FLAG_TYPE_VARIABLE) ||
+                    isDispatchParent(canonicalClassType(actual->getValType()),
+                                     canonicalClassType(formal->getValType()));
+
+  bool implicitBang = allowImplicitNilabilityRemoval(actual->type, actual,
+                                                     formal->type, formal);
+
+  return getInstantiationType(actual->type, actual, formal->type, formal, ctx,
+                              allowCoercions, implicitBang);
+}
+
 
 Type* getInstantiationType(Type* actualType, Symbol* actualSym,
                            Type* formalType, Symbol* formalSym,
@@ -742,14 +748,7 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
           return false;
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-          bool implicitBang =
-            allowImplicitNilabilityRemoval(actual->type, actual,
-                                           formal->type, formal);
-
-          Type* t = getInstantiationType(actual->type, actual,
-                                         formal->type, formal, ctx,
-                                         !formalIsTypeAlias, // canCoerce
-                                         implicitBang);
+          Type* t = getInstantiationType(actual, formal, ctx);
           if (t == NULL) {
             failingArgument = actual;
             reason = classifyTypeMismatch(actual->type, formal->type);
