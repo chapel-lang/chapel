@@ -2548,7 +2548,13 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       // It could probably be removed.
       if (isBuiltinGenericClassType(targetType) ||
           isDecoratedClassType(targetType)) {
-        Type* t = canonicalDecoratedClassType(valueType);
+
+        Type* t = NULL;
+        if (isBuiltinGenericClassType(targetType))
+          t = canonicalDecoratedClassType(valueType);
+        else
+          t = canonicalDecoratedClassType(targetType);
+
         AggregateType* at = toAggregateType(t);
 
         // Compute the decorator combining generic properties
