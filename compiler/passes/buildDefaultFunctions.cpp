@@ -317,7 +317,10 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 
   fn->setMethod(true);
 
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  Type* thisType = ct;
+  if (isClassLike(ct) && isClass(ct) && typeMethod)
+    thisType = ct->getDecoratedClass(CLASS_TYPE_GENERIC);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
   if (typeMethod) {
     _this->addFlag(FLAG_TYPE_VARIABLE);
