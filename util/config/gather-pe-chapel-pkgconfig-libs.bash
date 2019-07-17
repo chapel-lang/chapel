@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 # Gather the list of libraries required for a PrgEnv compilation,
-# or an LLVM compilation when on a Cray XC system.
+# or an LLVM compilation when on a Cray system.
 
 chpl_target_platform="${CHPL_MAKE_TARGET_PLATFORM:-$1}"
 chpl_comm="${CHPL_MAKE_COMM:-$2}"
