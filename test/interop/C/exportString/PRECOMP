@@ -1,2 +1,2 @@
 #!/bin/bash
-chpl --library TestLibrary.chpl
+$3 --library TestLibrary.chpl
