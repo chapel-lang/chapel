@@ -634,45 +634,52 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 /* Inner product of 2 vectors. */
 proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
-  // Replaces `+ reduce (A*B)` for improved distributed performance
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
-
-  var localResults: [Locales.domain] etype = 0;
-  
-  coforall l in Locales do on l {
-    const maxThreads = if dataParTasksPerLocale==0 then here.maxTaskPar
-      else dataParTasksPerLocale;
-    const localDomain = X.localSubdomain();
-    const iterPerThread = divceil(localDomain.size, maxThreads);
-    var localResult: etype = 0; 
-    var threadResults: [0..#maxThreads] etype = 0;
     
-    coforall tid in 0..#maxThreads {
-      const startid = localDomain.low + tid * iterPerThread;
-      const temp_endid = startid + iterPerThread - 1;
-      const endid = if localDomain.high < temp_endid then 
-                          localDomain.high else temp_endid;
-      var myResult: etype = 0;
-      local {
-        for ind in startid..endid {
-          myResult += X[ind] * Y[ind];
+  var result = 0.0;
+  
+  if A.hasSingleLocalSubdomain() {
+    result = + reduce (A*B);
+  }
+  else {
+    // Replaces `+ reduce (A*B)` for improved distributed performance
+
+    var localResults: [Locales.domain] etype = 0;
+
+    coforall l in Locales do on l {
+      const maxThreads = if dataParTasksPerLocale==0 then here.maxTaskPar
+        else dataParTasksPerLocale;
+      const localDomain = X.localSubdomain();
+      const iterPerThread = divceil(localDomain.size, maxThreads);
+      var localResult: etype = 0; 
+      var threadResults: [0..#maxThreads] etype = 0;
+
+      coforall tid in 0..#maxThreads {
+        const startid = localDomain.low + tid * iterPerThread;
+        const temp_endid = startid + iterPerThread - 1;
+        const endid = if localDomain.high < temp_endid then 
+                            localDomain.high else temp_endid;
+        var myResult: etype = 0;
+        local {
+          for ind in startid..endid {
+            myResult += X[ind] * Y[ind];
+          }
         }
+        threadResults[tid] = myResult;
       }
-      threadResults[tid] = myResult;
+
+      for tr in threadResults {
+        localResult += tr;
+      }
+      localResults[here.id] = localResult;
     }
 
-    for tr in threadResults {
-      localResult += tr;
+    for r in localResults {
+      result += r;
     }
-    localResults[here.id] = localResult;
-  }
-  
-  var result = 0.0;
-  for r in localResults {
-    result += r;
   }
   
   return result;
