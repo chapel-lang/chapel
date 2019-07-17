@@ -343,6 +343,14 @@ module OwnedObject {
         return chpl_p!;
       }
     }
+
+    proc type borrow() type {
+      if _to_nilable(chpl_t) == chpl_t {
+        return chpl_t;
+      } else {
+        return _to_nonnil(chpl_t);
+      }
+    }
   }
 
   /*
