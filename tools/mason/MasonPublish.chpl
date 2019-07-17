@@ -175,8 +175,8 @@ private proc getUsername() {
 /* Clones the mason registry fork from the users repo. Takes username as input. */
 proc cloneMasonReg(username: string, safeDir : string) throws {
   try! {
-    const gitClone = 'git clone git@github.com:';
-    var ret = gitC(safeDir, gitClone  + username + "/mason-registry mason-registry", true);
+    const gitClone = 'git clone --quiet git@github.com:';
+    var ret = gitC(safeDir, gitClone  + username + "/mason-registry mason-registry", false);
     return ret;
   }
   catch {
@@ -202,7 +202,7 @@ private proc gitUrl() {
  name or branch is taken from the Mason.toml of the mason package.*/
 proc branchMasonReg(username: string, name: string, safeDir: string) throws {
   try! {
-    const branchCommand = "git checkout -b "+ name: string;
+    const branchCommand = "git checkout --quiet -b  "+ name: string;
     var ret = gitC(safeDir + '/mason-registry', branchCommand, true);
     return ret;
   }
