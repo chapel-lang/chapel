@@ -433,7 +433,7 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are printable.
+     Checks if all the characters in the object are printable in ASCII.
 
       :returns: * `true`  -- when the characters are printable.
                 * `false` -- otherwise
@@ -444,7 +444,7 @@ module Bytes {
 
     /*
       Checks if all uppercase characters are preceded by uncased characters,
-      and if all lowercase characters are preceded by cased characters.
+      and if all lowercase characters are preceded by cased characters in ASCII.
 
       :returns: * `true`  -- when the condition described above is met.
                 * `false` -- otherwise
