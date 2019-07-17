@@ -51,8 +51,30 @@ To learn more about handling these errors, see the
 module Bytes {
   use ChapelStandard;
 
+  private        param chpl_string_min_alloc_size: int = 16;
+
+  // Following is copy-paste from string
+  pragma "fn synchronization free"
+  private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
+
+  // Calls to chpl_here_alloc increment the memory descriptor by
+  // `chpl_memhook_md_num`. For internal runtime descriptors like the ones
+  // below, this would result in selecting the incorrect descriptor string.
+  //
+  // Instead, decrement the CHPL_RT_MD* descriptor and use the result when
+  // calling chpl_here_alloc.
+  private proc offset_STR_COPY_DATA {
+    extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
+    return CHPL_RT_MD_STR_COPY_DATA - chpl_memhook_md_num();
+  }
+  private proc offset_STR_COPY_REMOTE {
+    extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
+    return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
+  }
+
+
   // to follow String.chpl, and maybe limit the index to smaller integers
-  type byteIndex = int; 
+  type idxType = int; 
 
   type byteType = uint(8);
   type bufferType = c_ptr(byteType);
@@ -70,13 +92,16 @@ module Bytes {
 
   record bytes {  // _bytes when/if there is compiler support
     pragma "no doc"
-    var len: int = 0;
+    var len: int = 0; // length of string in bytes
+    pragma "no doc"
+    var _size: int = 0; // size of the buffer we own
     pragma "no doc"
     var buff: bufferType = nil;
-
-    // We use chpl_nodeID as a shortcut to get at here.id without actually
-    // constructing a locale object. Used when determining if we should make a
-    // remote transfer.
+    pragma "no doc"
+    var isowned: bool = true;
+    pragma "no doc"
+    // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
+    // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
 
     pragma "no doc"
@@ -92,12 +117,55 @@ module Bytes {
       to ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
      */
-    proc init(b: bytes, isowned: bool = true) {
+    /*proc init(b: bytes, isowned: bool = true) {*/
 
+    /*}*/
+
+    /*
+      Initialize a new :record:`bytes` from ``s``. If ``isowned`` is set to
+      ``true`` then ``b`` will be fully copied into the new instance. If it is
+      ``false`` a shallow copy will be made such that any in-place modifications
+      to the new bytes may appear in ``b``. It is the responsibility of the user
+      to ensure that the underlying buffer is not freed while being used as part
+      of a shallow copy.
+     */
+    proc init(s, isowned: bool = true) where s.type == string || s.type == bytes {
+      //IDENTICAL TO STRING VERSION
+      const sRemote = _local == false && s.locale_id != chpl_nodeID;
+      const sLen = s.len;
+      this.isowned = isowned;
+      this.complete();
+      // Don't need to do anything if s is an empty string
+      if sLen != 0 {
+        this.len = sLen;
+        if !_local && sRemote {
+          // ignore supplied value of isowned for remote strings so we don't leak
+          this.isowned = true;
+          this.buff = copyRemoteBuffer(s.locale_id, s.buff, sLen);
+          this._size = sLen+1;
+        } else {
+          if this.isowned {
+            const allocSize = chpl_here_good_alloc_size(sLen+1);
+            this.buff = chpl_here_alloc(allocSize,
+                                       offset_STR_COPY_DATA): bufferType;
+            c_memcpy(this.buff, s.buff, s.len);
+            this.buff[sLen] = 0;
+            this._size = allocSize;
+          } else {
+            this.buff = s.buff;
+            this._size = s._size;
+          }
+        }
+      }
     }
 
     pragma "no doc"
     proc init=(b: bytes) {
+      this.init(b);
+    }
+
+    pragma "no doc"
+    proc init=(b: string) {
       this.init(b);
     }
 
@@ -112,7 +180,10 @@ module Bytes {
 
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
-
+      this.isowned = isowned;
+      this.complete();
+      const cs_len = length;
+      this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
 
     /*
@@ -128,7 +199,63 @@ module Bytes {
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: c_ptr, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
+      //different than string's similar constructor. Here we are not limited to
+      //any type
+      this.isowned = isowned;
+      this.complete();
+      this.reinitString(buff, length, size, needToCopy);
+    }
 
+    // This is assumed to be called from this.locale
+    pragma "no doc"
+    proc ref reinitString(_buf: c_ptr, s_len: int, size: int,
+                          needToCopy:bool = true) {
+      if this.isEmpty() && _buf == nil then return;
+
+      const buf = _buf:bufferType; // this is different than string
+
+      // If the this.buff is longer than buf, then reuse the buffer if we are
+      // allowed to (this.isowned == true)
+      if s_len != 0 {
+        if needToCopy {
+          if !this.isowned || s_len+1 > this._size {
+            // If the new string is too big for our current buffer or we dont
+            // own our current buffer then we need a new one.
+            if this.isowned && !this.isEmpty() then
+              chpl_here_free(this.buff);
+            // TODO: should I just allocate 'size' bytes?
+            const allocSize = chpl_here_good_alloc_size(s_len+1);
+            this.buff = chpl_here_alloc(allocSize,
+                                       offset_STR_COPY_DATA):bufferType;
+            this._size = allocSize;
+            // We just allocated a buffer, make sure to free it later
+            this.isowned = true;
+          }
+          c_memmove(this.buff, buf, s_len);
+          this.buff[s_len] = 0;
+        } else {
+          if this.isowned && !this.isEmpty() then
+            chpl_here_free(this.buff);
+          this.buff = buf;
+          this._size = size;
+        }
+      } else {
+        // If s_len is 0, 'buf' may still have been allocated. Regardless, we
+        // need to free the old buffer if 'this' is isowned.
+        if this.isowned && !this.isEmpty() then chpl_here_free(this.buff);
+        this._size = 0;
+
+        // If we need to copy, we can just set 'buff' to nil. Otherwise the
+        // implication is that the string takes ownership of the given buffer,
+        // so we need to store it and free it later.
+        if needToCopy {
+          this.buff = nil;
+        } else {
+          this.buff = buf;
+        }
+      }
+
+      this.len = s_len;
     }
 
     /*
@@ -149,14 +276,28 @@ module Bytes {
                  current locale, otherwise a deep copy is performed.
     */
     inline proc localize() : bytes {
-      return this;
+      //IDENTICAL TO STRING VERSION
+      if _local || this.locale_id == chpl_nodeID {
+        return new bytes(this, isowned=false);
+      } else {
+        const x:bytes = this; // assignment makes it local
+        return x;
+      }
     }
+
 
     /*
       Get a `c_string` from a :record:`bytes`.
      */
     inline proc c_str(): c_string {
-      return new c_string();
+      inline proc _cast(type t:c_string, x:bufferType) {
+        return __primitive("cast", t, x);
+      }
+
+      if _local == false && this.locale_id != chpl_nodeID then
+        halt("Cannot call .c_str() on a remote bytes");
+
+      return this.buff:c_string;
     }
 
     /*
@@ -176,7 +317,10 @@ module Bytes {
       :returns: 1-length :record:`bytes` object
      */
     proc this(i: int): bytes {
-
+      if this.isEmpty() then return new bytes("");
+      if boundsChecking && (i <= 0 || i > this.len)
+        then halt("index out of bounds of bytes: ", i);
+      return new bytes(c_ptrTo(this.buff[i-1]), length=1, size=2);
     }
 
     /*
@@ -208,7 +352,7 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc startsWith(needles: bytes ...) : bool {
-      return false;
+      return _startsEndsWith((...needles), fromLeft=true);
     }
 
     /*
@@ -218,7 +362,42 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc endsWith(needles: bytes ...) : bool {
+      return _startsEndsWith((...needles), fromLeft=false);
 
+    }
+
+    // TODO: could use a multi-pattern search or some variant when there are
+    // multiple needles. Probably wouldn't be worth the overhead for small
+    // needles though
+    pragma "no doc"
+    inline proc _startsEndsWith(needles: bytes ..., param fromLeft: bool) : bool {
+      var ret: bool = false;
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for needle in needles {
+          if needle.isEmpty() {
+            ret = true;
+            break;
+          }
+          if needle.len > this.len then continue;
+
+          const localNeedle: bytes = needle.localize();
+
+          const needleR = 0:int..#localNeedle.len;
+          if fromLeft {
+            const result = c_memcmp(this.buff, localNeedle.buff,
+                                    localNeedle.len);
+            ret = result == 0;
+          } else {
+            var offset = this.len-localNeedle.len;
+            const result = c_memcmp(this.buff+offset, localNeedle.buff,
+                                    localNeedle.len);
+            ret = result == 0;
+          }
+          if ret == true then break;
+        }
+      }
+      return ret;
     }
 
     /*
@@ -230,7 +409,7 @@ module Bytes {
       :returns: the index of the first occurrence of `needle` within a
                 the object, or 0 if the `needle` is not in the object.
      */
-    proc find(needle: bytes, region: range(?) = 1:byteIndex..) : byteIndex {
+    proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
 
     }
 
@@ -243,7 +422,7 @@ module Bytes {
       :returns: the index of the first occurrence from the right of `needle`
                 within the object, or 0 if the `needle` is not in the object.
      */
-    proc rfind(needle: bytes, region: range(?) = 1:byteIndex..) : byteIndex {
+    proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
 
     }
 
@@ -482,6 +661,10 @@ module Bytes {
     }
 
   } // end of record bytes
+
+  inline proc _cast(type t: bytes, x: string) {
+    return new bytes(x);
+  }
 
   /*
      Appends the bytes `rhs` to the bytes `lhs`.
