@@ -36,6 +36,7 @@
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "fixupExports.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "initializerResolution.h"
@@ -7633,6 +7634,8 @@ static void resolveSupportForModuleDeinits() {
 ************************************** | *************************************/
 
 static void resolveExports() {
+  std::vector<FnSymbol*> exps;
+
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn == initStringLiterals) {
@@ -7646,8 +7649,12 @@ static void resolveExports() {
       SET_LINENO(fn);
 
       resolveSignatureAndFunction(fn);
+
+      exps.push_back(fn);
     }
   }
+
+  fixupExportedFunctions(exps);
 }
 
 /************************************* | **************************************
