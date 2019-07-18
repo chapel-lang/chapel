@@ -463,7 +463,7 @@ pragma "no doc"
    fieldDate,
    fieldTime,
    fieldDateTime };
- use fieldtag;
+ private use fieldtag;
 
  pragma "no doc"
  proc =(ref t: unmanaged Toml, s: string) {
