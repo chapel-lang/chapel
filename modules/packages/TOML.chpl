@@ -35,7 +35,7 @@ module TOML {
 
 
 use TomlParser;
-use TomlReader;
+private use TomlReader;
 
 
 /* Receives a TOML file as a parameter and outputs a Toml object.
