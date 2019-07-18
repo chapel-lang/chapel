@@ -27,10 +27,11 @@ use MasonNew;
 use MasonModify;
 use Random;
 
-/* Top Level procedure that gets called from mason.chpl that takes in arguments from command line
-Returns the help output in '-h' or '--help' exits in the arguments.
-If --dry-run is passed then it checks to see if the package is able to be published.
-Takes in the username of the package owner as an argument*/
+/* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
+   Returns the help output in '-h' or '--help' exits in the arguments.
+   If --dry-run is passed then it checks to see if the package is able to be published.
+   Takes in the username of the package owner as an argument
+ */
 proc masonPublish(args: [] string) throws {
   try! {
     if args.size == 4 {
@@ -95,8 +96,9 @@ proc masonPublish(args: [] string) throws {
 }
 
 /* Main Script that goes through the act of publishing the package to the mason registry.
- Takes the package owners GitHub username as input will throw errors through command
-line git commands if any of the git calls fails.*/
+   Takes the package owners GitHub username as input will throw errors through command
+   line git commands if any of the git calls fails.
+ */
 proc publishPackage(username: string) throws {
   const packageLocation = absPath(here.cwd());
   var stream = makeRandomStream(int);
@@ -123,7 +125,8 @@ proc publishPackage(username: string) throws {
 }
 
 /* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
- and the package has a git remote origin. If both exist then the package can be published. */
+ and the package has a git remote origin. If both exist then the package can be published.
+ */
 proc dryRun(username: string) throws {
   var fork = false;
   var remoteCheck = checkIfForkExists(username: string);
@@ -154,21 +157,24 @@ proc dryRun(username: string) throws {
   }
 }
 
-/* Opens Spawn call to get username for the mason registry fork */
+/* Opens Spawn call to get username for the mason registry fork
+ */
 private proc usernameCheck(username: string) {
   const gitRemote = 'git ls-remote https://github.com/';
   var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry');
   return usernameCheck;
 }
 
-/* Runs Commands to see if Fork of mason-registry exists under the username */
+/* Runs Commands to see if Fork of mason-registry exists under the username
+ */
 private proc checkIfForkExists(username: string) {
   var getFork = ('git ls-remote https://github.com/' + username + '/mason-registry');
   var p = runWithStatus(getFork, false);
   return p;
 }
 
-/*Gets the GitHub username of the user, by parsing from the remote origin url.  */
+/* Gets the GitHub username of the user, by parsing from the remote origin url.
+ */
 private proc getUsername() {
   var usernameUrl = gitUrl();
   var tail = usernameUrl.find("/")-1: int;
@@ -177,7 +183,8 @@ private proc getUsername() {
   return username;
 }
 
-/* Clones the mason registry fork from the users repo. Takes username as input. */
+/* Clones the mason registry fork from the users repo. Takes username as input.
+ */
 proc cloneMasonReg(username: string, safeDir : string) throws {
   try! {
     const gitClone = 'git clone --quiet git@github.com:';
@@ -191,20 +198,23 @@ proc cloneMasonReg(username: string, safeDir : string) throws {
   }
 }
 
-/* Checks to see if 'git config --get remote.origin.url' exists */
+/* Checks to see if 'git config --get remote.origin.url' exists
+ */
 proc doesGitOriginExist() {
   var urlExists = runCommand("git config --get remote.origin.url", true);
   return !urlExists.isEmpty();
 }
 
-/*Procedure that returns the url of the git remote origin */
+/* Procedure that returns the url of the git remote origin
+ */
 private proc gitUrl() {
   var url = runCommand("git config --get remote.origin.url", true);
   return url;
 }
 
 /* Takes the git username and creates a new branch of the mason registry users fork,
- name or branch is taken from the Mason.toml of the mason package.*/
+  name or branch is taken from the Mason.toml of the mason package.
+ */
 proc branchMasonReg(username: string, name: string, safeDir: string) throws {
   try! {
     const branchCommand = "git checkout --quiet -b  "+ name: string;
@@ -218,7 +228,8 @@ proc branchMasonReg(username: string, name: string, safeDir: string) throws {
   }
 }
 
-/* Gets name from the Mason.toml */
+/* Gets name from the Mason.toml
+ */
 proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
@@ -233,7 +244,8 @@ proc getPackageName() throws {
 }
 
 /* Adds package to the Bricks of the mason-registry branch and then adds the version.toml
- with the source url of the package's GitHub repo.*/
+ with the source url of the package's GitHub repo.
+ */
 private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string) throws {
   try! {
 
