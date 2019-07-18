@@ -85,7 +85,7 @@ proc Worker(exec: string) {
   var ctxt: Context;
   var sock = ctxt.socket(ZMQ.SUB);
   sock.connect("tcp://localhost:5556");
-  sock.setSubscribe(zipcode);
+  sock.setsockopt(ZMQ.SUBSCRIBE, zipcode);
 
   record WeatherData {
     var zipcode, temperature, humidity: int;
