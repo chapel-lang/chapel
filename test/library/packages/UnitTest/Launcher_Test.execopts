@@ -4,3 +4,4 @@ test_halt.chpl #launcher_Test.halt.good
 LauncherTest/test_fail.chpl #launcher_Test.fail.good
 LauncherTest/ #launcher_Test.folder.good 
 test_locales.chpl #launcher_Test.numLocales.good
+test_dependency.chpl #launcher_Test.dependency.good

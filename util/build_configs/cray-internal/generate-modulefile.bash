@@ -63,7 +63,7 @@ if { [file exists "$latest_module/admin/bin/modulefile-utils.tcl" ]} {
 proc ModulesHelp { } {
     puts stderr "This modulefile defines the system paths and"
     puts stderr "environment variables needed to use "
-    puts stderr "the Chapel compiler on XT. This module "
+    puts stderr "the Chapel compiler on Cray systems. This module "
     puts stderr "requires a PrgEnv environment to be loaded."
 }
 
@@ -72,10 +72,42 @@ conflicts xt-mpich2 < 6.0.0
 conflict chapel
 #conflict gcc
 
+##
+## Now, we're going to attempt to get to the right build type
+###
+#
+set network seastar
+if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
+    set network $env(XTPE_NETWORK_TARGET)
+} elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
+    set network $env(CRAYPE_NETWORK_TARGET)
+}
+set accel 0
+if { [ info exists env(CRAY_ACCEL_TARGET) ] } {
+    set accel 1
+}
+
+setenv MPICH_GNI_DYNAMIC_CONN disabled
+if { [string match gemini $network] } {
+    set CHPL_HOST_PLATFORM cray-xe
+} elseif { [string match aries $network] } {
+    set CHPL_HOST_PLATFORM cray-xc
+} elseif { [string match ofi $network] } {
+    if { [file exists /etc/opt/cray/release/cray-release] } {
+        set CRAY_REL_INFO [exec cat /etc/opt/cray/release/cray-release]
+        if { [string match "PRODUCT=*Shasta*" $CRAY_REL_INFO] } {
+            set CHPL_HOST_PLATFORM cray-shasta
+        }
+    }
+}
+if { ! [info exists CHPL_HOST_PLATFORM] } {
+    puts stderr "Cannot determine host platform"
+}
+
 if { [string match aarch64 $CHPL_HOST_ARCH] } {
     # ARM-based CPU, 2018-06-08
 } elseif { [string match x86_64 $CHPL_HOST_ARCH] } {
-    # Legacy Cray-XC/XE
+    # Cray-XC/XE/Shasta
 
     # Load/unload cray-mpich if not previously loaded
 
@@ -112,29 +144,42 @@ if { ! [ info exists env(PE_ENV) ] } {
     module load PrgEnv-gnu
 }
 
-##
-## Now, we're going to attempt to get to the right build type
-###
-#
-set network seastar
-if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
-    set network $env(XTPE_NETWORK_TARGET)
-} elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
-    set network $env(CRAYPE_NETWORK_TARGET)
-}
-set accel 0
-if { [ info exists env(CRAY_ACCEL_TARGET) ] } {
-    set accel 1
-}
+set compiler $env(PE_ENV)
 
+if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
+    # Interim settings for Shasta systems.
 
-setenv MPICH_GNI_DYNAMIC_CONN disabled
-if { [string match gemini $network] } {
-    set CHPL_HOST_PLATFORM cray-xe
-} elseif { [string match aries $network] } {
-    set CHPL_HOST_PLATFORM cray-xc
-} else {
-    set CHPL_HOST_PLATFORM cray-xt
+    # So far we only have gnu-based Chapel for Shasta.
+    if { [string equal -nocase cray $compiler] } {
+        module swap PrgEnv-cray PrgEnv-gnu
+    } elseif { [string equal -nocase intel $compiler] } {
+        module swap PrgEnv-intel PrgEnv-gnu
+    } elseif { [string equal -nocase pgi $compiler] } {
+        module swap PrgEnv-pgi PrgEnv-gnu
+    }
+
+    # The cray-libsci module is loading hugepages, which we don't want (yet).
+    module unload cray-libsci
+
+    # Some libraries are not yet available in static form.
+    setenv CRAYPE_LINK_TYPE dynamic
+
+    # The PrgEnv stuff isn't picking up the right PMI library yet.
+    prepend-path LD_LIBRARY_PATH /usr/lib64
+
+    # Work around libfabric module not setting everything we need yet:
+    # set LIBFABRIC_DIR to the parent of libfabric's PATH entry.
+    if { ! [info exists env(LOADEDMODULES)] ||
+         ! [string match *libfabric* $env(LOADEDMODULES)] } {
+        module load libfabric
+    }
+    if { [info exists env(PATH)] &&
+         [regsub {^(.*:)?([^:]*libfabric[^:]*)/bin.*} $env(PATH) {\2} lfp] == 1
+       } {
+        setenv LIBFABRIC_DIR $lfp
+    } else {
+        puts stderr "Error: Cannot find libfabric path"
+    }
 }
 
 set BASE_INSTALL_DIR    [BASE_INSTALL_DIR]
@@ -158,14 +203,15 @@ if { [ file exists $CHPL_LOC/release_info ] } {
     set REL_INFO ""
 }
 
-# The default comm layer for Chapel version 1.11+ is ugni, which requires a
+# The default comm layer on X* for Chapel version 1.11+ is ugni, which requires a
 # craype-hugepages module in order to link correctly. If CHPL_COMM is not set
 # in the environment or is set to ugni, make sure there is a craype-hugepages
 # module loaded. Use craype-hugepages16M if a craype-hugepages module is not
 # already loaded.
-set compiler $env(PE_ENV)
 if { [info exists env(CHPL_COMM)] } {
     set chpl_comm $env(CHPL_COMM)
+} elseif { [string match cray-x* $CHPL_HOST_PLATFORM] } {
+    set chpl_comm "UNSET-WILL-BE-UGNI"
 } else {
     set chpl_comm "UNSET"
 }
@@ -180,7 +226,7 @@ if { !([is-loaded chapel] == 1) }  {
     }
 
     # Check to see if we require hugepages
-    if { ([string equal UNSET $chpl_comm] || [string equal ugni $chpl_comm]) &&
+    if { ([string equal UNSET-WILL-BE-UGNI $chpl_comm] || [string equal ugni $chpl_comm]) &&
          ([string equal -nocase GNU $compiler] || [string equal -nocase INTEL $compiler] || [string equal -nocase CRAY $compiler]) } {
 
         if {! $hugepagesLoaded} {

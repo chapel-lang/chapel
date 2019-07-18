@@ -621,7 +621,8 @@ def filter_errors(output, pre_exec_output, execgoodfile, execlog):
 
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
-        if re.search(s, output, re.IGNORECASE) != None:
+        if (re.search(s, output, re.IGNORECASE) != None or
+            re.search(s, pre_exec_output, re.IGNORECASE) != None):
             extra_msg = '(possible JIRA 357) '
             break
 

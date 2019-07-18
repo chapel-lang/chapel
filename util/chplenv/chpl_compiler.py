@@ -62,7 +62,7 @@ def get(flag='host', llvm_mode='default'):
     # The cray platforms are a special case in that we want to "cross-compile"
     # by default. (the compiler is different between host and target, but the
     # platform is the same)
-    if platform_val.startswith('cray-x'):
+    if platform_val.startswith('cray-x') or platform_val == 'cray-shasta':
         if flag == 'host':
             compiler_val = 'gnu'
         else:
