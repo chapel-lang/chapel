@@ -72,12 +72,23 @@ module Bytes {
     return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
   }
 
-
-  // to follow String.chpl, and maybe limit the index to smaller integers
   type idxType = int; 
 
   type byteType = uint(8);
   type bufferType = c_ptr(byteType);
+
+  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
+                                           src_addr: bufferType, len: integral) {
+    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
+  }
+
+  private proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
+                                len: int): bufferType {
+      const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
+      chpl_string_comm_get(dest, src_loc_id, src_addr, len);
+      dest[len] = 0;
+      return dest;
+  }
 
   /*
      ``DecodePolicy`` specifies what happens when there is malformed characters
@@ -306,7 +317,9 @@ module Bytes {
       :yields: 1-length :record:`bytes` objects
      */
     iter these(): bytes {
-      yield 0;
+      if this.isEmpty() then return;
+      for i in 1..this.len do
+        yield this[i];
     }
 
     /*
@@ -317,10 +330,24 @@ module Bytes {
       :returns: 1-length :record:`bytes` object
      */
     proc this(i: int): bytes {
-      if this.isEmpty() then return new bytes("");
+      if this.isEmpty() then return new bytes(""); // TODO this isn't right?
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       return new bytes(c_ptrTo(this.buff[i-1]), length=1, size=2);
+    }
+
+    // TODO add getByte and iterBytes 
+
+    iter iterBytes(): byteType {
+      if this.isEmpty() then return;
+      for i in 1..this.len do
+        yield this.getByte(i);
+    }
+
+    proc getByte(i: int): byteType {
+      if boundsChecking && (i <= 0 || i > this.len)
+        then halt("index out of bounds of bytes: ", i);
+      return this.buff[i-1];
     }
 
     /*
@@ -334,7 +361,70 @@ module Bytes {
                 the length of `r` is zero, an empty bytes is returned.
      */
     proc this(r: range(?)) : bytes {
+      var ret: bytes;
+      if this.isEmpty() then return ret;
 
+      const r2 = this._getView(r);
+      if r2.size <= 0 {
+        // TODO: I can't just return "" (ret var gets freed for some reason)
+        ret = "";
+      } else {
+        ret.len = r2.size:int;
+        const newSize = chpl_here_good_alloc_size(ret.len+1);
+        ret._size = max(chpl_string_min_alloc_size, newSize);
+        // FIXME: I was dumb here, just copy the correct region over in
+        // multi-locale and use that as the string buffer. No need to copy stuff
+        // about after pulling it across.
+        ret.buff = chpl_here_alloc(ret._size,
+                                  offset_STR_COPY_DATA): bufferType;
+
+        var thisBuff: bufferType;
+        const remoteThis = _local == false && this.locale_id != chpl_nodeID;
+        if remoteThis {
+          // TODO: Could do an optimization here and only pull down the data
+          // between r2.low and r2.high. Indexing for the copy below gets a bit
+          // more complex when that is performed though.
+          thisBuff = copyRemoteBuffer(this.locale_id, this.buff, this.len);
+        } else {
+          thisBuff = this.buff;
+        }
+
+        var buff = ret.buff; // Has perf impact and our LICM can't hoist :(
+        for (r2_i, i) in zip(r2, 0..) {
+          buff[i] = thisBuff[r2_i-1];
+        }
+        buff[ret.len] = 0;
+
+        if remoteThis then chpl_here_free(thisBuff);
+      }
+
+      return ret;
+
+    }
+
+    // Checks to see if r is inside the bounds of this and returns a finite
+    // range that can be used to iterate over a section of the string
+    // TODO: move into the public interface in some form? better name if so?
+    pragma "no doc"
+    proc _getView(r:range(?)) where r.idxType == int {
+      if boundsChecking {
+        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
+          if r.low:int <= 0 then
+            halt("range out of bounds of string");
+        }
+        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
+          if (r.high:int < 0) || (r.high:int > this.len) then
+            halt("range out of bounds of string");
+        }
+      }
+      const r1 = r[1:r.idxType..this.len:r.idxType];
+      if r1.stridable {
+        const ret = r1.low:int..r1.high:int by r1.stride;
+        return ret;
+      } else {
+        const ret = r1.low:int..r1.high:int;
+        return ret;
+      }
     }
 
     /*
@@ -410,7 +500,7 @@ module Bytes {
                 the object, or 0 if the `needle` is not in the object.
      */
     proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
-
+      return _search_helper(needle, region, count=false): idxType;
     }
 
     /*
@@ -423,7 +513,8 @@ module Bytes {
                 within the object, or 0 if the `needle` is not in the object.
      */
     proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
-
+      return _search_helper(needle, region, count=false,
+                            fromLeft=false): idxType;
     }
 
     /*
@@ -435,7 +526,78 @@ module Bytes {
       :returns: the number of times `needle` occurs in the object
      */
     proc count(needle: bytes, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=true);
+    }
 
+    // Helper function that uses a param bool to toggle between count and find
+    //TODO: this could be a much better string search
+    //      (Boyer-Moore-Horspool|any thing other than brute force)
+    //
+    pragma "no doc"
+    inline proc _search_helper(needle: bytes, region: range(?),
+                               param count: bool, param fromLeft: bool = true) {
+      // needle.len is <= than this.len, so go to the home locale
+      var ret: int = 0;
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        // any value > 0 means we have a solution
+        // used because we cant break out of an on-clause early
+        var localRet: int = -1;
+        const nLen = needle.len;
+        const view = this._getView(region);
+        const thisLen = view.size;
+
+        // Edge cases
+        if count {
+          if nLen == 0 { // Empty needle
+            localRet = thisLen+1;
+          }
+        } else { // find
+          if nLen == 0 { // Empty needle
+            if fromLeft {
+              localRet = 0;
+            } else {
+              localRet = if thisLen == 0
+                then 0
+                else thisLen+1;
+            }
+          }
+        }
+
+        if nLen > thisLen {
+          localRet = 0;
+        }
+
+        if localRet == -1 {
+          localRet = 0;
+          const localNeedle: bytes = needle.localize();
+
+          // i *is not* an index into anything, it is the order of the element
+          // of view we are searching from.
+          const numPossible = thisLen - nLen + 1;
+          const searchSpace = if fromLeft
+              then 0..#(numPossible)
+              else 0..#(numPossible) by -1;
+          for i in searchSpace {
+            // j *is* the index into the localNeedle's buffer
+            for j in 0..#nLen {
+              const idx = view.orderToIndex(i+j); // 1s based idx
+              if this.buff[idx-1] != localNeedle.buff[j] then break;
+
+              if j == nLen-1 {
+                if count {
+                  localRet += 1;
+                } else { // find
+                  localRet = view.orderToIndex(i);
+                }
+              }
+            }
+            if !count && localRet != 0 then break;
+          }
+        }
+        ret = localRet;
+      }
+      return ret;
     }
 
     /*
@@ -447,7 +609,28 @@ module Bytes {
       :returns: a copy of the object where `replacement` replaces `needle` up
                 to `count` times
      */
+    // TODO: not ideal - count and single allocation probably faster
+    //                 - can special case on replacement|needle.length (0, 1)
     proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
+      var result: bytes = this;
+      var found: int = 0;
+      var startIdx: idxType = 1;
+      const localNeedle: bytes = needle.localize();
+      const localReplacement: bytes = replacement.localize();
+
+      while (count < 0) || (found < count) {
+        const idx = result.find(localNeedle, startIdx..);
+        if !idx then break;
+
+        found += 1;
+        result = result[..idx-1] + localReplacement +
+                 result[(idx + localNeedle.length)..];
+        var tmp_res = result[..idx-1] + localReplacement +
+                 result[(idx + localNeedle.length)..];
+
+        startIdx = idx + localReplacement.length;
+      }
+      return result;
 
     }
 
@@ -467,6 +650,47 @@ module Bytes {
      */
     iter split(sep: bytes, maxsplit: int = -1,
                ignoreEmpty: bool = false): bytes {
+      if !(maxsplit == 0 && ignoreEmpty && this.isEmpty()) {
+        const localThis: bytes = this.localize();
+        const localSep: bytes = sep.localize();
+
+        // really should be <, but we need to avoid returns and extra yields so
+        // the iterator gets inlined
+        var splitAll: bool = maxsplit <= 0;
+        var splitCount: int = 0;
+
+        var start: idxType = 1;
+        var done: bool = false;
+        while !done  {
+          var chunk: bytes;
+          var end: idxType;
+
+          if (maxsplit == 0) {
+            chunk = localThis;
+            done = true;
+          } else {
+            if (splitAll || splitCount < maxsplit) then
+              end = localThis.find(localSep, start..);
+
+            if(end == 0) {
+              // Separator not found
+              chunk = localThis[start..];
+              done = true;
+            } else {
+              chunk = localThis[start..end-1];
+            }
+          }
+
+          if !(ignoreEmpty && chunk.isEmpty()) {
+            // Putting the yield inside the if prevents us from being inlined
+            // in the zippered case, but I don't think there is any way to avoid
+            // that easily
+            yield chunk;
+            splitCount += 1;
+          }
+          start = end+localSep.length;
+        }
+      }
 
     }
 
@@ -477,6 +701,73 @@ module Bytes {
                      indicate no limit.
      */
     iter split(maxsplit: int = -1) : bytes {
+      if !this.isEmpty() {
+        const localThis: bytes = this.localize();
+        var done : bool = false;
+        var yieldChunk : bool = false;
+        var chunk : bytes;
+
+        const noSplits : bool = maxsplit == 0;
+        const limitSplits : bool = maxsplit > 0;
+        var splitCount: int = 0;
+        const iEnd: idxType = localThis.len - 1;
+
+        var inChunk : bool = false;
+        var chunkStart : idxType;
+
+        for (i,c) in zip(1.., localThis.iterBytes()) {
+          // emit whole string, unless all whitespace
+          // TODO Engin: Why is this inside the loop?
+          if noSplits {
+            halt("Not ready for this yet");
+            /*done = true;*/
+            /*if !localThis.isSpace() then {*/
+              /*chunk = localThis;*/
+              /*yieldChunk = true;*/
+            /*}*/
+          } else {
+            var cSpace = ascii_isWhitespace(c);
+            // first char of a chunk
+            if !(inChunk || cSpace) {
+              chunkStart = i;
+              inChunk = true;
+              if i > iEnd {
+                chunk = localThis[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              }
+            } else if inChunk {
+              // first char out of a chunk
+              if cSpace {
+                splitCount += 1;
+                // last split under limit
+                if limitSplits && splitCount > maxsplit {
+                  chunk = localThis[chunkStart..];
+                  yieldChunk = true;
+                  done = true;
+                // no limit
+                } else {
+                  chunk = localThis[chunkStart..i-1];
+                  yieldChunk = true;
+                  inChunk = false;
+                }
+              // out of chars
+              } else if i > iEnd {
+                chunk = localThis[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              }
+            }
+          }
+
+          if yieldChunk {
+            yield chunk;
+            yieldChunk = false;
+          }
+          if done then
+            break;
+        }
+      }
 
     }
 
@@ -576,7 +867,19 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isSpace() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
 
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for b in this.iterBytes() {
+          if !(ascii_isWhitespace(b)) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
     }
 
     /*
@@ -677,6 +980,27 @@ module Bytes {
      Copies the bytes `rhs` into the bytes `lhs`.
   */
   proc =(ref lhs: bytes, rhs: bytes) {
+    inline proc helpMe(ref lhs: bytes, rhs: bytes) {
+      if _local || rhs.locale_id == chpl_nodeID {
+        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
+      } else {
+        const len = rhs.len; // cache the remote copy of len
+        var remote_buf:bufferType = nil;
+        if len != 0 then
+          remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);
+        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
+      }
+    }
+
+    if _local || lhs.locale_id == chpl_nodeID then {
+      helpMe(lhs, rhs);
+    }
+    else {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+        helpMe(lhs, rhs);
+      }
+    }
 
   }
 
@@ -697,7 +1021,35 @@ module Bytes {
                and `s1`
   */
   proc +(s0: bytes, s1: bytes) {
-  
+    // cache lengths locally
+    const s0len = s0.len;
+    if s0len == 0 then return s1;
+    const s1len = s1.len;
+    if s1len == 0 then return s0;
+
+    var ret: bytes;
+    ret.len = s0len + s1len;
+    const allocSize = chpl_here_good_alloc_size(ret.len+1);
+    ret._size = allocSize;
+    ret.buff = chpl_here_alloc(allocSize,
+                              offset_STR_COPY_DATA): bufferType;
+    ret.isowned = true;
+
+    const s0remote = s0.locale_id != chpl_nodeID;
+    if s0remote {
+      chpl_string_comm_get(ret.buff, s0.locale_id, s0.buff, s0len);
+    } else {
+      c_memcpy(ret.buff, s0.buff, s0len);
+    }
+
+    const s1remote = s1.locale_id != chpl_nodeID;
+    if s1remote {
+      chpl_string_comm_get(ret.buff+s0len, s1.locale_id, s1.buff, s1len);
+    } else {
+      c_memcpy(ret.buff+s0len, s1.buff, s1len);
+    }
+    ret.buff[ret.len] = 0;
+    return ret;
   }
 
   /*
@@ -720,5 +1072,25 @@ module Bytes {
   inline proc +(x: enumerated, s: bytes) {}
   inline proc +(s: bytes, x: bool) {}
   inline proc +(x: bool, s: bytes) {}
+
+  // ASCII helpers
+
+  private param asciiSpace:byteType = 32;
+  private param asciiHTab:byteType = 9;
+  private param asciiVTab:byteType = 11;
+  private param asciiLineFeed:byteType = 10;
+  private param asciiFormFeed:byteType = 12;
+  private param asciiCarriageReturn:byteType = 13;
+
+  private inline proc ascii_isWhitespace(c: byteType): bool {
+    return c==asciiSpace ||
+           c==asciiHTab ||
+           c==asciiLineFeed ||
+           c==asciiCarriageReturn ||
+           c==asciiVTab ||
+           c==asciiFormFeed;
+  }
+
+  
 
 } // end of module Bytes
