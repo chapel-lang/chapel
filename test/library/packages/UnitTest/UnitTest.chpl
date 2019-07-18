@@ -1,19 +1,88 @@
 /*
-Module UnitTest provides support for automated testing in Chapel .
+Module UnitTest provides support for automated testing in Chapel.
 Any function of the form
 
 .. code-block:: chapel
   
   proc funcName(test: Test) throws {}
 
-is treated as a test function.
+is treated as a test function. These functions must accept an object of Test
+Class. We use :proc:`~UnitTest.runTest` to pass the tests.
+
+**Example**
+
+*Using Asserts*
+
+:proc:`~Test.skip`
+:proc:`~Test.skipIf`
+:proc:`~Test.assertTrue`
+:proc:`~Test.assertFalse`
+:proc:`~Test.assertEqual`
+:proc:`~Test.assertNotEqual`
+:proc:`~Test.assertGreaterThan`
+:proc:`~Test.assertLessThan`
+
+.. code-block:: chapel
+
+   use UnitTest;
+
+   proc test1(test: Test) throws {
+     test.assertTrue(True);
+   }
+
+   UnitTest.runTest(test1);
+
+*Specifying locales*
+
+:proc:`~Test.addNumLocales`
+:proc:`~Test.maxLocales`
+:proc:`~Test.minLocales`
+
+.. code-block:: chapel
+
+   proc test2(test: Test) throws {
+     test.addNumLocales(16);
+   }
+
+   proc test3(test: Test) throws {
+     test.addNumLocales(16,8);
+   }
+  
+   proc test4(test: Test) throws {
+     test.maxLocales(4);
+     test.minLocales(2);
+   }
+
+*Specifying Dependencies*
+
+:proc:`~Test.dependsOn`
+
+.. code-block:: chapel
+
+   proc test5(test: Test) throws {
+     test.dependsOn(test3);
+   }
+
+   proc test6(test: Test) throws {
+     test.dependsOn(test2, test5);
+   }
+
+
+
 */
 module UnitTest {
   use Reflection;
   use TestError;
   pragma "no doc"
-  config const skipId: int = 0;
   config const testNames: string = "None";
+  pragma "no doc"
+  config const failedTestNames: string = "None";
+  pragma "no doc"
+  config const errorTestNames: string = "None";
+  pragma "no doc"
+  config const skippedTestNames: string = "None";
+  pragma "no doc"
+  config const ranTests: string = "None";
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: Test) throws { }
@@ -23,17 +92,31 @@ module UnitTest {
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
+    pragma "no doc"
     var numMaxLocales = max(int),
         numMinLocales = min(int);
+    pragma "no doc"
     var dictDomain: domain(int);
-    
-    /* Unconditionally skip a test. */
+    pragma "no doc"
+    var testDependsOn: [1..0] argType;
+
+    /* Unconditionally skip a test.
+
+      :arg reason: the reason for skipping
+      :type reason: `string` 
+    */
     proc skip(reason: string = "") throws {
       throw new owned TestSkipped(reason);
     }
 
     /*
     Skip a test if the condition is true.
+
+    :arg condition: the boolean condition
+    :type condition: `bool`
+
+    :arg reason: the reason for skipping
+    :type reason: `string`
    */
     proc skipIf(condition: bool, reason: string = "") throws {
       if condition then
@@ -42,7 +125,7 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is true.  If it is false, prints
-      'assert failed' and rasies AssertionError. 
+      ``assert failed`` and raises AssertionError. 
 
       :arg test: the boolean condition
       :type test: `bool`
@@ -56,7 +139,7 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is false.  If it is true, prints
-      'assert failed' and raises AssertionError.
+      ``assert failed`` and raises AssertionError.
 
       :arg test: the boolean condition
       :type test: `bool`
@@ -261,7 +344,10 @@ module UnitTest {
     }
     
     /*
-      Fail if the two objects are unequal as determined by the '==' operator.
+      Fail if the two objects are unequal as determined by the ``==`` operator.
+      
+      :arg first: The first object to compare.
+      :arg second: The second object to compare. 
     */
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
@@ -290,7 +376,12 @@ module UnitTest {
 
     
     /*
-      Fail if the two objects are equal as determined by the '==' operator and type.
+      Assert that a first argument is not equal to second argument. If it is false, 
+      raises AssertionError. Uses ``==`` operator and type to determine if both are equal
+      or not.
+
+      :arg first: The first object to compare.
+      :arg second: The second object to compare. 
     */
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
@@ -303,7 +394,10 @@ module UnitTest {
 
     /*
       Assert that a first argument is greater than second argument.  If it is false, prints
-      'assert failed' and rasies AssertionError. 
+      ``assert failed`` and raises AssertionError. 
+
+      :arg first: The first object to compare.
+      :arg second: The second object to compare. 
     */
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
@@ -503,8 +597,10 @@ module UnitTest {
     }
 
     /*
-      Assert that a first argument is less than second argument.  If it is false, prints
-      'assert failed' and rasies AssertionError. 
+      Assert that a first argument is less than second argument.  If it is false, raises AssertionError. 
+
+      :arg first: The first object to compare.
+      :arg second: The second object to compare. 
     */
     proc assertLessThan(first, second) throws {
       if canResolve("<=",first, second) {
@@ -703,7 +799,14 @@ module UnitTest {
       }
     }
 
-    /*Specify Max Number of Locales required to run the test*/
+    /*
+      Specify Max Number of Locales required to run the test
+    
+      :arg value: Maximum number of locales with which the test can be ran.
+      :type value: `int`.
+
+      :throws UnexpectedLocalesError: If `value` is less than 1 or `minNumLocales` 
+    */
     proc maxLocales(value: int) throws {
       this.numMaxLocales = value;
       if this.numMaxLocales < 1 {
@@ -717,7 +820,14 @@ module UnitTest {
       }
     }
 
-    /*Specify Min Number of Locales required to run the test*/
+    /*
+      Specify Min Number of Locales required to run the test
+    
+      :arg value: Minimum number of locales with which the test can be ran.
+      :type value: `int`.
+
+      :throws UnexpectedLocalesError: If `value` is more than `maxNumLocales`
+    */
     proc minLocales(value: int) throws {
       this.numMinLocales = value;
       if this.numMaxLocales < this.numMinLocales {
@@ -728,7 +838,14 @@ module UnitTest {
       }
     }
 
-    /*To add how many locales this test requires*/
+    /*
+      To add locales in which test can be run.
+
+      :arg locales: Multiple ``,`` separated locale values
+
+      :throws UnexpectedLocalesError: If `locales` are already added.
+    
+    */
     proc addNumLocales(locales: int ...?n) throws {
       var canRun =  false;
       if this.dictDomain.size > 0 {
@@ -746,6 +863,20 @@ module UnitTest {
         throw new owned TestIncorrectNumLocales(localesErrorStr);
       }
     }
+
+    /*Adds the tests in which the given test is depending.
+
+      :arg tests: Multiple ``,`` separated First Class Test Functions.
+      
+    */
+    proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
+      if testDependsOn.size == 0 {
+        for eachSuperTest in tests {
+          this.testDependsOn.push_back(eachSuperTest);
+        }
+        throw new owned DependencyFound();
+      }
+    }
   }
 
   pragma "no doc"
@@ -754,34 +885,40 @@ module UnitTest {
     var separator1 = "="* 70,
         separator2 = "-"* 70;
     
-    proc startTest(test, indx) throws {
-      stdout.write(test: string,"[",indx: string,"]: ");
+    proc startTest(test) throws {
+      stdout.writeln(test: string);
     }
 
     proc addError(test, errMsg) throws {
-      stdout.writeln("ERROR");
+      stdout.writeln("Flavour: ERROR");
       PrintError(errMsg);
     }
 
     proc addFailure(test, errMsg) throws {
-      stdout.writeln("FAIL");
+      stdout.writeln("Flavour: FAIL");
       PrintError(errMsg);
     }
 
     proc addSuccess(test) throws {
-      stdout.writeln("OK");
+      stdout.writeln("Flavour: OK");
       stdout.writeln(this.separator1);
       stdout.writeln(this.separator2);
     }
 
     proc addSkip(test, reason) throws {
-      stdout.writeln("SKIPPED");
+      stdout.writeln("Flavour: SKIPPED");
       PrintError(reason);
     }
 
     proc addIncorrectNumLocales(test, reason) throws {
-      stdout.writeln("IncorrectNumLocales");
+      stdout.writeln("Flavour: IncorrectNumLocales");
       PrintError(reason);
+    }
+
+    proc dependencyNotMet(test) throws {
+      stdout.writeln("Flavour: Dependence");
+      stdout.writeln(this.separator1);
+      stdout.writeln(this.separator2);
     }
 
     proc PrintError(err) throws {
@@ -789,7 +926,7 @@ module UnitTest {
       stdout.writeln(err);
       stdout.writeln(this.separator2);
     }
-    
+
   }
   
   pragma "no doc"
@@ -823,66 +960,209 @@ module UnitTest {
     }
   }
 
-  /*Runs the tests*/
+  /*Runs the tests
+  
+    :arg tests: Multiple ``,`` separated First Class Test Functions.
+
+    Call this as 
+    
+    .. code-block:: chapel
+
+      UnitTest.runTest(test1, test2);
+  */
   proc runTest(tests: argType ...?n) throws {
 
-    var runAllTests = true;
-    var testNameList: [1..0] string;
-    if testNames != "None" {
-      runAllTests = false;
-      for test in testNames.split(" ") do testNameList.push_back(test.strip());
-    }
+    var testNamesMap: domain(string);
+    var testStatus: [testNamesMap] bool,
+        testsFailed: [testNamesMap] bool,
+        testsErrored: [testNamesMap] bool,
+        testsLocalFails: [testNamesMap] bool,
+        testsPassed: [testNamesMap] bool,
+        testsSkipped: [testNamesMap] bool;
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
     testSuite.addTests(tests);
-    var testResult = new TextTestResult();
-    for indx in (skipId+1)..testSuite.testCount {
-      var test = testSuite[indx];
-      try {
-        if runAllTests {
-          runTestMethod(testResult, test, indx);
-        }
-        else {
-          var checkStatus = testNameList.find(test: string);
-          if checkStatus[1] {
-            runTestMethod(testResult, test, indx);
-          }
-        }
-        
+    
+    for test in testSuite {
+      const testName = test: string;
+      testNamesMap += testName;
+    }
+    if testNames != "None" {
+      for test in testNames.split(" ") {
+        testsLocalFails[test.strip()] = true;
       }
-      // A variety of catch statements will handle errors thrown
-      catch e: AssertionError {
-        testResult.addFailure(test: string, e: string);
-        // print info of the assertion error
+    }
+    if failedTestNames != "None" {
+      for test in failedTestNames.split(" ") {
+        testsFailed[test.strip()] = true; // these tests failed or skipped
+        testStatus[test.strip()] = true;
       }
-      catch e: TestSkipped {
-        testResult.addSkip(test: string, e: string);
-        // Print info on test skipped
+    }
+    if errorTestNames != "None" {
+      for test in errorTestNames.split(" ") {
+        testsErrored[test.strip()] = true; // these tests failed or skipped
+        testStatus[test.strip()] = true;
       }
-      catch e: TestDependencyNotMet {
-        // Pop test out of array and append to end
+    }
+    if skippedTestNames != "None" {
+      for test in skippedTestNames.split(" ") {
+        testsSkipped[test.strip()] = true; // these tests failed or skipped
+        testStatus[test.strip()] = true;
       }
-      catch e: TestIncorrectNumLocales {
-        testResult.addIncorrectNumLocales(test: string, e: string);
+    }
+    if ranTests != "None" {
+      for test in ranTests.split(" ") {
+        testsPassed[test.strip()] = true; // these tests failed or skipped
+        testStatus[test.strip()] = true;
       }
-      catch e: UnexpectedLocales {
-        testResult.addFailure(test: string, e: string);
-      }
-      catch e { 
-        testResult.addError(test:string, e:string);
+    }
+
+    for test in testSuite {
+      if !testStatus[test: string] {
+        // Create a test object per test
+        var checkCircle: [1..0] string;
+        var circleFound = false;
+        var testObject = new Test();
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
+                      testsLocalFails, test, checkCircle, circleFound);
       }
     }
   }
 
   private
-  proc runTestMethod(ref testResult, test, indx) throws {
-    // Create a test object per test
-    var testObject = new Test();
-    var testName = test: string;
-    //test is a FCF:
-    testResult.startTest(testName, indx);
-    test(testObject);
-    testResult.addSuccess(testName);
+  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed, ref testsErrored, 
+                      ref testsSkipped, ref testsLocalFails, test, ref checkCircle, 
+                      ref circleFound) throws {
+    var testResult = new TextTestResult();
+    var testName = test: string; //test is a FCF:
+    checkCircle.push_back(testName);
+    try {
+      testResult.startTest(testName);
+      test(testObject);
+      testResult.addSuccess(testName);
+      testsLocalFails[testName] = false;
+    }
+    // A variety of catch statements will handle errors thrown
+    catch e: AssertionError {
+      testResult.addFailure(testName, e: string);
+      testsFailed[testName] = true;
+      // print info of the assertion error
+    }
+    catch e: DependencyFound {
+      var allTestsRan = true;
+      for superTest in testObject.testDependsOn {
+        var checkCircleStatus = checkCircle.find(superTest: string);
+        // cycle is checked
+        if checkCircleStatus[1]{
+          testsSkipped[testName] = true;
+          circleFound = true;
+          var failReason = testName + " skipped as circular dependency found";
+          testResult.addSkip(testName, failReason);
+          testStatus[testName] = true;
+          return;
+        }
+        // if super test didn't Error or Failed or skipped
+        if !testsErrored[superTest: string] && !testsFailed[superTest: string] && !testsSkipped[superTest: string]
+        {
+          // checking if super test ran or not.
+          if !testStatus[superTest: string] {
+            // Create a test object per test
+            var superTestObject = new Test();
+            // running the super test
+            runTestMethod(testStatus, superTestObject, testsFailed, testsErrored, 
+                          testsSkipped, testsLocalFails, superTest, checkCircle, 
+                          circleFound);
+            var removeSuperTest = checkCircle.find(superTest: string);
+            if removeSuperTest[1] {
+              checkCircle.remove(removeSuperTest[2]);
+            }
+            // if super test failed
+            if testsFailed[superTest: string] {
+              testsSkipped[testName] = true; // current test have failed or skipped
+              var skipReason = testName + " skipped as " + superTest: string +" failed";
+              testResult.addSkip(testName, skipReason);
+              break;
+            }
+            // if super test failed
+            if testsSkipped[superTest: string] {
+              testsSkipped[testName] = true; // current test have failed or skipped
+              var skipReason = testName + " skipped as " + superTest: string +" skipped";
+              testResult.addSkip(testName, skipReason);
+              break;
+            }
+            // this superTest has not yet finished.
+            if testsLocalFails[superTest: string] {
+              allTestsRan = false;
+            }
+
+            // if Circle Found running the superTests
+            if circleFound then break;
+
+            // if superTest error then
+            if testsErrored[superTest: string] {
+              testsSkipped[testName] = true;
+              var skipReason = testName + " skipped as " + superTest: string +" gave an Error";
+              testResult.addSkip(testName, skipReason);
+              break;
+            }
+          }
+        }
+        // super test Errored
+        else if testsErrored[superTest: string] {
+          testsSkipped[testName] = true;
+          var skipReason = testName + " skipped as " + superTest: string +" gave an Error";
+          testResult.addSkip(testName, skipReason);
+          break;
+        }
+        // super test Skipped 
+        else if testsSkipped[superTest: string] {
+          testsSkipped[testName] = true;
+          var skipReason = testName + " skipped as " + superTest: string +" Skipped";
+          testResult.addSkip(testName, skipReason);
+          break;
+        }
+        //super test failed
+        else {
+          testsSkipped[testName] = true; // current test have failed or skipped
+          var skipReason = testName + " skipped as " + superTest: string +" failed";
+          testResult.addSkip(testName, skipReason);
+        }
+      }
+      if circleFound {
+        testsSkipped[testName] = true;
+        var skipReason = testName + " skipped as circular dependency found";
+        testResult.addSkip(testName, skipReason);
+      }
+      // Test is not having error or failures or dependency or skipped
+      else if !testsErrored[testName] && allTestsRan && !testsFailed[testName] && !testsSkipped[testName]
+      {
+        testObject.dictDomain.clear(); // clearing so that we don't get Locales already added
+        runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
+                      testsLocalFails, test, checkCircle, circleFound);
+      }
+      else if !testsErrored[testName] && !allTestsRan && !testsFailed[testName] && !testsSkipped[testName]
+      {
+        testResult.dependencyNotMet(testName);
+      }
+    }
+    catch e: TestSkipped {
+      testResult.addSkip(testName, e: string);
+      testsSkipped[testName] = true ;
+      // Print info on test skipped
+    }
+    catch e: TestIncorrectNumLocales {
+      testResult.addIncorrectNumLocales(testName, e: string);
+      testsLocalFails[testName] = true;;
+    }
+    catch e: UnexpectedLocales {
+      testResult.addFailure(testName, e: string);
+      testsFailed[testName] = true ;
+    }
+    catch e { 
+      testResult.addError(testName, e:string);
+      testsErrored[testName] = true ;
+    }
+    testStatus[testName] = true;
   }
 }
