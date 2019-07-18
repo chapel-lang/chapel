@@ -117,7 +117,7 @@ Parser module with the Toml class for the Chapel TOML library.
 */
 module TomlParser {
 
-  use Regexp;
+  private use Regexp;
   use DateTime;
 
 
@@ -992,7 +992,7 @@ pragma "no doc"
  */
 module TomlReader {
 
- use Regexp;
+ private use Regexp;
 
  config const debugTomlReader = false;
 
