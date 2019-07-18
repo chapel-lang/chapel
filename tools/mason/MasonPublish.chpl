@@ -124,7 +124,7 @@ proc publishPackage(username: string) throws {
 
 /* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
  and the package has a git remote origin. If both exist then the package can be published. */
-private proc dryRun(username: string) throws {
+proc dryRun(username: string) throws {
   var fork = false;
   var remoteCheck = checkIfForkExists(username: string);
   if remoteCheck == 0 {
@@ -219,7 +219,7 @@ proc branchMasonReg(username: string, name: string, safeDir: string) throws {
 }
 
 /* Gets name from the Mason.toml */
-private proc getPackageName() throws {
+proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
@@ -227,7 +227,6 @@ private proc getPackageName() throws {
     return name;
   }
   catch {
-    rmTree(MASON_HOME + '/tmp');
     writeln('Error getting the name of your package, ensure your package is a mason project');
     exit(1);
   }
