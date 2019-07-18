@@ -261,8 +261,8 @@ module ZMQ {
 
   require "zmq.h", "-lzmq", "ZMQHelper/zmq_helper.h", "ZMQHelper/zmq_helper.c";
 
-  use Reflection;
-  use ExplicitRefCount;
+  private use Reflection;
+  private use ExplicitRefCount;
   use SysError;
 
   private extern proc chpl_macro_int_errno():c_int;
