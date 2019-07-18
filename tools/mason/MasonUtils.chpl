@@ -443,7 +443,7 @@ proc isIdentifier(name:string) {
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
-    if v.tag == fieldToml then
+    if v.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }

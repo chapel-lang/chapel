@@ -241,7 +241,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
   for (name, spec) in zip(exDeps.D, exDeps.A) {
     try! {
       select spec.tag {
-          when fieldToml do continue;
+          when fieldtag.fieldToml do continue;
           otherwise {
             // Take key from toml file if not present in spec
             var tempSpec = spec.s;
