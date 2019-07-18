@@ -81,7 +81,12 @@ proc masonPublish(args: [] string) throws {
         throw new owned MasonError('Must have remote origin set up in repository in order to publish.');
       }
     }
-    else throw new owned MasonError('Usage must meet the form "mason publish [options]"');
+    else {
+      const badSyntaxMessage = ' does not meet the "mason publish [options]" syntax';
+      writeln('"' + args[0]+ ' '  + args[1] + ' ' + args[2] + badSyntaxMessage);
+      writeln('See "mason publish -h" for more details');
+      exit(0);
+     }
   }
   catch e: MasonError {
     writeln(e.message());
