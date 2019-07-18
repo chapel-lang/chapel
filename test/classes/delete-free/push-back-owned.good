@@ -1,1 +1,2 @@
+push-back-owned.chpl:9: warning: push_back is deprecated - please use List.extend
 1

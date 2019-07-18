@@ -1,4 +1,10 @@
 push_back_lifetime.chpl:3: In function 'bad1':
+push_back_lifetime.chpl:9: warning: push_back is deprecated - please use List.extend
+push_back_lifetime.chpl:14: In function 'bad2':
+push_back_lifetime.chpl:19: warning: push_back is deprecated - please use List.extend
+push_back_lifetime.chpl:25: In function 'ok':
+push_back_lifetime.chpl:30: warning: push_back is deprecated - please use List.extend
+push_back_lifetime.chpl:3: In function 'bad1':
 push_back_lifetime.chpl:9: error: Actual argument bb does not meet called function lifetime constraint
 push_back_lifetime.chpl:7: note: consider scope of own
 note: called function [domain(1,int(64),false)] borrowed C.push_back(val: borrowed C)
