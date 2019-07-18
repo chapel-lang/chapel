@@ -157,7 +157,7 @@ ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
 {
   const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
   if (nameString == astrThis)
-    USR_FATAL_CONT(nameExp, "cannot apply a forall or task intent to 'this'");
+    USR_FATAL_CONT(nameExp, "cannot currently apply a forall or task intent to 'this'");
 
   if (type == NULL && init == NULL)
     // non-TPV forall intent
