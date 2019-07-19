@@ -2430,6 +2430,97 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
   return false;
 }
 
+Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
+                                  ClassTypeDecorator useDec,
+                                  AggregateType* manager,
+                                  Expr* ctx) {
+  // Now type-construct it with appropriate nilability
+  ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED,
+					   useDec);
+  Type* borrowType = canonicalClassType->getDecoratedClass(d);
+
+  CallExpr* typeCall = new CallExpr(manager->symbol,
+				    borrowType->symbol);
+  ctx->insertAfter(typeCall);
+  resolveCall(typeCall);
+  Type* ret = typeCall->typeInfo();
+  typeCall->remove();
+  return ret;
+}
+
+static void adjustClassCastCall(CallExpr* call)
+{
+  SymExpr* targetTypeSe = toSymExpr(call->get(1));
+  SymExpr* valueSe = toSymExpr(call->get(2));
+  Type* targetType = targetTypeSe->symbol()->getValType();
+  Type* valueType = valueSe->symbol()->getValType();
+
+  // Handle casting from managed type to
+  //  * any-management SomeClass
+  //  * unmanaged SomeClass
+  //  * borrowed SomeClass
+  //  * unmanaged
+  // This section just handles merging the decortators.
+  // Casts from owned etc. to owned are still also handled in module code.
+  // Down-casting is handled in the module code as well.
+  if (isClassLikeOrManaged(valueType) && isClassLikeOrManaged(targetType)) {
+    Type* canonicalValue = canonicalClassType(valueType);
+    ClassTypeDecorator valueD = classTypeDecorator(valueType);
+
+    Type* canonicalTarget = canonicalClassType(targetType);
+    ClassTypeDecorator targetD = classTypeDecorator(targetType);
+
+    AggregateType* at = NULL;
+
+    if (isBuiltinGenericClassType(targetType))
+      at = toAggregateType(canonicalValue);
+    else
+      at = toAggregateType(canonicalTarget);
+
+    // Compute the decorator combining generic properties
+    ClassTypeDecorator d = combineDecorators(targetD, valueD);
+
+    // Now compute the target type
+    Type* t = NULL;
+    if (isDecoratorManaged(d)) {
+      AggregateType* manager = getManagedPtrManagerType(valueType);
+      t = computeDecoratedManagedType(at, d, manager, call);
+    } else {
+      t = at->getDecoratedClass(d);
+    }
+
+    // Replace the target type with the instantiated one if it differs
+    if (targetType != t) {
+      targetTypeSe->setSymbol(t->symbol);
+    }
+
+    // Now, do a borrow if it's a cast from managed to not managed.
+    // (Note, this assumes that managedType.borrow() does not throw/halt
+    //  for nilable managed types storing nil. If that changed, we'd
+    //  need another method to call here to get the possibly nil ptr).
+    if (isDecoratorManaged(valueD) &&
+        !isDecoratorManaged(d) &&
+        !isTypeExpr(valueSe)) {
+      if (isDecoratorUnknownManagement(d))
+        INT_FATAL(call, "actual value has unknown type");
+      // Convert it to borrow before trying to resolve the cast again
+      SET_LINENO(call);
+      VarSymbol* tmp = newTempConst("cast_tmp");
+      Symbol* valueSym = valueSe->symbol();
+      CallExpr* c = new CallExpr("borrow", gMethodToken, valueSym);
+      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(m);
+      resolveCallAndCallee(c);
+      resolveCall(m);
+
+      // Now update the cast call we have to cast
+      // the result of the borrow
+      valueSe->setSymbol(tmp);
+    }
+  }
+}
+
 static bool resolveBuiltinCastCall(CallExpr* call)
 {
   UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
@@ -2444,12 +2535,14 @@ static bool resolveBuiltinCastCall(CallExpr* call)
 
   if (targetTypeSe && valueSe &&
       targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+
+    // Fix types for e.g. cast to generic-management MyClass.
+    // This can change the symbols pointed to by targetTypeSe/valueSe.
+    adjustClassCastCall(call);
+
     Type* targetType = targetTypeSe->symbol()->getValType();
     Type* valueType = valueSe->symbol()->getValType();
 
-    bool promotes = false;
-    bool paramNarrows = false;
-    bool paramCoerce = false;
     // If it's a trivial cast, replace it with PRIM_CAST.
     // Trivial casts are those casts that:
     //   * are already handled by C/LLVM
@@ -2461,6 +2554,9 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     //  * casts involving complex (e.g. imag to complex)
     //  * promoted casts
 
+    bool promotes = false;
+    bool paramNarrows = false;
+    bool paramCoerce = false;
     if (!isRecord(targetType) && !isRecord(valueType) &&
         !is_complex_type(targetType) && !is_complex_type(valueType) &&
         canDispatch(valueType, valueSe->symbol(),
@@ -2468,9 +2564,28 @@ static bool resolveBuiltinCastCall(CallExpr* call)
                     &promotes, &paramNarrows, paramCoerce) &&
         !promotes) {
 
+      if (isTypeExpr(valueSe)) {
+        // Casts of type expressions e.g. MyOwnedType:unmanaged
+        // are useful but don't really work as calls to _cast.
+        // Change them to noop to work around other parts of resolution.
+        call->primitive = primitives[PRIM_NOOP];
+        call->baseExpr->remove();
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE) ||
+              parentCall->isPrimitive(PRIM_ASSIGN)) {
+            SET_LINENO(call);
+            call->replace(new SymExpr(targetType->symbol));
+            parentCall->getStmtExpr()->insertBefore(call);
+          }
+        }
+        return true;
+      }
+
+      // Otherwise, convert the _cast call to a primitive cast
       call->baseExpr->remove();
       call->primitive = primitives[PRIM_CAST];
 
+      // Add a dereference for references to avoid confusing the compiler.
       if (valueSe->symbol()->isRef()) {
         if (targetTypeSe->symbol()->isRef())
           INT_FATAL("casting from reference to reference not handled");
@@ -2490,104 +2605,6 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       }
 
       return true;
-    }
-
-    // Handle casting from managed type to its borrow type
-    // (or variants thereof)
-    if (isManagedPtrType(valueType) && !isManagedPtrType(targetType) &&
-        isClassLike(targetType)) {
-
-      if (isTypeExpr(valueSe) && isBuiltinGenericClassType(targetType)) {
-        // Casts of type expressions e.g. MyOwnedType:unmanaged
-        // are useful but don't really work as calls to _cast.
-        // Change them to noop to work around other parts of resolution.
-        Type* t = canonicalDecoratedClassType(valueType);
-        AggregateType* at = toAggregateType(t);
-
-        // Compute the decorator combining generic properties
-        ClassTypeDecorator d;
-        d = combineDecorators(classTypeDecorator(targetType),
-                              classTypeDecorator(valueType));
-        t = at->getDecoratedClass(d);
-
-        gdbShouldBreakHere();
-        targetTypeSe->setSymbol(t->symbol);
-        call->primitive = primitives[PRIM_NOOP];
-        call->baseExpr->remove();
-        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-          if (parentCall->isPrimitive(PRIM_MOVE) ||
-              parentCall->isPrimitive(PRIM_ASSIGN)) {
-            call->replace(new SymExpr(t->symbol));
-            parentCall->getStmtExpr()->insertBefore(call);
-          }
-        }
-        return true;
-      } else {
-        SET_LINENO(call);
-        VarSymbol* tmp = newTempConst("cast_tmp");
-        CallExpr* c = new CallExpr("borrow", gMethodToken, valueSe->symbol());
-        CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
-        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(m);
-        resolveCallAndCallee(c);
-        resolveCall(m);
-
-        // Now update the cast call we have to cast
-        // the result of the borrow
-        valueSe->setSymbol(tmp);
-        // Try again with that
-        return resolveBuiltinCastCall(call);
-      }
-    }
-
-    // Handle some generic casts to 'unmanaged' etc
-    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
-      // This case is here just because in the event
-      // that targetType is generic, we weren't able
-      // to resolve a call to a _cast with a generic actual.
-      // It could probably be removed.
-      if (isBuiltinGenericClassType(targetType) ||
-          isDecoratedClassType(targetType)) {
-
-        Type* t = NULL;
-        if (isBuiltinGenericClassType(targetType))
-          t = canonicalDecoratedClassType(valueType);
-        else
-          t = canonicalDecoratedClassType(targetType);
-
-        AggregateType* at = toAggregateType(t);
-
-        // Compute the decorator combining generic properties
-        ClassTypeDecorator d;
-        d = combineDecorators(classTypeDecorator(targetType),
-                              classTypeDecorator(valueType));
-        t = at->getDecoratedClass(d);
-
-        // Replace the target type with the instantiated one.
-        targetTypeSe->setSymbol(t->symbol);
-
-        if (isTypeExpr(valueSe)) {
-          // Casts of type expressions e.g. t:unmanaged
-          // are useful but don't really work as calls to _cast.
-          // Change them to noop to work around other parts of resolution.
-          call->primitive = primitives[PRIM_NOOP];
-          call->baseExpr->remove();
-          if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-            if (parentCall->isPrimitive(PRIM_MOVE) ||
-                parentCall->isPrimitive(PRIM_ASSIGN)) {
-              call->replace(new SymExpr(t->symbol));
-              parentCall->getStmtExpr()->insertBefore(call);
-            }
-          }
-          return true;
-        } else {
-          // Try again with proper type
-          return resolveBuiltinCastCall(call);
-        }
-      }
-
-      // This could compute the target type for generics.
-      // If it does, be careful with generics with defaults.
     }
   }
 

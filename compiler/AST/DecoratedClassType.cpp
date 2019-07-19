@@ -81,6 +81,9 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   return NULL;
 }
 
+// Information from the formalDecorator will be used,
+// but if it is generic and actualDecorator has a non-generic value,
+// the non-generic component will be combined in.
 ClassTypeDecorator combineDecorators(ClassTypeDecorator formalDecorator,
                                      ClassTypeDecorator actualDecorator) {
   ClassTypeDecorator d = formalDecorator;

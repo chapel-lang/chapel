@@ -529,21 +529,10 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
           fMgr = getManagedPtrManagerType(formalType);
 
 	if (fMgr == NULL || aMgr == fMgr) {
-	  // Now type-construct it with appropriate nilability
-	  ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED,
-						   useDec);
-	  if (useType == NULL)
-	    useType = canonicalActual;
-
-	  Type* borrowType = getDecoratedClass(useType, d);
-
-	  CallExpr* typeCall = new CallExpr(aMgr->symbol,
-					    borrowType->symbol);
-	  ctx->insertAfter(typeCall);
-	  resolveCall(typeCall);
-	  useType = typeCall->typeInfo();
-	  typeCall->remove();
-	  return useType;
+	  if (useType == NULL) useType = canonicalActual;
+          AggregateType* at = toAggregateType(useType);
+          INT_ASSERT(at);
+          return computeDecoratedManagedType(at, useDec, aMgr, ctx);
         }
       }
 

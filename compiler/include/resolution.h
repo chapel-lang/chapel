@@ -306,4 +306,9 @@ bool isNumericParamDefaultType(Type* type);
 
 void resolveGenericActuals(CallExpr* call);
 
+Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
+                                  ClassTypeDecorator useDec,
+                                  AggregateType* manager,
+                                  Expr* ctx);
+
 #endif

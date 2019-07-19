@@ -12,6 +12,117 @@ module test {
     var noq:owned Child? = nil;
     var nsq:shared Child? = nil;
 
+    // casting to generic Child
+    {
+      writeln();
+      writeln("casts to generic Child");
+      // co
+      {
+        writeln("co:Child");
+        var x = co:Child;
+        writeln(x.type:string, " ", x);
+        co = new owned Child(1,2); // because of ownership transfer
+      }
+      // coq
+      {
+        writeln("coq:Child");
+        try {
+          var x = coq:Child;
+          writeln(x.type:string, " ", x);
+          coq = new owned Child(1,2); // because of ownership transfer
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // cs
+      {
+        writeln("cs:Child");
+        var x = cs:Child;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Child");
+        try {
+          var x = csq:Child;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // noq
+      {
+        writeln("noq:Child");
+        try {
+          var x = noq:Child;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+      // nsq
+      {
+        writeln("nsq:Child");
+        try {
+          var x = nsq:Child;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+    }
+
+    // casting to generic Child?
+    {
+      writeln();
+      writeln("casts to generic Child?");
+      // co
+      {
+        writeln("co:Child?");
+        var x = co:Child?;
+        writeln(x.type:string, " ", x);
+        co = new owned Child(1,2); // because of ownership transfer
+      }
+      // coq
+      {
+        writeln("coq:Child?");
+        var x = coq:Child?;
+        writeln(x.type:string, " ", x);
+        coq = new owned Child(1,2); // because of ownership transfer
+      }
+      // cs
+      {
+        writeln("cs:Child?");
+        var x = cs:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Child?");
+        var x = csq:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // noq
+      {
+        writeln("noq:Child?");
+        var x = noq:Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+      // nsq
+      {
+        writeln("nsq:Child?");
+        var x = nsq:Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+    }
+
+
     // casting to borrowed Child
     {
       writeln();
@@ -326,6 +437,116 @@ module test {
       {
         writeln("nsq:shared Child?");
         var x = nsq:shared Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+    }
+
+    // casting to generic Parent
+    {
+      writeln();
+      writeln("casts to generic Parent");
+      // co
+      {
+        writeln("co:Parent");
+        var x = co:Parent;
+        writeln(x.type:string, " ", x);
+        co = new owned Child(1,2); // because of ownership transfer
+      }
+      // coq
+      {
+        writeln("coq:Parent");
+        try {
+          var x = coq:Parent;
+          writeln(x.type:string, " ", x);
+          coq = new owned Child(1,2); // because of ownership transfer
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // cs
+      {
+        writeln("cs:Parent");
+        var x = cs:Parent;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Parent");
+        try {
+          var x = csq:Parent;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // noq
+      {
+        writeln("noq:Parent");
+        try {
+          var x = noq:Parent;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+      // nsq
+      {
+        writeln("nsq:Parent");
+        try {
+          var x = nsq:Parent;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+    }
+
+    // casting to generic Parent?
+    {
+      writeln();
+      writeln("casts to generic Parent?");
+      // co
+      {
+        writeln("co:Parent?");
+        var x = co:Parent?;
+        writeln(x.type:string, " ", x);
+        co = new owned Child(1,2); // because of ownership transfer
+      }
+      // coq
+      {
+        writeln("coq:Parent?");
+        var x = coq:Parent?;
+        writeln(x.type:string, " ", x);
+        coq = new owned Child(1,2); // because of ownership transfer
+      }
+      // cs
+      {
+        writeln("cs:Parent?");
+        var x = cs:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Parent?");
+        var x = csq:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // noq
+      {
+        writeln("noq:Parent?");
+        var x = noq:Parent?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+      // nsq
+      {
+        writeln("nsq:Parent?");
+        var x = nsq:Parent?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
       }

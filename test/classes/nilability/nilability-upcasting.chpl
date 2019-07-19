@@ -11,6 +11,112 @@ module test {
     var nbq:borrowed Child? = nil;
     var nuq:unmanaged Child? = nil;
 
+    // casting to generic Child
+    {
+      writeln();
+      writeln("casts to generic Child");
+      // cb
+      {
+        writeln("cb:Child");
+        var x = cb:Child;
+        writeln(x.type:string, " ", x);
+      }
+      // cbq
+      {
+        writeln("cbq:Child");
+        try {
+          var x = cbq:Child;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // cu
+      {
+        writeln("cu:Child");
+        var x = cu:Child;
+        writeln(x.type:string, " ", x);
+      }
+      // cuq
+      {
+        writeln("cuq:Child");
+        try {
+          var x = cuq:Child;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // nbq
+      {
+        writeln("nbq:Child");
+        try {
+          var x = nbq:Child;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+      // nuq
+      {
+        writeln("nuq:Child");
+        try {
+          var x = nuq:Child;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+    }
+
+    // casting to generic Child?
+    {
+      writeln();
+      writeln("casts to generic Child?");
+      // cb
+      {
+        writeln("cb:Child?");
+        var x = cb:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // cbq
+      {
+        writeln("cbq:Child?");
+        var x = cbq:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // cu
+      {
+        writeln("cu:Child?");
+        var x = cu:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // cuq
+      {
+        writeln("cuq:Child?");
+        var x = cuq:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // nbq
+      {
+        writeln("nbq:Child?");
+        var x = nbq:Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+      // nuq
+      {
+        writeln("nuq:Child?");
+        var x = nuq:Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+    }
+
     // casting to borrowed Child
     {
       writeln();
@@ -312,6 +418,112 @@ module test {
         var y = nuq:(unmanaged?);
         writeln(y.type:string, " ", y);
         assert(y == nil);
+      }
+    }
+
+    // casting to generic Parent
+    {
+      writeln();
+      writeln("casts to generic Parent");
+      // cb
+      {
+        writeln("cb:Parent");
+        var x = cb:Parent;
+        writeln(x.type:string, " ", x);
+      }
+      // cbq
+      {
+        writeln("cbq:Parent");
+        try {
+          var x = cbq:Parent;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // cu
+      {
+        writeln("cu:Parent");
+        var x = cu:Parent;
+        writeln(x.type:string, " ", x);
+      }
+      // cuq
+      {
+        writeln("cuq:Parent");
+        try {
+          var x = cuq:Parent;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // nbq
+      {
+        writeln("nbq:Parent");
+        try {
+          var x = nbq:Parent;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+      // nuq
+      {
+        writeln("nuq:Parent");
+        try {
+          var x = nuq:Parent;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+    }
+
+    // casting to generic Parent?
+    {
+      writeln();
+      writeln("casts to generic Parent?");
+      // cb
+      {
+        writeln("cb:Parent?");
+        var x = cb:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // cbq
+      {
+        writeln("cbq:Parent?");
+        var x = cbq:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // cu
+      {
+        writeln("cu:Parent?");
+        var x = cu:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // cuq
+      {
+        writeln("cuq:Parent?");
+        var x = cuq:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // nbq
+      {
+        writeln("nbq:Parent?");
+        var x = nbq:Parent?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+      // nuq
+      {
+        writeln("nuq:Parent?");
+        var x = nuq:Parent?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
       }
     }
 
