@@ -298,15 +298,27 @@ module CPtr {
   pragma "last resort"
   pragma "no doc"
   inline proc _cast(type t:_anyManagement, x:c_void_ptr) {
-    compilerError("cast from c_void_ptr to " + t:string + " is deprecated");
-    compilerError("cast to " + t:unmanaged?:string + " instead");
-    return __primitive("cast", t, x);
+    if isUnmanagedClass(t) || isBorrowedClass(t) {
+      if !chpl_legacyNilClasses {
+        compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
+        compilerWarning("cast to "+ _to_nilable(t):string +" instead");
+      }
+      return __primitive("cast", t, x);
+    } else {
+      compilerWarning("invalid cast from c_void_ptr to managed type " +
+                      t:string);
+    }
   }
 
   pragma "no doc"
   inline proc _cast(type t:unmanaged?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
+  inline proc _cast(type t:borrowed?, x:c_void_ptr) {
+    return __primitive("cast", t, x);
+  }
+
   pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:borrowed) {
     return __primitive("cast", t, x);
