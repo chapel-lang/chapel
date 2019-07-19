@@ -609,6 +609,10 @@ module ZMQ {
     Note that this record contains private fields not listed below.
    */
   record Socket {
+    // Note: if we make this private but haven't exposed all the setsockopt
+    // options, users will need another way to work around that lack of support.
+    // Currently, they can work around it by defining their own extern version
+    // and using this field.
     pragma "no doc"
     var classRef: unmanaged SocketClass;
 
