@@ -61,19 +61,38 @@ writeln();
 
 var allWS = (" " + "\t" + "\n" + "\r" + "\v" + "\f"):bytes;
 writeln("Is allWS space: ", allWS.isSpace());
+writeln();
 
+// TEST CASING
+writeln("Casing");
 var allUpper: bytes = "ABCDEFGHIJKLOMNPQRSTUVWXYZ";
 var allLower: bytes = "abcdefghijklomnpqrstuvwxyz";
-var allDigits: bytes = "0123456789";
+var allDigit: bytes = "0123456789";
 
 writeln("Is allUpper all upper: ", allUpper.isUpper());
 writeln("Is allLower all lower: ", allLower.isLower());
-writeln("Is allDigits all digits: ", allDigits.isDigit());
-var allAlnum = allUpper+allLower+allDigits;
+writeln("Is allDigit all digits: ", allDigit.isDigit());
+var allAlnum = allUpper+allLower+allDigit;
 writeln("Is allAlnum all alphanumeric: ", allAlnum.isAlnum());
 writeln("Is allAlnum all upper: ", allAlnum.isUpper());
 writeln("Is allAlnum all lower: ", allAlnum.isLower());
 writeln("Is allAlnum all digits: ", allAlnum.isDigit());
+
+var helloChapel: bytes = "Hello Chapel!";
+var helloWorld: bytes = "Hello world!";
+writeln(helloChapel, " is title: ", helloChapel.isTitle());
+writeln(helloWorld, " is title: ", helloWorld.isTitle());
+
+writeln(helloChapel, " to title: ", helloChapel.toTitle());
+writeln(helloWorld, " to title: ", helloWorld.toTitle());
+
+writeln("allLower.toUpper() :", allLower.toUpper());
+writeln("allLower.toLower() :", allLower.toLower());
+writeln("allUpper.toUpper() :", allUpper.toUpper());
+writeln("allUpper.toLower() :", allUpper.toLower());
+writeln("allDigit.toUpper() :", allDigit.toUpper());
+writeln("allDigit.toLower() :", allDigit.toLower());
+writeln();
 
 // TEST SLICE
 writeln("Slice tests");

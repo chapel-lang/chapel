@@ -1184,7 +1184,36 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isTitle() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
 
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        param UN = 0, UPPER = 1, LOWER = 2;
+        var last = UN;
+        for b in this.iterBytes() {
+          if ascii_isLower(b) {
+            if last == UPPER || last == LOWER {
+              last = LOWER;
+            } else { // last == UN
+              result = false;
+              break;
+            }
+          }
+          else if ascii_isUpper(b) {
+            if last == UN {
+              last = UPPER;
+            } else { // last == UPPER || last == LOWER
+              result = false;
+              break;
+            }
+          } else {
+            // Uncased elements
+            last = UN;
+          }
+        }
+      }
+      return result;
     }
 
     /*
@@ -1193,7 +1222,12 @@ module Bytes {
                 characters remain untouched.
     */
     proc toLower() : bytes {
-
+      var result: bytes = this;
+      if result.isEmpty() then return result;
+      for (i,b) in zip(0.., result.iterBytes()) {
+        result.buff[i] = ascii_toLower(b); //check is done by ascii_toLower
+      }
+      return result;
     }
 
     /*
@@ -1202,7 +1236,12 @@ module Bytes {
                 untouched.
     */
     proc toUpper() : bytes {
-
+      var result: bytes = this;
+      if result.isEmpty() then return result;
+      for (i,b) in zip(0.., result.iterBytes()) {
+        result.buff[i] = ascii_toUpper(b); //check is done by ascii_toUpper
+      }
+      return result;
     }
 
     /*
@@ -1212,7 +1251,25 @@ module Bytes {
                 lowercase.
      */
     proc toTitle() : bytes {
+      var result: bytes = this;
+      if result.isEmpty() then return result;
 
+      param UN = 0, LETTER = 1;
+      var last = UN;
+      for (i,b) in zip(0.., result.iterBytes()) {
+        if ascii_isAlpha(b) {
+          if last == UN {
+            last = LETTER;
+            result.buff[i] = ascii_toUpper(b);
+          } else { // last == LETTER
+            result.buff[i] = ascii_toLower(b);
+          }
+        } else {
+          // Uncased elements
+          last = UN;
+        }
+      }
+      return result;
     }
 
   } // end of record bytes
@@ -1376,6 +1433,8 @@ module Bytes {
   private param ascii0 = 48;
   private param ascii9 = 57;
 
+  private param asciiCaseDiff = asciia-asciiA;
+
   private inline proc ascii_isWhitespace(c: byteType): bool {
     return c==asciiSpace ||
            c==asciiHTab ||
@@ -1408,4 +1467,19 @@ module Bytes {
   private inline proc ascii_isAlnum(c: byteType): bool {
     return ascii_isAlpha(c) || ascii_isDigit(c);
   }
+
+  private inline proc ascii_toUpper(c: byteType): byteType {
+    if ascii_isLower(c) then
+      return c-asciiCaseDiff;
+    else
+      return c;
+  }
+
+  private inline proc ascii_toLower(c: byteType): byteType {
+    if ascii_isUpper(c) then
+      return c+asciiCaseDiff;
+    else
+      return c;
+  }
+
 } // end of module Bytes
