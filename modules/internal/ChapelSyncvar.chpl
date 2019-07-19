@@ -42,7 +42,7 @@ module ChapelSyncvar {
   private use ChapelStandard;
 
   use AlignedTSupport;
-  use MemConsistency;
+  private use MemConsistency;
   use SyncVarRuntimeSupport;
 
   /************************************ | *************************************
