@@ -2682,7 +2682,7 @@ proc _isSimpleIoType(type t) param return
 
 pragma "no doc"
 proc _isIoPrimitiveType(type t) param return
-  _isSimpleIoType(t) || (t == string) || (t==bytes);
+  _isSimpleIoType(t) || (t == string);
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
@@ -2771,7 +2771,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     var re = x.re;
     var im = x.im;
     return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(re.type));
-  } else if t == string || t == bytes {
+  } else if t == string {
     // handle string
     const local_x = x.localize();
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
@@ -2922,7 +2922,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
       compilerError("Unknown complex type in _write_binary_internal ", t:string);
     }
     return err;
-  } else if t == string || t==bytes {
+  } else if t == string {
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.length: ssize_t);
   } else if isEnumType(t) {

@@ -101,6 +101,36 @@ writeln("Test split with args");
 for (num,byte) in zip(1.., b.split("is":bytes)) do
   writeln("Split ", num, ": ", byte);
 
+writeln("Test join -- bytes varargs");
+var baseBytes = "/":bytes;
+writeln(baseBytes.join("dir1":bytes, "dir2":bytes, "file":bytes));
+
+writeln("Test join -- homogeneous tuple of bytes");
+writeln(baseBytes.join(("dir1":bytes, "dir2":bytes, "file":bytes)));
+
+writeln("Test join -- array of bytes");
+writeln(baseBytes.join(["dir1":bytes, "dir2":bytes, "file":bytes]));
+
+writeln("Test strip");
+var bytesToStrip: bytes = " \n  a \t text\n";
+writeln("Default:", bytesToStrip.strip());
+writeln("Only space:", bytesToStrip.strip(chars=" ":bytes));
+writeln("Only leading:", bytesToStrip.strip(trailing=false));
+
+writeln("Test partition");
+writeln(b.partition("a":bytes));
+
+iter byteYielder() {
+  yield "dir1":bytes;
+  yield "dir2":bytes;
+  yield "file":bytes;
+}
+
+writeln("Test join -- iterable");
+writeln(baseBytes.join(byteYielder()));
+
+
+
 // TEST CASTS
 writeln("Type after string->byte ", ("test":bytes).type:string);
 

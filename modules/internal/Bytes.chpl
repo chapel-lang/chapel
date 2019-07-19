@@ -51,9 +51,15 @@ To learn more about handling these errors, see the
 module Bytes {
   use ChapelStandard;
 
-  private        param chpl_string_min_alloc_size: int = 16;
+  // Growth factor to use when extending the buffer for appends
+  private config param chpl_stringGrowthFactor = 1.5;
+
 
   // Following is copy-paste from string
+  //
+  // Externs and constants used to implement strings
+  //
+  private        param chpl_string_min_alloc_size: int = 16;
   pragma "fn synchronization free"
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
 
@@ -71,6 +77,8 @@ module Bytes {
     extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
     return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
   }
+  pragma "fn synchronization free"
+  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
 
   type idxType = int; 
 
@@ -167,6 +175,24 @@ module Bytes {
             this._size = s._size;
           }
         }
+      }
+    }
+
+    pragma "no doc"
+    proc writeThis(f) {
+      try {
+        for b in this.iterBytes() {
+          if ascii_isPrintable(b) {
+            f.writef("%c", b);
+          }
+          else {
+            f.writef("\\x%xu", b);
+          }
+        }
+      } catch e: SystemError {
+        f.setError(e.err);
+      } catch {
+        f.setError(EINVAL:syserr);
       }
     }
 
@@ -777,19 +803,92 @@ module Bytes {
       receiver inserted between them.
     */
     proc join(const ref S: bytes ...) : bytes {
-
+      return _join(S);
     }
 
     /*
       Same as the varargs version, but with a homogeneous tuple of bytes.
     */
     proc join(const ref S) : bytes where isTuple(S) {
+      if !isHomogeneousTuple(S) || !isBytes(S[1]) then
+        compilerError("join() on tuples only handles homogeneous tuples of strings");
+      return _join(S);
+    }
 
+    /*
+      Same as the varargs version, but with all the bytes in an array.
+     */
+    proc join(const ref S: [] bytes) : bytes {
+      return _join(S);
     }
 
     pragma "no doc"
     proc join(ir: _iteratorRecord) {
+      var s: bytes;
+      var first: bool = true;
+      for i in ir {
+        if first then
+          first = false;
+        else
+          s += this;
+        s += i;
+      }
+      return s;
 
+    }
+
+    pragma "no doc"
+    proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
+      if S.size == 0 {
+        return '';
+      } else if S.size == 1 {
+        // TODO: ensures copy, clean up when no longer needed
+        var ret: bytes;
+        if (isArray(S)) {
+          ret = S[S.domain.first];
+        } else {
+          ret = S[1];
+        }
+        return ret;
+      } else {
+        var joinedSize: int = this.len * (S.size - 1);
+        for s in S do joinedSize += s.length;
+
+        if joinedSize == 0 then
+          return '';
+
+        var joined: bytes;
+        joined.len = joinedSize;
+        const allocSize = chpl_here_good_alloc_size(joined.len + 1);
+        joined._size = allocSize;
+        joined.buff = chpl_here_alloc(
+          allocSize,
+          offset_STR_COPY_DATA): bufferType;
+
+        var first = true;
+        var offset = 0;
+        for s in S {
+          if first {
+            first = false;
+          } else if this.len != 0 {
+            c_memcpy(joined.buff + offset, this.buff, this.len);
+            offset += this.len;
+          }
+
+          var sLen = s.len;
+          if sLen != 0 {
+            var cpyStart = joined.buff + offset;
+            if _local || s.locale_id == chpl_nodeID {
+              c_memcpy(cpyStart, s.buff, sLen);
+            } else {
+              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sLen);
+            }
+            offset += sLen;
+          }
+        }
+        joined.buff[offset] = 0;
+        return joined;
+      }
     }
 
     /*
@@ -803,8 +902,46 @@ module Bytes {
       :returns: A new :record:`bytes` with `leading` and/or `trailing`
                 occurrences of characters in `chars` removed as appropriate.
     */
-    proc strip(chars: bytes = " \t\r\n", leading=true, trailing=true) : bytes {
+    proc strip(chars: bytes = " \t\r\n":bytes, leading=true, trailing=true) : bytes {
+      if this.isEmpty() then return "";
+      if chars.isEmpty() then return this;
 
+      const localThis: bytes = this.localize();
+      const localChars: bytes = chars.localize();
+
+      var start: idxType = 1;
+      var end: idxType = localThis.len;
+
+      if leading {
+        label outer for (i, thisChar) in zip(1.., localThis.iterBytes()) {
+          for removeChar in localChars.iterBytes() {
+            if thisChar == removeChar {
+              start = i + 1;
+              continue outer;
+            }
+          }
+          break;
+        }
+      }
+
+      if trailing {
+        // Because we are working with codepoints whose starting byte index
+        // is not initially known, it is faster to work forward, assuming we
+        // are already past the end of the string, and then update the end
+        // point as we are proven wrong.
+        end = 0;
+        label outer for (i, thisChar) in zip(1.., localThis.iterBytes()) {
+          for removeChar in localChars.iterBytes() {
+            if thisChar == removeChar {
+              continue outer;
+            }
+          }
+          // This was not a character to be removed, so update tentative end.
+          end = i;
+        }
+      }
+
+      return localThis[start..end];
     }
 
     /*
@@ -813,7 +950,12 @@ module Bytes {
       the tuple will contain the whole bytes, and then two empty bytes.
     */
     proc const partition(sep: bytes) : 3*bytes {
-
+      const idx = this.find(sep);
+      if idx != 0 {
+        return (this[..idx-1], sep, this[idx+sep.length..]);
+      } else {
+        return (this, "":bytes, "":bytes);
+      }
     }
 
     /*
@@ -828,7 +970,42 @@ module Bytes {
     */
     // NOTE: In the future this could support more encodings.
     proc decode(errors: DecodePolicy = Strict): string {
+      var localThis: bytes = this.localize();
 
+      // allocate buffer the same size as this buffer assuming that the string
+      // is in fact perfectly decodable. In the worst case, the user wants the
+      // replacement policy and we grow the buffer couple of times.
+      // The alternative is to allocate more space from the beginning.
+      var allocSize = chpl_here_good_alloc_size(this.len+1);
+      var c_buf = chpl_here_alloc(allocSize, offset_STR_COPY_DATA): bufferType;
+
+      var thisIdx = 0;
+      var decodedIdx = 0;
+      while thisIdx < localThis.len {
+        var cp: int(32);
+        var nbytes: c_int;
+        var bufToDecode = (localThis.buff + thisIdx): c_string;
+        var maxbytes = (localThis.len - thisIdx): ssize_t;
+        qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
+
+        if cp == 0xfffd {  //decoder returns the replacament character
+          if errors == Strict {
+            halt("This should throw an error here");
+          }
+          else if errors == Ignore {
+            thisIdx += nbytes; //skip over the malformed bytes
+            continue;
+          }
+        }
+
+        // do a naive copy
+        c_memcpy(c_ptrTo(c_buf[decodedIdx]), bufToDecode:c_void_ptr, nbytes);
+        thisIdx += nbytes;
+        decodedIdx += nbytes;
+      }
+
+      // I couldn't use any named args here, why?
+      return new string(c_buf, decodedIdx, allocSize, true, false);
     }
 
     /*
@@ -921,6 +1098,19 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isPrintable() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
+
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for b in this.iterBytes() {
+          if !ascii_isPrintable(b) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
 
     }
 
@@ -973,7 +1163,39 @@ module Bytes {
      Appends the bytes `rhs` to the bytes `lhs`.
   */
   proc +=(ref lhs: bytes, const ref rhs: bytes) : void {
+    // if rhs is empty, nothing to do
+    if rhs.len == 0 then return;
 
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+      const rhsLen = rhs.len;
+      const newLength = lhs.len+rhsLen; //TODO: check for overflow
+      if lhs._size <= newLength {
+        const newSize = chpl_here_good_alloc_size(
+            max(newLength+1, lhs.len*chpl_stringGrowthFactor):int);
+
+        if lhs.isowned {
+          lhs.buff = chpl_here_realloc(lhs.buff, newSize,
+                                      offset_STR_COPY_DATA):bufferType;
+        } else {
+          var newBuff = chpl_here_alloc(newSize,
+                                       offset_STR_COPY_DATA):bufferType;
+          c_memcpy(newBuff, lhs.buff, lhs.len);
+          lhs.buff = newBuff;
+          lhs.isowned = true;
+        }
+
+        lhs._size = newSize;
+      }
+      const rhsRemote = rhs.locale_id != chpl_nodeID;
+      if rhsRemote {
+        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale_id, rhs.buff, rhsLen);
+      } else {
+        c_memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen);
+      }
+      lhs.len = newLength;
+      lhs.buff[newLength] = 0;
+    }
   }
 
   /*
@@ -1081,6 +1303,7 @@ module Bytes {
   private param asciiLineFeed:byteType = 10;
   private param asciiFormFeed:byteType = 12;
   private param asciiCarriageReturn:byteType = 13;
+  private param asciiDelete:byteType = 127;
 
   private inline proc ascii_isWhitespace(c: byteType): bool {
     return c==asciiSpace ||
@@ -1091,6 +1314,7 @@ module Bytes {
            c==asciiFormFeed;
   }
 
-  
-
+  private inline proc ascii_isPrintable(c: byteType): bool {
+    return c>=asciiSpace && c<=asciiDelete;
+  }
 } // end of module Bytes
