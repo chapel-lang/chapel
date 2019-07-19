@@ -582,7 +582,7 @@ module DateTime {
      `time` to create a new `time`. All arguments are optional.
    */
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
-                    tzinfo=this.tzinfo) {
+                    in tzinfo=this.tzinfo) {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -951,7 +951,7 @@ module DateTime {
                           microsecond=t(2));
     } else {
       var dt = datetime.utcfromtimestamp(timestamp);
-      return (dt + tz.borrow().utcoffset(dt)).replace(tzinfo=tz);
+      return (dt + tz!.utcoffset(dt)).replace(tzinfo=tz);
     }
   }
 
