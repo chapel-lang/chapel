@@ -2434,6 +2434,8 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
                                   ClassTypeDecorator useDec,
                                   AggregateType* manager,
                                   Expr* ctx) {
+  SET_LINENO(ctx);
+
   // Now type-construct it with appropriate nilability
   ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED,
 					   useDec);
