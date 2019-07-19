@@ -972,23 +972,21 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         // TODO: remove constraint for user code only
         if (usymExpr->getModule()->modTag == MOD_USER) {
 
-          bool defaultIsGenericHere = true;
+          // make MyClass mean generic-management unless
+          // --legacy-nilable-classes is passed.
+          bool defaultIsGenericHere = !fLegacyNilableClasses;
 
           // This exception is for type method calls e.g. MyClass.typeMethod()
           // TODO: remove and replace with any-generic
-          if (CallExpr* inCall = toCallExpr(usymExpr->parentExpr)) {
+          /*if (CallExpr* inCall = toCallExpr(usymExpr->parentExpr)) {
             if (inCall->isPrimitive(PRIM_GET_MEMBER) || inCall->isNamed(".")) {
               if (CallExpr* parentCall = toCallExpr(inCall->parentExpr)) {
                 if (inCall == parentCall->baseExpr) {
                   defaultIsGenericHere = false;
                 }
               }
-              // TODO: exceptions for
-              //   - _owned(MyClass) - type ctor gets borrow type
-              //   - formal type for method receivers
-              //   - actual receiver for type methods
             }
-          }
+          }*/
 
           if (defaultIsGenericHere) {
             // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
