@@ -1019,7 +1019,19 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isUpper() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
 
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for b in this.iterBytes() {
+          if !(ascii_isUpper(b)) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
     }
 
     /*
@@ -1033,6 +1045,19 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isLower() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
+
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for b in this.iterBytes() {
+          if !(ascii_isLower(b)) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
 
     }
 
@@ -1067,7 +1092,19 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isAlpha() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
 
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for b in this.iterBytes() {
+          if !ascii_isAlpha(b) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
     }
 
     /*
@@ -1077,7 +1114,19 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isDigit() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
 
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for b in this.iterBytes() {
+          if !ascii_isDigit(b) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
     }
 
     /*
@@ -1088,6 +1137,19 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc isAlnum() : bool {
+      if this.isEmpty() then return false;
+      var result: bool = true;
+
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        for b in this.iterBytes() {
+          if !ascii_isAlnum(b) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
 
     }
 
@@ -1305,6 +1367,15 @@ module Bytes {
   private param asciiCarriageReturn:byteType = 13;
   private param asciiDelete:byteType = 127;
 
+  private param asciiA = 65;
+  private param asciiZ = 90;
+
+  private param asciia = 97;
+  private param asciiz = 122;
+
+  private param ascii0 = 48;
+  private param ascii9 = 57;
+
   private inline proc ascii_isWhitespace(c: byteType): bool {
     return c==asciiSpace ||
            c==asciiHTab ||
@@ -1316,5 +1387,25 @@ module Bytes {
 
   private inline proc ascii_isPrintable(c: byteType): bool {
     return c>=asciiSpace && c<=asciiDelete;
+  }
+
+  private inline proc ascii_isAlpha(c: byteType): bool {
+    return ascii_isUpper(c) || ascii_isLower(c);
+  }
+
+  private inline proc ascii_isUpper(c: byteType): bool {
+    return c>=asciiA && c<=asciiZ;
+  }
+
+  private inline proc ascii_isLower(c: byteType): bool {
+    return c>=asciia && c<=asciiz;
+  }
+
+  private inline proc ascii_isDigit(c: byteType): bool {
+    return c>=ascii0 && c<=ascii9;
+  }
+
+  private inline proc ascii_isAlnum(c: byteType): bool {
+    return ascii_isAlpha(c) || ascii_isDigit(c);
   }
 } // end of module Bytes

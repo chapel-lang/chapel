@@ -62,6 +62,19 @@ writeln();
 var allWS = (" " + "\t" + "\n" + "\r" + "\v" + "\f"):bytes;
 writeln("Is allWS space: ", allWS.isSpace());
 
+var allUpper: bytes = "ABCDEFGHIJKLOMNPQRSTUVWXYZ";
+var allLower: bytes = "abcdefghijklomnpqrstuvwxyz";
+var allDigits: bytes = "0123456789";
+
+writeln("Is allUpper all upper: ", allUpper.isUpper());
+writeln("Is allLower all lower: ", allLower.isLower());
+writeln("Is allDigits all digits: ", allDigits.isDigit());
+var allAlnum = allUpper+allLower+allDigits;
+writeln("Is allAlnum all alphanumeric: ", allAlnum.isAlnum());
+writeln("Is allAlnum all upper: ", allAlnum.isUpper());
+writeln("Is allAlnum all lower: ", allAlnum.isLower());
+writeln("Is allAlnum all digits: ", allAlnum.isDigit());
+
 // TEST SLICE
 writeln("Slice tests");
 writeln(b[..4], " -- the type is ", b[1..4].type:string); // "this"
