@@ -1,0 +1,2 @@
+bug: verification failure with vararg tuple in lifetime clause
+#13509
