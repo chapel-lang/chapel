@@ -612,7 +612,7 @@ module ZMQ {
     // Note: if we make this private but haven't exposed all the setsockopt
     // options, users will need another way to work around that lack of support.
     // Currently, they can work around it by defining their own extern version
-    // and using this field.
+    // and using this field (see #13503)
     pragma "no doc"
     var classRef: unmanaged SocketClass;
 
