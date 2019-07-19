@@ -251,6 +251,7 @@ comparator to the initializer of the module-defined
  */
 module Sort {
 
+  private use Reflection;
 
 /* Module-defined comparators */
 
@@ -315,8 +316,6 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
 */
 pragma "no doc"
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
-  use Reflection;
-
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
@@ -345,8 +344,6 @@ pragma "no doc"
 
  */
 proc chpl_check_comparator(comparator, type eltType) param {
-  use Reflection;
-
   // Dummy data for checking method resolution
   // This may need updating when constructors support non-default args
   const data: eltType;
@@ -402,8 +399,6 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
-  use Reflection;
-
   if !Dom.stridable {
     var tmp:Data[Dom.alignedLow].type;
     if canResolveMethod(comparator, "keyPart", tmp, 1) {
@@ -1224,8 +1219,6 @@ module RadixSortHelp {
   inline
   proc binForRecord(a, criterion, startbit:int)
   {
-    use Reflection;
-
     if canResolveMethod(criterion, "keyPart", a, 1) {
       return binForRecordKeyPart(a, criterion, startbit);
     } else if canResolveMethod(criterion, "key", a) {
@@ -1260,8 +1253,6 @@ module RadixSortHelp {
   //
   // Returns -1 if no such ending is known at compile-time.
   proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
-    use Reflection;
-
     // Compute end_bit if it's known
     // Default comparator on integers has fixed width
     const ref element = Data[Data.domain.low];
@@ -1798,12 +1789,10 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasKeyPart(a) param {
-    use Reflection;
     return canResolveMethod(this.comparator, "keyPart", a, 1);
   }
   pragma "no doc"
   proc hasKeyPartFromKey(a) param {
-    use Reflection;
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
@@ -1814,12 +1803,10 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasCompare(a,b) param {
-    use Reflection;
     return canResolveMethod(this.comparator, "compare", a, b);
   }
   pragma "no doc"
   proc hasCompareFromKey(a) param {
-    use Reflection;
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a compare for this?
