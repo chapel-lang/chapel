@@ -423,7 +423,7 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-use SysBasic;
+private use SysBasic;
 use SysError;
 
 /*
