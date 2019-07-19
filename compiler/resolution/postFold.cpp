@@ -288,7 +288,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
     Type* st = subExpr->getValType();
     Type* pt = parentExpr->getValType();
 
-    if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
+    if (st->symbol->hasFlag(FLAG_DISTRIBUTION) &&
+        isDistClass(canonicalClassType(pt))) {
       AggregateType* ag = toAggregateType(st);
 
       st = canonicalDecoratedClassType(ag->getField("_instance")->type);
