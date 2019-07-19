@@ -39,7 +39,7 @@ proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   use AlignedTSupport;
   use MemConsistency;
