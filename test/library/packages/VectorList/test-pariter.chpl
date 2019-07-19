@@ -13,7 +13,7 @@ proc test(sz: int) {
 
   } else {
     const VL = new owned VectorList(int,1); // "1" for more thorough testing
-    help(VL, sz);
+    help(VL.borrow(), sz);
   }
 }
 

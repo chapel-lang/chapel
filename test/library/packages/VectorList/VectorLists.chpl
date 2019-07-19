@@ -147,7 +147,7 @@ module VectorLists {
   }
 
   /* Yields pairs (starting index, VectorListElement pointer). */
-  inline iter VectorList.links(): (int,VectorListElement(eltType)) {
+  inline iter VectorList.links(): (int,unmanaged VectorListElement(eltType)) {
     if size == 0 then return; // no vector elements
     var currStart = 0;
     for LE in listElements() {
