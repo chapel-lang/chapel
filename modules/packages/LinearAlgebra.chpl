@@ -631,6 +631,11 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+pragma "no doc"
+/* Returns ``true`` if the domain is distributed */
+private proc isDistributed(a) param {
+  return !isSubtype(a.domain.dist.type, DefaultDist);
+}
 
 /* Inner product of 2 vectors. */
 proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
@@ -641,7 +646,7 @@ proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
     
   var result = 0.0;
   
-  if A.hasSingleLocalSubdomain() {
+  if isDistributed(A) {
     result = + reduce (A*B);
   }
   else {
