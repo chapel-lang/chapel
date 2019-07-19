@@ -724,7 +724,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
     if (fn->hasFlag(FLAG_COMPILER_ADDED_WHERE))
       // RESOLUTION_CANDIDATE_WHERE_FAILED is not helpful to the user
       // if they did not write the where clause.
-      reason = RESOLUTION_CANDIDATE_OTHER;
+      reason = RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED;
     else
       reason = RESOLUTION_CANDIDATE_WHERE_FAILED;
     return false;
@@ -939,6 +939,9 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");
+      break;
+    case RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED:
+      USR_PRINT(fn, "because an argument was incompatible");
       break;
     case RESOLUTION_CANDIDATE_NOT_PARAM:
       USR_PRINT(call, "because non-param %s", failingActualDesc);

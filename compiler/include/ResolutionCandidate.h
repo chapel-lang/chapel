@@ -45,6 +45,9 @@ typedef enum {
   // Where clause does not match
   RESOLUTION_CANDIDATE_WHERE_FAILED,
 
+  // Implicit where clause does not match
+  RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED,
+
   // Types do not match and are in different categories
   RESOLUTION_CANDIDATE_UNRELATED_TYPE,
 
