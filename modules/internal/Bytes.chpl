@@ -52,7 +52,7 @@ module Bytes {
   use ChapelStandard;
 
   // to follow String.chpl, and maybe limit the index to smaller integers
-  type byteIndex = int; 
+  type idxType = int; 
 
   type byteType = uint(8);
   type bufferType = c_ptr(byteType);
@@ -194,6 +194,26 @@ module Bytes {
     }
 
     /*
+      Gets a byte from the object
+
+      :arg i: The index
+
+      :returns: A `uint(8)`
+     */
+    proc getByte(i: idxType): byteType {
+
+    }
+
+    /*
+      Iterates over the bytes
+
+      :yields: `uint(8)` s
+     */
+    iter iterBytes(): byteType {
+      yield 0;
+    }
+
+    /*
       :returns: * `true`  -- when the object is empty
                 * `false` -- otherwise
      */
@@ -230,7 +250,7 @@ module Bytes {
       :returns: the index of the first occurrence of `needle` within a
                 the object, or 0 if the `needle` is not in the object.
      */
-    proc find(needle: bytes, region: range(?) = 1:byteIndex..) : byteIndex {
+    proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
 
     }
 
@@ -243,7 +263,7 @@ module Bytes {
       :returns: the index of the first occurrence from the right of `needle`
                 within the object, or 0 if the `needle` is not in the object.
      */
-    proc rfind(needle: bytes, region: range(?) = 1:byteIndex..) : byteIndex {
+    proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
 
     }
 
