@@ -1,4 +1,4 @@
-anymanaged.chpl:28: warning: ========= borrowed C =========
+anymanaged.chpl:28: warning: ========= C =========
 anymanaged.chpl:30: warning: 
 anymanaged.chpl:32: warning:            C .mp()  true
 anymanaged.chpl:33: warning:     (owned C).mp()  true
@@ -30,7 +30,7 @@ anymanaged.chpl:66: warning:    (shared C).ms()  true
 anymanaged.chpl:67: warning:  (borrowed C).ms()  false
 anymanaged.chpl:68: warning: (unmanaged C).ms()  false
 anymanaged.chpl:70: warning: 
-anymanaged.chpl:72: warning:            C .mb()  true
+anymanaged.chpl:72: warning:            C .mb()  false
 anymanaged.chpl:73: warning:     (owned C).mb()  false
 anymanaged.chpl:74: warning:    (shared C).mb()  false
 anymanaged.chpl:75: warning:  (borrowed C).mb()  true
@@ -42,7 +42,7 @@ anymanaged.chpl:82: warning:    (shared C).mu()  false
 anymanaged.chpl:83: warning:  (borrowed C).mu()  false
 anymanaged.chpl:84: warning: (unmanaged C).mu()  true
 anymanaged.chpl:86: warning: 
-anymanaged.chpl:88: warning: ========= borrowed D =========
+anymanaged.chpl:88: warning: ========= D =========
 anymanaged.chpl:90: warning: 
 anymanaged.chpl:92: warning:            D .mp()  true
 anymanaged.chpl:93: warning:     (owned D).mp()  true
@@ -63,18 +63,18 @@ anymanaged.chpl:111: warning:  (borrowed D).mB()  true
 anymanaged.chpl:112: warning: (unmanaged D).mB()  true
 anymanaged.chpl:114: warning: 
 anymanaged.chpl:116: warning:            D .mo()  false
-anymanaged.chpl:117: warning:     (owned D).mo()  false
+anymanaged.chpl:117: warning:     (owned D).mo()  true
 anymanaged.chpl:118: warning:    (shared D).mo()  false
 anymanaged.chpl:119: warning:  (borrowed D).mo()  false
 anymanaged.chpl:120: warning: (unmanaged D).mo()  false
 anymanaged.chpl:122: warning: 
 anymanaged.chpl:124: warning:            D .ms()  false
 anymanaged.chpl:125: warning:     (owned D).ms()  false
-anymanaged.chpl:126: warning:    (shared D).ms()  false
+anymanaged.chpl:126: warning:    (shared D).ms()  true
 anymanaged.chpl:127: warning:  (borrowed D).ms()  false
 anymanaged.chpl:128: warning: (unmanaged D).ms()  false
 anymanaged.chpl:130: warning: 
-anymanaged.chpl:132: warning:            D .mb()  true
+anymanaged.chpl:132: warning:            D .mb()  false
 anymanaged.chpl:133: warning:     (owned D).mb()  false
 anymanaged.chpl:134: warning:    (shared D).mb()  false
 anymanaged.chpl:135: warning:  (borrowed D).mb()  true
@@ -86,7 +86,7 @@ anymanaged.chpl:142: warning:    (shared D).mu()  false
 anymanaged.chpl:143: warning:  (borrowed D).mu()  false
 anymanaged.chpl:144: warning: (unmanaged D).mu()  true
 anymanaged.chpl:146: warning: 
-anymanaged.chpl:148: warning: ========= borrowed E =========
+anymanaged.chpl:148: warning: ========= E =========
 anymanaged.chpl:150: warning: 
 anymanaged.chpl:152: warning:            E .mp()  false
 anymanaged.chpl:153: warning:     (owned E).mp()  false

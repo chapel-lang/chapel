@@ -471,9 +471,15 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
   if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
     Type* canonicalActual = canonicalClassType(actualType);
     ClassTypeDecorator actualDec = classTypeDecorator(actualType);
+    Type* actualManager = NULL;
+    if (isManagedPtrType(actualType))
+      actualManager = getManagedPtrManagerType(actualType);
 
     Type* canonicalFormal = canonicalClassType(formalType);
     ClassTypeDecorator formalDec = classTypeDecorator(formalType);
+    Type* formalManager = NULL;
+    if (isManagedPtrType(formalType))
+      formalManager = getManagedPtrManagerType(formalType);
 
     if (canInstantiateDecorators(actualDec, formalDec) ||
         (allowCoercion && canInstantiateOrCoerceDecorators(actualDec,
@@ -489,6 +495,11 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
       // handle e.g. unmanaged MyClass actual -> borrowed MyClass? formal
       if (canInstantiate(canonicalActual, canonicalFormal) ||
           isBuiltinGenericClassType(canonicalFormal)) {
+        useType = actualType;
+      }
+      // Handle owned MyClass actual for owned! formal (say)
+      // but not owned MyClass -> shared!
+      if (canonicalFormal == actualManager && formalManager == actualManager) {
         useType = actualType;
       }
 
@@ -516,27 +527,28 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
           }
         }
       }
-      // If the formal is e.g. _owned
-      // any-management formal -> return actual
-      if (isDecoratorManaged(useDec)) {
-        INT_ASSERT(ctx != NULL);
-	AggregateType* aMgr = NULL;
-	AggregateType* fMgr = NULL;
-
-        if (!isDecoratorUnknownManagement(actualDec))
-          aMgr = getManagedPtrManagerType(actualType);
-        if (!isDecoratorUnknownManagement(formalDec))
-          fMgr = getManagedPtrManagerType(formalType);
-
-	if (fMgr == NULL || aMgr == fMgr) {
-	  if (useType == NULL) useType = canonicalActual;
-          AggregateType* at = toAggregateType(useType);
-          INT_ASSERT(at);
-          return computeDecoratedManagedType(at, useDec, aMgr, ctx);
-        }
-      }
 
       if (useType != NULL) {
+        // If the formal is e.g. _owned
+        // any-management formal -> return actual
+        if (isDecoratorManaged(useDec)) {
+          INT_ASSERT(ctx != NULL);
+          AggregateType* aMgr = NULL;
+          AggregateType* fMgr = NULL;
+
+          if (!isDecoratorUnknownManagement(actualDec))
+            aMgr = getManagedPtrManagerType(actualType);
+          if (!isDecoratorUnknownManagement(formalDec))
+            fMgr = getManagedPtrManagerType(formalType);
+
+          if (fMgr == NULL || aMgr == fMgr) {
+            if (useType == NULL) useType = canonicalActual;
+            AggregateType* at = toAggregateType(useType);
+            INT_ASSERT(at);
+            return computeDecoratedManagedType(at, useDec, aMgr, ctx);
+          }
+        }
+
         // Then compute the instantiation type as the actual
         // with the formal's decorator.
         return getDecoratedClass(useType, useDec);
