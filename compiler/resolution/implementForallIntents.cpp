@@ -990,6 +990,7 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),
                                               new SymExpr(fieldRef));
+  svar->addFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST);//to cullOverReferences
   svar->type = svarType;
   fs->shadowVariables().insertAtTail(new DefExpr(svar));
   handleOneShadowVar(fs, svar);
