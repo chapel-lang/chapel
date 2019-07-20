@@ -33,7 +33,7 @@ proc main() {
     writeln('iters : ', iters);
     writeln('n     : ', n);
     writeln('numLocales     : ', numLocales);
-    writeln('MB    : ', (bytes*m*m) / 10**6);
+    writeln('MB    : ', (bytes*n) / 10**6);
     writeln();
   }
   
