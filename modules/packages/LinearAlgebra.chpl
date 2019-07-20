@@ -718,12 +718,14 @@ proc inv (in A: [?Adom] ?eltType) where usingLAPACK {
     halt("Matrix inverse only supports square matrices");
 
   const n = Adom.shape(1);
+  
+  var info = 0;
 
   var ipiv : [1..3] c_int;
   LAPACK.getrf(lapack_memory_order.row_major, A, ipiv);
   LAPACK.getri(lapack_memory_order.row_major, A, ipiv);
 
-  return A;
+  return (A, info);
 }
 
 proc inv (in A: [?Adom] ?eltType) {
