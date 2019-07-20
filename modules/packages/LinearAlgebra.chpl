@@ -1977,6 +1977,37 @@ module Sparse {
     return A;
   }
 
+  /* Adds a diagonal to a sparse array by adding indices to its
+      sparse domain and sets the value of that diagonal to a 
+      constant. 
+    
+      ``p > 0``, represents an upper diagonal starting
+      from the ``p``th column, ``p == 0`` represents the main 
+      diagonal, ``p < 0`` represents a lower diagonal starting
+      from the ``-p``th row. ``p`` is 0-indexed.
+  */
+  proc addDiag (ref X: [?D] ?eltype, in p: int = 0, val: eltype = 0)
+                where isSparseArr(X) {
+      var start, end = 0;
+      if (p >= 0) { // upper or main diagonal
+        start = 1;
+        end = D.shape(1) - p;
+      }
+      else { // lower diagonal
+        start = 1 - p;
+        end = D.shape(1);
+      }
+      var indices : [start..end] (D.idxType, D.idxType);
+      forall ind in {start..end} {
+        indices[ind] = (ind, ind+p);
+      }
+      D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
+      forall ind in indices {
+        X(ind) = val;
+      }
+  }
+
+
   //
   // Type helpers
   //
