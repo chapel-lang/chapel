@@ -1977,8 +1977,8 @@ module Sparse {
     return A;
   }
 
-  /* Adds a diagonal to a sparse array by adding indices to its
-      sparse domain and sets the value of that diagonal to a 
+  /* Adds a diagonal to a square sparse array by adding indices to
+      its sparse domain and sets the value of that diagonal to a 
       constant. 
     
       ``p > 0``, represents an upper diagonal starting
@@ -1987,7 +1987,13 @@ module Sparse {
       from the ``-p``th row. ``p`` is 0-indexed.
   */
   proc addDiag (ref X: [?D] ?eltype, in p: int = 0, val: eltype = 0)
-                where isSparseArr(X) {
+                where isSparseArr(X) { 
+      if Adom.rank != 2 then
+        halt("Wrong rank for addDiag");
+
+      if Adom.shape(1) != Adom.shape(2) then
+        halt("addDiag only supports square matrices");
+        
       var start, end = 0;
       if (p >= 0) { // upper or main diagonal
         start = 1;
