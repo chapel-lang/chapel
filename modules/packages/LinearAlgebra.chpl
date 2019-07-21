@@ -1986,7 +1986,7 @@ module Sparse {
       diagonal, ``p < 0`` represents a lower diagonal starting
       from the ``-p``th row. ``p`` is 0-indexed.
   */
-  proc addDiag (ref X: [?D] ?eltype, in p: int = 0, val: eltype = 0)
+  proc addDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0)
                 where isSparseArr(X) { 
       if D.rank != 2 then
         halt("Wrong rank for addDiag");
