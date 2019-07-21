@@ -433,6 +433,30 @@ proc eye(Dom: domain(2), type eltType=real) {
 // Matrix Operations
 //
 
+
+/* Sets the value of a diagonal in a dense matrix.
+
+    ``p > 0``, represents an upper diagonal starting
+    from the ``p``th column, ``p == 0`` represents the main 
+    diagonal, ``p < 0`` represents a lower diagonal starting
+    from the ``-p``th row. ``p`` is 0-indexed.
+*/
+proc setDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0) 
+              where isDenseArr(A){
+  var start, end = 0;
+  if (p >= 0) { // upper or main diagonal
+    start = 1;
+    end = D.shape(1) - p;
+  }
+  else { // lower diagonal
+    start = 1 - p;
+    end = D.shape(1);
+  }
+  forall row in {start..end} {
+    X(row, row+p) = val;
+  }
+}
+
 pragma "no doc"
 inline proc transpose(D: domain(1)) {
   return D;
@@ -2011,29 +2035,6 @@ module Sparse {
       forall ind in indices {
         X(ind) = val;
       }
-  }
-  
-  /* Sets the value of a diagonal in a dense matrix.
-    
-      ``p > 0``, represents an upper diagonal starting
-      from the ``p``th column, ``p == 0`` represents the main 
-      diagonal, ``p < 0`` represents a lower diagonal starting
-      from the ``-p``th row. ``p`` is 0-indexed.
-  */
-  proc setDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0) 
-                where isDenseArr(A){
-    var start, end = 0;
-    if (p >= 0) { // upper or main diagonal
-      start = 1;
-      end = D.shape(1) - p;
-    }
-    else { // lower diagonal
-      start = 1 - p;
-      end = D.shape(1);
-    }
-    forall row in {start..end} {
-      X(row, row+p) = val;
-    }
   }
 
   //
