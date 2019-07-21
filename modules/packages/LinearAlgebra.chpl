@@ -1082,6 +1082,31 @@ proc lu (const ref A: [?Adom] ?eltType) {
   return (L,U);
 }
 
+/* Returns the determinant of a square matrix.
+
+    .. note::
+
+      This procedure performs LU factorization to compute the 
+      determinant. In certain cases, e.g. having a lower/upper
+      triangular matrix, it is more desirable to compute the 
+      determinant manually.
+*/
+
+proc det (const ref A: [?Adom] ?eltType) {
+  if Adom.rank != 2 then
+    halt("Wrong rank for computing determinant");
+
+  if Adom.shape(1) != Adom.shape(2) then
+    halt("Determinant can only be computed from square matrices");
+    
+  var (L,U) = lu(A);
+  
+  // L[i,i] always = 1, so we only need to take the 
+  // diagonal product of U
+  
+  return (* reduce [i in Adom.dim(1)] U[i,i]);
+}
+
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
