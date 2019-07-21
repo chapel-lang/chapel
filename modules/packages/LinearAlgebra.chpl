@@ -1043,6 +1043,46 @@ proc trace(A: [?D] ?eltType) {
 }
 
 
+/*
+  Returns a pair of lower and upper triangular matrices
+  (L,U) such that ``L * U = A``.
+
+    .. note::
+
+      This procedure accepts A as either a dense and sparse 
+      array, but only returns dense matrices L and U.
+*/
+
+proc lu (const ref A: [?Adom] ?eltType) {
+  if Adom.rank != 2 then
+    halt("Wrong rank for LU factorization");
+
+  if Adom.shape(1) != Adom.shape(2) then
+    halt("LU factorization only supports square matrices");
+
+  const n = Adom.shape(1);
+  const LUDom = {1..n, 1..n};
+
+  var L, U: [LUDom] eltType;
+
+  for i in 1..n { 
+    forall k in i..n {
+      var sum = + reduce (L[i,..] * U[..,k]);
+      U[i,k] = A[i,k] - sum;
+    }
+
+    L[i,i] = 1;
+
+    forall k in (i+1)..n {
+      var sum = + reduce (L[k,..] * U[..,i]);
+      L[k,i] = (A[k,i] - sum) / U[i,i];
+    }
+  } 
+
+  return (L,U);
+}
+
+
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
    triangular factor.  Matrix ``A`` is not modified.  Returns an array with
