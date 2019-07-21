@@ -1988,10 +1988,10 @@ module Sparse {
   */
   proc addDiag (ref X: [?D] ?eltype, in p: int = 0, val: eltype = 0)
                 where isSparseArr(X) { 
-      if Adom.rank != 2 then
+      if D.rank != 2 then
         halt("Wrong rank for addDiag");
 
-      if Adom.shape(1) != Adom.shape(2) then
+      if D.shape(1) != D.shape(2) then
         halt("addDiag only supports square matrices");
         
       var start, end = 0;
