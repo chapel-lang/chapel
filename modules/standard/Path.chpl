@@ -65,7 +65,7 @@
 module Path {
 
 use SysError;
-use Sys;
+private use Sys;
 
 /* Represents generally the current directory. This starts as the directory
    where the program is being executed from.
