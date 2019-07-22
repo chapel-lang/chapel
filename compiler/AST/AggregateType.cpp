@@ -2493,8 +2493,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   //  0 -> borrowed MyClass?
   //  1 -> unmanaged MyClass!
   //  2 -> unmanaged MyClass?
-  //  3 -> generic-management MyClass!
-  //  4 -> generic-management MyClass?
+  //  3 -> generic-management generic-nilability MyClass
+  //  4 -> generic-management MyClass!
+  //  5 -> generic-management MyClass?
   switch (d) {
     case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
     case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
