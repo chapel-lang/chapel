@@ -382,38 +382,19 @@ module ChapelDistribution {
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true){
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale){
 
       if !dataSorted && preserveInds {
         var _inds = inds;
-        return bulkAdd_help(_inds, dataSorted, isUnique);
+        return bulkAdd_help(_inds, dataSorted, isUnique, addOn);
       }
       else {
-        return bulkAdd_help(inds, dataSorted, isUnique);
-      }
-    }
-
-    override proc dsiBulkAddHere(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true){
-
-      if !dataSorted && preserveInds {
-        var _inds = inds;
-        return bulkAddHere_help(_inds, dataSorted, isUnique);
-      }
-      else {
-        return bulkAddHere_help(inds, dataSorted, isUnique);
+        return bulkAdd_help(inds, dataSorted, isUnique, addOn);
       }
     }
 
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false){
-      halt("Helper function called on the BaseSparseDomImpl");
-
-      return -1;
-    }
-
-    proc bulkAddHere_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false){
+        dataSorted=false, isUnique=false, addOn=nil:locale){
       halt("Helper function called on the BaseSparseDomImpl");
 
       return -1;
@@ -573,15 +554,10 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true){
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale){
 
       halt("Bulk addition is not supported by this sparse domain");
-    }
-
-    proc dsiBulkAddHere(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true){
-
-      halt("Bulk addition is not supported by this sparse domain");
+      return 0;
     }
 
     proc boundsCheck(ind: index(rank, idxType)):void {

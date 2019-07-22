@@ -240,8 +240,15 @@ module DefaultSparse {
       }
     }
 
-    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
-        isUnique=false){
+    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+        dataSorted=false, isUnique=false, addOn=nil:locale){
+
+      if addOn != nil {
+        if addOn != this.locale {
+          halt("Bulk index addition is only possible on the locale where the\
+              sparse domain is created");
+        }
+      }
 
       bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
 

@@ -368,8 +368,15 @@ class CSDom: BaseSparseDomImpl {
     return 1;
   }
 
-  override proc bulkAdd_help(inds: [?indsDom] rank*idxType, dataSorted=false,
-                             isUnique=false) {
+  override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
+      dataSorted=false, isUnique=false, addOn=nil:locale) {
+
+    if addOn != nil {
+      if addOn != this.locale {
+        halt("Bulk index addition is only possible on the locale where the\
+            sparse domain is created");
+      }
+    }
 
     if this.compressRows then
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=Sort.defaultComparator);

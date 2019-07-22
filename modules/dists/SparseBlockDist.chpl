@@ -142,10 +142,26 @@ class SparseBlockDom: BaseSparseDomImpl {
     return max reduce ([l in locDoms] l.mySparseBlock.last);
   }
 
-  override proc bulkAdd_help(inds: [] index(rank,idxType),
-      dataSorted=false, isUnique=false) {
+  override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
+      dataSorted=false, isUnique=false, addOn=nil:locale) {
     use Sort;
     use Search;
+
+    // call local bulk addition helper if necessary
+    if addOn != nil {
+      var retval = 0;
+      on addOn {
+        if inds.locale == here {
+          retval = bulkAddHere_help(inds, dataSorted, isUnique);
+        }
+        else {
+          var _local_inds: [indsDom] index(rank, idxType);
+          _local_inds = inds;
+          retval = bulkAddHere_help(_local_inds, dataSorted, isUnique);
+        }
+      }
+      return retval;
+    }
 
     // without _new_, record functions throw null deref
     var comp = new TargetLocaleComparator(rank=rank, idxType=idxType,
@@ -188,7 +204,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     return _retval;
   }
 
-  override proc bulkAddHere_help(inds: [] index(rank,idxType),
+  proc bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
     const _retval = myLocDom.mySparseBlock.bulkAdd(inds, dataSorted=true,

@@ -12,7 +12,7 @@ proc test(space) {
     myIndices[0] = locSubDom.low;
     myIndices[1] = locSubDom.high;
 
-    spsdom.bulkAddHere(myIndices);
+    spsdom.bulkAdd(myIndices, addOn=here);
   }
   for i in spsdom do
     write(i, " ");
