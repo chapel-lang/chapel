@@ -372,14 +372,18 @@ module Bytes {
       return new bytes(c_ptrTo(this.buff[i-1]), length=1, size=2);
     }
 
-    // TODO add getByte and iterBytes 
-
+    /*
+      Iterates over the bytes byte by byte.
+    */
     iter iterBytes(): byteType {
       if this.isEmpty() then return;
       for i in 1..this.len do
         yield this.getByte(i);
     }
 
+    /*
+      :returns: The value of the `i` th byte as an integer.
+    */
     proc getByte(i: int): byteType {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);

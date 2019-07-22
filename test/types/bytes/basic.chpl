@@ -36,19 +36,19 @@ writeln(b_from_cs.size, " must be ", cs.size);
 writeln(b_from_c_ptr.size, " must be ", 3);
 writeln();
 
-// TODO test localize in a multilocale setup
-
-// c_str is tested with writeln anyways
-
 // TEST ACCESSORS
 writeln("Accessor tests");
 for i in 1..b_from_c_ptr.length do
   writeln(b_from_c_ptr[i], " as ", b_from_c_ptr[i].type:string);
+for i in 1..b_from_c_ptr.length do
+  writeln(b_from_c_ptr.getByte(i), " as ", b_from_c_ptr[i].type:string);
 writeln();
 
 //TEST ITERATORS
 writeln("Iterator tests");
 for byte in b_from_c_ptr do
+  writeln(byte, " as ", byte.type:string);
+for byte in b_from_c_ptr.iterBytes() do
   writeln(byte, " as ", byte.type:string);
 writeln();
 
@@ -57,7 +57,6 @@ writeln("Basic functions");
 var emptyBytes: bytes = "";
 writeln("Is emptyBytes empty: ", emptyBytes.isEmpty());
 writeln("Is emptyBytes space: ", emptyBytes.isSpace());
-writeln();
 
 var allWS = (" " + "\t" + "\n" + "\r" + "\v" + "\f"):bytes;
 writeln("Is allWS space: ", allWS.isSpace());
@@ -117,11 +116,11 @@ writeln(b.rfind("is":bytes)); //6
 writeln(b.count("is":bytes)); //2
 
 writeln(b.find("is":bytes, region=4..)); //6
-writeln(b.rfind("is":bytes, region=..5)); //2
+writeln(b.rfind("is":bytes, region=..5)); //3
 writeln(b.count("is":bytes, region=..5)); //1
 
-writeln(b.find("is is":bytes));
-writeln("Make it plural ", b.replace("is is":bytes, "ese are":bytes));
+writeln(b.find("is is":bytes)); //3
+writeln("Make it plural ", b.replace("is is a":bytes, "ese are":bytes));
 writeln();
 
 // TEST SPLIT/JOIN etc
