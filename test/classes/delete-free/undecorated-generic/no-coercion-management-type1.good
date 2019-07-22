@@ -1,4 +1,1 @@
-no-coercion-management-type1.chpl:8: error: unresolved call 'f(type unmanaged Child)'
-no-coercion-management-type1.chpl:4: note: this candidate did not match: f(type t: borrowed Parent)
-no-coercion-management-type1.chpl:8: note: because call actual argument #1 with type unmanaged Child
-no-coercion-management-type1.chpl:4: note: is passed to formal 't: borrowed Parent'
+borrowed Parent

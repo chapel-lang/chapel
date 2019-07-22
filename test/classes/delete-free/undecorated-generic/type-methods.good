@@ -1,7 +1,7 @@
 MyClass.f()
-in f borrowed MyClass
+in f MyClass
 MyClass.g()
-in g borrowed MyClass
+in g MyClass
 
 (owned MyClass).f()
 in f owned MyClass
