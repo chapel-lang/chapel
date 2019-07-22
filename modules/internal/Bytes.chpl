@@ -107,7 +107,6 @@ module Bytes {
        - **Ignore**: silently drop data
   */
   enum DecodePolicy { Strict, Replace, Ignore }
-  use DecodePolicy;
 
   /*
    A `DecodeError` is thrown if the `decode` method is called on a non-UTF-8
@@ -159,7 +158,6 @@ module Bytes {
       of a shallow copy.
      */
     proc init(s, isowned: bool = true) where s.type == string || s.type == bytes {
-      //IDENTICAL TO STRING VERSION
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -188,6 +186,9 @@ module Bytes {
       }
     }
 
+
+    // this is implemented only for debugging purposes. Ideally writeThis should
+    // just halt when called on bytes record
     pragma "no doc"
     proc writeThis(f) {
       try {
@@ -323,7 +324,6 @@ module Bytes {
                  current locale, otherwise a deep copy is performed.
     */
     inline proc localize() : bytes {
-      //IDENTICAL TO STRING VERSION
       if _local || this.locale_id == chpl_nodeID {
         return new bytes(this, isowned=false);
       } else {
@@ -348,6 +348,28 @@ module Bytes {
     }
 
     /*
+      Gets a byte from the object
+
+      :arg i: The index
+
+      :returns: 1-length :record:`bytes` object
+     */
+    proc this(i: int): bytes {
+      if boundsChecking && (i <= 0 || i > this.len)
+        then halt("index out of bounds of bytes: ", i);
+      return new bytes(c_ptrTo(this.buff[i-1]), length=1, size=2);
+    }
+
+    /*
+      :returns: The value of the `i` th byte as an integer.
+    */
+    proc getByte(i: int): byteType {
+      if boundsChecking && (i <= 0 || i > this.len)
+        then halt("index out of bounds of bytes: ", i);
+      return this.buff[i-1];
+    }
+
+    /*
       Iterates over the bytes
 
       :yields: 1-length :record:`bytes` objects
@@ -359,35 +381,11 @@ module Bytes {
     }
 
     /*
-      Gets a byte from the object
-
-      :arg i: The index
-
-      :returns: 1-length :record:`bytes` object
-     */
-    proc this(i: int): bytes {
-      if this.isEmpty() then return new bytes(""); // TODO this isn't right?
-      if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of bytes: ", i);
-      return new bytes(c_ptrTo(this.buff[i-1]), length=1, size=2);
-    }
-
-    /*
       Iterates over the bytes byte by byte.
     */
     iter iterBytes(): byteType {
-      if this.isEmpty() then return;
       for i in 1..this.len do
         yield this.getByte(i);
-    }
-
-    /*
-      :returns: The value of the `i` th byte as an integer.
-    */
-    proc getByte(i: int): byteType {
-      if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of bytes: ", i);
-      return this.buff[i-1];
     }
 
     /*
@@ -450,11 +448,11 @@ module Bytes {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
-            halt("range out of bounds of string");
+            halt("range out of bounds of bytes");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
           if (r.high:int < 0) || (r.high:int > this.len) then
-            halt("range out of bounds of string");
+            halt("range out of bounds of bytes");
         }
       }
       const r1 = r[1:r.idxType..this.len:r.idxType];
@@ -759,12 +757,11 @@ module Bytes {
           // emit whole string, unless all whitespace
           // TODO Engin: Why is this inside the loop?
           if noSplits {
-            halt("Not ready for this yet");
-            /*done = true;*/
-            /*if !localThis.isSpace() then {*/
-              /*chunk = localThis;*/
-              /*yieldChunk = true;*/
-            /*}*/
+            done = true;
+            if !localThis.isSpace() then {
+              chunk = localThis;
+              yieldChunk = true;
+            }
           } else {
             var cSpace = ascii_isWhitespace(c);
             // first char of a chunk
@@ -986,7 +983,7 @@ module Bytes {
       :returns: A UTF-8 string.
     */
     // NOTE: In the future this could support more encodings.
-    proc decode(errors: DecodePolicy = Strict): string throws {
+    proc decode(errors=DecodePolicy.Strict): string throws {
       var localThis: bytes = this.localize();
 
       // allocate buffer the same size as this buffer assuming that the string
@@ -1006,10 +1003,10 @@ module Bytes {
         qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
 
         if cp == 0xfffd {  //decoder returns the replacament character
-          if errors == Strict {
+          if errors == DecodePolicy.Strict {
             throw new owned DecodeError();
           }
-          else if errors == Ignore {
+          else if errors == DecodePolicy.Ignore {
             thisIdx += nbytes; //skip over the malformed bytes
             continue;
           }
@@ -1368,7 +1365,13 @@ module Bytes {
      Halts if `lhs` is a remote bytes.
   */
   proc =(ref lhs: bytes, rhs_c: c_string) {
+    // Make this some sort of local check once we have local types/vars
+    if !_local && (lhs.locale_id != chpl_nodeID) then
+      halt("Cannot assign a c_string to a remote string.");
 
+    const len = rhs_c.length;
+    const buff:bufferType = rhs_c:bufferType;
+    lhs.reinitString(buff, len, len+1, needToCopy=true);
   }
 
   //
@@ -1461,7 +1464,8 @@ module Bytes {
     return ret;
   }
 
-  // anything that is castable to string must be castable to bytes, too
+  // Can we cast anything that is castable to string to bytes, as well? What if
+  // we have an enum with some non-ascii characters?
   // TODO does this have a significant performance impact? Should there be a
   // BytesCasts module similar to StringCasts?
   proc _cast(type t:bytes, x) {

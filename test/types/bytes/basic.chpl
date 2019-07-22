@@ -124,6 +124,10 @@ writeln("Make it plural ", b.replace("is is a":bytes, "ese are":bytes));
 writeln();
 
 // TEST SPLIT/JOIN etc
+writeln("Test split no split");
+for (num,byte) in zip(1.., b.split(maxsplit = 0)) do
+  writeln("Split ", num, ": ", byte);
+
 writeln("Test split no args");
 for (num,byte) in zip(1.., b.split()) do
   writeln("Split ", num, ": ", byte);
