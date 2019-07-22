@@ -326,15 +326,14 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
         substitutions.put(formal, dtStringC->symbol);
 
       } else {
-        if (formal->type == type) {
+        if (formal->type == type && false) {
           // This error is a workaround to avoid infinite loops.
+          // ... but it is no longer necessary?
           fPrintCallStackOnError = true;
-          USR_FATAL_CONT(actual->defPoint,
+          USR_FATAL_CONT(ctx,
                          "this pattern of passing a generic type "
-                         " is not yet supported");
-          USR_PRINT(actual->defPoint,
-                    "the generic type %s is passed",
-                    toString(type));
+                         "is not yet supported");
+          USR_PRINT(ctx, "the generic type %s is passed", toString(type));
           printUndecoratedClassTypeNote(actual->defPoint, type);
           USR_STOP();
         }
@@ -398,8 +397,9 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
       Type* canonicalFormal = canonicalClassType(formalType);
       ClassTypeDecorator formalD = classTypeDecorator(formalType);
 
-      if (canInstantiateDecorators(actualD, formalD) &&
-          isDispatchParent(canonicalActual, canonicalFormal)) {
+      if (canInstantiateOrCoerceDecorators(actualD, formalD, false) &&
+          (canonicalActual == canonicalFormal ||
+           isDispatchParent(canonicalActual, canonicalFormal))) {
         allowCoercions = true;
       }
     }
@@ -471,13 +471,13 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
   if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
     Type* canonicalActual = canonicalClassType(actualType);
     ClassTypeDecorator actualDec = classTypeDecorator(actualType);
-    Type* actualManager = NULL;
+    AggregateType* actualManager = NULL;
     if (isManagedPtrType(actualType))
       actualManager = getManagedPtrManagerType(actualType);
 
     Type* canonicalFormal = canonicalClassType(formalType);
     ClassTypeDecorator formalDec = classTypeDecorator(formalType);
-    Type* formalManager = NULL;
+    AggregateType* formalManager = NULL;
     if (isManagedPtrType(formalType))
       formalManager = getManagedPtrManagerType(formalType);
 
@@ -491,16 +491,17 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
       // according to the actual decorator, when formalDec is generic.
       ClassTypeDecorator useDec = combineDecorators(formalDec, actualDec);
       Type* useType = NULL;
+      AggregateType* useManager = actualManager ? actualManager : formalManager;
 
       // handle e.g. unmanaged MyClass actual -> borrowed MyClass? formal
       if (canInstantiate(canonicalActual, canonicalFormal) ||
           isBuiltinGenericClassType(canonicalFormal)) {
-        useType = actualType;
+        useType = canonicalActual;
       }
       // Handle owned MyClass actual for owned! formal (say)
       // but not owned MyClass -> shared!
       if (canonicalFormal == actualManager && formalManager == actualManager) {
-        useType = actualType;
+        useType = canonicalActual;
       }
 
       // Now, if formalType is a generic parent type to actualType,
@@ -524,6 +525,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
                         canonicalFormal, toArgSymbol(formalSym),
                         NULL, &promotes, NULL) && !promotes) {
             useType = canonicalFormal;
+            useManager = formalManager ? formalManager : actualManager;
           }
         }
       }
@@ -533,20 +535,11 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
         // any-management formal -> return actual
         if (isDecoratorManaged(useDec)) {
           INT_ASSERT(ctx != NULL);
-          AggregateType* aMgr = NULL;
-          AggregateType* fMgr = NULL;
+          INT_ASSERT(useManager != NULL);
 
-          if (!isDecoratorUnknownManagement(actualDec))
-            aMgr = getManagedPtrManagerType(actualType);
-          if (!isDecoratorUnknownManagement(formalDec))
-            fMgr = getManagedPtrManagerType(formalType);
-
-          if (fMgr == NULL || aMgr == fMgr) {
-            if (useType == NULL) useType = canonicalActual;
-            AggregateType* at = toAggregateType(useType);
-            INT_ASSERT(at);
-            return computeDecoratedManagedType(at, useDec, aMgr, ctx);
-          }
+          AggregateType* at = toAggregateType(useType);
+          INT_ASSERT(at);
+          return computeDecoratedManagedType(at, useDec, useManager, ctx);
         }
 
         // Then compute the instantiation type as the actual
@@ -692,7 +685,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
       } else if (formalIsTypeAlias &&
                  !shouldAllowCoercions(actual, formal) &&
                  actual->getValType() != formal->getValType()) {
-        // coercions should not be allowed for type variables
+        // coercions should not generally be allowed for type variables
         failingArgument = actual;
         reason = classifyTypeMismatch(actual->getValType(),
                                       formal->getValType());

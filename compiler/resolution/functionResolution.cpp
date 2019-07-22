@@ -1077,6 +1077,7 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
       // Can't coerce borrowed to unmanaged
       return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NILABLE;
+
     case CLASS_TYPE_MANAGED:
       // managed but generic nilability
       // this would be instantiation
@@ -1127,12 +1128,14 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_BORROWED_NONNIL:
     case CLASS_TYPE_BORROWED_NILABLE:
       return false;
+
     case CLASS_TYPE_UNMANAGED:
       return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NILABLE;
     case CLASS_TYPE_UNMANAGED_NONNIL:
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return false;
+
     case CLASS_TYPE_MANAGED:
       return actual == CLASS_TYPE_MANAGED_NONNIL ||
              actual == CLASS_TYPE_MANAGED_NILABLE;
@@ -1143,11 +1146,13 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_GENERIC:
       return true;
     case CLASS_TYPE_GENERIC_NONNIL:
-      return actual == CLASS_TYPE_BORROWED_NONNIL ||
+      return actual == CLASS_TYPE_GENERIC_NONNIL ||
+             actual == CLASS_TYPE_BORROWED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NONNIL ||
              actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_GENERIC_NILABLE:
-      return actual == CLASS_TYPE_BORROWED_NONNIL ||
+      return actual == CLASS_TYPE_GENERIC_NILABLE ||
+             actual == CLASS_TYPE_BORROWED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NONNIL ||
              actual == CLASS_TYPE_MANAGED_NONNIL;
 
@@ -1180,6 +1185,7 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_BORROWED_NILABLE:
       // can borrow from anything, can always coerce to nilable
       return true;
+
     case CLASS_TYPE_UNMANAGED:
       // no coercions to unmanaged
       return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
@@ -1190,6 +1196,7 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NILABLE;
+
     case CLASS_TYPE_MANAGED:
       return actual == CLASS_TYPE_MANAGED_NONNIL ||
              actual == CLASS_TYPE_MANAGED_NILABLE;
@@ -2435,6 +2442,9 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
                                   AggregateType* manager,
                                   Expr* ctx) {
   SET_LINENO(ctx);
+
+  INT_ASSERT(!isManagedPtrType(canonicalClassType));
+  INT_ASSERT(isClass(canonicalClassType));
 
   // Now type-construct it with appropriate nilability
   ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED,
