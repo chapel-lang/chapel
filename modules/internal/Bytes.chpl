@@ -1412,6 +1412,35 @@ module Bytes {
                returned.
   */
   proc *(s: bytes, n: integral) {
+    if n <= 0 then return new bytes("");
+
+    const sLen = s.length;
+    if sLen == 0 then return new bytes("");
+
+    var ret: bytes;
+    ret.len = sLen * n; // TODO: check for overflow
+    const allocSize = chpl_here_good_alloc_size(ret.len+1);
+    ret._size = allocSize;
+    ret.buff = chpl_here_alloc(allocSize,
+                              offset_STR_COPY_DATA): bufferType;
+    ret.isowned = true;
+
+    const sRemote = s.locale_id != chpl_nodeID;
+    if sRemote {
+      chpl_string_comm_get(ret.buff, s.locale_id, s.buff, sLen);
+    } else {
+      c_memcpy(ret.buff, s.buff, sLen);
+    }
+
+    var iterations = n-1;
+    var offset = sLen;
+    for i in 1..iterations {
+      c_memcpy(ret.buff+offset, ret.buff, sLen);
+      offset += sLen;
+    }
+    ret.buff[ret.len] = 0;
+
+    return ret;
 
   }
 
