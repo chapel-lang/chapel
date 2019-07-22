@@ -191,8 +191,9 @@ module Bytes {
     // just halt when called on bytes record
     pragma "no doc"
     proc writeThis(f) {
+      var localThis = this.localize();
       try {
-        for b in this.iterBytes() {
+        for b in localThis.iterBytes() {
           if ascii_isPrintable(b) {
             f.writef("%c", b);
           }
