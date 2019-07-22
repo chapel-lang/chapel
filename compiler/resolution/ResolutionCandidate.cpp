@@ -397,10 +397,16 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
       Type* canonicalFormal = canonicalClassType(formalType);
       ClassTypeDecorator formalD = classTypeDecorator(formalType);
 
-      if (canInstantiateOrCoerceDecorators(actualD, formalD, false) &&
-          (canonicalActual == canonicalFormal ||
-           isDispatchParent(canonicalActual, canonicalFormal))) {
-        allowCoercions = true;
+      AggregateType* at = toAggregateType(canonicalActual);
+
+      if (canInstantiateOrCoerceDecorators(actualD, formalD, false)) {
+        if (canonicalActual == canonicalFormal ||
+            isDispatchParent(canonicalActual, canonicalFormal) ||
+            (at && at->instantiatedFrom &&
+             canonicalFormal->symbol->hasFlag(FLAG_GENERIC) &&
+             getConcreteParentForGenericFormal(at, canonicalFormal) != NULL)) {
+          allowCoercions = true;
+        }
       }
     }
   }
