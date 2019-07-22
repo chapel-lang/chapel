@@ -2548,6 +2548,8 @@ static bool resolveBuiltinCastCall(CallExpr* call)
   if (targetTypeSe && valueSe &&
       targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
 
+    Type* initialTargetType = targetTypeSe->symbol()->getValType();
+
     // Fix types for e.g. cast to generic-management MyClass.
     // This can change the symbols pointed to by targetTypeSe/valueSe.
     adjustClassCastCall(call);
@@ -2569,17 +2571,29 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     bool promotes = false;
     bool paramNarrows = false;
     bool paramCoerce = false;
-    if (!isRecord(targetType) && !isRecord(valueType) &&
-        !is_complex_type(targetType) && !is_complex_type(valueType) &&
-        canDispatch(valueType, valueSe->symbol(),
-                    targetType, NULL, call->getFunction(),
-                    &promotes, &paramNarrows, paramCoerce) &&
-        !promotes) {
+    bool dispatches = canDispatch(valueType, valueSe->symbol(),
+                                  targetType, NULL, call->getFunction(),
+                                  &promotes, &paramNarrows, paramCoerce);
 
-      if (isTypeExpr(valueSe)) {
-        // Casts of type expressions e.g. MyOwnedType:unmanaged
-        // are useful but don't really work as calls to _cast.
-        // Change them to noop to work around other parts of resolution.
+    if (isTypeExpr(valueSe)) {
+      if (targetType == dtString) {
+        // Handle cast of type to string
+        call->primitive = primitives[PRIM_NOOP];
+        call->baseExpr->remove();
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE) ||
+              parentCall->isPrimitive(PRIM_ASSIGN)) {
+            SET_LINENO(call);
+            const char* typeName = toString(valueType);
+            Symbol* typeNameSym = new_StringSymbol(typeName);
+            call->replace(new SymExpr(typeNameSym));
+            parentCall->getStmtExpr()->insertBefore(call);
+          }
+        }
+
+        return true;
+      } else if (dispatches && isBuiltinGenericClassType(initialTargetType)) {
+        // Handle e.g. owned MyClass:borrowed
         call->primitive = primitives[PRIM_NOOP];
         call->baseExpr->remove();
         if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
@@ -2591,7 +2605,14 @@ static bool resolveBuiltinCastCall(CallExpr* call)
           }
         }
         return true;
+      } else {
+        return false;
       }
+    }
+
+    if (!isRecord(targetType) && !isRecord(valueType) &&
+        !is_complex_type(targetType) && !is_complex_type(valueType) &&
+        dispatches && !promotes) {
 
       // Otherwise, convert the _cast call to a primitive cast
       call->baseExpr->remove();
