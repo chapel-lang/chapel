@@ -28,7 +28,10 @@
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
     case CLASS_TYPE_BORROWED:
-      return astr("borrowed ", className);
+      if (developer)
+        return astr("borrowed anynil ", className);
+      else
+        return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NONNIL:
       if (developer)
         return astr("borrowed ", className, "!");
@@ -37,7 +40,10 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
     case CLASS_TYPE_UNMANAGED:
-      return astr("unmanaged ", className);
+      if (developer)
+        return astr("unmanaged anynil ", className);
+      else
+        return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NONNIL:
       if (developer)
         return astr("unmanaged ", className, "!");
@@ -47,7 +53,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       return astr("unmanaged ", className, "?");
     case CLASS_TYPE_MANAGED:
       if (developer)
-        return astr("managed ", className);
+        return astr("managed anynil ", className);
       else
         return astr(className);
     case CLASS_TYPE_MANAGED_NONNIL:
@@ -62,7 +68,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr(className, "?");
     case CLASS_TYPE_GENERIC:
       if (developer)
-        return astr("anymanaged ", className);
+        return astr("anymanaged anynil ", className);
       else
         return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
