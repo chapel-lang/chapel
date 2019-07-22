@@ -1,3 +1,17 @@
+arrayVectorOps.chpl:29: warning: push_front is deprecated - please use List.insert
+arrayVectorOps.chpl:31: warning: push_back is deprecated - please use List.extend
+arrayVectorOps.chpl:45: warning: pop_front is deprecated - please use List.pop
+arrayVectorOps.chpl:47: warning: pop_back is deprecated - please use List.pop
+arrayVectorOps.chpl:57: warning: insert is deprecated - please use List.insert
+arrayVectorOps.chpl:58: warning: insert is deprecated - please use List.insert
+arrayVectorOps.chpl:59: warning: insert is deprecated - please use List.insert
+arrayVectorOps.chpl:86: warning: push_front is deprecated - please use List.insert
+arrayVectorOps.chpl:87: warning: push_back is deprecated - please use List.extend
+arrayVectorOps.chpl:107: warning: remove is deprecated - please use List.pop
+arrayVectorOps.chpl:114: warning: remove has been deprecated - please use List.pop
+arrayVectorOps.chpl:114: warning: remove is deprecated - please use List.pop
+arrayVectorOps.chpl:121: warning: remove is deprecated - please use List.pop
+arrayVectorOps.chpl:143: warning: clear is deprecated - please use List.clear
 A was initialized to: 1 2 3 4 5
 After adding to the front and back A is: 0 1 2 3 4 5 6
 The first and last elements in A are: (0, 6)

@@ -1,6 +1,7 @@
 use FileSystem;
 use Spawn;
 use Sort;
+use Lists;
 
 config const verbose = false;
 
@@ -9,14 +10,14 @@ type Hash = (int,int,int);
 
 proc main(args:[] string)
 {
-  var paths:[1..0] string;
+  var paths: list(string);
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.push_back(arg);
+      paths.append(arg);
     else if isDir(arg) then
       for path in findfiles(arg, recursive=true) do
-        paths.push_back(path);
+        paths.append(path);
   }
 
   // Create an array of hashes and file ids
@@ -24,7 +25,7 @@ proc main(args:[] string)
   var hashAndFileId:[1..paths.size] (Hash, int);
  
   // Compute the SHA1 sums using the external program
-  forall (id,path) in zip(paths.domain, paths) {
+  forall (id,path) in zip(paths.toArray().domain, paths) {
     if verbose then
       writeln("Running sha1sum ", path);
     var sub = spawn(["sha1sum", path], stdout=PIPE);

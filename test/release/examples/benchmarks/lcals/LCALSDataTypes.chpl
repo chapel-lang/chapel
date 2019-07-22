@@ -1,18 +1,19 @@
 module LCALSDataTypes {
   use LCALSParams;
   use LCALSEnums;
+  use Lists;
 
   class vector {
     type eltType;
-    var A: [0..-1] eltType;
+    var A: list(eltType);
     proc this(i: int) ref {
       return A[i];
     }
     proc push_back(e: eltType) {
-      A.push_back(e);
+      A.append(e);
     }
     proc numElements {
-      return A.numElements;
+      return A.size;
     }
     iter these() {
       for a in A do yield a;

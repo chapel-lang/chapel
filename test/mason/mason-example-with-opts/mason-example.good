@@ -1,3 +1,82 @@
+../../../tools/mason//MasonBuild.chpl:31: In function 'masonBuild':
+../../../tools/mason//MasonBuild.chpl:41: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:69: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:75: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:76: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:77: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:78: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExample.chpl:31: In function 'masonExample':
+../../../tools/mason//MasonExample.chpl:63: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExample.chpl:67: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonEnv.chpl:53: In function 'MASON_REGISTRY':
+../../../tools/mason//MasonEnv.chpl:60: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonEnv.chpl:80: warning: push_back is deprecated - please use List.extend
+$CHPL_HOME/modules/packages/TOML.chpl:1071: In function 'splitLine':
+$CHPL_HOME/modules/packages/TOML.chpl:1101: warning: push_back is deprecated - please use List.extend
+$CHPL_HOME/modules/packages/TOML.chpl:1107: warning: push_back is deprecated - please use List.extend
+$CHPL_HOME/modules/packages/TOML.chpl:1112: warning: push_back is deprecated - please use List.extend
+$CHPL_HOME/modules/packages/TOML.chpl:1117: In function 'nextLine':
+$CHPL_HOME/modules/packages/TOML.chpl:1124: warning: remove is deprecated - please use List.pop
+$CHPL_HOME/modules/packages/TOML.chpl:1181: In function 'next':
+$CHPL_HOME/modules/packages/TOML.chpl:1184: warning: remove is deprecated - please use List.pop
+$CHPL_HOME/modules/packages/TOML.chpl:1175: In function 'skip':
+$CHPL_HOME/modules/packages/TOML.chpl:1178: warning: remove is deprecated - please use List.pop
+$CHPL_HOME/modules/packages/TOML.chpl:304: In function 'parseValue':
+$CHPL_HOME/modules/packages/TOML.chpl:322: warning: push_back is deprecated - please use List.extend
+$CHPL_HOME/modules/packages/TOML.chpl:1188: In function 'addToke':
+$CHPL_HOME/modules/packages/TOML.chpl:1189: warning: push_front is deprecated - please use List.insert
+../../../tools/mason//MasonUpdate.chpl:455: In function 'getDependencies':
+../../../tools/mason//MasonUpdate.chpl:461: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonUpdate.chpl:425: In function 'getManifests':
+../../../tools/mason//MasonUpdate.chpl:431: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonUpdate.chpl:324: In function 'createDepTrees':
+../../../tools/mason//MasonUpdate.chpl:341: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonUpdate.chpl:359: warning: remove is deprecated - please use List.pop
+../../../tools/mason//MasonUpdate.chpl:253: In function 'chplVersionError':
+../../../tools/mason//MasonUpdate.chpl:260: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonSystem.chpl:176: In function 'getPkgVariable':
+../../../tools/mason//MasonSystem.chpl:188: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//SpecParser.chpl:77: In function 'readSpec':
+../../../tools/mason//SpecParser.chpl:113: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//SpecParser.chpl:120: In function 'parseSpec':
+../../../tools/mason//SpecParser.chpl:143: warning: pop_front is deprecated - please use List.pop
+../../../tools/mason//SpecParser.chpl:164: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//SpecParser.chpl:178: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//SpecParser.chpl:185: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExternal.chpl:347: In function 'getSpkgDependencies':
+../../../tools/mason//MasonExternal.chpl:359: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExternal.chpl:275: In function 'getSpkgInfo':
+../../../tools/mason//MasonExternal.chpl:310: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExternal.chpl:320: warning: remove is deprecated - please use List.pop
+../../../tools/mason//MasonBuild.chpl:212: In function 'genSourceList':
+../../../tools/mason//MasonBuild.chpl:220: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExample.chpl:292: In function 'getExamples':
+../../../tools/mason//MasonExample.chpl:302: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExample.chpl:310: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:262: In function 'getTomlCompopts':
+../../../tools/mason//MasonBuild.chpl:267: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:275: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:276: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:277: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:286: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonBuild.chpl:287: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonExample.chpl:147: In function 'determineExamples':
+../../../tools/mason//MasonExample.chpl:159: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:26: In function 'masonRun':
+../../../tools/mason//MasonRun.chpl:37: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:139: In function 'masonBuildRun':
+../../../tools/mason//MasonRun.chpl:152: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:179: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:183: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:184: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:185: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:186: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:191: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:192: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:193: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:194: warning: push_back is deprecated - please use List.extend
+../../../tools/mason//MasonRun.chpl:26: In function 'masonRun':
+../../../tools/mason//MasonRun.chpl:68: warning: push_back is deprecated - please use List.extend
 Updating mason-registry
 Downloading dependency: _MasonTest1-0.2.0
 compiled depExample.chpl successfully

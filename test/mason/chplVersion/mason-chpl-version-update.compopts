@@ -4,4 +4,4 @@
 # here.
 # See: https://github.com/chapel-lang/chapel/issues/13233
 #
--M ../../tools/mason/ --no-warnings
+--no-warnings
