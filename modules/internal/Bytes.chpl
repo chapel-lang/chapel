@@ -1415,17 +1415,37 @@ module Bytes {
 
   }
 
+  // Concatenation with other types is done by casting to bytes
+  private inline proc concatHelp(s: bytes, x:?t) where t != bytes {
+    var cs = x:bytes;
+    const ret = s + cs;
+    return ret;
+  }
+
+  private inline proc concatHelp(x:?t, s: bytes) where t != bytes  {
+    var cs = x:bytes;
+    const ret = cs + s;
+    return ret;
+  }
+
+  // anything that is castable to string must be castable to bytes, too
+  // TODO does this have a significant performance impact? Should there be a
+  // BytesCasts module similar to StringCasts?
+  proc _cast(type t:bytes, x) {
+    return new bytes(x:string);
+  }
+
   /*
      The following concatenation functions return a new :record:`bytes` which is
      the result of casting the non-bytes argument to a bytes, and concatenating
      that result with `s`.
   */
-  inline proc +(s: bytes, x: numeric) {}
-  inline proc +(x: numeric, s: bytes) {}
-  inline proc +(s: bytes, x: enumerated) {}
-  inline proc +(x: enumerated, s: bytes) {}
-  inline proc +(s: bytes, x: bool) {}
-  inline proc +(x: bool, s: bytes) {}
+  inline proc +(s: bytes, x: numeric) return concatHelp(s, x);
+  inline proc +(x: numeric, s: bytes) return concatHelp(x, s);
+  inline proc +(s: bytes, x: enumerated) return concatHelp(s, x);
+  inline proc +(x: enumerated, s: bytes) return concatHelp(x, s);
+  inline proc +(s: bytes, x: bool) return concatHelp(s, x);
+  inline proc +(x: bool, s: bytes) return concatHelp(x, s);
 
   // ASCII helpers
 
