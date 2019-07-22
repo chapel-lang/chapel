@@ -1107,6 +1107,48 @@ proc det (const ref A: [?Adom] ?eltType) {
   return (* reduce [i in Adom.dim(1)] U[i,i]);
 }
 
+/* Returns the solution ``x`` to the linear system `` L * x = b `` 
+    where ``L`` is a lower triangular matrix.
+*/
+proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType) {
+  const n = Ldom.shape(1);
+  var y = b;
+  
+  for i in 1..n {
+    const sol = y(i) / L(i,i);
+    y(i) = sol;
+    
+    if (i < n) {
+      forall j in (i+1)..n {
+        y(j) -= L(j,i) * sol;
+      }
+    }
+  }
+  
+  return y;
+}
+
+/* Returns the solution ``x`` to the linear system `` U * x = b `` 
+    where ``U`` is an upper triangular matrix.
+*/
+proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
+  const n = Udom.shape(1);
+  var y = b;
+  
+  for i in 1..n by -1 {
+    const sol = y(i) / U(i,i);
+    y(i) = sol;
+    
+    if (i > 1) {
+      forall j in 1..(i-1) by -1 {
+        y(j) -= U(j,i) * sol;
+      }
+    }
+  }
+  
+  return y;
+}
+
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
