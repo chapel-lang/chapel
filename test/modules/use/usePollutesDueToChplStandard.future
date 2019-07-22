@@ -1,9 +1,0 @@
-bug: 'use ChapelStandard' needs to be private / non-transitive
-
-This test demonstrates that because of the 'use ChapelStandard'
-injected by the Chapel compiler to get automatically-included modules,
-a module that looks completely innocuous like `Library` here can
-eclipse user-level variables inadvertantly.  I believe the fix here is
-to implement `private` (non-transitive) `use` statements (issue #6093)
-and then to have the compiler-injected `use ChapelStandard` be a
-`private use`.

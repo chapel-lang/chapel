@@ -613,6 +613,7 @@ static void build_chpl_entry_points() {
     // that we correctly set up the runtime.
     FnSymbol* chpl_mli_smain = new FnSymbol("chpl_mli_smain");
     chpl_mli_smain->addFlag(FLAG_EXTERN);
+    chpl_mli_smain->addFlag(FLAG_LOCAL_ARGS);
     // Takes the connection information
     ArgSymbol* setup_conn = new ArgSymbol(INTENT_BLANK, "setup_conn",
                                           dtStringC);

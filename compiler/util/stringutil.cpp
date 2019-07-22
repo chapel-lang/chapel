@@ -307,13 +307,24 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
 }
 
 
+inline int countLeadingSpaces(const std::string& s) {
+  int leadingSpaces = 0;
+  for (size_t i=0; i < s.length(); i++) {
+    if (std::isspace(s[i]))
+      leadingSpaces++;
+    else
+      break;
+  }
+  return leadingSpaces;
+}
+
 /*
  * Trim spaces from start of string.
  *
  * From: http://stackoverflow.com/a/217605
  */
 inline std::string ltrim(std::string s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+  s.erase(s.begin(), s.begin() + countLeadingSpaces(s));
   return s;
 }
 
@@ -321,8 +332,8 @@ inline std::string ltrim(std::string s) {
 /*
  * Return true if 's' is empty or only has whitespace characters.
  */
-inline bool isEmpty(std::string s) {
-  return s.end() == std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace)));
+inline bool isEmpty(const std::string& s) {
+  return s.end() == s.begin()+countLeadingSpaces(s);
 }
 
 
@@ -364,7 +375,7 @@ std::string erasePrefix(std::string s, int count) {
  * Returns first non empty line of the string after ltrimming it. "Empty lines"
  * are those with no characters or only whitespace characters.
  */
-std::string firstNonEmptyLine(std::string s) {
+std::string firstNonEmptyLine(const std::string& s) {
   std::stringstream sStream(s);
   std::string line;
   std::string result;
@@ -385,12 +396,11 @@ std::string firstNonEmptyLine(std::string s) {
  * FIXME: Find minimum prefix also if every single line begins with
  *        "\s+*\s". (thomasvandoren, 2015-02-04)
  */
-int minimumPrefix(std::string s) {
+int minimumPrefix(const std::string& s) {
   std::stringstream sStream(s);
   std::string line;
   bool first = true;
   int minPrefix = INT_MAX;
-  int currentPrefix;
   while (std::getline(sStream, line)) {
     // Skip the first line. It is a special case that often has been trimmed to
     // some extent.
@@ -406,9 +416,11 @@ int minimumPrefix(std::string s) {
     }
 
     // Find the first non-space character. Record if it is the new minimum.
-    currentPrefix = std::find_if(line.begin(), line.end(), std::not1(std::ptr_fun<int, int>(std::isspace))) - line.begin();
-    if (currentPrefix < minPrefix) {
-      minPrefix = currentPrefix;
+    for (size_t i=0; (int)i < minPrefix && i < line.length(); i++) {
+      if (!std::isspace(line[i])) {
+        minPrefix = i;
+        break;
+      }
     }
   }
   return minPrefix;

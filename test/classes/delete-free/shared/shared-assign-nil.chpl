@@ -4,7 +4,7 @@ class MyClass {
 
 
 proc test() {
-  var s:shared MyClass = nil;
+  var s:shared MyClass? = nil;
   s = nil;
 
   writeln(s);

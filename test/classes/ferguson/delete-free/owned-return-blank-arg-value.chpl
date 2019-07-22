@@ -31,7 +31,7 @@ proc returnByValueTyped(arg:owned)
 
 proc bar() {
   writeln("in bar");
-  var x = new owned C(1);
+  var x: owned C? = new owned C(1);
   writeln(" x=", x);
 
   var y = returnByValueTyped(x);

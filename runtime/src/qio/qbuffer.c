@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,7 +65,7 @@ void qbytes_free_null(qbytes_t* b) {
 void qbytes_free_munmap(qbytes_t* b) {
   err_t err;
 
-  /* I don't believe this is required, but 
+  /* I don't believe this is required, but
    * I've heard here and there it might be for NFS...
    *
   rc = msync(b->data, b->len, MS_ASYNC);
@@ -147,8 +147,15 @@ qioerr qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbyte
 qioerr _qbytes_init_iobuf(qbytes_t* ret)
 {
   void* data = NULL;
-  
-  data = qio_memalign(sys_page_size(), qbytes_iobuf_size);
+
+  // qbytes_iobuf_size is generally >= page size. However in
+  // some testing configurations, it is very small (e.g. 5 bytes).
+  size_t page_size = sys_page_size();
+  if (qbytes_iobuf_size >= page_size)
+    data = qio_memalign(page_size, qbytes_iobuf_size);
+  else
+    data = qio_malloc(qbytes_iobuf_size);
+
   if( !data ) return QIO_ENOMEM;
   memset(data, 0, qbytes_iobuf_size);
 
@@ -241,7 +248,7 @@ int qbytes_append_realloc(qbytes_t* qb, size_t item_size, void* item)
    if( len == exp ) {
       // the array is full - double its size.
       if( exp == 0 ) exp = 1;
-      while( len + item_size > exp ) exp = 2*exp; 
+      while( len + item_size > exp ) exp = 2*exp;
 
       a = (unsigned char*) realloc(a, exp);
       if( !a ) return QIO_ENOMEM;
@@ -280,7 +287,7 @@ void debug_print_qbuffer(qbuffer_t* buf)
 
   while( ! deque_it_equals(cur, end) ) {
     qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr( sizeof(qbuffer_part_t), cur);
-    fprintf(stderr, "part %p: bytes=%p (data %p) skip=%lli len=%lli end=%lli\n", 
+    fprintf(stderr, "part %p: bytes=%p (data %p) skip=%lli len=%lli end=%lli\n",
             qbp, qbp->bytes, qbp->bytes->data,
             (long long int) qbp->skip_bytes,
             (long long int) qbp->len_bytes,
@@ -480,7 +487,7 @@ void qbuffer_trim_front(qbuffer_t* buf, int64_t remove_bytes)
   int64_t new_start = buf->offset_start + remove_bytes;
 
   if( remove_bytes == 0 ) return;
-  
+
   assert( remove_bytes > 0 );
   assert( new_start <= buf->offset_end );
 
@@ -587,7 +594,7 @@ qioerr qbuffer_pop_back(qbuffer_t* buf)
   qbuffer_iter_t chunk;
 
   if ( qbuffer_num_parts(buf) == 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot pop from empty buffer");
-  
+
   chunk = qbuffer_end(buf);
   qbuffer_iter_prev_part(buf, &chunk);
 
@@ -698,7 +705,7 @@ void qbuffer_iter_ceil_part(qbuffer_t* buf, qbuffer_iter_t* iter)
 }
 
 
-/* Advances an iterator using linear search. 
+/* Advances an iterator using linear search.
  */
 void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt)
 {
@@ -794,8 +801,8 @@ qbuffer_iter_t qbuffer_iter_at(qbuffer_t* buf, int64_t offset)
   return ret;
 }
 
-qioerr qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
-                     size_t max_iov, struct iovec *iov_out, 
+qioerr qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
+                     size_t max_iov, struct iovec *iov_out,
                      qbytes_t** bytes_out /* can be NULL */,
                      size_t *iovcnt_out)
 {
@@ -895,7 +902,7 @@ qioerr qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
   qbytes_t* ret;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 ||
       start.offset < buf->offset_start || end.offset > buf->offset_end ) {
     *bytes_out = 0;
@@ -950,7 +957,7 @@ qioerr qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, q
   MAYBE_STACK_SPACE(qbytes_t*, bytes_onstack);
   qioerr err;
   qbuffer_ptr_t ret = NULL;
- 
+
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
 
   err = qbuffer_create(&ret);
@@ -1002,7 +1009,7 @@ qioerr qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
   size_t i,j;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 ||
       start.offset < buf->offset_start || end.offset > buf->offset_end ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
@@ -1040,7 +1047,7 @@ qioerr qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   size_t i,j;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 ||
       start.offset < buf->offset_start || end.offset > buf->offset_end ) {
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
@@ -1082,7 +1089,7 @@ qioerr qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_i
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
   qbuffer_iter_t dst_cur, dst_cur_end;
- 
+
   if( dst == src ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot copy a buffer to itself");
 
   if( dst_num_bytes < 0 || dst_num_parts < 0 || dst_start.offset < dst->offset_start || dst_end.offset > dst->offset_end ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "dst range outside of buffer");
@@ -1120,7 +1127,7 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   size_t i;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);

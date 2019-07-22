@@ -251,6 +251,7 @@ comparator to the initializer of the module-defined
  */
 module Sort {
 
+  private use Reflection;
 
 /* Module-defined comparators */
 
@@ -315,8 +316,6 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
 */
 pragma "no doc"
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
-  use Reflection;
-
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
@@ -345,8 +344,6 @@ pragma "no doc"
 
  */
 proc chpl_check_comparator(comparator, type eltType) param {
-  use Reflection;
-
   // Dummy data for checking method resolution
   // This may need updating when constructors support non-default args
   const data: eltType;
@@ -402,10 +399,8 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
-  use Reflection;
-
   if !Dom.stridable {
-    var tmp:Data[Dom.low].type;
+    var tmp:Data[Dom.alignedLow].type;
     if canResolveMethod(comparator, "keyPart", tmp, 1) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
@@ -492,7 +487,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
-    if i > Dom.low {
+    if i > Dom.alignedLow {
       sorted &&= (chpl_compare(Data[i-stride], element, comparator) <= 0);
     }
   }
@@ -593,7 +588,7 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
       data is sorted.
 
  */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
   compilerWarning("insertionSort is deprecated - please use sort");
   InsertionSort.insertionSort(Data, comparator, lo, hi);
 }
@@ -687,8 +682,8 @@ module BubbleSort {
       compilerError("bubbleSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           stride = abs(Dom.stride);
 
     var swapped = true;
@@ -724,8 +719,8 @@ module HeapSort {
       compilerError("heapSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           size = Dom.size,
           stride = abs(Dom.stride);
 
@@ -783,7 +778,7 @@ module InsertionSort {
       data is sorted.
 
    */
-  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -832,8 +827,8 @@ module BinaryInsertionSort {
       compilerError("binaryInsertionSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           stride = abs(Dom.stride);
 
     for i in low..high by stride {
@@ -858,7 +853,7 @@ module BinaryInsertionSort {
     If `val` is not in `Data`, the index that it should be inserted at is returned.
     Does not check for a valid comparator.
   */
-  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh) {
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
     var loc = -1;                                        // index of the last occurrence of val in Data
@@ -902,7 +897,7 @@ module MergeSort {
       compilerError("mergeSort() requires 1-D array");
     }
 
-    _MergeSort(Data, Dom.low, Dom.high, minlen, comparator);
+    _MergeSort(Data, Dom.alignedLow, Dom.alignedHigh, minlen, comparator);
   }
 
   private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
@@ -911,47 +906,60 @@ module MergeSort {
       InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
       return;
     }
-    const mid = (hi-lo)/2+lo;
+
+    const stride = if Dom.stridable then abs(Dom.stride) else 1,
+          size = (hi - lo) / stride,
+          mid = lo + (size/2) * stride;
+
     if(here.runningTasks() < here.numPUs(logical=true)) {
       cobegin {
         { _MergeSort(Data, lo, mid, minlen, comparator); }
-        { _MergeSort(Data, mid+1, hi, minlen, comparator); }
+        { _MergeSort(Data, mid+stride, hi, minlen, comparator); }
       }
     } else {
       _MergeSort(Data, lo, mid, minlen, comparator);
-      _MergeSort(Data, mid+1, hi, minlen, comparator);
+      _MergeSort(Data, mid+stride, hi, minlen, comparator);
     }
     _Merge(Data, lo, mid, hi, comparator);
   }
 
   private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
-    var a1max = mid;
-    var A1 = Data[lo..(a1max)];
-    var a2max = hi;
-    var A2 = Data[mid..(a2max)];
-    var a1 = lo;
-    var a2 = mid + 1;
+    /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
+     * Dom is unstrided.  So specify the latter explicitly when possible. */
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const a1size = (lo..mid by stride).size;
+    var A1: [1..a1size] Data.eltType =
+      if Dom.stridable
+      then Data[lo..mid by stride]
+      else Data[lo..mid];
+    const a2size = ((mid+stride)..hi by stride).size;
+    var A2: [1..a2size] Data.eltType =
+      if Dom.stridable
+      then Data[(mid+stride)..hi by stride]
+      else Data[(mid+1)..hi];
+    var a1 = 1;
+    var a2 = 1;
     var i = lo;
-    while ((a1 <= a1max) && (a2 <= a2max)) {
+    while ((a1 <= a1size) && (a2 <= a2size)) {
       if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
         Data[i] = A1[a1];
         a1 += 1;
-        i += 1;
+        i += stride;
       } else {
         Data[i] = A2[a2];
         a2 += 1;
-        i += 1;
+        i += stride;
       }
     }
-    while (a1 <= a1max) {
+    while (a1 <= a1size) {
       Data[i] = A1[a1];
       a1 += 1;
-      i += 1;
+      i += stride;
     }
-    while (a2 <= a2max) {
+    while (a2 <= a2size) {
       Data[i] = A2[a2];
       a2 += 1;
-      i += 1;
+      i += stride;
     }
   }
 }
@@ -977,8 +985,8 @@ module QuickSort {
 
     // grab obvious indices
     const stride = abs(Dom.stride),
-          lo = Dom.low,
-          hi = Dom.high,
+          lo = Dom.alignedLow,
+          hi = Dom.alignedHigh,
           size = Dom.size,
           mid = if hi == lo then hi
                 else if size % 2 then lo + ((size - 1)/2) * stride
@@ -1018,8 +1026,8 @@ module QuickSort {
 
     // TODO -- Get this cobegin working and tested
     //  cobegin {
-      quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+stride..], minlen, comparator);
+      quickSort(Data[..loptr-stride by stride align lo], minlen, comparator);  // could use unbounded ranges here
+      quickSort(Data[loptr+stride.. by stride align lo], minlen, comparator);
     //  }
   }
 
@@ -1096,8 +1104,8 @@ module SelectionSort {
       compilerError("selectionSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           stride = abs(Dom.stride);
 
     for i in low..high-stride by stride {
@@ -1115,7 +1123,7 @@ module SelectionSort {
 pragma "no doc"
 module ShellSort {
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-                 start=Dom.low, end=Dom.high)
+                 start=Dom.alignedLow, end=Dom.alignedHigh)
   {
     chpl_check_comparator(comparator, eltType);
 
@@ -1211,8 +1219,6 @@ module RadixSortHelp {
   inline
   proc binForRecord(a, criterion, startbit:int)
   {
-    use Reflection;
-
     if canResolveMethod(criterion, "keyPart", a, 1) {
       return binForRecordKeyPart(a, criterion, startbit);
     } else if canResolveMethod(criterion, "key", a) {
@@ -1247,8 +1253,6 @@ module RadixSortHelp {
   //
   // Returns -1 if no such ending is known at compile-time.
   proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
-    use Reflection;
-
     // Compute end_bit if it's known
     // Default comparator on integers has fixed width
     const ref element = Data[Data.domain.low];
@@ -1785,12 +1789,10 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasKeyPart(a) param {
-    use Reflection;
     return canResolveMethod(this.comparator, "keyPart", a, 1);
   }
   pragma "no doc"
   proc hasKeyPartFromKey(a) param {
-    use Reflection;
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
@@ -1801,12 +1803,10 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasCompare(a,b) param {
-    use Reflection;
     return canResolveMethod(this.comparator, "compare", a, b);
   }
   pragma "no doc"
   proc hasCompareFromKey(a) param {
-    use Reflection;
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a compare for this?

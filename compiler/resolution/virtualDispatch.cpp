@@ -171,7 +171,7 @@ static bool buildVirtualMaps() {
 // Add overrides of pfn to virtual maps down the inheritance hierarchy
 static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
   forv_Vec(AggregateType, ct, pct->dispatchChildren) {
-    if (ct->isGeneric() == false) {
+    if (ct && ct->isGeneric() == false) {
       if (ct->mayHaveInstances() == true) {
         std::vector<FnSymbol*> methods;
 
@@ -251,7 +251,7 @@ static void collectMethods(FnSymbol*               pfn,
 
   while (fromType != NULL) {
     forv_Vec(FnSymbol, cfn, fromType->methods) {
-      if (cfn->instantiatedFrom == NULL) {
+      if (cfn && cfn->instantiatedFrom == NULL) {
         // if pfn is a filled in vararg function then cfn needs its
         // vararg stamped out here too.
         if (pfn->hasFlag(FLAG_EXPANDED_VARARGS)) {
@@ -679,7 +679,7 @@ static void buildVirtualMethodTable() {
 
         if (AggregateType* at = toAggregateType(t)) {
           forv_Vec(AggregateType, childType, at->dispatchChildren) {
-            if (childSet.set_in(childType) == NULL) {
+            if (childType && childSet.set_in(childType) == NULL) {
               addVirtualMethodTableEntry(childType, pfn, false);
             }
           }
@@ -689,7 +689,8 @@ static void buildVirtualMethodTable() {
 
     if (AggregateType* at = toAggregateType(t)) {
       forv_Vec(AggregateType, child, at->dispatchChildren) {
-        ctq.add(child);
+        if (child)
+          ctq.add(child);
       }
     }
   }

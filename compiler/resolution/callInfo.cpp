@@ -127,9 +127,11 @@ void CallInfo::haltNotWellFormed() const {
                 sym->name);
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      INT_FATAL(call,
+      USR_FATAL_CONT(call,
                 "the type of the actual argument '%s' is generic",
                 sym->name);
+      USR_PRINT("generic actual arguments are not currently supported");
+      USR_STOP();
     }
   }
 }

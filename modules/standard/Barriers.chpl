@@ -83,7 +83,6 @@ module Barriers {
     proc init(numTasks: int,
               barrierType: BarrierType = BarrierType.Atomic,
               reusable: bool = true) {
-      this.complete();
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
@@ -101,6 +100,7 @@ module Barriers {
         }
         otherwise {
           HaltWrappers.exhaustiveSelectHalt("unknown barrier type");
+          bar = new unmanaged BarrierBaseType(); // dummy
         }
       }
       isowned = true;

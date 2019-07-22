@@ -15,7 +15,7 @@ genLLVM = False
 for i in range(len(compflags)):
     if compflags[i] == '--llvm':
         genLLVM = True
-        os.environ['CHPL_LLVM_CODEGEN'] = os.environ['CHPL_LLVM']
+        os.environ['CHPL_LLVM_CODEGEN'] = 'llvm'
         break
 
 goodfile = testname+'.good'
@@ -55,4 +55,4 @@ with open(goodfile, 'w') as gfh:
     for (env, val) in (e.split('=', 1) for e in sorted(chplenv.split('\n')) if e):
         gfh.write('  %s: %s\n'%(env, val))
         if env == 'CHPL_LLVM' and genLLVM:
-            gfh.write('  CHPL_LLVM_CODEGEN: %s\n'%(os.environ['CHPL_LLVM_CODEGEN']))
+            gfh.write('  CHPL_LLVM_CODEGEN: llvm\n')

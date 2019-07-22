@@ -630,16 +630,8 @@ void ModuleSymbol::addDefaultUses() {
     if (parentModule->modTag != MOD_USER) {
       SET_LINENO(this);
 
-      UnresolvedSymExpr* modRef;
-
-      // If this is a Fortran compilation, we need to use ISO_Fortran_binding
-      if (fLibraryFortran) {
-        modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
-        block->insertAtHead(new UseStmt(modRef, false));
-      }
-
-      modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef, false));
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
+      block->insertAtHead(new UseStmt(modRef, /* isPrivate */ true));
     }
 
   // We don't currently have a good way to fetch the root module by name.
@@ -649,7 +641,28 @@ void ModuleSymbol::addDefaultUses() {
 
     block->useListAdd(rootModule, false);
   }
+
+  if (fLibraryFortran && modTag == MOD_INTERNAL) {
+    if (this == standardModule) {
+      SET_LINENO(this);
+
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
+      block->insertAtTail(new UseStmt(modRef, /* isPrivate */ false));
+    }
+  }
 }
+
+// Helper function for computing the index in the module use list
+// within mod for a use of usedModule
+static int moduleUseIndex(ModuleSymbol* mod, ModuleSymbol* usedModule) {
+  for (size_t i=0; i < mod->modUseList.size(); i++) {
+    if (mod->modUseList[i] == usedModule) {
+      return (int)i;
+    }
+  }
+  return -1;
+}
+
 
 //
 // NOAKES 2014/07/22
@@ -664,12 +677,12 @@ void ModuleSymbol::addDefaultUses() {
 // Fortunately there are currently no tests that expose this fallacy so
 // long at ChapelStandard always appears first in the list
 void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
-  if (mod != this && modUseList.index(mod) < 0) {
+  if (mod != this && moduleUseIndex(this, mod) < 0) {
     if (mod == standardModule) {
-      modUseList.insert(0, mod);
+      modUseList.insert(modUseList.begin(), mod);
 
     } else {
-      modUseList.add(mod);
+      modUseList.push_back(mod);
     }
   }
 }
@@ -682,17 +695,18 @@ void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
 // At this time this is only used for deadCodeElimination and
 // it is not clear if there will be other uses.
 void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
-  int index = modUseList.index(mod);
+  int index = moduleUseIndex(this, mod);
 
   if (index >= 0) {
     bool inBlock = block->useListRemove(mod);
 
-    modUseList.remove(index);
+    modUseList.erase(modUseList.begin() + index);
 
     // The dead module may have used other modules.  If so add them
     // to the current module
-    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
-      if (modUseList.index(modUsedByDeadMod) < 0 && modUsedByDeadMod != this) {
+    for_vector(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
+      if (moduleUseIndex(this, modUsedByDeadMod) < 0 &&
+          modUsedByDeadMod != this) {
         if (modUsedByDeadMod == mod) {
           INT_FATAL("Dead module using itself");
         }
@@ -704,7 +718,7 @@ void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
           block->useListAdd(modUsedByDeadMod, false);
         }
 
-        modUseList.add(modUsedByDeadMod);
+        modUseList.push_back(modUsedByDeadMod);
       }
     }
   }

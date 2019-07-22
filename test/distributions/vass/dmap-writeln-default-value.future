@@ -1,6 +1,0 @@
-bug: writeln-within-writeln deadlock
-
-When I run this, it hangs. My guess it's because of writeln-within-writeln.
-
-The .good output is probably not exactly the right one,
-it's just how much it prints out before it hangs.
