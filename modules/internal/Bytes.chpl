@@ -109,6 +109,16 @@ module Bytes {
   enum DecodePolicy { Strict, Replace, Ignore }
   use DecodePolicy;
 
+  /*
+   A `DecodeError` is thrown if the `decode` method is called on a non-UTF-8
+   string.
+   */
+  class DecodeError: Error {
+    override proc message() {
+      return "Invalid UTF-8 character encountered.";
+    }
+  }
+
   record bytes {  // _bytes when/if there is compiler support
     pragma "no doc"
     var len: int = 0; // length of string in bytes
@@ -965,11 +975,14 @@ module Bytes {
       :arg errors: `DecodePolicy.Strict` raises an error, `DecodePolicy.Replace`
                    replaces the malformed character with UTF-8 replacement
                    character, `DecodePolicy.Ignore` drops the data silently.
+      
+      :throws: `DecodeError` if `DecodePolicy.Strict` is passed to the `errors`
+               argument and the `bytes` object contains non-UTF-8 characters.
 
       :returns: A UTF-8 string.
     */
     // NOTE: In the future this could support more encodings.
-    proc decode(errors: DecodePolicy = Strict): string {
+    proc decode(errors: DecodePolicy = Strict): string throws {
       var localThis: bytes = this.localize();
 
       // allocate buffer the same size as this buffer assuming that the string
@@ -990,7 +1003,7 @@ module Bytes {
 
         if cp == 0xfffd {  //decoder returns the replacament character
           if errors == Strict {
-            halt("This should throw an error here");
+            throw new owned DecodeError();
           }
           else if errors == Ignore {
             thisIdx += nbytes; //skip over the malformed bytes

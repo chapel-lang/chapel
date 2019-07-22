@@ -3,3 +3,4 @@ Print as bytes: T\xc3\xbcrk\xc3\xa7e
 Decoded string: Türkçe
 String with the ignore policy: Türkçe (length=8)
 String with the ignore policy: Tü�rkçe (length=9)
+DecodeError: Invalid UTF-8 character encountered.
