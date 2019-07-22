@@ -24,5 +24,6 @@
 
 outfile=$2
 sed < $outfile > $outfile.tmp -e '/Transient MPP reservation error on create/d' \
+                              -e '/Transient MPP reservation error preparing request/d' \
                               -e '/Transient MPP reservation error on confirm/d'
 mv -f $outfile.tmp $outfile
