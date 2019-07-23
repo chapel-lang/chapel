@@ -145,7 +145,9 @@ static struct fi_msg ofi_msg_reqs;
 
 static void emit_delayedFixedHeapMsgs(void);
 
-static inline struct perTxCtxInfo_t* tciAlloc(chpl_bool);
+static inline struct perTxCtxInfo_t* tciAlloc(void);
+static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
+static inline chpl_bool tciTryRealloc(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
@@ -197,14 +199,14 @@ static void time_init(void);
 // it seems like something we might encounter with other providers as
 // well.
 //
-#define OFI_RIDE_OUT_EAGAIN(expr)                                       \
+#define OFI_RIDE_OUT_EAGAIN(expr, progFnCall)                           \
   do {                                                                  \
     ssize_t _ret;                                                       \
     do {                                                                \
       CHK_TRUE((_ret = (expr)) == 0 || _ret == -FI_EAGAIN);             \
       if (_ret == -FI_EAGAIN) {                                         \
         sched_yield();                                                  \
-        ensure_progress();                                              \
+        progFnCall;                                                     \
       }                                                                 \
     } while (_ret == -FI_EAGAIN);                                       \
   } while (0)
@@ -1751,7 +1753,7 @@ void amRequestCommon(c_nodeid_t node,
 #endif
 
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
 
   chpl_comm_on_bundle_t* myArg = arg;
   void* mrDesc = NULL;
@@ -1795,17 +1797,25 @@ void amRequestCommon(c_nodeid_t node,
              node, chpl_nodeID, myArg->comm.b.seq,
              am_opName(myArg->comm.b.op), argSize, pDone, ctx);
   OFI_RIDE_OUT_EAGAIN(fi_send(tcip->txCtx, myArg, argSize,
-                              mrDesc, rxMsgAddr(tcip, node), ctx));
+                              mrDesc, rxMsgAddr(tcip, node), ctx),
+                      checkTxCQ(tcip));
 
   //
   // If this is an unordered AMO we already counted it; otherwise,
   // wait for the network completion.
   //
-  if (myArg->comm.b.op != am_opAMO || ordered) {
-    waitForCQThisTxn(tcip, &done);
-  }
-
   tciFree(tcip);
+
+  if (myArg->comm.b.op != am_opAMO || ordered) {
+    do {
+      local_yield();
+      ensure_progress();
+      if (tciTryRealloc(tcip)) {
+        checkTxCQ(tcip);
+        tciFree(tcip);
+      }
+    } while (! *(volatile int*) &done);
+  }
 
   if (myArg != arg) {
     freeBounceBuf(myArg);
@@ -1896,7 +1906,7 @@ void fini_amHandling(void) {
 static
 void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = tciAlloc(true /*bindToAmHandler*/)) != NULL);
+  CHK_TRUE((tcip = tciAllocForAmHandler()) != NULL);
 
   isAmHandler = true;
 
@@ -1960,9 +1970,6 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
   const size_t maxEvents = 10;
   struct fi_cq_data_entry cqes[maxEvents];
   const ssize_t numEvents = readCQ(ofi_rxCQ, cqes, maxEvents);
-
-  if (numEvents == -EAGAIN)
-    return;
 
   for (int i = 0; i < numEvents; i++) {
     if ((cqes[i].flags & FI_RECV) != 0) {
@@ -2439,24 +2446,39 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 // Internal communication support
 //
 
+static inline struct perTxCtxInfo_t* tciAllocCommon(chpl_bool);
 static struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool);
 
+static __thread struct perTxCtxInfo_t* _ttcip;
+
+
 static inline
-struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
-  static __thread struct perTxCtxInfo_t* tcip;
-  if (tcip != NULL) {
+struct perTxCtxInfo_t* tciAlloc(void) {
+  return tciAllocCommon(false /*bindToAmHandler*/);
+}
+
+
+static inline
+struct perTxCtxInfo_t* tciAllocForAmHandler(void) {
+  return tciAllocCommon(true /*bindToAmHandler*/);
+}
+
+
+static inline
+struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
+  if (_ttcip != NULL) {
     //
     // If the last tx context we used is bound to our thread or can be
     // re-allocated, use that.
     //
-    if (tcip->bound) {
-      DBG_PRINTF(DBG_TCIPS, "realloc bound tciTab[%td]", tcip - tciTab);
-      return tcip;
+    if (_ttcip->bound) {
+      DBG_PRINTF(DBG_TCIPS, "realloc bound tciTab[%td]", _ttcip - tciTab);
+      return _ttcip;
     }
 
-    if (!atomic_exchange_bool(&tcip->allocated, true)) {
-      DBG_PRINTF(DBG_TCIPS, "realloc tciTab[%td]", tcip - tciTab);
-      return tcip;
+    if (!atomic_exchange_bool(&_ttcip->allocated, true)) {
+      DBG_PRINTF(DBG_TCIPS, "realloc tciTab[%td]", _ttcip - tciTab);
+      return _ttcip;
     }
   }
 
@@ -2465,14 +2487,14 @@ struct perTxCtxInfo_t* tciAlloc(chpl_bool bindToAmHandler) {
   // for either the AM handler or a tasking layer fixed worker thread,
   // bind it permanently.
   //
-  tcip = findFreeTciTabEntry(bindToAmHandler);
+  _ttcip = findFreeTciTabEntry(bindToAmHandler);
   if (bindToAmHandler
       || (tciTabFixedAssignments && chpl_task_isFixedThread())) {
-    tcip->bound = true;
+    _ttcip->bound = true;
   }
   DBG_PRINTF(DBG_TCIPS, "alloc%s tciTab[%td]",
-             tcip->bound ? " bound" : "", tcip - tciTab);
-  return tcip;
+             _ttcip->bound ? " bound" : "", _ttcip - tciTab);
+  return _ttcip;
 }
 
 
@@ -2530,6 +2552,23 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
 
 
 static inline
+chpl_bool tciTryRealloc(struct perTxCtxInfo_t* tcip) {
+  if (tcip == _ttcip && tcip->bound) {
+    DBG_PRINTF(DBG_TCIPS, "tryRealloced bound tciTab[%td]", tcip - tciTab);
+    return true;
+  }
+
+  if (!atomic_exchange_bool(&tcip->allocated, true)) {
+    DBG_PRINTF(DBG_TCIPS, "tryRealloced tciTab[%td]", tcip - tciTab);
+    CHK_TRUE(!tcip->bound);
+    return true;
+  }
+
+  return false;
+}
+
+
+static inline
 void tciFree(struct perTxCtxInfo_t* tcip) {
   //
   // Bound contexts stay bound.  We only release non-bound ones.
@@ -2566,14 +2605,15 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     void* ctx = txnTrkEncode(txnTrkDone, &done);
 
     struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
 
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
                (int) node, raddr, myAddr, size, mrKey, ctx);
     OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
-                                 (uint64_t) raddr, mrKey, ctx));
+                                 (uint64_t) raddr, mrKey, ctx),
+                        checkTxCQ(tcip));
 
     if (tcip->txCQ != NULL) {
       waitForCQThisTxn(tcip, &done);
@@ -2631,13 +2671,14 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     void* ctx = txnTrkEncode(txnTrkDone, &done);
 
     struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64 ", ctx %p",
                myAddr, (int) node, raddr, size, mrKey, ctx);
     OFI_RIDE_OUT_EAGAIN(fi_read(tcip->txCtx, myAddr, size,
                                 mrDesc, rxRmaAddr(tcip, node),
-                                (uint64_t) raddr, mrKey, ctx));
+                                (uint64_t) raddr, mrKey, ctx),
+                        checkTxCQ(tcip));
     waitForCQThisTxn(tcip, &done);
     tciFree(tcip);
   } else {
@@ -2828,9 +2869,8 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
   struct fi_cq_msg_entry cqes[5];
   const int cqesSize = sizeof(cqes) / sizeof(cqes[0]);
   const ssize_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
-  CHK_TRUE(numEvents >= 0 || numEvents == -FI_EAGAIN);
 
-  if (numEvents == -EAGAIN) {
+  if (numEvents == 0) {
     sched_yield();
     ensure_progress();
   } else {
@@ -2887,7 +2927,7 @@ ssize_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
     }
   }
 
-  return ret;
+  return (ret == -FI_EAGAIN) ? 0 : ret;
 }
 
 
@@ -3262,7 +3302,7 @@ void doAMO(c_nodeid_t node, void* object,
     // is remotely accessible.  Do the AMO natively.
     //
     struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = tciAlloc(false /*bindToAmHandler*/)) != NULL);
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
     ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
             ofiOp, ofiType, size);
     tciFree(tcip);
