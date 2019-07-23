@@ -394,7 +394,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
     //
     // The other place is in String, which calls it with either one or
     // two arguments, which are always params.  The one-argument version
-    // is deprecated, but the deprecation is handled elsewhere.
+    // is deprecated, but the deprecation is handled elsewhere.  If
+    // the second argument is -1, then the string must contain exactly
+    // one byte.
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
@@ -410,7 +412,14 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
         INT_ASSERT(ie && ie->symbol()->isParameter() && get_int(ie, &val));
 
-        idx = static_cast<size_t>(val) - 1;
+        if (val == -1) {
+          if (unescaped.length() != 1) {
+            USR_FATAL(call, "string.toByte() only accepts single-byte strings");
+          }
+          idx = 0;
+        } else {
+          idx = static_cast<size_t>(val) - 1;
+        }
       }
 
       if (idx >= unescaped.length()) {

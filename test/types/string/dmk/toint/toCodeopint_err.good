@@ -1,0 +1,1 @@
+toCodeopint_err.chpl:6: error: halt reached - string.toCodepoint() only accepts single-codepoint strings
