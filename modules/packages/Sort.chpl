@@ -1381,7 +1381,7 @@ module SampleSortHelp {
                                    A:[],
                                    in numSamples:int,
                                    seed=1) {
-    use Random;
+    private use Random;
     var Tmp:[1..1] A.eltType;
     var randNums = makeRandomStream(seed=seed, eltType=int, parSafe=false);
     while numSamples > 0 {
@@ -1804,8 +1804,8 @@ module SequentialInPlacePartitioning {
 
 pragma "no doc"
 module TwoArrayPartitioning {
-  use BlockDist;
-  use MSBRadixSort;
+  private use BlockDist;
+  private use MSBRadixSort;
 
   private param debug = false;
   param maxBuckets = 512;
@@ -2580,8 +2580,8 @@ module TwoArrayPartitioning {
 
 pragma "no doc"
 module TwoArrayRadixSort {
-  use TwoArrayPartitioning;
-  use RadixSortHelp;
+  private use TwoArrayPartitioning;
+  private use RadixSortHelp;
 
   proc twoArrayRadixSort(Data:[], comparator:?rec=defaultComparator) {
 
@@ -2627,9 +2627,9 @@ module TwoArrayRadixSort {
 
 pragma "no doc"
 module TwoArraySampleSort {
-  use TwoArrayPartitioning;
-  use SampleSortHelp;
-  use RadixSortHelp;
+  private use TwoArrayPartitioning;
+  private use SampleSortHelp;
+  private use RadixSortHelp;
 
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 
@@ -2676,7 +2676,7 @@ module InPlacePartitioning {
 pragma "no doc"
 module MSBRadixSort {
 
-  use RadixSortHelp;
+  private use RadixSortHelp;
 
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {
