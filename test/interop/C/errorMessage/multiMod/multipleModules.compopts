@@ -1,2 +1,2 @@
---library # multipleModules.error.good
---library -o myNameIsNotImportant
+--library C.chpl # multipleModules.error.good
+--library C.chpl -o myNameIsNotImportant

@@ -89,6 +89,11 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
 
   if (mFP != 0) {
     fprintf(mFP, "AST dump for %s after pass %s.\n", module->name, passName);
+    fprintf(mFP, "Module use list: ");
+    for_vector(ModuleSymbol, usedMod, module->modUseList) {
+      fprintf(mFP, "%s ", usedMod->name);
+    }
+    fprintf(mFP, "\n");
   }
 
   return (mFP != 0) ? true : false;

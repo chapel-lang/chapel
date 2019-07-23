@@ -177,7 +177,7 @@ sub usage
     print "  trace-file(s) may include any mix of ${tool_prefix_mc} trace files and local memory reports\n";
     if ($tool_prefix eq "upc" && !$h2mhelp) {
         print <<EOF;
-For detailed documentation, please see man upc_trace(1) or http://upc.lbl.gov/docs/
+For detailed documentation, please see man upc_trace(1) or https://upc.lbl.gov/docs/
 EOF
     }
     print <<EOF;

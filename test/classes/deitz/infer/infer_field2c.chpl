@@ -9,7 +9,7 @@ proc foo() {
 
   while c != nil {
     s.append(c.result);
-    c = next_foo(c);
+    c = next_foo(c!);
   }
 
   delete cc;

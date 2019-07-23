@@ -61,13 +61,13 @@ proc test3() {
 }
 test3();
 
-proc acceptst2(args: (owned C, owned C)) {
+proc acceptst2(args: (owned C?, owned C?)) {
   acceptst(args);
 }
 
 proc test4() {
-  var a = new owned C(1);
-  var b = new owned C(1);
+  var a: owned C? = new owned C(1);
+  var b: owned C? = new owned C(1);
 
   writeln("test4");
   acceptst2( (a, b) );

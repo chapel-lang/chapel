@@ -2224,7 +2224,7 @@ isBoundedIterator(FnSymbol* fn) {
 static void getIteratorChildren(Vec<Type*>& children, Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     forv_Vec(AggregateType, child, at->dispatchChildren) {
-      if (child != dtObject) {
+      if (child && child != dtObject) {
         children.add_exclusive(child);
         getIteratorChildren(children, child);
       }

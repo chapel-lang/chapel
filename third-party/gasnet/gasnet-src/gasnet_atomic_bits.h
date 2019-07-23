@@ -175,7 +175,7 @@
          There are no surviving examples, however the SPARC7 and
          PA-RISC code (removed after GASNet-1.22.0) were good examples.
 
-   SEE ALSO: http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1607
+   SEE ALSO: https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1607
  */
 
 /* ------------------------------------------------------------------------------------ */
@@ -1664,7 +1664,7 @@
               "add      %0,%3,%1   \n\t" /* newval = oldval + op; */
               "casx     [%4],%0,%1 \n\t" /* if (*addr == oldval) SWAP(*addr,newval); else newval = *addr; */
               "cmp      %0, %1     \n\t" /* check if newval == oldval (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %1, %0     "     /* oldval = newval; (branch delay slot, annulled if not taken) */
               : "=&r"(_oldval), "=&r"(_newval), "=m"(_v->gasneti_ctr)
               : "rI"(_op), "r"(_addr), "m"(_v->gasneti_ctr) );
@@ -1683,7 +1683,7 @@
               "ldx      [%4],%0    \n\t" /* oldval = *addr; */
               "casx     [%4],%0,%1 \n\t" /* if (*addr == oldval) SWAP(*addr,tmp); else tmp = *addr; */
               "cmp      %0, %1     \n\t" /* check if tmp == oldval (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %3, %1     "     /* tmp = newval; (branch delay slot, annulled if not taken) */
               : "=&r"(_oldval), "=&r"(_tmp), "=m"(_v->gasneti_ctr)
               : "r"(_newval), "r"(_addr), "m"(_v->gasneti_ctr) );
@@ -1700,13 +1700,21 @@
           #define gasneti_atomic64_init(v)       { (v) }
           GASNETI_INLINE(_gasneti_atomic64_set)
           void _gasneti_atomic64_set(gasneti_atomic64_t *_p, uint64_t _v) {
+          #if PLATFORM_OS_SOLARIS // Bug 3797
+            __asm__ __volatile__ ( "std	%1, %0" : "=m"(_p->gasneti_ctr) : "U!f"(_v) );
+          #else
             __asm__ __volatile__ ( "std	%1, %0" : "=m"(_p->gasneti_ctr) : "U"(_v) );
+          #endif
 	  }
           #define _gasneti_atomic64_set _gasneti_atomic64_set
           GASNETI_INLINE(_gasneti_atomic64_read)
           uint64_t _gasneti_atomic64_read(gasneti_atomic64_t *_p) {
 	    GASNETI_ASM_REGISTER_KEYWORD uint64_t _retval;
+          #if PLATFORM_OS_SOLARIS // Bug 3797
+            __asm__ __volatile__ ( "ldd	%1, %0" : "=U!f"(_retval) : "m"(_p->gasneti_ctr) );
+          #else
             __asm__ __volatile__ ( "ldd	%1, %0" : "=U"(_retval) : "m"(_p->gasneti_ctr) );
+          #endif
 	    return _retval;
 	  }
           #define _gasneti_atomic64_read _gasneti_atomic64_read
@@ -1748,7 +1756,7 @@
               "ldx      [%6],%2    \n\t" /* tmp2 = *addr; */
               "casx     [%6],%2,%1 \n\t" /* if (*addr == tmp2) SWAP(*addr,tmp1); else tmp1 = *addr; */
               "cmp      %2,%1      \n\t" /* check if tmp1 == tmp2 (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %3,%1      \n\t" /* tmp1 = tmp3; (branch delay slot, annulled if not taken) */
               "srlx     %1,32,%H0  \n\t" /* HI(oldval) = tmp1 >> 32 */
               "srl      %1,0,%L0   "     /* LO(oldval) = (uint32_t)tmp1 */
@@ -1772,7 +1780,7 @@
               "add      %1,%2,%3   \n\t" /* tmp3 = tmp1 + tmp2 */
               "casx     [%6],%2,%3 \n\t" /* if (*addr == tmp2) SWAP(*addr,tmp3); else tmp3 = *addr; */
               "cmp      %2,%3      \n\t" /* check if tmp2 == tmp3 (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %3,%2      \n\t" /* tmp2 = tmp3; (branch delay slot, annulled if not taken) */
               "srlx     %3,32,%H0  \n\t" /* HI(oldval) = tmp3 >> 32 */
               "srl      %3,0,%L0   "     /* LO(oldval) = (uint32_t)tmp3 */
@@ -1859,7 +1867,7 @@
                      "ldx      [%i0], %g4               \n\t"                           \
                      "casx     [%i0], %g4, %g1          \n\t"                           \
                      "cmp      %g4, %g1                 \n\t"                           \
-                     "bne,a,pn %icc, .LGN001            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN001            \n\t"                           \
                      "  mov    %i1, %g1                 \n\t"                           \
                      "mov      %g4, %i0" )
           #define GASNETI_ATOMIC64_FETCHADD_BODY                                        \
@@ -1869,7 +1877,7 @@
                      "add      %g1, %i1, %g4            \n\t"                           \
                      "casx     [%i0], %g1, %g4          \n\t"                           \
                      "cmp      %g1, %g4                 \n\t"                           \
-                     "bne,a,pn %icc, .LGN002            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN002            \n\t"                           \
                      "  mov    %g4, %g1                 \n\t"                           \
                      "mov      %g4, %i0" )
           #define GASNETI_ATOMIC64_SPECIALS                                      \
@@ -1916,7 +1924,7 @@
                      "ldx      [%i0],%o7                \n\t"                           \
                      "casx     [%i0],%o7,%o5            \n\t"                           \
                      "cmp      %o7,%o5                  \n\t"                           \
-                     "bne,a,pn %icc, .LGN001            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN001            \n\t"                           \
                      "  mov    %g1,%o5                  \n\t"                           \
                      "srlx     %o5,32,%i0               \n\t"                           \
                      "srl      %o5,0,%i1" )
@@ -1930,7 +1938,7 @@
                      "add      %o5,%o7,%g1              \n\t"                           \
                      "casx     [%i0],%o7,%g1            \n\t"                           \
                      "cmp      %o7,%g1                  \n\t"                           \
-                     "bne,a,pn %icc, .LGN002            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN002            \n\t"                           \
                      "  mov    %g1,%o7                  \n\t"                           \
                      "srlx     %g1,32,%i0               \n\t"                           \
                      "srl      %g1,0,%i1" )

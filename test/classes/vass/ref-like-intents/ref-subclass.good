@@ -1,4 +1,4 @@
-ref-subclass.chpl:14: error: unresolved call 'procRefC(unmanaged D)'
-ref-subclass.chpl:6: note: this candidate did not match: procRefC(ref arg: unmanaged C)
-ref-subclass.chpl:14: note: because call actual argument #1 with type unmanaged D
-ref-subclass.chpl:6: note: is passed to formal 'ref arg: unmanaged C'
+ref-subclass.chpl:14: error: unresolved call 'procRefC(borrowed D?)'
+ref-subclass.chpl:6: note: this candidate did not match: procRefC(ref arg: C?)
+ref-subclass.chpl:14: note: because call actual argument #1 with type borrowed D?
+ref-subclass.chpl:6: note: is passed to formal 'ref arg: borrowed C?'

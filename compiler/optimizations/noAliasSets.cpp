@@ -571,6 +571,8 @@ bool addAlias(std::map<Symbol*, BitVec> &map,
   bool changed = false;
   std::map<Symbol*, BitVec>::iterator it = map.find(sym);
 
+  INT_ASSERT(index < bitVecSize);
+
   if (it == map.end()) {
     it = map.insert(std::make_pair(sym, makeBitVec(bitVecSize))).first;
     changed = true;
@@ -656,6 +658,7 @@ void computeNoAliasSets() {
 
   // Now compute the global alias sets for procedure arguments
   size_t nAddrTakenGlobals = addrTakenGlobalsToIds.size();
+  nAddrTakenGlobals++; // add 1 since we count from 1
 
   // Compute the starting point for the sets,
   // don't worry about transitivity/propagating yet.

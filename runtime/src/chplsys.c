@@ -763,37 +763,6 @@ int chpl_sys_getNumCPUsLogical(chpl_bool accessible_only) {
 }
 
 
-//
-// Move to the last available hardware thread.  Tasking layers use
-// this to get predictable placement for comm layer polling threads,
-// in order to help manage execution resources.
-//
-void chpl_moveToLastCPU(void) {
-  //
-  // This is currently a no-op except on Linux.
-  //
-#if defined __linux__
-  {
-    cpu_set_t mask;
-    int i, cnt;
-
-    if (pthread_getaffinity_np(pthread_self(), sizeof(mask), &mask) < 0)
-      chpl_internal_error("sched_getaffinity() failed");
-
-    for (i = cnt = 0; !CPU_ISSET(i, &mask) || ++cnt < CPU_COUNT(&mask); i++)
-      ;
-
-    CPU_ZERO(&mask);
-    CPU_SET(i, &mask);
-    if (pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) < 0)
-      chpl_internal_error("sched_setaffinity() failed");
-  }
-#endif
-
-  return;
-}
-
-
 // Using a static buffer is a bad idea from the standpoint of thread-safety.
 // However, since the node name is not expected to change it is OK to
 // initialize it once and share the singleton string.

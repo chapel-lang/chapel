@@ -4,7 +4,8 @@ class C {
 
 record R {
 // private:
-  var c, c2: unmanaged C;
+  var c: unmanaged C;
+  var c2: unmanaged C?;
 // public:
   proc init(a:int, b:int) {
     writeln("R");

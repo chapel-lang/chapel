@@ -1446,14 +1446,6 @@ static chpl_bool polling_task_blocking_cq;
 
 
 //
-// These tell the state of, or give direction to, the main process
-//
-static chpl_bool can_shutdown = false;
-static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-
-
-//
 // Specialized argument type and values for the may_remote_proxy
 // argument to do_remote_put() and ..._get().
 //
@@ -2049,12 +2041,6 @@ void chpl_comm_post_mem_init(void)
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 {
   return 0;
-}
-
-
-int chpl_comm_numPollingTasks(void)
-{
-  return 1;
 }
 
 void chpl_comm_task_end(void) {
@@ -3904,7 +3890,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
+void chpl_comm_broadcast_private(int id, size_t size)
 {
   int i;
 
@@ -4023,18 +4009,11 @@ void chpl_comm_pre_task_exit(int all)
 
   if (all) {
     if (chpl_nodeID == 0) {
-      int i;
-      for (i = 0; i < chpl_numNodes; i++) {
-        if (i != chpl_nodeID) {
-          fork_shutdown(i);
-        }
+      for (int i = 1; i < chpl_numNodes; i++) {
+        fork_shutdown(i);
       }
     } else {
-      pthread_mutex_lock(&shutdown_mutex);
-      while (!can_shutdown) {
-        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
-      }
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_wait_for_shutdown();
     }
 
     chpl_comm_barrier("chpl_comm_pre_task_exit");
@@ -4297,10 +4276,7 @@ void rf_handler(gni_cq_entry_t* ev)
 
     {
       release_req_buf(req_li, req_cdi, req_rbi);
-      pthread_mutex_lock(&shutdown_mutex);
-      can_shutdown = true;
-      pthread_cond_signal(&shutdown_cond);
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_signal_shutdown();
     }
     break;
 
@@ -5286,8 +5262,7 @@ void consume_all_outstanding_cq_events(int cdi)
 
 
 void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t typeIndex,
-                   int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5306,7 +5281,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -5770,8 +5745,8 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
 
 void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
                                 c_nodeid_t src_locale, void* src_addr,
-                                size_t size, int32_t typeIndex,
-                                int32_t commID, int ln, int32_t fn)
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn)
 {
   assert(dst_addr != NULL);
   assert(src_addr != NULL);
@@ -5785,30 +5760,29 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
   }
 
   if (dst_locale == chpl_nodeID) {
-    chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, typeIndex, commID, ln, fn);
+    chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, commID, ln, fn);
   } else if (src_locale == chpl_nodeID) {
-    chpl_comm_put_unordered(src_addr, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+    chpl_comm_put_unordered(src_addr, dst_locale, dst_addr, size, commID, ln, fn);
   } else {
     // TODO use unordered ops in this case? Would have to ensure we always
     // flush GET buffer before the PUT buffer
     if (size <= MAX_UNORDERED_TRANS_SZ) {
       char buf[MAX_UNORDERED_TRANS_SZ];
-      chpl_comm_get(buf, src_locale, src_addr, size, typeIndex, commID, ln, fn);
-      chpl_comm_put(buf, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+      chpl_comm_get(buf, src_locale, src_addr, size, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, commID, ln, fn);
     } else {
       // Note, we do not expect this case to trigger, but if it does we may
       // want to do on-stmt to src locale and then transfer
       char* buf = chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-      chpl_comm_get(buf, src_locale, src_addr, size, typeIndex, commID, ln, fn);
-      chpl_comm_put(buf, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+      chpl_comm_get(buf, src_locale, src_addr, size, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, commID, ln, fn);
       chpl_mem_free(buf, 0, 0);
     }
   }
 }
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t typeIndex, int32_t commID,
-                             int ln, int32_t fn)
+                             size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_unordered(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5827,7 +5801,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -5838,8 +5812,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
 }
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t typeIndex,
-                             int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int ln, int32_t fn)
 
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_unordered(%p, %d, %p, %zd)",
@@ -5859,7 +5832,7 @@ void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -5875,8 +5848,7 @@ void chpl_comm_getput_unordered_task_fence(void) {
 
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t typeIndex,
-                   int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5895,7 +5867,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -6286,7 +6258,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t dstlocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(put_strd_cnt);
   put_strd_common(dstaddr_arg, dststrides,
@@ -6294,7 +6266,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   strd_maxHandles, local_yield,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 
@@ -6302,7 +6274,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t srclocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(get_strd_cnt);
   get_strd_common(dstaddr_arg, dststrides,
@@ -6310,7 +6282,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   strd_maxHandles, local_yield,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 
@@ -6319,8 +6291,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 //
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
   mem_region_t*          local_mr;
   mem_region_t*          remote_mr;
@@ -6349,7 +6320,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+       .iu.comm={addr, raddr, size, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -6433,8 +6404,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6444,7 +6414,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
   // it do a real nonblocking implementation, but right now we don't
   // have time.
   //
-  chpl_comm_put(addr, locale, raddr, size, typeIndex, commID, ln, fn);
+  chpl_comm_put(addr, locale, raddr, size, commID, ln, fn);
   return NULL;
 
 #if 0
@@ -6456,7 +6426,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+       .iu.comm={addr, raddr, size, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 #endif
@@ -8438,7 +8408,7 @@ void chpl_comm_statsReport(chpl_bool sum_over_locales)
     sum = chpl_comm_pstats;
     for (int li = 0; li < chpl_numNodes; li++) {
       if (li != chpl_nodeID) {
-        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
+        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), CHPL_COMM_UNKNOWN_ID, 0, -1);
 #define _PSV_SUM(psv) _PSV_ADD_FUNC(&sum.psv, _PSV_LD_FUNC(&ps.psv));
         PERFSTATS_DO_ALL(_PSV_SUM);
 #undef _PSV_SUM

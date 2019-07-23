@@ -137,9 +137,7 @@ void normalize() {
       makeExportWrapper(fn);
     }
 
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
-      fixupArrayFormals(fn);
-    }
+    fixupArrayFormals(fn);
 
     if (includesParameterizedPrimitive(fn) == true) {
       replaceFunctionWithInstantiationsOfPrimitive(fn);
@@ -860,9 +858,29 @@ class LowerIfExprVisitor : public AstVisitorTraverse
     virtual void exitIfExpr(IfExpr* node);
 };
 
+static bool isInsideDefExpr(Expr* expr) {
+  bool ret = false;
+
+  Expr* cur = expr->parentExpr;
+  while (cur != NULL) {
+    if (isDefExpr(cur)) {
+      ret = true;
+      break;
+    } else if (isBlockStmt(cur)) {
+      // OK to lower inside a BlockStmt because unlike a DefExpr we can insert
+      // temporaries.
+      break;
+    } else {
+      cur = cur->parentExpr;
+    }
+  }
+
+  return ret;
+}
+
 void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
   if (isAlive(ife) == false) return;
-  if (isDefExpr(ife->parentExpr)) return;
+  if (isInsideDefExpr(ife)) return;
   if (isLoopExpr(ife->parentExpr)) return;
 
   SET_LINENO(ife);
@@ -1055,9 +1073,10 @@ static void processManagedNew(CallExpr* newCall) {
     // This conditional avoids known cases where those expressions are
     // re-normalized.
     //
-    if (parent->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false &&
-        parent->hasFlag(FLAG_NEW_WRAPPER) == false &&
-        parent->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+    bool resolvingField = normalized && isTypeSymbol(newCall->parentSymbol);
+    if (parent->hasFlag(FLAG_NEW_WRAPPER) == false &&
+        parent->hasFlag(FLAG_COMPILER_GENERATED) == false &&
+        resolvingField == false) {
       USR_FATAL_CONT(newCall, "type in 'new' expression is missing its argument list");
     }
   }
@@ -1191,8 +1210,7 @@ static void normalizeReturns(FnSymbol* fn) {
   // Check if this function's returns are already normal.
   if (rets.size() == 1 && theRet == fn->body->body.last()) {
     if (SymExpr* se = toSymExpr(theRet->get(1))) {
-      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
-          strcmp ("=",      fn->name)           ==    0 ||
+      if (strcmp ("=",      fn->name)           ==    0 ||
           strcmp ("_init",  fn->name)           ==    0||
           strcmp ("_ret",   se->symbol()->name) ==    0) {
         return;
@@ -1652,36 +1670,6 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
           } else if (SymExpr* riSpec = callUsedInRiSpec(call)) {
             restoreReduceIntentSpecCall(riSpec, call);
 
-          } else {
-            // Transform C ( ... ) into _type_construct_C ( ... )
-
-            // The old constructor-based implementation of nested types made
-            // the type constructor a method on the enclosing type. Using a
-            // method would not be allowed within an initializer because 'this'
-            // may not yet be initialized/instantiated.
-            //
-            // Instead the initializer-based implementation of nested types
-            // hoists the nested type constructor outside of the enclosing type
-            // as a standalone function, like other type constructors.
-            //
-            // This could lead to problems with resolution if a type at the
-            // same scope as the enclosing type had the same name as the nested
-            // type. E.g.:
-            //
-            //   class Node {}
-            //   class List {
-            //     var n : Node; // which _type_construct_Node ?
-            //     class Node {}
-            //   }
-            //
-            // To work around this, use a SymExpr pointing to the type
-            // constructor we know to be correct.
-            if (at->hasInitializers()) {
-              se->replace(new SymExpr(at->typeConstructor));
-            } else {
-              const char* name = at->typeConstructor->name;
-              se->replace(new UnresolvedSymExpr(name));
-            }
           }
         }
       }
@@ -1699,7 +1687,7 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
 // We want to keep these reduce intents in their original form
 // until we process reduce intents later.
 //
-// We do it here to avoid transforming it into _type_construct_C ( ... ).
+// We do it here to avoid transforming it into a type constructor call.
 // That would be incorrect because this is a special syntax for reduce intent.
 //
 static SymExpr* callUsedInRiSpec(Expr* call) {
@@ -2398,8 +2386,7 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
       var->hasFlag(FLAG_REF_VAR)         == false &&
 
       fn->_this                          != var   && // Note 2.
-      fn->hasFlag(FLAG_INIT_COPY_FN)     == false && // Note 3.
-      fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
+      fn->hasFlag(FLAG_INIT_COPY_FN)     == false) { // Note 3.
 
     // Note that if the DefExpr is at module scope, the auto-destroy
     // for it will end up in the module deinit function.
@@ -2467,11 +2454,8 @@ static void hack_resolve_types(ArgSymbol* arg) {
         // because resolution will not be able to handle the resulting AST.
         if (CallExpr* call = toCallExpr(only)) {
           if (SymExpr* se = toSymExpr(call->baseExpr)) {
-            if (FnSymbol* fn = toFnSymbol(se->symbol())) {
-              if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-                // Set dtUnknown, causing the upcoming conditional to fail
-                type = dtUnknown;
-              }
+            if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+              type = dtUnknown;
             }
           }
         }

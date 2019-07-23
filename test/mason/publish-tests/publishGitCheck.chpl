@@ -12,10 +12,10 @@ proc main(){
   if doesGitOriginExist() == false {
     here.chdir(pwd);
     rmTree('publishCheck');
+
     writeln("Passed! Should return empty string as no repo was initialized");
     return 0;
   }
   else {
     return 1;
   }
-}

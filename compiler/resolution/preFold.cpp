@@ -117,7 +117,10 @@ Expr* preFold(CallExpr* call) {
       call->replace(retval);
 
     } else {
-      if (isLcnSymbol(symExpr->symbol()) == true) {
+      if (symExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
+          symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
+        // Type constructor calls OK
+      } else if (isLcnSymbol(symExpr->symbol()) == true) {
         baseExpr->replace(new UnresolvedSymExpr("this"));
 
         call->insertAtHead(baseExpr);
@@ -762,10 +765,13 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
         } else if (varSym                            != NULL &&
                    (intent & INTENT_FLAG_IN)         !=    0 &&
-                   varSym->isConstValWillNotChange() == true) {
+                   (varSym->isConstValWillNotChange() == true ||
+                    varSym->hasFlag(FLAG_TYPE_VARIABLE))) {
           // don't take address of outer variables declared to be const
           // (otherwise, after flattenFunctions, we will take the
-          //  address of a by-value argument).
+          //  address of a by-value argument). An outer variable might be a
+          //  type if the symbol represents a field, and taking the address of
+          //  a type does not make sense.
 
         } else {
           Expr* stmt = call->getStmtExpr();
@@ -1494,28 +1500,6 @@ static Expr* preFoldNamed(CallExpr* call) {
     }
 
 
-  } else if (call->isNamed("_type_construct__tuple") ==  true &&
-             call->isResolved()                      == false) {
-    if (SymExpr* sym = toSymExpr(call->get(1))) {
-      if (VarSymbol* var = toVarSymbol(sym->symbol())) {
-        if (var->immediate) {
-          int rank = var->immediate->int_value();
-
-          if (rank != call->numActuals() - 1) {
-            if (call->numActuals() != 2) {
-              INT_FATAL(call, "bad homogeneous tuple");
-            }
-
-            Expr* actual = call->get(2);
-
-            for (int i = 1; i < rank; i++) {
-              call->insertAtTail(actual->copy());
-            }
-          }
-        }
-      }
-    }
-
   } else if (call->isNamed("chpl__staticFastFollowCheck")  ||
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {
     if (! call->isResolved())
@@ -1642,20 +1626,38 @@ static Symbol* determineQueriedField(CallExpr* call) {
     retval = at->getField(var->immediate->v_string, false);
 
   } else {
-    Vec<ArgSymbol*> args;
+    Vec<Symbol*> args;
     int             position      = var->immediate->int_value();
-    FnSymbol*       typeConstruct = at->typeConstructor;
-    AggregateType*  source        = at->instantiatedFrom;
 
-    while (typeConstruct == NULL) {
-      typeConstruct = source->typeConstructor;
-      source        = source->instantiatedFrom;
+    if (at->symbol->hasFlag(FLAG_TUPLE)) {
+      return at->getField(position);
     }
 
-    for_formals(arg, typeConstruct) {
-      args.add(arg);
+    for_vector(Symbol, field, at->getRootInstantiation()->genericFields) {
+      args.add(field);
     }
 
+    // A PRIM_QUERY supports three forms:
+    // The first case occurs when the user exclusively used positional queries:
+    //     proc foo(arg : R(?A, ?B));
+    //     ===>
+    //     (query <integer>) for each query
+    //
+    // The second case occurs when the user wrote a named-query:
+    //     proc foo(arg : R(A=?A, B=?B));
+    //     ===>
+    //     (query <string>) for each query
+    //
+    // The third case occurs when the user wrote a mix of positional and named
+    // queries:
+    //     proc foo(arg : R(A=?A, B=?B, ?C, ?D));
+    //     ===>
+    //     (query "A")       // ?A
+    //     (query "B")       // ?B
+    //     (query "A" "B" 1) // ?C
+    //     (query "A" "B" 2) // ?D
+    // The positional arguments in this case contain a list of the named fields
+    // which are used to find the other unnamed fields.
     for (int i = 2; i < call->numActuals(); i++) {
       SymExpr*   actual = toSymExpr(call->get(i));
       VarSymbol* var    = toVarSymbol(actual->symbol());
@@ -1670,7 +1672,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
       }
     }
 
-    forv_Vec(ArgSymbol, arg, args) {
+    forv_Vec(Symbol, arg, args) {
       if (arg != NULL) {
         if (position == 1) {
           retval = at->getField(arg->name, false);
@@ -1705,15 +1707,10 @@ static bool isInstantiatedField(Symbol* field) {
       // Fully-generic types are apparently OK?
       retval = true;
     }
+  } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    retval = true;
   } else {
-    for_formals(formal, at->typeConstructor) {
-      if (strcmp(field->name, formal->name) == 0) {
-        if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-          retval = true;
-          break;
-        }
-      }
-    }
+    INT_ASSERT(false);
   }
 
   return retval;
@@ -1840,7 +1837,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   ct->fields.insertAtHead(new DefExpr(super));
 
-  ct->buildTypeConstructor();
+  ct->processGenericFields();
 
   ct->buildDefaultInitializer();
 
@@ -2151,7 +2148,7 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
 
   parent->fields.insertAtHead(new DefExpr(parentSuper));
 
-  parent->buildTypeConstructor();
+  parent->processGenericFields();
 
   parent->buildDefaultInitializer();
 

@@ -166,13 +166,13 @@ static void markGenerics() {
     } while (changed);
 }
 
-static void buildTypeConstructors() {
+static void processGenericFields() {
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    // Build the type constructor now that we know which fields are generic
+    // Build the type constructor now that we know which types are generic
     if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
       USR_FATAL_CONT(ct, "Extern classes are not supported.");
     }
-    ct->buildTypeConstructor();
+    ct->processGenericFields();
   }
 }
 
@@ -1301,6 +1301,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
       // The desired case.
       svar->outerVarSE = new SymExpr(ovar);
       insert_help(svar->outerVarSE, NULL, svar);
+      checkTypeParamTaskIntent(svar->outerVarSE);
     }
   } else {
     USR_FATAL_CONT(svar,
@@ -2002,10 +2003,6 @@ static void buildBreadthFirstModuleList(
               // itself and its immediate parent.  Therefore, if the symbol
               // is private, we will not traverse it further and will merely
               // add it to the alreadySeen map.
-              // The same goes for private uses - the symbols made available
-              // via a private use are only available to the module with the
-              // use statement, and should otherwise be treated as though they
-              // do not exist.
               useToAdd = use->applyOuterUse(source);
 
               if (useToAdd                       != NULL &&
@@ -2021,7 +2018,11 @@ static void buildBreadthFirstModuleList(
                 (*alreadySeen)[useSE->symbol()].push_back(useToAdd);
               }
 
-            } else {
+            } else if (!use->isPrivate &&
+                       useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+              // Private uses should be skipped, but should not prevent us from
+              // traversing the module in a later use of it, if that later use
+              // is not private.
               (*alreadySeen)[useSE->symbol()].push_back(use);
             }
           }
@@ -2323,11 +2324,8 @@ static void resolveUnmanagedBorrows() {
           }
         }
       }
-      // It's tempting to give type constructor calls the same
-      // treatment, but type constructors are so special;
-      // see normalizeCallToTypeConstructor which changes
-      // them to _type_construct_C e.g. and such a function won't
-      // exist for the unmanaged type.
+      // It's tempting to give type constructor calls the same treatment, but
+      // type constructors are handled separately later during resolution.
     }
 
     // fix e.g. unmanaged!
@@ -2359,6 +2357,66 @@ static void resolveUnmanagedBorrows() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void markUsedModule(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
+  // Do nothing if it's already in the set.
+  if (set.count(mod) != 0)
+    return;
+
+  // Add it to the set
+  set.insert(mod);
+
+  // Mark each used module as well
+  for_vector(ModuleSymbol, usedMod, mod->modUseList) {
+    markUsedModule(set, usedMod);
+  }
+
+  // Additionally, mark any parent modules
+  while (mod != NULL && mod->defPoint != NULL) {
+    mod = mod->defPoint->getModule();
+    if (mod != NULL)
+      markUsedModule(set, mod);
+  }
+}
+
+// Figure out if there are any modules that are not used at all.
+// If so, completely remove these modules from the tree.
+static void removeUnusedModules() {
+  std::set<ModuleSymbol*> usedModules;
+
+  markUsedModule(usedModules, stringLiteralModule);
+
+  markUsedModule(usedModules, ModuleSymbol::mainModule());
+
+  if (printModuleInitModule)
+    markUsedModule(usedModules, printModuleInitModule);
+
+  // Now remove any module not in the set
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (usedModules.count(mod) == 0) {
+      INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
+      mod->defPoint->remove();
+    }
+  }
+}
+
+static void detectUserDefinedBorrowMethods() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isMethod() && fn->name == astrBorrow) {
+      Type *thisType = fn->_this->type;
+      if (isClassLike(thisType) && 
+          !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+        USR_FATAL("Classes cannot define a method named \"borrow\"");
+      }
+    }
+  }
+}
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2382,7 +2440,7 @@ void scopeResolve() {
 
   markGenerics();
 
-  buildTypeConstructors();
+  processGenericFields();
 
   ResolveScope::destroyAstMap();
 
@@ -2395,4 +2453,8 @@ void scopeResolve() {
   cleanupExternC();
 
   resolveUnmanagedBorrows();
+
+  detectUserDefinedBorrowMethods();
+
+  removeUnusedModules();
 }

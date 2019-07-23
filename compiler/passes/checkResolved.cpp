@@ -389,7 +389,6 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
     return; // No.
 
@@ -512,18 +511,6 @@ static void checkExportedProcs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->hasFlag(FLAG_EXPORT))
       continue;
-
-    for_formals(formal, fn) {
-      if (formal->typeInfo() == dtString) {
-        USR_FATAL_CONT(fn, "exported procedures should not take arguments of "
-                       "type string, use c_string instead");
-      }
-    }
-
-    if (fn->retType == dtString) {
-      USR_FATAL_CONT(fn, "exported procedures should not return strings, use "
-                     "c_strings instead");
-    }
 
     if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
       USR_FATAL_CONT(fn, "exported procedures should not return c_array");

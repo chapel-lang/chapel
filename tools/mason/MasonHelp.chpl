@@ -150,6 +150,7 @@ proc masonSearchHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
+  writeln("    --show                      Display the manifest of a package");
   writeln();
   writeln(desc);
 }
@@ -408,8 +409,8 @@ proc masonCleanHelp() {
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln();
-}
 
+}
 
 proc masonPublishHelp(){
   writeln("Publish a package to the mason-registry repository");
@@ -423,7 +424,6 @@ proc masonPublishHelp(){
   writeln();
   writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');
 }
-
 
 proc masonDocHelp() {
   writeln("Generate documentation for a mason package using chpldoc");

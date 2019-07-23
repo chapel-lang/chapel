@@ -19,6 +19,7 @@
 
 module ChapelDistribution {
 
+  private use ChapelArray, ChapelLocks, ChapelRange;
   use LinkedLists;
 
   //
@@ -958,13 +959,6 @@ module ChapelDistribution {
     // runs the array destructor
     delete arr;
   }
-
-  // These are used in ChapelLocale.chpl. They are here to
-  // prevent an order-of-resolution issue.
-  pragma "no doc"
-  const chpl_emptyLocaleSpace: domain(1) = {1..0};
-  pragma "no doc"
-  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   // domain assignment helpers
 

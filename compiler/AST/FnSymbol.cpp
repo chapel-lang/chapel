@@ -732,16 +732,6 @@ bool FnSymbol::tagIfGeneric() {
     if (result > 0) {
       addFlag(FLAG_GENERIC);
 
-      if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-        if (AggregateType* at = toAggregateType(retType)) {
-          at->markAsGeneric();
-          if (result == 2)
-            at->markAsGenericWithDefaults();
-        }
-
-        retType->symbol->addFlag(FLAG_GENERIC);
-      }
-
       retval = true;
     }
   }
@@ -1113,12 +1103,7 @@ const char* toString(FnSymbol* fn) {
         fn = fn->instantiatedFrom;
       }
 
-      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-        // if not, make sure 'str' is built as desired
-        INT_ASSERT(strncmp("_type_construct_", fn->name, 16) == 0);
-        retval = astr(fn->name + 16);
-
-      } else if (fn->isMethod()) {
+      if (fn->isMethod()) {
         INT_ASSERT(fn->_this);
         retval = astr(toString(fn->_this->type, false), ".", fn->name);
 
@@ -1133,10 +1118,6 @@ const char* toString(FnSymbol* fn) {
     }
 
     if        (fn->hasFlag(FLAG_NO_PARENS)        == true) {
-      skipParens =  true;
-
-    } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true &&
-               fn->numFormals()                   ==    0) {
       skipParens =  true;
 
     } else if (fn->hasFlag(FLAG_MODULE_INIT)      == true &&

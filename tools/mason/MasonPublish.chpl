@@ -34,6 +34,7 @@ use Random;
  */
 proc masonPublish(args: [] string) throws {
   try! {
+
     if hasOptions(args, "-h", "--help") {
       masonPublishHelp();
       exit(0);

@@ -66,6 +66,7 @@ module ChapelStandard {
   use ChapelDynDispHack;
   use ChapelTaskData;
   use ChapelSerializedBroadcast;
+  use ExternalString;
 
   // Standard modules.
   use Assert;

@@ -591,12 +591,6 @@ for the type is ``struct stat``:
 
   writeln(getFileSize("stat-example.chpl"));
 
-Note that external record types only support assignment from records
-of matching type.  In particular, Chapel's normal mechanisms that
-perform record assignment by field name are not used for external
-records.  This restriction could be lifted in the future if considered
-useful to users.
-
 
 Opaque Types
 ------------

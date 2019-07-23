@@ -3,7 +3,7 @@ class MyClass {
 }
 
 proc test() {
-  var x: borrowed MyClass;
+  var x: borrowed MyClass?;
   writeln(x);
 }
 test();

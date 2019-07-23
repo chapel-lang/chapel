@@ -1,1 +1,0 @@
-usePollutesDueToChplStandard.chpl:9: error: unresolved access of 'real(64)' by '[1]'

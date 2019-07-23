@@ -21,7 +21,7 @@ record R {
   }
 }
 
-var d: unmanaged C;
+var d: unmanaged C?;
 writeln("start");
 {
 var c = new unmanaged C(44);

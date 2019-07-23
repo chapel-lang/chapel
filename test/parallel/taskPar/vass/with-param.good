@@ -1,0 +1,1 @@
+with-param.chpl:5: error: cannot apply a forall or task intent to a type or a param, here 'T'

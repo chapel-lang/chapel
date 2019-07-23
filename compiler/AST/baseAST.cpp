@@ -639,9 +639,29 @@ void registerModule(ModuleSymbol* mod) {
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
-    if (sym_expr->symbol())
-      if (Symbol* y = map->get(sym_expr->symbol()))
-        sym_expr->setSymbol(y);
+    if (sym_expr->symbol()) {
+      if (Symbol* y = map->get(sym_expr->symbol())) {
+        bool skip = false;
+
+        // Do not replace symbols for type constructor calls
+        //
+        // BENHARSH TODO 2019-06-20: I think we need to do this because in
+        // some cases the SymbolMap contains a mapping from the generic 'T' to
+        // an instantiation of 'T'. Is that mapping necessary?
+        CallExpr* call = toCallExpr(sym_expr->parentExpr);
+        if (call != NULL && call->baseExpr == sym_expr) {
+          if (y->getValType()->symbol->hasFlag(FLAG_TUPLE) == false &&
+              y->getValType() != dtUnknown &&
+              sym_expr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+            skip = true;
+          }
+        }
+
+        if (!skip) {
+          sym_expr->setSymbol(y);
+        }
+      }
+    }
 
 
   } else if (DefExpr* defExpr = toDefExpr(ast)) {

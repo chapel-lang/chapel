@@ -38,10 +38,10 @@ ref begin
   owned MyClass
   shared MyClass
 in begin
-  owned MyClass
+  owned MyClass?
   shared MyClass
 nil
 const in begin
-  owned MyClass
+  owned MyClass?
   shared MyClass
 nil
