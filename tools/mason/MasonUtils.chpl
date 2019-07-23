@@ -448,4 +448,3 @@ iter allFields(tomlTbl: unmanaged Toml) {
     else yield(k,v);
   }
 }
-
