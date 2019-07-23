@@ -2261,6 +2261,7 @@ module String {
 
   pragma "no doc"
   inline proc param string.toByte() param : uint(8) {
+    // The -1 argument below means to check that this is a single-byte string.
     return __primitive("ascii", this, -1);
   }
 

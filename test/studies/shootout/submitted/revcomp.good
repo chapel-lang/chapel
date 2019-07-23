@@ -1,12 +1,12 @@
 revcomp.chpl:68: In function 'initTable':
-revcomp.chpl:72: warning: ascii is deprecated - please use string.byte instead
-revcomp.chpl:72: warning: ascii is deprecated - please use string.byte instead
-revcomp.chpl:74: warning: ascii is deprecated - please use string.byte instead
-revcomp.chpl:74: warning: ascii is deprecated - please use string.byte instead
+revcomp.chpl:72: warning: ascii is deprecated - please use string.toByte or string.byte
+revcomp.chpl:72: warning: ascii is deprecated - please use string.toByte or string.byte
+revcomp.chpl:74: warning: ascii is deprecated - please use string.toByte or string.byte
+revcomp.chpl:74: warning: ascii is deprecated - please use string.toByte or string.byte
 revcomp.chpl:12: In function 'main':
-revcomp.chpl:24: warning: ascii is deprecated - please use string.byte instead
+revcomp.chpl:24: warning: ascii is deprecated - please use string.toByte or string.byte
 revcomp.chpl:48: In function 'process':
-revcomp.chpl:57: warning: ascii is deprecated - please use string.byte instead
+revcomp.chpl:57: warning: ascii is deprecated - please use string.toByte or string.byte
 >ONE Homo sapiens alu
 CGGAGTCTCGCTCTGTCGCCCAGGCTGGAGTGCAGTGGCGCGATCTCGGCTCACTGCAAC
 CTCCGCCTCCCGGGTTCAAGCGATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGATTACA

@@ -397,6 +397,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
     // is deprecated, but the deprecation is handled elsewhere.  If
     // the second argument is -1, then the string must contain exactly
     // one byte.
+    //
+    // After the deprecated cases are removed, this can be simplified
+    // to pass one param argument if the string must contain exactly
+    // one byte, or two param arguments if not.  Then we can avoid
+    // using -1 as a special value.
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
