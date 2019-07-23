@@ -2447,12 +2447,10 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   INT_ASSERT(isClass(canonicalClassType));
 
   // Now type-construct it with appropriate nilability
-  ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED,
-					   useDec);
+  ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED, useDec);
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
-  CallExpr* typeCall = new CallExpr(manager->symbol,
-				    borrowType->symbol);
+  CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
   ctx->insertAfter(typeCall);
   resolveCall(typeCall);
   Type* ret = typeCall->typeInfo();

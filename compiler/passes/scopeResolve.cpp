@@ -960,7 +960,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       if (isDecoratedClassType(sym->type)) {
         // Don't adjust already-decorated class types
       } else if (isManagedPtrType(sym->type)) {
-	// e.g. 'owned' becomes 'owned with any nilability'
+        // e.g. 'owned' becomes 'owned with any nilability'
         AggregateType* at = toAggregateType(sym->type);
         INT_ASSERT(at);
         Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
