@@ -72,10 +72,10 @@ module Sets {
     param parSafe = false;
 
     pragma "no doc"
-    var _size = 0;
+    var _lock$ = if parSafe then new _LockWrapper() else none;
 
     pragma "no doc"
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _dom: domain(eltType, parSafe=false);
 
     /*
       Initializes an empty set containing elements of the given type.
@@ -84,6 +84,8 @@ module Sets {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, param parSafe=false) {
+      this.eltType = eltType;
+      this.parSafe = parSafe;
     }
 
     /*
@@ -95,11 +97,42 @@ module Sets {
       :arg iterable: A collection of elements to add to this set.
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
-    proc init=(iterable, param parSafe=other.parSafe) {
+    proc init(type eltType, param parSafe, iterable) {
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+      this.complete();
+      //
+      // TODO: Is there a reliable way to get iterable size, here? If so, we
+      // could make a call to `requestCapacity`.
+      //
+      for x in iterable do
+        _dom.add(x);
+    }
+
+    /*
+      Initialize this set with a copy of each of the elements contained in
+      the set `other`. This set will inherit the `parSafe` value of the
+      set `other`.
+
+      :arg other: A set to initialize this set with.
+    */
+    proc init=(const ref other: set(?t, ?)) {
+      this.eltType = t;
+      this.parSafe = other.parSafe;
+      this.complete();
+      for x in other {
+        //
+        // TODO: Not entirely sure if this inner copy is necessary, but we
+        // want to avoid potentially locking over and over.
+        //
+        var cpy = x;
+        _dom.add(cpy);
+      }
     }
 
     pragma "no doc"
     inline proc deinit() {
+      clear();
     }
 
     pragma "no doc"
@@ -113,7 +146,7 @@ module Sets {
       if parSafe then
         _lock$.unlock();
     }
-
+ 
     /*
       Add a copy of the element `x` to this set. Does nothing if this set
       already contains an element equal to the value of `x`.
@@ -121,7 +154,9 @@ module Sets {
       :arg x: The element to add to this set.
     */
     proc add(in x: eltType) {
-      return;
+      _enter();
+      _dom.add(x);
+      _leave();
     }
 
     /*
@@ -132,7 +167,10 @@ module Sets {
       :return: Whether or not the given element is a member of this set.
     */
     proc const contains(const ref x: eltType): bool {
-      return false;
+      _enter();
+      var result = _dom.contains(x);
+      _leave();
+      return result;
     }
 
     /*
@@ -143,7 +181,17 @@ module Sets {
       :return: Whether or not this set and `other` are disjoint.
     */
     proc const isDisjoint(const ref other: set(eltType, ?)): bool {
-      return false;
+      _enter();
+
+      var result = true;
+      forall x in other do
+        // TODO: Can we insert a break in a forall statement?
+        if !_dom.contains(x) then 
+          result = false;
+
+      _leave();
+
+      return result;
     }
 
     /*
@@ -154,7 +202,7 @@ module Sets {
       :return: Whether or not this set and `other` intersect.
     */
     proc const isIntersecting(const ref other: set(eltType, ?)): bool {
-      return false;
+      return !isDisjoint(other);
     }
 
     /*
@@ -170,7 +218,20 @@ module Sets {
       :throws IllegalArgumentError: If the list contains no such element.
     */
     proc remove(const ref x: eltType): eltType throws {
-      return;
+      _enter();
+
+      if !contains(x) {
+        _leave();
+        const msg = "No such element in set: " + x:string;
+        // TODO: Replace with more appropriate error?
+        throw new owned
+          IllegalArgumentError(msg);
+      }
+
+      var result = _dom.remove(x);
+      _leave();
+
+      return result;
     }
 
     /*
@@ -185,7 +246,12 @@ module Sets {
       :arg x: The element to discard.
     */
     proc discard(const ref x: eltType) {
-      return;
+      _enter();
+
+      if _dom.contains(x) then
+        _dom.remove(x);
+
+      _leave();
     }
 
     /*
@@ -197,7 +263,9 @@ module Sets {
         references to the elements contained in this set.
     */
     proc clear() {
-      return;
+      _enter();
+      _dom.clear();
+      _leave();
     }
 
     /*
@@ -206,7 +274,9 @@ module Sets {
       :yields: A reference to one of the elements contained in this set.
     */
     iter these() ref {
-      return nil;
+      // TODO: How to make a parallel safe iterator?
+      for x in _dom do
+        yield x;
     }
 
     /*
@@ -215,7 +285,23 @@ module Sets {
       :arg ch: A channel to write to.
     */
     proc const writeThis(ch: channel) {
-      return;
+      _enter();
+
+      var count = 1;
+      ch <~> "[";
+
+      for x in _dom {
+        if count <= (_dom.size - 1) {
+          count += 1;
+          ch <~> x <~> ", ";
+        } else {
+          ch <~> x;
+        }
+      }
+
+      ch <~> "]";
+
+      _leave();
     }
 
     /*
@@ -225,14 +311,20 @@ module Sets {
       :rtype: `bool`
     */
     inline proc const isEmpty(): bool {
-      return false;
+      _enter();
+      var result = _dom.isEmpty();
+      _leave();
+      return result;
     }
 
     /*
       The current number of elements contained in this set.
     */
     inline proc const size {
-      return 0;
+      _enter();
+      var result = _dom.size;
+      _leave();
+      return result;
     }
 
     /*
@@ -241,7 +333,17 @@ module Sets {
       not guaranteed to follow any particular ordering.
     */
     proc const toArray(): [] eltType {
-      var result: [1..0] eltType;
+      _enter();
+      var result: [1.._dom.size] eltType;
+      var count = 1;
+
+      for x in _dom {
+        result[count] = x;
+        count += 1;
+      }
+
+      _leave();
+
       return result;
     }
 
@@ -260,7 +362,9 @@ module Sets {
     :arg rhs: The set to assign from. 
   */
   proc =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    return;
+    lhs.clear();
+    for x in rhs do
+      lhs.add(x);
   }
 
   /*
@@ -273,7 +377,15 @@ module Sets {
     :rtype: `set(?t, ?)`
   */
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
+    var result: set(t, (a.parSafe && b.parSafe));
+
+    for x in a do
+      result.add(x);
+
+    for x in b do
+      result.add(b);
+
+    return result;
   }
 
   /*
@@ -288,7 +400,7 @@ module Sets {
     :arg rhs: A set to take the union of.
   */
   proc |=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    return new set(t, false);
+    lhs = lhs | rhs;
   }
 
   /*
@@ -317,7 +429,7 @@ module Sets {
     :arg rhs: A set to take the union of.
   */
   proc +=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    return new set(t, false);
+    lhs = lhs + rhs;
   }
 
   /*
@@ -330,7 +442,13 @@ module Sets {
     :rtype: `set(?t, ?)`
   */
   proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return new set(t, false);
+    var result: set(t, (a.parSafe && b.parSafe));
+
+    for x in a do
+      if !b.contains(x) then
+        result.add(x);
+
+    return result;
   }
 
   /*
@@ -345,7 +463,7 @@ module Sets {
     :arg rhs: A set to take the difference of.
   */
   proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    return new set(t, false);
+    lhs = lhs - rhs;
   }
 
   /*
@@ -358,7 +476,13 @@ module Sets {
     :rtype: `set(?t, ?)`
   */
   proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return setIntersection(a, b);
+    var result: set(t, (a.parSafe && b.parSafe));
+
+    for x in a do
+      if b.contains(x) then
+        result.add(x);
+
+    return result;
   }
 
   /*
@@ -374,7 +498,7 @@ module Sets {
     :arg rhs: A set to take the intersection of.
   */
   proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    return new set(t, false);
+    lhs = lhs & rhs;
   }
 
   /*
@@ -387,7 +511,17 @@ module Sets {
     :rtype: `set(?t, ?)`
   */
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    return setSymmetricDiff(a, b);
+    var result: set(t, (a.parSafe && b.parSaf));
+    
+    for x in a do
+      if !b.contains(x) then
+        result.add(x);
+
+    for x in b do
+      if !a.contains(x) then
+        result.add(x);
+
+    return result;
   }
 
   /*
@@ -403,7 +537,7 @@ module Sets {
     :arg rhs: A set to take the symmetric difference of.
   */
   proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    return new set(t, false);
+    lhs = lhs ^ rhs;
   }
 
   /*
@@ -417,7 +551,16 @@ module Sets {
     :rtype: `bool`
   */
   proc ==(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
-    return false;
+    if a.size != b.size then
+      return false;
+
+    var result = true;
+
+    forall x in a do
+      if !b.contains(x) then
+        result = false;
+
+    return result;
   }
 
   /*
@@ -430,7 +573,7 @@ module Sets {
     :rtype: `bool`
   */
   proc !=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
-    return false;
+    return !(a == b);
   }
 
   /*
@@ -443,7 +586,9 @@ module Sets {
     :rtype: `bool`
   */
   proc <(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
-    return false;
+    if a.size >= b.size then
+      return false;
+    return a <= b;
   }
 
   /*
@@ -456,7 +601,17 @@ module Sets {
     :rtype: `bool`
   */
   proc <=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
-    return false;
+    if a.size > b.size then
+      return false;
+
+    var result = true;
+
+    // TODO: Do we need to guard/make result atomic here?
+    forall x in a do
+      if !b.contains(x) then
+        result = false;
+
+    return result;
   }
 
   /*
@@ -469,7 +624,9 @@ module Sets {
     :rtype: `bool`
   */
   proc >(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
-    return false;
+    if a.size <= b.size then
+      return false;
+    return a >= b;
   }
 
   /*
@@ -482,7 +639,17 @@ module Sets {
     :rtype: `bool`
   */
   proc >=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
-    return false;
+    if a.size < b.size then
+      return false;
+
+    var result = true;
+
+    // TODO: Do we need to guard/make result atomic, here?
+    forall x in a do
+      if !b.contains(x) then
+        result = false;
+
+    return result;
   }
 
 } // End module "Sets".
