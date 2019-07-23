@@ -1509,6 +1509,11 @@ module ChapelArray {
        :arg preserveInds: ``true`` if data in ``inds`` needs to be preserved.
        :type preserveInds: bool
 
+       :arg addOn: The locale where the indices should be added. Default value
+                   is ``nil`` which indicates that locale is unknown or there
+                   are more than one.
+       :type addOn: locale
+
        :returns: Number of indices added to the domain
        :rtype: int
     */
