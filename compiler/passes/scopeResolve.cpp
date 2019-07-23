@@ -2405,6 +2405,18 @@ static void removeUnusedModules() {
   }
 }
 
+static void detectUserDefinedBorrowMethods() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isMethod() && fn->name == astrBorrow) {
+      Type *thisType = fn->_this->type;
+      if (isClassLike(thisType) && 
+          !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+        USR_FATAL("Classes cannot define a method named \"borrow\"");
+      }
+    }
+  }
+}
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2441,6 +2453,8 @@ void scopeResolve() {
   cleanupExternC();
 
   resolveUnmanagedBorrows();
+
+  detectUserDefinedBorrowMethods();
 
   removeUnusedModules();
 }
