@@ -180,6 +180,7 @@ GenRet BlockStmt::codegen() {
     info->currentStackVariables.emplace_back();
 
     for_alist(node, this->body) {
+      node->codegen();
       if (CallExpr* call = toCallExpr(node)) {
         if (call->isPrimitive(PRIM_RETURN)) {
           while (info->currentStackVariables.size() > 0) {
@@ -192,7 +193,6 @@ GenRet BlockStmt::codegen() {
           }
         }
       }
-      node->codegen();
       if (DefExpr* def = toDefExpr(node)) {
         Symbol* var = def->sym;
         if (!isGlobal(var) && var->type && var->type != dtVoid && var->type != dtNothing) {
