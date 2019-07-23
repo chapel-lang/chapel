@@ -186,7 +186,7 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
-void compute_fn_call_sites(FnSymbol* fn) {
+void compute_fn_call_sites(FnSymbol* fn, bool allowChildren) {
 /* If present, fn->calledBy needs to be set up in advance.
    See the comment in compute_call_sites() */
 
@@ -215,6 +215,7 @@ void compute_fn_call_sites(FnSymbol* fn) {
           Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
 
           fn->calledBy->add(call);
+          INT_ASSERT(allowChildren);
 
           forv_Vec(FnSymbol, child, *children) {
             if (!child->calledBy)

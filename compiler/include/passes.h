@@ -102,7 +102,8 @@ void deadBlockElimination();
 
 // flattenFunctions.cpp
 void flattenNestedFunction(FnSymbol* nestedFunction);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions,
+                            bool fastCCS = false);
 
 // foralls.cpp
 void checkTypeParamTaskIntent(SymExpr* outerSE);

@@ -48,7 +48,7 @@ void flattenNestedFunction(FnSymbol* nestedFunction) {
 
     nestedFunctions.add(nestedFunction);
 
-    flattenNestedFunctions(nestedFunctions);
+    flattenNestedFunctions(nestedFunctions, true);
   }
 }
 
@@ -376,8 +376,18 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
   }
 }
 
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
-  compute_call_sites();
+static void deleteCalledby(FnSymbol* fn) {
+  if (fn->calledBy != NULL)  { delete fn->calledBy; fn->calledBy = NULL; }
+}
+static void deleteAllCalledby() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)  deleteCalledby(fn);
+}
+
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool fastCCS) {
+  if (fastCCS)
+    { if (fVerify) deleteAllCalledby(); }
+  else
+    compute_call_sites();
 
   Vec<FnSymbol*> outerFunctionSet;
   Vec<FnSymbol*> nestedFunctionSet;
@@ -405,8 +415,12 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
     change = false;
 
     forv_Vec(FnSymbol, fn, nestedFunctions) {
-      std::vector<BaseAST*> asts;
+      if (fastCCS) {
+        if (!fVerify) deleteCalledby(fn);
+        compute_fn_call_sites(fn, false);
+      }
 
+      std::vector<BaseAST*> asts;
       collect_top_asts(fn, asts);
 
       SymbolMap* uses = args_map.get(fn);
