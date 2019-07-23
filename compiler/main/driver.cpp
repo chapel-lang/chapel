@@ -542,7 +542,11 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     llvmPrintIrStageNum = llvmStageNum::BASIC;
 
-  addNameToPrintLlvmIr(arg);
+  std::vector<std::string> fNames;
+  splitString(std::string(arg), ',', fNames);
+  for (const auto& f : fNames) {
+    addNameToPrintLlvmIr(f.c_str());
+  }
 }
 
 static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
