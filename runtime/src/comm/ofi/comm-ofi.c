@@ -2365,6 +2365,10 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   CHK_TRUE(addr != NULL);
   CHK_TRUE(raddr != NULL);
 
+  if (size == 0) {
+    return;
+  }
+
   if (node == chpl_nodeID) {
     memmove(raddr, addr, size);
     return;
@@ -2392,6 +2396,10 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
   //
   CHK_TRUE(addr != NULL);
   CHK_TRUE(raddr != NULL);
+
+  if (size == 0) {
+    return;
+  }
 
   if (node == chpl_nodeID) {
     memmove(addr, raddr, size);
