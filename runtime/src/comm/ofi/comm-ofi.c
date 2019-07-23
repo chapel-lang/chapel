@@ -57,6 +57,7 @@
 #include <string.h>
 #include <sys/uio.h> /* for struct iovec */
 #include <time.h>
+#include <unistd.h>
 
 #include <rdma/fabric.h>
 #include <rdma/fi_atomic.h>
@@ -181,15 +182,32 @@ static void time_init(void);
 // Error checking
 //
 
-#define OFI_CHK_VAL(expr, wantVal)                                      \
+static void ofiErrReport(const char*, int, const char*);
+
+#define OFI_ERR(exprStr, retVal, errStr)                                \
     do {                                                                \
-      int _rc = (expr);                                                 \
-      if (_rc != wantVal) {                                             \
-        INTERNAL_ERROR_V("%s: %s", #expr, fi_strerror(- _rc));          \
+      ofiErrReport(exprStr, retVal, errStr); /* may not return */       \
+      INTERNAL_ERROR_V("OFI error: %s: %s", exprStr, errStr);           \
+    } while (0)
+
+#define OFI_CHK(expr) OFI_CHK_1(expr, FI_SUCCESS)
+
+#define OFI_CHK_1(expr, want1)                                          \
+    do {                                                                \
+      int retVal = (expr);                                              \
+      if (retVal != want1) {                                            \
+        OFI_ERR(#expr, retVal, fi_strerror(-retVal));                   \
       }                                                                 \
     } while (0)
 
-#define OFI_CHK(expr) OFI_CHK_VAL(expr, FI_SUCCESS)
+#define OFI_CHK_2(expr, retVal, want2)                                  \
+    do {                                                                \
+      retVal = (expr);                                                  \
+      if (retVal != FI_SUCCESS && retVal != want2) {                    \
+        OFI_ERR(#expr, retVal, fi_strerror(-retVal));                   \
+      }                                                                 \
+    } while (0)
+
 
 //
 // The ofi_rxm provider may return -FI_EAGAIN for read/write/send while
@@ -203,7 +221,7 @@ static void time_init(void);
   do {                                                                  \
     ssize_t _ret;                                                       \
     do {                                                                \
-      CHK_TRUE((_ret = (expr)) == 0 || _ret == -FI_EAGAIN);             \
+      OFI_CHK_2(expr, _ret, -FI_EAGAIN);                                \
       if (_ret == -FI_EAGAIN) {                                         \
         sched_yield();                                                  \
         progFnCall;                                                     \
@@ -274,6 +292,24 @@ const char* getProviderName(void) {
 //
 static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
 static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
+
+
+//
+// Is this name in the provider string?
+//
+static
+chpl_bool isInProviderName(const char* s) {
+  char* tok;
+  char* strSave;
+  for (char* pn = ofi_info->fabric_attr->prov_name;
+       (tok = strtok_r(pn, ";", &strSave)) != NULL;
+       pn = NULL) {
+    if (strcmp(s, tok) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
 
 
 ////////////////////////////////////////
@@ -347,6 +383,7 @@ pthread_t pthread_that_inited;
 
 static void init_ofi(void);
 static void init_ofiFabricDomain(void);
+static void init_ofiDoProviderChecks(void);
 static void init_ofiEp(void);
 static void init_ofiEpNumCtxs(void);
 static void init_ofiExchangeAvInfo(void);
@@ -397,6 +434,7 @@ void chpl_comm_post_task_init(void) {
 static
 void init_ofi(void) {
   init_ofiFabricDomain();
+  init_ofiDoProviderChecks();
   init_ofiEp();
   init_ofiExchangeAvInfo();
   init_ofiForMem();
@@ -477,8 +515,9 @@ void init_ofiFabricDomain(void) {
   }
 
   int ret;
-  ret = fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
-                   NULL, NULL, 0, hints, &ofi_info);
+  OFI_CHK_2(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
+                       NULL, NULL, 0, hints, &ofi_info),
+            ret, -FI_ENODATA);
 
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
@@ -521,8 +560,6 @@ void init_ofiFabricDomain(void) {
     }
   }
 
-  OFI_CHK(ret);
-
   fi_freeinfo(hints);
 
   if (verbosity >= 2) {
@@ -537,40 +574,40 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
+}
 
+
+static
+void init_ofiDoProviderChecks(void) {
   //
-  // Set provider-based controls.  So far these just have to do with the
-  // RxD utility provider which supplies RDM support for verbs.
-  // - Based on tracebacks after internal error aborts, RxD seems to
-  //   want to record an address per accessing endpoint for at least
-  //   some AVs (perhaps just those for which it handles progress?).  It
-  //   uses the AV attribute 'count' member to size the data structure
-  //   in which it stores those.  So, that member will need to account
-  //   for all transmitting endpoints.
-  // - Based on analyzing a segfault, RxD has to have a non-NULL buf arg
-  //   for fi_fetch_atomic(FI_ATOMIC_READ) even though the fi_atomic man
-  //   page says buf is ignored for that operation and may be NULL.
+  // Set/compute various provider-specific things.
   //
-  {
-    char* tok;
-    char* strSave;
-    for (char* s = ofi_info->fabric_attr->prov_name;
-         (tok = strtok_r(s, ";", &strSave)) != NULL;
-         s = NULL) {
-      if (strcmp(tok, "ofi_rxd") == 0) {
-        provCtl_sizeAvsByNumEps = true;
-        provCtl_readAmoNeedsOpnd = true;
-        break;
-      }
-    }
+  if (isInProviderName("gni")) {
+    //
+    // gni
+    //
+    // If there were questionable settings associated with the fixed
+    // heap on a Cray XC system, say something about that now.
+    //
+    emit_delayedFixedHeapMsgs();
+  } else if (isInProviderName("ofi_rxd")) {
+    //
+    // ofi_rxd (utility provider with tcp, verbs, possibly others)
+    //
+    // - Based on tracebacks after internal error aborts, RxD seems to
+    //   want to record an address per accessing endpoint for at least
+    //   some AVs (perhaps just those for which it handles progress?).
+    //   It uses the AV attribute 'count' member to size the data
+    //   structure in which it stores those.  So, that member will need
+    //   to account for all transmitting endpoints.
+    // - Based on analyzing a segfault, RxD has to have a non-NULL
+    //   buf arg for fi_fetch_atomic(FI_ATOMIC_READ) even though the
+    //   fi_atomic man page says buf is ignored for that operation
+    //   and may be NULL.
+    //
+    provCtl_sizeAvsByNumEps = true;
+    provCtl_readAmoNeedsOpnd = true;
   }
-
-  //
-  // If we're using the gni provider on a Cray XC system and there were
-  // questionable settings associated with the fixed heap, say something
-  // about that now.
-  //
-  emit_delayedFixedHeapMsgs();
 }
 
 
@@ -830,8 +867,8 @@ void init_ofiExchangeAvInfo(void) {
     size_t len = 0;
     size_t lenRma = 0;
 
-    CHK_TRUE(fi_getname(&ofi_rxEp->fid, NULL, &len) == -FI_ETOOSMALL);
-    CHK_TRUE(fi_getname(&ofi_rxEpRma->fid, NULL, &lenRma) == -FI_ETOOSMALL);
+    OFI_CHK_1(fi_getname(&ofi_rxEp->fid, NULL, &len), -FI_ETOOSMALL);
+    OFI_CHK_1(fi_getname(&ofi_rxEpRma->fid, NULL, &lenRma), -FI_ETOOSMALL);
     CHK_TRUE(len == lenRma);
 
     size_t* lens;
@@ -848,7 +885,7 @@ void init_ofiExchangeAvInfo(void) {
   char* addrs;
   size_t my_addr_len = 0;
 
-  CHK_TRUE(fi_getname(&ofi_rxEp->fid, NULL, &my_addr_len) == -FI_ETOOSMALL);
+  OFI_CHK_1(fi_getname(&ofi_rxEp->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
   CHPL_CALLOC_SZ(my_addr, 2 * my_addr_len, 1);
   OFI_CHK(fi_getname(&ofi_rxEp->fid, my_addr, &my_addr_len));
   OFI_CHK(fi_getname(&ofi_rxEpRma->fid, my_addr + my_addr_len, &my_addr_len));
@@ -983,9 +1020,10 @@ void init_ofiForAms(void) {
   //
   {
     const size_t sz = AM_MAX_MSG_SIZE;
-    const int ret = fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
-                              FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz));
-    CHK_TRUE(ret == FI_SUCCESS || ret == -FI_ENOSYS);
+    int ret;
+    OFI_CHK_2(fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
+                        FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz)),
+              ret, -FI_ENOSYS);
   }
 
   //
@@ -1309,8 +1347,7 @@ void emit_delayedFixedHeapMsgs(void) {
   // and using the gni provider.
   //
   if (chpl_numNodes <= 1
-      || getNetworkType() != networkAries
-      || strcmp(ofi_info->fabric_attr->prov_name, "gni") != 0) {
+      || getNetworkType() != networkAries) {
     return;
   }
 
@@ -3802,6 +3839,46 @@ double chpl_comm_ofi_time_get(void) {
   struct timespec _ts;
   (void) clock_gettime(CLOCK_MONOTONIC, &_ts);
   return ((double) _ts.tv_sec + (double) _ts.tv_nsec * 1e-9) - timeBase;
+}
+
+
+////////////////////////////////////////
+//
+// Error reporting
+//
+
+//
+// Here we just handle a few special cases where we think we can be
+// more informative than usual.  If we return, the usual internal
+// error message will be printed.
+//
+static
+void ofiErrReport(const char* exprStr, int retVal, const char* errStr) {
+  if (retVal == -FI_EMFILE && isInProviderName("tcp")) {
+    //
+    // The tcp provider opens a lot of files but most importantly, it
+    // opens a socket file for each connected endpoint.  Because of
+    // this, one can reach a quite reasonable open-file limit in a job
+    // running on a fairly modest number of many-core locales.  For
+    // example, we've seen extremeBlock get -FI_EMFILE with an open file
+    // limit of 1024 when run on 32 overloaded locales on a 24-core
+    // node.  Here, try to inform the user about this without getting
+    // overly technical.
+    //
+    if (2L * chpl_numNodes * numTxCtxs > sysconf(_SC_OPEN_MAX)) {
+      INTERNAL_ERROR_V(
+        "OFI error: %s: %s:\n"
+        "The program has reached the limit on the number of files it can\n"
+        "have open at once.  This may be because the product of the number\n"
+        "of locales (%d) and the communication concurrency (roughly %d) is\n"
+        "a significant fraction of the open-file limit (%ld).  That being\n"
+        "so, either setting CHPL_RT_COMM_CONCURRENCY to decrease the former\n"
+        "or using `ulimit` to increase the latter may allow the program to\n"
+        "run successfully at this scale.",
+                       exprStr, errStr, (int) chpl_numNodes, numTxCtxs,
+                       sysconf(_SC_OPEN_MAX));
+    }
+  }
 }
 
 
