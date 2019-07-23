@@ -25,7 +25,8 @@ proc main(args:[] string)
   var hashAndFileId:[1..paths.size] (Hash, int);
  
   // Compute the SHA1 sums using the external program
-  forall (id,path) in zip(paths.toArray().domain, paths) {
+  var pathsArray = paths.toArray();
+  forall (id,path) in zip(pathsArray.domain, pathsArray) {
     if verbose then
       writeln("Running sha1sum ", path);
     var sub = spawn(["sha1sum", path], stdout=PIPE);

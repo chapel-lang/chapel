@@ -38,7 +38,8 @@ proc main(args:[] string)
   var hashAndFileId:[1..paths.size] (Hash, int);
 
   // Compute the SHA1 sums using the extern calls
-  forall (id,path) in zip(paths.toArray().domain, paths) {
+  var pathsArray = paths.toArray();
+  forall (id,path) in zip(pathsArray.domain, pathsArray) {
     var mdArray:[1..20] uint(8);
     var data:string;
     var f = open(path, iomode.r);
