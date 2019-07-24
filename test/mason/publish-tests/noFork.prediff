@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+
+if 'fatal' in open('noFork.exec.out.tmp').read():
+  if 'dsklnfdsklafndsklanf' in open('noFork.exec.out.tmp').read():
+    open('noFork.exec.out.tmp', 'w').close()
+
