@@ -25,12 +25,52 @@ Class. We use :proc:`~UnitTest.runTest` to pass the tests.
 .. code-block:: chapel
 
    use UnitTest;
+    
+   // calculates factorial
+   proc factorial(x: int): int {
+     return if x == 0 then 1 else x * factorial(x-1); 
+   }
 
    proc test1(test: Test) throws {
-     test.assertTrue(True);
+     test.skipIf(factorial(0) != 1,"Base condtion is wrong in factorial");
+     test.assertTrue(factorial(5) == 120);
    }
 
    UnitTest.runTest(test1);
+
+Another Example
+
+.. code-block:: chapel
+
+   use UnitTest;
+    
+   proc celius2fahrenheit(x) {
+     return (x * 9/5)+32;
+     // we should be returning "(x: real * 9/5)+32"
+   }
+
+   proc test_temperature(test: Test) throws {
+     test.assertFalse(celius2fahrenheit(37) == 98);
+     // we were expecting 98.6 but since we missed typecasting
+     // the above function returned 98.
+   }
+
+   UnitTest.runTest(test_temperature);
+
+Output: 
+
+.. code-block:: bash
+  
+  ======================================================================
+  FAIL xyz.chpl: test_temperature()
+  ----------------------------------------------------------------------
+  AssertionError: assertFalse failed. Given expression is True
+
+  ----------------------------------------------------------------------
+  Run 1 test
+
+  FAILED failures = 1 
+
 
 *Specifying locales*
 
@@ -59,15 +99,30 @@ Class. We use :proc:`~UnitTest.runTest` to pass the tests.
 
 .. code-block:: chapel
 
-   proc test5(test: Test) throws {
-     test.dependsOn(test3);
+   use UnitTest;
+    
+   var factArray: [1..0] int;
+
+   // calculates factorial
+   proc factorial(x: int): int {
+     return if x == 0 then 1 else x * factorial(x-1); 
    }
 
-   proc test6(test: Test) throws {
-     test.dependsOn(test2, test5);
+   proc testFillFact(test: Test) throws {
+     test.skipIf(factorial(0) != 1,"Base condtion is wrong in factorial");
+     for i in 1..10 do
+       factArray.push_back(factorial(i));
    }
 
+   proc testSumFact(test: Test) throws {
+     test.dependsOn(testFillFact);
+     var s = 0;
+     for i in 1..10 do
+       s += factArray[i];
+     test.assertGreaterThan(s,0); 
+   }
 
+   UnitTest.runTest(testSumFact, testFillFact);
 
 */
 module UnitTest {
