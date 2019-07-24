@@ -65,7 +65,7 @@ void reset_ast_loc(BaseAST* destNode, astlocT astloc);
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 
 // compute call sites FnSymbol::calls
-void compute_fn_call_sites(FnSymbol* fn);
+void compute_fn_call_sites(FnSymbol* fn, bool allowVirtual = true);
 void compute_call_sites();
 
 //
