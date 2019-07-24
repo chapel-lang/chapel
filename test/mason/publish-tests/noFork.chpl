@@ -5,7 +5,7 @@ use MasonUtils;
 
 proc badDryRun() throws {
   try! {
-    dryRun('this user name has not forked the repo');
+    dryRun('DummyGitUserName');
   }
   catch e : MasonError {
     writeln(e.message());
