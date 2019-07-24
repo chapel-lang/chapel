@@ -2561,7 +2561,7 @@ static bool isTypeConstructionCall(CallExpr* call) {
       // Compiler may represent accesses of instantiated tuple components in
       // the same way as a type construction call, so skip that case here.
       //
-      // A SymExpr of dtTuple indiciates tuple type construction.
+      // A SymExpr of dtTuple indicates tuple type construction.
       // TODO: Shouldn't we see a call to 'this' as the baseExpr?
       if (se->typeInfo()->symbol->hasFlag(FLAG_TUPLE) &&
           se->typeInfo() != dtTuple) {
