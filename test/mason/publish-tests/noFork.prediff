@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
+import sys
 
+file = sys.argv[2]
 
-if 'fatal' in open('noFork.exec.out.tmp').read():
-  if 'dsklnfdsklafndsklanf' in open('noFork.exec.out.tmp').read():
-    open('noFork.exec.out.tmp', 'w').close()
+if 'fatal' in open(file).read():
+  if 'dsklnfdsklafndsklanf' in open(file).read():
+    open(file, 'w').close()
 
