@@ -35,7 +35,7 @@ typedef enum {
 } ClassTypeDecorator;
 #define NUM_DECORATED_CLASS_TYPES (11)
 #define CLASS_TYPE_MANAGEMENT_MASK (0xfc)
-#define CLASS_TYPE_NILIBILITY_MASK (0x03)
+#define CLASS_TYPE_NILABILITY_MASK (0x03)
 #define NUM_PACKED_DECORATED_TYPES 3
 
 static inline ClassTypeDecorator removeNilableFromDecorator(ClassTypeDecorator d) {
@@ -54,13 +54,13 @@ static inline ClassTypeDecorator addNilableToDecorator(ClassTypeDecorator d) {
   return (ClassTypeDecorator) tmp;
 }
 static inline bool isDecoratorUnknownNilability(ClassTypeDecorator d) {
-  return (d & CLASS_TYPE_NILIBILITY_MASK) == 0;
+  return (d & CLASS_TYPE_NILABILITY_MASK) == 0;
 }
 static inline bool isDecoratorNonNilable(ClassTypeDecorator d) {
-  return (d & CLASS_TYPE_NILIBILITY_MASK) == 1;
+  return (d & CLASS_TYPE_NILABILITY_MASK) == 1;
 }
 static inline bool isDecoratorNilable(ClassTypeDecorator d) {
-  return (d & CLASS_TYPE_NILIBILITY_MASK) == 2;
+  return (d & CLASS_TYPE_NILABILITY_MASK) == 2;
 }
 
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className);

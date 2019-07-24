@@ -1483,7 +1483,7 @@ static void resolveEnumeratedTypes() {
 ************************************** | *************************************/
 
 //
-// Convert each "proc type C.myProc() ..." to, roughtly:
+// Convert each "proc type C.myProc() ..." to, roughly:
 // "proc type any.myProc() where isSubtype(this.type, C) ..."
 //
 static void adjustTypeMethodsOnClasses() {
@@ -2268,11 +2268,11 @@ static void resolveUnmanagedBorrows() {
 
           // Compute the decorated class type
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {

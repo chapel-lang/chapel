@@ -167,7 +167,7 @@ module SharedObject {
 
     pragma "no doc"
     proc init(p : borrowed) {
-      compilerError("cannoti initialize shared from a borrow");
+      compilerError("cannot initialize shared from a borrow");
       this.init(_to_unmanaged(p));
     }
 

@@ -1054,7 +1054,7 @@ bool canCoerceTuples(Type*     actualType,
 
 /* CLASS_TYPE_BORROWED e.g. can represent any nilability,
    but this function assumes that an actual with type CLASS_TYPE_BORROWED
-   is actually the same as CLASS_TYPE_BORROWED_NOTNIL.
+   is actually the same as CLASS_TYPE_BORROWED_NONNIL.
  */
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal) {
@@ -2362,7 +2362,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     // e.g. casting pointer or numeric types.
     //
     // The following are exceptions:
-    //  * casts invoving records (e.g. owned to borrowed)
+    //  * casts involving records (e.g. owned to borrowed)
     //  * casts involving complex (e.g. imag to complex)
     //  * promoted casts
 
@@ -2561,7 +2561,7 @@ static bool isTypeConstructionCall(CallExpr* call) {
       // Compiler may represent accesses of instantiated tuple components in
       // the same way as a type construction call, so skip that case here.
       //
-      // A SymExpr of dtTuple indiciates tuple type construction.
+      // A SymExpr of dtTuple indicates tuple type construction.
       // TODO: Shouldn't we see a call to 'this' as the baseExpr?
       if (se->typeInfo()->symbol->hasFlag(FLAG_TUPLE) &&
           se->typeInfo() != dtTuple) {
@@ -3318,7 +3318,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       i++;
 
       if (i <= nPrintDetails)
-        continue; // already printed it in detal
+        continue; // already printed it in detail
 
       if (fPrintAllCandidates == false && i > nPrint) {
         USR_PRINT("and %i other candidates, use --print-all-candidates to see them",

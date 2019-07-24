@@ -320,7 +320,7 @@ module DefaultRectangular {
         // TODO: The following is somewhat of an abuse of what
         // _computeBlock() was designed for (dense ranges only; I
         // multiplied by the stride as a white lie to make it work
-        // reasonabley.  We should switch to using the RangeChunk
+        // reasonably.  We should switch to using the RangeChunk
         // library...
         coforall chunk in 0..#numChunks {
           var block = ranges;
