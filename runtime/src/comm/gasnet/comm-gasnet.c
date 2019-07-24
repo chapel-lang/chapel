@@ -771,7 +771,9 @@ static void stop_polling(chpl_bool wait) {
 
 static void set_gasnet_masterip() {
   char* chpl_launch_masterip = getenv("CHPL_LAUNCH_MASTERIP");
-  chpl_env_set("GASNET_MASTERIP", chpl_launch_masterip, 0);
+  if (chpl_launch_masterip != NULL) {
+    chpl_env_set("GASNET_MASTERIP", chpl_launch_masterip, 0);
+  }
 }
 
 static void set_max_segsize_env_var(size_t size) {
