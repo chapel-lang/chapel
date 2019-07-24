@@ -5,7 +5,6 @@ use MasonUtils;
 
 proc badDryRun() throws {
   try! {
-    
     dryRun('dsklnfdsklafndsklanf');
   }
   catch e : MasonError {
