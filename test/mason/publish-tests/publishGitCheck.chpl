@@ -6,12 +6,12 @@ use TOML;
 use MasonNew;
 
 proc main(){
-  masonNew(['mason', 'new', 'publishGitDir']);
+  masonNew(['mason', 'new', 'publishCheck']);
   var pwd = getEnv("PWD");
-  here.chdir(pwd + '/publishGitDir');
+  here.chdir(pwd + '/publishCheck');
   if doesGitOriginExist() == false {
     here.chdir(pwd);
-    rmTree('publishGitDir');
+    rmTree('publishCheck');
     writeln("Passed! Should return empty string as no repo was initialized");
     return 0;
   }
