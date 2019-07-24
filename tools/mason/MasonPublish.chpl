@@ -35,9 +35,9 @@ use Random;
 proc masonPublish(args: [] string) throws {
   try! {
     if hasOptions(args, "-h", "--help") {
-	      masonPublishHelp();
-	      exit(0);
-	  }
+      masonPublishHelp();
+      exit(0);
+    }
     if args.size == 4 {
       masonPublishHelp();
       exit(0);
