@@ -544,8 +544,8 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
 
   std::vector<std::string> fNames;
   splitString(std::string(arg), ',', fNames);
-  for (const auto& f : fNames) {
-    addNameToPrintLlvmIr(f.c_str());
+  for (std::size_t i = 0; i < fNames.size(); ++i) {
+    addNameToPrintLlvmIr(fNames[i].c_str());
   }
 }
 
