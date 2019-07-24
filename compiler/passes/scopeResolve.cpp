@@ -1483,7 +1483,7 @@ static void resolveEnumeratedTypes() {
 ************************************** | *************************************/
 
 //
-// Convert each "proc type C.myProc() ..." to, roughtly:
+// Convert each "proc type C.myProc() ..." to, roughly:
 // "proc type any.myProc() where isSubtype(this.type, C) ..."
 //
 static void adjustTypeMethodsOnClasses() {
@@ -2268,11 +2268,11 @@ static void resolveUnmanagedBorrows() {
 
           // Compute the decorated class type
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
@@ -2405,6 +2405,18 @@ static void removeUnusedModules() {
   }
 }
 
+static void detectUserDefinedBorrowMethods() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isMethod() && fn->name == astrBorrow) {
+      Type *thisType = fn->_this->type;
+      if (isClassLike(thisType) && 
+          !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+        USR_FATAL("Classes cannot define a method named \"borrow\"");
+      }
+    }
+  }
+}
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2441,6 +2453,8 @@ void scopeResolve() {
   cleanupExternC();
 
   resolveUnmanagedBorrows();
+
+  detectUserDefinedBorrowMethods();
 
   removeUnusedModules();
 }

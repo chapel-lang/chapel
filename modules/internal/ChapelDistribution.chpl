@@ -375,7 +375,7 @@ module ChapelDistribution {
 
   class BaseSparseDomImpl : BaseSparseDom {
 
-    var nnzDom = {1..nnz};
+    var nnzDom = {1..0};
 
     proc deinit() {
       // this is a bug workaround
@@ -432,6 +432,7 @@ module ChapelDistribution {
     // calculate new nnz and update it, (2) call this method, (3) add
     // indices
     inline proc _bulkGrow() {
+      const nnz  = getNNZ();
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
 
@@ -543,7 +544,11 @@ module ChapelDistribution {
     // inheritance of generic var fields.
     // var dist;
 
-    var nnz = 0; //: int;
+    /*var nnz = 0; //: int;*/
+
+    proc getNNZ(): int {
+      halt("nnz queried on base class");
+    }
 
     proc deinit() {
       // this is a bug workaround
@@ -569,8 +574,8 @@ module ChapelDistribution {
     //basic DSI functions
     proc dsiDim(d: int) { return parentDom.dim(d); }
     proc dsiDims() { return parentDom.dims(); }
-    proc dsiNumIndices { return nnz; }
-    proc dsiSize { return nnz; }
+    proc dsiNumIndices { return getNNZ(); }
+    proc dsiSize { return getNNZ(); }
     proc dsiLow { return parentDom.low; }
     proc dsiHigh { return parentDom.high; }
     proc dsiStride { return parentDom.stride; }

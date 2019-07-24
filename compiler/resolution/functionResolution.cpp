@@ -1054,7 +1054,7 @@ bool canCoerceTuples(Type*     actualType,
 
 /* CLASS_TYPE_BORROWED e.g. can represent any nilability,
    but this function assumes that an actual with type CLASS_TYPE_BORROWED
-   is actually the same as CLASS_TYPE_BORROWED_NOTNIL.
+   is actually the same as CLASS_TYPE_BORROWED_NONNIL.
  */
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal) {
@@ -2223,6 +2223,7 @@ void resolveDestructor(AggregateType* at) {
 
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
+static bool resolveClassBorrowMethod(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2275,6 +2276,9 @@ void resolveCall(CallExpr* call) {
       return;
 
     if (resolveBuiltinCastCall(call))
+      return;
+
+    if (resolveClassBorrowMethod(call))
       return;
 
     resolveNormalCall(call);
@@ -2358,7 +2362,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     // e.g. casting pointer or numeric types.
     //
     // The following are exceptions:
-    //  * casts invoving records (e.g. owned to borrowed)
+    //  * casts involving records (e.g. owned to borrowed)
     //  * casts involving complex (e.g. imag to complex)
     //  * promoted casts
 
@@ -2465,6 +2469,50 @@ static bool resolveBuiltinCastCall(CallExpr* call)
   return false;
 }
 
+static bool resolveClassBorrowMethod(CallExpr* call) {
+  if (isUnresolvedSymExpr(call->baseExpr)) {
+    if (call->numActuals() == 2) { //mt, this
+      if (call->isNamedAstr(astrBorrow) && dtMethodToken == call->get(1)->typeInfo()) {
+        Type *t = call->get(2)->getValType();
+        if (isClassLike(t)) {
+          CallExpr *pe = toCallExpr(call->parentExpr);
+          INT_ASSERT(call->methodTag && pe && pe->baseExpr == call);
+
+          // if the class is nilable the borrow should be too
+          ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
+          if (isDecoratorNilable(classTypeDecorator(t))) {
+            d = CLASS_TYPE_BORROWED_NILABLE;
+          }
+
+          // this works around a compiler bug
+          AggregateType *at = toAggregateType(canonicalDecoratedClassType(t));
+          Type *newType = at->getDecoratedClass(d);
+
+          // make the call a PRIM_CAST
+          call->baseExpr->remove();
+          call->primitive = primitives[PRIM_CAST];
+
+          call->get(1)->remove();  //remove method token
+          Expr *receiver = call->get(1)->remove(); // remove `this`
+
+          // add arguments to PRIM_CAST
+          call->insertAtTail(newType->symbol);
+          call->insertAtTail(receiver);
+
+          // put the cast before the parent
+          pe->insertBefore(call->remove());
+
+          //make parent noop
+          pe->convertToNoop();
+
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -2513,7 +2561,7 @@ static bool isTypeConstructionCall(CallExpr* call) {
       // Compiler may represent accesses of instantiated tuple components in
       // the same way as a type construction call, so skip that case here.
       //
-      // A SymExpr of dtTuple indiciates tuple type construction.
+      // A SymExpr of dtTuple indicates tuple type construction.
       // TODO: Shouldn't we see a call to 'this' as the baseExpr?
       if (se->typeInfo()->symbol->hasFlag(FLAG_TUPLE) &&
           se->typeInfo() != dtTuple) {
@@ -3270,7 +3318,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       i++;
 
       if (i <= nPrintDetails)
-        continue; // already printed it in detal
+        continue; // already printed it in detail
 
       if (fPrintAllCandidates == false && i > nPrint) {
         USR_PRINT("and %i other candidates, use --print-all-candidates to see them",
