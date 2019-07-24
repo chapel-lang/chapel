@@ -769,6 +769,11 @@ static void stop_polling(chpl_bool wait) {
   }
 }
 
+static void set_gasnet_masterip() {
+  char* chpl_launch_masterip = getenv("CHPL_LAUNCH_MASTERIP");
+  chpl_env_set("GASNET_MASTERIP", chpl_launch_masterip, 0);
+}
+
 static void set_max_segsize_env_var(size_t size) {
   chpl_env_set_uint("GASNET_MAX_SEGSIZE", size, 1);
 }
@@ -801,6 +806,7 @@ static void set_num_comm_domains() {
 void chpl_comm_init(int *argc_p, char ***argv_p) {
 //  int status; // Some compilers complain about unused variable 'status'.
 
+  set_gasnet_masterip();
   set_max_segsize();
   set_num_comm_domains();
   setup_polling();
