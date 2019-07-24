@@ -1609,20 +1609,13 @@ module RadixSortHelp {
 
 pragma "no doc"
 module ShallowCopy {
-  /*
-use BlockDist;
 
-proc main() {
-  var A, B : [1..10, 1..10] int;
+  // These shallow copy functions "move" a record around
+  // (i.e. they neither swap nor call a copy initializer).
 
-  A = 1;
-  B = 5;
+  // TODO: move these out of the Sort module and/or consider
+  // language support for it.
 
-  const success = chpl__bulkTransferArray(A, {1..5, 1..5}, B, {6..10, 6..10});
-  assert(success);
-  writeln(A);
-}
-   */
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
     // Ideally this would just be
@@ -2075,7 +2068,7 @@ module TwoArrayPartitioning {
       // sort the sample
 
 
-      // TODO: make it a constant
+      // TODO: make it adjustable from the settings
       if sampleSize <= 1024*1024 {
         // base case sort, parallel OK
         msbRadixSort(start_n, start_n + sampleSize - 1,
@@ -2321,7 +2314,7 @@ module TwoArrayPartitioning {
 
       // sort the sample
 
-      // TODO: make it a constant
+      // TODO: make it adjustable in the settings
       if sampleSize <= 1024*1024 {
         // base case sort, parallel OK
         distributedPartitioningSortWithScratchSpaceBaseCase(start_n, start_n + sampleSize - 1,
