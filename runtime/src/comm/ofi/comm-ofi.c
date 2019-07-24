@@ -159,6 +159,8 @@ static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
                                     chpl_comm_taskPrvData_t*);
 static inline void checkTxCQ(struct perTxCtxInfo_t*);
 static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
+static void reportCQError(struct fid_cq*);
+
 static void waitForCntrAllTxns(struct perTxCtxInfo_t*);
 static inline uint64_t getTxCntr(struct perTxCtxInfo_t*);
 static void* allocBounceBuf(size_t);
@@ -728,9 +730,10 @@ void init_ofiEp(void) {
   // to send requests to us at once.
   //
   struct fi_cq_attr rxCqAttr = (struct fi_cq_attr)
-                               { .format = FI_CQ_FORMAT_DATA,
-                                 .size = chpl_numNodes * numWorkerTxCtxs,
-                                 .wait_obj = FI_WAIT_NONE, };
+                               { .size = chpl_numNodes * numWorkerTxCtxs,
+                                 .format = FI_CQ_FORMAT_DATA,
+                                 .wait_obj = FI_WAIT_UNSPEC,
+                                 .wait_cond = FI_CQ_COND_NONE, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &tciTab[0].av->fid, 0));
@@ -1887,7 +1890,7 @@ static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 static void amHandler(void*);
-static void processRxAmReq(struct perTxCtxInfo_t*);
+static void processRxAmReq(struct perTxCtxInfo_t*, chpl_bool);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
 static inline void amWrapExecOnBody(void*);
 static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
@@ -1962,8 +1965,11 @@ void amHandler(void* argNil) {
   //
   // Process AM requests and watch transmit responses arrive.
   //
+  const chpl_bool blockingCQ = chpl_env_rt_get_bool("COMM_OFI_BLOCKING_CQ",
+                                                    false);
+
   while (!atomic_load_bool(&amHandlersExit)) {
-    processRxAmReq(tcip);
+    processRxAmReq(tcip, blockingCQ);
 
     if (tcip->txCQ != NULL) {
       checkTxCQ(tcip);
@@ -2000,13 +2006,27 @@ void amHandler(void* argNil) {
 
 
 static
-void processRxAmReq(struct perTxCtxInfo_t* tcip) {
+void processRxAmReq(struct perTxCtxInfo_t* tcip, chpl_bool blockingCQ) {
   //
   // Process requests received on the AM request endpoint.
   //
-  const size_t maxEvents = 10;
-  struct fi_cq_data_entry cqes[maxEvents];
-  const ssize_t numEvents = readCQ(ofi_rxCQ, cqes, maxEvents);
+  struct fi_cq_data_entry cqes[5];
+  const size_t maxEvents = sizeof(cqes) / sizeof(cqes[0]);
+  ssize_t ret;
+  if (blockingCQ) {
+    CHK_TRUE((ret = fi_cq_sread(ofi_rxCQ, cqes, maxEvents, NULL, 100)) > 0
+             || ret == -FI_EAGAIN
+             || ret == -FI_EAVAIL);
+  } else {
+    CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxEvents)) > 0
+             || ret == -FI_EAGAIN
+             || ret == -FI_EAVAIL);
+  }
+  if (ret == -FI_EAVAIL) {
+    reportCQError(ofi_rxCQ);
+  }
+
+  const size_t numEvents = (ret == -FI_EAGAIN) ? 0 : ret;
 
   for (int i = 0; i < numEvents; i++) {
     if ((cqes[i].flags & FI_RECV) != 0) {
@@ -2945,34 +2965,38 @@ ssize_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
   CHK_TRUE((ret = fi_cq_read(cq, buf, count)) > 0
            || ret == -FI_EAGAIN
            || ret == -FI_EAVAIL);
-
   if (ret == -FI_EAVAIL) {
-    struct fi_cq_err_entry err = { 0 };
-    fi_cq_readerr(cq, &err, 0);
-    if (err.err == FI_ETRUNC) {
-      //
-      // This only happens when reading from the CQ associated with the
-      // inbound AM request multi-receive buffer.
-      //
-      // We ran out of inbound buffer space and a message was truncated.
-      // If the fi_setopt(FI_OPT_MIN_MULTI_RECV) worked and nobody sent
-      // anything larger than that, this shouldn't happen.  In any case,
-      // we can't recover, but let's provide some information to help
-      // aid failure analysis.
-      //
-      INTERNAL_ERROR_V("fi_cq_readerr(): AM recv buf FI_ETRUNC: "
-                       "flags %#" PRIx64 ", len %zd, olen %zd",
-                       err.flags, err.len, err.olen);
-    } else {
-      char bufProv[100];
-      (void) fi_cq_strerror(cq, err.prov_errno, err.err_data,
-                            bufProv, sizeof(bufProv));
-      INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s",
-                       err.err, bufProv);
-    }
+    reportCQError(cq);
   }
-
   return (ret == -FI_EAGAIN) ? 0 : ret;
+}
+
+
+static
+void reportCQError(struct fid_cq* cq) {
+  struct fi_cq_err_entry err = { 0 };
+  fi_cq_readerr(cq, &err, 0);
+  if (err.err == FI_ETRUNC) {
+    //
+    // This only happens when reading from the CQ associated with the
+    // inbound AM request multi-receive buffer.
+    //
+    // We ran out of inbound buffer space and a message was truncated.
+    // If the fi_setopt(FI_OPT_MIN_MULTI_RECV) worked and nobody sent
+    // anything larger than that, this shouldn't happen.  In any case,
+    // we can't recover, but let's provide some information to help
+    // aid failure analysis.
+    //
+    INTERNAL_ERROR_V("fi_cq_readerr(): AM recv buf FI_ETRUNC: "
+                     "flags %#" PRIx64 ", len %zd, olen %zd",
+                     err.flags, err.len, err.olen);
+  } else {
+    char bufProv[100];
+    (void) fi_cq_strerror(cq, err.prov_errno, err.err_data,
+                          bufProv, sizeof(bufProv));
+    INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s",
+                     err.err, bufProv);
+  }
 }
 
 
