@@ -153,9 +153,10 @@ module Sets {
 
       :arg x: The element to add to this set.
     */
-    proc add(in x: eltType) {
+    proc add(x: eltType) {
       _enter();
-      _dom.add(x);
+      var cpy = x;
+      _dom.add(cpy);
       _leave();
     }
 
