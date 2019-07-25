@@ -884,14 +884,19 @@ module String {
     proc toCodepoint(): int(32) {
       var localThis: string = this.localize();
 
-      if localThis.numCodepoints != 1 then
+      if localThis.isEmpty() then
         halt("string.toCodepoint() only accepts single-codepoint strings");
 
-      var ret: int(32);
-      for cp in localThis.codepoints() {
-        ret = cp;
-      }
-      return ret;  // Return the first and only codepoint.
+      var cp: int(32);
+      var nbytes: c_int;
+      var multibytes = localThis.buff: c_string;
+      var maxbytes = localThis.len: ssize_t;
+      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+
+      if localThis.len != nbytes:int then
+        halt("string.toCodepoint() only accepts single-codepoint strings");
+
+      return cp;
     }
 
     /*
