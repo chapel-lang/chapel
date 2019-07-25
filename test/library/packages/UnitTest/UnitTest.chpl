@@ -80,18 +80,35 @@ Output:
 
 .. code-block:: chapel
 
-   proc test2(test: Test) throws {
-     test.addNumLocales(16);
-   }
+  proc test_square(test: Test) throws {
+    test.addNumLocales(5);
+    var A: [1..numLocales] int;
+    coforall i in 0..numLocales-1 with (ref A) {
+      on Locales(i) {
+        A[i+1] = (i+1)*(i+1);
+      }
+    }
+    test.assertTrue(A[5]==25);
+  }
 
-   proc test3(test: Test) throws {
-     test.addNumLocales(16,8);
-   }
+
+You can also specify multiple locales on which your code can run.
+
+.. code-block:: chapel
+
+  proc test3(test: Test) throws {
+    test.addNumLocales(16,8);
+  }
   
-   proc test4(test: Test) throws {
-     test.maxLocales(4);
-     test.minLocales(2);
-   }
+You can mention the range of locales using :proc:`~Test.maxLocales` and 
+:proc:`~Test.minLocales`
+
+.. code-block:: chapel
+
+  proc test4(test: Test) throws {
+    test.maxLocales(4);
+    test.minLocales(2);
+  }
 
 *Specifying Dependencies*
 
