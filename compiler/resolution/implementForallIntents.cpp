@@ -826,10 +826,10 @@ static void assertNotRecordReceiver(Symbol* ovar, Expr* ref) {
 // Find all symbols used in 'block' and defined outside of it.
 //
 // For each found symbol, see if it needs a ShadowVarSymbol.
-// If so, create one, add it to fs->shadowVariables() and to 'toReplace'.
-// Otherwise, map it to markPruned in 'toReplace'.
+// If so, create one, add it to fs->shadowVariables() and to 'outer2shadow'.
+// Otherwise, map it to markPruned in 'outer2shadow'.
 //
-// At the same time, perform the substitutions already in 'toReplace'
+// At the same time, perform the substitutions already in 'outer2shadow'
 // except markPruned.
 //
 static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
