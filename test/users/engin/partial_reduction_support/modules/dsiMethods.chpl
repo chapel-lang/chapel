@@ -81,13 +81,8 @@ iter DefaultRectangularArr.dsiPartialThese(param onlyDim,
     param tag: iterKind) where tag == iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
                                           onlyDim, otherIdx, tag=tag) {
-    /*compilerWarning("This.type ", this.type:string);*/
     if rank == 1 then
       compilerError("dsiPartialThese on 1D array");
-    /*otherIdx=createTuple(rank-1, idxType, 0:idxType);*/
-
-
-
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
 }
@@ -663,7 +658,6 @@ proc LocBlockCyclicDom.dsiPartialDomain(param exceptDim) {
 iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx) {
 
   for i in globDom.dsiLocalSubdomains(here) {
-    /*compilerWarning("Partial these on 1:", i._value.type:string);*/
     for ii in i._value.dsiPartialThese(onlyDim, otherIdx) {
       yield ii;
     }
@@ -674,7 +668,6 @@ iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   coforall i in globDom.dsiLocalSubdomains(here) {
-    /*compilerWarning("Partial these on 2:", i._value.type:string);*/
     for ii in i._value.dsiPartialThese(onlyDim, otherIdx, tag) {
       yield (i, ii);
     }
@@ -684,7 +677,6 @@ iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
 iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
-    /*compilerWarning("Partial these on 3:", followThis[1]._value.type:string);*/
     for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
         tag=tag, followThis=followThis[2]) do
       yield i;
@@ -698,7 +690,6 @@ proc LocBlockCyclicArr.clone() {
 proc LocBlockCyclicArr.dsiGetBaseDom() { return indexDom; }
 
 iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx) {
-  /*compilerWarning("LocBlockCyclicArr.dsiPartialThese 1");*/
 
   for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
       yield this(otherIdx.withIdx(onlyDim, i));
@@ -707,7 +698,6 @@ iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx) {
 
 iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
-  /*compilerWarning("LocBlockCyclicArr.dsiPartialThese 2");*/
 
   coforall i in do_dsiLocalSubdomains(indexDom) {
     for ii in i._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
@@ -718,7 +708,6 @@ iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
 
 iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
-  /*compilerWarning("LocBlockCyclicArr.dsiPartialThese 3");*/
 
     for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
         tag=tag, followThis=followThis[2]) {
@@ -731,18 +720,9 @@ iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
       __primitive("method call resolves", myElems._value, "dsiPartialThese",
                                           onlyDim, otherIdx, tag=tag) {
 
-  /*compilerWarning("LocBlockCyclicArr type :", this.type:string);*/
-  /*compilerWarning("myElems type :", this.myElems.type:string);*/
-  /*compilerWarning("myElems._value type :", this.myElems._value.type:string);*/
-
-
   for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
     yield this(otherIdx.withIdx(onlyDim, i));
   }
-
-  /*for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {*/
-    /*yield i;*/
-  /*}*/
 }
 //
 // end BlockCyclic distribution support
