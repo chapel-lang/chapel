@@ -1,10 +1,3 @@
-../../../tools/mason//SpecParser.chpl:77: In function 'readSpec':
-../../../tools/mason//SpecParser.chpl:113: warning: push_back is deprecated - please use List.extend
-../../../tools/mason//SpecParser.chpl:120: In function 'parseSpec':
-../../../tools/mason//SpecParser.chpl:143: warning: pop_front is deprecated - please use List.pop
-../../../tools/mason//SpecParser.chpl:164: warning: push_back is deprecated - please use List.extend
-../../../tools/mason//SpecParser.chpl:178: warning: push_back is deprecated - please use List.extend
-../../../tools/mason//SpecParser.chpl:185: warning: push_back is deprecated - please use List.extend
 ---------
 Spec: openblas@1.2.3%gcc@4.2.3 +hl~mpi
 Package: openblas
