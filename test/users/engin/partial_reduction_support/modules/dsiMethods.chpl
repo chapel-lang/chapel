@@ -41,7 +41,11 @@ iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
 
 iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone &&
-      __primitive("method call resolves", ranges(onlyDim), "these", tag) {
+      __primitive("method call resolves",
+                  ranges(if rank==1 then 1 else onlyDim), "these", tag) {
+
+  if rank==1 then
+    compilerError("dsiPartialThese is called on 1D domain");
 
     if !dsiPartialDomain(onlyDim).contains(otherIdx) then return;
     for i in ranges(onlyDim).these(tag) do yield i;
@@ -73,11 +77,12 @@ iter DefaultRectangularArr.dsiPartialThese(param onlyDim, otherIdx,
 }
 
 iter DefaultRectangularArr.dsiPartialThese(param onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    otherIdx,
     param tag: iterKind) where tag == iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
                                           onlyDim, otherIdx, tag=tag) {
-
+    if rank == 1 then
+      compilerError("dsiPartialThese on 1D array");
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
 }
@@ -715,8 +720,8 @@ iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
       __primitive("method call resolves", myElems._value, "dsiPartialThese",
                                           onlyDim, otherIdx, tag=tag) {
 
-  for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
-    yield i;
+  for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
+    yield this(otherIdx.withIdx(onlyDim, i));
   }
 }
 //
