@@ -1479,14 +1479,6 @@ module Bytes {
     return ret;
   }
 
-  // Can we cast anything that is castable to string to bytes, as well? What if
-  // we have an enum with some non-ascii characters?
-  // TODO does this have a significant performance impact? Should there be a
-  // BytesCasts module similar to StringCasts?
-  /*proc _cast(type t:bytes, x) {*/
-    /*return new bytes(x:string);*/
-  /*}*/
-
   /*
      The following concatenation functions return a new :record:`bytes` which is
      the result of casting the non-bytes argument to a bytes, and concatenating
