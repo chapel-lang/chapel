@@ -18,7 +18,14 @@
  */
 
 /*
-  This modules contains the implementation of the set type.
+  This module contains the implementation of the set type.
+
+  A set is a collection of unique elements.
+
+  [Paragraph about parallel invalidating references.]
+  [List of operations that may invalidate references.]
+  [Paragraph about parallel safety.]
+  [Speed of common operations.]
 */
 module Sets {
 
@@ -61,7 +68,23 @@ module Sets {
   }
 
   /*
-    A set is a...
+    A set is a collection of unique elements. If an attempt is made to add an
+    element to a set that already contains an element with an equal value, it
+    will not be added again. The set type supports a test for membership via
+    the `contains` operator, along with free functions for calculating the
+    union, difference, intersection, and symmetric difference of two sets. The
+    set type also defines the (proper) subset and (proper) superset operations
+    by overloading common comparison operators.
+
+    Sets can be iterated over, but they do not support random access. A set
+    can be default initialized (containing no elements), or it may be
+    initialized with elements that are a copy of those contained in any
+    iterator.
+
+    The set type is not parallel safe by default. For situations in which
+    such protections are desirable, parallel safety can be enabled by setting
+    `parSafe = true` in any set constructor. A set constructed from another
+    set inherits the parallel safety mode of that set by default.
   */
   record set {
 
@@ -153,10 +176,9 @@ module Sets {
 
       :arg x: The element to add to this set.
     */
-    proc add(x: eltType) {
+    proc add(in x: eltType) {
       _enter();
-      var cpy = x;
-      _dom.add(cpy);
+      const dbg = _dom.add(x);
       _leave();
     }
 
@@ -313,7 +335,7 @@ module Sets {
     */
     inline proc const isEmpty(): bool {
       _enter();
-      var result = _dom.isEmpty();
+      const result = _dom.isEmpty();
       _leave();
       return result;
     }
@@ -323,7 +345,7 @@ module Sets {
     */
     inline proc const size {
       _enter();
-      var result = _dom.size;
+      const result = _dom.size;
       _leave();
       return result;
     }
