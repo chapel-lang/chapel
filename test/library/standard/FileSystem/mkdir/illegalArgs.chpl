@@ -3,7 +3,7 @@ use FileSystem;
 proc main() throws {
   try {
     mkdir('', parents=false);
-  } catch e: IllegalArgumentError {
+  } catch e: FileNotFoundError {
     writeln(e);
   } catch e {
     writeln('wrong error thrown for parents=false:');
@@ -12,7 +12,7 @@ proc main() throws {
 
   try {
     mkdir('', parents=true);
-  } catch e: IllegalArgumentError {
+  } catch e: FileNotFoundError {
     writeln(e);
   } catch e {
     writeln('wrong error thrown for parents=true:');
