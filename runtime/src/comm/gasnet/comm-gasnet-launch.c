@@ -24,6 +24,6 @@
 void chpl_comm_preLaunch() {
   char* chpl_launch_masterip = getenv("CHPL_LAUNCH_MASTERIP");
   if (chpl_launch_masterip != NULL) {
-    chpl_env_set("GASNET_MASTERIP", chpl_launch_masterip, 0);
+    chpl_env_set("GASNET_MASTERIP", chpl_launch_masterip, 1);
   }
 }
