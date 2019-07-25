@@ -1,42 +1,53 @@
 use Sets;
 
-record testRecord {
-  var dummy: int = 0;
-}
-
-class testClass {
-  var dummy: int = 0;
-}
-
 config const testIters = 8;
 
-// Start tests in their own scope to get a tally of all destructors fired.
-var set1: set(int);
-var set2: set(testRecord);
-var set3: set(owned testClass);
-var set4: set(shared testClass);
-
-proc display(ref s) {
-  writeln("Set of ", s.eltType:string, " of size ", s.size, ":");
-  writeln(s);
+record testRecord {
+  var dummy: int = 0;
+  proc init(dummy: int=0) { this.dummy = dummy; }
 }
 
-display(set1);
-display(set2);
-display(set3);
-display(set4);
+proc _cast(type t: testRecord, x: int) {
+  return new testRecord(x);
+}
 
-addItems(set1, set2, set3, set4);
+proc doTest(type eltType) {
+  var s: set(eltType);
 
-display(set1);
-display(set2);
-display(set3);
-display(set4);
+  assert(s.size == 0);
 
-addItems(set1, set2, set3, set4);
+  for i in 1..testIters {
+    var x = i:eltType;
+    s.add(x);
+  }
 
-display(set1);
-display(set2);
-display(set3);
-display(set4);
+  assert(s.size == testIters);
+
+  for i in 1..testIters {
+    var x = i:eltType;
+    assert(s.contains(x));
+  }
+
+  for i in 1..testIters {
+    var x = i:eltType;
+    s.add(x);
+  }
+
+  assert(s.size == testIters);
+
+  for i in 1..(testIters * 2) {
+    var x = i:eltType;
+    s.add(x);
+  }
+
+  assert(s.size == (testIters * 2));
+
+  for i in 1..(testIters * 2) {
+    var x = i:eltType;
+    assert(s.contains(x));
+  }
+}
+
+doTest(int);
+doTest(testRecord);
 

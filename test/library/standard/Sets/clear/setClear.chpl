@@ -1,81 +1,68 @@
 use Sets;
 
-record testRecord {
-  var dummy: int = 0;
-  proc deinit() { writeln("Destroying testRecord!"); }
-}
-
-class testClass {
-  var dummy: int = 0;
-  proc deinit() { writeln("Destroying testClass!"); }
-}
-
 config const testIters = 8;
 
-var set1: set(int);
-var set2: set(testRecord);
-var set3: set(testClass);
-
-writeln(set1);
-writeln(set2);
-writeln(set3);
-
-proc addItems(ref set1, ref set2, ref set3) {
-  for i in 1..testIters {
-    set1.add(i);
-    var tr = new testRecord();
-    tr.dummy = i;
-    set2.add(tr);
-    var tc = new testClass();
-    tc.dummy = i;
-    set3.add(tc);
-  }
+record testRecord {
+  var dummy: int = 0;
+  proc init(dummy: int=0) { this.dummy = dummy; }
 }
 
-addItems(set1, set2, set3);
+proc _cast(type t: testRecord, x: int) {
+  return new testRecord(x);
+}
 
-writeln(set1);
-writeln(set2);
-writeln(set3);
+proc doTest(type eltType) {
+  var s1: set(eltType);
+  var s2: set(eltType);
+  var s3: set(eltType);
 
-var set4: set(int);
-var set5: set(testRecord);
-var set6: set(testClass);
+  for i in 1..testIters {
+    var x = i:eltType;
+    s1.add(x);
+  }
 
-writeln(set4);
-writeln(set5);
-writeln(set6);
+  for i in 1..(testIters * 2) {
+    var x = i:eltType;
+    s2.add(x);
+  }
 
-set4 = set1;
-set5 = set2;
-set6 = set3;
+  // Clearing a list that was on the LHS should not clear the RHS list.
+  s3 = s1;
+  s1.clear();
 
-writeln(set1);
-writeln(set2);
-writeln(set3);
-writeln(set4);
-writeln(set5);
-writeln(set6);
+  assert(s1.size == 0);
+  assert(s2.size == (testIters * 2));
+  assert(s3.size == testIters);
 
-addItems(set1, set2, set3);
-addItems(set4, set5, set6);
+  // Likewise for adding elements to a cleared list.
+  for i in 1..testIters {
+    var x = i:eltType;
+    s1.add(x);
+  }
 
-writeln(set1);
-writeln(set2);
-writeln(set3);
-writeln(set4);
-writeln(set5);
-writeln(set6);
+  assert(s1.size == testIters);
+  assert(s2.size == (testIters * 2));
+  assert(s3.size == testIters);
 
-set1.clear();
-set2.clear();
-set3.clear();
+  s2 = s3;
 
-writeln(set1);
-writeln(set2);
-writeln(set3);
-writeln(set4);
-writeln(set5);
-writeln(set6);
+  for x in s2 do
+    assert(s1.contains(x) && s3.contains(x));
 
+  s1.clear();
+
+  for i in 1..testIters {
+    var x = i:eltType;
+    assert(!s1.contains(x) && s2.contains(x) && s3.contains(x));
+  }
+
+  s1.clear();
+  s2.clear();
+  s3.clear();
+
+  assert(s1.size == s2.size == s3.size == 0);
+}
+
+doTest(int);
+doTest(testRecord);
 
