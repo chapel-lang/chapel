@@ -7,7 +7,7 @@ proc world() {
 }
 
 proc hello() {
-  writeln("Hello");
+  write("Hello");
 }
 
 proc print_helloworld() {
