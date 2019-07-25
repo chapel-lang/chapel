@@ -243,8 +243,7 @@ static
 bool symExprIsSet(SymExpr* se)
 {
   // The ref is necessary if it is for an explicit ref var
-  if (se->symbol()->hasFlag(FLAG_REF_VAR)                             &&
-      ! se->symbol()->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST) ) {
+  if (se->symbol()->hasFlag(FLAG_REF_VAR)) {
     return true;
   }
 
@@ -265,7 +264,7 @@ bool symExprIsSet(SymExpr* se)
   }
   if (defOrUse & 2) { // use
     if (symExprIsSetByUse(se))
-      return true;;
+      return true;
   }
 
   return false;

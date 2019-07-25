@@ -641,7 +641,6 @@ static void handleRef(ForallStmt* fs, ShadowVarSymbol* SR, bool isConst) {
   } else {
     SR->qual = QUAL_REF;
   }
-  SR->addFlag(FLAG_REF_VAR);
   INT_ASSERT(SR->isRef());
   if (ovar->isConstValWillNotChange())
     SR->addFlag(FLAG_REF_TO_IMMUTABLE);
@@ -954,6 +953,9 @@ static Symbol* isFieldAccess(AggregateType* recType, Expr* arg) {
     if (call->numActuals() == 2)
       if (call->get(1)->getValType() == dtMethodToken)
         // Field accesses are unresolved method calls at this point.
+        // A call to a user-defined paren-less method that shadows a field
+        // is considered a call to a field accessor and is handled like
+        // field access.
         if (UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr))
           if (Symbol* fieldSym = recType->getField(base->unresolved, false))
             return fieldSym;
@@ -990,7 +992,6 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),
                                               new SymExpr(fieldRef));
-  svar->addFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST);//to cullOverReferences
   svar->type = svarType;
   fs->shadowVariables().insertAtTail(new DefExpr(svar));
   handleOneShadowVar(fs, svar);
