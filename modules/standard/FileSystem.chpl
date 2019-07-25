@@ -1240,7 +1240,6 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
    :type parents: `bool`
 
    :throws SystemError: Thrown to describe an error if one occurs.
-   :throws IllegalArgumentError: when `name` is empty.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
   extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
