@@ -423,7 +423,7 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-use SysBasic;
+private use SysBasic;
 use SysError;
 
 /*
@@ -719,11 +719,6 @@ extern record qiovec_t {
 }
 
 pragma "no doc"
-extern type qio_file_functions_ptr_t; // pointer to function ptr struct
-pragma "no doc"
-extern type qio_file_functions_t;     // function ptr struct
-
-pragma "no doc"
 extern type qio_channel_ptr_t;
 private extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
@@ -1014,13 +1009,6 @@ private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t
 private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):syserr;
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):syserr;
 private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):syserr;
-
-// Same as qio_file_open_access in, except this time we pass though our
-// struct that will initialize the file with the appropriate functions for that FS
-pragma "no doc"
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
-                                     access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
-                                     fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 pragma "no doc"
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
@@ -5487,7 +5475,7 @@ class _channel_regexp_info {
 
 pragma "no doc"
 proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
-    ref style:iostyle, ref r:unmanaged _channel_regexp_info)
+    ref style:iostyle, r:unmanaged _channel_regexp_info)
 {
   if qio_regexp_ok(r.theRegexp) {
     if r.matchedRegexp then return;
@@ -5553,10 +5541,10 @@ pragma "no doc"
 proc channel._format_reader(
     fmt:c_string, ref cur:size_t, len:size_t, ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
-    ref r:unmanaged _channel_regexp_info,
+    ref r:unmanaged _channel_regexp_info?,
     isReadf:bool)
 {
-  if r != nil then r.hasRegexp = false;
+  if r != nil then r!.hasRegexp = false;
   if !error {
     while cur < len {
       gotConv = false;
@@ -5607,19 +5595,20 @@ proc channel._format_reader(
         } else {
           // allocate regexp info if needed
           if r == nil then r = new unmanaged _channel_regexp_info();
+          const rnn = r!;  // indicate that it is non-nil
           // clear out old data, if there is any.
-          r.clear();
+          rnn.clear();
           // Compile a regexp from the format string
           var errstr:string;
           // build a regexp out of regexp and regexp_flags
-          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length, conv.regexp_flags, conv.regexp_flags_length, /* utf8? */ true, r.theRegexp);
-          r.releaseRegexp = true;
-          if qio_regexp_ok(r.theRegexp) {
-            r.hasRegexp = true;
-            r.ncaptures = qio_regexp_get_ncaptures(r.theRegexp);
+          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length, conv.regexp_flags, conv.regexp_flags_length, /* utf8? */ true, rnn.theRegexp);
+          rnn.releaseRegexp = true;
+          if qio_regexp_ok(rnn.theRegexp) {
+            rnn.hasRegexp = true;
+            rnn.ncaptures = qio_regexp_get_ncaptures(rnn.theRegexp);
             // If there are no captures, and we don't have arguments
             // to consume, go ahead and match the regexp.
-            if r.ncaptures > 0 ||
+            if rnn.ncaptures > 0 ||
                conv.preArg1 != QIO_CONV_UNK ||
                conv.preArg2 != QIO_CONV_UNK ||
                conv.preArg3 != QIO_CONV_UNK
@@ -5629,7 +5618,7 @@ proc channel._format_reader(
               break;
             } else {
               // No args will be consumed.
-              _match_regexp_if_needed(cur, len, error, style, r);
+              _match_regexp_if_needed(cur, len, error, style, rnn);
             }
           } else {
             error = qio_format_error_bad_regexp();
@@ -5995,7 +5984,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:unmanaged _channel_regexp_info;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }
@@ -6142,7 +6131,7 @@ proc channel.writef(fmtStr:string): bool throws {
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }
@@ -6199,7 +6188,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:unmanaged _channel_regexp_info;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }
@@ -6221,16 +6210,19 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                          conv, gotConv, style, r,
                          true);
 
-          if r != nil && r.hasRegexp {
+          if r != nil {
+           const rnn = r!;  // indicate that it is non-nil
+           if (rnn.hasRegexp) {
             // We need to handle the next ncaptures arguments.
-            if i + r.ncaptures - 1 > k {
+            if i + rnn.ncaptures - 1 > k {
               err= qio_format_error_too_few_args();
             }
-            for z in 0..#r.ncaptures {
+            for z in 0..#rnn.ncaptures {
               if i+z <= argType.size {
                 argType(i+z) = QIO_CONV_SET_CAPTURE;
               }
             }
+           }
           }
         }
 
@@ -6335,18 +6327,19 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
               }
               // match it here.
               if r == nil then r = new unmanaged _channel_regexp_info();
-              r.clear();
-              r.theRegexp = t._regexp;
-              r.hasRegexp = true;
-              r.releaseRegexp = false;
-              _match_regexp_if_needed(cur, len, err, style, r);
+              const rnn = r!;  // indicate that it is non-nil
+              rnn.clear();
+              rnn.theRegexp = t._regexp;
+              rnn.hasRegexp = true;
+              rnn.releaseRegexp = false;
+              _match_regexp_if_needed(cur, len, err, style, rnn);
 
               // Set the capture groups.
               // We need to handle the next ncaptures arguments.
-              if i + r.ncaptures - 1 > k {
+              if i + rnn.ncaptures - 1 > k {
                 err = qio_format_error_too_few_args();
               }
-              for z in 0..#r.ncaptures {
+              for z in 0..#rnn.ncaptures {
                 if i+z <= argType.size {
                   argType(i+z+1) = QIO_CONV_SET_CAPTURE;
                 }
@@ -6357,9 +6350,10 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
               if r == nil {
                 err = qio_format_error_bad_regexp();
               } else {
-                _match_regexp_if_needed(cur, len, err, style, r);
+                const rnn = r!;  // indicate that it is non-nil
+                _match_regexp_if_needed(cur, len, err, style, rnn);
                 // Set args(i) to the capture at capturei.
-                if r.capturei >= r.ncaptures {
+                if rnn.capturei >= rnn.ncaptures {
                   err = qio_format_error_bad_regexp();
                 } else {
                   // We have a string in captures[capturei] and
@@ -6368,12 +6362,12 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                     // but only if it's a primitive type
                     // (so that we can avoid problems with string-to-record).
                     try {
-                      args(i) = r.capArr[r.capturei]:args(i).type;
+                      args(i) = rnn.capArr[rnn.capturei]:args(i).type;
                     } catch {
                       err = qio_format_error_bad_regexp();
                     }
                   }
-                  r.capturei += 1;
+                  rnn.capturei += 1;
                 }
               }
             } otherwise {
@@ -6438,7 +6432,7 @@ proc channel.readf(fmtStr:string) throws {
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }

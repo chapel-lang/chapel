@@ -32,7 +32,7 @@ pragma "no doc"
 class listNode {
   type eltType;
   var data: eltType;
-  var next: unmanaged listNode(eltType);
+  var next: unmanaged listNode(eltType)?;
 }
 
 
@@ -59,17 +59,18 @@ record list {
   type eltType;
   pragma "no doc"
   pragma "owned"
-  var first: unmanaged listNode(eltType);
+  var first: unmanaged listNode(eltType)?;
   pragma "no doc"
   pragma "owned"
-  var last: unmanaged listNode(eltType);
+  var last: unmanaged listNode(eltType)?;
   /*
     The number of nodes in the list.
    */
   var length: int;
 
   pragma "no doc"
-  proc init(type eltType, first : unmanaged listNode(eltType) = nil, last : unmanaged listNode(eltType) = nil) {
+  proc init(type eltType, first : unmanaged listNode(eltType)? = nil,
+                          last : unmanaged listNode(eltType)? = nil) {
     this.eltType = eltType;
     this.first = first;
     this.last = last;
@@ -98,8 +99,8 @@ record list {
   iter these() {
     var tmp = first;
     while tmp != nil {
-      yield tmp.data;
-      tmp = tmp.next;
+      yield tmp!.data;
+      tmp = tmp!.next;
     }
   }
 
@@ -108,8 +109,8 @@ record list {
    */
   proc ref append(e : eltType) {
     if last {
-      last.next = new unmanaged listNode(eltType, e);
-      last = last.next;
+      last!.next = new unmanaged listNode(eltType, e);
+      last = last!.next;
     } else {
       first = new unmanaged listNode(eltType, e);
       last = first;
@@ -206,7 +207,7 @@ record list {
   proc destroy() {
     var current = first;
     while (current != nil) {
-      var next = current.next;
+      var next = current!.next;
       delete current;
       current = next;
     }

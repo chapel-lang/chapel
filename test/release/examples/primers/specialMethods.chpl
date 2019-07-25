@@ -114,6 +114,9 @@ writeln(r.vals);
 // channel. We'll write the ``vals`` tuple between asterisks. See section
 // :ref:`readThis-writeThis-readWriteThis` for more information  on the
 // ``writeThis``, ``readThis``, and ``readWriteThis`` methods.
+
+config const filename = "tempfile.txt";
+
 proc R.writeThis(ch: channel) {
   ch.write("*", vals, "*");
 }
@@ -121,7 +124,7 @@ proc R.writeThis(ch: channel) {
 {
   // Open the file in a new block so that deinitializers
   // will close it at the end of the block
-  var f = open("tempfile.txt", iomode.cw);
+  var f = open(filename, iomode.cw);
   var ch = f.writer();
   ch.writeln(r);
 }
@@ -137,7 +140,7 @@ proc R.readThis(ch: channel) {
 }
 
 {
-  var f = open("tempfile.txt", iomode.r);
+  var f = open(filename, iomode.r);
   var ch = f.reader();
   var r2 = new R();
   ch.readln(r2);
@@ -158,16 +161,23 @@ proc R.readWriteThis(ch: channel) {
 }
 
 {
-  var chW = openwriter("tempfile.txt");
+  var chW = openwriter(filename);
   chW.writeln(r);
   chW.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openreader("tempfile.txt");
+  var chR = openreader(filename);
   chR.readln(r2);
   assert(r == r2);
   
+}
+
+// Clean up the temporary file we created earlier.
+{
+  use FileSystem;
+  if exists(filename) then
+    remove(filename);
 }
 
 /*

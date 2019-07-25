@@ -118,6 +118,10 @@ class SparseBlockDom: BaseSparseDomImpl {
     }
   }
 
+  override proc getNNZ() {
+    return + reduce ([ld in locDoms] ld.mySparseBlock.size);
+  }
+
   // TODO: For some reason I have to make all the methods for these classes primary
   // rather than secondary methods.  This doesn't seem right, but I couldn't boil
   // it down to a smaller test case in the time I spent on it.
@@ -126,7 +130,6 @@ class SparseBlockDom: BaseSparseDomImpl {
     on dist.dsiIndexToLocale(ind) {
       _retval = locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
     }
-    nnz += _retval;
     return _retval;
   }
 
@@ -200,7 +203,6 @@ class SparseBlockDom: BaseSparseDomImpl {
       _totalAdded.add(_retval);
     }
     const _retval = _totalAdded.read();
-    nnz += _retval;
     return _retval;
   }
 
@@ -297,7 +299,6 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   override proc dsiClear() {
-    nnz = 0;
     coforall locDom in locDoms do
       on locDom do
         locDom.dsiClear();

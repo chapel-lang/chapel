@@ -26,7 +26,6 @@ clean: FORCE
 	cd jemalloc && $(MAKE) clean
 	cd libunwind && $(MAKE) clean
 	cd llvm && $(MAKE) clean
-	cd massivethreads && $(MAKE) clean
 	cd qthread && $(MAKE) clean
 	cd re2 && $(MAKE) clean
 	cd fltk && $(MAKE) clean
@@ -39,7 +38,6 @@ cleanall: FORCE
 	cd jemalloc && $(MAKE) cleanall
 	cd libunwind && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
-	cd massivethreads && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
 	cd re2 && $(MAKE) cleanall
 	cd fltk && $(MAKE) cleanall
@@ -52,7 +50,6 @@ clobber: FORCE
 	cd jemalloc && $(MAKE) clobber
 	cd libunwind && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
-	cd massivethreads && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
 	cd re2 && $(MAKE) clobber
 	cd fltk && $(MAKE) clobber
@@ -76,7 +73,6 @@ HWLOC_DEPEND          := $(call find_3p_depend, $(HWLOC_DIR))
 JEMALLOC_DEPEND       := $(call find_3p_depend, $(JEMALLOC_DIR))
 LIBUNWIND_DEPEND      := $(call find_3p_depend, $(LIBUNWIND_DIR))
 LLVM_DEPEND           := $(call find_3p_depend, $(LLVM_DIR))
-MASSIVETHREADS_DEPEND := $(call find_3p_depend, $(MASSIVETHREADS_DIR))
 QTHREAD_DEPEND        := $(call find_3p_depend, $(QTHREAD_DIR))
 RE2_DEPEND            := $(call find_3p_depend, $(RE2_DIR))
 
@@ -128,11 +124,6 @@ $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	rm -rf $(LLVM_INSTALL_DIR) && rm -rf $(LLVM_BUILD_DIR)
 	cd llvm && $(MAKE)
 
-massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
-$(MASSIVETHREADS_INSTALL_DIR): $(MASSIVETHREADS_DEPEND)
-	rm -rf $(MASSIVETHREADS_INSTALL_DIR) && rm -rf $(MASSIVETHREADS_BUILD_DIR)
-	cd massivethreads && $(MAKE)
-
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first.
 ifeq ($(CHPL_MAKE_HWLOC), hwloc)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(HWLOC_INSTALL_DIR)
@@ -146,9 +137,6 @@ $(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(QTHREAD_OTHER_INSTALL_DIR_DEPS)
 	rm -rf $(QTHREAD_INSTALL_DIR) && rm -rf $(QTHREAD_BUILD_DIR)
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
-
-libhdfs3: FORCE
-	cd libhdfs3 && $(MAKE)
 
 try-re2: FORCE
 ifeq ($(wildcard $(RE2_BUILD_DIR)),)

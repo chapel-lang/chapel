@@ -6,11 +6,11 @@ class D : C {
   var y : real = 2.0;
 }
 
-proc foo(c : unmanaged C) {
+proc foo(c : unmanaged C?) {
   writeln(c);
 }
 
-var c : unmanaged C;
+var c : unmanaged C?;
 
 c = new unmanaged C();
 foo(c);

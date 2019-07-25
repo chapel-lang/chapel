@@ -17,27 +17,35 @@ module TestResult {
     var shouldStop = false;
     var separator1 = "="* 70,
         separator2 = "-"* 70;
-    // called when a test if about to run
-    proc startTest() {
+    // called when a test ran
+    proc testRan() {
       this.testsRun += 1;
     }
     
     /*Called when an error has occurred.*/
-    proc addError(test: string, errMsg: string) {
-      this.errors.push_back((test, errMsg));
+    proc addError(testName: string, fileName: string, errMsg: string) {
+      this.testRan();
+      var fileAdd = fileName + ": " + testName;
+      this.errors.push_back((fileAdd, errMsg));
     }
 
     /*called when error occured */
-    proc addFailure(test: string, errMsg: string) {
-      this.failures.push_back((test, errMsg));
+    proc addFailure(testName: string, fileName: string, errMsg: string) {
+      this.testRan();
+      var fileAdd = fileName + ": " + testName;
+      this.failures.push_back((fileAdd, errMsg));
     }
 
     /*Called when a test has completed successfully*/
-    proc addSuccess(test: string) { }
+    proc addSuccess(testName: string, fileName: string) {
+      this.testRan();
+    }
 
     /*Called when a test is skipped.*/
-    proc addSkip(test: string, reason: string) {
-      this.skipped.push_back((test, reason));
+    proc addSkip(testName: string, fileName: string, errMsg: string) {
+      this.testRan();
+      var fileAdd = fileName + ": " + testName;
+      this.skipped.push_back((fileAdd, errMsg));
     }
 
     /*Tells whether or not this result was a success.*/
@@ -75,7 +83,7 @@ module TestResult {
     proc printErrorList(flavour, errors) {
       for (test, err) in errors {
         writeln(this.separator1);
-        writeln(flavour," ",test);
+        writeln(flavour, " ", test);
         writeln(this.separator2);
         writeln(err);
       }
@@ -85,8 +93,8 @@ module TestResult {
     proc printResult() {
       var skipped = this.numSkippedTests();
       var run = this.testsRun - skipped;
-      if this.testsRun!=0 {
-        writeln("Run "+ run +" "+printTest(run));
+      if this.testsRun != 0 {
+        writeln("Run "+ run +" "+ printTest(run));
         writeln();
         var infos: [1..0](string);
         if !this.wasSuccessful() {
@@ -94,21 +102,19 @@ module TestResult {
           var failed = this.numFailedTests(),
             errored = this.numErroredTests();
           if failed then
-            infos.push_back("failures = "+failed);
+            infos.push_back("failures = " + failed);
           if errored then
-            infos.push_back("errors = "+errored);
+            infos.push_back("errors = " + errored);
         }
         else
           write("OK");
         if skipped then
-          infos.push_back("skipped = "+skipped);
+          infos.push_back("skipped = " + skipped);
         if infos.size {
           write(" ");
-          for info in infos do write(info," ");
+          for info in infos do write(info, " ");
         }
         write("\n");
-        // for value in this.failures do stdout.writeln(value);
-        // for value in this.skipped do stdout.writeln(value);
       }
       else {
         writeln("No Tests Found");

@@ -148,7 +148,14 @@ qioerr _qbytes_init_iobuf(qbytes_t* ret)
 {
   void* data = NULL;
 
-  data = qio_memalign(sys_page_size(), qbytes_iobuf_size);
+  // qbytes_iobuf_size is generally >= page size. However in
+  // some testing configurations, it is very small (e.g. 5 bytes).
+  size_t page_size = sys_page_size();
+  if (qbytes_iobuf_size >= page_size)
+    data = qio_memalign(page_size, qbytes_iobuf_size);
+  else
+    data = qio_malloc(qbytes_iobuf_size);
+
   if( !data ) return QIO_ENOMEM;
   memset(data, 0, qbytes_iobuf_size);
 

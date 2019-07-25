@@ -104,8 +104,8 @@ The following example demonstrate bundling of futures.
 
 module Futures {
 
-  use Reflection;
-  use ExplicitRefCount;
+  private use Reflection;
+  private use ExplicitRefCount;
 
   pragma "no doc"
   class FutureClass: RefCountBase {

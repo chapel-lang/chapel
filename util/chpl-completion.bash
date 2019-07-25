@@ -67,7 +67,6 @@ _chpl ()
 --help \
 --help-env \
 --help-settings \
---heterogeneous \
 --home \
 --html \
 --html-chpl-home \
@@ -189,6 +188,7 @@ _chpl ()
 --no-optimize-loop-iterators \
 --no-optimize-on-clauses \
 --no-optimize-range-iteration \
+--no-overload-sets-checks \
 --no-override-checking \
 --no-parse-only \
 --no-permit-unhandled-module-errors \
@@ -234,6 +234,7 @@ _chpl ()
 --optimize-on-clauses \
 --optimize-range-iteration \
 --output \
+--overload-sets-checks \
 --override-checking \
 --parse-only \
 --parser-debug \

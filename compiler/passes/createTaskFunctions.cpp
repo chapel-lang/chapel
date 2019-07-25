@@ -513,6 +513,7 @@ static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
                     //                 or over chpl__reduceGlob
     Symbol* var = se->symbol();
     if (marker) {
+      checkTypeParamTaskIntent(se);
       SymbolMapElem* elem = uses.get_record(var);
       if (elem) {
         elem->value = marker;

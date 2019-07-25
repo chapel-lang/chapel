@@ -390,6 +390,8 @@ all:
   05/06/19:
     - text: Enable the unordered compiler optimization by default (#12952)
       config: 16 node XC
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 
 AllCompTime:
@@ -588,8 +590,6 @@ create-views:
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
-  05/30/19:
-    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 dgemm.128:
   09/06/13:
@@ -884,6 +884,10 @@ mandelbrot-extras:
   09/21/17:
     - Restore string perf (#7416)
 
+many-to-many-puts.ml-perf:
+  06/01/19:
+    - Optimize unorderedCopy for the PUT case (#13140)
+
 memleaks:
   11/13/13:
     - Plugged the massive memory leak in fileIO.chpl
@@ -1175,8 +1179,6 @@ parOpEquals:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
   05/24/19:
     - Increased usage of initializers for domains and distributions (#13018)
-  05/30/19:
-    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 pidigits: &pidigits-base
   05/16/16:
@@ -1289,6 +1291,10 @@ regexdna-submitted:
 regexdnaredux-submitted:
   <<: *regexdna-base
 
+remote-ons.ml-perf:
+  05/17/19:
+    - Avoid comm/compute overlap for short-lived tasks (#12964)
+
 remote-record-read-copy:
   11/15/18:
     - Invoke 'init' directly for init-var instead of chpl__initCopy (#11629)
@@ -1327,10 +1333,6 @@ revcomp:
   02/05/19:
     - Make stdout, stderr ordering predictable in test output (#12236)
 
-ri-a2-AoA:
-  05/30/19:
-    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
-
 sad:
   05/03/16:
     - inconclusive due to noise
@@ -1368,8 +1370,6 @@ split-whitespace-perf:
 SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
-  05/30/19:
-    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
 
 STREAM_study_fragmented:
   09/06/13:

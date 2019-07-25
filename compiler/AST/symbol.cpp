@@ -64,6 +64,7 @@ VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
 VarSymbol *gLegacyNilClasses = NULL;
+VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
@@ -1994,6 +1995,7 @@ const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
 const char* astrPostfixBang = NULL;
+const char* astrBorrow = NULL;
 
 void initAstrConsts() {
   astrSdot    = astr(".");
@@ -2020,6 +2022,8 @@ void initAstrConsts() {
   astr_loopexpr_iter = astr("chpl__loopexpr_iter");
 
   astrPostfixBang = astr("postfix!");
+
+  astrBorrow = astr("borrow");
 }
 
 /************************************* | **************************************

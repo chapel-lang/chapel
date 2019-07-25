@@ -104,13 +104,13 @@ proc DefaultSparseDom.__private_findRowRange(r) {
   var done: atomic bool;
   begin with (ref end) {
     var found: bool;
-    (found, end) = binarySearch(indices, ((...r),endDummy), hi=nnz);
+    (found, end) = binarySearch(indices, ((...r),endDummy), hi=_nnz);
     done.write(true);
   }
   var found: bool;
-  (found, start) = binarySearch(indices, ((...r),startDummy), hi=nnz);
+  (found, start) = binarySearch(indices, ((...r),startDummy), hi=_nnz);
   done.waitFor(true);
-  return start..min(nnz,end-1);
+  return start..min(_nnz,end-1);
 }
 
 proc partialIterationDimCheck(param onlyDim, param rank) {
@@ -129,7 +129,7 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
   const otherIdxTup = chpl__tuplify(otherIdx);
 
   if onlyDim != this.rank {
-    for i in nnzDom.low..#nnz do
+    for i in nnzDom.low..#_nnz do
       if indices[i].withoutIdx(onlyDim) == otherIdxTup then 
         yield indices[i][onlyDim];
   }
@@ -155,11 +155,11 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
   if onlyDim==rank then rowRange = __private_findRowRange(otherIdxTup);
 
   const l = if onlyDim!=rank then nnzDom.low else rowRange.low;
-  const h = if onlyDim!=rank then nnzDom.low+nnz else rowRange.high;
+  const h = if onlyDim!=rank then nnzDom.low+_nnz else rowRange.high;
   const numElems = h-l+1;
   coforall t in 0..#numTasks {
     const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
-    yield (myChunk[1]..min(nnz, myChunk[2]),);
+    yield (myChunk[1]..min(_nnz, myChunk[2]),);
   }
 }
 
@@ -200,14 +200,14 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
   if onlyDim==rank then rowRange = __private_findRowRange(otherIdxTup);
 
   const l = if onlyDim!=rank then indices.domain.low else rowRange.low;
-  const h = if onlyDim!=rank then nnz else rowRange.high;
+  const h = if onlyDim!=rank then _nnz else rowRange.high;
   const numElems = h-l+1;
   if numElems <= -2 then return;
 
   if onlyDim != rank {
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-      for i in myChunk[1]..min(nnz,myChunk[2]) do
+      for i in myChunk[1]..min(_nnz,myChunk[2]) do
         if indices[i].withoutIdx(onlyDim) == otherIdxTup then
           yield indices[i][onlyDim];
     }
@@ -276,7 +276,7 @@ iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
 
   if onlyDim==1 {
     // Should we have a compiler warning about this expensive operation?
-    for i in nnzDom.low..#nnz {
+    for i in nnzDom.low..#_nnz {
       if idx[i] == otherIdx {
         const (found, loc) = binarySearch(startIdx, i);
         yield if found then loc else loc-1;
@@ -300,7 +300,7 @@ iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale;
 
   const l = if onlyDim==1 then nnzDom.low else startIdx[otherIdx];
-  const h = if onlyDim==1 then nnzDom.low+nnz-1 else stopIdx[otherIdx];
+  const h = if onlyDim==1 then nnzDom.low+_nnz-1 else stopIdx[otherIdx];
   const numElems = h-l+1;
 
   coforall t in 0..#numTasks {
@@ -344,8 +344,8 @@ iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale;
 
   if onlyDim==1 {
-    const l = nnzDom.low, h = nnzDom.low+nnz-1;
-    const numElems = nnz;
+    const l = nnzDom.low, h = nnzDom.low+_nnz-1;
+    const numElems = _nnz;
 
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);

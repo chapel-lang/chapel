@@ -549,6 +549,11 @@ static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
 }
 
 static bool considerForOuter(Symbol* sym) {
+  if (isTypeSymbol(sym->defPoint->parentSymbol)) {
+    // Fields are considered 'outer'
+    return true;
+  }
+
   if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
       sym->hasFlag(FLAG_PARAM))
     return false;  // these will be eliminated anyway
@@ -582,7 +587,15 @@ static ArgSymbol* newOuterVarArg(Symbol* ovar) {
   if (argType == dtUnknown)
     argType = dtAny;
 
-  return new ArgSymbol(INTENT_BLANK, ovar->name, argType);
+  ArgSymbol* ret = new ArgSymbol(INTENT_BLANK, ovar->name, argType);
+
+  // An argument might need to be a type variable if the outer variable is
+  // a type field.
+  if (ovar->hasFlag(FLAG_TYPE_VARIABLE)) {
+    ret->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  return ret;
 }
 
 //

@@ -10,6 +10,6 @@ class Foo {
   }
 }
 
-var foo: borrowed Foo(5); // We can make a type instantiation, but not an instance that
+var foo: borrowed Foo(5)?; // We can make a type instantiation, but not an instance that
 // will match
 writeln(foo.type:string);

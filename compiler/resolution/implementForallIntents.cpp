@@ -641,7 +641,6 @@ static void handleRef(ForallStmt* fs, ShadowVarSymbol* SR, bool isConst) {
   } else {
     SR->qual = QUAL_REF;
   }
-  SR->addFlag(FLAG_REF_VAR);
   INT_ASSERT(SR->isRef());
   if (ovar->isConstValWillNotChange())
     SR->addFlag(FLAG_REF_TO_IMMUTABLE);
@@ -795,18 +794,42 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// handle implicit vs. explicit shadow variables
+// handle implicit vs. explicit shadow variables and fields of 'this'
 //
+
+// Helper: if this is a 'this' that needs our attention, return its type.
+static AggregateType* isRecordReceiver(Symbol* sym) {
+  if (sym->hasFlag(FLAG_ARG_THIS))
+    if (Type* type = sym->type->getValType())
+      if (isRecord(type)                      &&
+          // Array-typed 'this' could be passed by ref-intent and so "pruned",
+          // see resolveShadowVarTypeIntent(). Then, there would not be
+          // a shadow variable for it and convertFieldsOfRecordReceiver()
+          // would not see it and would not do the transformations.
+          // So, skip arrays always, for consistency.
+          ! type->symbol->hasFlag(FLAG_ARRAY) )
+        return toAggregateType(type);
+  return NULL;
+}
+
+//
+// Helper: ensure that the receiver formal 'this' has a shadow variable
+// when it may be needed for convertFieldsOfRecordReceiver().
+//
+static void assertNotRecordReceiver(Symbol* ovar, Expr* ref) {
+  if (isRecordReceiver(ovar))
+    INT_FATAL(ref, "removing shadow variable for 'this'");
+}
 
 //
 // A forall-intents variation on findOuterVars() in createTaskFunctions.cpp:
 // Find all symbols used in 'block' and defined outside of it.
 //
 // For each found symbol, see if it needs a ShadowVarSymbol.
-// If so, create one, add it to fs->shadowVariables() and to 'toReplace'.
-// Otherwise, map it to markPruned in 'toReplace'.
+// If so, create one, add it to fs->shadowVariables() and to 'outer2shadow'.
+// Otherwise, map it to markPruned in 'outer2shadow'.
 //
-// At the same time, perform the substitutions already in 'toReplace'
+// At the same time, perform the substitutions already in 'outer2shadow'
 // except markPruned.
 //
 static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
@@ -828,6 +851,7 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     }
 
     if (!needsShadowVar(fs, block, sym)) { // do not convert to shadow var
+      assertNotRecordReceiver(sym, se);
       outer2shadow.put(sym, markPruned);
       continue;
     }
@@ -838,6 +862,7 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     resolveShadowVarTypeIntent(type, intent, prune); // updates the args
 
     if (prune) {                      // do not convert to shadow var
+      assertNotRecordReceiver(sym, se);
       outer2shadow.put(sym, markPruned);
       continue;
     }
@@ -906,6 +931,7 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
     resolveShadowVarTypeIntent(type, svar->intent, prune); // updates the args
 
     if (prune) {
+      assertNotRecordReceiver(svar->outerVarSym(), svar->outerVarSE);
       removeUsesOfShadowVar(svar);
     }
     else {
@@ -918,6 +944,98 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
       return; // we have processed implicit shadow vars elsewhere
     }
   }
+}
+
+// If it is a CallExpr(<something>, _mt, arg), and <something>
+// names a field in 'recType', return that field's Symbol
+static Symbol* isFieldAccess(AggregateType* recType, Expr* arg) {
+  if (CallExpr* call = toCallExpr(arg->parentExpr))
+    if (call->numActuals() == 2)
+      if (call->get(1)->getValType() == dtMethodToken)
+        // Field accesses are unresolved method calls at this point.
+        // A call to a user-defined paren-less method that shadows a field
+        // is considered a call to a field accessor and is handled like
+        // field access.
+        if (UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr))
+          if (Symbol* fieldSym = recType->getField(base->unresolved, false))
+            return fieldSym;
+  return NULL;
+}
+
+// Given a field "myField", create a shadow variable myField_SV
+// whose outer variable "myField_ref" is set up prior to 'fs':
+//   ref myField_ref = ovar.myField;
+static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
+                                               Symbol* field)
+{
+  bool isConst = ovar->isConstant() || field->isConstant();
+  VarSymbol* fieldRef = newTemp(astr(field->name, "_ref"),
+                                field->type->getRefType());
+  fieldRef->qual = isConst ? QUAL_CONST_REF : QUAL_REF;
+  if (isConst) fieldRef->addFlag(FLAG_CONST);
+  fs->insertBefore(new DefExpr(fieldRef));
+
+  BlockStmt* holder = new BlockStmt();
+  fs->insertBefore(holder);
+  // This is how a ref variable is currently initialized.
+  CallExpr* init = new CallExpr(field->name, gMethodToken, ovar);
+  holder->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, init));
+  resolveBlockStmt(holder);
+  holder->flattenAndRemove();
+
+  // Now create the shadow variable.
+  Type*           svarType   = field->type;
+  ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
+  bool            pruneDummy = false;
+  resolveShadowVarTypeIntent(svarType, svarIntent, pruneDummy);
+
+  ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
+                                              astr(field->name, "_svar"),
+                                              new SymExpr(fieldRef));
+  svar->type = svarType;
+  fs->shadowVariables().insertAtTail(new DefExpr(svar));
+  handleOneShadowVar(fs, svar);
+
+  return svar;
+}
+
+static void doConvertFieldsOfThis(ForallStmt* fs, AggregateType* recType,
+                                  ShadowVarSymbol* svar, Symbol* ovar)
+{
+  std::map<Symbol*, ShadowVarSymbol*> fieldVars;
+
+  // This traversal covers the loop body as well as IB/DB.
+  for_SymbolSymExprs(se, svar) {
+    if (Symbol* fieldSym = isFieldAccess(recType, se)) {
+      ShadowVarSymbol*& fieldSV = fieldVars[fieldSym];
+      if (fieldSV == NULL)
+        fieldSV = createSVforFieldAccess(fs, ovar, fieldSym);
+      se->parentExpr->replace(new SymExpr(fieldSV));
+    }
+  }
+
+  // Remove 'svar' if it does not have any uses remaining.
+  if (svar->firstSymExpr() == NULL)
+    svar->defPoint->remove();
+}
+
+static void convertFieldsOfRecordReceiver(ForallStmt* fs) {
+  // Each access to the receiver's field will reference the ArgSymbol
+  // for 'this'. Which will force us to have a shadow variable for 'this'
+  // and replace those ArgSymbol references with the shadow variable.
+  //
+  // So, the simplest way to find whether we need to do the conversion
+  // is to look for the shadow variable whose outer var is 'this'.
+  //
+  // As a bonus, this will automatically handle the case where there are
+  // multiple 'this', ex. if the enclosing method is lexically nested
+  // within another method. This is perhaps useless, however, because
+  // scopeResolve/insertFieldAccess() prevents that from happening.
+
+  for_shadow_vars(svar, temp, fs)
+    if (Symbol* ovar = svar->outerVarSym())
+      if (AggregateType* recType = isRecordReceiver(ovar))
+        doConvertFieldsOfThis(fs, recType, svar, ovar);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -947,4 +1065,10 @@ void setupAndResolveShadowVars(ForallStmt* fs)
   // it does not come across the explicit shadow vars that have been pruned.
   //
   resolveAndPruneExplicitShadowVars(fs, lastExplicitSVarDef);
+
+  //
+  // In a method on a record, treat the record fields like outer variables
+  // passed by the default intent.
+  //
+  convertFieldsOfRecordReceiver(fs);
 }

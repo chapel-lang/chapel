@@ -4,8 +4,8 @@ class pair {
 }
 
 proc main() {
-  var a: unmanaged pair;
-  var aa: borrowed pair;
+  var a: unmanaged pair?;
+  var aa: borrowed pair?;
 
   if (a == nil && aa == nil) {
     writeln("a initialized properly");
