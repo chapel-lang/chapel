@@ -106,6 +106,17 @@ forwarded to worker processes. However, this strategy is not always
 reliable. The remote system may override some environment variables, and
 some launchers might not correctly forward all environment variables.
 
+.. _chpl-launch-masterip:
+
+CHPL_LAUNCH_MASTERIP
+********************
+
+This environment variable is intended as an expansion on ``GASNET_MASTERIP``
+(see http://gasnet.lbl.gov/dist/udp-conduit/README ).  When set, if
+``GASNET_MASTERIP`` is not already present in the environment it will be set to
+the same value.  ``CHPL_LAUNCH_MASTERIP`` will also be used by multilocale
+libraries when communicating.
+
 .. _using-slurm:
 
 Using Slurm
