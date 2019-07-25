@@ -50,6 +50,7 @@ To learn more about handling these errors, see the
  */
 module Bytes {
   use ChapelStandard;
+  use BytesCasts;
 
   // Growth factor to use when extending the buffer for appends
   private config param chpl_stringGrowthFactor = 1.5;
@@ -1383,13 +1384,25 @@ module Bytes {
                and `s1`
   */
   proc +(s0: bytes, s1: bytes) {
+    return bytes_string_concat(s0,s1);
+  }
+
+  proc +(s0: bytes, s1: string) {
+    return bytes_string_concat(s0,s1);
+  }
+
+  proc +(s0: string, s1: bytes) {
+    return bytes_string_concat(s0,s1);
+  }
+
+  private proc bytes_string_concat(s0: ?t, s1): t {
     // cache lengths locally
     const s0len = s0.len;
-    if s0len == 0 then return s1;
+    if s0len == 0 then return s1:t;
     const s1len = s1.len;
     if s1len == 0 then return s0;
 
-    var ret: bytes;
+    var ret: t;
     ret.len = s0len + s1len;
     const allocSize = chpl_here_good_alloc_size(ret.len+1);
     ret._size = allocSize;
@@ -1412,6 +1425,7 @@ module Bytes {
     }
     ret.buff[ret.len] = 0;
     return ret;
+
   }
 
   /*
@@ -1469,9 +1483,9 @@ module Bytes {
   // we have an enum with some non-ascii characters?
   // TODO does this have a significant performance impact? Should there be a
   // BytesCasts module similar to StringCasts?
-  proc _cast(type t:bytes, x) {
-    return new bytes(x:string);
-  }
+  /*proc _cast(type t:bytes, x) {*/
+    /*return new bytes(x:string);*/
+  /*}*/
 
   /*
      The following concatenation functions return a new :record:`bytes` which is
@@ -1484,6 +1498,78 @@ module Bytes {
   inline proc +(x: enumerated, s: bytes) return concatHelp(x, s);
   inline proc +(s: bytes, x: bool) return concatHelp(s, x);
   inline proc +(x: bool, s: bytes) return concatHelp(x, s);
+
+  // Relational operators
+  private inline proc _strcmp_local(a, b) : int {
+    // Assumes a and b are on same locale and not empty.
+    const size = min(a.len, b.len);
+    const result =  c_memcmp(a.buff, b.buff, size);
+
+    if (result == 0) {
+      // Handle cases where one string is the beginning of the other
+      if (size < a.len) then return 1;
+      if (size < b.len) then return -1;
+    }
+    return result;
+  }
+
+  private inline proc _strcmp(a, b) where a.type==bytes||a.type==string &&
+                                          b.type==bytes||b.type==string : int {
+    if a.locale_id == chpl_nodeID && b.locale_id == chpl_nodeID {
+      // it's local
+      return _strcmp_local(a, b);
+    } else {
+      var localA: bytes = a.localize();
+      var localB: bytes = b.localize();
+      return _strcmp_local(localA, localB);
+    }
+  }
+
+  pragma "no doc"
+  proc ==(a: bytes, b: bytes) : bool {
+    // At the moment, this commented out section will not work correctly. If a
+    // and b are on the same locale, we will go to that locale, but an autoCopy
+    // will localize a and b, before they are placed into the on bundle,
+    // causing us to access garbage data inside the doEq routine. Always
+    // localize for now.
+    //
+    /* if a.locale_id == b.locale_id {
+      var ret: bool = false;
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+        ret = doEq(a, b);
+      }
+      return ret;
+    } else { */
+
+    return _strcmp(a, b) == 0;
+  }
+
+  pragma "no doc"
+  proc ==(a: bytes, b: string) : bool {
+    return _strcmp(a, b) == 0;
+  }
+
+  pragma "no doc"
+  proc ==(a: string, b: bytes) : bool {
+    return _strcmp(a, b) == 0;
+  }
+
+  pragma "no doc"
+  inline proc !=(a: bytes, b: bytes) : bool {
+    return _strcmp(a, b) != 0;
+  }
+
+  pragma "no doc"
+  inline proc !=(a: bytes, b: string) : bool {
+    return _strcmp(a, b) != 0;
+  }
+
+  pragma "no doc"
+  inline proc !=(a: string, b: bytes) : bool {
+    return _strcmp(a, b) != 0;
+  }
+
 
   // ASCII helpers
 
