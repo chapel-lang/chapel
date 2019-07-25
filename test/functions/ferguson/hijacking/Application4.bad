@@ -1,2 +1,7 @@
-in Application4.setup
-Global is 0
+Application4.chpl:7: In function 'run':
+Application4.chpl:8: error: multiple overload sets are applicable to this call
+Application4.chpl:3: note: instead of the candidate here
+Application4.chpl:1: note: ... defined in this closer module
+Application4.chpl:15: note: the best-matching candidate is here
+Application4.chpl:12: note: ... in this farther-away module
+Application4.chpl:8: note: use --no-overload-sets-checks to disable overload sets errors

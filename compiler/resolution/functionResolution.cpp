@@ -2665,6 +2665,139 @@ static bool isGenericRecordInit(CallExpr* call) {
 }
 
 
+// Return the module for RC->fn, if it exists and is not internal.
+// Otherwise, return NULL, meaning "nothing to consider here".
+static inline ModuleSymbol* overloadSetModule(ResolutionCandidate* RC) {
+  if (RC == NULL) return NULL;
+  ModuleSymbol* mod = RC->fn->getModule();
+  if (mod->modTag == MOD_INTERNAL) return NULL;
+  return mod;
+}
+
+// As of this writing, this always succeeds on our test suite.
+static bool bestModulesAreConsistent(CallExpr* call, bool checkOnly,
+   ModuleSymbol* mod1, ResolutionCandidate* rc1, const char* descr1,
+   ModuleSymbol* mod2, ResolutionCandidate* rc2, const char* descr2)
+{
+  if (mod1 != NULL && mod2 != NULL && mod1 != mod2) {
+    if (! checkOnly) {
+      USR_FATAL_CONT(call,
+                     "the best %s and %s overloads are in different modules",
+                     descr1, descr2);
+      USR_PRINT(rc1->fn, "the best %s overload is here", descr1);
+      USR_PRINT(rc2->fn, "the best %s overload is here", descr2);
+      USR_STOP();
+    }
+    return false;
+  }
+  return true;
+}
+
+// If 'call' is a method call on a class, accept it if 'bestFn' is
+// in the same module as the class of the receiver actual of 'call'.
+//
+// The purpose of this function is to accept certain method calls
+// that method-oblivious checking already rejected.
+static bool isAcceptableMethodChoice(CallExpr* call,
+                                 FnSymbol* bestFn, FnSymbol* candFn,
+                                 Vec<ResolutionCandidate*>& candidates)
+{
+  if (call->numActuals() < 2 || call->get(1)->getValType() != dtMethodToken)
+    return false;  // not a method call
+
+  // Should this be a public utility function ex. canonicalClassTypeOrNull() ?
+  Type* actualType = canonicalClassType(call->get(2)->getValType());
+  AggregateType* actualClass = toAggregateType(actualType);
+  if (actualClass == NULL || ! actualClass->isClass())
+    return false;  // a method not on a class
+    
+  ModuleSymbol* actualMod = actualClass->getModule();
+  if (actualMod == bestFn->getModule())
+    return true;  // bestFn and the receiver's class are in the same module
+
+  return false;
+}
+
+static void reportHijackingError(CallExpr* call,
+                                 FnSymbol* bestFn, ModuleSymbol* bestMod,
+                                 FnSymbol* candFn, ModuleSymbol* candMod)
+{
+  USR_FATAL_CONT(call, "multiple overload sets are applicable to this call");
+
+  if (isMoreVisible(call, candFn, bestFn))
+  {
+    USR_PRINT(candFn, "instead of the candidate here");
+    USR_PRINT(candMod, "... defined in this closer module");
+    USR_PRINT(bestFn, "the best-matching candidate is here");
+    USR_PRINT(bestMod, "... in this farther-away module");
+  }
+  else
+  {
+    USR_PRINT(bestFn, "the best-matching candidate is here");
+    USR_PRINT(bestMod, "... defined in this module");
+    USR_PRINT(candFn, "even though the candidate here is also available");
+    USR_PRINT(candMod, "... defined in this module");
+  }
+
+  USR_PRINT(call, "use --no-overload-sets-checks to disable overload sets errors");
+  USR_STOP();
+}
+
+static bool overloadSetsOK(CallExpr* call, bool checkOnly,
+                           Vec<ResolutionCandidate*>& candidates,
+                           ResolutionCandidate* bestRef,
+                           ResolutionCandidate* bestCref,
+                           ResolutionCandidate* bestVal)
+{
+  if (!fOverloadSetsChecks) return true;
+
+  ModuleSymbol* bestRefMod  = overloadSetModule(bestRef);
+  ModuleSymbol* bestCrefMod = overloadSetModule(bestCref);
+  ModuleSymbol* bestValMod  = overloadSetModule(bestVal);
+
+  // Ensure these "best" modules, if any, are consistent.
+  if (! bestModulesAreConsistent(call, checkOnly,
+                                 bestRefMod,  bestRef,  "ref",
+                                 bestCrefMod, bestCref, "const ref") ||
+      ! bestModulesAreConsistent(call, checkOnly,
+                                 bestRefMod,  bestRef,  "ref",
+                                 bestValMod,  bestVal,  "value")     ||
+      ! bestModulesAreConsistent(call, checkOnly,
+                                 bestCrefMod, bestCref, "const ref",
+                                 bestValMod,  bestVal,  "value")     )
+    return false;
+
+  FnSymbol* bestFn = bestRefMod  ? bestRef->fn  :
+                      bestCrefMod ? bestCref->fn :
+                       bestValMod  ? bestVal->fn  : NULL;
+  ModuleSymbol* bestMod = bestRefMod ? bestRefMod :
+                           bestCrefMod ? bestCrefMod :
+                            bestValMod;
+  if (bestMod == NULL)
+    // No "best" candidates, so nothing to check. Or, all "best" candidates
+    // are from internal modules, so they will always be "more visible".
+    return true;
+
+  forv_Vec(ResolutionCandidate, candidate, candidates) {
+    if (candidate == bestRef || candidate == bestCref || candidate == bestVal)
+      continue; // do not check the "best" candidate against itself
+
+    ModuleSymbol* candMod = overloadSetModule(candidate);
+    if (candMod && candMod != bestMod                                       &&
+        ! isMoreVisible(call, bestFn, candidate->fn)                        &&
+        ! isAcceptableMethodChoice(call, bestFn, candidate->fn, candidates) )
+    {
+      if (! checkOnly)
+        reportHijackingError(call, bestFn, bestMod, candidate->fn, candMod);
+      return false;
+    }
+  }
+
+  // All checks passed.
+  return true;
+}
+
+
 static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly);
 static bool typeUsesForwarding(Type* t);
 
@@ -2699,8 +2832,13 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
       if (fn) {
         return fn;
       }
-      // otherwise error is printed in next block
+      // otherwise error is printed below
     }
+  }
+
+  if (! overloadSetsOK(info.call, checkOnly, candidates,
+                       bestRef, bestCref, bestVal)) {
+    return NULL; // overloadSetsOK() found an error
   }
 
   if (numMatches == 0) {
