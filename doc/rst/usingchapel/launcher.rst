@@ -111,11 +111,14 @@ some launchers might not correctly forward all environment variables.
 CHPL_LAUNCH_MASTERIP
 ********************
 
-This environment variable is intended as an expansion on ``GASNET_MASTERIP``
-(see http://gasnet.lbl.gov/dist/udp-conduit/README ).  When set, if
-``GASNET_MASTERIP`` is not already present in the environment it will be set to
-the same value.  ``CHPL_LAUNCH_MASTERIP`` will also be used by multilocale
-libraries when communicating.
+This environment variable is used to specify the IP address which should be used
+to connect.  By default, the node creating the connection will pass the result
+of ``gethostname()`` on to the nodes that need to connect to it, which will
+resolve that to an IP address using ``gethostbynname()``.
+
+When ``CHPL_COMM == gasnet``, this will be used to set the value of
+``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
+http://gasnet.lbl.gov/dist/udp-conduit/README ).
 
 .. _using-slurm:
 

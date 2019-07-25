@@ -153,7 +153,7 @@ I get xSocket errors when using a system with multiple IP addresses
  *** FATAL ERROR: Got an xSocket while spawning slave process: connect()
  failed while creating a connect socket (111:Connection refused)
 
-You need to set ``CHPL_LAUNCH_MASTERIP`` or ``GASNET_MASTERIP``, and possibly
+You need to set ``CHPL_LAUNCH_MASTERIP`` (or ``GASNET_MASTERIP``), and possibly
 ``GASNET_WORKERIP``.  Please refer to:
 
   * :ref:`chpl-launch-masterip`
