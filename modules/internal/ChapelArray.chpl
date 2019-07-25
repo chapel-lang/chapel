@@ -1479,11 +1479,12 @@ module ChapelArray {
 
     pragma "no doc"
     proc bulkAdd(inds: [] _value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
+        isUnique=false, preserveInds=true, addOn=nil:locale)
+        where isSparseDom(this) && _value.rank==1 {
 
       if inds.size == 0 then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
     /*
@@ -1515,15 +1516,21 @@ module ChapelArray {
        :arg preserveInds: ``true`` if data in ``inds`` needs to be preserved.
        :type preserveInds: bool
 
+       :arg addOn: The locale where the indices should be added. Default value
+                   is ``nil`` which indicates that locale is unknown or there
+                   are more than one.
+       :type addOn: locale
+
        :returns: Number of indices added to the domain
        :rtype: int
     */
-    proc bulkAdd(inds: [] _value.rank*_value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
+    proc bulkAdd(inds: [] _value.rank*_value.idxType,
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale)
+        where isSparseDom(this) && _value.rank>1 {
 
       if inds.size == 0 then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
     /* Remove index ``i`` from this domain */

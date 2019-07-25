@@ -75,6 +75,8 @@ class SparseBlockDom: BaseSparseDomImpl {
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
+  var myLocDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
+      sparseLayoutType);
 
   proc postinit() {
     setup();
@@ -83,6 +85,7 @@ class SparseBlockDom: BaseSparseDomImpl {
 
   proc setup() {
     //    writeln("In setup");
+    var thisid = this.locale.id;
     if locDoms(dist.targetLocDom.low) == nil {
       coforall localeIdx in dist.targetLocDom do {
         on dist.targetLocales(localeIdx) do {
@@ -91,6 +94,8 @@ class SparseBlockDom: BaseSparseDomImpl {
          locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType, stridable,
              sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
+         if thisid == here.id then
+           myLocDom = locDoms(localeIdx);
         }
       }
       //      writeln("Past coforall");
@@ -140,10 +145,26 @@ class SparseBlockDom: BaseSparseDomImpl {
     return max reduce ([l in locDoms] l.mySparseBlock.last);
   }
 
-  override proc bulkAdd_help(inds: [] index(rank,idxType),
-      dataSorted=false, isUnique=false) {
+  override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
+      dataSorted=false, isUnique=false, addOn=nil:locale) {
     use Sort;
     use Search;
+
+    // call local bulk addition helper if necessary
+    if addOn != nil {
+      var retval = 0;
+      on addOn {
+        if inds.locale == here {
+          retval = bulkAddHere_help(inds, dataSorted, isUnique);
+        }
+        else {
+          var _local_inds: [indsDom] index(rank, idxType);
+          _local_inds = inds;
+          retval = bulkAddHere_help(_local_inds, dataSorted, isUnique);
+        }
+      }
+      return retval;
+    }
 
     // without _new_, record functions throw null deref
     var comp = new TargetLocaleComparator(rank=rank, idxType=idxType,
@@ -182,6 +203,14 @@ class SparseBlockDom: BaseSparseDomImpl {
       _totalAdded.add(_retval);
     }
     const _retval = _totalAdded.read();
+    return _retval;
+  }
+
+  proc bulkAddHere_help(inds: [] index(rank,idxType),
+      dataSorted=false, isUnique=false) {
+
+    const _retval = myLocDom.mySparseBlock.bulkAdd(inds, dataSorted=true,
+        isUnique=false);
     return _retval;
   }
 
@@ -718,8 +747,11 @@ proc SparseBlockDom.dsiPrivatize(privatizeData) {
                              stridable=parentDom.stridable, dist=privdist,
                              whole=whole,
                              parentDom=parentDom);
-  for i in c.dist.targetLocDom do
+  for i in c.dist.targetLocDom {
     c.locDoms(i) = locDoms(i);
+    if c.locDoms(i).locale.id == here.id then
+      c.myLocDom = c.locDoms(i);
+  }
   c.whole = {(...privatizeData(2))};
   return c;
 }
