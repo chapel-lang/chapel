@@ -211,7 +211,6 @@ class SparseBlockDom: BaseSparseDomImpl {
 
     const _retval = myLocDom.mySparseBlock.bulkAdd(inds, dataSorted=true,
         isUnique=false);
-    nnz += _retval;
     return _retval;
   }
 
