@@ -173,8 +173,8 @@ private proc usernameCheck(username: string) {
  */
 private proc checkIfForkExists(username: string) {
   var getFork = ('git ls-remote https://github.com/' + username + '/mason-registry');
-  var p = runWithStatus(getFork, false);
-  return p;
+  var p = runWithProcess(getFork, false);
+  return p.exit_status;
 }
 
 /* Gets the GitHub username of the user, by parsing from the remote origin url.
