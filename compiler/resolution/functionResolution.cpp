@@ -2671,7 +2671,7 @@ static void reportHijackingError(CallExpr* call,
                                  FnSymbol* bestFn, ModuleSymbol* bestMod,
                                  FnSymbol* candFn, ModuleSymbol* candMod)
 {
-  USR_FATAL_CONT(call, "the target of this call is potentially hijacked");
+  USR_FATAL_CONT(call, "multiple overload sets are applicable to this call");
 
   if (isMoreVisible(call, candFn, bestFn))
   {
@@ -2688,6 +2688,7 @@ static void reportHijackingError(CallExpr* call,
     USR_PRINT(candMod, "... defined in this module");
   }
 
+  USR_PRINT(call, "use --no-overload-sets-checks to disable overload sets errors");
   USR_STOP();
 }
 

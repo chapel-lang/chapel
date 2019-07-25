@@ -1,6 +1,7 @@
 breakList.chpl:20: In function 'bar':
-breakList.chpl:23: error: the target of this call is potentially hijacked
+breakList.chpl:23: error: multiple overload sets are applicable to this call
 breakList.chpl:3: note: the best-matching candidate is here
 breakList.chpl:1: note: ... defined in this module
 $CHPL_HOME/modules/standard/LinkedLists.chpl:107: note: even though the candidate here is also available
 $CHPL_HOME/modules/standard/LinkedLists.chpl:27: note: ... defined in this module
+breakList.chpl:23: note: use --no-overload-sets-checks to disable overload sets errors
