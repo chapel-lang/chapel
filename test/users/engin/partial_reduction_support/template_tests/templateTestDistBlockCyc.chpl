@@ -16,4 +16,4 @@ for (i,j) in ParentDom {
 
 writeln(bulkPartialReduce(arr._value, 1));
 writeln();
-writeln(bulkPartialReduce(arr._value, 2));
+/*writeln(bulkPartialReduce(arr._value, 2));*/

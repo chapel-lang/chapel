@@ -73,10 +73,16 @@ iter DefaultRectangularArr.dsiPartialThese(param onlyDim, otherIdx,
 }
 
 iter DefaultRectangularArr.dsiPartialThese(param onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    otherIdx,
     param tag: iterKind) where tag == iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
                                           onlyDim, otherIdx, tag=tag) {
+    /*compilerWarning("This.type ", this.type:string);*/
+    if rank == 1 then
+      compilerError("dsiPartialThese on 1D array");
+    /*otherIdx=createTuple(rank-1, idxType, 0:idxType);*/
+
+
 
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
@@ -715,9 +721,17 @@ iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
       __primitive("method call resolves", myElems._value, "dsiPartialThese",
                                           onlyDim, otherIdx, tag=tag) {
 
-  for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
-    yield i;
+  /*compilerWarning("LocBlockCyclicArr type :", this.type:string);*/
+  /*compilerWarning("myElems type :", this.myElems.type:string);*/
+  /*compilerWarning("myElems._value type :", this.myElems._value.type:string);*/
+
+  for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
+    yield this(otherIdx.withIdx(onlyDim, i));
   }
+
+  /*for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {*/
+    /*yield i;*/
+  /*}*/
 }
 //
 // end BlockCyclic distribution support
