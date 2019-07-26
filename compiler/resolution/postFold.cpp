@@ -415,7 +415,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
         SymExpr* ie = toSymExpr(call->get(2));
         int64_t val = 0;
 
-        INT_ASSERT(ie && ie->symbol()->isParameter() && get_int(ie, &val));
+        INT_ASSERT(ie && ie->symbol()->isParameter());
+        bool found_int = get_int(ie, &val);
+        INT_ASSERT(found_int);
 
         if (val == -1) {
           if (unescaped.length() != 1) {
