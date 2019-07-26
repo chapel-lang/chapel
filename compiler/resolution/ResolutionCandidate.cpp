@@ -102,7 +102,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
     return false;
 
   // Compute the param/type substitutions for generic arguments.
-  if (computeSubstitutions(info.call) <= 0) {
+  if (computeSubstitutions(info.call) == false) {
     reason = RESOLUTION_CANDIDATE_OTHER;
     return false;
   }
@@ -236,14 +236,12 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
                                        bool allowCoercion,
                                        bool implititBang);
 
-int ResolutionCandidate::computeSubstitutions(Expr* ctx) {
-  bool exitForDefault = false;
-
+bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
   substitutions.clear();
 
-  for (int i = 1; i <= fn->numFormals() && exitForDefault == false; i++) {
-    ArgSymbol* formal = fn->getFormal(i);
-
+  int nDefault = 0;
+  int i = 1;
+  for_formals(formal, fn) {
     if (formal->intent                              == INTENT_PARAM ||
         formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
 
@@ -251,20 +249,14 @@ int ResolutionCandidate::computeSubstitutions(Expr* ctx) {
         computeSubstitution(formal, actual, ctx);
 
       } else if (formal->defaultExpr != NULL) {
-        if (substitutions.n == 0) {
-          computeSubstitution(formal, ctx);
-
-        } else {
-          // break because default expression may reference generic
-          // arguments earlier in formal list; make those substitutions
-          // first (test/classes/bradc/paramInClass/weirdParamInit4)
-          exitForDefault = true;
-        }
+        computeSubstitutionForDefaultExpr(formal, ctx);
+        nDefault++;
       }
     }
+    i++;
   }
 
-  return substitutions.n;
+  return substitutions.n + nDefault > 0;
 }
 
 bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
@@ -344,38 +336,77 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
   }
 }
 
-void ResolutionCandidate::computeSubstitution(ArgSymbol* formal, Expr* ctx) {
-  resolveBlockStmt(formal->defaultExpr);
+void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
+                                                            Expr* ctx) {
+  Expr* tail = NULL;
+  Expr* origTail = formal->defaultExpr->body.tail;
 
-  if (formal->intent == INTENT_PARAM) {
-    if (SymExpr* se = toSymExpr(formal->defaultExpr->body.tail)) {
-      if (se->symbol()->isParameter() == false) {
-        USR_FATAL(formal, "default value for param is not a param");
+  // Handle the common case of a literal of some sort (e.g. 1)
+  if (SymExpr* se = toSymExpr(origTail)) {
+    Symbol* sym = se->symbol();
+    if (isEnumSymbol(sym)) {
+      tail = origTail;
+    } else if (VarSymbol* v = toVarSymbol(sym)) {
+      if (v->isImmediate())
+        tail = origTail;
+    }
+  }
 
-      } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)      == true &&
-                 canInstantiate(se->symbol()->type, formal->type) == false) {
-        USR_FATAL(formal,
-                  "type mismatch between declared formal type "
-                  "and default value type");
+  /*
+  if (tail == NULL) {
+    // Handle the more complex case that might depend on substitutions
+
+    // We need to resolve formal->defaultExpr with the appropriate
+    // substitutions. At the same time, we don't want to modify
+    // formal->defaultExpr, since this is the generic function symbol before
+    // instantiation. So, make a copy of formal->defaultExpr,
+    // swap it in, do the substitutions and resolve it, and then
+    // put the original back.
+
+    BlockStmt* origDefault = formal->defaultExpr;
+    BlockStmt* defaultCopy = formal->defaultExpr->copy();
+    // Swap the new version in
+    origDefault->replace(defaultCopy);
+    // Update the symbols that refer to previous arguments
+    update_symbols(defaultCopy, &substitutions);
+    // Resolve it
+    resolveBlockStmt(formal->defaultExpr);
+    // Swap the original back in
+    defaultCopy->replace(origDefault);
+    tail = defaultCopy->body.tail;
+  }*/
+
+  if (tail != NULL) {
+    if (formal->intent == INTENT_PARAM) {
+      if (SymExpr* se = toSymExpr(tail)) {
+        if (se->symbol()->isParameter() == false) {
+          USR_FATAL(formal, "default value for param is not a param");
+
+        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)      == true &&
+                   canInstantiate(se->symbol()->type, formal->type) == false) {
+          USR_FATAL(formal,
+                    "type mismatch between declared formal type "
+                    "and default value type");
+
+        } else {
+          substitutions.put(formal, se->symbol());
+        }
 
       } else {
-        substitutions.put(formal, se->symbol());
+        USR_FATAL(formal, "default value for param is not a param");
       }
 
-    } else {
-      USR_FATAL(formal, "default value for param is not a param");
-    }
+    } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+      Type* defaultType = tail->typeInfo();
 
-  } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-    Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
+      if (defaultType == dtTypeDefaultToken) {
+        substitutions.put(formal, dtTypeDefaultToken->symbol);
 
-    if (defaultType == dtTypeDefaultToken) {
-      substitutions.put(formal, dtTypeDefaultToken->symbol);
-
-    } else if (Type* type = getInstantiationType(defaultType, NULL,
-                                                 formal->type, NULL, ctx,
-                                                 true, false)) {
-      substitutions.put(formal, type->symbol);
+      } else if (Type* type = getInstantiationType(defaultType, NULL,
+                                                   formal->type, NULL, ctx,
+                                                   true, false)) {
+        substitutions.put(formal, type->symbol);
+      }
     }
   }
 }
