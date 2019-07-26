@@ -436,21 +436,26 @@ std::string ltrimAllLines(std::string s) {
 
 /*
  * Split a string separated by the given delimiters into a vector of substrings.
- * If splitAllWhitespaces is true, split the string against all whitespace characters.
  */
-void splitString(const std::string& s, std::vector<std::string>& vec, const char* delimiters, bool splitAllWhitespaces) {
+void splitString(const std::string& s, std::vector<std::string>& vec, const char* delimiters) {
   if (!s.empty()) {
-    const char* wsDelim = " \t\n\r\f\v";
     char* cStr = strdup(s.c_str());
-    char* arg = strtok(cStr, splitAllWhitespaces ? wsDelim : delimiters);
+    char* arg = strtok(cStr, delimiters);
     while (arg) {
       if (strlen(arg) > 0) {
         vec.push_back(std::string(arg));
       }
-      arg = strtok(NULL, splitAllWhitespaces ? wsDelim : delimiters);
+      arg = strtok(NULL, delimiters);
     }
     free(cStr);
   }
+}
+
+/*
+ * Split a string by all whitespace characters into a vector of substrings.
+ */
+void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec) {
+  splitString(s, vec, " \t\n\r\f\v");
 }
 
 void removeTrailingNewlines(std::string& str) {
