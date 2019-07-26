@@ -550,8 +550,7 @@ module ChapelDistribution {
     }
 
     proc deinit() {
-      if cur>=1 then
-        flush();
+      commit();
     }
 
     proc add(idx: idxType) {
@@ -559,19 +558,13 @@ module ChapelDistribution {
       cur += 1;
 
       if cur == buf.size then
-        flush();
-    }
-
-    proc flush() {
-      obj.dsiBulkAdd(buf[..cur-1]);
-      /*writeln("Flushing ", cur, " indices");*/
-      cur = 0;
+        commit();
     }
 
     proc commit() {
-      flush();
-
-      // TODO any other cleanup here
+      if cur >= 1 then
+        obj.dsiBulkAdd(buf[..cur-1]);
+      cur = 0;
     }
   }
 
