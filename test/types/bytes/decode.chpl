@@ -12,7 +12,7 @@ const ignoredString = invalid_utf8.decode(errors=DecodePolicy.Ignore);
 writeln("String with the ignore policy: ", ignoredString,
         " (length=", ignoredString.length, ")");
 const replacedString = invalid_utf8.decode(errors=DecodePolicy.Replace);
-writeln("String with the ignore policy: ", replacedString,
+writeln("String with the replace policy: ", replacedString,
         " (length=", replacedString.length, ")");
 try! {
   const strictString = invalid_utf8.decode(errors=DecodePolicy.Strict);

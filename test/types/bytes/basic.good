@@ -95,11 +95,28 @@ dir1/dir2/file
 Test join -- array of bytes
 dir1/dir2/file
 Test strip
-Default:a \x9 text
-Only space:\xa  a \x9 text\xa
-Only leading:a \x9 text\xa
+Default:a 	 text
+Only space:
+  a 	 text
+
+Only leading:a 	 text
+
 Test partition
 (this is , a,  bytes)
 Test join -- iterable
 dir1/dir2/file
-Type after string->byte bytes
+
+writeln behavior
+Output 1
+wordword
+Output 2
+wordword
+Output 3
+word	word
+Output 4
+word
+word
+Output 5
+wordword
+End of writeln tests
+

@@ -195,11 +195,8 @@ module Bytes {
       var localThis = this.localize();
       try {
         for b in localThis.iterBytes() {
-          if ascii_isPrintable(b) {
+          if ascii_isPrintable(b) || ascii_isWhitespace(b) {
             f.writef("%c", b);
-          }
-          else {
-            f.writef("\\x%xu", b);
           }
         }
       } catch e: SystemError {

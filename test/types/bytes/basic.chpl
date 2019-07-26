@@ -163,9 +163,20 @@ iter byteYielder() {
 
 writeln("Test join -- iterable");
 writeln(baseBytes.join(byteYielder()));
+writeln();
 
-
-
-// TEST CASTS
-writeln("Type after string->byte ", ("test":bytes).type:string);
+// TEST writeln behavior
+writeln("writeln behavior");
+writeln("Output 1");
+writeln("wordword":bytes);
+writeln("Output 2");
+writeln("word\x00word":bytes);
+writeln("Output 3");
+writeln("word\tword":bytes);
+writeln("Output 4");
+writeln("word\nword":bytes);
+writeln("Output 5");
+writeln("word\rword":bytes); // should print "word"
+writeln("End of writeln tests");
+writeln();
 
