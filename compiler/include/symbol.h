@@ -698,6 +698,7 @@ extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
 extern const char* astrPostfixBang;
+extern const char* astrBorrow;
 
 void initAstrConsts();
 
@@ -744,6 +745,7 @@ extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
 extern VarSymbol *gNilChecking;
 extern VarSymbol *gLegacyNilClasses;
+extern VarSymbol *gOverloadSetsChecks;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;

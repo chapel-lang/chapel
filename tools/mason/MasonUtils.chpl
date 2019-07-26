@@ -123,6 +123,19 @@ proc runWithStatus(command, show=true): int {
   }
 }
 
+proc runWithProcess(command, quiet=false) throws {
+  try {
+    var cmd = command.split();
+    var process = spawn(cmd, stdout=PIPE, stderr=PIPE);
+
+    return process;
+  }
+  catch {
+    throw new owned MasonError("Internal mason error");
+    exit(0);
+  }
+}
+
 proc SPACK_ROOT : string {
   const envHome = getEnv("SPACK_ROOT");
   const default = MASON_HOME + "/spack";
@@ -443,9 +456,8 @@ proc isIdentifier(name:string) {
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
-    if v.tag == fieldToml then
+    if v.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }
 }
-

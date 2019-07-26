@@ -95,6 +95,40 @@ GenRet UseStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+#ifdef HAVE_LLVM
+static
+void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
+{
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  int64_t sizeInBytes = -1;
+  if (valType->isSized())
+    sizeInBytes = dataLayout.getTypeStoreSize(valType);
+
+  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
+    llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+
+  info->irBuilder->CreateLifetimeStart(addr, size);
+}
+
+static
+void codegenLifetimeEnd(llvm::Type *valType, llvm::Value *addr)
+{
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  int64_t sizeInBytes = -1;
+  if (valType->isSized())
+    sizeInBytes = dataLayout.getTypeStoreSize(valType);
+
+  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
+    llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+
+  info->irBuilder->CreateLifetimeEnd(addr, size);
+}
+#endif
+
 GenRet BlockStmt::codegen() {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -142,7 +176,38 @@ GenRet BlockStmt::codegen() {
 
     info->lvt->addLayer();
 
-    body.codegen("");
+    // Add a new variables set to the stack for lifetimes
+    info->currentStackVariables.emplace_back();
+
+    for_alist(node, this->body) {
+      node->codegen();
+      if (CallExpr* call = toCallExpr(node)) {
+        if (call->isPrimitive(PRIM_RETURN)) {
+          while (info->currentStackVariables.size() > 0) {
+            for_set(Symbol, var, info->currentStackVariables.back()) {
+              llvm::Value* declared = var->codegen().val;
+              llvm::Type* type = var->type->codegen().type;
+              codegenLifetimeEnd(type, declared);
+            };
+            info->currentStackVariables.pop_back();
+          }
+        }
+      }
+      if (DefExpr* def = toDefExpr(node)) {
+        Symbol* var = def->sym;
+        if (!isGlobal(var) && var->type && var->type != dtVoid && var->type != dtNothing) {
+          GenRet ret = var->codegen();
+          if (ret.isLVPtr == GEN_PTR) {
+            llvm::Value* declared = ret.val;
+            llvm::Type* type = var->type->codegen().type;
+            if (declared && type) {
+              codegenLifetimeStart(type, declared);
+              info->currentStackVariables.back().insert(var);
+            }
+          }
+        }
+      }
+    }
 
     info->lvt->removeLayer();
 
@@ -176,7 +241,7 @@ CondStmt::codegen() {
 
     int numExtraPar = 0;
     //if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
-    if (c_condExpr[numExtraPar] == '(' && 
+    if (c_condExpr[numExtraPar] == '(' &&
         c_condExpr[c_condExpr.size()-(numExtraPar+1)] == ')') {
       numExtraPar++;
     }

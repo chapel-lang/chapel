@@ -840,7 +840,7 @@ module ChapelBase {
     }
   }
 
-  pragma "unsafe" // work around problems storting non-nilable classes
+  pragma "unsafe" // work around problems storing non-nilable classes
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 

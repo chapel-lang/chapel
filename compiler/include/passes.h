@@ -102,7 +102,10 @@ void deadBlockElimination();
 
 // flattenFunctions.cpp
 void flattenNestedFunction(FnSymbol* nestedFunction);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+// When fastCCS=true, call sites are computed only for the functions that
+// are looked at. Such functions must not have dispatch parents/children.
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions,
+                            bool fastCCS = false);
 
 // foralls.cpp
 void checkTypeParamTaskIntent(SymExpr* outerSE);

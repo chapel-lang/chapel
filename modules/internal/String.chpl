@@ -980,7 +980,7 @@ module String {
     // Converts from codepointIndex range to byte index range in the process.
     //
     // This function handles ranges of codepointIndex or of numeric types,
-    // both of which signify postions in the string measured in codepoints.
+    // both of which signify positions in the string measured in codepoints.
     //
     // Slicing by stridable codepoint ranges is unsupported because it
     // creates an irregular sequence of bytes.  We could add support in the

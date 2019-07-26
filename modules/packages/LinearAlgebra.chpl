@@ -406,7 +406,7 @@ private proc _eyeDiagonal(ref A: [?Dom] ?eltType) {
 }
 
 /* Return a square identity matrix over domain ``{1..m, 1..m}`` */
-proc eye(m, type eltType=real) {
+proc eye(m: integral, type eltType=real) {
   var A: [{1..m, 1..m}] eltType;
   _eyeDiagonal(A);
   return A;
@@ -414,7 +414,7 @@ proc eye(m, type eltType=real) {
 
 
 /* Return an identity matrix over domain ``{1..m, 1..n}`` */
-proc eye(m, n, type eltType=real) {
+proc eye(m: integral, n: integral, type eltType=real) {
   var A: [{1..m, 1..n}] eltType;
   _eyeDiagonal(A);
   return A;
@@ -1580,9 +1580,9 @@ module Sparse {
     ADom.startIdx = indptr;
     const (hasZero, zeroIndex) = indices.find(0);
     if hasZero {
-      ADom.nnz = zeroIndex-1;
+      ADom._nnz = zeroIndex-1;
     } else {
-      ADom.nnz = indices.size;
+      ADom._nnz = indices.size;
     }
     ADom.nnzDom = {1..indices.size};
     ADom.idx = indices;
