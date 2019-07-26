@@ -188,6 +188,7 @@ module Sets {
 
       :arg x: The element to test for membership.
       :return: Whether or not the given element is a member of this set.
+      :rtype: `bool`
     */
     proc const contains(const ref x: eltType): bool {
       _enter();
@@ -202,6 +203,7 @@ module Sets {
 
       :arg other: The set to compare against.
       :return: Whether or not this set and `other` are disjoint.
+      :rtype: `bool`
     */
     proc const isDisjoint(const ref other: set(eltType, ?)): bool {
       _enter();
@@ -223,6 +225,7 @@ module Sets {
 
       :arg other: The set to compare against.
       :return: Whether or not this set and `other` intersect.
+      :rtype: `bool`
     */
     proc const isIntersecting(const ref other: set(eltType, ?)): bool {
       return !isDisjoint(other);
@@ -240,10 +243,10 @@ module Sets {
 
       :throws IllegalArgumentError: If the list contains no such element.
     */
-    proc remove(const ref x: eltType): eltType throws {
+    proc remove(const ref x: eltType) throws {
       _enter();
 
-      if !contains(x) {
+      if !_dom.contains(x) {
         _leave();
         const msg = "No such element in set: " + x:string;
         // TODO: Replace with more appropriate error?
@@ -251,10 +254,9 @@ module Sets {
           IllegalArgumentError(msg);
       }
 
-      var result = _dom.remove(x);
-      _leave();
+      const dbg = _dom.remove(x);
 
-      return result;
+      _leave();
     }
 
     /*
@@ -269,12 +271,9 @@ module Sets {
       :arg x: The element to discard.
     */
     proc discard(const ref x: eltType) {
-      _enter();
-
-      if _dom.contains(x) then
-        _dom.remove(x);
-
-      _leave();
+      try {
+        remove(x);
+      } catch {}
     }
 
     /*
@@ -354,9 +353,13 @@ module Sets {
       Returns a new DefaultRectangular array containing a copy of each of the
       elements contained in this set. The elements of the returned array are
       not guaranteed to follow any particular ordering.
+
+      :return: An array containing a copy of each of the elements in this set.
+      :rtype: `[] eltType`
     */
     proc const toArray(): [] eltType {
       _enter();
+
       var result: [1.._dom.size] eltType;
       var count = 1;
 
@@ -386,6 +389,7 @@ module Sets {
   */
   proc =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs.clear();
+
     for x in rhs do
       lhs.add(x);
   }
@@ -399,14 +403,14 @@ module Sets {
     :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    var result: set(t, (a.parSafe && b.parSafe));
+  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+    var result: set(t, (a.parSafe || b.parSafe));
 
     for x in a do
       result.add(x);
 
     for x in b do
-      result.add(b);
+      result.add(x);
 
     return result;
   }
@@ -464,8 +468,8 @@ module Sets {
     :return: A new set containing the difference between `a` and `b`.
     :rtype: `set(t)`
   */
-  proc -(const ref a: set(?t, ?p1), const ref b: set(t, ?p2)): set(t) {
-    var result = new set(t, (p1 || p2));
+  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+    var result = new set(t, (a.parSafe || b.parSafe));
 
     for x in a do
       if !b.contains(x) then
@@ -496,10 +500,10 @@ module Sets {
     :arg b: A set to take the intersection of.
 
     :return: A new set containing the intersection of `a` and `b`.
-    :rtype: `set(?t, ?)`
+    :rtype: `set(t)`
   */
-  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    var result: set(t, (a.parSafe && b.parSafe));
+  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+    var result: set(t, (a.parSafe || b.parSafe));
 
     for x in a do
       if b.contains(x) then
@@ -533,8 +537,8 @@ module Sets {
     :return: A new set containing the symmetric difference of `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    var result: set(t, (a.parSafe && b.parSaf));
+  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+    var result: set(t, (a.parSafe || b.parSafe));
     
     for x in a do
       if !b.contains(x) then
