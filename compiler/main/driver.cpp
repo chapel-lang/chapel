@@ -543,7 +543,7 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
     llvmPrintIrStageNum = llvmStageNum::BASIC;
 
   std::vector<std::string> fNames;
-  splitString(std::string(arg), fNames, ',');
+  splitString(std::string(arg), fNames, ",");
   for (std::size_t i = 0; i < fNames.size(); ++i) {
     addNameToPrintLlvmIr(fNames[i].c_str());
   }

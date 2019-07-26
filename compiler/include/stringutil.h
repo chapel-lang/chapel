@@ -75,7 +75,7 @@ inline std::string ltrim(std::string s);
        std::string ltrimAllLines(std::string s);
        int         minimumPrefix(const std::string& s);
 
-void splitString(const std::string& s, std::vector<std::string>& vec, char delim, bool splitAllWhitespaces = false);
+void splitString(const std::string& s, std::vector<std::string>& vec, const char* delimiters, bool splitAllWhitespaces = false);
 
 void removeTrailingNewlines(std::string& str);
 

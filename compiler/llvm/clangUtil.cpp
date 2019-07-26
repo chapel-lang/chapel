@@ -1201,7 +1201,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     // Then add any from --mllvm passed to Chapel
     if (llvmFlags != "") {
       //split llvmFlags by spaces
-      splitString(llvmFlags, vec, ' ');
+      splitString(llvmFlags, vec, " ");
     }
 
     std::vector<const char*> Args;
@@ -1630,7 +1630,7 @@ void runClang(const char* just_parse_filename) {
   readArgsFromFile(sysroot_arguments, args);
 
   // read arguments that we captured at compile time
-  splitString(get_clang_sysroot_args(), args, ' ');
+  splitString(get_clang_sysroot_args(), args, " ");
 
   std::string runtime_includes(CHPL_RUNTIME_LIB);
   runtime_includes += "/";
@@ -1720,7 +1720,7 @@ void runClang(const char* just_parse_filename) {
   }
 
   //split ccflags by spaces
-  splitString(ccflags, clangCCArgs, ' ');
+  splitString(ccflags, clangCCArgs, " ");
 
   clangCCArgs.push_back("-pthread");
 
