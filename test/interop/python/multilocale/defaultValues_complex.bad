@@ -1,2 +1,2 @@
 defaultValues_complex.chpl:1: warning: Non-literal default values are ignored in exported functions, argument 'x' must always be provided
-error: Multi-locale libraries do not support type
+defaultValues_complex.chpl:1: error: Multi-locale libraries do not support formal type: complex(128)
