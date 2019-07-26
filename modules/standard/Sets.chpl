@@ -207,8 +207,8 @@ module Sets {
       _enter();
 
       var result = true;
-      forall x in other do
-        // TODO: Can we insert a break in a forall statement?
+      for x in other do
+        // TODO: Can we insert a break in a for statement?
         if !_dom.contains(x) then 
           result = false;
 
@@ -462,10 +462,10 @@ module Sets {
     :arg b: A set to take the difference of.
 
     :return: A new set containing the difference between `a` and `b`.
-    :rtype: `set(?t, ?)`
+    :rtype: `set(t)`
   */
-  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
-    var result: set(t, (a.parSafe && b.parSafe));
+  proc -(const ref a: set(?t, ?p1), const ref b: set(t, ?p2)): set(t) {
+    var result = new set(t, (p1 || p2));
 
     for x in a do
       if !b.contains(x) then
@@ -579,7 +579,7 @@ module Sets {
 
     var result = true;
 
-    forall x in a do
+    for x in a do
       if !b.contains(x) then
         result = false;
 
@@ -630,7 +630,7 @@ module Sets {
     var result = true;
 
     // TODO: Do we need to guard/make result atomic here?
-    forall x in a do
+    for x in a do
       if !b.contains(x) then
         result = false;
 
@@ -667,8 +667,7 @@ module Sets {
 
     var result = true;
 
-    // TODO: Do we need to guard/make result atomic, here?
-    forall x in a do
+    for x in a do
       if !b.contains(x) then
         result = false;
 
