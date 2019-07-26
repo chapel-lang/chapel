@@ -1,1 +1,1 @@
-error: string.toByte() only accepts single-byte strings
+toByte_param_err.chpl:1: error: string.toByte() only accepts single-byte strings

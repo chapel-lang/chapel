@@ -2266,15 +2266,15 @@ module String {
 
   pragma "no doc"
   inline proc param string.toByte() param : uint(8) {
-    // The -1 argument below means to check that this is a single-byte string.
-    return __primitive("ascii", this, -1);
+    if __primitive("string_length", this) != 1 then
+      compilerError("string.toByte() only accepts single-byte strings");
+    return __primitive("ascii", this);
   }
 
   pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
-    // The value -1 is a special value in the primitive, so weed it out here.
-    if i == -1 then
-      compilerError("index out of bounds of string: -1");
+    if i < 1 || i > __primitive("string_length", this) then
+      compilerError("index out of bounds of string: " + i);
     return __primitive("ascii", this, i);
   }
 
