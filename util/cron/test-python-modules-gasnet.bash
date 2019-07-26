@@ -10,4 +10,4 @@ export CHPL_LIB_PIC=pic
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="python-modules.gasnet"
 export CHPL_NIGHTLY_TEST_DIRS="interop/python/multilocale"
 
-$CWD/nightly -cron -multilocale -futures
+$CWD/nightly -cron -futures
