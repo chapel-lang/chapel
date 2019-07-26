@@ -1499,8 +1499,8 @@ module ChapelArray {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
-    inline proc getIndexBuffer(size) {
-      return _value.dsiGetIndexBuffer(size);
+    inline proc makeIndexBuffer(size) {
+      return _value.dsiMakeIndexBuffer(size);
     }
 
     /*
