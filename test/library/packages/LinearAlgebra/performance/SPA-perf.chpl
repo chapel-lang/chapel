@@ -120,7 +120,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
   var C: [Cdom] A.eltType;
 
   // pre-allocate nnz(A) + nnz(B) -- TODO: shrink later
-  const nnzAB = Adom._value.nnz + Bdom._value.nnz;
+  const nnzAB = Adom.numIndices + Bdom.numIndices;
   Cdom._value.nnzDom = {1..nnzAB};
 
   var spa = new _SPA(cols={D.dim(1)}, eltType=A.eltType);
@@ -194,7 +194,7 @@ record _SPA {
       if nzcur + nzi  > C.JC.size then break;
       C.JC[nzcur+nzi] = idx;
       C.NUM[nzcur+nzi] = w[idx];
-      Cdom._value.nnz += 1;
+      Cdom._value._nnz += 1;
       nzi += 1;
     }
     return nzi;
