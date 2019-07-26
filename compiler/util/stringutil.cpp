@@ -435,31 +435,21 @@ std::string ltrimAllLines(std::string s) {
 }
 
 /*
- * Split a string separated by a delimiter into a vector of substrings.
+ * Split a string separated by the given delimiters into a vector of substrings.
  * If splitAllWhitespaces is true, split the string against all whitespace characters.
  */
-void splitString(const std::string& s, std::vector<std::string>& vec, char delim, bool splitAllWhitespaces) {
+void splitString(const std::string& s, std::vector<std::string>& vec, const char* delimiters, bool splitAllWhitespaces) {
   if (!s.empty()) {
-    if (splitAllWhitespaces) {
-      const char* wsDelim = " \t\n\r\f\v";
-      char* cStr = strdup(s.c_str());
-      char* arg = strtok(cStr, wsDelim);
-      while (arg) {
-        if (strlen(arg) > 0) {
-          vec.push_back(std::string(arg));
-        }
-        arg = strtok(NULL, wsDelim);
+    const char* wsDelim = " \t\n\r\f\v";
+    char* cStr = strdup(s.c_str());
+    char* arg = strtok(cStr, splitAllWhitespaces ? wsDelim : delimiters);
+    while (arg) {
+      if (strlen(arg) > 0) {
+        vec.push_back(std::string(arg));
       }
-      free(cStr);
-    } else {
-      std::stringstream sstream(s);
-      std::string arg;
-      while (std::getline(sstream, arg, delim)) {
-        if (!arg.empty()) {
-          vec.push_back(arg);
-        }
-      }
+      arg = strtok(NULL, splitAllWhitespaces ? wsDelim : delimiters);
     }
+    free(cStr);
   }
 }
 
