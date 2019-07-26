@@ -116,7 +116,7 @@ to connect.  By default, the node creating the connection will pass the result
 of ``gethostname()`` on to the nodes that need to connect to it, which will
 resolve that to an IP address using ``gethostbynname()``.
 
-When ``CHPL_COMM == gasnet``, this will be used to set the value of
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
 ``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
 http://gasnet.lbl.gov/dist/udp-conduit/README ).
 
