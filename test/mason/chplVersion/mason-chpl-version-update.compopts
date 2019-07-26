@@ -1,7 +1,5 @@
 #
-# Both the TOML and Mason packages must be rewritten to make use of List
-# instead of "array-as-vec" before we can remove the "--no-warnings" flag
-# here.
-# See: https://github.com/chapel-lang/chapel/issues/13233
+# This "--no-warnings" flag suppresses warnings from deprecated array methods.
+# See: https://github.com/chapel-lang/chapel/pull/13530
 #
 --no-warnings
