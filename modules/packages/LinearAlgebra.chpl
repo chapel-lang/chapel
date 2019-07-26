@@ -1053,7 +1053,7 @@ proc trace(A: [?D] ?eltType) {
       array, but only returns dense matrices L and U.
 */
 
-proc lu (const ref A: [?Adom] ?eltType) {
+proc lu (in A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for LU factorization");
 
@@ -1063,23 +1063,43 @@ proc lu (const ref A: [?Adom] ?eltType) {
   const n = Adom.shape(1);
   const LUDom = {1..n, 1..n};
 
-  var L, U: [LUDom] eltType;
+  var L, U, P: [LUDom] eltType;
+  
+  var pivots: [{1..n}] int = [i in {1..n}] i;
 
   for i in 1..n { 
+    
+    var max = A[i,i], swaprow = i;
+    for row in (i+1)..n {
+      if (abs(A[row,i]) > abs(max)) {
+        max = A[row,i];
+        swaprow = row;
+      }
+    }
+    if (swaprow != i) {
+      A[i,..] <=> A[swaprow,..];
+      L[i,..] <=> L[swaprow,..];
+      pivots[i] <=> pivots[swaprow];
+    }
+    
     forall k in i..n {
-      var sum = + reduce (L[i,..] * U[..,k]);
-      U[i,k] = A[i,k] - sum;
+    	var sum = + reduce (L[i,..] * U[..,k]);
+    	U[i,k] = A[i,k] - sum;
     }
 
     L[i,i] = 1;
 
     forall k in (i+1)..n {
-      var sum = + reduce (L[k,..] * U[..,i]);
-      L[k,i] = (A[k,i] - sum) / U[i,i];
+    	var sum = + reduce (L[k,..] * U[..,i]);
+    	L[k,i] = (A[k,i] - sum) / U[i,i];
     }
   } 
+  
+  forall i in 1..n {
+    P[i,pivots[i]] = 1;
+  }
 
-  return (L,U);
+  return (L,U,P);
 }
 
 /* Returns the determinant of a square matrix.
@@ -1099,7 +1119,7 @@ proc det (const ref A: [?Adom] ?eltType) {
   if Adom.shape(1) != Adom.shape(2) then
     halt("Determinant can only be computed from square matrices");
     
-  var (L,U) = lu(A);
+  var (L,U,P) = lu(A);
   
   // L[i,i] always = 1, so we only need to take the 
   // diagonal product of U
