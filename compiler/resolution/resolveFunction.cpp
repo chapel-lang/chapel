@@ -1292,9 +1292,10 @@ void insertFormalTemps(FnSymbol* fn) {
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
 
-      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-      }
+      if (formal->hasFlag(FLAG_NO_AUTO_DESTROY))
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
 
       formals2vars.put(formal, tmp);
     }
