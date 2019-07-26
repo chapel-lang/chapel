@@ -1,5 +1,1 @@
-#
-# This "--no-warnings" flag suppresses warnings from deprecated array methods.
-# See: https://github.com/chapel-lang/chapel/pull/13530
-#
---no-warnings --set blasImpl=off --set lapackImpl=off
+--set blasImpl=off --set lapackImpl=off
