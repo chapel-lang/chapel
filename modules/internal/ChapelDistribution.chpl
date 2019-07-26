@@ -549,6 +549,11 @@ module ChapelDistribution {
       bufDom = {0..#size};
     }
 
+    proc deinit() {
+      if cur>=1 then
+        flush();
+    }
+
     proc add(idx: idxType) {
       buf[cur] = idx;
       cur += 1;
