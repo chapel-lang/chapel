@@ -393,8 +393,15 @@ static Expr* postFoldPrimop(CallExpr* call) {
     // elsewhere.
     //
     // The other place is in String, which calls it with either one or
-    // two arguments, which are always params.  The one-argument version
-    // is deprecated, but the deprecation is handled elsewhere.
+    // two arguments, which are always params.
+    //
+    // All tests for user errors involving out-of-bounds accesses are
+    // done in the module code so that the line number of the error
+    // message will be more useful.  Therefore, bounds checks are not
+    // done here.
+    //
+    // After the deprecated cases are removed, this code should assert
+    // that the first argument is a param instead of just testing.
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
@@ -408,13 +415,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
         SymExpr* ie = toSymExpr(call->get(2));
         int64_t val = 0;
 
-        INT_ASSERT(ie && ie->symbol()->isParameter() && get_int(ie, &val));
+        INT_ASSERT(ie && ie->symbol()->isParameter());
+        bool found_int = get_int(ie, &val);
+        INT_ASSERT(found_int);
 
         idx = static_cast<size_t>(val) - 1;
-      }
-
-      if (idx >= unescaped.length()) {
-        USR_FATAL(call, "index out of bounds of string: %zd", idx + 1);
       }
 
       retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
