@@ -33,17 +33,28 @@ proc main() {
     writeln();
   }
 
-  for 1..iters {
+  for i in 1..iters {
     var A: [SparseDom] real;
     t.start();
     addDiag(A, 0, 2);
     addDiag(A, 1, -1);
     addDiag(A, -1, -1);
     t.stop();
+    
+    if correctness && i == 1 {
+      for (i,j) in Space {
+        if SparseDom.contains(i,j) then
+          write(A(i,j), " "); 
+        else
+          write(". ");
+
+        if (j == m) then writeln();
+      }
+      writeln();
+    }  
   }
 
   if !correctness then
     writeln('LinearAlgebra.addDiag: ', t.elapsed() / iters);
   t.clear();
 }
-
