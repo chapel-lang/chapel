@@ -30,7 +30,7 @@
 module Sets {
 
   pragma "no doc"
-  config param _sanityChecks = true;
+  private param _sanityChecks = true;
 
   //
   // Some asserts are useful while developing, but can be turned off when the
@@ -295,10 +295,28 @@ module Sets {
 
       :yields: A reference to one of the elements contained in this set.
     */
-    iter these() ref {
-      // TODO: How to make a parallel safe iterator?
-      for x in _dom do
+    iter these() {
+      for x in _dom.these() do
         yield x;
+    }
+
+    pragma "no doc"
+    iter these(param tag) where tag == iterKind.standalone {
+      for x in _dom.these(tag) do
+        yield x;
+    }
+
+    pragma "no doc"
+    iter these(param tag) where tag == iterKind.leader {
+      for followThis in _dom.these(tag) do
+        yield followThis;
+    }
+
+    pragma "no doc"
+    iter these(param tag, followThis) where tag == iterKind.follower {
+      for x in _dom.these(tag, followThis) do
+        yield x;
+
     }
 
     /*
