@@ -32,8 +32,7 @@ proc main(args: [] string) {
   setenv("PWD", newPWD.c_str(), 1);
 
   // Add mason dependency
-  var modArgs = args[2..];
-  modArgs.push_front(args[0]);
+  var modArgs: [0..#args.size-2] string = args[2..];
   masonModify(modArgs);;
 
   // Print manifest for diff against .good file
