@@ -29,7 +29,7 @@ bdir=$(CHPL_BIN_DIR)
 link=../../tools/mason/mason
 linkFile=$(bdir)/mason
 
-MASON_SOURCES=MasonBuild.chpl MasonEnv.chpl MasonHelp.chpl MasonNew.chpl MasonRun.chpl MasonSearch.chpl MasonUpdate.chpl MasonUtils.chpl mason.chpl
+MASON_SOURCES=*.chpl
 
 all: mason
 
