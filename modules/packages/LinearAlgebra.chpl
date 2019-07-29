@@ -1070,15 +1070,15 @@ proc _lu (in A: [?Adom] ?eltType) {
     }
 
     forall k in i..n {
-    	var sum = + reduce (L[i,..] * U[..,k]);
-    	U[i,k] = A[i,k] - sum;
+      var sum = + reduce (L[i,..] * U[..,k]);
+      U[i,k] = A[i,k] - sum;
     }
 
     L[i,i] = 1;
 
     forall k in (i+1)..n {
-    	var sum = + reduce (L[k,..] * U[..,i]);
-    	L[k,i] = (A[k,i] - sum) / U[i,i];
+      var sum = + reduce (L[k,..] * U[..,i]);
+      L[k,i] = (A[k,i] - sum) / U[i,i];
     }
   } 
 
