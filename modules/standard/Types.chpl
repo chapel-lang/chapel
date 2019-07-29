@@ -145,7 +145,7 @@ proc isStringType(type t) param return t == string;
 
 /* Returns `true` if the type `t` is the `bytes` type. */
 pragma "no instantiation limit"
-proc isBytesType(type t) param return t == bytes;
+proc isBytesType(type t) param return t == _bytes;
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
 Old Data in C++.

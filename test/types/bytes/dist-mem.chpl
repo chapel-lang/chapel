@@ -1,8 +1,8 @@
 use CommDiagnostics;
 config const length = 20;
-var b: bytes = "b ";
+var b: _bytes = "b ";
 b = b*length;
-var otherB: bytes;
+var otherB: _bytes;
 
 on Locales[1] {
   startCommDiagnosticsHere();

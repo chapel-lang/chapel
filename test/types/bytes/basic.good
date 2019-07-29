@@ -16,17 +16,17 @@ Length/size tests
 3 must be 3
 
 Accessor tests
-A as bytes
-B as bytes
-C as bytes
-65 as bytes
-66 as bytes
-67 as bytes
+A as _bytes
+B as _bytes
+C as _bytes
+65 as _bytes
+66 as _bytes
+67 as _bytes
 
 Iterator tests
-A as bytes
-B as bytes
-C as bytes
+A as _bytes
+B as _bytes
+C as _bytes
 65 as uint(8)
 66 as uint(8)
 67 as uint(8)
@@ -56,10 +56,10 @@ allDigit.toUpper() :0123456789
 allDigit.toLower() :0123456789
 
 Slice tests
-this -- the type is bytes
-is a bytes -- the type is bytes
-this is a bytes -- the type is bytes
-bytes -- the type is bytes
+this -- the type is _bytes
+is a bytes -- the type is _bytes
+this is a bytes -- the type is _bytes
+bytes -- the type is _bytes
 
 Search tests
 true
