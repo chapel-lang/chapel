@@ -1183,8 +1183,7 @@ AggregateType* getManagedPtrManagerType(Type* managedPtrType) {
     managedPtrType = dt->getCanonicalClass();
 
   AggregateType* at = toAggregateType(managedPtrType);
-  while (at && at->instantiatedFrom)
-    at = at->instantiatedFrom;
+  at = at->getRootInstantiation();
 
   return at;
 }
