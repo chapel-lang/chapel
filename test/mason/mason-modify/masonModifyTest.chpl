@@ -28,7 +28,7 @@ proc main(args: [] string) {
 
   // here.chdir is not sufficient
   const oldPWD = getEnv('PWD');
-  const newPWD = oldPWD + '/' + basename;
+  const newPWD = '/'.join(oldPWD, basename);
   setenv("PWD", newPWD.c_str(), 1);
 
   // Add mason dependency
