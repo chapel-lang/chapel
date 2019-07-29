@@ -1,12 +1,15 @@
-use MasonNew;
 use MasonModify;
 use MasonUtils;
 use MasonSearch;
+
 use TOML;
 use FileSystem;
 
 extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
 
+/* Copy the toml file into a package (empty directory) as 'Mason.toml',
+   modify it with the provided arguments, and print it out.
+ */
 proc main(args: [] string) {
 
   // Expect basename as first arg, e.g. addDep
