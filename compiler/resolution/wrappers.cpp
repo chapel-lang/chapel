@@ -432,6 +432,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   }
 
+  wrapper->addFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_MAYBE_PARAM);
   wrapper->addFlag(FLAG_MAYBE_TYPE);
