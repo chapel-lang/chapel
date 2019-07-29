@@ -50,6 +50,20 @@ var mag = abs(simple);
   if diff(tmp.im,unit.re/(small*mag)) then writeln("FAILED-6 im : ",tmp.re);
 }
 
+{
+  var tmp = 1.0:complex/(simple*big);
+  if diff(tmp.re,unit.re/(big*mag)) then writeln("FAILED-7 re : ",tmp.re);
+  if diff(tmp.im,-unit.im/(big*mag)) then writeln("FAILED-7 im : ",tmp.re);
+}
+
+
+{
+  var tmp = 1.0:complex/(simple*small);
+  if diff(tmp.re,unit.re/(small*mag)) then writeln("FAILED-8 re : ",tmp.re);
+  if diff(tmp.im,-unit.im/(small*mag)) then writeln("FAILED-8 im : ",tmp.re);
+}
+
+
 proc diff(actual : real, expected : real) : bool {
   return abs((actual-expected)/expected) > 1.0e-14;
 }
