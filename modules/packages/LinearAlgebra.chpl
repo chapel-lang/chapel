@@ -1066,7 +1066,7 @@ proc _lu (in A: [?Adom] ?eltType) {
       A[i,..] <=> A[swaprow,..];
       L[i,..] <=> L[swaprow,..];
       ipiv[i] <=> ipiv[swaprow];
-      numSwap++;
+      numSwap+=1;
     }
 
     forall k in i..n {
