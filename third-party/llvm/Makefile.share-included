@@ -11,10 +11,5 @@ ifndef LLVM_CONFIG_CFLAGS
   export LLVM_CONFIG_CFLAGS:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
 endif
 
-ifndef LLVM_VERSION
-  export LLVM_VERSION:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --version)
-endif
-
-ifndef LLVM_MAJOR_VERSION
-  export LLVM_MAJOR_VERSION:=$(firstword $(subst ., ,$(LLVM_VERSION)))
-endif
+# LLVM_VERSION, LLVM_MAJOR_VERSION, etc
+include $(THIRD_PARTY_DIR)/llvm/Makefile.version
