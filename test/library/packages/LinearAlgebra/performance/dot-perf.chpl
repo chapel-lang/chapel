@@ -9,6 +9,7 @@ use Math;
 
 config const n=1000000,
              iters=10,
+             thresh=1.0e-10,
              /* Skip benchmarking against reduction */
              reference=false,
              /* Omit timing output */
@@ -41,8 +42,19 @@ proc main() {
 
   for 1..iters {
     t.start();
-    var d = dot(BA, BA);
+    d = dot(BA, BA);
     t.stop();
+  }
+  
+  if correctness {
+    var d_reduce = + reduce (BA * BA);
+    const diff = abs(d - d_reduce);
+    if diff > thresh {
+      writeln("FAILED ", maxdiff);
+    }
+    else {
+      writeln("PASSED");
+    }
   }
 
   if !correctness then
