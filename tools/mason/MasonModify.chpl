@@ -101,7 +101,7 @@ proc masonModify(args) throws {
 proc modifyToml(add: bool, spec: string, external: bool, system: bool,
                 projectHome: string, tf="Mason.toml") throws {
 
-  const tomlPath = projectHome + "/" + tf;
+  const tomlPath = '/'.join(projectHome, tf);
   const openFile = openreader(tomlPath);
   const toml = parseToml(openFile);
   var newToml: unmanaged Toml;
