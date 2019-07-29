@@ -1130,13 +1130,14 @@ proc det (const ref A: [?Adom] ?eltType) {
 
   if Adom.shape(1) != Adom.shape(2) then
     halt("Determinant can only be computed from square matrices");
-    
-  var (L,U,P) = lu(A);
+  
+  var (LU, ipiv) = lu(A);
+  const pdet = if ipiv % 2 == 0 then 1 else -1;
   
   // L[i,i] always = 1, so we only need to take the 
   // diagonal product of U
   
-  return (* reduce [i in Adom.dim(1)] U[i,i]);
+  return (* reduce [i in Adom.dim(1)] LU[i,i]) * pdet;
 }
 
 /* Returns the solution ``x`` to the linear system `` L * x = b `` 
