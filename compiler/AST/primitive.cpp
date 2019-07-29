@@ -1034,6 +1034,10 @@ initPrimitive() {
   // indicate optimization information.
   // That symbol includes OPT_INFO_... flags.
   prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
+
+  prim_def(PRIM_POPULATE_TESTS,"populate tests",returnInfoDefaultInt);
+  prim_def(PRIM_GET_TEST_BY_NAME,"get test by name",returnInfoVoid);
+  prim_def(PRIM_GET_TEST_BY_INDEX,"get test by index",returnInfoVoid);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
