@@ -85,7 +85,7 @@ module UnitTest {
   config const ranTests: string = "None";
   // This is a dummy test to capture the function signature
   private
-  proc testSignature(test: Test) throws { }
+  proc testSignature(test: borrowed Test) throws { }
   pragma "no doc"
   var tempFcf = testSignature;
   pragma "no doc"

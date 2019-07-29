@@ -43,6 +43,7 @@
 
 #include "ResolveScope.h"
 
+#include "DecoratedClassType.h"
 #include "ForallStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
@@ -243,6 +244,9 @@ void ResolveScope::addBuiltIns() {
   extend(dtUnmanaged->symbol);
   extend(dtUnmanagedNonNilable->symbol);
   extend(dtUnmanagedNilable->symbol);
+  extend(dtAnyManagement->symbol);
+  extend(dtAnyManagementNonNilable->symbol);
+  extend(dtAnyManagementNilable->symbol);
 
   extend(dtMethodToken->symbol);
   extend(gMethodToken);

@@ -113,6 +113,8 @@ static std::map<FnSymbol*,FnSymbol*> newWrapperMap;
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion
 static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
+  SET_LINENO(initFn);
+
   AggregateType* type = toAggregateType(initFn->_this->getValType());
   if (newWrapperMap.find(initFn) != newWrapperMap.end()) {
     return newWrapperMap[initFn];

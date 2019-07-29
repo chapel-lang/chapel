@@ -440,7 +440,7 @@ proc test_more_astimezone() {
   assert(dt.tzinfo == f44m);
 
   // Replacing with same tzinfo makes no change.
-  var x = dt.astimezone(dt.tzinfo);
+  var x = dt.astimezone(dt.tzinfo:shared TZInfo);
   assert(x.tzinfo == f44m);
   assert(x.getdate() == dt.getdate());
   assert(x.gettime() == dt.gettime());

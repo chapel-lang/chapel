@@ -1,2 +1,1 @@
-genericActualTypeArg3.chpl:2: error: the type of the actual argument 'Foo' is generic
-note: generic actual arguments are not currently supported
+Foo

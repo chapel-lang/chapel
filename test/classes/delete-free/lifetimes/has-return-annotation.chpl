@@ -53,7 +53,7 @@ proc callOk2() {
 }
 callOk2();
 
-proc returnOneOfThem (a: C, b: C) lifetime return b {
+proc returnOneOfThem (a: borrowed C, b: borrowed C) lifetime return b {
   return b;
 }
 

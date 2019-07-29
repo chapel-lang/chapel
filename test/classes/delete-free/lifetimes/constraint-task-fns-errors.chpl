@@ -38,7 +38,7 @@ proc setit_on( ref lhs: C?, rhs: C ) lifetime lhs < rhs {
 
 
 proc test_begin() {
-  var bb: C?;
+  var bb: borrowed C?;
   {
     var a = new owned C(1);
     setit_begin(bb, a.borrow());
@@ -48,7 +48,7 @@ proc test_begin() {
 test_begin();
 
 proc test_cobegin() {
-  var bb: C?;
+  var bb: borrowed C?;
   {
     var a = new owned C(1);
     setit_cobegin(bb, a.borrow());
@@ -58,7 +58,7 @@ proc test_cobegin() {
 test_cobegin();
 
 proc test_coforall() {
-  var bb: C?;
+  var bb: borrowed C?;
   {
     var a = new owned C(1);
     setit_coforall(bb, a.borrow());
@@ -68,7 +68,7 @@ proc test_coforall() {
 test_coforall();
 
 proc test_forall() {
-  var bb: C?;
+  var bb: borrowed C?;
   {
     var a = new owned C(1);
     setit_forall(bb, a.borrow());
@@ -78,7 +78,7 @@ proc test_forall() {
 test_forall();
 
 proc test_on() {
-  var bb: C?;
+  var bb: borrowed C?;
   {
     var a = new owned C(1);
     setit_on(bb, a.borrow());

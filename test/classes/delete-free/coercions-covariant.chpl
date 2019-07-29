@@ -7,10 +7,10 @@ class SubClass : MyClass {
 }
 
 
-proc acceptOwnedMyClass1(own:owned MyClass) {
+proc acceptOwnedMyClass1(in own:owned MyClass) {
   writeln(own);
 }
-proc acceptOwnedMyClass3(const own:owned MyClass) {
+proc acceptOwnedMyClass3(const in own:owned MyClass) {
   writeln(own);
 }
 

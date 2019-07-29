@@ -648,7 +648,7 @@ module DefaultAssociative {
     override proc dsiGetBaseDom() return dom;
   
     override proc clearEntry(idx: idxType) {
-      const initval: eltType;
+      var initval: eltType;
       dsiAccess(idx) = initval;
     }
 

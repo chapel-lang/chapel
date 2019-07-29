@@ -470,7 +470,7 @@ int isDefAndOrUse(SymExpr* se) {
       // BHARSH TODO: get rid of this 'isRecord' special case
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
-          (fn->name == astrSequals &&
+          (fn->name == astrSassign &&
            fn->getFormal(1) == arg &&
            isRecord(arg->type))) {
         return DEF_USE;

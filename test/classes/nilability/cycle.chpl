@@ -1,5 +1,5 @@
 module cycle {
-  class Node { var next: Node?; }
+  class Node { var next: borrowed Node?; }
   var a = new shared Node();
   var b = new shared Node();
   a.next = b.borrow(); // coerce from notnil to nilable

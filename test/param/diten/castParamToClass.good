@@ -1,2 +1,2 @@
 castParamToClass.chpl:1: In function 'main':
-castParamToClass.chpl:3: error: illegal cast from int(64) to borrowed object
+castParamToClass.chpl:3: error: illegal cast from int(64) to object

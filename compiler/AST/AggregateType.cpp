@@ -1030,7 +1030,8 @@ static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const 
 
   if (Type* fieldType = resolveFieldTypeForInstantiation(field, call, callString)) {
     if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
-      if (getInstantiationType(val->type, fieldType) == NULL) {
+      if (getInstantiationType(val->type, NULL,
+                               fieldType, NULL, call) == NULL) {
         USR_FATAL_CONT(call, "invalid type specifier '%s'", callString);
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
         USR_PRINT(call, "unable to instantiate field '%s : %s' with type '%s'", field->name, fieldType->symbol->name, val->type->symbol->name);
@@ -1086,7 +1087,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
           Symbol* value = resolveFieldDefault(field, call, callString);
 
           if (expected != NULL && value != NULL) {
-            if (getInstantiationType(value->type, expected) == NULL) {
+            if (getInstantiationType(value->type, NULL,
+                                     expected, NULL, call) == NULL) {
               // TODO: pretty-print resolved value
               USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
               USR_PRINT(call, "param field '%s' has type '%s' but default value is of incompatible type '%s'",
@@ -2317,6 +2319,10 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
+    // Use AggregateType in class hierarchy rather than generic-management
+    if (isDecoratedClassType(sym->type)) {
+      sym = canonicalClassType(sym->type)->symbol;
+    }
     ts = toTypeSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());
@@ -2487,6 +2493,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   //  0 -> borrowed MyClass?
   //  1 -> unmanaged MyClass!
   //  2 -> unmanaged MyClass?
+  //  3 -> generic-management generic-nilability MyClass
+  //  4 -> generic-management MyClass!
+  //  5 -> generic-management MyClass?
   switch (d) {
     case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
     case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
@@ -2497,6 +2506,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED:           packedDecorator = -1; break;
     case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
     case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
+    case CLASS_TYPE_GENERIC:           packedDecorator =  3; break;
+    case CLASS_TYPE_GENERIC_NONNIL:    packedDecorator =  4; break;
+    case CLASS_TYPE_GENERIC_NILABLE:   packedDecorator =  5; break;
       // intentionally no default
   }
 
@@ -2526,7 +2538,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     if (aggregateTag == AGGREGATE_CLASS)
       return at;
     else
-      INT_FATAL("Can't get borrowed owned/shared");
+      INT_FATAL("invalid type for borrowed variant");
   }
 
   // Otherwise, gather the appropriate class type.
@@ -2542,6 +2554,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     tsDec->addFlag(FLAG_NO_OBJECT);
     // Propagate generic-ness to the decorated type
     if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
+      tsDec->addFlag(FLAG_GENERIC);
+    // Generic management is generic
+    if (isDecoratorUnknownManagement(d))
       tsDec->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsDec->cname = at->symbol->cname;

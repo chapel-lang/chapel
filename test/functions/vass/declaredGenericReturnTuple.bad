@@ -1,3 +1,2 @@
-declaredGenericReturnTuple.chpl:11: In function 'p2':
-declaredGenericReturnTuple.chpl:11: error: the type of the actual argument 'VectorListElement' is generic
-note: generic actual arguments are not currently supported
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: error: Cannot default-initialize a variable with generic type
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: note: 'elt_x1' has generic type 'VectorListElement'

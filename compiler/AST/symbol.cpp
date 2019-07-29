@@ -1973,8 +1973,10 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 
 // cache some popular strings
 
+const char* astrSassign = NULL;
 const char* astrSdot = NULL;
-const char* astrSequals = NULL;
+const char* astrSeq = NULL;
+const char* astrSne = NULL;
 const char* astrSgt = NULL;
 const char* astrSgte = NULL;
 const char* astrSlt = NULL;
@@ -1998,8 +2000,10 @@ const char* astrPostfixBang = NULL;
 const char* astrBorrow = NULL;
 
 void initAstrConsts() {
+  astrSassign = astr("=");
   astrSdot    = astr(".");
-  astrSequals = astr("=");
+  astrSeq = astr("==");
+  astrSne = astr("!=");
   astrSgt = astr(">");
   astrSgte = astr(">=");
   astrSlt = astr("<");

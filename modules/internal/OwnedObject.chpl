@@ -343,6 +343,14 @@ module OwnedObject {
         return chpl_p!;
       }
     }
+
+    proc type borrow() type {
+      if _to_nilable(chpl_t) == chpl_t {
+        return chpl_t;
+      } else {
+        return _to_nonnil(chpl_t);
+      }
+    }
   }
 
   /*
@@ -475,7 +483,7 @@ module OwnedObject {
 
   pragma "no doc"
   pragma "always propagate line file info"
-  inline proc postfix!(x:_owned) {
+  inline proc postfix!(const ref x:_owned) {
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.

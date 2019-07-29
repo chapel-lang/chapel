@@ -1,7 +1,7 @@
 class MyClass {
   var x:int;
 }
-proc f(arg:owned MyClass?) {
+proc f(in arg:owned MyClass?) {
   writeln(arg);
 }
 

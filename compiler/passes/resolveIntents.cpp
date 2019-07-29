@@ -45,7 +45,6 @@ static IntentTag constIntentForType(Type* t) {
       t == dtNothing ||
       t == dtVoid ||
       t->symbol->hasFlag(FLAG_RANGE) ||
-      isManagedPtrType(t) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
     return INTENT_CONST_IN;
@@ -53,6 +52,7 @@ static IntentTag constIntentForType(Type* t) {
   } else if (isSyncType(t)          ||
              isSingleType(t)        ||
              isRecordWrappedType(t) ||  // domain, array, or distribution
+             isManagedPtrType(t) ||
              isAtomicType(t) ||
              isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
@@ -96,8 +96,9 @@ IntentTag blankIntentForType(Type* t) {
     retval = INTENT_REF_MAYBE_CONST;
 
   } else if (isManagedPtrType(t)) {
+    // TODO: INTENT_REF_MAYBE_CONST could
     // allow blank intent owned to be transferred out of
-    retval = INTENT_IN;
+    retval = INTENT_CONST_REF;
 
   } else if (is_bool_type(t)                         ||
              is_int_type(t)                          ||
@@ -232,12 +233,6 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     // the type. It would be better to rely on task/forall intents
     // to correctly mark const / not const / maybe const.
     return INTENT_REF;
-
-  else if (isManagedPtrType(arg->type) &&
-           (arg->intent == INTENT_BLANK || arg->intent == INTENT_CONST) &&
-           arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY))
-
-    return INTENT_CONST_REF;
 
   else
     return concreteIntent(arg->intent, arg->type);

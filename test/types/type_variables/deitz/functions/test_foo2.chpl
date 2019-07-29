@@ -11,5 +11,5 @@ record R {
   var b : int = 2;
 }
 
-foo(C);
+foo(borrowed C?);
 foo(R);
