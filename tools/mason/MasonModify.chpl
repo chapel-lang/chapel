@@ -21,55 +21,66 @@ use Regexp;
 use TOML;
 use MasonUtils;
 
+/* Modify manifest file */
 proc masonModify(args) throws {
-
   try! {
+
+    // Check for help flags
+    for arg in args[1..] {
+      if arg == '-h' || arg == '--help' {
+        masonModifyHelp();
+        exit(0);
+      }
+    }
+
+    // Check for incorrect usage
     if args.size < 3 {
       masonModifyHelp();
       exit(0);
     }
-    else if args.size > 2 {
-      for arg in args[1..] {
-        if arg == '-h' || arg == '--help' {
-          masonModifyHelp();
-          exit(0);
-        }
-      }
-      }
-    else {
-      const cwd = getEnv("PWD");
-      const projectHome = getProjectHome(cwd, "Mason.toml");
-      var external = false;
-      var system = false;
-      var add = true;
-      var dep = "";
-      for arg in args[1..] {
-        if arg == '-h' || arg == '--help' {
-          masonModifyHelp();
-         }
-        else if arg == "--system" {
+
+    // Parse arguments
+    var external = false;
+    var system = false;
+    var add = false;
+    var remove = false;
+    var dep = "";
+    for arg in args[1..] {
+      select (arg) {
+        when '--system' {
           system = true;
         }
-        else if arg == "--external" {
+        when '--external' {
           external = true;
         }
-        else if arg == "add" {
+        when 'add' {
           add = true;
         }
-        else if arg == "rm" {
-          add = false;
+        when 'rm' {
+          remove = true;
         }
-        else {
+        otherwise {
           dep = arg;
         }
       }
-      if external && system then throw new owned MasonError("Invalid combination of arguments");
-      else if dep == "" then throw new owned MasonError("Must enter a dependency");
-      else {
-        const result = modifyToml(add, dep, external, system, projectHome);
-        generateToml(result[1], result[2]);
-      }
     }
+
+    // Check for errors in argument values
+    if external && system then
+      throw new owned MasonError("Use only '--external' or '--system'");
+    if dep == "" then
+      throw new owned MasonError("Must enter a dependency");
+    if add && remove then
+      throw new owned MasonError("Use only 'add' or 'rm'");
+    // Note: We don't need to check for !add && !remove because
+    //       this function is only executed when 'add' or 'rm' is passed
+
+    // Modify the manifest file based on arguments
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd, "Mason.toml");
+
+    const result = modifyToml(add, dep, external, system, projectHome);
+    generateToml(result[1], result[2]);
   }
   catch e: MasonError {
     writeln(e.message());
@@ -80,13 +91,13 @@ proc masonModify(args) throws {
 proc modifyToml(add: bool, spec: string, external: bool, system: bool,
                 projectHome: string, tf="Mason.toml") throws {
 
-  const tomlPath = projectHome + "/" + tf;    
+  const tomlPath = projectHome + "/" + tf;
   const openFile = openreader(tomlPath);
   const toml = parseToml(openFile);
   var newToml: unmanaged Toml;
 
   try! {
-    
+
     // Adding a dependency
     if add {
       if spec.find("@") == 0 {
@@ -109,7 +120,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       else {
         writeln(" ".join("Adding Mason dependency", dependency, "version", version));
         newToml = masonAdd(toml, dependency, version);
-      }    
+      }
     }
 
     // Removing a dependency
@@ -122,7 +133,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       else depName = spec;
       const dependency = depName;
       checkDepName(depName);
-      
+
       if !system && !external {
         writeln("Removing Mason dependency " + dependency);
         newToml = masonRemove(toml, dependency);
@@ -184,7 +195,7 @@ private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
 
 /* Add a system dependency to Mason.toml */
 private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string) throws {
-  
+
   if toml.pathExists("system") {
     if toml.pathExists("system." + toAdd) {
       throw new owned MasonError("A dependency by that name already exists in Mason.toml");
@@ -277,6 +288,6 @@ private proc checkVersion(version: string) throws {
 private proc checkDepName(dep: string) throws {
   if !isIdentifier(dep) {
       throw new owned MasonError("Bad package name '" + dep +
-                             "' - only Chapel identifiers are legal package names");  
+                             "' - only Chapel identifiers are legal package names");
   }
 }
