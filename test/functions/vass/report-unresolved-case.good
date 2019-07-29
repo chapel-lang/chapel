@@ -1,2 +1,2 @@
 report-unresolved-case.chpl:2: error: unresolved call 'int(64).these(iterKind)'
-note: and 73 other candidates, use --print-all-candidates to see them
+note: and 74 other candidates, use --print-all-candidates to see them
