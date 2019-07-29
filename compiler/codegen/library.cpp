@@ -665,6 +665,14 @@ static void makePYFile() {
       fprintf(py.fptr, "\"%s\"", libName);
     }
     std::string libraries = getCompilelineOption("libraries");
+
+    // Erase trailing newline and append multilocale-only dependencies.
+    if (fMultiLocaleInterop) {
+      libraries.erase(libraries.length - 1);
+      libraries += " ";
+      libraries += getCompilelineOption("multilocale-lib-deps");
+    }
+
     char copyOfLib[libraries.length() + 1];
     libraries.copy(copyOfLib, libraries.length(), 0);
     copyOfLib[libraries.length()] = '\0';
@@ -683,6 +691,8 @@ static void makePYFile() {
       }
       curSection = strtok(NULL, " \n");
     }
+
+    // Fetch addition
     fprintf(py.fptr, "]\n");
 
     // Cythonize me, Captain!
@@ -691,8 +701,10 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
-            libname.c_str());
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + ",
+                     "[\"%s\"])))\n",
+                     libname.c_str(),
+                     libname.c_str());
 
     gGenInfo->cfile = save_cfile;
   }
@@ -750,6 +762,15 @@ void codegen_make_python_module() {
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
+  // Snag extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = "$CHPL_HOME/util/config/compileline";
+    cmd += " --multilocale-lib-deps";
+    libraries += " ";
+    libraries += runCommand(cmd);
+    libraries.erase(libraries.length() - 1);
+  }
+
   std::string name = "-l";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
@@ -772,10 +793,8 @@ void codegen_make_python_module() {
   fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
 
-  // We might be using the GNU linker, in which case we need to do this.
-  if (llvmCodegen) {
-    fullCythonCall += " " + name;
-  }
+  // Append library as last link argument to appease GNU linker.
+  fullCythonCall += " " + name;
 
   fullCythonCall +=  "\" " + cythonPortion;
 
