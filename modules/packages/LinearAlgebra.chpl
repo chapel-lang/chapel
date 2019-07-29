@@ -1042,33 +1042,19 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
-
-/*
-  Returns a pair of lower and upper triangular matrices
-  (L,U) such that ``L * U = A``.
-
-    .. note::
-
-      This procedure accepts A as either a dense and sparse 
-      array, but only returns dense matrices L and U.
-*/
-
-proc lu (in A: [?Adom] ?eltType) {
-  if Adom.rank != 2 then
-    halt("Wrong rank for LU factorization");
-
-  if Adom.shape(1) != Adom.shape(2) then
-    halt("LU factorization only supports square matrices");
-
+proc _lu (in A: [?Adom] ?eltType) {
   const n = Adom.shape(1);
   const LUDom = {1..n, 1..n};
 
-  var L, U, P: [LUDom] eltType;
+  // TODO: Reduce memory usage
+  var L, U, LU: [LUDom] eltType;
+
+  var ipiv: [{1..n}] int = [i in {1..n}] i;
   
-  var pivots: [{1..n}] int = [i in {1..n}] i;
+  var numSwap: int = 0;
 
   for i in 1..n { 
-    
+
     var max = A[i,i], swaprow = i;
     for row in (i+1)..n {
       if (abs(A[row,i]) > abs(max)) {
@@ -1079,9 +1065,10 @@ proc lu (in A: [?Adom] ?eltType) {
     if (swaprow != i) {
       A[i,..] <=> A[swaprow,..];
       L[i,..] <=> L[swaprow,..];
-      pivots[i] <=> pivots[swaprow];
+      ipiv[i] <=> ipiv[swaprow];
+      numSwap++;
     }
-    
+
     forall k in i..n {
     	var sum = + reduce (L[i,..] * U[..,k]);
     	U[i,k] = A[i,k] - sum;
@@ -1094,12 +1081,37 @@ proc lu (in A: [?Adom] ?eltType) {
     	L[k,i] = (A[k,i] - sum) / U[i,i];
     }
   } 
-  
+
+  LU = L + U;
   forall i in 1..n {
-    P[i,pivots[i]] = 1;
+    LU(i,i) = U(i,i);
   }
 
-  return (L,U,P);
+  return (LU,ipiv,numSwap);
+}
+
+/*
+  Computes an LU factorization of square matrix `A` 
+  using partial pivoting, such that `A = P * L * U` where P
+  is a permutation matrix. 
+  
+  `L` and `U` are stored in the same matrix `LU` where 
+  the unit diagonal elements of L are not stored.
+  
+  `ipiv` contains the pivot indices such that row i of `A` 
+  was interchanged with row `ipiv(i)`.
+  
+*/
+
+proc lu (A: [?Adom] ?eltType) {
+  if Adom.rank != 2 then
+    halt("Wrong rank for LU factorization");
+
+  if Adom.shape(1) != Adom.shape(2) then
+    halt("LU factorization only supports square matrices");
+
+  var (LU, ipiv, numSwap) = _lu(A);
+  return (LU,ipiv);
 }
 
 /* Returns the determinant of a square matrix.
