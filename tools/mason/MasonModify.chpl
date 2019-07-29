@@ -46,21 +46,31 @@ proc masonModify(args) throws {
     var remove = false;
     var dep = "";
     for arg in args[1..] {
-      select (arg) {
-        when '--system' {
-          system = true;
+      if arg.startsWith('-') {
+        // Parse optional arguments
+        select (arg) {
+          when '--system' {
+            system = true;
+          }
+          when '--external' {
+            external = true;
+          }
+          otherwise {
+            throw new owned MasonError("Unrecognized flag: " + arg);
+          }
         }
-        when '--external' {
-          external = true;
-        }
-        when 'add' {
-          add = true;
-        }
-        when 'rm' {
-          remove = true;
-        }
-        otherwise {
-          dep = arg;
+      } else {
+        // Parse positional arguments
+        select (arg) {
+          when 'add' {
+            add = true;
+          }
+          when 'rm' {
+            remove = true;
+          } otherwise {
+            if dep.isEmpty() then dep = arg;
+            else throw new owned MasonError("More than one package specified: " + dep + ', ' + arg);
+          }
         }
       }
     }
