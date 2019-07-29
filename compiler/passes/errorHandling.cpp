@@ -631,15 +631,18 @@ static bool catchesNotExhaustive(TryStmt* tryStmt) {
 static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth) {
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     bool inCompilerGeneratedFn = false;
+    bool inDefaultActualFn = false;
     if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
       // Don't check wrapper functions in strict mode, unless they are task
       // functions and we know the caller of the task function is not declared
       // as throws.
       inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn) &&
         !(isTaskFun(parentFn) && taskFunctionDepth > 0);
+      inDefaultActualFn = parentFn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
     }
     bool callsUncheckedThrowsFn = isUncheckedThrowsFunction(calledFn);
-    bool strictError = !(inCompilerGeneratedFn || callsUncheckedThrowsFn);
+    bool strictError = !((inCompilerGeneratedFn && !inDefaultActualFn) ||
+                         callsUncheckedThrowsFn);
 
     return strictError;
   }

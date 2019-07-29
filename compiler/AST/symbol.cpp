@@ -64,6 +64,7 @@ VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
 VarSymbol *gLegacyNilClasses = NULL;
+VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
@@ -1972,8 +1973,10 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 
 // cache some popular strings
 
+const char* astrSassign = NULL;
 const char* astrSdot = NULL;
-const char* astrSequals = NULL;
+const char* astrSeq = NULL;
+const char* astrSne = NULL;
 const char* astrSgt = NULL;
 const char* astrSgte = NULL;
 const char* astrSlt = NULL;
@@ -1994,10 +1997,13 @@ const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
 const char* astrPostfixBang = NULL;
+const char* astrBorrow = NULL;
 
 void initAstrConsts() {
+  astrSassign = astr("=");
   astrSdot    = astr(".");
-  astrSequals = astr("=");
+  astrSeq = astr("==");
+  astrSne = astr("!=");
   astrSgt = astr(">");
   astrSgte = astr(">=");
   astrSlt = astr("<");
@@ -2020,6 +2026,8 @@ void initAstrConsts() {
   astr_loopexpr_iter = astr("chpl__loopexpr_iter");
 
   astrPostfixBang = astr("postfix!");
+
+  astrBorrow = astr("borrow");
 }
 
 /************************************* | **************************************

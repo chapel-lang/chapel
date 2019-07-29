@@ -186,13 +186,15 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
-void compute_fn_call_sites(FnSymbol* fn) {
+void compute_fn_call_sites(FnSymbol* fn, bool allowVirtual) {
 /* If present, fn->calledBy needs to be set up in advance.
    See the comment in compute_call_sites() */
 
   if (fn->calledBy == NULL) {
     fn->calledBy = new Vec<CallExpr*>();
   }
+
+  INT_ASSERT(allowVirtual || virtualRootsMap.get(fn) == NULL);
 
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -215,6 +217,7 @@ void compute_fn_call_sites(FnSymbol* fn) {
           Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
 
           fn->calledBy->add(call);
+          INT_ASSERT(allowVirtual);
 
           forv_Vec(FnSymbol, child, *children) {
             if (!child->calledBy)
@@ -467,7 +470,7 @@ int isDefAndOrUse(SymExpr* se) {
       // BHARSH TODO: get rid of this 'isRecord' special case
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
-          (fn->name == astrSequals &&
+          (fn->name == astrSassign &&
            fn->getFormal(1) == arg &&
            isRecord(arg->type))) {
         return DEF_USE;

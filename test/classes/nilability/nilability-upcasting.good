@@ -1,4 +1,32 @@
 
+casts to generic Child
+cb:Child
+borrowed Child {p = 1, c = 2}
+cbq:Child
+borrowed Child {p = 1, c = 2}
+cu:Child
+unmanaged Child {p = 1, c = 2}
+cuq:Child
+unmanaged Child {p = 1, c = 2}
+nbq:Child
+NilClassError: cannot convert nil class to non nilable type
+nuq:Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to generic Child?
+cb:Child?
+borrowed Child? {p = 1, c = 2}
+cbq:Child?
+borrowed Child? {p = 1, c = 2}
+cu:Child?
+unmanaged Child? {p = 1, c = 2}
+cuq:Child?
+unmanaged Child? {p = 1, c = 2}
+nbq:Child?
+borrowed Child? nil
+nuq:Child?
+unmanaged Child? nil
+
 casts to borrowed Child
 cb:borrowed Child
 borrowed Child {p = 1, c = 2}
@@ -78,6 +106,34 @@ unmanaged Child? nil
 nuq:unmanaged Child?
 unmanaged Child? nil
 unmanaged Child? nil
+
+casts to generic Parent
+cb:Parent
+borrowed Parent {p = 1, c = 2}
+cbq:Parent
+borrowed Parent {p = 1, c = 2}
+cu:Parent
+unmanaged Parent {p = 1, c = 2}
+cuq:Parent
+unmanaged Parent {p = 1, c = 2}
+nbq:Parent
+NilClassError: cannot convert nil class to non nilable type
+nuq:Parent
+NilClassError: cannot convert nil class to non nilable type
+
+casts to generic Parent?
+cb:Parent?
+borrowed Parent? {p = 1, c = 2}
+cbq:Parent?
+borrowed Parent? {p = 1, c = 2}
+cu:Parent?
+unmanaged Parent? {p = 1, c = 2}
+cuq:Parent?
+unmanaged Parent? {p = 1, c = 2}
+nbq:Parent?
+borrowed Parent? nil
+nuq:Parent?
+unmanaged Parent? nil
 
 casts to borrowed Parent
 cb:borrowed Parent

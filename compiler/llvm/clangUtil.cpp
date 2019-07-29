@@ -1655,6 +1655,8 @@ void runClang(const char* just_parse_filename) {
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
     gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash compile '";
+    gather_prgenv += CHPL_TARGET_PLATFORM;
+    gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM;
     gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM_SUBSTRATE;
@@ -2867,6 +2869,8 @@ void makeBinaryLLVM(void) {
     std::string gather_prgenv(CHPL_HOME);
     gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link '";
 
+    gather_prgenv += CHPL_TARGET_PLATFORM;
+    gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM;
     gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM_SUBSTRATE;

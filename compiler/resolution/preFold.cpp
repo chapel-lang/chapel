@@ -585,14 +585,29 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
+    Expr* e = call->get(1);
 
-    if (isTypeExpr(call->get(1))) {
+    if (isTypeExpr(e)) {
       retval = new SymExpr(totype->symbol);
+      call->replace(retval);
     } else {
-      retval = new CallExpr(PRIM_CAST, totype->symbol, call->get(1)->copy());
+      if (isManagedPtrType(e->typeInfo())) {
+        VarSymbol* tmp = newTemp("borrow_tmp");
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        CallExpr* c = new CallExpr("borrow", gMethodToken, e->remove());
+        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, c);
+        call->getStmtExpr()->insertBefore(move);
+        // so it is resolved
+        resolveExpr(c);
+        resolveExpr(move);
+        retval = new CallExpr(PRIM_CAST, totype->symbol, tmp);
+        call->replace(retval);
+      } else {
+        retval = new CallExpr(PRIM_CAST, totype->symbol, e->remove());
+        call->replace(retval);
+      }
     }
 
-    call->replace(retval);
 
     break;
   }
@@ -1469,36 +1484,6 @@ static Expr* preFoldNamed(CallExpr* call) {
         }
       }
     }
-
-  } else if (call->isNamed("==")) {
-    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
-      Type* lt = call->get(1)->getValType();
-      Type* rt = call->get(2)->getValType();
-
-      if (lt                                != dtUnknown &&
-          rt                                != dtUnknown &&
-          lt->symbol->hasFlag(FLAG_GENERIC) == false     &&
-          rt->symbol->hasFlag(FLAG_GENERIC) == false) {
-        retval = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-        call->replace(retval);
-      }
-    }
-
-
-  } else if (call->isNamed("!=")) {
-    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
-      Type* lt = call->get(1)->getValType();
-      Type* rt = call->get(2)->getValType();
-
-      if (lt                                != dtUnknown &&
-          rt                                != dtUnknown &&
-          lt->symbol->hasFlag(FLAG_GENERIC) == false     &&
-          rt->symbol->hasFlag(FLAG_GENERIC) == false) {
-        retval = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-        call->replace(retval);
-      }
-    }
-
 
   } else if (call->isNamed("chpl__staticFastFollowCheck")  ||
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {

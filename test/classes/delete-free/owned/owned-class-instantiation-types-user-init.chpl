@@ -8,7 +8,7 @@ class GenericCollection {
     var default:t;
     field = default;
   }
-  proc init(arg:owned) {
+  proc init(in arg:owned) {
     field = arg;
   }
   proc init(arg:borrowed) {

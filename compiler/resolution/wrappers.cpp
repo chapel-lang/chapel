@@ -357,7 +357,8 @@ static void addDefaultsAndReorder(FnSymbol *fn,
   }
 
   // Adjust AST location to be call site
-  reset_ast_loc(body, call);
+  if (fn->getModule()->modTag != MOD_USER)
+    reset_ast_loc(body, call);
 
   // Flatten body
   body->flattenAndRemove();
@@ -431,6 +432,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   }
 
+  wrapper->addFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_MAYBE_PARAM);
   wrapper->addFlag(FLAG_MAYBE_TYPE);
@@ -1113,6 +1115,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
+    USR_FATAL_CONT(formal->getFunction(),
+                   "to function '%s' defined here",
+                   formal->getFunction()->name);
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
@@ -1128,6 +1133,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);
+      USR_FATAL_CONT(formal->getFunction(),
+                     "to function '%s' defined here",
+                     formal->getFunction()->name);
     }
   }
 }
@@ -1690,7 +1698,7 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
                          std::vector<ArgSymbol*>& actualFormals) {
   bool retval = false;
 
-  if (fn->name != astrSequals) {
+  if (fn->name != astrSassign) {
     int numActuals = actualFormals.size();
     for (int j = 0; j < numActuals; j++) {
       Symbol* actual     = info.actuals.v[j];

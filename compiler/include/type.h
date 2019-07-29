@@ -397,6 +397,9 @@ TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
+TYPE_EXTERN PrimitiveType*    dtAnyManagement;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementNonNilable;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementNilable;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtDummyRef;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
@@ -446,6 +449,7 @@ int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
@@ -461,6 +465,7 @@ bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
 bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
+AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);

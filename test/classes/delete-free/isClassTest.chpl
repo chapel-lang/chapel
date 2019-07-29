@@ -16,7 +16,18 @@ proc testit(type t) {
   writeln();
 }
 
-testit(C);
+{
+  writeln("undecorated C");
+  // These would require generic actuals
+  //writeln(C:string);
+  //writeln(isClass(C));
+  //writeln(isClassType(C));
+  var c: C = new C();
+  writeln(isClass(c));
+  writeln(isClassValue(c));
+  writeln();
+}
+
 testit(unmanaged C);
 testit(borrowed C);
 testit(owned C);

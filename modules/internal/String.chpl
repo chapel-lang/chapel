@@ -857,6 +857,17 @@ module String {
     }
 
     /*
+      :returns: The value of a single-byte string as an integer.
+    */
+    proc toByte(): uint(8) {
+      var localThis: string = this.localize();
+
+      if localThis.len != 1 then
+        halt("string.toByte() only accepts single-byte strings");
+      return localThis.buff[0];
+    }
+
+    /*
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
@@ -865,6 +876,27 @@ module String {
       if boundsChecking && (i <= 0 || i > localThis.len)
         then halt("index out of bounds of string: ", i);
       return localThis.buff[i - 1];
+    }
+
+    /*
+      :returns: The value of a single-codepoint string as an integer.
+     */
+    proc toCodepoint(): int(32) {
+      var localThis: string = this.localize();
+
+      if localThis.isEmpty() then
+        halt("string.toCodepoint() only accepts single-codepoint strings");
+
+      var cp: int(32);
+      var nbytes: c_int;
+      var multibytes = localThis.buff: c_string;
+      var maxbytes = localThis.len: ssize_t;
+      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+
+      if localThis.len != nbytes:int then
+        halt("string.toCodepoint() only accepts single-codepoint strings");
+
+      return cp;
     }
 
     /*
@@ -980,7 +1012,7 @@ module String {
     // Converts from codepointIndex range to byte index range in the process.
     //
     // This function handles ranges of codepointIndex or of numeric types,
-    // both of which signify postions in the string measured in codepoints.
+    // both of which signify positions in the string measured in codepoints.
     //
     // Slicing by stridable codepoint ranges is unsupported because it
     // creates an irregular sequence of bytes.  We could add support in the
@@ -2228,12 +2260,21 @@ module String {
 
   pragma "no doc"
   inline proc ascii(param a: string) param {
-    compilerWarning("ascii is deprecated - please use string.byte instead");
+    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
     return __primitive("ascii", a);
   }
 
   pragma "no doc"
+  inline proc param string.toByte() param : uint(8) {
+    if __primitive("string_length", this) != 1 then
+      compilerError("string.toByte() only accepts single-byte strings");
+    return __primitive("ascii", this);
+  }
+
+  pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
+    if i < 1 || i > __primitive("string_length", this) then
+      compilerError("index out of bounds of string: " + i);
     return __primitive("ascii", this, i);
   }
 
@@ -2441,7 +2482,7 @@ module String {
      :returns: The byte value of the first character in `a` as an integer.
   */
   inline proc ascii(a: string) : uint(8) {
-    compilerWarning("ascii is deprecated - please use string.byte instead");
+    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
     if a.isEmpty() then return 0;
 
     if _local || a.locale_id == chpl_nodeID {

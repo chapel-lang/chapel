@@ -23,6 +23,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "iterator.h"
+#include "resolution.h"
 #include "stringutil.h"
 
 CallInfo::CallInfo() {
@@ -94,6 +95,10 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
       if (isInit && i == 2) {
         actuals.add(sym);
 
+      } else if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        // type formals can be generic
+        actuals.add(sym);
+
       } else {
         retval = false;
       }
@@ -131,6 +136,7 @@ void CallInfo::haltNotWellFormed() const {
                 "the type of the actual argument '%s' is generic",
                 sym->name);
       USR_PRINT("generic actual arguments are not currently supported");
+      printUndecoratedClassTypeNote(call, t);
       USR_STOP();
     }
   }

@@ -435,7 +435,10 @@ returnInfoCoerce(CallExpr* call) {
   if (t->symbol->hasFlag(FLAG_GENERIC)) {
     // Try to figure out what instantiation type we would use
     // and return that type.
-    t = getInstantiationType(call->get(1)->getValType(), t);
+    SymExpr* actualOne = toSymExpr(call->get(1));
+    SymExpr* actualTwo = toSymExpr(call->get(2));
+    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+                             t, actualTwo->symbol(), call);
   }
 
   return QualifiedType(t, QUAL_VAL);
@@ -456,6 +459,8 @@ returnInfoToUnmanaged(CallExpr* call) {
     t = dt->getCanonicalClass();
     if (dt->isNilable())
       decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
 
   if (AggregateType* at = toAggregateType(t)) {
@@ -484,7 +489,6 @@ returnInfoToBorrowed(CallExpr* call) {
     if (isClass(at))
       t = at->getDecoratedClass(decorator);
 
-  // Canonical class type is borrow type
   return QualifiedType(t, QUAL_VAL);
 }
 

@@ -28,29 +28,95 @@
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
     case CLASS_TYPE_BORROWED:
-      return astr("borrowed ", className);
+      if (developer)
+        return astr("borrowed anynil ", className);
+      else
+        return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NONNIL:
-      return astr("borrowed ", className); //, "!");
+      if (developer)
+        return astr("borrowed ", className, "!");
+      else
+        return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
     case CLASS_TYPE_UNMANAGED:
-      return astr("unmanaged ", className);
+      if (developer)
+        return astr("unmanaged anynil ", className);
+      else
+        return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NONNIL:
-      return astr("unmanaged ", className); //, "!");
+      if (developer)
+        return astr("unmanaged ", className, "!");
+      else
+        return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
     case CLASS_TYPE_MANAGED:
-      return astr(className);
+      if (developer)
+        return astr("managed anynil ", className);
+      else
+        return astr(className);
     case CLASS_TYPE_MANAGED_NONNIL:
-      return astr(className, "!");
+      if (developer)
+        return astr("managed ", className, "!");
+      else
+        return astr(className, "!");
     case CLASS_TYPE_MANAGED_NILABLE:
-      return astr(className, "?");
-
+      if (developer)
+        return astr("managed ", className, "?");
+      else
+        return astr(className, "?");
+    case CLASS_TYPE_GENERIC:
+      if (developer)
+        return astr("anymanaged anynil ", className);
+      else
+        return astr(className);
+    case CLASS_TYPE_GENERIC_NONNIL:
+      if (developer)
+        return astr("anymanaged ", className, "!");
+      else
+        return astr(className);
+    case CLASS_TYPE_GENERIC_NILABLE:
+      if (developer)
+        return astr("anymanaged ", className, "?");
+      else
+        return astr(className, "?");
     // no default for help from compilation errors
   }
   INT_FATAL("Case not handled");
   return NULL;
 }
+
+// Information from the formalDecorator will be used,
+// but if it is generic and actualDecorator has a non-generic value,
+// the non-generic component will be combined in.
+ClassTypeDecorator combineDecorators(ClassTypeDecorator formalDecorator,
+                                     ClassTypeDecorator actualDecorator) {
+  ClassTypeDecorator d = formalDecorator;
+
+  // Combine management information
+  if (isDecoratorUnknownManagement(formalDecorator)) {
+    // Get the management from the other decorator, but get the
+    // nilability from this one if it's specified.
+    d = removeNilableFromDecorator(actualDecorator);
+    if (isDecoratorNilable(formalDecorator))
+      d = addNilableToDecorator(d);
+    else if (isDecoratorNonNilable(formalDecorator))
+      d = addNonNilToDecorator(d);
+  }
+
+  // Combine nilability information
+  if (isDecoratorUnknownNilability(d)) {
+    // If it's unknown, use the nilability from the other decorator
+    if (isDecoratorNilable(actualDecorator))
+      d = addNilableToDecorator(d);
+    else if (isDecoratorNonNilable(actualDecorator))
+      d = addNonNilToDecorator(d);
+  }
+
+  return d;
+}
+
 
 DecoratedClassType::DecoratedClassType(AggregateType* cls, ClassTypeDecorator d)
   : Type(E_DecoratedClassType, NULL) {
@@ -152,7 +218,12 @@ Type* canonicalClassType(Type* t) {
 
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
-  if (isClassLike(t) && isClass(t)) {
+  // no _ddata c_ptr etc
+  INT_ASSERT(isClassLikeOrManaged(t));
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    return dt->getCanonicalClass()->getDecoratedClass(d);
+  } else if (isClassLike(t) && isClass(t)) {
     AggregateType* at = toAggregateType(t);
     return at->getDecoratedClass(d);
   } else if (isManagedPtrType(t)) {
@@ -161,7 +232,7 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
         d != CLASS_TYPE_MANAGED_NILABLE) {
       Type* bt = getManagedPtrBorrowType(t);
       if (bt && bt != dtUnknown) {
-        AggregateType* a = toAggregateType(bt);
+        AggregateType* a = toAggregateType(canonicalClassType(bt));
         INT_ASSERT(a);
         return a->getDecoratedClass(d);
       }
@@ -195,6 +266,12 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED_NONNIL:
     case CLASS_TYPE_MANAGED_NILABLE:
       INT_FATAL("should be handled above");
+    case CLASS_TYPE_GENERIC:
+      return dtAnyManagement;
+    case CLASS_TYPE_GENERIC_NONNIL:
+      return dtAnyManagementNonNilable;
+    case CLASS_TYPE_GENERIC_NILABLE:
+      return dtAnyManagementNilable;
     // intentionally no default
   }
 
@@ -203,8 +280,8 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
 
 ClassTypeDecorator classTypeDecorator(Type* t) {
-  if (!isClassLikeOrManaged(t))
-    INT_FATAL("classTypeDecorator called on non-class");
+  if (!isClassLikeOrManaged(t) && !isClassLikeOrPtr(t))
+    INT_FATAL("classTypeDecorator called on non-class non-ptr");
 
   if (isManagedPtrType(t) && !isDecoratedClassType(t)) {
     Type* bt = getManagedPtrBorrowType(t);
@@ -250,6 +327,18 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
     return CLASS_TYPE_UNMANAGED_NONNIL;
   if (t == dtUnmanagedNilable)
     return CLASS_TYPE_UNMANAGED_NILABLE;
+  if (t == dtAnyManagement)
+    return CLASS_TYPE_GENERIC;
+  if (t == dtAnyManagementNonNilable)
+    return CLASS_TYPE_GENERIC_NONNIL;
+  if (t == dtAnyManagementNilable)
+    return CLASS_TYPE_GENERIC_NILABLE;
+
+  if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+      t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+      t == dtCVoidPtr) {
+    return CLASS_TYPE_UNMANAGED_NILABLE;
+  }
 
   INT_FATAL("case not handled");
   return CLASS_TYPE_BORROWED;

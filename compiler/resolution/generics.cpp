@@ -129,20 +129,6 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, key, actualTS->getValType()->symbol);
   } else {
-    if (isManagedPtrType(actualTS->getValType()))
-      if (!(fn->hasFlag(FLAG_INIT_COPY_FN) ||
-            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-            fn->hasFlag(FLAG_BUILD_TUPLE) ||
-            fn->hasFlag(FLAG_NO_BORROW_CONVERT) ||
-            (fn->name == astrInit && fn->hasFlag(FLAG_COMPILER_GENERATED)) ||
-            fn->name == astr_cast))
-        if (ArgSymbol* arg = toArgSymbol(key))
-          if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
-            if (arg->intent == INTENT_CONST ||
-                arg->intent == INTENT_BLANK)
-              if (arg->getValType() == dtAny)
-                return getManagedPtrBorrowType(actualTS->getValType())->symbol;
-
     return actualTS;
   }
 }
@@ -371,7 +357,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
-      newFn->tagIfGeneric();
+      newFn->tagIfGeneric(&subs);
 
       explainAndCheckInstantiation(newFn, fn);
 

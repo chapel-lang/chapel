@@ -154,7 +154,7 @@ public:
 
   CallExpr*                  singleInvocation()                          const;
 
-  bool                       tagIfGeneric();
+  bool                       tagIfGeneric(SymbolMap* map = NULL);
 
   bool                       isNormalized()                              const;
   void                       setNormalized(bool value);
@@ -195,7 +195,7 @@ public:
 private:
   virtual std::string        docsDirective();
 
-  int                        hasGenericFormals()                         const;
+  int                        hasGenericFormals(SymbolMap* map)           const;
 
   bool                       mIsNormalized;
   bool                       _throwsError;

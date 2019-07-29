@@ -45,6 +45,9 @@ typedef enum {
   // Where clause does not match
   RESOLUTION_CANDIDATE_WHERE_FAILED,
 
+  // Implicit where clause does not match
+  RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED,
+
   // Types do not match and are in different categories
   RESOLUTION_CANDIDATE_UNRELATED_TYPE,
 
@@ -94,20 +97,22 @@ private:
 
   bool                      computeAlignment(CallInfo& info);
 
-  int                       computeSubstitutions();
+  int                       computeSubstitutions(Expr* ctx);
 
   bool                      verifyGenericFormal(ArgSymbol* formal)       const;
 
   void                      computeSubstitution(ArgSymbol* formal,
-                                                Symbol*    actual);
+                                                Symbol*    actual,
+                                                Expr*      ctx);
 
-  void                      computeSubstitution(ArgSymbol* formal);
+  void                      computeSubstitution(ArgSymbol* formal,
+                                                Expr*      ctx);
 
   void                      resolveTypedefedArgTypes();
 
   bool                      checkResolveFormalsWhereClauses(CallInfo& info);
 
-  bool                      checkGenericFormals();
+  bool                      checkGenericFormals(Expr* ctx);
 
   SymbolMap                 substitutions;
 };

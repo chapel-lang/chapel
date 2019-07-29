@@ -1,2 +1,1 @@
-issue-11846-b.chpl:7: error: the type of the actual argument 'R3' is generic
-note: generic actual arguments are not currently supported
+issue-11846-b.chpl:5: error: unable to resolve type

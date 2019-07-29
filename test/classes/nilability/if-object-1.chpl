@@ -5,7 +5,7 @@ class C {
 }
 
 proc main() {
-  var obj: C?;
+  var obj: borrowed C?;
 
   writeln(obj.x);
 

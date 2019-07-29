@@ -115,6 +115,7 @@ module ChapelBase {
   //
   // equality comparison on primitive types
   //
+  inline proc ==(a: _nilType, b: _nilType) param return true;
   inline proc ==(a: bool, b: bool) return __primitive("==", a, b);
   inline proc ==(a: int(?w), b: int(w)) return __primitive("==", a, b);
   inline proc ==(a: uint(?w), b: uint(w)) return __primitive("==", a, b);
@@ -131,6 +132,7 @@ module ChapelBase {
     return false;
   }
 
+  inline proc !=(a: _nilType, b: _nilType) param return false;
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
   inline proc !=(a: int(?w), b: int(w)) return __primitive("!=", a, b);
   inline proc !=(a: uint(?w), b: uint(w)) return __primitive("!=", a, b);
@@ -840,7 +842,7 @@ module ChapelBase {
     }
   }
 
-  pragma "unsafe" // work around problems storting non-nilable classes
+  pragma "unsafe" // work around problems storing non-nilable classes
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 

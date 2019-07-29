@@ -57,7 +57,7 @@ iter yieldRefX() ref {
   writeln(x);
 }
 proc okIterX() {
-  var b: C?;
+  var b: borrowed C?;
   var first = true;
   for x in yieldRefX() {
     x = 2;

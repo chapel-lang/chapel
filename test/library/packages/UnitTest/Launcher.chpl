@@ -119,11 +119,16 @@ module Launcher {
       }
       sub.wait();
       if !compErr {
-        var testNames: [1..0] string;
+        var testNames: [1..0] string,
+            failedTestNames: [1..0] string,
+            erroredTestNames: [1..0] string,
+            testsPassed: [1..0] string,
+            skippedTestNames: [1..0] string;
         var dictDomain: domain(int);
         var dict: [dictDomain] int;
-        runAndLog(executable, fileName, result, 0, numLocales,
-                  testNames, dictDomain, dict);
+        runAndLog(executable, fileName, result, numLocales, testsPassed,
+                  testNames, dictDomain, dict, failedTestNames, erroredTestNames,
+                  skippedTestNames);
         if !keepExec {
           FileSystem.remove(executable);
           if isFile(executableReal) {
@@ -150,48 +155,65 @@ module Launcher {
 
   pragma "no doc"
   /*Docs: Todo*/
-  proc runAndLog(executable, fileName, ref result, skipId = 0,
-                  reqNumLocales: int = numLocales, ref testNames,
-                  ref dictDomain, ref dict) throws 
+  proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
+                ref testsPassed, ref testNames, ref dictDomain, ref dict, 
+                ref failedTestNames, ref erroredTestNames, ref skippedTestNames) throws 
   {
     var separator1 = result.separator1,
         separator2 = result.separator2;
-    var testName: string,
-        flavour: string,
+    var flavour: string,
         line: string,
         testExecMsg: string;
-    var curIndex = 0,
-        reqLocales = 0;
+    var reqLocales = 0;
     var sep1Found = false,
         haltOccured = false;
-    var testNamesStr = "None";
+    var testNamesStr,
+        failedTestNamesStr,
+        erroredTestNamesStr,
+        passedTestStr,
+        skippedTestNamesStr = "None";
+
+    var currentRunningTests: [1..0] string;
     if testNames.size != 0 then testNamesStr = testNames: string;
-    var exec = spawn(["./"+executable, "--skipId", skipId: string, "-nl",
-                      reqNumLocales: string, "--testNames", testNamesStr],
-                      stdout = PIPE, stderr = PIPE); //Executing the file
+    if failedTestNames.size != 0 then failedTestNamesStr = failedTestNames: string;
+    if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames: string;
+    if testsPassed.size != 0 then passedTestStr = testsPassed: string;
+    if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames: string;
+    var exec = spawn(["./"+executable, "-nl", reqNumLocales: string, "--testNames", 
+              testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
+              erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
+              skippedTestNamesStr], stdout = PIPE, 
+              stderr = PIPE); //Executing the file
     //std output pipe
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
       else if line.strip() == separator2 && sep1Found {
+        var testName = currentRunningTests.pop_back();
         var checkStatus = testNames.find(testName);
         if checkStatus[1] then
           testNames.remove(checkStatus[2]);
-        addTestResult(result, dictDomain, dict, testNames, flavour, 
-                      fileName, testName, testExecMsg);
+        addTestResult(result, dictDomain, dict, testNames, flavour, fileName, 
+                  testName, testExecMsg, failedTestNames, erroredTestNames, 
+                  skippedTestNames, testsPassed);
         testExecMsg = "";
         sep1Found = false;
       }
+      else if line.startsWith("Flavour") {
+        var temp = line.strip().split(":");
+        flavour = temp[2].strip();
+        testExecMsg = "";
+      }
       else if sep1Found then testExecMsg += line;
       else {
-        var temp = line.strip().split(":");
-        if temp[1].strip().endsWith("]") {
-          var strSplit = temp[1].strip().split("]");
-          var testNameIndex = strSplit[1].split("[");
-          testName = testNameIndex[1];
-          curIndex = testNameIndex[2]: int;
-          result.startTest();
-          if temp.size > 1 {
-            flavour = temp[2].strip();
+        if line.strip().endsWith(")") {
+          var testName = line.strip();
+          var checkStatus = currentRunningTests.find(testName);
+          if !checkStatus[1] {
+            currentRunningTests.push_back(testName);
+            checkStatus = testNames.find(testName);
+            if !checkStatus[1] {
+              testNames.push_back(testName);
+            }
           }
           testExecMsg = "";
         }  
@@ -201,15 +223,23 @@ module Launcher {
     if exec.stderr.readline(line) { 
       var testErrMsg = line;
       while exec.stderr.readline(line) do testErrMsg += line;
-      if testName != "" {
+      if !currentRunningTests.isEmpty() {
+        var testNameIndex = currentRunningTests.pop_back();
+        var testName = testNameIndex;
+        var checkStatus = testNames.find(testName);
+        if checkStatus[1] {
+          testNames.remove(checkStatus[2]);
+        }
+        erroredTestNames.push_back(testName);
         result.addError(testName, fileName, testErrMsg);
         haltOccured =  true;
       }
     }
     exec.wait();//wait till the subprocess is complete
     if haltOccured then
-      runAndLog(executable, fileName, result,curIndex,
-                reqNumLocales, testNames, dictDomain, dict);
+      runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
+                testNames, dictDomain, dict, failedTestNames, erroredTestNames,
+                skippedTestNames);
     if testNames.size != 0 {
       var maxCount = -1;
       for key in dictDomain.sorted() {
@@ -219,24 +249,37 @@ module Launcher {
         }
       }
       dictDomain.remove(reqLocales);
-      runAndLog(executable, fileName, result, 0, 
-                reqLocales, testNames, dictDomain, dict);
+      runAndLog(executable, fileName, result, reqLocales, testsPassed,
+                testNames, dictDomain, dict, failedTestNames, erroredTestNames, 
+                skippedTestNames);
     }
   }
 
   pragma "no doc"
   /*Docs: Todo*/
   proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, 
-                      flavour, fileName, testName, errMsg) throws 
+                    flavour, fileName, testName, errMsg, ref failedTestNames, 
+                    ref erroredTestNames, ref skippedTestNames, ref testsPassed) throws 
   {
     select flavour {
-      when "OK" do result.addSuccess(testName, fileName);
-      when "ERROR" do result.addError(testName, fileName, errMsg);
-      when "FAIL" do result.addFailure(testName, fileName, errMsg);
-      when "SKIPPED" do result.addSkip(testName, fileName, errMsg);
+      when "OK" {
+        result.addSuccess(testName, fileName);
+        testsPassed.push_back(testName);
+      }
+      when "ERROR" {
+        result.addError(testName, fileName, errMsg);
+        erroredTestNames.push_back(testName);
+      }
+      when "FAIL" {
+        result.addFailure(testName, fileName, errMsg);
+        failedTestNames.push_back(testName);
+      }
+      when "SKIPPED" {
+        result.addSkip(testName, fileName, errMsg);
+        skippedTestNames.push_back(testName);
+      }
       when "IncorrectNumLocales" {
         if comm != "none" {
-          result.testToBeReRan();
           var strSplit = errMsg.split("=");
           var reqLocalesStr = strSplit[2].strip().split(" ");
           for a in reqLocalesStr do
@@ -250,7 +293,11 @@ module Launcher {
           var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
           locErrMsg += errMsg; 
           result.addFailure(testName, fileName, locErrMsg);
+          failedTestNames.push_back(testName);
         }
+      }
+      when "Dependence" {
+        testNames.push_back(testName);
       }
     }
   }

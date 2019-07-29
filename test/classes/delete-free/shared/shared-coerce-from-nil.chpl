@@ -1,7 +1,7 @@
 class MyClass {
   var x:int;
 }
-proc f(arg:shared MyClass?) {
+proc f(in arg:shared MyClass?) {
   writeln(arg);
 }
 

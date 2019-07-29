@@ -415,7 +415,7 @@ static void checkCall(
     rhsExpr = call->get(2);
     moveLike = true;
     userCall = toCallExpr(rhsExpr);
-  } else if (call->isNamedAstr(astrSequals)) {
+  } else if (call->isNamedAstr(astrSassign)) {
     initSe = toSymExpr(call->get(1));
     lhsSym = initSe->symbol();
     rhsExpr = call->get(2);

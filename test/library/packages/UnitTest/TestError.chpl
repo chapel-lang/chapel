@@ -28,10 +28,10 @@ class TestSkipped: TestError {
   }
 }
 
-/* TestDependencyNotMet Error Class. Raised when a all dependency
+/* DependencyFound Error Class. Raised when a all dependency
    of a test are not met.
 */
-class TestDependencyNotMet: TestError {
+class DependencyFound: TestError {
   proc init(details: string = "") {
     super.init(details);
   }

@@ -423,7 +423,7 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-use SysBasic;
+private use SysBasic;
 use SysError;
 
 /*
@@ -934,7 +934,7 @@ class QioPluginChannel {
 // TODO: Move more of the QIO code to be pure Chapel
 pragma "no doc"
 export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
   var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
   plugin_ch = pluginChannel:c_void_ptr;
@@ -943,17 +943,17 @@ export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_
 
 pragma "no doc"
 export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
-  var c=ch_plugin:QioPluginChannel;
+  var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.readAtLeast(amt);
 }
 pragma "no doc"
 export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
-  var c=ch_plugin:QioPluginChannel;
+  var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.write(amt);
 }
 pragma "no doc"
 export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
-  var c=ch:unmanaged QioPluginChannel;
+  var c=(ch:unmanaged QioPluginChannel?)!;
   var err = c.close();
   delete c;
   return err;
@@ -961,36 +961,36 @@ export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
 
 pragma "no doc"
 export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.filelength(length);
 }
 pragma "no doc"
 export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:int(64)):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.getpath(str, len);
 }
 pragma "no doc"
 export proc chpl_qio_fsync(file:c_void_ptr):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.fsync();
 }
 pragma "no doc"
 export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.getChunk(length);
 }
 pragma "no doc"
 export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
     end:int(64), ref localeNames:c_void_ptr, ref nLocales:int(64)):syserr {
   var strPtr:c_ptr(c_string);
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   var ret = f.getLocalesForRegion(start, end, strPtr, nLocales);
   localeNames = strPtr:c_void_ptr;
   return ret;
 }
 pragma "no doc"
 export proc chpl_qio_file_close(file:c_void_ptr):syserr {
-  var f = file:unmanaged QioPluginFile;
+  var f = (file:unmanaged QioPluginFile?)!;
   var err = f.close();
   delete f;
   return err;
@@ -3066,9 +3066,12 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
         iolit = new ioLiteral("nil");
       }
       _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
-    } else {
-      var notNilX = _to_nonnil(x);
+    } else if isClassType(t) {
+      var notNilX = x!;
       notNilX.writeThis(writer);
+    } else {
+      // ddata / cptr
+      x.writeThis(writer);
     }
   } else {
     x.writeThis(writer);

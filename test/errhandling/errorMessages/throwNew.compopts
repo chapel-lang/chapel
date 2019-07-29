@@ -1,1 +1,1 @@
---no-warn-unstable
+--no-warn-unstable --no-legacy-nilable-classes

@@ -616,12 +616,9 @@ intent overloads (see \rsec{Return_Intent_Overloads}).
 \index{intents!default for shared}
 
 The default intent for \chpl{owned} and \chpl{shared} arguments is
-generally \chpl{in}. There is an exception for generic formal arguments
-that use default or \chpl{const} intent and have no type expression.
-When a such a generic formal is instantiated for an \chpl{owned} or
-\chpl{shared} actual argument, the instantiated formal will have the
-relevant \chpl{borrowed} type. This exception does not apply to \chpl{type}
-arguments or to the default initializer generated for a class type.
+\chpl{const ref}. Arguments can use the \chpl{in} or \chpl{const in}
+intents to transfer or share ownership if those arguments apply
+to \chpl{owned} or \chpl{shared} types.
 
 \begin{chapelexample}{owned-any-intent.chpl}
 \begin{chapel}
@@ -629,26 +626,15 @@ proc defaultGeneric(arg) {
   writeln(arg.type:string);
 }
 class SomeClass { }
-defaultGeneric(new owned SomeClass());
+var own = new owned SomeClass();
+defaultGeneric(own);
+writeln(own != nil);
 \end{chapel}
 \begin{chapeloutput}
-borrowed SomeClass
+owned SomeClass
+true
 \end{chapeloutput}
-Here, the program will output the type \chpl{borrowed SomeClass} rather
-than \chpl{owned SomeClass}. It would output \chpl{owned SomeClass} if
-the argument were declared with an \chpl{in} intent (e.g. \chpl{in arg}) or if
-the argument included a type specifier (e.g. \chpl{arg: owned}).
 \end{chapelexample}
-
-\begin{openissue}
-The reason for this rule is to make it clearer when ownership transfer will
-happen. In particular, with this rule, ownership transfer can only occur
-for arguments marked with an \chpl{in} intent or with an \chpl{owned} or
-\chpl{shared} argument type.
-
-This rule is likely change based upon further experience in using it.
-\end{openissue}
-
 
 \section{Variable Number of Arguments}
 \label{Variable_Length_Argument_Lists}

@@ -71,7 +71,7 @@ proc test4() {
 
   writeln("test4");
   acceptst2( (a, b) );
-  acceptst2( (a, b) ); // should be nil by here
+  acceptst2( (a, b) );
 }
 test4();
 

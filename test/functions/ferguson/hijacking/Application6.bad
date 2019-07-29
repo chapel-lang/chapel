@@ -1,2 +1,7 @@
-in LibraryY.setup
-Global is 0.0
+Application6.chpl:21: In function 'main':
+Application6.chpl:23: error: multiple overload sets are applicable to this call
+Application6.chpl:12: note: the best-matching candidate is here
+Application6.chpl:11: note: ... defined in this module
+Application6.chpl:3: note: even though the candidate here is also available
+Application6.chpl:1: note: ... defined in this module
+Application6.chpl:23: note: use --no-overload-sets-checks to disable overload sets errors

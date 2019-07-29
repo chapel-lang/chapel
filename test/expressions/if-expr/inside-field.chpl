@@ -2,20 +2,20 @@ class C {}
 
 record R1 {
   type T;
-  var data: if isClass(T) then [1..2] owned T else [1..2] T;
+  var data: if isClass(borrowed T) then [1..2] owned T else [1..2] borrowed T;
 }
 
 record R2 {
   type T;
-  var one: [1..2] if isClass(T) then owned T else T;
-  var two: [1..2] [1..2] if isClass(T) then owned T else T;
-  var three: [1..2] [1..2] [1..2] if isClass(T) then owned T else T;
+  var one: [1..2] if isClass(borrowed T) then owned T else borrowed T;
+  var two: [1..2] [1..2] if isClass(borrowed T) then owned T else borrowed T;
+  var three: [1..2] [1..2] [1..2] if isClass(borrowed T) then owned T else borrowed T;
 }
 
 record R3 {
   type T;
-  var multiple: [1..2] if !isClass(T) then 2*T
-                       else [1..2] if isClass(T) then owned T else T;
+  var multiple: [1..2] if !isClass(borrowed T) then 2*borrowed T
+                       else [1..2] if isClass(borrowed T) then owned T else borrowed T;
 }
 
 proc test(type T) {

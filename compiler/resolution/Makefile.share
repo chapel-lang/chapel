@@ -24,6 +24,7 @@ RESOLUTION_SRCS =                                              \
                   cleanups.cpp                                 \
                   cullOverReferences.cpp                       \
                   expandVarArgs.cpp                            \
+                  fixupExports.cpp                             \
                   functionResolution.cpp                       \
                   generics.cpp                                 \
                   implementForallIntents.cpp                   \
