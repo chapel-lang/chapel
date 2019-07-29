@@ -246,26 +246,7 @@ module CPtr {
   pragma "no doc"
   inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
 
-  /* rely on coercions from nil to pointer types
-  pragma "no doc"
-  inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, c_nil); }
-
-  pragma "no doc"
-  inline proc _cast(type t:c_ptr, x:_nilType) {
-    return __primitive("cast", t, x);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:_nilType) {
-    return __primitive("cast", c_void_ptr, nil);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_fn_ptr, x:_nilType) {
-    return __primitive("cast", c_fn_ptr, nil);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:c_fn_ptr) {
-    return __primitive("cast", c_void_ptr, x);
-  }*/
+  // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
   pragma "no doc"
   inline proc _cast(type t:c_ptr, x:c_ptr) {
@@ -367,12 +348,6 @@ module CPtr {
   inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
 
-
-  /*
-  pragma "no doc"
-  inline proc =(ref a:c_fn_ptr, b:_nilType) { __primitive("=", a, c_nil); }
-   */
-
   pragma "no doc"
   inline proc =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
 
@@ -393,23 +368,6 @@ module CPtr {
   }
   // Don't need _nilType versions -
   // Rely on coercions from nil to c_ptr / c_void_ptr
-  /*
-  pragma "no doc"
-  inline proc ==(a: c_ptr, b: _nilType) {
-    return __primitive("ptr_eq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc ==(a: _nilType, b: c_ptr) {
-    return __primitive("ptr_eq", c_nil, b);
-  }
-  pragma "no doc"
-  inline proc ==(a: c_void_ptr, b: _nilType) {
-    return __primitive("ptr_eq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc ==(a: _nilType, b: c_void_ptr) {
-    return __primitive("ptr_eq", c_nil, b);
-  }*/
 
   pragma "no doc"
   inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -423,23 +381,6 @@ module CPtr {
   inline proc !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
   }
-  /*
-  pragma "no doc"
-  inline proc !=(a: c_ptr, b: _nilType) {
-    return __primitive("ptr_neq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc !=(a: _nilType, b: c_ptr) {
-    return __primitive("ptr_neq", c_nil, b);
-  }
-  pragma "no doc"
-  inline proc !=(a: c_void_ptr, b: _nilType) {
-    return __primitive("ptr_neq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc !=(a: _nilType, b: c_void_ptr) {
-    return __primitive("ptr_neq", c_nil, b);
-  }*/
 
   pragma "no doc"
   inline proc _cond_test(x: c_ptr) return x != c_nil;

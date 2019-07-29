@@ -111,14 +111,6 @@ static void handleReceiverFormals() {
         SET_LINENO(fn->_this);
 
         if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
-
-          /*
-          if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
-            if (dt->getDecorator() == CLASS_TYPE_GENERIC_NONNIL) {
-              AggregateType* at = dt->getCanonicalClass();
-              ts = at->symbol; // converting this -> borrow type
-            }
-          }*/
           sym->replace(new SymExpr(ts));
 
           fn->_this->type = ts->type;
@@ -975,19 +967,6 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
           // make MyClass mean generic-management unless
           // --legacy-nilable-classes is passed.
           bool defaultIsGenericHere = !fLegacyNilableClasses;
-
-          // This exception is for type method calls e.g. MyClass.typeMethod()
-          // TODO: remove and replace with any-generic
-          /*if (CallExpr* inCall = toCallExpr(usymExpr->parentExpr)) {
-            if (inCall->isPrimitive(PRIM_GET_MEMBER) || inCall->isNamed(".")) {
-              if (CallExpr* parentCall = toCallExpr(inCall->parentExpr)) {
-                if (inCall == parentCall->baseExpr) {
-                  defaultIsGenericHere = false;
-                }
-              }
-            }
-          }*/
-
           if (defaultIsGenericHere) {
             // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
             ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
@@ -1547,23 +1526,6 @@ static void adjustTypeMethodsOnClasses() {
 
     // Update the type of 'this'.
     thisArg->type = getDecoratedClass(thisType, CLASS_TYPE_GENERIC);
-
-    // The desired where-expression. Clean up this.type for isSubtype().
-    /*SET_LINENO(thisArg);
-    Expr* isSubtype = new_Expr(
-     "'is_subtype'(%S,'to borrowed class'('to non nilable class'(%S)))",
-     thisType->symbol, thisArg);
-
-    if (BlockStmt* where = fn->where) {
-      // If a where-clause already exists, augment it.
-      Expr* userWhere = where->body.last()->remove();
-      where->insertAtTail(new CallExpr("&&", isSubtype, userWhere));
-
-    } else {
-      fn->where = new BlockStmt(isSubtype);
-      insert_help(fn->where, NULL, fn);
-      fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
-    }*/
   }
 }
 
