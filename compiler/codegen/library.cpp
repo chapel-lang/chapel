@@ -668,7 +668,7 @@ static void makePYFile() {
 
     // Erase trailing newline and append multilocale-only dependencies.
     if (fMultiLocaleInterop) {
-      libraries.erase(libraries.length - 1);
+      libraries.erase(libraries.length() - 1);
       libraries += " ";
       libraries += getCompilelineOption("multilocale-lib-deps");
     }
@@ -701,10 +701,9 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + ",
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
                      "[\"%s\"])))\n",
-                     libname.c_str(),
-                     libname.c_str());
+                     libname.c_str(), libname.c_str());
 
     gGenInfo->cfile = save_cfile;
   }
