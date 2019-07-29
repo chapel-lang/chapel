@@ -9,9 +9,15 @@ Any function of the form
 is treated as a test function. These functions must accept an object of Test
 Class. We use :proc:`~UnitTest.runTest` to pass the tests.
 
-**Example**
+.. note::
 
-*Using Asserts*
+  Tests must be launched with a test launcher. Currently, this is a standalone application 
+  built separately. However, this functionality will eventually be integrated into mason.
+
+Assert Functions
+================
+
+Here are the assert functions available in the UnitTest module:
 
 :proc:`~Test.skip`
 :proc:`~Test.skipIf`
@@ -22,37 +28,29 @@ Class. We use :proc:`~UnitTest.runTest` to pass the tests.
 :proc:`~Test.assertGreaterThan`
 :proc:`~Test.assertLessThan`
 
-.. code-block:: chapel
+Examples
+=========
 
-   use UnitTest;
-    
-   // calculates factorial
-   proc factorial(x: int): int {
-     return if x == 0 then 1 else x * factorial(x-1); 
-   }
+Basic Usage
+-------------
 
-   proc test1(test: Test) throws {
-     test.skipIf(factorial(0) != 1,"Base condtion is wrong in factorial");
-     test.assertTrue(factorial(5) == 120);
-   }
+Here is a minimal example demonstrating how to use the UnitTest module:
 
-   UnitTest.runTest(test1);
-
-Another Example
+<celsius2fahrenheit example>
 
 .. code-block:: chapel
 
    use UnitTest;
     
-   proc celius2fahrenheit(x) {
-     return (x * 9/5)+32;
+   proc celsius2fahrenheit(x) {
      // we should be returning "(x: real * 9/5)+32"
+     return (x * 9/5)+32;
    }
 
    proc test_temperature(test: Test) throws {
-     test.assertFalse(celius2fahrenheit(37) == 98);
      // we were expecting 98.6 but since we missed typecasting
      // the above function returned 98.
+     test.assertFalse(celsius2fahrenheit(37) == 98);
    }
 
    UnitTest.runTest(test_temperature);
@@ -72,11 +70,62 @@ Output:
   FAILED failures = 1 
 
 
-*Specifying locales*
+Skipping Tests
+---------------
+
+You can skip tests unconditionally with :proc:`~Test.skip` and 
+conditionally with :proc:`~Test.skipIf`:
+
+<factorial example with skips>
+
+.. code-block:: chapel
+
+   use UnitTest;
+    
+   /* calculates factorial */
+   proc factorial(x: int): int {
+     return if x == 0 then 1 else x * factorial(x-1); 
+   }
+
+   /*Conditional skip*/
+   proc test1(test: Test) throws {
+     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
+     test.assertTrue(factorial(5) == 120);
+   }
+
+   /*Unconditional skip*/
+   proc test2(test: Test) throws {
+     test.skip("Skipping the test directly");
+   }
+
+   UnitTest.runTest(test1, test2);
+
+
+Output: 
+
+.. code-block:: bash
+
+  ======================================================================
+  SKIPPED xyz.chpl: test2()
+  ----------------------------------------------------------------------
+  TestSkipped: Skipping the test directly
+
+  ----------------------------------------------------------------------
+  Run 1 test
+
+  OK skipped = 1 
+
+
+Specifying locales
+------------------
+
+You can specify the num of locales of a test using these method.
 
 :proc:`~Test.addNumLocales`
 :proc:`~Test.maxLocales`
 :proc:`~Test.minLocales`
+
+Here is an example demonstrating how to use the :proc:`~Test.addNumLocales`
 
 .. code-block:: chapel
 
@@ -91,6 +140,14 @@ Output:
     test.assertTrue(A[5]==25);
   }
 
+Output:
+
+.. code-block:: bash
+
+  ----------------------------------------------------------------------
+  Run 1 test
+
+  OK
 
 You can also specify multiple locales on which your code can run.
 
@@ -110,9 +167,12 @@ You can mention the range of locales using :proc:`~Test.maxLocales` and
     test.minLocales(2);
   }
 
-*Specifying Dependencies*
+Specifying Dependencies
+-----------------------
 
 :proc:`~Test.dependsOn`
+
+Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
 
 .. code-block:: chapel
 
@@ -126,7 +186,7 @@ You can mention the range of locales using :proc:`~Test.maxLocales` and
    }
 
    proc testFillFact(test: Test) throws {
-     test.skipIf(factorial(0) != 1,"Base condtion is wrong in factorial");
+     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
      for i in 1..10 do
        factArray.push_back(factorial(i));
    }
@@ -140,6 +200,15 @@ You can mention the range of locales using :proc:`~Test.maxLocales` and
    }
 
    UnitTest.runTest(testSumFact, testFillFact);
+
+Output:
+
+.. code-block:: bash
+
+  ----------------------------------------------------------------------
+  Run 2 tests
+
+  OK
 
 */
 module UnitTest {
