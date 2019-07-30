@@ -40,7 +40,7 @@ proc =(ref lhs:RMyClass, ref rhs:RMyClass) {
 }
 
 // Globals
-var globalMyClass:owned MyClass;
+var globalMyClass:owned MyClass?;
 var globalRMyClass:RMyClass;
 
 // Test initialization block

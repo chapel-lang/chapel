@@ -154,7 +154,7 @@ module DataFrames {
         curr_ord += 1;
         uni_rev_idx[curr_ord] = lhs_i;
 
-        if rhs.idx.contains(lhs_i) {
+        if rhs.idx!.contains(lhs_i) {
           uni_data[curr_ord] = unifier.f(lhs_d, rhs[lhs_i]);
           uni_valid_bits[curr_ord] = lhs_v && rhs.valid(lhs_i);
         } else {
@@ -164,7 +164,7 @@ module DataFrames {
       }
 
       for (rhs_v, (rhs_i, rhs_d)) in rhs._items(idxType) {
-        if !lhs.idx.contains(rhs_i) {
+        if !lhs.idx!.contains(rhs_i) {
           curr_ord += 1;
           uni_rev_idx[curr_ord] = rhs_i;
           uni_data[curr_ord] = unifier.f_rhs(rhs_d);
@@ -300,12 +300,12 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc reindex(in idx : shared Index) {
+    proc reindex(in idx : shared Index?) {
       halt("generic Series cannot be reindexed");
     }
 
     pragma "no doc"
-    proc reindex(type eltType, in idx : shared Index) {
+    proc reindex(type eltType, in idx : shared Index?) {
       var _typed = this: TypedSeries(eltType)?;
       if _typed == nil then halt("Unable to cast generic index with type ", eltType:string);
 
@@ -411,7 +411,7 @@ module DataFrames {
     type eltType;
 
     // TODO: ords dmap Block
-    var idx: shared Index;
+    var idx: shared Index?;
     var ords: domain(1);
     var data: [ords] eltType;
     var valid_bits: [ords] bool;
@@ -439,7 +439,7 @@ module DataFrames {
       this.valid_bits = valid_bits;
     }
 
-    proc init(data: [] ?T, in idx: shared Index) {
+    proc init(data: [] ?T, in idx: shared Index?) {
       super.init();
       eltType = T;
 
@@ -449,7 +449,7 @@ module DataFrames {
       this.valid_bits = true;
     }
 
-    proc init(data: [] ?T, in idx: shared Index, valid_bits: [] bool) {
+    proc init(data: [] ?T, in idx: shared Index?, valid_bits: [] bool) {
       super.init();
       eltType = T;
 
@@ -481,7 +481,7 @@ module DataFrames {
 
     iter items(type idxType) {
       if idx {
-        for (v, i, d) in zip(valid_bits, idx.these(idxType), data) do
+        for (v, i, d) in zip(valid_bits, idx!.these(idxType), data) do
           if v then yield (i, d);
       }
     }
@@ -499,7 +499,7 @@ module DataFrames {
 
     iter items_fast(type idxType) {
       if idx {
-        for t in zip(idx.these(idxType), data) do
+        for t in zip(idx!.these(idxType), data) do
           yield t;
       }
     }
@@ -530,7 +530,7 @@ module DataFrames {
 
     proc this(lab: ?idxType) {
       if idx then
-        return data[idx[lab]];
+        return data[idx![lab]];
 
       var default: eltType;
       return default;
@@ -540,7 +540,7 @@ module DataFrames {
     proc this(filterSeries: ?T) : owned Series where isSubtype(T, Series) {
       var castFilter = filterSeries: borrowed TypedSeries(bool)?;
       if idx then
-        return idx.filter(this, castFilter!);
+        return idx!.filter(this, castFilter!);
 
       // TODO: needs Series with Index(int) to remove items not in range
       var filter_data: [ords] eltType;
@@ -557,7 +557,7 @@ module DataFrames {
 
     proc valid(lab: ?idxType) {
       if idx then
-        return valid_bits[idx[lab]];
+        return valid_bits[idx![lab]];
 
       return false;
     }
@@ -566,7 +566,7 @@ module DataFrames {
       return valid_bits[ord];
     }
 
-    override proc reindex(in idx: shared Index) {
+    override proc reindex(in idx: shared Index?) {
       this.idx = idx;
     }
 
@@ -577,7 +577,7 @@ module DataFrames {
     override
     proc uni(lhs: borrowed TypedSeries(eltType), unifier: borrowed SeriesUnifier(eltType)): owned Series {
       if lhs.idx then
-        return lhs.idx.uni(lhs, this, unifier):owned Series;
+        return lhs.idx!.uni(lhs, this, unifier):owned Series;
 
       var uni_ords = if lhs.ords.size > this.ords.size
                      then 1..lhs.ords.size
@@ -607,7 +607,7 @@ module DataFrames {
     proc map(mapper: borrowed SeriesMapper): owned Series {
       if idx {
         // Workaround for lack of shared this-intent for Index.map
-        var ret = idx.map(this, mapper);
+        var ret = idx!.map(this, mapper);
         ret.reindex(mapper.retType, idx);
         return ret;
       }
@@ -706,7 +706,7 @@ module DataFrames {
     override
     proc nrows(): int {
       if idx then
-        return idx.nrows();
+        return idx!.nrows();
       else
         return ords.size;
     }
@@ -714,7 +714,7 @@ module DataFrames {
     override
     proc writeThis(f) {
       if idx {
-        idx.writeThis(f, _to_unmanaged(this));
+        idx!.writeThis(f, _to_unmanaged(this));
       } else {
         for (v, (i, d)) in this._items() {
           f <~> i + "    ";
@@ -762,7 +762,7 @@ module DataFrames {
     //   Currently run into confusing const errors in DefaultAssociative
     var columns: [labels] unmanaged Series;
 
-    var idx: shared Index;
+    var idx: shared Index?;
 
     // TODO: init with labels arg
 
@@ -807,7 +807,7 @@ module DataFrames {
       columns[lab] = sCopy;
     }
 
-    proc reindex(in idx: shared Index) {
+    proc reindex(in idx: shared Index?) {
       this.idx = idx;
       for s in columns do
         s.reindex(idx);
@@ -825,7 +825,7 @@ module DataFrames {
     override
     proc writeThis(f) {
       if idx {
-        idx.writeThis(f, _to_unmanaged(this));
+        idx!.writeThis(f, _to_unmanaged(this));
       } else {
         var n = nrows();
         var nStr = new string(n: string);

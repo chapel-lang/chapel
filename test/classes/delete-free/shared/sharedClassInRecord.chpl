@@ -3,7 +3,7 @@
 class C { }
 
 record R {
-  var sc: shared C;
+  var sc: shared C?;
 }
 
 proc main {

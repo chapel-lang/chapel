@@ -6,7 +6,7 @@ class MyClass {
 }
 
 proc okSetInInner() {
-  var x: owned MyClass;
+  var x: owned MyClass?;
   proc inner() {
     x = new owned MyClass(1);
   }
@@ -16,7 +16,7 @@ proc okSetInInner() {
 okSetInInner();
 
 proc okSetInTask() {
-  var x: owned MyClass;
+  var x: owned MyClass?;
   var s$: sync int;
 
   begin with (ref x) {

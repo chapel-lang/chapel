@@ -10,7 +10,7 @@ proc test() {
 
   var s1:shared MyClass = o1;
   var s2 = new shared(o2);
-  var s3:shared MyClass;
+  var s3:shared MyClass?;
   s3 = o3;
 
   writeln(s1, " ", o1);

@@ -163,7 +163,7 @@ proc output(name: string, time: real) {
 
 proc main {
   var A: [1..0] int;
-  var r: owned Runner;
+  var r = new Runner(); // dummy initialization
 
   r = new owned PushBack(n); output("PushBack", timeRun(r, A));
   r = new owned SumElements(n); output("SumElements", timeRun(r, A));
