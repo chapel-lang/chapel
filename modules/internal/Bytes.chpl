@@ -195,8 +195,8 @@ module Bytes {
       var localThis = this.localize();
       try {
         for b in localThis.iterBytes() {
-          if ascii_isAscii(b) {
-            if ascii_isPrintable(b) || ascii_isWhitespace(b) {
+          if byte_isAscii(b) {
+            if byte_isPrintable(b) || byte_isWhitespace(b) {
               f.writef("%c", b);
             }
           }
@@ -764,7 +764,7 @@ module Bytes {
               yieldChunk = true;
             }
           } else {
-            var cSpace = ascii_isWhitespace(c);
+            var cSpace = byte_isWhitespace(c);
             // first char of a chunk
             if !(inChunk || cSpace) {
               chunkStart = i;
@@ -1040,7 +1040,7 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for b in this.iterBytes() {
-          if !(ascii_isUpper(b)) {
+          if !(byte_isUpper(b)) {
             result = false;
             break;
           }
@@ -1066,7 +1066,7 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for b in this.iterBytes() {
-          if !(ascii_isLower(b)) {
+          if !(byte_isLower(b)) {
             result = false;
             break;
           }
@@ -1090,7 +1090,7 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for b in this.iterBytes() {
-          if !(ascii_isWhitespace(b)) {
+          if !(byte_isWhitespace(b)) {
             result = false;
             break;
           }
@@ -1113,7 +1113,7 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for b in this.iterBytes() {
-          if !ascii_isAlpha(b) {
+          if !byte_isAlpha(b) {
             result = false;
             break;
           }
@@ -1135,7 +1135,7 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for b in this.iterBytes() {
-          if !ascii_isDigit(b) {
+          if !byte_isDigit(b) {
             result = false;
             break;
           }
@@ -1158,7 +1158,7 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for b in this.iterBytes() {
-          if !ascii_isAlnum(b) {
+          if !byte_isAlnum(b) {
             result = false;
             break;
           }
@@ -1181,7 +1181,7 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for b in this.iterBytes() {
-          if !ascii_isPrintable(b) {
+          if !byte_isPrintable(b) {
             result = false;
             break;
           }
@@ -1207,7 +1207,7 @@ module Bytes {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
         for b in this.iterBytes() {
-          if ascii_isLower(b) {
+          if byte_isLower(b) {
             if last == UPPER || last == LOWER {
               last = LOWER;
             } else { // last == UN
@@ -1215,7 +1215,7 @@ module Bytes {
               break;
             }
           }
-          else if ascii_isUpper(b) {
+          else if byte_isUpper(b) {
             if last == UN {
               last = UPPER;
             } else { // last == UPPER || last == LOWER
@@ -1240,7 +1240,7 @@ module Bytes {
       var result: _bytes = this;
       if result.isEmpty() then return result;
       for (i,b) in zip(0.., result.iterBytes()) {
-        result.buff[i] = ascii_toLower(b); //check is done by ascii_toLower
+        result.buff[i] = byte_toLower(b); //check is done by byte_toLower
       }
       return result;
     }
@@ -1254,7 +1254,7 @@ module Bytes {
       var result: _bytes = this;
       if result.isEmpty() then return result;
       for (i,b) in zip(0.., result.iterBytes()) {
-        result.buff[i] = ascii_toUpper(b); //check is done by ascii_toUpper
+        result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
       }
       return result;
     }
@@ -1272,12 +1272,12 @@ module Bytes {
       param UN = 0, LETTER = 1;
       var last = UN;
       for (i,b) in zip(0.., result.iterBytes()) {
-        if ascii_isAlpha(b) {
+        if byte_isAlpha(b) {
           if last == UN {
             last = LETTER;
-            result.buff[i] = ascii_toUpper(b);
+            result.buff[i] = byte_toUpper(b);
           } else { // last == LETTER
-            result.buff[i] = ascii_toLower(b);
+            result.buff[i] = byte_toLower(b);
           }
         } else {
           // Uncased elements
@@ -1562,65 +1562,65 @@ module Bytes {
   }
 
 
-  // ASCII helpers
+  // character-wise operation helpers
 
   require "ctype.h";
 
-  private inline proc ascii_isAscii(c: byteType): bool {
+  private inline proc byte_isAscii(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc isascii(c: c_int): c_int;
     return isascii(c: c_int) != 0;
   }
 
-  private inline proc ascii_isWhitespace(c: byteType): bool {
+  private inline proc byte_isWhitespace(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc isspace(c: c_int): c_int;
     return isspace(c: c_int) != 0;
   }
 
-  private inline proc ascii_isPrintable(c: byteType): bool {
+  private inline proc byte_isPrintable(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc isprint(c: c_int): c_int;
     return isprint(c: c_int) != 0;
   }
 
-  private inline proc ascii_isAlpha(c: byteType): bool {
+  private inline proc byte_isAlpha(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc isalpha(c: c_int): c_int;
     return isalpha(c: c_int) != 0;
   }
 
-  private inline proc ascii_isUpper(c: byteType): bool {
+  private inline proc byte_isUpper(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc isupper(c: c_int): c_int;
     return isupper(c: c_int) != 0;
   }
 
-  private inline proc ascii_isLower(c: byteType): bool {
+  private inline proc byte_isLower(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc islower(c: c_int): c_int;
     return islower(c: c_int) != 0;
   }
 
-  private inline proc ascii_isDigit(c: byteType): bool {
+  private inline proc byte_isDigit(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc isdigit(c: c_int): c_int;
     return isdigit(c: c_int) != 0;
   }
 
-  private inline proc ascii_isAlnum(c: byteType): bool {
+  private inline proc byte_isAlnum(c: byteType): bool {
     pragma "fn synchronization free"
     extern proc isalnum(c: c_int): c_int;
     return isalnum(c: c_int) != 0;
   }
 
-  private inline proc ascii_toUpper(c: byteType): byteType {
+  private inline proc byte_toUpper(c: byteType): byteType {
     pragma "fn synchronization free"
     extern proc toupper(c: c_int): c_int;
     return toupper(c: c_int):byteType;
   }
 
-  private inline proc ascii_toLower(c: byteType): byteType {
+  private inline proc byte_toLower(c: byteType): byteType {
     pragma "fn synchronization free"
     extern proc tolower(c: c_int): c_int;
     return tolower(c: c_int):byteType;
