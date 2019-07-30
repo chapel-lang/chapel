@@ -1114,6 +1114,38 @@ proc lu (A: [?Adom] ?eltType) {
   return (LU,ipiv);
 }
 
+proc permute (ipiv, A: [?Adom] ?eltType, transpose=false) {
+  const n = Adom.shape(1);
+  
+  var B: [Adom] eltType;
+  
+  if Adom.rank == 1 {
+    if transpose {
+      forall i in 1..n {
+        B[i] = A[ipiv(i)];
+      }
+    }
+    else {
+      forall i in 1..n {
+        B[ipiv(i)] = A[i];
+      }
+    }
+  }
+  else if Adom.rank == 2 {
+    if transpose {
+      forall i in 1..n {
+        B[i,..] = A[ipiv(i),..];
+      }
+    }
+    else {
+      forall i in 1..n {
+        B[ipiv(i),..] = A[i,..];
+      }
+    }
+  }
+  return B;
+}
+
 /* Returns the determinant of a square matrix.
 
     .. note::
@@ -1124,31 +1156,33 @@ proc lu (A: [?Adom] ?eltType) {
       determinant manually.
 */
 
-proc det (const ref A: [?Adom] ?eltType) {
+proc det (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for computing determinant");
 
   if Adom.shape(1) != Adom.shape(2) then
     halt("Determinant can only be computed from square matrices");
-  
-  var (LU, ipiv) = lu(A);
-  const pdet = if ipiv % 2 == 0 then 1 else -1;
-  
+
+  var (LU,ipiv,numSwap) = _lu(A);
+  const pdet = if numSwap % 2 == 0 then 1 else -1;
+
   // L[i,i] always = 1, so we only need to take the 
   // diagonal product of U
-  
+
   return (* reduce [i in Adom.dim(1)] LU[i,i]) * pdet;
 }
 
 /* Returns the solution ``x`` to the linear system `` L * x = b `` 
-    where ``L`` is a lower triangular matrix.
+    where ``L`` is a lower triangular matrix. `unit_diag` will set the diagonal
+    elements to 1 within this procedure.
 */
-proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType) {
+proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType, 
+                  unit_diag = true) {
   const n = Ldom.shape(1);
   var y = b;
   
   for i in 1..n {
-    const sol = y(i) / L(i,i);
+    const sol = if unit_diag then y(i) else y(i) / L(i,i);
     y(i) = sol;
     
     if (i < n) {
