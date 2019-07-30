@@ -1,3 +1,25 @@
+<<<<<<< HEAD
+=======
+/*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+>>>>>>> Started to overhaul masonPublish to take a path to a different registry as an argument.
 use MasonUtils;
 use Spawn;
 use FileSystem;
@@ -16,7 +38,7 @@ proc masonPublish(args : [] string) throws {
   var path = MASON_HOME;
   var username = "";
   var trueIfLocal = isPathLocal(path);
-
+  if args.size == 2 then trueIfLocal = false;
   try! {
     if hasOptions(args, "-h", "--help") {
       masonPublishHelp();
@@ -60,7 +82,8 @@ proc masonPublish(args : [] string) throws {
       else throw new owned MasonError('Must have remote origin for package in order to publish.');
     }
     else if dry {
-      dryRun(path, registry, trueIfLocal);
+      username = getUsername();
+      dryRun(username, registry, trueIfLocal);
     }
     else {
       var passed = "";
@@ -92,16 +115,22 @@ proc publishPackage(username: string, path : string, dry : bool, registry : bool
   else {
     safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
   }
-  try! {
-    if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
-    mkdir(safeDir);
 
-    if !registry || (registry && !trueIfLocal) {
+  try! {
+    if !exists(MASON_HOME + '/tmp') &&  !registry {
+      mkdir(MASON_HOME + '/tmp')
+    }
+    if !registry {
+      mkdir(safeDir);
+    }
+
+    if !registry {
       cloneMasonReg(username, safeDir);
       branchMasonReg(username, name, safeDir);
     }
 
-    addPackageToBricks(packageLocation, safeDir, name);
+    addPackageToBricks(packageLocation, safeDir, name, path, trueIfLocal);
+
     if (registry && !trueIfLocal) || !registry {
       gitC(safeDir + "/mason-registry", "git add .");
       gitC(safeDir + "/mason-registry", "git commit -m '" + name + "'");
@@ -115,7 +144,7 @@ proc publishPackage(username: string, path : string, dry : bool, registry : bool
     }
   }
   catch {
-    if exists(safeDir) then rmTree(safeDir + '/');
+    if (exists(safeDir) && !trueIfLocal) then rmTree(safeDir + '/');
     writeln('Error publishing your package to the mason-registry');
   }
 }
@@ -166,7 +195,10 @@ proc dryRun(username: string, registry : bool, trueIfLocal : bool) throws {
   }
 }
 
-
+/* When passed a path and whether or not that path is a local or remote path,
+   the function checks to make sure that it is a valid path to a mason-registry
+   by checking the existence of the Bricks
+ */
 proc checkPath(path : string, trueIfLocal : bool) throws {
   try! {
     if trueIfLocal {
@@ -195,11 +227,13 @@ proc checkPath(path : string, trueIfLocal : bool) throws {
   }
 }
 
+/* Uses the existence of a colon to see if a passed path is a local or remote path
+ */
 proc isPathLocal(path : string) throws {
   if path.find(":") == 0 {
-    return false;
+    return true;
   }
-  else return true;
+  else return false;
 }
 
 
@@ -257,6 +291,7 @@ private proc gitUrl() {
   var url = runCommand("git config --get remote.origin.url", true);
   return url;
 }
+
 /* Takes the git username and creates a new branch of the mason registry users fork,
   name or branch is taken from the Mason.toml of the mason package.
  */
@@ -291,24 +326,36 @@ proc getPackageName() throws {
 /* Adds package to the Bricks of the mason-registry branch and then adds the version.toml
  with the source url of the package's GitHub repo.
  */
-private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string) throws {
+private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string, path : string, trueIfLocal : bool) throws {
   try! {
-
+    
     const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
-    const url = gitUrl();
     var tomlFile = new owned(parseToml(toParse));
     const versionNum = tomlFile['brick']['version'].s;
-    mkdir(safeDir + "/mason-registry/Bricks/" + name);
-    const baseToml = tomlFile;
-    var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
-    var tomlWriter = newToml.writer();
-    baseToml["brick"]["source"] = url[1..url.length-1];
-    tomlWriter.write(baseToml);
-    tomlWriter.close();
+
+    if !trueIfLocal {
+      mkdir(safeDir + "/mason-registry/Bricks/" + name);
+      const baseToml = tomlFile;
+      var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
+      var tomlWriter = newToml.writer();
+      const url = gitUrl();
+      baseToml["brick"]["source"] = url[1..url.length-1];
+      tomlWriter.write(baseToml);
+      tomlWriter.close();
     }
+    else {
+      mkdir(safeDir + "/Bricks/" + name);
+      const baseToml = tomlFile;
+      var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
+      var tomlWriter = newToml.writer();
+      baseToml["brick"]["source"] = path;
+      tomlWriter.write(baseToml);
+      tomlWriter.close();
+    }
+  }
   catch {
     writeln('ERROR: ' + name + ' already exists in the Bricks');
-    rmTree(safeDir + '/');
+    if !trueIfLocal then rmTree(safeDir + '/');
     exit(1);
   }
 }
