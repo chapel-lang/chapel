@@ -533,7 +533,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     break;
   }
-    
+
+  case PRIM_IS_GENERIC_TYPE: {
+    Type* t = call->get(1)->typeInfo();
+
+    if (t->symbol->hasFlag(FLAG_GENERIC)) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+    break;
+  }
+
+
   case PRIM_IS_CLASS_TYPE: {
     Type* t = call->get(1)->typeInfo();
 
