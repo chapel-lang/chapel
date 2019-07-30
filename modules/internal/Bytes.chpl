@@ -195,8 +195,10 @@ module Bytes {
       var localThis = this.localize();
       try {
         for b in localThis.iterBytes() {
-          if ascii_isPrintable(b) || ascii_isWhitespace(b) {
-            f.writef("%c", b);
+          if ascii_isAscii(b) {
+            if ascii_isPrintable(b) || ascii_isWhitespace(b) {
+              f.writef("%c", b);
+            }
           }
         }
       } catch e: SystemError {
@@ -1562,70 +1564,66 @@ module Bytes {
 
   // ASCII helpers
 
-  private param asciiSpace:byteType = 32;
-  private param asciiHTab:byteType = 9;
-  private param asciiVTab:byteType = 11;
-  private param asciiLineFeed:byteType = 10;
-  private param asciiFormFeed:byteType = 12;
-  private param asciiCarriageReturn:byteType = 13;
-  private param asciiDelete:byteType = 127;
+  require "ctype.h";
 
-  private param asciiA = 65;
-  private param asciiZ = 90;
-
-  private param asciia = 97;
-  private param asciiz = 122;
-
-  private param ascii0 = 48;
-  private param ascii9 = 57;
-
-  private param asciiCaseDiff = asciia-asciiA;
+  private inline proc ascii_isAscii(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isascii(c: c_int): c_int;
+    return isascii(c: c_int) != 0;
+  }
 
   private inline proc ascii_isWhitespace(c: byteType): bool {
-    return c==asciiSpace ||
-           c==asciiHTab ||
-           c==asciiLineFeed ||
-           c==asciiCarriageReturn ||
-           c==asciiVTab ||
-           c==asciiFormFeed;
+    pragma "fn synchronization free"
+    extern proc isspace(c: c_int): c_int;
+    return isspace(c: c_int) != 0;
   }
 
   private inline proc ascii_isPrintable(c: byteType): bool {
-    return c>=asciiSpace && c<=asciiDelete;
+    pragma "fn synchronization free"
+    extern proc isprint(c: c_int): c_int;
+    return isprint(c: c_int) != 0;
   }
 
   private inline proc ascii_isAlpha(c: byteType): bool {
-    return ascii_isUpper(c) || ascii_isLower(c);
+    pragma "fn synchronization free"
+    extern proc isalpha(c: c_int): c_int;
+    return isalpha(c: c_int) != 0;
   }
 
   private inline proc ascii_isUpper(c: byteType): bool {
-    return c>=asciiA && c<=asciiZ;
+    pragma "fn synchronization free"
+    extern proc isupper(c: c_int): c_int;
+    return isupper(c: c_int) != 0;
   }
 
   private inline proc ascii_isLower(c: byteType): bool {
-    return c>=asciia && c<=asciiz;
+    pragma "fn synchronization free"
+    extern proc islower(c: c_int): c_int;
+    return islower(c: c_int) != 0;
   }
 
   private inline proc ascii_isDigit(c: byteType): bool {
-    return c>=ascii0 && c<=ascii9;
+    pragma "fn synchronization free"
+    extern proc isdigit(c: c_int): c_int;
+    return isdigit(c: c_int) != 0;
   }
 
   private inline proc ascii_isAlnum(c: byteType): bool {
-    return ascii_isAlpha(c) || ascii_isDigit(c);
+    pragma "fn synchronization free"
+    extern proc isalnum(c: c_int): c_int;
+    return isalnum(c: c_int) != 0;
   }
 
   private inline proc ascii_toUpper(c: byteType): byteType {
-    if ascii_isLower(c) then
-      return c-asciiCaseDiff;
-    else
-      return c;
+    pragma "fn synchronization free"
+    extern proc toupper(c: c_int): c_int;
+    return toupper(c: c_int):byteType;
   }
 
   private inline proc ascii_toLower(c: byteType): byteType {
-    if ascii_isUpper(c) then
-      return c+asciiCaseDiff;
-    else
-      return c;
+    pragma "fn synchronization free"
+    extern proc tolower(c: c_int): c_int;
+    return tolower(c: c_int):byteType;
   }
 
 } // end of module Bytes
