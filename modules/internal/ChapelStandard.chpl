@@ -26,6 +26,7 @@ module ChapelStandard {
   // Internal modules.
   use CPtr;
   use CString;
+  use Bytes;
   use String;
   use OwnedObject;
   use SharedObject;
