@@ -118,7 +118,7 @@ proc publishPackage(username: string, path : string, dry : bool, registry : bool
 
   try! {
     if !exists(MASON_HOME + '/tmp') &&  !registry {
-      mkdir(MASON_HOME + '/tmp')
+      mkdir(MASON_HOME + '/tmp');
     }
     if !registry {
       mkdir(safeDir);
