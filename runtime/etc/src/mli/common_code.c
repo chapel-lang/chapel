@@ -58,6 +58,8 @@
 #   endif
 #endif
 
+#include "chpl-env.h"
+
 //
 // If this code is being run on the server, mli_malloc() is a wrapper for
 // chpl_malloc(). If this code is being run on the client, then it is a
@@ -251,7 +253,7 @@ char * chpl_mli_connection_info(void* socket) {
   traveler++;
 
   int lenConnBoilerplate = strlen("tcp://:");
-  char* chpl_rt_masterip = getenv("CHPL_RT_MASTERIP");
+  const char* chpl_rt_masterip = chpl_env_rt_get("MASTERIP", NULL);
   chpl_mli_debugf("got env var value for CHPL_RT_MASTERIP: %s\n",
                   chpl_rt_masterip);
   char* fullConnection = NULL;
