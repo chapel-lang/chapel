@@ -1417,6 +1417,15 @@ module ChapelArray {
       if eltType == void {
         compilerError("array element type cannot be void");
       }
+      if isGenericType(eltType) {
+        compilerWarning("creating an array with element type " +
+                        eltType:string);
+        if isClassType(eltType) && !isGenericType(borrowed eltType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("array element type cannot currently be generic");
+        // In the future we might support it if the array is not default-inited
+      }
       var x = _value.dsiBuildArray(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
