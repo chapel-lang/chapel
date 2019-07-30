@@ -227,6 +227,31 @@ GenRet DefExpr::codegen() {
 ************************************* | ************************************/
 
 #ifdef HAVE_LLVM
+static
+void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
+{
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  int64_t sizeInBytes = -1;
+  if (valType->isSized())
+    sizeInBytes = dataLayout.getTypeStoreSize(valType);
+
+  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
+    llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+
+  info->irBuilder->CreateLifetimeStart(addr, size);
+}
+
+llvm::Value* createVarLLVM(llvm::Type* type, const char* name)
+{
+  GenInfo* info = gGenInfo;
+  llvm::Value* val = createTempVarLLVM(info->irBuilder, type, name);
+  info->currentStackVariables.push_back(val);
+  codegenLifetimeStart(type, val);
+  return val;
+}
+
 // Easier-to-use versions of functions in llvmUtil.h, not
 // defined there because we didn't want llvmUtil.h to depend on
 // Chapel's codegen.h
