@@ -1,6 +1,0 @@
-#
-# I am not quite able to get this to run correctly when "array-as-vec" uses
-# are replaced with list uses. Though it _does_ compile, the test fails.
-# See: https://github.com/chapel-lang/chapel/pull/13530
-#
---no-warnings

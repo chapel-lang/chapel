@@ -1,7 +1,0 @@
-#
-# Both the TOML and Mason packages must be rewritten to make use of List
-# instead of "array-as-vec" before we can remove the "--no-warnings" flag
-# here.
-# See: https://github.com/chapel-lang/chapel/issues/13233
-#
---no-warnings

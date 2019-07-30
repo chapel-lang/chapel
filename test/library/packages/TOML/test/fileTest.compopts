@@ -1,9 +1,0 @@
-#
-# Since these tests modify the .good file as part of the test, we cannot add
-# compiler warnings for deprecated array operations to the .good file.
-# Instead, we suppress all compiler warnings (until TOML is rewritten to not
-# use "array-as-vec" operations).
-#
-# See: https://github.com/chapel-lang/chapel/issues/13233
-#
---no-warnings
