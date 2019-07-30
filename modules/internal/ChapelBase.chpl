@@ -2133,6 +2133,7 @@ module ChapelBase {
   }
 
 
+  proc isGenericType(type t) param return __primitive("is generic type", t);
   proc isClassType(type t) param return __primitive("is class type", t);
   proc isNilableClassType(type t) param return __primitive("is nilable class type", t);
   proc isNonNilableClassType(type t) param return __primitive("is non nilable class type", t);

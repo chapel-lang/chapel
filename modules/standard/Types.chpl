@@ -328,6 +328,8 @@ proc isTuple(type t)     param  return isTupleType(t);
 pragma "no doc"
 proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
 pragma "no doc"
+proc isGeneric(type t)   param  return isGenericType(t);
+pragma "no doc"
 proc isClass(type t)     param  return isClassType(t);
 pragma "no doc"
 proc isOwnedClass(type t) param  return isOwnedClassType(t);
@@ -410,6 +412,8 @@ proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
 /* Returns `true` if the argument is a class type or value
    that is not an ``extern`` class, or when the argument is ``nil``. */
 proc isClass(e)     param  return isClassValue(e);
+/* Returns `true` if the argument is a generic type, and `false` otherwise. */
+proc isGeneric(e)   param  return false;
 /* Returns `true` if the argument is an ``owned`` class type. */
 pragma "no borrow convert"
 proc isOwnedClass(e)     param  return isOwnedClassValue(e);
