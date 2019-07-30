@@ -676,19 +676,26 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
       if (!newFormal->defaultExpr || formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         Symbol* defaultSym = NULL;
 
-        if (newFormal->defaultExpr) {
-          newFormal->defaultExpr->remove();
-        }
-
         if (Symbol* sym = paramMap.get(newFormal)) {
           defaultSym = sym;
         } else {
           defaultSym = gTypeDefaultToken;
         }
 
-        newFormal->defaultExpr = new BlockStmt(new SymExpr(defaultSym));
-
-        insert_help(newFormal->defaultExpr, NULL, newFormal);
+        SymExpr* defaultSe = new SymExpr(defaultSym);
+        // Replace the contents of the block with just defaultSe
+        if (newFormal->defaultExpr) {
+          // Empty the block, but leave the original block,
+          // in case it is used as a visibility block.
+          BlockStmt* block = newFormal->defaultExpr;
+          for_alist(stmt, block->body) {
+            stmt->remove();
+          }
+          block->insertAtTail(defaultSe);
+        } else {
+          newFormal->defaultExpr = new BlockStmt(defaultSe);
+          insert_help(newFormal->defaultExpr, NULL, newFormal);
+        }
       }
     }
   }
