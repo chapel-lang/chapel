@@ -106,10 +106,10 @@ forwarded to worker processes. However, this strategy is not always
 reliable. The remote system may override some environment variables, and
 some launchers might not correctly forward all environment variables.
 
-.. _chpl-launch-masterip:
+.. _chpl-rt-masterip:
 
-CHPL_LAUNCH_MASTERIP
-********************
+CHPL_RT_MASTERIP
+****************
 
 This environment variable is used to specify the IP address which should be used
 to connect.  By default, the node creating the connection will pass the result
