@@ -164,7 +164,7 @@ Some other common optional configurations are:
     # Defaults to empty, can be used instead of copying config files onto each machine
     SSH_OPTIONS='-i ~/.ssh/foo.pem'
 
-See :ref:`chpl-launch-masterip` for details on that environment variable.
+See :ref:`chpl-rt-masterip` for details on that environment variable.
 
 .. _GASNet documentation: http://gasnet.lbl.gov/dist/udp-conduit/README
 

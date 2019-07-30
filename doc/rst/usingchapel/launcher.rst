@@ -120,6 +120,19 @@ When ``CHPL_COMM == gasnet``, this will also be used to set the value of
 ``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
 http://gasnet.lbl.gov/dist/udp-conduit/README ).
 
+.. _chpl-rt-workerip:
+
+CHPL_RT_WORKERIP
+****************
+
+This environment variable is used to specify the IP address which should be used
+to communicate between worker nodes.  By default, worker nodes will communicate
+among themselves using the same interface used to connect to the master node
+(see :ref:`chpl-rt-masterip`, above).
+
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
+``GASNET_WORKERIP`` (see http://gasnet.lbl.gov/dist/udp-conduit/README ).
+
 .. _using-slurm:
 
 Using Slurm
