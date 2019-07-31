@@ -49,7 +49,7 @@ proc test_readline(amount: int, input: string, expected: string) {
     ret = r.readline(data, numRead);
   }
 
-  var invoke_string = if amount >= 0 then "readline(amount="+amount+")" else
+  var invoke_string = if amount >= 0 then "readline(amount="+amount:string+")" else
 					    "readline()";
 
   if (!ret) {

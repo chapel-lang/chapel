@@ -8,5 +8,5 @@ var dirname = "notAMonkey";
 // And neither is this file.
 var filename = "notAMonkey/notAMount.txt";
 
-writeln("Is that directory a mount point? " + isMount(dirname));
-writeln("Is that file a mount point? " + isMount(filename));
+writeln("Is that directory a mount point? ", isMount(dirname));
+writeln("Is that file a mount point? ", isMount(filename));

@@ -20,7 +20,7 @@ proc help(lst, sz) {
 
   writeln("building");
   for i1 in 11..#sz do
-    lst.push_back("e"+i1);
+    lst.push_back("e"+i1:string);
 
   writeln("random indexing");
   for i2 in 0..#sz by -1 do

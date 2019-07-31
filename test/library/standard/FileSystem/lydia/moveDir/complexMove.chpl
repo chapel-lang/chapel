@@ -8,4 +8,4 @@ var src = "complexCopy";
 var dest = "complexDest";
 
 moveDir(src, dest);
-writeln("original directory no longer exists: " + !exists(src));
+writeln("original directory no longer exists: ", !exists(src));
