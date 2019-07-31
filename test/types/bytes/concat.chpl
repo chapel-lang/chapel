@@ -1,4 +1,4 @@
-var b: _bytes = " base bytes ";
+var b: bytes = " base bytes ";
 
 printValAndType(b+3:_bytes);
 printValAndType(3:_bytes+b);
