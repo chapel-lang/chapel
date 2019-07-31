@@ -242,12 +242,12 @@ void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
 
   info->irBuilder->CreateLifetimeStart(addr, size);
 }
-
+git stat
 llvm::Value* createVarLLVM(llvm::Type* type, const char* name)
 {
   GenInfo* info = gGenInfo;
   llvm::Value* val = createTempVarLLVM(info->irBuilder, type, name);
-  info->currentStackVariables.push_back(val);
+  info->currentStackVariables.push_back(std::pair<llvm::Value*, llvm::Type*>(val, type));
   codegenLifetimeStart(type, val);
   return val;
 }

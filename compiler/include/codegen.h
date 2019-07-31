@@ -103,7 +103,7 @@ struct GenInfo {
   llvm::TargetMachine* targetMachine;
 
   std::stack<LoopData> loopStack;
-  std::vector<llvm::Value*> currentStackVariables;
+  std::vector<std::pair<llvm::Value*, llvm::Type*> > currentStackVariables;
 
   llvm::LLVMContext llvmContext;
   llvm::MDNode* tbaaRootNode;

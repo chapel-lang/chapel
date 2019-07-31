@@ -164,8 +164,10 @@ GenRet BlockStmt::codegen() {
       node->codegen();
       if (CallExpr* call = toCallExpr(node)) {
         if (call->isPrimitive(PRIM_RETURN)) {
-          for_vector(llvm::Value, var, info->currentStackVariables) {
-            codegenLifetimeEnd(var->getType(), var);
+          for (std::size_t i = 0; i < info->currentStackVariables.size(); ++i) {
+            llvm::Value* val = info->currentStackVariables.at(i).first;
+            llvm::Type* type = info->currentStackVariables.at(i).second;
+            codegenLifetimeEnd(type, val);
           };
         }
       }
