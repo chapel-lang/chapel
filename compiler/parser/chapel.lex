@@ -125,6 +125,7 @@ bool             return processToken(yyscanner, TBOOL);
 borrowed         return processToken(yyscanner, TBORROWED);
 break            return processToken(yyscanner, TBREAK);
 by               return processToken(yyscanner, TBY);
+bytes            return processToken(yyscanner, TBYTES);
 catch            return processToken(yyscanner, TCATCH);
 class            return processToken(yyscanner, TCLASS);
 cobegin          return processToken(yyscanner, TCOBEGIN);
