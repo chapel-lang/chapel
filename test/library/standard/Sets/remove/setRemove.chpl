@@ -35,18 +35,20 @@ proc doTest(type eltType) {
   assert(s2.size == (testIters * 2));
 
   for x in s1 {
-     s2.remove(x);
-     assert(s1.contains(x));
+    assert(s2.remove(x));
+    assert(s1.contains(x));
   }
 
   assert(s1.size == s2.size);
   assert(s1.size == testIters);
 
-  for x in s2 {
-    try {
-      s1.remove(x);
-      halt("Should never reach here.");
-    } catch {}
+  for x in s2 do
+    assert(!s1.remove(x));
+
+  // Conjure up some numbers that shouldn't be in either set.
+  for i in -1..-testIters by -1 {
+    var x = i:eltType;
+    assert(!s1.remove(x) && !s2.remove(x));
   }
 }
 
