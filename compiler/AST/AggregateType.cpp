@@ -43,6 +43,7 @@
 #include <queue>
 
 AggregateType* dtObject = NULL;
+AggregateType* dtBytes  = NULL;
 AggregateType* dtString = NULL;
 AggregateType* dtLocale = NULL;
 
