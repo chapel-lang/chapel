@@ -246,6 +246,11 @@ module CPtr {
   pragma "no doc"
   inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
 
+  pragma "no doc"
+  inline proc _cast(type t:c_void_ptr, x:c_fn_ptr) {
+    return __primitive("cast", c_void_ptr, x);
+  }
+
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
   pragma "no doc"
