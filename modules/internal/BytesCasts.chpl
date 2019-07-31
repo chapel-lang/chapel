@@ -24,15 +24,15 @@ module BytesCasts {
   //
   // Bool
   //
-  inline proc _cast(type t:_bytes, x: bool) {
+  inline proc _cast(type t:bytes, x: bool) {
     if (x) {
-      return "true":_bytes;
+      return "true":bytes;
     } else {
-      return "false":_bytes;
+      return "false":bytes;
     }
   }
 
-  proc _cast(type t:chpl_anybool, x: _bytes) throws {
+  proc _cast(type t:chpl_anybool, x: bytes) throws {
     var b = x.strip();
     if b.isEmpty() {
       // TODO engin: do we really need this check?
@@ -52,7 +52,7 @@ module BytesCasts {
   //
   // int
   //
-  proc _cast(type t:_bytes, x: integral) {
+  proc _cast(type t:bytes, x: integral) {
     //TODO: switch to using qio's writef somehow
     pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool,
@@ -72,7 +72,7 @@ module BytesCasts {
       }
     }
 
-    var ret: _bytes;
+    var ret: bytes;
     ret.buff = csc:c_ptr(uint(8));
     ret.len = strlen(csc).safeCast(int);
     ret._size = ret.len+1;
@@ -80,7 +80,7 @@ module BytesCasts {
     return ret;
   }
 
-  inline proc _cast(type t:integral, x: _bytes) throws {
+  inline proc _cast(type t:integral, x: bytes) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -111,7 +111,7 @@ module BytesCasts {
     var isErr: bool;
     // localize the bytes and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find("_":_bytes) != 0;
+    const hasUnderscores = localX.find("_":bytes) != 0;
 
     if hasUnderscores {
       localX = localX.strip();
@@ -128,7 +128,7 @@ module BytesCasts {
 
       // remove underscores everywhere but the first position
       if localX.length >= 2 then
-        localX = localX[1] + localX[2..].replace("_":_bytes, "":_bytes);
+        localX = localX[1] + localX[2..].replace("_":bytes, "":bytes);
     }
 
     if localX.isEmpty() then
@@ -166,7 +166,7 @@ module BytesCasts {
   //
   // real & imag
   //
-  inline proc _real_cast_helper(x: real(64), param isImag: bool) : _bytes {
+  inline proc _real_cast_helper(x: real(64), param isImag: bool) : bytes {
     pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
     pragma "fn synchronization free"
@@ -174,7 +174,7 @@ module BytesCasts {
 
     var csc = real_to_c_string(x:real(64), isImag);
 
-    var ret: _bytes;
+    var ret: bytes;
     ret.buff = csc:c_ptr(uint(8));
     ret.len = strlen(csc).safeCast(int);
     ret._size = ret.len+1;
@@ -182,12 +182,12 @@ module BytesCasts {
     return ret;
   }
 
-  proc _cast(type t:_bytes, x:chpl_anyreal) {
+  proc _cast(type t:bytes, x:chpl_anyreal) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
 
-  proc _cast(type t:_bytes, x:chpl_anyimag) {
+  proc _cast(type t:bytes, x:chpl_anyimag) {
     //TODO: switch to using qio's writef somehow
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See the cast in ChapelBase.
@@ -195,25 +195,25 @@ module BytesCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cleanupBytesForRealCast(type t, ref s: _bytes) throws {
+  inline proc _cleanupBytesForRealCast(type t, ref s: bytes) throws {
     var len = s.length;
 
     if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty bytes to " +
                                            t: string);
 
-    if len >= 2 && s[2..].find("_":_bytes) != 0 {
+    if len >= 2 && s[2..].find("_":bytes) != 0 {
       // Don't remove a leading underscore in the string number,
       // but remove the rest.
       if len > 2 && s[1] == "_" {
-        s = s[1] + s[2..].replace("_":_bytes, "":_bytes);
+        s = s[1] + s[2..].replace("_":bytes, "":bytes);
       } else {
-        s = s.replace("_":_bytes, "":_bytes);
+        s = s.replace("_":bytes, "":bytes);
       }
     }
   }
 
-  inline proc _cast(type t:chpl_anyreal, x: _bytes) throws {
+  inline proc _cast(type t:chpl_anyreal, x: bytes) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -242,7 +242,7 @@ module BytesCasts {
     return retVal;
   }
 
-  inline proc _cast(type t:chpl_anyimag, x: _bytes) throws {
+  inline proc _cast(type t:chpl_anyimag, x: bytes) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
@@ -274,30 +274,30 @@ module BytesCasts {
   //
   // complex
   //
-  proc _cast(type t:_bytes, x: chpl_anycomplex) {
+  proc _cast(type t:bytes, x: chpl_anycomplex) {
     if isnan(x.re) || isnan(x.im) then
-      return "nan":_bytes;
-    var re = (x.re):_bytes;
-    var im: _bytes;
-    var op: _bytes;
+      return "nan":bytes;
+    var re = (x.re):bytes;
+    var im: bytes;
+    var op: bytes;
     if x.im < 0 {
-      im = (-x.im):_bytes;
+      im = (-x.im):bytes;
       op = " - ";
     } else if x.im == -0.0 && -0.0 != 0.0 { // Special accommodation for Seymour.
       im = "0.0";
       op = " - ";
     } else {
-      im = (x.im):_bytes;
+      im = (x.im):bytes;
       op = " + ";
     }
     const ts0 = re + op;
     const ts1 = ts0 + im;
-    const ret = ts1 + "i":_bytes;
+    const ret = ts1 + "i":bytes;
     return ret;
   }
 
 
-  inline proc _cast(type t:chpl_anycomplex, x: _bytes) throws {
+  inline proc _cast(type t:chpl_anycomplex, x: bytes) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);
@@ -334,8 +334,8 @@ module BytesCasts {
   // enum 
   // not sure if this is quite necessary, but adding it just to make bytes as
   // similar to string as possible
-  proc _cast(type t:_bytes, x: enumerated) {
-    return x:string:_bytes;
+  proc _cast(type t:bytes, x: enumerated) {
+    return x:string:bytes;
   }
 
 } // end of module BytesCasts
