@@ -637,7 +637,12 @@ static void cleanupAfterRemoves() {
       fn->addFlag(FLAG_INSTANTIATED_GENERIC);
     fn->instantiatedFrom = NULL;
     fn->setInstantiationPoint(NULL);
-    // How about fn->substitutions, basicBlocks, calledBy ?
+    form_Map(SymbolMapElem, e, fn->substitutions) {
+      if (e->value && !e->value->inTree()) {
+        e->value = NULL;
+      }
+    }
+    // How about basicBlocks, calledBy ?
   }
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
