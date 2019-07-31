@@ -501,6 +501,8 @@ module String {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
     pragma "no doc"
+    var _numCodepoints: int = -1; // length in codepoints, -1 if not known
+    pragma "no doc"
     var _size: int = 0; // size of the buffer we own
     pragma "no doc"
     var buff: bufferType = nil;
@@ -694,13 +696,23 @@ module String {
     inline proc size return len;
 
     /*
-      :returns: The number of codepoints in the string.
+      :returns: The number of codepoints in the string, assuming the
+                string is correctly-encoded UTF-8.
       */
     proc numCodepoints {
-      var n = 0;
-      for cp in this.codepoints() do
-        n += 1;
-      return n;
+      if _numCodepoints < 0 {
+        var localThis: string = this.localize();
+        var n = 0;
+        var i = 0;
+        while i < localThis.len {
+          i += 1;
+          while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
+            i += 1;
+          n += 1;
+        }
+        _numCodepoints = n;
+      }
+      return _numCodepoints;
     }
 
     /*
@@ -835,24 +847,61 @@ module String {
     }
 
     /*
+      Returns true if the argument is a valid initial byte of a UTF-8
+      encoded multibyte character.
+    */
+    pragma "no doc"
+    inline proc _isInitialByte(b: uint(8)) : bool {
+      return (b & 0xc0) != 0x80;
+    }
+
+    /*
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
       Skip characters that begin prior to the specified starting byte index.
+      Assume we accidentally start in the middle of a multibyte character,
+      but the string is correctly encoded UTF-8.
     */
     pragma "no doc"
     iter _cpIndexLen(start = 1:byteIndex) {
       var localThis: string = this.localize();
 
-      var i = 0;
+      var i = start:int - 1;
+      if i > 0 then
+        while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
+          i += 1; // in case `start` is in the middle of a multibyte character
       while i < localThis.len {
         var cp: int(32);
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
-        if i + 1 >= start then
-          yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
+        yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
+      }
+    }
+
+    /*
+      Iterates over the string Unicode character by Unicode character,
+      and returns the byte index and byte length of each character.
+      Skip characters that begin prior to the specified starting byte index.
+      Assume we accidentally start in the middle of a multibyte character,
+      but the string is correctly encoded UTF-8.
+    */
+    pragma "no doc"
+    iter _indexLen(start = 1:byteIndex) {
+      var localThis: string = this.localize();
+
+      var i = start:int - 1;
+      if i > 0 then
+        while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
+          i += 1; // in case `start` is in the middle of a multibyte character
+      while i < localThis.len {
+        var j = i + 1;
+        while j < localThis.len && !_isInitialByte(localThis.buff[j]) do
+          j += 1;
+        yield ((i + 1):byteIndex, j - i);
+        i = j;
       }
     }
 
@@ -1039,7 +1088,7 @@ module String {
       var byte_low = this.len + 1;  // empty range if bounds outside string
       var byte_high = this.len;
       if cp_high > 0 {
-        for (c, i, nbytes) in this._cpIndexLen() {
+        for (i, nbytes) in this._indexLen() {
           if cp_count == cp_low {
             byte_low = i:int;
             if !r.hasHighBound() then
