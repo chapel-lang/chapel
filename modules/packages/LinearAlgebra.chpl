@@ -1216,6 +1216,17 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   return y;
 }
 
+/* 
+  Returns the solution ``x`` to the linear system `` A * x = b ``.
+*/
+proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
+  var (LU, ipiv) = lu(A);
+  b = permute (ipiv, b, true);
+  var z = solve_tril(LU, b);
+  var x = solve_triu(LU, z);
+  return x;
+}
+
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
