@@ -1500,6 +1500,43 @@ module ChapelArray {
     }
 
     /*
+     Creates an index buffer which can be used for faster index addition. 
+
+     For example, instead of:
+
+       .. code-block:: chapel
+
+          var spsDom: sparse subdomain(parentDom);
+          for i in someIndexIterator() do
+            spsDom += i;
+
+     You can use `SparseIndexBuffer` for better performance:
+
+       .. code-block:: chapel
+
+          var spsDom: sparse subdomain(parentDom);
+          var idxBuf = spsDom.makeIndexBuffer(size=N);
+          for i in someIndexIterator() do
+            idxBuf.add(i);
+          idxBuf.commit();
+
+     The above snippet will create a buffer of size N indices, and will
+     automatically commit indices to the sparse domain as the buffer fills up.
+     Indices are also committed when the buffer goes out of scope.
+
+       .. note::
+
+          The interface and implementation is not stable and may change in the
+          future.
+
+     :arg size: Size of the buffer in number of indices.
+     :type size: int
+    */
+    inline proc makeIndexBuffer(size: int) {
+      return _value.dsiMakeIndexBuffer(size);
+    }
+
+    /*
        Adds indices in ``inds`` to this domain in bulk.
 
        For sparse domains, an operation equivalent to this method is available
