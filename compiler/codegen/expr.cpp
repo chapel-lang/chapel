@@ -242,7 +242,7 @@ void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
 
   info->irBuilder->CreateLifetimeStart(addr, size);
 }
-git stat
+
 llvm::Value* createVarLLVM(llvm::Type* type, const char* name)
 {
   GenInfo* info = gGenInfo;
