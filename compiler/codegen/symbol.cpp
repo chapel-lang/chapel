@@ -1909,7 +1909,9 @@ void FnSymbol::codegenDef() {
 
   body->codegen();
   flushStatements();
+#ifdef HAVE_LLVM
   info->currentStackVariables.clear();
+#endif
 
   if( outfile ) {
     fprintf(outfile, "}\n\n");
