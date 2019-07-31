@@ -14,7 +14,7 @@ class Impl {
 
 proc run() {
   var x = new shared Impl(1);
-  var y: shared Impl;
+  var y: shared Impl?;
 
   // check assignment
   y = x;

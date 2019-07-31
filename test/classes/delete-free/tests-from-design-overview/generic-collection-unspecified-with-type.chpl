@@ -10,7 +10,7 @@ proc Collection.addElement(in arg: elementType) lifetime this < arg {
 }
 
 proc test() {
-  var c: Collection(owned MyClass);
+  var c: Collection(owned MyClass?);
   c.addElement( new owned MyClass() ); // transferred to element
 
   var global = new owned MyClass();

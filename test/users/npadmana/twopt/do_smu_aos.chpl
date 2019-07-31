@@ -141,7 +141,7 @@ class KDNode {
   var dom : domain(1);
   var xcen : NDIM*real;
   var rcell : real;
-  var left, right : owned KDNode;
+  var left, right : owned KDNode?;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
@@ -216,24 +216,24 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node
 
   // If one node is a leaf 
   if (node1.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
   if (node2.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   }
 
   // Split the larger case;
   if (node1.npart > node2.npart) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   } else {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
 

@@ -9237,6 +9237,61 @@ static void resolvePrimInit(CallExpr* call,
   }
 }
 
+// Does 'val' feed into a tuple? Ex.:
+//   default init var( elt_x1 type owned Foo ) 
+//   .=( tup "x1" elt_x1 ) 
+static bool isTupleComponent(Symbol* val, CallExpr* call) {
+  CallExpr* otherUse = NULL;
+  for_SymbolSymExprs(se, val)
+    if (se->parentExpr != call)
+      if (CallExpr* parentCall = toCallExpr(se->parentExpr))
+        if (parentCall->isPrimitive(PRIM_SET_MEMBER))
+          {
+            if (otherUse == NULL) otherUse = parentCall;
+            else return false; // too many uses
+          }
+
+  if (otherUse != NULL)
+    if (SymExpr* defSE = toSymExpr(otherUse->get(1)))
+      // Does 'otherUse' define a tuple?
+      if (defSE->symbol()->type->symbol->hasFlag(FLAG_TUPLE))
+        return true;
+
+  return false;
+}
+
+// Create an error when default initializing a non-nilable class type.
+static void errorIfNonNilableType(CallExpr* call, Symbol* val,
+                                  Type* typeToCheck, Type* type)
+{
+  if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
+    return;
+
+  // Work around current problems in array / assoc array types
+  bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
+                call->getModule()->hasFlag(FLAG_UNSAFE);
+  if (unsafe)
+    return;
+
+  const char* descr = val->name;
+  if (VarSymbol* v = toVarSymbol(val))
+    descr = toString(v);
+
+  CallExpr* uCall = call;
+  if (isTupleComponent(val, call)) {
+    descr = astr("a tuple component of the type ", toString(type));
+    uCall = userCall(call);
+  }
+
+  USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
+  USR_PRINT("non-nil class types do not support default initialization");
+
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+  ClassTypeDecorator d = classTypeDecorator(type);
+  Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+  USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+}
+
 static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
   if (val->hasFlag(FLAG_PARAM) &&
       val->hasFlag(FLAG_TEMP) == false &&
@@ -9288,28 +9343,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     resolveExpr(moveDefault);
     call->convertToNoop();
 
-    // Create an error when default initializing a non-nilable class type.
-    if (isNonNilableClassType(type) && !useLegacyNilability(call)) {
-      // Work around current problems in array / assoc array types
-      bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
-                    call->getModule()->hasFlag(FLAG_UNSAFE);
-
-      if (unsafe == false) {
-
-        const char* descr = val->name;
-        if (VarSymbol* v = toVarSymbol(val))
-          descr = toString(v);
-
-        USR_FATAL_CONT(call, "Cannot default-initialize %s", descr);
-        USR_PRINT("non-nil class types do not support default initialization");
-        AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-        INT_ASSERT(at);
-        ClassTypeDecorator d = classTypeDecorator(type);
-        Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-        USR_PRINT("Consider using the type %s instead",
-                  toString(suggestedType));
-      }
-    }
+    errorIfNonNilableType(call, val, type, type);
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
@@ -9356,6 +9390,9 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
             (at->isRecord() || at->isUnion())) {
 
     errorInvalidParamInit(call, val, at);
+    if (at->symbol->hasFlag(FLAG_MANAGED_POINTER))
+      errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at);
+
     if (!val->hasFlag(FLAG_NO_INIT))
       resolvePrimInitGenericRecordVar(call, val, at);
     else
