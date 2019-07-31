@@ -442,7 +442,7 @@ proc eye(Dom: domain(2), type eltType=real) {
     from the ``-p``th row. ``p`` is 0-indexed.
 */
 proc setDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0) 
-              where isDenseArr(A){
+              where isDenseArr(X){
   var start, end = 0;
   if (p >= 0) { // upper or main diagonal
     start = 1;
