@@ -216,7 +216,7 @@ module String {
     encoded multibyte character.
   */
   pragma "no doc"
-  private inline proc _isInitialByte(b: uint(8)) : bool {
+  private inline proc isInitialByte(b: uint(8)) : bool {
     return (b & 0xc0) != 0x80;
   }
 
@@ -712,7 +712,7 @@ module String {
       var i = 0;
       while i < localThis.len {
         i += 1;
-        while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
+        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
           i += 1;
         n += 1;
       }
@@ -863,7 +863,7 @@ module String {
 
       var i = start:int - 1;
       if i > 0 then
-        while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
+        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
           i += 1; // in case `start` is in the middle of a multibyte character
       while i < localThis.len {
         var cp: int(32);
@@ -889,11 +889,11 @@ module String {
 
       var i = start:int - 1;
       if i > 0 then
-        while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
+        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
           i += 1; // in case `start` is in the middle of a multibyte character
       while i < localThis.len {
         var j = i + 1;
-        while j < localThis.len && !_isInitialByte(localThis.buff[j]) do
+        while j < localThis.len && !isInitialByte(localThis.buff[j]) do
           j += 1;
         yield ((i + 1):byteIndex, j - i);
         i = j;
