@@ -141,12 +141,12 @@ module UnitTest {
         if seq_type_name == "Array" {
           tmpString += "'[";
           for i in 1..seq1.size {
-            if i != seq1.size then tmpString+= seq1[i]+", ";
-            else tmpString += seq1[i]+"]' != '[";
+            if i != seq1.size then tmpString+= seq1[i]:string+", ";
+            else tmpString += seq1[i]:string+"]' != '[";
           }
           for i in 1..seq2.size {
-            if i != seq2.size then tmpString+= seq2[i]+", ";
-            else tmpString += seq2[i]+"]'";
+            if i != seq2.size then tmpString+= seq2[i]:string+", ";
+            else tmpString += seq2[i]:string+"]'";
           }
         }
         else {
@@ -156,19 +156,19 @@ module UnitTest {
           var item1 = seq1[i],
               item2 = seq2[i];
           if item1 != item2 {
-            tmpString += "\nFirst differing element at index "+i +":\n'"+item1+"'\n'"+item2+"'\n";
+            tmpString += "\nFirst differing element at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
             break;
           }
         }
         if len1 > len2 {
           var size_diff = len1 - len2;
-          tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff +" additionl elements.\n";
-          tmpString += "First extra element is at index "+(len2+1)+"\n'"+seq1[len2+1]+"'\n";
+          tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff:string +" additionl elements.\n";
+          tmpString += "First extra element is at index "+(len2+1):string+"\n'"+seq1[len2+1]:string+"'\n";
         }
         else if len1 < len2 {
           var size_diff = len2 - len1;
-          tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff +" additionl elements.\n";
-          tmpString += "First extra element is at index "+(len1+1)+"\n'"+seq2[len1+1]+"'\n";
+          tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff:string +" additionl elements.\n";
+          tmpString += "First extra element is at index "+(len1+1):string+"\n'"+seq2[len1+1]:string+"'\n";
         }
       }
       throw new owned AssertionError(tmpString);
@@ -371,7 +371,7 @@ module UnitTest {
           if item1 == item2 then checkequal = true;
           else if item1 < item2 {
             tmpString += "First "+seq_type_name+" < Second "+seq_type_name+" :\n";
-            tmplarge += "\nFirst larger element in second "+seq_type_name+" is at index "+i +":\n'"+item1+"'\n'"+item2+"'\n";
+            tmplarge += "\nFirst larger element in second "+seq_type_name+" is at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
             checkgreater = true;
             checkequal = false;
             symbol = "<";
@@ -390,12 +390,12 @@ module UnitTest {
         if seq_type_name == "Array" {
           tmpString += "'[";
           for i in 1..seq1.size {
-            if i != seq1.size then tmpString+= seq1[i]+", ";
-            else tmpString += seq1[i]+"]' "+symbol+ " '[";
+            if i != seq1.size then tmpString+= seq1[i]:string+", ";
+            else tmpString += seq1[i]:string+"]' "+symbol+ " '[";
           }
           for i in 1..seq2.size {
-            if i != seq2.size then tmpString+= seq2[i]+", ";
-            else tmpString += seq2[i]+"]'";
+            if i != seq2.size then tmpString+= seq2[i]:string+", ";
+            else tmpString += seq2[i]:string+"]'";
           }
         }
         else {
@@ -572,7 +572,7 @@ module UnitTest {
           if item1 == item2 then checkequal = true;
           else if item1 > item2 {
             tmpString += "First "+seq_type_name+" > Second "+seq_type_name+" :\n";
-            tmplarge += "\nFirst larger element in first "+seq_type_name+" is at index "+i +":\n'"+item1+"'\n'"+item2+"'\n";
+            tmplarge += "\nFirst larger element in first "+seq_type_name+" is at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
             checkless = true;
             checkequal = false;
             symbol = ">";
@@ -591,12 +591,12 @@ module UnitTest {
         if seq_type_name == "Array" {
           tmpString += "'[";
           for i in 1..seq1.size {
-            if i != seq1.size then tmpString+= seq1[i]+", ";
-            else tmpString += seq1[i]+"]' "+symbol+ " '[";
+            if i != seq1.size then tmpString+= seq1[i]:string+", ";
+            else tmpString += seq1[i]:string+"]' "+symbol+ " '[";
           }
           for i in 1..seq2.size {
-            if i != seq2.size then tmpString+= seq2[i]+", ";
-            else tmpString += seq2[i]+"]'";
+            if i != seq2.size then tmpString+= seq2[i]:string+", ";
+            else tmpString += seq2[i]:string+"]'";
           }
         }
         else {
