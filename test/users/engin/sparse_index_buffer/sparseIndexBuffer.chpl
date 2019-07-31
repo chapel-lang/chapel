@@ -1,5 +1,6 @@
 use BlockDist;
 use LayoutCS;
+use Lists;
 
 var parentDom1D = {1..100};
 var parentDom2D = {1..100, 1..100};
@@ -33,9 +34,11 @@ proc test(d) {
 }
 
 proc printDomain(d) {
+  var indexList: list(if d.rank==1 then d.idxType else d.rank*d.idxType);
   for i in d do
-    write(i, " ");
-  writeln();
+    indexList.append(i);
+  indexList.sort();
+  writeln(indexList);
 }
 
 // test local 1D domains
@@ -59,6 +62,5 @@ var cooDom2DDist: sparse subdomain(distParentDom2DCOO);
 test(cooDom2DDist);
 var csrDom2DDist: sparse subdomain(distParentDom2DCSR);
 test(csrDom2DDist);
-// addition to distributed CSC is currently broken on master. See #13418
-/*var cscDom2DDist: sparse subdomain(distParentDom2DCSC);*/
-/*test(cscDom2DDist);*/
+var cscDom2DDist: sparse subdomain(distParentDom2DCSC);
+test(cscDom2DDist);
