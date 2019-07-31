@@ -43,7 +43,6 @@ proc addDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0)
 proc main() {
 
   const Space = {1..m, 1..m};
-  var SparseDom: sparse subdomain(Space);
 
   var t: Timer;
 
@@ -58,7 +57,7 @@ proc main() {
     writeln();
   }
 
-  var A: [SparseDom] eltType;
+  var A: [Space] eltType;
 
   addDiag(A, 0, 2);
   addDiag(A, 1, -1);
@@ -68,18 +67,8 @@ proc main() {
 
   for 1..iters {
     t.start();
-    var (L,U) = lu(A);
+    var (LU, ipiv) = lu(A);
     t.stop();
-    
-    if correctness {
-      var P = dot(L,U);
-      forall (i,j) in SparseDom {
-        const expect = A(i,j);
-        if abs((expect - P(i,j)) / expect) > 0.0001 {
-          writeln("Wrong value of LU dot product at ", i, " ", j);
-        }
-      }
-    }
   }
 
   if !correctness then
