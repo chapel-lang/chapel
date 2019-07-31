@@ -22,8 +22,12 @@
 #include "chpl-env.h"
 
 void chpl_comm_preLaunch() {
-  char* chpl_launch_masterip = getenv("CHPL_LAUNCH_MASTERIP");
-  if (chpl_launch_masterip != NULL) {
-    chpl_env_set("GASNET_MASTERIP", chpl_launch_masterip, 1);
+  const char* chpl_rt_masterip = chpl_env_rt_get("MASTERIP", NULL);
+  if (chpl_rt_masterip != NULL) {
+    chpl_env_set("GASNET_MASTERIP", chpl_rt_masterip, 1);
+  }
+  const char* chpl_rt_workerip = chpl_env_rt_get("WORKERIP", NULL);
+  if (chpl_rt_workerip != NULL) {
+    chpl_env_set("GASNET_WORKERIP", chpl_rt_workerip, 1);
   }
 }
