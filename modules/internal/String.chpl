@@ -211,6 +211,15 @@ module String {
 
   private config param debugStrings = false;
 
+  /*
+    Returns true if the argument is a valid initial byte of a UTF-8
+    encoded multibyte character.
+  */
+  pragma "no doc"
+  inline proc _isInitialByte(b: uint(8)) : bool {
+    return (b & 0xc0) != 0x80;
+  }
+
   pragma "no doc"
   record __serializeHelper {
     var len       : int;
@@ -501,8 +510,6 @@ module String {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
     pragma "no doc"
-    var _numCodepoints: int = -1; // length in codepoints, -1 if not known
-    pragma "no doc"
     var _size: int = 0; // size of the buffer we own
     pragma "no doc"
     var buff: bufferType = nil;
@@ -700,19 +707,16 @@ module String {
                 string is correctly-encoded UTF-8.
       */
     proc numCodepoints {
-      if _numCodepoints < 0 {
-        var localThis: string = this.localize();
-        var n = 0;
-        var i = 0;
-        while i < localThis.len {
+      var localThis: string = this.localize();
+      var n = 0;
+      var i = 0;
+      while i < localThis.len {
+        i += 1;
+        while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
           i += 1;
-          while i < localThis.len && !_isInitialByte(localThis.buff[i]) do
-            i += 1;
-          n += 1;
-        }
-        _numCodepoints = n;
+        n += 1;
       }
-      return _numCodepoints;
+      return n;
     }
 
     /*
@@ -844,15 +848,6 @@ module String {
       compilerWarning("uchars is deprecated - please use codepoints instead");
       for cp in this.codepoints() do
         yield cp;
-    }
-
-    /*
-      Returns true if the argument is a valid initial byte of a UTF-8
-      encoded multibyte character.
-    */
-    pragma "no doc"
-    inline proc _isInitialByte(b: uint(8)) : bool {
-      return (b & 0xc0) != 0x80;
     }
 
     /*
