@@ -515,38 +515,23 @@ module ZMQ {
       Create a ZMQ context.
      */
     proc init() {
+      this.classRef = new unmanaged ContextClass();
+      this.classRef.incRefCount();
       this.complete();
-      acquire(new unmanaged ContextClass());
     }
 
     pragma "no doc"
     proc init=(c: Context) {
+      this.classRef = c.classRef;
+      this.classRef.incRefCount();
       this.complete();
-      this.acquire(c.classRef);
     }
 
     pragma "no doc"
     proc deinit() {
-      release();
-    }
-
-    pragma "no doc"
-    proc acquire(newRef: unmanaged ContextClass) {
-      classRef = newRef;
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc acquire() {
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc release() {
       var rc = classRef.decRefCount();
       if rc == 1 {
         delete classRef;
-        classRef = nil;
       }
     }
 
@@ -566,9 +551,15 @@ module ZMQ {
 
   pragma "no doc"
   proc =(ref lhs: Context, rhs: Context) {
-    if lhs.classRef != nil then
-      lhs.release();
-    lhs.acquire(rhs.classRef);
+    // Retain
+    rhs.classRef.incRefCount();
+    // Release
+    var rc = lhs.classRef.decRefCount();
+    if rc == 1 {
+      delete lhs.classRef;
+    }
+    // Assign
+    lhs.classRef = rhs.classRef;
   }
 
   pragma "no doc"
@@ -626,40 +617,37 @@ module ZMQ {
 
     pragma "no doc"
     proc init=(s: Socket) {
+      this.classRef = s.classRef;
+      this.classRef.incRefCount();
       this.complete();
-      this.acquire(s.classRef);
     }
 
     pragma "no doc"
     proc init(ctx: Context, sockType: int) {
-      context = ctx;
+
+      // This function exists because initializers are confused
+      // by on statements.
+      proc makeClass(ctx: Context, sockType: int): unmanaged SocketClass {
+        // ideally we could return from on statement, removing
+        // need for this nilable variable.
+        var newClass: unmanaged SocketClass?;
+        on ctx.classRef.home {
+          newClass = new unmanaged SocketClass(ctx, sockType);
+          newClass!.incRefCount();
+        }
+        return newClass!;
+      }
+
+      this.classRef = makeClass(ctx, sockType);
+      this.context = ctx;
       this.complete();
-      on ctx.classRef.home do
-        acquire(new unmanaged SocketClass(ctx, sockType));
     }
 
     pragma "no doc"
     proc deinit() {
-      release();
-    }
-
-    pragma "no doc"
-    proc acquire(newRef: unmanaged SocketClass) {
-      classRef = newRef;
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc acquire() {
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc release() {
       var rc = classRef.decRefCount();
       if rc == 1 {
         delete classRef;
-        classRef = nil;
       }
     }
 
@@ -1120,9 +1108,15 @@ module ZMQ {
   pragma "no doc"
   proc =(ref lhs: Socket, rhs: Socket) {
     if lhs.classRef == rhs.classRef then return;
-    if lhs.classRef != nil then
-      lhs.release();
-    lhs.acquire(rhs.classRef);
+    // Retain
+    rhs.classRef.incRefCount();
+    // Release
+    var rc = lhs.classRef.decRefCount();
+    if rc == 1 {
+      delete lhs.classRef;
+    }
+    // Assign
+    lhs.classRef = rhs.classRef;
   }
 
   /*
