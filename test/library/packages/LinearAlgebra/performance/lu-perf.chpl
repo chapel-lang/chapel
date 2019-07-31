@@ -12,34 +12,6 @@ config type eltType = real;
 
 const bytes = numBytes(eltType);
 
-// Identical to #13515, should be removed after #13515 is merged
-proc addDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0)
-              where isSparseArr(X) { 
-    if D.rank != 2 then
-      halt("Wrong rank for addDiag");
-
-    if D.shape(1) != D.shape(2) then
-      halt("addDiag only supports square matrices");
-
-    var start, end = 0;
-    if (p >= 0) { // upper or main diagonal
-      start = 1;
-      end = D.shape(1) - p;
-    }
-    else { // lower diagonal
-      start = 1 - p;
-      end = D.shape(1);
-    }
-    var indices : [start..end] (D.idxType, D.idxType);
-    forall ind in {start..end} {
-      indices[ind] = (ind, ind+p);
-    }
-    D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
-    forall ind in indices {
-      X(ind) = val;
-    }
-}
-
 proc main() {
 
   const Space = {1..m, 1..m};
