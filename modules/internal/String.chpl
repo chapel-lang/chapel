@@ -854,7 +854,7 @@ module String {
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
       Skip characters that begin prior to the specified starting byte index.
-      Assume we accidentally start in the middle of a multibyte character,
+      Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
     pragma "no doc"
@@ -880,7 +880,7 @@ module String {
       Iterates over the string Unicode character by Unicode character,
       and returns the byte index and byte length of each character.
       Skip characters that begin prior to the specified starting byte index.
-      Assume we accidentally start in the middle of a multibyte character,
+      Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
     pragma "no doc"
