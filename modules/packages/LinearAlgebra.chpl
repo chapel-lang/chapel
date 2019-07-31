@@ -1216,8 +1216,7 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   return y;
 }
 
-/* 
-  Returns the solution ``x`` to the linear system `` A * x = b ``.
+/* Returns the solution ``x`` to the linear system `` A * x = b ``.
 */
 proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
