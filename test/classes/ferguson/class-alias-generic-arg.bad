@@ -1,2 +1,0 @@
-class-alias-generic-arg.chpl:12: error: the type of the actual argument 'A' is generic
-note: generic actual arguments are not currently supported

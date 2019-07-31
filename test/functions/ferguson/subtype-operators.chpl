@@ -46,32 +46,32 @@ proc checkNotGte(type a, type b) {
 
 
 proc main() {
-  checkLt(Child, Parent);
+  checkLt(borrowed Child, borrowed Parent);
   checkLt(int(8), int(16));
-  checkNotLt(Parent, Child);
+  checkNotLt(borrowed Parent, borrowed Child);
   checkNotLt(int(16), int(8));
-  checkNotLt(Child, Child);
+  checkNotLt(borrowed Child, borrowed Child);
   checkNotLt(int(8), int(8));
 
-  checkGt(Parent, Child);
+  checkGt(borrowed Parent, borrowed Child);
   checkGt(int(16), int(8));
-  checkNotGt(Child, Parent);
+  checkNotGt(borrowed Child, borrowed Parent);
   checkNotGt(int(8), int(16));
-  checkNotGt(Child, Child);
+  checkNotGt(borrowed Child, borrowed Child);
   checkNotGt(int(8), int(8));
 
-  checkLte(Child, Parent);
+  checkLte(borrowed Child, borrowed Parent);
   checkLte(int(8), int(16));
-  checkNotLte(Parent, Child);
+  checkNotLte(borrowed Parent, borrowed Child);
   checkNotLte(int(16), int(8));
-  checkLte(Child, Child);
+  checkLte(borrowed Child, borrowed Child);
   checkLte(int(8), int(8));
 
-  checkGte(Parent, Child);
+  checkGte(borrowed Parent, borrowed Child);
   checkGte(int(16), int(8));
-  checkNotGte(Child, Parent);
+  checkNotGte(borrowed Child, borrowed Parent);
   checkNotGte(int(8), int(16));
-  checkGte(Child, Child);
+  checkGte(borrowed Child, borrowed Child);
   checkGte(int(8), int(8));
 
   var i8: int(8);

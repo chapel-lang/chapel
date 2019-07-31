@@ -1,0 +1,7 @@
+Value =  base bytes 3 Type = _bytes
+Value = 3 base bytes  Type = _bytes
+Value =  base bytes Foo Type = _bytes
+Value = Bar base bytes  Type = _bytes
+Value =  base bytes true Type = _bytes
+Value = false base bytes  Type = _bytes
+Value =  base bytes  base bytes  base bytes  base bytes  Type = _bytes

@@ -11,8 +11,8 @@ proc check_expected(data, expected:string, len) {
   for i in 1..min(len, expected.length) {
     var n = data[i];
     var c = expected[i:byteIndex];
-    if n != c.byte(1) {
-      writeln("miscompare at ", i, ": expected ", c, " (", c.byte(1), "), got ", n);
+    if n != c.toByte() {
+      writeln("miscompare at ", i, ": expected ", c, " (", c.toByte(), "), got ", n);
     }
   }
 

@@ -8,8 +8,8 @@ record R5 {
 }
 
 record R6 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
 }
 
 class C5 {
@@ -18,8 +18,8 @@ class C5 {
 }
 
 class C6 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
 }
 
 proc test5a() {

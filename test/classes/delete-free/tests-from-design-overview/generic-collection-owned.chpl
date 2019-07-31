@@ -4,7 +4,7 @@ record Collection {
   var element: owned;
 }
 
-proc Collection.addElement(arg: owned) {
+proc Collection.addElement(in arg: owned) {
   element = arg;
 }
 

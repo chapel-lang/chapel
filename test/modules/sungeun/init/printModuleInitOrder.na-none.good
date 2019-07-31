@@ -6,6 +6,7 @@ Initializing Modules:
      SysError
      HaltWrappers
     CString
+    Bytes
     String
      StringCasts
     OwnedObject

@@ -38,7 +38,7 @@ proc main(args: [] string) {
 
   // Make everything uppercase
   forall d in data do
-    d -= ("a".byte(1) - "A".byte(1));
+    d -= ("a".toByte() - "A".toByte());
 
   writeFreqs(data, 1);
   writeFreqs(data, 2);
@@ -118,9 +118,9 @@ const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
 forall i in toChar.domain do
-  toNum[toChar[i].byte(1)] = i;
+  toNum[toChar[i].toByte()] = i;
 //
-// Too terse (?): toNum[toChar.byte(1)] = toChar.domain;
+// Too terse (?): toNum[toChar.toByte()] = toChar.domain;
 
 
 inline proc decode(in data, param nclSize) {
@@ -156,8 +156,8 @@ proc string.toBytes() {
 
 
 inline proc startsWithThree(data) {
-  return data[1] == ">".byte(1) &&
-         data[2] == "T".byte(1) &&
-         data[3] == "H".byte(1);
+  return data[1] == ">".toByte() &&
+         data[2] == "T".toByte() &&
+         data[3] == "H".toByte();
 }
 

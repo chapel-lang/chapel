@@ -106,6 +106,33 @@ forwarded to worker processes. However, this strategy is not always
 reliable. The remote system may override some environment variables, and
 some launchers might not correctly forward all environment variables.
 
+.. _chpl-rt-masterip:
+
+CHPL_RT_MASTERIP
+****************
+
+This environment variable is used to specify the IP address which should be used
+to connect.  By default, the node creating the connection will pass the result
+of ``gethostname()`` on to the nodes that need to connect to it, which will
+resolve that to an IP address using ``gethostbynname()``.
+
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
+``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
+http://gasnet.lbl.gov/dist/udp-conduit/README ).
+
+.. _chpl-rt-workerip:
+
+CHPL_RT_WORKERIP
+****************
+
+This environment variable is used to specify the IP address which should be used
+to communicate between worker nodes.  By default, worker nodes will communicate
+among themselves using the same interface used to connect to the master node
+(see :ref:`chpl-rt-masterip`, above).
+
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
+``GASNET_WORKERIP`` (see http://gasnet.lbl.gov/dist/udp-conduit/README ).
+
 .. _using-slurm:
 
 Using Slurm

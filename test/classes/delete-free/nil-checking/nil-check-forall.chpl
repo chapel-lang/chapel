@@ -32,7 +32,7 @@ badNilInCoforallLoop();
 
 proc badNilInForallLoop2() {
   forall i in 1..n {
-    var x:owned MyClass;
+    var x:owned MyClass?;
     x.method();
   }
 }

@@ -989,7 +989,7 @@ void init_broadcast_private(void) {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
+void chpl_comm_broadcast_private(int id, size_t size) {
   for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
       (void) ofi_put(chpl_rt_priv_bcast_tab[id], i,
@@ -2182,18 +2182,16 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn) {
-  chpl_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
+                                       int32_t commID, int ln, int32_t fn) {
+  chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
   return NULL;
 }
 
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn) {
-  chpl_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
+                                       int32_t commID, int ln, int32_t fn) {
+  chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
   return NULL;
 }
 
@@ -2230,8 +2228,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 
 
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                   size_t size, int32_t typeIndex, int32_t commID,
-                   int ln, int32_t fn) {
+                   size_t size, int32_t commID, int ln, int32_t fn) {
   //
   // Sanity checks, self-communication.
   //
@@ -2247,7 +2244,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -2259,8 +2256,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
-                   size_t size, int32_t typeIndex, int32_t commID,
-                   int ln, int32_t fn) {
+                   size_t size, int32_t commID, int ln, int32_t fn) {
   //
   // Sanity checks, self-communication.
   //
@@ -2276,7 +2272,7 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -2291,14 +2287,13 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         c_nodeid_t dstnode,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID,
-                        int ln, int32_t fn) {
+                        int32_t commID, int ln, int32_t fn) {
   put_strd_common(dstaddr_arg, dststrides,
                   dstnode,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   1, NULL,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 
@@ -2306,14 +2301,13 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         c_nodeid_t srcnode,
                         void* srcaddr_arg, size_t* srcstrides, size_t* count,
                         int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID,
-                        int ln, int32_t fn) {
+                        int32_t commID, int ln, int32_t fn) {
   get_strd_common(dstaddr_arg, dststrides,
                   srcnode,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   1, NULL,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 

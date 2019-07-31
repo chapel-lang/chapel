@@ -379,7 +379,9 @@ static int processToken(yyscan_t scanner, int t) {
 
   if (captureTokens) {
     if (t == TASSIGN ||
-        t == TDOTDOTDOT) {
+        t == TDOTDOTDOT ||
+        t == TPARAM ||
+        t == TTYPE) {
       captureString.push_back(' ');
     }
 

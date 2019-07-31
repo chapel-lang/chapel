@@ -1,7 +1,7 @@
 class C { var x: int; }
 
 proc test() {
-  var bb: C?;
+  var bb: borrowed C?;
   sync begin with (ref bb) {
     var a = new owned C(1);
     bb = a.borrow();

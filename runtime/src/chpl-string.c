@@ -34,7 +34,7 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, int32_t filen
 
   chpl_string s = chpl_mem_alloc(x->size, CHPL_RT_MD_STR_COPY_DATA, lineno, filename);
   chpl_gen_comm_get((void *)s, chpl_rt_nodeFromLocaleID(x->locale),
-                    (void *)(x->addr), x->size, -1, CHPL_COMM_UNKNOWN_ID,
+                    (void *)(x->addr), x->size, CHPL_COMM_UNKNOWN_ID,
                     lineno, filename);
   return s;
 }

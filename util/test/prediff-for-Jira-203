@@ -8,13 +8,6 @@
 # This is thought to be a system issue, caused by a miscommunication between
 # ALPS and PBS. Not a Chapel issue.
 
-# Note: start_test's error handler also recognizes the same string,
-#   "Transient MPP reservation error on create",
-# and, if found, generates a more-recognizable error msg,
-#   "Error: Jira 203 -- Transient MPP reservation error",
-# instead of the generic
-#   "Error matching program output".
-
 # See Jira #203 (https://chapel.atlassian.net/browse/CHAPEL-203) for more info.
 
 # To use this prediff file with start_test (assuming bash):
@@ -23,6 +16,5 @@
 # start_test ...
 
 outfile=$2
-sed < $outfile > $outfile.tmp -e '/Transient MPP reservation error on create/d' \
-                              -e '/Transient MPP reservation error on confirm/d'
+sed < $outfile > $outfile.tmp -e '/Transient MPP reservation error/d'
 mv -f $outfile.tmp $outfile

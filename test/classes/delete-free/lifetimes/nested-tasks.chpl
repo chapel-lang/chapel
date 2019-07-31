@@ -4,7 +4,7 @@ class C { var x: int; }
 
 proc test0() {
   var myc = new owned C(1);
-  var bb: C?;
+  var bb: borrowed C?;
 
   coforall i in 1..2 with (ref bb) {
     bb = myc.borrow();
@@ -14,7 +14,7 @@ test0();
 
 proc test1() {
   var myc = new owned C(1);
-  var bb: C?;
+  var bb: borrowed C?;
 
   coforall i in 1..2 with (ref bb) {
     coforall j in 1..2 with (ref bb) {
@@ -27,7 +27,7 @@ test1();
 proc test1a() {
   var myc = new owned C(1);
   var from = myc.borrow();
-  var bb: C?;
+  var bb: borrowed C?;
 
   coforall i in 1..2 with (ref bb) {
     var tmp = bb;

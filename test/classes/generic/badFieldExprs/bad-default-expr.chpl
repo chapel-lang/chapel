@@ -23,13 +23,13 @@ class BadValueDefault {
 
 proc main() {
   if case == 0 {
-    type T = BadTypeDefault;
-    writeln(T:string);
+    type T = borrowed BadTypeDefault?;
+    var x:T;
   } else if case == 1 {
-    type T = BadParamDefault;
-    writeln(T:string);
+    type T = borrowed BadParamDefault?;
+    var x:T;
   } else if case == 2 {
-    type T = BadValueDefault;
-    writeln(T:string);
+    type T = borrowed BadValueDefault?;
+    var x:T;
   }
 }

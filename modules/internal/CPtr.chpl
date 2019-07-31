@@ -247,24 +247,11 @@ module CPtr {
   inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
 
   pragma "no doc"
-  inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, c_nil); }
-
-  pragma "no doc"
-  inline proc _cast(type t:c_ptr, x:_nilType) {
-    return __primitive("cast", t, x);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:_nilType) {
-    return __primitive("cast", c_void_ptr, nil);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_fn_ptr, x:_nilType) {
-    return __primitive("cast", c_fn_ptr, nil);
-  }
-  pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:c_fn_ptr) {
     return __primitive("cast", c_void_ptr, x);
   }
+
+  // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
   pragma "no doc"
   inline proc _cast(type t:c_ptr, x:c_ptr) {
@@ -294,14 +281,30 @@ module CPtr {
   inline proc _cast(type t:string, x:c_ptr) {
     return new string(__primitive("ref to string", x), needToCopy=false);
   }
+  pragma "last resort"
   pragma "no doc"
-  inline proc _cast(type t:borrowed, x:c_void_ptr) {
+  inline proc _cast(type t:_anyManagement, x:c_void_ptr) {
+    if isUnmanagedClass(t) || isBorrowedClass(t) {
+      if !chpl_legacyNilClasses {
+        compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
+        compilerWarning("cast to "+ _to_nilable(t):string +" instead");
+      }
+      return __primitive("cast", t, x);
+    } else {
+      compilerWarning("invalid cast from c_void_ptr to managed type " +
+                      t:string);
+    }
+  }
+
+  pragma "no doc"
+  inline proc _cast(type t:unmanaged?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:unmanaged, x:c_void_ptr) {
+  inline proc _cast(type t:borrowed?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
+
   pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:borrowed) {
     return __primitive("cast", t, x);
@@ -350,10 +353,6 @@ module CPtr {
   inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
 
-
-  pragma "no doc"
-  inline proc =(ref a:c_fn_ptr, b:_nilType) { __primitive("=", a, c_nil); }
-
   pragma "no doc"
   inline proc =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
 
@@ -363,6 +362,7 @@ module CPtr {
   inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
+
   pragma "no doc"
   inline proc ==(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);
@@ -371,22 +371,8 @@ module CPtr {
   inline proc ==(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_eq", a, b);
   }
-  pragma "no doc"
-  inline proc ==(a: c_ptr, b: _nilType) {
-    return __primitive("ptr_eq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc ==(a: _nilType, b: c_ptr) {
-    return __primitive("ptr_eq", c_nil, b);
-  }
-  pragma "no doc"
-  inline proc ==(a: c_void_ptr, b: _nilType) {
-    return __primitive("ptr_eq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc ==(a: _nilType, b: c_void_ptr) {
-    return __primitive("ptr_eq", c_nil, b);
-  }
+  // Don't need _nilType versions -
+  // Rely on coercions from nil to c_ptr / c_void_ptr
 
   pragma "no doc"
   inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -399,22 +385,6 @@ module CPtr {
   pragma "no doc"
   inline proc !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
-  }
-  pragma "no doc"
-  inline proc !=(a: c_ptr, b: _nilType) {
-    return __primitive("ptr_neq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc !=(a: _nilType, b: c_ptr) {
-    return __primitive("ptr_neq", c_nil, b);
-  }
-  pragma "no doc"
-  inline proc !=(a: c_void_ptr, b: _nilType) {
-    return __primitive("ptr_neq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc !=(a: _nilType, b: c_void_ptr) {
-    return __primitive("ptr_neq", c_nil, b);
   }
 
   pragma "no doc"
@@ -539,6 +509,8 @@ module CPtr {
    */
   proc c_offsetof(type t, param fieldname : string): size_t where isRecordType(t) {
     use Reflection;
+    pragma "no auto destroy"
+    pragma "no init"
     var x: t;
 
     return c_ptrTo(getFieldRef(x, fieldname)):size_t - c_ptrTo(x):size_t;

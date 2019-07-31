@@ -2,7 +2,7 @@ class MyClass {
   var x:int;
 }
 
-var a:owned MyClass;
+var a:owned MyClass?;
 
 on Locales[numLocales-1] {
   a = new owned MyClass(1);

@@ -35,7 +35,7 @@ module TOML {
 
 
 use TomlParser;
-use TomlReader;
+private use TomlReader;
 
 
 /* Receives a TOML file as a parameter and outputs a Toml object.
@@ -117,7 +117,7 @@ Parser module with the Toml class for the Chapel TOML library.
 */
 module TomlParser {
 
-  use Regexp;
+  private use Regexp;
   use DateTime;
 
 
@@ -463,7 +463,7 @@ pragma "no doc"
    fieldDate,
    fieldTime,
    fieldDateTime };
- use fieldtag;
+ private use fieldtag;
 
  pragma "no doc"
  proc =(ref t: unmanaged Toml, s: string) {
@@ -992,7 +992,7 @@ pragma "no doc"
  */
 module TomlReader {
 
- use Regexp;
+ private use Regexp;
 
  config const debugTomlReader = false;
 

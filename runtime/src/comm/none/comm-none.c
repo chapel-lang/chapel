@@ -58,8 +58,8 @@ static int mysystem(const char* command, const char* description,
 
 // Chapel interface
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn)
+                                       size_t size, int32_t commID,
+                                       int ln, int32_t fn)
 {
   assert(node == 0);
   chpl_memmove(raddr, addr, size);
@@ -67,8 +67,8 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 }
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn)
+                                       size_t size, int32_t commID,
+                                       int ln, int32_t fn)
 {
   assert(node == 0);
   chpl_memmove(addr, raddr, size);
@@ -135,7 +135,7 @@ void chpl_comm_rollcall(void) {
 
 wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
 
-void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) { }
+void chpl_comm_broadcast_private(int id, size_t size) { }
 
 void chpl_comm_barrier(const char *msg) { }
 
@@ -144,16 +144,14 @@ void chpl_comm_pre_task_exit(int all) { }
 void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
-                    int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int ln, int32_t fn) {
   assert(node==0);
 
   memmove(raddr, addr, size);
 }
 
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
-                    int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int ln, int32_t fn) {
   assert(node==0);
 
   memmove(addr, raddr, size);
@@ -161,28 +159,28 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
 void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
-                         int32_t stridelevels, size_t elemSize, int32_t typeIndex,
-                         int32_t commID, int ln, int32_t fn)
+                         int32_t stridelevels, size_t elemSize, int32_t commID, 
+                         int ln, int32_t fn)
 {
   assert(dstnode==0);
   put_strd_common(dstaddr_arg, dststrides, dstnode,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   1, NULL, // "nb" xfers block, so no need for yield
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
-                         int32_t stridelevels, size_t elemSize, int32_t typeIndex,
-                         int32_t commID, int ln, int32_t fn)
+                         int32_t stridelevels, size_t elemSize, int32_t commID, 
+                         int ln, int32_t fn)
 {
   assert(srcnode==0);
   get_strd_common(dstaddr_arg, dststrides, srcnode,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   1, NULL, // "nb" xfers block, so no need for yield
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 typedef struct {

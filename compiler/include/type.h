@@ -70,11 +70,6 @@ public:
   virtual void           codegenDef();
   virtual void           codegenPrototype();
 
-  // only used for heterogeneous compilations in which we need to define
-  // what our data structures are for the point of conversions
-  virtual int            codegenStructure(FILE*       outfile,
-                                          const char* baseoffset);
-
   virtual Symbol*        getField(const char* name, bool fatal = true)   const;
 
   const char*            name()                                          const;
@@ -326,7 +321,6 @@ class EnumType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenDef();
-  int codegenStructure(FILE* outfile, const char* baseoffset);
 
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
@@ -361,7 +355,6 @@ class PrimitiveType : public Type {
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
-  int codegenStructure(FILE* outfile, const char* baseoffset);
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -404,6 +397,9 @@ TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
+TYPE_EXTERN PrimitiveType*    dtAnyManagement;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementNonNilable;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementNilable;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtDummyRef;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
@@ -453,6 +449,7 @@ int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
@@ -468,6 +465,7 @@ bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
 bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
+AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
@@ -499,11 +497,6 @@ bool isClassWithInitializers (Type* type);
 bool isRecordWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
-
-void registerTypeToStructurallyCodegen(TypeSymbol* type);
-GenRet genTypeStructureIndex(TypeSymbol* typesym);
-void codegenTypeStructures(FILE* hdrfile);
-void codegenTypeStructureInclude(FILE* outfile);
 
 Type* getNamedType(std::string name);
 

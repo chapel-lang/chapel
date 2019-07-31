@@ -85,7 +85,8 @@
  */
 module FileSystem {
 
-use SysError, Path;
+  use SysError;
+  private use Path;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -1243,6 +1244,9 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
   extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
+
+  if name.isEmpty() then
+    try ioerror(ENOENT:syserr, "mkdir called with illegal path: '" + name + "'");
 
   var err = chpl_fs_mkdir(name.localize().c_str(), mode, parents);
   if err then try ioerror(err, "in mkdir", name);

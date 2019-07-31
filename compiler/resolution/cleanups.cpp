@@ -542,7 +542,22 @@ static void removeTypedefParts() {
     if (!isPrimitiveType(def->sym->type) &&
         def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
         def->sym->type->symbol->hasFlag(FLAG_GENERIC)) {
-      def->remove();
+      bool removeIt = true;
+      if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
+        if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
+          ClassTypeDecorator d = dt->getDecorator();
+          if (isDecoratorUnknownNilability(d) ||
+              isDecoratorUnknownManagement(d)) {
+            // After resolution, can't consider it generic anymore...
+            // The generic-ness will be moot though because later
+            // it will all be replaced with the AggregateType.
+            ts->removeFlag(FLAG_GENERIC);
+            removeIt = false;
+          }
+        }
+      }
+      if (removeIt)
+        def->remove();
     }
   }
 }
@@ -622,7 +637,12 @@ static void cleanupAfterRemoves() {
       fn->addFlag(FLAG_INSTANTIATED_GENERIC);
     fn->instantiatedFrom = NULL;
     fn->setInstantiationPoint(NULL);
-    // How about fn->substitutions, basicBlocks, calledBy ?
+    form_Map(SymbolMapElem, e, fn->substitutions) {
+      if (e->value && !e->value->inTree()) {
+        e->value = NULL;
+      }
+    }
+    // How about basicBlocks, calledBy ?
   }
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {

@@ -1,0 +1,2 @@
+badReturnIntent.chpl:6: error: Exported routine 'badReturnIntentRef()' may only return the 'string' type by value
+badReturnIntent.chpl:10: error: Exported routine 'badReturnIntentConstRef()' may only return the 'string' type by value

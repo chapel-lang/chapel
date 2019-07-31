@@ -33,7 +33,7 @@ use MasonRun;
 use FileSystem;
 use MasonSystem;
 use MasonExternal;
-
+use MasonPublish;
 
 /*
 
@@ -88,6 +88,7 @@ proc main(args: [] string) throws {
       when 'test' do masonTest(args);
       when 'env' do masonEnv(args);
       when 'doc' do masonDoc(args);
+      when 'publish' do masonPublish(args);
       when 'clean' do masonClean(args);
       when 'help' do masonHelp();
       when 'version' do printVersion();

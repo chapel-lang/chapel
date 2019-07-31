@@ -26,6 +26,7 @@ module ChapelStandard {
   // Internal modules.
   use CPtr;
   use CString;
+  use Bytes;
   use String;
   use OwnedObject;
   use SharedObject;
@@ -66,14 +67,13 @@ module ChapelStandard {
   use ChapelDynDispHack;
   use ChapelTaskData;
   use ChapelSerializedBroadcast;
+  use ExternalString;
 
   // Standard modules.
   use Assert;
   use HaltWrappers only ;
   use Types;
   use Math;
-  use SysBasic;
-  use SysError;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

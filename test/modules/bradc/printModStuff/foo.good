@@ -25,9 +25,9 @@ Parsing module files:
   $CHPL_HOME/modules/standard/HaltWrappers.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl
+  $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
   $CHPL_HOME/modules/standard/SysError.chpl
-  $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/Reflection.chpl
   $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
@@ -38,6 +38,12 @@ Parsing module files:
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Sys.chpl
   $CHPL_HOME/modules/standard/Regexp.chpl
+  $CHPL_HOME/modules/standard/Random.chpl
+  $CHPL_HOME/modules/dists/BlockDist.chpl
+  $CHPL_HOME/modules/standard/Time.chpl
+  $CHPL_HOME/modules/dists/SparseBlockDist.chpl
+  $CHPL_HOME/modules/layouts/LayoutCS.chpl
+  $CHPL_HOME/modules/dists/ReplicatedDist.chpl
 In bar
 In baz
 In bak

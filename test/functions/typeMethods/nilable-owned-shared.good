@@ -1,3 +1,0 @@
-nilable-owned-shared.chpl:8: warning: owned C?
-nilable-owned-shared.chpl:9: warning: shared C?
-nilable-owned-shared.chpl:11: error: done

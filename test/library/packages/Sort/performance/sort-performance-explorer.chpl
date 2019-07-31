@@ -18,7 +18,8 @@ config type eltType = int;
 
 config const seed = SeedGenerator.oddCurrentTime;
 
-var methods = ["default", "msbRadixSort", "quickSort"];//, "mergeSort"];
+var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
+               "twoArraySample", "twoArrayRadix"];
 
 proc testsort(input, method, parallel, cmp) {
 
@@ -46,6 +47,20 @@ proc testsort(input, method, parallel, cmp) {
     } else {
       MergeSort.mergeSort(input);
     }
+  } else if method == "twoArraySample" {
+    if parallel == false {
+      serial { TwoArraySampleSort.twoArraySampleSort(input); }
+    } else {
+      TwoArraySampleSort.twoArraySampleSort(input);
+    }
+  } else if method == "twoArrayRadix" {
+    if parallel == false {
+      serial { TwoArrayRadixSort.twoArrayRadixSort(input); }
+    } else {
+      TwoArrayRadixSort.twoArrayRadixSort(input);
+    }
+  } else {
+    halt("Unknown sorting method " + method);
   }
 }
 

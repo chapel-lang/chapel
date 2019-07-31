@@ -28,10 +28,29 @@ class TestSkipped: TestError {
   }
 }
 
-/* TestDependencyNotMet Error Class. Raised when a all dependency
+/* DependencyFound Error Class. Raised when a all dependency
    of a test are not met.
 */
-class TestDependencyNotMet: TestError {
+class DependencyFound: TestError {
+  proc init(details: string = "") {
+    super.init(details);
+  }
+}
+
+/* TestIncorrectNumLocales Error Class. Raised when test is not run with
+   expected number of Locales.
+*/
+class TestIncorrectNumLocales: TestError {
+  proc init(details: string = "") {
+    super.init(details);
+  }
+}
+
+/* UnexpectedLocales Error Class. Raised when test has
+    locales with which it can't be run.
+    Eg: MaxLocales < MinLocales
+*/
+class UnexpectedLocales: TestError {
   proc init(details: string = "") {
     super.init(details);
   }

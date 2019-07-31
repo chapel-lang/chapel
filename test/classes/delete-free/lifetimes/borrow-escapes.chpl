@@ -9,14 +9,14 @@ class MyClass {
 
 record R {
   // TODO - get init with owned fields working
-  var c:owned MyClass;// = new Owned(nil:MyClass);
+  var c:owned MyClass?;// = new Owned(nil:MyClass);
   proc init() {
     //var tmp = new Owned(new MyClass(data));
     //c = tmp;
     //c.retain(new MyClass(data));
   }
   proc get(): borrowed MyClass {
-    return c.borrow();
+    return c!.borrow();
   }
 }
 

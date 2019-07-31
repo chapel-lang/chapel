@@ -1,3 +1,6 @@
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:98: In function 'iteratorToArrayElementType':
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:102: error: the type of the actual argument 'call_tmp' is generic
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:202: error: returning a generic type variable is not supported
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:85: error: returning a generic type variable is not supported
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:98: error: returning a generic type variable is not supported
+$CHPL_HOME/modules/internal/ChapelBase.chpl:931: error: returning a generic type variable is not supported
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4512: error: the type of the actual argument 'elt' is generic
 note: generic actual arguments are not currently supported

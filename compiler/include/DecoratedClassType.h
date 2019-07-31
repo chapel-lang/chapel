@@ -92,7 +92,7 @@ private:
 
 bool classesWithSameKind(Type* a, Type* b);
 
-// Returns the AggregateType referred to be a DecoratedClassType
+// Returns the AggregateType referred to by a DecoratedClassType
 // and leaves other types (e.g. owned(SomeClass) unmodified).
 Type* canonicalDecoratedClassType(Type* t);
 
