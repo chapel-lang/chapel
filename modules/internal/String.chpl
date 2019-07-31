@@ -216,7 +216,7 @@ module String {
     encoded multibyte character.
   */
   pragma "no doc"
-  inline proc _isInitialByte(b: uint(8)) : bool {
+  private inline proc _isInitialByte(b: uint(8)) : bool {
     return (b & 0xc0) != 0x80;
   }
 
