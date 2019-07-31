@@ -36,8 +36,6 @@ Basic Usage
 
 Here is a minimal example demonstrating how to use the UnitTest module:
 
-<celsius2fahrenheit example>
-
 .. code-block:: chapel
 
    use UnitTest;
@@ -75,8 +73,6 @@ Skipping Tests
 
 You can skip tests unconditionally with :proc:`~Test.skip` and 
 conditionally with :proc:`~Test.skipIf`:
-
-<factorial example with skips>
 
 .. code-block:: chapel
 
