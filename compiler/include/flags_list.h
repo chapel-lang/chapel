@@ -149,6 +149,12 @@ symbolFlag( FLAG_GENERATE_SIGNATURE, ypr, "generate signature", "compiler should
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
 symbolFlag( FLAG_DELAY_GENERIC_EXPANSION, npr, "delay instantiation", "generics instances whose instantiation  will be determined shortly")
 symbolFlag( FLAG_GEN_MAIN_FUNC, npr, "generated main", "compiler generated main function")
+
+symbolFlag( FLAG_GET_LINE_NUMBER, ypr, "get line number", "replace calls to this function with the line number of the call" )
+symbolFlag( FLAG_GET_FILE_NAME, ypr, "get file name", "replace calls to this function with the name of the file the call is in" )
+symbolFlag( FLAG_GET_FUNCTION_NAME, ypr, "get function name", "replace calls to this function with the name of the function that called it" )
+symbolFlag( FLAG_GET_MODULE_NAME, ypr, "get module name", "replace calls to this function with the name of the module the call was in" )
+
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )

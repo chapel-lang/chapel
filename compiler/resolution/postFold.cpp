@@ -178,6 +178,20 @@ static Expr* postFoldNormal(CallExpr* call) {
     }
   }
 
+  if (fn->hasFlag(FLAG_GET_LINE_NUMBER)) {
+    retval = new SymExpr(new_IntSymbol(call->linenum()));
+    call->replace(retval);
+  } else if (fn->hasFlag(FLAG_GET_FILE_NAME)) {
+    retval = new SymExpr(new_StringSymbol(call->fname()));
+    call->replace(retval);
+  } else if (fn->hasFlag(FLAG_GET_FUNCTION_NAME)) {
+    retval = new SymExpr(new_StringSymbol(call->getFunction()->name));
+    call->replace(retval);
+  } else if (fn->hasFlag(FLAG_GET_MODULE_NAME)) {
+    retval = new SymExpr(new_StringSymbol(call->getModule()->name));
+    call->replace(retval);
+  }
+
   return retval;
 }
 
