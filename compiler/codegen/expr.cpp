@@ -246,19 +246,17 @@ void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
 llvm::Value* createVarLLVM(llvm::Type* type, const char* name)
 {
   GenInfo* info = gGenInfo;
-  llvm::Value* val = createTempVarLLVM(info->irBuilder, type, name);
+  llvm::Value* val = createLLVMAlloca(info->irBuilder, type, name);
   info->currentStackVariables.push_back(std::pair<llvm::Value*, llvm::Type*>(val, type));
   codegenLifetimeStart(type, val);
   return val;
 }
 
-// Easier-to-use versions of functions in llvmUtil.h, not
-// defined there because we didn't want llvmUtil.h to depend on
-// Chapel's codegen.h
-llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name)
+llvm::Value* createVarLLVM(llvm::Type* type)
 {
-  GenInfo* info = gGenInfo;
-  return createTempVarLLVM(info->irBuilder, type, name);
+  char name[32];
+  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
+  return createVarLLVM(type, name);
 }
 
 static
@@ -1307,17 +1305,6 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   return ret;
 }
 
-#ifdef HAVE_LLVM
-
-llvm::Value* createTempVarLLVM(llvm::Type* type)
-{
-  char name[32];
-  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
-  return createTempVarLLVM(type, name);
-}
-
-#endif
-
 static
 GenRet createTempVar(const char* ctype)
 {
@@ -1335,7 +1322,7 @@ GenRet createTempVar(const char* ctype)
 #ifdef HAVE_LLVM
     llvm::Type* llTy = info->lvt->getType(ctype);
     INT_ASSERT(llTy);
-    ret.val = createTempVarLLVM(llTy, name);
+    ret.val = createVarLLVM(llTy, name);
 #endif
   }
   return ret;
@@ -1361,7 +1348,7 @@ static GenRet createTempVar(Type* t)
     llvm::Type* llTy = tmp.type;
     INT_ASSERT(llTy);
     ret.isLVPtr = GEN_PTR;
-    ret.val = createTempVarLLVM(llTy);
+    ret.val = createVarLLVM(llTy);
 #endif
   }
   ret.chplType = t;
@@ -2069,7 +2056,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     char name[32];
     sprintf(name, "chpl_macro_tmp_tv_%d", codegen_tmp++);
 
-    llvm::Value* tmp = createTempVarLLVM(values.a->getType(), name);
+    llvm::Value* tmp = createVarLLVM(values.a->getType(), name);
 
     info->irBuilder->CreateCondBr(
         codegenValue(cond).val, blockIfTrue, blockIfFalse);
@@ -2301,10 +2288,10 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     // e.g. on aarch64, a struct < 128 bits will be rounded
     // up to a multiple of 64 bits.
     if (targ_size > arg_size) {
-      arg_ptr = createTempVarLLVM(info->irBuilder, targetType, "");
+      arg_ptr = createLLVMAlloca(info->irBuilder, targetType, "");
       arg_ptr = info->irBuilder->CreatePointerCast(arg_ptr, t->getPointerTo());
     } else {
-      arg_ptr = createTempVarLLVM(info->irBuilder, t, "");
+      arg_ptr = createLLVMAlloca(info->irBuilder, t, "");
     }
     arg_i8_ptr = info->irBuilder->CreatePointerCast(arg_ptr, int8_ptr_type, "");
 
@@ -2485,7 +2472,7 @@ GenRet codegenCallExpr(GenRet function,
       llvm::PointerType* ptrToRetTy = llvm::cast<llvm::PointerType>(
           fnType->getParamType(0));
       llvm::Type* retTy = ptrToRetTy->getElementType();
-      sret = createTempVarLLVM(retTy);
+      sret = createVarLLVM(retTy);
       llArgs.push_back(sret);
     }
 

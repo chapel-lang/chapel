@@ -157,7 +157,7 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
   return tempVar;
 }
 
-llvm::Value* createTempVarLLVM(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name)
+llvm::Value* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name)
 {
   // It's important to alloca at the front of the function in order
   // to avoid having an alloca in a loop which is a good way to achieve
@@ -258,9 +258,9 @@ llvm::Value *convertValueToType(
       llvm::Value* tmp_alloc;
       if( layout.getTypeStoreSize(newType) >=
           layout.getTypeStoreSize(curType) )
-        tmp_alloc = createTempVarLLVM(irBuilder, newType, "");
+        tmp_alloc = createLLVMAlloca(irBuilder, newType, "");
       else {
-        tmp_alloc = createTempVarLLVM(irBuilder, curType, "");
+        tmp_alloc = createLLVMAlloca(irBuilder, curType, "");
       }
       // Now cast the allocation to both fromType and toType.
       llvm::Type* curPtrType = curType->getPointerTo();
