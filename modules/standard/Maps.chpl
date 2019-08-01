@@ -24,10 +24,11 @@
   The following operations may invalidate references to elements contained in
   a map:
 
-      - update
+      - indexing using a non-existing key (e.g. `myMap[key] = value`)
       - add
       - remove
       - clear
+      - update
 
   Maps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any map constructor. When
