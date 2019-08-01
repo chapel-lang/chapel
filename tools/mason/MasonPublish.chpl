@@ -261,7 +261,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
     const baseToml = tomlFile;
     var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
     var tomlWriter = newToml.writer();
-    baseToml["brick"]["source"] = url[1..url.length-1];
+    baseToml["brick"].set("source", url[1..url.length-1]);
     tomlWriter.write(baseToml);
     tomlWriter.close();
     }

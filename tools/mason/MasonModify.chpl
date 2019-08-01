@@ -104,7 +104,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
   const tomlPath = '/'.join(projectHome, tf);
   const openFile = openreader(tomlPath);
   const toml = parseToml(openFile);
-  var newToml: unmanaged Toml;
+  var newToml: unmanaged Toml?;
 
   try! {
 
@@ -162,7 +162,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
     writeln(e.message());
     exit(1);
   }
-  return (newToml, tomlPath);
+  return (newToml!, tomlPath);
 }
 
 /* Add a mason dependency to Mason.toml */
@@ -172,15 +172,15 @@ private proc masonAdd(toml: unmanaged Toml, toAdd: string, version: string) thro
       throw new owned MasonError("A dependency by that name already exists in Mason.toml");
     }
     else {
-      toml["dependencies"][toAdd] = version;
+      toml["dependencies"].set(toAdd, version);
     }
   }
   // Create dependency table if it doesnt exist
   else {
     var tdom: domain(string);
     var deps: [tdom] unmanaged Toml;
-    toml["dependencies"] = deps;
-    toml["dependencies"][toAdd] = version;
+    toml.set("dependencies", deps);
+    toml["dependencies"].set(toAdd, version);
   }
   return toml;
 }
@@ -211,14 +211,14 @@ private proc masonSystemAdd(toml: unmanaged Toml, toAdd: string, version: string
       throw new owned MasonError("A dependency by that name already exists in Mason.toml");
     }
     else {
-      toml["system"][toAdd] = version;
+      toml["system"].set(toAdd, version);
     }
   }
   else {
     var pkgdom: domain(string);
     var pkgdeps: [pkgdom] unmanaged Toml;
-    toml["system"] = pkgdeps;
-    toml["system"][toAdd] = version;
+    toml.set("system", pkgdeps);
+    toml["system"].set(toAdd, version);
   }
   return toml;
 }
@@ -248,14 +248,14 @@ private proc masonExternalAdd(toml: unmanaged Toml, toAdd: string, spec: string)
       throw new owned MasonError("An external dependency by that name already exists in Mason.toml");
     }
     else {
-      toml["external"][toAdd] = spec;
+      toml["external"].set(toAdd, spec);
     }
   }
   else {
     var exdom: domain(string);
     var exdeps: [exdom] unmanaged Toml;
-    toml["external"] = exdeps;
-    toml["external"][toAdd] = spec;
+    toml.set("external", exdeps);
+    toml["external"].set(toAdd, spec);
   }
   return toml;
 }
