@@ -368,16 +368,14 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   insertInitialAccumulate(headAnchor, globalOp, origSym);
 
   Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
-  // Doing insertAfter() calls in reverse order.
-  // Can't insertBefore() on tailAnchor->next - that can be NULL.
-  // origSym = <- globalOp.generate() (via genTemp); delete globalOp;
+  // origSym = globalOp.generate() (via genTemp); delete globalOp;
   VarSymbol* genTemp = newTemp("genTemp");
   genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  tailAnchor->insertAfter(new CallExpr("chpl__delete", globalOp));
-  tailAnchor->insertAfter(new CallExpr("=", origSym, genTemp));
-  tailAnchor->insertAfter("'move'(%S,generate(%S,%S))",
-                          genTemp, gMethodToken, globalOp);
-  tailAnchor->insertAfter(new DefExpr(genTemp));
+  tailAnchor->insertAfter(new DefExpr(genTemp),
+                          new CallExpr(PRIM_MOVE, genTemp,
+                            new CallExpr("generate", gMethodToken, globalOp)),
+                          new CallExpr("=", origSym, genTemp),
+                          new CallExpr("chpl__delete", globalOp));
 
   ArgSymbol* parentOp = new ArgSymbol(INTENT_BLANK, "reduceParent", dtUnknown);
   newFormal = parentOp;
