@@ -19,14 +19,14 @@ Assert Functions
 
 Here are the assert functions available in the UnitTest module:
 
-:proc:`~Test.skip`
-:proc:`~Test.skipIf`
-:proc:`~Test.assertTrue`
-:proc:`~Test.assertFalse`
-:proc:`~Test.assertEqual`
-:proc:`~Test.assertNotEqual`
-:proc:`~Test.assertGreaterThan`
-:proc:`~Test.assertLessThan`
+- :proc:`~Test.skip`
+- :proc:`~Test.skipIf`
+- :proc:`~Test.assertTrue`
+- :proc:`~Test.assertFalse`
+- :proc:`~Test.assertEqual`
+- :proc:`~Test.assertNotEqual`
+- :proc:`~Test.assertGreaterThan`
+- :proc:`~Test.assertLessThan`
 
 Examples
 =========
@@ -240,7 +240,9 @@ module UnitTest {
     /* Unconditionally skip a test.
 
       :arg reason: the reason for skipping
-      :type reason: `string` 
+      :type reason: `string`
+      :throws TestSkipped: Always
+
     */
     proc skip(reason: string = "") throws {
       throw new owned TestSkipped(reason);
@@ -254,6 +256,7 @@ module UnitTest {
 
     :arg reason: the reason for skipping
     :type reason: `string`
+    :throws TestSkipped: If the `condition` is true.
    */
     proc skipIf(condition: bool, reason: string = "") throws {
       if condition then
@@ -262,10 +265,11 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is true.  If it is false, prints
-      ``assert failed`` and raises AssertionError. 
+      ``assert failed``. 
 
       :arg test: the boolean condition
       :type test: `bool`
+      :throws AssertionError: If the assertion is false.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -276,10 +280,11 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is false.  If it is true, prints
-      ``assert failed`` and raises AssertionError.
+      ``assert failed``.
 
       :arg test: the boolean condition
       :type test: `bool`
+      :throws AssertionError: If the assertion is true.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -484,7 +489,8 @@ module UnitTest {
       Fail if the two objects are unequal as determined by the ``==`` operator.
       
       :arg first: The first object to compare.
-      :arg second: The second object to compare. 
+      :arg second: The second object to compare.
+      :throws AssertionError: If both the arguments are not equal. 
     */
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
@@ -513,12 +519,13 @@ module UnitTest {
 
     
     /*
-      Assert that a first argument is not equal to second argument. If it is false, 
-      raises AssertionError. Uses ``==`` operator and type to determine if both are equal
+      Assert that a first argument is not equal to second argument.
+      Uses ``==`` operator and type to determine if both are equal
       or not.
 
       :arg first: The first object to compare.
-      :arg second: The second object to compare. 
+      :arg second: The second object to compare.
+      :throws AssertionError: If both the arguments are equal.
     */
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
@@ -535,6 +542,7 @@ module UnitTest {
 
       :arg first: The first object to compare.
       :arg second: The second object to compare. 
+      :throws AssertionError: If the first argument is not greater than second argument. 
     */
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
@@ -738,6 +746,7 @@ module UnitTest {
 
       :arg first: The first object to compare.
       :arg second: The second object to compare. 
+      :throws AssertionError: If the first argument is not less than the second argument.
     */
     proc assertLessThan(first, second) throws {
       if canResolve("<=",first, second) {
@@ -1004,6 +1013,7 @@ module UnitTest {
     /*Adds the tests in which the given test is depending.
 
       :arg tests: Multiple ``,`` separated First Class Test Functions.
+      :throws DependencyFound: If Called for the first time in a function.
       
     */
     proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
