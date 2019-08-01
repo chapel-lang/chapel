@@ -209,7 +209,7 @@ module DistributedDeque {
       documentation.
     */
     // This is unused, and merely for documentation purposes. See '_value'.
-    var _impl : DistributedDequeImpl(eltType);
+    var _impl : DistributedDequeImpl(eltType)?;
 
     // Privatization id
     pragma "no doc"
@@ -268,13 +268,13 @@ module DistributedDeque {
 
     // Keeps track of which slot we are on...
     pragma "no doc"
-    var globalHead : unmanaged DistributedDequeCounter;
+    var globalHead : unmanaged DistributedDequeCounter?;
 
     pragma "no doc"
-    var globalTail : unmanaged DistributedDequeCounter;
+    var globalTail : unmanaged DistributedDequeCounter?;
 
     pragma "no doc"
-    var queueSize : unmanaged DistributedDequeCounter;
+    var queueSize : unmanaged DistributedDequeCounter?;
 
     // We maintain an array of slots, wherein each slot is a pointer into a node's
     // address space. To maximize parallelism, we maintain numLocales * maxTaskPar
@@ -374,16 +374,16 @@ module DistributedDeque {
       // enqueue operation has over committed, we consequentially help them as well
       // during the fetch-sub loop.
       while true {
-        var size = queueSize.fetchSub(1);
+        var size = queueSize!.fetchSub(1);
 
         // Negative, fix before returning...
         if size <= 0 {
           on queueSize {
-            var readSize = queueSize.read();
+            var readSize = queueSize!.read();
             // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-            while readSize < 0 && !queueSize.compareExchangeWeak(readSize, 0) {
+            while readSize < 0 && !queueSize!.compareExchangeWeak(readSize, 0) {
               chpl_task_yield();
-              readSize = queueSize.read();
+              readSize = queueSize!.read();
             }
           }
 
@@ -419,16 +419,16 @@ module DistributedDeque {
       // has over committed, we consequentially help them as well during the fetch-add loop.
       if cap > 0 {
         while true {
-          var size = queueSize.fetchAdd(1);
+          var size = queueSize!.fetchAdd(1);
 
           // Over capacity, fix before returning...
           if size >= cap {
             on queueSize {
-              var readSize = queueSize.read();
+              var readSize = queueSize!.read();
               // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-              while readSize > this.cap && !queueSize.compareExchangeWeak(readSize, this.cap) {
+              while readSize > this.cap && !queueSize!.compareExchangeWeak(readSize, this.cap) {
                 chpl_task_yield();
-                readSize = queueSize.read();
+                readSize = queueSize!.read();
               }
             }
 
@@ -449,7 +449,7 @@ module DistributedDeque {
       // infinite amount; this gives us a more optimized code path.
       else {
         while true {
-          var size = queueSize.fetchAdd(1);
+          var size = queueSize!.fetchAdd(1);
 
           // We have reserved a spot for our operation.
           if size >= 0 {
@@ -516,7 +516,7 @@ module DistributedDeque {
 
       // At this point, we know we have a space for us. We find our slot based on another
       // fetch-add counter, making this wait-free as well.
-      var tail = globalTail.fetchAdd(1) % nSlots;
+      var tail = globalTail!.fetchAdd(1) % nSlots;
       slots[abs(tail)].pushBack(elt);
       return true;
     }
@@ -532,7 +532,7 @@ module DistributedDeque {
       }
 
       // We find our slot based on another fetch-add counter, making this wait-free as well.
-      var tail = (globalTail.fetchSub(1) - 1) % nSlots;
+      var tail = (globalTail!.fetchSub(1) - 1) % nSlots;
       var elt = slots[abs(tail)].popBack();
       var retval = (true, elt);
       return retval;
@@ -548,7 +548,7 @@ module DistributedDeque {
       }
 
       // We find our slot based on another fetch-add counter, making this wait-free as well.
-      var head = (globalHead.fetchSub(1) - 1) % nSlots;
+      var head = (globalHead!.fetchSub(1) - 1) % nSlots;
       slots[abs(head)].pushFront(elt);
       return true;
     }
@@ -564,7 +564,7 @@ module DistributedDeque {
       }
 
       // We find our slot based on another fetch-add counter, making this wait-free as well.
-      var head = globalHead.fetchAdd(1) % nSlots;
+      var head = globalHead!.fetchAdd(1) % nSlots;
       var elt = slots[abs(head)].popFront();
       var retval = (true, elt);
       return retval;
@@ -574,7 +574,7 @@ module DistributedDeque {
       Obtains the number of elements held by this queue.
     */
     override proc getSize() : int {
-      return queueSize.read();
+      return queueSize!.read();
     }
 
     /*
@@ -599,16 +599,16 @@ module DistributedDeque {
         var node = slot.head;
 
         while node != nil {
-          var headIdx = node.headIdx;
-          for 1 .. node.size {
-            yield node.elements[headIdx];
+          var headIdx = node!.headIdx;
+          for 1 .. node!.size {
+            yield node!.elements[headIdx];
 
             headIdx += 1;
             if headIdx > distributedDequeBlockSize {
               headIdx = 1;
             }
           }
-          node = node.next;
+          node = node!.next;
         }
 
         slot.lock$;
@@ -617,9 +617,9 @@ module DistributedDeque {
 
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.FIFO {
       // Fill our slots to visit in FIFO order.
-      var head = globalHead.read();
-      var tail = globalTail.read();
-      var size = queueSize.read();
+      var head = globalHead!.read();
+      var tail = globalTail!.read();
+      var size = queueSize!.read();
 
       // Check if empty...
       if size == 0 {
@@ -630,13 +630,13 @@ module DistributedDeque {
       for slot in slots do slot.lock$ = true;
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
-      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType));
+      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType)?);
       for i in 0 .. #nSlots {
         var node = slots[i].head;
         if node == nil {
           nodes[i] = (-1, -1, node);
         } else {
-          nodes[i] = (node.size, node.headIdx, node);
+          nodes[i] = (node!.size, node!.headIdx, node);
         }
       }
 
@@ -651,7 +651,7 @@ module DistributedDeque {
         if node == nil || headIdx == -1 || size == -1 {
           halt("DistributedDeque Internal Error: Iterating over nil nodes, head: ", head, ", tail: ", tail, ", idx: ", i);
         }
-        yield node.elements[headIdx];
+        yield node!.elements[headIdx];
 
         // Update state...
         size -= 1;
@@ -662,9 +662,9 @@ module DistributedDeque {
 
         // Advance...
         if size == 0 {
-          node = node.next;
+          node = node!.next;
           if node != nil {
-            nodes[idx] = (node.size, node.headIdx, node);
+            nodes[idx] = (node!.size, node!.headIdx, node);
           } else {
             nodes[idx] = (-1, -1, node);
           }
@@ -680,9 +680,9 @@ module DistributedDeque {
 
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.LIFO {
       // Fill our slots to visit in FIFO order.
-      var head = globalHead.read();
-      var tail = globalTail.read();
-      var size = queueSize.read();
+      var head = globalHead!.read();
+      var tail = globalTail!.read();
+      var size = queueSize!.read();
 
       // Check if empty...
       if size == 0 {
@@ -693,10 +693,10 @@ module DistributedDeque {
       for slot in slots do slot.lock$ = true;
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
-      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType));
+      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType)?);
       for i in 0 .. #nSlots {
         var node = slots[i].tail;
-        nodes[i] = (node.size, node.tailIdx, node);
+        nodes[i] = (node!.size, node!.tailIdx, node);
       }
 
       // Iterate over captured head nodes; each time we read them we advance them
@@ -715,16 +715,16 @@ module DistributedDeque {
         if tailIdx == 0 {
           tailIdx = distributedDequeBlockSize;
         }
-        yield node.elements[tailIdx];
+        yield node!.elements[tailIdx];
 
         // Update state...
         size -= 1;
 
         // Advance...
         if size == 0 {
-          node = node.prev;
+          node = node!.prev;
           if node != nil {
-            nodes[idx] = (node.size, node.tailIdx, node);
+            nodes[idx] = (node!.size, node!.tailIdx, node);
           } else {
             nodes[idx] = (-1, -1, node);
           }
@@ -756,16 +756,16 @@ module DistributedDeque {
       var node = followThis.head;
 
       while node != nil {
-        var headIdx = node.headIdx;
-        for 1 .. node.size {
-          yield node.elements[headIdx];
+        var headIdx = node!.headIdx;
+        for 1 .. node!.size {
+          yield node!.elements[headIdx];
 
           headIdx += 1;
           if headIdx > distributedDequeBlockSize {
             headIdx = 1;
           }
         }
-        node = node.next;
+        node = node!.next;
       }
 
       followThis.lock$;
@@ -790,8 +790,8 @@ module DistributedDeque {
     var headIdx : int = 1;
     var tailIdx : int = 1;
     var size : int;
-    var next : unmanaged LocalDequeNode(eltType);
-    var prev : unmanaged LocalDequeNode(eltType);
+    var next : unmanaged LocalDequeNode(eltType)?;
+    var prev : unmanaged LocalDequeNode(eltType)?;
 
     inline proc isFull {
       return size == distributedDequeBlockSize;
@@ -856,11 +856,11 @@ module DistributedDeque {
 
     var lock$ : sync bool;
 
-    var head : unmanaged LocalDequeNode(eltType);
-    var tail : unmanaged LocalDequeNode(eltType);
+    var head : unmanaged LocalDequeNode(eltType)?;
+    var tail : unmanaged LocalDequeNode(eltType)?;
 
     // We cache the last deleted node to handle cases where we have rapid mixed push/pop
-    var cached : unmanaged LocalDequeNode(eltType);
+    var cached : unmanaged LocalDequeNode(eltType)?;
 
     // The size of a segment. This is used as both a means of knowing when an element
     // gets added, as well as a barrier to prevent the head and tail from being cached.
@@ -869,7 +869,7 @@ module DistributedDeque {
     inline proc recycleNode() {
       // If we have cached a previous used node, reuse it here...
       if cached != nil {
-        var tmp = cached;
+        var tmp = cached!;
         cached = nil;
 
         // Clean...
@@ -907,14 +907,14 @@ module DistributedDeque {
           }
 
           // Its full...
-          if tail.isFull {
-            tail.next = recycleNode();
-            tail.next.prev = tail;
-            tail = tail.next;
+          if tail!.isFull {
+            tail!.next = recycleNode();
+            tail!.next!.prev = tail;
+            tail = tail!.next;
           }
 
           // Push...
-          tail.pushBack(_elt);
+          tail!.pushBack(_elt);
           size.add(1);
 
           lock$;
@@ -944,15 +944,15 @@ module DistributedDeque {
             }
 
             // Pop...
-            _elt = tail.popBack();
-            if tail.isEmpty {
+            _elt = tail!.popBack();
+            if tail!.isEmpty {
               var node = tail;
-              tail = tail.prev;
+              tail = tail!.prev;
 
               // If not empty, remove reference to retired node...
               // If it is empty, fix the head...
               if tail != nil {
-                tail.next = nil;
+                tail!.next = nil;
               } else {
                 head = nil;
               }
@@ -984,14 +984,14 @@ module DistributedDeque {
           }
 
           // Its full...
-          if head.isFull {
-            head.prev = recycleNode();
-            head.prev.next = head;
-            head = head.prev;
+          if head!.isFull {
+            head!.prev = recycleNode();
+            head!.prev!.next = head;
+            head = head!.prev;
           }
 
           // Push...
-          head.pushFront(_elt);
+          head!.pushFront(_elt);
           size.add(1);
 
           lock$;
@@ -1021,15 +1021,15 @@ module DistributedDeque {
             }
 
             // Pop...
-            _elt = head.popFront();
-            if head.isEmpty {
+            _elt = head!.popFront();
+            if head!.isEmpty {
               var node = head;
-              head = head.next;
+              head = head!.next;
 
               // If not empty, remove reference to retired node...
               // If it is empty, fix the tail...
               if head != nil {
-                head.prev = nil;
+                head!.prev = nil;
               } else {
                 tail = nil;
               }
@@ -1052,7 +1052,7 @@ module DistributedDeque {
       var curr = head;
 
       while curr != nil {
-        var tmp = curr.next;
+        var tmp = curr!.next;
         delete curr;
         curr = tmp;
       }
