@@ -1,5 +1,3 @@
-test-ints.chpl:20: In function 'help':
-test-ints.chpl:25: warning: push_back is deprecated - please use List.extend
 
 ======== size 0
 building

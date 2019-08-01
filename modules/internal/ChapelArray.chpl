@@ -3006,7 +3006,7 @@ module ChapelArray {
      */
     proc push_back(in val: this.eltType) lifetime this < val {
       if showArrayAsVectorWarnings then
-        compilerWarning("push_back is deprecated - please use List.extend");
+        compilerWarning("push_back is deprecated - please use List.append");
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 

@@ -1,3 +1,2 @@
 ./arrayAPItest.chpl:121: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:236: warning: push_back is deprecated - please use List.extend
 ./arrayAPItest.chpl:236: error: push_back() is only supported on dense 1D arrays

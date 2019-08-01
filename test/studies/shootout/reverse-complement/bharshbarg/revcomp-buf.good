@@ -1,6 +1,3 @@
-revcomp-buf.chpl:72: In function 'readUntil':
-revcomp-buf.chpl:82: warning: push_back is deprecated - please use List.extend
-revcomp-buf.chpl:85: warning: push_back is deprecated - please use List.extend
 >ONE Homo sapiens alu
 CGGAGTCTCGCTCTGTCGCCCAGGCTGGAGTGCAGTGGCGCGATCTCGGCTCACTGCAAC
 CTCCGCCTCCCGGGTTCAAGCGATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGATTACA

@@ -1,3 +1,2 @@
 ./arrayAPItest.chpl:121: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:242: warning: pop_front is deprecated - please use List.pop
 ./arrayAPItest.chpl:242: error: pop_front() is only supported on dense 1D arrays

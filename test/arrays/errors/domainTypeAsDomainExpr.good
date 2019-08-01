@@ -1,3 +1,2 @@
-domainTypeAsDomainExpr.chpl:11: warning: push_back is deprecated - please use List.extend
 domainTypeAsDomainExpr.chpl:6: In function 'fn':
 domainTypeAsDomainExpr.chpl:6: error: Domain expression was a type ('domain(1,int(64),false)') rather than a domain value or range list as expected

@@ -64,6 +64,7 @@
 */
 module Path {
 
+private use Lists;
 use SysError;
 use Sys;
 
@@ -166,8 +167,6 @@ proc basename(name: string): string {
 // NOTE: Add in intent here to temporarily fix compiler memory leak related
 // to use of varargs.
 proc commonPath(in paths: string ...?n): string {
-  use Lists;
-
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
   var firstPath = paths(1);
@@ -238,8 +237,6 @@ proc commonPath(in paths: string ...?n): string {
 */
 
 proc commonPath(paths: []): string {
-  use Lists;
-
   var result: string = "";    // result string
   var inputLength = paths.size;   // size of input array
   if inputLength == 0 then {     // if input is empty, return empty string.
@@ -549,8 +546,7 @@ private proc normalizeLeadingSlashCount(name: string): int {
   :rtype: `string`
 */
 proc normPath(name: string): string {
-  use Lists;
-
+  
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
@@ -696,8 +692,6 @@ proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc relPath(name: string, start:string=curDir): string throws {
-  use Lists;
-
   const realstart = if start == "" then curDir else start;
 
   // NOTE: Reliance on locale.cwd() can't be avoided.

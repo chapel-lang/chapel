@@ -1,5 +1,3 @@
-popReturns.chpl:3: warning: pop_front is deprecated - please use List.pop
-popReturns.chpl:4: warning: pop_back is deprecated - please use List.pop
 1
 3
 2

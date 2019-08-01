@@ -60,7 +60,7 @@ module Lists {
   private const _initialArrayCapacity = 16;
 
   pragma "no doc"
-  private config param _sanityChecks = true;
+  private param _sanityChecks = true;
 
   //
   // Some asserts are useful while developing, but can be turned off when the
@@ -168,15 +168,8 @@ module Lists {
       chpl__autoDestroy(item);
     }
 
-    //
-    // Getting weird lifetime errors when using this function over classes,
-    // and I'm not sure quite how to solve them yet. Since this is used in a
-    // managed way internally, try marking "unsafe" for now to circumvent
-    // the errors, and see if we can deal with them later.
-    //
     pragma "no doc"
-    pragma "unsafe"
-    inline proc _move(ref src: ?t, ref dst: t) {
+    inline proc _move(ref src: ?t, ref dst: t) lifetime src == dst {
       __primitive("=", dst, src);
     }
 
@@ -420,15 +413,9 @@ module Lists {
 
       :arg x: An element to append.
     */
-    proc append(x: eltType) {
-      //
-      // TODO: Use a local copy until this pragma works with formals.
-      // See: https://github.com/chapel-lang/chapel/issues/13225
-      //
-      pragma "no auto destroy"
-      var cpy = x;
+    proc append(pragma "no auto destroy" in x: eltType) lifetime this < x {
       _enter();
-      _append_by_ref(cpy);
+      _append_by_ref(x);
       _leave();
     }
 
@@ -490,16 +477,14 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc insert(i: int, x: eltType) throws {
-      _enter();
+    proc insert(i: int, pragma "no auto destroy" in x: eltType) throws
+            lifetime this < x {
 
-      // TODO: Use a local copy until this pragma works with formals.
-      pragma "no auto destroy"
-      var cpy = x;
+      _enter();
 
       // Handle special case of `a.insert((a.size + 1), x)` here.
       if i == _size + 1 {
-        _append_by_ref(cpy);
+        _append_by_ref(x);
         _leave();
         return;
       }
@@ -507,7 +492,7 @@ module Lists {
       try _boundsCheckLeaveOnThrow(i);
       // May acquire memory based on size before insert.
       _expand(i);
-      ref src = cpy;
+      ref src = x;
       ref dst = _getRef(i);
       _move(src, dst);
       _size += 1;

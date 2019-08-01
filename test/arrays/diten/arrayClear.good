@@ -1,6 +1,2 @@
-arrayClear.chpl:2: warning: push_back is deprecated - please use List.extend
-arrayClear.chpl:3: warning: push_back is deprecated - please use List.extend
-arrayClear.chpl:4: warning: push_back is deprecated - please use List.extend
-arrayClear.chpl:6: warning: clear is deprecated - please use List.clear
 (1 2 3, 3)
 (, 0)
