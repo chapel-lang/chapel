@@ -1,3 +1,7 @@
+/*
+  verifies that only those functions are counted which
+  takes an `int` type as an argument.
+*/
 proc dummy_test_int(test: int) throws {
     //This is a dummy test that takes int
 }
@@ -7,4 +11,4 @@ proc dummy_test_real(test: string) throws {
 }
 
 var test = 5;
-writeln(__primitive("populate tests", (test)));
+writeln(__primitive("gather tests", (test)));
