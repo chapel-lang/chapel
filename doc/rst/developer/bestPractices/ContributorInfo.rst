@@ -817,18 +817,15 @@ Testing your patch
 Work-in-progress pull request
 +++++++++++++++++++++++++++++
 
-This is a special kind of pull request that is not yet intended to be merged.
-Such PRs are created to take advantage of what the Github PR interface provides,
-such as public comment history and quick links between the WIP PR and other
-related issues and pull requests.  They allow the developer to get early
-feedback on a change.
+A work-in-progress (WIP) PR is a special kind of pull request that is not yet
+intended to be merged.  Such PRs are created to take advantage of what the
+Github PR interface provides, such as public comment history and quick links
+between the WIP PR and other related issues and pull requests.  They allow the
+developer to get early feedback on a change.
 
-The status of the WIP PR should be clearly stated, including what steps need to
-be taken before the PR is ready for final review.
-
-It is generally advisable to "close" such PRs until they are ready for
-final review and testing, as their development can span a large period of time
-and would thus add clutter to the list of open PRs.
+The status of a WIP PR can be stated by using the GitHub "draft PR" feature.
+The PR description should include what steps need to be taken before the PR is
+ready for final review.
 
 It is perfectly acceptable to abandon such PRs (especially in favor of a cleaned
 up version of the code) when the git history becomes too large, so long as a
@@ -836,6 +833,7 @@ link to the original PR is provided when the change is eventually merged, to
 preserve the discussion.
 
 .. _Pull request guidance:
+
 
 Pull request guidance
 +++++++++++++++++++++
@@ -854,24 +852,52 @@ Pull request guidance
     of the code.
 
   * Ideally, the size of the PR should be proportional to the expected value to
-    the developer and user community. For example, a new module introduced as a
-    1000-line PR is acceptable, while a set of new tests introduced as a
-    1000-line PR is not.
+    the developer and user community.
+
+.. _Pull request description:
+
+Pull request description
+++++++++++++++++++++++++
+
+* Generally, try to come up with a single-line headline of 75 characters at
+  most to describe the change.  Think of this as a statement of what the PR
+  accomplishes, ideally with a user perspective (as opposed to the "what I did
+  to the code" perspective).
+
+* Depending on the magnitude of the change, write a short paragraph to longer
+  set of paragraphs describing the change (again, focusing on the user
+  experience, at least in the initial paragraphs... why would a Chapel user
+  care that you merged this?  Or if it's not user-facing, why would a developer
+  care).
+
+* If it's truly complex such that you think the code changes themselves warrant
+  describing in the PR (because they're complex or clever, say), additional
+  paragraphs talking about the code changes / approach taken can be nice (but
+  aren't strictly required).
+
+* Depending on the complexity of the PR, it can be reassuring to reviewers to
+  denote how you have tested the PR either in the PR description or an initial
+  comment.
+
+It's not uncommon for the contents of the PR description to evolve over the
+lifetime of the PR and its review.  Initially it should help the person doing
+the code review understand what's being done (and potentially why).  Then, when
+the code review is done, make sure the text is still accurate.
 
 .. _Final merge message:
 
 Final merge message
 +++++++++++++++++++
 
-- start with a single topic line with at most 75 characters
-- then have a blank line
-- then have a more detailed explanation including motivation for the
-  change and how it changes the previous behavior
-- use present tense (e.g. "Fix file iterator bug")
-- manually wrap long lines in the explanation to 75 or 80 characters
+When merging, copy and paste the PR description into the GitHub merge dialogue
+box, include the title of the PR which should already be there.
 
-It is good practice for the pull request title to match the topic line, and the
-detailed explanation to match the pull request description.
+It is good practice to add mention of the reviewer(s) at the end of the PR.
+This is typically formatted in brackets:
+
+.. code-block::
+
+    [Reviewed by @reviewer1 and @reviewer2]
 
 .. _Git history is clear:
 
