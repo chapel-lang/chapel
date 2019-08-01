@@ -246,10 +246,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           tryCall->insertAtTail(actual->copy());
         }
         // Try to resolve it.
-        if (tryResolveCall(tryCall)) {
-          ModuleSymbol *mod = fn->getModule();
-          if (mod->modTag == MOD_USER && !(fn->hasFlag(FLAG_GENERIC))) {
-            totalTest++;
+        ModuleSymbol *mod = fn->getModule();
+        if (mod->modTag == MOD_USER) {
+          if (fn->numFormals() == 1) {
+            if (!fn->hasFlag(FLAG_GENERIC) && fn->instantiatedFrom == NULL) { 
+              if (tryResolveCall(tryCall)) {
+                totalTest++;
+              }
+            }
           }
         }
         // remove the call from the AST
