@@ -1379,6 +1379,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
       Immediate* from = toVarSymbol(sym)->immediate;
       coerce_immediate(from, &coerce);
       sym = new_ImmediateSymbol(&coerce);
+      symType = sym->type;
     }
 
     retval->substitutions.put(field, sym);
