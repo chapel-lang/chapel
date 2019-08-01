@@ -436,12 +436,6 @@ else
         ;;
     ( compiler )
         load_prgenv_gnu
-
-        if [ "$CHPL_LLVM" == llvm ]; then
-            # Chapel make compiler with LLVM requires python 2.7 and cmake >= 3.4.1
-            load_module cmake
-            use_python27
-        fi
         ;;
     ( venv )
         load_prgenv_gnu
