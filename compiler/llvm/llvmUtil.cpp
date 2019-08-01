@@ -24,91 +24,14 @@
 
 #ifdef HAVE_LLVM
 
-static
 bool isArrayVecOrStruct(llvm::Type* t)
 {
   return t->isArrayTy() || t->isVectorTy() || t->isStructTy();
 }
 
-// Returns n elements in a vector/array or -1
-static
-int64_t arrayVecN(llvm::Type *t)
-{
-  if( t->isArrayTy() ) {
-    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
-    unsigned n = at->getNumElements();
-    return n;
-  } else if( t->isVectorTy() ) {
-    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
-    unsigned n = vt->getNumElements();
-    return n;
-  } else {
-    return -1;
-  }
-}
-static
-llvm::Type* arrayVecEltType(llvm::Type *t)
-{
-  if( t->isArrayTy() ) {
-    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
-    return at->getElementType();
-  } else if( t->isVectorTy() ) {
-    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
-    return vt->getElementType();
-  } else {
-    return NULL;
-  }
-}
-
 llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
 {
   return llvm::ConstantExpr::getSizeOf(type);
-}
-
-static
-bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type* b, bool force)
-{
-  int64_t aN = arrayVecN(a);
-  int64_t bN = arrayVecN(a);
-  int alignA, alignB;
-  int64_t sizeA, sizeB;
-
-  if( a == b ) {
-    return true;
-  } else if( a->isStructTy() && b->isStructTy() ) {
-    llvm::StructType *aTy = llvm::dyn_cast<llvm::StructType>(a);
-    llvm::StructType *bTy = llvm::dyn_cast<llvm::StructType>(b);
-    if( aTy->isLayoutIdentical(bTy) ) return true;
-    // handle case like
-    // {float, float, float, float} <=> { <2xfloat>, <2xfloat> }
-    // fall through...
-  } else if( aN >= 0 && aN == bN &&
-             arrayVecEltType(a) && arrayVecEltType(a) == arrayVecEltType(b) ) {
-    return true;
-  }
-
-
-  alignA = layout.getPrefTypeAlignment(a);
-  alignB = layout.getPrefTypeAlignment(b);
-  sizeA = layout.getTypeStoreSize(a);
-  sizeB = layout.getTypeStoreSize(b);
-
-  // Are they the same size?
-  if( sizeA == sizeB ) return true;
-
-  if( !force ) return false;
-
-  // Are they the same size, within alignment?
-  if( sizeA < sizeB ) {
-    // Try making size A bigger...
-    if( sizeA + alignA >= sizeB ) return true;
-  } else {
-    // A >= B
-    // Try making size B bigger...
-    if( sizeB + alignB >= sizeA ) return true;
-  }
-
-  return false;
 }
 
 llvm::AllocaInst* makeAlloca(llvm::Type* type,
@@ -173,109 +96,6 @@ llvm::Value* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, co
   irBuilder->SetInsertPoint(&func->back());
   return tempVar;
 }
-
-llvm::Value *convertValueToType(
-    llvm::IRBuilder<> *irBuilder,
-    const llvm::DataLayout& layout,
-    llvm::Value *value,
-    llvm::Type *newType,
-    bool isSigned,
-    bool force) {
-
-  llvm::Type *curType = value->getType();
-  
-  if(curType == newType) {
-    return value;
-  }
-  
-  //Integer values
-  if(newType->isIntegerTy() && curType->isIntegerTy()) {
-    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
-      // Sign extend if isSigned, but never sign extend single bits.
-      if(isSigned && ! curType->isIntegerTy(1)) {
-        return irBuilder->CreateSExtOrBitCast(value, newType);
-      }
-      else {
-        return irBuilder->CreateZExtOrBitCast(value, newType);
-      }
-    }
-    else {
-      return irBuilder->CreateTruncOrBitCast(value, newType);
-    }
-  }
-  
-  //Floating point values
-  if(newType->isFloatingPointTy() && curType->isFloatingPointTy()) {
-    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
-      return irBuilder->CreateFPExt(value, newType);
-    }
-    else {
-      return irBuilder->CreateFPTrunc(value, newType);
-    }
-  }
-
-  //Integer value to floating point value
-  if(newType->isFloatingPointTy() && curType->isIntegerTy()) {
-    if(isSigned) {
-      return irBuilder->CreateSIToFP(value, newType);
-    }
-    else {
-      return irBuilder->CreateUIToFP(value, newType);
-    }
-  }
-
-  //Floating point value to integer value
-  if(newType->isIntegerTy() && curType->isFloatingPointTy()) {
-    return irBuilder->CreateFPToSI(value, newType);
-  }
-  
-  //Integer to pointer
-  if(newType->isPointerTy() && curType->isIntegerTy()) {
-    return irBuilder->CreateIntToPtr(value, newType);
-  }
-
-  //Pointer to integer
-  if(newType->isIntegerTy() && curType->isPointerTy()) {
-    return irBuilder->CreatePtrToInt(value, newType);
-  }
-
-  //Pointers
-  if(newType->isPointerTy() && curType->isPointerTy()) {
-    if( newType->getPointerAddressSpace() !=
-        curType->getPointerAddressSpace() ) {
-      assert( 0 && "Can't convert pointer to different address space");
-    }
-    return irBuilder->CreatePointerCast(value, newType);
-  }
-
-  // Structure types. 
-  // This is important in order to handle clang structure expansion
-  // (e.g. calling a function that returns {int64,int64})
-  if( isArrayVecOrStruct(curType) || isArrayVecOrStruct(newType) ) {
-    if( isTypeEquivalent(layout, curType, newType, force) ) {
-      // We turn it into a store/load to convert the type
-      // since LLVM does not allow bit casts on structure types.
-      llvm::Value* tmp_alloc;
-      if( layout.getTypeStoreSize(newType) >=
-          layout.getTypeStoreSize(curType) )
-        tmp_alloc = createLLVMAlloca(irBuilder, newType, "");
-      else {
-        tmp_alloc = createLLVMAlloca(irBuilder, curType, "");
-      }
-      // Now cast the allocation to both fromType and toType.
-      llvm::Type* curPtrType = curType->getPointerTo();
-      llvm::Type* newPtrType = newType->getPointerTo();
-      // Now get cast pointers 
-      llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
-      llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
-      irBuilder->CreateStore(value, tmp_cur);
-      return irBuilder->CreateLoad(tmp_new);
-    }
-  }
-
-  return NULL;
-}
-
 
 // Following the C "usual arithmetic conversions" rules
 // see http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf p 52

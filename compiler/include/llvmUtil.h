@@ -38,11 +38,11 @@ struct PromotedPair {
   }
 };
 
+bool isArrayVecOrStruct(llvm::Type* t);
 llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
 llvm::Value* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);
-llvm::Value *convertValueToType(llvm::IRBuilder<> *irBuilder, const llvm::DataLayout& targetData, llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false);
 PromotedPair convertValuesToLarger(llvm::IRBuilder<> *irBuilder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
 
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
