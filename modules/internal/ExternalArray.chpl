@@ -82,7 +82,11 @@ module ExternalArray {
   // arrType is a subclass of BaseArr
   pragma "no copy return"
   proc makeArrayFromOpaque(value: chpl_opaque_array, type arrType) {
-    var ret = _newArray(value._instance: arrType);
+    var asArrType = value._instance: arrType?;
+    if asArrType == nil then
+      halt("nil array passed to makeArrayFromOpaque");
+    var asNonNilArrType = try! asArrType: arrType;
+    var ret = _newArray(asNonNilArrType);
     // Don't clean up arrays we create in this way or the user will have garbage
     // memory after the first function call
     ret._pid = value._pid;
