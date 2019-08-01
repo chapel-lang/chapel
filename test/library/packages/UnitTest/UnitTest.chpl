@@ -9,65 +9,202 @@ Any function of the form
 is treated as a test function. These functions must accept an object of Test
 Class. We use :proc:`~UnitTest.runTest` to pass the tests.
 
-**Example**
+.. note::
 
-*Using Asserts*
+  Tests must be launched with a test launcher. Currently, this is a standalone application 
+  built separately. However, this functionality will eventually be integrated into mason.
 
-:proc:`~Test.skip`
-:proc:`~Test.skipIf`
-:proc:`~Test.assertTrue`
-:proc:`~Test.assertFalse`
-:proc:`~Test.assertEqual`
-:proc:`~Test.assertNotEqual`
-:proc:`~Test.assertGreaterThan`
-:proc:`~Test.assertLessThan`
+Assert Functions
+================
+
+Here are the assert functions available in the UnitTest module:
+
+- :proc:`~Test.skip`
+- :proc:`~Test.skipIf`
+- :proc:`~Test.assertTrue`
+- :proc:`~Test.assertFalse`
+- :proc:`~Test.assertEqual`
+- :proc:`~Test.assertNotEqual`
+- :proc:`~Test.assertGreaterThan`
+- :proc:`~Test.assertLessThan`
+
+Examples
+=========
+
+Basic Usage
+-------------
+
+Here is a minimal example demonstrating how to use the UnitTest module:
 
 .. code-block:: chapel
 
    use UnitTest;
-
-   proc test1(test: Test) throws {
-     test.assertTrue(True);
+    
+   proc celsius2fahrenheit(x) {
+     // we should be returning "(x: real * 9/5)+32"
+     return (x * 9/5)+32;
    }
 
-   UnitTest.runTest(test1);
+   proc test_temperature(test: Test) throws {
+     // we were expecting 98.6 but since we missed typecasting
+     // the above function returned 98.
+     test.assertFalse(celsius2fahrenheit(37) == 98);
+   }
 
-*Specifying locales*
+   UnitTest.runTest(test_temperature);
+
+Output: 
+
+.. code-block:: bash
+  
+  ======================================================================
+  FAIL xyz.chpl: test_temperature()
+  ----------------------------------------------------------------------
+  AssertionError: assertFalse failed. Given expression is True
+
+  ----------------------------------------------------------------------
+  Run 1 test
+
+  FAILED failures = 1 
+
+
+Skipping Tests
+---------------
+
+You can skip tests unconditionally with :proc:`~Test.skip` and 
+conditionally with :proc:`~Test.skipIf`:
+
+.. code-block:: chapel
+
+   use UnitTest;
+    
+   /* calculates factorial */
+   proc factorial(x: int): int {
+     return if x == 0 then 1 else x * factorial(x-1); 
+   }
+
+   /*Conditional skip*/
+   proc test1(test: Test) throws {
+     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
+     test.assertTrue(factorial(5) == 120);
+   }
+
+   /*Unconditional skip*/
+   proc test2(test: Test) throws {
+     test.skip("Skipping the test directly");
+   }
+
+   UnitTest.runTest(test1, test2);
+
+
+Output: 
+
+.. code-block:: bash
+
+  ======================================================================
+  SKIPPED xyz.chpl: test2()
+  ----------------------------------------------------------------------
+  TestSkipped: Skipping the test directly
+
+  ----------------------------------------------------------------------
+  Run 1 test
+
+  OK skipped = 1 
+
+
+Specifying locales
+------------------
+
+You can specify the num of locales of a test using these method.
 
 :proc:`~Test.addNumLocales`
 :proc:`~Test.maxLocales`
 :proc:`~Test.minLocales`
 
+Here is an example demonstrating how to use the :proc:`~Test.addNumLocales`
+
 .. code-block:: chapel
 
-   proc test2(test: Test) throws {
-     test.addNumLocales(16);
-   }
+  proc test_square(test: Test) throws {
+    test.addNumLocales(5);
+    var A: [1..numLocales] int;
+    coforall i in 0..numLocales-1 with (ref A) {
+      on Locales(i) {
+        A[i+1] = (i+1)*(i+1);
+      }
+    }
+    test.assertTrue(A[5]==25);
+  }
 
-   proc test3(test: Test) throws {
-     test.addNumLocales(16,8);
-   }
+Output:
+
+.. code-block:: bash
+
+  ----------------------------------------------------------------------
+  Run 1 test
+
+  OK
+
+You can also specify multiple locales on which your code can run.
+
+.. code-block:: chapel
+
+  proc test3(test: Test) throws {
+    test.addNumLocales(16,8);
+  }
   
-   proc test4(test: Test) throws {
-     test.maxLocales(4);
-     test.minLocales(2);
-   }
+You can mention the range of locales using :proc:`~Test.maxLocales` and 
+:proc:`~Test.minLocales`
 
-*Specifying Dependencies*
+.. code-block:: chapel
+
+  proc test4(test: Test) throws {
+    test.maxLocales(4);
+    test.minLocales(2);
+  }
+
+Specifying Dependencies
+-----------------------
 
 :proc:`~Test.dependsOn`
 
+Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
+
 .. code-block:: chapel
 
-   proc test5(test: Test) throws {
-     test.dependsOn(test3);
+   use UnitTest;
+    
+   var factArray: [1..0] int;
+
+   // calculates factorial
+   proc factorial(x: int): int {
+     return if x == 0 then 1 else x * factorial(x-1); 
    }
 
-   proc test6(test: Test) throws {
-     test.dependsOn(test2, test5);
+   proc testFillFact(test: Test) throws {
+     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
+     for i in 1..10 do
+       factArray.push_back(factorial(i));
    }
 
+   proc testSumFact(test: Test) throws {
+     test.dependsOn(testFillFact);
+     var s = 0;
+     for i in 1..10 do
+       s += factArray[i];
+     test.assertGreaterThan(s,0); 
+   }
 
+   UnitTest.runTest(testSumFact, testFillFact);
+
+Output:
+
+.. code-block:: bash
+
+  ----------------------------------------------------------------------
+  Run 2 tests
+
+  OK
 
 */
 module UnitTest {
@@ -103,7 +240,9 @@ module UnitTest {
     /* Unconditionally skip a test.
 
       :arg reason: the reason for skipping
-      :type reason: `string` 
+      :type reason: `string`
+      :throws TestSkipped: Always
+
     */
     proc skip(reason: string = "") throws {
       throw new owned TestSkipped(reason);
@@ -117,6 +256,7 @@ module UnitTest {
 
     :arg reason: the reason for skipping
     :type reason: `string`
+    :throws TestSkipped: If the `condition` is true.
    */
     proc skipIf(condition: bool, reason: string = "") throws {
       if condition then
@@ -125,10 +265,11 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is true.  If it is false, prints
-      ``assert failed`` and raises AssertionError. 
+      ``assert failed``. 
 
       :arg test: the boolean condition
       :type test: `bool`
+      :throws AssertionError: If the assertion is false.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -139,10 +280,11 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is false.  If it is true, prints
-      ``assert failed`` and raises AssertionError.
+      ``assert failed``.
 
       :arg test: the boolean condition
       :type test: `bool`
+      :throws AssertionError: If the assertion is true.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -347,7 +489,8 @@ module UnitTest {
       Fail if the two objects are unequal as determined by the ``==`` operator.
       
       :arg first: The first object to compare.
-      :arg second: The second object to compare. 
+      :arg second: The second object to compare.
+      :throws AssertionError: If both the arguments are not equal. 
     */
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
@@ -376,12 +519,13 @@ module UnitTest {
 
     
     /*
-      Assert that a first argument is not equal to second argument. If it is false, 
-      raises AssertionError. Uses ``==`` operator and type to determine if both are equal
+      Assert that a first argument is not equal to second argument.
+      Uses ``==`` operator and type to determine if both are equal
       or not.
 
       :arg first: The first object to compare.
-      :arg second: The second object to compare. 
+      :arg second: The second object to compare.
+      :throws AssertionError: If both the arguments are equal.
     */
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
@@ -398,6 +542,7 @@ module UnitTest {
 
       :arg first: The first object to compare.
       :arg second: The second object to compare. 
+      :throws AssertionError: If the first argument is not greater than second argument. 
     */
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
@@ -601,6 +746,7 @@ module UnitTest {
 
       :arg first: The first object to compare.
       :arg second: The second object to compare. 
+      :throws AssertionError: If the first argument is not less than the second argument.
     */
     proc assertLessThan(first, second) throws {
       if canResolve("<=",first, second) {
@@ -867,6 +1013,7 @@ module UnitTest {
     /*Adds the tests in which the given test is depending.
 
       :arg tests: Multiple ``,`` separated First Class Test Functions.
+      :throws DependencyFound: If Called for the first time in a function.
       
     */
     proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
