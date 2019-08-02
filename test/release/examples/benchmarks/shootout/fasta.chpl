@@ -128,18 +128,18 @@ proc randomMake(desc, nuclInfo, n) {
 
     // iterate over 0..n-1 in a round-robin fashion across tasks
     for i in tid*chunkSize..n-1 by numTasks*chunkSize {
-      const bytes = min(chunkSize, n-i);
+      const nBytes = min(chunkSize, n-i);
 
-      // Get 'bytes' random numbers in a coordinated manner
+      // Get 'nBytes' random numbers in a coordinated manner
       randGo[tid].waitFor(i);
-      getRands(bytes, myRands);
+      getRands(nBytes, myRands);
       randGo[nextTid].write(i+chunkSize);
 
-      // Compute 'bytes' nucleotides and store in 'myBuff'
+      // Compute 'nBytes' nucleotides and store in 'myBuff'
       var col = 0,
           off = 0;
 
-      for j in 0..#bytes {
+      for j in 0..#nBytes {
         const r = myRands[j];
         var nid = 1;
         for k in 1..numNucls do

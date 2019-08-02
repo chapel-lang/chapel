@@ -102,16 +102,16 @@ proc makeLookup(a) {
 // Add a line of random sequence
 var random = new unmanaged Random();
 var line_buff: [0..LINE_LENGTH] int(8);
-proc addLine(bytes: int) {
-  for (i, r) in random.get(bytes) {
+proc addLine(nBytes: int) {
+  for (i, r) in random.get(nBytes) {
     var ai = r: int;
     while (lookup[ai].p < r) do
       ai = ai + 1;
 
     line_buff[i] = lookup[ai].c: int(8);
   }
-  line_buff[bytes] = 10;
-  stdout.write(line_buff[0..bytes]);
+  line_buff[nBytes] = 10;
+  stdout.write(line_buff[0..nBytes]);
 }
 
 // Output a random sequence of length n using distribution a
@@ -120,9 +120,9 @@ proc randomMake(desc: string, a: [], n: int) {
   makeLookup(a);
   stdout.writef("%s", desc);
   while (len > 0) {
-    var bytes: int = min(LINE_LENGTH, len);
-    addLine(bytes);
-    len = len - bytes;
+    var nBytes: int = min(LINE_LENGTH, len);
+    addLine(nBytes);
+    len = len - nBytes;
   }
 }
 
