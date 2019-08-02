@@ -664,18 +664,18 @@ commands:
 
 .. code-block:: bash
 
-   # This will save your old master state to a different branch name, removing
-   # the name "master" from the list of branches you can access on your fork
-   git branch -m <name for old, messed up master>
+    # This will save your old master state to a different branch name, removing
+    # the name "master" from the list of branches you can access on your fork
+    git branch -m <name for old, messed up master>
 
-   # You will get a message indicating you are in a "detached HEAD state".  This
-   # is expected (and desired).  Now the repository you are in is in line with
-   # your fork's master branch.
-   git checkout origin/master
+    # You will get a message indicating you are in a "detached HEAD state".  This
+    # is expected (and desired).  Now the repository you are in is in line with
+    # your fork's master branch.
+    git checkout origin/master
 
-   # This will save the state of the repository right now to a new branch, named
-   # master.
-   git checkout -b master
+    # This will save the state of the repository right now to a new branch, named
+    # master.
+    git checkout -b master
 
 At this point, a `git push origin master` should work as expected.  Remember, do
 not try this with a master branch that has been corrupted on your remote fork.
@@ -937,6 +937,17 @@ This is typically formatted in brackets:
 
 Git history is clear
 ++++++++++++++++++++
+
+In general, having logical commits with meaningful commit messages is helpful
+for maintaining a clean git history. This is particularly important for
+critical or complex code changes. Depending on how critical or complex your
+changes are, it may be a good idea to do an interactive rebase to squash any
+non-meaningful commits:
+
+.. code-block:: bash
+
+    git fetch upstream
+    git rebase -i upstream/master
 
 It's not generally possible to completely remove a commit from git by the time
 it makes it in to the master branch. So be very careful not to commit anything
