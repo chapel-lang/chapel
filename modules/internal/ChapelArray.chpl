@@ -168,7 +168,7 @@ module ChapelArray {
   use ArrayViewReindex;
 
   pragma "no doc"
-  config param showArrayAsVectorWarnings = false;
+  config param showArrayAsVecWarnings = false;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -3005,7 +3005,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_back(in val: this.eltType) lifetime this < val {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("push_back is deprecated - please use List.append");
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
@@ -3029,7 +3029,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_back(vals:_array) lifetime this < vals {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("push_back is deprecated - please use List.extend");
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
@@ -3054,7 +3054,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc pop_back() {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("pop_back is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("pop_back() is only supported on dense 1D arrays");
@@ -3109,7 +3109,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_front(in val: this.eltType) lifetime this < val {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("push_front is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
@@ -3128,7 +3128,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_front(vals:_array) lifetime this < vals {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("push_front is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
@@ -3154,7 +3154,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc pop_front() {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("pop_front is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("pop_front() is only supported on dense 1D arrays");
@@ -3196,7 +3196,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc insert(pos: this.idxType, in val: this.eltType) {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("insert is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
@@ -3234,7 +3234,7 @@ module ChapelArray {
 
     */
     proc insert(pos: this.idxType, vals: []) {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("insert is deprecated - please use List.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
@@ -3265,7 +3265,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType) {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("remove is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
@@ -3301,7 +3301,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType, count: this.idxType) {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("remove is deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
@@ -3341,7 +3341,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: range(this.idxType, stridable=false)) {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("remove has been deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
@@ -3368,7 +3368,7 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc clear() {
-      if showArrayAsVectorWarnings then
+      if showArrayAsVecWarnings then
         compilerWarning("clear is deprecated - please use List.clear");
       if (!chpl__isDense1DArray()) then
         compilerError("clear() is only supported on dense 1D arrays");

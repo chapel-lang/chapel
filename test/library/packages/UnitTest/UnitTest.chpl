@@ -73,7 +73,6 @@ Class. We use :proc:`~UnitTest.runTest` to pass the tests.
 module UnitTest {
   use Reflection;
   use TestError;
-  use Lists;
   pragma "no doc"
   config const testNames: string = "None";
   pragma "no doc"
@@ -99,7 +98,7 @@ module UnitTest {
     pragma "no doc"
     var dictDomain: domain(int);
     pragma "no doc"
-    var testDependsOn: list(argType);
+    var testDependsOn: [1..0] argType;
 
     /* Unconditionally skip a test.
 
@@ -873,7 +872,7 @@ module UnitTest {
     proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
       if testDependsOn.size == 0 {
         for eachSuperTest in tests {
-          this.testDependsOn.append(eachSuperTest);
+          this.testDependsOn.push_back(eachSuperTest);
         }
         throw new owned DependencyFound();
       }
@@ -933,14 +932,14 @@ module UnitTest {
   pragma "no doc"
   class TestSuite {
     var testCount = 0;
-    var _tests: list(argType);
+    var _tests: [1..0] argType;
     
     proc addTest(test) lifetime this < test {
       // var tempTest = new Test();
       // param test_name = test: string;
       // if !canResolve(test_name,tempTest) then
       //   compilerError(test + " is not callable");
-      this._tests.append(test);
+      this._tests.push_back(test);
       this.testCount += 1;
     }
 
@@ -1022,7 +1021,7 @@ module UnitTest {
     for test in testSuite {
       if !testStatus[test: string] {
         // Create a test object per test
-        var checkCircle: list(string);
+        var checkCircle: [1..0] string;
         var circleFound = false;
         var testObject = new Test();
         runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
@@ -1037,7 +1036,7 @@ module UnitTest {
                       ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = test: string; //test is a FCF:
-    checkCircle.append(testName);
+    checkCircle.push_back(testName);
     try {
       testResult.startTest(testName);
       test(testObject);
@@ -1053,15 +1052,16 @@ module UnitTest {
     catch e: DependencyFound {
       var allTestsRan = true;
       for superTest in testObject.testDependsOn {
-        try {
-          var idx = checkCircle.indexOf(superTest:string);
+        var checkCircleStatus = checkCircle.find(superTest: string);
+        // cycle is checked
+        if checkCircleStatus[1]{
           testsSkipped[testName] = true;
           circleFound = true;
           var failReason = testName + " skipped as circular dependency found";
           testResult.addSkip(testName, failReason);
           testStatus[testName] = true;
           return;
-        } catch e: IllegalArgumentError {}
+        }
         // if super test didn't Error or Failed or skipped
         if !testsErrored[superTest: string] && !testsFailed[superTest: string] && !testsSkipped[superTest: string]
         {
@@ -1073,9 +1073,10 @@ module UnitTest {
             runTestMethod(testStatus, superTestObject, testsFailed, testsErrored, 
                           testsSkipped, testsLocalFails, superTest, checkCircle, 
                           circleFound);
-            try {
-              checkCircle.remove(superTest:string);
-            } catch e: IllegalArgumentError {}
+            var removeSuperTest = checkCircle.find(superTest: string);
+            if removeSuperTest[1] {
+              checkCircle.remove(removeSuperTest[2]);
+            }
             // if super test failed
             if testsFailed[superTest: string] {
               testsSkipped[testName] = true; // current test have failed or skipped
