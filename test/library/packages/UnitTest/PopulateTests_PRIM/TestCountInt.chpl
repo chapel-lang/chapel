@@ -1,6 +1,7 @@
 /*
   verifies that only those functions are counted which
-  takes an `int` type as an argument.
+  takes an `int` type as an argument. This is because an `int`
+  is passed as an argument to the primitive.
 */
 proc dummy_test_int(test: int) throws {
     //This is a dummy test that takes int
