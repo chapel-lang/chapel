@@ -1,0 +1,5 @@
+bug: upper and lower case Unicode characters do not always encode to the same number of UTF-8 bytes
+
+The lower case German sharp S encodes to two bytes in UTF-8, while the
+upper case version encodes to three bytes.  String methods that make
+case changes in place currently assume the same number of bytes.
