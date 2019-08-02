@@ -54,13 +54,13 @@
 module Lists {
 
   pragma "no doc"
-  config const _initialCapacity = 8;
+  private const _initialCapacity = 8;
 
   pragma "no doc"
-  config const _initialArrayCapacity = 16;
+  private const _initialArrayCapacity = 16;
 
   pragma "no doc"
-  config param _sanityChecks = true;
+  private param _sanityChecks = true;
 
   //
   // Some asserts are useful while developing, but can be turned off when the
