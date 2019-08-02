@@ -1061,7 +1061,7 @@ module UnitTest {
           testResult.addSkip(testName, failReason);
           testStatus[testName] = true;
           return;
-        } catch {}
+        } catch e: IllegalArgumentError {}
         // if super test didn't Error or Failed or skipped
         if !testsErrored[superTest: string] && !testsFailed[superTest: string] && !testsSkipped[superTest: string]
         {
@@ -1075,7 +1075,7 @@ module UnitTest {
                           circleFound);
             try {
               checkCircle.remove(superTest:string);
-            } catch {}
+            } catch e: IllegalArgumentError {}
             // if super test failed
             if testsFailed[superTest: string] {
               testsSkipped[testName] = true; // current test have failed or skipped

@@ -655,18 +655,13 @@ module Spawn {
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
   {
-    use Lists;
-
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
     
-    var args = new list(string);
-    args.append(command);
+    var args = if shellarg == "" then [executable, command]
+        else [executable, shellarg, command];
 
-    if shellarg != "" then args.insert(1, shellarg);
-    args.insert(1, executable);
-
-    return spawn(args.toArray(), env, executable,
+    return spawn(args, env, executable,
                  stdin=stdin, stdout=stdout, stderr=stderr,
                  kind=kind, locking=locking);
   }

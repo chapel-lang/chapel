@@ -169,7 +169,7 @@ module Lists {
     }
 
     pragma "no doc"
-    inline proc _move(ref src: ?t, ref dst: t) lifetime src == dst {
+    inline proc _move(const ref src: ?t, ref dst: t) lifetime src == dst {
       __primitive("=", dst, src);
     }
 
@@ -400,9 +400,9 @@ module Lists {
     // case, fire it twice).
     //
     pragma "no doc"
-    proc _append_by_ref(ref x: eltType) {
+    proc _append_by_ref(const ref x: eltType) {
       _maybeAcquireMem(1);
-      ref src = x;
+      const ref src = x;
       ref dst = _getRef(_size + 1);
       _move(src, dst);
       _size += 1;
