@@ -721,12 +721,12 @@ module Sets {
     var result = true;
 
     if a.parSafe && b.parSafe {
-      forall x in a do
-        if !b.contains(x) then
+      forall x in b do
+        if !a.contains(x) then
           result = false;
     } else {
-      for x in a do
-        if !b.contains(x) then
+      for x in b do
+        if !a.contains(x) then
           return false;
     }
 
