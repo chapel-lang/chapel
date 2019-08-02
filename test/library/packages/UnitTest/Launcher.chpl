@@ -58,6 +58,23 @@ module Launcher {
         if files.size == 0 && dirs.size == 0 {
           dirs.push_back(".");
         }
+        // set comm if found empty
+        if comm == "" then comm = "none";
+        // setting communication mechanism.
+        if setComm != "" {
+          if comm != "none" {
+            comm = setComm;
+          }
+          else {
+            if setComm == "none" then comm = setComm;
+            else {
+              writeln("Trying to execute in a MultiLocal Environment when ",
+              "communication mechanism is `none`.");
+              writeln("Try changing the Commication Mechanism");
+              exit(2);
+            }
+          }
+        }
         
         var result =  new TestResult();
 
@@ -108,7 +125,6 @@ module Launcher {
       if isFile(executableReal) {
         FileSystem.remove(executableReal);
       }
-      if setComm != "" then comm = setComm;
       var sub = spawn(["chpl", file, "-o", executable, "-M.", 
                       "--comm", comm], stderr = PIPE); //Compiling the file
       var compError: string;
@@ -179,7 +195,7 @@ module Launcher {
     if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames: string;
     if testsPassed.size != 0 then passedTestStr = testsPassed: string;
     if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames: string;
-    var exec = spawn(["./"+executable, "-nl", reqNumLocales: string, "--testNames", 
+    var exec = spawn(["./"+executable, "--numLocales", reqNumLocales: string, "--testNames", 
               testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
               erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
               skippedTestNamesStr], stdout = PIPE, 
@@ -292,8 +308,8 @@ module Launcher {
         else {
           var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
           locErrMsg += errMsg; 
-          result.addFailure(testName, fileName, locErrMsg);
-          failedTestNames.push_back(testName);
+          result.addSkip(testName, fileName, locErrMsg);
+          skippedTestNames.push_back(testName);
         }
       }
       when "Dependence" {
