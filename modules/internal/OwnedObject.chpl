@@ -477,6 +477,41 @@ module OwnedObject {
     return new _owned(castPtr!);
   }
 
+  // this version handles downcast to non-nil owned
+  // TODO: Should this clear out `x` if it is not a subclass?
+  inline proc _cast(type t:owned!, in x:owned?) throws
+    where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
+  {
+    if x.chpl_p == nil {
+      throw new owned NilClassError();
+    }
+    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    x.chpl_p = nil;
+    return new _owned(castPtr);
+  }
+
+  // this version handles downcast to nilable owned
+  // TODO: Should this clear out `x` if it is not a subclass?
+  inline proc _cast(type t:owned?, in x:owned?)
+    where isProperSubtype(t.chpl_t,x.chpl_t)
+  {
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    x.chpl_p = nil;
+    return new _owned(castPtr);
+  }
+  // this version handles downcast to nilable owned
+  // TODO: Should this clear out `x` if it is not a subclass?
+  inline proc _cast(type t:owned?, in x:owned!)
+    where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
+  {
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    x.chpl_p = nil;
+    return new _owned(castPtr);
+  }
+
+
+
+
   // cast from nil to owned
   pragma "no doc"
   inline proc _cast(type t:_owned, pragma "nil from arg" x:_nilType) {

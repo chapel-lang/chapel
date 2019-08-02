@@ -250,6 +250,13 @@ module SharedObject {
       src.chpl_pn = nil;
     }
 
+    pragma "no doc"
+    proc init(_private: bool, type t, p, pn) {
+      this.chpl_t = t;
+      this.chpl_p = p:_to_nilable(_to_unmanaged(t));
+      this.chpl_pn = pn;
+    }
+
 
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
@@ -451,6 +458,31 @@ module SharedObject {
     }
 
     return new _shared(true, _to_nonnil(t.chpl_t), x);
+  }
+
+  // this version handles downcast to non-nil shared
+  inline proc _cast(type t:shared!, in x:shared?) throws
+    where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
+  {
+    if x.chpl_p == nil {
+      throw new owned NilClassError();
+    }
+    var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    var pn = x.chpl_pn;
+    x.chpl_p = nil;
+    x.chpl_pn = nil;
+    return new _shared(true, _to_borrowed(p.type), p, pn);
+  }
+
+  // this version handles downcast to nilable shared
+  inline proc _cast(type t:shared?, in x:shared?)
+    where isProperSubtype(t.chpl_t,x.chpl_t)
+  {
+    var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var pn = x.chpl_pn;
+    x.chpl_p = nil;
+    x.chpl_pn = nil;
+    return new _shared(true, _to_borrowed(p.type), p, pn);
   }
 
   // cast from nil to shared
