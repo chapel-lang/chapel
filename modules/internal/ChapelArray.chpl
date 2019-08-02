@@ -3341,7 +3341,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: range(this.idxType, stridable=false)) {
-      compilerWarning("remove has been deprecated - please use List.pop");
+      if showArrayAsVectorWarnings then
+        compilerWarning("remove has been deprecated - please use List.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove range");

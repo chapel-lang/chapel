@@ -54,13 +54,13 @@
 module Lists {
 
   pragma "no doc"
-  private const _initialCapacity = 8;
+  config const _initialCapacity = 8;
 
   pragma "no doc"
-  private const _initialArrayCapacity = 16;
+  config const _initialArrayCapacity = 16;
 
   pragma "no doc"
-  private param _sanityChecks = true;
+  config param _sanityChecks = true;
 
   //
   // Some asserts are useful while developing, but can be turned off when the
@@ -168,8 +168,15 @@ module Lists {
       chpl__autoDestroy(item);
     }
 
+    //
+    // Getting weird lifetime errors when using this function over classes,
+    // and I'm not sure quite how to solve them yet. Since this is used in a
+    // managed way internally, try marking "unsafe" for now to circumvent
+    // the errors, and see if we can deal with them later.
+    //
     pragma "no doc"
-    inline proc _move(const ref src: ?t, ref dst: t) lifetime src == dst {
+    pragma "unsafe"
+    inline proc _move(ref src: ?t, ref dst: t) {
       __primitive("=", dst, src);
     }
 
@@ -400,9 +407,9 @@ module Lists {
     // case, fire it twice).
     //
     pragma "no doc"
-    proc _append_by_ref(const ref x: eltType) {
+    proc _append_by_ref(ref x: eltType) {
       _maybeAcquireMem(1);
-      const ref src = x;
+      ref src = x;
       ref dst = _getRef(_size + 1);
       _move(src, dst);
       _size += 1;
@@ -413,9 +420,15 @@ module Lists {
 
       :arg x: An element to append.
     */
-    proc append(pragma "no auto destroy" in x: eltType) lifetime this < x {
+    proc append(x: eltType) {
+      //
+      // TODO: Use a local copy until this pragma works with formals.
+      // See: https://github.com/chapel-lang/chapel/issues/13225
+      //
+      pragma "no auto destroy"
+      var cpy = x;
       _enter();
-      _append_by_ref(x);
+      _append_by_ref(cpy);
       _leave();
     }
 
@@ -477,14 +490,16 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc insert(i: int, pragma "no auto destroy" in x: eltType) throws
-            lifetime this < x {
-
+    proc insert(i: int, x: eltType) throws {
       _enter();
+
+      // TODO: Use a local copy until this pragma works with formals.
+      pragma "no auto destroy"
+      var cpy = x;
 
       // Handle special case of `a.insert((a.size + 1), x)` here.
       if i == _size + 1 {
-        _append_by_ref(x);
+        _append_by_ref(cpy);
         _leave();
         return;
       }
@@ -492,7 +507,7 @@ module Lists {
       try _boundsCheckLeaveOnThrow(i);
       // May acquire memory based on size before insert.
       _expand(i);
-      ref src = x;
+      ref src = cpy;
       ref dst = _getRef(i);
       _move(src, dst);
       _size += 1;
