@@ -464,7 +464,7 @@ to them (which is typical in Chapel development), because
 it pollutes the git history with non-meaningful merge commits. These show up in
 the git history as:
 
-.. code-block::
+.. code-block:: bash
 
     Merge branch 'master' of github.com:chapel-lang/chapel into dev-branch
 
@@ -929,7 +929,7 @@ box, include the title of the PR which should already be there.
 It is good practice to add mention of the reviewer(s) at the end of the PR.
 This is typically formatted in brackets:
 
-.. code-block::
+.. code-block:: bash
 
     [Reviewed by @reviewer1 and @reviewer2]
 

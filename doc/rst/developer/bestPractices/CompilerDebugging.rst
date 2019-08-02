@@ -81,7 +81,7 @@ Here are some other useful additions to your ``~/.gdbinit``:
 
 The ``set print object on`` makes ``gdb`` print a C++ object based on its
 dynamic, rather than static, type. E.g. if the variable ``p`` has the
-(static) type Expr*, then 'print *p' in gdb will include the fields
+(static) type ``Expr*``, then ``print *p`` in gdb will include the fields
 corresponding to whatever subclass of Expr 'p' is pointing to at the
 moment (e.g. DefExpr, SymExpr, etc.).
 
