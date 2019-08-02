@@ -6,6 +6,7 @@ import sys
 # output from --report-aliases) and exec good file
 
 testBaseName = sys.argv[1]
+outfile = sys.argv[2]
 compopts=sys.argv[4]
 
 testGoodFile = testBaseName + '.good'
@@ -16,8 +17,27 @@ compGoodOutput = ''
 execGoodOutput = ''
 
 if '--report-aliases' in compopts:
-  with open (goodCompOutputFile, 'r') as f:
-      compGoodOutput = f.read()
+    with open (goodCompOutputFile, 'r') as f:
+        compGoodOutput = f.read()
+
+    output = ''
+    with open (outfile, 'r') as f:
+        for line in f:
+            keep = True
+            # Filter out LICM output related to temporaries/code
+            # that are dependent on compiler configuration.
+            if "may alias" in line:
+                if "_" in line or "x1" in line:
+                    keep = False
+            if "LICM: may-alias report for a loop in function main:" in line:
+                keep = False
+
+            if keep:
+                output += line
+
+    with open (outfile, 'w') as f:
+        f.write(output)
+
 
 with open (goodExecOutputFile, 'r') as f:
     execGoodOutput = f.read()
