@@ -4,6 +4,5 @@ noAliasSets: no-aliases for function _new:
 noAliasSets: no-aliases for function arrayArgs:
 noAliasSets: no-aliases for function classArgs:
 noAliasSets: no-aliases for function innerArrayArgs:
-LICM: may-alias report for a loop in function main:
 LICM: may-alias report for a loop in function arrayArgs:
 LICM: may-alias report for a loop in function innerArrayArgs:
