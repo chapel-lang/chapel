@@ -416,7 +416,29 @@ Committing staged changes:
 
     # similar to: svn commit [-m <message>]
 
-Bring in changes from the main Chapel project:
+Bring in changes from Chapel master branch to your branch (preferred):
+
+.. code-block:: bash
+
+    git fetch upstream
+    git rebase upstream/master
+
+    # If branch has already been pushed, you will need to force push to update:
+    git push -f -u origin <branch_name>
+
+
+If there are conflicts, you will be asked to resolve them. Once the affected
+files have been fixed, stage them with ``git add``, and then call ``git
+rebase --continue`` to finish the rebase process.
+
+If there are other development branches working off of your development branch
+(something not common in Chapel development), then you should instead merge
+the Chapel master branch into your branch as shown below, which does not
+require a force push to rewrite git history.
+
+
+
+Bring in changes from Chapel master branch to your branch:
 
 .. code-block:: bash
 
@@ -435,6 +457,17 @@ commit`` to finish the merge process.
 
 If you want to understand the changes that occurred upstream, see
 `Read commit messages for changes from the main Chapel project`_ below.
+
+Using ``git merge upstream/master`` or ``git pull upstream master`` is not
+recommended when working in development branches that have no other references
+to them (which is typical in Chapel development), because
+it pollutes the git history with non-meaningful merge commits. These show up in
+the git history as:
+
+.. code-block::
+
+    Merge branch 'master' of github.com:chapel-lang/chapel into dev-branch
+
 
 .. _How to modify git history:
 
@@ -472,7 +505,8 @@ perform a pull next time you checkout your local master):
     git rebase upstream/master
 
 Pushing such changes to your repository (again, **this may cause problems** if
-other repositories have pulled the changes):
+other repositories have pulled the changes -- however this is uncommon in the
+Chapel development workflow):
 
 .. code-block:: bash
 
