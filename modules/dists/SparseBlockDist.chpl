@@ -81,10 +81,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   param stridable: bool = false;  // TODO: remove default value eventually
   const dist: unmanaged Block(rank, idxType, sparseLayoutType);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType, stridable,
-      sparseLayoutType);
+  var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType,
+                                                              stridable,
+                                                              sparseLayoutType);
   var myLocDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
-      sparseLayoutType);
+                                            sparseLayoutType)?;
+
+  // TODO: move towards init and away from postinit
+  // and remove nilable types
 
   proc postinit() {
     setup();
@@ -154,7 +158,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
-      dataSorted=false, isUnique=false, addOn=nil:locale) {
+      dataSorted=false, isUnique=false, addOn=nil:locale?) {
     use Sort;
     use Search;
 
@@ -217,7 +221,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   proc bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
-    const _retval = myLocDom.mySparseBlock.bulkAdd(inds, dataSorted=true,
+    const _retval = myLocDom!.mySparseBlock.bulkAdd(inds, dataSorted=true,
         isUnique=false);
     return _retval;
   }
@@ -385,8 +389,8 @@ class SparseBlockArr: BaseSparseArr {
   var locArrDom: domain(rank,idxType);
   var locArr: [locArrDom] unmanaged LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
-  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
-      sparseLayoutType);
+  var myLocArr: unmanaged LocSparseBlockArr(eltType, rank, idxType, stridable,
+                                            sparseLayoutType)?;
 
   proc init(type eltType, param rank, type idxType, param stridable,
       type sparseLayoutType ,dom) {
@@ -461,8 +465,8 @@ class SparseBlockArr: BaseSparseArr {
 
   proc dsiAccess(i: rank*idxType) ref {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
-        return myLocArr.dsiAccess(i);
+      if myLocArr != nil && myLocArr!.locDom.parentDom.contains(i) {
+        return myLocArr!.dsiAccess(i);
       }
     }
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
@@ -470,8 +474,8 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType)
   where shouldReturnRvalueByValue(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
-        return myLocArr.dsiAccess(i);
+      if myLocArr != nil && myLocArr!.locDom.parentDom.contains(i) {
+        return myLocArr!.dsiAccess(i);
       }
     }
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
@@ -479,8 +483,8 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: rank*idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     local {
-      if myLocArr != nil && myLocArr.locDom.parentDom.contains(i) {
-        return myLocArr.dsiAccess(i);
+      if myLocArr != nil && myLocArr!.locDom.parentDom.contains(i) {
+        return myLocArr!.dsiAccess(i);
       }
     }
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
@@ -818,5 +822,5 @@ proc SparseBlockArr.dsiLocalSubdomain(loc: locale) {
     unimplementedFeatureHalt("the Sparse Block distribution",
                              "remote subdomain queries");
 
-  return myLocArr.locDom.mySparseBlock;
+  return myLocArr!.locDom.mySparseBlock;
 }

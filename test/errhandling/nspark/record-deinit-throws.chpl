@@ -2,7 +2,7 @@ use ExampleErrors;
 record Wrapper {
 
   var val: int;
-  var err: owned Error;
+  var err: owned Error?;
 
   proc init(v: int) {
     val = v;

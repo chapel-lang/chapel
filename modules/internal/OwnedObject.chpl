@@ -361,6 +361,12 @@ module OwnedObject {
   proc =(ref lhs:_owned,
          pragma "leaves arg nil"
          ref rhs: _owned) {
+
+    // Work around issues in associative arrays of owned
+    // TODO: remove this workaround
+    if lhs.chpl_p == nil && rhs.chpl_p == nil then
+        return;
+
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for lhs non-nilable rhs nilable

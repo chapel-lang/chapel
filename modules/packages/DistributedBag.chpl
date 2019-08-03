@@ -227,7 +227,7 @@ module DistributedBag {
       documentation.
     */
     // This is unused, and merely for documentation purposes. See '_value'.
-    var _impl : DistributedBagImpl(eltType);
+    var _impl : DistributedBagImpl(eltType)?;
 
     // Privatized id...
     pragma "no doc"
@@ -268,7 +268,7 @@ module DistributedBag {
     // Node-local fields below. These fields are specific to the privatized instance.
     // To access them from another node, make sure you use 'getPrivatizedThis'
     pragma "no doc"
-    var bag : unmanaged Bag(eltType);
+    var bag : unmanaged Bag(eltType)?;
 
     proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
       super.init(eltType);
@@ -329,7 +329,7 @@ module DistributedBag {
       preserved.
     */
     override proc add(elt : eltType) : bool {
-      return bag.add(elt);
+      return bag!.add(elt);
     }
 
     /*
@@ -338,7 +338,7 @@ module DistributedBag {
       bag is empty, it will attempt to steal elements from bags of other nodes.
     */
     override proc remove() : (bool, eltType) {
-      return bag.remove();
+      return bag!.remove();
     }
 
     /*
@@ -352,7 +352,7 @@ module DistributedBag {
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
         forall segmentIdx in 0..#here.maxTaskPar {
-          sz.add(instance.bag.segments[segmentIdx].nElems.read() : int);
+          sz.add(instance.bag!.segments[segmentIdx].nElems.read() : int);
         }
       }
 
@@ -423,7 +423,7 @@ module DistributedBag {
       for loc in localThis.targetLocales do on loc {
         var instance = getPrivatizedThis;
         for segmentIdx in 0 .. #here.maxTaskPar {
-          ref segment = instance.bag.segments[segmentIdx];
+          ref segment = instance.bag!.segments[segmentIdx];
           segment.acquire(STATUS_BALANCE);
         }
       }
@@ -434,7 +434,7 @@ module DistributedBag {
         var nSegmentElems : [localThis.targetLocales.size] int;
         var locIdx = 0;
         for loc in localThis.targetLocales do on loc {
-          var nElems = getPrivatizedThis.bag.segments[segmentIdx].nElems.read() : int;
+          var nElems = getPrivatizedThis.bag!.segments[segmentIdx].nElems.read() : int;
           nSegmentElems[locIdx] = nElems;
           locIdx += 1;
         }
@@ -457,7 +457,7 @@ module DistributedBag {
         var bufferOffset = 0;
         for loc in localThis.targetLocales do on loc {
           var average = avg;
-          ref segment = getPrivatizedThis.bag.segments[segmentIdx];
+          ref segment = getPrivatizedThis.bag!.segments[segmentIdx];
           var nElems = segment.nElems.read() : int;
           if nElems > average {
             var nTransfer = nElems - average;
@@ -471,7 +471,7 @@ module DistributedBag {
         bufferOffset = 0;
         for loc in localThis.targetLocales do on loc {
           var average = avg;
-          ref segment = getPrivatizedThis.bag.segments[segmentIdx];
+          ref segment = getPrivatizedThis.bag!.segments[segmentIdx];
           var nElems = segment.nElems.read() : int;
           if average > nElems {
             var give = average - nElems;
@@ -491,7 +491,7 @@ module DistributedBag {
 
         // Lastly, if there are items left over, just add them to our locale's segment.
         if excess > bufferOffset {
-          ref segment = localThis.bag.segments[segmentIdx];
+          ref segment = localThis.bag!.segments[segmentIdx];
           var nLeftOvers = excess - bufferOffset;
           var tmpBuffer = buffer + bufferOffset;
           segment.addElementsPtr(tmpBuffer, nLeftOvers, buffer.locale.id);
@@ -504,7 +504,7 @@ module DistributedBag {
       for loc in localThis.targetLocales do on loc {
         var instance = getPrivatizedThis;
         for segmentIdx in 0 .. #here.maxTaskPar {
-          ref segment = instance.bag.segments[segmentIdx];
+          ref segment = instance.bag!.segments[segmentIdx];
           segment.releaseStatus();
         }
       }
@@ -536,18 +536,18 @@ module DistributedBag {
           var buffer : [dom] eltType;
 
           on loc {
-            ref segment = getPrivatizedThis.bag.segments[segmentIdx];
+            ref segment = getPrivatizedThis.bag!.segments[segmentIdx];
 
             if segment.acquireIfNonEmpty(STATUS_LOOKUP) {
               dom = {0..#segment.nElems.read() : int};
               var block = segment.headBlock;
               var idx = 0;
               while block != nil {
-                for i in 0 .. #block.size {
-                    buffer[idx] = block.elems[i];
+                for i in 0 .. #block!.size {
+                    buffer[idx] = block!.elems[i];
                     idx += 1;
                 }
-                block = block.next;
+                block = block!.next;
               }
               segment.releaseStatus();
             }
@@ -565,7 +565,7 @@ module DistributedBag {
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
         coforall segmentIdx in 0 .. #here.maxTaskPar {
-          ref segment = instance.bag.segments[segmentIdx];
+          ref segment = instance.bag!.segments[segmentIdx];
 
           if segment.acquireIfNonEmpty(STATUS_LOOKUP) {
             // Create a snapshot...
@@ -575,12 +575,12 @@ module DistributedBag {
             var bufferOffset = 0;
 
             while block != nil {
-              if bufferOffset + block.size > bufferSz {
-                halt("DistributedBag Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block.size, ")");
+              if bufferOffset + block!.size > bufferSz {
+                halt("DistributedBag Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
               }
-              __primitive("chpl_comm_array_put", block.elems[0], here.id, buffer[bufferOffset], block.size);
-              bufferOffset += block.size;
-              block = block.next;
+              __primitive("chpl_comm_array_put", block!.elems[0], here.id, buffer[bufferOffset], block!.size);
+              bufferOffset += block!.size;
+              block = block!.next;
             }
 
             // Yield this chunk to be process...
@@ -615,7 +615,7 @@ module DistributedBag {
 
     // Contiguous memory containing all elements
     var elems :  c_ptr(eltType);
-    var next : unmanaged BagSegmentBlock(eltType);
+    var next : unmanaged BagSegmentBlock(eltType)?;
 
     // The capacity of this block.
     var cap : int;
@@ -690,8 +690,8 @@ module DistributedBag {
     // Used as a test-and-test-and-set spinlock.
     var status : atomic uint;
 
-    var headBlock : unmanaged BagSegmentBlock(eltType);
-    var tailBlock : unmanaged BagSegmentBlock(eltType);
+    var headBlock : unmanaged BagSegmentBlock(eltType)?;
+    var tailBlock : unmanaged BagSegmentBlock(eltType)?;
 
     var nElems : atomic uint;
 
@@ -752,26 +752,26 @@ module DistributedBag {
           halt(here, ": DistributedBag Internal Error: Attempted transfer ", n, " elements to ", locId, " but failed... destOffset=", destOffset);
         }
 
-        var len = headBlock.size;
+        var len = headBlock!.size;
         var need = n - destOffset;
         // If the amount in this block is greater than what is left to transfer, we
         // cannot begin transferring at the beginning, so we set our offset from the end.
         if len > need {
           srcOffset = len - need;
-          headBlock.size = srcOffset;
-          __primitive("chpl_comm_array_put", headBlock.elems[srcOffset], locId, destPtr[destOffset], need);
+          headBlock!.size = srcOffset;
+          __primitive("chpl_comm_array_put", headBlock!.elems[srcOffset], locId, destPtr[destOffset], need);
           destOffset = destOffset + need;
         } else {
           srcOffset = 0;
-          headBlock.size = 0;
-          __primitive("chpl_comm_array_put", headBlock.elems[srcOffset], locId, destPtr[destOffset], len);
+          headBlock!.size = 0;
+          __primitive("chpl_comm_array_put", headBlock!.elems[srcOffset], locId, destPtr[destOffset], len);
           destOffset = destOffset + len;
         }
 
         // Fix list if we consumed last one...
-        if headBlock.isEmpty {
+        if headBlock!.isEmpty {
           var tmp = headBlock;
-          headBlock = headBlock.next;
+          headBlock = headBlock!.next;
           delete tmp;
 
           if headBlock == nil then tailBlock = nil;
@@ -793,17 +793,17 @@ module DistributedBag {
         }
 
         // Full? Create a new one double the previous size
-        if block.isFull {
-          block.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
-          tailBlock = block.next;
-          block = block.next;
+        if block!.isFull {
+          block!.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block!.cap * 2));
+          tailBlock = block!.next;
+          block = block!.next;
         }
 
         var nLeft = n - offset;
-        var nSpace = block.cap - block.size;
+        var nSpace = block!.cap - block!.size;
         var nFill = min(nLeft, nSpace);
-        __primitive("chpl_comm_array_get", block.elems[block.size], locId, ptr[offset], nFill);
-        block.size = block.size + nFill;
+        __primitive("chpl_comm_array_get", block!.elems[block!.size], locId, ptr[offset], nFill);
+        block!.size = block!.size + nFill;
         offset = offset + nFill;
       }
 
@@ -820,7 +820,7 @@ module DistributedBag {
           halt("DistributedBag Internal Error: Attempted to take ", n, " elements when insufficient");
         }
 
-        if headBlock.isEmpty {
+        if headBlock!.isEmpty {
           halt("DistributedBag Internal Error: Iterating over ", n, " elements with headBlock empty but nElems is ", nElems.read());
         }
 
@@ -829,9 +829,9 @@ module DistributedBag {
         nElems.sub(1);
 
         // Fix list if we consumed last one...
-        if headBlock.isEmpty {
+        if headBlock!.isEmpty {
           var tmp = headBlock;
-          headBlock = headBlock.next;
+          headBlock = headBlock!.next;
           delete tmp;
 
           if headBlock == nil then tailBlock = nil;
@@ -847,17 +847,17 @@ module DistributedBag {
         return (false, default);
       }
 
-      if headBlock.isEmpty {
+      if headBlock!.isEmpty {
         halt("DistributedBag Internal Error: Iterating over 1 element with headBlock empty but nElems is ", nElems.read());
       }
 
-      var elem = headBlock.pop();
+      var elem = headBlock!.pop();
       nElems.sub(1);
 
       // Fix list if we consumed last one...
-      if headBlock.isEmpty {
+      if headBlock!.isEmpty {
         var tmp = headBlock;
-        headBlock = headBlock.next;
+        headBlock = headBlock!.next;
         delete tmp;
 
         if headBlock == nil then tailBlock = nil;
@@ -877,13 +877,13 @@ module DistributedBag {
       }
 
       // Full? Create a new one double the previous size
-      if block.isFull {
-        block.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
-        tailBlock = block.next;
-        block = block.next;
+      if block!.isFull {
+        block!.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block!.cap * 2));
+        tailBlock = block!.next;
+        block = block!.next;
       }
 
-      block.push(elt);
+      block!.push(elt);
       nElems.add(1);
     }
 
@@ -944,7 +944,7 @@ module DistributedBag {
         var block = segment.headBlock;
         while block != nil {
           var tmp = block;
-          block = block.next;
+          block = block!.next;
           delete tmp;
         }
       }
@@ -1146,8 +1146,8 @@ module DistributedBag {
                           var targetBag = parentHandle.bag;
 
                           // Only proceed if the target is not load balancing themselves...
-                          if !targetBag.loadBalanceInProgress.read() {
-                            ref targetSegment = targetBag.segments[segmentIdx];
+                          if !targetBag!.loadBalanceInProgress.read() {
+                            ref targetSegment = targetBag!.segments[segmentIdx];
 
                             // As we only care that the segment contains data,
                             // we test-and-test-and-set until we gain ownership.
