@@ -107,7 +107,7 @@ FnSymbol* debugGetTheIteratorFn(ForLoop* forLoop) {
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
-static void nonLeaderParCheckInt(FnSymbol* fn);
+static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields);
 
 static void nonLeaderParCheck()
 {
@@ -116,7 +116,7 @@ static void nonLeaderParCheck()
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator() && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
-      nonLeaderParCheckInt(fn);
+      nonLeaderParCheckInt(fn, !fn->hasFlag(FLAG_RECURSIVE_ITERATOR));
     }
   }
   USR_STOP();
@@ -161,7 +161,7 @@ bool isVirtualIterator(FnSymbol* iterFn) {
   return retval;
 }
 
-static void nonLeaderParCheckInt(FnSymbol* fn)
+static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
   std::vector<CallExpr*> calls;
 
@@ -197,11 +197,15 @@ static void nonLeaderParCheckInt(FnSymbol* fn)
       // If they are not, check for PRIM_YIELD like below.
       INT_ASSERT(false);
     }
-
+    if (!allowYields) {
+      if (call->isPrimitive(PRIM_YIELD)) {
+        USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
+      }
+    }
     if (taskFn) {
       // This used to be the body of the parallel or 'on' construct
       // so need to descend into it.
-      nonLeaderParCheckInt(taskFn);
+      nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON) || allowYields);
     }
   }
 }
@@ -2914,11 +2918,11 @@ static void removeUncalledIterators()
 }
 
 void lowerIterators() {
-  nonLeaderParCheck();
-
   markVectorizableForallLoops();
 
   computeRecursiveIteratorSet();
+
+  nonLeaderParCheck();
 
   cleanupLeaderIteratorCalls();
 
