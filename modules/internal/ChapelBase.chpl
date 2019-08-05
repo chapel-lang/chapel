@@ -98,6 +98,9 @@ module ChapelBase {
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
   {
+    if isNonNilableClassType(a.type) && !chpl_legacyNilClasses {
+      compilerError("cannot assign to " + a.type:string + " from nil");
+    }
     __primitive("=", a, nil);
   }
 
@@ -1303,6 +1306,20 @@ module ChapelBase {
     return x;
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
+
+  inline proc _cast(type t:unmanaged!, x:_nilType)
+  {
+    if !chpl_legacyNilClasses {
+      compilerError("cannot cast nil to " + t:string);
+    }
+  }
+  inline proc _cast(type t:borrowed!, x:_nilType)
+  {
+    if !chpl_legacyNilClasses {
+      compilerError("cannot cast nil to " + t:string);
+    }
+  }
+
 
   // casting to unmanaged?, no class downcast
   inline proc _cast(type t:unmanaged?, x:borrowed?)

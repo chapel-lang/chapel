@@ -3,7 +3,7 @@ record Wrapper {
 
   type retType;
   var val: retType;
-  var err: owned Error = nil;
+  var err: owned Error? = nil;
 
   proc get(): retType throws {
     if err then throw err;

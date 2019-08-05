@@ -3450,7 +3450,7 @@ inline proc channel.read(ref args ...?k):bool throws {
         if args[i].locale == here {
           err = _read_one_internal(_channel_internal, kind, args[i], origLocale);
         } else {
-          var tmp:args[i].type;
+          var tmp = args[i];
           err = _read_one_internal(_channel_internal, kind, tmp, origLocale);
           args[i] = tmp;
         }

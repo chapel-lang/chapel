@@ -253,7 +253,7 @@ proc test_tzinfo_fromtimestamp() {
   var tz = new shared FixedOffset(utcoffset, "tz", new timedelta());
   var expected = utcdatetime + utcoffset;
   var got = datetime.fromtimestamp(timestamp, tz);
-  assert(expected == got.replace(tzinfo=new shared(nil:unmanaged TZInfo)));
+  assert(expected == got.replace(tzinfo=new shared(nil:unmanaged TZInfo?)));
 }
 
 proc test_tzinfo_timetuple() {

@@ -50,28 +50,28 @@ proc s9(test: borrowed Test) throws {
 }
 
 // this test halts
-proc s10(test: Test) throws {
+proc s10(test: borrowed Test) throws {
   var a: [1..0] int;
   writeln(a[0]);
 }
 
 // this depend on test s9 which depends on s10 which halts
-proc s11(test: Test) throws {
+proc s11(test: borrowed Test) throws {
   test.dependsOn(s14,s1);
 }
 
 // this depends on a test that pass
-proc s12(test: Test) throws {
+proc s12(test: borrowed Test) throws {
   test.dependsOn(s2);
 }
 
 // this depends on a test which fails
-proc s13(test: Test) throws {
+proc s13(test: borrowed Test) throws {
   test.dependsOn(s8);
 }
 
 // depends on a test that halts
-proc s14(test: Test) throws {
+proc s14(test: borrowed Test) throws {
   test.dependsOn(s10);
 }
 UnitTest.runTest(s1,s2,s3,s4,s11,s5,s6,s7,s8,s9,s10,s12,s13,s14);
