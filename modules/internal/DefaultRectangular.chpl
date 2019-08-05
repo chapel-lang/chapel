@@ -1062,6 +1062,7 @@ module DefaultRectangular {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
+        var freedData = false;
         if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
@@ -1074,10 +1075,13 @@ module DefaultRectangular {
               numElts = dom.dsiNumIndices;
             dsiDestroyDataHelper(data, numElts);
             _ddata_free(data, numElts);
+            freedData = true;
           }
-        } else {
+        }
+        if !freedData {
           const size = blk(1) * dom.dsiDim(1).length;
           _ddata_free(data, size);
+          freedData = true;
         }
       }
     }
