@@ -18,12 +18,13 @@
  */
 
 /*
-  Single-threaded FFT computations via key routines from FFTW (version 3)
+  FFT computations via key routines from FFTW (version 3)
 
-  This module defines Chapel wrappers for key single-threaded 64-bit
-  routines from FFTW (http://www.fftw.org), version 3.  For
-  multi-threaded routines, refer to the :mod:`FFTW_MT` module.  Over
-  time, the intention is to expand these modules to support additional
+  This module defines Chapel wrappers for key 64-bit
+  routines from FFTW (http://www.fftw.org), version 3. The routines
+  in this module exposes the simple FFTW interface. The full C API
+  may be accessed through the :mod:`FFTW.C_FFTW` submodule.
+  Over time, the intention is to expand these modules to support additional
   routines, prioritizing based on requests and feedback from users.
 
 
@@ -49,6 +50,24 @@
         compiler to the location of these header files. Refer to the Intel MKL
         documentation for the appropriate libraries to include.
 
+  4. If you wish to run FFTW in a multi-threaded mode:
+
+     a. Initialize FFTW for multithreaded support. You may do this by either
+        setting the compile-time config parameter ``autoInitFFTW_MT`` to `true`
+        or calling :proc:`init_FFTW_MT`.
+
+     b. Set the number of threads for subsequent FFTW plans with :proc:`plan_with_nthreads`.
+        If you initialized automatically, this module defaults to using ``here.maxTaskPar``.
+        There is no limit on the number of times you can call :proc:`plan_with_nthreads`.
+
+     c. Link with the appropriate multi-threaded FFTW libraries.
+
+     d. Note the both :proc:`init_FFTW_MT` and :proc:`plan_with_nthreads` are multi-locale
+        aware and will automatically run on all locales. However, the FFTW plans
+        created by this routine are not distributed.
+
+     e. When all multi-threaded usage is complete, call :proc:`cleanup_threads`.
+
 
   As in standard FFTW usage, the flow is to:
 
@@ -58,7 +77,7 @@
 
   3. Destroy the plan(s) using :proc:`destroy_plan`.
 
-  4. Call :proc:`cleanup`.
+  4. Cleanup, using :proc:`cleanup` (and :proc:`cleanup_threads` if multi-threaded).
 
 
   Note that each of the Chapel :proc:`plan_dft* <plan_dft>` routines
@@ -110,11 +129,15 @@ module FFTW {
   }
   
   /*
-    By default, this module will call :proc:`init_FFTW_MT()` and
-    :proc:`plan_with_nthreads()` as part of its initialization.
-    Setting this to `false` at compile-time will disable this
-    auto-initialization, requiring these calls to be made
-    manually.
+    Set this config parameter to `true` to automatically initialize
+    FFTW for thread support, and setup FFTW to generate multi-threaded
+    plans (with the number of threads equal to `maxTaskPar` in Chapel).
+
+    If you keep the default value of `false`, then call :proc:`init_FFTW_MT()`
+    to initialize thread-support for Chapel.
+
+    Note that :proc:`plan_with_nthreads` can be called at any time
+    and changes the number of threads used by plans created after the call.
   */
   config param autoInitFFTW_MT = false;
 
@@ -651,7 +674,9 @@ module FFTW {
     }
   }
 
-  pragma "no doc"
+  /* Exposes the FFTW C API for advanced users.
+
+     Please refer to the FFTW documentation for more details. */
   module C_FFTW {
     extern proc fftw_execute(p : fftw_plan) : void;
 
