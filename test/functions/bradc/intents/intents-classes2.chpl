@@ -63,10 +63,11 @@ proc main() {
   delete a;
 
   {
-    var aa: unmanaged pair? = a;
+    var aa: unmanaged pair?;
     callout(aa);
     writeln("back at callsite, a is: ", aa.a, " ", aa.b);
     writeln();
+    a = aa!;
   }
 
   callinout(a);
