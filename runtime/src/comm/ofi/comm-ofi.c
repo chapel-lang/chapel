@@ -560,6 +560,14 @@ void init_ofiFabricDomain(void) {
       DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
       DBG_PRINTF(DBG_CFGFAB, "----------");
     }
+  } else {
+    //
+    // Node 0 will take care of producing the error message.
+    //
+    if (ret == -FI_ENODATA) {
+      chpl_comm_ofi_oob_fini();
+      chpl_exit_any(0);
+    }
   }
 
   fi_freeinfo(hints);
