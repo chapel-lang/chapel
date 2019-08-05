@@ -130,9 +130,6 @@ llvm::DIType* debug_data::construct_type(Type *type)
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
-  if (strstr(defFile, "/modules/")!=NULL || strcmp(defFile, "<internal>")==0) {
-    return NULL;
-  }
   int defLine = type->symbol->linenum();
 
   if(!ty) {
@@ -657,8 +654,8 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
   llvm::DIFile* file = get_file(file_name);
   llvm::DIType* varSym_type = get_type(varSym->type);
 
-  if(varSym_type){
-    return this->dibuilder.createAutoVariable(
+  if(varSym_type) {
+    llvm::DILocalVariable* localVariable = this->dibuilder.createAutoVariable(
       scope, /* Scope */
       name, /*Name*/
       file, /*File*/
@@ -666,6 +663,12 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
       varSym_type, /*Type*/
       true/*AlwaysPreserve, won't be removed when optimized*/
       ); //omit the  Flags and ArgNo
+
+    this->dibuilder.insertDeclare(varSym->codegen().val, localVariable,
+      this->dibuilder.createExpression(), llvm::DebugLoc::get(line_number, 0, scope),
+      gGenInfo->irBuilder->GetInsertBlock());
+
+    return localVariable;
   }
   else {
     //Empty dbg node if the symbol type is unresolved
