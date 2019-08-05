@@ -3246,7 +3246,7 @@ module ChapelArray {
       const newRange = this.domain.low..(this.domain.high + 1);
 
       if boundsChecking && !newRange.contains(pos) then
-        halt("insert at position " + pos:string + " out of bounds");
+        halt("insert at position ", pos, " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");
 
@@ -3284,7 +3284,7 @@ module ChapelArray {
             validInsertRange = this.domain.low..(this.domain.high + 1);
 
       if boundsChecking && !validInsertRange.contains(pos) then
-        halt("insert at position " + pos:string + " out of bounds");
+        halt("insert at position ", pos, " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");
 
@@ -3307,7 +3307,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("remove");
 
       if boundsChecking && !this.domain.contains(pos) then
-        halt("remove at position " + pos:string + " out of bounds");
+        halt("remove at position ", pos, " out of bounds");
 
       const lo = this.domain.low,
             hi = this.domain.high-1;
@@ -3342,9 +3342,9 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high-count;
       if boundsChecking && pos+count-1 > this.domain.high then
-        halt("remove at position ", (pos+count-1):string, " out of bounds");
+        halt("remove at position ", pos+count-1, " out of bounds");
       if boundsChecking && pos < lo then
-        halt("remove at position ", pos:string, " out of bounds");
+        halt("remove at position ", pos, " out of bounds");
 
       const newRange = lo..hi;
       for i in pos..hi {
