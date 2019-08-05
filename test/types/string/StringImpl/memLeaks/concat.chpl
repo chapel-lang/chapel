@@ -30,6 +30,26 @@ module unitTest {
       }
     }
 
+    // Without this string-specific overload, the above version of the
+    // function generates an error: "follower iterators accepting a
+    // non-POD argument by in-intent are not implemented" when strings
+    // are cast to string.
+
+    inline proc fRemote(x:string) {
+      const s: t = "s";
+      on Locales[numLocales-1] {
+        if useExpr {
+          writeMe(s+x);
+          writeMe(x+s);
+        } else {
+          const sx = s+x;
+          writeMe(sx);
+          const xs = x+s;
+          writeMe(xs);
+        }
+      }
+    }
+
     proc fempty() {
       writeln("=== concat with empty");
       const m0 = allMemoryUsed();
