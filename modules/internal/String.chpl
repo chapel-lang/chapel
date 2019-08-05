@@ -2322,7 +2322,7 @@ module String {
   pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
     if i < 1 || i > __primitive("string_length", this) then
-      compilerError("index out of bounds of string: " + i);
+      compilerError("index out of bounds of string: " + i:string);
     return __primitive("ascii", this, i);
   }
 
