@@ -1073,10 +1073,12 @@ module DefaultRectangular {
             if numElts == 0 then
               numElts = dom.dsiNumIndices;
             dsiDestroyDataHelper(data, numElts);
+            _ddata_free(data, numElts);
           }
+        } else {
+          const size = blk(1) * dom.dsiDim(1).length;
+          _ddata_free(data, size);
         }
-        const size = blk(1) * dom.dsiDim(1).length;
-        _ddata_free(data, size);
       }
     }
 
