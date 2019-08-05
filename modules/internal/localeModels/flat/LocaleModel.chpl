@@ -118,14 +118,6 @@ module LocaleModel {
       return this;
     }
 
-
-    override proc writeThis(f) {
-      // Most classes will define it like this:
-      //      f <~> name;
-      // but here it is defined thus for backward compatibility.
-      f <~> new ioLiteral("LOCALE") <~> _node_id;
-    }
-
     proc getChildSpace() return chpl_emptyLocaleSpace;
 
     override proc getChildCount() return 0;

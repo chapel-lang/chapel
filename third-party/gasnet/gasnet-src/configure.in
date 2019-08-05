@@ -9,18 +9,18 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[2018])
-define([GASNET_RELEASE_VERSION_MINOR_D],[9])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2019])
+define([GASNET_RELEASE_VERSION_MINOR_D],[6])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[6])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[12])
+define([GASNETT_SPEC_VERSION_MINOR_D],[13])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -35,8 +35,8 @@ dnl AC_REVISION("no-version-control-info (tools only)")
 dnl define([AC_PACKAGE_NAME],[GASNet_Tools])
 dnl GASNET_TOOLSONLY_TRUE_END
 
-define([AC_PACKAGE_BUGREPORT],[http://gasnet-bugs.lbl.gov])
-define([AC_PACKAGE_URL],[http://gasnet.lbl.gov])
+define([AC_PACKAGE_BUGREPORT],[https://gasnet-bugs.lbl.gov])
+define([AC_PACKAGE_URL],[https://gasnet.lbl.gov])
 define([AC_PACKAGE_VERSION],[GASNET_RELEASE_VERSION_D])
 
 ifdef([GASNET_TRIM_ACHELP], dnl must precede AC_INIT
@@ -280,6 +280,9 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
                     -Wmissing-format-attribute  \
                 dnl Selected warnings:
                     -Winit-self                 \
+                    -Wvla                       \
+                    -Wexpansion-to-defined      \
+                    -Woverlength-strings        \
                 dnl -Wextra subset:
                     -Wclobbered                 \
                     -Wcast-function-type        \
@@ -291,8 +294,10 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
                     -Wuninitialized             \
                     -Wshift-negative-value      \
       ; do
-     if test "$2" = "Open64" && test "x$warnflag" = "x-Wempty-body" ; then 
-      : # Bug 3711: Open64 botches -Wempty-body at link time which is not probed here
+     if test "$2" = "Open64" && (
+          test "x$warnflag" = "x-Wempty-body" ||
+          test "x$warnflag" = "x-Wexpansion-to-defined" 
+      ) ; then : # Bug 3711: Open64 botches some warnings at link time, which is not probed here
      else
       ]GASNET_TRY_[$1]FLAG[([$3$warnflag],
                             [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3$warnflag"])
@@ -529,6 +534,7 @@ case "$CC_FAMILY" in
   Pathscale) CCDEBUGFLAGS="-g3 -O0" ;; # need to explicitly disable optimization
   Open64)    CCDEBUGFLAGS="-g3" ;;
   Clang)     CCDEBUGFLAGS="-g -O0" ;;
+  Cray)      CCDEBUGFLAGS="-g -O0" ;;
   *)         CCDEBUGFLAGS="-g" ;;
 esac
 
@@ -1555,7 +1561,6 @@ GASNET_WITH(max-pthreads-per-node, [Set max pthreads supported per GASNet node],
   [AC_DEFINE_UNQUOTED(GASNETI_MAX_THREADS_CONFIGURE, $withval)]
   )
 
-GASNETI_CACHE_LINE_BYTES=""
 if test "$have_pthread" = no ; then
   GASNET_THREAD_DEFINES=""
   GASNET_THREAD_LIBS=""
@@ -1607,22 +1612,6 @@ else
     [AC_DEFINE_UNQUOTED(GASNETI_THREADINFO_OPT_CONFIGURE, 1)],
     [AC_DEFINE_UNQUOTED(GASNETI_THREADINFO_OPT_CONFIGURE, 0)])
 
- if test "$cross_compiling" = "no"; then
-  case "$target_os" in
-    darwin*)
-      AC_MSG_CHECKING(for shared data cache line size)
-      GASNETI_CACHE_LINE_BYTES=`/usr/sbin/sysctl hw.cachelinesize | cut '-d ' -f2`
-      AC_MSG_RESULT($GASNETI_CACHE_LINE_BYTES)
-      ;;
-    *)
-      GASNET_TRY_CACHE_RUN_EXPR(for shared data cache line size, datacache_line_size, 
-      [ #define CONFIG_TEST 1
-        #include "detect-cachesz.c" ], [ 
-       val = detect_cachesz(79.0, 0); if (val<=0) exit(1); ], GASNETI_CACHE_LINE_BYTES)
-      ;;
-  esac
- fi
-
   case "$target_os" in
     freebsd*) ;; # bug 1205: intentionally avoid -lpthread on BSD, where it causes problems
     netbsd*)  ;;
@@ -1632,25 +1621,40 @@ else
   GASNET_POPVAR(CPPFLAGS)
   GASNET_POPVAR(LIBS)
 fi
-if test "$cross_compiling" = "yes"; then
-  GASNET_CROSS_VAR(GASNETI_CACHE_LINE_BYTES, CACHE_LINE_BYTES, unset)
-  if test "$GASNETI_CACHE_LINE_BYTES" = unset; then
-    GASNETI_CACHE_LINE_BYTES='';
+
+# Determine the cache line size we should use for padding to avoid false sharing cache traffic
+AC_MSG_CHECKING(for shared data cache line size)
+# initial guess based on architecture
+case "$target_cpu" in # when chip revs differ, we should err on the larger size
+  i*86)     cache_line_guess=64 ;;
+  x86_64)   cache_line_guess=64 ;;
+  arm*)     cache_line_guess=64 ;;
+  aarch64)  cache_line_guess=64 ;;
+  rs6000)   cache_line_guess=32 ;;  # https://www.csee.umbc.edu/portal/help/architecture/rs6000_arch.ps
+  powerpc*) cache_line_guess=128 ;; # https://www.7-cpu.com/cpu/Power8.html
+  ia64)     cache_line_guess=128 ;; # https://www.7-cpu.com/cpu/Itanium2.html
+  sparc)    cache_line_guess=128 ;; # https://en.wikipedia.org/wiki/SPARC64_V
+  *)        cache_line_guess=128 ;; # the default when we have no other info
+esac
+# allow the OS to refine our guess
+if test "$cross_compiling" = "no"; then
+  cache_line_guess_os=
+  case "$target_os" in
+    darwin*) # could also use `sysctl machdep.cpu.cache.linesize`
+      cache_line_guess_os=`(/usr/sbin/sysctl hw.cachelinesize | cut '-d ' -f2) 2>/dev/null` ;;
+    linux*) # `getconf LEVEL1_DCACHE_LINESIZE` and cache_alignment in /proc/cpuinfo seem less reliable
+      cache_line_guess_os=`(cat /sys/devices/system/cpu/cpu0/cache/index{0,1,2,3}/coherency_line_size | tail -1) 2>/dev/null` ;;
+    *) ;;
+  esac
+  if test -n "$cache_line_guess_os" ; then
+    cache_line_guess=$cache_line_guess_os
   fi
 fi
-if test "$GASNETI_CACHE_LINE_BYTES" = "" ; then
-  GASNETI_CACHE_LINE_BYTES=128
-  if test "$cross_compiling" = "no"; then
-    GASNET_MSG_WARN([Unable to automatically detect a shared data cache line size (either system load too high, pthreads is broken or this is not a cache-coherent SMP).  Using a safe default size of $GASNETI_CACHE_LINE_BYTES])
-  else
-    GASNET_MSG_WARN([Unable to automatically detect a shared data cache line size when cross compiling.  Using a safe default size of $GASNETI_CACHE_LINE_BYTES])
-  fi
-fi
-AC_DEFINE_UNQUOTED(GASNETI_CACHE_LINE_BYTES,$GASNETI_CACHE_LINE_BYTES)
-case "$GASNETI_CACHE_LINE_BYTES" in
-     1)     GASNETI_CACHE_LINE_SHIFT=0  ;;
-     2)     GASNETI_CACHE_LINE_SHIFT=1  ;;
-     4)     GASNETI_CACHE_LINE_SHIFT=2  ;;
+AC_MSG_RESULT($cache_line_guess)
+GASNET_ENV_DEFAULT(CACHE_LINE_BYTES, $cache_line_guess,
+                     [shared data cache line width, in bytes (default is platform-dependent)])
+AC_DEFINE_UNQUOTED(GASNETI_CACHE_LINE_BYTES,$CACHE_LINE_BYTES)
+case "$CACHE_LINE_BYTES" in
      8)     GASNETI_CACHE_LINE_SHIFT=3  ;;
     16)     GASNETI_CACHE_LINE_SHIFT=4  ;;
     32)     GASNETI_CACHE_LINE_SHIFT=5  ;;
@@ -1659,17 +1663,13 @@ case "$GASNETI_CACHE_LINE_BYTES" in
    256)     GASNETI_CACHE_LINE_SHIFT=8  ;;
    512)     GASNETI_CACHE_LINE_SHIFT=9  ;;
   1024)     GASNETI_CACHE_LINE_SHIFT=10 ;;
-  *) AC_MSG_ERROR(unknown GASNETI_CACHE_LINE_BYTES=$GASNETI_CACHE_LINE_BYTES) ;;
-  esac
+  *) AC_MSG_ERROR(unsupported CACHE_LINE_BYTES=$CACHE_LINE_BYTES) ;;
+esac
 AC_DEFINE_UNQUOTED(GASNETI_CACHE_LINE_SHIFT,$GASNETI_CACHE_LINE_SHIFT)
           
 AM_CONDITIONAL(HAVE_PTHREAD, test "$have_pthread" = yes)
 PTHREADS="$have_pthread"
 AC_SUBST(PTHREADS)
-
-## Solaris threads
-
-AC_CHECK_LIB(thread, thr_create, have_solthread=yes, have_solthread=no)
 
 ########################################################################
 ## Process-shared memory (pshm)
@@ -1929,6 +1929,8 @@ nodes, you need to re-run configure without --enable-aligned-segments"
 		    GASNETI_DISABLE_ALIGNED_SEGMENTS=1
 		    AC_DEFINE(GASNETI_DISABLE_ALIGNED_SEGMENTS)
                    ])
+
+AC_CHECK_HEADER([sys/statvfs.h],[AC_CHECK_FUNCS([fstatvfs])])
 dnl GASNET_TOOLSONLY_FALSE_END
 
 AM_CONDITIONAL(USE_PSHM, test "$with_pshm" != no)
@@ -2260,64 +2262,11 @@ fi
 
 #---------------------------------------------------------------------------------------------------------------
 # Check for overrides of compile-time checks for SMPs
-GASNET_IF_ENABLED_WITH_AUTO(smp-safe, Enable build of SMP-safe libraries (default is to probe at configure time),
-  [ uni_build=no ],
-  [ uni_build=yes],
-  [ AC_CHECK_HEADERS(/boot/kernel.h)
-    AC_MSG_CHECKING(whether to force a uni-processor build)
-    uni_build=no;
-    if test "$cross_compiling" = "yes" ; then
-      uni_build='no (default for cross-compilation)'
-    elif test "`uname -a | grep -i SMP`" = ""; then
-      case "$target_os" in
-      linux*)  
-        AC_TRY_COMPILE([
-          /* Note that we try to error on the side of an SMP */
-          #include <linux/config.h>
-          #if defined(CONFIG_SMP)
-            #error Make the AC_TRY_COMPILE fail (SMP)
-          #endif
-          #ifdef HAVE__BOOT_KERNEL_H
-            #include </boot/kernel.h>
-            #if defined(__BOOT_KERNEL_SMP) && (__BOOT_KERNEL_SMP == 1)
-              #error Make the AC_TRY_COMPILE fail (SMP)
-            #endif
-          #endif
-          ], [], [ uni_build=yes ])
-        ;;
-      freebsd* | openbsd* | netbsd*)  
-        if test "`/sbin/sysctl -n hw.ncpu 2>/dev/null`" = 1; then
-          uni_build=yes
-        fi
-        ;;
-      darwin*)
-        if test "`/usr/sbin/sysctl -n hw.ncpu 2>/dev/null`" = 1; then
-          uni_build=yes
-        fi
-        ;;
-      *)  
-        AC_TRY_RUN([
-	    #include <unistd.h>
-	    #if defined(_SC_NPROCESSORS_ONLN)
-	    /* OK */
-	    #elif defined(_SC_NPROC_ONLN)
-	    # define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
-	    #elif defined(_SC_CRAY_MAXPES)
-	    # define _SC_NPROCESSORS_ONLN _SC_CRAY_MAXPES
-            #else
-	    /* Maybe _SC_NPROCESSORS_ONLN is an enum? */
-            #endif
-            int main(void) { return !(sysconf(_SC_NPROCESSORS_ONLN) == 1); }
-          ], [ uni_build=yes ])
-        ;;
-      esac
-    fi
-    AC_MSG_RESULT($uni_build)
-  ] 
- )
-if test "$uni_build" = yes; then
-  AC_DEFINE(GASNETI_UNI_BUILD)
-fi
+# Enable build of SMP-safe libraries (default is off)
+GASNET_IF_DISABLED_NOHELP(smp-safe, [ 
+  GASNET_MSG_WARN([configure --disable-smp-safe is deprecated and may be unsafe. You should only use this option if you really know what you are doing.])
+  AC_DEFINE(GASNETI_UNI_BUILD) 
+])
 
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
 GASNET_IF_ENABLED(loopback-memsync, Force memory barriers for GASNet local (loopback) puts and gets,
@@ -2514,14 +2463,12 @@ GASNET_IF_DISABLED(auto-conduit-detect, [Enable/disable automatic detection of s
 		   [enabled_auto_detect=yes;_conduit_auto_reason=auto])
 dnl GASNET_TOOLSONLY_FALSE_END
 
-dnl GASNet branch control -- allows us to keep a unified configure script
-dnl define([GASNET_BRANCH_1],[1])
-    define([GASNET_BRANCH_EX],[1])
-
-ifdef([GASNET_BRANCH_1],[gasnet_branch=1],[gasnet_branch=EX])
-
-dnl CONDUIT_BEGIN(lowername, ex_allow, desc)
-dnl ex_impl should be a literal [yes|no|warn] to allow this conduit for EX branch, or probe and warn when support looks available
+dnl CONDUIT_BEGIN(lowername, conduit_allow, desc)
+dnl conduit_allow should be a literal [yes|exp|g1|no] to control use of this conduit:
+dnl   yes = normal EX conduit 
+dnl   exp = experimental EX conduit (don't auto-detect, warns and requires --enable-conduit or --enable-conduit=probe)
+dnl   g1  = force-disabled: warns directing users to GASNet-1 version of conduit
+dnl   no  = completely disabled and hidden
 dnl sets enabled_<lowername> to yes or no for whether conduit should be enabled
 AC_DEFUN([CONDUIT_BEGIN],[
  pushdef([CONDUIT_NAME],[$1])
@@ -2529,18 +2476,35 @@ AC_DEFUN([CONDUIT_BEGIN],[
  pushdef([CONDUIT_DESC],[$3])
  # bug 1946: prevent confusing cross-conduit error messages
  GASNET_ERR_CLEANUP
-ifdef([GASNET_BRANCH_1],[pushdef([CONDUIT_IMPLEMENTED],yes)],[pushdef([CONDUIT_IMPLEMENTED],$2)])
+pushdef([CONDUIT_IMPLEMENTED],$2)
+pushdef([CONDUIT_HELP_TAG],[])
 ifelse(CONDUIT_IMPLEMENTED,[yes],[
+  _conduit_list_[]CONDUIT_NAME=yes
+  pushdef([CONDUIT_IMPLEMENTED_HELP],yes)
+],CONDUIT_IMPLEMENTED,[exp],[
+  _conduit_list_[]CONDUIT_NAME=yes
+  pushdef([CONDUIT_IMPLEMENTED_HELP],yes)
+  popdef([CONDUIT_HELP_TAG])
+  pushdef([CONDUIT_HELP_TAG],[**EXPERIMENTAL**])
+],CONDUIT_IMPLEMENTED,[g1],[
+  _conduit_list_[]CONDUIT_NAME=no
+  pushdef([CONDUIT_IMPLEMENTED_HELP],no)
+],CONDUIT_IMPLEMENTED,[no],[
+  _conduit_list_[]CONDUIT_NAME=no
+  pushdef([CONDUIT_IMPLEMENTED_HELP],no)
+],[m4_fatal([Internal error on CONDUIT_BEGIN($1,conduit_allow=$2)])])
+
+ifelse(CONDUIT_IMPLEMENTED_HELP,[yes],[
  GASNET_HELP_OUTPUT([
-CONDUIT_NAME[]-conduit options: (CONDUIT_DESC)])
-  _conduit_implemented_[]CONDUIT_NAME=yes
+CONDUIT_NAME[]-conduit options: (CONDUIT_DESC) CONDUIT_HELP_TAG])
 ],[ dnl unimplemented conduit help disabled
  pushdef([GASNET_SUPPRESSHELP],[set]) 
-  _conduit_implemented_[]CONDUIT_NAME=no
 ])
+popdef([CONDUIT_HELP_TAG])
+
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
 ifelse(CONDUIT_IMPLEMENTED,[no],[ enabled_[]$1=no ],[
- GASNET_IF_ENABLED_WITH_AUTO($1, Enable/disable the CONDUIT_DESC (auto-detected),
+ GASNET_IF_ENABLED_WITH_AUTO($1, Enable/disable the CONDUIT_DESC ifelse(CONDUIT_IMPLEMENTED,[yes],[(auto-detected)],[]),
   [enabled_[]$1=yes;force_[]$1=yes;  _conduit_reason_[]$1=enabled],
   [enabled_[]$1=no;                  _conduit_reason_[]$1=disabled],
   [ if test "$enable_$1" = "probe" ; then # --enable-conduit=probe overrides --disable-auto-conduit-detect
@@ -2645,16 +2609,18 @@ AC_DEFUN([CONDUIT_PHYSMEM],[
   fi
 ])
 dnl CONDUIT_END(test_conduit_enabled)
-dnl note this may also change enabled_<conduit> for ex_allow=warn
+dnl note this may also change enabled_<conduit> for (conduit_allow != yes)
 AC_DEFUN([CONDUIT_END],[
   _conduit_enabled_[]CONDUIT_NAME=no
   if test "$gasnet_toolsonly_mode" = "no" ; then
     if $1; then
-      if test "CONDUIT_IMPLEMENTED" != "yes"; then
+     case "CONDUIT_IMPLEMENTED" in
+      no) ;;
+      g1)
         pushdef([EX_UNIMPL_MESSAGE],[It appears your system has the required support for CONDUIT_NAME[]-conduit, 
-	  however CONDUIT_NAME[]-conduit is not yet fully implemented in this GASNet-EX distribution, 
-	  If you want to use this conduit, please download the GASNet v1.x distribution from http://gasnet.lbl.gov.
-	  Otherwise, you can disable this message with --disable-[]CONDUIT_NAME ])
+however CONDUIT_NAME[]-conduit is not yet fully implemented in this GASNet-EX distribution, 
+If you want to use this conduit, please download the GASNet v1.x distribution from https://gasnet.lbl.gov.
+Otherwise, you can disable this message with --disable-[]CONDUIT_NAME ])
         if test "$force_[]CONDUIT_NAME" = yes ; then 
 	  GASNET_MSG_ERROR([EX_UNIMPL_MESSAGE])
 	else # warn and disable
@@ -2662,9 +2628,25 @@ AC_DEFUN([CONDUIT_END],[
 	  GASNET_MSG_WARN([EX_UNIMPL_MESSAGE])
 	fi
         popdef([EX_UNIMPL_MESSAGE])
-      else
+      ;;
+      exp)
+        pushdef([EXP_MESSAGE],[CONDUIT_NAME[]-conduit is still experimental, and may have performance and correctness bugs.])
+        if test "$force_[]CONDUIT_NAME" = yes || test "$enable_[]CONDUIT_NAME" = "probe" ; then 
+	  GASNET_MSG_WARN([EXP_MESSAGE])
+          _conduit_enabled_[]CONDUIT_NAME=yes
+	else # warn and disable
+          enabled_[]CONDUIT_NAME=no 
+	  GASNET_MSG_WARN([It appears your system has the required support for CONDUIT_NAME[]-conduit. 
+However, EXP_MESSAGE
+You can enable experimental support with --enable-[]CONDUIT_NAME.
+Otherwise, you can disable this message with --disable-[]CONDUIT_NAME ])
+	fi
+        popdef([EXP_MESSAGE])
+      ;;
+      yes)
         _conduit_enabled_[]CONDUIT_NAME=yes
-      fi
+      ;;
+     esac
     else
       if test "$force_[]CONDUIT_NAME" = yes ; then
        GASNET_MSG_ERROR([User requested --enable-CONDUIT_NAME but I don't know how to build CONDUIT_NAME programs for your system])
@@ -2680,10 +2662,11 @@ AC_DEFUN([CONDUIT_END],[
     fi
     _conduit_desc_[]CONDUIT_NAME="  CONDUIT_DESC m4_substr([                                                  ],len(CONDUIT_DESC))$_conduit_flagstr"
   fi 
-  ifelse(CONDUIT_IMPLEMENTED,[yes],[],[
+  ifelse(CONDUIT_IMPLEMENTED_HELP,[no],[
     popdef([GASNET_SUPPRESSHELP])
   ])
   popdef([CONDUIT_IMPLEMENTED])
+  popdef([CONDUIT_IMPLEMENTED_HELP])
   popdef([CONDUIT_NAME])
   popdef([CONDUIT_UPPERNAME])
   popdef([CONDUIT_DESC])
@@ -2693,7 +2676,7 @@ AC_DEFUN([CONDUIT_OUTPUT],[
   if test "$_conduit_enabled_[]$1" = "yes" ; then
     CONDUITS="$CONDUITS $1"
   fi
-  if test "$_conduit_implemented_[]$1" = "yes" ; then
+  if test "$_conduit_list_[]$1" = "yes" ; then
     echo "$_conduit_desc_[]$1" >> $CONDUIT_LIST
   fi
 ])
@@ -2906,7 +2889,9 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
       ;;
     Cray)
      case "$target_cpu" in
-      x86_64)   MISC_CXXFLAGS="-hnomessage=236:3185 -hexceptions -hnew_for_init" ;; # XT, XE, XK, XC, etc.
+      x86_64) # XT, XE, XK, XC, etc.
+                CXXDEBUGFLAGS="-g -O0"   # consistent with CCDEBUGFLAGS
+                MISC_CXXFLAGS="-hnomessage=236:3185 -hexceptions -hnew_for_init" ;;
       *)        AC_MSG_ERROR(Cray C++ compiler for unknown target CPU) ;;
      esac ;;
     Pathscale)  GASNET_PATHSCALE_VERSION_CHECK(CXX)
@@ -2923,7 +2908,7 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
     ;;
     Clang)
        CXXOPTFLAGS="-O3"
-       CXXDEBUGFLAGS="-g" 
+       CXXDEBUGFLAGS="-g -O0" # consistent with CCDEBUGFLAGS
     ;;
   esac  
   if test "$BUILDCONFIG" = "optimize" ; then
@@ -3026,7 +3011,7 @@ fi
 #---------------------------------------------------------------------------------------------------------------
 # UDP/AMUDP Configuration
 CONDUIT_BEGIN(udp,yes,[Portable UDP/IP conduit (udp)])
-if test $enabled_udp = yes; then
+if test "$enabled_udp" = yes; then
  if test "$have_cxx" = yes; then
   # detect libraries necessary for udp-* backends
   GASNET_PUSHVAR(LIBS,"")
@@ -3340,7 +3325,7 @@ AM_CONDITIONAL(USE_MPI, test "$have_mpi" = yes)
 # SMP configuration
 
 CONDUIT_BEGIN(smp,yes,[Portable SMP-loopback conduit (smp)])
-if test $enabled_smp = yes; then
+if test "$enabled_smp" = yes; then
   if test x"$with_pshm" != xno; then
     dnl TODO: factor socket related probes
     AC_CHECK_HEADERS(sys/socket.h)
@@ -3429,200 +3414,6 @@ fi
 AC_SUBST(SMP_LIBS)
 CONDUIT_END([test "$enabled_smp" = yes])
 AM_CONDITIONAL(USE_SMP_CONDUIT, test "$enabled_smp" = yes)
-
-#--------------------------------------------------------------------------------------------------------
-# MXM configuration
-#
-
-CONDUIT_BEGIN(mxm,no,[Mellanox InfiniBand MXM conduit (mxm)])
-have_mxm=no
-if test "$enabled_mxm" = no; then
-    :
-elif test "$have_fork" = no; then
-    GASNET_MSG_WARN([mxm-conduit requires fork() ($fork_reason) for startup - disabling mxm])
-elif test "$have_pthread" = no; then
-    GASNET_MSG_WARN([mxm-conduit requires libpthread ($pthread_reason) - disabling mxm])
-else
-    #
-    # Either MXM was required explicitly, or we just need to probe for its existence
-    #
-
-    have_mxm=yes  # assume success
-
-    CONDUIT_HOME([MXM drivers], [mxm_dump_config], [/opt/mellanox/mxm], [include/mxm/api/mxm_api.h])
-    CONDUIT_CFLAGS
-    GASNET_ENV_DEFAULT(MXM_LIBS, -lmxm)
-    CONDUIT_LDFLAGS(mxm)
-    GASNET_SPLIT_LINKER_OPTS(MXM_LDFLAGS,MXM_LIBS)
-
-    # Try to compile and link a basic MXM program
-    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $MXM_CFLAGS")
-    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $MXM_LDFLAGS")
-    GASNET_PUSHVAR(LIBS,"$LIBS $MXM_LIBS")
-      GASNET_TRY_CACHE_LINK(for working MXM configuration, mxm_works, [
-            #include <mxm/api/mxm_api.h>
-            #if MXM_API < MXM_VERSION(2,0)
-            #include <mxm/api/mxm_addr.h>
-            #endif  
-        ], [{
-               unsigned long cur_ver = mxm_get_version();
-               mxm_error_t mxm_status = mxm_init(NULL,NULL);
-            }], [ : ], [ have_mxm=no; GASNET_ERR_SAVE() ] )
-    GASNET_POPVAR(CFLAGS)
-    GASNET_POPVAR(LDFLAGS)
-    GASNET_POPVAR(LIBS)
-
-    CONDUIT_PHYSMEM("2/3")
-
-    if test "$have_mxm" = yes; then
-      GASNET_MSG_WARN([mxm-conduit has been deprecated.  Please see the mxm-conduit README for more information.])
-    fi
-
-  CONDUIT_SPAWNER
-fi
-AC_SUBST(MXM_CFLAGS)
-AC_SUBST(MXM_LDFLAGS)
-AC_SUBST(MXM_LIBS)
-CONDUIT_END([test "$enabled_mxm$have_mxm" = yesyes])
-AM_CONDITIONAL(USE_MXM_CONDUIT, test "$enabled_mxm$have_mxm" = yesyes)
-
-#--------------------------------------------------------------------------------------------------------
-# PSM conduit
-#
-
-CONDUIT_BEGIN(psm,warn,[Intel OmniPath PSM2 conduit (psm)])
-have_psm=no
-if test "$enabled_psm" = no; then
-    :
-elif test "$have_pthread" = no; then
-    GASNET_MSG_WARN([psm-conduit requires libpthread ($pthread_reason) - disabling psm])
-else
-    #
-    # Either PSM was required explicitly, or we just need to probe for its existence
-    #
-
-    have_psm=yes  # assume success
-
-    CONDUIT_HOME([Omni-Path PSM2 drivers], [], [], [include/psm2.h])
-    CONDUIT_CFLAGS
-    GASNET_ENV_DEFAULT(PSM_LIBS, -lpsm2)
-    CONDUIT_LDFLAGS(psm2)
-    GASNET_SPLIT_LINKER_OPTS(PSM_LDFLAGS,PSM_LIBS)
-
-    if test "$have_psm" = yes; then
-      # Try to compile and link a basic PSM program
-      GASNET_PUSHVAR(CFLAGS,"$CFLAGS $PSM_CFLAGS")
-      GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PSM_LDFLAGS")
-      GASNET_PUSHVAR(LIBS,"$LIBS $PSM_LIBS")
-        GASNET_TRY_CACHE_LINK(for working PSM configuration, psm_works, [
-            #include <psm2.h>
-            #include <psm2_mq.h>
-            #include <psm2_am.h>
-        ], [{
-               int major = PSM2_VERNO_MAJOR;
-               int minor = PSM2_VERNO_MINOR;
-               psm2_error_t psm_status = psm2_init(&major,&minor);
-            }], [ : ], [ have_psm=no; GASNET_ERR_SAVE() ] )
-      GASNET_POPVAR(CFLAGS)
-      GASNET_POPVAR(LDFLAGS)
-      GASNET_POPVAR(LIBS)
-    fi
-
-    if test "$have_psm" = yes; then
-      GASNET_MSG_WARN([psm-conduit has been deprecated.  Please see the psm-conduit README for more information.])
-    fi
-
-  CONDUIT_SPAWNER
-fi
-AC_SUBST(PSM_CFLAGS)
-AC_SUBST(PSM_LDFLAGS)
-AC_SUBST(PSM_LIBS)
-CONDUIT_END([test "$enabled_psm$have_psm" = yesyes])
-AM_CONDITIONAL(USE_PSM_CONDUIT, test "$enabled_psm$have_psm" = yesyes)
-
-#--------------------------------------------------------------------------------------------------------
-# Portals4 Conduit
-
-CONDUIT_BEGIN(portals4,no,[Portable Portals4 conduit (portals4)])
-if test "$enabled_portals4" = yes; then
-  # Start by assuming we do have Portals4
-  have_portals4=yes
-
-  CONDUIT_HOME([Portals4 library], [yod], [], [include/portals4.h])
-  CONDUIT_CFLAGS
-  GASNET_ENV_DEFAULT(PORTALS4_LIBS, -lportals)
-  CONDUIT_LDFLAGS(portals)
-  GASNET_SPLIT_LINKER_OPTS(PORTALS4_LDFLAGS,PORTALS4_LIBS)
-
-  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $PORTALS4_CFLAGS $GASNET_THREAD_DEFINES")
-  GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PORTALS4_LDFLAGS")
-  GASNET_PUSHVAR(LIBS,"$LIBS $PORTALS4_LIBS $GASNET_THREAD_LIBS")
-
-  # Try to compile and link a basic Portals 4 program
-  GASNET_TRY_CACHE_LINK(for working Portals4 configuration, portals4_works, [
-      #include <portals4.h>
-  ], [{
-    PtlInit();
-  }], [ : ], [ have_portals4=no; GASNET_ERR_SAVE() ] )
-
-  # Try to compile and link Portals 4 PMI support
-  # TODO: this could be integrated with the conduit-independent PMI probe -PHH
-  portals4_pmi_cflags="-I$PORTALS4_HOME/include/portals4 -DHAVE_PMI_H"
-  portals4_pmi_libs="-lportals_runtime"
-  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $portals4_pmi_cflags")
-  GASNET_PUSHVAR(LIBS,"$LIBS $portals4_pmi_libs")
-  GASNET_TRY_CACHE_LINK(for PMI support in Portals4 runtime library, portals4_pmi_works, [
-      #include <stddef.h>
-      #include <portals4/pmi.h>
-  ], [{
-      PMI_Init(NULL);
-  }], [
-      PORTALS4_CFLAGS="$PORTALS4_CFLAGS $portals4_pmi_cflags"
-      PORTALS4_LIBS="$PORTALS4_LIBS $portals4_pmi_libs"
-   ] )
-  GASNET_POPVAR(CFLAGS)
-  GASNET_POPVAR(LIBS)
-
-  GASNET_POPVAR(CFLAGS)
-  GASNET_POPVAR(LDFLAGS)
-  GASNET_POPVAR(LIBS)
-
-  max_md_size=0
-  GASNET_WITH([portals4-max-md-size],
-    [Log base 2 of the maximum size in bytes of a memory descriptor.  Should only be set for implementations which do not support binding all of virtual address space.],
-    [if test "$with_portals4_max_md_size" = "yes" ; then
-       max_md_size=0
-     else
-       max_md_size=$with_portals4_max_md_size
-     fi])
-    AC_DEFINE_UNQUOTED([GASNETC_PORTALS4_MAX_MD_SIZE], [$max_md_size],
-      [Log base 2 of the maximum size in bytes of a memory descriptor.  Set to 0 if MD can bind all of memory.])
-  max_va_size=0
-  GASNET_WITH([portals4-max-va-size],
-         [Log base 2 of the maximum size in bytes of the user virtual address space.  Should only be set for implementations which do not support binding all of virtual address space.],
-    [if test "$with_portals4_max_va_size" = "yes" ; then
-       max_va_size=0
-     else
-       max_va_size=$with_portals4_max_va_size
-     fi])
-    AC_DEFINE_UNQUOTED([GASNETC_PORTALS4_MAX_VA_SIZE], [$max_va_size],
-      [Log base 2 of the maximum size in bytes of the user virtual address space.  Set to 0 if MD can bind all of memory.])
-
-    if test \( $max_md_size -eq 0 -a $max_va_size -ne 0 \) -o \( $max_md_size -ne 0 -a $max_va_size -eq 0 \); then
-      AC_MSG_ERROR([If either --with-portals4-max-md-size or --with-portals4-max-va-size is set, both must be set.])
-    fi
-    if test $max_md_size -ge $max_va_size; then
-      max_md_size=0;
-      max_va_size=0;
-    fi
-dnl AS_IF([test $max_md_size -ne 0 -a $max_va_size -ne 0],
-dnl       [AC_MSG_NOTICE([Portals 4 address space size: $max_md_size, $max_va_size])])
-fi
-AC_SUBST(PORTALS4_CFLAGS)
-AC_SUBST(PORTALS4_LDFLAGS)
-AC_SUBST(PORTALS4_LIBS)
-CONDUIT_END([test "$enabled_portals4$have_portals4" = yesyes])
-AM_CONDITIONAL(USE_PORTALS4_CONDUIT, test "$enabled_portals4$have_portals4" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
 # IBV configuration
@@ -3718,6 +3509,11 @@ if test "$enabled_ibv" = yes; then
         AC_DEFINE(GASNETC_IBV_CONN_THREAD)
       fi
 
+    GASNET_IF_ENABLED(ibv-amrdma, [See ibv-conduit/README (disabled by default)], enabled_ibv_amrdma=yes, enabled_ibv_amrdma=no)
+    if test "$enabled_ibv_amrdma" = yes; then
+      AC_DEFINE(GASNETC_IBV_AMRDMA)
+    fi
+
     CONDUIT_SPAWNER
 
     gasnetc_ibv_max_hcas=2
@@ -3762,6 +3558,41 @@ if test "$enabled_ibv" = yes; then
         GASNET_MSG_ERROR([IBV XRC support was requested with --enable-ibv-xrc but is not available])
       fi
     fi
+
+      GASNET_IF_ENABLED_WITH_AUTO([ibv-odp],
+          [Enable/disable On Demand Paging (ODP) support in ibv-conduit (default is to probe)],
+          [enabled_ibv_odp="yes"; force_ibv_odp="yes"],
+          [enabled_ibv_odp="no"; AC_DEFINE(GASNETC_IBV_ODP_DISABLED)],
+          [enabled_ibv_odp="yes"])
+      if test "$enabled_ibv_odp" = yes; then
+        GASNET_PUSHVAR(CFLAGS,"$CFLAGS $IBV_CFLAGS $GASNET_THREAD_DEFINES")
+        GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $IBV_LDFLAGS")
+        GASNET_PUSHVAR(LIBS,"$LIBS $IBV_LIBS $GASNET_THREAD_LIBS")
+        GASNET_TRY_CACHE_LINK(for ibv ODP support, ibv_odp_support, [
+          #include <infiniband/verbs.h>
+          #include <infiniband/verbs_exp.h>
+        ], [
+          struct ibv_exp_device_attr attr;
+          attr.comp_mask = IBV_EXP_DEVICE_ATTR_ODP | IBV_EXP_DEVICE_ATTR_EXP_CAP_FLAGS;
+          int ret = ibv_exp_query_device(NULL, &attr);
+          int ok = (attr.exp_device_cap_flags & IBV_EXP_DEVICE_ODP) &&
+                   (attr.odp_caps.general_odp_caps & IBV_EXP_ODP_SUPPORT_IMPLICIT) &&
+                   (attr.odp_caps.per_transport_caps.rc_odp_caps & IBV_EXP_ODP_SUPPORT_READ) &&
+                   (attr.odp_caps.per_transport_caps.rc_odp_caps & IBV_EXP_ODP_SUPPORT_WRITE);
+          struct ibv_exp_reg_mr_in x;
+          x.exp_access = IBV_EXP_ACCESS_ON_DEMAND | IBV_EXP_ACCESS_LOCAL_WRITE;
+          x.length = IBV_EXP_IMPLICIT_MR_SIZE;
+          struct ibv_mr *mr = ibv_exp_reg_mr(&x);
+        ], [have_ibv_odp=yes], [have_ibv_odp=no])
+        GASNET_POPVAR(CFLAGS)
+        GASNET_POPVAR(LDFLAGS)
+        GASNET_POPVAR(LIBS)
+        if test "$have_ibv_odp$force_ibv_odp" = noyes; then
+          GASNET_MSG_ERROR([IBV ODP support was requested with --enable-ibv-odp but is not available])
+        elif test "$have_ibv_odp" = yes; then
+          AC_DEFINE(GASNETC_IBV_ODP)
+        fi
+      fi
   fi
 fi
 AC_SUBST(IBV_CFLAGS)
@@ -3916,6 +3747,9 @@ CONDUIT_BEGIN(gemini,yes,[Cray XE/XK Gemini conduit (gemini)])
 CONDUIT_DISALLOW_SEGMENT(everything)
 if test "$enabled_gemini" = yes; then
   GASNET_CHECK_GNI(Gemini)
+  if test "$have_gemini" = yes; then
+    GASNET_MSG_WARN([gemini-conduit has been deprecated.  Please see the gemini-conduit README for more information.])
+  fi
 fi
 CONDUIT_END([test "$enabled_gemini$have_gemini" = yesyes])
 AM_CONDITIONAL(USE_GEMINI_CONDUIT, test "$enabled_gemini$have_gemini" = yesyes)
@@ -3932,7 +3766,7 @@ AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
 #--------------------------------------------------------------------------------------------------------
 # PAMI configuration
 CONDUIT_BEGIN(pami,yes,[IBM BlueGene/Q / Power775 PAMI conduit (pami)])
-if test $enabled_pami = yes; then
+if test "$enabled_pami" = yes; then
   have_pami=yes
 
   if false ; then # just for help strings
@@ -4033,7 +3867,7 @@ AM_CONDITIONAL(USE_PAMI_CONDUIT, test "$enabled_pami$have_pami" = yesyes)
 #--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
 
-CONDUIT_BEGIN(ofi,warn,[Portable OpenFabrics Interfaces conduit (ofi)])
+CONDUIT_BEGIN(ofi,g1,[Portable OpenFabrics Interfaces conduit (ofi)])
 if test "$enabled_ofi" = yes; then
   have_ofi=yes
 
@@ -4189,8 +4023,7 @@ EOF
 # Order portable conduits from LOW to HIGH precedence, clients use order to select defaults
 
 CONDUIT_OUTPUT(smp)
-CONDUIT_OUTPUT(ofi)      dnl Not currently the best choice for any hardware
-CONDUIT_OUTPUT(portals4) dnl Not currently the best choice for any hardware
+CONDUIT_OUTPUT(ofi)      dnl Not currently supported in EX
 CONDUIT_OUTPUT(udp)
 CONDUIT_OUTPUT(mpi)      dnl Should be lower than udp for Ethernet, higher otherwise. How to reliably differentiate?
 
@@ -4203,9 +4036,7 @@ EOF
 # Order native conduits from LOW to HIGH precedence, clients use order to select defaults
 
 CONDUIT_OUTPUT(pami)    dnl Ensure pami-over-ib is lower than ibv
-CONDUIT_OUTPUT(mxm)     dnl deprecated, thus below ibv
 CONDUIT_OUTPUT(ibv)
-CONDUIT_OUTPUT(psm)
 CONDUIT_OUTPUT(gemini)
 CONDUIT_OUTPUT(aries)
 
@@ -4213,7 +4044,7 @@ CONDUIT_OUTPUT(aries)
 
 if test -z "$CONDUITS" ; then
   pushdef([COMMONMSG],[If you intend to use GASNet without network support, you must use the
-GASNet_Tools distribution instead (see http://gasnet.lbl.gov).
+GASNet_Tools distribution instead (see https://gasnet.lbl.gov).
 See the GASNet documentation for additional details.])
   if test "$enabled_auto_detect" = yes; then
     GASNET_MSG_ERROR([No network conduits were auto-detected.
@@ -5132,50 +4963,6 @@ dnl GASNET_TOOLSONLY_FALSE_BEGIN
 ########################################################################
 # Optional "third-party" libraries
 
-##                        FCA SUPPORT
-GASNET_IF_ENABLED_WITH_AUTO(fca,
-  [Enable/disable FCA for acceleration of collectives (ifdef([GASNET_BRANCH_1],[auto-detected],[default is no]))],
-  [enable_fca=yes], [enable_fca=no], ifdef([GASNET_BRANCH_1],[enable_fca=probe],[enable_fca=no]))
-
-have_fca=no
-if test "$enable_fca" != "no"; then
-  GASNET_PACKAGE_HOME([FCA],[FCA drivers],[fca_config],[/opt/mellanox/fca],[include/fca/fca_api.h])
-  GASNET_PACKAGE_CFLAGS([FCA],[],0)
-  GASNET_PACKAGE_LDFLAGS([FCA],[fca],[],0)
-  FCA_LIBS='-lfca'
-  GASNET_SPLIT_LINKER_OPTS(FCA_LDFLAGS,FCA_LIBS)
-
-  # Try to compile and link a basic FCA program
-  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $FCA_CFLAGS")
-  GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $FCA_LDFLAGS")
-  GASNET_PUSHVAR(LIBS,"$LIBS $FCA_LIBS")
-    GASNET_TRY_CACHE_LINK(for working FCA configuration, fca_works,
-      [#include <fca/fca_api.h>],
-      [{ struct fca_init_spec fca_spec;
-         fca_t *fca_context;
-         int rc = fca_init(&fca_spec, &fca_context);
-       }], [ have_fca=yes ], [ GASNET_ERR_SAVE() ] )
-  GASNET_POPVAR(CFLAGS)
-  GASNET_POPVAR(LDFLAGS)
-  GASNET_POPVAR(LIBS)
-fi
-if test "$have_fca" = yes; then
-    AC_DEFINE_UNQUOTED(GASNETI_FCA_HOME, "$FCA_HOME")
-    AC_DEFINE(GASNETI_FCA_ENABLED)
-elif test "$enable_fca" = yes; then
-    GASNET_MSG_ERROR([User requested --enable-fca but FCA support could not be found. Perhaps you need to pass --with-fca-home=/path/to/fca ?])
-else
-    FCA_CFLAGS=
-    FCA_LDFLAGS=
-    FCA_LIBS=
-fi
-FCA_ENABLED="$have_fca"
-AC_SUBST(FCA_ENABLED) # extracted by UPCR
-AM_CONDITIONAL(FCA_ENABLED, test "$have_fca" = "yes")
-AC_SUBST(FCA_CFLAGS) # extracted by UPCR
-AC_SUBST(FCA_LDFLAGS)
-AC_SUBST(FCA_LIBS)
-
 ##                        BLCR SUPPORT
 have_blcr=no
 pushdef([GASNET_SUPPRESSHELP],1)
@@ -5251,8 +5038,6 @@ dnl GASNET_TOOLSONLY_FALSE_END
 
 GASNET_FIX_EXEC(mpi-conduit/contrib/gasnetrun_mpi)
 GASNET_FIX_EXEC(ibv-conduit/contrib/gasnetrun_ibv)
-GASNET_FIX_EXEC(mxm-conduit/contrib/gasnetrun_mxm)
-GASNET_FIX_EXEC(psm-conduit/contrib/gasnetrun_psm)
 GASNET_FIX_EXEC(pami-conduit/contrib/gasnetrun_pami)
 GASNET_FIX_EXEC(gemini-conduit/contrib/gasnetrun_gemini)
 GASNET_FIX_EXEC(aries-conduit/contrib/gasnetrun_aries)
@@ -5272,14 +5057,13 @@ cat >>$CONDUIT_LIST <<EOF
   Pthreads support:       $have_pthread
   Segment config:         $segconfig
   PSHM support:           $with_pshm
-  FCA support:            $have_fca
   BLCR support:           $have_blcr
   Atomics support:        $atomics_config
 EOF
 else
 cat >>$CONDUIT_LIST <<EOF
  GASNet is configured in tools-only mode, with all network communication services disabled.
- For the full GASNet distribution, visit http://gasnet.lbl.gov
+ For the full GASNet distribution, visit https://gasnet.lbl.gov
 
  Misc Settings
  -------------
@@ -5331,8 +5115,6 @@ other/contrib/Makefile
 other/contrib/gasnet_trace
 other/firehose/Makefile
 other/firehose/firehose.mak
-other/fca/Makefile
-other/fca/fca.mak
 other/blcr/Makefile
 other/blcr/blcr.mak
 
@@ -5358,19 +5140,6 @@ ibv-conduit/Makefile
 ibv-conduit/conduit.mak
 ibv-conduit/contrib/Makefile
 ibv-conduit/contrib/gasnetrun_ibv
-
-mxm-conduit/Makefile
-mxm-conduit/conduit.mak
-mxm-conduit/contrib/Makefile
-mxm-conduit/contrib/gasnetrun_mxm
-
-psm-conduit/Makefile
-psm-conduit/conduit.mak
-psm-conduit/contrib/Makefile
-psm-conduit/contrib/gasnetrun_psm
-
-portals4-conduit/Makefile
-portals4-conduit/conduit.mak
 
 gemini-conduit/Makefile
 gemini-conduit/conduit.mak

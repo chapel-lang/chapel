@@ -445,6 +445,38 @@ void Expr::insertAfter(Expr* new_ast) {
   list->length++;
 }
 
+void Expr::insertAfter(Expr* e1, Expr* e2) {
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3) {
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4) {
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4, Expr* e5) {
+  insertAfter(e5);
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                       Expr* e5, Expr* e6) {
+  insertAfter(e6);
+  insertAfter(e5);
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+
 
 void Expr::insertBefore(AList exprs) {
   Expr* curr = this;

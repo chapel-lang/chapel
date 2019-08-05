@@ -1,23 +1,23 @@
-fasta3.chpl:88: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:16: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:16: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:16: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:16: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:17: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:17: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:17: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:17: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:18: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:18: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:18: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:18: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:19: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:19: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:19: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:19: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:20: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:20: warning: ascii is deprecated - please use string.byte instead
-fasta3.chpl:20: warning: ascii is deprecated - please use string.byte instead
+fasta3.chpl:88: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:16: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:16: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:16: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:16: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:17: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:17: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:17: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:17: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:18: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:18: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:18: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:18: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:19: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:19: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:19: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:19: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:20: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:20: warning: ascii is deprecated - please use string.toByte or string.byte
+fasta3.chpl:20: warning: ascii is deprecated - please use string.toByte or string.byte
 >ONE Homo sapiens alu
 GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA
 TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACT

@@ -5,7 +5,7 @@ borrowed MyClass
 borrowed MyClass
 in MyClass.deinit
 test2a
-in computeA borrowed MyClass {x = 0}
+in computeA owned MyClass {x = 0}
 back in test2a
 in MyClass.deinit
 test2b

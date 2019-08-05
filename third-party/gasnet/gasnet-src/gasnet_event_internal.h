@@ -136,9 +136,9 @@ enum {
 #define SET_EVENT_TYPE(op,idx,type) _SET_EVENT_TYPE((gasnete_op_t*)(op),idx,type)
 GASNETI_INLINE(_SET_EVENT_TYPE)
 void _SET_EVENT_TYPE(gasnete_op_t *op, unsigned int idx, uint8_t type) {
-  gasneti_assert(idx < GASNETE_OP_EVENTS);
+  gasneti_assert_uint(idx ,<, GASNETE_OP_EVENTS);
   gasneti_assert((EVENT_TYPE(op, idx) == 0) || (EVENT_TYPE(op, idx) == type));
-  gasneti_assert(type == (type & EVENT_TYPE_MASK));
+  gasneti_assert_uint(type ,==, (type & EVENT_TYPE_MASK));
   op->event[idx] = EVENT_LIVE_MASK | type;
 }
 
@@ -150,7 +150,7 @@ void _SET_EVENT_TYPE(gasnete_op_t *op, unsigned int idx, uint8_t type) {
 #define SET_EVENT_DONE(op,idx) _SET_EVENT_DONE((gasnete_op_t*)(op),idx)
 GASNETI_INLINE(_SET_EVENT_DONE)
 void _SET_EVENT_DONE(gasnete_op_t *op, unsigned int idx) {
-  gasneti_assert(idx < GASNETE_OP_EVENTS);
+  gasneti_assert_uint(idx ,<, GASNETE_OP_EVENTS);
   gasneti_assert(! EVENT_DONE(op, idx));
   // TODO-EX: OPT build could potentially replace "&= ..." with just "= 0".
   // This would be only for idx!=0, and may not work if there is a need
@@ -170,7 +170,7 @@ void _SET_EVENT_DONE(gasnete_op_t *op, unsigned int idx) {
 #if GASNET_DEBUG
   /* check an in-flight/complete eop */
   #define gasnete_eop_check(eop) do {                                \
-    gasneti_assert(OPTYPE(eop) == OPTYPE_EXPLICIT);                  \
+    gasneti_assert_uint(OPTYPE(eop) ,==, OPTYPE_EXPLICIT);           \
     gasnete_assert_valid_threadid((eop)->threadidx);                 \
   } while (0)
   // TODO-EX: type_free_iop occurs only when called via gasnete_free_threaddata()
@@ -185,15 +185,15 @@ void _SET_EVENT_DONE(gasnete_op_t *op, unsigned int idx) {
                    OPTYPE(iop) == gasnete_event_type_free_iop);\
     gasnete_assert_valid_threadid((iop)->threadidx);          \
     _temp = gasnete_op_atomic_read(&((iop)->completed_put_cnt), GASNETI_ATOMIC_RMB_POST); \
-    gasneti_assert((((iop)->initiated_put_cnt - _temp) & GASNETI_ATOMIC_MAX) < (GASNETI_ATOMIC_MAX/2)); \
+    gasneti_assert_uint((((iop)->initiated_put_cnt - _temp) & GASNETI_ATOMIC_MAX) ,<, (GASNETI_ATOMIC_MAX/2)); \
     _temp = gasnete_op_atomic_read(&((iop)->completed_get_cnt), GASNETI_ATOMIC_RMB_POST); \
-    gasneti_assert((((iop)->initiated_get_cnt - _temp) & GASNETI_ATOMIC_MAX) < (GASNETI_ATOMIC_MAX/2)); \
+    gasneti_assert_uint((((iop)->initiated_get_cnt - _temp) & GASNETI_ATOMIC_MAX) ,<, (GASNETI_ATOMIC_MAX/2)); \
   } while (0)
   extern void _gasnete_iop_check(gasnete_iop_t *iop);
   #define gasnete_event_check(_h) do { \
     gasneti_assert(_h != GEX_EVENT_INVALID);              \
     gasneti_assert(_h != GEX_EVENT_NO_OP);                \
-    gasneti_assert(gasneti_event_idx(_h) < GASNETE_OP_EVENTS); \
+    gasneti_assert_uint(gasneti_event_idx(_h) ,<, GASNETE_OP_EVENTS); \
     gasnete_op_t *_op = gasneti_event_op(_h);                  \
     switch (EVENT_TYPE(_op,0)) {                               \
       case gasnete_event_type_eop:                             \
@@ -383,8 +383,8 @@ gasnete_eop_t *_gasnete_eop_new(gasneti_threaddata_t * const thread) {
   {
     thread->eop_free = eop->next;
   #if GASNET_DEBUG
-    gasneti_assert(eop->threadidx == thread->threadidx);
-    gasneti_assert(eop->event[0] == gasnete_event_type_free_eop);
+    gasneti_assert_uint(eop->threadidx ,==, thread->threadidx);
+    gasneti_assert_uint(eop->event[0] ,==, gasnete_event_type_free_eop);
     eop->event[0] = gasnete_event_type_eop;
   #endif
   #ifdef _GASNETE_EOP_NEW_EXTRA
@@ -464,7 +464,7 @@ void gasnete_eop_prep_free(gasnete_eop_t *eop) {
   GASNETE_EOP_PREP_FREE_EXTRA(eop);
 #endif
 #if GASNET_DEBUG
-  gasneti_assert(eop->event[0] == gasnete_event_type_eop);
+  gasneti_assert_uint(eop->event[0] ,==, gasnete_event_type_eop);
   eop->event[0] = gasnete_event_type_pendingfree_eop;
 #endif
 }
@@ -481,7 +481,7 @@ void gasnete_eop_free(gasnete_eop_t *eop GASNETI_THREAD_FARG) {
   GASNETE_EOP_FREE_EXTRA(eop);
 #endif
 #if GASNET_DEBUG
-  gasneti_assert(eop->event[0] == gasnete_event_type_pendingfree_eop);
+  gasneti_assert_uint(eop->event[0] ,==, gasnete_event_type_pendingfree_eop);
   eop->event[0] = gasnete_event_type_free_eop;
 #endif
   gasneti_threaddata_t * const thread = gasnete_threadtable[eop->threadidx];

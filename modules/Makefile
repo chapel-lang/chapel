@@ -105,7 +105,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
-	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
@@ -124,7 +123,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedIters.chpl \
 	packages/TOML.chpl \
 	packages/UnorderedAtomics.chpl \
-	packages/UnorderedCopy.chpl
+	packages/UnorderedCopy.chpl \
+	packages/URL.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -150,6 +150,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelLocale.chpl            \
 	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
+	internal/Bytes.chpl                   \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \

@@ -24,12 +24,7 @@ module StringCasts {
   // T.parse(string), but we dont support methods on types yet. Ideally they
   // would use a tagged union return val as well.
 
-  //
-  // Type -- Foo.type:string
-  //
-  proc _cast(type t:string, type x)  param : string {
-    return __primitive("typeToString", x);
-  }
+  // SomeType:string or Foo.type:string is handled directly by compiler.
 
   //
   // Bool

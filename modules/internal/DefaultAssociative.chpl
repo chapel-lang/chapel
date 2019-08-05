@@ -23,6 +23,8 @@ pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
   use DSIUtil;
+  private use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
+  private use ChapelBase, ChapelLocks, IO;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
 
@@ -646,7 +648,7 @@ module DefaultAssociative {
     override proc dsiGetBaseDom() return dom;
   
     override proc clearEntry(idx: idxType) {
-      const initval: eltType;
+      var initval: eltType;
       dsiAccess(idx) = initval;
     }
 

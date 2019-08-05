@@ -938,6 +938,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   }
 }
 
+// usymExpr is the UnresolveSymExpr and sym is what we
+// have resolved it to with scope resolution.
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                      Symbol* sym) {
   FnSymbol* fn = toFnSymbol(sym);
@@ -945,16 +947,37 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   if (fn == NULL) {
     SymExpr* symExpr = NULL;
 
-    if (sym->hasFlag(FLAG_MANAGED_POINTER) && isTypeSymbol(sym)) {
-      AggregateType* at = toAggregateType(sym->type);
-      INT_ASSERT(at);
-      Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
-      INT_ASSERT(t);
-      symExpr = new SymExpr(t->symbol);
-    } else {
-      symExpr = new SymExpr(sym);
+    // Adjust class type symbols for generic management / generic nilability
+    if (isTypeSymbol(sym) && isClassLikeOrManaged(sym->type)) {
+      if (isDecoratedClassType(sym->type)) {
+        // Don't adjust already-decorated class types
+      } else if (isManagedPtrType(sym->type)) {
+        // e.g. 'owned' becomes 'owned with any nilability'
+        AggregateType* at = toAggregateType(sym->type);
+        INT_ASSERT(at);
+        Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
+        INT_ASSERT(t);
+        sym = t->symbol;
+      } else if (isClass(sym->type)) {
+        // e.g. 'MyClass' becomes 'MyClass with any management'
+
+        // TODO: remove constraint for user code only
+        if (usymExpr->getModule()->modTag == MOD_USER) {
+
+          // make MyClass mean generic-management unless
+          // --legacy-nilable-classes is passed.
+          bool defaultIsGenericHere = !fLegacyNilableClasses;
+          if (defaultIsGenericHere) {
+            // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+            ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+            Type* t = getDecoratedClass(sym->type, d);
+            sym = t->symbol;
+          }
+        }
+      }
     }
 
+    symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
 
     if (fWarnUnstable)
@@ -1016,7 +1039,7 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
 
   if (sym != NULL) {
     if (TypeSymbol* cts = toTypeSymbol(sym->defPoint->parentSymbol)) {
-      isAggr = isAggregateType(cts->type);
+      isAggr = isAggregateType(canonicalClassType(cts->type));
     }
   }
 
@@ -1090,7 +1113,7 @@ static void insertFieldAccess(FnSymbol*          method,
   }
 
   if (isTypeSymbol(sym) == true) {
-    AggregateType* at = toAggregateType(sym->type);
+    AggregateType* at = toAggregateType(canonicalClassType(sym->type));
     if (at != NULL && at->hasInitializers()) {
       dot = new SymExpr(sym);
     } else {
@@ -1301,6 +1324,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
       // The desired case.
       svar->outerVarSE = new SymExpr(ovar);
       insert_help(svar->outerVarSE, NULL, svar);
+      checkTypeParamTaskIntent(svar->outerVarSE);
     }
   } else {
     USR_FATAL_CONT(svar,
@@ -1482,7 +1506,7 @@ static void resolveEnumeratedTypes() {
 ************************************** | *************************************/
 
 //
-// Convert each "proc type C.myProc() ..." to, roughtly:
+// Convert each "proc type C.myProc() ..." to, roughly:
 // "proc type any.myProc() where isSubtype(this.type, C) ..."
 //
 static void adjustTypeMethodsOnClasses() {
@@ -1501,24 +1525,7 @@ static void adjustTypeMethodsOnClasses() {
     }
 
     // Update the type of 'this'.
-    thisArg->type = dtAny;
-
-    // The desired where-expression. Clean up this.type for isSubtype().
-    SET_LINENO(thisArg);
-    Expr* isSubtype = new_Expr(
-     "'is_subtype'(%S,'to borrowed class'('to non nilable class'(%S)))",
-     thisType->symbol, thisArg);
-
-    if (BlockStmt* where = fn->where) {
-      // If a where-clause already exists, augment it.
-      Expr* userWhere = where->body.last()->remove();
-      where->insertAtTail(new CallExpr("&&", isSubtype, userWhere));
-
-    } else {
-      fn->where = new BlockStmt(isSubtype);
-      insert_help(fn->where, NULL, fn);
-      fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
-    }
+    thisArg->type = getDecoratedClass(thisType, CLASS_TYPE_GENERIC);
   }
 }
 
@@ -1673,7 +1680,8 @@ static void lookup(const char*           name,
       if (fn != NULL && fn->_this) {
         // If currently in a method, the next scope up is anything visible
         // within the aggregate type
-        if (AggregateType* ct = toAggregateType(fn->_this->type)) {
+        if (AggregateType* ct =
+            toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols);
         }
       }
@@ -1857,7 +1865,7 @@ static Symbol* inType(const char* name, BaseAST* scope) {
   Symbol* retval = NULL;
 
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
+    if (AggregateType* ct = toAggregateType(canonicalClassType(ts->type))) {
       if (Symbol* sym = ct->getField(name, false)) {
         retval = sym;
 
@@ -2002,10 +2010,6 @@ static void buildBreadthFirstModuleList(
               // itself and its immediate parent.  Therefore, if the symbol
               // is private, we will not traverse it further and will merely
               // add it to the alreadySeen map.
-              // The same goes for private uses - the symbols made available
-              // via a private use are only available to the module with the
-              // use statement, and should otherwise be treated as though they
-              // do not exist.
               useToAdd = use->applyOuterUse(source);
 
               if (useToAdd                       != NULL &&
@@ -2021,7 +2025,11 @@ static void buildBreadthFirstModuleList(
                 (*alreadySeen)[useSE->symbol()].push_back(useToAdd);
               }
 
-            } else {
+            } else if (!use->isPrivate &&
+                       useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+              // Private uses should be skipped, but should not prevent us from
+              // traversing the module in a later use of it, if that later use
+              // is not private.
               (*alreadySeen)[useSE->symbol()].push_back(use);
             }
           }
@@ -2267,11 +2275,11 @@ static void resolveUnmanagedBorrows() {
 
           // Compute the decorated class type
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
           } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
@@ -2314,7 +2322,11 @@ static void resolveUnmanagedBorrows() {
               case CLASS_TYPE_MANAGED_NILABLE:
                 INT_FATAL("case not handled");
                 break;
-
+              case CLASS_TYPE_GENERIC:
+              case CLASS_TYPE_GENERIC_NONNIL:
+              case CLASS_TYPE_GENERIC_NILABLE:
+                INT_FATAL("case not handled");
+                break;
               // no default intentionally
             }
             INT_ASSERT(dt);
@@ -2356,6 +2368,66 @@ static void resolveUnmanagedBorrows() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void markUsedModule(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
+  // Do nothing if it's already in the set.
+  if (set.count(mod) != 0)
+    return;
+
+  // Add it to the set
+  set.insert(mod);
+
+  // Mark each used module as well
+  for_vector(ModuleSymbol, usedMod, mod->modUseList) {
+    markUsedModule(set, usedMod);
+  }
+
+  // Additionally, mark any parent modules
+  while (mod != NULL && mod->defPoint != NULL) {
+    mod = mod->defPoint->getModule();
+    if (mod != NULL)
+      markUsedModule(set, mod);
+  }
+}
+
+// Figure out if there are any modules that are not used at all.
+// If so, completely remove these modules from the tree.
+static void removeUnusedModules() {
+  std::set<ModuleSymbol*> usedModules;
+
+  markUsedModule(usedModules, stringLiteralModule);
+
+  markUsedModule(usedModules, ModuleSymbol::mainModule());
+
+  if (printModuleInitModule)
+    markUsedModule(usedModules, printModuleInitModule);
+
+  // Now remove any module not in the set
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (usedModules.count(mod) == 0) {
+      INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
+      mod->defPoint->remove();
+    }
+  }
+}
+
+static void detectUserDefinedBorrowMethods() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isMethod() && fn->name == astrBorrow) {
+      Type *thisType = fn->_this->type;
+      if (isClassLike(thisType) && 
+          !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+        USR_FATAL("Classes cannot define a method named \"borrow\"");
+      }
+    }
+  }
+}
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2392,4 +2464,8 @@ void scopeResolve() {
   cleanupExternC();
 
   resolveUnmanagedBorrows();
+
+  detectUserDefinedBorrowMethods();
+
+  removeUnusedModules();
 }

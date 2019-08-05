@@ -55,11 +55,11 @@ Known problems:
   to 32-bit datatypes on ILP32 platforms.  However, there are exceptions on both
   types of platform, many of which are compiler dependent.
   The most up-to-date information on this bug is maintained at:
-    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3727
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3727
   That bug report describes the problem in more detail.
 
 * See the GASNet Bugzilla server for details on other known bugs:
-  http://gasnet-bugs.lbl.gov/
+  https://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

@@ -1,10 +1,8 @@
 GASNet-EX ChangeLog
 -------------------
 
-  This archive represents a lightly-tested snapshot of a work-in-progress.
-
-  Many additional new features are coming soon, and are not yet reflected in this
-  archive. All new interfaces are subject to change without notice.
+  GASNet-EX is a work-in-progress.
+  Many features remain to be specified, implemented, and/or tuned.
 
   Feedback or questions on any matters related to the EX project are
   welcomed at: gasnet-devel@lbl.gov
@@ -17,7 +15,127 @@ GASNet-EX ChangeLog
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
   Users wishing to use other conduits are recommended to download the GASNet v1.x
-  distribution from http://gasnet.lbl.gov.
+  distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+06-14-2019: GASNet-EX 2019.6.0 Release
+
+* InfiniBand Verbs (ibv-conduit)
+  - NEW: Improved support for correct operation on multi-rail InfiniBand systems
+  - New envvar GASNET_USE_FENCED_PUTS controls the strictness of ordering
+    guarantees for put RMA completion on multi-rail hardware, addressing bug 3447.
+  - Compilation of AM-over-RDMA support is now disabled by default
+  - Improve error messages for some cases.
+
+* Cray uGNI aries-conduit
+  - The Aries Collective Engine, if available, is now used to accelerate
+    gex_Coll_BarrierNB().
+
+* Cray uGNI gemini-conduit
+  - This conduit is now DEPRECATED and will be removed in a future release.
+  - The aries-conduit remains supported and under active development.
+
+* GASNet-EX Spec v0.8:
+  - Add GASNET_HIDDEN_AM_CONCURRENCY_LEVEL
+  - The EX spec file has been renamed to docs/GASNet-EX.txt
+
+* Notable bugs fixed in this release:
+  - bug3880: XLC 16.1.x ICE compiling ibv-conduit for Power9
+  - bug3943: infrequent startup hang with PSHM and over 62 PPN
+  - bug3946: Improve gasnetrun support for CPU binding esp with Open MPI
+
+----------------------------------------------------------------------
+05-27-2019: GASNet-EX 2019.3.2 Release (bug fix release)
+
+* Notable bugs fixed in this release:
+  - bug3943: infrequent startup hang with PSHM and over 62 PPN
+
+----------------------------------------------------------------------
+03-15-2019: GASNet-EX 2019.3.0 Release
+
+* Legacy backward-compatibility layer:
+  - gasnet.h now implements gasnet_memset{,_nb,_nbi}
+  - gasnet.h now conditionally implements the unofficial var-arg gasnet_AM* fns
+
+* InfiniBand Verbs (ibv-conduit)
+  - Add support for non-default IB Partition Keys - see docs for GASNET_IBV_PKEY
+  - Fix compilation problem with alloca.h on FreeBSD 12.0
+  - Legacy support for Mellanox FCA has been removed
+
+* General and Misc.
+  - Removed outdated subdir license.txt files, where top-level license applies
+  - Reduce sub-line interleaving of diagnostic output, especially on smp-conduit
+
+* GASNet tools (spec v1.13)
+  - New define GASNETT_SET_AFFINITY_SUPPORT
+  - gasnett_set_affinity() now returns zero on success or non-zero otherwise.
+
+* Configure and Build
+  - Updated handling for cache line size, see --with-cache-line-bytes
+
+* MPI-based job-launch (mpi-spawner)
+  - update logic for IBM's jsrun
+
+* Notable bugs fixed in this release:
+  - bug3693: Reduce segment registration failures due to insufficient /dev/shm
+  - bug3829: Co-located segment probe failures
+  - bug3805: Fix issues with 64-bit SPARC assembly
+  - bug3834: GASNet ctype wrappers break for C++ clients
+  - bug3853: ibv-conduit AM hang under heavy load
+  - bug3854: Fix assertion failure in gex_TM_Split
+  - bug3856: Improved crash behavior on Cygwin with multi-threading
+  - bug3858: Fix assertion failure in pmi-spawner
+  - bug3866: Fix potential x86 timer calibration issue
+  - bug3873: gasnetrun w/mpi-spawner losing exit code in some configs
+
+----------------------------------------------------------------------
+12-17-2018: GASNet-EX 2018.12.0 Beta release
+
+* InfiniBand Verbs (ibv-conduit)
+  - Mellanox On-Demand Pinning (ODP) feature now replaces explicit out-of-segment 
+    memory registration on systems with appropriate hardware/driver support.
+    This resolves bug 495 for clients using SEGMENT_FAST with ODP support.  
+    Note that ODP support may interact badly with improper job shutdown 
+    (see "GASNet exit" section of README for more information).
+  - Add startup checks for required HCA homogeneity properties
+
+* GASNet-EX Spec v0.7:
+  - Barriers initiated using gex_Coll_BarrierNB() are now permitted to
+    overlap with collectives on the same team (including other barriers).
+
+* Collective Operations
+  - Improve serial overheads for out-of-segment collectives
+  - Improve congestion tolerance for some cases
+  - Improve scalability of large or out-of-segment broadcasts
+
+* Cray uGNI (gemini- and aries-conduits)
+  - Now tolerate unequal GASNET_DOMAIN_COUNT in multi-domain mode
+
+* General and Misc.
+  - New GASNET_CATCH_EXIT envvar improves interop with tools like CrayPat
+  - Most fatal errors now include the process rank
+  - Other minor improvements to fatal error paths
+
+* GASNet tools
+  - New define GASNETT_THREAD_SINGLE selects single-threaded build
+
+* Configure and Build
+  - cross-configure scripts can now optionally be run without copying them to
+    the source directory, by setting $SRCDIR to indicate the source directory.
+
+* SSH-based job-launch (ssh-spawner)
+  - Improve error checking and reporting
+
+* Platform support/portability
+  - Cray X{C,E,K}: Correct default cache line padding size
+
+* Notable bugs fixed in this release:
+  - bug3815: XPMEM incompatibility with gprof
+  - bug3812: Intermittent mmap failures at startup: cannot allocate memory
+  - bug3803: gasnetrun_* -N command-line support for Open MPI 3.X
+  - bug3797: invalid asm on Solaris/SPARC 
+  - bug3796: Fix LDFLAGS/LIBS processing for library names
+  - bug3790: ibv-conduit AM flow-control hangs with multiple HCAs
 
 ----------------------------------------------------------------------
 09-26-2018: GASNet-EX 2018.9.0 Release
@@ -36,12 +154,21 @@ GASNet-EX ChangeLog
   - Adjust the default GASNET_GNI_{PUT,GET}_FMA_RDMA_CUTOVER thresholds that
     control the GNI-level protocol selection on aries for GASNet RMA
 
+* InfiniBand Verbs (ibv-conduit)
+  - Multi-rail support is disabled by default, due to bug 3447
+
+* General and Misc.
+  - Performance tests now default to in-segment memory (see --help)
+  - Average values in STATS now output as floating-point, instead of rounding
+  - Silence harmless library compile warnings from gcc 8.*
+
 * Configure and Build
   - Improve configure-time handling of non-EX conduits
 
 * Platform support/portability
   - Improvements to internal logic for handling thread data on platforms
     lacking native register-level support for thread data
+  - Internal AM handler dispatch code is now strictly C spec compliant
 
 * Collective Operations
   - Add initial reference implementation of ReduceToAll
@@ -49,6 +176,7 @@ GASNet-EX ChangeLog
     and has no limit on vector length for reductions on built-in types.
 
 * Notable bugs fixed in this release:
+  - bug3742: Atomic CAS failures on PPCle+{pgi,clang}
   - bug3783: broken DEBUG check in gex_AD_Create for sub-teams
   - bug3788: aries-conduit offloaded atomics defect with sub-teams
 
@@ -65,7 +193,7 @@ GASNet-EX ChangeLog
   - Rename gex_NbrhdInfo_t to gex_RankInfo_t
   - New GEX_FLAG_USES_GASNET1 flag enables gex_Client_Init() for legacy GASNet-1 calls
   - Minor clarifications throughout
-  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+  - Consult docs/GASNet-EX.txt for the detailed status of the evolving specification
      
 * Major new features implemented in this release:
   - Teams:
@@ -78,9 +206,9 @@ GASNet-EX ChangeLog
    Additional collective operations will be added in future releases
   - Non-contiguous RMA: Vector, Indexed, Strided (VIS)
     + VIS Puts now support notifying (potentially remote) peers of completion.
-      For details, see docs/GASNet-EX.spec for gex_VIS_SetPeerCompletionHandler
+      For details, see docs/GASNet-EX.txt for gex_VIS_SetPeerCompletionHandler
     + VIS Puts now offer local completion support.
-      For details, see docs/GASNet-EX.spec for GEX_FLAG_ENABLE_LEAF_LC
+      For details, see docs/GASNet-EX.txt for GEX_FLAG_ENABLE_LEAF_LC
   - gasnet_fwd.h now provides a dependency-free useful subset of the API
     declarations, suitable for inclusion into application-level code.
 
@@ -95,7 +223,7 @@ GASNet-EX ChangeLog
 
 * Notable bugs fixed in this release:
   - Bug3749: assertion failure in PSHM's NP-AM
-  - See fixes listed in the pending GASNet-1 1.30.2 ChangeLog below
+  - See fixes listed in the GASNet-1 1.32.0 ChangeLog below
 
 
 ----------------------------------------------------------------------
@@ -148,18 +276,18 @@ GASNet-EX ChangeLog
   - Specified gex_System_QueryNeighborhoodInfo() [EXPERIMENTAL]
   - Significant alteration to Segment Disposition flags [UNIMPLEMENTED]
   - Minor clarifications throughout
-  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+  - Consult docs/GASNet-EX.txt for the detailed status of the evolving specification
 
 * Major new features implemented in this release:
   - Remote Atomic operations: untuned, network-independent implementation 
-    + See docs/GASNet-EX.spec for details
+    + See docs/GASNet-EX.txt for details
   - Vector, Indexed, Strided extensions: untuned, network-independent implementation 
-    + See docs/GASNet-EX.spec for details 
+    + See docs/GASNet-EX.txt for details 
   - Cray Aries implementation specializations for the following features:
     + New AM Interfaces, Immediate Operations, Local Completion and Remote Atomics.
 
 * Notable bugs fixed in this release:
-  - See fixes listed in the pending GASNet-1 1.30.2 ChangeLog below
+  - See fixes listed in the GASNet-1 1.32.0 ChangeLog below
 
 ----------------------------------------------------------------------
 09-28-2017: GASNet-EX 2017.9.0 Release
@@ -168,7 +296,7 @@ GASNet-EX ChangeLog
   - Specified gex_System_QueryJob{Rank,Size}() [EXPERIMENTAL]
   - Specified gex_Segment_QueryBound() [EXPERIMENTAL]
   - Significant changes to Negotiated-Payload AM semantics
-  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+  - Consult docs/GASNet-EX.txt for the detailed status of the evolving specification
 
 * Major new features implemented in this release:
   - gex_Event_t is no longer thread-specific: one can safely pass a gex_Event_t
@@ -188,7 +316,7 @@ GASNet-EX ChangeLog
 * Other Known Limitations:
   - This release supports Microsoft Windows Subsystem for Linux, but is
     affected by an OS bug which was fixed starting in build 16278. 
-    Details: http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3588
+    Details: https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3588
 
 ----------------------------------------------------------------------
 06-30-2017: GASNet-EX 2017.6.0 Beta release
@@ -205,7 +333,7 @@ GASNet-EX ChangeLog
   - Job initialization interface rewritten to use EX objects
 
 * GASNet-EX Spec v0.1:
-  - Consult docs/GASNet-EX.spec for the detailed status of the evolving specification
+  - Consult docs/GASNet-EX.txt for the detailed status of the evolving specification
   - gasnetex.h is the new public header
   - Major new EX object types have been defined, including:
     + Client - an instance of the client interface to the GASNet library
@@ -232,25 +360,6 @@ Note some entries below do not apply to the EX branch.
 ----------------------------------------------------------------------
 GASNet-1 ChangeLog 
 ------------------
-----------------------------------------------------------------------
-09-26-2018: pending work @06f79b2
-
-* InfiniBand Verbs (ibv-conduit)
-  - Multi-rail support is disabled by default, due to bug 3447
-
-* General and Misc.
-  - Performance tests now default to in-segment memory (see --help)
-  - Average values in STATS now output as floating-point, instead of rounding
-  - Fix bug 3742: Atomic CAS failures on PPCle+{pgi,clang}
-  - Silence harmless library compile warnings from gcc 8.*
-
-* Platform support/portability
-  - Improvements to internal logic for handling thread data on platforms
-    lacking native register-level support for thread data.
-  - Internal AM handler dispatch code is now strictly C spec compliant
-  - Fix bug 3806, providing support for -N option to gasnetrun_* scripts
-    when mpirun from Open MPI 3.x is used for job launch.
-
 ----------------------------------------------------------------------
 07-20-2018: Release 1.32.0
 
@@ -335,6 +444,7 @@ GASNet-1 ChangeLog
   - Add a git hash "watermark" to libraries
   - Warning enable flags are removed from GASNET_C(XX)FLAGS and friends. 
     The flags remain available in GASNET_DEVWARN_C(XX)FLAGS for opt-in.
+  - configure --disable-smp-safe is now deprecated. The default is enable-smp-safe.
 
 * Removal of unmaintained platform support
   - This release no longer supports the following platforms:
@@ -366,7 +476,7 @@ GASNet-1 ChangeLog
           --{en,dis}able-gni-multi-domain
           --{en,dis}able-gni-udreg
   - NOTE to users of PrgEnv-cray: there is a known bug in CCE-8.6 that leads to
-    errors when linking libgasnet.  See bug 3589 at http://gasnet-bugs.lbl.gov
+    errors when linking libgasnet.  See bug 3589 at https://gasnet-bugs.lbl.gov
     for the most complete and up-to-date details.
 
 * InfiniBand Verbs (ibv-conduit)
@@ -893,7 +1003,7 @@ GASNet-1 ChangeLog
 * General
   - Several fixes for missing or incorrect PowerPC memory fences
   - GASNet development now takes place in a public repository.
-    See http://bitbucket.org/berkeleylab/gasnet
+    See https://bitbucket.org/berkeleylab/gasnet
   - Numerous small changes for the switch from CVS to Git
 
 * Removal of unmaintained platform support
@@ -1548,7 +1658,7 @@ GASNet-1 ChangeLog
 * Misc changes:
   - Improved checking for randomized Linux VM spaces, which inhibit
     the ability to provide GASNET_ALIGNED_SEGMENTS
-  - Numerous bug fixes, see http://gasnet-bugs.lbl.gov for details
+  - Numerous bug fixes, see https://gasnet-bugs.lbl.gov for details
 
 ----------------------------------------------------------------------
 09-13-2007 : Release 1.9.6 (Cray XT only beta release)
@@ -1586,7 +1696,7 @@ GASNet-1 ChangeLog
   - Add new features GASNET_FREEZE_SIGNAL and GASNET_BACKTRACE_SIGNAL
     which allow a user to asynchronously freeze a process or print a backtrace
   - Many, many bug fixes, for both specific conduits and general platform
-    portability. See http://gasnet-bugs.lbl.gov for complete details.    
+    portability. See https://gasnet-bugs.lbl.gov for complete details.    
 
 * InfiniBand/VAPI:
   - New AM-over-RDMA optimization significantly improves performance of small AMs
@@ -1619,7 +1729,7 @@ GASNet-1 ChangeLog
   - Barrier algorithm can now be selected at runtime using GASNET_BARRIER 
   - Standardize and simplify our preprocessor platform detection logic system-wide
   - Many, many bug fixes, for both specific conduits and general platform
-    portability. See http://gasnet-bugs.lbl.gov for complete details.    
+    portability. See https://gasnet-bugs.lbl.gov for complete details.    
 
 * GASNet tools support:
   - Add a conduit-independent library implementing the GASNet portability tools - 
@@ -1701,7 +1811,7 @@ GASNet-1 ChangeLog
       all environment variables in use      
     - Improve the robustness and quality of GASNet's automatic heap corruption detection 
     - Many, many bug fixes, for both specific conduits and general platform
-      portability. See http://gasnet-bugs.lbl.gov for complete details.    
+      portability. See https://gasnet-bugs.lbl.gov for complete details.    
       
 * Myrinet/GM:
     - gm-conduit now provides interoperability with MPI.

@@ -331,7 +331,7 @@ class StencilArr: BaseRectangularArr {
   var dom: unmanaged StencilDom(rank, idxType, stridable, ignoreFluff);
   var locArr: [dom.dist.targetLocDom] unmanaged LocStencilArr(eltType, rank, idxType, stridable);
   pragma "local field"
-  var myLocArr: unmanaged LocStencilArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocStencilArr(eltType, rank, idxType, stridable)?;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -351,7 +351,7 @@ class LocStencilArr {
   type idxType;
   param stridable: bool;
   const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: chpl_LocalSpinlock;
@@ -1052,7 +1052,7 @@ override proc StencilArr.dsiDestroyArr() {
 
 
 inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
-  return myLocArr.this(i);
+  return myLocArr!.this(i);
 }
 
 //
@@ -1064,6 +1064,7 @@ inline
 proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
   local {
     if myLocArr != nil {
+      const myLocArr = this.myLocArr!; // indicate it is not nil
       if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
         if myLocArr.locDom.contains(idx) then return myLocArr.this(idx);
@@ -1082,6 +1083,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {
     if myLocArr {
+      const myLocArr = this.myLocArr!; // indicate it is not nil
       if boundsChecking {
         if !dom.wholeFluff.contains(i) {
           halt("array index out of bounds: ", i);
@@ -1098,16 +1100,17 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
           }
           myLocArr.locRADLock.unlock();
         }
-        if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.lockRAD(rlocIdx);
-          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-            myLocArr.locRAD.RAD(rlocIdx) =
+        const locRAD = myLocArr.locRAD!;
+        if locRAD.RAD(rlocIdx).blk == SENTINEL {
+          locRAD.lockRAD(rlocIdx);
+          if locRAD.RAD(rlocIdx).blk == SENTINEL {
+            locRAD.RAD(rlocIdx) =
               locArr(rlocIdx).myElems._value.dsiGetRAD();
           }
-          myLocArr.locRAD.unlockRAD(rlocIdx);
+          locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD!;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedData != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(i);
@@ -1214,11 +1217,12 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // that we can use the local block below
     //
     if arrSection.locale.id != here.id then
-      arrSection = myLocArr;
+      arrSection = myLocArr!;
 
     local {
-      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type;
-      ref myElems = narrowArrSection.myElems;
+      const narrowArrSection =
+        __primitive("_wide_get_addr", arrSection):(arrSection.type?);
+      ref myElems = narrowArrSection!.myElems;
       for i in myFollowThisDom do yield myElems[i];
     }
   } else {
@@ -1776,7 +1780,7 @@ proc StencilArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
     if myLocArr != nil then
-      return myLocArr.locDom.myBlock;
+      return myLocArr!.locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable);
     return d;

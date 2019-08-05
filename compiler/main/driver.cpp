@@ -146,6 +146,7 @@ bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fLegacyNilableClasses = true;
+bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
 bool fNoInferLocalFields = false;
 bool fReplaceArrayAccessesWithRefTemps = false;
@@ -192,7 +193,6 @@ bool fIgnoreLocalClasses = false;
 bool fLifetimeChecking = true;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
-bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
@@ -542,7 +542,11 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     llvmPrintIrStageNum = llvmStageNum::BASIC;
 
-  addNameToPrintLlvmIr(arg);
+  std::vector<std::string> fNames;
+  splitString(std::string(arg), fNames, ",");
+  for (std::size_t i = 0; i < fNames.size(); ++i) {
+    addNameToPrintLlvmIr(fNames[i].c_str());
+  }
 }
 
 static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
@@ -1057,8 +1061,8 @@ static ArgumentDescription arg_desc[] = {
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
  {"legacy-nilable-classes", ' ', NULL, "Allow all variables of class type to store nil", "N", &fLegacyNilableClasses, NULL, NULL},
+ {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
- {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -1321,14 +1325,6 @@ static void setupChplGlobals(const char* argv0) {
   setChapelEnvs();
 }
 
-static void postStackCheck() {
-  if (!fNoStackChecks && fUserSetStackChecks) {
-    if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
-      USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
-    }
-  }
-}
-
 static void postTaskTracking() {
   if (fEnableTaskTracking) {
     if (strcmp(CHPL_TASKS, "fifo") != 0) {
@@ -1463,8 +1459,6 @@ static void postprocess_args() {
   postVectorize();
 
   postTaskTracking();
-
-  postStackCheck();
 
   setMultiLocaleInterop();
 

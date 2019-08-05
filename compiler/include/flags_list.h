@@ -103,6 +103,7 @@ symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 
 // Flag for temporaries created for default values
 symbolFlag( FLAG_DEFAULT_ACTUAL, npr, "default actual temp", ncm)
+symbolFlag( FLAG_DEFAULT_ACTUAL_FUNCTION, npr, "default actual function", "applied to functions created for formal default values")
 
 // Enable override for default-intent for types defined in terms of record/class
 symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The default intent for this type is ref")
@@ -163,6 +164,7 @@ symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 // into loop index variables.
 symbolFlag( FLAG_INDEX_OF_INTEREST , npr, "an _indexOfInterest or chpl__followIdx variable" , ncm )
 symbolFlag( FLAG_INIT_COPY_FN,  ypr, "init copy fn" , "init copy function" )
+symbolFlag( FLAG_INITIALIZED_LATER,  ypr, "initialized later" , "initialized in subsequent statement" )
 symbolFlag( FLAG_INIT_TUPLE, ypr, "tuple init fn", ncm)
 symbolFlag( FLAG_INLINE , npr, "inline" , ncm )
 symbolFlag( FLAG_INLINE_ITERATOR , npr, "inline iterator" , "iterators that are always inlined, e.g., leaders" )
@@ -245,6 +247,7 @@ symbolFlag( FLAG_NO_COPY_RETURN, ypr, "no copy return", ncm)
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )
 symbolFlag( FLAG_NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol" )
 symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not require autoCopy/autoDestroy" )
+symbolFlag( FLAG_NO_INIT , ypr, "no init", "Do not initialize this variable" )
 symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The instantiation limit is not checked for this function" )
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )

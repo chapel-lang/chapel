@@ -98,6 +98,9 @@ module ChapelBase {
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
   {
+    if isNonNilableClassType(a.type) && !chpl_legacyNilClasses {
+      compilerError("cannot assign to " + a.type:string + " from nil");
+    }
     __primitive("=", a, nil);
   }
 
@@ -115,6 +118,7 @@ module ChapelBase {
   //
   // equality comparison on primitive types
   //
+  inline proc ==(a: _nilType, b: _nilType) param return true;
   inline proc ==(a: bool, b: bool) return __primitive("==", a, b);
   inline proc ==(a: int(?w), b: int(w)) return __primitive("==", a, b);
   inline proc ==(a: uint(?w), b: uint(w)) return __primitive("==", a, b);
@@ -131,6 +135,7 @@ module ChapelBase {
     return false;
   }
 
+  inline proc !=(a: _nilType, b: _nilType) param return false;
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
   inline proc !=(a: int(?w), b: int(w)) return __primitive("!=", a, b);
   inline proc !=(a: uint(?w), b: uint(w)) return __primitive("!=", a, b);
@@ -840,7 +845,7 @@ module ChapelBase {
     }
   }
 
-  pragma "unsafe" // work around problems storting non-nilable classes
+  pragma "unsafe" // work around problems storing non-nilable classes
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 
@@ -1301,6 +1306,20 @@ module ChapelBase {
     return x;
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
+
+  inline proc _cast(type t:unmanaged!, x:_nilType)
+  {
+    if !chpl_legacyNilClasses {
+      compilerError("cannot cast nil to " + t:string);
+    }
+  }
+  inline proc _cast(type t:borrowed!, x:_nilType)
+  {
+    if !chpl_legacyNilClasses {
+      compilerError("cannot cast nil to " + t:string);
+    }
+  }
+
 
   // casting to unmanaged?, no class downcast
   inline proc _cast(type t:unmanaged?, x:borrowed?)
@@ -2131,6 +2150,7 @@ module ChapelBase {
   }
 
 
+  proc isGenericType(type t) param return __primitive("is generic type", t);
   proc isClassType(type t) param return __primitive("is class type", t);
   proc isNilableClassType(type t) param return __primitive("is nilable class type", t);
   proc isNonNilableClassType(type t) param return __primitive("is non nilable class type", t);

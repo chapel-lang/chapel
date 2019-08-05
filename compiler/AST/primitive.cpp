@@ -435,7 +435,10 @@ returnInfoCoerce(CallExpr* call) {
   if (t->symbol->hasFlag(FLAG_GENERIC)) {
     // Try to figure out what instantiation type we would use
     // and return that type.
-    t = getInstantiationType(call->get(1)->getValType(), t);
+    SymExpr* actualOne = toSymExpr(call->get(1));
+    SymExpr* actualTwo = toSymExpr(call->get(2));
+    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+                             t, actualTwo->symbol(), call);
   }
 
   return QualifiedType(t, QUAL_VAL);
@@ -456,6 +459,8 @@ returnInfoToUnmanaged(CallExpr* call) {
     t = dt->getCanonicalClass();
     if (dt->isNilable())
       decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
 
   if (AggregateType* at = toAggregateType(t)) {
@@ -484,7 +489,6 @@ returnInfoToBorrowed(CallExpr* call) {
     if (isClass(at))
       t = at->getDecoratedClass(decorator);
 
-  // Canonical class type is borrow type
   return QualifiedType(t, QUAL_VAL);
 }
 
@@ -955,6 +959,7 @@ initPrimitive() {
 
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_ITERATOR_RECORD_SET_SHAPE, "iterator record set shape", returnInfoVoid);
+  prim_def(PRIM_IS_GENERIC_TYPE, "is generic type", returnInfoBool);
   prim_def(PRIM_IS_CLASS_TYPE, "is class type", returnInfoBool);
   prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
   prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
@@ -1034,6 +1039,10 @@ initPrimitive() {
   // indicate optimization information.
   // That symbol includes OPT_INFO_... flags.
   prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
+
+  prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
+  prim_def(PRIM_GET_TEST_BY_NAME, "get test by name", returnInfoVoid);
+  prim_def(PRIM_GET_TEST_BY_INDEX, "get test by index", returnInfoVoid);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

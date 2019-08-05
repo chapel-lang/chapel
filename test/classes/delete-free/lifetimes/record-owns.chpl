@@ -28,7 +28,7 @@ class MyClass {
 record RMyClass {
   var c:owned MyClass;
   proc init() {
-    this.c = new owned(nil:unmanaged MyClass);
+    this.c = new owned(nil:unmanaged MyClass?);
   }
   proc init(in c:owned MyClass) {
     this.c = c;
@@ -40,7 +40,7 @@ proc =(ref lhs:RMyClass, ref rhs:RMyClass) {
 }
 
 // Globals
-var globalMyClass:owned MyClass;
+var globalMyClass:owned MyClass?;
 var globalRMyClass:RMyClass;
 
 // Test initialization block

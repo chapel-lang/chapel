@@ -261,8 +261,8 @@ module ZMQ {
 
   require "zmq.h", "-lzmq", "ZMQHelper/zmq_helper.h", "ZMQHelper/zmq_helper.c";
 
-  use Reflection;
-  use ExplicitRefCount;
+  private use Reflection;
+  private use ExplicitRefCount;
   use SysError;
 
   private extern proc chpl_macro_int_errno():c_int;
@@ -357,6 +357,10 @@ module ZMQ {
   private extern const ZMQ_IDENTITY: c_int;
 
   /*
+    .. warning::
+       :proc:`Socket.setsockopt()` and SUBSCRIBE have been deprecated.  Please
+       use :proc:`Socket.setSubscribe()` instead.
+
     The :proc:`Socket.setsockopt()` option value to specify the message filter
     for a :const:`SUB`-type :record:`Socket`.
    */
@@ -364,6 +368,10 @@ module ZMQ {
   private extern const ZMQ_SUBSCRIBE: c_int;
 
   /*
+    .. warning::
+       :proc:`Socket.setsockopt()` and UNSUBSCRIBE have been deprecated.  Please
+       use :proc:`Socket.setUnsubscribe()` instead.
+
     The :proc:`Socket.setsockopt()` option value to remote an existing message
     filter for a :const:`SUB`-type :record:`Socket`.
    */
@@ -380,6 +388,10 @@ module ZMQ {
   private extern const ZMQ_TYPE: c_int;
 
   /*
+    .. warning::
+       :proc:`Socket.setsockopt()` and LINGER have been deprecated.  Please use
+       :proc:`Socket.setLinger()` instead.
+
     The :proc:`Socket.setsockopt()` option value to specify the linger period
     for the associated :record:`Socket` object.
    */
@@ -503,38 +515,23 @@ module ZMQ {
       Create a ZMQ context.
      */
     proc init() {
+      this.classRef = new unmanaged ContextClass();
+      this.classRef.incRefCount();
       this.complete();
-      acquire(new unmanaged ContextClass());
     }
 
     pragma "no doc"
     proc init=(c: Context) {
+      this.classRef = c.classRef;
+      this.classRef.incRefCount();
       this.complete();
-      this.acquire(c.classRef);
     }
 
     pragma "no doc"
     proc deinit() {
-      release();
-    }
-
-    pragma "no doc"
-    proc acquire(newRef: unmanaged ContextClass) {
-      classRef = newRef;
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc acquire() {
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc release() {
       var rc = classRef.decRefCount();
       if rc == 1 {
         delete classRef;
-        classRef = nil;
       }
     }
 
@@ -554,9 +551,15 @@ module ZMQ {
 
   pragma "no doc"
   proc =(ref lhs: Context, rhs: Context) {
-    if lhs.classRef != nil then
-      lhs.release();
-    lhs.acquire(rhs.classRef);
+    // Retain
+    rhs.classRef.incRefCount();
+    // Release
+    var rc = lhs.classRef.decRefCount();
+    if rc == 1 {
+      delete lhs.classRef;
+    }
+    // Assign
+    lhs.classRef = rhs.classRef;
   }
 
   pragma "no doc"
@@ -597,6 +600,10 @@ module ZMQ {
     Note that this record contains private fields not listed below.
    */
   record Socket {
+    // Note: if we make this private but haven't exposed all the setsockopt
+    // options, users will need another way to work around that lack of support.
+    // Currently, they can work around it by defining their own extern version
+    // and using this field (see #13503)
     pragma "no doc"
     var classRef: unmanaged SocketClass;
 
@@ -610,40 +617,37 @@ module ZMQ {
 
     pragma "no doc"
     proc init=(s: Socket) {
+      this.classRef = s.classRef;
+      this.classRef.incRefCount();
       this.complete();
-      this.acquire(s.classRef);
     }
 
     pragma "no doc"
     proc init(ctx: Context, sockType: int) {
-      context = ctx;
+
+      // This function exists because initializers are confused
+      // by on statements.
+      proc makeClass(ctx: Context, sockType: int): unmanaged SocketClass {
+        // ideally we could return from on statement, removing
+        // need for this nilable variable.
+        var newClass: unmanaged SocketClass?;
+        on ctx.classRef.home {
+          newClass = new unmanaged SocketClass(ctx, sockType);
+          newClass!.incRefCount();
+        }
+        return newClass!;
+      }
+
+      this.classRef = makeClass(ctx, sockType);
+      this.context = ctx;
       this.complete();
-      on ctx.classRef.home do
-        acquire(new unmanaged SocketClass(ctx, sockType));
     }
 
     pragma "no doc"
     proc deinit() {
-      release();
-    }
-
-    pragma "no doc"
-    proc acquire(newRef: unmanaged SocketClass) {
-      classRef = newRef;
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc acquire() {
-      classRef.incRefCount();
-    }
-
-    pragma "no doc"
-    proc release() {
       var rc = classRef.decRefCount();
       if rc == 1 {
         delete classRef;
-        classRef = nil;
       }
     }
 
@@ -699,6 +703,12 @@ module ZMQ {
     }
 
     /*
+      .. warning::
+         setsockopt(), :const:`LINGER`, :const:`SUBSCRIBE`, and
+         :const:`UNSUBSCRIBE` have been deprecated.  Please use
+         :proc:`Socket.setLinger()`, :proc:`Socket.setSubscribe()` or
+         :proc:`Socket.setUnsubscribe()` instead.
+
       Set socket options;
       see `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_
 
@@ -709,6 +719,8 @@ module ZMQ {
       :arg value: the socket option value
      */
     proc setsockopt(option: int, value: ?T) where isPODType(T) {
+      compilerWarning("setsockopt is deprecated - please use e.g. setLinger " +
+                      "instead");
       on classRef.home {
         var copy: T = value;
         var ret = zmq_setsockopt(classRef.socket, option:c_int,
@@ -723,6 +735,8 @@ module ZMQ {
 
     pragma "no doc"
     proc setsockopt(option: int, value: string) {
+      compilerWarning("setsockopt is deprecated - please use e.g. setLinger " +
+                      "instead");
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, option:c_int,
                                  value.c_str():c_void_ptr,
@@ -808,6 +822,86 @@ module ZMQ {
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
           throw new owned ZMQError("Error in Socket.setLinger(): " + errmsg);
+        }
+      }
+    }
+
+    /*
+      Set the message filter for the specified ZMQ_SUB socket; see
+      `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_ under
+      ZMQ_SUBSCRIBE.
+
+      :arg value: The new message filter for the socket.
+
+      :throws ZMQError: Thrown when an error occurs setting the message filter.
+    */
+    proc setSubscribe(value: ?T) throws where isPODType(T) {
+      on classRef.home {
+        var copy: T = value;
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
+                                 c_ptrTo(copy): c_void_ptr,
+                                 numBytes(value.type)): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setSubscribe(): " + errmsg);
+        }
+      }
+    }
+
+    pragma "no doc"
+    proc setSubscribe(value: string) throws {
+      on classRef.home {
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
+                                 value.c_str(): c_void_ptr,
+                                 value.length:size_t): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setSubscribe(): " + errmsg);
+        }
+      }
+    }
+
+    /*
+      Remove an existing message filter for the specified ZMQ_SUB socket; see
+      `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_ under
+      ZMQ_UNSUBSCRIBE.
+
+      :arg value: The message filter to remove from the socket.
+
+      :throws ZMQError: Thrown when an error occurs setting the message filter.
+    */
+    proc setUnsubscribe(value: ?T) throws where isPODType(T) {
+      on classRef.home {
+        var copy: T = value;
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
+                                 c_ptrTo(copy): c_void_ptr,
+                                 numBytes(value.type)): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setUnsubscribe(): " +
+                                   errmsg);
+        }
+      }
+    }
+
+    pragma "no doc"
+    proc setUnsubscribe(value: string) throws {
+      on classRef.home {
+        var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
+                                 value.c_str(): c_void_ptr,
+                                 value.length:size_t): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          // It would be good to use a factory method for a ZMQError subclass,
+          // see #12397
+          throw new owned ZMQError("Error in Socket.setUnsubscribe(): " +
+                                   errmsg);
         }
       }
     }
@@ -1014,9 +1108,15 @@ module ZMQ {
   pragma "no doc"
   proc =(ref lhs: Socket, rhs: Socket) {
     if lhs.classRef == rhs.classRef then return;
-    if lhs.classRef != nil then
-      lhs.release();
-    lhs.acquire(rhs.classRef);
+    // Retain
+    rhs.classRef.incRefCount();
+    // Release
+    var rc = lhs.classRef.decRefCount();
+    if rc == 1 {
+      delete lhs.classRef;
+    }
+    // Assign
+    lhs.classRef = rhs.classRef;
   }
 
   /*

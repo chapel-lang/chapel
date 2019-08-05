@@ -20,6 +20,7 @@
 #include "CatchStmt.h"
 
 #include "AstVisitor.h"
+#include "DecoratedClassType.h"
 #include "stringutil.h"
 #include "TryStmt.h"
 #include "wellknown.h"
@@ -75,7 +76,7 @@ bool CatchStmt::isCatchall() const {
     return true;
 
   if (SymExpr* typeSe = toSymExpr(type()))
-    if (typeSe->symbol()->type == dtError)
+    if (canonicalClassType(typeSe->symbol()->type) == dtError)
       return true;
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))

@@ -83,6 +83,7 @@ doit(int);
 doit(complex);
 doit(c_int);
 doit(MyClass);
+doit(borrowed MyClass);
 doit(atomic int);
 doit(sync int);
 doit(single int);

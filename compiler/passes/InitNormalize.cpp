@@ -908,7 +908,7 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
 
   if (type != dtObject) {
     forv_Vec(FnSymbol, method, type->methods) {
-      if (strcmp(method->name, methodName) == 0) {
+      if (method && strcmp(method->name, methodName) == 0) {
         retval = true;
         break;
       }
@@ -1193,7 +1193,7 @@ static bool isAssignment(CallExpr* callExpr) {
 static bool isSimpleAssignment(CallExpr* callExpr) {
   bool retval = false;
 
-  if (callExpr->isNamedAstr(astrSequals) == true) {
+  if (callExpr->isNamedAstr(astrSassign) == true) {
     retval = true;
   }
 

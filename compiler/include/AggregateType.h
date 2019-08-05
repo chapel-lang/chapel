@@ -110,13 +110,6 @@ public:
 
   GenRet                      codegenClassStructType();
 
-  int                         codegenStructure(FILE*       outfile,
-                                               const char* baseoffset);
-
-  int                         codegenFieldStructure(FILE*       outfile,
-                                                    bool        nested,
-                                                    const char* baseOffset);
-
   bool                        setFirstGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index, Expr* insnPoint = NULL);
@@ -242,9 +235,9 @@ private:
   Symbol*                     substitutionForField(Symbol*    field,
                                                    SymbolMap& subs)      const;
 
-  AggregateType*              getCurInstantiation(Symbol* sym);
+  AggregateType*              getCurInstantiation(Symbol* sym, Type* symType);
 
-  AggregateType*              getNewInstantiation(Symbol* sym, Expr* insnPoint = NULL);
+  AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 

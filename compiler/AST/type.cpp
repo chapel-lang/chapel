@@ -747,6 +747,16 @@ void initPrimitiveTypes() {
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyManagement = createInternalType("_anyManagement", "_anyManagement");
+  dtAnyManagement->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyManagementNonNilable = createInternalType("_anyManagementNonNilable", "_anyManagementNonNilable");
+  dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyManagementNilable = createInternalType("_anyManagementNilable", "_anyManagementNilable");
+  dtAnyManagementNilable->symbol->addFlag(FLAG_GENERIC);
+
+
   dtMethodToken = createInternalType ("_MT", "_MT");
   dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
 
@@ -847,6 +857,10 @@ void initCompilerGlobals() {
   gLegacyNilClasses = new VarSymbol("chpl_legacyNilClasses", dtBool);
   gLegacyNilClasses->addFlag(FLAG_PARAM);
   setupBoolGlobal(gLegacyNilClasses, fLegacyNilableClasses);
+
+  gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
+  gOverloadSetsChecks->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);
 
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);
@@ -1027,14 +1041,21 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
-bool isClassLike(Type* t) {
-  return isDecoratedClassType(t) ||
-         t == dtBorrowed ||
+bool isBuiltinGenericClassType(Type* t) {
+  return t == dtBorrowed ||
          t == dtBorrowedNonNilable ||
          t == dtBorrowedNilable ||
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
          t == dtUnmanagedNonNilable ||
+         t == dtAnyManagement ||
+         t == dtAnyManagementNonNilable ||
+         t == dtAnyManagementNilable;
+}
+
+bool isClassLike(Type* t) {
+  return isDecoratedClassType(t) ||
+         isBuiltinGenericClassType(t) ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));
@@ -1046,7 +1067,9 @@ bool isClassLikeOrManaged(Type* t) {
 
 bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
-                            t->symbol->hasFlag(FLAG_DATA_CLASS));
+                            t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+                            t == dtCVoidPtr ||
+                            t == dtCFnPtr);
 }
 
 bool isClassLikeOrNil(Type* t) {
@@ -1155,6 +1178,18 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
       borrowType = at->getDecoratedClass(decorator);
 
   return borrowType;
+}
+
+AggregateType* getManagedPtrManagerType(Type* managedPtrType) {
+  INT_ASSERT(isManagedPtrType(managedPtrType));
+
+  if (DecoratedClassType* dt = toDecoratedClassType(managedPtrType))
+    managedPtrType = dt->getCanonicalClass();
+
+  AggregateType* at = toAggregateType(managedPtrType);
+  at = at->getRootInstantiation();
+
+  return at;
 }
 
 bool isSyncType(const Type* t) {

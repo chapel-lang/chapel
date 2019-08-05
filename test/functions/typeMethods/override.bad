@@ -1,3 +1,7 @@
-override.chpl:10: error: ambiguous call 'type D.myTypeMethod()'
-override.chpl:3: note: candidates are: _any.myTypeMethod()
-override.chpl:6: note:                 _any.myTypeMethod()
+internal error: UTI-MIS-0602 chpl version 1.20.0 pre-release (6fb62fa123)
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+

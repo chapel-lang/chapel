@@ -11,4 +11,4 @@ w.write(delim);
 
 var r = f.reader();
 var data : string;
-r.readUntil(data, delim.byte(1));
+r.readUntil(data, delim.toByte());

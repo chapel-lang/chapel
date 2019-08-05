@@ -167,7 +167,7 @@ module SharedObject {
 
     pragma "no doc"
     proc init(p : borrowed) {
-      compilerError("cannoti initialize shared from a borrow");
+      compilerError("cannot initialize shared from a borrow");
       this.init(_to_unmanaged(p));
     }
 
@@ -201,18 +201,6 @@ module SharedObject {
       // since it would refer to `this` as a whole here.
     }
 
-    proc init(pragma "nil from arg" p : unmanaged?) {
-      this.chpl_t = _to_borrowed(p.type);
-      var rc:unmanaged ReferenceCount = nil;
-      if p != nil then
-        rc = new unmanaged ReferenceCount();
-
-      this.chpl_p = _to_borrowed(p);
-      this.chpl_pn = rc;
-
-      this.complete();
-    }
-
     proc init(p: ?T)
     where isClass(T) == false &&
           isSubtype(T, _shared) == false &&
@@ -239,7 +227,7 @@ module SharedObject {
       if !isClass(p) then
         compilerError("shared only works with classes");
 
-      var rc:unmanaged ReferenceCount = nil;
+      var rc:unmanaged ReferenceCount? = nil;
 
       if p != nil then
         rc = new unmanaged ReferenceCount();

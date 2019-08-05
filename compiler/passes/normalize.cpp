@@ -858,9 +858,29 @@ class LowerIfExprVisitor : public AstVisitorTraverse
     virtual void exitIfExpr(IfExpr* node);
 };
 
+static bool isInsideDefExpr(Expr* expr) {
+  bool ret = false;
+
+  Expr* cur = expr->parentExpr;
+  while (cur != NULL) {
+    if (isDefExpr(cur)) {
+      ret = true;
+      break;
+    } else if (isBlockStmt(cur)) {
+      // OK to lower inside a BlockStmt because unlike a DefExpr we can insert
+      // temporaries.
+      break;
+    } else {
+      cur = cur->parentExpr;
+    }
+  }
+
+  return ret;
+}
+
 void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
   if (isAlive(ife) == false) return;
-  if (isDefExpr(ife->parentExpr)) return;
+  if (isInsideDefExpr(ife)) return;
   if (isLoopExpr(ife->parentExpr)) return;
 
   SET_LINENO(ife);
@@ -948,7 +968,7 @@ static void processSyntacticDistributions(CallExpr* call) {
     if (CallExpr* distCall = toCallExpr(call->get(1))) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
-          if (isDistClass(ts->type) == true) {
+          if (isDistClass(canonicalClassType(ts->type)) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW,
                 new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall->remove()));
 

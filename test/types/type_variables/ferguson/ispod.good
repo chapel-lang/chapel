@@ -3,6 +3,7 @@ int(16) : true
 int(64) : true
 complex(128) : true
 int(32) : true
+MyClass : true
 borrowed MyClass : true
 RAtomicT(int(64)) : false
 _syncvar(int(64)) : false

@@ -93,7 +93,7 @@ public:
   FnSymbol*               initFn;
   FnSymbol*               deinitFn;
 
-  Vec<ModuleSymbol*>      modUseList;
+  std::vector<ModuleSymbol*> modUseList;
 
   const char*             filename;
   const char*             doc;

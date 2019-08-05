@@ -363,7 +363,6 @@ CHPL_TASKS
         ============== ===================================================
         qthreads       use Sandia's Qthreads package
         fifo           use POSIX threads
-        massivethreads use U Tokyo's MassiveThreads package
         ============== ===================================================
 
    If ``CHPL_TASKS`` is not set it defaults to ``qthreads`` in all cases
@@ -607,29 +606,21 @@ CHPL_REGEXP
      ``CHPL_REGEXP`` to ``'none`` while the ``util/setchplenv.*`` versions
      leave it unset, resulting in the behavior described just above.
 
-
 .. _readme-chplenv.CHPL_AUX_FILESYS:
 
 CHPL_AUX_FILESYS
 ~~~~~~~~~~~~~~~~
    Optionally, the ``CHPL_AUX_FILESYS`` environment variable can be used to
-   request that runtime support for filesystems beyond the usual Linux one be
-   present.  Current options are:
+   request runtime support for certain filesystems.
 
-       ====== =================================================
+       ====== ======================================================
        Value  Description
-       ====== =================================================
+       ====== ======================================================
        none   only support traditional Linux filesystems
-       hdfs   also support HDFS filesystems using Apache Hadoop libhdfs
-       hdfs3  support for HDFS filesystems using Pivotal libhdfs3
-       curl   also support CURL as a filesystem interface
-       ====== =================================================
+       lustre enable I/O improvements specific to Lustre filesystems
+       ====== ======================================================
 
    If unset, ``CHPL_AUX_FILESYS`` defaults to ``none``.
-
-   See :ref:`readme-auxIO`, :chpl:mod:`HDFS`, and :chpl:mod:`Curl` for more
-   information about HDFS and CURL support.
-
 
 .. _readme-chplenv.CHPL_LLVM:
 

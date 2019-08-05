@@ -5,8 +5,8 @@ Using Chapel on Cray Systems
 ============================
 
 The following information is assembled to help Chapel users get up and running
-on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|, XK\
-|trade|, and CS\ |trade| series systems.
+on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|,
+XK\ |trade|, CS\ |trade|, and Shasta\ |trade| series systems.
 
 Support has been added for the Cray XC50\ |trade| system with ARM
 processors. This works the same as other Cray XC\ |trade| systems in
@@ -48,6 +48,83 @@ build Chapel from source, continue on to
 
 For information on obtaining and installing the Chapel module please
 contact your system administrator.
+
+
+--------------------------------------------------
+Getting Started with Chapel on Cray Shasta Systems
+--------------------------------------------------
+
+Chapel is available as a module for Cray Shasta systems.  It should be
+installed on your system already.  If it is not, contact your system
+administrator for information on obtaining and installing the Chapel
+module.
+
+To use Chapel with the default settings and confirm it is correctly
+installed, do the following:
+
+1) Load the Chapel module::
+
+     module load chapel
+
+
+2) Make sure you are using the Cray Gnu-based programming environment.
+   Unload any other PrgEnv first, if necessary. ::
+
+     module load PrgEnv-gnu
+
+
+3) Specify some interim settings.  We expect the need for these will
+   disappear soon, but for now they're required.  First, unload the
+   ``cray-libsci`` module, if it's loaded::
+
+     module unload cray-libsci
+
+   Then, set some environment variables::
+
+     export CHPL_LAUNCHER=slurm-srun
+     export CRAYPE_LINK_TYPE=dynamic
+     export LIBFABRIC_DIR=/opt/cray/libfabric/1.8.0a1-85f6e641a
+     export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
+
+4) Compile an example program like this::
+
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+
+
+5) Execute the resulting executable on 2 locales::
+
+     ./hello6-taskpar-dist -nl 2
+
+
+Note that currently the number of Chapel configurations available on
+Shasta systems is quite limited.  Only the following have been built
+into the module::
+
+  CHPL_TARGET_PLATFORM: cray-shasta
+  CHPL_TARGET_COMPILER: cray-prgenv-gnu
+  CHPL_TARGET_ARCH: x86_64
+  CHPL_TARGET_CPU: sandybridge
+  CHPL_LOCALE_MODEL: flat
+  CHPL_COMM: none, ofi
+  CHPL_TASKS: qthreads
+  CHPL_LAUNCHER: none
+  CHPL_TIMERS: generic
+  CHPL_UNWIND: none
+  CHPL_MEM: jemalloc
+  CHPL_ATOMICS: cstdlib
+    CHPL_NETWORK_ATOMICS: none, ofi
+  CHPL_GMP: none
+  CHPL_HWLOC: hwloc
+  CHPL_REGEXP: none
+  CHPL_LLVM: none
+  CHPL_AUX_FILESYS: none
+
+You may be able to build Chapel from source on a Shasta system if you do
+not have a module already.  Generally you should be able to follow the
+instructions below for building from source, but be advised that so far
+only the above configurations have been built.  Also, you'll probably
+find that the module and environment settings shown in 3) above will be
+required during the build.
 
 
 ----------------------------------------------

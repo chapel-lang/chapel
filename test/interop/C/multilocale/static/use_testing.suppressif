@@ -1,1 +1,5 @@
-CHPL_TARGET_PLATFORM != darwin
+#
+# These tests fail when CHPL_TASKS=fifo. For now, suppress them.
+# See: #13475
+#
+CHPL_TASKS==fifo

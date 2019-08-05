@@ -178,7 +178,7 @@ module Spawn {
     param locking:bool;
 
     pragma "no doc"
-    var home:locale;
+    var home:locale = here;
 
     /* The Process ID number of the spawned process */
     var pid:int(64);

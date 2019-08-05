@@ -66,8 +66,8 @@ int chpl_vdebug = 0;
 
 #define TID_STRING(buff, tid) (chpl_task_idToString(buff, CHPL_TASK_ID_STRING_MAX_LEN, tid))
 
-#define VDEBUG_GETPUT_FORMAT_NAMES "kind tv srcNodeID dstNodeID commTaskID addr raddr elemSize typeIndex length commID lineNumber fileno"
-#define VDEBUG_GETPUT_FORMAT_STRING "%s: %lld.%06ld %d %d %s %#lx %#lx %zd %d %zd %d %d %d\n"
+#define VDEBUG_GETPUT_FORMAT_NAMES "kind tv srcNodeID dstNodeID commTaskID addr raddr elemSize length commID lineNumber fileno"
+#define VDEBUG_GETPUT_FORMAT_STRING "%s: %lld.%06ld %d %d %s %#lx %#lx %zd %zd %d %d %d\n"
 
 int chpl_dprintf (int fd, const char * format, ...) {
   char buffer[2048]; 
@@ -157,7 +157,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     ru.ru_stime.tv_usec = 0;
   }
   chpl_dprintf (chpl_vdebug_fd,
-                "ChplVdebug: ver 1.3 nodes %d nid %d tid %s seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
+                "ChplVdebug: ver 1.4 nodes %d nid %d tid %s seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
                 chpl_numNodes, chpl_nodeID, TID_STRING(buff, startTask), now,
                 (long long) tv.tv_sec, (long) tv.tv_usec,
                 (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
@@ -305,7 +305,7 @@ void chpl_vdebug_pause (int tagno) {
 //        relevant as well.
 
 // Record>  nb_put: time.sec srcNodeId dstNodeId commTaskId addr raddr elemsize 
-//                  typeIndex length lineNumber fileName
+//                  length lineNumber fileName
 //
 
 void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
@@ -319,13 +319,13 @@ void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
                   VDEBUG_GETPUT_FORMAT_STRING, "nb_put",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
 
 // Record>  nb_get: time.sec dstNodeId srcNodeId commTaskId addr raddr elemsize 
-//                  typeIndex length lineNumber fileName
+//                  length lineNumber fileName
 //
 // Note: dstNodeId is node requesting Get
 
@@ -340,13 +340,13 @@ void cb_comm_get_nb (const chpl_comm_cb_info_t *info) {
                   VDEBUG_GETPUT_FORMAT_STRING, "nb_get",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
 
 // Record>  put: time.sec srcNodeId dstNodeId commTaskId addr raddr elemsize 
-//               typeIndex length lineNumber fileName
+//               length lineNumber fileName
 
 
 void cb_comm_put (const chpl_comm_cb_info_t *info) {
@@ -360,13 +360,13 @@ void cb_comm_put (const chpl_comm_cb_info_t *info) {
                   VDEBUG_GETPUT_FORMAT_STRING, "put",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
 
 // Record>  get: time.sec dstNodeId srcNodeId commTaskId addr raddr elemsize 
-//               typeIndex length lineNumber fileName
+//               length lineNumber fileName
 //
 // Note:  dstNodeId is for the node making the request
 
@@ -381,13 +381,13 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
                   VDEBUG_GETPUT_FORMAT_STRING, "get",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
 
 // Record>  st_put: time.sec srcNodeId dstNodeId commTaskId addr raddr elemsize 
-//                  typeIndex length lineNumber fileName
+//                  length lineNumber fileName
 
 void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
     if (chpl_vdebug) {
@@ -408,14 +408,14 @@ void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID, 
                   info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->srcaddr, (unsigned long) cm->dstaddr, cm->elemSize,
-                  cm->typeIndex, length, cm->commID, cm->lineno, cm->filename);
+                  length, cm->commID, cm->lineno, cm->filename);
     // printout srcstrides and dststrides and stridelevels and count?
   }
 
 }
 
 // Record>  st_get: time.sec dstNodeId srcNodeId commTaskId addr raddr elemsize 
-//                  typeIndex length lineNumber fileName
+//                  length lineNumber fileName
 //
 // Note:  dstNode is node making request for get
 
@@ -438,7 +438,7 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->dstaddr, (unsigned long) cm->srcaddr, cm->elemSize,
-                  cm->typeIndex, length, cm->commID, cm->lineno, cm->filename);
+                  length, cm->commID, cm->lineno, cm->filename);
     // print out the srcstrides and dststrides and stridelevels and count?
   }
 }

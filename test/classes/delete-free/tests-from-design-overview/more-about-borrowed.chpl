@@ -11,8 +11,8 @@ proc test1() {
   // The following are equivalent ways of declaring a borrow from x:
   var b1 = x.borrow();
   var b2: MyClass = x.borrow();
-  var b3 = x: MyClass; // Cast to borrow
-  var b4: MyClass = x; // Coerce to borrow
+  var b3 = x: borrowed MyClass; // Cast to borrow
+  var b4: borrowed MyClass = x; // Coerce to borrow
 
   writeln(b1.type:string);
   writeln(b2.type:string);

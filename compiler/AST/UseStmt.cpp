@@ -477,7 +477,8 @@ void UseStmt::trackMethods() {
       // Note: stores duplicates
       for_vector(AggregateType, t, types) {
         forv_Vec(FnSymbol, method, t->methods) {
-          methodsAndFields.push_back(method->name);
+          if (method != NULL)
+            methodsAndFields.push_back(method->name);
         }
 
         for_fields(sym, t) {

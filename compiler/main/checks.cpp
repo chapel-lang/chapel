@@ -606,6 +606,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
         case PRIM_COERCE:
+        case PRIM_GATHER_TESTS:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
           break;
@@ -787,7 +788,7 @@ checkFormalActualTypesMatch()
             // Exact match, so OK.
             continue;
 
-          if (isClass(formal->type))
+          if (isClassLikeOrPtr(formal->type))
             // dtNil can be converted to any class type, so OK.
             continue;
 

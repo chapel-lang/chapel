@@ -1,0 +1,122 @@
+this is a bytes
+this is a string
+this is a c_string
+
+Initializer tests
+bytes object from string: this is a string
+bytes object from c_string: this is a c_string
+bytes object from c_ptr: ABC
+
+Length/size tests
+16 must be 16
+18 must be 18
+3 must be 3
+16 must be 16
+18 must be 18
+3 must be 3
+
+Accessor tests
+A as _bytes
+B as _bytes
+C as _bytes
+65 as _bytes
+66 as _bytes
+67 as _bytes
+
+Iterator tests
+A as _bytes
+B as _bytes
+C as _bytes
+65 as uint(8)
+66 as uint(8)
+67 as uint(8)
+
+Basic functions
+Is emptyBytes empty: true
+Is emptyBytes space: false
+Is allWS space: true
+
+Casing
+Is allUpper all upper: true
+Is allLower all lower: true
+Is allDigit all digits: true
+Is allAlnum all alphanumeric: true
+Is allAlnum all upper: false
+Is allAlnum all lower: false
+Is allAlnum all digits: false
+Hello Chapel! is title: true
+Hello world! is title: false
+Hello Chapel! to title: Hello Chapel!
+Hello world! to title: Hello World!
+allLower.toUpper() :ABCDEFGHIJKLOMNPQRSTUVWXYZ
+allLower.toLower() :abcdefghijklomnpqrstuvwxyz
+allUpper.toUpper() :ABCDEFGHIJKLOMNPQRSTUVWXYZ
+allUpper.toLower() :abcdefghijklomnpqrstuvwxyz
+allDigit.toUpper() :0123456789
+allDigit.toLower() :0123456789
+
+Slice tests
+this -- the type is _bytes
+is a bytes -- the type is _bytes
+this is a bytes -- the type is _bytes
+bytes -- the type is _bytes
+
+Search tests
+true
+false
+false
+false
+false
+true
+3
+6
+2
+6
+3
+1
+3
+Make it plural these are bytes
+
+Test split no split
+Split 1: this is a bytes
+Test split no args
+Split 1: this
+Split 2: is
+Split 3: a
+Split 4: bytes
+Test split with args
+Split 1: th
+Split 2:  
+Split 3:  a bytes
+Test join -- bytes varargs
+dir1/dir2/file
+Test join -- homogeneous tuple of bytes
+dir1/dir2/file
+Test join -- array of bytes
+dir1/dir2/file
+Test strip
+Default:a 	 text
+Only space:
+  a 	 text
+
+Only leading:a 	 text
+
+Test partition
+(this is , a,  bytes)
+Test join -- iterable
+dir1/dir2/file
+
+writeln behavior
+Output 1
+wordword
+Output 2
+wordword
+Output 3
+word	word
+Output 4
+word
+word
+Output 5
+wordword
+End of writeln tests
+

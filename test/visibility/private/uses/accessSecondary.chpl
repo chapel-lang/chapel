@@ -3,5 +3,5 @@ use TypeDefiner; // same
 
 // Verifies that you cannot make use of secondary methods obtained via
 // another module's private use.
-var foo: Foo = new Foo(5);
+var foo: borrowed Foo = new Foo(5);
 foo.other();
