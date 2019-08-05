@@ -6,6 +6,6 @@ use blondie;
 var first: blondie;
 var second: blondie = blondie.orAnother;
 var third = blondie.oneDay;
-writeln(first + ", " + second + " I'm gonna find ya");
+writeln(first, ", ", second, " I'm gonna find ya");
 writeln("I'm gonna getcha getcha getcha getcha");
-writeln(third + ", maybe next week . . .");
+writeln(third, ", maybe next week . . .");

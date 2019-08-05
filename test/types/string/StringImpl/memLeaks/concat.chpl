@@ -5,12 +5,12 @@ module unitTest {
     inline proc fLocal(x) {
       const s: t = "s";
       if useExpr {
-        writeMe(s+x);
-        writeMe(x+s);
+        writeMe(s+x:string);
+        writeMe(x:string+s);
       } else {
-        const sx = s+x;
+        const sx = s+x:string;
         writeMe(sx);
-        const xs = x+s;
+        const xs = x:string+s;
         writeMe(xs);
       }
     }
@@ -19,12 +19,12 @@ module unitTest {
       const s: t = "s";
       on Locales[numLocales-1] {
         if useExpr {
-          writeMe(s+x);
-          writeMe(x+s);
+          writeMe(s+x:string);
+          writeMe(x:string+s);
         } else {
-          const sx = s+x;
+          const sx = s+x:string;
           writeMe(sx);
-          const xs = x+s;
+          const xs = x:string+s;
           writeMe(xs);
         }
       }

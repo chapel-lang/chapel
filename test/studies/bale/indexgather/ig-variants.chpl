@@ -78,7 +78,7 @@ proc testit(mode: Mode, param explicit, printStats) {
     const bytesPerTask = N * numBytes(int);
     const mbPerTask = bytesPerTask:real / (1<<20):real;
     const prefix = if explicit then "explicit-" else "compiler-";
-    writeln(prefix + mode + " MB/s: " + mbPerTask * numTasksPerLocale / t.elapsed());
+    writeln(prefix, mode, " MB/s: ", mbPerTask * numTasksPerLocale / t.elapsed());
   }
 
   if verify {

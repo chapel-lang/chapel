@@ -40,13 +40,13 @@ proc stop(opType: string) {
   t.stop();
   if commDiags { stopCommDiagnostics(); }
   const ordering = if useUnorderedCopy then "Unordered " else "Ordered ";
-  const timing = if printStats then " time: " + t.elapsed() else "";
-  const rate = if printStats then " rate(mOps/sec): " + (size / t.elapsed()) / 1e6 else "";
+  const timing = if printStats then " time: " + t.elapsed():string else "";
+  const rate = if printStats then " rate(mOps/sec): " + ((size / t.elapsed()) / 1e6):string else "";
   const gets = +reduce getCommDiagnostics().get;
   const puts = +reduce getCommDiagnostics().put;
   const diags = if commDiags then " (GETS: " + gets + ", PUTS: " + puts + ")" else "";
 
-  writeln(ordering + opType + timing, " : " + ordering + opType + rate + diags);
+  writeln(ordering, opType, timing, " : ", ordering, opType, rate, diags);
 
   if verify then
     forall (rA, i) in zip(reversedA, D) do
