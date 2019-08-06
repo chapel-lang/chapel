@@ -2524,7 +2524,19 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType) type {
-    if isEnumType(idxType) || isBoolType(idxType) then return int; else return idxType;
+    if isBoolType(idxType) {
+      return int;
+    } else if isEnumType(idxType) {
+      // Most range/array code currently relies on being able to store
+      // empty ranges like 1..0.  If an enum only defines a single
+      // symbol, we can't create such a range, so print the following
+      // error message to avoid going off the rails.
+      if idxType.size < 2 then
+        compilerError("ranges are not currently supported for enums with fewer than two values");
+      return int;
+    } else {
+      return idxType;
+    }
   }
 
   // convenience method for converting integers to index types in
