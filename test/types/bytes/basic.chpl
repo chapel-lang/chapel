@@ -180,3 +180,4 @@ writeln("word\rword":_bytes); // should print "word"
 writeln("End of writeln tests");
 writeln();
 
+c_free(c_char_arr);

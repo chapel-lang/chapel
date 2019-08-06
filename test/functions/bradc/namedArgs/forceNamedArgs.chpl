@@ -4,7 +4,7 @@ class dummyarg {
   }
 }
 
-proc momentum(dummy: borrowed dummyarg = nil, mass: real, velocity: real) {
+proc momentum(dummy: borrowed dummyarg? = nil, mass: real, velocity: real) {
   return mass*velocity;
 }
 

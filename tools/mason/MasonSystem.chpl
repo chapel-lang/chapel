@@ -208,17 +208,17 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 
   var pkgDom: domain(string);
   var pkgToml: [pkgDom] unmanaged Toml;
-  var pkgInfo: unmanaged Toml = pkgToml;
+  var pkgInfo = new unmanaged Toml(pkgToml);
 
   if pkgExists(pkgName) {
     const pcVersion = "".join(getPkgVariable(pkgName, "--modversion")).strip();
     const libs = "".join(getPkgVariable(pkgName, "--libs")).strip();
     const include = "".join(getPkgVariable(pkgName, "--variable=includedir")).strip();
 
-    pkgInfo["name"] = pkgName;
-    pkgInfo["version"] = pcVersion;
-    pkgInfo["libs"] = libs;
-    pkgInfo["include"] = include;
+    pkgInfo.set("name", pkgName);
+    pkgInfo.set("version", pcVersion);
+    pkgInfo.set("libs", libs);
+    pkgInfo.set("include", include);
 
     if pcVersion != version && version != "*" {
       throw new owned MasonError("Unable to locate " + pkgName + ": " +version + "\n Found " + pcVersion);

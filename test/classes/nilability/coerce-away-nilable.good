@@ -1,4 +1,1 @@
-coerce-away-nilable.chpl:6: error: Cannot default-initialize notNilable: borrowed MyClass
-note: non-nil class types do not support default initialization
-note: Consider using the type borrowed MyClass? instead
 coerce-away-nilable.chpl:6: error: Cannot assign to borrowed MyClass from borrowed MyClass?

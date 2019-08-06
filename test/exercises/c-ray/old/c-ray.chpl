@@ -229,7 +229,7 @@ proc trace(ray, depth=0): vec3 {
     return (0.0, 0.0, 0.0);
 
   // find the nearest intersection...
-  var nearestObj: borrowed sphere,
+  var nearestObj: borrowed sphere?,
       nearestSp: spoint;
 
   for obj in objects {
@@ -242,7 +242,7 @@ proc trace(ray, depth=0): vec3 {
 
   // and perform shading calculations as needed by calling shade()
   if nearestObj then
-    return shade(nearestObj, nearestSp, depth);
+    return shade(nearestObj!, nearestSp, depth);
   else
     return (0.0, 0.0, 0.0);
 }

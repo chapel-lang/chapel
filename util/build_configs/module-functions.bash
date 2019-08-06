@@ -178,8 +178,10 @@ function load_module_version() {
         bashDebugPop
         found=$( get_module_version $target_module )
     fi
-    if [ -z "$found" -o "$found" != $target_version ]; then
-        log_error "Failed: $bug_msg"
-        exit 2
+    if [ "$target_version" != "default" ] ; then
+        if [ -z "$found" -o "$found" != $target_version ]; then
+            log_error "Failed: $bug_msg"
+            exit 2
+        fi
     fi
 }

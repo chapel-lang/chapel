@@ -207,6 +207,10 @@ static void printUnusedFunctions();
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
+static bool  moveIsAcceptable(CallExpr* call);
+static void  moveHaltMoveIsUnacceptable(CallExpr* call);
+
+
 static bool useLegacyNilability(Expr* at) {
   if (fLegacyNilableClasses) return true;
 
@@ -5644,6 +5648,10 @@ static void resolveInitVar(CallExpr* call) {
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
     targetType = targetTypeExpr->typeInfo();
 
+    // PRIM_INIT_VAR has dst, src like PRIM_MOVE so we can reuse some checking
+    if (moveIsAcceptable(call) == false)
+      moveHaltMoveIsUnacceptable(call);
+
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
@@ -5871,10 +5879,6 @@ FnSymbol* findCopyInit(AggregateType* at) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool  moveIsAcceptable(CallExpr* call);
-
-static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
@@ -9271,6 +9275,11 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
                 call->getModule()->hasFlag(FLAG_UNSAFE);
   if (unsafe)
+    return;
+
+  // Allow default-init assign to work around current compiler oddities.
+  // In a future where init= is always used, we can remove this case.
+  if (val->hasFlag(FLAG_INITIALIZED_LATER))
     return;
 
   const char* descr = val->name;
