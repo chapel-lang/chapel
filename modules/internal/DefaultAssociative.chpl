@@ -502,8 +502,8 @@ module DefaultAssociative {
 
         unlockTable();
       } else if entries > numKeys {
-        warning("Requested capacity (" + numKeys:string + ") " +
-                "is less than current size (" + entries:string + ")");
+        warning("Requested capacity (", numKeys, ") ",
+                "is less than current size (", entries, ")");
       }
     }
   
