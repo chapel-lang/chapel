@@ -32,7 +32,7 @@ proc doTest(type eltType) {
   s3 = s2;
 
   for x in s1 do
-    s3.discard(x);
+    assert(s3.remove(x));
 
   for x in s3 do
     assert(!s1.contains(x) && s2.contains(x));
