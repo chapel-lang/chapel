@@ -301,9 +301,16 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 //
 static
 chpl_bool isInProviderName(const char* s) {
+  if (ofi_info->fabric_attr->prov_name == NULL) {
+    return false;
+  }
+
+  char provName[strlen(ofi_info->fabric_attr->prov_name) + 1];
+  strcpy(provName, ofi_info->fabric_attr->prov_name);
+
   char* tok;
   char* strSave;
-  for (char* pn = ofi_info->fabric_attr->prov_name;
+  for (char* pn = provName;
        (tok = strtok_r(pn, ";", &strSave)) != NULL;
        pn = NULL) {
     if (strcmp(s, tok) == 0) {
