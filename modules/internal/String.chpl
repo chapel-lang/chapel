@@ -1950,9 +1950,9 @@ module String {
         var maxbytes = (result.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         var lowCodepoint = codepoint_toLower(cp);
-        if lowCodepoint != cp {
-          // This assumes that the upper and lower case version of a
-          // character take the same number of bytes.
+        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+          // Use the MacOS approach everywhere:  only change the case if
+          // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, lowCodepoint);
         }
         i += nbytes;
@@ -1983,9 +1983,9 @@ module String {
         var maxbytes = (result.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         var upCodepoint = codepoint_toUpper(cp);
-        if upCodepoint != cp {
-          // This assumes that the upper and lower case version of a
-          // character take the same number of bytes.
+        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+          // Use the MacOS approach everywhere:  only change the case if
+          // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, upCodepoint);
         }
         i += nbytes;
@@ -2022,16 +2022,16 @@ module String {
           if last == UN {
             last = LETTER;
             var upCodepoint = codepoint_toUpper(cp);
-            if upCodepoint != cp {
-              // This assumes that the upper and lower case version of a
-              // character take the same number of bytes.
+            if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+              // Use the MacOS approach everywhere:  only change the case if
+              // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, upCodepoint);
             }
           } else { // last == LETTER
             var lowCodepoint = codepoint_toLower(cp);
-            if lowCodepoint != cp {
-              // This assumes that the upper and lower case version of a
-              // character take the same number of bytes.
+            if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+              // Use the MacOS approach everywhere:  only change the case if
+              // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, lowCodepoint);
             }
           }
@@ -2060,9 +2060,9 @@ module String {
       var maxbytes = result.len: ssize_t;
       qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
       var upCodepoint = codepoint_toUpper(cp);
-      if upCodepoint != cp {
-        // This assumes that the upper and lower case version of a
-        // character take the same number of bytes.
+      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+        // Use the MacOS approach everywhere:  only change the case if
+        // the result does not change the number of encoded bytes.
         qio_encode_char_buf(result.buff, upCodepoint);
       }
       return result;
