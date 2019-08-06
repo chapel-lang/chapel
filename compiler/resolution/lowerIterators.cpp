@@ -107,7 +107,7 @@ FnSymbol* debugGetTheIteratorFn(ForLoop* forLoop) {
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
-static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields);
+static void nonLeaderParCheckInt(FnSymbol* origfn, FnSymbol* fn, bool allowYields);
 
 static void nonLeaderParCheck()
 {
@@ -116,7 +116,7 @@ static void nonLeaderParCheck()
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator() && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
-      nonLeaderParCheckInt(fn, !fn->hasFlag(FLAG_RECURSIVE_ITERATOR));
+      nonLeaderParCheckInt(fn, fn, false);
     }
   }
   USR_STOP();
@@ -161,7 +161,7 @@ bool isVirtualIterator(FnSymbol* iterFn) {
   return retval;
 }
 
-static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
+static void nonLeaderParCheckInt(FnSymbol* origfn, FnSymbol* fn, bool markYields)
 {
   std::vector<CallExpr*> calls;
 
@@ -197,15 +197,15 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       // If they are not, check for PRIM_YIELD like below.
       INT_ASSERT(false);
     }
-    if (!allowYields) {
+    if (markYields) {
       if (call->isPrimitive(PRIM_YIELD)) {
-        USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
+        origfn->addFlag(FLAG_YIELD_WITHIN_ON);
       }
     }
     if (taskFn) {
       // This used to be the body of the parallel or 'on' construct
       // so need to descend into it.
-      nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON) || allowYields);
+      nonLeaderParCheckInt(origfn, taskFn, taskFn->hasFlag(FLAG_ON));
     }
   }
 }
@@ -512,9 +512,13 @@ static void computeRecursiveIteratorSet() {
 
     // Determine if the iterator calls itself, either directly or indirectly.
     Vec<FnSymbol*> fnSet;   // Used to avoid recursion
-    if (find_recursive_caller(iter, iter, fnSet))
+    if (find_recursive_caller(iter, iter, fnSet)) {
       // If so, add the recursive iterator flag.
       iter->addFlag(FLAG_RECURSIVE_ITERATOR);
+      if (iter->hasFlag(FLAG_YIELD_WITHIN_ON)) {
+        USR_FATAL_CONT(iter, "'yield' within 'on' not currently supported within recursive serial iterators");
+      }
+    }
   }
 
   // Mark task functions, too, by adding to taskFunInRecursiveIteratorSet
@@ -2410,6 +2414,9 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
 
       FnSymbol* iterFn = getTheIteratorFn(iterators.v[i]);
+      if (iterFn->hasFlag(FLAG_YIELD_WITHIN_ON)) {
+        USR_FATAL_CONT(forLoop, "'yield' statements within 'on' clauses are not currently supported for serial zippered/non-inlineable iterators");
+      }
 
       if (isBoundedIterator(iterFn)) {
         if (testBlock == NULL) {
@@ -2918,11 +2925,11 @@ static void removeUncalledIterators()
 }
 
 void lowerIterators() {
+  nonLeaderParCheck();
+
   markVectorizableForallLoops();
 
   computeRecursiveIteratorSet();
-
-  nonLeaderParCheck();
 
   cleanupLeaderIteratorCalls();
 
