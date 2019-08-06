@@ -1,0 +1,4 @@
+zipMultiLocSerIter.chpl:13: error: 'yield' statements within 'on' clauses are not currently supported for serial zippered/non-inlineable iterators
+zipMultiLocSerIter.chpl:13: error: 'yield' statements within 'on' clauses are not currently supported for serial zippered/non-inlineable iterators
+zipMultiLocSerIter.chpl:16: error: 'yield' statements within 'on' clauses are not currently supported for serial zippered/non-inlineable iterators
+zipMultiLocSerIter.chpl:16: error: 'yield' statements within 'on' clauses are not currently supported for serial zippered/non-inlineable iterators
