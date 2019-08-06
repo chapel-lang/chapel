@@ -1863,7 +1863,7 @@ void amRequestCommon(c_nodeid_t node,
 
   if (myArg->comm.b.op != am_opAMO || ordered) {
     do {
-      local_yield();
+      sched_yield();
       ensure_progress();
       if (tciTryRealloc(tcip)) {
         checkTxCQ(tcip);
