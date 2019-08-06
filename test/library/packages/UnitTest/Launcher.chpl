@@ -31,7 +31,7 @@ module Launcher {
       else {
         if setComm == "none" then comm = setComm;
         else {
-          writeln("Trying to execute in a MultiLocal Environment when ",
+          writeln("Trying to execute in a multiLocale environment when ",
           "communication mechanism is `none`.");
           writeln("Try changing the Commication Mechanism");
           exit(2);
