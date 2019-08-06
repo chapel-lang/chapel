@@ -1,5 +1,5 @@
 iter foo(depth: int): int {
-  if depth > numLocales then
+  if depth >= numLocales then
     return;
 
   on Locales[depth] do
