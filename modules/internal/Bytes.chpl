@@ -187,25 +187,14 @@ module Bytes {
       }
     }
 
-
-    // this is implemented only for debugging purposes. Ideally writeThis should
-    // just halt when called on bytes record
+    // These should never be called (but are default functions for records)
     pragma "no doc"
     proc writeThis(f) {
-      var localThis = this.localize();
-      try {
-        for b in localThis.iterBytes() {
-          if byte_isAscii(b) {
-            if byte_isPrintable(b) || byte_isWhitespace(b) {
-              f.writef("%c", b);
-            }
-          }
-        }
-      } catch e: SystemError {
-        f.setError(e.err);
-      } catch {
-        f.setError(EINVAL:syserr);
-      }
+      compilerError("not implemented: writeThis");
+    }
+    pragma "no doc"
+    proc readThis(f) {
+      compilerError("not implemented: readThis");
     }
 
     pragma "no doc"

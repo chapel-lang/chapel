@@ -170,7 +170,7 @@ writeln("writeln behavior");
 writeln("Output 1");
 writeln("wordword":_bytes);
 writeln("Output 2");
-writeln("word\x00word":_bytes);
+writeln("word\x00word":_bytes); // should print a junk char in between
 writeln("Output 3");
 writeln("word\tword":_bytes);
 writeln("Output 4");
