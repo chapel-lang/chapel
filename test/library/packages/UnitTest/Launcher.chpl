@@ -15,6 +15,32 @@ module Launcher {
   config const setComm: string = "";
   var comm: string;
 
+  /* Gets the comm */
+  proc getRuntimeComm() throws {
+    var line: string;
+    var checkComm = spawn(["python",CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
+                        stdout = PIPE);
+    while checkComm.stdout.readline(line) {
+      comm = line.strip();
+    }
+    // setting communication mechanism.
+    if setComm != "" {
+      if comm != "none" {
+        comm = setComm;
+      }
+      else {
+        if setComm == "none" then comm = setComm;
+        else {
+          writeln("Trying to execute in a MultiLocal Environment when ",
+          "communication mechanism is `none`.");
+          writeln("Try changing the Commication Mechanism");
+          exit(2);
+        }
+      }
+    }
+  }
+
+
   proc main(args: [] string) {
     var comm_c: c_string;
     var dirs: [1..0] string,
@@ -26,9 +52,9 @@ module Launcher {
       checkChpl.wait();
       var line: string;
       if checkChpl.stdout.readline(line) {
-        sys_getenv("CHPL_COMM", comm_c);
-        comm = comm_c: string;
-        
+        // get comm
+        getRuntimeComm();
+
         for a in args[1..] {
           if a == "-h" || a == "--help" {
             writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
@@ -57,23 +83,6 @@ module Launcher {
 
         if files.size == 0 && dirs.size == 0 {
           dirs.push_back(".");
-        }
-        // set comm if found empty
-        if comm == "" then comm = "none";
-        // setting communication mechanism.
-        if setComm != "" {
-          if comm != "none" {
-            comm = setComm;
-          }
-          else {
-            if setComm == "none" then comm = setComm;
-            else {
-              writeln("Trying to execute in a MultiLocal Environment when ",
-              "communication mechanism is `none`.");
-              writeln("Try changing the Commication Mechanism");
-              exit(2);
-            }
-          }
         }
         
         var result =  new TestResult();
@@ -195,7 +204,7 @@ module Launcher {
     if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames: string;
     if testsPassed.size != 0 then passedTestStr = testsPassed: string;
     if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames: string;
-    var exec = spawn(["./"+executable, "--numLocales", reqNumLocales: string, "--testNames", 
+    var exec = spawn(["./"+executable, "-nl", reqNumLocales: string, "--testNames", 
               testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
               erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
               skippedTestNamesStr], stdout = PIPE, 
