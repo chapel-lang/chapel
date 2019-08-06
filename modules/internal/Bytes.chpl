@@ -187,6 +187,16 @@ module Bytes {
       }
     }
 
+    pragma "no doc"
+    proc ref deinit() {
+      if isowned && this.buff != nil {
+        on __primitive("chpl_on_locale_num",
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+          chpl_here_free(this.buff);
+        }
+      }
+    }
+
 
     // this is implemented only for debugging purposes. Ideally writeThis should
     // just halt when called on bytes record
