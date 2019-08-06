@@ -322,7 +322,7 @@ module Sets {
     proc const writeThis(ch: channel) {
       _enter();
       var count = 1;
-      ch <~> "[";
+      ch <~> "{";
 
       for x in _dom {
         if count <= (_dom.size - 1) {
@@ -333,7 +333,7 @@ module Sets {
         }
       }
 
-      ch <~> "]";
+      ch <~> "}";
       _leave();
     }
 
