@@ -33,7 +33,7 @@ module Launcher {
         else {
           writeln("Trying to execute in a multiLocale environment when ",
           "communication mechanism is `none`.");
-          writeln("Try changing the Commication Mechanism");
+          writeln("Try changing the communication mechanism");
           exit(2);
         }
       }
