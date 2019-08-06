@@ -962,7 +962,7 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value < numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales ="+value);
+        throw new owned TestIncorrectNumLocales("Required Locales ="+value:string);
       }
     }
 
@@ -980,7 +980,7 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value > numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = "+value);
+        throw new owned TestIncorrectNumLocales("Required Locales = "+value:string);
       }
     }
 

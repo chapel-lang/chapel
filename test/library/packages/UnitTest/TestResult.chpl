@@ -94,7 +94,7 @@ module TestResult {
       var skipped = this.numSkippedTests();
       var run = this.testsRun - skipped;
       if this.testsRun != 0 {
-        writeln("Run "+ run +" "+ printTest(run));
+        writeln("Run ", run, " ", printTest(run));
         writeln();
         var infos: [1..0](string);
         if !this.wasSuccessful() {
@@ -102,14 +102,14 @@ module TestResult {
           var failed = this.numFailedTests(),
             errored = this.numErroredTests();
           if failed then
-            infos.push_back("failures = " + failed);
+            infos.push_back("failures = " + failed:string);
           if errored then
-            infos.push_back("errors = " + errored);
+            infos.push_back("errors = " + errored:string);
         }
         else
           write("OK");
         if skipped then
-          infos.push_back("skipped = " + skipped);
+          infos.push_back("skipped = " + skipped:string);
         if infos.size {
           write(" ");
           for info in infos do write(info, " ");
