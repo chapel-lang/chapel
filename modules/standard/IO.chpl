@@ -2775,6 +2775,10 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     // handle string
     const local_x = x.localize();
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
+  } else if t == _bytes {
+    // handle bytes
+    const local_x = x.localize();
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
