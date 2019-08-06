@@ -220,9 +220,7 @@ proc commonPath(in paths: string ...?n): string {
     // updated
   }
 
-  var prefixArray = prefixList.toArray();
-  result = pathSep.join(prefixArray);
-
+  result = pathSep.join(prefixList.these());
   return result;
 }
 
@@ -304,9 +302,7 @@ proc commonPath(paths: []): string {
     // updated
   }
 
-  var prefixArray = prefixList.toArray();
-  result = delimiter.join(prefixArray);
-
+  result = delimiter.join(prefixList.these());
   return result;
 }
 
@@ -571,7 +567,7 @@ proc normPath(name: string): string {
       try! outComps.pop();
   }
 
-  var result = pathSep * leadingSlashes + pathSep.join(outComps.toArray());
+  var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
 
   if result == "" then
     return curDir;
