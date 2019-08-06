@@ -3,6 +3,7 @@ Sparse diagonal creation performance testing
 */
 
 use LinearAlgebra;
+use LinearAlgebra.Sparse;
 use Time;
 use BlockDist;
 use Math;
