@@ -6091,7 +6091,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
           } otherwise {
             // Unhandled argument type!
             throw new owned IllegalArgumentError("args(" + i:string + ")",
-                                                 "writef internal error " + argType(i):string);
+                                           "writef internal error " + argType(i):string);
           }
         }
       }
@@ -6375,7 +6375,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
               }
             } otherwise {
               throw new owned IllegalArgumentError("args(" + i:string + ")",
-                                                   "readf internal error " + argType(i):string);
+                                             "readf internal error " + argType(i):string);
             }
           }
         }

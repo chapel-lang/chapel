@@ -958,7 +958,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
       if isBoundedRange(this) && ord >= this.length then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
-                                     ord:string + " that is larger than the range's number of indices " + this.length:string);
+            ord:string + " that is larger than the range's number of indices " + this.length:string);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,

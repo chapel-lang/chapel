@@ -147,7 +147,7 @@ class List {
         w.write(i);
         first = false;
       } else {
-        w.write(" " , i);
+        w.write(" ", i);
       }
   }
 }
