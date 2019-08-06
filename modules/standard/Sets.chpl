@@ -22,10 +22,18 @@
 
   A set is a collection of unique elements.
 
-  [Paragraph about parallel invalidating references.]
-  [List of operations that may invalidate references.]
-  [Paragraph about parallel safety.]
-  [Speed of common operations.]
+  The highly parallel nature of Chapel means that great care should be taken
+  when performing operations that may invalidate references to set elements.
+  Adding or removing an element to a set may invalidate references to
+  elements contained in the set.
+
+  All references to set elements are invalidated when the set is cleared or
+  deinitialized.
+
+  Sets are not parallel safe by default, but can be made parallel safe by
+  setting the param formal 'parSafe` to true in any set constructor. When
+  constructed from another set, the new set will inherit the parallel safety
+  mode of its originating set.
 */
 module Sets {
 
@@ -68,18 +76,21 @@ module Sets {
   }
 
   /*
-    A set is a collection of unique elements. If an attempt is made to add an
-    element to a set that already contains an element with an equal value, it
-    will not be added again. The set type supports a test for membership via
-    the `contains` operator, along with free functions for calculating the
-    union, difference, intersection, and symmetric difference of two sets. The
-    set type also defines the (proper) subset and (proper) superset operations
-    by overloading common comparison operators.
+    A set is a collection of unique elements. Attempting to add a duplicate
+    element to a set has no effect.
 
-    Sets can be iterated over, but they do not support random access. A set
-    can be default initialized (containing no elements), or it may be
-    initialized with elements that are a copy of those contained in any
-    iterator.
+    The set type supporta a test for membership via the :proc:`contains`
+    method, along with free functions for calculating the union, difference,
+    intersection, and symmetric difference of two sets. The set type also
+    defines the (proper) subset and (proper) superset operations by
+    overloading common comparison operators.
+
+    Sets can be iterated over, but they do not support random access. The set
+    type makes no guarantee of a consistent iteration order.
+
+    A set can be default initialized (containing no elements), or it may be
+    initialized with elements that are copies of those contained by any
+    type that supports an iterator.
 
     The set type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
@@ -155,15 +166,19 @@ module Sets {
     pragma "no doc"
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        on this {
+          _lock$.lock();
+        }
     }
 
     pragma "no doc"
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        on this {
+          _lock$.unlock();
+        }
     }
- 
+
     /*
       Add a copy of the element `x` to this set. Does nothing if this set
       already contains an element equal to the value of `x`.
@@ -213,13 +228,12 @@ module Sets {
       }
 
       //
-      // TODO: Does the serial iterator acquire locks (or any iterator, for
-      // that matter? If so, we should be acquiring locks in a fixed order
-      // here in order to prevent deadlock if two threads interleave iterator
-      // accesses in reverse order, IE:
-      //
-      // Thread 1: set1.isDisjoint(set2)
-      // Thread 2: set2.isDisjoint(set1)
+      // Right now, iterators do not acquire locks, and attempting to modify
+      // a container while it is being iterated over leads to undefined
+      // behavior. This means that when a container is being iterated over
+      // by at least one thread, it is considered to be in a "read only"
+      // state. This may only be a temporary assumption, but for now it means
+      // we only need to grab the lock on `this`.
       //
       for x in other do
         if _dom.contains(x) {
@@ -288,6 +302,12 @@ module Sets {
 
     /*
       Iterate over the elements of this set.
+
+      .. warning::
+
+        Set iterators are currently not threadsafe. Attempting to mutate the
+        state of a set while it is being iterated over is considered
+        undefined behavior.
 
       :yields: A reference to one of the elements contained in this set.
     */
