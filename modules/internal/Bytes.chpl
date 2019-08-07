@@ -541,7 +541,6 @@ module Bytes {
 
         if localRet == -1 {
           localRet = 0;
-          /*const localNeedle: _bytes = needle.localize();*/
           const needleLen = needle.len;
           const localNeedleBuf = copyRemoteBuffer(needle.locale_id,
                                                   needle.buff,
