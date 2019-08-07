@@ -2415,7 +2415,7 @@ expandForLoop(ForLoop* forLoop) {
 
       FnSymbol* iterFn = getTheIteratorFn(iterators.v[i]);
       if (iterFn->hasFlag(FLAG_YIELD_WITHIN_ON)) {
-        USR_FATAL_CONT(forLoop, "zippering serial iterators with 'yield' statements in 'on' clauses is not currently supported");
+        USR_FATAL_CONT(forLoop, "'yield' statements within 'on' clauses are not currently supported for iterators that are not inlined (e.g., within zippered loops)");
         break;
       }
 
