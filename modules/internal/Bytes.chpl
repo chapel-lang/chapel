@@ -53,33 +53,6 @@ module Bytes {
   use BytesCasts;
   private use ByteBufferHelpers;
 
-  // Following is copy-paste from string
-  //
-  // Externs and constants used to implement strings
-  //
-  private        param chpl_string_min_alloc_size: int = 16;
-  pragma "fn synchronization free"
-  private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
-
-  // Calls to chpl_here_alloc increment the memory descriptor by
-  // `chpl_memhook_md_num`. For internal runtime descriptors like the ones
-  // below, this would result in selecting the incorrect descriptor string.
-  //
-  // Instead, decrement the CHPL_RT_MD* descriptor and use the result when
-  // calling chpl_here_alloc.
-  private proc offset_STR_COPY_DATA {
-    extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
-    return CHPL_RT_MD_STR_COPY_DATA - chpl_memhook_md_num();
-  }
-  private proc offset_STR_COPY_REMOTE {
-    extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
-    return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
-  }
-  pragma "fn synchronization free"
-  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
-
-  type idxType = int; 
-
   /*
      ``DecodePolicy`` specifies what happens when there is malformed characters
      when decoding the :record:`bytes` object into a UTF-8 `string`.
@@ -99,6 +72,8 @@ module Bytes {
       return "Invalid UTF-8 character encountered.";
     }
   }
+
+  type idxType = int; 
 
   record _bytes {
     pragma "no doc"
@@ -942,6 +917,10 @@ module Bytes {
     */
     // NOTE: In the future this could support more encodings.
     proc decode(errors=DecodePolicy.Strict): string throws {
+      pragma "fn synchronization free"
+      extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
+                                      buf:c_string, buflen:ssize_t):syserr;
+
       var localThis: _bytes = this.localize();
 
       // allocate buffer the same size as this buffer assuming that the string
