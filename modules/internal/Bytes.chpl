@@ -1281,31 +1281,25 @@ module Bytes {
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
       const rhsLen = rhs.len;
       const newLength = lhs.len+rhsLen; //TODO: check for overflow
+      //resize the buffer if needed
       if lhs._size <= newLength {
-        const newSize = chpl_here_good_alloc_size(
-            max(newLength+1, lhs.len*chpl_stringGrowthFactor):int);
-
+        const requestedSize = max(newLength+1,
+                                  lhs.len*chpl_stringGrowthFactor):int;
         if lhs.isowned {
-          lhs.buff = chpl_here_realloc(lhs.buff, newSize,
-                                      offset_STR_COPY_DATA):bufferType;
-        } else {
-          var newBuff = chpl_here_alloc(newSize,
-                                       offset_STR_COPY_DATA):bufferType;
-          c_memcpy(newBuff, lhs.buff, lhs.len);
+          var (newBuff, allocSize) = reallocBuffer(lhs.buff, requestedSize);
           lhs.buff = newBuff;
+          lhs._size = allocSize;
+        } else {
+          var (newBuff, allocSize) = copyLocalBuffer(lhs.buff, lhs.len);
+          lhs.buff = newBuff;
+          lhs._size = allocSize;
           lhs.isowned = true;
         }
-
-        lhs._size = newSize;
       }
-      const rhsRemote = rhs.locale_id != chpl_nodeID;
-      if rhsRemote {
-        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale_id, rhs.buff, rhsLen);
-      } else {
-        c_memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen);
-      }
+      // copy the data from rhs
+      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhsLen,
+                   dst_off=lhs.len);
       lhs.len = newLength;
-      lhs.buff[newLength] = 0;
     }
   }
 

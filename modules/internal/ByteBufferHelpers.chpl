@@ -44,6 +44,14 @@ module ByteBufferHelpers {
     return (buf, allocSize);
   }
 
+  proc reallocBuffer(buf, requestedSize) {
+    const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
+                          chpl_string_min_alloc_size);
+    var newBuff = chpl_here_realloc(buf, allocSize,
+                                offset_STR_COPY_DATA): bufferType;
+    return (newBuff, allocSize);
+  }
+
   proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
                                 len: int): bufferType {
       const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
