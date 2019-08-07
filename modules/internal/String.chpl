@@ -136,6 +136,7 @@ module String {
   use CString;
   use SysCTypes;
   use StringCasts;
+  use ByteBufferHelpers;
   private use SysBasic;
 
   // Growth factor to use when extending the buffer for appends
@@ -915,11 +916,9 @@ module String {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
-      var localThis: string = this.localize();
-
-      if boundsChecking && (i <= 0 || i > localThis.len)
+      if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of string: ", i);
-      return localThis.buff[i - 1];
+      return getByte(this.buff, i, this.locale_id);
     }
 
     /*
@@ -2088,47 +2087,60 @@ module String {
     lhs._cpindex = rhs: int;
   }
 
+  // Concatenation with other types is done by casting to bytes
+  private inline proc concatHelp(s: string, x:?t) where t != string {
+    var cs = x:string;
+    const ret = s + cs;
+    return ret;
+  }
+
+  private inline proc concatHelp(x:?t, s: string) where t != string  {
+    var cs = x:string;
+    const ret = cs + s;
+    return ret;
+  }
+
   /*
      Copies the string `rhs` into the string `lhs`.
   */
-  /*proc =(ref lhs: string, rhs: string) {*/
-    /*inline proc helpMe(ref lhs: string, rhs: string) {*/
-      /*if _local || rhs.locale_id == chpl_nodeID {*/
-        /*lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);*/
-      /*} else {*/
-        /*const len = rhs.len; // cache the remote copy of len*/
-        /*var remote_buf:bufferType = nil;*/
-        /*if len != 0 then*/
-          /*remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);*/
-        /*lhs.reinitString(remote_buf, len, len+1, needToCopy=false);*/
-      /*}*/
-    /*}*/
+  proc =(ref lhs: string, rhs: string) {
+    inline proc helpMe(ref lhs: string, rhs: string) {
+      if _local || rhs.locale_id == chpl_nodeID {
+        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
+      } else {
+        const len = rhs.len; // cache the remote copy of len
+        var remote_buf:bufferType = nil;
+        if len != 0 then
+          remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);
+        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
+      }
+    }
 
-    /*if _local || lhs.locale_id == chpl_nodeID then {*/
-      /*helpMe(lhs, rhs);*/
-    /*}*/
-    /*else {*/
-      /*on __primitive("chpl_on_locale_num",*/
-                     /*chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {*/
-        /*helpMe(lhs, rhs);*/
-      /*}*/
-    /*}*/
-  /*}*/
+    if _local || lhs.locale_id == chpl_nodeID then {
+      helpMe(lhs, rhs);
+    }
+    else {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+        helpMe(lhs, rhs);
+      }
+    }
+  }
 
   /*
      Copies the c_string `rhs_c` into the string `lhs`.
 
      Halts if `lhs` is a remote string.
   */
-  /*proc =(ref lhs: string, rhs_c: c_string) {*/
-    /*// Make this some sort of local check once we have local types/vars*/
-    /*if !_local && (lhs.locale_id != chpl_nodeID) then*/
-      /*halt("Cannot assign a c_string to a remote string.");*/
+  proc =(ref lhs: string, rhs_c: c_string) {
+    // Make this some sort of local check once we have local types/vars
+    if !_local && (lhs.locale_id != chpl_nodeID) then
+      halt("Cannot assign a c_string to a remote string.");
 
-    /*const len = rhs_c.length;*/
-    /*const buff:bufferType = rhs_c:bufferType;*/
-    /*lhs.reinitString(buff, len, len+1, needToCopy=true);*/
-  /*}*/
+    const len = rhs_c.length;
+    const buff:bufferType = rhs_c:bufferType;
+    lhs.reinitString(buff, len, len+1, needToCopy=true);
+  }
 
   //
   // Concatenation
@@ -2430,31 +2442,31 @@ module String {
       return ret;
     } else { */
 
-    return _strcmp(a, b) == 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) == 0;
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: string) : bool {
-    return _strcmp(a, b) != 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) != 0;
   }
 
   pragma "no doc"
   inline proc <(a: string, b: string) : bool {
-    return _strcmp(a, b) < 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) < 0;
   }
 
   pragma "no doc"
   inline proc >(a: string, b: string) : bool {
-    return _strcmp(a, b) > 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) > 0;
   }
 
   pragma "no doc"
   inline proc <=(a: string, b: string) : bool {
-    return _strcmp(a, b) <= 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) <= 0;
   }
   pragma "no doc"
   inline proc >=(a: string, b: string) : bool {
-    return _strcmp(a, b) >= 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
   }
 
 
