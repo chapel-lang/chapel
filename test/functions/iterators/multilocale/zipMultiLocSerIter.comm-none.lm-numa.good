@@ -1,0 +1,2 @@
+zipMultiLocSerIter.chpl:13: error: zippering serial iterators with 'yield' statements in 'on' clauses is not currently supported
+zipMultiLocSerIter.chpl:16: error: zippering serial iterators with 'yield' statements in 'on' clauses is not currently supported
