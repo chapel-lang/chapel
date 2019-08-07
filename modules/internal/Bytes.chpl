@@ -139,18 +139,6 @@ module Bytes {
     }
 
     /*
-      Initialize a new :record:`bytes` from ``b``. If ``isowned`` is set to
-      ``true`` then ``b`` will be fully copied into the new instance. If it is
-      ``false`` a shallow copy will be made such that any in-place modifications
-      to the new bytes may appear in ``b``. It is the responsibility of the user
-      to ensure that the underlying buffer is not freed while being used as part
-      of a shallow copy.
-     */
-    /*proc init(b: bytes, isowned: bool = true) {*/
-
-    /*}*/
-
-    /*
       Initialize a new :record:`bytes` from ``s``. If ``isowned`` is set to
       ``true`` then ``b`` will be fully copied into the new instance. If it is
       ``false`` a shallow copy will be made such that any in-place modifications
