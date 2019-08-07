@@ -1375,13 +1375,13 @@ module Bytes {
     return _bytes_string_concat(s0,s1);
   }
 
-  proc +(s0: _bytes, s1: string) {
-    return _bytes_string_concat(s0,s1);
-  }
+  /*proc +(s0: _bytes, s1: string) {*/
+    /*return _bytes_string_concat(s0,s1);*/
+  /*}*/
 
-  proc +(s0: string, s1: _bytes) {
-    return _bytes_string_concat(s0,s1);
-  }
+  /*proc +(s0: string, s1: _bytes) {*/
+    /*return _bytes_string_concat(s0,s1);*/
+  /*}*/
 
   private proc _bytes_string_concat(s0: ?t, s1): t {
     // cache lengths locally

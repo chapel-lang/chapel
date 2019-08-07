@@ -117,7 +117,8 @@ module BytesCasts {
         if numElements > 1 then break;
       }
       if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from bytes '" + x + "' to " + t:string);
+        throw new owned IllegalArgumentError("bad cast from bytes '" +
+            x.decode(DecodePolicy.Ignore)  + "' to " + t:string);
 
       // remove underscores everywhere but the first position
       if localX.length >= 2 then
@@ -146,7 +147,8 @@ module BytesCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from string '" +
+          x.decode(DecodePolicy.Ignore) + "' to " + t:string);
 
     return retVal;
   }
@@ -221,7 +223,8 @@ module BytesCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" +
+          x.decode(DecodePolicy.Ignore) + "' to real(" + numBits(t) + ")");
 
     return retVal;
   }
@@ -247,7 +250,8 @@ module BytesCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" +
+          x.decode(DecodePolicy.Ignore) + "' to imag(" + numBits(t) + ")");
 
     return retVal;
   }
@@ -300,7 +304,8 @@ module BytesCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" +
+          x.decode(DecodePolicy.Ignore) + "' to complex(" + numBits(t) + ")");
 
     return retVal;
   }
