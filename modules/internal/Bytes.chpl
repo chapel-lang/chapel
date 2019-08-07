@@ -865,34 +865,32 @@ module Bytes {
 
         var joined: _bytes;
         joined.len = joinedSize;
-        const allocSize = chpl_here_good_alloc_size(joined.len + 1);
-        joined._size = allocSize;
-        joined.buff = chpl_here_alloc(
-          allocSize,
-          offset_STR_COPY_DATA): bufferType;
+
+        var (newBuf, allocSize) = allocBuffer(joined.len);
+        joined._size = size;
+        joined.buff = newBuf;
 
         var first = true;
         var offset = 0;
         for s in S {
+          const sLen = s.len;
+
+          // copy this's contents
           if first {
             first = false;
           } else if this.len != 0 {
-            c_memcpy(joined.buff + offset, this.buff, this.len);
+            bufferMemcpyLocal(dst=joined.buff, src=this.buff, len=this.len,
+                              dst_off=offset);
             offset += this.len;
           }
 
-          var sLen = s.len;
+          // copy s's contents
           if sLen != 0 {
-            var cpyStart = joined.buff + offset;
-            if _local || s.locale_id == chpl_nodeID {
-              c_memcpy(cpyStart, s.buff, sLen);
-            } else {
-              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sLen);
-            }
+            bufferMemcpy(dst=joined.buff, dst_off=offset,
+                         src_loc=s.locale_id, src=s.buff,len=sLen);
             offset += sLen;
           }
         }
-        joined.buff[offset] = 0;
         return joined;
       }
     }

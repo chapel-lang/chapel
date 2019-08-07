@@ -36,7 +36,7 @@ module ByteBufferHelpers {
     return t==_bytes || t==string;
   }
 
-  private proc allocBuffer(requestedSize) {
+  proc allocBuffer(requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
                           chpl_string_min_alloc_size);
     var buf = chpl_here_alloc(allocSize,
@@ -95,6 +95,21 @@ module ByteBufferHelpers {
       c_memcpy(newBuf, buf+off, len);
       return (newBuf, size);
     }
+  }
+
+  //dst must be local
+  proc bufferMemcpy(dst, src_loc, src, len, dst_off=0, src_off=0) {
+    if !_local && src_loc == chpl_nodeID {
+      chpl_string_comm_get(dst+dst_off, src_loc, src+src_off, len);
+    }
+    else {
+      c_memcpy(dst+dst_off, src+src_off, len);
+    }
+
+  }
+
+  proc bufferMemcpyLocal(dst, src, len, dst_off=0, src_off=0) {
+    c_memcpy(dst+dst_off, src+src_off, len);
   }
 
   proc getByteFromBuf(buf, off, loc) {
