@@ -27,10 +27,10 @@ for i in 1..testIters {
   list2.append(tr);
 }
 
-var set1 = new set(int, false, array1);
-var set2 = new set(testRecord, false, array2);
-var set3 = new set(int, false, list1);
-var set4 = new set(testRecord, false, array2);
+var set1 = new set(int, array1);
+var set2 = new set(testRecord, array2);
+var set3 = new set(int, list1);
+var set4 = new set(testRecord, array2);
 
 proc checkContains(ref s, ref it) {
   for x in it do

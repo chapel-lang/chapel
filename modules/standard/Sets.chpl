@@ -37,6 +37,12 @@
 */
 module Sets {
 
+  //
+  // Use this to restrict our secondary initializer to only resolve when the
+  // "iterable" argument has a method named "these".
+  //
+  private use Reflection;
+
   pragma "no doc"
   private param _sanityChecks = true;
 
@@ -131,7 +137,8 @@ module Sets {
       :arg iterable: A collection of elements to add to this set.
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
-    proc init(type eltType, param parSafe, iterable) {
+    proc init(type eltType, iterable, param parSafe=false)
+            where canResolveMethod(iterable, "these") {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
@@ -186,9 +193,11 @@ module Sets {
       :arg x: The element to add to this set.
     */
     proc add(in x: eltType) {
-      _enter();
-      _dom.add(x);
-      _leave();
+      on this {
+        _enter();
+        _dom.add(x);
+        _leave();
+      }
     }
 
     /*
@@ -202,9 +211,11 @@ module Sets {
     proc const contains(const ref x: eltType): bool {
       var result = false;
     
-      _enter();
-      result = _dom.contains(x);
-      _leave();
+      on this {
+        _enter();
+        result = _dom.contains(x);
+        _leave();
+      }
 
       return result;
     }
@@ -220,28 +231,28 @@ module Sets {
     proc const isDisjoint(const ref other: set(eltType, ?)): bool {
       var result = true;
 
-      _enter();
+      on this {
+        _enter();
 
-      if size == 0 || other.size == 0 {
-        _leave();
-        return true;
-      }
+        if !(size == 0 || other.size == 0) {
 
-      //
-      // Right now, iterators do not acquire locks, and attempting to modify
-      // a container while it is being iterated over leads to undefined
-      // behavior. This means that when a container is being iterated over
-      // by at least one thread, it is considered to be in a "read only"
-      // state. This may only be a temporary assumption, but for now it means
-      // we only need to grab the lock on `this`.
-      //
-      for x in other do
-        if _dom.contains(x) {
-          _leave();
-          return false;
+          //
+          // Right now, iterators do not acquire locks, and attempting to
+          // modify a container while it is being iterated over leads to
+          // undefined behavior. This means that when a container is being
+          // iterated over by at least one thread, it is considered to be in a
+          // "read only" state. This may only be a temporary assumption, but
+          // for now it means we only need to grab the lock on `this`.
+          //
+          for x in other do
+            if _dom.contains(x) {
+              result = false;
+              break;
+            }
         }
-      
-      _leave();
+        
+        _leave();
+      }
 
       return result;
     }
@@ -273,17 +284,20 @@ module Sets {
       :rtype: `bool`
     */
     proc remove(const ref x: eltType): bool {
-      _enter();
+      var result = false;
 
-      if !_dom.contains(x) {
+      on this {
+        _enter();
+
+        if _dom.contains(x) {
+          _dom.remove(x);
+          result = true;
+        }
+
         _leave();
-        return false;
       }
 
-      _dom.remove(x);
-      _leave();
-
-      return true;
+      return result;
     }
 
     /*
@@ -295,9 +309,11 @@ module Sets {
         references to the elements contained in this set.
     */
     proc clear() {
-      _enter();
-      _dom.clear();
-      _leave();
+      on this {
+        _enter();
+        _dom.clear();
+        _leave();
+      }
     }
 
     /*
@@ -340,21 +356,23 @@ module Sets {
       :arg ch: A channel to write to.
     */
     proc const writeThis(ch: channel) {
-      _enter();
-      var count = 1;
-      ch <~> "{";
+      on this {
+        _enter();
+        var count = 1;
+        ch <~> "{";
 
-      for x in _dom {
-        if count <= (_dom.size - 1) {
-          count += 1;
-          ch <~> x <~> ", ";
-        } else {
-          ch <~> x;
+        for x in _dom {
+          if count <= (_dom.size - 1) {
+            count += 1;
+            ch <~> x <~> ", ";
+          } else {
+            ch <~> x;
+          }
         }
-      }
 
-      ch <~> "}";
-      _leave();
+        ch <~> "}";
+        _leave();
+      }
     }
 
     /*
@@ -365,10 +383,12 @@ module Sets {
     */
     inline proc const isEmpty(): bool {
       var result = false;
-      
-      _enter();
-      result = _dom.isEmpty();
-      _leave();
+     
+      on this {
+        _enter();
+        result = _dom.isEmpty();
+        _leave();
+      }
 
       return result;
     }
@@ -379,9 +399,11 @@ module Sets {
     inline proc const size {
       var result = 0;
 
-      _enter();
-      result = _dom.size;
-      _leave();
+      on this {
+        _enter();
+        result = _dom.size;
+        _leave();
+      }
 
       return result;
     }
@@ -395,17 +417,22 @@ module Sets {
       :rtype: `[] eltType`
     */
     proc const toArray(): [] eltType {
-      _enter();
-
       var result: [1.._dom.size] eltType;
-      var count = 1;
 
-      for x in _dom {
-        result[count] = x;
-        count += 1;
+      on this {
+        _enter();
+
+        var count = 1;
+        var array: [1.._dom.size] eltType;
+
+        for x in _dom {
+          array[count] = x;
+          count += 1;
+        }
+
+        result = array;
+        _leave();
       }
-
-      _leave();
 
       return result;
     }
