@@ -938,7 +938,7 @@ record regexp {
 
     if t == stringPart then pos = text.offset;
     else pos = 0;
-    endpos = pos + text.nymBytes;
+    endpos = pos + text.numBytes;
 
     var replaced:c_string;
     var nreplaced:int;
