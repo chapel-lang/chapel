@@ -1378,28 +1378,17 @@ module Bytes {
     const s1len = s1.len;
     if s1len == 0 then return s0;
 
+    // TODO Engin: Implement a factory function for this case
     var ret: t;
     ret.len = s0len + s1len;
-    const allocSize = chpl_here_good_alloc_size(ret.len+1);
+    var (buff, allocSize) = allocBuffer(ret.len);
+    ret.buff = buff;
     ret._size = allocSize;
-    ret.buff = chpl_here_alloc(allocSize,
-                              offset_STR_COPY_DATA): bufferType;
     ret.isowned = true;
 
-    const s0remote = s0.locale_id != chpl_nodeID;
-    if s0remote {
-      chpl_string_comm_get(ret.buff, s0.locale_id, s0.buff, s0len);
-    } else {
-      c_memcpy(ret.buff, s0.buff, s0len);
-    }
-
-    const s1remote = s1.locale_id != chpl_nodeID;
-    if s1remote {
-      chpl_string_comm_get(ret.buff+s0len, s1.locale_id, s1.buff, s1len);
-    } else {
-      c_memcpy(ret.buff+s0len, s1.buff, s1len);
-    }
-    ret.buff[ret.len] = 0;
+    bufferMemcpy(dst=ret.buff, src_loc=s0.locale_id, src=s0.buff, len=s0len);
+    bufferMemcpy(dst=ret.buff, src_loc=s1.locale_id, src=s1.buff, len=s1len,
+                 dst_off=s0len);
     return ret;
 
   }
@@ -1415,31 +1404,23 @@ module Bytes {
     const sLen = s.length;
     if sLen == 0 then return new _bytes("");
 
+    // TODO Engin: Implement a factory function for this case
     var ret: _bytes;
     ret.len = sLen * n; // TODO: check for overflow
-    const allocSize = chpl_here_good_alloc_size(ret.len+1);
+    var (buff, allocSize) = allocBuffer(ret.len);
+    ret.buff = buff;
     ret._size = allocSize;
-    ret.buff = chpl_here_alloc(allocSize,
-                              offset_STR_COPY_DATA): bufferType;
     ret.isowned = true;
 
-    const sRemote = s.locale_id != chpl_nodeID;
-    if sRemote {
-      chpl_string_comm_get(ret.buff, s.locale_id, s.buff, sLen);
-    } else {
-      c_memcpy(ret.buff, s.buff, sLen);
-    }
+    bufferMemcpy(dst=ret.buff, src_loc=s.locale_id, src=s.buff, len=s.len);
 
-    var iterations = n-1;
     var offset = sLen;
-    for i in 1..iterations {
-      c_memcpy(ret.buff+offset, ret.buff, sLen);
+    for i in 1..(n-1) {
+      bufferMemcpyLocal(dst=ret.buff, src=ret.buff, len=s.len,
+                        dst_off=offset);
       offset += sLen;
     }
-    ret.buff[ret.len] = 0;
-
     return ret;
-
   }
 
   // Concatenation with other types is done by casting to bytes
