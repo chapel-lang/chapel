@@ -1075,8 +1075,8 @@ module DefaultRectangular {
           if needsDestroy {
             dsiDestroyDataHelper(data, numElts);
           }
+          _ddata_free(data, numElts);
         }
-        _ddata_free(data, numElts);
       }
     }
 
