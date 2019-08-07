@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+private use Lists;
 use TOML;
 use FileSystem;
 use MasonUtils;
@@ -40,7 +41,7 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
        (ex. 1.13.0, 2.1.0 --> incompatible)
 */
 
-private var failedChapelVersion : [1..0] string;
+private var failedChapelVersion: list(string);
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
@@ -257,7 +258,7 @@ proc chplVersionError(brick:borrowed Toml) {
     const hi   = info(3);
     const name = brick["name"].s + "-" + brick["version"].s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
-    failedChapelVersion.push_back(msg);
+    failedChapelVersion.append(msg);
   }
 }
 
@@ -322,7 +323,7 @@ private proc createDepTree(root: unmanaged Toml) {
 }
 
 private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, name: string) : unmanaged Toml {
-  var depList: [1..0] unmanaged Toml;
+  var depList: list(unmanaged Toml);
   while deps.domain.size > 0 {
     var dep = deps[deps.domain.first];
 
@@ -338,7 +339,7 @@ private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, 
       chplVersion = verToUse["chplVersion"].s;
     }
 
-    depList.push_back(new unmanaged Toml(package));
+    depList.append(new unmanaged Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
@@ -423,12 +424,12 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 /* Returns the Mason.toml for each dep listed as a Toml */
 private proc getManifests(deps: [?dom] (string, unmanaged Toml)) {
-  var manifests: [1..0] unmanaged Toml;
+  var manifests: list(unmanaged Toml);
   for dep in deps {
     var name = dep(1);
     var version: string = dep(2).s;
     var toAdd = retrieveDep(name, version);
-    manifests.push_back(toAdd);
+    manifests.append(toAdd);
   }
   return manifests;
 }
@@ -454,11 +455,11 @@ private proc retrieveDep(name: string, version: string) {
    dependencies are returned as a (string, Toml) */
 private proc getDependencies(tomlTbl: unmanaged Toml) {
   var depsD: domain(1);
-  var deps: [depsD] (string, unmanaged Toml);
+  var deps: list((string, unmanaged Toml));
   for k in tomlTbl.D {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]) {
-        deps.push_back((a, d));
+        deps.append((a, d));
       }
     }
   }

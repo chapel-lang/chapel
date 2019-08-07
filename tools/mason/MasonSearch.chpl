@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+private use Lists;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
@@ -51,10 +52,10 @@ proc masonSearch(origArgs : [] string) {
                 else ".*";
   const pattern = compile(query, ignorecase=true);
 
-  var results : [1..0] string;
-  var packages: [1..0] string;
-  var versions: [1..0] string;
-  var registries: [1..0] string;
+  var results: list(string);
+  var packages: list(string);
+  var versions: list(string);
+  var registries: list(string);
 
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
@@ -71,10 +72,10 @@ proc masonSearch(origArgs : [] string) {
           const ver = findLatest(searchDir + dir);
           const versionZero = new VersionInfo(0, 0, 0);
           if ver != versionZero {
-            results.push_back(name + " (" + ver.str() + ")");
-            packages.push_back(name);
-            versions.push_back(ver.str());
-            registries.push_back(registry);
+            results.append(name + " (" + ver.str() + ")");
+            packages.append(name);
+            versions.append(ver.str());
+            registries.append(registry);
           }
         }
       }

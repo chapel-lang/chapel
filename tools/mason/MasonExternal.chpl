@@ -19,6 +19,7 @@
 
 config const spackVersion = "releases/v0.11.2";
 
+private use Lists;
 use MasonUtils;
 use FileSystem;
 use MasonHelp;
@@ -275,7 +276,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throws {
 
   // put above try b/c compiler comlains about return value
-  var depList: [1..0] unmanaged Toml;
+  var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
   var spkgToml: [spkgDom] unmanaged Toml;
   var spkgInfo: unmanaged Toml = spkgToml;
@@ -307,7 +308,7 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
         var name = depSpec[1];
 
         // put dep into current packages dep list
-        depList.push_back(new unmanaged Toml(name));
+        depList.append(new unmanaged Toml(name));
 
         // get dependencies of dep
         var depsOfDep = getSpkgDependencies(dep);
@@ -348,7 +349,7 @@ proc getSpkgDependencies(spec: string) throws {
   const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
-  var dependencies: [1..0] string; // a list of pkg dependencies
+  var dependencies: list(string);
   for item in pkgInfo.split() {
 
     if item.rfind(spec) != 0 {
@@ -356,7 +357,7 @@ proc getSpkgDependencies(spec: string) throws {
     }
     else if found == true {
       const dep = item.strip("^");
-      dependencies.push_back(dep); // format: pkg@version%compiler
+      dependencies.append(dep);
     }
   }
   if !found {

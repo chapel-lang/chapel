@@ -18,6 +18,7 @@
  */
 
 
+private use Lists;
 use TOML;
 use Spawn;
 use MasonUtils;
@@ -34,7 +35,7 @@ proc masonTest(args) throws {
   var run = true;
   var parallel = false;
   var update = true;
-  var compopts: [1..0] string;
+  var compopts: list(string);
 
   if args.size > 2 {
     for arg in args[2..] {
@@ -58,17 +59,17 @@ proc masonTest(args) throws {
         update = false;
       }
       else {
-        compopts.push_back(arg);
+        compopts.append(arg);
       }
     }
   }
-  var uargs: [0..1] string;
-  if !update then uargs.push_back('--no-update');
+  var uargs: list(string);
+  if !update then uargs.append('--no-update');
   UpdateLock(uargs);
   runTests(show, run, parallel, compopts);
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: [?d] string) throws {
+private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -222,7 +223,7 @@ private proc getMasonDependencies(sourceList: [?d] (string, string, string),
 }
 
 private proc getTests(lock: borrowed Toml, projectHome: string) {
-  var testNames: [1..0] string;
+  var testNames: list(string);
   const testPath = joinPath(projectHome, "test");
 
   if lock.pathExists("root.tests") {
@@ -230,7 +231,7 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
     var strippedTests = tests.split(',').strip('[]');
     for test in strippedTests {
       const t = test.strip().strip('"');
-      testNames.push_back(t);
+      testNames.append(t);
     }
     return testNames;
   }
@@ -238,7 +239,7 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
     var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
     for test in tests {
       if test.endsWith(".chpl") {
-        testNames.push_back(getTestPath(test));
+        testNames.append(getTestPath(test));
       }
     }
     return testNames;
