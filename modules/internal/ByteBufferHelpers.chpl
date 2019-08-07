@@ -4,8 +4,44 @@ module ByteBufferHelpers {
   pragma "no doc"
   type bufferType = c_ptr(uint(8));
 
+  // Following is copy-paste from string
+  //
+  // Externs and constants used to implement strings
+  //
+  private        param chpl_string_min_alloc_size: int = 16;
+  pragma "fn synchronization free"
+  private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
+
+  // Calls to chpl_here_alloc increment the memory descriptor by
+  // `chpl_memhook_md_num`. For internal runtime descriptors like the ones
+  // below, this would result in selecting the incorrect descriptor string.
+  //
+  // Instead, decrement the CHPL_RT_MD* descriptor and use the result when
+  // calling chpl_here_alloc.
+  private proc offset_STR_COPY_DATA {
+    extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
+    return CHPL_RT_MD_STR_COPY_DATA - chpl_memhook_md_num();
+  }
+  private proc offset_STR_COPY_REMOTE {
+    extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
+    return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
+  }
+
+  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
+                                           src_addr: bufferType, len: integral) {
+    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
+  }
+
   private proc isBytesOrStringType(type t) param: bool {
     return t==_bytes || t==string;
+  }
+
+  private proc allocBuffer(requestedSize) {
+    const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
+                          chpl_string_min_alloc_size);
+    var buf = chpl_here_alloc(allocSize,
+                              offset_STR_COPY_DATA): bufferType;
+    return (buf, allocSize);
   }
 
   private proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
@@ -16,91 +52,58 @@ module ByteBufferHelpers {
       return dest;
   }
 
-  private proc localizeBufAndLen(
-
   private inline proc _strcmp_local(buf1, len1, buf2, len2) : int {
     // Assumes a and b are on same locale and not empty.
-    const size = min(a.len, b.len);
-    const result =  c_memcmp(a.buff, b.buff, size);
+    const size = min(len1, len2);
+    const result =  c_memcmp(buf1, buf2, size);
 
     if (result == 0) {
       // Handle cases where one string is the beginning of the other
-      if (size < a.len) then return 1;
-      if (size < b.len) then return -1;
+      if (size < len1) then return 1;
+      if (size < len2) then return -1;
     }
     return result;
   }
 
-  inline proc _strcmp(a, b): int
-      where isBytesOrStringType(a.type) && isBytesOrStringType(b.type) {
-    if a.locale_id == chpl_nodeID && b.locale_id == chpl_nodeID {
+  inline proc _strcmp(buf1, len1, loc1, buf2, len2, loc2) {
+    if loc1 == chpl_nodeID && loc2 == chpl_nodeID {
       // it's local
-      /*return _strcmp_local(a, b);*/
-      return _strcmp_local(a.buff, a.len, b.buff, b.len);
-    } else {
-      var localA: _bytes = a.localize();
-      var localB: _bytes = b.localize();
-      /*return _strcmp_local(localA, localB);*/
-      return _strcmp_local(localA.buff, localA.len,
-                           localB.buff, localB.len);
+      return _strcmp_local(buf1, len1, buf2, len2);
+    } 
+    else if loc1 != chpl_nodeID && loc2 == chpl_nodeID {
+      var locBuf1 = copyRemoteBuffer(loc1, buf1, len1);
+      return _strcmp_local(locBuf1, len1, buf2, len2);
     }
-  }
-
-  // Concatenation with other types is done by casting to bytes
-  inline proc concatHelp(s: ?t, x)
-      where isBytesOrStringType(t) && x.type != t {
-    var cs = x:t;
-    const ret = s + cs;
-    return ret;
-  }
-
-  inline proc concatHelp(x, s: ?t)
-      where isBytesOrStringType(t) && x.type != t {
-    var cs = x:t;
-    const ret = cs + s;
-    return ret;
-  }
-
-  /*
-     Copies the bytes `rhs` into the bytes `lhs`.
-  */
-  proc =(ref lhs: ?t, rhs: t) where isBytesOrStringType(t) {
-    inline proc helpMe(ref lhs: ?t, rhs: t) 
-          where isBytesOrStringType(t) {
-      if _local || rhs.locale_id == chpl_nodeID {
-        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
-      } else {
-        const len = rhs.len; // cache the remote copy of len
-        var remote_buf:bufferType = nil;
-        if len != 0 then
-          remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);
-        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
-      }
-    }
-
-    if _local || lhs.locale_id == chpl_nodeID then {
-      helpMe(lhs, rhs);
+    else if loc1 == chpl_nodeID && loc2 != chpl_nodeID {
+      var locBuf2 = copyRemoteBuffer(loc2, buf2, len2);
+      return _strcmp_local(buf1, len1, locBuf2, len2);
     }
     else {
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-        helpMe(lhs, rhs);
-      }
+      var locBuf1 = copyRemoteBuffer(loc1, buf1, len1);
+      var locBuf2 = copyRemoteBuffer(loc2, buf2, len2);
+      return _strcmp_local(locBuf1, len1, locBuf2, len2);
     }
   }
 
-  /*
-     Copies the c_string `rhs_c` into the bytes `lhs`.
+  proc copyChunk(buf, off, len, loc) {
+    if !_local && loc != chpl_nodeID {
+      var newBuf = copyRemoteBuffer(loc, buf+off, len);
+      return (newBuf, len);
+    }
+    else {
+      var (newBuf,size) = allocBuffer(len);
+      c_memcpy(newBuf, buf+off, len);
+      return (newBuf, size);
+    }
+  }
 
-     Halts if `lhs` is a remote bytes.
-  */
-  proc =(ref lhs: ?t, rhs_c: c_string) where isBytesOrStringType(t) {
-    // Make this some sort of local check once we have local types/vars
-    if !_local && (lhs.locale_id != chpl_nodeID) then
-      halt("Cannot assign a c_string to a remote string.");
-
-    const len = rhs_c.length;
-    const buff:bufferType = rhs_c:bufferType;
-    lhs.reinitString(buff, len, len+1, needToCopy=true);
+  proc getByteFromBuf(buf, off, loc) {
+    if !_local && loc != chpl_nodeID {
+      const newBuf = copyRemoteBuffer(loc, buf+off, 1);
+      return newBuf[0];
+    }
+    else {
+      return buf[off];
+    }
   }
 }

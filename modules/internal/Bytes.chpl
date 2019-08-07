@@ -368,7 +368,9 @@ module Bytes {
     proc this(i: int): _bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
-      return new _bytes(c_ptrTo(this.buff[i-1]), length=1, size=2);
+      var (buf, size) = copyChunk(buf=this.buff, off=i-1, len=1,
+                                  loc=this.locale_id);
+      return new _bytes(buf, length=1, size=size, needToCopy=false);
     }
 
     /*
@@ -377,7 +379,7 @@ module Bytes {
     proc getByte(i: int): byteType {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
-      return this.buff[i-1];
+      return getByteFromBuf(buf=this.buff, off=i-1, loc=this.locale_id);
     }
 
     /*
@@ -1501,32 +1503,6 @@ module Bytes {
   inline proc +(s: _bytes, x: bool) return concatHelp(s, x);
   inline proc +(x: bool, s: _bytes) return concatHelp(x, s);
 
-  // Relational operators
-  private inline proc _strcmp_local(a, b) : int {
-    // Assumes a and b are on same locale and not empty.
-    const size = min(a.len, b.len);
-    const result =  c_memcmp(a.buff, b.buff, size);
-
-    if (result == 0) {
-      // Handle cases where one string is the beginning of the other
-      if (size < a.len) then return 1;
-      if (size < b.len) then return -1;
-    }
-    return result;
-  }
-
-  private inline proc _strcmp(a, b) where a.type==_bytes||a.type==string &&
-                                          b.type==_bytes||b.type==string : int {
-    if a.locale_id == chpl_nodeID && b.locale_id == chpl_nodeID {
-      // it's local
-      return _strcmp_local(a, b);
-    } else {
-      var localA: _bytes = a.localize();
-      var localB: _bytes = b.localize();
-      return _strcmp_local(localA, localB);
-    }
-  }
-
   pragma "no doc"
   proc ==(a: _bytes, b: _bytes) : bool {
     // At the moment, this commented out section will not work correctly. If a
@@ -1544,32 +1520,32 @@ module Bytes {
       return ret;
     } else { */
 
-    return _strcmp(a, b) == 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) == 0;
   }
 
   pragma "no doc"
   proc ==(a: _bytes, b: string) : bool {
-    return _strcmp(a, b) == 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) == 0;
   }
 
   pragma "no doc"
   proc ==(a: string, b: _bytes) : bool {
-    return _strcmp(a, b) == 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) == 0;
   }
 
   pragma "no doc"
   inline proc !=(a: _bytes, b: _bytes) : bool {
-    return _strcmp(a, b) != 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) != 0;
   }
 
   pragma "no doc"
   inline proc !=(a: _bytes, b: string) : bool {
-    return _strcmp(a, b) != 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) != 0;
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: _bytes) : bool {
-    return _strcmp(a, b) != 0;
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) != 0;
   }
 
 
