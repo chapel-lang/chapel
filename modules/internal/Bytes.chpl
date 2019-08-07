@@ -943,7 +943,6 @@ module Bytes {
 
         if cp == 0xfffd {  //decoder returns the replacament character
           if errors == DecodePolicy.Strict {
-            chpl_here_free(c_buf);
             throw new owned DecodeError();
           }
           else if errors == DecodePolicy.Ignore {
