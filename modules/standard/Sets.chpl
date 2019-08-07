@@ -20,11 +20,11 @@
 /*
   This module contains the implementation of the set type.
 
-  A set is a collection of unique elements.
+  A set is a collection of unique elements. Sets are unordered and unindexed.
 
   The highly parallel nature of Chapel means that great care should be taken
   when performing operations that may invalidate references to set elements.
-  Adding or removing an element to a set may invalidate references to
+  Adding or removing an element from a set may invalidate references to
   elements contained in the set.
 
   All references to set elements are invalidated when the set is cleared or
@@ -58,15 +58,14 @@ module Sets {
   //
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
-  // contention (IE, lots of tasks trying to insert into the middle of this
-  // list, or any operation that is O(n)).
+  // contention.
   //
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   //
-  // Use a wrapper class to let list methods have a const ref receiver even
-  // when `parSafe` is `true` and the list lock is used.
+  // Use a wrapper class to let set methods have a const ref receiver even
+  // when `parSafe` is `true` and the set lock is used.
   //
   pragma "no doc"
   class _LockWrapper {
@@ -85,14 +84,14 @@ module Sets {
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
 
-    The set type supporta a test for membership via the :proc:`contains`
+    The set type supports a test for membership via the :proc:`contains`
     method, along with free functions for calculating the union, difference,
     intersection, and symmetric difference of two sets. The set type also
     defines the (proper) subset and (proper) superset operations by
     overloading common comparison operators.
 
-    Sets can be iterated over, but they do not support random access. The set
-    type makes no guarantee of a consistent iteration order.
+    Sets can be iterated over. The set type makes no guarantee of a consistent
+    iteration order.
 
     A set can be default initialized (containing no elements), or it may be
     initialized with elements that are copies of those contained by any
@@ -132,7 +131,7 @@ module Sets {
       Initialize this set with a unique copy of each element contained in
       `iterable`. If an element from `iterable` is already contained in this
       set, it will not be added again. The formal `iterable` must be a type
-      with an iterator defined for it.
+      with an iterator named "these" defined for it.
 
       :arg iterable: A collection of elements to add to this set.
       :arg parSafe: If `true`, this set will use parallel safe operations.
