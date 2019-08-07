@@ -1536,7 +1536,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
-                            chpl_comm_amDone_t**, chpl_bool);
+                            chpl_comm_amDone_t**, chpl_bool, chpl_bool);
 
 
 static inline
@@ -1657,7 +1657,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                        .pAmDone = NULL };
     amRequestCommon(node, arg, argSize,
                     blocking ? &arg->comm.xo.pAmDone : NULL,
-                    false);
+                    false, blocking);
   } else {
     arg->comm.xol = (struct chpl_comm_bundleData_execOnLrg_t)
                       { .b = (struct chpl_comm_bundleData_base_t)
@@ -1671,7 +1671,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
     chpl_atomic_thread_fence(memory_order_release);
     amRequestCommon(node, arg, sizeof(*arg),
                     blocking ? &arg->comm.xol.pAmDone : NULL,
-                    false);
+                    false, blocking);
     if (!blocking) {
       //
       // Even if non-blocking, we cannot return until after the target
@@ -1700,7 +1700,7 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.rma)),
-                  &arg.comm.rma.pAmDone, false);
+                  &arg.comm.rma.pAmDone, false, true);
 }
 
 
@@ -1746,7 +1746,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.amo)),
-                  &arg.comm.amo.pAmDone, true);
+                  &arg.comm.amo.pAmDone, true, true);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
@@ -1760,14 +1760,15 @@ void amRequestShutdown(c_nodeid_t node) {
                  { .op = am_opShutdown, .node = chpl_nodeID };
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm) + sizeof(arg.comm.b)),
-                  NULL, false);
+                  NULL, false, true);
 }
 
 
 static inline
 void amRequestCommon(c_nodeid_t node,
                      chpl_comm_on_bundle_t* arg, size_t argSize,
-                     chpl_comm_amDone_t** ppAmDone, chpl_bool ordered) {
+                     chpl_comm_amDone_t** ppAmDone, chpl_bool isOrderedAMO,
+                     chpl_bool yieldDuringTxnWait) {
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
@@ -1820,8 +1821,6 @@ void amRequestCommon(c_nodeid_t node,
   }
 
   atomic_bool txnDone;
-  atomic_init_bool(&txnDone, false);
-
   void* ctx;
 
   if (myArg->comm.b.op == am_opAMO) {
@@ -1832,12 +1831,13 @@ void amRequestCommon(c_nodeid_t node,
     // and we'll wait for it later, if ever.
     //
     chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (ordered) {
+    if (isOrderedAMO) {
       waitForCQAllTxns(tcip, prvData);
+      atomic_init_bool(&txnDone, false);
       ctx = txnTrkEncode(txnTrkDone, &txnDone);
     } else {
       ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
-      prvData->numTxnsOut++;  // counting txn now allows smaller prvData scope
+      prvData->numTxnsOut++;  // count txn now, saving control flow later
     }
   } else {
     //
@@ -1845,6 +1845,7 @@ void amRequestCommon(c_nodeid_t node,
     // no need to synchronize beforehand with any (unordered) AMOs that
     // might be outstanding.
     //
+    atomic_init_bool(&txnDone, false);
     ctx = txnTrkEncode(txnTrkDone, &txnDone);
   }
 
@@ -1858,20 +1859,28 @@ void amRequestCommon(c_nodeid_t node,
                       checkTxCQ(tcip));
 
   //
-  // If this is an unordered AMO we already counted it; otherwise,
-  // wait for the network completion.
+  // If this is a non-AMO or ordered AMO then wait for the network
+  // completion.  Yield initially while doing so; the minimum round
+  // trip time on the network isn't small and maybe we can find
+  // something else to do in the meantime.  After that, only yield
+  // every 64 attempts.
   //
   tciFree(tcip);
 
-  if (myArg->comm.b.op != am_opAMO || ordered) {
+  if (myArg->comm.b.op != am_opAMO || isOrderedAMO) {
+    int iters = 0;
     do {
-      sched_yield();
-      ensure_progress();
+      if (yieldDuringTxnWait && (iters++ & 0x3f) == 0) {
+        local_yield();
+        ensure_progress();
+      }
       if (tciTryRealloc(tcip)) {
         checkTxCQ(tcip);
         tciFree(tcip);
       }
     } while (!atomic_load_explicit_bool(&txnDone, memory_order_acquire));
+
+    atomic_destroy_bool(&txnDone);
   }
 
   if (myArg != arg) {
