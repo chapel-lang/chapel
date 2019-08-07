@@ -161,11 +161,8 @@ module Bytes {
           this._size = sLen+1;
         } else {
           if this.isowned {
-            const allocSize = chpl_here_good_alloc_size(sLen+1);
-            this.buff = chpl_here_alloc(allocSize,
-                                       offset_STR_COPY_DATA): bufferType;
-            c_memcpy(this.buff, s.buff, s.len);
-            this.buff[sLen] = 0;
+            const (buf, allocSize) = copyLocalBuffer(s.buff, s.len);
+            this.buff = buf;
             this._size = allocSize;
           } else {
             this.buff = s.buff;
@@ -269,27 +266,26 @@ module Bytes {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
             if this.isowned && !this.isEmpty() then
-              chpl_here_free(this.buff);
+              freeBuffer(this.buff);
             // TODO: should I just allocate 'size' bytes?
-            const allocSize = chpl_here_good_alloc_size(s_len+1);
-            this.buff = chpl_here_alloc(allocSize,
-                                       offset_STR_COPY_DATA):bufferType;
+            const (buf, allocSize) = allocBuffer(s_len+1);
+            this.buff = buf;
             this._size = allocSize;
             // We just allocated a buffer, make sure to free it later
             this.isowned = true;
           }
-          c_memmove(this.buff, buf, s_len);
+          bufferMemmove(this.buff, buf, s_len);
           this.buff[s_len] = 0;
         } else {
           if this.isowned && !this.isEmpty() then
-            chpl_here_free(this.buff);
+            freeBuffer(this.buff);
           this.buff = buf;
           this._size = size;
         }
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmpty() then chpl_here_free(this.buff);
+        if this.isowned && !this.isEmpty() then freeBuffer(this.buff);
         this._size = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the

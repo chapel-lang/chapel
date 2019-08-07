@@ -52,6 +52,12 @@ module ByteBufferHelpers {
       return dest;
   }
 
+  proc copyLocalBuffer(src_addr: bufferType, len: int) {
+      const (dst, allocSize) = allocBuffer(len);
+      bufferMemcpyLocal(dst=dst, src=src_addr, len=len);
+      return (dst, allocSize);
+  }
+
   private inline proc _strcmp_local(buf1, len1, buf2, len2) : int {
     // Assumes a and b are on same locale and not empty.
     const size = min(len1, len2);
@@ -110,6 +116,14 @@ module ByteBufferHelpers {
 
   proc bufferMemcpyLocal(dst, src, len, dst_off=0, src_off=0) {
     c_memcpy(dst+dst_off, src+src_off, len);
+  }
+
+  proc bufferMemmove(dst, src, len, dst_off=0, src_off=0) {
+    c_memmove(dst+dst_off, src+src_off, len);
+  }
+
+  proc freeBuffer(buf) {
+    chpl_here_free(buf);
   }
 
   proc getByteFromBuf(buf, off, loc) {
