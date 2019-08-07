@@ -601,7 +601,11 @@ module Bytes {
 
         if localRet == -1 {
           localRet = 0;
-          const localNeedle: _bytes = needle.localize();
+          /*const localNeedle: _bytes = needle.localize();*/
+          const needleLen = needle.len;
+          const localNeedleBuf = copyRemoteBuffer(needle.locale_id,
+                                                  needle.buff,
+                                                  needleLen);
 
           // i *is not* an index into anything, it is the order of the element
           // of view we are searching from.
@@ -610,17 +614,15 @@ module Bytes {
               then 0..#(numPossible)
               else 0..#(numPossible) by -1;
           for i in searchSpace {
-            // j *is* the index into the localNeedle's buffer
-            for j in 0..#nLen {
-              const idx = view.orderToIndex(i+j); // 1s based idx
-              if this.buff[idx-1] != localNeedle.buff[j] then break;
-
-              if j == nLen-1 {
-                if count {
-                  localRet += 1;
-                } else { // find
-                  localRet = view.orderToIndex(i);
-                }
+            const bufIdx = view.orderToIndex(i);
+            const found = bufferEqualsLocal(buf1=this.buff, off1=bufIdx-1,
+                                            buf2=localNeedleBuf, off2=0,
+                                            len=needleLen);
+            if found {
+              if count {
+                localRet += 1;
+              } else { // find
+                localRet = view.orderToIndex(i);
               }
             }
             if !count && localRet != 0 then break;

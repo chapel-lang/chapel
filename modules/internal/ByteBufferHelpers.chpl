@@ -44,7 +44,7 @@ module ByteBufferHelpers {
     return (buf, allocSize);
   }
 
-  private proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
+  proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
                                 len: int): bufferType {
       const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
       chpl_string_comm_get(dest, src_loc_id, src_addr, len);
@@ -105,6 +105,11 @@ module ByteBufferHelpers {
     else {
       return buf[off];
     }
+  }
+
+  proc bufferEqualsLocal(buf1, off1, buf2, off2, len) {
+    return _strcmp_local(buf1=buf1+off1,len1=len,
+                         buf2=buf2+off2,len2=len) == 0;
   }
 
   proc bufferEquals(buf1, off1, loc1, buf2, off2, loc2, len) {
