@@ -106,4 +106,9 @@ module ByteBufferHelpers {
       return buf[off];
     }
   }
+
+  proc bufferEquals(buf1, off1, loc1, buf2, off2, loc2, len) {
+    return _strcmp(buf1=buf1+off1,len1=len,loc1=loc1,
+                   buf2=buf2+off2,len2=len,loc2=loc1) == 0;
+  }
 }

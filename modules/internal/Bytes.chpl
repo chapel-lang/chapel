@@ -497,24 +497,23 @@ module Bytes {
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for needle in needles {
-          if needle.isEmpty() {
+          const needleLen = needle.len;
+          if needleLen == 0 {
             ret = true;
             break;
           }
-          if needle.len > this.len then continue;
+          if needleLen > this.len then continue;
 
-          const localNeedle: _bytes = needle.localize();
-
-          const needleR = 0:int..#localNeedle.len;
           if fromLeft {
-            const result = c_memcmp(this.buff, localNeedle.buff,
-                                    localNeedle.len);
-            ret = result == 0;
+            ret = bufferEquals(buf1=this.buff, off1=0, loc1=this.locale_id,
+                               buf2=needle.buff, off2=0, loc2=needle.locale_id,
+                               len=needleLen);
           } else {
-            var offset = this.len-localNeedle.len;
-            const result = c_memcmp(this.buff+offset, localNeedle.buff,
-                                    localNeedle.len);
-            ret = result == 0;
+            var offset = this.len-needleLen;
+            ret = bufferEquals(buf1=this.buff, off1=offset, loc1=this.locale_id,
+                               buf2=needle.buff, off2=0, loc2=needle.locale_id,
+                               len=needleLen);
+
           }
           if ret == true then break;
         }
