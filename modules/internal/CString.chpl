@@ -216,7 +216,7 @@ module CString {
     return __primitive("ascii", a);
   }
 
-  inline proc c_string.length return __primitive("string_length", this);
+  inline proc c_string.length return __primitive("string_length_bytes", this);
   inline proc c_string.size return this.length;
 
   inline proc c_string.substring(i: int)
@@ -230,7 +230,7 @@ module CString {
 
   pragma "last resort" // avoids param string to c_string coercion
   inline proc param c_string.length param
-    return __primitive("string_length", this);
+    return __primitive("string_length_bytes", this);
   pragma "last resort" // avoids param string to c_string coercion
   inline proc _string_contains(param a: c_string, param b: c_string) param
     return __primitive("string_contains", a, b);

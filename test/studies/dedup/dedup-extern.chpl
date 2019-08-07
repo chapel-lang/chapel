@@ -35,7 +35,7 @@ proc main(args:[] string)
     var data:string;
     var f = open(path, iomode.r);
     f.reader(kind=iokind.native).readstring(data);
-    SHA1(data.c_str():c_ptr(uint(8)), data.length:uint, c_ptrTo(mdArray));
+    SHA1(data.c_str():c_ptr(uint(8)), data.numBytes:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 1..20 do
       hash(i) = mdArray(i);

@@ -375,19 +375,39 @@ static Expr* postFoldPrimop(CallExpr* call) {
       call->replace(retval);
     }
 
-  } else if (call->isPrimitive("string_length") == true) {
+  } else if (call->isPrimitive("string_length_bytes") == true) {
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
 
     if (se->symbol()->isParameter() == true) {
-      const char* str    = get_string(se);
-      int         length = unescapeString(str, se).length();
+      const char* str     = get_string(se);
+      const size_t nbytes = unescapeString(str, se).length();
 
-      retval = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
+      retval = new SymExpr(new_IntSymbol(nbytes, INT_SIZE_DEFAULT));
 
       call->replace(retval);
     }
+
+  } else if (call->isPrimitive("string_length_codepoints") == true) {
+    SymExpr* se = toSymExpr(call->get(1));
+
+    INT_ASSERT(se && se->symbol()->isParameter());
+
+    const char* str         = get_string(se);
+    const std::string unesc = unescapeString(str, se);
+    const size_t nbytes     = unesc.length();
+
+    // Don't bother looking at the first byte.
+    // Count it as an initial UTF-8 byte.
+    size_t ncodepoints  = (nbytes > 0);
+    for (size_t i = 1; i < nbytes; ++i)
+      if (isInitialUTF8Byte(unesc[i]))
+        ++ncodepoints;
+
+    retval = new SymExpr(new_IntSymbol(ncodepoints, INT_SIZE_DEFAULT));
+
+    call->replace(retval);
 
   } else if (call->isPrimitive("ascii") == true) {
     // This primitive is used from two places in the module code.

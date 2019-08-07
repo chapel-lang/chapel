@@ -1,5 +1,5 @@
 config const delim = "!";
-assert(delim.length == 1);
+assert(delim.numBytes == 1);
 config const lineLen = 100;
 
 var f = openmem();

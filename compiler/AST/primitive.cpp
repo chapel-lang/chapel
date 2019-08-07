@@ -920,7 +920,8 @@ initPrimitive() {
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoStringC, true, true);
-  prim_def("string_length", returnInfoDefaultInt);
+  prim_def("string_length_bytes", returnInfoDefaultInt);
+  prim_def("string_length_codepoints", returnInfoDefaultInt);
   prim_def("ascii", returnInfoUInt8);
   prim_def("string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
