@@ -51,10 +51,7 @@ To learn more about handling these errors, see the
 module Bytes {
   use ChapelStandard;
   use BytesCasts;
-
-  // Growth factor to use when extending the buffer for appends
-  private config param chpl_stringGrowthFactor = 1.5;
-
+  private use ByteBufferHelpers;
 
   // Following is copy-paste from string
   //
@@ -82,22 +79,6 @@ module Bytes {
   private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
 
   type idxType = int; 
-
-  type byteType = uint(8);
-  type bufferType = c_ptr(byteType);
-
-  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
-                                           src_addr: bufferType, len: integral) {
-    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
-  }
-
-  private proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
-                                len: int): bufferType {
-      const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, len);
-      dest[len] = 0;
-      return dest;
-  }
 
   /*
      ``DecodePolicy`` specifies what happens when there is malformed characters
@@ -967,8 +948,11 @@ module Bytes {
       // is in fact perfectly decodable. In the worst case, the user wants the
       // replacement policy and we grow the buffer couple of times.
       // The alternative is to allocate more space from the beginning.
-      var allocSize = chpl_here_good_alloc_size(this.len+1);
-      var c_buf = chpl_here_alloc(allocSize, offset_STR_COPY_DATA): bufferType;
+      var ret: string;
+      var (newBuff, allocSize) = allocBuffer(this.len+1);
+      ret.buff = newBuff;
+      ret._size = allocSize;
+      ret.isowned = true;
 
       var thisIdx = 0;
       var decodedIdx = 0;
@@ -991,13 +975,15 @@ module Bytes {
         }
 
         // do a naive copy
-        c_memcpy(c_ptrTo(c_buf[decodedIdx]), bufToDecode:c_void_ptr, nbytes);
+        bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
+                          dst_off=decodedIdx);
         thisIdx += nbytes;
         decodedIdx += nbytes;
       }
 
-      // I couldn't use any named args here, why?
-      return new string(c_buf, decodedIdx, allocSize, true, false);
+      ret.len = decodedIdx;
+      ret.buff[ret.len] = 0;
+      return ret;
     }
 
     /*

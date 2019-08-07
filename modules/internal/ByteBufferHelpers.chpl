@@ -2,7 +2,12 @@
 module ByteBufferHelpers {
   use Bytes;
   pragma "no doc"
+  type byteType = uint(8);
+  pragma "no doc"
   type bufferType = c_ptr(uint(8));
+
+  // Growth factor to use when extending the buffer for appends
+  config param chpl_stringGrowthFactor = 1.5;
 
   // Following is copy-paste from string
   //
@@ -123,7 +128,7 @@ module ByteBufferHelpers {
   }
 
   proc bufferMemcpyLocal(dst, src, len, dst_off=0, src_off=0) {
-    c_memcpy(dst+dst_off, src+src_off, len);
+    c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len);
   }
 
   proc bufferMemmove(dst, src, len, dst_off=0, src_off=0) {
