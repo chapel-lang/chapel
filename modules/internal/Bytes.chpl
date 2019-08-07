@@ -420,33 +420,14 @@ module Bytes {
         // TODO: I can't just return "" (ret var gets freed for some reason)
         ret = "";
       } else {
-        ret.len = r2.size:int;
-        const newSize = chpl_here_good_alloc_size(ret.len+1);
-        ret._size = max(chpl_string_min_alloc_size, newSize);
-        // FIXME: I was dumb here, just copy the correct region over in
-        // multi-locale and use that as the string buffer. No need to copy stuff
-        // about after pulling it across.
-        ret.buff = chpl_here_alloc(ret._size,
-                                  offset_STR_COPY_DATA): bufferType;
+        var (buf, size) = copyChunk(buf=this.buff, off=r2.low-1,
+                                    len=r2.size, loc=this.locale_id);
 
-        var thisBuff: bufferType;
-        const remoteThis = _local == false && this.locale_id != chpl_nodeID;
-        if remoteThis {
-          // TODO: Could do an optimization here and only pull down the data
-          // between r2.low and r2.high. Indexing for the copy below gets a bit
-          // more complex when that is performed though.
-          thisBuff = copyRemoteBuffer(this.locale_id, this.buff, this.len);
-        } else {
-          thisBuff = this.buff;
-        }
-
-        var buff = ret.buff; // Has perf impact and our LICM can't hoist :(
-        for (r2_i, i) in zip(r2, 0..) {
-          buff[i] = thisBuff[r2_i-1];
-        }
-        buff[ret.len] = 0;
-
-        if remoteThis then chpl_here_free(thisBuff);
+        // TODO Engin: I'd like to call init or something that constructs a byte
+        // object instead of doing the these
+        ret.buff = buf;
+        ret._size = size;
+        ret.len = r2.size;
       }
 
       return ret;
