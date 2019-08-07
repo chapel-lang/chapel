@@ -1062,27 +1062,21 @@ module DefaultRectangular {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
-        var freedData = false;
         if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
+          var numElts = 0;
+          // dataAllocRange may be empty or contain a meaningful value
+          if rank == 1 && !stridable then
+            numElts = dataAllocRange.length;
+          if numElts == 0 then
+            numElts = dom.dsiNumIndices;
+
           if needsDestroy {
-            var numElts:intIdxType = 0;
-            // dataAllocRange may be empty or contain a meaningful value
-            if rank == 1 && !stridable then
-              numElts = dataAllocRange.length;
-            if numElts == 0 then
-              numElts = dom.dsiNumIndices;
             dsiDestroyDataHelper(data, numElts);
-            _ddata_free(data, numElts);
-            freedData = true;
           }
         }
-        if !freedData {
-          const size = blk(1) * dom.dsiDim(1).length;
-          _ddata_free(data, size);
-          freedData = true;
-        }
+        _ddata_free(data, numElts);
       }
     }
 
