@@ -69,7 +69,7 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(_parent);
       sid = _sid;
-      ndName = "ND"+sid;
+      ndName = "ND"+sid:string;
     }
 
     override proc writeThis(f) {

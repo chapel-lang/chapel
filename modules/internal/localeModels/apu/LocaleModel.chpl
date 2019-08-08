@@ -65,7 +65,7 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(_parent);
       sid = _sid;
-      name = _parent.chpl_name() + "-CPU" + sid;
+      name = _parent.chpl_name() + "-CPU" + sid:string;
     }
 
     override proc writeThis(f) {
@@ -109,7 +109,7 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(_parent);
       sid = _sid;
-      name = _parent.chpl_name() + "-GPU" + sid;
+      name = _parent.chpl_name() + "-GPU" + sid:string;
     }
 
     override proc writeThis(f) {
