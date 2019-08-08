@@ -139,40 +139,6 @@ module String {
   private use ByteBufferHelpers;
   private use SysBasic;
 
-  //
-  // Externs and constants used to implement strings
-  //
-
-  private        param chpl_string_min_alloc_size: int = 16;
-
-  // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.
-  // chpl_mem_descInt_t is really a well known compiler type since the compiler
-  // emits calls for the chpl_mem_descs table. Maybe the compiler should just
-  // create the type and export it to the runtime?
-  pragma "no doc"
-  extern type chpl_mem_descInt_t = int(16); // this "leaks" to CPtr.chpl
-
-  pragma "fn synchronization free"
-  private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
-
-  // Calls to chpl_here_alloc increment the memory descriptor by
-  // `chpl_memhook_md_num`. For internal runtime descriptors like the ones
-  // below, this would result in selecting the incorrect descriptor string.
-  //
-  // Instead, decrement the CHPL_RT_MD* descriptor and use the result when
-  // calling chpl_here_alloc.
-  private proc offset_STR_COPY_DATA {
-    extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
-    return CHPL_RT_MD_STR_COPY_DATA - chpl_memhook_md_num();
-  }
-  private proc offset_STR_COPY_REMOTE {
-    extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
-    return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
-  }
-
-  pragma "no doc"
-  type bufferType = c_ptr(uint(8));
-
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
   pragma "fn synchronization free"
@@ -194,18 +160,6 @@ module String {
   pragma "fn synchronization free"
   pragma "no doc"
   extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
-
-  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
-                                           src_addr: bufferType, len: integral) {
-    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
-  }
-
-  private proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
-      const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, len);
-      dest[len] = 0;
-      return dest;
-  }
 
   private config param debugStrings = false;
 
@@ -2467,7 +2421,7 @@ module String {
   */
   inline proc asciiToString(i: uint(8)) {
     compilerWarning("asciiToString is deprecated - please use codepointToString instead");
-    var buffer = chpl_here_alloc(2, offset_STR_COPY_DATA): bufferType;
+    var buffer = allocBufferExact(2);
     buffer[0] = i;
     buffer[1] = 0;
     var s = new string(buffer, 1, 2, isowned=true, needToCopy=false);
@@ -2480,10 +2434,7 @@ module String {
   */
   inline proc codepointToString(i: int(32)) {
     const mblength = qio_nbytes_char(i): int;
-    const mbsize = max(chpl_string_min_alloc_size,
-                       chpl_here_good_alloc_size(mblength + 1));
-    var buffer = chpl_here_alloc(mbsize, offset_STR_COPY_DATA): bufferType;
-    /*var (buffer, mbsize) = allocBuffer(mblength+1);*/
+    var (buffer, mbsize) = allocBuffer(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
     var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);

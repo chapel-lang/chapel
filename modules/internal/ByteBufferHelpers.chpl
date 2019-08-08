@@ -40,8 +40,8 @@ module ByteBufferHelpers {
     return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
   }
 
-  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
-                                           src_addr: bufferType, len: integral) {
+  inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
+                                   src_addr: bufferType, len: integral) {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
   }
 
@@ -55,6 +55,12 @@ module ByteBufferHelpers {
     var buf = chpl_here_alloc(allocSize,
                               offset_STR_COPY_DATA): bufferType;
     return (buf, allocSize);
+  }
+
+  proc allocBufferExact(requestedSize) {
+    var buf = chpl_here_alloc(requestedSize,
+                              offset_STR_COPY_DATA): bufferType;
+    return buf;
   }
 
   proc reallocBuffer(buf, requestedSize) {

@@ -464,6 +464,15 @@ module CPtr {
     compilerError("Can't call a C function pointer within Chapel");
   }
 
+  // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.
+  // chpl_mem_descInt_t is really a well known compiler type since the compiler
+  // emits calls for the chpl_mem_descs table. Maybe the compiler should just
+  // create the type and export it to the runtime?
+  // Note (Engin 08/07/19): This used to be in modules/internal/String.chpl, but
+  // after refactor, it is moved to modules/internal/ByteBufferHelpers.chpl,
+  // which is only privately used by bytes and string types.
+  pragma "no doc"
+  extern type chpl_mem_descInt_t = int(16);
 
   // Offset the CHPL_RT_MD constant in order to preserve the value through
   // calls to chpl_here_alloc. See comments on offset_STR_* in String.chpl
