@@ -226,7 +226,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -252,7 +252,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -297,7 +297,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t):string + ")");
 
     select numBits(t) {
       when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
@@ -306,7 +306,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t):string + ")");
 
     return retVal;
   }

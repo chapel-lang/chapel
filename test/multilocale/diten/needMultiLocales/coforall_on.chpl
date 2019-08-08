@@ -10,7 +10,7 @@ proc main() {
       select i {
         when 0 {
           r.a;
-          r.s = "Hello from locale " + here.id;
+          r.s = "Hello from locale " + here.id:string;
         }
         when 1 {
           r.b;

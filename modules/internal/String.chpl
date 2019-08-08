@@ -2220,14 +2220,20 @@ module String {
     return ret;
   }
 
+  private proc stringValDeprecated() {
+    compilerWarning("'+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string");
+  }
+
   // Concatenation with other types is done by casting to string
   private inline proc concatHelp(s: string, x:?t) where t != string {
+    stringValDeprecated();
     var cs = x:string;
     const ret = s + cs;
     return ret;
   }
 
   private inline proc concatHelp(x:?t, s: string) where t != string  {
+    stringValDeprecated();
     var cs = x:string;
     const ret = cs + s;
     return ret;
@@ -2284,28 +2290,40 @@ module String {
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
-  inline proc +(param s: string, param x: integral) param
+  inline proc +(param s: string, param x: integral) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: integral, param s: string) param
+  inline proc +(param x: integral, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
-  inline proc +(param s: string, param x: enumerated) param
+  inline proc +(param s: string, param x: enumerated) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: enumerated, param s: string) param
+  inline proc +(param x: enumerated, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
-  inline proc +(param s: string, param x: bool) param
+  inline proc +(param s: string, param x: bool) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: bool, param s: string) param
+  inline proc +(param x: bool, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
   inline proc ascii(param a: string) param {
@@ -2323,7 +2341,7 @@ module String {
   pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
     if i < 1 || i > this.numBytes then
-      compilerError("index out of bounds of string: " + i);
+      compilerError("index out of bounds of string: " + i:string);
     return __primitive("ascii", this, i);
   }
 

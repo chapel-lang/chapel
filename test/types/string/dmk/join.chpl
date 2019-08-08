@@ -5,7 +5,7 @@ use Random.PCGRandom only RandomStream;
 config const count = 100;
 
 proc get_str_with_concat(x: int, y: int): string {
-  return "out_" + x + "_" + y;
+  return "out_" + x:string + "_" + y:string;
 }
 
 proc get_str_with_join(x: int, y: int): string {
