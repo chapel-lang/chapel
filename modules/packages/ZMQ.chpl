@@ -740,7 +740,7 @@ module ZMQ {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, option:c_int,
                                  value.c_str():c_void_ptr,
-                                 value.length:size_t): int;
+                                 value.numBytes:size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           halt("Error in Socket.setsockopt(): ", errmsg);
@@ -855,7 +855,7 @@ module ZMQ {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
                                  value.c_str(): c_void_ptr,
-                                 value.length:size_t): int;
+                                 value.numBytes:size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           // It would be good to use a factory method for a ZMQError subclass,
@@ -895,7 +895,7 @@ module ZMQ {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
                                  value.c_str(): c_void_ptr,
-                                 value.length:size_t): int;
+                                 value.numBytes:size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           // It would be good to use a factory method for a ZMQError subclass,
@@ -947,7 +947,7 @@ module ZMQ {
         // Create the ZeroMQ message from the string buffer
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
-                                   copy.length:size_t, c_ptrTo(free_helper),
+                                   copy.numBytes:size_t, c_ptrTo(free_helper),
                                    c_nil)) {
           try throw_socket_error(errno, "send");
         }

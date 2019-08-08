@@ -94,7 +94,7 @@ proc write_frequencies(data : string, size : int) {
 }
 
 proc write_count(data : string, pattern : string) {
-  const size = pattern.length;
+  const size = pattern.numBytes;
   var freqs = calculate(data, size);
   const d = hash(pattern[1:byteIndex..#size]);
   writeln(freqs[d], "\t", decode(d, size));
