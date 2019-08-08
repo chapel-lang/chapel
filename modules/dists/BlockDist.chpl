@@ -38,11 +38,11 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
-use DSIUtil;
-use ChapelUtil;
-use CommDiagnostics;
-use SparseBlockDist;
-use LayoutCS;
+private use DSIUtil;
+private use ChapelUtil;
+private use CommDiagnostics;
+private use SparseBlockDist;
+private use LayoutCS;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can

@@ -21,8 +21,8 @@
 // Block-cyclic dimension specifier - for use with DimensionalDist2D.
 //
 
-use DimensionalDist2D;
-use RangeChunk only ;
+private use DimensionalDist2D;
+private use RangeChunk only ;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing

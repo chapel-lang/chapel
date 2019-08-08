@@ -31,9 +31,9 @@
 // mapped to by the distribution.
 //
 
-use DSIUtil;
-use ChapelUtil;
-use BlockDist;
+private use DSIUtil;
+private use ChapelUtil;
+private use BlockDist;
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
