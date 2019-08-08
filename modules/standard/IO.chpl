@@ -2951,9 +2951,6 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: ssize_t, x.ignoreWhiteSpace);
-    //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.numBytes, x.ignoreWhiteSpace);
-    //writeln("Scanning literal ", x.val,  " yielded error ", e);
-    //return e;
   } else if t == ioBits {
     return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
