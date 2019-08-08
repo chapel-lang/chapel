@@ -2216,7 +2216,7 @@ module String {
   }
 
   private proc stringValDeprecated() {
-    compilerWarning("'+' is deprecated for string/value pairs; please cast the value to string instead");
+    compilerWarning("'+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string");
   }
 
   // Concatenation with other types is done by casting to string

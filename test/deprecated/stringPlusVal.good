@@ -1,25 +1,25 @@
-stringPlusVal.chpl:12: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:13: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:14: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:15: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:16: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:17: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:18: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:20: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:21: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:22: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:23: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:24: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:25: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:26: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:28: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:29: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:30: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:31: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:33: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:34: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:35: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
-stringPlusVal.chpl:36: warning: '+' is deprecated for string/value pairs; please cast the value to string instead
+stringPlusVal.chpl:12: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:13: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:14: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:15: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:16: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:17: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:18: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:20: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:21: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:22: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:23: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:24: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:25: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:26: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:28: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:29: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:30: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:31: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:33: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:34: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:35: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
+stringPlusVal.chpl:36: warning: '+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string
  hi 1
  hi 0
  hi 1.2
