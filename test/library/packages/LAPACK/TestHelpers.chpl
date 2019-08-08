@@ -159,7 +159,7 @@ module TestHelpers {
                                else ( "  " );
                               
         for j in this.columnRange {
-          retstring += ( this[i,j] + ", " );
+          retstring += ( this[i,j]:string + ", " );
         }
         
         retstring += if i == this.rows then ( "]" )
