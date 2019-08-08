@@ -4290,7 +4290,7 @@ qioerr qio_conv_parse(c_string fmt,
           QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary %S conversion");
         }
 
-        spec_out->argType = QIO_CONV_ARG_TYPE_STRING;
+        spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_STRING;
       } else {
         QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary conversion");
       }

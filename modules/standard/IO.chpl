@@ -1205,6 +1205,7 @@ private extern const QIO_CONV_ARG_TYPE_BINARY_COMPLEX:c_int;
 
 private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
+private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
 private extern const QIO_CONV_ARG_TYPE_REGEXP:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL:c_int;
@@ -5338,9 +5339,16 @@ proc _toBytes(x:?t) where t==_bytes
 }
 
 private inline
-proc _toBytes(x:?t)
+proc _toBytes(x:?t) where t==string
 {
   return (x:_bytes, true);
+}
+
+// don't allow anything else to be cast to bytes for now
+private inline
+proc _toBytes(x:?t)
+{
+  return ("":_bytes, false);
 }
 
 private inline
@@ -5349,7 +5357,12 @@ proc _toString(x:?t) where t==string
   return (x, true);
 }
 private inline
-proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=string)
+proc _toString(x:?t) where t==_bytes
+{
+  return ("", false);
+}
+private inline
+proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=_bytes && t!=string)
 {
   return (x:string, true);
 }
@@ -6096,6 +6109,11 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
             } else err = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t), origLocale);
+          } when QIO_CONV_ARG_TYPE_BINARY_STRING {
+            var (t,ok) = _toBytes(args(i));
+            if ! ok {
+              err = qio_format_error_arg_mismatch(i);
+            } else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_STRING {
             var (t,ok) = _toString(args(i));
             if ! ok {
@@ -6334,6 +6352,13 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                 err = qio_format_error_arg_mismatch(i);
               } else err = _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
               if ! err then _setIfChar(args(i),chr.ch);
+            } when QIO_CONV_ARG_TYPE_BINARY_STRING {
+              var (t,ok) = _toBytes(args(i));
+              if ! ok {
+                err = qio_format_error_arg_mismatch(i);
+              }
+              else err = _read_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+              if ! err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_STRING {
               var (t,ok) = _toString(args(i));
               if ! ok {
