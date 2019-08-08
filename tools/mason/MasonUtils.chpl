@@ -241,7 +241,7 @@ record VersionInfo {
   }
 
   proc str() {
-    return major + "." + minor + "." + bug;
+    return major:string + "." + minor:string + "." + bug:string;
   }
 
   proc cmp(other:VersionInfo) {
@@ -345,7 +345,7 @@ private var chplVersion = "";
 proc getChapelVersionStr() {
   if chplVersion == "" {
     const version = getChapelVersionInfo();
-    chplVersion = version(1) + "." + version(2) + "." + version(3);
+    chplVersion = version(1):string + "." + version(2):string + "." + version(3):string;
   }
   return chplVersion;
 }

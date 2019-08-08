@@ -298,7 +298,7 @@ proc main() {
     }
     if showProgress then
       writef("time = %er, dt=%er, %s", time, deltatime,
-             if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) +"\n"
+             if doTiming then ", elapsed = " + (getCurrentTime()-iterTime):string +"\n"
                          else "\n");
   }
   if (cycle == maxcycles) {

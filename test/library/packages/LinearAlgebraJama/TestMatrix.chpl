@@ -323,7 +323,7 @@ Jama is public domain and developed by MathWorks and NIST
       if ((y == 0.0) & (abs(x) < 10.0*eps)) { return; }
 
       if (abs(x-y) > 10.0*eps*max(abs(x),abs(y))) {
-         writeln("The difference x-y is too large: x = " + x + "  y = " + y);
+         writeln("The difference x-y is too large: x = ", x, "  y = ", y);
       }
    }
 
@@ -354,7 +354,7 @@ Jama is public domain and developed by MathWorks and NIST
       if ( (X.norm1() == 0.0) & (Y.norm1() < 10.0*eps)) { writeln("X is good"); return; }
       if ((Y.norm1() == 0.0) & (X.norm1() < 10.0*eps)) { writeln("Y is good"); return; }
       if (X.minus(Y).norm1() > 1000.0*eps*max(X.norm1(),Y.norm1())) {
-         writeln("The norm of (X-Y) is too large: " + X.minus(Y).norm1());
+         writeln("The norm of (X-Y) is too large: ", X.minus(Y).norm1());
       }
    }
 

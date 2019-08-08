@@ -717,7 +717,7 @@ module DataFrames {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {
         for (v, (i, d)) in this._items() {
-          f <~> i + "    ";
+          f <~> i:string + "    ";
           if v then
             f <~> d;
           else
