@@ -4185,7 +4185,7 @@ qioerr qio_conv_parse(c_string fmt,
     }
 
     // Read a specifier character
-    if( istype(fmt[i], "ntiurmzBs/cS") ) {
+    if( istype(fmt[i], "ntiurmzs/cS") ) {
       specifier = fmt[i];
       if( fmt[i] == 'S' ) {
         // handle numbers parsed as width for e.g. %|0S
@@ -4253,7 +4253,7 @@ qioerr qio_conv_parse(c_string fmt,
         } else if( specifier == 'z' ) {
           spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_COMPLEX;
         }
-      } else if( specifier == 's' || specifier == 'S' || specifier == 'B' ) {
+      } else if( specifier == 's' || specifier == 'S') {
         char type = 's';
         if( S_encoding ) type = S_encoding;
 
@@ -4269,33 +4269,28 @@ qioerr qio_conv_parse(c_string fmt,
           }
         }
 
-        if( specifier == 'B' ) {
-          spec_out->argType = QIO_CONV_ARG_TYPE_BYTES;
+        // s conversions without following encoding type must have a width.
+        if( type == 's' && width == WIDTH_NOT_SET ) {
+          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
+          goto done;
         }
-        else {
-          // s conversions without following encoding type must have a width.
-          if( type == 's' && width == WIDTH_NOT_SET ) {
-            QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
-            goto done;
-          }
 
-          if( type == 's' ) ; // OK
-          else if( type == '0' ) style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
-          else if( type == 'v' ) style_out->str_style = QIO_STRSTYLE_VLEN; // variable length
-          else if( type == '1' ) style_out->str_style = -1; // 1b length before
-          else if( type == '2' ) style_out->str_style = -2; // 2b length before
-          else if( type == '4' ) style_out->str_style = -4; // 4b length before
-          else if( type == '8' ) style_out->str_style = -8; // 8b length before
-          else if( type == '*' ) {
-            style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
-            // need to overwrite str_style
-            spec_out->preArg3 = QIO_CONV_SET_TERMINATOR;
-          } else {
-            QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary %S conversion");
-          }
-
-          spec_out->argType = QIO_CONV_ARG_TYPE_STRING;
+        if( type == 's' ) ; // OK
+        else if( type == '0' ) style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
+        else if( type == 'v' ) style_out->str_style = QIO_STRSTYLE_VLEN; // variable length
+        else if( type == '1' ) style_out->str_style = -1; // 1b length before
+        else if( type == '2' ) style_out->str_style = -2; // 2b length before
+        else if( type == '4' ) style_out->str_style = -4; // 4b length before
+        else if( type == '8' ) style_out->str_style = -8; // 8b length before
+        else if( type == '*' ) {
+          style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
+          // need to overwrite str_style
+          spec_out->preArg3 = QIO_CONV_SET_TERMINATOR;
+        } else {
+          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary %S conversion");
         }
+
+        spec_out->argType = QIO_CONV_ARG_TYPE_STRING;
       } else {
         QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary conversion");
       }
@@ -4373,8 +4368,7 @@ qioerr qio_conv_parse(c_string fmt,
     } else if( specifier == 'c' ) {
       // width, precision, flags have no effect on %c,
       spec_out->argType = QIO_CONV_ARG_TYPE_CHAR;
-    } else if( specifier == 's' || specifier == 'S' || specifier == 'B' ||
-               specifier == '/' ) {
+    } else if( specifier == 's' || specifier == 'S' || specifier == '/' ) {
       // Either one could limit the number of bytes read (width)
       // or the number of characters read (precision)
       // (although the / conversion will ignore # chars read/precision)
@@ -4399,13 +4393,7 @@ qioerr qio_conv_parse(c_string fmt,
         }
       }
 
-      if( specifier == 'B' ) {
-        if( minus_flag ) {
-          style_out->leftjustify = 1;
-        }
-        spec_out->argType = QIO_CONV_ARG_TYPE_BYTES;
-      }
-      else if( specifier == 's' || specifier == 'S') {
+      if( specifier == 's' || specifier == 'S') {
         // Handle base flags modifying string format
 
         // Note -- when scanning, a precision should adjust the string
