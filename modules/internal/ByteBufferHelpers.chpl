@@ -45,10 +45,6 @@ module ByteBufferHelpers {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
   }
 
-  private proc isBytesOrStringType(type t) param: bool {
-    return t==_bytes || t==string;
-  }
-
   proc allocBuffer(requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize),
                           chpl_string_min_alloc_size);

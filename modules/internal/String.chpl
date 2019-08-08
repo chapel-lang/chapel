@@ -137,6 +137,7 @@ module String {
   use SysCTypes;
   use StringCasts;
   private use ByteBufferHelpers;
+  private use BytesStringCommon;
   private use SysBasic;
 
   pragma "fn synchronization free"
@@ -722,14 +723,7 @@ module String {
           on the same locale as the string.
      */
     inline proc c_str(): c_string {
-      inline proc _cast(type t:c_string, x:bufferType) {
-        return __primitive("cast", t, x);
-      }
-
-      if _local == false && this.locale_id != chpl_nodeID then
-        halt("Cannot call .c_str() on a remote string");
-
-      return this.buff:c_string;
+      return get_c_str(this);
     }
 
     pragma "no doc"
@@ -1063,40 +1057,7 @@ module String {
      */
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
-      var ret: string;
-      if this.isEmpty() then return ret;
-
-      const r2 = this._getView(r);
-      if r2.size <= 0 {
-        // TODO: I can't just return "" (ret var gets freed for some reason)
-        ret = "";
-      } else {
-        // In case r1 is strided, we cannot just use r2.size for the copy
-        // length. For to be able to cover strided copies, we copy the range
-        // from low to high then do a strided operation to put the data in the
-        // buffer in the correct order.
-        const copyLen = r2.high-r2.low+1;
-        var (copyBuf, copySize) = copyChunk(buf=this.buff, off=r2.low-1,
-                                            len=copyLen, loc=this.locale_id);
-        if r2.stride == 1 {
-          // TODO Engin: I'd like to call init or something that constructs a byte
-          // object instead of doing the these
-          ret.buff = copyBuf;
-          ret._size = copySize;
-        }
-        else {
-          // the range is strided
-          var (newBuf, allocSize) = allocBuffer(r2.size+1);
-          for (r2_i, i) in zip(r2, 0..) {
-            newBuf[i] = copyBuf[r2_i-r2.low];
-          }
-          ret.buff = newBuf;
-          ret._size = allocSize;
-        }
-        ret.len = r2.size;
-        ret.buff[ret.len] = 0;
-      }
-      return ret;
+      return get_slice(this, r);
     }
 
     pragma "no doc"
@@ -1133,39 +1094,6 @@ module String {
     pragma "no doc"
     proc readThis(f) {
       compilerError("not implemented: readThis");
-    }
-
-    // TODO: could use a multi-pattern search or some variant when there are
-    // multiple needles. Probably wouldn't be worth the overhead for small
-    // needles though
-    pragma "no doc"
-    inline proc _startsEndsWith(needles: string ..., param fromLeft: bool) : bool {
-      var ret: bool = false;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for needle in needles {
-          const needleLen = needle.len;
-          if needleLen == 0 {
-            ret = true;
-            break;
-          }
-          if needleLen > this.len then continue;
-
-          if fromLeft {
-            ret = bufferEquals(buf1=this.buff, off1=0, loc1=this.locale_id,
-                               buf2=needle.buff, off2=0, loc2=needle.locale_id,
-                               len=needleLen);
-          } else {
-            var offset = this.len-needleLen;
-            ret = bufferEquals(buf1=this.buff, off1=offset, loc1=this.locale_id,
-                               buf2=needle.buff, off2=0, loc2=needle.locale_id,
-                               len=needleLen);
-
-          }
-          if ret == true then break;
-        }
-      }
-      return ret;
     }
 
     /*
@@ -1331,21 +1259,7 @@ module String {
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
     proc replace(needle: string, replacement: string, count: int = -1) : string {
-      var result: string = this;
-      var found: int = 0;
-      var startIdx: byteIndex = 1;
-      const localNeedle: string = needle.localize();
-      const localReplacement: string = replacement.localize();
-
-      while (count < 0) || (found < count) {
-        const idx = result.find(localNeedle, startIdx..);
-        if !idx then break;
-
-        found += 1;
-        result = result[..idx-1] + localReplacement + result[(idx + localNeedle.length)..];
-        startIdx = idx + localReplacement.length;
-      }
-      return result;
+      return do_replace(this, needle, replacement, count);
     }
 
     /*
@@ -1362,47 +1276,7 @@ module String {
      */
     // TODO: specifying return type leads to un-inited string?
     iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
-      if !(maxsplit == 0 && ignoreEmpty && this.isEmpty()) {
-        const localThis: string = this.localize();
-        const localSep: string = sep.localize();
-
-        // really should be <, but we need to avoid returns and extra yields so
-        // the iterator gets inlined
-        var splitAll: bool = maxsplit <= 0;
-        var splitCount: int = 0;
-
-        var start: byteIndex = 1;
-        var done: bool = false;
-        while !done  {
-          var chunk: string;
-          var end: byteIndex;
-
-          if (maxsplit == 0) {
-            chunk = localThis;
-            done = true;
-          } else {
-            if (splitAll || splitCount < maxsplit) then
-              end = localThis.find(localSep, start..);
-
-            if(end == 0) {
-              // Separator not found
-              chunk = localThis[start..];
-              done = true;
-            } else {
-              chunk = localThis[start..end-1];
-            }
-          }
-
-          if !(ignoreEmpty && chunk.isEmpty()) {
-            // Putting the yield inside the if prevents us from being inlined
-            // in the zippered case, but I don't think there is any way to avoid
-            // that easily
-            yield chunk;
-            splitCount += 1;
-          }
-          start = end+localSep.length;
-        }
-      }
+      for s in do_split(this, sep, maxsplit, ignoreEmpty) do yield s;
     }
 
     /*
@@ -1523,70 +1397,13 @@ module String {
     }
 
     pragma "no doc"
-    proc join(ir: _iteratorRecord) {
-      var s: string;
-      var first: bool = true;
-      for i in ir {
-        if first then
-          first = false;
-        else
-          s += this;
-        s += i;
-      }
-      return s;
+    proc join(ir: _iteratorRecord): string {
+      return do_join_iterator(this, ir);
     }
 
     pragma "no doc"
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      if S.size == 0 {
-        return '';
-      } else if S.size == 1 {
-        // TODO: ensures copy, clean up when no longer needed
-        var ret: string;
-        if (isArray(S)) {
-          ret = S[S.domain.first];
-        } else {
-          ret = S[1];
-        }
-        return ret;
-      } else {
-        var joinedSize: int = this.len * (S.size - 1);
-        for s in S do joinedSize += s.length;
-
-        if joinedSize == 0 then
-          return '';
-
-        var joined: string;
-        joined.len = joinedSize;
-
-        var (newBuf, allocSize) = allocBuffer(joined.len+1);
-        joined._size = size;
-        joined.buff = newBuf;
-
-        var first = true;
-        var offset = 0;
-        for s in S {
-          const sLen = s.len;
-
-          // copy this's contents
-          if first {
-            first = false;
-          } else if this.len != 0 {
-            bufferMemcpyLocal(dst=joined.buff, src=this.buff, len=this.len,
-                              dst_off=offset);
-            offset += this.len;
-          }
-
-          // copy s's contents
-          if sLen != 0 {
-            bufferMemcpy(dst=joined.buff, dst_off=offset,
-                         src_loc=s.locale_id, src=s.buff,len=sLen);
-            offset += sLen;
-          }
-        }
-        joined.buff[joined.len] = 0;
-        return joined;
-      }
+      return do_join(this, S);
     }
 
     /*
@@ -1601,45 +1418,7 @@ module String {
                 characters in `chars` removed as appropriate.
     */
     proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
-      if this.isEmpty() then return "";
-      if chars.isEmpty() then return this;
-
-      const localThis: string = this.localize();
-      const localChars: string = chars.localize();
-
-      var start: byteIndex = 1;
-      var end: byteIndex = localThis.len;
-
-      if leading {
-        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
-          for removeChar in localChars.codepoints() {
-            if thisChar == removeChar {
-              start = i + nbytes;
-              continue outer;
-            }
-          }
-          break;
-        }
-      }
-
-      if trailing {
-        // Because we are working with codepoints whose starting byte index
-        // is not initially known, it is faster to work forward, assuming we
-        // are already past the end of the string, and then update the end
-        // point as we are proven wrong.
-        end = 0;
-        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
-          for removeChar in localChars.codepoints() {
-            if thisChar == removeChar {
-              continue outer;
-            }
-          }
-          // This was not a character to be removed, so update tentative end.
-          end = i + nbytes-1;
-        }
-      }
-
-      return localThis[start..end];
+      return do_strip(this, chars, leading, trailing);
     }
 
     /*
@@ -1647,16 +1426,8 @@ module String {
       before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
       the tuple will contain the whole string, and then two empty strings.
     */
-    // TODO: I could make this and other routines that use find faster by
-    // making a version of search helper that only takes in local strings and
-    // localizing in the calling function
     proc const partition(sep: string) : 3*string {
-      const idx = this.find(sep);
-      if idx != 0 {
-        return (this[..idx-1], sep, this[idx+sep.length..]);
-      } else {
-        return (this, "", "");
-      }
+      return do_partition(this, sep);
     }
 
     /*
@@ -2031,27 +1802,7 @@ module String {
      Copies the string `rhs` into the string `lhs`.
   */
   proc =(ref lhs: string, rhs: string) {
-    inline proc helpMe(ref lhs: string, rhs: string) {
-      if _local || rhs.locale_id == chpl_nodeID {
-        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
-      } else {
-        const len = rhs.len; // cache the remote copy of len
-        var remote_buf:bufferType = nil;
-        if len != 0 then
-          remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);
-        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
-      }
-    }
-
-    if _local || lhs.locale_id == chpl_nodeID then {
-      helpMe(lhs, rhs);
-    }
-    else {
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-        helpMe(lhs, rhs);
-      }
-    }
+    do_assign(lhs, rhs);
   }
 
   /*
@@ -2060,13 +1811,7 @@ module String {
      Halts if `lhs` is a remote string.
   */
   proc =(ref lhs: string, rhs_c: c_string) {
-    // Make this some sort of local check once we have local types/vars
-    if !_local && (lhs.locale_id != chpl_nodeID) then
-      halt("Cannot assign a c_string to a remote string.");
-
-    const len = rhs_c.length;
-    const buff:bufferType = rhs_c:bufferType;
-    lhs.reinitString(buff, len, len+1, needToCopy=true);
+    do_assign(lhs, rhs_c);
   }
 
   //
@@ -2076,25 +1821,7 @@ module String {
      :returns: A new string which is the result of concatenating `s0` and `s1`
   */
   proc +(s0: string, s1: string) {
-    // cache lengths locally
-    const s0len = s0.len;
-    if s0len == 0 then return s1;
-    const s1len = s1.len;
-    if s1len == 0 then return s0;
-
-    var ret: string;
-    ret.len = s0len + s1len;
-    var (buff, allocSize) = allocBuffer(ret.len+1);
-    ret.buff = buff;
-    ret._size = allocSize;
-    ret.isowned = true;
-
-    bufferMemcpy(dst=ret.buff, src_loc=s0.locale_id, src=s0.buff, len=s0len);
-    bufferMemcpy(dst=ret.buff, src_loc=s1.locale_id, src=s1.buff, len=s1len,
-                 dst_off=s0len);
-    ret.buff[ret.len] = 0;
-
-    return ret;
+    return do_concat(s0, s1);
   }
 
   /*
@@ -2112,29 +1839,7 @@ module String {
        Hello! Hello! Hello!
   */
   proc *(s: string, n: integral) {
-    if n <= 0 then return "";
-
-    const sLen = s.length;
-    if sLen == 0 then return "";
-
-    var ret: string;
-    ret.len = sLen * n; // TODO: check for overflow
-    var (buff, allocSize) = allocBuffer(ret.len+1);
-    ret.buff = buff;
-    ret._size = allocSize;
-    ret.isowned = true;
-
-    bufferMemcpy(dst=ret.buff, src_loc=s.locale_id, src=s.buff, len=s.len);
-
-    var offset = sLen;
-    for i in 1..(n-1) {
-      bufferMemcpyLocal(dst=ret.buff, src=ret.buff, len=s.len,
-                        dst_off=offset);
-      offset += sLen;
-    }
-    ret.buff[ret.len] = 0;
-
-    return ret;
+    return do_multiply(s, n);
   }
 
   // Concatenation with other types is done by casting to string
@@ -2260,35 +1965,7 @@ module String {
      Appends the string `rhs` to the string `lhs`.
   */
   proc +=(ref lhs: string, const ref rhs: string) : void {
-    // if rhs is empty, nothing to do
-    if rhs.len == 0 then return;
-
-    on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      const rhsLen = rhs.len;
-      const newLength = lhs.len+rhsLen; //TODO: check for overflow
-      //resize the buffer if needed
-      if lhs._size <= newLength {
-        const requestedSize = max(newLength+1,
-                                  lhs.len*chpl_stringGrowthFactor):int;
-        if lhs.isowned {
-          var (newBuff, allocSize) = reallocBuffer(lhs.buff, requestedSize);
-          lhs.buff = newBuff;
-          lhs._size = allocSize;
-        } else {
-          var (newBuff, allocSize) = allocBuffer(requestedSize);
-          bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.len);
-          lhs.buff = newBuff;
-          lhs._size = allocSize;
-          lhs.isowned = true;
-        }
-      }
-      // copy the data from rhs
-      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhsLen,
-                   dst_off=lhs.len);
-      lhs.len = newLength;
-      lhs.buff[newLength] = 0;
-    }
+    do_append(lhs, rhs);
   }
 
   //
@@ -2323,13 +2000,12 @@ module String {
       }
       return ret;
     } else { */
-
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) == 0;
+    return do_eq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) != 0;
+    return !do_eq(a,b);
   }
 
   pragma "no doc"
