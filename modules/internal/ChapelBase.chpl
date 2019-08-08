@@ -1373,7 +1373,7 @@ module ChapelBase {
 
   // this version handles downcast to non-nil borrowed
   inline proc _cast(type t:borrowed!, x:borrowed?) throws
-    where isSubtype(t,_to_nonnil(x.type)) && (_to_nonnil(x.type) != t)
+    where isProperSubtype(t,_to_nonnil(x.type))
   {
     if x == nil {
       throw new owned NilClassError();
@@ -1388,7 +1388,7 @@ module ChapelBase {
 
   // this version handles downcast to nilable borrowed
   inline proc _cast(type t:borrowed?, x:borrowed?)
-    where isSubtype(t,x.type) && (x.type != t)
+    where isProperSubtype(t,x.type)
   {
     if x == nil {
       return nil;

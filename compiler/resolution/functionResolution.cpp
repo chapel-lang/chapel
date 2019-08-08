@@ -2496,7 +2496,9 @@ static void adjustClassCastCall(CallExpr* call)
 
     // Now compute the target type
     Type* t = NULL;
-    if (isDecoratorManaged(d)) {
+    if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
+      t = targetType;
+    } else if (isDecoratorManaged(d)) {
       AggregateType* manager = getManagedPtrManagerType(valueType);
       t = computeDecoratedManagedType(at, d, manager, call);
     } else {
