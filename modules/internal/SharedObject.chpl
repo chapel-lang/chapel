@@ -250,11 +250,23 @@ module SharedObject {
       src.chpl_pn = nil;
     }
 
+    /* Private initializer for casts. This one increments the reference
+       count if the stored pointer is not nil. */
     pragma "no doc"
     proc init(_private: bool, type t, p, pn) {
+      var ptr = p:_to_nilable(_to_unmanaged(t));
+      var count = pn;
+      if ptr != nil {
+        // increment the reference count
+        count!.retain();
+      } else {
+        // don't store a count for the nil pointer
+        count = nil;
+      }
+
       this.chpl_t = t;
-      this.chpl_p = p:_to_nilable(_to_unmanaged(t));
-      this.chpl_pn = pn;
+      this.chpl_p = ptr;
+      this.chpl_pn = count;
     }
 
 
@@ -461,28 +473,41 @@ module SharedObject {
   }
 
   // this version handles downcast to non-nil shared
-  inline proc _cast(type t:shared!, in x:shared?) throws
+  inline proc _cast(type t:shared!, const ref x:shared?) throws
     where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
   {
     if x.chpl_p == nil {
       throw new owned NilClassError();
     }
+    // the following line can throw ClassCastError
     var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
-    var pn = x.chpl_pn;
-    x.chpl_p = nil;
-    x.chpl_pn = nil;
-    return new _shared(true, _to_borrowed(p.type), p, pn);
-  }
 
-  // this version handles downcast to nilable shared
-  inline proc _cast(type t:shared?, in x:shared?)
+    return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
+  }
+  inline proc _cast(type t:shared!, const ref x:shared!) throws
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
+    // the following line can throw ClassCastError
+    var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+
+    return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
+  }
+
+
+  // this version handles downcast to nilable shared
+  inline proc _cast(type t:shared?, const ref x:shared?)
+    where isProperSubtype(t.chpl_t,x.chpl_t)
+  {
+    // this cast returns nil if the dynamic type is not compatible
     var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
-    var pn = x.chpl_pn;
-    x.chpl_p = nil;
-    x.chpl_pn = nil;
-    return new _shared(true, _to_borrowed(p.type), p, pn);
+    return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
+  }
+  inline proc _cast(type t:shared?, const ref x:shared!)
+    where isProperSubtype(t.chpl_t,_to_nilable(x.chpl_t))
+  {
+    // this cast returns nil if the dynamic type is not compatible
+    var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
 
   // cast from nil to shared

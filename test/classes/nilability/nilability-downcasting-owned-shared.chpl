@@ -239,6 +239,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(po != nil); // should not transfer if cast failed
         po = new owned Parent(3);
       }
       // from poq
@@ -249,6 +250,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(poq != nil); // should not transfer if cast failed
         poq = new owned Parent(3);
       }
       // from noq
@@ -290,6 +292,7 @@ module test {
         var x = po:owned Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(po != nil); // should not transfer if cast failed
         po = new owned Parent(3);
       }
       // from poq
@@ -298,6 +301,7 @@ module test {
         var x = poq:owned Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(poq != nil); // should not transfer if cast failed
         poq = new owned Parent(3);
       }
       // from noq
@@ -391,6 +395,7 @@ module test {
         var x = ps:shared Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(ps != nil);
       }
       // from psq
       {
@@ -398,6 +403,7 @@ module test {
         var x = psq:shared Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(psq != nil);
       }
       // from nsq
       {
