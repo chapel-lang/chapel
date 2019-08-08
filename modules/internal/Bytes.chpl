@@ -360,14 +360,30 @@ module Bytes {
         // TODO: I can't just return "" (ret var gets freed for some reason)
         ret = "";
       } else {
-        var (buf, size) = copyChunk(buf=this.buff, off=r2.low-1,
-                                    len=r2.size, loc=this.locale_id);
-
-        // TODO Engin: I'd like to call init or something that constructs a byte
-        // object instead of doing the these
-        ret.buff = buf;
-        ret._size = size;
+        // In case r1 is strided, we cannot just use r2.size for the copy
+        // length. For to be able to cover strided copies, we copy the range
+        // from low to high then do a strided operation to put the data in the
+        // buffer in the correct order.
+        const copyLen = r2.high-r2.low+1;
+        var (copyBuf, copySize) = copyChunk(buf=this.buff, off=r2.low-1,
+                                            len=copyLen, loc=this.locale_id);
+        if r2.stride == 1 {
+          // TODO Engin: I'd like to call init or something that constructs a byte
+          // object instead of doing the these
+          ret.buff = copyBuf;
+          ret._size = copySize;
+        }
+        else {
+          // the range is strided
+          var (newBuf, allocSize) = allocBuffer(r2.size+1);
+          for (r2_i, i) in zip(r2, 0..) {
+            newBuf[i] = copyBuf[r2_i-r2.low];
+          }
+          ret.buff = newBuf;
+          ret._size = allocSize;
+        }
         ret.len = r2.size;
+        ret.buff[ret.len] = 0;
       }
       return ret;
     }
