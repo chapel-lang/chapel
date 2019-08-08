@@ -506,7 +506,7 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
 pragma "no doc"
 record stringPart {
   var offset:byteIndex;
-  var length:int;
+  var numBytes:int;
   var from:string;
 }
 
@@ -1029,7 +1029,7 @@ proc =(ref ret:regexp, x:regexp)
       qio_regexp_get_options(x._regexp, options);
     }
 
-    qio_regexp_create_compile(pattern, pattern.numBytes, options, ret._regexp);
+    qio_regexp_create_compile(pattern, pattern.length, options, ret._regexp);
   }
 }
 
