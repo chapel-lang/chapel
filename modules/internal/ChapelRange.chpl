@@ -1557,9 +1557,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     proc absSameType(str) {
       if (r.stride < 0) {
-        return (-r.stride):r.idxType;
+        return (-r.stride):resultType;
       } else {
-        return r.stride:r.idxType;
+        return r.stride:resultType;
       }
     }
 
@@ -1568,8 +1568,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         return new range(idxType = r.idxType,
                          boundedType = BoundedRangeType.bounded,
                          stridable = r.stridable,
-                         _low = r._low,
-                         _high = r._low - absSameType(r.stride),
+                         _low = chpl__intToIdx(r.idxType, r._low),
+                         _high = chpl__intToIdx(r.idxType, r._low - absSameType(r.stride)),
                          _stride = r.stride,
                          _alignment = r._alignment,
                          _aligned = r.aligned);
@@ -1577,8 +1577,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         return new range(idxType = r.idxType,
                          boundedType = BoundedRangeType.bounded,
                          stridable = r.stridable,
-                         _low = r._high + absSameType(r.stride),
-                         _high = r._high,
+                         _low = chpl__intToIdx(r.idxType, r._high + absSameType(r.stride)),
+                         _high = chpl__intToIdx(r.idxType, r._high),
                          _stride = r.stride,
                          _alignment = r._alignment,
                          _aligned = r.aligned);
