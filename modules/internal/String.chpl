@@ -693,14 +693,19 @@ module String {
     }
 
     /*
-      :returns: The number of bytes in the string.
+      :returns: The number of codepoints in the string.
       */
-    inline proc length return len;
+    inline proc length return numCodepoints;
+
+    /*
+      :returns: The number of codepoints in the string.
+      */
+    inline proc size return numCodepoints;
 
     /*
       :returns: The number of bytes in the string.
       */
-    inline proc size return len;
+    inline proc numBytes return len;
 
     /*
       :returns: The number of codepoints in the string, assuming the
@@ -967,7 +972,7 @@ module String {
       Return the codepoint starting at the `i` th byte in the string
 
       :returns: A string with the complete multibyte character starting at the
-                specified byte index from ``1..string.length``
+                specified byte index from ``1..string.numBytes``
      */
     proc this(i: byteIndex) : string {
       var idx = i: int;
@@ -1402,8 +1407,8 @@ module String {
         if !idx then break;
 
         found += 1;
-        result = result[..idx-1] + localReplacement + result[(idx + localNeedle.length)..];
-        startIdx = idx + localReplacement.length;
+        result = result[..idx-1] + localReplacement + result[(idx + localNeedle.numBytes)..];
+        startIdx = idx + localReplacement.numBytes;
       }
       return result;
     }
@@ -1460,7 +1465,7 @@ module String {
             yield chunk;
             splitCount += 1;
           }
-          start = end+localSep.length;
+          start = end+localSep.numBytes;
         }
       }
     }
@@ -1611,7 +1616,7 @@ module String {
         return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
-        for s in S do joinedSize += s.length;
+        for s in S do joinedSize += s.numBytes;
 
         if joinedSize == 0 then
           return '';
@@ -1714,7 +1719,7 @@ module String {
     proc const partition(sep: string) : 3*string {
       const idx = this.find(sep);
       if idx != 0 {
-        return (this[..idx-1], sep, this[idx+sep.length..]);
+        return (this[..idx-1], sep, this[idx+sep.numBytes..]);
       } else {
         return (this, "", "");
       }
@@ -2186,7 +2191,7 @@ module String {
   proc *(s: string, n: integral) {
     if n <= 0 then return "";
 
-    const sLen = s.length;
+    const sLen = s.numBytes;
     if sLen == 0 then return "";
 
     var ret: string;
@@ -2328,21 +2333,29 @@ module String {
 
   pragma "no doc"
   inline proc param string.toByte() param : uint(8) {
-    if __primitive("string_length", this) != 1 then
+    if this.numBytes != 1 then
       compilerError("string.toByte() only accepts single-byte strings");
     return __primitive("ascii", this);
   }
 
   pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
-    if i < 1 || i > __primitive("string_length", this) then
+    if i < 1 || i > this.numBytes then
       compilerError("index out of bounds of string: " + i:string);
     return __primitive("ascii", this, i);
   }
 
   pragma "no doc"
+  inline proc param string.numBytes param
+    return __primitive("string_length_bytes", this);
+
+  pragma "no doc"
+  inline proc param string.numCodepoints param
+    return __primitive("string_length_codepoints", this);
+
+  pragma "no doc"
   inline proc param string.length param
-    return __primitive("string_length", this);
+    return this.numCodepoints;
 
   pragma "no doc"
   inline proc _string_contains(param a: string, param b: string) param
@@ -2654,7 +2667,7 @@ module String {
                    chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
       // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
       var locHash: int(64) = 5381;
-      for c in 0..#(x.length) {
+      for c in 0..#(x.numBytes) {
         locHash = ((locHash << 5) + locHash) ^ x.buff[c];
       }
       hash = locHash;

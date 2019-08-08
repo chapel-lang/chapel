@@ -1156,9 +1156,9 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
              actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_GENERIC_NILABLE:
       return actual == CLASS_TYPE_GENERIC_NILABLE ||
-             actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL;
+             actual == CLASS_TYPE_BORROWED_NILABLE||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -2496,9 +2496,18 @@ static void adjustClassCastCall(CallExpr* call)
 
     // Now compute the target type
     Type* t = NULL;
-    if (isDecoratorManaged(d)) {
+    if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
+      // Don't change it, expecting an error
+      t = targetType;
+    } else if (isDecoratorManaged(d)) {
       AggregateType* manager = getManagedPtrManagerType(valueType);
-      t = computeDecoratedManagedType(at, d, manager, call);
+      if (isManagedPtrType(targetType) &&
+          manager != getManagedPtrManagerType(targetType)) {
+        // Don't change it, expecting an error
+        t = targetType;
+      } else {
+        t = computeDecoratedManagedType(at, d, manager, call);
+      }
     } else {
       t = at->getDecoratedClass(d);
     }
