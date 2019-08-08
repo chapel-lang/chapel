@@ -132,7 +132,7 @@ module ByteBufferHelpers {
 
   //dst must be local
   proc bufferMemcpy(dst, src_loc, src, len, dst_off=0, src_off=0) {
-    if !_local && src_loc == chpl_nodeID {
+    if !_local && src_loc != chpl_nodeID {
       chpl_string_comm_get(dst+dst_off, src_loc, src+src_off, len);
     }
     else {
