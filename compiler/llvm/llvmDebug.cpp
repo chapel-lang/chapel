@@ -644,11 +644,7 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
   const char *name = varSym->name;
   const char *file_name = varSym->astloc.filename;
   int line_number = varSym->astloc.lineno;
-  FnSymbol *funcSym = NULL;
-  if(isFnSymbol(varSym->defPoint->parentSymbol))
-    funcSym = (FnSymbol*)varSym->defPoint->parentSymbol;//TODO:if parent is a block
-  else
-    printf("Couldn't find the function parent of variable: %s!\n",name);
+  FnSymbol *funcSym = varSym->defPoint->getFunction();
 
   llvm::DISubprogram* scope = get_function(funcSym);
   llvm::DIFile* file = get_file(file_name);
