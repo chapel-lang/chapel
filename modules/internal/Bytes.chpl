@@ -803,7 +803,7 @@ module Bytes {
         var joined: _bytes;
         joined.len = joinedSize;
 
-        var (newBuf, allocSize) = allocBuffer(joined.len);
+        var (newBuf, allocSize) = allocBuffer(joined.len+1);
         joined._size = size;
         joined.buff = newBuf;
 
@@ -828,6 +828,7 @@ module Bytes {
             offset += sLen;
           }
         }
+        joined.buff[joined.len] = 0;
         return joined;
       }
     }
@@ -1251,7 +1252,8 @@ module Bytes {
           lhs.buff = newBuff;
           lhs._size = allocSize;
         } else {
-          var (newBuff, allocSize) = copyLocalBuffer(lhs.buff, lhs.len);
+          var (newBuff, allocSize) = allocBuffer(requestedSize);
+          bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.len);
           lhs.buff = newBuff;
           lhs._size = allocSize;
           lhs.isowned = true;
@@ -1261,6 +1263,7 @@ module Bytes {
       bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhsLen,
                    dst_off=lhs.len);
       lhs.len = newLength;
+      lhs.buff[newLength] = 0;
     }
   }
 
@@ -1336,7 +1339,7 @@ module Bytes {
     // TODO Engin: Implement a factory function for this case
     var ret: t;
     ret.len = s0len + s1len;
-    var (buff, allocSize) = allocBuffer(ret.len);
+    var (buff, allocSize) = allocBuffer(ret.len+1);
     ret.buff = buff;
     ret._size = allocSize;
     ret.isowned = true;
@@ -1344,8 +1347,8 @@ module Bytes {
     bufferMemcpy(dst=ret.buff, src_loc=s0.locale_id, src=s0.buff, len=s0len);
     bufferMemcpy(dst=ret.buff, src_loc=s1.locale_id, src=s1.buff, len=s1len,
                  dst_off=s0len);
+    ret.buff[ret.len] = 0;
     return ret;
-
   }
 
   /*
@@ -1362,7 +1365,7 @@ module Bytes {
     // TODO Engin: Implement a factory function for this case
     var ret: _bytes;
     ret.len = sLen * n; // TODO: check for overflow
-    var (buff, allocSize) = allocBuffer(ret.len);
+    var (buff, allocSize) = allocBuffer(ret.len+1);
     ret.buff = buff;
     ret._size = allocSize;
     ret.isowned = true;
@@ -1375,6 +1378,7 @@ module Bytes {
                         dst_off=offset);
       offset += sLen;
     }
+    ret.buff[ret.len] = 0;
     return ret;
   }
 
