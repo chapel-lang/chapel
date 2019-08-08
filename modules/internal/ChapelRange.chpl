@@ -1555,16 +1555,37 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     type resultType = r.intIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    if (count == 0) then
-      // Return a degenerate range.
-      return new range(idxType = r.idxType,
-                       boundedType = BoundedRangeType.bounded,
-                       stridable = r.stridable,
-                       _low = r.chpl_intToIdx(1),
-                       _high = r.chpl_intToIdx(0),
-                       _stride = r.stride,
-                       _alignment = r.chpl_intToIdx(0),
-                       _aligned = false);
+    proc absSameType(str) {
+      if (r.stride < 0) {
+        return (-r.stride):r.idxType;
+      } else {
+        return r.stride:r.idxType;
+      }
+    }
+
+    if (count == 0) {
+      if (r.hasLowBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = r._low,
+                         _high = r._low - absSameType(r.stride),
+                         _stride = r.stride,
+                         _alignment = r._alignment,
+                         _aligned = r.aligned);
+      } else if (r.hasHighBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = r._high + absSameType(r.stride),
+                         _high = r._high,
+                         _stride = r.stride,
+                         _alignment = r._alignment,
+                         _aligned = r.aligned);
+      } else {
+        halt("Internal error: Unexpected case in chpl_count_help");
+      }
+    }
 
     if boundsChecking && !r.hasFirst() && count > 0 then
       boundsCheckHalt("With a positive count, the range must have a first index.");
