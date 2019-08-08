@@ -1,1 +1,1 @@
-init-var-nonnil-owned-from-oknil-borrowed.chpl:9: error: cannot assign to an owned variable from a borrowed class
+init-var-nonnil-owned-from-oknil-borrowed.chpl:9: error: cannot create an owned variable from a borrowed class instance

@@ -277,7 +277,7 @@ module SharedObject {
       if isNonNilableClass(this.type) && isNilableClass(take) &&
          !chpl_legacyNilClasses
       then
-        compilerError("cannot assign to a non-nilable shared variable from a nilable class");
+        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
       this.init(take);
     }
@@ -291,7 +291,7 @@ module SharedObject {
       if isNonNilableClass(this.type) && isNilableClass(src) &&
          !chpl_legacyNilClasses
       then
-        compilerError("cannot assign to a non-nilable shared variable from a nilable class");
+        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.chpl_p;
@@ -304,12 +304,12 @@ module SharedObject {
     }
 
     proc init=(src: borrowed) {
-      compilerError("cannot assign to a shared variable from a borrowed class");
+      compilerError("cannot create a shared variable from a borrowed class instance");
       this.chpl_t = int; //dummy
     }
 
     proc init=(src: unmanaged) {
-      compilerError("cannot assign to a shared variable from an unmanaged class");
+      compilerError("cannot create a shared variable from an unmanaged class instance");
       this.chpl_t = int; //dummy
     }
 

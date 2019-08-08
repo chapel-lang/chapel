@@ -1,1 +1,1 @@
-init-var-nonnil-owned-from-oknil-owned.chpl:9: error: cannot assign to a non-nilable owned variable from a nilable class
+init-var-nonnil-owned-from-oknil-owned.chpl:9: error: cannot create a non-nilable owned variable from a nilable class instance

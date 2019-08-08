@@ -248,7 +248,7 @@ module OwnedObject {
       if isNonNilableClass(this.type) && isNilableClass(src) &&
          !chpl_legacyNilClasses
       then
-        compilerError("cannot assign to a non-nilable owned variable from a nilable class");
+        compilerError("cannot create a non-nilable owned variable from a nilable class instance");
 
       // Use 'this.type.chpl_t' in case RHS is a subtype
       this.chpl_t = this.type.chpl_t;
@@ -257,17 +257,17 @@ module OwnedObject {
     }
 
     proc init=(src: shared) {
-      compilerError("cannot assign to an owned variable from a shared class");
+      compilerError("cannot create an owned variable from a shared class instance");
       this.chpl_t = int; //dummy
     }
 
     proc init=(src: borrowed) {
-      compilerError("cannot assign to an owned variable from a borrowed class");
+      compilerError("cannot create an owned variable from a borrowed class instance");
       this.chpl_t = int; //dummy
     }
 
     proc init=(src: unmanaged) {
-      compilerError("cannot assign to an owned variable from an unmanaged class");
+      compilerError("cannot create an owned variable from an unmanaged class instance");
       this.chpl_t = int; //dummy
     }
 
