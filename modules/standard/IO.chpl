@@ -5339,7 +5339,7 @@ proc _toBytes(x:?t) where t==_bytes
 }
 
 private inline
-proc _toBytes(x:?t) where t==string
+proc _toBytes(x:?t) where t!=_bytes
 {
   halt("This shouldn't have been called");
   return (x, false);
