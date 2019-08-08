@@ -14,6 +14,14 @@ module ByteBufferHelpers {
   // Externs and constants used to implement strings
   //
   private        param chpl_string_min_alloc_size: int = 16;
+
+  // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.
+  // chpl_mem_descInt_t is really a well known compiler type since the compiler
+  // emits calls for the chpl_mem_descs table. Maybe the compiler should just
+  // create the type and export it to the runtime?
+  pragma "no doc"
+  extern type chpl_mem_descInt_t = int(16);
+
   pragma "fn synchronization free"
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
 
@@ -42,7 +50,7 @@ module ByteBufferHelpers {
   }
 
   proc allocBuffer(requestedSize) {
-    const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
+    const allocSize = max(chpl_here_good_alloc_size(requestedSize),
                           chpl_string_min_alloc_size);
     var buf = chpl_here_alloc(allocSize,
                               offset_STR_COPY_DATA): bufferType;
@@ -66,7 +74,7 @@ module ByteBufferHelpers {
   }
 
   proc copyLocalBuffer(src_addr: bufferType, len: int) {
-      const (dst, allocSize) = allocBuffer(len);
+      const (dst, allocSize) = allocBuffer(len+1);
       bufferMemcpyLocal(dst=dst, src=src_addr, len=len);
       return (dst, allocSize);
   }
@@ -110,7 +118,7 @@ module ByteBufferHelpers {
       return (newBuf, len);
     }
     else {
-      var (newBuf,size) = allocBuffer(len);
+      var (newBuf,size) = allocBuffer(len+1);
       c_memcpy(newBuf, buf+off, len);
       return (newBuf, size);
     }

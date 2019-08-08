@@ -117,7 +117,7 @@ module Bytes {
           this._size = sLen+1;
         } else {
           if this.isowned {
-            const (buf, allocSize) = copyLocalBuffer(s.buff, s.len);
+            const (buf, allocSize) = copyLocalBuffer(s.buff, sLen);
             this.buff = buf;
             this._size = allocSize;
           } else {
@@ -208,11 +208,11 @@ module Bytes {
 
     // This is assumed to be called from this.locale
     pragma "no doc"
-    proc ref reinitString(_buf: c_ptr, s_len: int, size: int,
+    proc ref reinitString(buf: bufferType, s_len: int, size: int,
                           needToCopy:bool = true) {
-      if this.isEmpty() && _buf == nil then return;
+      if this.isEmpty() && buf == nil then return;
 
-      const buf = _buf:bufferType; // this is different than string
+      /*const buf = _buf:bufferType; // this is different than string*/
 
       // If the this.buff is longer than buf, then reuse the buffer if we are
       // allowed to (this.isowned == true)
@@ -369,9 +369,7 @@ module Bytes {
         ret._size = size;
         ret.len = r2.size;
       }
-
       return ret;
-
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -521,7 +519,7 @@ module Bytes {
         // Edge cases
         if count {
           if nLen == 0 { // Empty needle
-            localRet = thisLen+1;
+            localRet = view.size+1;
           }
         } else { // find
           if nLen == 0 { // Empty needle
