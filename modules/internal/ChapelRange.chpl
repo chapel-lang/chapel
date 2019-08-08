@@ -1571,7 +1571,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                          _low = chpl__intToIdx(r.idxType, r._low),
                          _high = chpl__intToIdx(r.idxType, r._low - absSameType(r.stride)),
                          _stride = r.stride,
-                         _alignment = r._alignment,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
                          _aligned = r.aligned);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
@@ -1580,7 +1580,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                          _low = chpl__intToIdx(r.idxType, r._high + absSameType(r.stride)),
                          _high = chpl__intToIdx(r.idxType, r._high),
                          _stride = r.stride,
-                         _alignment = r._alignment,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
                          _aligned = r.aligned);
       } else {
         halt("Internal error: Unexpected case in chpl_count_help");
@@ -2595,6 +2595,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   inline proc chpl__intToIdx(type idxType, param i: integral) param where isBoolType(idxType) {
     return i: bool;
+  }
+
+  inline proc chpl__intToIdx(type idxType, i: nothing) {
+    return none;
   }
 
   inline proc chpl__idxToInt(i: integral) {
