@@ -1372,25 +1372,13 @@ module Bytes {
                and `s1`
   */
   proc +(s0: _bytes, s1: _bytes) {
-    return _bytes_string_concat(s0,s1);
-  }
-
-  proc +(s0: _bytes, s1: string) {
-    return _bytes_string_concat(s0,s1);
-  }
-
-  proc +(s0: string, s1: _bytes) {
-    return _bytes_string_concat(s0,s1);
-  }
-
-  private proc _bytes_string_concat(s0: ?t, s1): t {
     // cache lengths locally
     const s0len = s0.len;
-    if s0len == 0 then return s1:t;
+    if s0len == 0 then return s1;
     const s1len = s1.len;
     if s1len == 0 then return s0;
 
-    var ret: t;
+    var ret: _bytes;
     ret.len = s0len + s1len;
     const allocSize = chpl_here_good_alloc_size(ret.len+1);
     ret._size = allocSize;
@@ -1413,7 +1401,6 @@ module Bytes {
     }
     ret.buff[ret.len] = 0;
     return ret;
-
   }
 
   /*
