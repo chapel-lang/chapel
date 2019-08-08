@@ -1,0 +1,1 @@
+init-var-nonnil-unmanaged-from-nonnil-borrowed.chpl:9: error: cannot assign to unmanaged MyClass from borrowed MyClass

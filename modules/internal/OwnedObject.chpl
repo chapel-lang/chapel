@@ -245,16 +245,37 @@ module OwnedObject {
        refer to `nil` after this call.
      */
     proc init=(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
+      if isNonNilableClass(this.type) && isNilableClass(src) &&
+         !chpl_legacyNilClasses
+      then
+        compilerError("cannot assign to a non-nilable owned variable from a nilable class");
+
       // Use 'this.type.chpl_t' in case RHS is a subtype
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.release();
+      this.complete();
+    }
+
+    proc init=(src: shared) {
+      compilerError("cannot assign to an owned variable from a shared class");
+      this.chpl_t = int; //dummy
+    }
+
+    proc init=(src: borrowed) {
+      compilerError("cannot assign to an owned variable from a borrowed class");
+      this.chpl_t = int; //dummy
+    }
+
+    proc init=(src: unmanaged) {
+      compilerError("cannot assign to an owned variable from an unmanaged class");
+      this.chpl_t = int; //dummy
     }
 
     pragma "no doc"
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 
-      if _to_nilable(chpl_t) != chpl_t && !chpl_legacyNilClasses {
+      if isNonNilableClass(chpl_t) && !chpl_legacyNilClasses {
         compilerError("Assigning non-nilable owned to nil");
       }
     }

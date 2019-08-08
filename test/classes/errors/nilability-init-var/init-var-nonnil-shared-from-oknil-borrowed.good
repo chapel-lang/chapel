@@ -1,0 +1,1 @@
+init-var-nonnil-shared-from-oknil-borrowed.chpl:9: error: cannot assign to a shared variable from a borrowed class

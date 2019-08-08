@@ -5607,6 +5607,41 @@ static void resolveInitField(CallExpr* call) {
   resolveSetMember(call); // Can we remove some of the above with this?
 }
 
+// Should this be public, like isNilableClassType() ?
+static bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+static bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
+}
+
+static void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
+  if (! fLegacyNilableClasses &&
+      isNonNilableClassType(lhs) && isNilableClassType(rhs))
+    USR_FATAL(call, "cannot assign to non-nilable %s from nilable %s",
+              toString(lhs), toString(rhs));
+
+  if (isUnmanagedClass(lhs) && isOwnedOrSharedOrBorrowed(rhs))
+    USR_FATAL(call, "cannot assign to %s from %s",
+              toString(lhs), toString(rhs));
+}
+
 /************************************* | **************************************
 *                                                                             *
 * This handles expressions of the form                                        *
@@ -5678,6 +5713,10 @@ static void resolveInitVar(CallExpr* call) {
         isSingleType(src->getValType()) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
+
+      if (mismatch)
+        checkMoveIntoClass(call, targetType->getValType(), src->getValType());
+
       VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
 
