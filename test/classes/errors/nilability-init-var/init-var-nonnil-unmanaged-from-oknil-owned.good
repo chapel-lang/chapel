@@ -1,0 +1,1 @@
+init-var-nonnil-unmanaged-from-oknil-owned.chpl:9: error: cannot assign to non-nilable unmanaged MyClass from nilable owned MyClass?

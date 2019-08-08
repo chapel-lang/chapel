@@ -274,6 +274,11 @@ module SharedObject {
     //   var s : shared = ownedThing;
     pragma "no doc"
     proc init=(pragma "nil from arg" in take: owned) {
+      if isNonNilableClass(this.type) && isNilableClass(take) &&
+         !chpl_legacyNilClasses
+      then
+        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
+
       this.init(take);
     }
 
@@ -283,6 +288,11 @@ module SharedObject {
        These will share responsibility for managing the instance.
      */
     proc init=(pragma "nil from arg" const ref src:_shared(?)) {
+      if isNonNilableClass(this.type) && isNilableClass(src) &&
+         !chpl_legacyNilClasses
+      then
+        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
+
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
@@ -291,6 +301,16 @@ module SharedObject {
 
       if this.chpl_pn != nil then
         this.chpl_pn!.retain();
+    }
+
+    proc init=(src: borrowed) {
+      compilerError("cannot create a shared variable from a borrowed class instance");
+      this.chpl_t = int; //dummy
+    }
+
+    proc init=(src: unmanaged) {
+      compilerError("cannot create a shared variable from an unmanaged class instance");
+      this.chpl_t = int; //dummy
     }
 
     proc init=(src : _nilType) {
