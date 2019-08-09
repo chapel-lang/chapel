@@ -242,7 +242,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
   for (name, spec) in zip(exDeps.D, exDeps.A) {
     try! {
       select spec.tag {
-          when fieldToml do continue;
+          when fieldtag.fieldToml do continue;
           otherwise {
             // Take key from toml file if not present in spec
             var tempSpec = spec.s;
@@ -279,7 +279,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
   var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
   var spkgToml: [spkgDom] unmanaged Toml;
-  var spkgInfo: unmanaged Toml = spkgToml;
+  var spkgInfo = new unmanaged Toml(spkgToml);
 
   try {
     const specFields = getSpecFields(spec);
@@ -294,13 +294,13 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
       const other = joinPath(spkgPath, "other");
 
       if isDir(other) {
-        spkgInfo["other"] = other;
+        spkgInfo.set("other", other);
       }
-      spkgInfo["name"] = pkgName;
-      spkgInfo["version"] = version;
-      spkgInfo["compiler"] = compiler;
-      spkgInfo["libs"] = libs;
-      spkgInfo["include"] = include;
+      spkgInfo.set("name", pkgName);
+      spkgInfo.set("version", version);
+      spkgInfo.set("compiler", compiler);
+      spkgInfo.set("libs", libs);
+      spkgInfo.set("include", include);
 
       while dependencies.size > 0 {
         var dep = dependencies[1];

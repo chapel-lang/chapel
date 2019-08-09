@@ -9,7 +9,6 @@ use DateTime;
 extern const CURLOPT_VERBOSE: CURLoption;
 extern const CURLOPT_FILETIME: CURLoption;
 extern const CURLINFO_FILETIME: CURLINFO;
-extern proc curl_easy_getinfo(handle:c_ptr(CURL), info, arg);
 
 proc test1() {
   writeln("\ntest1\n");

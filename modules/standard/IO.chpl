@@ -423,7 +423,7 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-use SysBasic;
+private use SysBasic;
 use SysError;
 
 /*
@@ -628,7 +628,7 @@ proc stringStyleWithLength(lengthBytes:int) throws {
     otherwise
       throw SystemError.fromSyserr(EINVAL,
                                    "Invalid string length prefix " +
-                                   lengthBytes);
+                                   lengthBytes:string);
   }
   return x;
 }
@@ -934,7 +934,7 @@ class QioPluginChannel {
 // TODO: Move more of the QIO code to be pure Chapel
 pragma "no doc"
 export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
   var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
   plugin_ch = pluginChannel:c_void_ptr;
@@ -943,17 +943,17 @@ export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_
 
 pragma "no doc"
 export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
-  var c=ch_plugin:QioPluginChannel;
+  var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.readAtLeast(amt);
 }
 pragma "no doc"
 export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
-  var c=ch_plugin:QioPluginChannel;
+  var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.write(amt);
 }
 pragma "no doc"
 export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
-  var c=ch:unmanaged QioPluginChannel;
+  var c=(ch:unmanaged QioPluginChannel?)!;
   var err = c.close();
   delete c;
   return err;
@@ -961,36 +961,36 @@ export proc chpl_qio_channel_close(ch:c_void_ptr):syserr {
 
 pragma "no doc"
 export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.filelength(length);
 }
 pragma "no doc"
 export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:int(64)):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.getpath(str, len);
 }
 pragma "no doc"
 export proc chpl_qio_fsync(file:c_void_ptr):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.fsync();
 }
 pragma "no doc"
 export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):syserr {
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   return f.getChunk(length);
 }
 pragma "no doc"
 export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
     end:int(64), ref localeNames:c_void_ptr, ref nLocales:int(64)):syserr {
   var strPtr:c_ptr(c_string);
-  var f=file:QioPluginFile;
+  var f=(file:unmanaged QioPluginFile?)!;
   var ret = f.getLocalesForRegion(start, end, strPtr, nLocales);
   localeNames = strPtr:c_void_ptr;
   return ret;
 }
 pragma "no doc"
 export proc chpl_qio_file_close(file:c_void_ptr):syserr {
-  var f = file:unmanaged QioPluginFile;
+  var f = (file:unmanaged QioPluginFile?)!;
   var err = f.close();
   delete f;
   return err;
@@ -2695,12 +2695,12 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var err:syserr = ENOERR;
     var got:bool = false;
 
-    err = qio_channel_scan_literal(false, _channel_internal, c"true", "true".length:ssize_t, 1);
+    err = qio_channel_scan_literal(false, _channel_internal, c"true", "true".numBytes:ssize_t, 1);
     if !err {
       got = true;
     } else if err == EFORMAT {
       // try reading false instead.
-      err = qio_channel_scan_literal(false, _channel_internal, c"false", "false".length:ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, c"false", "false".numBytes:ssize_t, 1);
       // got is already false, so we don't need to set it.
     }
     if !err then x = got;
@@ -2734,7 +2734,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     for i in chpl_enumerate(t) {
       var str = i:string;
       if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
-      var slen:ssize_t = str.length.safeCast(ssize_t);
+      var slen:ssize_t = str.numBytes.safeCast(ssize_t);
       err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
       // Do not free str, because enum literals are C string literals
       if !err {
@@ -2753,9 +2753,9 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, c"true", "true".length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"true", "true".numBytes:ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, c"false", "false".length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"false", "false".numBytes:ssize_t);
     }
   } else if isIntegralType(t) {
     // handles int types
@@ -2774,12 +2774,12 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == string {
     // handle string
     const local_x = x.localize();
-    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
     if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
-    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.numBytes:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
   }
@@ -2924,7 +2924,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     return err;
   } else if t == string {
     var local_x = x.localize();
-    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.length: ssize_t);
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if isEnumType(t) {
     var i = chpl__enumToOrder(x):chpl_enum_mintype(t);
     // call the integer version
@@ -2950,10 +2950,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     //writeln("in scan literal ", x.val);
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
-                                    x.val.length: ssize_t, x.ignoreWhiteSpace);
-    //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
-    //writeln("Scanning literal ", x.val,  " yielded error ", e);
-    //return e;
+                                    x.val.numBytes: ssize_t, x.ignoreWhiteSpace);
   } else if t == ioBits {
     return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
@@ -2985,7 +2982,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
@@ -3066,9 +3063,12 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
         iolit = new ioLiteral("nil");
       }
       _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
-    } else {
-      var notNilX = _to_nonnil(x);
+    } else if isClassType(t) {
+      var notNilX = x!;
       notNilX.writeThis(writer);
+    } else {
+      // ddata / cptr
+      x.writeThis(writer);
     }
   } else {
     x.writeThis(writer);
@@ -3447,7 +3447,7 @@ inline proc channel.read(ref args ...?k):bool throws {
         if args[i].locale == here {
           err = _read_one_internal(_channel_internal, kind, args[i], origLocale);
         } else {
-          var tmp:args[i].type;
+          var tmp = args[i];
           err = _read_one_internal(_channel_internal, kind, tmp, origLocale);
           args[i] = tmp;
         }
@@ -3667,11 +3667,11 @@ inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits:string +
                                                  " > bits in v:" + v.type:string);
     // Error if reading negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits:string + " < 0");
   }
 
   var tmp:ioBits;
@@ -3695,11 +3695,11 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits +
+      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits:string +
                                                  " > bits in v:" + v.type:string);
     // Error if writing negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits + " < 0");
+      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
   }
 
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
@@ -5349,7 +5349,7 @@ proc _toChar(x:?t) where t == string
   var chr:int(32);
   var nbytes:c_int;
   var local_x = x.localize();
-  qio_decode_char_buf(chr, nbytes, local_x.c_str(), local_x.length:ssize_t);
+  qio_decode_char_buf(chr, nbytes, local_x.c_str(), local_x.numBytes:ssize_t);
   return (chr, true);
 }
 private inline
@@ -6087,8 +6087,8 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
-            throw new owned IllegalArgumentError("args(" + i + ")",
-                                           "writef internal error " + argType(i));
+            throw new owned IllegalArgumentError("args(" + i:string + ")",
+                                           "writef internal error " + argType(i):string);
           }
         }
       }
@@ -6371,8 +6371,8 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                 }
               }
             } otherwise {
-              throw new owned IllegalArgumentError("args(" + i + ")",
-                                             "readf internal error " + argType(i));
+              throw new owned IllegalArgumentError("args(" + i:string + ")",
+                                             "readf internal error " + argType(i):string);
             }
           }
         }

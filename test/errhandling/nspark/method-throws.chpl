@@ -2,7 +2,7 @@ use ExampleErrors;
 record Wrapper {
 
   var val: int;
-  var err: owned Error = nil;
+  var err: owned Error? = nil;
 
   proc action() throws {
     if err then throw err;

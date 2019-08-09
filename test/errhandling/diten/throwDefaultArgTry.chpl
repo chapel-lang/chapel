@@ -8,7 +8,7 @@ module M {
     return 1;
   }
 
-  proc myproc(arg = thrower()) throws {
+  proc myproc(arg = try thrower()) throws {
     writeln(arg);
     return arg;
   }

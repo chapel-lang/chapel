@@ -42,7 +42,6 @@ static void build_accessors(AggregateType* ct, Symbol* field);
 static void buildDefaultOfFunction(AggregateType* ct);
 
 static void build_union_assignment_function(AggregateType* ct);
-static void buildClassBorrowMethod(AggregateType* ct);
 
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
@@ -121,10 +120,6 @@ void buildDefaultFunctions() {
 
         if (isUnion(ct)) {
           build_union_assignment_function(ct);
-        }
-
-        if (isClass(ct)) {
-          buildClassBorrowMethod(ct);
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
@@ -322,7 +317,10 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 
   fn->setMethod(true);
 
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  Type* thisType = ct;
+  if (isClassLike(ct) && isClass(ct) && typeMethod)
+    thisType = ct->getDecoratedClass(CLASS_TYPE_GENERIC);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
   if (typeMethod) {
     _this->addFlag(FLAG_TYPE_VARIABLE);
@@ -1250,35 +1248,6 @@ static void build_union_assignment_function(AggregateType* ct) {
       }
     }
   }
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, ct->symbol);
-  normalize(fn);
-}
-
-static void buildClassBorrowMethod(AggregateType* ct) {
-  if (function_exists("borrow", dtMethodToken, ct))
-    return;
-
-  FnSymbol* fn = new FnSymbol("borrow");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-
-  if (ct->isClass() && ct != dtObject)
-    fn->addFlag(FLAG_OVERRIDE);
-  else
-    fn->addFlag(FLAG_INLINE);
-
-  fn->cname = astr("borrow");
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->setMethod(true);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->insertFormalAtTail(fn->_this);
-
-  fn->retType = ct;
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
-
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);

@@ -19,10 +19,10 @@ proc test(useUnordered) {
     t.stop();
     if printStats {
       const ordering = if useUnordered then "Unordered " else "Ordered ";
-      const time = "time(sec): " + t.elapsed();
-      const rate = "rate(mOps/sec): " + (iters / t.elapsed()) / 1e6;
-      writeln(ordering + time);
-      writeln(ordering + rate);
+      const time = "time(sec): " + t.elapsed():string;
+      const rate = "rate(mOps/sec): " + ((iters / t.elapsed()) / 1e6):string;
+      writeln(ordering, time);
+      writeln(ordering, rate);
     }
   }
   assert(a.read() == iters);

@@ -8,7 +8,7 @@ module linkedlist {
   }
 
   var head = new Node(0);      // : borrowed Node - i.e. head cannot be nil
-  var current: Node? = head; // Forget :Node? -> compiler error below on `current =` line
+  var current: borrowed Node? = head; // Forget :Node? -> compiler error below on `current =` line
   for i in 1..numLocales-1 do on Locales[i] {
     current!.next = new owned Node(i);
     current = current!.next;

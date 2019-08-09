@@ -221,7 +221,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
   for (name, package) in zip(lockFile.D, lockFile.A) {
-    if package.tag == fieldToml {
+    if package.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
         var version = lockFile[name]["version"].s;

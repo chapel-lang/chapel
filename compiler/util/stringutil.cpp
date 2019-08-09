@@ -435,17 +435,27 @@ std::string ltrimAllLines(std::string s) {
 }
 
 /*
- * Gather words from the string and store them into the array.
- * These words are arguments to a program.
+ * Split a string separated by the given delimiters into a vector of substrings.
  */
-void readArgsFromString(std::string s, std::vector<std::string>& args) {
-  if (s != "") {
-    //split s by spaces
-    std::stringstream argsStream(s);
-    std::string word;
-    while(argsStream >> word)
-      args.push_back(word);
+void splitString(const std::string& s, std::vector<std::string>& vec, const char* delimiters) {
+  if (!s.empty()) {
+    char* cStr = strdup(s.c_str());
+    char* arg = strtok(cStr, delimiters);
+    while (arg) {
+      if (strlen(arg) > 0) {
+        vec.push_back(std::string(arg));
+      }
+      arg = strtok(NULL, delimiters);
+    }
+    free(cStr);
   }
+}
+
+/*
+ * Split a string by all whitespace characters into a vector of substrings.
+ */
+void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec) {
+  splitString(s, vec, " \t\n\r\f\v");
 }
 
 void removeTrailingNewlines(std::string& str) {

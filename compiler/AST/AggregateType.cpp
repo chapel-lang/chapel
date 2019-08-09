@@ -1030,7 +1030,8 @@ static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const 
 
   if (Type* fieldType = resolveFieldTypeForInstantiation(field, call, callString)) {
     if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
-      if (getInstantiationType(val->type, fieldType) == NULL) {
+      if (getInstantiationType(val->type, NULL,
+                               fieldType, NULL, call) == NULL) {
         USR_FATAL_CONT(call, "invalid type specifier '%s'", callString);
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
         USR_PRINT(call, "unable to instantiate field '%s : %s' with type '%s'", field->name, fieldType->symbol->name, val->type->symbol->name);
@@ -1086,7 +1087,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
           Symbol* value = resolveFieldDefault(field, call, callString);
 
           if (expected != NULL && value != NULL) {
-            if (getInstantiationType(value->type, expected) == NULL) {
+            if (getInstantiationType(value->type, NULL,
+                                     expected, NULL, call) == NULL) {
               // TODO: pretty-print resolved value
               USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
               USR_PRINT(call, "param field '%s' has type '%s' but default value is of incompatible type '%s'",
@@ -1248,14 +1250,25 @@ Symbol* AggregateType::substitutionForField(Symbol*    field,
 AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* insnPoint) {
   AggregateType* retval = NULL;
 
+  Type* symType = sym->typeInfo();
+  // Normalize `_owned(anymanaged-MyClass)` to `_owned(borrowed MyClass)`
+  if (isManagedPtrType(this)) {
+    if (isClassLike(symType)) {
+      ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
+      if (isNilableClassType(symType))
+        d = CLASS_TYPE_BORROWED_NILABLE;
+      symType = ::getDecoratedClass(symType, d);
+    }
+  }
+
   if (index < genericField) {
     retval = this;
 
   } else if (index == genericField) {
-    if (AggregateType* at = getCurInstantiation(sym)) {
+    if (AggregateType* at = getCurInstantiation(sym, symType)) {
       retval = at;
     } else {
-      retval = getNewInstantiation(sym, insnPoint);
+      retval = getNewInstantiation(sym, symType, insnPoint);
     }
 
   } else {
@@ -1271,14 +1284,14 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
 // generic field. This way there is only ever one instance of AggregateType for
 // a particular instantiation.
 //
-AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
+AggregateType* AggregateType::getCurInstantiation(Symbol* sym, Type* symType) {
   AggregateType* retval = NULL;
 
   for_vector(AggregateType, at, instantiations) {
     Symbol* field = at->getField(genericField);
 
     if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      if (givesType(sym) == true && field->type == sym->typeInfo()) {
+      if (givesType(sym) == true && field->type == symType) {
         retval = at;
         break;
       }
@@ -1301,7 +1314,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
       // See param/ferguson/mismatched-param-type-error.chpl for an example
       // where this check is necessary.
       //
-      if (expected != NULL && expected != sym->type) {
+      if (expected != NULL && expected != symType) {
         Immediate result;
         Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
         Immediate* rhs = getSymbolImmediate(sym);
@@ -1315,7 +1328,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
       }
 
     } else {
-      if (field->type == sym->typeInfo()) {
+      if (field->type == symType) {
         retval = at;
         break;
       }
@@ -1325,7 +1338,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
   return retval;
 }
 
-AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Expr* insnPoint) {
+AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint) {
   AggregateType* retval = toAggregateType(symbol->copy()->type);
   Symbol*        field  = retval->getField(genericField);
 
@@ -1366,6 +1379,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Expr* insnPoint) 
       Immediate* from = toVarSymbol(sym)->immediate;
       coerce_immediate(from, &coerce);
       sym = new_ImmediateSymbol(&coerce);
+      symType = sym->type;
     }
 
     retval->substitutions.put(field, sym);
@@ -1373,24 +1387,24 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Expr* insnPoint) 
     paramMap.put(field,sym);
 
   } else {
-    retval->substitutions.put(field, sym->typeInfo()->symbol);
-    retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
+    retval->substitutions.put(field, symType->symbol);
+    retval->symbol->renameInstantiatedSingle(symType->symbol);
   }
 
   if (field->hasFlag(FLAG_TYPE_VARIABLE) == true && givesType(sym) == true) {
-    field->type = sym->typeInfo();
+    field->type = symType;
 
   } else if (field->defPoint->exprType == NULL) {
     if (field->type == dtUnknown) {
-      field->type = sym->typeInfo();
+      field->type = symType;
     }
 
   } else {
     Type* fieldType = field->defPoint->exprType->typeInfo();
     if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
-      field->type = sym->typeInfo();
-    } else if (fieldType == sym->typeInfo()) {
-      field->type = sym->typeInfo();
+      field->type = symType;
+    } else if (fieldType == symType) {
+      field->type = symType;
     } else {
       INT_FATAL("unexpected type for field instantiation");
     }
@@ -2317,6 +2331,10 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
+    // Use AggregateType in class hierarchy rather than generic-management
+    if (isDecoratedClassType(sym->type)) {
+      sym = canonicalClassType(sym->type)->symbol;
+    }
     ts = toTypeSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());
@@ -2487,6 +2505,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   //  0 -> borrowed MyClass?
   //  1 -> unmanaged MyClass!
   //  2 -> unmanaged MyClass?
+  //  3 -> generic-management generic-nilability MyClass
+  //  4 -> generic-management MyClass!
+  //  5 -> generic-management MyClass?
   switch (d) {
     case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
     case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
@@ -2497,6 +2518,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED:           packedDecorator = -1; break;
     case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
     case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
+    case CLASS_TYPE_GENERIC:           packedDecorator =  3; break;
+    case CLASS_TYPE_GENERIC_NONNIL:    packedDecorator =  4; break;
+    case CLASS_TYPE_GENERIC_NILABLE:   packedDecorator =  5; break;
       // intentionally no default
   }
 
@@ -2526,7 +2550,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     if (aggregateTag == AGGREGATE_CLASS)
       return at;
     else
-      INT_FATAL("Can't get borrowed owned/shared");
+      INT_FATAL("invalid type for borrowed variant");
   }
 
   // Otherwise, gather the appropriate class type.
@@ -2542,6 +2566,9 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     tsDec->addFlag(FLAG_NO_OBJECT);
     // Propagate generic-ness to the decorated type
     if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
+      tsDec->addFlag(FLAG_GENERIC);
+    // Generic management is generic
+    if (isDecoratorUnknownManagement(d))
       tsDec->addFlag(FLAG_GENERIC);
     // The generated code should just use the canonical class name
     tsDec->cname = at->symbol->cname;

@@ -66,7 +66,7 @@ module Path {
 
 private use Lists;
 use SysError;
-use Sys;
+private use Sys;
 
 /* Represents generally the current directory. This starts as the directory
    where the program is being executed from.
@@ -256,7 +256,7 @@ proc commonPath(paths: []): string {
 
   // finding delimiter to split the paths.
 
-  if firstPath.find("\\", 1..firstPath.length) == 0 then {
+  if firstPath.find("\\") == 0 then {
     delimiter = "/";
   } else {
     delimiter = "\\";
@@ -338,7 +338,7 @@ proc dirname(name: string): string {
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
    var ind: byteIndex = 1;
-   var pathlen: int = path_p.length;
+   var pathlen: int = path_p.numBytes;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -347,7 +347,7 @@ proc dirname(name: string): string {
          ind += 1;
        } else if (path_p(ind+1) == "{") {
          path_p = path_p((ind+2)..);
-         pathlen = path_p.length;
+         pathlen = path_p.numBytes;
          ind = path_p.find("}");
          if (ind == 0) {
            res += "${" +path_p;
@@ -367,7 +367,7 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.numBytes && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
@@ -380,7 +380,7 @@ proc dirname(name: string): string {
            value = value_c: string;
          }
          res += value;
-         if (ind <= path_p.length) {
+         if (ind <= path_p.numBytes) {
            ind -= 1;
          }
        }
@@ -447,7 +447,6 @@ proc isAbsPath(name: string): bool {
   if name.isEmpty() {
     return false;
   }
-  const len: int = name.length;
   var str: string = name[1];
   if (str == '/') {
     return true;

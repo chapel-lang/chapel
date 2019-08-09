@@ -32,7 +32,7 @@ proc callBad2() {
 }
 callBad2();
 
-proc returnOneOfThem (a: C, b: C) {
+proc returnOneOfThem (a: borrowed C, b: borrowed C) {
   return b;
 }
 

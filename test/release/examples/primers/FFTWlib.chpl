@@ -64,7 +64,7 @@ proc main() {
 proc testAllDims() {
   for param d in 1..3 {
     writeln(d, "D");
-    runtest(d, "arr"+d+"d.dat");
+    runtest(d, "arr"+d:string+"d.dat");
   }
 }
 

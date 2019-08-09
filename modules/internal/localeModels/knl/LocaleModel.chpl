@@ -219,7 +219,7 @@ module LocaleModel {
         kindstr = "DDR";
       else if kind == memoryKindMCDRAM() then
         kindstr = "MCDRAM";
-      mlName = kindstr+whichNuma;
+      mlName = kindstr+whichNuma:string;
     }
 
     override proc writeThis(f) {
@@ -277,7 +277,7 @@ module LocaleModel {
 
       sid = packSublocID(numSublocales, _sid, defaultMemoryKind())
               : chpl_sublocID_t;
-      ndName = "ND"+_sid;
+      ndName = "ND"+_sid:string;
 
       this.complete();
 

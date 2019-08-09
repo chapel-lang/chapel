@@ -3188,6 +3188,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
         from = codegenWideHere(codegenNullPointer(), to_ptr.chplType);
         type = to_ptr.chplType->getValType();
         from.isLVPtr = GEN_VAL;
+      } else {
+        from = codegenNullPointer();
+        type = to_ptr.chplType->getValType();
+        from.isLVPtr = GEN_VAL;
       }
     }
   }
@@ -3734,31 +3738,40 @@ DEFINE_PRIM(PRIM_CLASS_NAME_BY_ID) {
 }
 
 DEFINE_PRIM(PRIM_RETURN) {
-    if (call->typeInfo() == dtVoid || call->typeInfo() == dtNothing) {
-
-      if (gGenInfo->cfile) {
-        ret.c = "return";
-      } else {
-#ifdef HAVE_LLVM
-        ret.val = gGenInfo->irBuilder->CreateRetVoid();
-#endif
-      }
-    } else {
-      GenRet retExpr = call->get(1);
-      if (!call->typeInfo()->symbol->isRefOrWideRef() && call->get(1)->isRefOrWideRef()) {
-        retExpr = codegenDeref(retExpr);
-      }
-      ret = codegenValue(retExpr);
-
-      if (gGenInfo->cfile) {
-        ret.c = "return " + ret.c;
-      } else {
-#ifdef HAVE_LLVM
-        ret = codegenCast(ret.chplType, codegenValue(call->get(1)));
-        ret.val = gGenInfo->irBuilder->CreateRet(ret.val);
-#endif
-      }
+  bool returnVoid = call->typeInfo() == dtVoid || call->typeInfo() == dtNothing;
+  if (!returnVoid) {
+    GenRet retExpr = call->get(1);
+    if (!call->typeInfo()->symbol->isRefOrWideRef() && call->get(1)->isRefOrWideRef()) {
+      retExpr = codegenDeref(retExpr);
     }
+    ret = codegenValue(retExpr);
+  }
+
+  if (gGenInfo->cfile) {
+    if (returnVoid) {
+      ret.c = "return";
+    } else {
+      ret.c = "return " + ret.c;
+    }
+  } else {
+#ifdef HAVE_LLVM
+    llvm::ReturnInst* returnInst = NULL;
+    if (returnVoid) {
+      returnInst = gGenInfo->irBuilder->CreateRetVoid();
+    } else {
+      ret = codegenCast(ret.chplType, ret);
+      returnInst = gGenInfo->irBuilder->CreateRet(ret.val);
+    }
+    ret.val = returnInst;
+
+    if (returnInst) {
+      // Since putting anything after the return statement will make the LLVM
+      // IR invalid, we set the insert point before the return instruction so that
+      // other compilation processes work fine and as expected.
+      gGenInfo->irBuilder->SetInsertPoint(returnInst);
+    }
+#endif
+  }
 }
 DEFINE_PRIM(PRIM_UNARY_MINUS) {
   ret = codegenNeg(call->get(1));

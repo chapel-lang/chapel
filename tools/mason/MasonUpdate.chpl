@@ -268,9 +268,9 @@ proc chplVersionError(brick:borrowed Toml) {
 private proc createDepTree(root: unmanaged Toml) {
   var dp: domain(string);
   var dps: [dp] unmanaged Toml;
-  var depTree: unmanaged Toml = dps;
+  var depTree = new unmanaged Toml(dps);
   if root.pathExists("brick") {
-    depTree["root"] = new unmanaged Toml(root["brick"]);
+    depTree.set("root", new unmanaged Toml(root["brick"]));
   }
   else {
     stderr.writeln("Could not find brick; Mason cannot update");
@@ -297,7 +297,7 @@ private proc createDepTree(root: unmanaged Toml) {
 
     // Lock in the current Chapel version
     const curVer = getChapelVersionStr();
-    brick["chplVersion"] = curVer + ".." + curVer;
+    brick.set("chplVersion", curVer + ".." + curVer);
 
     if brick.pathExists("dependencies") {
       for item in brick["dependencies"].arr {
@@ -310,13 +310,13 @@ private proc createDepTree(root: unmanaged Toml) {
   // Check for pkg-config dependencies
   if root.pathExists("system") {
     const exDeps = getPCDeps(root["system"]);
-    depTree["system"] = exDeps;
+    depTree.set("system", exDeps);
   }
 
   // Check for non-Chapel dependencies
   if root.pathExists("external") {
     const externals = getExternalPackages(root["external"]);
-    depTree["external"] = externals;
+    depTree.set("external", externals);
   }
   return depTree;
 }
@@ -343,12 +343,12 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
     if depTree.pathExists(package) == false {
       var dt: domain(string);
       var depTbl: [dt] unmanaged Toml;
-      depTree[package] = depTbl;
+      depTree.set(package, depTbl);
     }
-    depTree[package]["name"] = package;
-    depTree[package]["version"] = version;
-    depTree[package]["chplVersion"] = chplVersion;
-    depTree[package]["source"] = source;
+    depTree[package].set("name", package);
+    depTree[package].set("version", version);
+    depTree[package].set("chplVersion", chplVersion);
+    depTree[package].set("source", source);
 
     if dep.pathExists("dependencies") {
       var subDeps = getDependencies(dep);
@@ -427,7 +427,7 @@ private proc getManifests(deps: list((string, unmanaged Toml))) {
   var manifests: list(unmanaged Toml);
   for dep in deps {
     var name = dep(1);
-    var version: string = dep(2).s;
+    var version: string = dep(2)!.s;
     var toAdd = retrieveDep(name, version);
     manifests.append(toAdd);
   }
@@ -455,7 +455,7 @@ private proc retrieveDep(name: string, version: string) {
    dependencies are returned as a (string, Toml) */
 private proc getDependencies(tomlTbl: unmanaged Toml) {
   var depsD: domain(1);
-  var deps: list((string, unmanaged Toml));
+  var deps: list((string, unmanaged Toml?));
   for k in tomlTbl.D {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]) {

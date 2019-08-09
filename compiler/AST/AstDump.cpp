@@ -867,7 +867,7 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
   }
 
   if (sym->hasFlag(FLAG_GENERIC))
-    write(false, "?", false);
+    write(false, "(?)", false);
 
   if (def)
     if (ArgSymbol* arg = toArgSymbol(sym))

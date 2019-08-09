@@ -211,6 +211,15 @@ module String {
 
   private config param debugStrings = false;
 
+  /*
+    Returns true if the argument is a valid initial byte of a UTF-8
+    encoded multibyte character.
+  */
+  pragma "no doc"
+  private inline proc isInitialByte(b: uint(8)) : bool {
+    return (b & 0xc0) != 0x80;
+  }
+
   pragma "no doc"
   record __serializeHelper {
     var len       : int;
@@ -684,22 +693,34 @@ module String {
     }
 
     /*
-      :returns: The number of bytes in the string.
+      :returns: The number of codepoints in the string.
       */
-    inline proc length return len;
-
-    /*
-      :returns: The number of bytes in the string.
-      */
-    inline proc size return len;
+    inline proc length return numCodepoints;
 
     /*
       :returns: The number of codepoints in the string.
       */
+    inline proc size return numCodepoints;
+
+    /*
+      :returns: The number of bytes in the string.
+      */
+    inline proc numBytes return len;
+
+    /*
+      :returns: The number of codepoints in the string, assuming the
+                string is correctly-encoded UTF-8.
+      */
     proc numCodepoints {
+      var localThis: string = this.localize();
       var n = 0;
-      for cp in this.codepoints() do
+      var i = 0;
+      while i < localThis.len {
+        i += 1;
+        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
+          i += 1;
         n += 1;
+      }
       return n;
     }
 
@@ -838,22 +859,61 @@ module String {
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
       Skip characters that begin prior to the specified starting byte index.
+      Assume we may accidentally start in the middle of a multibyte character,
+      but the string is correctly encoded UTF-8.
     */
     pragma "no doc"
     iter _cpIndexLen(start = 1:byteIndex) {
       var localThis: string = this.localize();
 
-      var i = 0;
+      var i = start:int - 1;
+      if i > 0 then
+        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
+          i += 1; // in case `start` is in the middle of a multibyte character
       while i < localThis.len {
         var cp: int(32);
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
-        if i + 1 >= start then
-          yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
+        yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
       }
+    }
+
+    /*
+      Iterates over the string Unicode character by Unicode character,
+      and returns the byte index and byte length of each character.
+      Skip characters that begin prior to the specified starting byte index.
+      Assume we may accidentally start in the middle of a multibyte character,
+      but the string is correctly encoded UTF-8.
+    */
+    pragma "no doc"
+    iter _indexLen(start = 1:byteIndex) {
+      var localThis: string = this.localize();
+
+      var i = start:int - 1;
+      if i > 0 then
+        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
+          i += 1; // in case `start` is in the middle of a multibyte character
+      while i < localThis.len {
+        var j = i + 1;
+        while j < localThis.len && !isInitialByte(localThis.buff[j]) do
+          j += 1;
+        yield ((i + 1):byteIndex, j - i);
+        i = j;
+      }
+    }
+
+    /*
+      :returns: The value of a single-byte string as an integer.
+    */
+    proc toByte(): uint(8) {
+      var localThis: string = this.localize();
+
+      if localThis.len != 1 then
+        halt("string.toByte() only accepts single-byte strings");
+      return localThis.buff[0];
     }
 
     /*
@@ -865,6 +925,27 @@ module String {
       if boundsChecking && (i <= 0 || i > localThis.len)
         then halt("index out of bounds of string: ", i);
       return localThis.buff[i - 1];
+    }
+
+    /*
+      :returns: The value of a single-codepoint string as an integer.
+     */
+    proc toCodepoint(): int(32) {
+      var localThis: string = this.localize();
+
+      if localThis.isEmpty() then
+        halt("string.toCodepoint() only accepts single-codepoint strings");
+
+      var cp: int(32);
+      var nbytes: c_int;
+      var multibytes = localThis.buff: c_string;
+      var maxbytes = localThis.len: ssize_t;
+      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+
+      if localThis.len != nbytes:int then
+        halt("string.toCodepoint() only accepts single-codepoint strings");
+
+      return cp;
     }
 
     /*
@@ -891,7 +972,7 @@ module String {
       Return the codepoint starting at the `i` th byte in the string
 
       :returns: A string with the complete multibyte character starting at the
-                specified byte index from ``1..string.length``
+                specified byte index from ``1..string.numBytes``
      */
     proc this(i: byteIndex) : string {
       var idx = i: int;
@@ -980,7 +1061,7 @@ module String {
     // Converts from codepointIndex range to byte index range in the process.
     //
     // This function handles ranges of codepointIndex or of numeric types,
-    // both of which signify postions in the string measured in codepoints.
+    // both of which signify positions in the string measured in codepoints.
     //
     // Slicing by stridable codepoint ranges is unsupported because it
     // creates an irregular sequence of bytes.  We could add support in the
@@ -1007,7 +1088,7 @@ module String {
       var byte_low = this.len + 1;  // empty range if bounds outside string
       var byte_high = this.len;
       if cp_high > 0 {
-        for (c, i, nbytes) in this._cpIndexLen() {
+        for (i, nbytes) in this._indexLen() {
           if cp_count == cp_low {
             byte_low = i:int;
             if !r.hasHighBound() then
@@ -1326,8 +1407,8 @@ module String {
         if !idx then break;
 
         found += 1;
-        result = result[..idx-1] + localReplacement + result[(idx + localNeedle.length)..];
-        startIdx = idx + localReplacement.length;
+        result = result[..idx-1] + localReplacement + result[(idx + localNeedle.numBytes)..];
+        startIdx = idx + localReplacement.numBytes;
       }
       return result;
     }
@@ -1384,7 +1465,7 @@ module String {
             yield chunk;
             splitCount += 1;
           }
-          start = end+localSep.length;
+          start = end+localSep.numBytes;
         }
       }
     }
@@ -1535,7 +1616,7 @@ module String {
         return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
-        for s in S do joinedSize += s.length;
+        for s in S do joinedSize += s.numBytes;
 
         if joinedSize == 0 then
           return '';
@@ -1638,7 +1719,7 @@ module String {
     proc const partition(sep: string) : 3*string {
       const idx = this.find(sep);
       if idx != 0 {
-        return (this[..idx-1], sep, this[idx+sep.length..]);
+        return (this[..idx-1], sep, this[idx+sep.numBytes..]);
       } else {
         return (this, "", "");
       }
@@ -1874,9 +1955,9 @@ module String {
         var maxbytes = (result.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         var lowCodepoint = codepoint_toLower(cp);
-        if lowCodepoint != cp {
-          // This assumes that the upper and lower case version of a
-          // character take the same number of bytes.
+        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+          // Use the MacOS approach everywhere:  only change the case if
+          // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, lowCodepoint);
         }
         i += nbytes;
@@ -1907,9 +1988,9 @@ module String {
         var maxbytes = (result.len - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         var upCodepoint = codepoint_toUpper(cp);
-        if upCodepoint != cp {
-          // This assumes that the upper and lower case version of a
-          // character take the same number of bytes.
+        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+          // Use the MacOS approach everywhere:  only change the case if
+          // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, upCodepoint);
         }
         i += nbytes;
@@ -1946,16 +2027,16 @@ module String {
           if last == UN {
             last = LETTER;
             var upCodepoint = codepoint_toUpper(cp);
-            if upCodepoint != cp {
-              // This assumes that the upper and lower case version of a
-              // character take the same number of bytes.
+            if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+              // Use the MacOS approach everywhere:  only change the case if
+              // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, upCodepoint);
             }
           } else { // last == LETTER
             var lowCodepoint = codepoint_toLower(cp);
-            if lowCodepoint != cp {
-              // This assumes that the upper and lower case version of a
-              // character take the same number of bytes.
+            if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+              // Use the MacOS approach everywhere:  only change the case if
+              // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, lowCodepoint);
             }
           }
@@ -1984,9 +2065,9 @@ module String {
       var maxbytes = result.len: ssize_t;
       qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
       var upCodepoint = codepoint_toUpper(cp);
-      if upCodepoint != cp {
-        // This assumes that the upper and lower case version of a
-        // character take the same number of bytes.
+      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+        // Use the MacOS approach everywhere:  only change the case if
+        // the result does not change the number of encoded bytes.
         qio_encode_char_buf(result.buff, upCodepoint);
       }
       return result;
@@ -2110,7 +2191,7 @@ module String {
   proc *(s: string, n: integral) {
     if n <= 0 then return "";
 
-    const sLen = s.length;
+    const sLen = s.numBytes;
     if sLen == 0 then return "";
 
     var ret: string;
@@ -2139,14 +2220,20 @@ module String {
     return ret;
   }
 
+  private proc stringValDeprecated() {
+    compilerWarning("'+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string");
+  }
+
   // Concatenation with other types is done by casting to string
   private inline proc concatHelp(s: string, x:?t) where t != string {
+    stringValDeprecated();
     var cs = x:string;
     const ret = s + cs;
     return ret;
   }
 
   private inline proc concatHelp(x:?t, s: string) where t != string  {
+    stringValDeprecated();
     var cs = x:string;
     const ret = cs + s;
     return ret;
@@ -2203,43 +2290,72 @@ module String {
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
-  inline proc +(param s: string, param x: integral) param
+  inline proc +(param s: string, param x: integral) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: integral, param s: string) param
+  inline proc +(param x: integral, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
-  inline proc +(param s: string, param x: enumerated) param
+  inline proc +(param s: string, param x: enumerated) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: enumerated, param s: string) param
+  inline proc +(param x: enumerated, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
-  inline proc +(param s: string, param x: bool) param
+  inline proc +(param s: string, param x: bool) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: bool, param s: string) param
+  inline proc +(param x: bool, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
   inline proc ascii(param a: string) param {
-    compilerWarning("ascii is deprecated - please use string.byte instead");
+    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
     return __primitive("ascii", a);
   }
 
   pragma "no doc"
+  inline proc param string.toByte() param : uint(8) {
+    if this.numBytes != 1 then
+      compilerError("string.toByte() only accepts single-byte strings");
+    return __primitive("ascii", this);
+  }
+
+  pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
+    if i < 1 || i > this.numBytes then
+      compilerError("index out of bounds of string: " + i:string);
     return __primitive("ascii", this, i);
   }
 
   pragma "no doc"
+  inline proc param string.numBytes param
+    return __primitive("string_length_bytes", this);
+
+  pragma "no doc"
+  inline proc param string.numCodepoints param
+    return __primitive("string_length_codepoints", this);
+
+  pragma "no doc"
   inline proc param string.length param
-    return __primitive("string_length", this);
+    return this.numCodepoints;
 
   pragma "no doc"
   inline proc _string_contains(param a: string, param b: string) param
@@ -2441,7 +2557,7 @@ module String {
      :returns: The byte value of the first character in `a` as an integer.
   */
   inline proc ascii(a: string) : uint(8) {
-    compilerWarning("ascii is deprecated - please use string.byte instead");
+    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
     if a.isEmpty() then return 0;
 
     if _local || a.locale_id == chpl_nodeID {
@@ -2551,7 +2667,7 @@ module String {
                    chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
       // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
       var locHash: int(64) = 5381;
-      for c in 0..#(x.length) {
+      for c in 0..#(x.numBytes) {
         locHash = ((locHash << 5) + locHash) ^ x.buff[c];
       }
       hash = locHash;

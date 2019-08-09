@@ -154,9 +154,9 @@ private proc getRegNameFromLoc(location: string): string {
     stderr.writeln("location should be an absolute path or URL");
     exit(1);
   }
-  if strippedLoc.endsWith(".git") {
-    // TODO: this should use a method to get the byte length
-    var beforeGit = (strippedLoc.length-4):byteIndex;
+  const gitExtension = ".git";
+  if strippedLoc.endsWith(gitExtension) {
+    var beforeGit = (strippedLoc.numBytes-gitExtension.numBytes):byteIndex;
     return strippedLoc[lastSlashPos+1..beforeGit];
   } else {
     return strippedLoc[lastSlashPos+1..];

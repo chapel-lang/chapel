@@ -124,7 +124,7 @@ module Crypto {
     */
     proc init(s: string) {
       this.complete();
-      this._len = s.length;
+      this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
       }
@@ -920,7 +920,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var key: [0..#byteLen] uint(8);
     var salt = saltBuff.getBuffData();
     var saltLen = saltBuff.getBuffSize();
-    var userKeyLen = userKey.length;
+    var userKeyLen = userKey.numBytes;
 
     var md: CONST_EVP_MD_PTR;
     md = EVP_get_digestbyname(digestName.c_str());

@@ -38,7 +38,7 @@ proc main(args: [] string) {
 
   // Make everything uppercase
   forall d in data do
-    d -= ("a".byte(1) - "A".byte(1));
+    d -= ("a".toByte() - "A".toByte());
 
   writeFreqs(data, 1);
   writeFreqs(data, 2);
@@ -76,10 +76,10 @@ proc writeFreqs(data, param nclSize) {
 
 
 proc writeCount(data, param str) {
-  const freqs = calculate(data, str.length),
-        d = hash(str.toBytes(), 1, str.length);
+  const freqs = calculate(data, str.numBytes),
+        d = hash(str.toBytes(), 1, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d, str.length));
+  writeln(freqs[d], "\t", decode(d, str.numBytes));
 }
 
 
@@ -118,9 +118,9 @@ const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
 forall i in toChar.domain do
-  toNum[toChar[i].byte(1)] = i;
+  toNum[toChar[i].toByte()] = i;
 //
-// Too terse (?): toNum[toChar.byte(1)] = toChar.domain;
+// Too terse (?): toNum[toChar.toByte()] = toChar.domain;
 
 
 inline proc decode(in data, param nclSize) {
@@ -148,7 +148,7 @@ inline proc hash(str, beg, param size) {
 
 
 proc string.toBytes() {
-  var bytes: [1..this.length] uint(8);
+  var bytes: [1..this.numBytes] uint(8);
   for (b, i) in zip(bytes, 1..) do
     b = this.byte(i);
   return bytes;
@@ -156,8 +156,8 @@ proc string.toBytes() {
 
 
 inline proc startsWithThree(data) {
-  return data[1] == ">".byte(1) &&
-         data[2] == "T".byte(1) &&
-         data[3] == "H".byte(1);
+  return data[1] == ">".toByte() &&
+         data[2] == "T".toByte() &&
+         data[3] == "H".toByte();
 }
 

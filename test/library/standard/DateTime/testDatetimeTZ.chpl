@@ -253,7 +253,7 @@ proc test_tzinfo_fromtimestamp() {
   var tz = new shared FixedOffset(utcoffset, "tz", new timedelta());
   var expected = utcdatetime + utcoffset;
   var got = datetime.fromtimestamp(timestamp, tz);
-  assert(expected == got.replace(tzinfo=new shared(nil:unmanaged TZInfo)));
+  assert(expected == got.replace(tzinfo=new shared(nil:unmanaged TZInfo?)));
 }
 
 proc test_tzinfo_timetuple() {
@@ -440,7 +440,7 @@ proc test_more_astimezone() {
   assert(dt.tzinfo == f44m);
 
   // Replacing with same tzinfo makes no change.
-  var x = dt.astimezone(dt.tzinfo);
+  var x = dt.astimezone(dt.tzinfo:shared TZInfo);
   assert(x.tzinfo == f44m);
   assert(x.getdate() == dt.getdate());
   assert(x.gettime() == dt.gettime());

@@ -2,7 +2,7 @@ class MyClass {
   var x:int;
 }
 
-var a:shared MyClass;
+var a:shared MyClass?;
 
 on Locales[numLocales-1] {
   a = new shared MyClass(1);

@@ -70,6 +70,16 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  // Insert multiple ASTs in the order of the arguments.
+  // Todo: replace with a single varargs version.
+  void            insertAfter(Expr* e1, Expr* e2);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                              Expr* e5);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                              Expr* e5, Expr* e6);
+
   void            insertBefore(AList exprs);
   void            insertAfter(AList exprs);
 

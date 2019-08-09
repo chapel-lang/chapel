@@ -102,8 +102,19 @@ bool explainCallMatch(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 
+bool allowImplicitNilabilityRemoval(Type* actualType,
+                                    Symbol* actualSym,
+                                    Type* formalType,
+                                    Symbol* formalSym);
+
 bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal);
+                         ClassTypeDecorator formal,
+                         bool implicitBang);
+bool canInstantiateDecorators(ClassTypeDecorator actual,
+                              ClassTypeDecorator formal);
+bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
+                                      ClassTypeDecorator formal,
+                                      bool implicitBang);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
@@ -163,13 +174,6 @@ void determineAllSubs(FnSymbol*  fn,
                       SymbolMap& subs,
                       SymbolMap& allSubs);
 
-FnSymbol* instantiateFunction(FnSymbol*  fn,
-                              FnSymbol*  root,
-                              SymbolMap& allSubs,
-                              CallExpr*  call,
-                              SymbolMap& subs,
-                              SymbolMap& map);
-
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 class DisambiguationContext {
@@ -223,6 +227,7 @@ void printResolutionErrorUnresolved(CallInfo&                  info,
 
 void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
+void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 
@@ -234,7 +239,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-bool isSubTypeOrInstantiation(Type* sub, Type* super);
+bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
@@ -278,7 +283,11 @@ void resolveDestructor(AggregateType* at);
 
 void fixTypeNames(AggregateType* at);
 
-Type* getInstantiationType(Type* actualType, Type* formalType);
+Type* getInstantiationType(Type* actualType, Symbol* actualSym,
+                           Type* formalType, Symbol* formalSym,
+                           Expr* ctx,
+                           bool allowCoercion=true,
+                           bool implicitBang=false);
 
 void resolveIfExprType(CondStmt* stmt);
 
@@ -289,5 +298,10 @@ void trimVisibleCandidates(CallInfo& call,
 bool isNumericParamDefaultType(Type* type);
 
 void resolveGenericActuals(CallExpr* call);
+
+Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
+                                  ClassTypeDecorator useDec,
+                                  AggregateType* manager,
+                                  Expr* ctx);
 
 #endif

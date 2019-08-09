@@ -1,5 +1,0 @@
-semantic: type of formal inferred from 'new C()'
-
-It looks to me like this test should work, but it seems not to.  I'd
-call this a bug but maybe there's something subtle going on
-semantically that I'm not picking up on.

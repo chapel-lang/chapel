@@ -15,4 +15,4 @@ fi
 
 rm $2.prediff.g.tmp
 mv $2.prediff.tmp $2
-rm memlog
+rm -f memlog

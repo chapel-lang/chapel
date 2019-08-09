@@ -1,0 +1,1 @@
+init-var-nonnil-unmanaged-from-nonnil-owned.chpl:9: error: cannot assign to unmanaged MyClass from owned MyClass

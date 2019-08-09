@@ -124,6 +124,19 @@ proc runWithStatus(command, show=true): int {
   }
 }
 
+proc runWithProcess(command, quiet=false) throws {
+  try {
+    var cmd = command.split();
+    var process = spawn(cmd, stdout=PIPE, stderr=PIPE);
+
+    return process;
+  }
+  catch {
+    throw new owned MasonError("Internal mason error");
+    exit(0);
+  }
+}
+
 proc SPACK_ROOT : string {
   const envHome = getEnv("SPACK_ROOT");
   const default = MASON_HOME + "/spack";
@@ -245,7 +258,7 @@ record VersionInfo {
   }
 
   proc str() {
-    return major + "." + minor + "." + bug;
+    return major:string + "." + minor:string + "." + bug:string;
   }
 
   proc cmp(other:VersionInfo) {
@@ -349,7 +362,7 @@ private var chplVersion = "";
 proc getChapelVersionStr() {
   if chplVersion == "" {
     const version = getChapelVersionInfo();
-    chplVersion = version(1) + "." + version(2) + "." + version(3);
+    chplVersion = version(1):string + "." + version(2):string + "." + version(3):string;
   }
   return chplVersion;
 }
@@ -460,9 +473,8 @@ proc isIdentifier(name:string) {
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
-    if v.tag == fieldToml then
+    if v.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }
 }
-

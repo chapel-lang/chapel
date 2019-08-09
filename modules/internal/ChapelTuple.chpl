@@ -100,7 +100,7 @@ module ChapelTuple {
   pragma "no doc"
   proc *(param p: uint, type t) type {
     if p > max(int) then
-      compilerError("Tuples of size >" + max(int) + " are not currently supported");
+      compilerError("Tuples of size >" + max(int):string + " are not currently supported");
     param pAsInt = p: int;
     return pAsInt*t;
   }

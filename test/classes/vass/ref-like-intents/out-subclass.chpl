@@ -7,8 +7,8 @@ proc procOutC(out arg: C?) {
   arg = new C();
 }
 
-var c: C?;
-var d: D?;
+var c: borrowed C?;
+var d: borrowed D?;
 
 procOutC(c); // OK
 procOutC(d); // error

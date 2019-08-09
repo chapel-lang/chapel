@@ -18,7 +18,8 @@ config type eltType = int;
 
 config const seed = SeedGenerator.oddCurrentTime;
 
-var methods = ["default", "msbRadixSort", "quickSort"];//, "mergeSort"];
+var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
+               "twoArraySample", "twoArrayRadix"];
 
 proc testsort(input, method, parallel, cmp) {
 
@@ -46,6 +47,20 @@ proc testsort(input, method, parallel, cmp) {
     } else {
       MergeSort.mergeSort(input);
     }
+  } else if method == "twoArraySample" {
+    if parallel == false {
+      serial { TwoArraySampleSort.twoArraySampleSort(input); }
+    } else {
+      TwoArraySampleSort.twoArraySampleSort(input);
+    }
+  } else if method == "twoArrayRadix" {
+    if parallel == false {
+      serial { TwoArrayRadixSort.twoArrayRadixSort(input); }
+    } else {
+      TwoArrayRadixSort.twoArrayRadixSort(input);
+    }
+  } else {
+    halt("Unknown sorting method " + method);
   }
 }
 
@@ -121,11 +136,11 @@ proc testsize(size:int) {
   var bytes = size*8;
   var kibibytes = bytes/1024.0;
   var mibibytes = kibibytes/1024.0;
-  var sizestr = bytes + " bytes";
+  var sizestr = bytes:string + " bytes";
   if kibibytes >= 1.0 then
-    sizestr = kibibytes + " KiB";
+    sizestr = kibibytes:string + " KiB";
   if mibibytes >= 1.0 then
-    sizestr = mibibytes + " MiB";
+    sizestr = mibibytes:string + " MiB";
   if printStats then
     writef("% 16s", sizestr);
 

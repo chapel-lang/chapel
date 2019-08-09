@@ -171,7 +171,7 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, int32_t
 c_string
 string_index(c_string x, int i, int32_t lineno, int32_t filename) {
   char* buffer;
-  if (i-1 < 0 || i-1 >= string_length(x))
+  if (i-1 < 0 || i-1 >= string_length_bytes(x))
   {
     return NULL;
   }

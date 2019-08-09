@@ -15,6 +15,32 @@ module Launcher {
   config const setComm: string = "";
   var comm: string;
 
+  /* Gets the comm */
+  proc getRuntimeComm() throws {
+    var line: string;
+    var checkComm = spawn(["python",CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
+                        stdout = PIPE);
+    while checkComm.stdout.readline(line) {
+      comm = line.strip();
+    }
+    // setting communication mechanism.
+    if setComm != "" {
+      if comm != "none" {
+        comm = setComm;
+      }
+      else {
+        if setComm == "none" then comm = setComm;
+        else {
+          writeln("Trying to execute in a multiLocale environment when ",
+          "communication mechanism is `none`.");
+          writeln("Try changing the communication mechanism");
+          exit(2);
+        }
+      }
+    }
+  }
+
+
   proc main(args: [] string) {
     var comm_c: c_string;
     var dirs: [1..0] string,
@@ -26,9 +52,9 @@ module Launcher {
       checkChpl.wait();
       var line: string;
       if checkChpl.stdout.readline(line) {
-        sys_getenv("CHPL_COMM", comm_c);
-        comm = comm_c: string;
-        
+        // get comm
+        getRuntimeComm();
+
         for a in args[1..] {
           if a == "-h" || a == "--help" {
             writeln("Usage: ", programName, " <options> filename [filenames] directoryname [directorynames]");
@@ -108,7 +134,6 @@ module Launcher {
       if isFile(executableReal) {
         FileSystem.remove(executableReal);
       }
-      if setComm != "" then comm = setComm;
       var sub = spawn(["chpl", file, "-o", executable, "-M.", 
                       "--comm", comm], stderr = PIPE); //Compiling the file
       var compError: string;
@@ -292,8 +317,8 @@ module Launcher {
         else {
           var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
           locErrMsg += errMsg; 
-          result.addFailure(testName, fileName, locErrMsg);
-          failedTestNames.push_back(testName);
+          result.addSkip(testName, fileName, locErrMsg);
+          skippedTestNames.push_back(testName);
         }
       }
       when "Dependence" {

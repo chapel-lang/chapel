@@ -143,6 +143,9 @@ proc isImagType(type t) param return
 pragma "no instantiation limit"
 proc isStringType(type t) param return t == string;
 
+/* Returns `true` if the type `t` is the `bytes` type. */
+pragma "no instantiation limit"
+proc isBytesType(type t) param return t == _bytes;
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
 Old Data in C++.
@@ -222,6 +225,8 @@ pragma "no doc"
 proc isComplexValue(e)   param  return isComplexType(e.type);
 pragma "no doc"
 proc isStringValue(e)    param  return isStringType(e.type);
+pragma "no doc"
+proc isBytesValue(e)     param  return isBytesType(e.type);
 pragma "no doc"
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
 pragma "no doc"
@@ -312,6 +317,8 @@ proc isImag(type t)      param  return isImagType(t);
 pragma "no doc"
 proc isComplex(type t)   param  return isComplexType(t);
 pragma "no doc"
+proc isBytes(type t)     param  return isBytesType(t);
+pragma "no doc"
 proc isString(type t)    param  return isStringType(t);
 pragma "no doc"
 proc isIntegral(type t)  param  return isIntegralType(t);
@@ -327,6 +334,8 @@ pragma "no doc"
 proc isTuple(type t)     param  return isTupleType(t);
 pragma "no doc"
 proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
+pragma "no doc"
+proc isGeneric(type t)   param  return isGenericType(t);
 pragma "no doc"
 proc isClass(type t)     param  return isClassType(t);
 pragma "no doc"
@@ -398,6 +407,8 @@ proc isReal(e)      param  return isRealValue(e);
 proc isImag(e)      param  return isImagValue(e);
 /* Returns `true` if the argument is a `complex` type or value, of any width. */
 proc isComplex(e)   param  return isComplexValue(e);
+/* Returns `true` if the argument is a bytes or the `bytes` type. */
+proc isBytes(e)     param  return isBytesValue(e);
 /* Returns `true` if the argument is a string or the `string` type. */
 proc isString(e)    param  return isStringValue(e);
 /* Returns `true` if the argument is an `enum` type or value, of any width. */
@@ -410,6 +421,8 @@ proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
 /* Returns `true` if the argument is a class type or value
    that is not an ``extern`` class, or when the argument is ``nil``. */
 proc isClass(e)     param  return isClassValue(e);
+/* Returns `true` if the argument is a generic type, and `false` otherwise. */
+proc isGeneric(e)   param  return false;
 /* Returns `true` if the argument is an ``owned`` class type. */
 pragma "no borrow convert"
 proc isOwnedClass(e)     param  return isOwnedClassValue(e);

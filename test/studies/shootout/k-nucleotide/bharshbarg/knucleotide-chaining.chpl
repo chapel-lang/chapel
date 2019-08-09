@@ -126,15 +126,15 @@ proc write_frequencies(data : [] uint(8), size : int) {
 }
 
 proc write_count(data : [] uint(8), str : string) {
-  var freqs = calculate(data, str.length);
-  var d = hash(str.toBytes(), 1, 0..str.length-1);
-  writeln(freqs[d], "\t", decode(d, str.length));
+  var freqs = calculate(data, str.numBytes);
+  var d = hash(str.toBytes(), 1, 0..str.numBytes-1);
+  writeln(freqs[d], "\t", decode(d, str.numBytes));
   delete freqs;
 }
 
 proc string.toBytes() {
-   var b : [1..this.length] uint(8);
-   memcpy(b, this.c_str(), this.length);
+   var b : [1..this.numBytes] uint(8);
+   memcpy(b, this.c_str(), this.numBytes);
    return b;
 }
 
