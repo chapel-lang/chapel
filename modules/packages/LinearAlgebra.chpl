@@ -638,13 +638,13 @@ private proc isDistributed(a) param {
 }
 
 /* Inner product of 2 vectors. */
-proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
+proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
     
-  var result = 0.0;
+  var result: eltType = 0;
   
   if isDistributed(A) {
     result = + reduce (A*B);
@@ -659,15 +659,15 @@ proc inner(const ref A: [?Adom], const ref B: [?Bdom]) {
         else dataParTasksPerLocale;
       const localDomain = A.localSubdomain();
       const iterPerThread = divceil(localDomain.size, maxThreads);
-      var localResult = 0; 
-      var threadResults: [0..#maxThreads] = 0;
+      var localResult: eltType = 0; 
+      var threadResults: [0..#maxThreads] eltType = 0;
 
       coforall tid in 0..#maxThreads {
         const startid = localDomain.low + tid * iterPerThread;
         const temp_endid = startid + iterPerThread - 1;
         const endid = if localDomain.high < temp_endid then 
                             localDomain.high else temp_endid;
-        var myResult = 0;
+        var myResult: eltType = 0;
         local {
           for ind in startid..endid {
             myResult += A[ind] * B[ind];
