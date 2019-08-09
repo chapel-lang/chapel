@@ -100,6 +100,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
+	packages/DistributedEpochManager.chpl \
+	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \
 	packages/Futures.chpl \
