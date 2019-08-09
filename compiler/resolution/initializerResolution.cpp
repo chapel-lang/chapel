@@ -589,6 +589,8 @@ static void resolveInitializerMatch(FnSymbol* fn) {
     insertFormalTemps(fn);
     at->setFirstGenericField();
     resolveInitializerBody(fn);
+
+    popInstantiationLimit(fn);
   }
 }
 

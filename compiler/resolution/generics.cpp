@@ -168,6 +168,9 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 }
 
 
+static Map<FnSymbol*,int> instantiationLimitMap;
+
+
 //
 // check for infinite instantiation by limiting the number of
 // instantiations of a particular type or function; this is important
@@ -179,21 +182,42 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 //
 static void
 checkInstantiationLimit(FnSymbol* fn) {
-  static Map<FnSymbol*,int> instantiationLimitMap;
-
   // Don't count instantiations on internal modules
   // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
   if (fn->getModule() &&
       fn->getModule()->modTag != MOD_INTERNAL &&
       !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT)) {
-    if (instantiationLimitMap.get(fn) >= instantiation_limit) {
-      USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
-                     fn->name);
-      USR_PRINT("  If this is intentional, try increasing"
-                " the instantiation limit from %d", instantiation_limit);
-      USR_STOP();
+    // This is the first time we've seen this symbol; add a new entry
+    // for it (storing 1) and then bump it up by one (so, store 2).
+    // This will permit us to distinguish between missing entries
+    // (whose get() calls will return 0) and ones that've popped all
+    // their resolutions (which will return 1)
+    if (instantiationLimitMap.get(fn) == 0) {
+      instantiationLimitMap.put(fn, 2);
+    } else {
+      if (instantiationLimitMap.get(fn) >= instantiation_limit &&
+          !fn->hasFlag(FLAG_COMPILER_GENERATED)) {
+        USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
+                       fn->name);
+        USR_PRINT("  If this is intentional, try increasing"
+                  " the instantiation limit from %d", instantiation_limit);
+        USR_STOP();
+      }
+      //      printf("Incrementing count for %s (%p)\n", fn->name, fn);
+      instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
     }
-    instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
+  }
+}
+
+void popInstantiationLimit(FnSymbol* fn) {
+  fn = fn->instantiatedFrom;
+  if (fn) {
+    //    printf("Thinking about decrementing count for %s (%p)\n", fn->name, fn);
+    int count = instantiationLimitMap.get(fn);
+    if (count > 1) {
+      //      printf("...Doing it!\n");
+      instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)-1);
+    }
   }
 }
 
