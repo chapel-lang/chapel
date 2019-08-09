@@ -657,7 +657,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
     coforall l in Locales do on l {
       const maxThreads = if dataParTasksPerLocale==0 then here.maxTaskPar
         else dataParTasksPerLocale;
-      const localDomain = X.localSubdomain();
+      const localDomain = A.localSubdomain();
       const iterPerThread = divceil(localDomain.size, maxThreads);
       var localResult: eltType = 0; 
       var threadResults: [0..#maxThreads] eltType = 0;
@@ -670,7 +670,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
         var myResult: eltType = 0;
         local {
           for ind in startid..endid {
-            myResult += X[ind] * Y[ind];
+            myResult += A[ind] * B[ind];
           }
         }
         threadResults[tid] = myResult;
