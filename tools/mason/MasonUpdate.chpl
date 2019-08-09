@@ -423,7 +423,7 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getManifests(deps: list((string, unmanaged Toml))) {
+private proc getManifests(deps: list((string, unmanaged Toml?))) {
   var manifests: list(unmanaged Toml);
   for dep in deps {
     var name = dep(1);

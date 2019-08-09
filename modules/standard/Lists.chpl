@@ -352,7 +352,7 @@ module Lists {
       const threshold = _totalCapacity - lastArrayCapacity;
       const nsize = _size - amount;
 
-      if nsize > threshhold then
+      if nsize > threshold then
         return;
 
       ref array = _arrays[lastArrayIdx];
