@@ -392,14 +392,13 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 static void chpl_launch_cleanup(void) {
   if (!debug) {
     if (unlink(expectFilename)) {
-      char msg[1024];
-      snprintf(msg, 1024, "Error removing temporary file '%s': %s",
+      char msg[FILENAME_MAX + 35];
+      snprintf(msg, FILENAME_MAX + 35, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
     }
   }
 }
-
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int retcode;

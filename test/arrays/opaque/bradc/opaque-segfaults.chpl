@@ -52,7 +52,7 @@ proc createRandomGraph() {
   for i in 1..numVertices {
     //    vertices(i) = Vertices.create();
     const newVertex = Vertices.create();
-    Label(newVertex) = "v" + i;
+    Label(newVertex) = "v" + i:string;
     VertexWeight(newVertex) = myRandNums.getNext();
   }
 

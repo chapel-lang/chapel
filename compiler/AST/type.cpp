@@ -860,7 +860,7 @@ void initCompilerGlobals() {
 
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gOverloadSetsChecks, fLegacyNilableClasses);
+  setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);
 
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);

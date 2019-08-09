@@ -5,39 +5,9 @@ ERROR test_locales.chpl: s10()
 test_locales.chpl:55: error: halt reached - array index out of bounds: (0)
 
 ======================================================================
-FAIL test_locales.chpl: s1()
-----------------------------------------------------------------------
-Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16
-
-======================================================================
-FAIL test_locales.chpl: s2()
-----------------------------------------------------------------------
-Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 2
-
-======================================================================
-FAIL test_locales.chpl: s3()
-----------------------------------------------------------------------
-Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16 8
-
-======================================================================
 FAIL test_locales.chpl: s4()
 ----------------------------------------------------------------------
 UnexpectedLocales: Max Locales is less than Min Locales
-
-======================================================================
-FAIL test_locales.chpl: s6()
-----------------------------------------------------------------------
-Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 6
-
-======================================================================
-FAIL test_locales.chpl: s7()
-----------------------------------------------------------------------
-Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16 8
 
 ======================================================================
 FAIL test_locales.chpl: s8()
@@ -45,7 +15,19 @@ FAIL test_locales.chpl: s8()
 UnexpectedLocales: Max Locales is less than 1
 
 ======================================================================
-FAIL test_locales.chpl: s9()
+SKIPPED test_locales.chpl: s1()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 16
+
+======================================================================
+SKIPPED test_locales.chpl: s2()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 2
+
+======================================================================
+SKIPPED test_locales.chpl: s3()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
 TestIncorrectNumLocales: Required Locales = 16 8
@@ -61,9 +43,27 @@ SKIPPED test_locales.chpl: s11()
 s11() skipped as s14() skipped
 
 ======================================================================
+SKIPPED test_locales.chpl: s6()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 6
+
+======================================================================
+SKIPPED test_locales.chpl: s7()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 16 8
+
+======================================================================
+SKIPPED test_locales.chpl: s9()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 16 8
+
+======================================================================
 SKIPPED test_locales.chpl: s12()
 ----------------------------------------------------------------------
-s12() skipped as s2() failed
+s12() skipped as s2() Skipped
 
 ======================================================================
 SKIPPED test_locales.chpl: s13()
@@ -71,6 +71,6 @@ SKIPPED test_locales.chpl: s13()
 s13() skipped as s8() failed
 
 ----------------------------------------------------------------------
-Run 10 tests
+Run 4 tests
 
-FAILED failures = 8 errors = 1 skipped = 4 
+FAILED failures = 2 errors = 1 skipped = 10 

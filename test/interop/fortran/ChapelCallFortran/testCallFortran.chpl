@@ -13,14 +13,14 @@ proc main {
   setInt(answer);
   setReal(e);
 
-  assert(fortInt == 42, "fortInt == " + answer);
-  assert(fortReal == e, fortReal + " == " + e);
+  assert(fortInt == 42, "fortInt == " + answer:string);
+  assert(fortReal == e, fortReal:string + " == " + e:string);
 
   fortInt = -1;
   fortReal = pi;
 
   assert(getInt() == -1, "getInt() == -1");
-  assert(getReal() == pi, "getReal() == " + pi);
+  assert(getReal() == pi, "getReal() == " + pi:string);
 
   writeln("Success!");
 }

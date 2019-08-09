@@ -53,6 +53,7 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_CFGAV                  0x80UL
 #define DBG_THREADS               0x100UL
 #define DBG_THREADDETAILS         0x200UL
+#define DBG_TCIPS                 0x800UL
 #define DBG_INTERFACE            0x1000UL
 #define DBG_AM                  0x10000UL
 #define DBG_AMSEND              0x20000UL

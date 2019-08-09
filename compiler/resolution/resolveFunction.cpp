@@ -1742,6 +1742,11 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // In the future, it would be nice if this could no-init
                 // a LHS array and then move records into it from the RHS.
 
+                // Tell compiler it shouldn't raise errors connected
+                // to default-initializing to since it is actually
+                // set below.
+                to->addFlag(FLAG_INITIALIZED_LATER);
+
                 CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                               to, fromType);
                 call->insertBefore(init);

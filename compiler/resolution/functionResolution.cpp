@@ -207,6 +207,10 @@ static void printUnusedFunctions();
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
+static bool  moveIsAcceptable(CallExpr* call);
+static void  moveHaltMoveIsUnacceptable(CallExpr* call);
+
+
 static bool useLegacyNilability(Expr* at) {
   if (fLegacyNilableClasses) return true;
 
@@ -1152,9 +1156,9 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
              actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_GENERIC_NILABLE:
       return actual == CLASS_TYPE_GENERIC_NILABLE ||
-             actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL;
+             actual == CLASS_TYPE_BORROWED_NILABLE||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -2492,9 +2496,18 @@ static void adjustClassCastCall(CallExpr* call)
 
     // Now compute the target type
     Type* t = NULL;
-    if (isDecoratorManaged(d)) {
+    if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
+      // Don't change it, expecting an error
+      t = targetType;
+    } else if (isDecoratorManaged(d)) {
       AggregateType* manager = getManagedPtrManagerType(valueType);
-      t = computeDecoratedManagedType(at, d, manager, call);
+      if (isManagedPtrType(targetType) &&
+          manager != getManagedPtrManagerType(targetType)) {
+        // Don't change it, expecting an error
+        t = targetType;
+      } else {
+        t = computeDecoratedManagedType(at, d, manager, call);
+      }
     } else {
       t = at->getDecoratedClass(d);
     }
@@ -5603,6 +5616,41 @@ static void resolveInitField(CallExpr* call) {
   resolveSetMember(call); // Can we remove some of the above with this?
 }
 
+// Should this be public, like isNilableClassType() ?
+static bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+static bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
+}
+
+static void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
+  if (! fLegacyNilableClasses &&
+      isNonNilableClassType(lhs) && isNilableClassType(rhs))
+    USR_FATAL(call, "cannot assign to non-nilable %s from nilable %s",
+              toString(lhs), toString(rhs));
+
+  if (isUnmanagedClass(lhs) && isOwnedOrSharedOrBorrowed(rhs))
+    USR_FATAL(call, "cannot assign to %s from %s",
+              toString(lhs), toString(rhs));
+}
+
 /************************************* | **************************************
 *                                                                             *
 * This handles expressions of the form                                        *
@@ -5644,6 +5692,10 @@ static void resolveInitVar(CallExpr* call) {
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
     targetType = targetTypeExpr->typeInfo();
 
+    // PRIM_INIT_VAR has dst, src like PRIM_MOVE so we can reuse some checking
+    if (moveIsAcceptable(call) == false)
+      moveHaltMoveIsUnacceptable(call);
+
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
@@ -5670,6 +5722,10 @@ static void resolveInitVar(CallExpr* call) {
         isSingleType(src->getValType()) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
+
+      if (mismatch)
+        checkMoveIntoClass(call, targetType->getValType(), src->getValType());
+
       VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
 
@@ -5871,10 +5927,6 @@ FnSymbol* findCopyInit(AggregateType* at) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool  moveIsAcceptable(CallExpr* call);
-
-static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
@@ -9271,6 +9323,11 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
                 call->getModule()->hasFlag(FLAG_UNSAFE);
   if (unsafe)
+    return;
+
+  // Allow default-init assign to work around current compiler oddities.
+  // In a future where init= is always used, we can remove this case.
+  if (val->hasFlag(FLAG_INITIALIZED_LATER))
     return;
 
   const char* descr = val->name;

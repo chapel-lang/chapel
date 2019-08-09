@@ -1,0 +1,5 @@
+badFormalIntent.chpl:5: error: Formal 's' of type 'string' in exported routine 'badFormalIntentIn(in s: string)' may only have the 'const ref' intent
+badFormalIntent.chpl:7: error: Formal 's' of type 'string' in exported routine 'badFormalIntentOut(out s: string)' may only have the 'const ref' intent
+badFormalIntent.chpl:9: error: Formal 's' of type 'string' in exported routine 'badFormalIntentInOut(inout s: string)' may only have the 'const ref' intent
+badFormalIntent.chpl:11: error: Formal 's' of type 'string' in exported routine 'badFormalIntentRef(ref s: string)' may only have the 'const ref' intent
+badFormalIntent.chpl:13: error: Formal 's' of type 'string' in exported routine 'badFormalIntentConstIn(const in s: string)' may only have the 'const ref' intent

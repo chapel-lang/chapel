@@ -182,8 +182,8 @@
     proc printLeader() {
         var outfile = open(outputFile, iomode.cw);
         var writer = outfile.writer();
-        writer.writeln("Leader: " + processSet[0].leaderId);
-        writeln("Leader: " + processSet[0].leaderId);
+        writer.writeln("Leader: ", processSet[0].leaderId);
+        writeln("Leader: ", processSet[0].leaderId);
         writer.close();
         outfile.close();
     }

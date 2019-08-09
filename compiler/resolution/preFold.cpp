@@ -231,6 +231,44 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_GATHER_TESTS: {
+    int  totalTest = 0;
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->throwsError()) {
+        ModuleSymbol *mod = fn->getModule();
+        if (mod->modTag == MOD_USER) {
+          if (fn->numFormals() == 1) {
+            if (!fn->hasFlag(FLAG_GENERIC) && fn->instantiatedFrom == NULL) {
+              const char* name = astr(fn->name);
+
+              // temporarily add a call to try resolving.
+              CallExpr* tryCall = new CallExpr(name);
+              // Add our new call to the AST temporarily.
+              call->getStmtExpr()->insertAfter(tryCall);
+
+              // copy actual args into tryCall.
+              for_actuals(actual, call) {
+                tryCall->insertAtTail(actual->copy());
+              }
+
+              // Try to resolve it.
+              if (tryResolveCall(tryCall)) {
+                totalTest++;
+              }
+
+              // remove the call from the AST
+              tryCall->remove();
+            }
+          }
+        }
+        
+      }
+    }
+    retval=new SymExpr(new_IntSymbol(totalTest));
+    call->replace(retval);
+    break;
+  }
+
   case PRIM_CALL_RESOLVES:
   case PRIM_METHOD_CALL_RESOLVES: {
     Expr* fnName   = NULL;

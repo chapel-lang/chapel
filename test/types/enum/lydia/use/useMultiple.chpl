@@ -8,7 +8,7 @@ module M {
   use foo, bar;
 
   proc main() {
-    writeln(a + " " + b + " " + c);
-    writeln(d + " " + e + " " + f);
+    writeln(a, " ", b, " ", c);
+    writeln(d, " ", e, " ", f);
   }
 }

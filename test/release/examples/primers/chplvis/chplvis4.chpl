@@ -21,14 +21,14 @@ coforall loc in Locales do
 
               go$[here.id]; // Block until ready!
               writeln ("Finishing running the 'begin' statement on locale "
-                        + here.id + ".");
+                       , here.id, ".");
               done$[here.id] = true;
            }
 
 tagVdebug("loc");
 
 coforall loc in Locales do
-    on loc do writeln("Hello from " + here.id);
+    on loc do writeln("Hello from ", here.id);
 
 tagVdebug("finish");
 

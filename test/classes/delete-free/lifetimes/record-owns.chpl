@@ -26,7 +26,7 @@ class MyClass {
 }
 
 record RMyClass {
-  var c:owned MyClass;
+  var c:owned MyClass?;
   proc init() {
     this.c = new owned(nil:unmanaged MyClass?);
   }

@@ -954,11 +954,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a range that is ambiguously aligned");
 
       if ord < 0 then
-        HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord);
+        HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
       if isBoundedRange(this) && ord >= this.length then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
-            ord + " that is larger than the range's number of indices " + this.length);
+            ord:string + " that is larger than the range's number of indices " + this.length:string);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,
@@ -1572,7 +1572,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       boundsCheckHalt("With a negative count, the range must have a last index.");
     if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
       abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.length:uint(64) then {
-      boundsCheckHalt("bounded range is too small to access " + abs(count) + " elements");
+      boundsCheckHalt("bounded range is too small to access " + abs(count):string + " elements");
     }
 
     //
@@ -2322,12 +2322,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var ret: string;
 
     if x.hasLowBound() then
-      ret += x.low;
+      ret += x.low:string;
     ret += "..";
     if x.hasHighBound() then
-      ret += x.high;
+      ret += x.high:string;
     if x.stride != 1 then
-      ret += " by " + x.stride;
+      ret += " by " + x.stride:string;
 
     var alignCheckRange = x;
     alignCheckRange.normalizeAlignment();
@@ -2335,7 +2335,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if !(alignCheckRange.isNaturallyAligned()) then
-      ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride);
+      ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride):string;
     return ret;
   }
 
@@ -2524,7 +2524,19 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType) type {
-    if isEnumType(idxType) || isBoolType(idxType) then return int; else return idxType;
+    if isBoolType(idxType) {
+      return int;
+    } else if isEnumType(idxType) {
+      // Most range/array code currently relies on being able to store
+      // empty ranges like 1..0.  If an enum only defines a single
+      // symbol, we can't create such a range, so print the following
+      // error message to avoid going off the rails.
+      if idxType.size < 2 then
+        compilerError("ranges are not currently supported for enums with fewer than two values");
+      return int;
+    } else {
+      return idxType;
+    }
   }
 
   // convenience method for converting integers to index types in

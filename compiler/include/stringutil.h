@@ -83,4 +83,10 @@ void removeTrailingNewlines(std::string& str);
 
 bool startsWith(const char* str, const char* prefix);
 
+// Unicode-specific utilities
+static inline bool isInitialUTF8Byte(unsigned char c)
+{
+  return (c & 0xc0) != 0x80;
+}
+
 #endif

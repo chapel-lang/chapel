@@ -15,14 +15,14 @@ proc printThem(ref dst, const ref src) {
   if unordered then unorderedCopyTaskFence();
   assert(src == dst && src == iniSrcValue());
   if printResults then
-    write("dst=" + dst + ", src=" + src + " -- ");
+    write("dst=", dst, ", src=", src, " -- ");
 }
 
 proc printThem(ref dst, param src) {
   if unordered then unorderedCopyTaskFence();
   assert(src == dst && src == iniSrcValue());
   if printResults then
-    write("dst=" + dst + ", src=" + src + " -- ");
+    write("dst=", dst, ", src=", src, " -- ");
 }
 
 inline proc assign(ref dst, const ref src) {
@@ -44,7 +44,7 @@ proc bothLocalAssign(param compileTimeKnown: bool) {
     on Locales[getLocaleID(curLocale=true)] do assign(dst, src);
   }
   printThem(dst, src);
-  writeln("bothLocalAssign(compileTimeKnown="+compileTimeKnown+")");
+  writeln("bothLocalAssign(compileTimeKnown=", compileTimeKnown, ")");
 }
 
 proc dstLocalAssign(param compileTimeKnown: bool, srcLocal: bool) {
@@ -62,7 +62,7 @@ proc dstLocalAssign(param compileTimeKnown: bool, srcLocal: bool) {
       printThem(dst, src);
     }
   }
-  writeln("dstLocalAssign(compileTimeKnown="+compileTimeKnown+", srcLocal="+srcLocal+")");
+  writeln("dstLocalAssign(compileTimeKnown=", compileTimeKnown, ", srcLocal=", srcLocal, ")");
 }
 
 proc srcLocalAssign(param compileTimeKnown: bool, dstLocal: bool) {
@@ -80,7 +80,7 @@ proc srcLocalAssign(param compileTimeKnown: bool, dstLocal: bool) {
       printThem(dst, src);
     }
   }
-  writeln("srcLocalAssign(compileTimeKnown="+compileTimeKnown+", dstLocal="+dstLocal+")");
+  writeln("srcLocalAssign(compileTimeKnown=", compileTimeKnown, ", dstLocal=", dstLocal, ")");
 }
 
 proc srcLocalConstAssign(param compileTimeKnown: bool, dstLocal: bool) {
@@ -98,7 +98,7 @@ proc srcLocalConstAssign(param compileTimeKnown: bool, dstLocal: bool) {
       printThem(dst, src);
     }
   }
-  writeln("srcLocalConstAssign(compileTimeKnown="+compileTimeKnown+", dstLocal="+dstLocal+")");
+  writeln("srcLocalConstAssign(compileTimeKnown=", compileTimeKnown, ", dstLocal=", dstLocal, ")");
 }
 
 proc srcParamAssign(dstLocal: bool) {
@@ -109,7 +109,7 @@ proc srcParamAssign(dstLocal: bool) {
                  else dst = src;
     printThem(dst, src);
   }
-  writeln("srcParamAssign(dstLocal="+dstLocal+")");
+  writeln("srcParamAssign(dstLocal=", dstLocal, ")");
 }
 
 proc neitherLocalAssign() {

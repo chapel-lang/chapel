@@ -920,7 +920,8 @@ initPrimitive() {
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoStringC, true, true);
-  prim_def("string_length", returnInfoDefaultInt);
+  prim_def("string_length_bytes", returnInfoDefaultInt);
+  prim_def("string_length_codepoints", returnInfoDefaultInt);
   prim_def("ascii", returnInfoUInt8);
   prim_def("string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
@@ -1039,6 +1040,10 @@ initPrimitive() {
   // indicate optimization information.
   // That symbol includes OPT_INFO_... flags.
   prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
+
+  prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
+  prim_def(PRIM_GET_TEST_BY_NAME, "get test by name", returnInfoVoid);
+  prim_def(PRIM_GET_TEST_BY_INDEX, "get test by index", returnInfoVoid);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

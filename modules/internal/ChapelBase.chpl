@@ -98,6 +98,9 @@ module ChapelBase {
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
   {
+    if isNonNilableClassType(a.type) && !chpl_legacyNilClasses {
+      compilerError("cannot assign to " + a.type:string + " from nil");
+    }
     __primitive("=", a, nil);
   }
 
@@ -1304,6 +1307,20 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
+  inline proc _cast(type t:unmanaged!, x:_nilType)
+  {
+    if !chpl_legacyNilClasses {
+      compilerError("cannot cast nil to " + t:string);
+    }
+  }
+  inline proc _cast(type t:borrowed!, x:_nilType)
+  {
+    if !chpl_legacyNilClasses {
+      compilerError("cannot cast nil to " + t:string);
+    }
+  }
+
+
   // casting to unmanaged?, no class downcast
   inline proc _cast(type t:unmanaged?, x:borrowed?)
     where isSubtype(_to_unmanaged(x.type),t)
@@ -1356,7 +1373,7 @@ module ChapelBase {
 
   // this version handles downcast to non-nil borrowed
   inline proc _cast(type t:borrowed!, x:borrowed?) throws
-    where isSubtype(t,_to_nonnil(x.type)) && (_to_nonnil(x.type) != t)
+    where isProperSubtype(t,_to_nonnil(x.type))
   {
     if x == nil {
       throw new owned NilClassError();
@@ -1371,7 +1388,7 @@ module ChapelBase {
 
   // this version handles downcast to nilable borrowed
   inline proc _cast(type t:borrowed?, x:borrowed?)
-    where isSubtype(t,x.type) && (x.type != t)
+    where isProperSubtype(t,x.type)
   {
     if x == nil {
       return nil;

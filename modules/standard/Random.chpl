@@ -858,7 +858,7 @@ module Random {
       proc getNext(min: eltType, max:eltType): eltType {
         _lock();
         if boundsChecking && min > max then
-          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max +  "]");
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
         _unlock();
@@ -872,7 +872,7 @@ module Random {
                    min: resultType, max:resultType): resultType {
         _lock();
         if boundsChecking && min > max then
-          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max + "]");
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string + "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
         _unlock();
@@ -889,7 +889,7 @@ module Random {
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
-          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -908,7 +908,7 @@ module Random {
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
@@ -2386,7 +2386,7 @@ module Random {
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
-          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
         _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -2405,7 +2405,7 @@ module Random {
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
         _lock(); 
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();

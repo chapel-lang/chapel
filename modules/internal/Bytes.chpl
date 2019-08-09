@@ -187,7 +187,16 @@ module Bytes {
       }
     }
 
-    // These should never be called (but are default functions for records)
+    pragma "no doc"
+    proc ref deinit() {
+      if isowned && this.buff != nil {
+        on __primitive("chpl_on_locale_num",
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+          chpl_here_free(this.buff);
+        }
+      }
+    }
+
     pragma "no doc"
     proc writeThis(f) {
       compilerError("not implemented: writeThis");
@@ -994,6 +1003,7 @@ module Bytes {
 
         if cp == 0xfffd {  //decoder returns the replacament character
           if errors == DecodePolicy.Strict {
+            chpl_here_free(c_buf);
             throw new owned DecodeError();
           }
           else if errors == DecodePolicy.Ignore {
