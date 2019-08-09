@@ -2729,6 +2729,13 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
     return ret;
+  } else if t == _bytes {
+    // handle _bytes
+    var len:int(64);
+    var tx: c_string;
+    var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
+    x = new _bytes(tx, length=len, needToCopy=false);
+    return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
@@ -2864,6 +2871,15 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
+    return ret;
+  } else if t == _bytes {
+    // handle _bytes
+    var len:int(64);
+    var tx: c_string;
+    var ret = qio_channel_read_string(false, byteorder:c_int,
+                                      qio_channel_str_style(_channel_internal),
+                                      _channel_internal, tx, len, -1);
+    x = new _bytes(tx, length=len, needToCopy=false);
     return ret;
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
@@ -5424,7 +5440,12 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoP
         lhs = rhs:int:t;
       }
     } else {
-      lhs = rhs:t;
+      if isBytesType(t2) && isStringType(t) {
+        lhs = rhs.decode(DecodePolicy.Ignore);
+      }
+      else {
+        lhs = rhs:t;
+      }
     }
   } catch {
     return ERANGE;
