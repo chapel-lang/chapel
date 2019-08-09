@@ -4,14 +4,14 @@ class C {
   var x:int;
 }
 
-proc getNum(c:borrowed C)
+proc getNum(c:borrowed C?)
 {
   if c == nil then return -1;
   else return c.x;
 }
 
 record R {
-  var c:unmanaged C;
+  var c:unmanaged C?;
   var isowned: bool;
 }
 
@@ -26,7 +26,7 @@ proc R.init() {
   this.isowned = true;
 }
 
-proc R.init(aliasing:unmanaged C) {
+proc R.init(aliasing:unmanaged C?) {
   this.c = aliasing;
   this.isowned = false;
 }
@@ -47,7 +47,7 @@ proc addOne(r:R) {
   r.c.x += 1;
 }
 
-proc makeAlias(c:unmanaged C)
+proc makeAlias(c:unmanaged C?)
 {
   if debug then writeln("in makeAlias");
   return new R(aliasing=c);
