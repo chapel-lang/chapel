@@ -1284,10 +1284,6 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
   } else {
-    // Write string_start.
-    err = qio_channel_write_char(false, ch, style->string_start);
-    if( err ) goto rewind;
-
     if(byte_esc) {
       for( i = 0; i < len; i+=clen ) {
         tmplen = _qio_byte_escape(ptr[i], style->string_end, style->string_format, tmp, NULL, NULL);
@@ -1301,6 +1297,10 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
       }
     }
     else {
+      // Write string_start.
+      err = qio_channel_write_char(false, ch, style->string_start);
+      if( err ) goto rewind;
+
       // Write the string while translating it.
       for( i = 0; i < len; i+=clen ) {
         err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
@@ -1315,12 +1315,11 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
         err = qio_channel_write_amt(false, ch, tmp, tmplen);
         if( err ) goto rewind;
       }
+
+      // Write string_end.
+      err = qio_channel_write_char(false, ch, style->string_end);
+      if( err ) goto rewind;
     }
-
-    // Write string_end.
-    err = qio_channel_write_char(false, ch, style->string_end);
-    if( err ) goto rewind;
-
     if( overfull ) {
       err = qio_channel_write_char(false, ch, '.');
       if( err ) goto rewind;
