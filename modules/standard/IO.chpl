@@ -3010,8 +3010,6 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
         otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
-      /*if byte_esc then*/
-        /*halt("here: "+byte_esc:string);*/
       e = _write_text_internal(_channel_internal, x, byte_esc);
     }
   } else {

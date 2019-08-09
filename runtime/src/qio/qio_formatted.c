@@ -1047,11 +1047,9 @@ char _qio_tohex(unsigned char i)
 static
 int _qio_byte_escape(uint8_t b, int32_t string_end, int string_format, char* tmp, int *width_chars_out, int *width_cols_out)
 {
-  /*printf("byte-escaping %c %d\n", b, b);*/
   int i = 0;
   char tmpchr;
   int cwidth;
-  qioerr err;
   if( b == string_end || b == '\\' ||
       b == '\'' || b == '"' || b == '\n' ) {
     tmp[0] = '\\';
@@ -1063,34 +1061,11 @@ int _qio_byte_escape(uint8_t b, int32_t string_end, int string_format, char* tmp
     tmp[1] = tmpchr;
     cwidth = 2;
   } else if( !iswascii(b) || !isprint(b) ) {
-    /*printf("problem char\n");*/
-
-    /*char buf[JSON_ESC_MAX];*/
-    /*int buflen;*/
-    /*int j;*/
-    /*int x;*/
-    /*int i;*/
-    // convert each of the bytes into \x00 escaped things.
-    /*buflen = qio_nbytes_char(b);*/
-    /*err = qio_encode_char_buf(buf, b);*/
-    /*if( err ) goto error;*/
-    /*printf("\tbuflen=%d\n", buflen);*/
-
-    /*// Now, print out each byte escaped.*/
-    /*for( j = 0; j < buflen; j++ ) {*/
-      /*x = buf[j];*/
-      tmp[0] = '\\';
-      tmp[1] = 'x';
-      tmp[2] = _qio_tohex((b >> 4) & 0xf);
-      tmp[3] = _qio_tohex((b >> 0) & 0xf);
-      /*WRITEC('\\');*/
-      /*WRITEC('x');*/
-      /*WRITEC(_qio_tohex((x >> 4) & 0xf));*/
-      /*WRITEC(_qio_tohex((x >> 0) & 0xf));*/
-      cwidth = 4;
-      /*i+=4;*/
-      /*printf("%d %d %d %d\n", tmp[i+0], tmp[i+1], tmp[i+2], tmp[i+3]);*/
-    /*}*/
+    tmp[0] = '\\';
+    tmp[1] = 'x';
+    tmp[2] = _qio_tohex((b >> 4) & 0xf);
+    tmp[3] = _qio_tohex((b >> 0) & 0xf);
+    cwidth = 4;
   } else {
     tmp[0] = b;
     cwidth = 1;
@@ -1099,11 +1074,6 @@ int _qio_byte_escape(uint8_t b, int32_t string_end, int string_format, char* tmp
   if( width_chars_out ) *width_chars_out = cwidth;
   if( width_cols_out ) *width_cols_out = cwidth;
   return cwidth;
-
-error:
-  if( width_chars_out ) *width_chars_out = -1;
-  if( width_cols_out ) *width_cols_out = -1;
-  return -1;
 }
 // Returns \" or \x00 or \uXXXX etc depending on string style
 // returns negative or 0 on error.
