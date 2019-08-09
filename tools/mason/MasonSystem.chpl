@@ -18,6 +18,7 @@
  */
 
 
+private use Lists;
 use Path;
 use MasonUtils;
 use MasonHelp;
@@ -177,7 +178,7 @@ proc getPkgVariable(pkgName: string, option: string) {
 
   var command = " ".join("pkg-config", pkgName, option);
 
-  var lines: [1..0] string;
+  var lines: list(string);
   var cmd = command.split();
   var sub = spawn(cmd, stdout=PIPE);
   sub.wait();
@@ -185,7 +186,7 @@ proc getPkgVariable(pkgName: string, option: string) {
   var line:string;
   for line in sub.stdout.lines() {
     if line.length > 1 then
-    lines.push_back(line);
+      lines.append(line);
   }
 
   return lines;
@@ -211,9 +212,10 @@ proc getPkgInfo(pkgName: string, version: string) throws {
   var pkgInfo: unmanaged Toml = pkgToml;
 
   if pkgExists(pkgName) {
-    const pcVersion = "".join(getPkgVariable(pkgName, "--modversion")).strip();
-    const libs = "".join(getPkgVariable(pkgName, "--libs")).strip();
-    const include = "".join(getPkgVariable(pkgName, "--variable=includedir")).strip();
+    // Pass "these" to join instead of converting the list to an array.
+    const pcVersion = "".join(getPkgVariable(pkgName, "--modversion").these()).strip();
+    const libs = "".join(getPkgVariable(pkgName, "--libs").these()).strip();
+    const include = "".join(getPkgVariable(pkgName, "--variable=includedir").these()).strip();
 
     pkgInfo["name"] = pkgName;
     pkgInfo["version"] = pcVersion;

@@ -273,7 +273,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 
 
 /* Retrieves build information for MasonUpdate */
-proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throws {
+proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
 
   // put above try b/c compiler comlains about return value
   var depList: list(unmanaged Toml);
@@ -302,8 +302,8 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
       spkgInfo["libs"] = libs;
       spkgInfo["include"] = include;
 
-      while dependencies.domain.size > 0 {
-        var dep = dependencies[dependencies.domain.first];
+      while dependencies.size > 0 {
+        var dep = dependencies[1];
         var depSpec = dep.split("@", 1);
         var name = depSpec[1];
 
@@ -315,13 +315,14 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
 
         // get a toml that contains the dependency info and put it
         // in a subtable of the current dependencies table
-        spkgInfo[name] = getSpkgInfo(dep, depsOfDep);
+        spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        dependencies.remove(dependencies.domain.first);
+        try! dependencies.pop(1);
       }
-      if depList.domain.size > 0 {
-        spkgInfo["dependencies"] = depList;
+      if depList.size > 0 {
+        // Temporarily use toArray here to avoid supporting list.
+        spkgInfo.set("dependencies", depList.toArray());
       }
     }
     else {

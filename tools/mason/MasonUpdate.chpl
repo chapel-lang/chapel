@@ -45,7 +45,7 @@ private var failedChapelVersion: list(string);
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
+proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
 
   try! {
 
@@ -125,10 +125,9 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(tf: string, args : [] string) {
-  if args.find("--no-update")[1] {
+proc updateRegistry(tf: string, args: list(string)) {
+  if args.count("--no-update") != 0 then
     return;
-  }
 
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
@@ -322,10 +321,10 @@ private proc createDepTree(root: unmanaged Toml) {
   return depTree;
 }
 
-private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, name: string) : unmanaged Toml {
+private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
   var depList: list(unmanaged Toml);
-  while deps.domain.size > 0 {
-    var dep = deps[deps.domain.first];
+  while deps.size > 0 {
+    var dep = deps[1];
 
     var brick       = dep["brick"];
     var package     = brick["name"].s;
@@ -357,10 +356,11 @@ private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, 
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    deps.remove(deps.domain.first);
+    try! deps.pop(1);
   }
-  if depList.domain.size > 0 then
-    depTree[name]["dependencies"] = depList;
+  // Use toArray here to avoid making Toml aware of `list`, for now.
+  if depList.size > 0 then
+    depTree[name].set("dependencies", depList.toArray());
   return depTree;
 }
 
@@ -423,7 +423,7 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getManifests(deps: [?dom] (string, unmanaged Toml)) {
+private proc getManifests(deps: list((string, unmanaged Toml))) {
   var manifests: list(unmanaged Toml);
   for dep in deps {
     var name = dep(1);

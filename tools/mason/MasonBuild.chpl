@@ -18,6 +18,7 @@
  */
 
 
+private use Lists;
 use TOML;
 use Spawn;
 use FileSystem;
@@ -32,13 +33,14 @@ proc masonBuild(args) throws {
   var show = false;
   var release = false;
   var force = false;
-  var compopts: [1..0] string;
+  var compopts: list(string);
   var opt = false;
   var example = false;
   if args.size > 2 {
-    for arg in args[2..] {
+    for i in 3..args.size {
+      var arg = args[i];
       if opt == true {
-        compopts.push_back(arg);
+        compopts.append(arg);
       }
       else if arg == '-h' || arg == '--help' {
         masonBuildHelp();
@@ -66,20 +68,22 @@ proc masonBuild(args) throws {
         continue;
       }
       else {
-        compopts.push_back(arg);
+        compopts.append(arg);
       }
     }
   }
   if example {
     // compopts become test names. Build never runs examples
-    compopts.push_back("--no-run");
-    if show then compopts.push_back("--show");
-    if release then compopts.push_back("--release");
-    if force then compopts.push_back("--force");
+    compopts.append("--no-run");
+    if show then compopts.append("--show");
+    if release then compopts.append("--release");
+    if force then compopts.append("--force");
     masonExample(compopts);
   }
   else {
-    const configNames = UpdateLock(args);
+    var argsList = new list(string);
+    for x in args do argsList.append(x);
+    const configNames = UpdateLock(argsList);
     const tomlName = configNames[1];
     const lockName = configNames[2];
     buildProgram(release, show, force, compopts, tomlName, lockName);
@@ -96,7 +100,7 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 }
 
 
-proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] string,
+proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
                   tomlName="Mason.toml", lockName="Mason.lock") throws {
 
 
@@ -129,6 +133,11 @@ proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] 
 
         // generate list of dependencies and get src code
         var sourceList = genSourceList(lockFile);
+        //
+        // TODO: Temporarily use `toArray` here because `list` does not yet
+        // support parallel iteration, which the `getSrcCode` method _must_
+        // have for good performance.
+        //
         getSrcCode(sourceList, show);
 
         // get compilation options including external dependencies
@@ -164,7 +173,7 @@ proc buildProgram(release: bool, show: bool, force: bool, cmdLineCompopts: [?d] 
    named after the project folder in which it is
    contained */
 proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
-                release: bool, compopts: [?dom] string, projectHome: string) : bool throws {
+                release: bool, compopts: list(string), projectHome: string) : bool throws {
 
   const sourceList = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
@@ -176,9 +185,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     throw new owned MasonError("Mason could not find your project");
   }
   else {
-    var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);
+    var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts.these());
     if release then command += " --fast";
-    if sourceList.numElements > 0 then command += " --main-module " + project;
+    if sourceList.size > 0 then command += " --main-module " + project;
 
     for (_, name, version) in sourceList {
       var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
@@ -210,14 +219,14 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 /* Generates a list of tuples that holds the git repo
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
-  var sourceList: [1..0] (string, string, string);
+  var sourceList: list((string, string, string));
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
-        sourceList.push_back((source, name, version));
+        sourceList.append((source, name, version));
       }
     }
   }
@@ -239,7 +248,15 @@ proc depExists(dependency: string) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceList: [?d] 3*string, show) {
+proc getSrcCode(sourceListArg: list(3*string), show) {
+
+  //
+  // TODO: Temporarily use `toArray` here because `list` does not yet
+  // support parallel iteration, which the `getSrcCode` method _must_
+  // have for good performance.
+  //
+  var sourceList = sourceListArg.toArray();
+
   var baseDir = MASON_HOME +'/src/';
   forall (srcURL, name, version) in sourceList {
     const nameVers = name + "-" + version;
@@ -259,12 +276,12 @@ proc getSrcCode(sourceList: [?d] 3*string, show) {
 }
 
 // Retrieves root table compopts, external compopts, and system compopts
-proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
+proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
 
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
     const cmpFlags = lock["root"]["compopts"].s;
-    compopts.push_back(cmpFlags);
+    compopts.append(cmpFlags);
   }
   
   if lock.pathExists('external') {
@@ -272,9 +289,9 @@ proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
     for (name, depInfo) in zip(exDeps.D, exDeps.A) {
       for (k,v) in allFields(depInfo) {
         select k {
-            when "libs" do compopts.push_back("-L" + v.s); 
-            when "include" do compopts.push_back("-I" + v.s);
-            when "other" do compopts.push_back("-I" + v.s);
+            when "libs" do compopts.append("-L" + v.s); 
+            when "include" do compopts.append("-I" + v.s);
+            when "other" do compopts.append("-I" + v.s);
             otherwise continue;
           }
       }
@@ -283,8 +300,8 @@ proc getTomlCompopts(lock: borrowed Toml, compopts: [?d] string) {
   if lock.pathExists('system') {
     const pkgDeps = lock['system'];
     for (name, depInfo) in zip(pkgDeps.D, pkgDeps.A) {
-      compopts.push_back(depInfo["libs"].s);
-      compopts.push_back("-I" + depInfo["include"].s);
+      compopts.append(depInfo["libs"].s);
+      compopts.append("-I" + depInfo["include"].s);
     }
   }
   return compopts;

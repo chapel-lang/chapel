@@ -69,7 +69,7 @@ proc masonTest(args) throws {
   runTests(show, run, parallel, compopts);
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: list(string)) throws {
+private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -82,6 +82,11 @@ private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: li
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
+    //
+    // TODO: Temporarily use `toArray` here because `list` does not yet
+    // support parallel iteration, which the `getSrcCode` method _must_
+    // have for good performance.
+    //
     getSrcCode(sourceList, show);
     const project = lockFile["root"]["name"].s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
@@ -97,7 +102,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: li
 
     // get the test names from lockfile or from test directory
     const testNames = getTests(lockFile.borrow(), projectHome);
-    var numTests = testNames.domain.size;
+    var numTests = testNames.size;
 
     // Check for tests to run
     if numTests > 0 {
@@ -113,7 +118,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, cmdLineCompopts: li
         // get the string of dependencies for compilation
         // also names test as --main-module
         const masonCompopts = getMasonDependencies(sourceList, testName);
-        const allCompOpts = "".join(" ".join(compopts), masonCompopts);
+        const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
 
         const moveTo = "-o " + projectHome + "/target/test/" + testName;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
@@ -164,7 +169,7 @@ private proc runTestBinary(projectHome: string, testName: string, show: bool) {
 }
 
 
-private proc runTestBinaries(projectHome: string, testNames: [?D] string,
+private proc runTestBinaries(projectHome: string, testNames: list(string),
                              numTests: int, show: bool) {
 
   var resultDomain: domain(string);
@@ -204,13 +209,13 @@ private proc printTestResults(testResults: [?d] string, numTests: int,
 }
 
 
-private proc getMasonDependencies(sourceList: [?d] (string, string, string),
+private proc getMasonDependencies(sourceList: list(3*string),
                                  testName: string) {
 
   // Declare test to run as the main module
   var masonCompopts = " ".join(" --main-module", testName, " ");
 
-  if sourceList.numElements > 0 {
+  if sourceList.size > 0 {
     const depPath = MASON_HOME + "/src/";
 
     // Add dependencies to project

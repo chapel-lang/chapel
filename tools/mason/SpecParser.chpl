@@ -50,7 +50,7 @@ config const debugSpecParser=false;
 proc getSpecFields(spec: string) {
   var specFields: 4*string;
   try! {
-    const tokenList = readSpec(spec);
+    var tokenList = readSpec(spec);
     const specInfo = parseSpec(tokenList);
     var compiler = specInfo[3];
     if compiler.length < 1 {
@@ -118,7 +118,7 @@ proc readSpec(spec: string) {
 }
 
 
-proc parseSpec(tokenList: [?d] string) throws {
+proc parseSpec(ref tokenList: list(string)) throws {
 
   const rVers = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
   const rCompiler = compile("(\\%[A-Za-z0-9\\-\\_]+[\\-a-zA-Z]*)");
@@ -141,7 +141,7 @@ proc parseSpec(tokenList: [?d] string) throws {
     throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
-    var toke = tokenList.pop_front();
+    var toke = try! tokenList.pop(1);
 
     // get package name (should always be first token)
     if package.length < 1 {

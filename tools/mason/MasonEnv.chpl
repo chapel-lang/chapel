@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+private use Lists;
 use MasonUtils;
 use MasonHelp;
 
@@ -35,10 +36,9 @@ proc MASON_HOME : string {
 proc MASON_CACHED_REGISTRY {
   const masonRegistry = MASON_REGISTRY;
   const masonHome = MASON_HOME;
-  var cachedRegistry: [masonRegistry.domain] string;
-  for ((name, _), cached) in zip(masonRegistry, cachedRegistry) {
-    cached = MASON_HOME + "/" + name;
-  }
+  var cachedRegistry: list(string);
+  for (name, _) in masonRegistry do
+    cachedRegistry.append(MASON_HOME + "/" + name);
 
   return cachedRegistry;
 }
@@ -54,10 +54,10 @@ proc MASON_REGISTRY {
   const env = getEnv("MASON_REGISTRY");
   const default = ("mason-registry",
                    "https://github.com/chapel-lang/mason-registry");
-  var registries: [1..0] 2*string;
+  var registries: list(2*string);
 
   if env == "" {
-    registries.push_back(default);
+    registries.append(default);
   } else {
     for str in env.split(',') {
       const regArr = str.split('|');
@@ -77,7 +77,7 @@ proc MASON_REGISTRY {
           // found a 'name|location' pair
           regTup = (regArr[1], regArr[2]);
         }
-        registries.push_back(regTup);
+        registries.append(regTup);
       }
     }
 
@@ -111,7 +111,7 @@ proc masonEnv(args) {
     writeln(name, ": ", val);
   }
 
-  proc printVar(name : string, val : [] string) {
+  proc printVar(name : string, val : list(string)) {
     const star = if getEnv(name) != "" then " *" else "";
     var first = true;
     write(name, ": ");
@@ -125,7 +125,7 @@ proc masonEnv(args) {
     writeln(star);
   }
 
-  proc printVar(name : string, val : [] 2*string) {
+  proc printVar(name : string, val: list(2*string)) {
     const star = if getEnv(name) != "" then " *" else "";
     var first = true;
     write(name, ": ");

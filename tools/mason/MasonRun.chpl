@@ -73,7 +73,7 @@ proc masonRun(args) throws {
   runProjectBinary(show, release, execopts);
 }
 
-proc runProjectBinary(show: bool, release: bool, execopts: [?d] string) throws {
+proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws {
 
   try! {
 
@@ -85,7 +85,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: [?d] string) throws {
  
     // Find the Binary and execute
     if isDir(joinPath(projectHome, 'target')) {
-      var execs = ' '.join(execopts);
+      var execs = ' '.join(execopts.these());
     
       // decide which binary(release or debug) to run
       var command: string;
@@ -189,12 +189,17 @@ private proc masonBuildRun(args: [?d] string) {
     }
     else {
       var buildArgs: list(string);
+      //var buildArgs: [0..1] string = ["mason", "build"];
       buildArgs.append("mason");
       buildArgs.append("build");
       if !updateRegistry then buildArgs.append("--no-update");
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
+      //
+      // TODO: If I pass list here, we get strange warnings along the lines
+      // of "parallel iteration is not supported over unbounded ranges (?).
+      //
       masonBuild(buildArgs);
       runProjectBinary(show, release, execopts);
     }

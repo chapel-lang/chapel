@@ -704,6 +704,100 @@ used to recursively hold tables and respective values
       return false;
     }
 
+    proc set(tbl: string, toml: unmanaged Toml) {
+      ref t = this(tbl);
+      if t == nil {
+        t = toml;
+      } else {
+        delete t;
+        t = toml;
+      }
+    }
+    proc set(tbl: string, s: string) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(s);
+      } else {
+        t.tag = fieldString;
+        t.s = s;
+      }
+    }
+    proc set(tbl: string, i: int) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(i);
+      } else {
+        t.tag = fieldInt;
+        t.i = i;
+      }
+    }
+    proc set(tbl: string, b: bool) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(b);
+      } else {
+        t.tag = fieldBool;
+        t.boo = b;
+      }
+    }
+    proc set(tbl: string, r: real) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(r);
+      } else {
+        t.tag = fieldReal;
+        t.re = r;
+      }
+    }
+    proc set(tbl: string, ld: date) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(ld);
+      } else {
+        t.tag = fieldDate;
+        t.ld = ld;
+      }
+    }
+    proc set(tbl: string, ti: time) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(ti);
+      } else {
+        t.tag = fieldTime;
+        t.ti = ti;
+      }
+    }
+    proc set(tbl: string, dt: datetime) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(dt);
+      } else {
+        t.tag = fieldDateTime;
+        t.dt = dt;
+      }
+    }
+    proc set(tbl: string, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(A);
+      } else {
+        t.tag = fieldToml;
+        t.D = D;
+        t.A = A;
+      }
+    }
+    proc set(tbl: string, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom) {
+      ref t = this(tbl);
+      if t == nil {
+        t = new unmanaged Toml(arr);
+      } else {
+        t.tag = fieldArr;
+        t.dom = dom;
+        t.arr = arr;
+      }
+    }
+
+
     /* Write a Table to channel f in TOML format */
     override proc writeThis(f) {
       writeTOML(f);
