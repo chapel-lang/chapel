@@ -206,22 +206,25 @@ checkInstantiationLimit(FnSymbol* fn) {
                 " the instantiation limit from %d", instantiation_limit);
       USR_STOP();
     }
-    /*
-    printf("Incrementing instantiation count for %s (%p)\n",
-           fn->name, fn);
-    */
+    // printf("Incrementing instantiation count for %s (%p)\n", fn->name, fn);
     instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
   }
 }
 
 void popInstantiationLimit(FnSymbol* fn) {
+  //
+  // varargs functions are not added to the instantiationLimitMap
+  //
+  if (fn->hasFlag(FLAG_EXPANDED_VARARGS)) {
+    return;
+  }
+
+  //
   // Go from a concrete instantiation to the generic it was based upon (if any)
+  //
   fn = fn->instantiatedFrom;
   if (fn && trackInstantiationsForFn(fn)) {
-    /*
-    printf("Decrementing instantiation count for %s (%p)\n",
-           fn->name, fn);
-    */
+    // printf("Decrementing instantiation count for %s (%p)\n", fn->name, fn);
     int count = instantiationLimitMap.get(fn);
     if (count > 0) {
       instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)-1);
