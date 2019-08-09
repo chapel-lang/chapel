@@ -367,6 +367,10 @@ module ChapelSyncvar {
 
     pragma "dont disable remote value forwarding"
     proc init(type valType) {
+      if _to_nilable(valType) != valType then
+        compilerError("sync variables containing non-nilable classes " +
+                      "are not currently supported");
+
       this.valType = valType;
       this.complete();
       chpl_sync_initAux(syncAux);
@@ -790,6 +794,10 @@ module ChapelSyncvar {
     var  singleAux : chpl_single_aux_t;      // Locking, signaling, ...
 
     proc init(type valType) {
+      if _to_nilable(valType) != valType then
+        compilerError("single variables containing non-nilable classes " +
+                      "are not currently supported");
+
       this.valType = valType;
       this.complete();
       chpl_single_initAux(singleAux);

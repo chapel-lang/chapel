@@ -1,0 +1,1 @@
+non-nilable-single-error.chpl:2: error: single variables containing non-nilable classes are not currently supported
