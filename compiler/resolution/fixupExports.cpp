@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "library.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -34,6 +35,8 @@
 
 static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<const char*, FnSymbol*> conversionCallMap;
+
+std::set<FnSymbol*> exportedStrRets;
 
 static void attemptFixups(FnSymbol* fn);
 static Type* maybeUnwrapRef(Type* t);
@@ -141,6 +144,9 @@ static void attemptFixups(FnSymbol* fn) {
 
   if (needsFixup(fn->retType) && validateReturnIntent(fn)) {
     if (wrapper == NULL) { wrapper = createWrapper(fn); }
+    if (fMultiLocaleInterop) {
+      exportedStrRets.insert(wrapper);
+    }
     changeRetType(wrapper);
   }
 
