@@ -1610,8 +1610,8 @@ module Sparse {
   private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) where (isSparseArr(A) || isSparseArr(B)) {
     // matrix-vector
     if Adom.rank == 2 && Bdom.rank == 1 {
-      if !isCSArr(A) then
-        return _sparsematvecMult(A,B);
+      if !isCSArr(A) then writeln ("not csarr a");
+        return _sparsematvecMult(A, B);
       return _csrmatvecMult(A, B);
     }
     // vector-matrix
@@ -1644,6 +1644,7 @@ module Sparse {
   /* Sparse Matrix-vector multiplication with Distributed support */
   private proc _sparsematvecMult(const ref A: [?Adom] ?eltType, const ref X: [?Xdom] eltType) where isSparseArr(A) {
     var Y: [Xdom] eltType;
+    var locks$: [LocaleSpace] sync bool;
     coforall l in Locales do on l {
       const localDomain = A.localSubdomain();
       var (low_i, low_j) = localDomain.low;
@@ -1653,9 +1654,33 @@ module Sparse {
       forall (i,j) in localDomain {
           rowResults[i] += A[i,j] * X[j];
       }
-      for i in low_i..high_i {
-          Y[i] += rowResults[i];
+      var numRowsPerSynch = localDomain.dim(1).size / A.domain.dist.targetLocales().shape(2);
+      var numLocsInRow = A.domain.dist.targetLocales().shape(2);
+      var myPosInRow: int;// = A.domain.dim(2).size/(A.localSubdomain().dim(2).high+1)-1; // 0-based assumed
+      var myPosInCol: int; // = A.domain.dim(1).size / (A.localSubdomain()
+      const targetLoc = A.domain.dist.targetLocales();
+      for (ind, Loc) in zip(targetLoc.domain, targetLoc) {
+        if Loc==here {
+          myPosInRow = ind(1);
+          myPosInCol = ind(2);
+        }
       }
+      for it in 0..#numLocsInRow {
+        //calculate start offset
+        var curStart = (low_i+((myPosInRow+it)*numRowsPerSynch))%(A.localSubdomain().dim(1).size);
+        var curEnd = if (myPosInRow + it) % numLocsInRow == numLocsInRow - 1 then high_i else (curStart+numRowsPerSynch-1);
+        
+        const myId = myPosInCol * numLocsInRow + ((myPosInRow + it) % numLocsInRow);
+        locks$[myId] = true;
+        for i in curStart..curEnd {
+          Y[i] += rowResults[i];
+        }
+        locks$[myId];
+      }   
+
+      /*for i in low_i..high_i {
+          Y[i] += rowResults[i];
+      }*/
     }
     return Y;
   }
