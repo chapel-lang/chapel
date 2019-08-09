@@ -482,10 +482,8 @@ module Bytes {
 
         if localRet == -1 {
           localRet = 0;
-          const needleLen = needle.len;
-          const localNeedleBuf = copyRemoteBuffer(needle.locale_id,
-                                                  needle.buff,
-                                                  needleLen);
+          const localNeedle = needle.localize();
+          const needleLen = localNeedle.len;
 
           // i *is not* an index into anything, it is the order of the element
           // of view we are searching from.
@@ -496,7 +494,7 @@ module Bytes {
           for i in searchSpace {
             const bufIdx = view.orderToIndex(i);
             const found = bufferEqualsLocal(buf1=this.buff, off1=bufIdx-1,
-                                            buf2=localNeedleBuf, off2=0,
+                                            buf2=localNeedle.buff, off2=0,
                                             len=needleLen);
             if found {
               if count {

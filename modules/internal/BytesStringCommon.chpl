@@ -47,6 +47,7 @@ module BytesStringCommon {
           }
           ret.buff = newBuf;
           ret._size = allocSize;
+          freeBuffer(copyBuf);
         }
         ret.len = r2.size;
         ret.buff[ret.len] = 0;
