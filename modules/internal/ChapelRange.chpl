@@ -2133,10 +2133,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                                                   minIndicesPerTask,
                                                   len);
       if debugDataParNuma {
-        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n" +
-                           "### numTasksPerSubloc = ", numSublocTasks, "\n" +
-                           "### ignoreRunning = ", ignoreRunning, "\n" +
-                           "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n",
+                           "### numTasksPerSubloc = ", numSublocTasks, "\n",
+                           "### ignoreRunning = ", ignoreRunning, "\n",
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n",
                            "### numChunks = ", numChunks);
       }
 
@@ -2147,8 +2147,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           local do on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
-                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+
-                                   chunk+", on "+chpl_getSubloc()+") ***");
+                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
+                                   chunk, ", on ", chpl_getSubloc(), ") ***");
             }
             const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
             const locRange = lo..hi;
@@ -2165,7 +2165,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             coforall core in 0..#numTasks {
               const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
               if debugDataParNuma {
-                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  " +
+                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
                                    "locRange = ", locRange, "  coreRange = ", low..high);
               }
               yield (low..high,);
