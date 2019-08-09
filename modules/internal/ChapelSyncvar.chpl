@@ -78,7 +78,13 @@ module ChapelSyncvar {
 
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
-      compilerError("sync/single types cannot be of type '", t : string, "'");
+      compilerError("sync/single types cannot be contain type '", t : string, "'");
+
+    if !chpl_legacyNilClasses && _to_nilable(t) != t then
+      compilerError("sync/single types cannot contain non-nilable classes");
+
+    if isGenericType(t) then
+      compilerError("sync/single types cannot contain generic types");
   }
 
   pragma "no doc"
@@ -367,10 +373,6 @@ module ChapelSyncvar {
 
     pragma "dont disable remote value forwarding"
     proc init(type valType) {
-      if _to_nilable(valType) != valType then
-        compilerError("sync variables containing non-nilable classes " +
-                      "are not currently supported");
-
       this.valType = valType;
       this.complete();
       chpl_sync_initAux(syncAux);
@@ -794,10 +796,6 @@ module ChapelSyncvar {
     var  singleAux : chpl_single_aux_t;      // Locking, signaling, ...
 
     proc init(type valType) {
-      if _to_nilable(valType) != valType then
-        compilerError("single variables containing non-nilable classes " +
-                      "are not currently supported");
-
       this.valType = valType;
       this.complete();
       chpl_single_initAux(singleAux);
