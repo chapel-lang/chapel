@@ -34,6 +34,7 @@ pragma "error mode fatal"
 module TOML {
 
 
+private use Lists;
 use TomlParser;
 private use TomlReader;
 
@@ -308,8 +309,7 @@ module TomlParser {
         // Array
         if val == '['  {
           skipNext(source);
-          var Dom: domain(1);
-          var array: [Dom] unmanaged Toml;
+          var array: list(unmanaged Toml);
           while top(source) != ']' {
             if comma.match(top(source)) {
               skipNext(source);
@@ -319,7 +319,7 @@ module TomlParser {
             }
             else {
               var toParse = parseValue();
-              array.push_back(toParse);
+              array.append(toParse);
             }
           }
           skipNext(source);
@@ -638,6 +638,13 @@ used to recursively hold tables and respective values
       this.arr = arr;
       this.tag = fieldArr;
     }
+
+    // List
+    proc init(lst: list(unmanaged Toml)) {
+      // Cheat by translating directly into an array for now.
+      this.init(lst.toArray());
+    }
+
 
     // Clone
     proc init(root: unmanaged Toml) {
@@ -1095,7 +1102,7 @@ module TomlReader {
     if !source.nextLine() {
       throw new owned TomlError("Reached end of file unexpectedly");
     }
-    return source.currentLine![source.currentLine!.D.first];
+    return source.currentLine![1];
   }
 
   /* Returns a boolean or whether or not another line can be read
@@ -1115,8 +1122,8 @@ module TomlReader {
   }
 
   proc skipLine(source) {
-    var emptyArray: [1..0] string;
-    var emptyCurrent = new unmanaged Tokens(emptyArray);
+    var emptyList: list(string);
+    var emptyCurrent = new unmanaged Tokens(emptyList);
     var ptrhold = source.currentLine;
     source.currentLine = emptyCurrent;
     var readNextLine = readLine(source);
@@ -1138,8 +1145,7 @@ module TomlReader {
   class Source {
 
     var tomlStr: string;
-    var tokenD = {1..0},
-      tokenlist: [tokenD] unmanaged Tokens;
+    var tokenlist: list(unmanaged Tokens);
     var currentLine: unmanaged Tokens?;
 
 
@@ -1154,7 +1160,7 @@ module TomlReader {
         splitLine(line);
       }
       if !this.isEmpty() {
-        currentLine = tokenlist[tokenD.first];
+        currentLine = tokenlist[1];
       }
     }
 
@@ -1163,7 +1169,7 @@ module TomlReader {
     }
 
     proc splitLine(line) {
-      var linetokens: [1..0] string;
+      var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
       const doubleQuotes = '(".*?")',           // ""
@@ -1192,31 +1198,31 @@ module TomlReader {
           }
 
           nonEmptyChar = true;
-          linetokens.push_back(strippedToken);
+          linetokens.append(strippedToken);
         }
       }
 
       // If no non-empty-chars => token is a blank line
       if(nonEmptyChar == false){
-        linetokens.push_back("\n");
+        linetokens.append("\n");
       }
 
       if !linetokens.isEmpty() {
         var tokens = new unmanaged Tokens(linetokens);
-        tokenlist.push_back(tokens);
+        tokenlist.append(tokens);
       }
     }
 
 
     proc nextLine() {
       if currentLine!.isEmpty() {
-        if tokenD.size == 1 {
+        if tokenlist.size == 1 {
           return false;
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.remove(tokenD.first);
-          currentLine = tokenlist[tokenD.first];
+          try! tokenlist.pop(1);
+          currentLine = tokenlist[1];
           delete ptrhold;
           return true;
         }
@@ -1258,29 +1264,23 @@ module TomlReader {
 
   /* Array wrapper */
   class Tokens {
-    var D: domain(1);
-    var A: [D] string;
+    var A: list(string);
 
-    proc init(A: [?D] string) {
-      this.D = D;
+    proc init(A: list(string)) {
       this.A = A;
     }
 
     proc skip() {
-      var idx = D.first;
-      var toke = A(idx);
-      A.remove(idx);
+      try! A.pop(1);
     }
 
     proc next() {
-      var idx =  D.first;
-      var toke = A(idx);
-      A.remove(idx);
+      var toke = try! A.pop(1);
       return toke;
     }
 
     proc addToke(toke: string) {
-      A.push_front(toke);
+      try! A.insert(1, toke);
     }
 
     proc isEmpty(): bool {
@@ -1298,7 +1298,8 @@ module TomlReader {
     }
 
     proc readWriteThis(f) {
-      f <~> this.A;
+      // TODO: The `list` type currently doesn't support readWriteThis!
+      f <~> this.A.toArray();
     }
   }
 }

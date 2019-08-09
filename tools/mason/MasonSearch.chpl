@@ -32,10 +32,7 @@ use Regexp;
 // - allow for exclusion of a pattern
 //
 
-proc masonSearch(origArgs : [] string) {
-  var args: list(string);
-  for x in origArgs do args.append(x);
-
+proc masonSearch(ref args: list(string)) {
   if hasOptions(args, "-h", "--help") {
     masonSearchHelp();
     exit(0);
