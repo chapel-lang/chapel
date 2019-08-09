@@ -395,10 +395,13 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
-      newFn->tagIfGeneric(&subs);
       if (fn->throwsError() == true) {
         newFn->throwsErrorInit();
       }
+
+      // Resolve formal type-exprs before checking if formals are generic
+      resolveSignature(newFn);
+      newFn->tagIfGeneric(&subs);
 
       explainAndCheckInstantiation(newFn, fn);
 
