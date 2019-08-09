@@ -1005,12 +1005,12 @@ iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
 
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
-  var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable)? = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;
   }
-  for i in do_dsiLocalSubdomains(myLocDom) do
+  for i in do_dsiLocalSubdomains(myLocDom!) do
     yield i;
 }
 
