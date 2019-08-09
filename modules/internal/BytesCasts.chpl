@@ -237,7 +237,7 @@ module BytesCasts {
     if isErr then
       throw new owned IllegalArgumentError("bad cast from bytes '" +
                                            x.decode(DecodePolicy.Ignore) +
-                                           "' to real(" + numBits(t) + ")");
+                                           "' to real(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -266,7 +266,7 @@ module BytesCasts {
     if isErr then
       throw new owned IllegalArgumentError("bad cast from bytes '" +
                                            x.decode(DecodePolicy.Ignore) +
-                                           "' to imag(" + numBits(t) + ")");
+                                           "' to imag(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -312,7 +312,7 @@ module BytesCasts {
     if localX.isEmpty() then
       throw new owned 
         IllegalArgumentError("bad cast from empty bytes to complex(" +
-                             numBits(t) + ")");
+                             numBits(t):string + ")");
 
     select numBits(t) {
       when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
@@ -324,7 +324,7 @@ module BytesCasts {
     if isErr then
       throw new owned IllegalArgumentError("bad cast from bytes '" +
                                            x.decode(DecodePolicy.Ignore) +
-                                           "' to complex(" + numBits(t) + ")");
+                                           "' to complex(" + numBits(t):string + ")");
 
     return retVal;
   }

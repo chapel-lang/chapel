@@ -316,6 +316,11 @@ module Bytes {
     inline proc size return len;
 
     /*
+      :returns: The number of bytes in the bytes.
+      */
+    inline proc numBytes return len;
+
+    /*
        Gets a version of the :record:`bytes` that is on the currently
        executing locale.
 
@@ -1450,31 +1455,6 @@ module Bytes {
     return ret;
 
   }
-
-  // Concatenation with other types is done by casting to bytes
-  private inline proc concatHelp(s: _bytes, x:?t) where t != _bytes {
-    var cs = x:_bytes;
-    const ret = s + cs;
-    return ret;
-  }
-
-  private inline proc concatHelp(x:?t, s: _bytes) where t != _bytes  {
-    var cs = x:_bytes;
-    const ret = cs + s;
-    return ret;
-  }
-
-  /*
-     The following concatenation functions return a new :record:`bytes` which is
-     the result of casting the non-bytes argument to a bytes, and concatenating
-     that result with `s`.
-  */
-  inline proc +(s: _bytes, x: numeric) return concatHelp(s, x);
-  inline proc +(x: numeric, s: _bytes) return concatHelp(x, s);
-  inline proc +(s: _bytes, x: enumerated) return concatHelp(s, x);
-  inline proc +(x: enumerated, s: _bytes) return concatHelp(x, s);
-  inline proc +(s: _bytes, x: bool) return concatHelp(s, x);
-  inline proc +(x: bool, s: _bytes) return concatHelp(x, s);
 
   // Relational operators
   private inline proc _strcmp_local(a, b) : int {
