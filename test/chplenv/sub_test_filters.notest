@@ -4,7 +4,7 @@ Usage & expected output:
 
 > start_test sub_test_filters/*.chpl
 
-[Error (possible JIRA 357)  for chplenv/sub_test_filters/compiler-error]
+[Error (possible private issue #398)  for chplenv/sub_test_filters/compiler-error]
 [Error (possible JIRA 287) matching program output for chplenv/sub_test_filters/compiler-warning]
 [Error (possible JIRA 274) matching program output for chplenv/sub_test_filters/runtime-error]
 
