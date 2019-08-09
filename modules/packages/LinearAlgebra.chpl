@@ -652,7 +652,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
   else {
     // Replaces `+ reduce (A*B)` for improved distributed performance
 
-    var localResults: [Locales.domain] = 0;
+    var localResults: [Locales.domain] eltType = 0;
 
     coforall l in Locales do on l {
       const maxThreads = if dataParTasksPerLocale==0 then here.maxTaskPar
