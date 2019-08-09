@@ -1165,7 +1165,7 @@ private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_chann
 private extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
-private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
+private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t, byte_esc:c_int):syserr;
 
 private extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipwsbefore:c_int):syserr;
 private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipwsbefore:c_int):syserr;
@@ -2754,7 +2754,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
-    x:?t):syserr where _isIoPrimitiveType(t) {
+    x:?t, byte_esc=false):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
       return qio_channel_print_literal(false, _channel_internal, c"true", "true".numBytes:ssize_t);
@@ -2778,11 +2778,11 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == string {
     // handle string
     const local_x = x.localize();
-    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t, false);
   } else if t == _bytes {
     // handle bytes
     const local_x = x.localize();
-    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t, byte_esc);
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
@@ -2989,7 +2989,8 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         x:?t,
-                                        loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                        loc:locale?,
+                                        byte_esc=false):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -3009,7 +3010,9 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
         otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
-      e = _write_text_internal(_channel_internal, x);
+      /*if byte_esc then*/
+        /*halt("here: "+byte_esc:string);*/
+      e = _write_text_internal(_channel_internal, x, byte_esc);
     }
   } else {
     e = _write_binary_internal(_channel_internal, kind, x);
@@ -6131,7 +6134,9 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             // a regexp. So we just don't handle it.
             err = qio_format_error_write_regexp();
           } when QIO_CONV_ARG_TYPE_REPR {
-            err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
+            var (t,isbytes) = _toBytes(args(i));
+
+            err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale, byte_esc=isbytes);
           } otherwise {
             // Unhandled argument type!
             throw new owned IllegalArgumentError("args(" + i:string + ")",

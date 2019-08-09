@@ -757,7 +757,7 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
 qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti);
 
 // Prints a string according to the style.
-qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
+qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len, const int byte_esc);
 
 // Prints a string as-is (this really just calls qio_channel_write_amt).
 qioerr qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
