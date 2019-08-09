@@ -2731,11 +2731,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     return ret;
   } else if t == _bytes {
     // handle _bytes
-    var len:int(64);
-    var tx: c_string;
-    var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    x = new _bytes(tx, length=len, needToCopy=false);
-    return ret;
+    halt("Cannot scan into bytes objects yet");
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
@@ -2874,13 +2870,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     return ret;
   } else if t == _bytes {
     // handle _bytes
-    var len:int(64);
-    var tx: c_string;
-    var ret = qio_channel_read_string(false, byteorder:c_int,
-                                      qio_channel_str_style(_channel_internal),
-                                      _channel_internal, tx, len, -1);
-    x = new _bytes(tx, length=len, needToCopy=false);
-    return ret;
+    halt("Cannot read into bytes objects yet");
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
     var err:syserr = ENOERR;
