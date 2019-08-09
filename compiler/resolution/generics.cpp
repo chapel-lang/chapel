@@ -171,6 +171,22 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 static Map<FnSymbol*,int> instantiationLimitMap;
 
 
+static bool trackInstantiationsForFn(FnSymbol* fn) {
+  ModuleSymbol* mod = fn->getModule();
+
+          // Don't count instantiations on internal modules
+  return (mod && mod->modTag != MOD_INTERNAL &&
+          // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
+          !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT) &&
+          // Nor ones that are compiler-generated (we could but
+          // this has caused problems for me in some cases and
+          // I'd prefer to assume compiler-generated functions
+          // won't result in infinitely recursive instantiations;
+          // to reproduce comment that part of the check out and try
+          // test/functions/resolution/instantiateMax/instMaxOKifNonrecursive.chpl
+          !fn->hasFlag(FLAG_COMPILER_GENERATED));
+}
+
 //
 // check for infinite instantiation by limiting the number of
 // instantiations of a particular type or function; this is important
@@ -182,41 +198,35 @@ static Map<FnSymbol*,int> instantiationLimitMap;
 //
 static void
 checkInstantiationLimit(FnSymbol* fn) {
-  // Don't count instantiations on internal modules
-  // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
-  if (fn->getModule() &&
-      fn->getModule()->modTag != MOD_INTERNAL &&
-      !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT)) {
-    // This is the first time we've seen this symbol; add a new entry
-    // for it (storing 1) and then bump it up by one (so, store 2).
-    // This will permit us to distinguish between missing entries
-    // (whose get() calls will return 0) and ones that've popped all
-    // their resolutions (which will return 1)
-    if (instantiationLimitMap.get(fn) == 0) {
-      instantiationLimitMap.put(fn, 2);
-    } else {
-      if (instantiationLimitMap.get(fn) >= instantiation_limit &&
-          !fn->hasFlag(FLAG_COMPILER_GENERATED)) {
-        USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
-                       fn->name);
-        USR_PRINT("  If this is intentional, try increasing"
-                  " the instantiation limit from %d", instantiation_limit);
-        USR_STOP();
-      }
-      //      printf("Incrementing count for %s (%p)\n", fn->name, fn);
-      instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
+  if (trackInstantiationsForFn(fn)) {
+    if (instantiationLimitMap.get(fn) >= instantiation_limit) {
+      USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
+                     fn->name);
+      USR_PRINT("  If this is intentional, try increasing"
+                " the instantiation limit from %d", instantiation_limit);
+      USR_STOP();
     }
+    /*
+    printf("Incrementing instantiation count for %s (%p)\n",
+           fn->name, fn);
+    */
+    instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
   }
 }
 
 void popInstantiationLimit(FnSymbol* fn) {
+  // Go from a concrete instantiation to the generic it was based upon (if any)
   fn = fn->instantiatedFrom;
-  if (fn) {
-    //    printf("Thinking about decrementing count for %s (%p)\n", fn->name, fn);
+  if (fn && trackInstantiationsForFn(fn)) {
+    /*
+    printf("Decrementing instantiation count for %s (%p)\n",
+           fn->name, fn);
+    */
     int count = instantiationLimitMap.get(fn);
-    if (count > 1) {
-      //      printf("...Doing it!\n");
+    if (count > 0) {
       instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)-1);
+    } else {
+      INT_FATAL("Over-decrementing a generic instantiation counter");
     }
   }
 }
