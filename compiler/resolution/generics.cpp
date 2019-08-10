@@ -176,14 +176,12 @@ static bool trackInstantiationsForFn(FnSymbol* fn) {
 
           // Don't count instantiations on internal modules
   return (mod && mod->modTag != MOD_INTERNAL &&
-          // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
-          !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT) &&
-          // Nor ones that are compiler-generated (we could but
-          // this has caused problems for me in some cases and
-          // I'd prefer to assume compiler-generated functions
-          // won't result in infinitely recursive instantiations;
-          // to reproduce comment that part of the check out and try
-          // test/functions/resolution/instantiateMax/instMaxOKifNonrecursive.chpl
+          // Nor ones that are compiler-generated (we could, but this
+          // has caused problems for me in some cases and I think it's
+          // reasonable to assume compiler-generated functions won't
+          // result in infinitely recursive instantiations; to
+          // reproduce this, comment out that part of the test and try
+          // test/functions/resolution/instantiateMax/instMaxOKifNonrecursive.chpl).
           !fn->hasFlag(FLAG_COMPILER_GENERATED));
 }
 

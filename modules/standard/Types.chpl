@@ -27,25 +27,19 @@ Functions related to predefined types.
 module Types {
 
 pragma "no doc" // joint documentation with the next one
-pragma "no instantiation limit"
 proc isType(type t) param return true;
 /* Returns `true` if the argument is a type. */
-pragma "no instantiation limit"
 proc isType(e) param return false;
 
 pragma "no doc" // joint documentation with the next one
-pragma "no instantiation limit"
 proc isParam(type t)  param return false;
 pragma "no doc" // joint documentation with the next one
-pragma "no instantiation limit"
 proc isParam(param p) param return true;
 /* Returns `true` if the argument is a param. */
-pragma "no instantiation limit"
 proc isParam(e)       param return false;
 
 // TODO eliminate this; beware of isPrimitive()
 pragma "no doc"
-pragma "no instantiation limit"
 proc _isPrimitiveType(type t) param return
   isBoolType(t)  ||
   isIntegralType(t) ||
@@ -58,7 +52,6 @@ proc _isPrimitiveType(type t) param return
 Returns `true` if the type `t` is a primitive type,
 as defined by the language specification.
 */
-pragma "no instantiation limit"
 proc isPrimitiveType(type t) param return
   isNothingType(t) || isVoidType(t) || isBoolType(t) ||
   isNumericType(t) || isStringType(t);
@@ -67,7 +60,6 @@ proc isPrimitiveType(type t) param return
 Returns `true` if the type `t` is one the following types, of any width:
 `int`, `uint`, `real`, `imag`, `complex`.
 */
-pragma "no instantiation limit"
 proc isNumericType(type t) param return
   isIntegralType(t) || isFloatType(t) || isComplexType(t);
 
@@ -75,7 +67,6 @@ proc isNumericType(type t) param return
 Returns `true` if the type `t` is one the following types, of any width:
 `int`, `uint`.
 */
-pragma "no instantiation limit"
 proc isIntegralType(type t) param return
   isIntType(t) || isUintType(t);
 
@@ -83,35 +74,28 @@ proc isIntegralType(type t) param return
 Returns `true` if the type `t` is one the following types, of any width:
 `real`, `imag`.
 */
-pragma "no instantiation limit"
 proc isFloatType(type t) param return
   isRealType(t) || isImagType(t);
 
 /* Returns `true` if the type `t` is the `nothing` type. */
-pragma "no instantiation limit"
 proc isNothingType(type t) param return t == nothing;
 
 /* Returns `true` if the type `t` is the `void` type. */
-pragma "no instantiation limit"
 proc isVoidType(type t) param return t == void;
 
 /* Returns `true` if the type `t` is a `bool` type, of any width. */
-pragma "no instantiation limit"
 proc isBoolType(type t) param return
   (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
 
 /* Returns `true` if the type `t` is an `int` type, of any width. */
-pragma "no instantiation limit"
 proc isIntType(type t) param return
   (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
 /* Returns `true` if the type `t` is a `uint` type, of any width. */
-pragma "no instantiation limit"
 proc isUintType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
 /* Returns `true` if the type `t` is an `enum` type. */
-pragma "no instantiation limit"
 proc isEnumType(type t) param {
   proc isEnumHelp(type t: enumerated) param return true;
   proc isEnumHelp(type t) param return false;
@@ -125,26 +109,21 @@ proc isAbstractEnumType(type t) param {
 }
 
 /* Returns `true` if the type `t` is a `complex` type, of any width. */
-pragma "no instantiation limit"
 proc isComplexType(type t) param return
   (t == complex(64)) || (t == complex(128));
 
 /* Returns `true` if the type `t` is a `real` type, of any width. */
-pragma "no instantiation limit"
 proc isRealType(type t) param return
   (t == real(32)) || (t == real(64));
 
 /* Returns `true` if the type `t` is an `imag` type, of any width. */
-pragma "no instantiation limit"
 proc isImagType(type t) param return
   (t == imag(32)) || (t == imag(64));
 
 /* Returns `true` if the type `t` is the `string` type. */
-pragma "no instantiation limit"
 proc isStringType(type t) param return t == string;
 
 /* Returns `true` if the type `t` is the `bytes` type. */
-pragma "no instantiation limit"
 proc isBytesType(type t) param return t == _bytes;
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
@@ -171,7 +150,6 @@ c_ptr is a POD type.
 
 Primitive numeric/boolean/enumerated Chapel types are POD types as well.
  */
-pragma "no instantiation limit"
 pragma "no doc" // I don't think we want to make this public yet
 proc isPODType(type t) param {
   return __primitive("is pod type", t);
