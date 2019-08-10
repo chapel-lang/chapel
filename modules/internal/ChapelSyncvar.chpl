@@ -80,7 +80,7 @@ module ChapelSyncvar {
     if isSupported(t) == false then
       compilerError("sync/single types cannot contain type '", t : string, "'");
 
-    if !chpl_legacyNilClasses && _to_nilable(t) != t then
+    if !chpl_legacyNilClasses && isNonNilableClass(t) then
       compilerError("sync/single types cannot contain non-nilable classes");
 
     if isGenericType(t) then
