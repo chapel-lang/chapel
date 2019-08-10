@@ -1103,7 +1103,7 @@ module String {
                 * `false` -- otherwise
      */
     proc startsWith(needles: string ...) : bool {
-      return _startsEndsWith((...needles), fromLeft=true);
+      return _startsEndsWith(this, needles, fromLeft=true);
     }
 
     /*
@@ -1113,7 +1113,7 @@ module String {
                 * `false` -- otherwise
      */
     proc endsWith(needles: string ...) : bool {
-      return _startsEndsWith((...needles), fromLeft=false);
+      return _startsEndsWith(this, needles, fromLeft=false);
     }
 
 
@@ -1418,7 +1418,45 @@ module String {
                 characters in `chars` removed as appropriate.
     */
     proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
-      return do_strip(this, chars, leading, trailing);
+      if this.isEmpty() then return "";
+      if chars.isEmpty() then return this;
+
+      const localThis: string = this.localize();
+      const localChars: string = chars.localize();
+
+      var start: byteIndex = 1;
+      var end: byteIndex = localThis.len;
+
+      if leading {
+        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
+          for removeChar in localChars.codepoints() {
+            if thisChar == removeChar {
+              start = i + nbytes;
+              continue outer;
+            }
+          }
+          break;
+        }
+      }
+
+      if trailing {
+        // Because we are working with codepoints whose starting byte index
+        // is not initially known, it is faster to work forward, assuming we
+        // are already past the end of the string, and then update the end
+        // point as we are proven wrong.
+        end = 0;
+        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
+          for removeChar in localChars.codepoints() {
+            if thisChar == removeChar {
+              continue outer;
+            }
+          }
+          // This was not a character to be removed, so update tentative end.
+          end = i + nbytes-1;
+        }
+      }
+
+      return localThis[start..end];
     }
 
     /*

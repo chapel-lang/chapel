@@ -153,15 +153,17 @@ module BytesStringCommon {
           }
           if needleLen > x.len then continue;
 
+          const localNeedle = needle.localize();
+
           if fromLeft {
-            ret = bufferEquals(buf1=x.buff, off1=0, loc1=x.locale_id,
-                               buf2=needle.buff, off2=0, loc2=needle.locale_id,
-                               len=needleLen);
+            ret = bufferEqualsLocal(buf1=x.buff, off1=0,
+                                    buf2=localNeedle.buff, off2=0,
+                                    len=needleLen);
           } else {
             var offset = x.len-needleLen;
-            ret = bufferEquals(buf1=x.buff, off1=offset, loc1=x.locale_id,
-                               buf2=needle.buff, off2=0, loc2=needle.locale_id,
-                               len=needleLen);
+            ret = bufferEqualsLocal(buf1=x.buff, off1=offset,
+                                    buf2=localNeedle.buff, off2=0,
+                                    len=needleLen);
 
           }
           if ret == true then break;
@@ -235,50 +237,6 @@ module BytesStringCommon {
       joined.buff[joined.len] = 0;
       return joined;
     }
-  }
-
-  proc do_strip(const ref x: ?t, chars:t=" \t\r\n",
-                leading=true, trailing=true): t where isBytesOrStringType(t) {
-    if x.isEmpty() then return "";
-    if chars.isEmpty() then return x;
-
-    const localThis: t = x.localize();
-    const localChars: t = chars.localize();
-
-    var start: idxType = 1;
-    var end: idxType = localThis.len;
-
-    if leading {
-      label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
-        for removeChar in localChars.bytes() {
-          if thisChar == removeChar {
-            start = i + 1;
-            continue outer;
-          }
-        }
-        break;
-      }
-    }
-
-    if trailing {
-      // Because we are working with codepoints whose starting byte index
-      // is not initially known, it is faster to work forward, assuming we
-      // are already past the end of the string, and then update the end
-      // point as we are proven wrong.
-      end = 0;
-      label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
-        for removeChar in localChars.bytes() {
-          if thisChar == removeChar {
-            continue outer;
-          }
-        }
-        // This was not a character to be removed, so update tentative end.
-        end = i;
-      }
-    }
-
-    return localThis[start..end];
-
   }
 
   // TODO: I could make this and other routines that use find faster by
