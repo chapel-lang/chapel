@@ -1207,7 +1207,8 @@ error:
 #undef WRITEC
 }
 
-qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len, const int byte_esc)
+static
+qioerr qio_channel_print_string_or_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len, const int byte_esc)
 {
   qioerr err;
   ssize_t i;
@@ -1355,6 +1356,19 @@ unlock:
   }
 
   return err;
+}
+
+
+inline
+qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+{
+  return qio_channel_print_string_or_bytes(threadsafe, ch, ptr, len, 0);
+}
+
+inline
+qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+{
+  return qio_channel_print_string_or_bytes(threadsafe, ch, ptr, len, 1);
 }
 
 // Returns length information for how we would quote ptr
