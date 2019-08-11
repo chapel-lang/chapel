@@ -21,15 +21,6 @@
   This module contains the implementation of the map type which is a container
   that stores key-value associations. 
 
-  The following operations may invalidate references to elements contained in
-  a map:
-
-      - indexing using a non-existing key (e.g. `myMap[key] = value`)
-      - add
-      - remove
-      - clear
-      - update
-
   Maps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any map constructor. When
   constructed from another map, the new map will inherit the parallel safety
