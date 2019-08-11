@@ -1047,7 +1047,6 @@ char _qio_tohex(unsigned char i)
 static
 int _qio_byte_escape(uint8_t b, int32_t string_end, int string_format, char* tmp, int *width_chars_out, int *width_cols_out)
 {
-  int i = 0;
   char tmpchr;
   int cwidth;
   if( b == string_end || b == '\\' ||
