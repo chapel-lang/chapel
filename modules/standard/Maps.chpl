@@ -110,15 +110,11 @@ module Maps {
     }
 
     /*
-      Get a reference to the value mapped to the given key.
+      Get the value mapped to the given key, or add the mapping if key does not
+      exist.
 
       :arg k: The key to access
       :type k: keyType
-
-      .. warning::
-
-        Use of the `this` method with a non-existent key (while bounds checking
-        is on) will cause the currently running program to halt.
 
       :returns: Reference to the value mapped to the given key.
     */
@@ -168,8 +164,8 @@ module Maps {
     }
 
     /*
-      Adds a key-value pair to the map. Different than doing `myMap[key] =
-      value`, this method returns `false` if the key already exists in the map.
+      Adds a key-value pair to the map. Method returns `false` if the key
+      already exists in the map.
 
      :arg k: The key to add to the map
      :type k: keyType
@@ -259,7 +255,7 @@ module Maps {
     :return: `true` if the contents of two maps are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: map(?k, ?v), const ref b: map(?k, ?v)): bool {
+  proc ==(const ref a: map(?kt, ?vt), const ref b: map(?kt, ?vt)): bool {
 
   }
 
@@ -275,7 +271,7 @@ module Maps {
     :return: `true` if the contents of two maps are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: map(?k, ?v), const ref b: map(?k, ?v)): bool {
+  proc !=(const ref a: map(?kt, ?vt), const ref b: map(?kt, ?vt)): bool {
 
   }
 
