@@ -195,7 +195,7 @@ module Maps {
     }
 
     /*
-      Returns a new 0-based array containing a copy of key-value pairs as
+      Returns a new 1-based array containing a copy of key-value pairs as
       tuples.
 
       :return: A new DefaultRectangular array.
