@@ -50,7 +50,7 @@ proc main() {
     var d_reduce = + reduce (BA * BA);
     const diff = abs(d - d_reduce);
     if diff > thresh {
-      writeln("FAILED ", maxdiff);
+      writeln("FAILED ", diff);
     }
     else {
       writeln("PASSED");
