@@ -1060,7 +1060,7 @@ int _qio_byte_escape(uint8_t b, int32_t string_end, int string_format, char* tmp
     }
     tmp[1] = tmpchr;
     cwidth = 2;
-  } else if( !iswascii(b) || !isprint(b) ) {
+  } else if( b >= 128 || !isprint(b) ) {
     tmp[0] = '\\';
     tmp[1] = 'x';
     tmp[2] = _qio_tohex((b >> 4) & 0xf);
