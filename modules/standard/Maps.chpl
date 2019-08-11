@@ -118,7 +118,7 @@ module Maps {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc const this(k: keyType) ref {
+    proc this(k: keyType) ref {
 
     }
 
