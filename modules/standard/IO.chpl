@@ -2732,7 +2732,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     return ret;
   } else if t == _bytes {
     // handle _bytes
-    halt("Cannot scan into bytes objects yet");
+    // for now, do nothing and let the function return EINVAL
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
@@ -2871,7 +2871,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     return ret;
   } else if t == _bytes {
     // handle _bytes
-    halt("Cannot read into bytes objects yet");
+    // for now, do nothing and let the function return EINVAL
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
     var err:syserr = ENOERR;
