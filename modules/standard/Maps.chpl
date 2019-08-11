@@ -206,7 +206,8 @@ module Maps {
     }
 
     /*
-      Returns a new 0-based array containing a copy of keys.
+      Returns a new 1-based array containing a copy of keys. Array is not
+      guaranteed to be in any particular order.
 
       :return: A new DefaultRectangular array.
       :rtype: [] keyType
@@ -216,7 +217,8 @@ module Maps {
     }
 
     /*
-      Returns a new 0-based array containing a copy of values.
+      Returns a new 1-based array containing a copy of values. Array is not
+      guaranteed to be in any particular order.
 
       :return: A new DefaultRectangular array.
       :rtype: [] valType
