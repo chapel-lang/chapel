@@ -283,7 +283,7 @@ proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
-    const name = tomlFile['brick']['name'].s;
+    const name = tomlFile['brick']['name'].s; 
     return name;
   }
   catch {
