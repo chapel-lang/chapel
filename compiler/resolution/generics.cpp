@@ -197,6 +197,9 @@ static bool trackInstantiationsForFn(FnSymbol* fn) {
 static void
 checkInstantiationLimit(FnSymbol* fn) {
   if (trackInstantiationsForFn(fn)) {
+    while (fn->instantiatedFrom != NULL) {
+      fn = fn->instantiatedFrom;
+    }
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
       USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
                      fn->name);
@@ -210,24 +213,32 @@ checkInstantiationLimit(FnSymbol* fn) {
 }
 
 void popInstantiationLimit(FnSymbol* fn) {
+  bool expandedVarArgs = fn->hasFlag(FLAG_EXPANDED_VARARGS);
   //
-  // varargs functions are not added to the instantiationLimitMap
-  //
-  if (fn->hasFlag(FLAG_EXPANDED_VARARGS)) {
-    return;
-  }
-
-  //
-  // Go from a concrete instantiation to the generic it was based upon (if any)
+  // Go from the concrete function to the generic it was based upon (if any)
   //
   fn = fn->instantiatedFrom;
-  if (fn && trackInstantiationsForFn(fn)) {
+  if (fn == NULL) {
+    return; // this was not a generic function, so it won't be in the table
+  }
+  while (fn->instantiatedFrom != NULL) {
+    fn = fn->instantiatedFrom;
+  }
+
+  if (trackInstantiationsForFn(fn)) {
     // printf("Decrementing instantiation count for %s (%p)\n", fn->name, fn);
     int count = instantiationLimitMap.get(fn);
     if (count > 0) {
       instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)-1);
     } else {
-      INT_FATAL("Over-decrementing a generic instantiation counter");
+      //
+      // varargs functions are not consistently added to the instantiationLimitMap,
+      // so don't fatal error if we didn't find it; for other functions, not
+      // finding it suggests something is wrong
+      //
+      if (!expandedVarArgs) {
+        INT_FATAL("Over-decrementing a generic instantiation counter");
+      }
     }
   }
 }
