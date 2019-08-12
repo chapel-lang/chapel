@@ -5337,13 +5337,13 @@ proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
 }
 
 private inline
-proc _toBytes(x:?t) where t==_bytes
+proc _toBytes(x:_bytes)
 {
   return (x, true);
 }
 
 private inline
-proc _toBytes(x:?t) where t==string
+proc _toBytes(x:string)
 {
   return (x:_bytes, true);
 }
@@ -5356,12 +5356,12 @@ proc _toBytes(x:?t)
 }
 
 private inline
-proc _toString(x:?t) where t==string
+proc _toString(x:string)
 {
   return (x, true);
 }
 private inline
-proc _toString(x:?t) where t==_bytes
+proc _toString(x:_bytes)
 {
   return ("", false);
 }
@@ -6378,7 +6378,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
               } else err = _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
               if ! err then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_BINARY_STRING {
-              var (t,ok) = _toBytes(args(i));
+              var (t,ok) = _toStringFromBytesOrString(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               }
