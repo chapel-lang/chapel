@@ -18,12 +18,10 @@
  */
 
 module LocalAtomics {
-  /*
-     Planned usage:
-     var head : LocalAtomicObject(unmanaged Node(int));
-  // Adding a new node...
-  head.write(new unmanaged Node(int)); // Need 'write(objType)'
-  */
+
+  if CHPL_TARGET_ARCH != "x86_64" {
+    compilerWarning("Program compiled for ", CHPL_TARGET_ARCH, " but target should be x86_64");
+  }
 
   extern {
 #include <stdint.h>
