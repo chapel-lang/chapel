@@ -3188,6 +3188,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
         from = codegenWideHere(codegenNullPointer(), to_ptr.chplType);
         type = to_ptr.chplType->getValType();
         from.isLVPtr = GEN_VAL;
+      } else {
+        from = codegenNullPointer();
+        type = to_ptr.chplType->getValType();
+        from.isLVPtr = GEN_VAL;
       }
     }
   }

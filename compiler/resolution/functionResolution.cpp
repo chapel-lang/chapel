@@ -207,6 +207,10 @@ static void printUnusedFunctions();
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
+static bool  moveIsAcceptable(CallExpr* call);
+static void  moveHaltMoveIsUnacceptable(CallExpr* call);
+
+
 static bool useLegacyNilability(Expr* at) {
   if (fLegacyNilableClasses) return true;
 
@@ -1152,9 +1156,9 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
              actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_GENERIC_NILABLE:
       return actual == CLASS_TYPE_GENERIC_NILABLE ||
-             actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL;
+             actual == CLASS_TYPE_BORROWED_NILABLE||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1377,8 +1381,8 @@ bool canCoerce(Type*     actualType,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic);
 
 
 static
@@ -1393,7 +1397,11 @@ bool doCanDispatch(Type*     actualType,
   if (actualType == formalType)
     return true;
 
-  if (isGenericInstantiation(actualType, formalType))
+  // MPF 2019-09 - for some reason resolving generic initializers
+  // needs this adjustment, which started in PR #5424.
+  if (fn && fn->isInitializer() &&
+      formalSym == fn->_this &&
+      isGenericInstantiation(formalType, actualType))
     return true;
 
   if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
@@ -1468,17 +1476,17 @@ bool canDispatch(Type*     actualType,
   return retval;
 }
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType) {
-  AggregateType* atActual = toAggregateType(actualType);
-  AggregateType* atFormal = toAggregateType(formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic) {
+  AggregateType* atConcrete = toAggregateType(concrete);
+  AggregateType* atGeneric = toAggregateType(generic);
   bool           retval   = false;
 
-  if (atActual                                != NULL &&
-      atActual->symbol->hasFlag(FLAG_GENERIC) == true &&
+  if (atGeneric                                != NULL &&
+      atGeneric->symbol->hasFlag(FLAG_GENERIC) == true &&
 
-      atFormal                                != NULL &&
-      atFormal->isInstantiatedFrom(atActual)  == true) {
+      atConcrete                                 != NULL &&
+      atConcrete->isInstantiatedFrom(atGeneric)  == true) {
 
     retval = true;
   }
@@ -2492,9 +2500,18 @@ static void adjustClassCastCall(CallExpr* call)
 
     // Now compute the target type
     Type* t = NULL;
-    if (isDecoratorManaged(d)) {
+    if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
+      // Don't change it, expecting an error
+      t = targetType;
+    } else if (isDecoratorManaged(d)) {
       AggregateType* manager = getManagedPtrManagerType(valueType);
-      t = computeDecoratedManagedType(at, d, manager, call);
+      if (isManagedPtrType(targetType) &&
+          manager != getManagedPtrManagerType(targetType)) {
+        // Don't change it, expecting an error
+        t = targetType;
+      } else {
+        t = computeDecoratedManagedType(at, d, manager, call);
+      }
     } else {
       t = at->getDecoratedClass(d);
     }
@@ -5402,7 +5419,7 @@ static void resolveSetMember(CallExpr* call) {
     INT_FATAL(call, "Unable to resolve field type");
   }
 
-  if (isGenericInstantiation(fs->type, t)) {
+  if (isGenericInstantiation(t, fs->type)) {
     fs->type = t;
   }
   if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {
@@ -5603,6 +5620,41 @@ static void resolveInitField(CallExpr* call) {
   resolveSetMember(call); // Can we remove some of the above with this?
 }
 
+// Should this be public, like isNilableClassType() ?
+static bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+static bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
+}
+
+static void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
+  if (! fLegacyNilableClasses &&
+      isNonNilableClassType(lhs) && isNilableClassType(rhs))
+    USR_FATAL(call, "cannot assign to non-nilable %s from nilable %s",
+              toString(lhs), toString(rhs));
+
+  if (isUnmanagedClass(lhs) && isOwnedOrSharedOrBorrowed(rhs))
+    USR_FATAL(call, "cannot assign to %s from %s",
+              toString(lhs), toString(rhs));
+}
+
 /************************************* | **************************************
 *                                                                             *
 * This handles expressions of the form                                        *
@@ -5644,6 +5696,10 @@ static void resolveInitVar(CallExpr* call) {
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
     targetType = targetTypeExpr->typeInfo();
 
+    // PRIM_INIT_VAR has dst, src like PRIM_MOVE so we can reuse some checking
+    if (moveIsAcceptable(call) == false)
+      moveHaltMoveIsUnacceptable(call);
+
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
@@ -5670,6 +5726,10 @@ static void resolveInitVar(CallExpr* call) {
         isSingleType(src->getValType()) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
+
+      if (mismatch)
+        checkMoveIntoClass(call, targetType->getValType(), src->getValType());
+
       VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
 
@@ -5871,10 +5931,6 @@ FnSymbol* findCopyInit(AggregateType* at) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool  moveIsAcceptable(CallExpr* call);
-
-static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
@@ -9237,6 +9293,66 @@ static void resolvePrimInit(CallExpr* call,
   }
 }
 
+// Does 'val' feed into a tuple? Ex.:
+//   default init var( elt_x1 type owned Foo ) 
+//   .=( tup "x1" elt_x1 ) 
+static bool isTupleComponent(Symbol* val, CallExpr* call) {
+  CallExpr* otherUse = NULL;
+  for_SymbolSymExprs(se, val)
+    if (se->parentExpr != call)
+      if (CallExpr* parentCall = toCallExpr(se->parentExpr))
+        if (parentCall->isPrimitive(PRIM_SET_MEMBER))
+          {
+            if (otherUse == NULL) otherUse = parentCall;
+            else return false; // too many uses
+          }
+
+  if (otherUse != NULL)
+    if (SymExpr* defSE = toSymExpr(otherUse->get(1)))
+      // Does 'otherUse' define a tuple?
+      if (defSE->symbol()->type->symbol->hasFlag(FLAG_TUPLE))
+        return true;
+
+  return false;
+}
+
+// Create an error when default initializing a non-nilable class type.
+static void errorIfNonNilableType(CallExpr* call, Symbol* val,
+                                  Type* typeToCheck, Type* type)
+{
+  if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
+    return;
+
+  // Work around current problems in array / assoc array types
+  bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
+                call->getModule()->hasFlag(FLAG_UNSAFE);
+  if (unsafe)
+    return;
+
+  // Allow default-init assign to work around current compiler oddities.
+  // In a future where init= is always used, we can remove this case.
+  if (val->hasFlag(FLAG_INITIALIZED_LATER))
+    return;
+
+  const char* descr = val->name;
+  if (VarSymbol* v = toVarSymbol(val))
+    descr = toString(v);
+
+  CallExpr* uCall = call;
+  if (isTupleComponent(val, call)) {
+    descr = astr("a tuple component of the type ", toString(type));
+    uCall = userCall(call);
+  }
+
+  USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
+  USR_PRINT("non-nil class types do not support default initialization");
+
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+  ClassTypeDecorator d = classTypeDecorator(type);
+  Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+  USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+}
+
 static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
   if (val->hasFlag(FLAG_PARAM) &&
       val->hasFlag(FLAG_TEMP) == false &&
@@ -9288,28 +9404,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     resolveExpr(moveDefault);
     call->convertToNoop();
 
-    // Create an error when default initializing a non-nilable class type.
-    if (isNonNilableClassType(type) && !useLegacyNilability(call)) {
-      // Work around current problems in array / assoc array types
-      bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
-                    call->getModule()->hasFlag(FLAG_UNSAFE);
-
-      if (unsafe == false) {
-
-        const char* descr = val->name;
-        if (VarSymbol* v = toVarSymbol(val))
-          descr = toString(v);
-
-        USR_FATAL_CONT(call, "Cannot default-initialize %s", descr);
-        USR_PRINT("non-nil class types do not support default initialization");
-        AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-        INT_ASSERT(at);
-        ClassTypeDecorator d = classTypeDecorator(type);
-        Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-        USR_PRINT("Consider using the type %s instead",
-                  toString(suggestedType));
-      }
-    }
+    errorIfNonNilableType(call, val, type, type);
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
@@ -9356,6 +9451,9 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
             (at->isRecord() || at->isUnion())) {
 
     errorInvalidParamInit(call, val, at);
+    if (at->symbol->hasFlag(FLAG_MANAGED_POINTER))
+      errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at);
+
     if (!val->hasFlag(FLAG_NO_INIT))
       resolvePrimInitGenericRecordVar(call, val, at);
     else

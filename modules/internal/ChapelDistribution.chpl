@@ -382,7 +382,7 @@ module ChapelDistribution {
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale){
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale?){
 
       if !dataSorted && preserveInds {
         var _inds = inds;
@@ -394,7 +394,7 @@ module ChapelDistribution {
     }
 
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false, addOn=nil:locale){
+        dataSorted=false, isUnique=false, addOn=nil:locale?){
       halt("Helper function called on the BaseSparseDomImpl");
 
       return -1;
@@ -534,6 +534,40 @@ module ChapelDistribution {
 
   }
 
+  record SparseIndexBuffer {
+    param rank: int;
+    var obj: BaseSparseDom;
+
+    type idxType = if rank==1 then int else rank*int;
+    var bufDom = domain(1);
+    var buf: [bufDom] idxType;
+    var cur = 0;
+
+    proc init(size, param rank: int, obj) {
+      this.rank = rank;
+      this.obj = obj;
+      bufDom = {0..#size};
+    }
+
+    proc deinit() {
+      commit();
+    }
+
+    proc add(idx: idxType) {
+      buf[cur] = idx;
+      cur += 1;
+
+      if cur == buf.size then
+        commit();
+    }
+
+    proc commit() {
+      if cur >= 1 then
+        obj.dsiBulkAdd(buf[..cur-1]);
+      cur = 0;
+    }
+  }
+
   class BaseSparseDom : BaseDom {
     // rank and idxType will be moved to BaseDom
     param rank: int;
@@ -559,7 +593,8 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale){
+        dataSorted=false, isUnique=false, preserveInds=true,
+        addOn=nil:locale?): int {
 
       halt("Bulk addition is not supported by this sparse domain");
       return 0;
@@ -593,6 +628,10 @@ module ChapelDistribution {
     }
     proc dsiAlignedLow { return parentDom.alignedLow; }
     proc dsiAlignedHigh { return parentDom.alignedHigh; }
+
+    proc dsiMakeIndexBuffer(size) {
+      return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
+    }
 
   } // end BaseSparseDom
 

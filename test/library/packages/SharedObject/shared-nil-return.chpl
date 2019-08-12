@@ -1,7 +1,7 @@
 class C { }
 
 class D {
-  var sc: shared C;
+  var sc: shared C?;
   proc foo() {
     return sc;
   }

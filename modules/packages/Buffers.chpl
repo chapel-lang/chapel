@@ -764,7 +764,7 @@ module Buffers {
       var start = it;
       var end = it;
       var tmp = value;
-      var len = value.length:int;
+      var len = value.numBytes:int;
       // Write string length
       this.advance(end, numBytes(int));
       err = qbuffer_copyin(this._buf_internal,

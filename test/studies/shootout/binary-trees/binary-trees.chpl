@@ -7,7 +7,7 @@ use DynamicIters;
 config const n = 10;
 
 class Tree {
-  const left, right: owned Tree;
+  const left, right: owned Tree?;
 }
 
 proc main() {
@@ -49,5 +49,5 @@ proc bottomUpTree(const depth: int): owned Tree {
 
 proc itemCheck(const T: borrowed Tree): int {
   if (T.left==nil) then return 1; 
-  else return (1 + itemCheck(T.left) + itemCheck(T.right));
+  else return (1 + itemCheck(T.left!) + itemCheck(T.right!));
 }

@@ -406,7 +406,7 @@ pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.length:ssize_t);
+    const quotedpath = quote_string(path, path.numBytes:ssize_t);
     var   details    = msg + " with path " + quotedpath +
                        " offset " + offset:string;
     throw SystemError.fromSyserr(error, details);
@@ -419,7 +419,7 @@ pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.length:ssize_t);
+    const quotedpath = quote_string(path, path.numBytes:ssize_t);
     var   details    = msg + " with path " + quotedpath;
     throw SystemError.fromSyserr(error, details);
   }
@@ -447,7 +447,7 @@ pragma "insert line file info"
 pragma "always propagate line file info"
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
-  const quotedpath = quote_string(path, path.length:ssize_t);
+  const quotedpath = quote_string(path, path.numBytes:ssize_t);
   const details    = errstr + " " + msg + " with path " + quotedpath +
                      " offset " + offset:string;
   throw SystemError.fromSyserr(EIO:syserr, details);

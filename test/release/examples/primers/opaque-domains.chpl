@@ -250,7 +250,7 @@ proc createRandomGraph() {
   //
   for i in 1..numVertices {
     const newVertex = Vertices.create();
-    Label(newVertex) = "v" + i;
+    Label(newVertex) = "v" + i:string;
     VertexWeight(newVertex) = myRandNums.getNext();
   }
 

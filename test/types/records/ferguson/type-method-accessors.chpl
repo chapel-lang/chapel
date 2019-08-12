@@ -35,8 +35,8 @@ proc printer(type T) {
 proc test2() {
   writeln("test2");
 
-  var A : borrowed X(real, false, 1);
-  var B : borrowed X(uint, true, 3);
+  var A : borrowed X(real, false, 1) = new borrowed X(real, false, 1);
+  var B : borrowed X(uint, true, 3) = new borrowed X(uint, true, 3);
 
   printer(A.type);
   printer(B.type);

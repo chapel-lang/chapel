@@ -9,8 +9,8 @@ use Spawn;
 var sub = spawn(["./getLastEndpointHelper", "--node=" + x]);
 
 var val = socket.recv(int);
-writeln("received: " + val);
-writeln("sending: " + (val + 1));
+writeln("received: ", val);
+writeln("sending: ", (val + 1));
 socket.send(val + 1);
 
 sub.wait();

@@ -174,13 +174,6 @@ void determineAllSubs(FnSymbol*  fn,
                       SymbolMap& subs,
                       SymbolMap& allSubs);
 
-FnSymbol* instantiateFunction(FnSymbol*  fn,
-                              FnSymbol*  root,
-                              SymbolMap& allSubs,
-                              CallExpr*  call,
-                              SymbolMap& subs,
-                              SymbolMap& map);
-
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 class DisambiguationContext {

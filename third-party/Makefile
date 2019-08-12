@@ -121,7 +121,7 @@ $(LIBUNWIND_INSTALL_DIR): $(LIBUNWIND_DEPEND)
 
 llvm: $(LLVM_INSTALL_DIR)
 $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
-	rm -rf $(LLVM_INSTALL_DIR) && rm -rf $(LLVM_BUILD_DIR)
+	rm -rf $(LLVM_INSTALL_DIR)
 	cd llvm && $(MAKE)
 
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first.

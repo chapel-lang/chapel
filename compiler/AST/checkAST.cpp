@@ -306,6 +306,7 @@ void checkPrimitives()
      case PRIM_VIRTUAL_METHOD_CALL:
      case PRIM_NUM_FIELDS:
      case PRIM_IS_POD:
+     case PRIM_GATHER_TESTS:
       break;
     }
   }

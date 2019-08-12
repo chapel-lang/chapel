@@ -251,16 +251,16 @@ char * chpl_mli_connection_info(void* socket) {
   traveler++;
 
   int lenConnBoilerplate = strlen("tcp://:");
-  char* chpl_launch_masterip = getenv("CHPL_LAUNCH_MASTERIP");
-  chpl_mli_debugf("got env var value for CHPL_LAUNCH_MASTERIP: %s\n",
-                  chpl_launch_masterip);
+  char* chpl_rt_masterip = getenv("CHPL_RT_MASTERIP");
+  chpl_mli_debugf("got env var value for CHPL_RT_MASTERIP: %s\n",
+                  chpl_rt_masterip);
   char* fullConnection = NULL;
-  if (chpl_launch_masterip != NULL) {
-    int lenMasterip = strlen(chpl_launch_masterip);
+  if (chpl_rt_masterip != NULL) {
+    int lenMasterip = strlen(chpl_rt_masterip);
     int lenFull = lenConnBoilerplate + lenMasterip + lenPort;
     fullConnection = (char*)mli_malloc(lenFull + 1);
     strcpy(fullConnection, "tcp://");
-    strcat(fullConnection, chpl_launch_masterip);
+    strcat(fullConnection, chpl_rt_masterip);
     chpl_mli_debugf("full connection before port was %s\n", fullConnection);
 
   } else {

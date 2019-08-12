@@ -8,8 +8,8 @@ class MyClass {
 }
 
 record R1 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
   proc init() {
   }
 }
@@ -31,8 +31,8 @@ record R3 {
 }
 
 record R4 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     this.complete();
     fo = new owned(a);
@@ -41,8 +41,8 @@ record R4 {
 }
 
 class C1 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
   proc init() {
   }
 }

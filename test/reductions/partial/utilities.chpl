@@ -102,7 +102,7 @@ proc partRedHelpCheckDimensions(resDims, srcDims) throws {
     if resDims(dim).length == 1 ||   // reduced dimension
        resDims(dim) == srcDims(dim)  // preserved dimension
     then ; // OK
-    else throw new owned IllegalArgumentError("the preserved dimension " + dim + " in the shape of the partial reduction differs from that in the array being reduced");
+    else throw new owned IllegalArgumentError("the preserved dimension " + dim:string + " in the shape of the partial reduction differs from that in the array being reduced");
   }
 }
 

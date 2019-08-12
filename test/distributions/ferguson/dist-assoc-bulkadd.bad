@@ -4,4 +4,4 @@ $CHPL_HOME/modules/internal/ChapelArray.chpl:1477: note: because method call rec
 $CHPL_HOME/modules/internal/ArrayViewSlice.chpl:47: note: is passed to formal 'this: ArrayViewSliceArr'
 $CHPL_HOME/modules/internal/ArrayViewRankChange.chpl:498: note: candidates are: ArrayViewRankChangeArr.rankparam 
 $CHPL_HOME/modules/internal/ArrayViewReindex.chpl:397: note:                 ArrayViewReindexArr.rankparam 
-note: and 16 other candidates, use --print-all-candidates to see them
+note: and 18 other candidates, use --print-all-candidates to see them

@@ -9,7 +9,7 @@
 config const n = 500;
 
 use barrierWF;
-var b: owned BarrierWF;
+var b: owned BarrierWF?;
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 proc eval_A(i,j : int) : real

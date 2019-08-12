@@ -368,18 +368,21 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   insertInitialAccumulate(headAnchor, globalOp, origSym);
 
   Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
-  // Doing insertAfter() calls in reverse order.
-  // Can't insertBefore() on tailAnchor->next - that can be NULL.
-  tailAnchor->insertAfter("chpl__delete(%S)",
-                         globalOp);
-  tailAnchor->insertAfter("'='(%S, generate(%S,%S))",
-                         origSym, gMethodToken, globalOp);
+  // origSym = globalOp.generate() (via genTemp); delete globalOp;
+  VarSymbol* genTemp = newTemp("genTemp");
+  genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  tailAnchor->insertAfter(new DefExpr(genTemp),
+                          new CallExpr(PRIM_MOVE, genTemp,
+                            new CallExpr("generate", gMethodToken, globalOp)),
+                          new CallExpr("=", origSym, genTemp),
+                          new CallExpr("chpl__delete", globalOp));
 
   ArgSymbol* parentOp = new ArgSymbol(INTENT_BLANK, "reduceParent", dtUnknown);
   newFormal = parentOp;
 
   VarSymbol* currOp = new VarSymbol("reduceCurr");
   VarSymbol* svar  = new VarSymbol(origSym->name, origSym->type);
+  svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
   symReplace = svar;
 
   redRef1->insertBefore(new DefExpr(currOp));

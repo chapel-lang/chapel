@@ -8,10 +8,10 @@ record MyRecord {
 
 var i:int;
 var r:MyRecord;
-var o:owned MyClass;
-var s:shared MyClass;
-var u:unmanaged MyClass;
-var b:borrowed MyClass;
+var o:owned MyClass?;
+var s:shared MyClass?;
+var u:unmanaged MyClass?;
+var b:borrowed MyClass?;
 var c:MyClass = new borrowed MyClass(1);
 
 proc myassert(param got) {

@@ -55,8 +55,8 @@ proc start(testNameArg: string) {
 }
 
 proc end(numErrors: int) {
-  const elapsed = if reportTime then timer.elapsed() + " sec" else "";
-  const message = if numErrors then numErrors + " FAILURES: " else "success  ";
+  const elapsed = if reportTime then timer.elapsed():string + " sec" else "";
+  const message = if numErrors then numErrors:string + " FAILURES: " else "success  ";
   writeln(message, testName, ": ", elapsed);
   if numErrors then numFailures += 1;
 }

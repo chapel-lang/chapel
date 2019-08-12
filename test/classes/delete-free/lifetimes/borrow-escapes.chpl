@@ -8,12 +8,12 @@ class MyClass {
 }
 
 record R {
-  // TODO - get init with owned fields working
-  var c:owned MyClass;// = new Owned(nil:MyClass);
+
+  var c = new owned MyClass(234);
   proc init() {
-    //var tmp = new Owned(new MyClass(data));
-    //c = tmp;
-    //c.retain(new MyClass(data));
+    // A whole lot of nothing.
+    // To preserve the line numbers
+    // in the .good file for this test
   }
   proc get(): borrowed MyClass {
     return c.borrow();

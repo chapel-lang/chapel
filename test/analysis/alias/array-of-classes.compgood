@@ -27,21 +27,6 @@ noAliasSets: no-aliases for function acceptsArrays:
   <array get pointer> no alias <array get pointer>
 noAliasSets: no-aliases for function acceptsClasses:
 noAliasSets: no-aliases for function acceptsIntRefs:
-LICM: may-alias report for a loop in function main:
-  Aq may alias F0_x
-  Bq may alias F0_x
-  A may alias x1
-  B may alias x1
-LICM: may-alias report for a loop in function main:
-  Aq may alias F0_x
-  Bq may alias F0_x
-  A may alias x1
-  B may alias x1
-LICM: may-alias report for a loop in function main:
-  Aq may alias F0_x
-  Bq may alias F0_x
-  A may alias x1
-  B may alias x1
 LICM: may-alias report for a loop in function acceptsArrays:
 LICM: may-alias report for a loop in function acceptsClasses:
 LICM: may-alias report for a loop in function acceptsIntRefs:
