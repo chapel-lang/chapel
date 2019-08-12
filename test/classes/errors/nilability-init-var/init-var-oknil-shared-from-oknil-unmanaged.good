@@ -1,0 +1,1 @@
+init-var-oknil-shared-from-oknil-unmanaged.chpl:9: error: cannot create a shared variable from an unmanaged class instance

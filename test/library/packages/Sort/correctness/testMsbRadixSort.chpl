@@ -65,7 +65,7 @@ use BitOps;
    inline
    proc keyPart(x:string, start:int):(int(8), uint(8)) {
      var ptr = x.c_str():c_ptr(uint(8));
-     var len = x.length;
+     var len = x.numBytes;
      var section = if start <= len then 0:int(8)     else -1:int(8);
      var part =    if start <= len then ptr[start-1] else  0:uint(8);
      return (section, part);

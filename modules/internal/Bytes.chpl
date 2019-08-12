@@ -139,25 +139,13 @@ module Bytes {
       }
     }
 
-
-    // this is implemented only for debugging purposes. Ideally writeThis should
-    // just halt when called on bytes record
     pragma "no doc"
     proc writeThis(f) {
-      var localThis = this.localize();
-      try {
-        for b in localThis.bytes() {
-          if byte_isAscii(b) {
-            if byte_isPrintable(b) || byte_isWhitespace(b) {
-              f.writef("%c", b);
-            }
-          }
-        }
-      } catch e: SystemError {
-        f.setError(e.err);
-      } catch {
-        f.setError(EINVAL:syserr);
-      }
+      compilerError("not implemented: writeThis");
+    }
+    pragma "no doc"
+    proc readThis(f) {
+      compilerError("not implemented: readThis");
     }
 
     pragma "no doc"
@@ -267,6 +255,11 @@ module Bytes {
       :returns: The number of bytes in the object.
       */
     inline proc size return len;
+
+    /*
+      :returns: The number of bytes in the bytes.
+      */
+    inline proc numBytes return len;
 
     /*
        Gets a version of the :record:`bytes` that is on the currently
@@ -1083,26 +1076,14 @@ module Bytes {
                and `s1`
   */
   proc +(s0: _bytes, s1: _bytes) {
-    return do_concat(s0, s1);
-  }
-
-  proc +(s0: _bytes, s1: string) {
-    return _bytes_string_concat(s0,s1);
-  }
-
-  proc +(s0: string, s1: _bytes) {
-    return _bytes_string_concat(s0,s1);
-  }
-
-  private proc _bytes_string_concat(s0: ?t, s1): t {
     // cache lengths locally
     const s0len = s0.len;
-    if s0len == 0 then return s1:t;
+    if s0len == 0 then return s1;
     const s1len = s1.len;
     if s1len == 0 then return s0;
 
     // TODO Engin: Implement a factory function for this case
-    var ret: t;
+    var ret: _bytes;
     ret.len = s0len + s1len;
     var (buff, allocSize) = allocBuffer(ret.len+1);
     ret.buff = buff;
@@ -1124,31 +1105,6 @@ module Bytes {
   proc *(s: _bytes, n: integral) {
     return do_multiply(s, n);
   }
-
-  // Concatenation with other types is done by casting to bytes
-  private inline proc concatHelp(s: _bytes, x:?t) where t != _bytes {
-    var cs = x:_bytes;
-    const ret = s + cs;
-    return ret;
-  }
-
-  private inline proc concatHelp(x:?t, s: _bytes) where t != _bytes  {
-    var cs = x:_bytes;
-    const ret = cs + s;
-    return ret;
-  }
-
-  /*
-     The following concatenation functions return a new :record:`bytes` which is
-     the result of casting the non-bytes argument to a bytes, and concatenating
-     that result with `s`.
-  */
-  inline proc +(s: _bytes, x: numeric) return concatHelp(s, x);
-  inline proc +(x: numeric, s: _bytes) return concatHelp(x, s);
-  inline proc +(s: _bytes, x: enumerated) return concatHelp(s, x);
-  inline proc +(x: enumerated, s: _bytes) return concatHelp(x, s);
-  inline proc +(s: _bytes, x: bool) return concatHelp(s, x);
-  inline proc +(x: bool, s: _bytes) return concatHelp(x, s);
 
   pragma "no doc"
   proc ==(a: _bytes, b: _bytes) : bool {

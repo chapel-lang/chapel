@@ -961,7 +961,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
   if (r.high >= num) then
-    HaltWrappers.zipLengthHalt("glob() is being zipped with something too big; it only has " + num + " matches");
+    HaltWrappers.zipLengthHalt("glob() is being zipped with something too big; it only has " + num:string + " matches");
 
   for i in r do
     yield glob_index_w(glb, i);

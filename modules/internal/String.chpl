@@ -648,14 +648,19 @@ module String {
     }
 
     /*
-      :returns: The number of bytes in the string.
+      :returns: The number of codepoints in the string.
       */
-    inline proc length return len;
+    inline proc length return numCodepoints;
+
+    /*
+      :returns: The number of codepoints in the string.
+      */
+    inline proc size return numCodepoints;
 
     /*
       :returns: The number of bytes in the string.
       */
-    inline proc size return len;
+    inline proc numBytes return len;
 
     /*
       :returns: The number of codepoints in the string, assuming the
@@ -916,7 +921,7 @@ module String {
       Return the codepoint starting at the `i` th byte in the string
 
       :returns: A string with the complete multibyte character starting at the
-                specified byte index from ``1..string.length``
+                specified byte index from ``1..string.numBytes``
      */
     proc this(i: byteIndex) : string {
       var idx = i: int;
@@ -1880,14 +1885,20 @@ module String {
     return do_multiply(s, n);
   }
 
+  private proc stringValDeprecated() {
+    compilerWarning("'+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string");
+  }
+
   // Concatenation with other types is done by casting to string
   private inline proc concatHelp(s: string, x:?t) where t != string {
+    stringValDeprecated();
     var cs = x:string;
     const ret = s + cs;
     return ret;
   }
 
   private inline proc concatHelp(x:?t, s: string) where t != string  {
+    stringValDeprecated();
     var cs = x:string;
     const ret = cs + s;
     return ret;
@@ -1944,28 +1955,40 @@ module String {
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
-  inline proc +(param s: string, param x: integral) param
+  inline proc +(param s: string, param x: integral) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: integral, param s: string) param
+  inline proc +(param x: integral, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
-  inline proc +(param s: string, param x: enumerated) param
+  inline proc +(param s: string, param x: enumerated) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: enumerated, param s: string) param
+  inline proc +(param x: enumerated, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
-  inline proc +(param s: string, param x: bool) param
+  inline proc +(param s: string, param x: bool) param {
+    stringValDeprecated();
     return __primitive("string_concat", s, x:string);
+  }
 
   pragma "no doc"
-  inline proc +(param x: bool, param s: string) param
+  inline proc +(param x: bool, param s: string) param {
+    stringValDeprecated();
     return __primitive("string_concat", x:string, s);
+  }
 
   pragma "no doc"
   inline proc ascii(param a: string) param {
@@ -1975,21 +1998,29 @@ module String {
 
   pragma "no doc"
   inline proc param string.toByte() param : uint(8) {
-    if __primitive("string_length", this) != 1 then
+    if this.numBytes != 1 then
       compilerError("string.toByte() only accepts single-byte strings");
     return __primitive("ascii", this);
   }
 
   pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
-    if i < 1 || i > __primitive("string_length", this) then
-      compilerError("index out of bounds of string: " + i);
+    if i < 1 || i > this.numBytes then
+      compilerError("index out of bounds of string: " + i:string);
     return __primitive("ascii", this, i);
   }
 
   pragma "no doc"
+  inline proc param string.numBytes param
+    return __primitive("string_length_bytes", this);
+
+  pragma "no doc"
+  inline proc param string.numCodepoints param
+    return __primitive("string_length_codepoints", this);
+
+  pragma "no doc"
   inline proc param string.length param
-    return __primitive("string_length", this);
+    return this.numCodepoints;
 
   pragma "no doc"
   inline proc _string_contains(param a: string, param b: string) param
@@ -2242,7 +2273,7 @@ module String {
                    chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
       // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
       var locHash: int(64) = 5381;
-      for c in 0..#(x.length) {
+      for c in 0..#(x.numBytes) {
         locHash = ((locHash << 5) + locHash) ^ x.buff[c];
       }
       hash = locHash;

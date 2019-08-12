@@ -1044,6 +1044,36 @@ char _qio_tohex(unsigned char i)
   else return 'A' + i - 10;
 }
 
+static
+int _qio_byte_escape(uint8_t b, int32_t string_end, int string_format, char* tmp, int *width_chars_out, int *width_cols_out)
+{
+  char tmpchr;
+  int cwidth;
+  if( b == string_end || b == '\\' ||
+      b == '\'' || b == '"' || b == '\n' ) {
+    tmp[0] = '\\';
+    if( b == '\n' ) {
+      tmpchr = 'n';
+    } else {
+      tmpchr = b;
+    }
+    tmp[1] = tmpchr;
+    cwidth = 2;
+  } else if( b >= 128 || !isprint(b) ) {
+    tmp[0] = '\\';
+    tmp[1] = 'x';
+    tmp[2] = _qio_tohex((b >> 4) & 0xf);
+    tmp[3] = _qio_tohex((b >> 0) & 0xf);
+    cwidth = 4;
+  } else {
+    tmp[0] = b;
+    cwidth = 1;
+  }
+
+  if( width_chars_out ) *width_chars_out = cwidth;
+  if( width_cols_out ) *width_cols_out = cwidth;
+  return cwidth;
+}
 // Returns \" or \x00 or \uXXXX etc depending on string style
 // returns negative or 0 on error.
 // Or returns number of bytes of UTF-8 characters printed in tmp
@@ -1176,7 +1206,8 @@ error:
 #undef WRITEC
 }
 
-qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+static
+qioerr qio_channel_print_string_or_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len, const int byte_esc)
 {
   qioerr err;
   ssize_t i;
@@ -1253,29 +1284,42 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
   } else {
-    // Write string_start.
-    err = qio_channel_write_char(false, ch, style->string_start);
-    if( err ) goto rewind;
+    if(byte_esc) {
+      for( i = 0; i < len; i+=clen ) {
+        tmplen = _qio_byte_escape(ptr[i], style->string_end, style->string_format, tmp, NULL, NULL);
+        if( tmplen < 0 ) {
+          QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
+          goto rewind;
+        }
 
-    // Write the string while translating it.
-    for( i = 0; i < len; i+=clen ) {
-      err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+        err = qio_channel_write_amt(false, ch, tmp, tmplen);
+        if( err ) goto rewind;
+      }
+    }
+    else {
+      // Write string_start.
+      err = qio_channel_write_char(false, ch, style->string_start);
       if( err ) goto rewind;
 
-      tmplen = _qio_chr_escape(chr, style->string_end, style->string_format, tmp, NULL, NULL);
-      if( tmplen < 0 ) {
-        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
-        goto rewind;
+      // Write the string while translating it.
+      for( i = 0; i < len; i+=clen ) {
+        err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+        if( err ) goto rewind;
+
+        tmplen = _qio_chr_escape(chr, style->string_end, style->string_format, tmp, NULL, NULL);
+        if( tmplen < 0 ) {
+          QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
+          goto rewind;
+        }
+
+        err = qio_channel_write_amt(false, ch, tmp, tmplen);
+        if( err ) goto rewind;
       }
 
-      err = qio_channel_write_amt(false, ch, tmp, tmplen);
+      // Write string_end.
+      err = qio_channel_write_char(false, ch, style->string_end);
       if( err ) goto rewind;
     }
-
-    // Write string_end.
-    err = qio_channel_write_char(false, ch, style->string_end);
-    if( err ) goto rewind;
-
     if( overfull ) {
       err = qio_channel_write_char(false, ch, '.');
       if( err ) goto rewind;
@@ -1311,6 +1355,19 @@ unlock:
   }
 
   return err;
+}
+
+
+inline
+qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+{
+  return qio_channel_print_string_or_bytes(threadsafe, ch, ptr, len, 0);
+}
+
+inline
+qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+{
+  return qio_channel_print_string_or_bytes(threadsafe, ch, ptr, len, 1);
 }
 
 // Returns length information for how we would quote ptr
@@ -4290,7 +4347,7 @@ qioerr qio_conv_parse(c_string fmt,
           QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary %S conversion");
         }
 
-        spec_out->argType = QIO_CONV_ARG_TYPE_STRING;
+        spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_STRING;
       } else {
         QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary conversion");
       }

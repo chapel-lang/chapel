@@ -55,7 +55,7 @@ coforall loc in Locales {
         // the message according to the task ID.
         //
         if (numSublocales > 1) then
-          message += (here:NumaDomain).sid + " of " + numSublocales + " named " + here.name + " on ";
+          message += (here:NumaDomain).sid:string + " of " + numSublocales:string + " named " + here.name + " on ";
 
         //
         // Specialize the message based on the locale we're running on:
@@ -65,7 +65,7 @@ coforall loc in Locales {
         // - '.name' queries its name (similar to UNIX `hostname`)
         // - 'numLocales' refers to the number of locales (as specified by -nl)
         //
-        message += "locale " + here.parent!.id + " of " + numLocales;
+        message += "locale " + here.parent!.id:string + " of " + numLocales:string;
         if (printLocaleName) then message += " named " + here.parent!.name;
 
         //

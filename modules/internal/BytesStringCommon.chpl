@@ -76,11 +76,11 @@ module BytesStringCommon {
 
       found += 1;
       result = result[..idx-1] + localReplacement +
-               result[(idx + localNeedle.length)..];
+               result[(idx + localNeedle.numBytes)..];
       var tmp_res = result[..idx-1] + localReplacement +
-               result[(idx + localNeedle.length)..];
+               result[(idx + localNeedle.numBytes)..];
 
-      startIdx = idx + localReplacement.length;
+      startIdx = idx + localReplacement.numBytes;
     }
     return result;
   }
@@ -201,7 +201,7 @@ module BytesStringCommon {
       return ret;
     } else {
       var joinedSize: int = x.len * (S.size - 1);
-      for s in S do joinedSize += s.length;
+      for s in S do joinedSize += s.numBytes;
 
       if joinedSize == 0 then
         return '';
@@ -245,7 +245,7 @@ module BytesStringCommon {
   proc do_partition(const ref x: ?t, sep: t): 3*t where isBytesOrStringType(t) {
     const idx = x.find(sep);
     if idx != 0 {
-      return (x[..idx-1], sep, x[idx+sep.length..]);
+      return (x[..idx-1], sep, x[idx+sep.numBytes..]);
     } else {
       return (x, "":t, "":t);
     }

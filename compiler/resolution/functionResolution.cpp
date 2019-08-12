@@ -1156,9 +1156,9 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
              actual == CLASS_TYPE_MANAGED_NONNIL;
     case CLASS_TYPE_GENERIC_NILABLE:
       return actual == CLASS_TYPE_GENERIC_NILABLE ||
-             actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL;
+             actual == CLASS_TYPE_BORROWED_NILABLE||
+             actual == CLASS_TYPE_UNMANAGED_NILABLE||
+             actual == CLASS_TYPE_MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1381,8 +1381,8 @@ bool canCoerce(Type*     actualType,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic);
 
 
 static
@@ -1397,7 +1397,11 @@ bool doCanDispatch(Type*     actualType,
   if (actualType == formalType)
     return true;
 
-  if (isGenericInstantiation(actualType, formalType))
+  // MPF 2019-09 - for some reason resolving generic initializers
+  // needs this adjustment, which started in PR #5424.
+  if (fn && fn->isInitializer() &&
+      formalSym == fn->_this &&
+      isGenericInstantiation(formalType, actualType))
     return true;
 
   if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
@@ -1472,17 +1476,17 @@ bool canDispatch(Type*     actualType,
   return retval;
 }
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType) {
-  AggregateType* atActual = toAggregateType(actualType);
-  AggregateType* atFormal = toAggregateType(formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic) {
+  AggregateType* atConcrete = toAggregateType(concrete);
+  AggregateType* atGeneric = toAggregateType(generic);
   bool           retval   = false;
 
-  if (atActual                                != NULL &&
-      atActual->symbol->hasFlag(FLAG_GENERIC) == true &&
+  if (atGeneric                                != NULL &&
+      atGeneric->symbol->hasFlag(FLAG_GENERIC) == true &&
 
-      atFormal                                != NULL &&
-      atFormal->isInstantiatedFrom(atActual)  == true) {
+      atConcrete                                 != NULL &&
+      atConcrete->isInstantiatedFrom(atGeneric)  == true) {
 
     retval = true;
   }
@@ -2496,9 +2500,18 @@ static void adjustClassCastCall(CallExpr* call)
 
     // Now compute the target type
     Type* t = NULL;
-    if (isDecoratorManaged(d)) {
+    if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
+      // Don't change it, expecting an error
+      t = targetType;
+    } else if (isDecoratorManaged(d)) {
       AggregateType* manager = getManagedPtrManagerType(valueType);
-      t = computeDecoratedManagedType(at, d, manager, call);
+      if (isManagedPtrType(targetType) &&
+          manager != getManagedPtrManagerType(targetType)) {
+        // Don't change it, expecting an error
+        t = targetType;
+      } else {
+        t = computeDecoratedManagedType(at, d, manager, call);
+      }
     } else {
       t = at->getDecoratedClass(d);
     }
@@ -5406,7 +5419,7 @@ static void resolveSetMember(CallExpr* call) {
     INT_FATAL(call, "Unable to resolve field type");
   }
 
-  if (isGenericInstantiation(fs->type, t)) {
+  if (isGenericInstantiation(t, fs->type)) {
     fs->type = t;
   }
   if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {
@@ -5607,6 +5620,41 @@ static void resolveInitField(CallExpr* call) {
   resolveSetMember(call); // Can we remove some of the above with this?
 }
 
+// Should this be public, like isNilableClassType() ?
+static bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+static bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
+}
+
+static void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
+  if (! fLegacyNilableClasses &&
+      isNonNilableClassType(lhs) && isNilableClassType(rhs))
+    USR_FATAL(call, "cannot assign to non-nilable %s from nilable %s",
+              toString(lhs), toString(rhs));
+
+  if (isUnmanagedClass(lhs) && isOwnedOrSharedOrBorrowed(rhs))
+    USR_FATAL(call, "cannot assign to %s from %s",
+              toString(lhs), toString(rhs));
+}
+
 /************************************* | **************************************
 *                                                                             *
 * This handles expressions of the form                                        *
@@ -5678,6 +5726,10 @@ static void resolveInitVar(CallExpr* call) {
         isSingleType(src->getValType()) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
+
+      if (mismatch)
+        checkMoveIntoClass(call, targetType->getValType(), src->getValType());
+
       VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
 

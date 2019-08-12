@@ -28,10 +28,10 @@ writeln();
 
 // TEST length and size queries
 writeln("Length/size tests");
-writeln(b_from_s.length, " must be ", s.length);
+writeln(b_from_s.length, " must be ", s.numBytes);
 writeln(b_from_cs.length, " must be ", cs.length);
 writeln(b_from_c_ptr.length, " must be ", 3);
-writeln(b_from_s.size, " must be ", s.size);
+writeln(b_from_s.size, " must be ", s.numBytes);
 writeln(b_from_cs.size, " must be ", cs.size);
 writeln(b_from_c_ptr.size, " must be ", 3);
 writeln();
@@ -170,7 +170,7 @@ writeln("writeln behavior");
 writeln("Output 1");
 writeln("wordword":_bytes);
 writeln("Output 2");
-writeln("word\x00word":_bytes);
+writeln("word\x00word":_bytes); // should print a junk char in between
 writeln("Output 3");
 writeln("word\tword":_bytes);
 writeln("Output 4");

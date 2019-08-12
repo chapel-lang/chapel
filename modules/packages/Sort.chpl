@@ -196,7 +196,7 @@ Here is a ``keyPart`` to support sorting of strings:
 .. code-block:: chapel
 
   proc keyPart(x:string, i:int):(int(8), uint(8)) {
-    var len = x.length;
+    var len = x.numBytes;
     var section = if i <= len then 0:int(8) else -1:int(8);
     var part =    if i <= len then x.byte(i) else  0:uint(8);
     return (section, part);
@@ -3041,7 +3041,7 @@ record DefaultComparator {
       assert(x.locale_id == here.id);
 
     var ptr = x.c_str():c_ptr(uint(8));
-    var len = x.length;
+    var len = x.numBytes;
     var section = if i <= len then 0:int(8) else -1:int(8);
     var part =    if i <= len then ptr[i-1] else  0:uint(8);
     return (section, part);

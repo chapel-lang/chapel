@@ -1,4 +1,4 @@
-var ops:[1..0] (int, unmanaged object, int, int, int);
+var ops:[1..0] (int, unmanaged object?, int, int, int);
 var opsLock$: sync bool = true;
 
 var counter: atomic int;
@@ -6,7 +6,7 @@ var counter: atomic int;
 require "gdb.h";
 config const breakOnAllocateId = -1;
 
-proc trackAllocation(c: object, id:int, x:int) {
+proc trackAllocation(c: object?, id:int, x:int) {
   opsLock$.readFE();
   ops.push_back( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
@@ -16,7 +16,7 @@ proc trackAllocation(c: object, id:int, x:int) {
   opsLock$.writeEF(true);
 }
 
-proc trackFree(c: object, id:int, x:int) {
+proc trackFree(c: object?, id:int, x:int) {
   opsLock$.readFE();
   ops.push_back( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   opsLock$.writeEF(true);

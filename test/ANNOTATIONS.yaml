@@ -438,6 +438,8 @@ array-of-strings-read:
     - Turn off some range halts for --no-checks (#11780)
   05/24/19:
     - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+  08/01/19:
+    - Take advantage of known UTF-8 encoding to speed up strings (#13580)
 
 arr-forall:
   03/24/15:
@@ -1081,6 +1083,10 @@ memleaksfull:
     - Add VectorList collection (#12791)
   04/17/19:
     - Fix bugs in mason search and buildMason (#12785)
+  07/25/19:
+    - Add two-array radix and sample sorts and a distributed sort (#13347)
+  08/02/19:
+    - Fix memory leaks in test-radix-bucketizer.chpl (#13604)
 
 meteor:
   12/18/13:
@@ -1425,6 +1431,8 @@ stream-spmd-barrier:
 substring:
   05/24/19:
     - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+  08/01/19:
+    - Take advantage of known UTF-8 encoding to speed up strings (#13580)
 
 taskSpawn:
   07/24/16:
@@ -1441,6 +1449,8 @@ temporary-copies:
     - Turn off some range halts for --no-checks (#11780)
   05/24/19:
     - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+  08/01/19:
+    - Take advantage of known UTF-8 encoding to speed up strings (#13580)
 
 twopt-paircount:
   06/22/17:

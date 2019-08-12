@@ -149,6 +149,12 @@ symbolFlag( FLAG_GENERATE_SIGNATURE, ypr, "generate signature", "compiler should
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
 symbolFlag( FLAG_DELAY_GENERIC_EXPANSION, npr, "delay instantiation", "generics instances whose instantiation  will be determined shortly")
 symbolFlag( FLAG_GEN_MAIN_FUNC, npr, "generated main", "compiler generated main function")
+
+symbolFlag( FLAG_GET_LINE_NUMBER, ypr, "get line number", "replace calls to this function with the line number of the call" )
+symbolFlag( FLAG_GET_FILE_NAME, ypr, "get file name", "replace calls to this function with the name of the file the call is in" )
+symbolFlag( FLAG_GET_FUNCTION_NAME, ypr, "get function name", "replace calls to this function with the name of the function that called it" )
+symbolFlag( FLAG_GET_MODULE_NAME, ypr, "get module name", "replace calls to this function with the name of the module the call was in" )
+
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
@@ -378,6 +384,7 @@ symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )
 symbolFlag( FLAG_WRAPPER_NEEDS_START_FENCE , npr, "wrapper needs start fence" , "add PRIM_START_RMEM_FENCE to the start of the wrapper function" )
 symbolFlag( FLAG_WRAPPER_NEEDS_FINISH_FENCE , npr, "wrapper needs finish fence" , "add PRIM_FINISH_RMEM_FENCE to the end of the wrapper function" )
 symbolFlag( FLAG_WRAP_WRITTEN_FORMAL , npr, "wrap written formal" , "formal argument for wrapper for out/inout intent" )
+symbolFlag( FLAG_YIELD_WITHIN_ON, npr, "yield within on", "iterator that yields within an on" )
 
 
 // These flags are for use with PRIM_OPTIMIZATION_INFO

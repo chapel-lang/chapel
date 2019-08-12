@@ -229,4 +229,20 @@ proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool
 
 // TODO -- do we need a different version of can resolve with ref this?
 
+/* Returns the line number of the call to this function. */
+pragma "get line number"
+proc lineNumber param : int { }
+
+/* Returns the file name this function was called from. */
+pragma "get file name"
+proc fileName param : string { }
+
+/* Returns the name of the function this function was called from. */
+pragma "get function name"
+proc functionName param : string { }
+
+/* Returns the name of the module this function was called from. */
+pragma "get module name"
+proc moduleName param : string { }
+
 } // module Reflection

@@ -245,16 +245,37 @@ module OwnedObject {
        refer to `nil` after this call.
      */
     proc init=(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
+      if isNonNilableClass(this.type) && isNilableClass(src) &&
+         !chpl_legacyNilClasses
+      then
+        compilerError("cannot create a non-nilable owned variable from a nilable class instance");
+
       // Use 'this.type.chpl_t' in case RHS is a subtype
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.release();
+      this.complete();
+    }
+
+    proc init=(src: shared) {
+      compilerError("cannot create an owned variable from a shared class instance");
+      this.chpl_t = int; //dummy
+    }
+
+    proc init=(src: borrowed) {
+      compilerError("cannot create an owned variable from a borrowed class instance");
+      this.chpl_t = int; //dummy
+    }
+
+    proc init=(src: unmanaged) {
+      compilerError("cannot create an owned variable from an unmanaged class instance");
+      this.chpl_t = int; //dummy
     }
 
     pragma "no doc"
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 
-      if _to_nilable(chpl_t) != chpl_t && !chpl_legacyNilClasses {
+      if isNonNilableClass(chpl_t) && !chpl_legacyNilClasses {
         compilerError("Assigning non-nilable owned to nil");
       }
     }
@@ -476,6 +497,54 @@ module OwnedObject {
     // t stores a non-nilable type
     return new _owned(castPtr!);
   }
+
+  // this version handles downcast to non-nil owned
+  inline proc _cast(type t:owned!, ref x:owned?) throws
+    where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
+  {
+    if x.chpl_p == nil {
+      throw new owned NilClassError();
+    }
+    // the following line can throw ClassCastError
+    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    x.chpl_p = nil;
+    return new _owned(castPtr);
+  }
+  inline proc _cast(type t:owned!, ref x:owned!) throws
+    where isProperSubtype(t.chpl_t,x.chpl_t)
+  {
+    // the following line can throw ClassCastError
+    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    x.chpl_p = nil;
+    return new _owned(castPtr);
+  }
+
+
+  // this version handles downcast to nilable owned
+  inline proc _cast(type t:owned?, ref x:owned?)
+    where isProperSubtype(t.chpl_t,x.chpl_t)
+  {
+    // this cast returns nil if the dynamic type is not compatible
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    if castPtr != nil {
+      x.chpl_p = nil;
+    }
+    return new _owned(castPtr);
+  }
+  // this version handles downcast to nilable owned
+  inline proc _cast(type t:owned?, ref x:owned!)
+    where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
+  {
+    // this cast returns nil if the dynamic type is not compatible
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    if castPtr != nil {
+      x.chpl_p = nil;
+    }
+    return new _owned(castPtr);
+  }
+
+
+
 
   // cast from nil to owned
   pragma "no doc"

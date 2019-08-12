@@ -303,10 +303,10 @@ module DefaultRectangular {
                            " ranges(", parDim, ").length=", ranges(parDim).length);
       }
       if debugDataPar {
-        chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
-                           "### ignoreRunning = ", ignoreRunning, "\n" +
-                           "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                           "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+        chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
+                           "### ignoreRunning = ", ignoreRunning, "\n",
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n",
+                           "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                            "### nranges = ", ranges);
       }
       if numChunks <= 1 {
@@ -372,11 +372,11 @@ module DefaultRectangular {
                                                        minIndicesPerTask,
                                                        ranges);
         if debugDataParNuma {
-          chpl_debug_writeln("### numSublocs = ", numSublocs, "\n" +
-                  "### numTasksPerSubloc = ", numSublocTasks, "\n" +
-                  "### ignoreRunning = ", ignoreRunning, "\n" +
-                  "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+          chpl_debug_writeln("### numSublocs = ", numSublocs, "\n",
+                 "### numTasksPerSubloc = ", numSublocTasks, "\n",
+                  "### ignoreRunning = ", ignoreRunning, "\n",
+                  "### minIndicesPerTask = ", minIndicesPerTask, "\n",
+                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                   "### nranges = ", ranges);
         }
 
@@ -394,8 +394,8 @@ module DefaultRectangular {
             local do on here.getChild(chunk) {
               if debugDataParNuma {
                 if chunk!=chpl_getSubloc() then
-                  chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                          ", on "+chpl_getSubloc()+") ***");
+                  chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ", chunk,
+                                     ", on ", chpl_getSubloc(), ") ***");
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
@@ -428,7 +428,7 @@ module DefaultRectangular {
                                               high, low, low);
                 followMe2(parDim2) = lo..hi;
                 if debugDataParNuma {
-                  chpl_debug_writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  " +
+                  chpl_debug_writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  ",
                           "followMe = ", followMe, "  followMe2 = ", followMe2);
                 }
                 yield followMe2;
@@ -458,10 +458,10 @@ module DefaultRectangular {
                   " ranges(", parDim, ").length=", ranges(parDim).length);
 
         if debugDataPar {
-          chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
-                  "### ignoreRunning = ", ignoreRunning, "\n" +
-                  "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+          chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
+                 "### ignoreRunning = ", ignoreRunning, "\n",
+                 "### minIndicesPerTask = ", minIndicesPerTask, "\n",
+                 "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                   "### nranges = ", ranges);
         }
 
@@ -1062,26 +1062,20 @@ module DefaultRectangular {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
-        var freedData = false;
         if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
+          var numElts:intIdxType = 0;
+          // dataAllocRange may be empty or contain a meaningful value
+          if rank == 1 && !stridable then
+            numElts = dataAllocRange.length;
+          if numElts == 0 then
+            numElts = dom.dsiNumIndices;
+
           if needsDestroy {
-            var numElts:intIdxType = 0;
-            // dataAllocRange may be empty or contain a meaningful value
-            if rank == 1 && !stridable then
-              numElts = dataAllocRange.length;
-            if numElts == 0 then
-              numElts = dom.dsiNumIndices;
             dsiDestroyDataHelper(data, numElts);
-            _ddata_free(data, numElts);
-            freedData = true;
           }
-        }
-        if !freedData {
-          const size = blk(1) * dom.dsiDim(1).length;
-          _ddata_free(data, size);
-          freedData = true;
+          _ddata_free(data, numElts);
         }
       }
     }
@@ -2080,12 +2074,12 @@ module DefaultRectangular {
   //
   private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     if debugDefaultDistBulkTransfer {
-      chpl_debug_writeln("BulkTransferStride with values:\n" +
-                         "\tLocale        = " + stringify(here.id) + "\n" +
-                         "\tStride levels = " + stringify(stridelevels) + "\n" +
-                         "\tdstStride     = " + stringify(dstStride) + "\n" +
-                         "\tsrcStride     = " + stringify(srcStride) + "\n" +
-                         "\tcount         = " + stringify(count));
+      chpl_debug_writeln("BulkTransferStride with values:\n",
+                         "\tLocale        = ", stringify(here.id), "\n",
+                         "\tStride levels = ", stringify(stridelevels), "\n",
+                         "\tdstStride     = ", stringify(dstStride), "\n",
+                         "\tsrcStride     = ", stringify(srcStride), "\n",
+                         "\tcount         = ", stringify(count));
     }
 
     const AO = A.getDataIndex(AFirst, getShifted = false);

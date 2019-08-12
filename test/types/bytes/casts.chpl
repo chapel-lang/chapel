@@ -65,9 +65,6 @@
 { // string
   var s = "some string";
   print(s:_bytes);
-
-  var b = "some bytes":_bytes;
-  print(b:string);
 }
 
 { // enum
