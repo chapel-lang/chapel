@@ -1,10 +1,16 @@
 #!/bin/bash
 
-command -v mason
+foo="$(command -v mason)"
 status=$?
-if [ $status -ne 0 ];  then
-    echo "True"
-else
+
+if [ $status -eq  0 ];  then
     echo "False"
+    exit 0
+else
+    echo "True"
+    exit 0
 fi
+
+
+
 
