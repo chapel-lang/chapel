@@ -1,10 +1,11 @@
 Publish a package to the mason-registry repository
 
 Usage:
-    mason publish [options]
+    mason publish [options] <registry>
 
 Options:
     -h, --help                   Display this message
     --dry-run                    Check to see if package is ready to be published
+    <registry>                   Positional argument indicates publishing to a personal registry
 
 Publishing requires the mason-registry to be forked and the package to have a remote origin.

@@ -416,11 +416,12 @@ proc masonPublishHelp(){
   writeln("Publish a package to the mason-registry repository");
   writeln();
   writeln("Usage:");
-  writeln("    mason publish [options]");
+  writeln("    mason publish [options] <registry>");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                   Display this message");
   writeln('    --dry-run                    Check to see if package is ready to be published');
+  writeln('    <registry>                   Positional argument indicates publishing to a personal registry');
   writeln();
   writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');
 }
