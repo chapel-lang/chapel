@@ -9,7 +9,7 @@ module M1 {
   }
 
   proc main() {
-    var c: C = new C(3);
+    var c: borrowed C = new C(3);
     baz(c);
   }
 }
@@ -30,8 +30,8 @@ module M2 {
 
   // if baz is not generic and is called from M2.main (and there is nothing to
   // instantiate bar before it), this should error.
-  proc baz(c1: C) {
-    var c2: C = new C(3);
+  proc baz(c1: borrowed C) {
+    var c2: borrowed C = new C(3);
 
     bar(c1);
     bar(c2);

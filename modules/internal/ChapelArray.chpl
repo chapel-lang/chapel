@@ -1491,7 +1491,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc bulkAdd(inds: [] _value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true, addOn=nil:locale)
+        isUnique=false, preserveInds=true, addOn=nil:locale?)
         where isSparseDom(this) && _value.rank==1 {
 
       if inds.size == 0 then return 0;
@@ -1574,7 +1574,7 @@ module ChapelArray {
        :rtype: int
     */
     proc bulkAdd(inds: [] _value.rank*_value.idxType,
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale)
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale?)
         where isSparseDom(this) && _value.rank>1 {
 
       if inds.size == 0 then return 0;

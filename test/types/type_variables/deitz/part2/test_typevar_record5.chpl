@@ -1,14 +1,14 @@
 class node {
   type t;
   var element : t;
-  var next : unmanaged node(t);
+  var next : unmanaged node(t)?;
 }
 
 record foo {
   type t;
   var length : int;
-  var first : unmanaged node(t);
-  var last : unmanaged node(t);
+  var first : unmanaged node(t)?;
+  var last : unmanaged node(t)?;
 
   proc append(e : t) {
    var anew : unmanaged node(t) = new unmanaged node(t);
@@ -25,8 +25,8 @@ record foo {
   }
 
   proc cleanup() {
-    var cursor: unmanaged node(t);
-    var next: unmanaged node(t);
+    var cursor: unmanaged node(t)?;
+    var next: unmanaged node(t)?;
     cursor = first;
     while (cursor != nil) {
       next = cursor.next;

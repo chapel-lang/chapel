@@ -78,7 +78,13 @@ module ChapelSyncvar {
 
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
-      compilerError("sync/single types cannot be of type '", t : string, "'");
+      compilerError("sync/single types cannot contain type '", t : string, "'");
+
+    if !chpl_legacyNilClasses && isNonNilableClass(t) then
+      compilerError("sync/single types cannot contain non-nilable classes");
+
+    if isGenericType(t) then
+      compilerError("sync/single types cannot contain generic types");
   }
 
   pragma "no doc"

@@ -13,7 +13,7 @@ var r: real;             test("real", r);
 var cmp: complex;        test("complex", cmp);
 var img: imag;           test("imag", img);
 var str: string;         test("string", str);
-var cls: borrowed C;     test("class", cls);
+var cls: borrowed C = new borrowed C();     test("class", cls);
 var rec: R;              test("record", rec);
 var uni: U;              test("union", uni);
 var dm1 = new unmanaged Block(LocaleSpace); test("dist", dm1);
