@@ -518,13 +518,14 @@ module DistributedEpochManager {
     */
     proc unregister() {
       manager.unregister(this._tok);
+      this._tok = nil;
     }
 
     /*
       Unregister the handle from the manager
     */
     proc deinit() {
-      manager.unregister(this._tok);
+      this.unregister();
     }
   }
 
