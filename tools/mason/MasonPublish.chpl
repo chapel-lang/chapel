@@ -150,7 +150,7 @@ proc publishPackage(username: string, path : string, isLocal : bool) throws {
     writeln('--------------------------------------------------------------------');
     writeln('Go to the above link to open up a Pull Request to the mason-registry');
    }
- 
+
   if (exists(safeDir) && !isLocal) then rmTree(safeDir + '/');
 }
 
@@ -178,7 +178,7 @@ proc dryRun(username: string, path : string, isLocal : bool) throws {
       writeln('> git commit -m [package name]');
       writeln('> git push --set-upstream origin [package name]');
       exit(0);
-    } 
+    }
     else {
       if fork == false {
         throw new owned MasonError('mason-registry is not forked on your GitHub');
@@ -283,7 +283,7 @@ proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
-    const name = tomlFile['brick']['name'].s; 
+    const name = tomlFile['brick']['name'].s;
     return name;
   }
   catch {
