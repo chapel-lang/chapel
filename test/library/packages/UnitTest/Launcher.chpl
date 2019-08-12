@@ -4,6 +4,7 @@
   subdirectories (defaults to true) using `--subdir`
 */
 module Launcher {
+  use Lists;
   use FileSystem;
   use Spawn;
   use Path;
@@ -43,8 +44,8 @@ module Launcher {
 
   proc main(args: [] string) {
     var comm_c: c_string;
-    var dirs: [1..0] string,
-        files: [1..0] string;
+    var dirs: list(string);
+    var files: list(string);
     var hadInvalidFile = false;
     var programName = args[0];
     try! {
@@ -64,10 +65,10 @@ module Launcher {
           else {
             try! {
               if isFile(a) {
-                files.push_back(a);
+                files.append(a);
               }
               else if isDir(a) {
-                dirs.push_back(a);
+                dirs.append(a);
               }
               else {
                 writeln("[Error: ", a, " is not a valid file or directory]");
@@ -82,7 +83,7 @@ module Launcher {
         }
 
         if files.size == 0 && dirs.size == 0 {
-          dirs.push_back(".");
+          dirs.append(".");
         }
         
         var result =  new TestResult();
@@ -144,11 +145,11 @@ module Launcher {
       }
       sub.wait();
       if !compErr {
-        var testNames: [1..0] string,
-            failedTestNames: [1..0] string,
-            erroredTestNames: [1..0] string,
-            testsPassed: [1..0] string,
-            skippedTestNames: [1..0] string;
+        var testNames: list(string),
+            failedTestNames: list(string),
+            erroredTestNames: list(string),
+            testsPassed: list(string),
+            skippedTestNames: list(string);
         var dictDomain: domain(int);
         var dict: [dictDomain] int;
         runAndLog(executable, fileName, result, numLocales, testsPassed,
@@ -198,12 +199,20 @@ module Launcher {
         passedTestStr,
         skippedTestNamesStr = "None";
 
-    var currentRunningTests: [1..0] string;
-    if testNames.size != 0 then testNamesStr = testNames: string;
-    if failedTestNames.size != 0 then failedTestNamesStr = failedTestNames: string;
-    if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames: string;
-    if testsPassed.size != 0 then passedTestStr = testsPassed: string;
-    if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames: string;
+    var currentRunningTests: list(string);
+    
+    //
+    // List has a different `writeThis` format than arrays, since it encloses
+    // the collection with brackets "[0, 1, 2, 3, ..., N]". This will cause
+    // test failures since this code assumes array style output. The simplest
+    // (albeit wasteful) thing we can do here is just cast the lists to
+    // array here.
+    //
+    if testNames.size != 0 then testNamesStr = testNames.toArray(): string;
+    if failedTestNames.size != 0 then failedTestNamesStr = failedTestNames.toArray(): string;
+    if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames.toArray(): string;
+    if testsPassed.size != 0 then passedTestStr = testsPassed.toArray(): string;
+    if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames.toArray(): string;
     var exec = spawn(["./"+executable, "-nl", reqNumLocales: string, "--testNames", 
               testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
               erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
@@ -213,10 +222,9 @@ module Launcher {
     while exec.stdout.readline(line) {
       if line.strip() == separator1 then sep1Found = true;
       else if line.strip() == separator2 && sep1Found {
-        var testName = currentRunningTests.pop_back();
-        var checkStatus = testNames.find(testName);
-        if checkStatus[1] then
-          testNames.remove(checkStatus[2]);
+        var testName = try! currentRunningTests.pop();
+        if testNames.count(testName) != 0 then
+          try! testNames.remove(testName);
         addTestResult(result, dictDomain, dict, testNames, flavour, fileName, 
                   testName, testExecMsg, failedTestNames, erroredTestNames, 
                   skippedTestNames, testsPassed);
@@ -232,13 +240,10 @@ module Launcher {
       else {
         if line.strip().endsWith(")") {
           var testName = line.strip();
-          var checkStatus = currentRunningTests.find(testName);
-          if !checkStatus[1] {
-            currentRunningTests.push_back(testName);
-            checkStatus = testNames.find(testName);
-            if !checkStatus[1] {
-              testNames.push_back(testName);
-            }
+          if currentRunningTests.count(testName) == 0 {
+            currentRunningTests.append(testName);
+            if testNames.count(testName) == 0 then
+              testNames.append(testName);
           }
           testExecMsg = "";
         }  
@@ -249,13 +254,11 @@ module Launcher {
       var testErrMsg = line;
       while exec.stderr.readline(line) do testErrMsg += line;
       if !currentRunningTests.isEmpty() {
-        var testNameIndex = currentRunningTests.pop_back();
+        var testNameIndex = try! currentRunningTests.pop();
         var testName = testNameIndex;
-        var checkStatus = testNames.find(testName);
-        if checkStatus[1] {
-          testNames.remove(checkStatus[2]);
-        }
-        erroredTestNames.push_back(testName);
+        if testNames.count(testName) != 0 then
+          try! testNames.remove(testName);
+        erroredTestNames.append(testName);
         result.addError(testName, fileName, testErrMsg);
         haltOccured =  true;
       }
@@ -289,19 +292,19 @@ module Launcher {
     select flavour {
       when "OK" {
         result.addSuccess(testName, fileName);
-        testsPassed.push_back(testName);
+        testsPassed.append(testName);
       }
       when "ERROR" {
         result.addError(testName, fileName, errMsg);
-        erroredTestNames.push_back(testName);
+        erroredTestNames.append(testName);
       }
       when "FAIL" {
         result.addFailure(testName, fileName, errMsg);
-        failedTestNames.push_back(testName);
+        failedTestNames.append(testName);
       }
       when "SKIPPED" {
         result.addSkip(testName, fileName, errMsg);
-        skippedTestNames.push_back(testName);
+        skippedTestNames.append(testName);
       }
       when "IncorrectNumLocales" {
         if comm != "none" {
@@ -312,17 +315,17 @@ module Launcher {
               dict[a: int] += 1;
             else
               dict[a: int] = 1;
-          testNames.push_back(testName);
+          testNames.append(testName);
         }
         else {
           var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
           locErrMsg += errMsg; 
           result.addSkip(testName, fileName, locErrMsg);
-          skippedTestNames.push_back(testName);
+          skippedTestNames.append(testName);
         }
       }
       when "Dependence" {
-        testNames.push_back(testName);
+        testNames.append(testName);
       }
     }
   }
