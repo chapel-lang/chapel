@@ -131,31 +131,27 @@ proc publishPackage(username: string, path : string, isLocal : bool) throws {
     safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
   }
 
-  try! {
-    if !isLocal {
-      if !exists(path + '/tmp') then mkdir(path + '/tmp');
-      mkdir(safeDir);
-    }
-    if !isLocal {
-      cloneMasonReg(username, safeDir, path);
-      branchMasonReg(username, name, safeDir, path);
-    }
-
-    addPackageToBricks(packageLocation, safeDir, name, path, isLocal);
-
-    if !isLocal {
-      gitC(safeDir + "/mason-registry", "git add .");
-      gitC(safeDir + "/mason-registry", "git commit -m '" + name + "'");
-      gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
-      rmTree(safeDir + '/');
-      writeln('--------------------------------------------------------------------');
-      writeln('Go to the above link to open up a Pull Request to the mason-registry');
-    }
+  if !isLocal {
+    if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
+    mkdir(safeDir);
   }
-  catch {
-    if exists(safeDir) then rmTree(safeDir + '/');
-    writeln('Error publishing your package to the mason-registry');
+  if !isLocal {
+    cloneMasonReg(username, safeDir, path);
+    branchMasonReg(username, name, safeDir, path);
   }
+
+  addPackageToBricks(packageLocation, safeDir, name, path, isLocal);
+
+  if !isLocal {
+    gitC(safeDir + "/mason-registry", "git add .");
+    gitC(safeDir + "/mason-registry", "git commit -m '" + name + "'");
+    gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
+    rmTree(safeDir + '/');
+    writeln('--------------------------------------------------------------------');
+    writeln('Go to the above link to open up a Pull Request to the mason-registry');
+   }
+ 
+  if (exists(safeDir) && !isLocal) then rmTree(safeDir + '/');
 }
 
 /* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
