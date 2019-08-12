@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 module BytesStringCommon {
   use Bytes;
   private use ByteBufferHelpers;
@@ -31,7 +50,7 @@ module BytesStringCommon {
         // from low to high then do a strided operation to put the data in the
         // buffer in the correct order.
         const copyLen = r2.high-r2.low+1;
-        var (copyBuf, copySize) = copyChunk(buf=x.buff, off=r2.low-1,
+        var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low-1,
                                             len=copyLen, loc=x.locale_id);
         if r2.stride == 1 {
           // TODO Engin: I'd like to call init or something that constructs a byte
@@ -41,13 +60,13 @@ module BytesStringCommon {
         }
         else {
           // the range is strided
-          var (newBuf, allocSize) = allocBuffer(r2.size+1);
+          var (newBuf, allocSize) = bufferAlloc(r2.size+1);
           for (r2_i, i) in zip(r2, 0..) {
             newBuf[i] = copyBuf[r2_i-r2.low];
           }
           ret.buff = newBuf;
           ret._size = allocSize;
-          freeBuffer(copyBuf);
+          bufferFree(copyBuf);
         }
         ret.len = r2.size;
         ret.buff[ret.len] = 0;
@@ -209,7 +228,7 @@ module BytesStringCommon {
       var joined: t;
       joined.len = joinedSize;
 
-      var (newBuf, allocSize) = allocBuffer(joined.len+1);
+      var (newBuf, allocSize) = bufferAlloc(joined.len+1);
       joined._size = allocSize;
       joined.buff = newBuf;
 
@@ -264,11 +283,11 @@ module BytesStringCommon {
         const requestedSize = max(newLength+1,
                                   lhs.len*chpl_stringGrowthFactor):int;
         if lhs.isowned {
-          var (newBuff, allocSize) = reallocBuffer(lhs.buff, requestedSize);
+          var (newBuff, allocSize) = bufferRealloc(lhs.buff, requestedSize);
           lhs.buff = newBuff;
           lhs._size = allocSize;
         } else {
-          var (newBuff, allocSize) = allocBuffer(requestedSize);
+          var (newBuff, allocSize) = bufferAlloc(requestedSize);
           bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.len);
           lhs.buff = newBuff;
           lhs._size = allocSize;
@@ -291,7 +310,7 @@ module BytesStringCommon {
         const len = rhs.len; // cache the remote copy of len
         var remote_buf:bufferType = nil;
         if len != 0 then
-          remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);
+          remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
         lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
       }
     }
@@ -327,7 +346,7 @@ module BytesStringCommon {
     // TODO Engin: Implement a factory function for this case
     var ret: t;
     ret.len = sLen * n; // TODO: check for overflow
-    var (buff, allocSize) = allocBuffer(ret.len+1);
+    var (buff, allocSize) = bufferAlloc(ret.len+1);
     ret.buff = buff;
     ret._size = allocSize;
     ret.isowned = true;
@@ -354,7 +373,7 @@ module BytesStringCommon {
     // TODO Engin: Implement a factory function for this case
     var ret: t;
     ret.len = s0len + s1len;
-    var (buff, allocSize) = allocBuffer(ret.len+1);
+    var (buff, allocSize) = bufferAlloc(ret.len+1);
     ret.buff = buff;
     ret._size = allocSize;
     ret.isowned = true;

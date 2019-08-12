@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -114,11 +113,11 @@ module Bytes {
         if !_local && sRemote {
           // ignore supplied value of isowned for remote strings so we don't leak
           this.isowned = true;
-          this.buff = copyRemoteBuffer(s.locale_id, s.buff, sLen);
+          this.buff = bufferCopyRemote(s.locale_id, s.buff, sLen);
           this._size = sLen+1;
         } else {
           if this.isowned {
-            const (buf, allocSize) = copyLocalBuffer(s.buff, sLen);
+            const (buf, allocSize) = bufferCopyLocal(s.buff, sLen);
             this.buff = buf;
             this._size = allocSize;
           } else {
@@ -211,9 +210,9 @@ module Bytes {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
             if this.isowned && !this.isEmpty() then
-              freeBuffer(this.buff);
+              bufferFree(this.buff);
             // TODO: should I just allocate 'size' bytes?
-            const (buf, allocSize) = allocBuffer(s_len+1);
+            const (buf, allocSize) = bufferAlloc(s_len+1);
             this.buff = buf;
             this._size = allocSize;
             // We just allocated a buffer, make sure to free it later
@@ -223,14 +222,14 @@ module Bytes {
           this.buff[s_len] = 0;
         } else {
           if this.isowned && !this.isEmpty() then
-            freeBuffer(this.buff);
+            bufferFree(this.buff);
           this.buff = buf;
           this._size = size;
         }
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmpty() then freeBuffer(this.buff);
+        if this.isowned && !this.isEmpty() then bufferFree(this.buff);
         this._size = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
@@ -295,7 +294,7 @@ module Bytes {
     proc this(i: int): _bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
-      var (buf, size) = copyChunk(buf=this.buff, off=i-1, len=1,
+      var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
                                   loc=this.locale_id);
       return new _bytes(buf, length=1, size=size, needToCopy=false);
     }
@@ -306,7 +305,7 @@ module Bytes {
     proc getByte(i: int): byteType {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
-      return getByteFromBuf(buf=this.buff, off=i-1, loc=this.locale_id);
+      return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
     }
 
     /*
@@ -739,7 +738,7 @@ module Bytes {
       // replacement policy and we grow the buffer couple of times.
       // The alternative is to allocate more space from the beginning.
       var ret: string;
-      var (newBuff, allocSize) = allocBuffer(this.len+1);
+      var (newBuff, allocSize) = bufferAlloc(this.len+1);
       ret.buff = newBuff;
       ret._size = allocSize;
       ret.isowned = true;
@@ -1085,7 +1084,7 @@ module Bytes {
     // TODO Engin: Implement a factory function for this case
     var ret: _bytes;
     ret.len = s0len + s1len;
-    var (buff, allocSize) = allocBuffer(ret.len+1);
+    var (buff, allocSize) = bufferAlloc(ret.len+1);
     ret.buff = buff;
     ret._size = allocSize;
     ret.isowned = true;

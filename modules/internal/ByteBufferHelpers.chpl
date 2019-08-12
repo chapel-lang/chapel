@@ -1,6 +1,25 @@
+/*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 module ByteBufferHelpers {
-  use Bytes;
+  use ChapelStandard;
+
   pragma "no doc"
   type byteType = uint(8);
   pragma "no doc"
@@ -9,7 +28,6 @@ module ByteBufferHelpers {
   // Growth factor to use when extending the buffer for appends
   config param chpl_stringGrowthFactor = 1.5;
 
-  // Following is copy-paste from string
   //
   // Externs and constants used to implement strings
   //
@@ -45,7 +63,7 @@ module ByteBufferHelpers {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
   }
 
-  proc allocBuffer(requestedSize) {
+  proc bufferAlloc(requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize),
                           chpl_string_min_alloc_size);
     var buf = chpl_here_alloc(allocSize,
@@ -53,13 +71,13 @@ module ByteBufferHelpers {
     return (buf, allocSize);
   }
 
-  proc allocBufferExact(requestedSize) {
+  proc bufferAllocExact(requestedSize) {
     var buf = chpl_here_alloc(requestedSize,
                               offset_STR_COPY_DATA): bufferType;
     return buf;
   }
 
-  proc reallocBuffer(buf, requestedSize) {
+  proc bufferRealloc(buf, requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
                           chpl_string_min_alloc_size);
     var newBuff = chpl_here_realloc(buf, allocSize,
@@ -67,7 +85,7 @@ module ByteBufferHelpers {
     return (newBuff, allocSize);
   }
 
-  proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
+  proc bufferCopyRemote(src_loc_id: int(64), src_addr: bufferType,
                                 len: int): bufferType {
       const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
       chpl_string_comm_get(dest, src_loc_id, src_addr, len);
@@ -75,54 +93,23 @@ module ByteBufferHelpers {
       return dest;
   }
 
-  proc copyLocalBuffer(src_addr: bufferType, len: int) {
-      const (dst, allocSize) = allocBuffer(len+1);
+  proc bufferCopyLocal(src_addr: bufferType, len: int) {
+      const (dst, allocSize) = bufferAlloc(len+1);
       bufferMemcpyLocal(dst=dst, src=src_addr, len=len);
       return (dst, allocSize);
   }
 
-  private inline proc _strcmp_local(buf1, len1, buf2, len2) : int {
-    // Assumes a and b are on same locale and not empty.
-    const size = min(len1, len2);
-    const result =  c_memcmp(buf1, buf2, size);
-
-    if (result == 0) {
-      // Handle cases where one string is the beginning of the other
-      if (size < len1) then return 1;
-      if (size < len2) then return -1;
-    }
-    return result;
+  proc bufferFree(buf) {
+    chpl_here_free(buf);
   }
 
-  inline proc _strcmp(buf1, len1, loc1, buf2, len2, loc2) {
-    if loc1 == chpl_nodeID && loc2 == chpl_nodeID {
-      // it's local
-      return _strcmp_local(buf1, len1, buf2, len2);
-    } 
-    else if loc1 != chpl_nodeID && loc2 == chpl_nodeID {
-      var locBuf1 = copyRemoteBuffer(loc1, buf1, len1);
-      return _strcmp_local(locBuf1, len1, buf2, len2);
-    }
-    else if loc1 == chpl_nodeID && loc2 != chpl_nodeID {
-      var locBuf2 = copyRemoteBuffer(loc2, buf2, len2);
-      return _strcmp_local(buf1, len1, locBuf2, len2);
-    }
-    else {
-      var locBuf1 = copyRemoteBuffer(loc1, buf1, len1);
-      var locBuf2 = copyRemoteBuffer(loc2, buf2, len2);
-      return _strcmp_local(locBuf1, len1, locBuf2, len2);
-    }
-  }
-
-  proc copyChunk(buf, off, len, loc) {
+  proc bufferCopy(buf, off, len, loc) {
     if !_local && loc != chpl_nodeID {
-      var newBuf = copyRemoteBuffer(loc, buf+off, len);
+      var newBuf = bufferCopyRemote(loc, buf+off, len);
       return (newBuf, len);
     }
     else {
-      var (newBuf,size) = allocBuffer(len+1);
-      c_memcpy(newBuf, buf+off, len);
-      return (newBuf, size);
+      return bufferCopyLocal(buf+off, len);
     }
   }
 
@@ -145,13 +132,9 @@ module ByteBufferHelpers {
     c_memmove(dst+dst_off, src+src_off, len);
   }
 
-  proc freeBuffer(buf) {
-    chpl_here_free(buf);
-  }
-
-  proc getByteFromBuf(buf, off, loc) {
+  proc bufferGetByte(buf, off, loc) {
     if !_local && loc != chpl_nodeID {
-      const newBuf = copyRemoteBuffer(loc, buf+off, 1);
+      const newBuf = bufferCopyRemote(loc, buf+off, 1);
       return newBuf[0];
     }
     else {
@@ -159,13 +142,46 @@ module ByteBufferHelpers {
     }
   }
 
+  proc bufferEquals(buf1, off1, loc1, buf2, off2, loc2, len) {
+    return _strcmp(buf1=buf1+off1,len1=len,loc1=loc1,
+                   buf2=buf2+off2,len2=len,loc2=loc1) == 0;
+  }
+
   proc bufferEqualsLocal(buf1, off1, buf2, off2, len) {
     return _strcmp_local(buf1=buf1+off1,len1=len,
                          buf2=buf2+off2,len2=len) == 0;
   }
 
-  proc bufferEquals(buf1, off1, loc1, buf2, off2, loc2, len) {
-    return _strcmp(buf1=buf1+off1,len1=len,loc1=loc1,
-                   buf2=buf2+off2,len2=len,loc2=loc1) == 0;
+  private inline proc _strcmp_local(buf1, len1, buf2, len2) : int {
+    // Assumes a and b are on same locale and not empty.
+    const size = min(len1, len2);
+    const result =  c_memcmp(buf1, buf2, size);
+
+    if (result == 0) {
+      // Handle cases where one string is the beginning of the other
+      if (size < len1) then return 1;
+      if (size < len2) then return -1;
+    }
+    return result;
+  }
+
+  inline proc _strcmp(buf1, len1, loc1, buf2, len2, loc2) {
+    if loc1 == chpl_nodeID && loc2 == chpl_nodeID {
+      // it's local
+      return _strcmp_local(buf1, len1, buf2, len2);
+    } 
+    else if loc1 != chpl_nodeID && loc2 == chpl_nodeID {
+      var locBuf1 = bufferCopyRemote(loc1, buf1, len1);
+      return _strcmp_local(locBuf1, len1, buf2, len2);
+    }
+    else if loc1 == chpl_nodeID && loc2 != chpl_nodeID {
+      var locBuf2 = bufferCopyRemote(loc2, buf2, len2);
+      return _strcmp_local(buf1, len1, locBuf2, len2);
+    }
+    else {
+      var locBuf1 = bufferCopyRemote(loc1, buf1, len1);
+      var locBuf2 = bufferCopyRemote(loc2, buf2, len2);
+      return _strcmp_local(locBuf1, len1, locBuf2, len2);
+    }
   }
 }

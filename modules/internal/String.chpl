@@ -502,11 +502,11 @@ module String {
         if !_local && sRemote {
           // ignore supplied value of isowned for remote strings so we don't leak
           this.isowned = true;
-          this.buff = copyRemoteBuffer(s.locale_id, s.buff, sLen);
+          this.buff = bufferCopyRemote(s.locale_id, s.buff, sLen);
           this._size = sLen+1;
         } else {
           if this.isowned {
-            const (buf, allocSize) = copyLocalBuffer(s.buff, sLen);
+            const (buf, allocSize) = bufferCopyLocal(s.buff, sLen);
             this.buff = buf;
             this.buff[sLen] = 0;
             this._size = allocSize;
@@ -589,7 +589,7 @@ module String {
           return new string(chpl__getInPlaceBufferData(data.shortData), data.len,
                             data.size, isowned=true, needToCopy=true);
         } else {
-          var localBuff = copyRemoteBuffer(data.locale_id, data.buff, data.len);
+          var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
           return new string(localBuff, data.len, data.size,
                             isowned=true, needToCopy=false);
         }
@@ -612,9 +612,9 @@ module String {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
             if this.isowned && !this.isEmpty() then
-              freeBuffer(this.buff);
+              bufferFree(this.buff);
             // TODO: should I just allocate 'size' bytes?
-            const (buf, allocSize) = allocBuffer(s_len+1);
+            const (buf, allocSize) = bufferAlloc(s_len+1);
             this.buff = buf;
             this._size = allocSize;
             // We just allocated a buffer, make sure to free it later
@@ -624,14 +624,14 @@ module String {
           this.buff[s_len] = 0;
         } else {
           if this.isowned && !this.isEmpty() then
-            freeBuffer(this.buff);
+            bufferFree(this.buff);
           this.buff = buf;
           this._size = size;
         }
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmpty() then freeBuffer(this.buff);
+        if this.isowned && !this.isEmpty() then bufferFree(this.buff);
         this._size = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
@@ -870,7 +870,7 @@ module String {
     proc byte(i: int): uint(8) {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
-      return getByteFromBuf(buf=this.buff, off=i-1, loc=this.locale_id);
+      return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
     }
 
     /*
@@ -932,8 +932,8 @@ module String {
       var maxbytes = (this.len - (idx - 1)): ssize_t;
       if maxbytes < 0 || maxbytes > 4 then
         maxbytes = 4;
-      var (newBuff, allocSize) = copyChunk(buf=this.buff, off=i-1, len=maxbytes,
-                                           loc=this.locale_id);
+      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i-1, len=maxbytes,
+                                            loc=this.locale_id);
       ret._size = allocSize;
       ret.buff = newBuff;
       ret.isowned = true;
@@ -2182,7 +2182,7 @@ module String {
   */
   inline proc asciiToString(i: uint(8)) {
     compilerWarning("asciiToString is deprecated - please use codepointToString instead");
-    var buffer = allocBufferExact(2);
+    var buffer = bufferAllocExact(2);
     buffer[0] = i;
     buffer[1] = 0;
     var s = new string(buffer, 1, 2, isowned=true, needToCopy=false);
@@ -2195,7 +2195,7 @@ module String {
   */
   inline proc codepointToString(i: int(32)) {
     const mblength = qio_nbytes_char(i): int;
-    var (buffer, mbsize) = allocBuffer(mblength+1);
+    var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
     var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);
