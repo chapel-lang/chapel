@@ -62,7 +62,6 @@ else
 # we need to make sure that we are generating position independent code,
 # IE with "-fPIC" on GCC.
 #
-	echo "Compiling launcher with MLI mode ON..."
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(SHARED_LIB_CFLAGS) \
 		-c -o $(TMPBINNAME)_launcher.o \
 		-DLAUNCHER $(CHPL_LN_INCS) -I. $(LAUNCHER_SRC_NAME)
