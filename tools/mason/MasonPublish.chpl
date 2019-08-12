@@ -159,10 +159,10 @@ proc publishPackage(username: string, path : string, isLocal : bool) throws {
  */
 proc dryRun(username: string, path : string, isLocal : bool) throws {
   if !isLocal {
-    var fork = false;
+    var fork = true;
     var remoteCheck = checkIfForkExists(username: string);
-    if remoteCheck == 0 {
-      fork = true;
+    if remoteCheck == 1 {
+      fork = false;
     }
     var git = false;
     if doesGitOriginExist() {
@@ -194,7 +194,7 @@ proc dryRun(username: string, path : string, isLocal : bool) throws {
       exit(0);
     }
     else {
-      throw new owned MasonError(path + ' is not a valid path to a local registrty.');
+      throw new owned MasonError(path + ' is not a valid path to a local registry.');
     }
   }
 }
