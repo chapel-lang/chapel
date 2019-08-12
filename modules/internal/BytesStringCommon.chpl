@@ -146,7 +146,7 @@ module BytesStringCommon {
             yield chunk;
             splitCount += 1;
           }
-          start = end+localSep.length;
+          start = end+localSep.numBytes;
         }
       }
   }
@@ -340,7 +340,7 @@ module BytesStringCommon {
   proc do_multiply(const ref x: ?t, n: integral) where isBytesOrStringType(t) {
     if n <= 0 then return new t("");
 
-    const sLen = x.length;
+    const sLen = x.numBytes;
     if sLen == 0 then return new t("");
 
     // TODO Engin: Implement a factory function for this case

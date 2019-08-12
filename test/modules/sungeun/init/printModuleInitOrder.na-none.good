@@ -8,8 +8,9 @@ Initializing Modules:
     CString
     Bytes
      ByteBufferHelpers
-    String
-     StringCasts
+     BytesStringCommon
+      String
+       StringCasts
     OwnedObject
     ChapelDebugPrint
     ChapelBase
