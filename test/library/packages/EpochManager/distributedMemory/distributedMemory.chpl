@@ -1,4 +1,5 @@
-use DistributedEpochManager;
+use EpochManager;
+use Random;
 
 class C {
   var x : int;
