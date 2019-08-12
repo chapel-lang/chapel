@@ -1,0 +1,2 @@
+init-field-arg-oknil-unmanaged-from-oknil-shared.chpl:9: In initializer:
+init-field-arg-oknil-unmanaged-from-oknil-shared.chpl:10: error: cannot assign to unmanaged MyClass? from shared MyClass?
