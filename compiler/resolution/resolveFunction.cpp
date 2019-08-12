@@ -506,6 +506,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
         resolveAlsoParallelIterators(fn, forCall);
       }
     }
+    popInstantiationLimit(fn);
   }
 }
 
