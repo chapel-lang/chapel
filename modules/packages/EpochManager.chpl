@@ -81,6 +81,7 @@ To destroy the manager, and reclaim all the memory managed by the manager:
 */
 module EpochManager {
 
+  pragma "no doc"
   module LockFreeLinkedListModule {
 
     use LocalAtomics;
@@ -135,6 +136,7 @@ module EpochManager {
     }
   }
 
+  pragma "no doc"
   module LockFreeQueueModule {
 
     use LocalAtomics;
@@ -303,6 +305,7 @@ module EpochManager {
     }
   }
 
+  pragma "no doc"
   module LimboListModule {
 
     use LocalAtomics;
