@@ -41,8 +41,9 @@
 private use DSIUtil;
 private use ChapelUtil;
 private use CommDiagnostics;
-private use SparseBlockDist;
-private use LayoutCS;
+
+use SparseBlockDist;
+use LayoutCS;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can
