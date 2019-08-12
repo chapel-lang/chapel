@@ -1381,8 +1381,8 @@ bool canCoerce(Type*     actualType,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic);
 
 
 static
@@ -1397,7 +1397,11 @@ bool doCanDispatch(Type*     actualType,
   if (actualType == formalType)
     return true;
 
-  if (isGenericInstantiation(actualType, formalType))
+  // MPF 2019-09 - for some reason resolving generic initializers
+  // needs this adjustment, which started in PR #5424.
+  if (fn && fn->isInitializer() &&
+      formalSym == fn->_this &&
+      isGenericInstantiation(formalType, actualType))
     return true;
 
   if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
@@ -1472,17 +1476,17 @@ bool canDispatch(Type*     actualType,
   return retval;
 }
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType) {
-  AggregateType* atActual = toAggregateType(actualType);
-  AggregateType* atFormal = toAggregateType(formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic) {
+  AggregateType* atConcrete = toAggregateType(concrete);
+  AggregateType* atGeneric = toAggregateType(generic);
   bool           retval   = false;
 
-  if (atActual                                != NULL &&
-      atActual->symbol->hasFlag(FLAG_GENERIC) == true &&
+  if (atGeneric                                != NULL &&
+      atGeneric->symbol->hasFlag(FLAG_GENERIC) == true &&
 
-      atFormal                                != NULL &&
-      atFormal->isInstantiatedFrom(atActual)  == true) {
+      atConcrete                                 != NULL &&
+      atConcrete->isInstantiatedFrom(atGeneric)  == true) {
 
     retval = true;
   }
@@ -5415,7 +5419,7 @@ static void resolveSetMember(CallExpr* call) {
     INT_FATAL(call, "Unable to resolve field type");
   }
 
-  if (isGenericInstantiation(fs->type, t)) {
+  if (isGenericInstantiation(t, fs->type)) {
     fs->type = t;
   }
   if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {
