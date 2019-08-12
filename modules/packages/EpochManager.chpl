@@ -81,9 +81,294 @@ To destroy the manager, and reclaim all the memory managed by the manager:
 */
 module EpochManager {
 
-  use LockFreeLinkedList;
-  use LockFreeQueue;
-  use LimboList;
+  module LockFreeLinkedListModule {
+
+    use LocalAtomics;
+
+    class node {
+      type eltType;
+      var val : eltType;
+      var next : unmanaged node(eltType);
+
+      proc init(val : ?eltType) {
+        this.eltType = eltType;
+        this.val = val;
+      }
+
+      proc init(type eltType) {
+        this.eltType = eltType;
+      }
+    }
+
+    class LockFreeLinkedList {
+      type objType;
+      var _head : LocalAtomicObject(unmanaged node(objType));
+
+      proc init(type objType) {
+        this.objType = objType;
+      }
+
+      proc append(newObj : objType) {
+        var _node = new unmanaged node(newObj);
+        do {
+          var oldHead = _head.readABA();
+          _node.next = oldHead.getObject();
+        } while(!_head.compareExchangeABA(oldHead, _node));
+      }
+
+      iter these() : objType {
+        var ptr = _head.read();
+        while (ptr != nil) {
+          yield ptr.val;
+          ptr = ptr.next;
+        }
+      }
+
+      proc deinit() {
+        var ptr = _head.read();
+        while (ptr != nil) {
+          var next = ptr.next;
+          delete ptr;
+          ptr = next;
+        }
+      }
+    }
+  }
+
+  module LockFreeQueueModule {
+
+    use LocalAtomics;
+
+    class node {
+      type eltType;
+      var val : eltType;
+      var next : LocalAtomicObject(unmanaged node(eltType));
+      var freeListNext : unmanaged node(eltType);
+
+      proc init(val : ?eltType) {
+        this.eltType = eltType;
+        this.val = val;
+      }
+
+      proc init(type eltType) {
+        this.eltType = eltType;
+      }
+    }
+
+    class LockFreeQueue {
+      type objType;
+      var _head : LocalAtomicObject(unmanaged node(objType));
+      var _tail : LocalAtomicObject(unmanaged node(objType));
+      var _freeListHead : LocalAtomicObject(unmanaged node(objType));
+      // Flag to set if objects held in the queue are to be deleted or not.
+      // By default initialised to true.
+      const delete_val : bool;
+
+      proc init(type objType) {
+        this.objType = objType;
+        delete_val = true;
+        this.complete();
+        var _node = new unmanaged node(objType);
+        _head.write(_node);
+        _tail.write(_node);
+      }
+
+      proc init(type objType, delete_val : bool) {
+        this.objType = objType;
+        this.delete_val = delete_val;
+        this.complete();
+        var _node = new unmanaged node(objType);
+        _head.write(_node);
+        _tail.write(_node);
+      }
+
+      proc recycle_node() : unmanaged node(objType) {
+        var oldTop : ABA(unmanaged node(objType));
+        var n : unmanaged node(objType);
+        do {
+          oldTop = _freeListHead.readABA();
+          n = oldTop.getObject();
+          if (n == nil) {
+            n = new unmanaged node(objType);
+            return n;
+          }
+          var newTop = n.freeListNext;
+        } while (!_freeListHead.compareExchangeABA(oldTop, newTop));
+        n.next.write(nil);
+        n.freeListNext = nil;
+        return n;
+      }
+
+      proc enqueue(newObj : objType) {
+        var n = recycle_node();
+        n.val = newObj;
+
+        // Now enqueue
+        while (true) {
+          var tail = _tail.readABA();
+          var next = tail.next.readABA();
+          var next_node = next.getObject();
+          var curr_tail = _tail.readABA();
+          if (tail == curr_tail) {
+            if (next_node == nil) {
+              if (curr_tail.next.compareExchangeABA(next, n)) {
+                _tail.compareExchangeABA(curr_tail, n);
+                break;
+              }
+            }
+            else {
+              _tail.compareExchangeABA(curr_tail, next_node);
+            }
+          }
+        }
+      }
+
+      proc dequeue() : objType {
+        while (true) {
+          var head = _head.readABA();
+          var head_node = head.getObject();
+          var curr_tail = _tail.readABA();
+          var tail_node = curr_tail.getObject();
+          var next = head.next.readABA();
+          var next_node = next.getObject();
+          var curr_head = _head.readABA();
+
+          if (head == curr_head) {
+            if (head_node == tail_node) {
+              if (next_node == nil) then
+                return nil;
+              _tail.compareExchangeABA(curr_tail, next_node);
+            }
+            else {
+              var ret_val = next_node.val;
+              if (_head.compareExchangeABA(curr_head, next_node)) {
+                retire_node(head_node);
+                return ret_val;
+              }
+            }
+          }
+        }
+
+        return nil;
+      }
+
+      // TODO: Reclaim retired nodes after a while
+      proc retire_node(nextObj : unmanaged node(objType)) {
+        nextObj.val = nil;
+        do {
+          var oldTop = _freeListHead.readABA();
+          nextObj.freeListNext = oldTop.getObject();
+        } while (!_freeListHead.compareExchangeABA(oldTop, nextObj));
+      }
+
+      iter these() : objType {
+        var ptr = _head.read().next.read();
+        while (ptr != nil) {
+          yield ptr.val;
+          ptr = ptr.next.read();
+        }
+      }
+
+      proc peek() : objType {
+        var actual_head = _head.read().next.read();
+        if (actual_head != nil) then
+          return actual_head.val;
+        return nil;
+      }
+
+      proc deinit() {
+        var ptr = _head.read();
+        if (delete_val) {
+          while (ptr != nil) {
+            _head = ptr.next;
+            delete ptr.val;
+            delete ptr;
+            ptr = _head.read();
+          }
+        } else {
+          while (ptr != nil) {
+            _head = ptr.next;
+            delete ptr;
+            ptr = _head.read();
+          }
+        }
+
+        ptr = _freeListHead.read();
+        while (ptr != nil) {
+          var head = ptr.freeListNext;
+          delete ptr;
+          ptr = head;
+        }
+      }
+    }
+  }
+
+  module LimboListModule {
+
+    use LocalAtomics;
+
+    class _node {
+      var val : unmanaged object;
+      var next : unmanaged _node;
+
+      proc init(val : unmanaged object) {
+        this.val = val;
+      }
+    }
+
+    class LimboList {
+      var _head : LocalAtomicObject(unmanaged _node);
+      var _freeListHead : LocalAtomicObject(unmanaged _node);
+
+      proc push(obj : unmanaged object) {
+        var node = recycle_node(obj);
+        var oldHead = _head.exchange(node);
+        node.next = oldHead;
+      }
+
+      proc recycle_node(obj : unmanaged object) : unmanaged _node {
+        var oldTop : ABA(unmanaged _node);
+        var n : unmanaged _node;
+        do {
+          oldTop = _freeListHead.readABA();
+          n = oldTop.getObject();
+          if (n == nil) {
+            n = new unmanaged _node(obj);
+            return n;
+          }
+          var newTop = n.next;
+        } while (!_freeListHead.compareExchangeABA(oldTop, newTop));
+        n.val = obj;
+        return n;
+      }
+
+      proc retire_node(nextObj : unmanaged _node) {
+        nextObj.val = nil;
+        do {
+          var oldTop = _freeListHead.readABA();
+          nextObj.next = oldTop.getObject();
+        } while (!_freeListHead.compareExchangeABA(oldTop, nextObj));
+      }
+
+      proc pop() {
+        return _head.exchange(nil);
+      }
+
+      proc deinit() {
+        var ptr = _head.read();
+        while (ptr != nil) {
+          var next = ptr.next;
+          delete ptr.val;
+          delete ptr;
+          ptr = next;
+        }
+      }
+    }
+  }
+
+  use LockFreeLinkedListModule;
+  use LockFreeQueueModule;
+  use LimboListModule;
 
   /*
     :class:`EpochManager` manages reclamation of objects, ensuring
@@ -354,28 +639,5 @@ module EpochManager {
     proc deinit() {
       this.unregister();
     }
-  }
-
-  pragma "no doc"
-  class C {
-    var x : int;
-    proc deinit() {
-      writeln("Deinit: " + this:string);
-    }
-  }
-
-  pragma "no doc"
-  proc main() {
-    var a = new unmanaged EpochManager();
-    coforall i in 1..10 {
-      var tok = a.register();
-      var b = new unmanaged C(i);
-      tok.pin();
-      tok.try_reclaim();
-      tok.delete_obj(b);
-      // tok.unregister();
-    }
-    a.try_reclaim();
-    delete a;
   }
 }
