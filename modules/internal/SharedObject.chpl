@@ -421,7 +421,7 @@ module SharedObject {
    */
   proc =(ref lhs:_shared, in rhs:owned) {
     if isNonNilableClass(lhs) && isNilableClass(rhs) then
-      compilerError("cannot assign to a non-nilable shared variable from a nilable class instance");
+      compilerError("cannot assign to a non-nilable shared variable from a nilable owned");
 
     lhs.retain(rhs.release());
   }

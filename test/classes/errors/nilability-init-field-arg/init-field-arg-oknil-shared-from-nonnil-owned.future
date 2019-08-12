@@ -1,4 +1,5 @@
 bug: can't assign to nilable shared from non-nilable owned
+#13714
 
 Not only that, but the reported error is unclear.
 
