@@ -1,0 +1,2 @@
+init-field-arg-nonnil-unmanaged-from-oknil-owned.chpl:9: In initializer:
+init-field-arg-nonnil-unmanaged-from-oknil-owned.chpl:10: error: cannot assign to non-nilable unmanaged MyClass from nilable owned MyClass?

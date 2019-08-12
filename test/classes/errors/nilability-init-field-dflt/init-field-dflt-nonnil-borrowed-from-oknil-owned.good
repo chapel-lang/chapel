@@ -1,0 +1,1 @@
+init-field-dflt-nonnil-borrowed-from-oknil-owned.chpl:11: error: default-initializing a field with a non-nilable type borrowed MyClass from an instance of nilable owned MyClass?
