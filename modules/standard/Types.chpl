@@ -61,7 +61,7 @@ as defined by the language specification.
 pragma "no instantiation limit"
 proc isPrimitiveType(type t) param return
   isNothingType(t) || isVoidType(t) || isBoolType(t) ||
-  isNumericType(t) || isStringType(t);
+  isNumericType(t) || isStringType(t) || isBytesType(t);
 
 /*
 Returns `true` if the type `t` is one the following types, of any width:

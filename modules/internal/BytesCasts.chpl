@@ -42,7 +42,9 @@ module BytesCasts {
     } else if (b == "false") {
       return false;
     } else {
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to bool");
+      throw new owned IllegalArgumentError("bad cast from bytes '" +
+                                           x.decode(DecodePolicy.Ignore) +
+                                           "' to bool");
     }
     return false;
   }
@@ -53,17 +55,20 @@ module BytesCasts {
   proc _cast(type t:_bytes, x: integral) {
     //TODO: switch to using qio's writef somehow
     pragma "fn synchronization free"
-    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
+    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool,
+                                     ref err: bool) : c_string;
     pragma "fn synchronization free"
     extern proc strlen(const str: c_string) : size_t;
 
     var isErr: bool;
-    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
+    var csc = integral_to_c_string(x:int(64), numBytes(x.type),
+                                   isIntType(x.type), isErr);
 
     // this should only happen if the runtime is broken
     if isErr {
       try! {
-        throw new owned IllegalArgumentError("Unexpected case in integral_to_c_string");
+        throw new owned
+          IllegalArgumentError("Unexpected case in integral_to_c_string");
       }
     }
 
@@ -117,7 +122,9 @@ module BytesCasts {
         if numElements > 1 then break;
       }
       if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from bytes '" + x + "' to " + t:string);
+        throw new owned IllegalArgumentError("bad cast from bytes '" + 
+                                             x.decode(DecodePolicy.Ignore) +
+                                             "' to " + t:string);
 
       // remove underscores everywhere but the first position
       if localX.length >= 2 then
@@ -125,7 +132,8 @@ module BytesCasts {
     }
 
     if localX.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty bytes to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from empty bytes to " +
+                                           t:string);
 
     if isIntType(t) {
       select numBits(t) {
@@ -133,7 +141,8 @@ module BytesCasts {
         when 16 do retVal = c_string_to_int16_t(localX.c_str(), isErr);
         when 32 do retVal = c_string_to_int32_t(localX.c_str(), isErr);
         when 64 do retVal = c_string_to_int64_t(localX.c_str(), isErr);
-        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast from string to " + t:string);
+        otherwise compilerError("Unsupported bit width ", numBits(t),
+                                " in cast from bytes to " + t:string);
       }
     } else {
       select numBits(t) {
@@ -141,12 +150,15 @@ module BytesCasts {
         when 16 do retVal = c_string_to_uint16_t(localX.c_str(), isErr);
         when 32 do retVal = c_string_to_uint32_t(localX.c_str(), isErr);
         when 64 do retVal = c_string_to_uint64_t(localX.c_str(), isErr);
-        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast from string to " + t:string);
+        otherwise compilerError("Unsupported bit width ", numBits(t),
+                                " in cast from bytes to " + t:string);
       }
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from bytes '" +
+                                           x.decode(DecodePolicy.Ignore) +
+                                           "' to " + t:string);
 
     return retVal;
   }
@@ -187,7 +199,8 @@ module BytesCasts {
     var len = s.length;
 
     if s.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
+      throw new owned IllegalArgumentError("bad cast from empty bytes to " +
+                                           t: string);
 
     if len >= 2 && s[2..].find("_":_bytes) != 0 {
       // Don't remove a leading underscore in the string number,
@@ -217,11 +230,14 @@ module BytesCasts {
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
       when 64 do retVal = c_string_to_real64(localX.c_str(), isErr);
-      otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
+      otherwise compilerError("Unsupported bit width ", numBits(t),
+                              " in cast to bytes");
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from bytes '" +
+                                           x.decode(DecodePolicy.Ignore) +
+                                           "' to real(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -243,11 +259,14 @@ module BytesCasts {
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
       when 64 do retVal = c_string_to_imag64(localX.c_str(), isErr);
-      otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
+      otherwise compilerError("Unsupported bit width ", numBits(t),
+                              " in cast to bytes");
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from bytes '" +
+                                           x.decode(DecodePolicy.Ignore) +
+                                           "' to imag(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -273,7 +292,7 @@ module BytesCasts {
     }
     const ts0 = re + op;
     const ts1 = ts0 + im;
-    const ret = ts1 + "i"; // _bytes+string should be bytes
+    const ret = ts1 + "i":_bytes;
     return ret;
   }
 
@@ -291,16 +310,21 @@ module BytesCasts {
     const localX = x.localize();
 
     if localX.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
+      throw new owned 
+        IllegalArgumentError("bad cast from empty bytes to complex(" +
+                             numBits(t):string + ")");
 
     select numBits(t) {
       when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
       when 128 do retVal = c_string_to_complex128(localX.c_str(), isErr);
-      otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
+      otherwise compilerError("Unsupported bit width ", numBits(t),
+                              " in cast to bytes");
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from bytes '" +
+                                           x.decode(DecodePolicy.Ignore) +
+                                           "' to complex(" + numBits(t):string + ")");
 
     return retVal;
   }

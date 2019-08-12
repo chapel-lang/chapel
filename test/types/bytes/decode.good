@@ -1,5 +1,5 @@
 Base unicode string : Türkçe (length=8)
-Print as bytes: Trke
+Print as bytes: Türkçe
 Decoded string: Türkçe
 String with the ignore policy: Türkçe (length=8)
 String with the replace policy: Tü�rkçe (length=9)
