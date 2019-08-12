@@ -1,10 +1,10 @@
 #!/bin/bash
 
-
 command -v mason
 status=$?
-
-if [ $status -ne 0 ]; then
-  echo "True"
+if [ $status -ne 0 ];  then
+    echo "True"
+else
+    echo "False"
 fi
 
