@@ -90,6 +90,8 @@ proc isPathLocal(path : string) throws {
  */
 proc checkPath(path : string, trueIfLocal : bool) throws {
   try! {
+    if path == MASON_HOME then return true;
+
     if trueIfLocal {
       if exists(path) && exists(path + "/Bricks/") {
         return true;
@@ -110,7 +112,7 @@ proc checkPath(path : string, trueIfLocal : bool) throws {
       }
     }
   }
-  catch e : MasonError {
+  catch e {
     writeln(e.message());
     exit(0);
   }
@@ -120,38 +122,44 @@ proc checkPath(path : string, trueIfLocal : bool) throws {
    line git commands if any of the git calls fails.
  */
 proc publishPackage(username: string, path : string, isLocal : bool) throws {
-  const packageLocation = absPath(here.cwd());
-  var stream = makeRandomStream(int);
-  var uniqueDir = stream.getNext(): string;
-  const name = getPackageName();
-  var safeDir = '';
+  try! {
+    const packageLocation = absPath(here.cwd());
+    var stream = makeRandomStream(int);
+    var uniqueDir = stream.getNext(): string;
+    const name = getPackageName();
+    var safeDir = '';
 
-  if isLocal then safeDir = path;
-  else {
-    safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
+    if isLocal then safeDir = path;
+    else {
+      safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
+    }
+  
+    if !isLocal {
+      if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
+      mkdir(safeDir);
+    }
+ 
+    if !isLocal {
+      cloneMasonReg(username, safeDir, path);
+      branchMasonReg(username, name, safeDir, path);
+    }
+  
+    addPackageToBricks(packageLocation, safeDir, name, path, isLocal);
+
+    if !isLocal {
+      gitC(safeDir + "/mason-registry", "git add .");
+      gitC(safeDir + "/mason-registry", "git commit -m '" + name + "'");
+      gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
+      rmTree(safeDir + '/');
+      writeln('--------------------------------------------------------------------');
+      writeln('Go to the above link to open up a Pull Request to the mason-registry');
+     }
+
+    if (exists(safeDir) && !isLocal) then rmTree(safeDir + '/');
   }
-
-  if !isLocal {
-    if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
-    mkdir(safeDir);
+  catch e {
+    writeln(e.message());
   }
-  if !isLocal {
-    cloneMasonReg(username, safeDir, path);
-    branchMasonReg(username, name, safeDir, path);
-  }
-
-  addPackageToBricks(packageLocation, safeDir, name, path, isLocal);
-
-  if !isLocal {
-    gitC(safeDir + "/mason-registry", "git add .");
-    gitC(safeDir + "/mason-registry", "git commit -m '" + name + "'");
-    gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
-    rmTree(safeDir + '/');
-    writeln('--------------------------------------------------------------------');
-    writeln('Go to the above link to open up a Pull Request to the mason-registry');
-   }
-
-  if (exists(safeDir) && !isLocal) then rmTree(safeDir + '/');
 }
 
 /* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
@@ -267,12 +275,11 @@ private proc gitUrl() {
 proc branchMasonReg(username: string, name: string, safeDir: string, path : string) throws {
   try! {
     const branchCommand = "git checkout --quiet -b  "+ name: string;
-    var ret = gitC(safeDir + '/mason-registry', branchCommand, true);
+    var ret = gitC(safeDir + '/mason-registry', branchCommand, false);
     return ret;
   }
   catch {
-    rmTree(safeDir);
-    writeln('Error branching mason-registry');
+    writeln('Error branching the registry, make sure you have a remote origin set up');
     exit(1);
   }
 }
