@@ -1388,7 +1388,7 @@ module Bytes {
      :returns: A new :record:`bytes` which is the result of concatenating `s0`
                and `s1`
   */
-  proc +(s0: _bytes, s1: _bytes) {
+  proc +(s0: bytes, s1: bytes) {
     // cache lengths locally
     const s0len = s0.len;
     if s0len == 0 then return s1;
