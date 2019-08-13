@@ -28,7 +28,7 @@ config const debug   = false;
 class Function {
     const k            : int;  // use first k Legendre polynomials as the basis in each box
     const thresh       : real; // truncation threshold for small wavelet coefficients
-    var   f            : unmanaged AFcn; // analytic f(x) to project into the numerical represntation
+    var   f            : unmanaged AFcn?; // analytic f(x) to project into the numerical represntation
     const initial_level: int;  // initial level of refinement
     const max_level    : int;  // maximum level of refinement mostly as a sanity check
     const autorefine   : bool; // automatically refine during multiplication
@@ -59,7 +59,7 @@ class Function {
     const r0   : [dcDom] real;
     const rp   : [dcDom] real;
 
-    proc init(k:int=5, thresh:real=1e-5, f:unmanaged AFcn=nil, initial_level:int=2,
+    proc init(k:int=5, thresh:real=1e-5, f:unmanaged AFcn?=nil, initial_level:int=2,
               max_level:int=30, autorefine:bool=true, compressed:bool=false,
               sumC:unmanaged FTree=new unmanaged FTree(order=k),
               diffC:unmanaged FTree=new unmanaged FTree(order=k)) {

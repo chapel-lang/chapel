@@ -139,7 +139,7 @@ module Graph500_defs
 class Level_Set {
   type Vertex_List;
   var Members: Vertex_List;
-  var previous: unmanaged Level_Set (Vertex_List);
+  var previous: unmanaged Level_Set (Vertex_List)?;
 }
 
 

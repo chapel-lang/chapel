@@ -136,7 +136,7 @@ class ParallelWorkQueue {
   var terminated : atomic bool;
   const terminatedRetries : int;
 
-  proc init( type eltType, type lockType = SyncLock, retries : int = 5 ){
+  proc init( type eltType, type lockType = unmanaged SyncLock, retries : int = 5 ){
     this.eltType = eltType;
     this.lockType = lockType;
     this.lock = new unmanaged lockType();
@@ -226,20 +226,20 @@ class DistributedWorkQueue {
   pragma "no doc"
   inline proc _value {
     if pid == -1 then halt("DistributedWorkQueue is uninitialized.");
-    return chpl_getPrivatizedCopy(LocalDistributedWorkQueue(eltType,lockType), pid);
+    return chpl_getPrivatizedCopy(unmanaged LocalDistributedWorkQueue(eltType,lockType), pid);
   }
 
   forwarding _value;
 
-  proc init( type eltType, targetLocales : [] locale, type lockType = AtomicLock ){
+  proc init( type eltType, targetLocales : [] locale, type lockType = unmanaged AtomicLock ){
     this.eltType = eltType;
     this.lockType = lockType;
 
     this.localesDomain = {0..#targetLocales.domain.size};
-
-    this.complete();
+    // locales is initialized here
     this.localInstance = new unmanaged LocalDistributedWorkQueue(eltType, lockType, targetLocales);
     this.pid = this.localInstance.pid;
+    this.complete();
   }
 
   proc deinit(){
@@ -505,7 +505,7 @@ class PermutationMap {
 
 class TopoSortResult {
   type idxType;
-  var permutationMap : shared PermutationMap(idxType);
+  var permutationMap : shared PermutationMap(idxType)?;
   var timerDom : domain(string);
   var timers : [timerDom] Timer;
 
@@ -1152,7 +1152,7 @@ proc main(){
   if !silentMode then writeln("Permuting upper triangluar domain");
   var permutedSparseUpperTriangularIndexList = permutationMap.permuateIndexList( sparseUpperTriangularIndexList );
 
-  var topoResult : shared TopoSortResult(D.idxType);
+  var topoResult : shared TopoSortResult(D.idxType)?;
 
   select implementation {
     when ToposortImplementation.Serial {

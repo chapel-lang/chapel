@@ -1,15 +1,15 @@
 class Update {
   var value: uint(64);
-  var forward: unmanaged Update;
+  var forward: unmanaged Update?;
 }
 
 class Bucket {
-  var updateList: unmanaged Update;
+  var updateList: unmanaged Update?;
   var numUpdates: int = 0;
 }
 
 class UpdateManager {
-  var updateList: unmanaged Update;
+  var updateList: unmanaged Update?;
 
   proc getUpdate() {
     if updateList == nil {
