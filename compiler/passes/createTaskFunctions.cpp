@@ -356,6 +356,8 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   headAnchor->insertBefore(new DefExpr(globalOp));
 
   AggregateType* reduceAt = toAggregateType(reduceType->type);
+  if (DecoratedClassType* dt = toDecoratedClassType(reduceType->type))
+    reduceAt = dt->getCanonicalClass();
   INT_ASSERT(reduceAt);
 
   CallExpr* newOp = new CallExpr(PRIM_NEW,

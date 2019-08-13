@@ -9331,7 +9331,9 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
 
   // Allow default-init assign to work around current compiler oddities.
   // In a future where init= is always used, we can remove this case.
-  if (val->hasFlag(FLAG_INITIALIZED_LATER))
+  // Skip this error for a param - it will get "not of a supported param type"
+  if (val->hasFlag(FLAG_INITIALIZED_LATER) ||
+      val->hasFlag(FLAG_PARAM))
     return;
 
   const char* descr = val->name;

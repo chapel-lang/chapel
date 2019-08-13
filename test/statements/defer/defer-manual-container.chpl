@@ -6,8 +6,8 @@ class Thing {
 
 }
 class Container {
-  var a: unmanaged Thing;
-  var b: unmanaged Thing;
+  var a: unmanaged Thing?;
+  var b: unmanaged Thing?;
   proc deinit() {
     writeln("in Container.deinit");
   }
@@ -20,9 +20,9 @@ proc shouldFail(x:int) {
   return x == failOnStep;
 }
 
-proc create_thing() : unmanaged Container {
+proc create_thing() : unmanaged Container? {
   var success = false;
-  var ret:unmanaged Container = nil;
+  var ret:unmanaged Container? = nil;
 
   writeln("creating Container");
   ret = new unmanaged Container();

@@ -147,7 +147,7 @@ class PrivateDom: BaseRectangularDom {
 
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
-  var data: eltType;
+  var data: eltType?;
 }
 
 override proc PrivateArr.dsiGetBaseDom() return dom;
