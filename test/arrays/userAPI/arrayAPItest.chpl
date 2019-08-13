@@ -87,27 +87,9 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
     writeln("reindexed X[", i, "] = ", x);
   writeln();
   // Test vector ops
-  if testError == 2 then
-    X.push_back(99.99);
-  if testError == 3 then
-    writeln(X.pop_back());
-  if testError == 4 then
-    X.push_front(99.99);
-  if testError == 5 then
-    writeln(X.pop_front());
-  if testError == 6 then
-    X.insert(3, 99.99);
-  if testError == 7 then
-    X.remove(3);
-  if testError == 8 then
-    X.remove(3, 1);
-  if testError == 9 then
-    X.remove(3..3);
+  // Test sparse-specific things
   if testError == 10 then
     X.reverse();
-  if testError == 11 then
-    X.clear();
-  // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
   // Test sorted iterator
@@ -232,26 +214,8 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
 
   // Test vector ops
-  if testError == 2 then
-    X.push_back(99.99);
-  if testError == 3 then
-    writeln(X.pop_back());
-  if testError == 4 then
-    X.push_front(99.99);
-  if testError == 5 then
-    writeln(X.pop_front());
-  if testError == 6 then
-    X.insert(3, 99.99);
-  if testError == 7 then
-    X.remove(3);
-  if testError == 8 then
-    X.remove(3, 1);
-  if testError == 9 then
-    X.remove(3..3);
   if testError == 10 then
     X.reverse();
-  if testError == 11 then
-    X.clear();
   
   // Test sparse-specific things
   if testError == 12 then

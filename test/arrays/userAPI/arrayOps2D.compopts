@@ -1,14 +1,5 @@
                # arrayOps2D.good
--stestError=2  # arrayOps2D-pushback.good
--stestError=3  # arrayOps2D-popback.good
--stestError=4  # arrayOps2D-pushfront.good
--stestError=5  # arrayOps2D-popfront.good
--stestError=6  # arrayOps2D-insert.good
--stestError=7  # arrayOps2D-remove.good
--stestError=8  # arrayOps2D-remove2.good
--stestError=9  # arrayOps2D-remove3.good
 -stestError=10 # arrayOps2D-reverse.good
--stestError=11 # arrayOps2D-clear.good
 -stestError=12 # arrayOps2D-IRV.good
 -stestError=13 # arrayOps2D-sorted.good
 
