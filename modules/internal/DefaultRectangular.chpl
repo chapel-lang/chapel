@@ -1945,6 +1945,8 @@ module DefaultRectangular {
 
 
   private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
+    use Lists;
+
     param minRank = min(LHS.rank, RHS.rank);
     type  idxType = LHS.idxType;
     type  intIdxType = LHS.intIdxType;
@@ -1959,10 +1961,10 @@ module DefaultRectangular {
 
     const (LeftActives, RightActives, inferredRank) = bulkCommComputeActiveDims(LeftDims, RightDims);
 
-    var DimSizes : [1..0] LeftDims(1).size.type;
+    var DimSizes = new list(LeftDims(1).size.type);
     for i in 1..inferredRank {
       const dimIdx = LeftActives(i);
-      DimSizes.push_back(LeftDims(dimIdx).size);
+      DimSizes.append(LeftDims(dimIdx).size);
     }
 
     if debugDefaultDistBulkTransfer {

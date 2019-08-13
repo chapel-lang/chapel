@@ -107,6 +107,8 @@ proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 // TODO: Optimize & Parallelize
 /* Sparse CSR-CSC multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
+  use Lists;
+
   if !(ADom._value.compressRows && !BDom._value.compressRows) then
     compilerError('Only CSR-CSC multiplication is currently supported');
 
@@ -126,7 +128,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
     }
   }
 
-  var indices: [1..0] 2*int;
+  var indices: list(2*int);
 
   if subtimers then subTimers['setup'].stop();
 
@@ -150,7 +152,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
       for (i, j) in overlap(aRange, bRange) {
         // Add to index!
         if subtimers then subTimers['  push_back'].start();
-        indices.push_back((r, c));
+        indices.append((r, c));
         if subtimers then subTimers['  push_back'].stop();
         break;
       }
@@ -160,7 +162,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
   if subtimers then subTimers['find indices'].stop();
 
   if subtimers then subTimers['add indices'].start();
-  CDom += indices;
+  CDom += indices.toArray();
   if subtimers then subTimers['add indices'].stop();
 
   if subtimers then subTimers['multiply'].start();
