@@ -114,7 +114,7 @@ CHPL_RT_MASTERIP
 This environment variable is used to specify the IP address which should be used
 to connect.  By default, the node creating the connection will pass the result
 of ``gethostname()`` on to the nodes that need to connect to it, which will
-resolve that to an IP address using ``gethostbynname()``.
+resolve that to an IP address using ``gethostbyname()``.
 
 When ``CHPL_COMM == gasnet``, this will also be used to set the value of
 ``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
