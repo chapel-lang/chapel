@@ -234,7 +234,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
                                        Type* formalType, Symbol* formalSym,
                                        Expr* ctx,
                                        bool allowCoercion,
-                                       bool implititBang);
+                                       bool implicitBang);
 
 bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
   substitutions.clear();
