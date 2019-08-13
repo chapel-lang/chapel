@@ -1,5 +1,5 @@
 Calling foo
-owned C
+borrowed C
 {x = 0}
 Calling bar
 owned C
