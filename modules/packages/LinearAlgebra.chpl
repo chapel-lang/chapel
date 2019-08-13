@@ -436,24 +436,24 @@ proc eye(Dom: domain(2), type eltType=real) {
 
 /* Sets the value of a diagonal in a dense matrix.
 
-    ``p > 0``, represents an upper diagonal starting
-    from the ``p``th column, ``p == 0`` represents the main 
-    diagonal, ``p < 0`` represents a lower diagonal starting
-    from the ``-p``th row. ``p`` is 0-indexed.
+    ``k > 0``, represents an upper diagonal starting
+    from the ``k``th column, ``k == 0`` represents the main 
+    diagonal, ``k < 0`` represents a lower diagonal starting
+    from the ``-k``th row. ``k`` is 0-indexed.
 */
-proc setDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0) 
+proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0) 
               where isDenseArr(X){
   var start, end = 0;
-  if (p >= 0) { // upper or main diagonal
+  if (k >= 0) { // upper or main diagonal
     start = 1;
-    end = D.shape(1) - p;
+    end = D.shape(1) - k;
   }
   else { // lower diagonal
-    start = 1 - p;
+    start = 1 - k;
     end = D.shape(1);
   }
   forall row in {start..end} {
-    X(row, row+p) = val;
+    X(row, row+k) = val;
   }
 }
 
@@ -2005,26 +2005,26 @@ module Sparse {
       its sparse domain and sets the value of that diagonal to a 
       constant. 
     
-      ``p > 0``, represents an upper diagonal starting
-      from the ``p``th column, ``p == 0`` represents the main 
-      diagonal, ``p < 0`` represents a lower diagonal starting
-      from the ``-p``th row. ``p`` is 0-indexed.
+      ``k > 0``, represents an upper diagonal starting
+      from the ``k``th column, ``k == 0`` represents the main 
+      diagonal, ``k < 0`` represents a lower diagonal starting
+      from the ``-k``th row. ``k`` is 0-indexed.
   */
-  proc addDiag (ref X: [?D] ?eltType, in p: int = 0, val: eltType = 0)
+  proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
                 where isSparseArr(X) { 
       if D.rank != 2 then
-        halt("Wrong rank for addDiag");
+        halt("Wrong rank for setDiag");
 
       if D.shape(1) != D.shape(2) then
         halt("addDiag only supports square matrices");
         
       var start, end = 0;
-      if (p >= 0) { // upper or main diagonal
+      if (k >= 0) { // upper or main diagonal
         start = 1;
-        end = D.shape(1) - p;
+        end = D.shape(1) - k;
       }
       else { // lower diagonal
-        start = 1 - p;
+        start = 1 - k;
         end = D.shape(1);
       }
       var indices : [start..end] (D.idxType, D.idxType);
