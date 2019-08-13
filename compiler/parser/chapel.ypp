@@ -1939,10 +1939,11 @@ call_expr:
 ;
 
 dot_expr:
-  expr TDOT ident_use  { $$ = buildDotExpr($1, $3); }
-| expr TDOT TTYPE      { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| expr TDOT TDOMAIN    { $$ = buildDotExpr($1, "_dom"); }
-| expr TDOT TLOCALE    { $$ = buildDotExpr($1, "locale"); }
+  expr TDOT ident_use          { $$ = buildDotExpr($1, $3); }
+| expr TDOT TTYPE              { $$ = new CallExpr(PRIM_TYPEOF, $1); }
+| expr TDOT TDOMAIN            { $$ = buildDotExpr($1, "_dom"); }
+| expr TDOT TLOCALE            { $$ = buildDotExpr($1, "locale"); }
+| expr TDOT TBYTES TLP TRP     { $$ = buildDotExpr($1, "chpl_bytes"); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.
