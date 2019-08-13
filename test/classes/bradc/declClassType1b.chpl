@@ -2,7 +2,7 @@ class C {
   var x = 10;
 }
 
-var globc: unmanaged C = new unmanaged C();
+var globc: unmanaged C? = new unmanaged C();
 
 class D {
   var y = 20;

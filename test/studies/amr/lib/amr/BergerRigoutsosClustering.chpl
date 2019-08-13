@@ -109,7 +109,7 @@ class CandidateDomain {
   const D:          domain(rank,stridable=true);
   const flags:      [D] bool;
   const min_width:  rank*int;
-  var   signatures: rank*unmanaged ArrayWrapper;
+  var   signatures: rank*unmanaged ArrayWrapper?;
 
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
