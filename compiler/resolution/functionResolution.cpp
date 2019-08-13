@@ -1166,7 +1166,7 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
   return false;
 }
 
-// Can we instatiate or coerce or both?
+// Can we instantiate or coerce or both?
 bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
                                       ClassTypeDecorator formal,
                                       bool implicitBang) {
@@ -2478,7 +2478,7 @@ static void adjustClassCastCall(CallExpr* call)
   //  * unmanaged SomeClass
   //  * borrowed SomeClass
   //  * unmanaged
-  // This section just handles merging the decortators.
+  // This section just handles merging the decorators.
   // Casts from owned etc. to owned are still also handled in module code.
   // Down-casting is handled in the module code as well.
   if (isClassLikeOrManaged(valueType) && isClassLikeOrManaged(targetType)) {
