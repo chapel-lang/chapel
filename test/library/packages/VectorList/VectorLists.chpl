@@ -143,8 +143,10 @@ module VectorLists {
   inline iter VectorList.listElements() {
     var curr = head;
     while true {
-      const next = curr.next; yield curr;
-      if next then curr = next!; else break;
+      const next = curr.next;
+      yield curr;
+      if next then curr = next!;
+              else break;
     }
   }
 
