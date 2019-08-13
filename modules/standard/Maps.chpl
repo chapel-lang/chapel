@@ -182,6 +182,24 @@ module Maps {
     }
 
     /*
+      Sets the value associated with a key. Method returns `false` if the key
+      does not exist in the map.
+
+     :arg k: The key whose value needs to change
+     :type k: keyType
+
+     :arg v: The desired value to the key ``k``
+     :type k: valueType
+
+     :returns: `true` if `k` was in the map and its value is updated with `v`.
+               `false` otherwise.
+     :rtype: bool
+    */
+    proc set(k: keyType, v: valType): bool {
+
+    }
+
+    /*
       Removes a key-value pair to the map, withe the given key.
       
      :arg k: The key to remove from the map
