@@ -1,6 +1,6 @@
 #!/bin/bash
 
-foo="$(command -v mason)"
+command -v mason > /dev/null
 status=$?
 
 if [ $status -eq  0 ];  then
