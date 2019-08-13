@@ -78,6 +78,7 @@ static struct fid_fabric* ofi_fabric;   // fabric domain
 static struct fid_domain* ofi_domain;   // fabric access domain
 static int useScalableTxEp;             // use a scalable tx endpoint?
 static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
+static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
@@ -89,8 +90,6 @@ static struct fid_cq* ofi_rxCQ;         // AM req receive endpoint CQ
 static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
 static struct fid_cq* ofi_rxCQRma;      // RMA/AMO target endpoint CQ
 static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
-static pthread_mutex_t rxEpRmaLock      // lock for (shared) RMA/AMO endpoint
-                       = PTHREAD_MUTEX_INITIALIZER;
 
 #define rxMsgAddr(tcip, n) ((tcip)->rxAddrs[2 * (n)])
 #define rxRmaAddr(tcip, n) ((tcip)->rxAddrs[2 * (n) + 1])
@@ -395,6 +394,8 @@ static void init_ofiFabricDomain(void);
 static void init_ofiDoProviderChecks(void);
 static void init_ofiEp(void);
 static void init_ofiEpNumCtxs(void);
+static void init_ofiEpTxCtx(int, struct fi_av_attr*,
+                            struct fi_cq_attr*, struct fi_cntr_attr*);
 static void init_ofiExchangeAvInfo(void);
 static void init_ofiForMem(void);
 static void init_ofiForRma(void);
@@ -631,6 +632,17 @@ void init_ofiDoProviderChecks(void) {
 static
 void init_ofiEp(void) {
   //
+  // The AM handler is responsible not only for AM handling and progress
+  // on any RMA it initiates but also progress on inbound RMA, if that
+  // is needed.  It uses a wait set to organize this.
+  //
+  {
+    struct fi_wait_attr waitSetAttr = (struct fi_wait_attr)
+                                      { .wait_obj = FI_WAIT_UNSPEC, };
+    OFI_CHK(fi_wait_open(ofi_fabric, &waitSetAttr, &ofi_amhWaitSet));
+  }
+
+  //
   // Compute numbers of transmit and receive contexts, and then create
   // the transmit context table.
   //
@@ -689,46 +701,46 @@ void init_ofiEp(void) {
     //
   }
 
-  struct fi_cq_attr txCqAttr = (struct fi_cq_attr)
-                               { .format = FI_CQ_FORMAT_MSG,
-                                 .size = 100, // TODO
-                                 .wait_obj = FI_WAIT_NONE, };
-  struct fi_cntr_attr cntrAttr = (struct fi_cntr_attr)
-                                 { .events = FI_CNTR_EVENTS_COMP,
-                                   .wait_obj = FI_WAIT_NONE, };
-
   //
-  // Worker TX contexts need completion queues.  Those for AM handlers
-  // can just use counters, if they're supported (i.e., not in verbs).
+  // Worker TX contexts need completion queues, so they can tell what
+  // kinds of things are completing.
   //
   const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
-  for (int i = 0; i < tciTabLen; i++) {
-    atomic_init_bool(&tciTab[i].allocated, false);
-    tciTab[i].bound = false;
-    if (useScalableTxEp) {
-      tciTab[i].av = tciTab[0].av;
-      OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tciTab[i].txCtx, NULL));
-    } else {
-      OFI_CHK(fi_av_open(ofi_domain, &avAttr, &tciTab[i].av, NULL));
-      OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &tciTab[i].txCtx, NULL));
-      OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].av->fid, 0));
+  struct fi_cq_attr cqAttr;
+  struct fi_cntr_attr cntrAttr;
+
+  {
+    cqAttr = (struct fi_cq_attr)
+             { .format = FI_CQ_FORMAT_MSG,
+               .size = 100, // TODO
+               .wait_obj = FI_WAIT_NONE, };
+    for (int i = 0; i < numWorkerTxCtxs; i++) {
+      init_ofiEpTxCtx(i, &avAttr, &cqAttr, NULL);
     }
-    if (i < numWorkerTxCtxs) {
-      // worker tx context
-      OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
-      OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid, FI_TRANSMIT));
-    } else {
-      // AM handler tx context
-      if (ofi_info->domain_attr->cntr_cnt == 0) {
-        OFI_CHK(fi_cq_open(ofi_domain, &txCqAttr, &tciTab[i].txCQ, NULL));
-        OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCQ->fid,
-                           FI_TRANSMIT));
-      } else {
-        OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &tciTab[i].txCntr, NULL));
-        OFI_CHK(fi_ep_bind(tciTab[i].txCtx, &tciTab[i].txCntr->fid, FI_WRITE));
-      }
+  }
+
+  //
+  // TX contexts for the AM handler(s) can just use counters, if the
+  // provider supports them.  Otherwise, they have to use CQs also.
+  //
+  if (ofi_info->domain_attr->cntr_cnt > 0) {
+    cntrAttr = (struct fi_cntr_attr)
+               { .events = FI_CNTR_EVENTS_COMP,
+                 .wait_obj = FI_WAIT_SET,
+                 .wait_set = ofi_amhWaitSet, };
+    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+      init_ofiEpTxCtx(i, &avAttr, NULL, &cntrAttr);
     }
-    OFI_CHK(fi_enable(tciTab[i].txCtx));
+  } else {
+    cqAttr = (struct fi_cq_attr)
+             { .format = FI_CQ_FORMAT_MSG,
+               .size = 100, // TODO
+               .wait_obj = FI_WAIT_SET,
+               .wait_cond = FI_CQ_COND_NONE,
+               .wait_set = ofi_amhWaitSet, };
+    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+      init_ofiEpTxCtx(i, &avAttr, &cqAttr, NULL);
+    }
   }
 
   //
@@ -744,22 +756,27 @@ void init_ofiEp(void) {
   // For the CQ length, allow for an appreciable proportion of the job
   // to send requests to us at once.
   //
-  struct fi_cq_attr rxCqAttr = (struct fi_cq_attr)
-                               { .size = chpl_numNodes * numWorkerTxCtxs,
-                                 .format = FI_CQ_FORMAT_DATA,
-                                 .wait_obj = FI_WAIT_UNSPEC,
-                                 .wait_cond = FI_CQ_COND_NONE, };
+  cqAttr = (struct fi_cq_attr)
+           { .size = chpl_numNodes * numWorkerTxCtxs,
+             .format = FI_CQ_FORMAT_DATA,
+             .wait_obj = FI_WAIT_SET,
+             .wait_cond = FI_CQ_COND_NONE,
+             .wait_set = ofi_amhWaitSet, };
+  cntrAttr = (struct fi_cntr_attr)
+             { .events = FI_CNTR_EVENTS_COMP,
+               .wait_obj = FI_WAIT_SET,
+               .wait_set = ofi_amhWaitSet, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &tciTab[0].av->fid, 0));
-  OFI_CHK(fi_cq_open(ofi_domain, &rxCqAttr, &ofi_rxCQ, NULL));
+  OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &tciTab[0].av->fid, 0));
   if (ofi_info->domain_attr->cntr_cnt == 0) {
-    OFI_CHK(fi_cq_open(ofi_domain, &rxCqAttr, &ofi_rxCQRma, NULL));
+    OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma, NULL));
     OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCQRma->fid, FI_RECV));
   } else {
     OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntrRma, NULL));
@@ -865,6 +882,32 @@ void init_ofiEpNumCtxs(void) {
                tciTabFixedAssignments ? fixedNumThreads : 0,
                numRxCtxs, (numRxCtxs == 1) ? "" : "s");
   }
+}
+
+
+static
+void init_ofiEpTxCtx(int i, struct fi_av_attr* avAttr,
+                     struct fi_cq_attr* cqAttr,
+                     struct fi_cntr_attr* cntrAttr) {
+  struct perTxCtxInfo_t* tcip = &tciTab[i];
+  atomic_init_bool(&tcip->allocated, false);
+  tcip->bound = false;
+  if (useScalableTxEp) {
+    tcip->av = tciTab[0].av;
+    OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tcip->txCtx, NULL));
+  } else {
+    OFI_CHK(fi_av_open(ofi_domain, avAttr, &tcip->av, NULL));
+    OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &tcip->txCtx, NULL));
+    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->av->fid, 0));
+  }
+  if (cqAttr != NULL) {
+    OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ, NULL));
+    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCQ->fid, FI_TRANSMIT));
+  } else {
+    OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr, NULL));
+    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCntr->fid, FI_WRITE));
+  }
+  OFI_CHK(fi_enable(tcip->txCtx));
 }
 
 
@@ -1237,6 +1280,8 @@ void fini_ofi(void) {
     }
   }
 
+  OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
+
   OFI_CHK(fi_close(&ofi_domain->fid));
   OFI_CHK(fi_close(&ofi_fabric->fid));
 
@@ -1541,18 +1586,13 @@ static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
 
 static inline
 void ensure_progress(void) {
-  if (ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
-    const int lockRet = pthread_mutex_trylock(&rxEpRmaLock);
-    if (lockRet == 0) {
-      if (ofi_rxCQRma != NULL) {
-        struct fi_cq_data_entry cqe;
-        (void) readCQ(ofi_rxCQRma, &cqe, 1);
-      } else {
-        (void) fi_cntr_read(ofi_rxCntrRma);
-      }
-      PTHREAD_CHK(pthread_mutex_unlock(&rxEpRmaLock));
+  if (isAmHandler
+      && ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
+    if (ofi_rxCQRma != NULL) {
+      struct fi_cq_data_entry cqe;
+      (void) readCQ(ofi_rxCQRma, &cqe, 1);
     } else {
-      CHK_TRUE(lockRet == EBUSY);
+      (void) fi_cntr_read(ofi_rxCntrRma);
     }
   }
 }
@@ -1679,7 +1719,6 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
       //
       while (!*(volatile chpl_comm_amDone_t*) &arg->comm.xol.gotArg) {
         local_yield();
-        ensure_progress();
       }
     }
   }
@@ -1872,7 +1911,6 @@ void amRequestCommon(c_nodeid_t node,
     do {
       if (yieldDuringTxnWait && (iters++ & 0x3f) == 0) {
         local_yield();
-        ensure_progress();
       }
       if (tciTryRealloc(tcip)) {
         checkTxCQ(tcip);
@@ -1895,7 +1933,6 @@ void amRequestCommon(c_nodeid_t node,
                "waiting for amDone indication in %p", pAmDone);
     while (!*(volatile chpl_comm_amDone_t*) pAmDone) {
       local_yield();
-      ensure_progress();
     }
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw amDone indication in %p", pAmDone);
     if (pAmDone != &amDone)
@@ -1916,7 +1953,7 @@ static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 static void amHandler(void*);
-static void processRxAmReq(struct perTxCtxInfo_t*, chpl_bool);
+static void processRxAmReq(struct perTxCtxInfo_t*);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
 static inline void amWrapExecOnBody(void*);
 static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
@@ -1991,29 +2028,16 @@ void amHandler(void* argNil) {
   //
   // Process AM requests and watch transmit responses arrive.
   //
-  const chpl_bool blockingCQ = chpl_env_rt_get_bool("COMM_OFI_BLOCKING_CQ",
-                                                    false);
-
   while (!atomic_load_bool(&amHandlersExit)) {
-    processRxAmReq(tcip, blockingCQ);
-
-    if (tcip->txCQ != NULL) {
-      checkTxCQ(tcip);
-    } else {
-      getTxCntr(tcip);
-    }
-
-    //
-    // Backstop the worker threads which have primary responsibility for
-    // progress when we're doing manual.  This covers cases such as when
-    // what we're progressing is an AMO from a remote node to us, but no
-    // worker thread on our side is communicating and thus doing
-    // progress.  The AM handler is the only candidate in this case.
-    //
-    {
-      static __thread int progressInterval;
-      if ((++progressInterval & 0xff) == 0)
-        ensure_progress();
+    int ret;
+    OFI_CHK_2(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret, -FI_ETIMEDOUT);
+    if (ret == FI_SUCCESS) {
+      processRxAmReq(tcip);
+      if (tcip->txCQ != NULL) {
+        checkTxCQ(tcip);
+      } else {
+        getTxCntr(tcip);
+      }
     }
   }
 
@@ -2032,22 +2056,16 @@ void amHandler(void* argNil) {
 
 
 static
-void processRxAmReq(struct perTxCtxInfo_t* tcip, chpl_bool blockingCQ) {
+void processRxAmReq(struct perTxCtxInfo_t* tcip) {
   //
   // Process requests received on the AM request endpoint.
   //
   struct fi_cq_data_entry cqes[5];
   const size_t maxEvents = sizeof(cqes) / sizeof(cqes[0]);
   ssize_t ret;
-  if (blockingCQ) {
-    CHK_TRUE((ret = fi_cq_sread(ofi_rxCQ, cqes, maxEvents, NULL, 100)) > 0
-             || ret == -FI_EAGAIN
-             || ret == -FI_EAVAIL);
-  } else {
-    CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxEvents)) > 0
-             || ret == -FI_EAGAIN
-             || ret == -FI_EAVAIL);
-  }
+  CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxEvents)) > 0
+           || ret == -FI_EAGAIN
+           || ret == -FI_EAVAIL);
   if (ret == -FI_EAVAIL) {
     reportCQError(ofi_rxCQ);
   }
@@ -2969,9 +2987,7 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
 
   if (numEvents == 0) {
     sched_yield();
-    if (!isAmHandler) {
-      ensure_progress();
-    }
+    ensure_progress();
   } else {
     for (int i = 0; i < numEvents; i++) {
       struct fi_cq_msg_entry* cqe = &cqes[i];
