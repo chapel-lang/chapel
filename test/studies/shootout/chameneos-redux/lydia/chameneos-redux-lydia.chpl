@@ -120,7 +120,7 @@ class Chameneos {
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
   proc runMeeting (population : [] owned Chameneos, peer_idx) {
-    var peer : Chameneos;
+    var peer : borrowed Chameneos?;
     var newColor : Color;
     var is_same : int;
     if (id == peer_idx) {
