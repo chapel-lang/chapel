@@ -1900,11 +1900,39 @@ module Sparse {
     return S;
   }
 
+  proc _array.plus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
+                                              && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps: sparse subdomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] + A[i,j];
+    }
+    return S;
+  }
+
   /* Element-wise subtraction. */
   proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps = CSRDomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] - A[i,j];
+    }
+    return S;
+  }
+
+  proc _array.minus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
+                                               && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
@@ -1934,6 +1962,20 @@ module Sparse {
 
     return B;
   }
+  
+  proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
+                                               && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps: sparse subdomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] * A[i,j];
+    }
+    return S;
+  }
 
   /* Element-wise division. */
   proc _array.elementDiv(A) where isCSArr(this) && isCSArr(A) {
@@ -1954,6 +1996,21 @@ module Sparse {
     forall (i,j) in A.domain do B[i,j] /= A[i,j];
 
     return B;
+  }
+  
+  proc _array.elementDiv(A: [?Adom] ?eltType) where 
+                                            isSparseArr(this) && !isCSArr(this)
+                                            && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps: sparse subdomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] / A[i,j];
+    }
+    return S;
   }
 
   /* Matrix division (solve) */
