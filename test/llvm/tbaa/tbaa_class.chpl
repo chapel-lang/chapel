@@ -3,7 +3,7 @@ class MyClass {
   var rval: real;
 };
 
-var myClass: MyClass;
+var myClass: borrowed MyClass = new MyClass();
 
 proc f(i: int, r: real) {
   // First make sure we are looking inside the class object.
