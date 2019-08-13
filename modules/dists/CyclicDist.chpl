@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-use DSIUtil;
+private use DSIUtil;
 
 proc _determineRankFromStartIdx(startIdx) param {
   return if isTuple(startIdx) then startIdx.size else 1;
