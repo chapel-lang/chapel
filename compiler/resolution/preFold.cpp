@@ -54,6 +54,9 @@ static std::map<std::string,
 //lookup table/cache for function captures
 static std::map<FnSymbol*, FnSymbol*>                      functionCaptureMap;
 
+// stores the test functions
+static std::vector<Expr* > testCaptureVector;
+
 static Expr*          preFoldPrimOp(CallExpr* call);
 
 static Expr*          preFoldNamed (CallExpr* call);
@@ -251,17 +254,27 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 tryCall->insertAtTail(actual->copy());
               }
 
+              bool isResolved = false;
               // Try to resolve it.
               if (tryResolveCall(tryCall)) {
                 totalTest++;
+                isResolved = true; 
+                tryCall->remove();
+
+                CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
+                call->getStmtExpr()->insertAfter(newCall);
+
+                testCaptureVector.push_back(createFunctionAsValue(newCall));
+                newCall->remove();
               }
 
-              // remove the call from the AST
-              tryCall->remove();
+              // remove the call from the AST if not removed
+              if (!isResolved) {
+                tryCall->remove();
+              }
             }
           }
         }
-        
       }
     }
     retval=new SymExpr(new_IntSymbol(totalTest));
