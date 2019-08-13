@@ -30,6 +30,10 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#ifndef GASNETRUN_LAUNCHER
+#error GASNETRUN_LAUNCHER must be defined
+#endif
+
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
@@ -247,8 +251,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (errorfn != NULL)
       fprintf(slurmFile, "#SBATCH -e %s\n", errorfn);
 
-    fprintf(slurmFile, "%s/%s/gasnetrun_ibv -n %d -N %d",
-            CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
+    fprintf(slurmFile, "%s/%s/%s -n %d -N %d",
+            CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER,
+            numLocales, numLocales);
 
     propagate_environment(envProp);
     fprintf(slurmFile, "%s", envProp);
@@ -282,8 +287,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += sprintf(iCom+len, "--exclude=%s ", exclude);
     if (constraint)
       len += sprintf(iCom+len, " -C %s", constraint);
-    len += sprintf(iCom+len, " %s/%s/gasnetrun_ibv -n %d -N %d",
-                   CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
+    len += sprintf(iCom+len, " %s/%s/%s -n %d -N %d",
+                   CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
+                   GASNETRUN_LAUNCHER, numLocales, numLocales);
     len += propagate_environment(iCom+len);
     len += sprintf(iCom+len, " %s ", chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {

@@ -17,4 +17,5 @@
  * limitations under the License.
  */
 
+#define GASNETRUN_LAUNCHER "gasnetrun_ibv"
 #include "../slurm-gasnetrun_common/slurm-gasnetrun_common.h"
