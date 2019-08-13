@@ -484,8 +484,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     gen += this->genMarshalBodyStringC(t, out);
   } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
              getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
-    // TODO: for passing c_ptr(int8)s in place of Chapel strings, need separate
-    // handling.  Also need to ensure we don't call this if/when we support
+    // A different strategy will be needed if we ever intend to support
     // c_ptr(int8)s that weren't originally Chapel strings.
     gen += this->genMarshalBodyStringChapel(t, out);
   } else {
