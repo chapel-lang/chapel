@@ -282,6 +282,30 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_GET_TEST_BY_INDEX: {
+    int64_t index    =        0;
+    
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of type");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to type index expression");
+    }
+
+    if (!get_int(call->get(1), &index)) {
+      USR_FATAL(call, "illegal type index expression");
+    }
+
+    if (index <= 0 || index > testCaptureVector.size()) {
+      USR_FATAL(call, "type index expression '%i' out of bounds", index);
+    }
+
+    retval = testCaptureVector[index-1];
+    call->replace(retval);
+    break;
+  }
+
   case PRIM_CALL_RESOLVES:
   case PRIM_METHOD_CALL_RESOLVES: {
     Expr* fnName   = NULL;
