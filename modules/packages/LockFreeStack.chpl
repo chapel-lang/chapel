@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-module ReclaimedLockFreeStack {
+module LockFreeStack {
   use EpochManager;
   use LocalAtomics;
 
@@ -36,7 +36,7 @@ module ReclaimedLockFreeStack {
     }
   }
 
-  class ReclaimedLockFreeStack {
+  class LockFreeStack {
     type objType;
     var _top : LocalAtomicObject(unmanaged node(objType));
     var _manager = new owned EpochManager();

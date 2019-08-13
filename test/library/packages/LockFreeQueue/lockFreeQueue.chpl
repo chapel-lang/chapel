@@ -1,10 +1,10 @@
-use ReclaimedLockFreeQueue;
+use LockFreeQueue;
 
 const InitialQueueSize = 64;
 const OperationsPerThread = 64;
 
 proc main() {
-  var lfq = new unmanaged ReclaimedLockFreeQueue(int);
+  var lfq = new unmanaged LockFreeQueue(int);
 
   // Fill the queue and warm up the cache.
   forall i in 1..InitialQueueSize with (var tok = lfq.getToken()) do lfq.enqueue(i, tok);

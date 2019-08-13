@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-module ReclaimedLockFreeQueue {
+module LockFreeQueue {
   use EpochManager;
   use LocalAtomics;
 
@@ -36,7 +36,7 @@ module ReclaimedLockFreeQueue {
     }
   }
 
-  class ReclaimedLockFreeQueue {
+  class LockFreeQueue {
     type objType;
     var _head : LocalAtomicObject(unmanaged node(objType));
     var _tail : LocalAtomicObject(unmanaged node(objType));

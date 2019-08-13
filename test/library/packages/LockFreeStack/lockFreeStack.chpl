@@ -1,10 +1,10 @@
-use ReclaimedLockFreeStack;
+use LockFreeStack;
 
 const InitialStackSize = 64;
 const OperationsPerThread = 64;
 
 proc main() {
-  var lfs = new unmanaged ReclaimedLockFreeStack(int);
+  var lfs = new unmanaged LockFreeStack(int);
 
   // Fill the stack and warm up the cache.
   forall i in 1..InitialStackSize with (var tok = lfs.getToken()) do lfs.push(i, tok);
