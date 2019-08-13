@@ -251,7 +251,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (errorfn != NULL)
       fprintf(slurmFile, "#SBATCH -e %s\n", errorfn);
 
-    fprintf(slurmFile, "%s/%s/%s -n %d -N %d",
+    fprintf(slurmFile, "%s/%s/%s -n %d -N %d -c 0",
             CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER,
             numLocales, numLocales);
 
@@ -287,7 +287,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += sprintf(iCom+len, "--exclude=%s ", exclude);
     if (constraint)
       len += sprintf(iCom+len, " -C %s", constraint);
-    len += sprintf(iCom+len, " %s/%s/%s -n %d -N %d",
+    len += sprintf(iCom+len, " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
                    GASNETRUN_LAUNCHER, numLocales, numLocales);
     len += propagate_environment(iCom+len);
