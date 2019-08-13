@@ -1,15 +1,15 @@
 var b: bytes = " base bytes ";
 
-printValAndType(b+3:_bytes);
-printValAndType(3:_bytes+b);
+printValAndType(b+3:bytes);
+printValAndType(3:bytes+b);
 
 enum Test {Foo, Bar};
 
-printValAndType(b+Test.Foo:_bytes);
-printValAndType(Test.Bar:_bytes+b);
+printValAndType(b+Test.Foo:bytes);
+printValAndType(Test.Bar:bytes+b);
 
-printValAndType(b+true:_bytes);
-printValAndType(false:_bytes+b);
+printValAndType(b+true:bytes);
+printValAndType(false:bytes+b);
 
 printValAndType(b*4);
 
