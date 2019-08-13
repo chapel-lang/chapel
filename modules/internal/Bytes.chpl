@@ -21,7 +21,7 @@
 /*
 The following document shows functions and methods used to
 manipulate and process Chapel bytes objects. The :record:`bytes` object is
-similar to astringbut allows arbitrary data to be stored in it. Methods onbytes`
+similar to a :record:`string` but allows arbitrary data to be stored in it. Methods on :record:`bytes`
 that interpret the data as characters assume that the bytes are ASCII characters
 
 Casts from bytes to a Numeric Type
@@ -677,7 +677,7 @@ module Bytes {
     }
 
     /*
-      Splits the :record:`bytes` on `sep` yielding the subbytes between each
+      Splits the :record:`bytes` on `sep` yielding the bytes between each
       occurrence, up to `maxsplit` times.
 
       :arg sep: The delimiter used to break the object into chunks.
@@ -1006,7 +1006,7 @@ module Bytes {
         var maxbytes = (localThis.len - thisIdx): ssize_t;
         qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
 
-        if cp == 0xfffd {  //decoder returns the replacament character
+        if cp == 0xfffd {  //decoder returns the replacement character
           if errors == DecodePolicy.Strict {
             chpl_here_free(c_buf);
             throw new owned DecodeError();
