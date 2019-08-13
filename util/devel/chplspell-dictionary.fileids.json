@@ -445,6 +445,9 @@
   "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/AtomicsCommon.chpl"
   ],
+  "4d6baa58-bd82-11e9-8464-10ddb1d4c3d5": [
+    "modules/internal/Bytes.chpl"
+  ],
   "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ChapelArray.chpl"
   ],
@@ -535,6 +538,9 @@
   "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MatrixMarket.chpl"
   ],
+  "c0ac0568-bd81-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/Sort.chpl"
+  ],
   "3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5": [
     "modules/packages/TOML.chpl"
   ],
@@ -605,6 +611,9 @@
   ],
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
+  ],
+  "61f7efb8-bd82-11e9-8464-10ddb1d4c3d5": [
+    "runtime/include/comm/ofi/chpl-comm-task-decls.h"
   ],
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"

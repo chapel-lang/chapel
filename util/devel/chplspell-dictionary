@@ -2782,6 +2782,7 @@ bbcopy
 dbaadab
 ftemp
 newresult
+origfn
 rauto
 
 FILEID: e3aa346c-1d8a-11e6-a3a6-10ddb1d4c3d5
@@ -2978,10 +2979,24 @@ wantv
 xmat
 
 FILEID: f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5
+codelet
 cplx
 cplxarrdesc
 dout
+fmas
 fnname
+halfcomplex
+howmany
+idist
+inembed
+iodim
+istride
+odist
+onembed
+ostride
+redft
+rodft
+timelimit
 
 FILEID: 2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5
 cainfo
@@ -3645,6 +3660,7 @@ adaptative
 binarytrees
 chapcs
 chplgmp
+dclass
 kace
 linkedlist
 paircount
@@ -4642,6 +4658,7 @@ rmawrite
 rxed
 schpl
 spages
+sread
 statsnodes
 statsprogress
 statsthreads
@@ -4649,10 +4666,14 @@ straddr
 tciia
 tciiw
 tcip
+tcips
 threaddetails
 tostr
+tskprv
 tstamp
+ttcip
 txed
+txns
 xcrc
 xpct
 xpctd
@@ -4925,6 +4946,23 @@ eunknown
 FILEID: 9410539a-9317-11e9-a422-10ddb1d4c3d5
 tilda
 
+FILEID: c0ac0568-bd81-11e9-8464-10ddb1d4c3d5
+sortit
+
+FILEID: 4d6baa58-bd82-11e9-8464-10ddb1d4c3d5
+isalnum
+isalpha
+isascii
+isdigit
+islower
+isprint
+tolower
+toupper
+
+FILEID: 61f7efb8-bd82-11e9-8464-10ddb1d4c3d5
+nonblk
+txns
+
 NATURAL:
 aarch
 abcd
@@ -4978,6 +5016,8 @@ antialias
 anubhav
 anybool
 anyimag
+anymanaged
+anynil
 anyreal
 apache
 appletalk
@@ -5125,6 +5165,8 @@ bspace
 bsub
 bswap
 bucketize
+bucketized
+bucketizer
 buettner
 bufcnt
 buffersize
@@ -5369,6 +5411,7 @@ debugprint
 december
 decls
 declspecs
+decodable
 decrementer
 deepak
 defexpr
@@ -5792,6 +5835,7 @@ getchunk
 getcontext
 getcwd
 getdtablesize
+gethostbyname
 gethostname
 gethugepagesize
 getinfo
@@ -5861,6 +5905,7 @@ hanunoo
 hardcode
 hargrove
 harshbarger
+hartley
 hasendbit
 hasher
 hashtable
@@ -6492,6 +6537,7 @@ nbodies
 nbody
 nccs
 ncells
+ncodepoints
 ncols
 ncsa
 ndata
@@ -6564,6 +6610,7 @@ nonnilable
 nonpersistent
 nonprimitive
 nonprinting
+nonrecursive
 nonsequential
 nonsingular
 nonstridable
@@ -6874,6 +6921,7 @@ readthedocs
 readv
 readwrite
 realfmt
+realloced
 reals
 realsize
 realstart
@@ -6994,6 +7042,7 @@ sanz
 sapiens
 sarthak
 sassert
+sassign
 saturday
 saurashtra
 savec
@@ -7234,6 +7283,7 @@ submul
 subobject
 subpixel
 subpixels
+subproblems
 subprocesses
 subquery
 subrange
@@ -7440,6 +7490,7 @@ unfragmented
 ungreedy
 unhandled
 unicast
+unindexed
 uninserted
 uninstall
 uninstantiated
