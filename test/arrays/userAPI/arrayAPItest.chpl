@@ -87,9 +87,9 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
     writeln("reindexed X[", i, "] = ", x);
   writeln();
   // Test vector ops
-  // Test sparse-specific things
   if testError == 10 then
     X.reverse();
+  // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
   // Test sorted iterator
