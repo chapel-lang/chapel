@@ -155,12 +155,12 @@ module String {
 
   pragma "fn synchronization free"
   pragma "no doc"
-  extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
+  extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : bufferType;
 
   // Signal to the Chapel compiler that the actual argument may be modified.
   pragma "fn synchronization free"
   pragma "no doc"
-  extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
+  extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : bufferType;
 
   private config param debugStrings = false;
 
@@ -350,7 +350,7 @@ module String {
     return (x + y: int): t;
 
   pragma "no doc"
-  inline proc +(x: c_ptr(uint(8)), y: byteIndex) {
+  inline proc +(x: bufferType, y: byteIndex) {
     return x+(y:int);
   }
 
@@ -859,9 +859,7 @@ module String {
     proc toByte(): uint(8) {
       if this.len != 1 then
         halt("string.toByte() only accepts single-byte strings");
-
-      var localThis: string = this.localize();
-      return localThis.buff[0];
+      return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id)[0];
     }
 
     /*
@@ -932,8 +930,8 @@ module String {
       var maxbytes = (this.len - (idx - 1)): ssize_t;
       if maxbytes < 0 || maxbytes > 4 then
         maxbytes = 4;
-      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i-1, len=maxbytes,
-                                            loc=this.locale_id);
+      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx-1,
+                                            len=maxbytes, loc=this.locale_id);
       ret._size = allocSize;
       ret.buff = newBuff;
       ret.isowned = true;
