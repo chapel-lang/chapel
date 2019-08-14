@@ -859,7 +859,7 @@ module String {
     proc toByte(): uint(8) {
       if this.len != 1 then
         halt("string.toByte() only accepts single-byte strings");
-      return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id)[0];
+      return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
     }
 
     /*
