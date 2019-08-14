@@ -7,9 +7,10 @@ export proc foo(tasksPerLocale: int) {
         var message = "Hello, world! (from ";
 
         if (tasksPerLocale > 1) then
-          message += "task " + tid + " of " + tasksPerLocale + " on ";
+          message += "task " + tid: string + " of " + tasksPerLocale:string +
+            " on ";
 
-        message += "locale " + here.id + " of " + numLocales;
+        message += "locale " + here.id:string + " of " + numLocales: string;
 
         message += ")";
         writeln(message);
