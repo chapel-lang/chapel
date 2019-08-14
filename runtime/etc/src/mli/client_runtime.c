@@ -99,6 +99,7 @@ int chpl_mli_client_launch(int argc, char** argv) {
     if (pid == -1) { return - 1; }
   } else {
     chpl_launch(argc, argv, execNumLocales);
+    chpl_exit_any(0);
   }
 
   return 0;
