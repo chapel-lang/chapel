@@ -47,41 +47,41 @@ module BytesStringCommon {
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
 
-      var ret: t;
-      if x.isEmpty() then return ret;
+    var ret: t;
+    if x.isEmpty() then return ret;
 
-      const r2 = x._getView(r);
-      if r2.size <= 0 {
-        // TODO: I can't just return "" (ret var gets freed for some reason)
-        ret = "";
-      } else {
-        // In case r1 is strided, we cannot just use r2.size for the copy
-        // length. For to be able to cover strided copies, we copy the range
-        // from low to high then do a strided operation to put the data in the
-        // buffer in the correct order.
-        const copyLen = r2.high-r2.low+1;
-        var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low-1,
-                                            len=copyLen, loc=x.locale_id);
-        if r2.stride == 1 {
-          // TODO Engin: I'd like to call init or something that constructs a
-          // new bytes/string object instead of doing the these all the time
-          ret.buff = copyBuf;
-          ret._size = copySize;
-        }
-        else {
-          // the range is strided
-          var (newBuf, allocSize) = bufferAlloc(r2.size+1);
-          for (r2_i, i) in zip(r2, 0..) {
-            newBuf[i] = copyBuf[r2_i-r2.low];
-          }
-          ret.buff = newBuf;
-          ret._size = allocSize;
-          bufferFree(copyBuf);
-        }
-        ret.len = r2.size;
-        ret.buff[ret.len] = 0;
+    const r2 = x._getView(r);
+    if r2.size <= 0 {
+      // TODO: I can't just return "" (ret var gets freed for some reason)
+      ret = "";
+    } else {
+      // In case r1 is strided, we cannot just use r2.size for the copy
+      // length. For to be able to cover strided copies, we copy the range
+      // from low to high then do a strided operation to put the data in the
+      // buffer in the correct order.
+      const copyLen = r2.high-r2.low+1;
+      var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low-1,
+                                          len=copyLen, loc=x.locale_id);
+      if r2.stride == 1 {
+        // TODO Engin: I'd like to call init or something that constructs a
+        // new bytes/string object instead of doing the these all the time
+        ret.buff = copyBuf;
+        ret._size = copySize;
       }
-      return ret;
+      else {
+        // the range is strided
+        var (newBuf, allocSize) = bufferAlloc(r2.size+1);
+        for (r2_i, i) in zip(r2, 0..) {
+          newBuf[i] = copyBuf[r2_i-r2.low];
+        }
+        ret.buff = newBuf;
+        ret._size = allocSize;
+        bufferFree(copyBuf);
+      }
+      ret.len = r2.size;
+      ret.buff[ret.len] = 0;
+    }
+    return ret;
   }
 
   proc getIndexType(type t) type {
@@ -122,47 +122,47 @@ module BytesStringCommon {
 
     type _idxt = getIndexType(t);
 
-      if !(maxsplit == 0 && ignoreEmpty && x.isEmpty()) {
-        const localThis: t = x.localize();
-        const localSep: t = sep.localize();
+    if !(maxsplit == 0 && ignoreEmpty && x.isEmpty()) {
+      const localThis: t = x.localize();
+      const localSep: t = sep.localize();
 
-        // really should be <, but we need to avoid returns and extra yields so
-        // the iterator gets inlined
-        var splitAll: bool = maxsplit <= 0;
-        var splitCount: int = 0;
+      // really should be <, but we need to avoid returns and extra yields so
+      // the iterator gets inlined
+      var splitAll: bool = maxsplit <= 0;
+      var splitCount: int = 0;
 
-        var start: _idxt = 1;
-        var done: bool = false;
-        while !done  {
-          var chunk: t;
-          var end: _idxt;
+      var start: _idxt = 1;
+      var done: bool = false;
+      while !done  {
+        var chunk: t;
+        var end: _idxt;
 
-          if (maxsplit == 0) {
-            chunk = localThis;
+        if (maxsplit == 0) {
+          chunk = localThis;
+          done = true;
+        } else {
+          if (splitAll || splitCount < maxsplit) then
+            end = localThis.find(localSep, start..);
+
+          if(end == 0) {
+            // Separator not found
+            chunk = localThis[start..];
             done = true;
           } else {
-            if (splitAll || splitCount < maxsplit) then
-              end = localThis.find(localSep, start..);
-
-            if(end == 0) {
-              // Separator not found
-              chunk = localThis[start..];
-              done = true;
-            } else {
-              chunk = localThis[start..end-1];
-            }
+            chunk = localThis[start..end-1];
           }
-
-          if !(ignoreEmpty && chunk.isEmpty()) {
-            // Putting the yield inside the if prevents us from being inlined
-            // in the zippered case, but I don't think there is any way to avoid
-            // that easily
-            yield chunk;
-            splitCount += 1;
-          }
-          start = end+localSep.numBytes;
         }
+
+        if !(ignoreEmpty && chunk.isEmpty()) {
+          // Putting the yield inside the if prevents us from being inlined
+          // in the zippered case, but I don't think there is any way to avoid
+          // that easily
+          yield chunk;
+          splitCount += 1;
+        }
+        start = end+localSep.numBytes;
       }
+    }
   }
 
   // TODO: could use a multi-pattern search or some variant when there are
@@ -175,34 +175,34 @@ module BytesStringCommon {
                                     needles[1].type==t {
     assertArgType(t, "startsEndsWith");
 
-      var ret: bool = false;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
-        for needle in needles {
-          const needleLen = needle.len;
-          if needleLen == 0 {
-            ret = true;
-            break;
-          }
-          if needleLen > x.len then continue;
-
-          const localNeedle = needle.localize();
-
-          if fromLeft {
-            ret = bufferEqualsLocal(buf1=x.buff, off1=0,
-                                    buf2=localNeedle.buff, off2=0,
-                                    len=needleLen);
-          } else {
-            var offset = x.len-needleLen;
-            ret = bufferEqualsLocal(buf1=x.buff, off1=offset,
-                                    buf2=localNeedle.buff, off2=0,
-                                    len=needleLen);
-
-          }
-          if ret == true then break;
+    var ret: bool = false;
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+      for needle in needles {
+        const needleLen = needle.len;
+        if needleLen == 0 {
+          ret = true;
+          break;
         }
+        if needleLen > x.len then continue;
+
+        const localNeedle = needle.localize();
+
+        if fromLeft {
+          ret = bufferEqualsLocal(buf1=x.buff, off1=0,
+                                  buf2=localNeedle.buff, off2=0,
+                                  len=needleLen);
+        } else {
+          var offset = x.len-needleLen;
+          ret = bufferEqualsLocal(buf1=x.buff, off1=offset,
+                                  buf2=localNeedle.buff, off2=0,
+                                  len=needleLen);
+
+        }
+        if ret == true then break;
       }
-      return ret;
+    }
+    return ret;
   }
 
   proc doJoinIterator(const ref x: ?t, ir: _iteratorRecord): t {
