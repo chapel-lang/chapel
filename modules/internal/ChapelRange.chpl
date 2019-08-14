@@ -1882,7 +1882,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
-    const (start, end) = if count == 0 then (low, low - 1)
+    // This cast avoids C compile-time warnings if    (vvv)
+    // 'low' is min(int)
+    const (start, end) = if count == 0 then (low, (low:uint - 1):low.type)
                                        else (low, low + (count:low.type - 1));
 
     for i in chpl_direct_param_stride_range_iter(start, end, 1) do yield i;
