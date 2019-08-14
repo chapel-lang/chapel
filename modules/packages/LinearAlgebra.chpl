@@ -2029,7 +2029,7 @@ module Sparse {
       }
       var indices : [start..end] (D.idxType, D.idxType);
       forall ind in {start..end} {
-        indices[ind] = (ind, ind+p);
+        indices[ind] = (ind, ind+k);
       }
       D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
       forall ind in indices {
