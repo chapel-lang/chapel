@@ -37,9 +37,9 @@ proc main() {
   for i in 1..iters {
     var A: [SparseDom] real;
     t.start();
-    addDiag(A, 0, 2);
-    addDiag(A, 1, -1);
-    addDiag(A, -1, -1);
+    setDiag(A, 0, 2);
+    setDiag(A, 1, -1);
+    setDiag(A, -1, -1);
     t.stop();
     
     if correctness && i == 1 {
