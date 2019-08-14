@@ -55,7 +55,10 @@ static std::map<std::string,
 static std::map<FnSymbol*, FnSymbol*>                      functionCaptureMap;
 
 // stores the test functions
-static std::vector<Expr* > testCaptureVector;
+static std::vector<Expr* >                                 testCaptureVector;
+
+// lookup table for test function names and their index in testCaptureVector
+static std::map<std::string,int>                           testNameIndex;
 
 static Expr*          preFoldPrimOp(CallExpr* call);
 
@@ -266,6 +269,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
                 testCaptureVector.push_back(createFunctionAsValue(newCall));
                 newCall->remove();
+                testNameIndex[name] = totalTest;
               }
 
               // remove the call from the AST if not removed
@@ -297,13 +301,29 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       USR_FATAL(call, "illegal type index expression");
     }
 
-    if (index <= 0 || index > testCaptureVector.size()) {
+    if (index <= 0 || index > (int64_t)testCaptureVector.size()) {
       USR_FATAL(call, "type index expression '%i' out of bounds", index);
     }
 
     retval = testCaptureVector[index-1];
     call->replace(retval);
     break;
+  }
+
+  case PRIM_GET_TEST_BY_NAME: {
+    const char* name = NULL;
+    if(!get_string(call->get(1), &name)) {
+      USR_FATAL(call, "illegal type function name");
+    }
+    if (testNameIndex.find(name) != testNameIndex.end()) {
+      int index = testNameIndex[name];
+      retval = testCaptureVector[index-1];
+      call->replace(retval);
+      break; 
+    }
+    else {
+      USR_FATAL(call, "No test function with name '%s'",name);
+    }
   }
 
   case PRIM_CALL_RESOLVES:
