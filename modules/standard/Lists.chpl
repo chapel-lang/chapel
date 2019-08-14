@@ -60,7 +60,7 @@ module Lists {
   private const _initialArrayCapacity = 16;
 
   pragma "no doc"
-  private param _sanityChecks = true;
+  private param _sanityChecks = false;
 
   //
   // Some asserts are useful while developing, but can be turned off when the
@@ -232,7 +232,7 @@ module Lists {
     // accesses of list elements should go through this function.
     //
     pragma "no doc"
-    proc _getRef(idx: int) ref {
+    inline proc _getRef(idx: int) ref {
       _sanity(idx >= 1 && idx <= _totalCapacity);
       const zpos = idx - 1;
       const arrayIdx = _getArrayIdx(zpos);
