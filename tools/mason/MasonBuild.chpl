@@ -36,8 +36,20 @@ proc masonBuild(args) throws {
   var compopts: list(string);
   var opt = false;
   var example = false;
+
   if args.size > 2 {
-    for i in 3..args.size {
+
+    //
+    // This function is generic and may be instantiated with either a list
+    // or an array as the type for "args". In the case of list, the
+    // start index is 1, however in the case of an array, the `low` element
+    // is 0. The below code is a stopgap.
+    //
+    var startIdx = 3;
+    if isArray(args) && args.eltType == string then
+      startIdx = args.domain.low + 2;
+
+    for i in startIdx..args.size {
       var arg = args[i];
       if opt == true {
         compopts.append(arg);
