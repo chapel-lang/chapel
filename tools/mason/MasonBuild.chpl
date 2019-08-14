@@ -45,11 +45,14 @@ proc masonBuild(args) throws {
     // start index is 1, however in the case of an array, the `low` element
     // is 0. The below code is a stopgap.
     //
-    var startIdx = 3;
-    if isArray(args) && args.eltType == string then
-      startIdx = args.domain.low + 2;
+    var start = 3;
+    var end = args.size; 
+    if isArray(args) && args.eltType == string {
+      start = args.domain.low + 2;
+      end = args.domain.high;
+    }
 
-    for i in startIdx..args.size {
+    for i in start..end {
       var arg = args[i];
       if opt == true {
         compopts.append(arg);
