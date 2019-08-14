@@ -1075,25 +1075,7 @@ module Bytes {
                and `s1`
   */
   proc +(s0: _bytes, s1: _bytes) {
-    // cache lengths locally
-    const s0len = s0.len;
-    if s0len == 0 then return s1;
-    const s1len = s1.len;
-    if s1len == 0 then return s0;
-
-    // TODO Engin: Implement a factory function for this case
-    var ret: _bytes;
-    ret.len = s0len + s1len;
-    var (buff, allocSize) = bufferAlloc(ret.len+1);
-    ret.buff = buff;
-    ret._size = allocSize;
-    ret.isowned = true;
-
-    bufferMemcpy(dst=ret.buff, src_loc=s0.locale_id, src=s0.buff, len=s0len);
-    bufferMemcpy(dst=ret.buff, src_loc=s1.locale_id, src=s1.buff, len=s1len,
-                 dst_off=s0len);
-    ret.buff[ret.len] = 0;
-    return ret;
+    return doConcat(s0, s1);
   }
 
   /*
