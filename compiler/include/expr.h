@@ -386,8 +386,8 @@ bool hasOptimizationFlag(Expr* anchor, Flag flag);
 
 
 #ifdef HAVE_LLVM
-llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
-llvm::Value* createTempVarLLVM(llvm::Type* type);
+llvm::Value* createVarLLVM(llvm::Type* type, const char* name);
+llvm::Value* createVarLLVM(llvm::Type* type);
 #endif
 
 GenRet codegenValue(GenRet r);
