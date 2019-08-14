@@ -728,7 +728,7 @@ module String {
           on the same locale as the string.
      */
     inline proc c_str(): c_string {
-      return get_c_str(this);
+      return getCStr(this);
     }
 
     pragma "no doc"
@@ -1062,7 +1062,7 @@ module String {
      */
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
-      return get_slice(this, r);
+      return getSlice(this, r);
     }
 
     pragma "no doc"
@@ -1264,7 +1264,7 @@ module String {
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
     proc replace(needle: string, replacement: string, count: int = -1) : string {
-      return do_replace(this, needle, replacement, count);
+      return doReplace(this, needle, replacement, count);
     }
 
     /*
@@ -1281,7 +1281,7 @@ module String {
      */
     // TODO: specifying return type leads to un-inited string?
     iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
-      for s in do_split(this, sep, maxsplit, ignoreEmpty) do yield s;
+      for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
     }
 
     /*
@@ -1403,12 +1403,12 @@ module String {
 
     pragma "no doc"
     proc join(ir: _iteratorRecord): string {
-      return do_join_iterator(this, ir);
+      return doJoinIterator(this, ir);
     }
 
     pragma "no doc"
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      return do_join(this, S);
+      return doJoin(this, S);
     }
 
     /*
@@ -1470,7 +1470,7 @@ module String {
       the tuple will contain the whole string, and then two empty strings.
     */
     proc const partition(sep: string) : 3*string {
-      return do_partition(this, sep);
+      return doPartition(this, sep);
     }
 
     /*
@@ -1845,7 +1845,7 @@ module String {
      Copies the string `rhs` into the string `lhs`.
   */
   proc =(ref lhs: string, rhs: string) {
-    do_assign(lhs, rhs);
+    doAssign(lhs, rhs);
   }
 
   /*
@@ -1854,7 +1854,7 @@ module String {
      Halts if `lhs` is a remote string.
   */
   proc =(ref lhs: string, rhs_c: c_string) {
-    do_assign(lhs, rhs_c);
+    doAssign(lhs, rhs_c);
   }
 
   //
@@ -1864,7 +1864,7 @@ module String {
      :returns: A new string which is the result of concatenating `s0` and `s1`
   */
   proc +(s0: string, s1: string) {
-    return do_concat(s0, s1);
+    return doConcat(s0, s1);
   }
 
   /*
@@ -1882,7 +1882,7 @@ module String {
        Hello! Hello! Hello!
   */
   proc *(s: string, n: integral) {
-    return do_multiply(s, n);
+    return doMultiply(s, n);
   }
 
   private proc stringValDeprecated() {
@@ -2034,7 +2034,7 @@ module String {
      Appends the string `rhs` to the string `lhs`.
   */
   proc +=(ref lhs: string, const ref rhs: string) : void {
-    do_append(lhs, rhs);
+    doAppend(lhs, rhs);
   }
 
   //
@@ -2069,12 +2069,12 @@ module String {
       }
       return ret;
     } else { */
-    return do_eq(a,b);
+    return doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: string) : bool {
-    return !do_eq(a,b);
+    return !doEq(a,b);
   }
 
   pragma "no doc"

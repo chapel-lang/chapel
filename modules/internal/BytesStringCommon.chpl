@@ -25,7 +25,7 @@ module BytesStringCommon {
     return t==_bytes || t==string;
   }
 
-  proc get_c_str(const ref x: ?t): c_string where isBytesOrStringType(t) {
+  proc getCStr(const ref x: ?t): c_string where isBytesOrStringType(t) {
     inline proc _cast(type t:c_string, b:bufferType) {
       return __primitive("cast", t, b);
     }
@@ -36,7 +36,7 @@ module BytesStringCommon {
     return x.buff:c_string;
   }
 
-  proc get_slice(const ref x: ?t, r: range(?)) where isBytesOrStringType(t) {
+  proc getSlice(const ref x: ?t, r: range(?)) where isBytesOrStringType(t) {
       var ret: t;
       if x.isEmpty() then return ret;
 
@@ -80,7 +80,7 @@ module BytesStringCommon {
     else compilerError("This function should only be used by bytes or string");
   }
 
-  proc do_replace(const ref x: ?t, needle: t, replacement: t,
+  proc doReplace(const ref x: ?t, needle: t, replacement: t,
                   count: int = -1): t where isBytesOrStringType(t) {
     type _idxt = getIndexType(t);
     var result: t = x;
@@ -104,7 +104,7 @@ module BytesStringCommon {
     return result;
   }
 
-  iter do_split(const ref x: ?t, sep: t, maxsplit: int = -1,
+  iter doSplit(const ref x: ?t, sep: t, maxsplit: int = -1,
                 ignoreEmpty: bool = false): t {
     type _idxt = getIndexType(t);
 
@@ -191,7 +191,7 @@ module BytesStringCommon {
       return ret;
   }
 
-  proc do_join_iterator(const ref x: ?t, ir: _iteratorRecord): t
+  proc doJoinIterator(const ref x: ?t, ir: _iteratorRecord): t
         where isBytesOrStringType(t) {
     var s: t;
     var first: bool = true;
@@ -205,7 +205,7 @@ module BytesStringCommon {
     return s;
   }
 
-  proc do_join(const ref x: ?t, const ref S): t
+  proc doJoin(const ref x: ?t, const ref S): t
                where isBytesOrStringType(t) && (isTuple(S) || isArray(S)) {
     if S.size == 0 {
       return '';
@@ -261,7 +261,7 @@ module BytesStringCommon {
   // TODO: I could make this and other routines that use find faster by
   // making a version of search helper that only takes in local strings and
   // localizing in the calling function
-  proc do_partition(const ref x: ?t, sep: t): 3*t where isBytesOrStringType(t) {
+  proc doPartition(const ref x: ?t, sep: t): 3*t where isBytesOrStringType(t) {
     const idx = x.find(sep);
     if idx != 0 {
       return (x[..idx-1], sep, x[idx+sep.numBytes..]);
@@ -270,7 +270,7 @@ module BytesStringCommon {
     }
   }
 
-  proc do_append(ref lhs: ?t, const ref rhs: t) where isBytesOrStringType(t) {
+  proc doAppend(ref lhs: ?t, const ref rhs: t) where isBytesOrStringType(t) {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
@@ -302,7 +302,7 @@ module BytesStringCommon {
     }
   }
 
-  proc do_assign(ref lhs: ?t, rhs: t) where isBytesOrStringType(t) {
+  proc doAssign(ref lhs: ?t, rhs: t) where isBytesOrStringType(t) {
     inline proc helpMe(ref lhs: t, rhs: t) {
       if _local || rhs.locale_id == chpl_nodeID {
         lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
@@ -326,7 +326,7 @@ module BytesStringCommon {
     }
   }
 
-  proc do_assign(ref lhs: ?t, rhs_c: c_string)
+  proc doAssign(ref lhs: ?t, rhs_c: c_string)
                  where isBytesOrStringType(t) {
     // Make this some sort of local check once we have local types/vars
     if !_local && (lhs.locale_id != chpl_nodeID) then
@@ -337,7 +337,7 @@ module BytesStringCommon {
     lhs.reinitString(buff, len, len+1, needToCopy=true);
   }
 
-  proc do_multiply(const ref x: ?t, n: integral) where isBytesOrStringType(t) {
+  proc doMultiply(const ref x: ?t, n: integral) where isBytesOrStringType(t) {
     if n <= 0 then return new t("");
 
     const sLen = x.numBytes;
@@ -363,7 +363,7 @@ module BytesStringCommon {
     return ret;
   }
 
-  proc do_concat(s0: ?t, s1: t): t {
+  proc doConcat(s0: ?t, s1: t): t {
     // cache lengths locally
     const s0len = s0.len;
     if s0len == 0 then return s1:t;
@@ -385,7 +385,7 @@ module BytesStringCommon {
     return ret;
   }
 
-  proc do_eq(a: ?t1, b: ?t2) where isBytesOrStringType(t1) && 
+  proc doEq(a: ?t1, b: ?t2) where isBytesOrStringType(t1) && 
                                    isBytesOrStringType(t2) {
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy

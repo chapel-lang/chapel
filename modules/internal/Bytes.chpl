@@ -281,7 +281,7 @@ module Bytes {
       Get a `c_string` from a :record:`bytes`.
      */
     inline proc c_str(): c_string {
-      return get_c_str(this);
+      return getCStr(this);
     }
 
     /*
@@ -338,7 +338,7 @@ module Bytes {
                 the length of `r` is zero, an empty bytes is returned.
      */
     proc this(r: range(?)) : _bytes {
-      return get_slice(this, r);
+      return getSlice(this, r);
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -515,7 +515,7 @@ module Bytes {
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
     proc replace(needle: _bytes, replacement: _bytes, count: int = -1) : _bytes {
-      return do_replace(this, needle, replacement, count);
+      return doReplace(this, needle, replacement, count);
     }
 
     /*
@@ -534,7 +534,7 @@ module Bytes {
      */
     iter split(sep: _bytes, maxsplit: int = -1,
                ignoreEmpty: bool = false): _bytes {
-      for s in do_split(this, sep, maxsplit, ignoreEmpty) do yield s;
+      for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
     }
 
     /*
@@ -640,12 +640,12 @@ module Bytes {
 
     pragma "no doc"
     proc join(ir: _iteratorRecord): _bytes {
-      return do_join_iterator(this, ir);
+      return doJoinIterator(this, ir);
     }
 
     pragma "no doc"
     proc _join(const ref S) : _bytes where isTuple(S) || isArray(S) {
-      return do_join(this, S);
+      return doJoin(this, S);
     }
 
     /*
@@ -709,7 +709,7 @@ module Bytes {
       the tuple will contain the whole bytes, and then two empty bytes.
     */
     proc const partition(sep: _bytes) : 3*_bytes {
-      return do_partition(this, sep);
+      return doPartition(this, sep);
     }
 
     /*
@@ -1048,14 +1048,14 @@ module Bytes {
      Appends the bytes `rhs` to the bytes `lhs`.
   */
   proc +=(ref lhs: _bytes, const ref rhs: _bytes) : void {
-    do_append(lhs, rhs);
+    doAppend(lhs, rhs);
   }
 
   /*
      Copies the bytes `rhs` into the bytes `lhs`.
   */
   proc =(ref lhs: _bytes, rhs: _bytes) {
-    do_assign(lhs, rhs);
+    doAssign(lhs, rhs);
   }
 
   /*
@@ -1064,7 +1064,7 @@ module Bytes {
      Halts if `lhs` is a remote bytes.
   */
   proc =(ref lhs: _bytes, rhs_c: c_string) {
-    do_assign(lhs, rhs_c);
+    doAssign(lhs, rhs_c);
   }
 
   //
@@ -1102,37 +1102,37 @@ module Bytes {
                returned.
   */
   proc *(s: _bytes, n: integral) {
-    return do_multiply(s, n);
+    return doMultiply(s, n);
   }
 
   pragma "no doc"
   proc ==(a: _bytes, b: _bytes) : bool {
-    return do_eq(a,b);
+    return doEq(a,b);
   }
 
   pragma "no doc"
   proc ==(a: _bytes, b: string) : bool {
-    return do_eq(a,b);
+    return doEq(a,b);
   }
 
   pragma "no doc"
   proc ==(a: string, b: _bytes) : bool {
-    return do_eq(a,b);
+    return doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: _bytes, b: _bytes) : bool {
-    return !do_eq(a,b);
+    return !doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: _bytes, b: string) : bool {
-    return !do_eq(a,b);
+    return !doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: _bytes) : bool {
-    return !do_eq(a,b);
+    return !doEq(a,b);
   }
 
   // character-wise operation helpers
