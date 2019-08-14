@@ -1091,7 +1091,7 @@ proc _lu (in A: [?Adom] ?eltType) {
 }
 
 /*
-  Computes an LU factorization of square matrix `A` 
+  Compute an LU factorization of square matrix `A` 
   using partial pivoting, such that `A = P * L * U` where P
   is a permutation matrix. 
   
@@ -1146,7 +1146,7 @@ proc permute (ipiv, A: [?Adom] ?eltType, transpose=false) {
   return B;
 }
 
-/* Returns the determinant of a square matrix.
+/* Return the determinant of a square matrix.
 
     .. note::
 
@@ -1172,7 +1172,7 @@ proc det (A: [?Adom] ?eltType) {
   return (* reduce [i in Adom.dim(1)] LU[i,i]) * pdet;
 }
 
-/* Returns the solution ``x`` to the linear system `` L * x = b `` 
+/* Return the solution ``x`` to the linear system `` L * x = b `` 
     where ``L`` is a lower triangular matrix. `unit_diag` will set the diagonal
     elements to 1 within this procedure.
 */
@@ -1195,7 +1195,7 @@ proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
   return y;
 }
 
-/* Returns the solution ``x`` to the linear system `` U * x = b `` 
+/* Return the solution ``x`` to the linear system `` U * x = b `` 
     where ``U`` is an upper triangular matrix.
 */
 proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
@@ -1216,7 +1216,7 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   return y;
 }
 
-/* Returns the solution ``x`` to the linear system `` A * x = b ``.
+/* Return the solution ``x`` to the linear system ``A * x = b``.
 */
 proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
