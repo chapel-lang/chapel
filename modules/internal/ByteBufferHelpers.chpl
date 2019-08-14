@@ -86,7 +86,7 @@ module ByteBufferHelpers {
   }
 
   proc bufferCopyRemote(src_loc_id: int(64), src_addr: bufferType,
-                                len: int): bufferType {
+                        len: int): bufferType {
       const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
       chpl_string_comm_get(dest, src_loc_id, src_addr, len);
       dest[len] = 0;
@@ -128,13 +128,13 @@ module ByteBufferHelpers {
     c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len);
   }
 
-  proc bufferMemmove(dst, src, len, dst_off=0, src_off=0) {
+  proc bufferMemmoveLocal(dst, src, len, dst_off=0, src_off=0) {
     c_memmove(dst+dst_off, src+src_off, len);
   }
 
   proc bufferGetByte(buf, off, loc) {
     if !_local && loc != chpl_nodeID {
-      const newBuf = bufferCopyRemote(loc, buf+off, 1);
+      const newBuf = bufferCopyRemote(loc=loc, buf=buf+off, len=1);
       return newBuf[0];
     }
     else {

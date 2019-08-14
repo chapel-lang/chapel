@@ -218,7 +218,7 @@ module Bytes {
             // We just allocated a buffer, make sure to free it later
             this.isowned = true;
           }
-          bufferMemmove(this.buff, buf, s_len);
+          bufferMemmoveLocal(this.buff, buf, s_len);
           this.buff[s_len] = 0;
         } else {
           if this.isowned && !this.isEmpty() then
@@ -295,14 +295,14 @@ module Bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
-                                  loc=this.locale_id);
+                                   loc=this.locale_id);
       return new _bytes(buf, length=1, size=size, needToCopy=false);
     }
 
     /*
       :returns: The value of the `i` th byte as an integer.
     */
-    proc getByte(i: int): byteType {
+    proc byte(i: int): byteType {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
@@ -324,7 +324,7 @@ module Bytes {
     */
     iter bytes(): byteType {
       for i in 1..this.len do
-        yield this.getByte(i);
+        yield this.byte(i);
     }
 
     /*

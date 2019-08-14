@@ -31,7 +31,7 @@ module BytesStringCommon {
     }
 
     if _local == false && x.locale_id != chpl_nodeID then
-      halt("Cannot call .c_str() on a remote bytes");
+      halt("Cannot call .c_str() on a remote " + t:string);
 
     return x.buff:c_string;
   }
@@ -53,8 +53,8 @@ module BytesStringCommon {
         var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low-1,
                                             len=copyLen, loc=x.locale_id);
         if r2.stride == 1 {
-          // TODO Engin: I'd like to call init or something that constructs a byte
-          // object instead of doing the these
+          // TODO Engin: I'd like to call init or something that constructs a
+          // new bytes/string object instead of doing the these all the time
           ret.buff = copyBuf;
           ret._size = copySize;
         }
@@ -97,7 +97,7 @@ module BytesStringCommon {
       result = result[..idx-1] + localReplacement +
                result[(idx + localNeedle.numBytes)..];
       var tmp_res = result[..idx-1] + localReplacement +
-               result[(idx + localNeedle.numBytes)..];
+                    result[(idx + localNeedle.numBytes)..];
 
       startIdx = idx + localReplacement.numBytes;
     }

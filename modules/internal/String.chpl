@@ -620,7 +620,7 @@ module String {
             // We just allocated a buffer, make sure to free it later
             this.isowned = true;
           }
-          bufferMemmove(this.buff, buf, s_len);
+          bufferMemmoveLocal(this.buff, buf, s_len);
           this.buff[s_len] = 0;
         } else {
           if this.isowned && !this.isEmpty() then
