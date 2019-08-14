@@ -1083,10 +1083,22 @@ memleaksfull:
     - Add VectorList collection (#12791)
   04/17/19:
     - Fix bugs in mason search and buildMason (#12785)
+  05/23/19:
+    - Execute defer actions in an iterator upon break from its loop (#12963)
+  06/29/19:
+    - Change to type constructors caused new leak in stream-block1dclass.chpl (#13315)
+  07/04/19:
+    - New assertion tests in Unit Test framework leak FCFs (#13288)
+  07/11/19:
+    - New test inside-field.chpl leaks 3 domains (#13416)
   07/25/19:
     - Add two-array radix and sample sorts and a distributed sort (#13347)
   08/02/19:
     - Fix memory leaks in test-radix-bucketizer.chpl (#13604)
+  08/06/19:
+    - Close memory leaks in bytes type and tests (#13660)
+  08/09/19:
+    - fix another deletion size mismatch error (introduced leaks) (#13671)
 
 meteor:
   12/18/13:

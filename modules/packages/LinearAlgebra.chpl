@@ -1857,16 +1857,17 @@ module Sparse {
 
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
-    var indices: [1..0] 2*D.idxType;
+    use Lists;
+    var indices: list(2*D.idxType);
     for i in D.dim(1) {
       for j in D.dimIter(2, i) {
-        indices.push_back((j, i));
+        indices.append((j, i));
       }
     }
 
     const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
-    Dom += indices;
+    Dom += indices.toArray();
     return Dom;
   }
 

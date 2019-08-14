@@ -11,4 +11,4 @@ proc foo(type t) {
   writeln(x);
 }
 
-foo(borrowed C(real));
+foo(borrowed C(real)?);

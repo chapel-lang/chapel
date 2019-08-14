@@ -1381,8 +1381,8 @@ bool canCoerce(Type*     actualType,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic);
 
 
 static
@@ -1397,7 +1397,11 @@ bool doCanDispatch(Type*     actualType,
   if (actualType == formalType)
     return true;
 
-  if (isGenericInstantiation(actualType, formalType))
+  // MPF 2019-09 - for some reason resolving generic initializers
+  // needs this adjustment, which started in PR #5424.
+  if (fn && fn->isInitializer() &&
+      formalSym == fn->_this &&
+      isGenericInstantiation(formalType, actualType))
     return true;
 
   if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
@@ -1472,17 +1476,17 @@ bool canDispatch(Type*     actualType,
   return retval;
 }
 
-static bool isGenericInstantiation(Type*     actualType,
-                                   Type*     formalType) {
-  AggregateType* atActual = toAggregateType(actualType);
-  AggregateType* atFormal = toAggregateType(formalType);
+static bool isGenericInstantiation(Type*     concrete,
+                                   Type*     generic) {
+  AggregateType* atConcrete = toAggregateType(concrete);
+  AggregateType* atGeneric = toAggregateType(generic);
   bool           retval   = false;
 
-  if (atActual                                != NULL &&
-      atActual->symbol->hasFlag(FLAG_GENERIC) == true &&
+  if (atGeneric                                != NULL &&
+      atGeneric->symbol->hasFlag(FLAG_GENERIC) == true &&
 
-      atFormal                                != NULL &&
-      atFormal->isInstantiatedFrom(atActual)  == true) {
+      atConcrete                                 != NULL &&
+      atConcrete->isInstantiatedFrom(atGeneric)  == true) {
 
     retval = true;
   }
@@ -5415,7 +5419,7 @@ static void resolveSetMember(CallExpr* call) {
     INT_FATAL(call, "Unable to resolve field type");
   }
 
-  if (isGenericInstantiation(fs->type, t)) {
+  if (isGenericInstantiation(t, fs->type)) {
     fs->type = t;
   }
   if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {
@@ -6697,12 +6701,17 @@ static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
 }
 
 static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
+  bool isUndecorated = false;
+
   INT_ASSERT(newExpr->parentSymbol);
   if (isClass(newType) &&
       !isReferenceType(newType) &&
       !newType->symbol->hasFlag(FLAG_DATA_CLASS) &&
       !newType->symbol->hasFlag(FLAG_NO_OBJECT) &&
       !newType->symbol->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS)) {
+
+    // Assume it is undecorated and below we will determine if otherwise
+    isUndecorated = true;
 
     SymExpr* checkSe = NULL;
     if (CallExpr* parentCall = toCallExpr(newExpr->parentExpr))
@@ -6714,29 +6723,32 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
     if (checkSe) {
       for_SymbolSymExprs(se, checkSe->symbol()) {
         // Check that 'new' was used either in
-        // chpl__toraw or in an initialization of Owned/Shared/etc.
+        // PRIM_TO_UNMANAGED_CLASS or in an initialization of Owned/Shared/etc.
         if (se == checkSe) {
-          // OK
+          // do nothing
         } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
           if (parentCall->isNamed("chpl__tounmanaged") || // TODO -- remove case
               parentCall->isNamed("chpl__delete") || // TODO -- remove case
               parentCall->isNamed("chpl__buildDistValue") ||
               parentCall->isNamed("chpl_fix_thrown_error")) {
-            // OK
+            // treat these as decorated
+            isUndecorated = false;
           } else if (parentCall->isPrimitive(PRIM_NEW) &&
                      parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
             // OK e.g. new Owned(new MyClass())
+            isUndecorated = false;
           } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
             // OK e.g. new raw MyClass() / new owned MyClass()
+            isUndecorated = false;
           } else {
-            return true;
+            // do nothing (this use is undecorated)
           }
         }
       }
     }
   }
 
-  return false;
+  return isUndecorated;
 }
 
 static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager) {
@@ -9327,7 +9339,9 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
 
   // Allow default-init assign to work around current compiler oddities.
   // In a future where init= is always used, we can remove this case.
-  if (val->hasFlag(FLAG_INITIALIZED_LATER))
+  // Skip this error for a param - it will get "not of a supported param type"
+  if (val->hasFlag(FLAG_INITIALIZED_LATER) ||
+      val->hasFlag(FLAG_PARAM))
     return;
 
   const char* descr = val->name;

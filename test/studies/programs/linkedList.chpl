@@ -17,7 +17,7 @@ config const listSize = 10;  // Used when populating the list
 //
 class List {
   type eltType;
-  var head: unmanaged Node(eltType);
+  var head: unmanaged Node(eltType)?;
 
   //
   // The Node class contains the list's values and references to the
@@ -27,7 +27,7 @@ class List {
   class Node {
     type eltType;
     var value: eltType;
-    var next: unmanaged Node(eltType);
+    var next: unmanaged Node(eltType)?;
   }
 
   //

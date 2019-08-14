@@ -19,13 +19,13 @@ class blockIndices {
 
 config const numLocs = 50;
 var numLocsDone : sync int = 0;
-var task : sync unmanaged blockIndices;
+var task : sync unmanaged blockIndices?;
  
 proc buildjk() {
   cobegin {
     for loc in 1..numLocs do
       begin {	      	
-          var bI, copyofbI : unmanaged blockIndices;
+          var bI, copyofbI : unmanaged blockIndices?;
           bI = task;
           while (bI.ilo != 0) {
             copyofbI = bI;

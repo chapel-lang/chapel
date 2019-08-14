@@ -31,9 +31,9 @@
 // mapped to by the distribution.
 //
 
-use DSIUtil;
-use ChapelUtil;
-use BlockDist;
+private use DSIUtil;
+private use ChapelUtil;
+private use BlockDist;
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
@@ -54,7 +54,7 @@ record TargetLocaleComparator {
   var dist: unmanaged Block(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
-      if sparseLayoutType == CS(compressRows=false) then
+      if sparseLayoutType == unmanaged CS(compressRows=false) then
         return (dist.targetLocsIdx(a), a[2], a[1]);
       else
         return (dist.targetLocsIdx(a), a[1], a[2]);

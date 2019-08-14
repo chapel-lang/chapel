@@ -1,0 +1,2 @@
+init-field-arg-nonnil-owned-from-oknil-nil.chpl:9: In initializer:
+init-field-arg-nonnil-owned-from-oknil-nil.chpl:10: error: Assigning non-nilable owned to nil

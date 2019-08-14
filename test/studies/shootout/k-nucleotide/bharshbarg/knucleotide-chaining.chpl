@@ -21,11 +21,11 @@ tochar[3] = "G";
 class Node {
   var data : uint;
   var count : int;
-  var next : unmanaged Node;
+  var next : unmanaged Node?;
 }
 
 class Table {
-  var table : [0..tableSize-1] unmanaged Node;
+  var table : [0..tableSize-1] unmanaged Node?;
   var size : int;
 
   proc this(d : uint) ref {

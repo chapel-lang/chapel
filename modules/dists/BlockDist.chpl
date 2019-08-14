@@ -38,9 +38,10 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
-use DSIUtil;
-use ChapelUtil;
-use CommDiagnostics;
+private use DSIUtil;
+private use ChapelUtil;
+private use CommDiagnostics;
+
 use SparseBlockDist;
 use LayoutCS;
 //
@@ -445,7 +446,7 @@ proc Block.init(boundingBox: domain,
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
-  this.sparseLayoutType = sparseLayoutType;
+  this.sparseLayoutType = unmanaged sparseLayoutType;
 
   this.complete();
 

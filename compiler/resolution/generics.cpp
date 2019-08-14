@@ -168,6 +168,23 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 }
 
 
+static Map<FnSymbol*,int> instantiationLimitMap;
+
+
+static bool trackInstantiationsForFn(FnSymbol* fn) {
+  ModuleSymbol* mod = fn->getModule();
+
+          // Don't count instantiations on internal modules
+  return (mod && mod->modTag != MOD_INTERNAL &&
+          // Nor ones that are compiler-generated (we could, but this
+          // has caused problems for me in some cases and I think it's
+          // reasonable to assume compiler-generated functions won't
+          // result in infinitely recursive instantiations; to
+          // reproduce this, comment out that part of the test and try
+          // test/functions/resolution/instantiateMax/instMaxOKifNonrecursive.chpl).
+          !fn->hasFlag(FLAG_COMPILER_GENERATED));
+}
+
 //
 // check for infinite instantiation by limiting the number of
 // instantiations of a particular type or function; this is important
@@ -179,13 +196,10 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 //
 static void
 checkInstantiationLimit(FnSymbol* fn) {
-  static Map<FnSymbol*,int> instantiationLimitMap;
-
-  // Don't count instantiations on internal modules
-  // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
-  if (fn->getModule() &&
-      fn->getModule()->modTag != MOD_INTERNAL &&
-      !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT)) {
+  if (trackInstantiationsForFn(fn)) {
+    while (fn->instantiatedFrom != NULL) {
+      fn = fn->instantiatedFrom;
+    }
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
       USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
                      fn->name);
@@ -193,7 +207,39 @@ checkInstantiationLimit(FnSymbol* fn) {
                 " the instantiation limit from %d", instantiation_limit);
       USR_STOP();
     }
+    // printf("Incrementing instantiation count for %s (%p)\n", fn->name, fn);
     instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
+  }
+}
+
+void popInstantiationLimit(FnSymbol* fn) {
+  bool expandedVarArgs = fn->hasFlag(FLAG_EXPANDED_VARARGS);
+  //
+  // Go from the concrete function to the generic it was based upon (if any)
+  //
+  fn = fn->instantiatedFrom;
+  if (fn == NULL) {
+    return; // this was not a generic function, so it won't be in the table
+  }
+  while (fn->instantiatedFrom != NULL) {
+    fn = fn->instantiatedFrom;
+  }
+
+  if (trackInstantiationsForFn(fn)) {
+    // printf("Decrementing instantiation count for %s (%p)\n", fn->name, fn);
+    int count = instantiationLimitMap.get(fn);
+    if (count > 0) {
+      instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)-1);
+    } else {
+      //
+      // varargs functions are not consistently added to the instantiationLimitMap,
+      // so don't fatal error if we didn't find it; for other functions, not
+      // finding it suggests something is wrong
+      //
+      if (!expandedVarArgs) {
+        INT_FATAL("Over-decrementing a generic instantiation counter");
+      }
+    }
   }
 }
 
@@ -395,10 +441,13 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
-      newFn->tagIfGeneric(&subs);
       if (fn->throwsError() == true) {
         newFn->throwsErrorInit();
       }
+
+      // Resolve formal type-exprs before checking if formals are generic
+      resolveSignature(newFn);
+      newFn->tagIfGeneric(&subs);
 
       explainAndCheckInstantiation(newFn, fn);
 

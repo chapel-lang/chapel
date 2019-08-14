@@ -18,11 +18,11 @@ record ListStack {
   class MyNode {
     type itemType;              // type of item
     var item: itemType;         // item in node
-    var next: unmanaged MyNode(itemType); // reference to next node (same type)
+    var next: unmanaged MyNode(itemType)?; // reference to next node (same type)
   }
 
   type itemType;             // type of items
-  var top: unmanaged MyNode(itemType); // top node on stack linked list
+  var top: unmanaged MyNode(itemType)?; // top node on stack linked list
 
   // push method: add an item to the top of the stack
   proc push(item: itemType) {

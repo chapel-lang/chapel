@@ -1,1 +1,1 @@
-record3.chpl:10: error: sync/single types cannot be of type 'R'
+record3.chpl:10: error: sync/single types cannot contain type 'R'

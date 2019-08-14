@@ -352,30 +352,6 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
     }
   }
 
-  /*
-  if (tail == NULL) {
-    // Handle the more complex case that might depend on substitutions
-
-    // We need to resolve formal->defaultExpr with the appropriate
-    // substitutions. At the same time, we don't want to modify
-    // formal->defaultExpr, since this is the generic function symbol before
-    // instantiation. So, make a copy of formal->defaultExpr,
-    // swap it in, do the substitutions and resolve it, and then
-    // put the original back.
-
-    BlockStmt* origDefault = formal->defaultExpr;
-    BlockStmt* defaultCopy = formal->defaultExpr->copy();
-    // Swap the new version in
-    origDefault->replace(defaultCopy);
-    // Update the symbols that refer to previous arguments
-    update_symbols(defaultCopy, &substitutions);
-    // Resolve it
-    resolveBlockStmt(formal->defaultExpr);
-    // Swap the original back in
-    defaultCopy->replace(origDefault);
-    tail = defaultCopy->body.tail;
-  }*/
-
   if (tail != NULL) {
     if (formal->intent == INTENT_PARAM) {
       if (SymExpr* se = toSymExpr(tail)) {

@@ -884,7 +884,7 @@ void VarSymbol::codegenDef() {
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
     llvm::Type *varType = type->codegen().type;
-    llvm::Value *varAlloca = createTempVarLLVM(varType, cname);
+    llvm::Value *varAlloca = createVarLLVM(varType, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {
@@ -1909,6 +1909,9 @@ void FnSymbol::codegenDef() {
 
   body->codegen();
   flushStatements();
+#ifdef HAVE_LLVM
+  info->currentStackVariables.clear();
+#endif
 
   if( outfile ) {
     fprintf(outfile, "}\n\n");

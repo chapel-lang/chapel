@@ -17,6 +17,5 @@ Value = 3.0i Type = imag(64)
 Value = 3.0 + 2.0i Type = _bytes
 Value = 3.0 + 2.0i Type = complex(128)
 Value = some string Type = _bytes
-Value = some bytes Type = string
 Value = Foo Type = _bytes
 Value = Bar Type = _bytes

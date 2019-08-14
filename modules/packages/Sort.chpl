@@ -334,6 +334,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
 
 
 pragma "no doc"
+pragma "unsafe" // due to 'data' default-initialized to nil for class types
 /*
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.
@@ -397,6 +398,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 /* Basic Functions */
 
+pragma "unsafe" // due to 'tmp' default-initialized to nil for class types
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
   if !Dom.stridable {

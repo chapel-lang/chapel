@@ -2,7 +2,7 @@ module NodesEdges {
 
   class PreEdge {
     var edge: int;
-    var next: unmanaged PreEdge;
+    var next: unmanaged PreEdge?;
   }
 
   class Edge {
@@ -36,7 +36,7 @@ module NodesEdges {
     var id: int;              // group id
     var size: int;            // size of group
     var vb: real;
-    var EdgeList: unmanaged SimpleEdge; // Vector of edges
+    var EdgeList: unmanaged SimpleEdge?; // Vector of edges
   }
 
   class Record {
@@ -45,7 +45,7 @@ module NodesEdges {
     var sigma: real;
     var onStack: int;         // next node on stack; -1, EOS; -2, not on stack
     var inHeap: int;          // position in heap; -1, not in heap
-    var preEdge: unmanaged PreEdge;     // list of edges to predecessor nodes
+    var preEdge: unmanaged PreEdge?;     // list of edges to predecessor nodes
   }
 
   class Heap {

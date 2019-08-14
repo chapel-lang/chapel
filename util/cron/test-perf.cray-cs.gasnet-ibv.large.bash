@@ -21,6 +21,7 @@ export CHPL_LAUNCHER_PARTITION=bdw18
 export CHPL_TARGET_CPU=broadwell
 nightly_args="${nightly_args} -no-buildcheck"
 
+perf_args="-performance-description gn-ibv-large -performance-configs gn-ibv-large:v,gn-ibv-fast:v,gn-mpi"
 perf_args="${perf_args} -performance -perflabel ml- -numtrials 3 -startdate 07/01/19"
 
 $CWD/nightly -cron ${perf_args} ${nightly_args}

@@ -1555,16 +1555,37 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     type resultType = r.intIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    if (count == 0) then
-      // Return a degenerate range.
-      return new range(idxType = r.idxType,
-                       boundedType = BoundedRangeType.bounded,
-                       stridable = r.stridable,
-                       _low = r.chpl_intToIdx(1),
-                       _high = r.chpl_intToIdx(0),
-                       _stride = r.stride,
-                       _alignment = r.chpl_intToIdx(0),
-                       _aligned = false);
+    proc absSameType(str) {
+      if (r.stride < 0) {
+        return (-r.stride):resultType;
+      } else {
+        return r.stride:resultType;
+      }
+    }
+
+    if (count == 0) {
+      if (r.hasLowBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = chpl__intToIdx(r.idxType, r._low),
+                         _high = chpl__intToIdx(r.idxType, r._low - absSameType(r.stride)),
+                         _stride = r.stride,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
+                         _aligned = r.aligned);
+      } else if (r.hasHighBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = chpl__intToIdx(r.idxType, r._high + absSameType(r.stride)),
+                         _high = chpl__intToIdx(r.idxType, r._high),
+                         _stride = r.stride,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
+                         _aligned = r.aligned);
+      } else {
+        halt("Internal error: Unexpected case in chpl_count_help");
+      }
+    }
 
     if boundsChecking && !r.hasFirst() && count > 0 then
       boundsCheckHalt("With a positive count, the range must have a first index.");
@@ -2133,10 +2154,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                                                   minIndicesPerTask,
                                                   len);
       if debugDataParNuma {
-        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n" +
-                           "### numTasksPerSubloc = ", numSublocTasks, "\n" +
-                           "### ignoreRunning = ", ignoreRunning, "\n" +
-                           "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n",
+                           "### numTasksPerSubloc = ", numSublocTasks, "\n",
+                           "### ignoreRunning = ", ignoreRunning, "\n",
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n",
                            "### numChunks = ", numChunks);
       }
 
@@ -2147,8 +2168,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           local do on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
-                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+
-                                   chunk+", on "+chpl_getSubloc()+") ***");
+                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
+                                   chunk, ", on ", chpl_getSubloc(), ") ***");
             }
             const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
             const locRange = lo..hi;
@@ -2165,7 +2186,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             coforall core in 0..#numTasks {
               const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
               if debugDataParNuma {
-                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  " +
+                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
                                    "locRange = ", locRange, "  coreRange = ", low..high);
               }
               yield (low..high,);
@@ -2574,6 +2595,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   inline proc chpl__intToIdx(type idxType, param i: integral) param where isBoolType(idxType) {
     return i: bool;
+  }
+
+  inline proc chpl__intToIdx(type idxType, i: nothing) {
+    return none;
   }
 
   inline proc chpl__idxToInt(i: integral) {

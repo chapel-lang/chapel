@@ -1165,6 +1165,7 @@ private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_chann
 private extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+private extern proc qio_channel_print_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
 private extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipwsbefore:c_int):syserr;
@@ -1205,6 +1206,7 @@ private extern const QIO_CONV_ARG_TYPE_BINARY_COMPLEX:c_int;
 
 private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
+private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
 private extern const QIO_CONV_ARG_TYPE_REGEXP:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL:c_int;
@@ -2682,7 +2684,7 @@ proc _isSimpleIoType(type t) param return
 
 pragma "no doc"
 proc _isIoPrimitiveType(type t) param return
-  _isSimpleIoType(t) || (t == string);
+  _isSimpleIoType(t) || (t == string) || (t == _bytes);
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
@@ -2728,6 +2730,9 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
     return ret;
+  } else if t == _bytes {
+    // handle _bytes
+    // for now, do nothing and let the function return EINVAL
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
@@ -2775,6 +2780,10 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     // handle string
     const local_x = x.localize();
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
+  } else if t == _bytes {
+    // handle bytes
+    const local_x = x.localize();
+    return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
@@ -2860,6 +2869,9 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
                                       _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
     return ret;
+  } else if t == _bytes {
+    // handle _bytes
+    // for now, do nothing and let the function return EINVAL
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
     var err:syserr = ENOERR;
@@ -2923,6 +2935,9 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     }
     return err;
   } else if t == string {
+    var local_x = x.localize();
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
+  } else if t == _bytes {
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if isEnumType(t) {
@@ -5321,19 +5336,58 @@ proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
   return (0, false);
 }
 
+private inline
+proc _toBytes(x:_bytes)
+{
+  return (x, true);
+}
 
 private inline
-proc _toString(x:?t) where t==string
+proc _toBytes(x:string)
+{
+  return (x:_bytes, true);
+}
+
+// don't allow anything else to be cast to bytes for now
+private inline
+proc _toBytes(x:?t)
+{
+  return ("":_bytes, false);
+}
+
+private inline
+proc _toString(x:string)
 {
   return (x, true);
 }
 private inline
-proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=string)
+proc _toString(x:_bytes)
+{
+  return ("", false);
+}
+private inline
+proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=_bytes && t!=string)
 {
   return (x:string, true);
 }
 private inline
 proc _toString(x:?t) where !_isIoPrimitiveType(t)
+{
+  return ("", false);
+}
+private inline
+proc _toStringFromBytesOrString(x:_bytes)
+{
+  return (new string(x.buff, length=x.length, size=x._size,
+                     isowned=false, needToCopy=false), true);
+}
+private inline
+proc _toStringFromBytesOrString(x:string)
+{
+  return (x, true);
+}
+private inline
+proc _toStringFromBytesOrString(x)
 {
   return ("", false);
 }
@@ -5390,7 +5444,12 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoP
         lhs = rhs:int:t;
       }
     } else {
-      lhs = rhs:t;
+      if isBytesType(t2) && isStringType(t) {
+        lhs = rhs.decode(DecodePolicy.Strict);
+      }
+      else {
+        lhs = rhs:t;
+      }
     }
   } catch {
     return ERANGE;
@@ -6075,7 +6134,12 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
             } else err = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t), origLocale);
-          } when QIO_CONV_ARG_TYPE_STRING {
+          } when QIO_CONV_ARG_TYPE_BINARY_STRING {
+            var (t,ok) = _toStringFromBytesOrString(args(i));
+            if ! ok {
+              err = qio_format_error_arg_mismatch(i);
+            } else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+          } when QIO_CONV_ARG_TYPE_STRING { // can only happen with string
             var (t,ok) = _toString(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
@@ -6313,6 +6377,13 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                 err = qio_format_error_arg_mismatch(i);
               } else err = _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
               if ! err then _setIfChar(args(i),chr.ch);
+            } when QIO_CONV_ARG_TYPE_BINARY_STRING {
+              var (t,ok) = _toStringFromBytesOrString(args(i));
+              if ! ok {
+                err = qio_format_error_arg_mismatch(i);
+              }
+              else err = _read_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+              if ! err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_STRING {
               var (t,ok) = _toString(args(i));
               if ! ok {

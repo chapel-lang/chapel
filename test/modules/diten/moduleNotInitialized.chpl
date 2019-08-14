@@ -5,7 +5,7 @@ module M1 {
   class C {
     var field: int;
   }
-  var a: unmanaged C;
+  var a: unmanaged C?;
   var raninit = false;
   proc init() {
     if (!raninit) {
@@ -19,7 +19,7 @@ module M1 {
 
 module M2 {
   proc main {
-    var b, c: sync object;
+    var b, c: sync borrowed object?;
     begin {
       use M1;
       M1.init();

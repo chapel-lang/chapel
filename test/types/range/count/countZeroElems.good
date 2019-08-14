@@ -1,0 +1,48 @@
+42..41: range(int(64),bounded,false)
+
+1..0: range(int(64),bounded,false)
+
+0..-1: range(int(64),bounded,false)
+
+1..0: range(uint(64),bounded,false)
+
+0..18446744073709551615: range(uint(64),bounded,false)
+
+0..255: range(uint(8),bounded,false)
+
+43..42: range(int(64),bounded,false)
+
+2..1: range(int(64),bounded,false)
+
+1..0: range(int(64),bounded,false)
+
+2..1: range(uint(64),bounded,false)
+
+1..0: range(uint(64),bounded,false)
+
+0..18446744073709551615: range(uint(64),bounded,false)
+
+0..255: range(uint(8),bounded,false)
+
+42..40 by 2: range(int(64),bounded,true)
+
+42..40 by 2 align 1: range(int(64),bounded,true)
+
+1..-1 by 2: range(int(64),bounded,true)
+
+1..255 by 2: range(uint(8),bounded,true)
+
+0..254 by 2: range(uint(8),bounded,true)
+
+1..254 by 3: range(uint(8),bounded,true)
+
+1..254 by 3 align 0: range(uint(8),bounded,true)
+
+44..42 by -2: range(int(64),bounded,true)
+
+44..42 by -2 align 1: range(int(64),bounded,true)
+
+3..1 by -2: range(int(64),bounded,true)
+
+1..255 by -2: range(uint(8),bounded,true)
+

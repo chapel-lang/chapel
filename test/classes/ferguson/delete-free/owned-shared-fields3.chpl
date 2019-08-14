@@ -59,8 +59,8 @@ test4();
 
 
 record R5 {
-  var fo:owned MyClass = nil;
-  var fs:shared MyClass = nil;
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
 }
 
 record R6 {
@@ -69,8 +69,8 @@ record R6 {
 }
 
 class C5 {
-  var fo:owned MyClass = nil;
-  var fs:shared MyClass = nil;
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
 }
 
 class C6 {

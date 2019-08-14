@@ -39,7 +39,7 @@ proc buildjk() {
 }
 
 proc consumer() {
-  var bI, copyofbI : unmanaged blockIndices;
+  var bI, copyofbI : unmanaged blockIndices?;
   bI = t.remove();
   while (bI.ilo != 0) {
     copyofbI = bI;

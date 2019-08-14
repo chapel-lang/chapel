@@ -657,10 +657,10 @@ module Spawn {
   {
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
+    
+    var args = if shellarg == "" then [executable, command]
+        else [executable, shellarg, command];
 
-    var args = [command];
-    if shellarg != "" then args.push_front(shellarg);
-    args.push_front(executable);
     return spawn(args, env, executable,
                  stdin=stdin, stdout=stdout, stderr=stderr,
                  kind=kind, locking=locking);

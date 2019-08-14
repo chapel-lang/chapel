@@ -126,7 +126,7 @@ class AccumStencilArr: BaseRectangularArr {
   var dom: unmanaged AccumStencilDom(rank, idxType, stridable, ignoreFluff);
   var locArr: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable);
   pragma "local field"
-  var myLocArr: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -146,7 +146,7 @@ class LocAccumStencilArr {
   type idxType;
   param stridable: bool;
   const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
@@ -752,7 +752,7 @@ proc AccumStencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     if doRADOpt then
-      writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD.RAD);
+      writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD!.RAD);
   }
 }
 
@@ -774,7 +774,7 @@ proc AccumStencilArr.setupRADOpt() {
         myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
-            myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+            myLocArr.locRAD!.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
           }
         }
       }
@@ -813,7 +813,7 @@ proc AccumStencilArr.fluff ref {
 
 
 inline proc AccumStencilArr.dsiLocalAccess(i: rank*idxType) ref {
-  return myLocArr.this(i);
+  return myLocArr!.this(i);
 }
 
 //
@@ -829,13 +829,14 @@ proc AccumStencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
   var i = idx;
   local {
     if myLocArr != nil {
+      const locArr = myLocArr!;
       if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
-        if myLocArr.locDom.contains(i) then return myLocArr.this(i);
+        if locArr.locDom.contains(i) then return locArr.this(i);
       } else {
         // A read: return from fluff if possible
         // If there is no fluff, then myFluff == myBlock
-        if myLocArr.locDom.myFluff.contains(i) then return myLocArr.this(i);
+        if locArr.locDom.myFluff.contains(i) then return locArr.this(i);
       }
     }
   }
@@ -847,6 +848,7 @@ proc AccumStencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {
     if myLocArr {
+      const mArr = myLocArr!;
       if boundsChecking {
         if !dom.wholeFluff.contains(i) {
           halt("array index out of bounds: ", i);
@@ -854,25 +856,25 @@ proc AccumStencilArr.nonLocalAccess(i: rank*idxType) ref {
       }
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableAccumStencilLazyRAD {
-        if myLocArr.locRAD == nil {
-          myLocArr.lockLocRAD();
-          if myLocArr.locRAD == nil {
+        if mArr.locRAD == nil {
+          mArr.lockLocRAD();
+          if mArr.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
-            myLocArr.locRAD = tempLocRAD;
+            mArr.locRAD = tempLocRAD;
           }
-          myLocArr.unlockLocRAD();
+          mArr.unlockLocRAD();
         }
-        if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.lockRAD(rlocIdx);
-          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-            myLocArr.locRAD.RAD(rlocIdx) =
-              locArr(rlocIdx).myElems._value.dsiGetRAD();
+        var mRAD = mArr.locRAD!;
+        if mRAD.RAD(rlocIdx).blk == SENTINEL {
+          mRAD.lockRAD(rlocIdx);
+          if mRAD.RAD(rlocIdx).blk == SENTINEL {
+            mRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
           }
-          myLocArr.locRAD.unlockRAD(rlocIdx);
+          mRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD!;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedData != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(i);
@@ -978,7 +980,7 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
     // that we can use the local block below
     //
     if arrSection.locale.id != here.id then
-      arrSection = myLocArr;
+      arrSection = myLocArr!;
 
     //
     // Slicing arrSection.myElems will require reference counts to be updated.
@@ -1552,7 +1554,7 @@ proc AccumStencilArr.dsiLocalSubdomain(loc: locale) {
   if loc != here then
     unimplementedFeatureHalt("AccumStencil", "remote subdomain queries");
 
-  return myLocArr.locDom.myBlock;
+  return myLocArr!.locDom.myBlock;
 }
 proc AccumStencilDom.dsiLocalSubdomain(loc: locale) {
   if loc != here then
