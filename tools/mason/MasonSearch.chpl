@@ -32,6 +32,15 @@ use Regexp;
 // - allow for exclusion of a pattern
 //
 
+//
+// Temporary passthrough transforming array to list to appease the compiler.
+//
+proc masonSearch(args: [?d] string) {
+  var listArgs: list(string);
+  for x in args do listArgs.append(x);
+  masonSearch(listArgs);
+}
+
 proc masonSearch(ref args: list(string)) {
   if hasOptions(args, "-h", "--help") {
     masonSearchHelp();

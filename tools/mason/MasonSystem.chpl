@@ -147,7 +147,11 @@ proc printPkgPc(args) throws {
     try! {
       const pkgName = args[3];
       if pkgExists(pkgName) {
-        var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir")).strip();
+        //
+        // Add a these call, since `string.join` has an iterator overload but
+        // not one for list.
+        //
+        var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
         var pcFile = joinPath(pcDir, pkgName + ".pc");
         var pc = open(pcFile, iomode.r);
         writeln("\n------- " + pkgName + ".pc -------\n");
