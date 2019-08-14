@@ -305,7 +305,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       USR_FATAL(call, "type index expression '%i' out of bounds", index);
     }
 
-    retval = testCaptureVector[index-1];
+    retval = testCaptureVector[index-1]->copy();
     call->replace(retval);
     break;
   }
@@ -317,7 +317,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
     if (testNameIndex.find(name) != testNameIndex.end()) {
       int index = testNameIndex[name];
-      retval = testCaptureVector[index-1];
+      retval = testCaptureVector[index-1]->copy();
       call->replace(retval);
       break; 
     }
