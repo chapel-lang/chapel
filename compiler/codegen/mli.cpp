@@ -87,8 +87,7 @@ private:
   bool typeRequiresAllocation(Type* t);
 
   std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
-  std::string genMarshalBodyStringC(Type* t, bool out);
-  std::string genMarshalBodyStringChapel(Type* t, bool out);
+  std::string genMarshalBodyString(Type* t, bool out);
   std::string genComment(const char* msg, const char* pfx="");
   std::string genNote(const char* msg);
   std::string genTodo(const char* msg);
@@ -332,7 +331,7 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
 // This will help us later down the line when we have to support other types
 // that push variable width buffers (arrays).
 //
-std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
+std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
   const char* target = out ? "obj" : "buffer";
   std::string gen;
 
@@ -367,54 +366,21 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
     // Null terminate the string we just received.
     gen += "((char*) buffer)[bytes] = '\\0';\n";
 
-    // Cast buffer to const char.
-    gen += "result = ((const char*) buffer);\n";
-  }
-
-  return gen;
-}
-
-std::string MLIContext::genMarshalBodyStringChapel(Type * t, bool out) {
-  const char* target = out ? "obj" : "buffer";
-  std::string gen;
-
-  if (out) {
-    // Compute and push length of string.
-    gen += "bytes = strlen(obj);\n";
-  }
-
-  gen += this->genSocketCall("skt", "bytes", out);
-
-  if (not out) {
-    // Attempt to allocate buffer.
-    gen += "buffer = mli_malloc(bytes + 1);\n";
-
-    // Set ACK value (non-zero if memory allocation failed).
-    gen += "mem_err = (buffer == NULL);\n";
-  }
-
-  // Push/pull possible allocation error on ACK.
-  gen += this->genSocketCall("skt", "mem_err", not out);
-
-  // If error, terminate client/server.
-  gen += "if (mem_err) chpl_mli_terminate(CHPL_MLI_CODE_EMEMORY);\n";
-
-  // Move the string over the wire, using length.
-  gen += this->genSocketCallBuffer("skt", target, "bytes", out);
-
-  // Generate a null frame in the opposite direction for the ACK.
-  gen += this->genSocketCall("skt", NULL, not out);
-
-  if (not out) {
-    // Null terminate the string we just received.
-    gen += "((char*) buffer)[bytes] = '\\0';\n";
-
-    // Cast buffer to int8*
-    Type* underlyingType = getDataClassType(t->symbol)->typeInfo();
-    const char* underlyingTypeName = underlyingType->symbol->cname;
-    gen += "result = ((";
-    gen += underlyingTypeName;
-    gen += "*) buffer);\n";
+    if (t == dtStringC) {
+      // Cast buffer to const char.
+      gen += "result = ((const char*) buffer);\n";
+    } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+               getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
+      // Cast buffer to int8*
+      Type* underlyingType = getDataClassType(t->symbol)->typeInfo();
+      const char* underlyingTypeName = underlyingType->symbol->cname;
+      gen += "result = ((";
+      gen += underlyingTypeName;
+      gen += "*) buffer);\n";
+    } else {
+      INT_FATAL("Unknown type passed to genMarshalBodyString, %s",
+                t->symbol->name);
+    }
   }
 
   return gen;
@@ -481,12 +447,12 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
   } else if (t == dtStringC) {
-    gen += this->genMarshalBodyStringC(t, out);
+    gen += this->genMarshalBodyString(t, out);
   } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
              getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
     // A different strategy will be needed if we ever intend to support
     // c_ptr(int8)s that weren't originally Chapel strings.
-    gen += this->genMarshalBodyStringChapel(t, out);
+    gen += this->genMarshalBodyString(t, out);
   } else {
     USR_FATAL(t, "Multi-locale libraries do not support type: %s",
               t->name());
