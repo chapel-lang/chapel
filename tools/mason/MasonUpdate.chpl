@@ -43,6 +43,15 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 
 private var failedChapelVersion: list(string);
 
+//
+// Temporary passthrough transforming array to list to appease the compiler.
+//
+proc UpdateLock(args: [?d] string, tf="Mason.toml", lf="Mason.lock") {
+  var listArgs: list(string);
+  for x in args do listArgs.append(x);
+  return UpdateLock(listArgs, tf, lf);
+}
+
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
