@@ -25,7 +25,15 @@ module BytesStringCommon {
     return t==_bytes || t==string;
   }
 
-  proc getCStr(const ref x: ?t): c_string where isBytesOrStringType(t) {
+  private proc assertArgType(type t, param methodName: string) param {
+    if !isBytesOrStringType(t) {
+      compilerError("BytesStringCommon."+methodName+
+                    " can only be called with bytes or string argument(s)");
+    }
+  }
+
+  proc getCStr(const ref x: ?t): c_string {
+    assertArgType(t, "getCStr");
     inline proc _cast(type t:c_string, b:bufferType) {
       return __primitive("cast", t, b);
     }
@@ -36,7 +44,9 @@ module BytesStringCommon {
     return x.buff:c_string;
   }
 
-  proc getSlice(const ref x: ?t, r: range(?)) where isBytesOrStringType(t) {
+  proc getSlice(const ref x: ?t, r: range(?)) {
+    assertArgType(t, "getSlice");
+
       var ret: t;
       if x.isEmpty() then return ret;
 
@@ -81,7 +91,9 @@ module BytesStringCommon {
   }
 
   proc doReplace(const ref x: ?t, needle: t, replacement: t,
-                  count: int = -1): t where isBytesOrStringType(t) {
+                  count: int = -1): t {
+    assertArgType(t, "doReplace");
+
     type _idxt = getIndexType(t);
     var result: t = x;
     var found: int = 0;
@@ -106,6 +118,8 @@ module BytesStringCommon {
 
   iter doSplit(const ref x: ?t, sep: t, maxsplit: int = -1,
                 ignoreEmpty: bool = false): t {
+    assertArgType(t, "doSplit");
+
     type _idxt = getIndexType(t);
 
       if !(maxsplit == 0 && ignoreEmpty && x.isEmpty()) {
@@ -157,9 +171,9 @@ module BytesStringCommon {
   pragma "no doc"
   inline proc _startsEndsWith(const ref x: ?t, needles,
                               param fromLeft: bool) : bool 
-                              where isBytesOrStringType(t) && 
-                                    isHomogeneousTuple(needles) &&
+                              where isHomogeneousTuple(needles) &&
                                     needles[1].type==t {
+    assertArgType(t, "startsEndsWith");
 
       var ret: bool = false;
       on __primitive("chpl_on_locale_num",
@@ -191,8 +205,9 @@ module BytesStringCommon {
       return ret;
   }
 
-  proc doJoinIterator(const ref x: ?t, ir: _iteratorRecord): t
-        where isBytesOrStringType(t) {
+  proc doJoinIterator(const ref x: ?t, ir: _iteratorRecord): t {
+    assertArgType(t, "doJoinIterator");
+
     var s: t;
     var first: bool = true;
     for i in ir {
@@ -206,7 +221,9 @@ module BytesStringCommon {
   }
 
   proc doJoin(const ref x: ?t, const ref S): t
-               where isBytesOrStringType(t) && (isTuple(S) || isArray(S)) {
+               where (isTuple(S) || isArray(S)) {
+    assertArgType(t, "doJoin");
+
     if S.size == 0 {
       return '';
     } else if S.size == 1 {
@@ -261,7 +278,9 @@ module BytesStringCommon {
   // TODO: I could make this and other routines that use find faster by
   // making a version of search helper that only takes in local strings and
   // localizing in the calling function
-  proc doPartition(const ref x: ?t, sep: t): 3*t where isBytesOrStringType(t) {
+  proc doPartition(const ref x: ?t, sep: t): 3*t {
+    assertArgType(t, "doPartition");
+
     const idx = x.find(sep);
     if idx != 0 {
       return (x[..idx-1], sep, x[idx+sep.numBytes..]);
@@ -270,7 +289,9 @@ module BytesStringCommon {
     }
   }
 
-  proc doAppend(ref lhs: ?t, const ref rhs: t) where isBytesOrStringType(t) {
+  proc doAppend(ref lhs: ?t, const ref rhs: t) {
+    assertArgType(t, "doAppend");
+
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
@@ -302,7 +323,9 @@ module BytesStringCommon {
     }
   }
 
-  proc doAssign(ref lhs: ?t, rhs: t) where isBytesOrStringType(t) {
+  proc doAssign(ref lhs: ?t, rhs: t) {
+    assertArgType(t, "doAssign");
+
     inline proc helpMe(ref lhs: t, rhs: t) {
       if _local || rhs.locale_id == chpl_nodeID {
         lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
@@ -326,8 +349,9 @@ module BytesStringCommon {
     }
   }
 
-  proc doAssign(ref lhs: ?t, rhs_c: c_string)
-                 where isBytesOrStringType(t) {
+  proc doAssign(ref lhs: ?t, rhs_c: c_string) {
+    assertArgType(t, "doAssign");
+
     // Make this some sort of local check once we have local types/vars
     if !_local && (lhs.locale_id != chpl_nodeID) then
       halt("Cannot assign a c_string to a remote string.");
@@ -337,7 +361,9 @@ module BytesStringCommon {
     lhs.reinitString(buff, len, len+1, needToCopy=true);
   }
 
-  proc doMultiply(const ref x: ?t, n: integral) where isBytesOrStringType(t) {
+  proc doMultiply(const ref x: ?t, n: integral) {
+    assertArgType(t, "doMultiply");
+
     if n <= 0 then return new t("");
 
     const sLen = x.numBytes;
@@ -385,8 +411,10 @@ module BytesStringCommon {
     return ret;
   }
 
-  proc doEq(a: ?t1, b: ?t2) where isBytesOrStringType(t1) && 
-                                   isBytesOrStringType(t2) {
+  proc doEq(a: ?t1, b: ?t2) {
+    assertArgType(t1, "doEq");
+    assertArgType(t2, "doEq");
+
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy
     // will localize a and b, before they are placed into the on bundle,
