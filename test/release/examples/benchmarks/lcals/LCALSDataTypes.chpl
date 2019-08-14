@@ -3,11 +3,20 @@ module LCALSDataTypes {
   use LCALSEnums;
   use Lists;
 
+  //
+  // This is a vector wrapper that uses 0-based indexing.
+  //
   class vector {
     type eltType;
     var A: list(eltType);
+
+    //
+    // Previously, this vector used an array with a domain that started at 0,
+    // but list indexes starting at 1. So we should add 1 to the index to
+    // prevent a logical error.
+    //
     proc this(i: int) ref {
-      return A[i];
+      return A[i + 1];
     }
     proc push_back(e: eltType) {
       A.append(e);
