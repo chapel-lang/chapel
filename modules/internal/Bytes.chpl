@@ -381,7 +381,7 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc startsWith(needles: _bytes ...) : bool {
-      return _startsEndsWith(this, needles, fromLeft=true);
+      return startsEndsWith(this, needles, fromLeft=true);
     }
 
     /*
@@ -391,7 +391,7 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc endsWith(needles: _bytes ...) : bool {
-      return _startsEndsWith(this, needles, fromLeft=false);
+      return startsEndsWith(this, needles, fromLeft=false);
     }
 
     /*

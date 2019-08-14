@@ -1108,7 +1108,7 @@ module String {
                 * `false` -- otherwise
      */
     proc startsWith(needles: string ...) : bool {
-      return _startsEndsWith(this, needles, fromLeft=true);
+      return startsEndsWith(this, needles, fromLeft=true);
     }
 
     /*
@@ -1118,7 +1118,7 @@ module String {
                 * `false` -- otherwise
      */
     proc endsWith(needles: string ...) : bool {
-      return _startsEndsWith(this, needles, fromLeft=false);
+      return startsEndsWith(this, needles, fromLeft=false);
     }
 
 

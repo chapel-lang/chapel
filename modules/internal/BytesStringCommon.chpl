@@ -169,10 +169,10 @@ module BytesStringCommon {
   // multiple needles. Probably wouldn't be worth the overhead for small
   // needles though
   pragma "no doc"
-  inline proc _startsEndsWith(const ref x: ?t, needles,
-                              param fromLeft: bool) : bool 
-                              where isHomogeneousTuple(needles) &&
-                                    needles[1].type==t {
+  inline proc startsEndsWith(const ref x: ?t, needles,
+                             param fromLeft: bool) : bool 
+                             where isHomogeneousTuple(needles) &&
+                                   needles[1].type==t {
     assertArgType(t, "startsEndsWith");
 
     var ret: bool = false;
