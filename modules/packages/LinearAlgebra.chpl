@@ -2016,7 +2016,7 @@ module Sparse {
         halt("Wrong rank for setDiag");
 
       if D.shape(1) != D.shape(2) then
-        halt("addDiag only supports square matrices");
+        halt("setDiag only supports square matrices");
         
       var start, end = 0;
       if (k >= 0) { // upper or main diagonal
