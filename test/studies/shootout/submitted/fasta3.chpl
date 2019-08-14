@@ -116,8 +116,8 @@ proc randomMake(desc, a, n) {
   //
   // Add a line of random sequence
   //
-  proc addLine(nBytes) {
-    for (r, i) in zip(getRands(nBytes), 0..) {
+  proc addLine(bytes) {
+    for (r, i) in zip(getRands(bytes), 0..) {
       if r < a[1](prob) {
         line_buff[i] = a[1](nucl): int(8);
       } else {
@@ -133,9 +133,9 @@ proc randomMake(desc, a, n) {
         line_buff[i] = a[hi](nucl): int(8);
       }
     }
-    line_buff[nBytes] = newline;
+    line_buff[bytes] = newline;
 
-    stdout.write(line_buff[0..nBytes]);
+    stdout.write(line_buff[0..bytes]);
   }
 }
 
