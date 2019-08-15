@@ -8,20 +8,21 @@ proc dummy_test(test) throws {
 }
 
 /* A test function which takes Test Object as argument*/
-proc test_square(test: Test) throws {
+proc test_square(test: borrowed Test) throws {
     // This is a test function
     writeln("b");
 }
 /* A test function which takes Test Object as argument*/
-proc test_squared(test: Test) throws {
+proc test_squared(test: borrowed Test) throws {
     // This is a test function
     writeln("c");
 }
 
 
-var test = new Test();
-param a = __primitive("gather tests", (test));
-var c = __primitive("get test by name","test_square");
+var test: owned Test;
+param a = __primitive("gather tests", test.borrow());
+writeln(a);
+var c = __primitive("get test by name","test_squared");
 var d = __primitive("get test by index",2);
 c(test);
 d(test);
