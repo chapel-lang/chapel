@@ -820,7 +820,7 @@ module String {
     /*
       Iterates over the string byte by byte.
     */
-    iter chpl_bytes: uint(8) {
+    iter chpl_bytes(): byteType {
       var localThis: string = this.localize();
 
       for i in 0..#localThis.len {

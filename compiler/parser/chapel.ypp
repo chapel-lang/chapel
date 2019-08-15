@@ -1943,7 +1943,7 @@ dot_expr:
 | expr TDOT TTYPE              { $$ = new CallExpr(PRIM_TYPEOF, $1); }
 | expr TDOT TDOMAIN            { $$ = buildDotExpr($1, "_dom"); }
 | expr TDOT TLOCALE            { $$ = buildDotExpr($1, "locale"); }
-| expr TDOT TBYTES TLP TRP     { $$ = buildDotExpr($1, "chpl_bytes"); }
+| expr TDOT TBYTES TLP TRP     { $$ = new CallExpr(buildDotExpr($1, "chpl_bytes")); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.

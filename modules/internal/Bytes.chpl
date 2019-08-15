@@ -389,7 +389,7 @@ module Bytes {
     /*
       Iterates over the bytes byte by byte.
     */
-    iter iterBytes(): byteType {
+    iter chpl_bytes(): byteType {
       for i in 1..this.len do
         yield this.getByte(i);
     }
