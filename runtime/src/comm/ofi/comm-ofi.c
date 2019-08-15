@@ -664,19 +664,6 @@ void init_ofiEp(void) {
   //
 
   //
-  // Remove all receive capabilities while creating transmit contexts.
-  // If we don't do this the 'tcp;ofi_rxm' provider (at least) will
-  // return an error from fi_enable() because it thinks the endpoint
-  // might be used for receives but we haven't configured a receive
-  // CQ for it.
-  //
-  uint64_t saved_rx_attr_caps = ofi_info->rx_attr->caps;
-  ofi_info->rx_attr->caps = 0;
-
-  size_t saved_domain_attr_cq_data_size = ofi_info->domain_attr->cq_data_size;
-  ofi_info->domain_attr->cq_data_size = 0;
-
-  //
   // For the CQ lengths, allow for whichever maxOutstanding (AMs or
   // RMAs) value is larger, plus quite a few for AM responses because
   // the network round-trip latency ought to be quite a bit more than
@@ -751,13 +738,6 @@ void init_ofiEp(void) {
   }
 
   //
-  // Restore receive capabilities removed while creating the transmit
-  // contexts.
-  //
-  ofi_info->rx_attr->caps = saved_rx_attr_caps;
-  ofi_info->domain_attr->cq_data_size = saved_domain_attr_cq_data_size;
-
-  //
   // Create receive contexts.
   //
   // For the CQ length, allow for an appreciable proportion of the job
@@ -777,17 +757,20 @@ void init_ofiEp(void) {
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &tciTab[0].av->fid, 0));
   OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_RECV));
+  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid,
+                     FI_TRANSMIT | FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &tciTab[0].av->fid, 0));
   if (ofi_info->domain_attr->cntr_cnt == 0) {
     OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma, NULL));
-    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCQRma->fid, FI_RECV));
+    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCQRma->fid,
+                       FI_TRANSMIT | FI_RECV));
   } else {
     OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntrRma, NULL));
-    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid, FI_RECV));
+    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid,
+                       FI_TRANSMIT | FI_RECV));
   }
   OFI_CHK(fi_enable(ofi_rxEpRma));
 }
@@ -909,10 +892,12 @@ void init_ofiEpTxCtx(int i, struct fi_av_attr* avAttr,
   }
   if (cqAttr != NULL) {
     OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ, NULL));
-    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCQ->fid, FI_TRANSMIT));
+    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCQ->fid,
+                       FI_TRANSMIT | FI_RECV));
   } else {
     OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr, NULL));
-    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCntr->fid, FI_WRITE));
+    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCntr->fid,
+                       FI_TRANSMIT | FI_RECV));
   }
   OFI_CHK(fi_enable(tcip->txCtx));
 }
