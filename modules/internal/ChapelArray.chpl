@@ -2361,13 +2361,53 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
+    // bounds checking helpers
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    pragma "no doc"
+    proc checkAccess(indices) {
+      if isRectangularDom(this.domain) {
+        for param i in 1..rank do
+          if !_value.dom.dsiDim(i).boundsCheck(indices(i)) then
+            halt("indexing out of bounds in dimension ", i, ": [", indices(i),
+                 "] but array bounds are ", _value.dom.dsiDim(i));
+      }
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    pragma "no doc"
+    proc checkSlice(d: domain) {
+      if isRectangularDom(this.domain) {
+        for param i in 1..rank do
+          if !_value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) then
+            halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
+      }
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    pragma "no doc"
+    proc checkSlice(ranges...rank) where chpl__isTupleOfRanges(ranges) {
+      if isRectangularDom(this.domain) {
+        for param i in 1..rank do
+          if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
+            halt("array slice out of bounds in dimension ", i, ": [", ranges(i),
+                 "] but array bounds are ", _value.dom.dsiDim(i));
+      }
+    }
+
     // array element access
     // When 'this' is 'const', so is the returned l-value.
+
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     inline proc ref this(i: rank*_value.dom.idxType) ref {
+      if boundsChecking then
+        checkAccess(i);
+
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
       else
@@ -2378,6 +2418,9 @@ module ChapelArray {
     inline proc const this(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
+      if boundsChecking then
+        checkAccess(i);
+
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
       else
@@ -2388,6 +2431,9 @@ module ChapelArray {
     inline proc const this(i: rank*_value.dom.idxType) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
     {
+      if boundsChecking then
+        checkAccess(i);
+
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
       else
@@ -2421,6 +2467,9 @@ module ChapelArray {
     pragma "alias scope from this"
     inline proc ref localAccess(i: rank*_value.dom.idxType) ref
     {
+      if boundsChecking then
+        checkAccess(i);
+
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
@@ -2431,6 +2480,9 @@ module ChapelArray {
     inline proc const localAccess(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
+      if boundsChecking then
+        checkAccess(i);
+
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
@@ -2441,6 +2493,9 @@ module ChapelArray {
     inline proc const localAccess(i: rank*_value.dom.idxType) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
     {
+      if boundsChecking then
+        checkAccess(i);
+
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
@@ -2507,20 +2562,6 @@ module ChapelArray {
       // underlying array
       d._value.add_arr(a, locking=true, addToList=false);
       return _newArray(a);
-    }
-
-    pragma "no doc"
-    proc checkSlice(d: domain) {
-      for param i in 1.._value.dom.rank do
-        if !_value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) then
-          halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
-    }
-
-    pragma "no doc"
-    proc checkSlice(ranges...rank) where chpl__isTupleOfRanges(ranges) {
-      for param i in 1.._value.dom.rank do
-        if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
-          halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
     // array slicing by a tuple of ranges
