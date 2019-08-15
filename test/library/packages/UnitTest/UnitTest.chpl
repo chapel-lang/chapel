@@ -4,7 +4,7 @@ Any function of the form
 
 .. code-block:: chapel
   
-  proc funcName(test: Test) throws {}
+  proc funcName(test: borrowed Test) throws {}
 
 is treated as a test function. These functions must accept an object of Test
 Class. We use :proc:`~UnitTest.runTest` to pass the tests.
@@ -45,13 +45,13 @@ Here is a minimal example demonstrating how to use the UnitTest module:
      return (x * 9/5)+32;
    }
 
-   proc test_temperature(test: Test) throws {
+   proc test_temperature(test: borrowed Test) throws {
      // we were expecting 98.6 but since we missed typecasting
      // the above function returned 98.
      test.assertFalse(celsius2fahrenheit(37) == 98);
    }
 
-   UnitTest.runTest(test_temperature);
+   UnitTest.main();
 
 Output: 
 
@@ -84,17 +84,17 @@ conditionally with :proc:`~Test.skipIf`:
    }
 
    /*Conditional skip*/
-   proc test1(test: Test) throws {
+   proc test1(test: borrowed Test) throws {
      test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
      test.assertTrue(factorial(5) == 120);
    }
 
    /*Unconditional skip*/
-   proc test2(test: Test) throws {
+   proc test2(test: borrowed Test) throws {
      test.skip("Skipping the test directly");
    }
 
-   UnitTest.runTest(test1, test2);
+   UnitTest.main();
 
 
 Output: 
@@ -125,7 +125,7 @@ Here is an example demonstrating how to use the :proc:`~Test.addNumLocales`
 
 .. code-block:: chapel
 
-  proc test_square(test: Test) throws {
+  proc test_square(test: borrowed Test) throws {
     test.addNumLocales(5);
     var A: [1..numLocales] int;
     coforall i in 0..numLocales-1 with (ref A) {
@@ -149,7 +149,7 @@ You can also specify multiple locales on which your code can run.
 
 .. code-block:: chapel
 
-  proc test3(test: Test) throws {
+  proc test3(test: borrowed Test) throws {
     test.addNumLocales(16,8);
   }
   
@@ -158,7 +158,7 @@ You can mention the range of locales using :proc:`~Test.maxLocales` and
 
 .. code-block:: chapel
 
-  proc test4(test: Test) throws {
+  proc test4(test: borrowed Test) throws {
     test.maxLocales(4);
     test.minLocales(2);
   }
@@ -181,13 +181,13 @@ Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
      return if x == 0 then 1 else x * factorial(x-1); 
    }
 
-   proc testFillFact(test: Test) throws {
+   proc testFillFact(test: borrowed Test) throws {
      test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
      for i in 1..10 do
        factArray.push_back(factorial(i));
    }
 
-   proc testSumFact(test: Test) throws {
+   proc testSumFact(test: borrowed Test) throws {
      test.dependsOn(testFillFact);
      var s = 0;
      for i in 1..10 do
@@ -195,7 +195,7 @@ Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
      test.assertGreaterThan(s,0); 
    }
 
-   UnitTest.runTest(testSumFact, testFillFact);
+   UnitTest.main();
 
 Output:
 
@@ -1081,18 +1081,14 @@ module UnitTest {
     var testCount = 0;
     var _tests: [1..0] argType;
     
-    proc addTest(test) lifetime this < test {
-      // var tempTest = new Test();
-      // param test_name = test: string;
-      // if !canResolve(test_name,tempTest) then
-      //   compilerError(test + " is not callable");
+    pragma "unsafe"
+    proc addTest(test) {
       this._tests.push_back(test);
       this.testCount += 1;
     }
 
-    proc addTests(tests) lifetime this < tests {
-      /*if isString(tests) then
-        compilerError("tests must be an iterable, not a string");*/
+    pragma "unsafe"
+    proc addTests(tests) {
       for test in tests do
         this.addTest(test);
     }
@@ -1108,16 +1104,14 @@ module UnitTest {
   }
 
   /*Runs the tests
-  
-    :arg tests: Multiple ``,`` separated First Class Test Functions.
 
     Call this as 
     
     .. code-block:: chapel
 
-      UnitTest.runTest(test1, test2);
+      UnitTest.main();
   */
-  proc runTest(tests: argType ...?n) throws {
+  proc main() throws {
 
     var testNamesMap: domain(string);
     var testStatus: [testNamesMap] bool,
@@ -1129,7 +1123,17 @@ module UnitTest {
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
-    testSuite.addTests(tests);
+    //Variable for passing to the primitive
+    var testObjGather: owned Test;
+    // gather all the tests
+    param n = __primitive("gather tests", testObjGather.borrow());
+
+    for param i in 1..n {
+      var test_FCF = __primitive("get test by index",i);
+      if (test_FCF: string != tempFcf: string) {
+        testSuite.addTest(test_FCF);
+      }
+    }
     
     for test in testSuite {
       const testName = test: string;
