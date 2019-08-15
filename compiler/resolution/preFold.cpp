@@ -239,6 +239,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_GATHER_TESTS: {
     int  totalTest = 0;
+    Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->throwsError()) {
         ModuleSymbol *mod = fn->getModule();
@@ -246,35 +247,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           if (fn->numFormals() == 1) {
             if (!fn->hasFlag(FLAG_GENERIC) && fn->instantiatedFrom == NULL) {
               const char* name = astr(fn->name);
-
-              // temporarily add a call to try resolving.
-              CallExpr* tryCall = new CallExpr(name);
-              // Add our new call to the AST temporarily.
-              call->getStmtExpr()->insertAfter(tryCall);
-
-              // copy actual args into tryCall.
-              for_actuals(actual, call) {
-                tryCall->insertAtTail(actual->copy());
-              }
-
-              bool isResolved = false;
-              // Try to resolve it.
-              if (tryResolveCall(tryCall)) {
+              resolveSignature(fn);
+              if(isSubTypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
                 totalTest++;
-                isResolved = true; 
-                tryCall->remove();
-
                 CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
-                call->getStmtExpr()->insertAfter(newCall);
-
+                fn->defPoint->getStmtExpr()->insertAfter(newCall);
                 testCaptureVector.push_back(createFunctionAsValue(newCall));
                 newCall->remove();
                 testNameIndex[name] = totalTest;
-              }
-
-              // remove the call from the AST if not removed
-              if (!isResolved) {
-                tryCall->remove();
               }
             }
           }
