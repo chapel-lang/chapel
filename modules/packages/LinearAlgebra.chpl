@@ -1855,8 +1855,39 @@ module Sparse {
     }
   }
 
+  /* Transpose CSR domain */
+  proc transpose(D: domain) where isCSDom(D) {
+    var indices: [1..0] 2*D.idxType;
+    for i in D.dim(1) {
+      for j in D.dimIter(2, i) {
+        indices.push_back((j, i));
+      }
+    }
+
+    const parentDT = transpose(D.parentDom);
+    var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
+    Dom += indices;
+    return Dom;
+  }
+
+  /* Transpose CSR matrix */
+  proc transpose(A: [?Adom] ?eltType) where isCSArr(A) {
+    var Dom = transpose(Adom);
+    var B: [Dom] eltType;
+
+    forall i in Adom.dim(1) {
+      for j in Adom.dimIter(2, i) {
+        B[j, i] = A[i, j];
+      }
+    }
+    return B;
+  }
+
+  /* Transpose CSR matrix */
+  proc _array.T where isCSArr(this) { return transpose(this); }
+
   /* Transpose Sparse domain */
-  proc transpose(D: domain) where isSparseDom(D) {
+  proc transpose(D: domain) where isSparseDom(D) && !isCSDom(D) {
     const nnz = D.nnz;
     var indices: [1..nnz] 2*D.idxType;
     var idx: int = 1;
@@ -1872,7 +1903,7 @@ module Sparse {
   }
 
   /* Transpose Sparse matrix */
-  proc transpose(A: [?Adom] ?eltType) where isSparseArr(A) {
+  proc transpose(A: [?Adom] ?eltType) where isSparseArr(A) && !isCSArr(A) {
     var Dom = transpose(Adom);
     var B: [Dom] eltType;
   
@@ -1883,7 +1914,9 @@ module Sparse {
   }
 
   /* Transpose Sparse matrix */
-  proc _array.T where isSparseArr(this) { return transpose(this); }
+  proc _array.T where isSparseArr(this) && !isCSArr(this) { 
+    return transpose(this); 
+  }
 
   /* Element-wise addition. */
   proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
