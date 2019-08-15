@@ -1587,6 +1587,32 @@ module String {
       return _join(S);
     }
 
+    /*
+      :args listToJoin: list contaning elements whose string values will be concatenated
+      .. code-block:: chapel
+      var x = "|".join([1,2,3])
+      writeln(x); //prints "a|10|d"
+    
+    */
+
+    proc join(listToJoin: list) : string {
+      return _join(listToJoin);
+    }
+
+    pragma "no doc"
+    proc _join(listToJoin: list) : string where isArray(listToJoin) {
+      var s: string;
+      var fistFlag: bool = true;
+      for el in listToJoin{
+        if fistFlag then 
+          fistFlag = false;
+        else
+          s += this;
+        s += el;
+      }
+      return s;
+    }
+
     pragma "no doc"
     proc join(ir: _iteratorRecord) {
       var s: string;
