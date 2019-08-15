@@ -1149,14 +1149,6 @@ module String {
     }
 
     /*
-     Deprecated, use :proc:`string.isEmpty`.
-     */
-    inline proc isEmptyString() : bool {
-      compilerWarning("isEmptyString is deprecated - please use isEmpty instead");
-      return this.isEmpty();
-    }
-
-    /*
       :returns: * `true`  -- when the string is empty
                 * `false` -- otherwise
      */
