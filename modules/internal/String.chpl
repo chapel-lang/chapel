@@ -115,7 +115,7 @@ units for offsets or lengths:
  * graphemes
 
 Most methods on the Chapel string type currently work with codepoint units by
-default. For example, :proc:`~string.length` returns the length in codepoints
+default. For example, :proc:`~string.size` returns the length in codepoints
 and `int` values passed into :proc:`~string.this` are offsets in codepoint
 units.
 
@@ -574,7 +574,7 @@ module String {
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
      */
-    proc init(cs: c_string, length: int = cs.length,
+    proc init(cs: c_string, length: int = cs.size,
                 isowned: bool = true, needToCopy:  bool = true) {
       this.isowned = isowned;
       this.complete();
@@ -692,10 +692,12 @@ module String {
       this.len = s_len;
     }
 
-    /*
-      :returns: The number of codepoints in the string.
-      */
-    inline proc length return numCodepoints;
+    /* Deprecated - please use :proc:`string.size`. */
+    inline proc length {
+      compilerWarning("string.length is deprecated - " +
+                      "please use string.size instead");
+      return numCodepoints;
+    }
 
     /*
       :returns: The number of codepoints in the string.
@@ -1114,11 +1116,11 @@ module String {
 
     /*
       Slice a string. Halts if r is not completely inside the range
-      ``1..string.length``.
+      ``1..string.size``.
 
       :arg r: range of the indices the new string should be made from
 
-      :returns: a new string that is a substring within ``1..string.length``. If
+      :returns: a new string that is a substring within ``1..string.size``. If
                 the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
@@ -1349,7 +1351,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within ``1..string.length``
+                   within ``1..string.size``
 
       :returns: the index of the first occurrence of `needle` within a
                 string, or 0 if the `needle` is not in the string.
@@ -1363,7 +1365,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within ``1..string.length``
+                   within ``1..string.size``
 
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
@@ -1376,7 +1378,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within ``1..string.length``
+                   within ``1..string.size``
 
       :returns: the number of times `needle` occurs in the string
      */
@@ -1394,7 +1396,7 @@ module String {
                 to `count` times
      */
     // TODO: not ideal - count and single allocation probably faster
-    //                 - can special case on replacement|needle.length (0, 1)
+    //                 - can special case on replacement|needle.size (0, 1)
     proc replace(needle: string, replacement: string, count: int = -1) : string {
       var result: string = this;
       var found: int = 0;
@@ -2130,7 +2132,7 @@ module String {
     if !_local && (lhs.locale_id != chpl_nodeID) then
       halt("Cannot assign a c_string to a remote string.");
 
-    const len = rhs_c.length;
+    const len = rhs_c.size;
     const buff:bufferType = rhs_c:bufferType;
     lhs.reinitString(buff, len, len+1, needToCopy=true);
   }
@@ -2354,7 +2356,14 @@ module String {
     return __primitive("string_length_codepoints", this);
 
   pragma "no doc"
-  inline proc param string.length param
+  inline proc param string.length param {
+    compilerWarning("string.length is deprecated - " +
+                    "please use string.size instead");
+    return this.numCodepoints;
+  }
+
+  pragma "no doc"
+  inline proc param string.size param
     return this.numCodepoints;
 
   pragma "no doc"
@@ -2618,7 +2627,7 @@ module String {
   pragma "no doc"
   proc _cast(type t, cs: c_string) where t == string {
     var ret: string;
-    ret.len = cs.length;
+    ret.len = cs.size;
     ret._size = ret.len+1;
     ret.buff = if ret.len > 0
       then __primitive("string_copy", cs): bufferType

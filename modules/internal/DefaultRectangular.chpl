@@ -300,7 +300,7 @@ module DefaultRectangular {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                           " ranges(", parDim, ").length=", ranges(parDim).length);
+                           " ranges(", parDim, ").length=", ranges(parDim).size);
       }
       if debugDataPar {
         chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
@@ -324,8 +324,8 @@ module DefaultRectangular {
         // library...
         coforall chunk in 0..#numChunks {
           var block = ranges;
-          const len = if (!ranges(parDim).stridable) then ranges(parDim).length
-              else ranges(parDim).length:uint * abs(ranges(parDim).stride):uint;
+          const len = if (!ranges(parDim).stridable) then ranges(parDim).size
+              else ranges(parDim).size:uint * abs(ranges(parDim).stride):uint;
           const (lo,hi) = _computeBlock(len,
                                         numChunks, chunk,
                                         ranges(parDim)._high,
@@ -382,11 +382,11 @@ module DefaultRectangular {
 
         if numChunks == 1 {
           if rank == 1 {
-            yield (offset(1)..#ranges(1).length,);
+            yield (offset(1)..#ranges(1).size,);
           } else {
             var block: rank*range(intIdxType);
             for param i in 1..rank do
-              block(i) = offset(i)..#ranges(i).length;
+              block(i) = offset(i)..#ranges(i).size;
             yield block;
           }
         } else {
@@ -404,9 +404,9 @@ module DefaultRectangular {
                                       else dptpl / numChunks);
               var locBlock: rank*range(intIdxType);
               for param i in 1..rank do
-                locBlock(i) = offset(i)..#(ranges(i).length);
+                locBlock(i) = offset(i)..#(ranges(i).size);
               var followMe: rank*range(intIdxType) = locBlock;
-              const (lo,hi) = _computeBlock(locBlock(parDim).length,
+              const (lo,hi) = _computeBlock(locBlock(parDim).size,
                                             numChunks, chunk,
                                             locBlock(parDim)._high,
                                             locBlock(parDim)._low,
@@ -423,7 +423,7 @@ module DefaultRectangular {
                 var followMe2: rank*range(intIdxType) = locBlock2;
                 const low  = locBlock2(parDim2)._low,
                   high = locBlock2(parDim2)._high;
-                const (lo,hi) = _computeBlock(locBlock2(parDim2).length,
+                const (lo,hi) = _computeBlock(locBlock2(parDim2).size,
                                               numChunks2, chunk2,
                                               high, low, low);
                 followMe2(parDim2) = lo..hi;
@@ -455,7 +455,7 @@ module DefaultRectangular {
                                                        ranges);
         if debugDefaultDist then
           chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                  " ranges(", parDim, ").length=", ranges(parDim).length);
+                  " ranges(", parDim, ").length=", ranges(parDim).size);
 
         if debugDataPar {
           chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
@@ -467,22 +467,22 @@ module DefaultRectangular {
 
         if numChunks == 1 {
           if rank == 1 {
-            yield (offset(1)..#ranges(1).length,);
+            yield (offset(1)..#ranges(1).size,);
           } else {
             var block: rank*range(intIdxType);
             for param i in 1..rank do
-              block(i) = offset(i)..#ranges(i).length;
+              block(i) = offset(i)..#ranges(i).size;
             yield block;
           }
         } else {
           var locBlock: rank*range(intIdxType);
           for param i in 1..rank do
-            locBlock(i) = offset(i)..#(ranges(i).length);
+            locBlock(i) = offset(i)..#(ranges(i).size);
           if debugDefaultDist then
             chpl_debug_writeln("*** DI: locBlock = ", locBlock);
           coforall chunk in 0..#numChunks {
             var followMe: rank*range(intIdxType) = locBlock;
-            const (lo,hi) = _computeBlock(locBlock(parDim).length,
+            const (lo,hi) = _computeBlock(locBlock(parDim).size,
                                           numChunks, chunk,
                                           locBlock(parDim)._high,
                                           locBlock(parDim)._low,
@@ -566,7 +566,7 @@ module DefaultRectangular {
         // NOTE: This follows from the implementation of indexOrder()
         if (orderD == (-1):intIdxType) then return orderD;
         totOrder += orderD * blk;
-        blk *= ranges(d).length;
+        blk *= ranges(d).size;
       }
       return totOrder;
     }
@@ -585,9 +585,9 @@ module DefaultRectangular {
     proc dsiNumIndices {
       var sum = 1:intIdxType;
       for param i in 1..rank do
-        sum *= ranges(i).length;
+        sum *= ranges(i).size;
       return sum;
-      // WANT: return * reduce (this(1..rank).length);
+      // WANT: return * reduce (this(1..rank).size);
     }
 
     proc dsiLow {
@@ -1063,12 +1063,12 @@ module DefaultRectangular {
         }
       } else {
         var numElts:intIdxType = 0;
-        if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
+        if dom.dsiNumIndices > 0 || dataAllocRange.size > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
           // dataAllocRange may be empty or contain a meaningful value
           if rank == 1 && !stridable then
-            numElts = dataAllocRange.length;
+            numElts = dataAllocRange.size;
           if numElts == 0 then
             numElts = dom.dsiNumIndices;
 
@@ -1179,23 +1179,23 @@ module DefaultRectangular {
       if storageOrder == ArrayStorageOrder.RMO {
         blk(rank) = 1:intIdxType;
         for param dim in 1..(rank-1) by -1 do
-          blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
+          blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).size;
       } else if storageOrder == ArrayStorageOrder.CMO {
         blk(1) = 1:intIdxType;
         for param dim in 2..rank {
-          blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).length;
+          blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).size;
         }
       } else {
         halt("unknown array storage order");
       }
       computeFactoredOffs();
       const size = if storageOrder == ArrayStorageOrder.RMO
-                   then blk(1) * dom.dsiDim(1).length
-                   else blk(rank) * dom.dsiDim(rank).length;
+                   then blk(1) * dom.dsiDim(1).size
+                   else blk(rank) * dom.dsiDim(rank).size;
 
       if usePollyArrayIndex {
         for param dim in 1..rank {
-         sizesPerDim(dim) = dom.dsiDim(dim).length;
+         sizesPerDim(dim) = dom.dsiDim(dim).size;
         }
       }
 
@@ -1517,7 +1517,7 @@ module DefaultRectangular {
 
         var   first  = info.getDataIndex(start);
         const step   = (second-first):chpl__signedType(viewDom.intIdxType);
-        var   last   = first + (viewDomDim.length-1) * step:viewDom.intIdxType;
+        var   last   = first + (viewDomDim.size-1) * step:viewDom.intIdxType;
 
         if step < 0 then
           last <=> first;
@@ -1661,7 +1661,7 @@ module DefaultRectangular {
 
     if false && !f.writing && !f.binary() &&
        rank == 1 && dom.dsiDim(1).stride == 1 &&
-       dom._arrs.length == 1 {
+       dom._arrs.size == 1 {
 
       // resize-on-read implementation, disabled right now
       // until we decide how it should work.
@@ -1803,7 +1803,7 @@ module DefaultRectangular {
     if blk(rank) != 1 then return false;
 
     for param dim in 1..(rank-1) by -1 do
-      if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
+      if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).size then return false;
 
     if debugDefaultDistBulkTransfer then
       chpl_debug_writeln("\tYES!");
