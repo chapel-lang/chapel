@@ -299,6 +299,19 @@ checkParsedVar(VarSymbol* var) {
 
 static void
 checkFunction(FnSymbol* fn) {
+
+  // Chapel doesn't really support procedures with no-op bodies (a
+  // semicolon only).  Doing so is likely to cause confusion for C
+  // programmers who will think of it as a prototype, but we don't
+  // support prototypes, so require such programmers to type the
+  // empty body instead.  This is consistent with the current draft
+  // of the spec as well.
+  if (fn->hasFlag(FLAG_NO_FN_BODY) && !fn->hasFlag(FLAG_EXTERN))
+    USR_FATAL_CONT(fn, "no-op procedures are only legal for extern functions");
+
+  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))
+    USR_FATAL_CONT(fn, "Extern functions cannot have a body");
+
   if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 

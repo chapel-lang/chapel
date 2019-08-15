@@ -621,7 +621,9 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
   CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
+  // aka record
   dtValue = createInternalType("value", "_chpl_value");
+  //dtValue->addFlag(FLAG_GENERIC); ?
 
   gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
   gIteratorBreakToken->addFlag(FLAG_CONST);
@@ -710,6 +712,7 @@ void initPrimitiveTypes() {
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
+  // aka enum
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
@@ -750,6 +753,7 @@ void initPrimitiveTypes() {
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
+  // aka class
   dtAnyManagement = createInternalType("_anyManagement", "_anyManagement");
   dtAnyManagement->symbol->addFlag(FLAG_GENERIC);
 
