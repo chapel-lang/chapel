@@ -8993,7 +8993,7 @@ yyreduce:
 
   case 530:
 #line 1946 "chapel.ypp" /* yacc.c:1663  */
-    { (yyval.pexpr) = buildDotExpr((yyvsp[-4].pexpr), "chpl_bytes"); }
+    { (yyval.pexpr) = new CallExpr(buildDotExpr((yyvsp[-4].pexpr), "chpl_bytes")); }
 #line 8998 "bison-chapel.cpp" /* yacc.c:1663  */
     break;
 
