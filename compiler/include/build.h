@@ -53,6 +53,7 @@ Expr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
 Expr* buildRealLiteral(const char* pch);
 Expr* buildImagLiteral(const char* pch);
 Expr* buildStringLiteral(const char* pch);
+Expr* buildBytesLiteral(const char* pch);
 Expr* buildCStringLiteral(const char* pch);
 
 Expr* buildDotExpr(BaseAST* base, const char* member);

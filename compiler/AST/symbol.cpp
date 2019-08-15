@@ -1573,7 +1573,7 @@ void createInitStringLiterals() {
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
-VarSymbol *new_StringSymbol(const char *str) {
+static VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
@@ -1601,7 +1601,7 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   int strLength = unescapeString(str, cstrMove).length();
 
-  s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
+  s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), t);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
   s->addFlag(FLAG_LOCALE_PRIVATE);
@@ -1612,7 +1612,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
   CallExpr *initCall = new CallExpr(PRIM_NEW,
-      new SymExpr(dtString->symbol),
+      new SymExpr(t->symbol),
       cstrTemp,
       new_IntSymbol(strLength));
   initCall->insertAtTail(gFalse); // owned = false
@@ -1635,6 +1635,14 @@ VarSymbol *new_StringSymbol(const char *str) {
   *s->immediate = imm;
   stringLiteralsHash.put(s->immediate, s);
   return s;
+}
+
+VarSymbol *new_BytesSymbol(const char *str) {
+  return new_StringOrBytesSymbol(str, dtBytes);
+}
+
+VarSymbol *new_StringSymbol(const char *str) {
+  return new_StringOrBytesSymbol(str, dtString);
 }
 
 VarSymbol *new_CStringSymbol(const char *str) {
