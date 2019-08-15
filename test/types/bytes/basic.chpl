@@ -48,7 +48,7 @@ writeln();
 writeln("Iterator tests");
 for byte in b_from_c_ptr do
   writeln(byte, " as ", byte.type:string);
-for byte in b_from_c_ptr.iterBytes() do
+for byte in b_from_c_ptr.bytes() do
   writeln(byte, " as ", byte.type:string);
 writeln();
 

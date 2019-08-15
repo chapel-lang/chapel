@@ -759,7 +759,7 @@ module Bytes {
         var inChunk : bool = false;
         var chunkStart : idxType;
 
-        for (i,c) in zip(1.., localThis.iterBytes()) {
+        for (i,c) in zip(1.., localThis.bytes()) {
           // emit whole string, unless all whitespace
           // TODO Engin: Why is this inside the loop?
           if noSplits {
@@ -930,8 +930,8 @@ module Bytes {
       var end: idxType = localThis.len;
 
       if leading {
-        label outer for (i, thisChar) in zip(1.., localThis.iterBytes()) {
-          for removeChar in localChars.iterBytes() {
+        label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
+          for removeChar in localChars.bytes() {
             if thisChar == removeChar {
               start = i + 1;
               continue outer;
@@ -947,8 +947,8 @@ module Bytes {
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
         end = 0;
-        label outer for (i, thisChar) in zip(1.., localThis.iterBytes()) {
-          for removeChar in localChars.iterBytes() {
+        label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
+          for removeChar in localChars.bytes() {
             if thisChar == removeChar {
               continue outer;
             }
@@ -1045,7 +1045,7 @@ module Bytes {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if !(byte_isUpper(b)) {
             result = false;
             break;
@@ -1071,7 +1071,7 @@ module Bytes {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if !(byte_isLower(b)) {
             result = false;
             break;
@@ -1095,7 +1095,7 @@ module Bytes {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if !(byte_isWhitespace(b)) {
             result = false;
             break;
@@ -1118,7 +1118,7 @@ module Bytes {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if !byte_isAlpha(b) {
             result = false;
             break;
@@ -1140,7 +1140,7 @@ module Bytes {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if !byte_isDigit(b) {
             result = false;
             break;
@@ -1163,7 +1163,7 @@ module Bytes {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if !byte_isAlnum(b) {
             result = false;
             break;
@@ -1186,7 +1186,7 @@ module Bytes {
 
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if !byte_isPrintable(b) {
             result = false;
             break;
@@ -1212,7 +1212,7 @@ module Bytes {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
-        for b in this.iterBytes() {
+        for b in this.bytes() {
           if byte_isLower(b) {
             if last == UPPER || last == LOWER {
               last = LOWER;
@@ -1245,7 +1245,7 @@ module Bytes {
     proc toLower() : bytes {
       var result: bytes = this;
       if result.isEmpty() then return result;
-      for (i,b) in zip(0.., result.iterBytes()) {
+      for (i,b) in zip(0.., result.bytes()) {
         result.buff[i] = byte_toLower(b); //check is done by byte_toLower
       }
       return result;
@@ -1259,7 +1259,7 @@ module Bytes {
     proc toUpper() : bytes {
       var result: bytes = this;
       if result.isEmpty() then return result;
-      for (i,b) in zip(0.., result.iterBytes()) {
+      for (i,b) in zip(0.., result.bytes()) {
         result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
       }
       return result;
@@ -1277,7 +1277,7 @@ module Bytes {
 
       param UN = 0, LETTER = 1;
       var last = UN;
-      for (i,b) in zip(0.., result.iterBytes()) {
+      for (i,b) in zip(0.., result.bytes()) {
         if byte_isAlpha(b) {
           if last == UN {
             last = LETTER;
