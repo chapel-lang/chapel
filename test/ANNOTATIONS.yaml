@@ -392,6 +392,14 @@ all:
       config: 16 node XC
   05/30/19:
     - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
+  07/12/19:
+    - Stop pinning the progress thread to the last CPU (#13423)
+  07/16/19:
+    - text: Use a blocking progress thread for gasnet-infiniband (#13473)
+      config: 16 node CS
+  08/08/19:
+    - text: Machine upgraded to CLE7
+      config: 16 node XC
 
 
 AllCompTime:
