@@ -454,11 +454,15 @@ static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
+  // todo: switch to using combineDecorators()
   ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NONNIL;
+
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     t = dt->getCanonicalClass();
-    if (dt->isNilable())
-      decorator = CLASS_TYPE_UNMANAGED_NILABLE;
   } else if (isManagedPtrType(t)) {
     t = getManagedPtrBorrowType(t);
   }
@@ -475,6 +479,7 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
+  // todo: switch to using combineDecorators()
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
 
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
