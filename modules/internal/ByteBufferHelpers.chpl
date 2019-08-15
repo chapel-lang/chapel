@@ -127,7 +127,7 @@ module ByteBufferHelpers {
 
   proc bufferGetByte(buf, off, loc) {
     if !_local && loc != chpl_nodeID {
-      const newBuf = bufferCopyRemote(loc=loc, buf=buf+off, len=1);
+      const newBuf = bufferCopyRemote(src_loc_id=loc, src_addr=buf+off, len=1);
       return newBuf[0];
     }
     else {
