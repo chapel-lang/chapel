@@ -6229,6 +6229,13 @@ proc channel.writef(fmtStr:string): bool throws {
    Read arguments according to a format string. See
    :ref:`about-io-formatted-io`.
 
+   .. warning::
+
+      Intents for all arguments except the format string are `ref`. If `readf`
+      is used with formats that require an additional argument such as `%*i` and
+      `%*S`, then those arguments cannot be constants. Instead, define variables
+      and pass them.
+
    :arg fmt: the format string
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
