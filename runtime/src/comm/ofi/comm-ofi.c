@@ -651,7 +651,9 @@ void init_ofiEp(void) {
   // Compute numbers of transmit and receive contexts, and then create
   // the transmit context table.
   //
-  useScalableTxEp = (ofi_info->domain_attr->max_ep_tx_ctx > 1);
+  useScalableTxEp = (ofi_info->domain_attr->max_ep_tx_ctx > 1
+                     && chpl_env_rt_get_bool("COMM_OFI_USE_SCALABLE_EP",
+                                             true));
   init_ofiEpNumCtxs();
 
   tciTabLen = numTxCtxs;
