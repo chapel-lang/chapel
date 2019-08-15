@@ -79,6 +79,7 @@ static struct fid_domain* ofi_domain;   // fabric access domain
 static int useScalableTxEp;             // use a scalable tx endpoint?
 static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
 static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
+static enum fi_wait_obj ofi_amhWaitObj; // wait object for above
 
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
@@ -636,10 +637,14 @@ void init_ofiEp(void) {
   // on any RMA it initiates but also progress on inbound RMA, if that
   // is needed.  It uses a wait set to organize this.
   //
-  {
+  if (chpl_env_rt_get_bool("COMM_OFI_USE_WAIT_SET", true)) {
     struct fi_wait_attr waitSetAttr = (struct fi_wait_attr)
                                       { .wait_obj = FI_WAIT_UNSPEC, };
     OFI_CHK(fi_wait_open(ofi_fabric, &waitSetAttr, &ofi_amhWaitSet));
+    ofi_amhWaitObj = FI_WAIT_SET;
+  } else {
+    ofi_amhWaitSet = NULL;
+    ofi_amhWaitObj = FI_WAIT_NONE;
   }
 
   //
@@ -726,7 +731,7 @@ void init_ofiEp(void) {
   if (ofi_info->domain_attr->cntr_cnt > 0) {
     cntrAttr = (struct fi_cntr_attr)
                { .events = FI_CNTR_EVENTS_COMP,
-                 .wait_obj = FI_WAIT_SET,
+                 .wait_obj = ofi_amhWaitObj,
                  .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
       init_ofiEpTxCtx(i, &avAttr, NULL, &cntrAttr);
@@ -735,7 +740,7 @@ void init_ofiEp(void) {
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
                .size = 100, // TODO
-               .wait_obj = FI_WAIT_SET,
+               .wait_obj = ofi_amhWaitObj,
                .wait_cond = FI_CQ_COND_NONE,
                .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
@@ -759,12 +764,12 @@ void init_ofiEp(void) {
   cqAttr = (struct fi_cq_attr)
            { .size = chpl_numNodes * numWorkerTxCtxs,
              .format = FI_CQ_FORMAT_DATA,
-             .wait_obj = FI_WAIT_SET,
+             .wait_obj = ofi_amhWaitObj,
              .wait_cond = FI_CQ_COND_NONE,
              .wait_set = ofi_amhWaitSet, };
   cntrAttr = (struct fi_cntr_attr)
              { .events = FI_CNTR_EVENTS_COMP,
-               .wait_obj = FI_WAIT_SET,
+               .wait_obj = ofi_amhWaitObj,
                .wait_set = ofi_amhWaitSet, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
@@ -1280,7 +1285,9 @@ void fini_ofi(void) {
     }
   }
 
-  OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
+  if (ofi_amhWaitObj == FI_WAIT_SET) {
+    OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
+  }
 
   OFI_CHK(fi_close(&ofi_domain->fid));
   OFI_CHK(fi_close(&ofi_fabric->fid));
@@ -2030,7 +2037,12 @@ void amHandler(void* argNil) {
   //
   while (!atomic_load_bool(&amHandlersExit)) {
     int ret;
-    OFI_CHK_2(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret, -FI_ETIMEDOUT);
+    if (ofi_amhWaitObj == FI_WAIT_SET) {
+      OFI_CHK_2(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret, -FI_ETIMEDOUT);
+    } else {
+      sched_yield();
+      ret = FI_SUCCESS;
+    }
     if (ret == FI_SUCCESS) {
       processRxAmReq(tcip);
       if (tcip->txCQ != NULL) {
