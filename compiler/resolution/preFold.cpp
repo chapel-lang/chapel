@@ -295,8 +295,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_GET_TEST_BY_NAME: {
     const char* name = NULL;
+
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of 'get test by name'");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to 'get test by name'");
+    }
+
     if(!get_string(call->get(1), &name)) {
-      USR_FATAL(call, "illegal type function name");
+      USR_FATAL(call, "illegal type for expected test name. Expected a 'string' got '%s'",
+                call->get(1)->getValType()->name());
     }
     if (testNameIndex.find(name) != testNameIndex.end()) {
       int index = testNameIndex[name];
