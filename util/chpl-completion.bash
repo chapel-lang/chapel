@@ -444,8 +444,6 @@ _chpl ()
 --optimize-range-iteration \
 --output \
 --permit-unhandled-module-errors \
---prepend-internal-module-dir \
---prepend-standard-module-dir \
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
