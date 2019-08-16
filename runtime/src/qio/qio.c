@@ -1551,6 +1551,7 @@ qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t h
   }
 }
 
+
 // This routine always returns a malloc'd string in the path_out pointer.
 // The caller must free the passed-back pointer.
 qioerr qio_relative_path(const char** path_out, const char* cwd, const char* path)
@@ -3844,6 +3845,127 @@ qioerr qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbyt
 
   return err;
 }
+
+qioerr qio_channel_seek(qio_channel_t* ch, int64_t start, int64_t end)
+{
+  qioerr err;
+
+  // clear out any bits.
+  ch->bit_buffer = 0;
+  ch->bit_buffer_bits = 0;
+
+  if( qbuffer_is_initialized(&ch->buf) ) {
+    _qio_buffered_advance_cached(ch);
+  }
+
+  if (ch->chan_info != NULL || ch->file->file_info != NULL)
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "reset not supported for plugin files");
+
+  if (ch->mark_cur != 0)
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "reset not supported for marked channel");
+
+  int writing = 0;
+  if (ch->flags & QIO_FDFLAG_READABLE)
+    writing = 0;
+  else
+    writing = 1;
+
+  //int64_t old_start = qbuffer_start_offset(&ch->buf);
+  int64_t old_av_start = ch->mark_stack[0];
+  int64_t old_av_end = ch->av_end;
+  int64_t old_end = qbuffer_end_offset(&ch->buf);
+
+
+  // Adjust the buffer.
+
+  bool do_setstart = false;
+  if (!writing) {
+    // Don't allow buffer reuse when writing because
+    // writing to a gap could mess things up.
+
+    // For reading, don't allow setstart if
+    //  seeking before the buffer
+    //  seeking to the write-behind region
+    if (old_av_start <= start && start < old_av_end) {
+      // seeking within the available region
+      do_setstart = true;
+    } else if (old_av_start <= start && start < old_end) {
+      // seeking to the read-ahead region
+      do_setstart = true;
+    }
+  }
+
+  if (do_setstart == false) {
+    // Zero the available region
+    if (writing)
+      ch->av_end = old_av_start;
+    else
+      _set_right_mark_start(ch, old_av_end);
+
+    _qio_buffered_behind(ch, /* flush everything */ true);
+
+    // Make sure the buffer is empty - since we ran buffered_behind,
+    // we can just discard any allocated memory.
+    int64_t trim_bytes = qbuffer_end_offset(&ch->buf) -
+                         qbuffer_start_offset(&ch->buf);
+
+    qbuffer_trim_back(&ch->buf, trim_bytes);
+
+    assert(qbuffer_start_offset(&ch->buf) == qbuffer_end_offset(&ch->buf));
+
+    // Set the new start_pos
+    qbuffer_reposition(&ch->buf, start);
+    ch->start_pos = start;
+    ch->end_pos = end;
+
+    // Update av_start and av_end
+    _set_right_mark_start(ch, start);
+    ch->av_end = start;
+
+    // update the file with start_pos.
+    err = qio_lock(&ch->file->lock);
+    if (err) return err;
+    if( ch->start_pos > ch->file->max_initial_position ) {
+      ch->file->max_initial_position = ch->start_pos;
+    }
+    qio_unlock(&ch->file->lock);
+
+    // Use file->mmap if possible
+    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MMAP &&
+        (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
+      int64_t uselen;
+
+      if( ch->file->mmap ) {
+        uselen = ch->file->mmap->len - start;
+        if( ch->end_pos < INT64_MAX ) {
+          if( start + uselen > ch->end_pos ) {
+            uselen = ch->end_pos - start;
+          }
+        }
+        if( uselen > 0 ) {
+          // Put the mmap data into the buffer.
+          err = qbuffer_append(&ch->buf, ch->file->mmap, start, uselen);
+        }
+      }
+    }
+
+  } else {
+    // Just change the buffer start.
+
+    // Adjust the av_end
+    err = _qio_channel_require_unlocked(ch, start - old_av_start, writing);
+    if (err) return err;
+
+    // Adjust the av_start
+    _set_right_mark_start(ch, start);
+    err = _qio_buffered_behind(ch, true);
+    if (err) return err;
+    // No need to set start_pos here.
+  }
+
+  return 0;
+}
+
 
 /* Handle I/O of bits at a time */
 void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t v, int8_t nbits)

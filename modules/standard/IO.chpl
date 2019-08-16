@@ -1083,6 +1083,8 @@ private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):sys
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 private extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
+private extern proc qio_channel_seek(ch:qio_channel_ptr_t, start:int(64), end:int(64)):syserr;
+
 private extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):syserr;
 private extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):syserr;
@@ -1668,7 +1670,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
 
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
-  
+
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
       file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
 
@@ -2326,6 +2328,15 @@ inline proc channel.revert() where this.locking == false {
 inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
+
+proc channel.seek(start:int, end:int = max(int)) throws
+where this.locking == false {
+  const err = qio_channel_seek(_channel_internal, start, end);
+
+  if err then
+    throw SystemError.fromSyserr(err);
+}
+
 
 // These begin with an _ to indicated that
 // you should have a lock before you use these... there is probably
