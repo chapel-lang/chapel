@@ -125,6 +125,7 @@ void parse() {
 
 static Vec<const char*> sModPathSet;
 
+static Vec<const char*> sPreModPath;
 static Vec<const char*> sIntModPath;
 static Vec<const char*> sStdModPath;
 static Vec<const char*> sUsrModPath;
@@ -134,6 +135,14 @@ static Vec<const char*> sModNameSet;
 static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<UseStmt*>    sModReqdByInt;
+
+void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
+  sIntModPath.add(astr(newpath));
+}
+
+void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
+  sStdModPath.add(astr(newpath));
+}
 
 void setupModulePaths() {
   const char* modulesRoot = NULL;
@@ -250,6 +259,7 @@ static void countTokensInCmdLineFiles() {
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName) == true) {
+      //      fprintf(stderr, "Parsing file due to counting tokens\n");
       parseFile(inputFileName, MOD_USER, true);
     }
   }
@@ -309,6 +319,7 @@ static void parseCommandLineFiles() {
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName)) {
+      //      fprintf(stderr, "Parsing file due to command line\n");
       parseFile(inputFileName, MOD_USER, true);
     }
   }
@@ -415,6 +426,7 @@ static void ensureRequiredStandardModulesAreParsed() {
       // then we need to parse it
       if (foundInt == false) {
         if (const char* path = searchThePath(modName, false, sStdModPath)) {
+          //          fprintf(stderr, "Parsing file due to requiring std modules\n");
           ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false);
 
           // If we also found a user module by the same name,
@@ -449,9 +461,12 @@ static void ensureRequiredStandardModulesAreParsed() {
 
 static void parseDependentModules(bool isInternal) {
   forv_Vec(const char*, modName, sModNameList) {
-    if (sModDoneSet.set_in(modName)   == NULL &&
-        parseMod(modName, isInternal) != NULL) {
-      sModDoneSet.set_add(modName);
+    //    printf("*** Considering %s\n", modName);
+    if (sModDoneSet.set_in(modName)   == NULL) {
+      //      printf("    Didn't find it in set\n");
+      if (parseMod(modName, isInternal) != NULL) {
+        sModDoneSet.set_add(modName);
+      }
     }
   }
 
@@ -485,6 +500,7 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
     modTag = isStandard ? MOD_STANDARD : MOD_USER;
   }
 
+  //  fprintf(stderr, "Parsing file due to parseMod\n");
   return (path != NULL) ? parseFile(path, modTag, false) : NULL;
 }
 
@@ -542,7 +558,7 @@ static ModuleSymbol* parseFile(const char* path,
         sFirstFile = false;
       }
 
-      fprintf(stderr, "  %s\n", cleanFilename(path));
+      fprintf(stderr, ">>%s\n", cleanFilename(path));
     }
 
     if (namedOnCommandLine == true) {
@@ -804,6 +820,8 @@ static const char* stdModNameToPath(const char* modName,
   const char* stdPath = searchThePath(modName, false, sStdModPath);
   const char* retval  = NULL;
 
+  //  printf("** Converting %s\n", modName);
+  
   if        (usrPath == NULL && stdPath == NULL) {
     *isStandard = false;
     retval      = NULL;
