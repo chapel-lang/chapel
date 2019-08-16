@@ -10,7 +10,7 @@ config const m=1000,
              
 config type eltType = real;
 
-const bytes = numBytes(eltType);
+const nbytes = numBytes(eltType);
 
 proc main() {
 
@@ -25,7 +25,7 @@ proc main() {
     writeln('iters : ', iters);
     writeln('m     : ', m);
     writeln('numLocales     : ', numLocales);
-    writeln('MB    : ', (bytes*m*m) / 10**6);
+    writeln('MB    : ', (nbytes*m*m) / 10**6);
     writeln();
   }
 
