@@ -668,10 +668,8 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
         const endid = if localDomain.high < temp_endid
                       then  localDomain.high else temp_endid;
         var myResult: eltType = 0;
-        local {
-          for ind in startid..endid {
-            myResult += A.localAccess(ind) * B.localAccess(ind);
-          }
+        for ind in startid..endid {
+          myResult += A.localAccess(ind) * B.localAccess(ind);
         }
         threadResults[tid] = myResult;
       }
