@@ -300,7 +300,7 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         # Try removing this line the next time we update compiler versions
-        load_module_version craype 2.1.6.9
+        load_module_version craype 2.6.1.9
         load_module_version $target_compiler $target_version
 
         # pin to mpich/libsci versions compatible with the gen compiler
