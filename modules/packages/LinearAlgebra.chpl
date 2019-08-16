@@ -1318,7 +1318,8 @@ proc svd(A: [?Adom] ?t) throws
     stored in ``X`` before calling the procedure, and the approximate solution 
     will be stored in the same array.
 */
-proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, b: [Xdom] eltType, tol, maxiter) {
+proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+            b: [Xdom] eltType, tol, maxiter) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
     halt("Wrong shape of input matrix or vector");
   if Adom.shape(1) != Adom.shape(2) then
