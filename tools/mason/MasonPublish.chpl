@@ -81,7 +81,7 @@ proc masonPublish(args: [] string) throws {
 /* Uses the existence of a colon to see if a passed registryPath is a local or remote registryPath
  */
 proc isRegistryPathLocal(registryPath : string) throws {
-  return registryPath.find(":") == 0; 
+  return registryPath.find(":") == 0;
 }
 
 /* When passed a registryPath and whether or not that registryPath is a local or remote registryPath,
@@ -135,17 +135,17 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
     else {
       safeDir = MASON_HOME + '/tmp/' + name + '-' + uniqueDir;
     }
-  
+
     if !isLocal {
       if !exists(MASON_HOME + '/tmp') then mkdir(MASON_HOME + '/tmp');
       mkdir(safeDir);
     }
- 
+
     if !isLocal {
       cloneMasonReg(username, safeDir, registryPath);
       branchMasonReg(username, name, safeDir, registryPath);
     }
-  
+
     addPackageToBricks(packageLocation, safeDir, name, registryPath, isLocal);
 
     if !isLocal {
@@ -160,7 +160,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
       gitC(safeDir, 'git add Bricks/' + name);
       gitC(safeDir, "git commit -m '" + name + "'" );
     }
-    
+
   }
   catch e {
     writeln(e.message());
