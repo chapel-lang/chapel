@@ -872,7 +872,7 @@ Record components:
 
 // The setEnv args use _ variable prefix (_CHPL_HOME) to ensure that setEnv is
 // only called when a flag is passed - otherwise arg functions are  called if
-// their environment variableis set
+// their environment variable is set
 
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
