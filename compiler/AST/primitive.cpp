@@ -631,6 +631,9 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
+  // dst, aggregate name, field name, type to default-init, value to init from
+  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
+
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 

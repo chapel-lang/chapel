@@ -1,2 +1,2 @@
 init-field-arg-oknil-unmanaged-from-nonnil-borrowed.chpl:9: In initializer:
-init-field-arg-oknil-unmanaged-from-nonnil-borrowed.chpl:10: error: cannot assign to unmanaged MyClass? from borrowed MyClass
+init-field-arg-oknil-unmanaged-from-nonnil-borrowed.chpl:10: error: cannot initialize field MyRecord.lhs of type unmanaged MyClass? from a borrowed MyClass

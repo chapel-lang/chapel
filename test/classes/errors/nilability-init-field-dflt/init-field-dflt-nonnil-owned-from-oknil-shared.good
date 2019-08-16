@@ -1,1 +1,1 @@
-init-field-dflt-nonnil-owned-from-oknil-shared.chpl:11: error: default-initializing a field with a non-nilable type owned MyClass from an instance of nilable shared MyClass?
+init-field-dflt-nonnil-owned-from-oknil-shared.chpl:8: error: cannot initialize field MyRecord.lhs of non-nilable type owned MyClass from a nilable shared MyClass?

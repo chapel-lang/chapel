@@ -1,1 +1,1 @@
-init-var-nonnil-unmanaged-from-nonnil-borrowed.chpl:9: error: cannot assign to unmanaged MyClass from borrowed MyClass
+init-var-nonnil-unmanaged-from-nonnil-borrowed.chpl:9: error: cannot initialize variable 'lhs' of type unmanaged MyClass from a borrowed MyClass

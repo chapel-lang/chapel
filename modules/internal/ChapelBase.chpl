@@ -1515,8 +1515,7 @@ module ChapelBase {
       compilerError("default-initializing a field with a non-nilable type ",
           t:string, " from an instance of nilable ", init.type:string);
 
-    pragma "no auto destroy" var x: t;
-    x = init;
+    pragma "no auto destroy" var x: t = init;
     return x;
   }
 
@@ -1525,8 +1524,7 @@ module ChapelBase {
   pragma "no copy return"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, param init) {
-    pragma "no auto destroy" var x: t;
-    x = init;
+    pragma "no auto destroy" var x: t = init;
     return x;
   }
 

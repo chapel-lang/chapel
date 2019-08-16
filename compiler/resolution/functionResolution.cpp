@@ -164,7 +164,6 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
                       Vec<BlockStmt*>& visited);
 static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
-static CallExpr* userCall(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset, bool err);
 
 static void resolveTupleExpand(CallExpr* call);
@@ -1801,8 +1800,7 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
   return false;
 }
 
-bool
-explainCallMatch(CallExpr* call) {
+bool explainCallMatch(CallExpr* call) {
   if (!call->isNamed(fExplainCall))
     return false;
   if (explainCallModule && explainCallModule != call->getModule())
@@ -1826,8 +1824,7 @@ static bool shouldSkip(CallExpr* call) {
   return false;
 }
 
-static CallExpr*
-userCall(CallExpr* call) {
+static CallExpr* userCall(CallExpr* call) {
   if (developer)
     return call;
   // If the called function is compiler-generated or is in one of the internal
@@ -5628,6 +5625,17 @@ static bool isUnmanagedClass(Type* t) {
   return false;
 }
 
+// Should this be public, like isNilableClassType() ?
+static bool isBorrowedClass(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    return dt->isBorrowed();
+
+  return false;
+}
+
 // Todo: ideally this would be simply something like:
 //   isChapelManagedType(t) || isChapelBorrowedType(t)
 static bool isOwnedOrSharedOrBorrowed(Type* t) {
@@ -5644,15 +5652,78 @@ static bool isOwnedOrSharedOrBorrowed(Type* t) {
   return false;
 }
 
-static void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
+static bool managementMismatch(Type* lhs, Type* rhs) {
+  if (isManagedPtrType(lhs)) {
+    if (isManagedPtrType(rhs)) {
+      // Here, only (owned <-- shared) is disallowed.
+      return (! strncmp(lhs->symbol->name, "_owned(", 7)  ||
+              ! strncmp(lhs->symbol->name, "owned ",  6)   )  &&
+             (! strncmp(rhs->symbol->name, "_shared(", 8) ||
+              ! strncmp(rhs->symbol->name, "shared ",  7)  );
+    } else if (isUnmanagedClass(rhs)    ||
+               isBorrowedClass(rhs) ) {
+      return true;
+    }
+  } else if (isUnmanagedClass(lhs)) {
+    if (isOwnedOrSharedOrBorrowed(rhs))
+      return true;
+  }
+  // Otherwise it's fine, ex. OK to borrow from anything.
+  return false;
+}
+
+// Looks for this pattern:
+//   init var( temp, initValue ) 
+//   init field( parentAggregate, "fieldName", temp ) 
+// and returns the 'init field' call.
+static CallExpr* fieldInitFrom(Symbol* temp) {
+  // Todo: have PRIM_INIT_VAR be considered a "def" by isDefAndOrUse(),
+  // so we can simply use "temp->getSingleUse()".
+  for_SymbolSymExprs(se, temp)
+    if (CallExpr* parent = toCallExpr(se->parentExpr))
+      if (parent->isPrimitive(PRIM_INIT_FIELD) &&  se == parent->get(3))
+        return parent;
+
+  return NULL;
+}
+
+static const char* describeFieldInit(const char* parent, const char* field,
+                                     const char* nonnilable) {
+    return astr("initialize field ", parent, ".", field, " of",
+                nonnilable, " type");
+}
+
+static const char* describeLHS(CallExpr* call, const char* nonnilable) {
+  if (call->isPrimitive(PRIM_INIT_VAR)) {
+    Symbol* lhs = toSymExpr(call->get(1))->symbol();
+    if (lhs->hasFlag(FLAG_TEMP)) {
+      if (CallExpr* fieldInit = fieldInitFrom(lhs))
+        return describeFieldInit(fieldInit->get(1)->getValType()->symbol->name,
+                                 get_string(fieldInit->get(2)), nonnilable);
+    } else {
+      return astr("initialize variable '", lhs->name,
+                  "' of", nonnilable, " type");
+    }
+  }
+
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_FIELD)) {
+    return describeFieldInit(get_string(call->get(1)),
+                             get_string(call->get(2)), nonnilable);
+  }
+
+  // Nothing clicked. Assume assignment.
+  return astr("assign to a", nonnilable);
+}    
+
+void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
   if (! fLegacyNilableClasses &&
       isNonNilableClassType(lhs) && isNilableClassType(rhs))
-    USR_FATAL(call, "cannot assign to non-nilable %s from nilable %s",
-              toString(lhs), toString(rhs));
+    USR_FATAL(userCall(call), "cannot %s %s from a nilable %s",
+              describeLHS(call, " non-nilable"), toString(lhs), toString(rhs));
 
-  if (isUnmanagedClass(lhs) && isOwnedOrSharedOrBorrowed(rhs))
-    USR_FATAL(call, "cannot assign to %s from %s",
-              toString(lhs), toString(rhs));
+  if (managementMismatch(lhs, rhs))
+    USR_FATAL(userCall(call), "cannot %s %s from a %s",
+              describeLHS(call, ""), toString(lhs), toString(rhs));
 }
 
 /************************************* | **************************************

@@ -1,1 +1,1 @@
-init-var-nonnil-borrowed-from-oknil-shared.chpl:9: error: cannot assign to non-nilable borrowed MyClass from nilable shared MyClass?
+init-var-nonnil-borrowed-from-oknil-shared.chpl:9: error: cannot initialize variable 'lhs' of non-nilable type borrowed MyClass from a nilable shared MyClass?
