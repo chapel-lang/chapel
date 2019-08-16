@@ -5,7 +5,7 @@ use MasonUtils;
 
 proc badDryRun() throws {
   try! {
-    dryRun('DummyGitUserName','DummyPath', false);
+    dryRun('DummyGitUserName','DummyPath', true);
   }
   catch e : MasonError {
     writeln(e.message());
