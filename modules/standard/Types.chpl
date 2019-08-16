@@ -124,7 +124,7 @@ proc isImagType(type t) param return
 proc isStringType(type t) param return t == string;
 
 /* Returns `true` if the type `t` is the `bytes` type. */
-proc isBytesType(type t) param return t == _bytes;
+proc isBytesType(type t) param return t == bytes;
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
 Old Data in C++.

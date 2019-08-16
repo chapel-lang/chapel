@@ -275,6 +275,7 @@ private:
 
 extern AggregateType* dtObject;
 
+extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
 

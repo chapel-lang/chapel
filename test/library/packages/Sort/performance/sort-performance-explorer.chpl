@@ -133,10 +133,10 @@ proc testsize(size:int) {
     inputStrings = forall a in array do a:string;
   }
 
-  var bytes = size*8;
-  var kibibytes = bytes/1024.0;
+  var nBytes = size*8;
+  var kibibytes = nBytes/1024.0;
   var mibibytes = kibibytes/1024.0;
-  var sizestr = bytes:string + " bytes";
+  var sizestr = nBytes:string + " bytes";
   if kibibytes >= 1.0 then
     sizestr = kibibytes:string + " KiB";
   if mibibytes >= 1.0 then
