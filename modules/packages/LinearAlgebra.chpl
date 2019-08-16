@@ -1343,7 +1343,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
     err = max reduce abs(t[..] - X[..]);
     X[..] = t[..];
     if err < tol {
-	    break;
+      break;
     }
   }
   return itern;
@@ -2053,7 +2053,7 @@ module Sparse {
       err = max reduce abs(t[..] - X[..]);
       X[..] = t[..];
       if err < tol {
-  	    break;
+        break;
       }
     }
   }
