@@ -240,7 +240,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_GATHER_TESTS: {
     int  totalTest = 0;
     if (call->numActuals() == 0) {
-      USR_FATAL(call, "illegal call of 'gather tests'");
+      USR_FATAL(call, "illegal call of 'gather tests'. Expected an argument of type 'Test'");
     }
 
     if (call->numActuals() > 1) {
@@ -278,7 +278,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     int64_t index    =        0;
     
     if (call->numActuals() == 0) {
-      USR_FATAL(call, "illegal call of 'get test by index'");
+      USR_FATAL(call, "illegal call of 'get test by index'. Expected an argument of type 'int'");
     }
 
     if (call->numActuals() > 1) {
@@ -305,7 +305,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     const char* name = NULL;
 
     if (call->numActuals() == 0) {
-      USR_FATAL(call, "illegal call of 'get test by name'");
+      USR_FATAL(call, "illegal call of 'get test by name'. Expected a test function name.");
     }
 
     if (call->numActuals() > 1) {
