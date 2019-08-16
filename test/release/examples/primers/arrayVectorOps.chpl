@@ -5,6 +5,17 @@
 //
 
 //
+// DEPRECATION WARNING
+//
+// Vector operations on arrays have been deprecated for the 1.20 release, and
+// are no longer officially supported. The `list` type has been added to the
+// standard library, and is intended to provide suitable replacements for
+// these deprecated operations.
+//
+// Use the following tutorial at your own risk. 
+//
+
+//
 // 1D rectangular arrays support several list-like or vector-like capabilities.
 // These are supported on arrays which have a 1:1 correspondence with their
 // domains. This restriction is because many of these operations modify the
