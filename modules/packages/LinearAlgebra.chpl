@@ -670,7 +670,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
         var myResult: eltType = 0;
         local {
           for ind in startid..endid {
-            myResult += A[ind] * B[ind];
+            myResult += A.localAccess(ind) * B.localAccess(ind);
           }
         }
         threadResults[tid] = myResult;
