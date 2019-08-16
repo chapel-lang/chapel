@@ -6,6 +6,6 @@ Usage:
 Options:
     -h, --help                   Display this message
     --dry-run                    Check to see if package is ready to be published
-    <registry>                   Positional argument indicates publishing to a personal registry
+    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry
 
 Publishing requires the mason-registry to be forked and the package to have a remote origin.

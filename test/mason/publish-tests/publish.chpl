@@ -9,9 +9,8 @@ const dir = here.cwd();
 proc main() throws {
   try! {
     masonNew(['mason', 'new' , 'publishCheck']);
-    const args = ['mason', 'publish'];
     here.chdir(dir + '/publishCheck');
-    masonPublish(args);
+    publishPackage('dummy','dir', true);
     here.chdir(dir);
     rmTree('publishCheck');
   }
