@@ -307,7 +307,7 @@
 // keywords (alphabetical)
 //
 %token TALIGN TAS TATOMIC
-%token TBEGIN TBREAK TBOOL TBORROWED TBY
+%token TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
@@ -724,6 +724,7 @@ internal_type_ident_def:
 | TREAL      { $$ = "real"; }
 | TIMAG      { $$ = "imag"; }
 | TCOMPLEX   { $$ = "complex"; }
+| TBYTES     { $$ = "bytes"; }
 | TSTRING    { $$ = "string"; }
 | TSYNC      { $$ = "sync"; }
 | TSINGLE    { $$ = "single"; }
@@ -745,6 +746,7 @@ scalar_type:
 | TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
 | TIMAG    { $$ = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
 | TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
+| TBYTES   { $$ = new SymExpr(dtBytes->symbol); }
 | TSTRING  { $$ = new SymExpr(dtString->symbol); }
 | TLOCALE  { $$ = new SymExpr(dtLocale->symbol); }
 | TNOTHING { $$ = new SymExpr(dtNothing->symbol); }
@@ -1937,10 +1939,11 @@ call_expr:
 ;
 
 dot_expr:
-  expr TDOT ident_use  { $$ = buildDotExpr($1, $3); }
-| expr TDOT TTYPE      { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| expr TDOT TDOMAIN    { $$ = buildDotExpr($1, "_dom"); }
-| expr TDOT TLOCALE    { $$ = buildDotExpr($1, "locale"); }
+  expr TDOT ident_use          { $$ = buildDotExpr($1, $3); }
+| expr TDOT TTYPE              { $$ = new CallExpr(PRIM_TYPEOF, $1); }
+| expr TDOT TDOMAIN            { $$ = buildDotExpr($1, "_dom"); }
+| expr TDOT TLOCALE            { $$ = buildDotExpr($1, "locale"); }
+| expr TDOT TBYTES TLP TRP     { $$ = new CallExpr(buildDotExpr($1, "chpl_bytes")); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.

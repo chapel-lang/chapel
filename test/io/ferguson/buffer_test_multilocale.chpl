@@ -2,7 +2,7 @@ use Buffers;
 
 proc main() {
   // allocate 50 bytes
-  var b = new bytes(50);
+  var b = new byteBuffer(50);
 
   // put our bytes into a buffer.
   var buf = new buffer();
@@ -53,7 +53,7 @@ proc main() {
     assert(local_got == num);
 
     // 3: copy remote bytes locally
-    var local_bytes2 = new bytes();
+    var local_bytes2 = new byteBuffer();
     local_bytes2 = buf_bytes;
     var buf_local_bytes2 = new buffer();
     buf_local_bytes2.append(local_bytes2);

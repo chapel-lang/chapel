@@ -1495,6 +1495,9 @@ DefExpr* buildClassDefExpr(const char*  name,
   if (strcmp("_string", name) == 0) {
     ct = installInternalType(ct, dtString);
     ts = ct->symbol;
+  } else if (strcmp("_bytes", name) == 0) {
+    ct = installInternalType(ct, dtBytes);
+    ts = ct->symbol;
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
     ts = ct->symbol;

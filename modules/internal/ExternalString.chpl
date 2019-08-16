@@ -27,11 +27,11 @@ module ExternalString {
   type chpl__exportTypeCharPtr = c_ptr(c_char);
 
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
-    const bytes = s.numBytes;
+    const nBytes = s.numBytes;
     const src = s.c_str():c_void_ptr;
-    var result = c_malloc(c_char, bytes + 1):c_ptr(c_char);
-    c_memcpy(result, src, bytes);
-    result[bytes] = 0;
+    var result = c_malloc(c_char, nBytes + 1):c_ptr(c_char);
+    c_memcpy(result, src, nBytes);
+    result[nBytes] = 0;
     return result;
   }
 

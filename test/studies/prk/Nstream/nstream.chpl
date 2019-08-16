@@ -89,7 +89,7 @@ if validate {
 }
 
 if !correctness {
-  const bytes = 4 * 8 * length;
-  writeln("Rate (MB/s): ", 1.0E-06*bytes/avgTime,
+  const nBytes = 4 * 8 * length;
+  writeln("Rate (MB/s): ", 1.0E-06*nBytes/avgTime,
          " Avg time (s): ",avgTime);
 }
