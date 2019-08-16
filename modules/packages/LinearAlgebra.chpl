@@ -646,7 +646,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
     
   var result: eltType = 0;
   
-  if isDistributed(A) {
+  if !isDistributed(A) {
     result = + reduce (A*B);
   }
   else {
