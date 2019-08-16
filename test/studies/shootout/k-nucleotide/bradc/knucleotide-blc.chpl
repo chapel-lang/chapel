@@ -148,10 +148,10 @@ inline proc hash(str, beg, param size) {
 
 
 proc string.toBytes() {
-  var bytes: [1..this.numBytes] uint(8);
-  for (b, i) in zip(bytes, 1..) do
+  var byteArr: [1..this.numBytes] uint(8);
+  for (b, i) in zip(byteArr, 1..) do
     b = this.byte(i);
-  return bytes;
+  return byteArr;
 }
 
 
