@@ -270,19 +270,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     int64_t index    =        0;
     
     if (call->numActuals() == 0) {
-      USR_FATAL(call, "illegal call of type");
+      USR_FATAL(call, "illegal call of 'get test by index'");
     }
 
     if (call->numActuals() > 1) {
-      USR_FATAL(call, "too many arguments to type index expression");
+      USR_FATAL(call, "too many arguments to 'get test by index'");
     }
 
     if (!get_int(call->get(1), &index)) {
-      USR_FATAL(call, "illegal type index expression");
+      USR_FATAL(call, "illegal type for index. Expected an 'int' got '%s'",
+                call->get(1)->getValType()->name());
     }
 
-    if (index <= 0 || index > (int64_t)testCaptureVector.size()) {
-      USR_FATAL(call, "type index expression '%i' out of bounds", index);
+    int64_t n = testCaptureVector.size();
+    if (index <= 0 || index > n) {
+      USR_FATAL(call, "index '%i' out of bounds, expected to be between '1' and '%i'",
+                index, n);
     }
 
     retval = testCaptureVector[index-1]->copy();
