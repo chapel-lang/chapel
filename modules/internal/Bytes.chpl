@@ -119,8 +119,6 @@ module Bytes {
     }
   }
 
-  /*pragma "ignore noinit"*/
-  /*pragma "no default functions" // avoid the default (read|write)This routines*/
   record _bytes {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
