@@ -22,7 +22,8 @@ proc test_squared(test: borrowed Test) throws {
 var test: owned Test;
 param a = __primitive("gather tests", test.borrow());
 writeln(a);
-var c = __primitive("get test by name","test_squared");
-var d = __primitive("get test by index",2);
+var c = __primitive("get test by name","test_square");
+param idx = 2; 
+var d = __primitive("get test by index", idx);
 c(test);
 d(test);
