@@ -1506,7 +1506,7 @@ static void handleInIntents(FnSymbol* fn,
   Expr* nextActual = NULL;
 
   for_formals(formal, fn) {
-
+    SET_LINENO(formal);
     nextActual = currActual->next;
 
     Symbol* actualSym  = info.actuals.v[j];
