@@ -239,6 +239,8 @@ _chpl ()
 --parse-only \
 --parser-debug \
 --permit-unhandled-module-errors \
+--prepend-internal-module-dir \
+--prepend-standard-module-dir \
 --preserve-inlined-line-numbers \
 --print-all-candidates \
 --print-callgraph \

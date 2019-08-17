@@ -185,6 +185,17 @@ void gatherWellKnownTypes() {
 
       dtString = NULL;
     }
+    if (dtBytes->symbol == NULL || dtBytes->symbol->defPoint == NULL) {
+      // This means there was no declaration of the bytes type.
+      if (dtBytes->symbol)
+        gTypeSymbols.remove(gTypeSymbols.index(dtBytes->symbol));
+
+      gAggregateTypes.remove(gAggregateTypes.index(dtBytes));
+
+      delete dtBytes;
+
+      dtBytes = NULL;
+    }
     if (dtLocale->symbol == NULL || dtLocale->symbol->defPoint == NULL) {
       // This means there was no declaration of the locale type.
       if (dtLocale->symbol)
