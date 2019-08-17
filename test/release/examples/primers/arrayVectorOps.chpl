@@ -1,11 +1,7 @@
 // Array Vector Operations
 
 //
-// This primer is about vector operations on 1D arrays
-//
-
-//
-// DEPRECATION WARNING
+// **DEPRECATION WARNING**
 //
 // Vector operations on arrays have been deprecated for the 1.20 release, and
 // are no longer officially supported. The `list` type has been added to the
@@ -13,6 +9,12 @@
 // these deprecated operations.
 //
 // Use the following tutorial at your own risk. 
+//
+// ---
+//
+
+//
+// This primer is about vector operations on 1D arrays
 //
 
 //
