@@ -1888,12 +1888,9 @@ module Sparse {
 
   /* Transpose Sparse domain */
   proc transpose(D: domain) where isSparseDom(D) && !isCSDom(D) {
-    const nnz = D.nnz;
-    var indices: [1..nnz] 2*D.idxType;
-    var idx: int = 1;
+    var indices: [1..0] 2*D.idxType;
     for (i,j) in D {
-      indices(idx) = (j,i);
-      idx = idx + 1;
+      indices += (j,i);
     }
     
     const parentDT = transpose(D.parentDom);
