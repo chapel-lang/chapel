@@ -434,7 +434,8 @@ proc eye(Dom: domain(2), type eltType=real) {
 //
 
 
-/* Sets the value of a diagonal in a dense matrix.
+/* Sets the value of a diagonal in a matrix. If the matrix is sparse, 
+    indices on the diagonal will be added to its domain
 
     ``k > 0``, represents an upper diagonal starting
     from the ``k``th column, ``k == 0`` represents the main 
@@ -2001,15 +2002,7 @@ module Sparse {
     return A;
   }
 
-  /* Adds a diagonal to a square sparse array by adding indices to
-      its sparse domain and sets the value of that diagonal to a 
-      constant. 
-    
-      ``k > 0``, represents an upper diagonal starting
-      from the ``k``th column, ``k == 0`` represents the main 
-      diagonal, ``k < 0`` represents a lower diagonal starting
-      from the ``-k``th row. ``k`` is 0-indexed.
-  */
+  pragma "no doc"
   proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
                 where isSparseArr(X) { 
       if D.rank != 2 then
