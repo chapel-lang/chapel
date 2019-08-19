@@ -178,7 +178,7 @@ void ResolveScope::addBuiltIns() {
   extend(gNoInit);
 
   extend(dtUnknown->symbol);
-  extend(dtValue->symbol);
+  extend(dtAnyRecord->symbol);
 
   extend(gUnknown);
   extend(gNone);

@@ -621,9 +621,9 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
   CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
-  // aka record
-  dtValue = createInternalType("value", "_chpl_value");
-  //dtValue->addFlag(FLAG_GENERIC); ?
+  // parses from record
+  dtAnyRecord = createInternalType("record", "_anyRecord");
+  dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
   gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
   gIteratorBreakToken->addFlag(FLAG_CONST);
@@ -712,7 +712,8 @@ void initPrimitiveTypes() {
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
-  // aka enum
+  // parses from enum
+  // TODO: remove enumerated and replace it with enum
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
@@ -756,8 +757,8 @@ void initPrimitiveTypes() {
   dtAnyManagementAnyNilable = createInternalType("_anyManagementAnyNilable", "_anyManagementAnyNilable");
   dtAnyManagementAnyNilable->symbol->addFlag(FLAG_GENERIC);
 
-  // aka class
-  dtAnyManagementNonNilable = createInternalType("_anyManagementNonNilable", "_anyManagementNonNilable");
+  // parses from class
+  dtAnyManagementNonNilable = createInternalType("class", "_anyManagementNonNilable");
   dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyManagementNilable = createInternalType("_anyManagementNilable", "_anyManagementNilable");

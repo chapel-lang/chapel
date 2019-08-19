@@ -390,7 +390,7 @@ TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
 TYPE_EXTERN PrimitiveType*    dtVoid;
 TYPE_EXTERN PrimitiveType*    dtNothing;
-TYPE_EXTERN PrimitiveType*    dtValue;
+TYPE_EXTERN PrimitiveType*    dtAnyRecord;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
 TYPE_EXTERN PrimitiveType*    dtBorrowedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;

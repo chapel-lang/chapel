@@ -1757,10 +1757,10 @@ sub_type_level_expr:
 | TCLASS
     { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
 | TRECORD
-    { $$ = new SymExpr(dtValue->symbol); }
-/*| TENUM
+    { $$ = new SymExpr(dtAnyRecord->symbol); }
+| TENUM
     { $$ = new SymExpr(dtAnyEnumerated->symbol); }
-*/
+
 ;
 
 for_expr:
