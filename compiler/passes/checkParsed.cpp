@@ -312,6 +312,13 @@ checkFunction(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))
     USR_FATAL_CONT(fn, "Extern functions cannot have a body");
 
+  if (fn->hasFlag(FLAG_EXTERN) && fn->throwsError())
+    USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
+
+  if (fn->hasFlag(FLAG_EXPORT) && fn->where != NULL)
+    USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
+
+
   if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 

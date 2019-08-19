@@ -1752,17 +1752,11 @@ buildFunctionDecl(FnSymbol*   fn,
 
   if (optThrowsError)
   {
-    if (fn->hasFlag(FLAG_EXTERN))
-      USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
-
     fn->throwsErrorInit();
   }
 
   if (optWhere)
   {
-    if (fn->hasFlag(FLAG_EXPORT))
-      USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
-
     fn->where = new BlockStmt(optWhere);
   }
 
