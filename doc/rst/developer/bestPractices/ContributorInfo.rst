@@ -640,7 +640,7 @@ feature branch with new changes from the main Chapel project)
 
     # or:
     git fetch origin
-    git merge origin/master # replace master with whatever branch you're on
+    git merge origin/master
 
     # similar to: svn update
 
