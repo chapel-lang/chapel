@@ -1,0 +1,30 @@
+acceptsOwnedNonNilable
+owned MyClass {x = 1}
+acceptsOwnedNilable
+owned MyClass? {x = 1}
+owned MyClass? {x = 1}
+acceptsOwnedAny
+owned MyClass {x = 1}
+owned MyClass? {x = 1}
+acceptsSharedNonNilable
+shared MyClass {x = 1}
+acceptsSharedNilable
+shared MyClass? {x = 1}
+shared MyClass? {x = 1}
+acceptsSharedAny
+shared MyClass {x = 1}
+shared MyClass? {x = 1}
+acceptsClassAnyManagementNonNilable
+owned MyClass {x = 1}
+shared MyClass {x = 1}
+borrowed MyClass {x = 1}
+unmanaged MyClass {x = 1}
+acceptsClassAnyManagementNilable
+owned MyClass? {x = 1}
+owned MyClass? {x = 1}
+shared MyClass? {x = 1}
+shared MyClass? {x = 1}
+borrowed MyClass? {x = 1}
+borrowed MyClass? {x = 1}
+unmanaged MyClass? {x = 1}
+unmanaged MyClass? {x = 1}
