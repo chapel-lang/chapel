@@ -416,7 +416,10 @@ Committing staged changes:
 
     # similar to: svn commit [-m <message>]
 
-Bring in changes from Chapel master branch to your branch (preferred):
+There are two different strategies available to bringing changes from Chapel
+master into your development branch:
+
+Rebase (replay your changes on top of the master branch):
 
 .. code-block:: bash
 
@@ -432,13 +435,12 @@ files have been fixed, stage them with ``git add``, and then call ``git
 rebase --continue`` to finish the rebase process.
 
 If there are other development branches working off of your development branch
-(something not common in Chapel development), then you should instead merge
-the Chapel master branch into your branch as shown below, which does not
-require a force push to rewrite git history.
+(something not common in Chapel development), then you should not use this
+strategy. Instead, merge the Chapel master branch into your branch as shown
+below, which does not require a force push to rewrite git history.
 
 
-
-Bring in changes from Chapel master branch to your branch:
+Merge (merge master into your branch):
 
 .. code-block:: bash
 
