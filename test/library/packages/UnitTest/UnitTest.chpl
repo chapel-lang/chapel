@@ -1081,12 +1081,16 @@ module UnitTest {
     var testCount = 0;
     var _tests: [1..0] argType;
     
+    // TODO: Get lifetime checking working in this case and remove pragma unsafe.
+    // Pragma "unsafe" disables the lifetime checker here.
     pragma "unsafe"
     proc addTest(test) {
       this._tests.push_back(test);
       this.testCount += 1;
     }
 
+    // TODO: Get lifetime checking working in this case and remove pragma unsafe.
+    // Pragma "unsafe" disables the lifetime checker here.
     pragma "unsafe"
     proc addTests(tests) {
       for test in tests do
