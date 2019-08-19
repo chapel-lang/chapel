@@ -1967,6 +1967,8 @@ module Sparse {
                                                && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    // TODO: sps should only contain non-zero entries in resulting array, 
+    //       i.e. intersection of this.domain and Adom
     var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
@@ -2003,11 +2005,12 @@ module Sparse {
                                             && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    // TODO: sps should only contain non-zero entries in resulting array
     var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in Adom {
       S[i,j] = this[i,j] / A[i,j];
     }
     return S;
