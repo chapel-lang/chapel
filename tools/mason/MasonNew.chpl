@@ -120,7 +120,7 @@ proc makeBasicToml(name: string) {
                      'chplVersion = "' + getChapelVersionStr() + '"\n' +
                      '\n' +
                      '[dependencies]' +
-                     '\n' + '\n';
+                     '\n';
   var tomlFile = open(name+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
@@ -136,6 +136,6 @@ private proc makeProjectFiles(name: string) {
     ' */\nmodule '+ name + ' {\n  writeln("New library: '+ name +'");\n}';
   var lib = open(name+'/src/'+name+'.chpl', iomode.cw);
   var libWriter = lib.writer();
-  libWriter.write(libTemplate + '\n' + '\n');
+  libWriter.write(libTemplate + '\n');
   libWriter.close();
 }
