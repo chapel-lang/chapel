@@ -575,8 +575,6 @@ module OwnedObject {
     return _to_nonnil(x.chpl_p);
   }
   inline proc postfix!(type t:_owned) type {
-    // TODO: this should return the borrow type
-    compilerWarning("Please use owned class instead of owned!");
-    return _owned(_to_nonnil(t.chpl_t));
+    return _to_borrowed(_to_nonnil(t.chpl_t));
   }
 }

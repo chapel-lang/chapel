@@ -2,11 +2,11 @@
 class MyClass { var x:int; }
 
 type od = owned MyClass;
-type ob = owned MyClass!;
+type ob = owned MyClass!; // aka borrowed MyClass
 type oq = owned MyClass?;
 
 type sd = shared MyClass;
-type sb = shared MyClass!;
+type sb = shared MyClass!; // aka borrowed MyClass
 type sq = shared MyClass?;
 
 type bd = borrowed MyClass;
@@ -35,7 +35,7 @@ compilerWarning(uq:string,0);
 // test type equalities
 
 compilerAssert(od == od);
-compilerAssert(od == ob);
+compilerAssert(od != ob);
 compilerAssert(od != oq);
 compilerAssert(od != sd);
 compilerAssert(od != sb);
@@ -47,17 +47,17 @@ compilerAssert(od != ud);
 compilerAssert(od != ub);
 compilerAssert(od != uq);
 
-compilerAssert(ob == od);
+compilerAssert(ob != od);
 compilerAssert(ob == ob);
 compilerAssert(ob != oq);
 compilerAssert(ob != sd);
-compilerAssert(ob != sb);
+compilerAssert(ob == sb);
 compilerAssert(ob != sq);
-compilerAssert(ob != bd);
-compilerAssert(ob != bb);
+compilerAssert(ob == bd);
+compilerAssert(ob == bb);
 compilerAssert(ob != bq);
 compilerAssert(ob != ud);
-compilerAssert(ob != ub);
+compilerAssert(ob == ub);
 compilerAssert(ob != uq);
 
 compilerAssert(oq != od);
@@ -77,7 +77,7 @@ compilerAssert(sd != od);
 compilerAssert(sd != ob);
 compilerAssert(sd != oq);
 compilerAssert(sd == sd);
-compilerAssert(sd == sb);
+compilerAssert(sd != sb);
 compilerAssert(sd != sq);
 compilerAssert(sd != bd);
 compilerAssert(sd != bb);
@@ -87,16 +87,16 @@ compilerAssert(sd != ub);
 compilerAssert(sd != uq);
 
 compilerAssert(sb != od);
-compilerAssert(sb != ob);
+compilerAssert(sb == ob);
 compilerAssert(sb != oq);
-compilerAssert(sb == sd);
+compilerAssert(sb != sd);
 compilerAssert(sb == sb);
 compilerAssert(sb != sq);
-compilerAssert(sb != bd);
-compilerAssert(sb != bb);
+compilerAssert(sb == bd);
+compilerAssert(sb == bb);
 compilerAssert(sb != bq);
 compilerAssert(sb != ud);
-compilerAssert(sb != ub);
+compilerAssert(sb == ub);
 compilerAssert(sb != uq);
 
 compilerAssert(sq != od);
@@ -113,29 +113,29 @@ compilerAssert(sq != ub);
 compilerAssert(sq != uq);
 
 compilerAssert(bd != od);
-compilerAssert(bd != ob);
+compilerAssert(bd == ob);
 compilerAssert(bd != oq);
 compilerAssert(bd != sd);
-compilerAssert(bd != sb);
+compilerAssert(bd == sb);
 compilerAssert(bd != sq);
 compilerAssert(bd == bd);
 compilerAssert(bd == bb);
 compilerAssert(bd != bq);
 compilerAssert(bd != ud);
-compilerAssert(bd != ub);
+compilerAssert(bd == ub);
 compilerAssert(bd != uq);
 
 compilerAssert(bb != od);
-compilerAssert(bb != ob);
+compilerAssert(bb == ob);
 compilerAssert(bb != oq);
 compilerAssert(bb != sd);
-compilerAssert(bb != sb);
+compilerAssert(bb == sb);
 compilerAssert(bb != sq);
 compilerAssert(bb == bd);
 compilerAssert(bb == bb);
 compilerAssert(bb != bq);
 compilerAssert(bb != ud);
-compilerAssert(bb != ub);
+compilerAssert(bb == ub);
 compilerAssert(bb != uq);
 
 compilerAssert(bq != od);
@@ -161,19 +161,19 @@ compilerAssert(ud != bd);
 compilerAssert(ud != bb);
 compilerAssert(ud != bq);
 compilerAssert(ud == ud);
-compilerAssert(ud == ub);
+compilerAssert(ud != ub);
 compilerAssert(ud != uq);
 
 compilerAssert(ub != od);
-compilerAssert(ub != ob);
+compilerAssert(ub == ob);
 compilerAssert(ub != oq);
 compilerAssert(ub != sd);
-compilerAssert(ub != sb);
+compilerAssert(ub == sb);
 compilerAssert(ub != sq);
-compilerAssert(ub != bd);
-compilerAssert(ub != bb);
+compilerAssert(ub == bd);
+compilerAssert(ub == bb);
 compilerAssert(ub != bq);
-compilerAssert(ub == ud);
+compilerAssert(ub != ud);
 compilerAssert(ub == ub);
 compilerAssert(ub != uq);
 
