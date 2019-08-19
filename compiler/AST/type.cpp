@@ -735,7 +735,7 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
-  dtBorrowed = createInternalType("_borrowed", "_borrowed");
+  dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
   dtBorrowedNonNilable = createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
@@ -744,7 +744,7 @@ void initPrimitiveTypes() {
   dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
   dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
+  dtUnmanaged = createInternalType("unmanaged", "unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanagedNonNilable = createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
