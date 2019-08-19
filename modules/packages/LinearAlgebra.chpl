@@ -631,15 +631,61 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+pragma "no doc"
+/* Returns ``true`` if the domain is distributed */
+private proc isDistributed(a) param {
+  return !isSubtype(a.domain.dist.type, DefaultDist);
+}
 
 /* Inner product of 2 vectors. */
-proc inner(A: [?Adom], B: [?Bdom]) {
+proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
+    
+  var result: eltType = 0;
+  
+  if !isDistributed(A) {
+    result = + reduce (A*B);
+  }
+  else {
+    // Replaces `+ reduce (A*B)` for improved distributed performance
 
-  return + reduce(A[..]*B[..]);
+    var localResults: [Locales.domain] eltType = 0;
+
+    coforall l in Locales do on l {
+      const maxThreads = if dataParTasksPerLocale==0 
+                         then here.maxTaskPar else dataParTasksPerLocale;
+      const localDomain = A.localSubdomain();
+      const iterPerThread = divceil(localDomain.size, maxThreads);
+      var localResult: eltType = 0; 
+      var threadResults: [0..#maxThreads] eltType = 0;
+
+      coforall tid in 0..#maxThreads {
+        const startid = localDomain.low + tid * iterPerThread;
+        const temp_endid = startid + iterPerThread - 1;
+        const endid = if localDomain.high < temp_endid
+                      then  localDomain.high else temp_endid;
+        var myResult: eltType = 0;
+        for ind in startid..endid {
+          myResult += A.localAccess(ind) * B.localAccess(ind);
+        }
+        threadResults[tid] = myResult;
+      }
+
+      for tr in threadResults {
+        localResult += tr;
+      }
+      localResults[here.id] = localResult;
+    }
+
+    for r in localResults {
+      result += r;
+    }
+  }
+  
+  return result;
 }
 
 
