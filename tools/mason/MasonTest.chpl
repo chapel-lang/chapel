@@ -35,7 +35,11 @@ proc masonTest(args) throws {
   var run = true;
   var parallel = false;
   var update = true;
-  var compopts: list(string);
+
+  if MASON_OFFLINE == 'true' then update = false;
+
+  var compopts: [1..0] string;
+
 
   if args.size > 2 {
     for arg in args[2..] {
@@ -57,6 +61,9 @@ proc masonTest(args) throws {
       }
       else if arg == '--no-update' {
         update = false;
+      }
+      else if arg == '--update' {
+        update = true;
       }
       else {
         compopts.append(arg);

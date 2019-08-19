@@ -138,6 +138,10 @@ proc updateRegistry(tf: string, args: list(string)) {
   if args.count("--no-update") != 0 then
     return;
 
+  if MASON_OFFLINE == 'true' && !args.find('--update')[1] {
+    return;
+  }
+
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
