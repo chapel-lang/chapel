@@ -433,6 +433,31 @@ proc eye(Dom: domain(2), type eltType=real) {
 // Matrix Operations
 //
 
+
+/* Sets the value of a diagonal in a matrix. If the matrix is sparse, 
+    indices on the diagonal will be added to its domain
+
+    ``k > 0``, represents an upper diagonal starting
+    from the ``k``th column, ``k == 0`` represents the main 
+    diagonal, ``k < 0`` represents a lower diagonal starting
+    from the ``-k``th row. ``k`` is 0-indexed.
+*/
+proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0) 
+              where isDenseArr(X){
+  var start, end = 0;
+  if (k >= 0) { // upper or main diagonal
+    start = 1;
+    end = D.shape(1) - k;
+  }
+  else { // lower diagonal
+    start = 1 - k;
+    end = D.shape(1);
+  }
+  forall row in {start..end} {
+    X(row, row+k) = val;
+  }
+}
+
 pragma "no doc"
 inline proc transpose(D: domain(1)) {
   return D;
@@ -1997,6 +2022,34 @@ module Sparse {
       A[i,i] = 1 : eltType;
     }
     return A;
+  }
+
+  pragma "no doc"
+  proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
+                where isSparseArr(X) { 
+      if D.rank != 2 then
+        halt("Wrong rank for setDiag");
+
+      if D.shape(1) != D.shape(2) then
+        halt("setDiag only supports square matrices");
+        
+      var start, end = 0;
+      if (k >= 0) { // upper or main diagonal
+        start = 1;
+        end = D.shape(1) - k;
+      }
+      else { // lower diagonal
+        start = 1 - k;
+        end = D.shape(1);
+      }
+      var indices : [start..end] (D.idxType, D.idxType);
+      forall ind in {start..end} {
+        indices[ind] = (ind, ind+k);
+      }
+      D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
+      forall ind in indices {
+        X(ind) = val;
+      }
   }
 
   //
