@@ -366,8 +366,10 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
       if(!fty){
         fty = getTypeLLVM(fts->cname);
-        if(!fty)
-          printf("Error: %s has no llvm type\n",fts->name);
+        if(!fty) {
+          // FIXME: Types should have an LLVM type
+          return NULL;
+        }
       }
       bool unused;
       llvm::DIType* mty = this->dibuilder.createMemberType(
@@ -431,6 +433,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
   }
 
   else if(ty->isArrayTy() && type->astTag == E_AggregateType) {
+    if (type->symbol->hasFlag(FLAG_C_ARRAY)) return NULL;
     AggregateType *this_class = (AggregateType *)type;
     // Subscripts are "ranges" for each dimension of the array
     llvm::SmallVector<llvm::Metadata *, 4> Subscripts;
@@ -439,6 +442,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     Subscripts.push_back(this->dibuilder.getOrCreateSubrange(0, Asize));
     Symbol *eleSym = toDefExpr(this_class->fields.head)->sym;
     Type *eleType = eleSym->type;
+    if (get_type(eleType) == NULL) return NULL;
     N = this->dibuilder.createArrayType(
       Asize,
       8*layout.getABITypeAlignment(ty),
