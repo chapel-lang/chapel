@@ -140,7 +140,7 @@ module test {
           halt("fail");
         }
         try {
-          var y = cbq:(borrowed!);
+          var y = cbq:borrowed class;
           writeln(y.type:string, " ", y);
         } catch e {
           writeln(e);
@@ -152,7 +152,7 @@ module test {
         writeln("cu:borrowed Child");
         var x = cu:borrowed Child;
         writeln(x.type:string, " ", x);
-        var y = cu:(borrowed!);
+        var y = cu:borrowed class;
         writeln(y.type:string, " ", y);
       }
       // cuq
@@ -166,7 +166,7 @@ module test {
           halt("fail");
         }
         try {
-          var y = cbq:(borrowed!);
+          var y = cbq:borrowed class;
           writeln(y.type:string, " ", y);
         } catch e {
           writeln(e);
@@ -184,7 +184,7 @@ module test {
           writeln(e);
         }
         try {
-          var y = nbq:(borrowed!);
+          var y = nbq:borrowed class;
           writeln(y.type:string, " ", y);
           halt("fail");
         } catch e {
@@ -202,7 +202,7 @@ module test {
           writeln(e);
         }
         try {
-          var y = nuq:(borrowed!);
+          var y = nuq:borrowed class;
           writeln(y.type:string, " ", y);
           halt("fail");
         } catch e {
@@ -220,7 +220,7 @@ module test {
         writeln("cb:borrowed Child?");
         var x = cb:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = cb:borrowed?;
+        var y = cb:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // cbq
@@ -228,7 +228,7 @@ module test {
         writeln("cbq:borrowed Child?");
         var x = cbq:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = cbq:borrowed?;
+        var y = cbq:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // cu
@@ -236,7 +236,7 @@ module test {
         writeln("cu:borrowed Child?");
         var x = cu:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = cu:borrowed?;
+        var y = cu:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // cuq
@@ -244,7 +244,7 @@ module test {
         writeln("cuq:borrowed Child?");
         var x = cuq:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = cbq:borrowed?;
+        var y = cbq:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // nbq
@@ -253,7 +253,7 @@ module test {
         var x = nbq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
-        var y = nbq:borrowed?;
+        var y = nbq:borrowed class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
       }
@@ -263,7 +263,7 @@ module test {
         var x = nuq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
-        var y = nuq:borrowed?;
+        var y = nuq:borrowed class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
       }
@@ -278,7 +278,7 @@ module test {
         writeln("cb:unmanaged Child");
         var x = cb:unmanaged Child;
         writeln(x.type:string, " ", x);
-        var y = cb:(unmanaged!);
+        var y = cb:unmanaged class;
         writeln(y.type:string, " ", y);
       }
       // cbq
@@ -292,7 +292,7 @@ module test {
           halt("fail");
         }
         try {
-          var y = cbq:(unmanaged!);
+          var y = cbq:unmanaged class;
           writeln(y.type:string, " ", y);
         } catch e {
           writeln(e);
@@ -318,7 +318,7 @@ module test {
           halt("fail");
         }
         try {
-          var y = cbq:(unmanaged!);
+          var y = cbq:unmanaged class;
           writeln(y.type:string, " ", y);
         } catch e {
           writeln(e);
@@ -336,7 +336,7 @@ module test {
           writeln(e);
         }
         try {
-          var y = nbq:(unmanaged!);
+          var y = nbq:unmanaged class;
           writeln(y.type:string, " ", y);
           halt("fail");
         } catch e {
@@ -354,7 +354,7 @@ module test {
           writeln(e);
         }
         try {
-          var y = nuq:(unmanaged!);
+          var y = nuq:unmanaged class;
           writeln(y.type:string, " ", y);
           halt("fail");
         } catch e {
@@ -372,7 +372,7 @@ module test {
         writeln("cb:unmanaged Child?");
         var x = cb:unmanaged Child?;
         writeln(x.type:string, " ", x);
-        var y = cb:(unmanaged?);
+        var y = cb:unmanaged class?;
         writeln(y.type:string, " ", y);
       }
       // cbq
@@ -380,7 +380,7 @@ module test {
         writeln("cbq:unmanaged Child?");
         var x = cbq:unmanaged Child?;
         writeln(x.type:string, " ", x);
-        var y = cbq:(unmanaged?);
+        var y = cbq:unmanaged class?;
         writeln(y.type:string, " ", y);
       }
       // cu
@@ -388,7 +388,7 @@ module test {
         writeln("cu:unmanaged Child?");
         var x = cu:unmanaged Child?;
         writeln(x.type:string, " ", x);
-        var y = cu:(unmanaged?);
+        var y = cu:unmanaged class?;
         writeln(y.type:string, " ", y);
       }
       // cuq
@@ -396,7 +396,7 @@ module test {
         writeln("cuq:unmanaged Child?");
         var x = cuq:unmanaged Child?;
         writeln(x.type:string, " ", x);
-        var y = cbq:(unmanaged?);
+        var y = cbq:unmanaged class?;
         writeln(y.type:string, " ", y);
       }
       // nbq
@@ -405,7 +405,7 @@ module test {
         var x = nbq:unmanaged Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
-        var y = nbq:(unmanaged?);
+        var y = nbq:unmanaged class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
       }
@@ -415,7 +415,7 @@ module test {
         var x = nuq:unmanaged Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
-        var y = nuq:(unmanaged?);
+        var y = nuq:unmanaged class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
       }

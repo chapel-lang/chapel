@@ -2253,6 +2253,8 @@ static void resolveUnmanagedBorrows() {
           ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
           if (isClassLike(ts->type)) {
             decorator = classTypeDecorator(ts->type);
+            if (ts->type == dtBorrowed || ts->type == dtUnmanaged)
+              USR_WARN(call, "Please %s class? and not %s?", ts->name, ts->name);
           } else if (isManagedPtrType(ts->type) &&
                      call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
             decorator = CLASS_TYPE_MANAGED;

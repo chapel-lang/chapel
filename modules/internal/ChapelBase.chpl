@@ -623,7 +623,7 @@ module ChapelBase {
   inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
   pragma "always propagate line file info"
-  private inline proc checkNotNil(x:borrowed?) {
+  private inline proc checkNotNil(x:borrowed class?) {
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -1682,10 +1682,10 @@ module ChapelBase {
     if isRecord(arg) then
       // special case for records as a more likely occurrence
       compilerError("'delete' is not allowed on records");
-    if !isSubtype(arg.type, borrowed?) then
+    if !isSubtype(arg.type, borrowed class?) then
       compilerError("'delete' is not allowed on non-class type ",
                     arg.type:string);
-    if !isSubtype(arg.type, unmanaged?) then
+    if !isSubtype(arg.type, unmanaged class?) then
       compilerError("'delete' can only be applied to unmanaged classes");
 
     if (arg != nil) {

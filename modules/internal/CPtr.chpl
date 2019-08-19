@@ -297,11 +297,11 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc _cast(type t:unmanaged?, x:c_void_ptr) {
+  inline proc _cast(type t:unmanaged class?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:borrowed?, x:c_void_ptr) {
+  inline proc _cast(type t:borrowed class?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
 
