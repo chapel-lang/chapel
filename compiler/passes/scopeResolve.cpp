@@ -2256,6 +2256,7 @@ static void resolveUnmanagedBorrows() {
           } else if (isManagedPtrType(ts->type) &&
                      call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
             decorator = CLASS_TYPE_MANAGED;
+            USR_WARN(call, "Please %s class? and not %s?", ts->name, ts->name);
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
@@ -2352,15 +2353,19 @@ static void resolveUnmanagedBorrows() {
 
           if (ts == dtBorrowed->symbol ||
               ts == dtBorrowedNonNilable->symbol ||
-              ts == dtBorrowedNilable->symbol)
+              ts == dtBorrowedNilable->symbol) {
             replace = dtBorrowedNonNilable;
-          else if (ts == dtUnmanaged->symbol ||
+            USR_WARN(call, "Please borrowed class and not borrowed!");
+          } else if (ts == dtUnmanaged->symbol ||
                    ts == dtUnmanagedNonNilable->symbol ||
-                   ts == dtUnmanagedNilable->symbol)
+                   ts == dtUnmanagedNilable->symbol) {
             replace = dtUnmanagedNonNilable;
-          else if (isManagedPtrType(ts->type)) {
+            USR_WARN(call, "Please unmanaged class and not unmanaged!");
+          } else if (isManagedPtrType(ts->type)) {
             AggregateType* at = toAggregateType(ts->type);
             replace = at->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+            USR_WARN(call, "Please %s class and not %s!",
+                     at->symbol->name, at->symbol->name);
           }
 
           if (replace) {

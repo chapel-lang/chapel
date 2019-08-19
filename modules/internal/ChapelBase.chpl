@@ -640,20 +640,20 @@ module ChapelBase {
     return _to_nonnil(t);
   }
 
-  inline proc postfix!(x:unmanaged!) {
+  inline proc postfix!(x:unmanaged class) {
     return _to_nonnil(x);
   }
-  inline proc postfix!(x:borrowed!) {
+  inline proc postfix!(x:borrowed class) {
     return _to_nonnil(x);
   }
 
   pragma "always propagate line file info"
-  inline proc postfix!(x:unmanaged?) {
+  inline proc postfix!(x:unmanaged class?) {
     checkNotNil(_to_borrowed(x));
     return _to_nonnil(x);
   }
   pragma "always propagate line file info"
-  inline proc postfix!(x:borrowed?) {
+  inline proc postfix!(x:borrowed class?) {
     checkNotNil(x);
     return _to_nonnil(x);
   }
@@ -1307,13 +1307,13 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:enumerated)
     return x: int: real;
 
-  inline proc _cast(type t:unmanaged!, x:_nilType)
+  inline proc _cast(type t:unmanaged class, x:_nilType)
   {
     if !chpl_legacyNilClasses {
       compilerError("cannot cast nil to " + t:string);
     }
   }
-  inline proc _cast(type t:borrowed!, x:_nilType)
+  inline proc _cast(type t:borrowed class, x:_nilType)
   {
     if !chpl_legacyNilClasses {
       compilerError("cannot cast nil to " + t:string);
@@ -1322,26 +1322,26 @@ module ChapelBase {
 
 
   // casting to unmanaged?, no class downcast
-  inline proc _cast(type t:unmanaged?, x:borrowed?)
+  inline proc _cast(type t:unmanaged class?, x:borrowed class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:unmanaged?, x:borrowed!)
+  inline proc _cast(type t:unmanaged class?, x:borrowed class)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     return __primitive("cast", t, x);
   }
 
   // casting to unmanaged, no class downcast
-  inline proc _cast(type t:unmanaged!, x:borrowed!)
+  inline proc _cast(type t:unmanaged class, x:borrowed class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:borrowed!, x:unmanaged?) throws
+  inline proc _cast(type t:borrowed class, x:unmanaged class?) throws
     where isSubtype(_to_nonnil(x.type),t)
   {
     if x == nil {
@@ -1352,7 +1352,7 @@ module ChapelBase {
 
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:borrowed!, x:borrowed?) throws
+  inline proc _cast(type t:borrowed class, x:borrowed class?) throws
     where isSubtype(_to_nonnil(x.type),t)
   {
     if x == nil {
@@ -1362,7 +1362,7 @@ module ChapelBase {
   }
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:unmanaged!, x:borrowed?) throws
+  inline proc _cast(type t:unmanaged class, x:borrowed class?) throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
@@ -1372,7 +1372,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to non-nil borrowed
-  inline proc _cast(type t:borrowed!, x:borrowed?) throws
+  inline proc _cast(type t:borrowed class, x:borrowed class?) throws
     where isProperSubtype(t,_to_nonnil(x.type))
   {
     if x == nil {
@@ -1387,7 +1387,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable borrowed
-  inline proc _cast(type t:borrowed?, x:borrowed?)
+  inline proc _cast(type t:borrowed class?, x:borrowed class?)
     where isProperSubtype(t,x.type)
   {
     if x == nil {
@@ -1399,7 +1399,7 @@ module ChapelBase {
 
 
   // this version handles downcast to non-nil unmanaged
-  inline proc _cast(type t:unmanaged!, x:borrowed?) throws
+  inline proc _cast(type t:unmanaged class, x:borrowed class?) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
     if x == nil {
@@ -1414,7 +1414,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
-  inline proc _cast(type t:unmanaged?, x:borrowed?)
+  inline proc _cast(type t:unmanaged class?, x:borrowed class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
   {
     if x == nil {
@@ -1425,7 +1425,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
-  inline proc _cast(type t:unmanaged?, x:borrowed!)
+  inline proc _cast(type t:unmanaged class?, x:borrowed class)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
   {
     if x == nil {

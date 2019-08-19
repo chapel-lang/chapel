@@ -465,7 +465,7 @@ module SharedObject {
 
   // cast to shared?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:shared?, pragma "nil from arg" in x:shared!)
+  inline proc _cast(type t:shared class?, pragma "nil from arg" in x:shared class)
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
     return new _shared(true, _to_nilable(t.chpl_t), x);
@@ -473,7 +473,7 @@ module SharedObject {
 
   // cast to shared?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:shared?, pragma "nil from arg" in x:shared?)
+  inline proc _cast(type t:shared class?, pragma "nil from arg" in x:shared class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
     return new _shared(true, t.chpl_t, x);
@@ -481,7 +481,7 @@ module SharedObject {
 
   // cast to shared!, no class downcast, no casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:shared!, pragma "nil from arg" in x:shared!)
+  inline proc _cast(type t:shared class, pragma "nil from arg" in x:shared class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
     return new _shared(true, t.chpl_t, x);
@@ -489,7 +489,7 @@ module SharedObject {
 
   // cast to shared!, no class downcast, casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:shared!, pragma "nil from arg" in x:shared?) throws
+  inline proc _cast(type t:shared class, pragma "nil from arg" in x:shared class?) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
     if x.chpl_p == nil {
@@ -500,7 +500,7 @@ module SharedObject {
   }
 
   // this version handles downcast to non-nil shared
-  inline proc _cast(type t:shared!, const ref x:shared?) throws
+  inline proc _cast(type t:shared class, const ref x:shared class?) throws
     where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
   {
     if x.chpl_p == nil {
@@ -511,7 +511,7 @@ module SharedObject {
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
-  inline proc _cast(type t:shared!, const ref x:shared!) throws
+  inline proc _cast(type t:shared class, const ref x:shared class) throws
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
@@ -522,14 +522,14 @@ module SharedObject {
 
 
   // this version handles downcast to nilable shared
-  inline proc _cast(type t:shared?, const ref x:shared?)
+  inline proc _cast(type t:shared class?, const ref x:shared class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
     var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
-  inline proc _cast(type t:shared?, const ref x:shared!)
+  inline proc _cast(type t:shared class?, const ref x:shared class)
     where isProperSubtype(t.chpl_t,_to_nilable(x.chpl_t))
   {
     // this cast returns nil if the dynamic type is not compatible
@@ -562,6 +562,8 @@ module SharedObject {
     return _to_nonnil(x.chpl_p);
   }
   inline proc postfix!(type t:_shared) type {
+    // TODO: this should return the borrow type
+    compilerWarning("Please use owned class instead of owned!");
     return _shared(_to_nonnil(t.chpl_t));
   }
 }
