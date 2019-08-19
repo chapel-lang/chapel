@@ -105,7 +105,7 @@ private proc gitInit(name: string, show: bool) {
 }
 
 private proc addGitIgnore(name: string) {
-  var toIgnore = "\ntarget/\nMason.lock";
+  var toIgnore = "target/\nMason.lock" + '\n';
   var gitIgnore = open(name+"/.gitignore", iomode.cw);
   var GIwriter = gitIgnore.writer();
   GIwriter.write(toIgnore);
@@ -114,7 +114,7 @@ private proc addGitIgnore(name: string) {
 
 
 proc makeBasicToml(name: string) {
-  const baseToml = '\n[brick]\n' +
+  const baseToml = '[brick]\n' +
                      'name = "' + name + '"\n' +
                      'version = "0.1.0"\n' +
                      'chplVersion = "' + getChapelVersionStr() + '"\n' +
