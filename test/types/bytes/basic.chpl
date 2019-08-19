@@ -41,7 +41,7 @@ writeln("Accessor tests");
 for i in 1..b_from_c_ptr.length do
   writeln(b_from_c_ptr[i], " as ", b_from_c_ptr[i].type:string);
 for i in 1..b_from_c_ptr.length do
-  writeln(b_from_c_ptr.getByte(i), " as ", b_from_c_ptr[i].type:string);
+  writeln(b_from_c_ptr.byte(i), " as ", b_from_c_ptr[i].type:string);
 writeln();
 
 //TEST ITERATORS

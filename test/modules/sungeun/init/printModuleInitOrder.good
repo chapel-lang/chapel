@@ -7,8 +7,10 @@ Initializing Modules:
      HaltWrappers
     CString
     Bytes
-    String
-     StringCasts
+     ByteBufferHelpers
+     BytesStringCommon
+      String
+       StringCasts
     OwnedObject
     ChapelDebugPrint
     ChapelBase

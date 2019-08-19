@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -51,53 +50,8 @@ To learn more about handling these errors, see the
 module Bytes {
   use ChapelStandard;
   use BytesCasts;
-
-  // Growth factor to use when extending the buffer for appends
-  private config param chpl_stringGrowthFactor = 1.5;
-
-
-  // Following is copy-paste from string
-  //
-  // Externs and constants used to implement strings
-  //
-  private        param chpl_string_min_alloc_size: int = 16;
-  pragma "fn synchronization free"
-  private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
-
-  // Calls to chpl_here_alloc increment the memory descriptor by
-  // `chpl_memhook_md_num`. For internal runtime descriptors like the ones
-  // below, this would result in selecting the incorrect descriptor string.
-  //
-  // Instead, decrement the CHPL_RT_MD* descriptor and use the result when
-  // calling chpl_here_alloc.
-  private proc offset_STR_COPY_DATA {
-    extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
-    return CHPL_RT_MD_STR_COPY_DATA - chpl_memhook_md_num();
-  }
-  private proc offset_STR_COPY_REMOTE {
-    extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
-    return CHPL_RT_MD_STR_COPY_REMOTE - chpl_memhook_md_num();
-  }
-  pragma "fn synchronization free"
-  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
-
-  type idxType = int; 
-
-  type byteType = uint(8);
-  type bufferType = c_ptr(byteType);
-
-  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
-                                           src_addr: bufferType, len: integral) {
-    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
-  }
-
-  private proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType,
-                                len: int): bufferType {
-      const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, len);
-      dest[len] = 0;
-      return dest;
-  }
+  private use ByteBufferHelpers;
+  private use BytesStringCommon;
 
   /*
      ``DecodePolicy`` specifies what happens when there is malformed characters
@@ -119,6 +73,8 @@ module Bytes {
     }
   }
 
+  type idxType = int; 
+
   record _bytes {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
@@ -139,18 +95,6 @@ module Bytes {
     }
 
     /*
-      Initialize a new :record:`bytes` from ``b``. If ``isowned`` is set to
-      ``true`` then ``b`` will be fully copied into the new instance. If it is
-      ``false`` a shallow copy will be made such that any in-place modifications
-      to the new bytes may appear in ``b``. It is the responsibility of the user
-      to ensure that the underlying buffer is not freed while being used as part
-      of a shallow copy.
-     */
-    /*proc init(b: bytes, isowned: bool = true) {*/
-
-    /*}*/
-
-    /*
       Initialize a new :record:`bytes` from ``s``. If ``isowned`` is set to
       ``true`` then ``b`` will be fully copied into the new instance. If it is
       ``false`` a shallow copy will be made such that any in-place modifications
@@ -169,15 +113,12 @@ module Bytes {
         if !_local && sRemote {
           // ignore supplied value of isowned for remote strings so we don't leak
           this.isowned = true;
-          this.buff = copyRemoteBuffer(s.locale_id, s.buff, sLen);
+          this.buff = bufferCopyRemote(s.locale_id, s.buff, sLen);
           this._size = sLen+1;
         } else {
           if this.isowned {
-            const allocSize = chpl_here_good_alloc_size(sLen+1);
-            this.buff = chpl_here_alloc(allocSize,
-                                       offset_STR_COPY_DATA): bufferType;
-            c_memcpy(this.buff, s.buff, s.len);
-            this.buff[sLen] = 0;
+            const (buf, allocSize) = bufferCopyLocal(s.buff, sLen);
+            this.buff = buf;
             this._size = allocSize;
           } else {
             this.buff = s.buff;
@@ -255,11 +196,11 @@ module Bytes {
 
     // This is assumed to be called from this.locale
     pragma "no doc"
-    proc ref reinitString(_buf: c_ptr, s_len: int, size: int,
+    proc ref reinitString(buf: bufferType, s_len: int, size: int,
                           needToCopy:bool = true) {
-      if this.isEmpty() && _buf == nil then return;
+      if this.isEmpty() && buf == nil then return;
 
-      const buf = _buf:bufferType; // this is different than string
+      /*const buf = _buf:bufferType; // this is different than string*/
 
       // If the this.buff is longer than buf, then reuse the buffer if we are
       // allowed to (this.isowned == true)
@@ -269,27 +210,26 @@ module Bytes {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
             if this.isowned && !this.isEmpty() then
-              chpl_here_free(this.buff);
+              bufferFree(this.buff);
             // TODO: should I just allocate 'size' bytes?
-            const allocSize = chpl_here_good_alloc_size(s_len+1);
-            this.buff = chpl_here_alloc(allocSize,
-                                       offset_STR_COPY_DATA):bufferType;
+            const (buf, allocSize) = bufferAlloc(s_len+1);
+            this.buff = buf;
             this._size = allocSize;
             // We just allocated a buffer, make sure to free it later
             this.isowned = true;
           }
-          c_memmove(this.buff, buf, s_len);
+          bufferMemmoveLocal(this.buff, buf, s_len);
           this.buff[s_len] = 0;
         } else {
           if this.isowned && !this.isEmpty() then
-            chpl_here_free(this.buff);
+            bufferFree(this.buff);
           this.buff = buf;
           this._size = size;
         }
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmpty() then chpl_here_free(this.buff);
+        if this.isowned && !this.isEmpty() then bufferFree(this.buff);
         this._size = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
@@ -341,14 +281,7 @@ module Bytes {
       Get a `c_string` from a :record:`bytes`.
      */
     inline proc c_str(): c_string {
-      inline proc _cast(type t:c_string, x:bufferType) {
-        return __primitive("cast", t, x);
-      }
-
-      if _local == false && this.locale_id != chpl_nodeID then
-        halt("Cannot call .c_str() on a remote bytes");
-
-      return this.buff:c_string;
+      return getCStr(this);
     }
 
     /*
@@ -361,16 +294,18 @@ module Bytes {
     proc this(i: int): bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
-      return new bytes(c_ptrTo(this.buff[i-1]), length=1, size=2);
+      var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
+                                   loc=this.locale_id);
+      return new bytes(buf, length=1, size=size, needToCopy=false);
     }
 
     /*
       :returns: The value of the `i` th byte as an integer.
     */
-    proc getByte(i: int): byteType {
+    proc byte(i: int): byteType {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
-      return this.buff[i-1];
+      return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
     }
 
     /*
@@ -389,7 +324,7 @@ module Bytes {
     */
     iter chpl_bytes(): byteType {
       for i in 1..this.len do
-        yield this.getByte(i);
+        yield this.byte(i);
     }
 
     /*
@@ -403,45 +338,7 @@ module Bytes {
                 the length of `r` is zero, an empty bytes is returned.
      */
     proc this(r: range(?)) : bytes {
-      var ret: bytes;
-      if this.isEmpty() then return ret;
-
-      const r2 = this._getView(r);
-      if r2.size <= 0 {
-        // TODO: I can't just return "" (ret var gets freed for some reason)
-        ret = "";
-      } else {
-        ret.len = r2.size:int;
-        const newSize = chpl_here_good_alloc_size(ret.len+1);
-        ret._size = max(chpl_string_min_alloc_size, newSize);
-        // FIXME: I was dumb here, just copy the correct region over in
-        // multi-locale and use that as the string buffer. No need to copy stuff
-        // about after pulling it across.
-        ret.buff = chpl_here_alloc(ret._size,
-                                  offset_STR_COPY_DATA): bufferType;
-
-        var thisBuff: bufferType;
-        const remoteThis = _local == false && this.locale_id != chpl_nodeID;
-        if remoteThis {
-          // TODO: Could do an optimization here and only pull down the data
-          // between r2.low and r2.high. Indexing for the copy below gets a bit
-          // more complex when that is performed though.
-          thisBuff = copyRemoteBuffer(this.locale_id, this.buff, this.len);
-        } else {
-          thisBuff = this.buff;
-        }
-
-        var buff = ret.buff; // Has perf impact and our LICM can't hoist :(
-        for (r2_i, i) in zip(r2, 0..) {
-          buff[i] = thisBuff[r2_i-1];
-        }
-        buff[ret.len] = 0;
-
-        if remoteThis then chpl_here_free(thisBuff);
-      }
-
-      return ret;
-
+      return getSlice(this, r);
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -484,7 +381,7 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc startsWith(needles: bytes ...) : bool {
-      return _startsEndsWith((...needles), fromLeft=true);
+      return startsEndsWith(this, needles, fromLeft=true);
     }
 
     /*
@@ -494,42 +391,7 @@ module Bytes {
                 * `false` -- otherwise
      */
     proc endsWith(needles: bytes ...) : bool {
-      return _startsEndsWith((...needles), fromLeft=false);
-
-    }
-
-    // TODO: could use a multi-pattern search or some variant when there are
-    // multiple needles. Probably wouldn't be worth the overhead for small
-    // needles though
-    pragma "no doc"
-    inline proc _startsEndsWith(needles: bytes ..., param fromLeft: bool) : bool {
-      var ret: bool = false;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for needle in needles {
-          if needle.isEmpty() {
-            ret = true;
-            break;
-          }
-          if needle.len > this.len then continue;
-
-          const localNeedle: bytes = needle.localize();
-
-          const needleR = 0:int..#localNeedle.len;
-          if fromLeft {
-            const result = c_memcmp(this.buff, localNeedle.buff,
-                                    localNeedle.len);
-            ret = result == 0;
-          } else {
-            var offset = this.len-localNeedle.len;
-            const result = c_memcmp(this.buff+offset, localNeedle.buff,
-                                    localNeedle.len);
-            ret = result == 0;
-          }
-          if ret == true then break;
-        }
-      }
-      return ret;
+      return startsEndsWith(this, needles, fromLeft=false);
     }
 
     /*
@@ -592,7 +454,7 @@ module Bytes {
         // Edge cases
         if count {
           if nLen == 0 { // Empty needle
-            localRet = thisLen+1;
+            localRet = view.size+1;
           }
         } else { // find
           if nLen == 0 { // Empty needle
@@ -612,7 +474,8 @@ module Bytes {
 
         if localRet == -1 {
           localRet = 0;
-          const localNeedle: bytes = needle.localize();
+          const localNeedle = needle.localize();
+          const needleLen = localNeedle.len;
 
           // i *is not* an index into anything, it is the order of the element
           // of view we are searching from.
@@ -621,17 +484,15 @@ module Bytes {
               then 0..#(numPossible)
               else 0..#(numPossible) by -1;
           for i in searchSpace {
-            // j *is* the index into the localNeedle's buffer
-            for j in 0..#nLen {
-              const idx = view.orderToIndex(i+j); // 1s based idx
-              if this.buff[idx-1] != localNeedle.buff[j] then break;
-
-              if j == nLen-1 {
-                if count {
-                  localRet += 1;
-                } else { // find
-                  localRet = view.orderToIndex(i);
-                }
+            const bufIdx = view.orderToIndex(i);
+            const found = bufferEqualsLocal(buf1=this.buff, off1=bufIdx-1,
+                                            buf2=localNeedle.buff, off2=0,
+                                            len=needleLen);
+            if found {
+              if count {
+                localRet += 1;
+              } else { // find
+                localRet = view.orderToIndex(i);
               }
             }
             if !count && localRet != 0 then break;
@@ -654,26 +515,7 @@ module Bytes {
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
     proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
-      var result: bytes = this;
-      var found: int = 0;
-      var startIdx: idxType = 1;
-      const localNeedle: bytes = needle.localize();
-      const localReplacement: bytes = replacement.localize();
-
-      while (count < 0) || (found < count) {
-        const idx = result.find(localNeedle, startIdx..);
-        if !idx then break;
-
-        found += 1;
-        result = result[..idx-1] + localReplacement +
-                 result[(idx + localNeedle.length)..];
-        var tmp_res = result[..idx-1] + localReplacement +
-                 result[(idx + localNeedle.length)..];
-
-        startIdx = idx + localReplacement.length;
-      }
-      return result;
-
+      return doReplace(this, needle, replacement, count);
     }
 
     /*
@@ -692,48 +534,7 @@ module Bytes {
      */
     iter split(sep: bytes, maxsplit: int = -1,
                ignoreEmpty: bool = false): bytes {
-      if !(maxsplit == 0 && ignoreEmpty && this.isEmpty()) {
-        const localThis: bytes = this.localize();
-        const localSep: bytes = sep.localize();
-
-        // really should be <, but we need to avoid returns and extra yields so
-        // the iterator gets inlined
-        var splitAll: bool = maxsplit <= 0;
-        var splitCount: int = 0;
-
-        var start: idxType = 1;
-        var done: bool = false;
-        while !done  {
-          var chunk: bytes;
-          var end: idxType;
-
-          if (maxsplit == 0) {
-            chunk = localThis;
-            done = true;
-          } else {
-            if (splitAll || splitCount < maxsplit) then
-              end = localThis.find(localSep, start..);
-
-            if(end == 0) {
-              // Separator not found
-              chunk = localThis[start..];
-              done = true;
-            } else {
-              chunk = localThis[start..end-1];
-            }
-          }
-
-          if !(ignoreEmpty && chunk.isEmpty()) {
-            // Putting the yield inside the if prevents us from being inlined
-            // in the zippered case, but I don't think there is any way to avoid
-            // that easily
-            yield chunk;
-            splitCount += 1;
-          }
-          start = end+localSep.length;
-        }
-      }
-
+      for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
     }
 
     /*
@@ -838,72 +639,13 @@ module Bytes {
     }
 
     pragma "no doc"
-    proc join(ir: _iteratorRecord) {
-      var s: bytes;
-      var first: bool = true;
-      for i in ir {
-        if first then
-          first = false;
-        else
-          s += this;
-        s += i;
-      }
-      return s;
-
+    proc join(ir: _iteratorRecord): bytes {
+      return doJoinIterator(this, ir);
     }
 
     pragma "no doc"
     proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
-      if S.size == 0 {
-        return '';
-      } else if S.size == 1 {
-        // TODO: ensures copy, clean up when no longer needed
-        var ret: bytes;
-        if (isArray(S)) {
-          ret = S[S.domain.first];
-        } else {
-          ret = S[1];
-        }
-        return ret;
-      } else {
-        var joinedSize: int = this.len * (S.size - 1);
-        for s in S do joinedSize += s.length;
-
-        if joinedSize == 0 then
-          return '';
-
-        var joined: bytes;
-        joined.len = joinedSize;
-        const allocSize = chpl_here_good_alloc_size(joined.len + 1);
-        joined._size = allocSize;
-        joined.buff = chpl_here_alloc(
-          allocSize,
-          offset_STR_COPY_DATA): bufferType;
-
-        var first = true;
-        var offset = 0;
-        for s in S {
-          if first {
-            first = false;
-          } else if this.len != 0 {
-            c_memcpy(joined.buff + offset, this.buff, this.len);
-            offset += this.len;
-          }
-
-          var sLen = s.len;
-          if sLen != 0 {
-            var cpyStart = joined.buff + offset;
-            if _local || s.locale_id == chpl_nodeID {
-              c_memcpy(cpyStart, s.buff, sLen);
-            } else {
-              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sLen);
-            }
-            offset += sLen;
-          }
-        }
-        joined.buff[offset] = 0;
-        return joined;
-      }
+      return doJoin(this, S);
     }
 
     /*
@@ -917,7 +659,8 @@ module Bytes {
       :returns: A new :record:`bytes` with `leading` and/or `trailing`
                 occurrences of characters in `chars` removed as appropriate.
     */
-    proc strip(chars: bytes = " \t\r\n":bytes, leading=true, trailing=true) : bytes {
+    proc strip(chars: bytes = " \t\r\n":bytes,
+               leading=true, trailing=true) : bytes {
       if this.isEmpty() then return "";
       if chars.isEmpty() then return this;
 
@@ -957,6 +700,7 @@ module Bytes {
       }
 
       return localThis[start..end];
+
     }
 
     /*
@@ -965,12 +709,7 @@ module Bytes {
       the tuple will contain the whole bytes, and then two empty bytes.
     */
     proc const partition(sep: bytes) : 3*bytes {
-      const idx = this.find(sep);
-      if idx != 0 {
-        return (this[..idx-1], sep, this[idx+sep.length..]);
-      } else {
-        return (this, "":bytes, "":bytes);
-      }
+      return doPartition(this, sep);
     }
 
     /*
@@ -988,14 +727,21 @@ module Bytes {
     */
     // NOTE: In the future this could support more encodings.
     proc decode(errors=DecodePolicy.Strict): string throws {
+      pragma "fn synchronization free"
+      extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
+                                      buf:c_string, buflen:ssize_t):syserr;
+
       var localThis: bytes = this.localize();
 
       // allocate buffer the same size as this buffer assuming that the string
       // is in fact perfectly decodable. In the worst case, the user wants the
       // replacement policy and we grow the buffer couple of times.
       // The alternative is to allocate more space from the beginning.
-      var allocSize = chpl_here_good_alloc_size(this.len+1);
-      var c_buf = chpl_here_alloc(allocSize, offset_STR_COPY_DATA): bufferType;
+      var ret: string;
+      var (newBuff, allocSize) = bufferAlloc(this.len+1);
+      ret.buff = newBuff;
+      ret._size = allocSize;
+      ret.isowned = true;
 
       var thisIdx = 0;
       var decodedIdx = 0;
@@ -1008,7 +754,6 @@ module Bytes {
 
         if cp == 0xfffd {  //decoder returns the replacament character
           if errors == DecodePolicy.Strict {
-            chpl_here_free(c_buf);
             throw new owned DecodeError();
           }
           else if errors == DecodePolicy.Ignore {
@@ -1018,13 +763,15 @@ module Bytes {
         }
 
         // do a naive copy
-        c_memcpy(c_ptrTo(c_buf[decodedIdx]), bufToDecode:c_void_ptr, nbytes);
+        bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
+                          dst_off=decodedIdx);
         thisIdx += nbytes;
         decodedIdx += nbytes;
       }
 
-      // I couldn't use any named args here, why?
-      return new string(c_buf, decodedIdx, allocSize, true, false);
+      ret.len = decodedIdx;
+      ret.buff[ret.len] = 0;
+      return ret;
     }
 
     /*
@@ -1301,67 +1048,14 @@ module Bytes {
      Appends the bytes `rhs` to the bytes `lhs`.
   */
   proc +=(ref lhs: bytes, const ref rhs: bytes) : void {
-    // if rhs is empty, nothing to do
-    if rhs.len == 0 then return;
-
-    on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      const rhsLen = rhs.len;
-      const newLength = lhs.len+rhsLen; //TODO: check for overflow
-      if lhs._size <= newLength {
-        const newSize = chpl_here_good_alloc_size(
-            max(newLength+1, lhs.len*chpl_stringGrowthFactor):int);
-
-        if lhs.isowned {
-          lhs.buff = chpl_here_realloc(lhs.buff, newSize,
-                                      offset_STR_COPY_DATA):bufferType;
-        } else {
-          var newBuff = chpl_here_alloc(newSize,
-                                       offset_STR_COPY_DATA):bufferType;
-          c_memcpy(newBuff, lhs.buff, lhs.len);
-          lhs.buff = newBuff;
-          lhs.isowned = true;
-        }
-
-        lhs._size = newSize;
-      }
-      const rhsRemote = rhs.locale_id != chpl_nodeID;
-      if rhsRemote {
-        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale_id, rhs.buff, rhsLen);
-      } else {
-        c_memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen);
-      }
-      lhs.len = newLength;
-      lhs.buff[newLength] = 0;
-    }
+    doAppend(lhs, rhs);
   }
 
   /*
      Copies the bytes `rhs` into the bytes `lhs`.
   */
   proc =(ref lhs: bytes, rhs: bytes) {
-    inline proc helpMe(ref lhs: bytes, rhs: bytes) {
-      if _local || rhs.locale_id == chpl_nodeID {
-        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
-      } else {
-        const len = rhs.len; // cache the remote copy of len
-        var remote_buf:bufferType = nil;
-        if len != 0 then
-          remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);
-        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
-      }
-    }
-
-    if _local || lhs.locale_id == chpl_nodeID then {
-      helpMe(lhs, rhs);
-    }
-    else {
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-        helpMe(lhs, rhs);
-      }
-    }
-
+    doAssign(lhs, rhs);
   }
 
   /*
@@ -1370,13 +1064,7 @@ module Bytes {
      Halts if `lhs` is a remote bytes.
   */
   proc =(ref lhs: bytes, rhs_c: c_string) {
-    // Make this some sort of local check once we have local types/vars
-    if !_local && (lhs.locale_id != chpl_nodeID) then
-      halt("Cannot assign a c_string to a remote string.");
-
-    const len = rhs_c.length;
-    const buff:bufferType = rhs_c:bufferType;
-    lhs.reinitString(buff, len, len+1, needToCopy=true);
+    doAssign(lhs, rhs_c);
   }
 
   //
@@ -1387,35 +1075,7 @@ module Bytes {
                and `s1`
   */
   proc +(s0: bytes, s1: bytes) {
-    // cache lengths locally
-    const s0len = s0.len;
-    if s0len == 0 then return s1;
-    const s1len = s1.len;
-    if s1len == 0 then return s0;
-
-    var ret: bytes;
-    ret.len = s0len + s1len;
-    const allocSize = chpl_here_good_alloc_size(ret.len+1);
-    ret._size = allocSize;
-    ret.buff = chpl_here_alloc(allocSize,
-                              offset_STR_COPY_DATA): bufferType;
-    ret.isowned = true;
-
-    const s0remote = s0.locale_id != chpl_nodeID;
-    if s0remote {
-      chpl_string_comm_get(ret.buff, s0.locale_id, s0.buff, s0len);
-    } else {
-      c_memcpy(ret.buff, s0.buff, s0len);
-    }
-
-    const s1remote = s1.locale_id != chpl_nodeID;
-    if s1remote {
-      chpl_string_comm_get(ret.buff+s0len, s1.locale_id, s1.buff, s1len);
-    } else {
-      c_memcpy(ret.buff+s0len, s1.buff, s1len);
-    }
-    ret.buff[ret.len] = 0;
-    return ret;
+    return doConcat(s0, s1);
   }
 
   /*
@@ -1424,109 +1084,38 @@ module Bytes {
                returned.
   */
   proc *(s: bytes, n: integral) {
-    if n <= 0 then return new bytes("");
-
-    const sLen = s.length;
-    if sLen == 0 then return new bytes("");
-
-    var ret: bytes;
-    ret.len = sLen * n; // TODO: check for overflow
-    const allocSize = chpl_here_good_alloc_size(ret.len+1);
-    ret._size = allocSize;
-    ret.buff = chpl_here_alloc(allocSize,
-                              offset_STR_COPY_DATA): bufferType;
-    ret.isowned = true;
-
-    const sRemote = s.locale_id != chpl_nodeID;
-    if sRemote {
-      chpl_string_comm_get(ret.buff, s.locale_id, s.buff, sLen);
-    } else {
-      c_memcpy(ret.buff, s.buff, sLen);
-    }
-
-    var iterations = n-1;
-    var offset = sLen;
-    for i in 1..iterations {
-      c_memcpy(ret.buff+offset, ret.buff, sLen);
-      offset += sLen;
-    }
-    ret.buff[ret.len] = 0;
-
-    return ret;
-
-  }
-
-  // Relational operators
-  private inline proc _strcmp_local(a, b) : int {
-    // Assumes a and b are on same locale and not empty.
-    const size = min(a.len, b.len);
-    const result =  c_memcmp(a.buff, b.buff, size);
-
-    if (result == 0) {
-      // Handle cases where one string is the beginning of the other
-      if (size < a.len) then return 1;
-      if (size < b.len) then return -1;
-    }
-    return result;
-  }
-
-  private inline proc _strcmp(a, b) where a.type==bytes||a.type==string &&
-                                          b.type==bytes||b.type==string : int {
-    if a.locale_id == chpl_nodeID && b.locale_id == chpl_nodeID {
-      // it's local
-      return _strcmp_local(a, b);
-    } else {
-      var localA: bytes = a.localize();
-      var localB: bytes = b.localize();
-      return _strcmp_local(localA, localB);
-    }
+    return doMultiply(s, n);
   }
 
   pragma "no doc"
   proc ==(a: bytes, b: bytes) : bool {
-    // At the moment, this commented out section will not work correctly. If a
-    // and b are on the same locale, we will go to that locale, but an autoCopy
-    // will localize a and b, before they are placed into the on bundle,
-    // causing us to access garbage data inside the doEq routine. Always
-    // localize for now.
-    //
-    /* if a.locale_id == b.locale_id {
-      var ret: bool = false;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
-        ret = doEq(a, b);
-      }
-      return ret;
-    } else { */
-
-    return _strcmp(a, b) == 0;
+    return doEq(a,b);
   }
 
   pragma "no doc"
   proc ==(a: bytes, b: string) : bool {
-    return _strcmp(a, b) == 0;
+    return doEq(a,b);
   }
 
   pragma "no doc"
   proc ==(a: string, b: bytes) : bool {
-    return _strcmp(a, b) == 0;
+    return doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: bytes, b: bytes) : bool {
-    return _strcmp(a, b) != 0;
+    return !doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: bytes, b: string) : bool {
-    return _strcmp(a, b) != 0;
+    return !doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: bytes) : bool {
-    return _strcmp(a, b) != 0;
+    return !doEq(a,b);
   }
-
 
   // character-wise operation helpers
 

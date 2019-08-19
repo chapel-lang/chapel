@@ -464,7 +464,6 @@ module CPtr {
     compilerError("Can't call a C function pointer within Chapel");
   }
 
-
   // Offset the CHPL_RT_MD constant in order to preserve the value through
   // calls to chpl_here_alloc. See comments on offset_STR_* in String.chpl
   // for more.

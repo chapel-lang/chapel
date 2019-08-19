@@ -923,6 +923,12 @@ module ChapelBase {
     }
   }
 
+  // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.
+  // chpl_mem_descInt_t is really a well known compiler type since the compiler
+  // emits calls for the chpl_mem_descs table. Maybe the compiler should just
+  // create the type and export it to the runtime?
+  pragma "no doc"
+  extern type chpl_mem_descInt_t = int(16);
 
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
