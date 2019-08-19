@@ -102,7 +102,7 @@ module Bytes {
       to ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
      */
-    proc init(s, isowned: bool = true) where s.type == string || s.type == _bytes {
+    proc init(s, isowned: bool = true) where s.type == string || s.type == bytes {
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -148,7 +148,7 @@ module Bytes {
     }
 
     pragma "no doc"
-    proc init=(b: _bytes) {
+    proc init=(b: bytes) {
       this.init(b);
     }
 
@@ -267,11 +267,11 @@ module Bytes {
        :returns: A shallow copy if the :record:`bytes` is already on the
                  current locale, otherwise a deep copy is performed.
     */
-    inline proc localize() : _bytes {
+    inline proc localize() : bytes {
       if _local || this.locale_id == chpl_nodeID {
-        return new _bytes(this, isowned=false);
+        return new bytes(this, isowned=false);
       } else {
-        const x:_bytes = this; // assignment makes it local
+        const x:bytes = this; // assignment makes it local
         return x;
       }
     }
@@ -291,12 +291,12 @@ module Bytes {
 
       :returns: 1-length :record:`bytes` object
      */
-    proc this(i: int): _bytes {
+    proc this(i: int): bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
                                    loc=this.locale_id);
-      return new _bytes(buf, length=1, size=size, needToCopy=false);
+      return new bytes(buf, length=1, size=size, needToCopy=false);
     }
 
     /*
@@ -313,7 +313,7 @@ module Bytes {
 
       :yields: 1-length :record:`bytes` objects
      */
-    iter these(): _bytes {
+    iter these(): bytes {
       if this.isEmpty() then return;
       for i in 1..this.len do
         yield this[i];
@@ -322,7 +322,7 @@ module Bytes {
     /*
       Iterates over the bytes byte by byte.
     */
-    iter bytes(): byteType {
+    iter chpl_bytes(): byteType {
       for i in 1..this.len do
         yield this.byte(i);
     }
@@ -337,7 +337,7 @@ module Bytes {
       :returns: a new bytes that is a slice within ``1..bytes.length``. If
                 the length of `r` is zero, an empty bytes is returned.
      */
-    proc this(r: range(?)) : _bytes {
+    proc this(r: range(?)) : bytes {
       return getSlice(this, r);
     }
 
@@ -380,7 +380,7 @@ module Bytes {
       :returns: * `true`  -- when the object begins with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc startsWith(needles: _bytes ...) : bool {
+    proc startsWith(needles: bytes ...) : bool {
       return startsEndsWith(this, needles, fromLeft=true);
     }
 
@@ -390,7 +390,7 @@ module Bytes {
       :returns: * `true`  -- when the object ends with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc endsWith(needles: _bytes ...) : bool {
+    proc endsWith(needles: bytes ...) : bool {
       return startsEndsWith(this, needles, fromLeft=false);
     }
 
@@ -403,7 +403,7 @@ module Bytes {
       :returns: the index of the first occurrence of `needle` within a
                 the object, or 0 if the `needle` is not in the object.
      */
-    proc find(needle: _bytes, region: range(?) = 1:idxType..) : idxType {
+    proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
       return _search_helper(needle, region, count=false): idxType;
     }
 
@@ -416,7 +416,7 @@ module Bytes {
       :returns: the index of the first occurrence from the right of `needle`
                 within the object, or 0 if the `needle` is not in the object.
      */
-    proc rfind(needle: _bytes, region: range(?) = 1:idxType..) : idxType {
+    proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
       return _search_helper(needle, region, count=false,
                             fromLeft=false): idxType;
     }
@@ -429,7 +429,7 @@ module Bytes {
 
       :returns: the number of times `needle` occurs in the object
      */
-    proc count(needle: _bytes, region: range(?) = 1..) : int {
+    proc count(needle: bytes, region: range(?) = 1..) : int {
       return _search_helper(needle, region, count=true);
     }
 
@@ -438,7 +438,7 @@ module Bytes {
     //      (Boyer-Moore-Horspool|any thing other than brute force)
     //
     pragma "no doc"
-    inline proc _search_helper(needle: _bytes, region: range(?),
+    inline proc _search_helper(needle: bytes, region: range(?),
                                param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.len, so go to the home locale
       var ret: int = 0;
@@ -514,7 +514,7 @@ module Bytes {
      */
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
-    proc replace(needle: _bytes, replacement: _bytes, count: int = -1) : _bytes {
+    proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
       return doReplace(this, needle, replacement, count);
     }
 
@@ -532,8 +532,8 @@ module Bytes {
                                           when `sep` occurs multiple times in a
                                           row.
      */
-    iter split(sep: _bytes, maxsplit: int = -1,
-               ignoreEmpty: bool = false): _bytes {
+    iter split(sep: bytes, maxsplit: int = -1,
+               ignoreEmpty: bool = false): bytes {
       for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
     }
 
@@ -543,12 +543,12 @@ module Bytes {
       :arg maxsplit: The number of times to split the bytes, negative values
                      indicate no limit.
      */
-    iter split(maxsplit: int = -1) : _bytes {
+    iter split(maxsplit: int = -1) : bytes {
       if !this.isEmpty() {
-        const localThis: _bytes = this.localize();
+        const localThis: bytes = this.localize();
         var done : bool = false;
         var yieldChunk : bool = false;
-        var chunk : _bytes;
+        var chunk : bytes;
 
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
@@ -618,14 +618,14 @@ module Bytes {
       the :record:`bytes` objects passed in with the contents of the method
       receiver inserted between them.
     */
-    proc join(const ref S: _bytes ...) : _bytes {
+    proc join(const ref S: bytes ...) : bytes {
       return _join(S);
     }
 
     /*
       Same as the varargs version, but with a homogeneous tuple of bytes.
     */
-    proc join(const ref S) : _bytes where isTuple(S) {
+    proc join(const ref S) : bytes where isTuple(S) {
       if !isHomogeneousTuple(S) || !isBytes(S[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
       return _join(S);
@@ -634,17 +634,17 @@ module Bytes {
     /*
       Same as the varargs version, but with all the bytes in an array.
      */
-    proc join(const ref S: [] _bytes) : _bytes {
+    proc join(const ref S: [] bytes) : bytes {
       return _join(S);
     }
 
     pragma "no doc"
-    proc join(ir: _iteratorRecord): _bytes {
+    proc join(ir: _iteratorRecord): bytes {
       return doJoinIterator(this, ir);
     }
 
     pragma "no doc"
-    proc _join(const ref S) : _bytes where isTuple(S) || isArray(S) {
+    proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
       return doJoin(this, S);
     }
 
@@ -659,13 +659,13 @@ module Bytes {
       :returns: A new :record:`bytes` with `leading` and/or `trailing`
                 occurrences of characters in `chars` removed as appropriate.
     */
-    proc strip(chars: _bytes = " \t\r\n":_bytes,
-               leading=true, trailing=true) : _bytes {
+    proc strip(chars: bytes = " \t\r\n":bytes,
+               leading=true, trailing=true) : bytes {
       if this.isEmpty() then return "";
       if chars.isEmpty() then return this;
 
-      const localThis: _bytes = this.localize();
-      const localChars: _bytes = chars.localize();
+      const localThis: bytes = this.localize();
+      const localChars: bytes = chars.localize();
 
       var start: idxType = 1;
       var end: idxType = localThis.len;
@@ -708,7 +708,7 @@ module Bytes {
       before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
       the tuple will contain the whole bytes, and then two empty bytes.
     */
-    proc const partition(sep: _bytes) : 3*_bytes {
+    proc const partition(sep: bytes) : 3*bytes {
       return doPartition(this, sep);
     }
 
@@ -731,7 +731,7 @@ module Bytes {
       extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
                                       buf:c_string, buflen:ssize_t):syserr;
 
-      var localThis: _bytes = this.localize();
+      var localThis: bytes = this.localize();
 
       // allocate buffer the same size as this buffer assuming that the string
       // is in fact perfectly decodable. In the worst case, the user wants the
@@ -987,8 +987,8 @@ module Bytes {
                 replaced with their lowercase counterpart in ASCII. Other
                 characters remain untouched.
     */
-    proc toLower() : _bytes {
-      var result: _bytes = this;
+    proc toLower() : bytes {
+      var result: bytes = this;
       if result.isEmpty() then return result;
       for (i,b) in zip(0.., result.bytes()) {
         result.buff[i] = byte_toLower(b); //check is done by byte_toLower
@@ -1001,8 +1001,8 @@ module Bytes {
                 their uppercase counterpart in ASCII. Other characters remain
                 untouched.
     */
-    proc toUpper() : _bytes {
-      var result: _bytes = this;
+    proc toUpper() : bytes {
+      var result: bytes = this;
       if result.isEmpty() then return result;
       for (i,b) in zip(0.., result.bytes()) {
         result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
@@ -1016,8 +1016,8 @@ module Bytes {
                 characters following another cased character converted to
                 lowercase.
      */
-    proc toTitle() : _bytes {
-      var result: _bytes = this;
+    proc toTitle() : bytes {
+      var result: bytes = this;
       if result.isEmpty() then return result;
 
       param UN = 0, LETTER = 1;
@@ -1040,21 +1040,21 @@ module Bytes {
 
   } // end of record bytes
 
-  inline proc _cast(type t: _bytes, x: string) {
-    return new _bytes(x);
+  inline proc _cast(type t: bytes, x: string) {
+    return new bytes(x);
   }
 
   /*
      Appends the bytes `rhs` to the bytes `lhs`.
   */
-  proc +=(ref lhs: _bytes, const ref rhs: _bytes) : void {
+  proc +=(ref lhs: bytes, const ref rhs: bytes) : void {
     doAppend(lhs, rhs);
   }
 
   /*
      Copies the bytes `rhs` into the bytes `lhs`.
   */
-  proc =(ref lhs: _bytes, rhs: _bytes) {
+  proc =(ref lhs: bytes, rhs: bytes) {
     doAssign(lhs, rhs);
   }
 
@@ -1063,7 +1063,7 @@ module Bytes {
 
      Halts if `lhs` is a remote bytes.
   */
-  proc =(ref lhs: _bytes, rhs_c: c_string) {
+  proc =(ref lhs: bytes, rhs_c: c_string) {
     doAssign(lhs, rhs_c);
   }
 
@@ -1074,7 +1074,7 @@ module Bytes {
      :returns: A new :record:`bytes` which is the result of concatenating `s0`
                and `s1`
   */
-  proc +(s0: _bytes, s1: _bytes) {
+  proc +(s0: bytes, s1: bytes) {
     return doConcat(s0, s1);
   }
 
@@ -1083,37 +1083,37 @@ module Bytes {
                times.  If `n` is less than or equal to 0, an empty bytes is
                returned.
   */
-  proc *(s: _bytes, n: integral) {
+  proc *(s: bytes, n: integral) {
     return doMultiply(s, n);
   }
 
   pragma "no doc"
-  proc ==(a: _bytes, b: _bytes) : bool {
+  proc ==(a: bytes, b: bytes) : bool {
     return doEq(a,b);
   }
 
   pragma "no doc"
-  proc ==(a: _bytes, b: string) : bool {
+  proc ==(a: bytes, b: string) : bool {
     return doEq(a,b);
   }
 
   pragma "no doc"
-  proc ==(a: string, b: _bytes) : bool {
+  proc ==(a: string, b: bytes) : bool {
     return doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc !=(a: _bytes, b: _bytes) : bool {
+  inline proc !=(a: bytes, b: bytes) : bool {
     return !doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc !=(a: _bytes, b: string) : bool {
+  inline proc !=(a: bytes, b: string) : bool {
     return !doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc !=(a: string, b: _bytes) : bool {
+  inline proc !=(a: string, b: bytes) : bool {
     return !doEq(a,b);
   }
 

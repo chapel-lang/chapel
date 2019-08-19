@@ -38,7 +38,7 @@ const    Dom = {0.. # order, 0.. # order};
 var tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
 
 var timer: Timer,
-    bytes = 2.0 * numBytes(real) * order * order,
+    nBytes = 2.0 * numBytes(real) * order * order,
     A, B : [Dom] real;
 
 //
@@ -109,7 +109,7 @@ if (debug) {
 // Verify correctness
 if (absErr < epsilon) {
   writeln("Solution validates");
-  if (!correctness) then writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgTime,
+  if (!correctness) then writeln("Rate (MB/s): ", 1.0E-06 * nBytes / avgTime,
                               " Avg time (s): ", avgTime);
 } else {
   writeln("ERROR: Aggregate squared error", absErr,

@@ -128,8 +128,8 @@ proc makeLookup(a :[?D]) {
 
 // Add a line of random sequence
 var line_buff : [0..LINE_LENGTH+1] int(8);
-proc addLine(bytes: int) {
-  for i in 0..bytes-1 {
+proc addLine(nBytes: int) {
+  for i in 0..nBytes-1 {
     var r  = random.next();
     var ai = r : int;
     while (lookup[ai].p < r) {
@@ -137,8 +137,8 @@ proc addLine(bytes: int) {
     }
     line_buff[i] = lookup[ai].c; //A faster way of writing would make this code viable
   }
-  line_buff[bytes] = 10;
-  line_buff[bytes+1] = 0;
+  line_buff[nBytes] = 10;
+  line_buff[nBytes+1] = 0;
   printf("%s", line_buff[0]);
 }
 
@@ -148,9 +148,9 @@ proc randomMake(desc : string, a :[], n : int) {
   makeLookup(a);
   write(desc);
   while (len > 0) {
-    var bytes : int = min(LINE_LENGTH, len);
-    addLine(bytes);
-    len = len - bytes;
+    var nBytes : int = min(LINE_LENGTH, len);
+    addLine(nBytes);
+    len = len - nBytes;
   }
 }
 

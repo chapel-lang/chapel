@@ -54,13 +54,13 @@
 module Lists {
 
   pragma "no doc"
-  config const _initialCapacity = 8;
+  private const _initialCapacity = 8;
 
   pragma "no doc"
-  config const _initialArrayCapacity = 16;
+  private const _initialArrayCapacity = 16;
 
   pragma "no doc"
-  config param _sanityChecks = true;
+  private param _sanityChecks = true;
 
   //
   // Some asserts are useful while developing, but can be turned off when the
@@ -141,6 +141,9 @@ module Lists {
     proc init(type eltType, param parSafe=false) {
       this.eltType = eltType;
       this.parSafe = parSafe;
+      this._arrays = nil;
+      this.complete();
+      this._firstTimeInitializeArrays();
     }
 
     /*
@@ -155,12 +158,28 @@ module Lists {
       this.parSafe = other.parSafe;
       this._arrays = nil;
       this.complete();
+      this._firstTimeInitializeArrays();
       this.extend(other);
     }
 
     pragma "no doc"
+    proc _firstTimeInitializeArrays() {
+      _sanity(_arrays == nil);
+      _sanity(_totalCapacity == 0);
+      _sanity(_size == 0);
+      _arrays = _makeBlockArray(_initialArrayCapacity);
+      _arrayCapacity = _initialArrayCapacity;
+      _arrays[0] = _makeArray(_initialCapacity);
+      _totalCapacity = _initialCapacity;
+    }
+
+    pragma "no doc"
     inline proc deinit() {
-      clear();
+      _fireAllDestructors();
+      _freeAllArrays();
+      _sanity(_totalCapacity == 0);
+      _sanity(_size == 0);
+      _sanity(_arrays == nil);
     }
 
     pragma "no doc"
@@ -279,24 +298,27 @@ module Lists {
 
     pragma "no doc"
     proc _maybeAcquireMem(amount: int) {
-      //
-      // TODO
-      // Adopt a new implementation where the first array is always allocated.
-      //
-      if _arrays == nil {
-        _sanity(_totalCapacity == 0);
-        _sanity(_size == 0);
-        _arrays = _makeBlockArray(_initialArrayCapacity);
-        _arrayCapacity = _initialArrayCapacity;
-        _arrays[0] = _makeArray(_initialCapacity);
-        _totalCapacity = _initialCapacity;
-      }
 
       const remaining = _totalCapacity - _size;
-      if remaining > amount then
+      _sanity(remaining >= 0);
+
+      /*
+      writeln("In function maybeAcquireMem >>");
+      writeln("Total capacity is: ", _totalCapacity);
+      writeln("Current size is: ", _size);
+      writeln("Slots requested: ", amount);
+      writeln("Remaining slots: ", remaining);
+      for i in 0..#_arrayCapacity {
+        var x = if _arrays[i] == nil then "N" else "X";
+        write(x);
+      }
+      writeln();
+      */
+
+      if remaining >= amount then
         return;
 
-      var lastArrayIdx = _getLastArrayIdx();
+      var lastArrayIdx = if _size == 0 then 0 else _getLastArrayIdx();
       var req = amount - remaining;
 
       while req > 0 {
@@ -340,25 +362,37 @@ module Lists {
     //
     // If the current size (occupied slots) minus a given amount is small
     // enough such that no slots in the last "sub-block" are occupied, then
-    // preemptively free that block. This method _does not_ fire destructors!
+    // preemptively free that block.
+    //
+    // This method _does not_ fire destructors!
     //
     pragma "no doc"
     proc _maybeReleaseMem(amount: int) {
-      if _arrays == nil || _totalCapacity == 0 then
+
+      //
+      // If we're down to one single "sub array", then there's no sense in
+      // doing anymore work (upon repeated appends/pops, we'd just have to
+      // reinitialize/deinitialize the whole segment array repeatedly).
+      //
+      if _totalCapacity <= _initialCapacity then
         return;
 
       const lastArrayIdx = _getLastArrayIdx();
+      _sanity(lastArrayIdx != 0);
+
       const lastArrayCapacity = _getArrayCapacity(lastArrayIdx);
       const threshold = _totalCapacity - lastArrayCapacity;
       const nsize = _size - amount;
 
-      if nsize >= threshold then
+      if nsize > threshold then
         return;
 
       ref array = _arrays[lastArrayIdx];
+      _sanity(array != nil);
+
       _freeArray(array, lastArrayCapacity);
       _totalCapacity -= lastArrayCapacity;
-      array = nil; 
+      array = nil;
     }
 
     //
@@ -390,7 +424,7 @@ module Lists {
       if idx == _size then
         return;
 
-      for i in idx.._size {
+      for i in idx..(_size - 1) {
         ref src = _getRef(i + 1);
         ref dst = _getRef(i);
         _move(src, dst);
@@ -596,6 +630,47 @@ module Lists {
       return result;
     }
 
+    //
+    // Manually call destructors on each currently allocated element. Use
+    // one-based indexing here since we're going through _getRef(). For
+    // logical consistency, set size to zero once all destructors have been
+    // fired.
+    //
+    pragma "no doc"
+    proc _fireAllDestructors() {
+      for i in 1.._size {
+        ref item = _getRef(i);
+        _destroy(item);
+      }
+      _size = 0;
+    }
+
+    pragma "no doc"
+    proc _freeAllArrays() {
+
+      if _arrays == nil then return;
+
+      _sanity(_totalCapacity != 0);
+      _sanity(_arrayCapacity != 0);
+
+      // Remember to use zero-based indexing with `_ddata`!
+      for i in 0..#_arrayCapacity {
+        ref array = _arrays[i];
+        if array == nil then
+          continue;
+        const capacity = _getArrayCapacity(i);
+        _totalCapacity -= capacity;
+        _freeArray(array, capacity);
+        array = nil;
+      }
+
+      _sanity(_totalCapacity == 0);
+
+      _freeBlockArray(_arrays, _arrayCapacity);
+      _arrays = nil;
+      _size = 0;
+    }
+
     /*
       Clear the contents of this list.
 
@@ -607,39 +682,16 @@ module Lists {
     proc clear() {
       _enter();
 
-      //
-      // Manually call destructors on each currently allocated element. Use
-      // one-based indexing here since we're going through _getRef().
-      //
-      for i in 1.._size {
-        ref item = _getRef(i);
-        _destroy(item);
-      }
-
-      //
-      // Loop through all arrays and clean them up, then clean up the "block
-      // array" itself.
-      //
-      if _arrays != nil {
-        _sanity(_totalCapacity != 0);
-        _sanity(_arrayCapacity != 0);
-        // Remember to use zero-based indexing with `_ddata`!
-        for i in 0..#_arrayCapacity {
-          ref array = _arrays[i];
-          if array == nil then
-            continue;
-          const capacity = _getArrayCapacity(i);
-          _totalCapacity -= capacity;
-          _freeArray(array, capacity);
-          array = nil;
-        }
-
-        _freeBlockArray(_arrays, _arrayCapacity);
-        _arrays = nil;
-      }
-
+      _fireAllDestructors();
+      _freeAllArrays();
       _sanity(_totalCapacity == 0);
-      _size = 0;
+      _sanity(_size == 0);
+      _sanity(_arrays == nil);
+
+      //
+      // All array operations assume a consistent initial state.
+      //
+      _firstTimeInitializeArrays();
 
       _leave();
     }

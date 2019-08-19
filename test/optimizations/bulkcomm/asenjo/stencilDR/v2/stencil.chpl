@@ -37,7 +37,7 @@ const allx = ldx * gx,
 
 // for neighbor-cache pointers
 var auxArr: [1..1, 1..1] elType;
-type cacheType = auxArr[1,..]._value.type; // a class type, so it can be nil
+type cacheType = auxArr[1,..]._value.type?; // a class type, so it can be nil
 
 ///////////
 

@@ -1,0 +1,2 @@
+init-field-arg-nonnil-owned-from-oknil-unmanaged.chpl:9: In initializer:
+init-field-arg-nonnil-owned-from-oknil-unmanaged.chpl:10: error: cannot create an owned variable from an unmanaged class instance

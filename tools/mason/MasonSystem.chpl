@@ -18,6 +18,7 @@
  */
 
 
+private use Lists;
 use Path;
 use MasonUtils;
 use MasonHelp;
@@ -146,7 +147,11 @@ proc printPkgPc(args) throws {
     try! {
       const pkgName = args[3];
       if pkgExists(pkgName) {
-        var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir")).strip();
+        //
+        // Add a these call, since `string.join` has an iterator overload but
+        // not one for list.
+        //
+        var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
         var pcFile = joinPath(pcDir, pkgName + ".pc");
         var pc = open(pcFile, iomode.r);
         writeln("\n------- " + pkgName + ".pc -------\n");
@@ -177,7 +182,7 @@ proc getPkgVariable(pkgName: string, option: string) {
 
   var command = " ".join("pkg-config", pkgName, option);
 
-  var lines: [1..0] string;
+  var lines: list(string);
   var cmd = command.split();
   var sub = spawn(cmd, stdout=PIPE);
   sub.wait();
@@ -185,7 +190,7 @@ proc getPkgVariable(pkgName: string, option: string) {
   var line:string;
   for line in sub.stdout.lines() {
     if line.length > 1 then
-    lines.push_back(line);
+      lines.append(line);
   }
 
   return lines;
@@ -211,9 +216,10 @@ proc getPkgInfo(pkgName: string, version: string) throws {
   var pkgInfo = new unmanaged Toml(pkgToml);
 
   if pkgExists(pkgName) {
-    const pcVersion = "".join(getPkgVariable(pkgName, "--modversion")).strip();
-    const libs = "".join(getPkgVariable(pkgName, "--libs")).strip();
-    const include = "".join(getPkgVariable(pkgName, "--variable=includedir")).strip();
+    // Pass "these" to join instead of converting the list to an array.
+    const pcVersion = "".join(getPkgVariable(pkgName, "--modversion").these()).strip();
+    const libs = "".join(getPkgVariable(pkgName, "--libs").these()).strip();
+    const include = "".join(getPkgVariable(pkgName, "--variable=includedir").these()).strip();
 
     pkgInfo.set("name", pkgName);
     pkgInfo.set("version", pcVersion);

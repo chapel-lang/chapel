@@ -56,7 +56,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: unmanaged ClassType;
+var cls: unmanaged ClassType?;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -91,7 +91,7 @@ proc funBlank(
  enm: EnumType,
 /* no records for now */
 /* no unions for now */
- cls: unmanaged ClassType,
+ cls: unmanaged ClassType?,
 /* no tuples for now */
  dom1: DomType1,
  dom2: DomType2,
@@ -261,7 +261,7 @@ const z128: complex(128),
 const enm: EnumType,
 /* no records for now */
 /* no unions for now */
-const cls: unmanaged ClassType,
+const cls: unmanaged ClassType?,
 /* no tuples for now */
 const dom1: DomType1,
 const dom2: DomType2,
@@ -431,7 +431,7 @@ const in z128: complex(128),
 const in enm: EnumType,
 /* no records for now */
 /* no unions for now */
-const in cls: unmanaged ClassType,
+const in cls: unmanaged ClassType?,
 /* no tuples for now */
 const in dom1: DomType1,
 const in dom2: DomType2,
@@ -601,7 +601,7 @@ in z128: complex(128),
 in enm: EnumType,
 /* no records for now */
 /* no unions for now */
-in cls: unmanaged ClassType,
+in cls: unmanaged ClassType?,
 /* no tuples for now */
 in dom1: DomType1,
 in dom2: DomType2,
@@ -771,7 +771,7 @@ inout z128: complex(128),
 inout enm: EnumType,
 /* no records for now */
 /* no unions for now */
-inout cls: unmanaged ClassType,
+inout cls: unmanaged ClassType?,
 /* no tuples for now */
 inout dom1: DomType1,
 inout dom2: DomType2,
@@ -941,7 +941,7 @@ out z128: complex(128),
 out enm: EnumType,
 /* no records for now */
 /* no unions for now */
-out cls: unmanaged ClassType,
+out cls: unmanaged ClassType?,
 /* no tuples for now */
 out dom1: DomType1,
 out dom2: DomType2,
@@ -1111,7 +1111,7 @@ ref z128: complex(128),
 ref enm: EnumType,
 /* no records for now */
 /* no unions for now */
-ref cls: unmanaged ClassType,
+ref cls: unmanaged ClassType?,
 /* no tuples for now */
 ref dom1: DomType1,
 ref dom2: DomType2,
@@ -1281,7 +1281,7 @@ const ref z128: complex(128),
 const ref enm: EnumType,
 /* no records for now */
 /* no unions for now */
-const ref cls: unmanaged ClassType,
+const ref cls: unmanaged ClassType?,
 /* no tuples for now */
 const ref dom1: DomType1,
 const ref dom2: DomType2,

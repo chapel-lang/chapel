@@ -227,20 +227,213 @@ GenRet DefExpr::codegen() {
 ************************************* | ************************************/
 
 #ifdef HAVE_LLVM
-// Easier-to-use versions of functions in llvmUtil.h, not
-// defined there because we didn't want llvmUtil.h to depend on
-// Chapel's codegen.h
-llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name)
+static
+void codegenLifetimeStart(llvm::Type *valType, llvm::Value *addr)
+{
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  int64_t sizeInBytes = -1;
+  if (valType->isSized())
+    sizeInBytes = dataLayout.getTypeStoreSize(valType);
+
+  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
+    llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+
+  info->irBuilder->CreateLifetimeStart(addr, size);
+}
+
+llvm::Value* createVarLLVM(llvm::Type* type, const char* name)
 {
   GenInfo* info = gGenInfo;
-  return createTempVarLLVM(info->irBuilder, type, name);
+  llvm::Value* val = createLLVMAlloca(info->irBuilder, type, name);
+  info->currentStackVariables.push_back(std::pair<llvm::Value*, llvm::Type*>(val, type));
+  codegenLifetimeStart(type, val);
+  return val;
+}
+
+llvm::Value* createVarLLVM(llvm::Type* type)
+{
+  char name[32];
+  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
+  return createVarLLVM(type, name);
+}
+
+// Returns n elements in a vector/array or -1
+static
+int64_t arrayVecN(llvm::Type *t)
+{
+  if( t->isArrayTy() ) {
+    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
+    unsigned n = at->getNumElements();
+    return n;
+  } else if( t->isVectorTy() ) {
+    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
+    unsigned n = vt->getNumElements();
+    return n;
+  } else {
+    return -1;
+  }
 }
 
 static
-llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false)
+llvm::Type* arrayVecEltType(llvm::Type *t)
 {
-  GenInfo* info = gGenInfo;
-  return convertValueToType(info->irBuilder, info->module->getDataLayout(), value, newType, isSigned, force);
+  if( t->isArrayTy() ) {
+    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
+    return at->getElementType();
+  } else if( t->isVectorTy() ) {
+    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
+    return vt->getElementType();
+  } else {
+    return NULL;
+  }
+}
+
+static
+bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type* b, bool force)
+{
+  int64_t aN = arrayVecN(a);
+  int64_t bN = arrayVecN(a);
+  int alignA, alignB;
+  int64_t sizeA, sizeB;
+
+  if( a == b ) {
+    return true;
+  } else if( a->isStructTy() && b->isStructTy() ) {
+    llvm::StructType *aTy = llvm::dyn_cast<llvm::StructType>(a);
+    llvm::StructType *bTy = llvm::dyn_cast<llvm::StructType>(b);
+    if( aTy->isLayoutIdentical(bTy) ) return true;
+    // handle case like
+    // {float, float, float, float} <=> { <2xfloat>, <2xfloat> }
+    // fall through...
+  } else if( aN >= 0 && aN == bN &&
+             arrayVecEltType(a) && arrayVecEltType(a) == arrayVecEltType(b) ) {
+    return true;
+  }
+
+
+  alignA = layout.getPrefTypeAlignment(a);
+  alignB = layout.getPrefTypeAlignment(b);
+  sizeA = layout.getTypeStoreSize(a);
+  sizeB = layout.getTypeStoreSize(b);
+
+  // Are they the same size?
+  if( sizeA == sizeB ) return true;
+
+  if( !force ) return false;
+
+  // Are they the same size, within alignment?
+  if( sizeA < sizeB ) {
+    // Try making size A bigger...
+    if( sizeA + alignA >= sizeB ) return true;
+  } else {
+    // A >= B
+    // Try making size B bigger...
+    if( sizeB + alignB >= sizeA ) return true;
+  }
+
+  return false;
+}
+
+static
+llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
+    bool isSigned = false, bool force = false) {
+
+  llvm::IRBuilder<>* irBuilder = gGenInfo->irBuilder;
+  const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
+  llvm::Type *curType = value->getType();
+
+  if(curType == newType) {
+    return value;
+  }
+
+  //Integer values
+  if(newType->isIntegerTy() && curType->isIntegerTy()) {
+    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
+      // Sign extend if isSigned, but never sign extend single bits.
+      if(isSigned && ! curType->isIntegerTy(1)) {
+        return irBuilder->CreateSExtOrBitCast(value, newType);
+      }
+      else {
+        return irBuilder->CreateZExtOrBitCast(value, newType);
+      }
+    }
+    else {
+      return irBuilder->CreateTruncOrBitCast(value, newType);
+    }
+  }
+
+  //Floating point values
+  if(newType->isFloatingPointTy() && curType->isFloatingPointTy()) {
+    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
+      return irBuilder->CreateFPExt(value, newType);
+    }
+    else {
+      return irBuilder->CreateFPTrunc(value, newType);
+    }
+  }
+
+  //Integer value to floating point value
+  if(newType->isFloatingPointTy() && curType->isIntegerTy()) {
+    if(isSigned) {
+      return irBuilder->CreateSIToFP(value, newType);
+    }
+    else {
+      return irBuilder->CreateUIToFP(value, newType);
+    }
+  }
+
+  //Floating point value to integer value
+  if(newType->isIntegerTy() && curType->isFloatingPointTy()) {
+    return irBuilder->CreateFPToSI(value, newType);
+  }
+
+  //Integer to pointer
+  if(newType->isPointerTy() && curType->isIntegerTy()) {
+    return irBuilder->CreateIntToPtr(value, newType);
+  }
+
+  //Pointer to integer
+  if(newType->isIntegerTy() && curType->isPointerTy()) {
+    return irBuilder->CreatePtrToInt(value, newType);
+  }
+
+  //Pointers
+  if(newType->isPointerTy() && curType->isPointerTy()) {
+    if( newType->getPointerAddressSpace() !=
+        curType->getPointerAddressSpace() ) {
+      assert( 0 && "Can't convert pointer to different address space");
+    }
+    return irBuilder->CreatePointerCast(value, newType);
+  }
+
+  // Structure types.
+  // This is important in order to handle clang structure expansion
+  // (e.g. calling a function that returns {int64,int64})
+  if( isArrayVecOrStruct(curType) || isArrayVecOrStruct(newType) ) {
+    if( isTypeEquivalent(layout, curType, newType, force) ) {
+      // We turn it into a store/load to convert the type
+      // since LLVM does not allow bit casts on structure types.
+      llvm::Value* tmp_alloc;
+      if( layout.getTypeStoreSize(newType) >=
+          layout.getTypeStoreSize(curType) )
+        tmp_alloc = createVarLLVM(newType, "");
+      else {
+        tmp_alloc = createVarLLVM(curType, "");
+      }
+      // Now cast the allocation to both fromType and toType.
+      llvm::Type* curPtrType = curType->getPointerTo();
+      llvm::Type* newPtrType = newType->getPointerTo();
+      // Now get cast pointers
+      llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
+      llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
+      irBuilder->CreateStore(value, tmp_cur);
+      return irBuilder->CreateLoad(tmp_new);
+    }
+  }
+
+  return NULL;
 }
 
 static
@@ -1282,17 +1475,6 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   return ret;
 }
 
-#ifdef HAVE_LLVM
-
-llvm::Value* createTempVarLLVM(llvm::Type* type)
-{
-  char name[32];
-  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
-  return createTempVarLLVM(type, name);
-}
-
-#endif
-
 static
 GenRet createTempVar(const char* ctype)
 {
@@ -1310,7 +1492,7 @@ GenRet createTempVar(const char* ctype)
 #ifdef HAVE_LLVM
     llvm::Type* llTy = info->lvt->getType(ctype);
     INT_ASSERT(llTy);
-    ret.val = createTempVarLLVM(llTy, name);
+    ret.val = createVarLLVM(llTy, name);
 #endif
   }
   return ret;
@@ -1336,7 +1518,7 @@ static GenRet createTempVar(Type* t)
     llvm::Type* llTy = tmp.type;
     INT_ASSERT(llTy);
     ret.isLVPtr = GEN_PTR;
-    ret.val = createTempVarLLVM(llTy);
+    ret.val = createVarLLVM(llTy);
 #endif
   }
   ret.chplType = t;
@@ -2044,7 +2226,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     char name[32];
     sprintf(name, "chpl_macro_tmp_tv_%d", codegen_tmp++);
 
-    llvm::Value* tmp = createTempVarLLVM(values.a->getType(), name);
+    llvm::Value* tmp = createVarLLVM(values.a->getType(), name);
 
     info->irBuilder->CreateCondBr(
         codegenValue(cond).val, blockIfTrue, blockIfFalse);
@@ -2276,10 +2458,10 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     // e.g. on aarch64, a struct < 128 bits will be rounded
     // up to a multiple of 64 bits.
     if (targ_size > arg_size) {
-      arg_ptr = createTempVarLLVM(info->irBuilder, targetType, "");
+      arg_ptr = createVarLLVM(targetType, "");
       arg_ptr = info->irBuilder->CreatePointerCast(arg_ptr, t->getPointerTo());
     } else {
-      arg_ptr = createTempVarLLVM(info->irBuilder, t, "");
+      arg_ptr = createVarLLVM(t, "");
     }
     arg_i8_ptr = info->irBuilder->CreatePointerCast(arg_ptr, int8_ptr_type, "");
 
@@ -2460,7 +2642,7 @@ GenRet codegenCallExpr(GenRet function,
       llvm::PointerType* ptrToRetTy = llvm::cast<llvm::PointerType>(
           fnType->getParamType(0));
       llvm::Type* retTy = ptrToRetTy->getElementType();
-      sret = createTempVarLLVM(retTy);
+      sret = createVarLLVM(retTy);
       llArgs.push_back(sret);
     }
 

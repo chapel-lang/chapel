@@ -52,7 +52,7 @@ class ForceLJ : Force {
     pij += epsilon2 * (rs6 * (rs6 - 1.0) - eShift);
   }
 
-  proc compute() : void {
+  override proc compute() : void {
 if useChplVis then tagVdebug("computeLJForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
@@ -82,7 +82,7 @@ if useChplVis then tagVdebug("computeLJForce");
 if useChplVis then pauseVdebug();
   }
 
-  proc computeLocal() : void {
+  override proc computeLocal() : void {
 if useChplVis then tagVdebug("computeLJForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
@@ -114,7 +114,7 @@ local {
 if useChplVis then pauseVdebug();
   }
     
-  proc print() : void {
+  override proc print() : void {
     writeln("Potential Data:");
     writeln("   Potential type   : ", potName);
     writeln("   Species name     : ", name);
@@ -127,7 +127,7 @@ if useChplVis then pauseVdebug();
     writeln("   Sigma            : ", sigma, " Angstroms");
   }
 
-  proc replicate() : unmanaged ForceLJ {
+  override proc replicate() : unmanaged ForceLJ? {
     var temp = new unmanaged ForceLJ();
     temp.cutoff = this.cutoff;
     temp.mass = this.mass;

@@ -88,7 +88,7 @@ module VectorLists {
     var size: int;
     const capacity: int;
     const elements: _ddata(eltType);  // _ddata is not managed
-    var next: unmanaged VectorListElement(eltType);
+    var next: unmanaged VectorListElement(eltType)?;
 
     inline proc init(type eltType, initCapacity: int) {
       this.eltType = eltType;
@@ -142,8 +142,12 @@ module VectorLists {
   /* Yields all VectorListElement. */
   inline iter VectorList.listElements() {
     var curr = head;
-    do { const next = curr.next; yield curr; curr = next; }
-    while curr != nil;
+    while true {
+      const next = curr.next;
+      yield curr;
+      if next then curr = next!;
+              else break;
+    }
   }
 
   /* Yields pairs (starting index, VectorListElement pointer). */

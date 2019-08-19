@@ -8,11 +8,12 @@
   formatted traceback of the error that occurred.
 */
 module TestResult {
+  private use Lists;
   class TestResult {
     type tupType = 2*string;
-    var failures: [1..0] tupType,
-        errors: [1..0] tupType,
-        skipped: [1..0] tupType;
+    var failures: list(tupType),
+        errors: list(tupType),
+        skipped: list(tupType);
     var testsRun = 0;
     var shouldStop = false;
     var separator1 = "="* 70,
@@ -26,14 +27,14 @@ module TestResult {
     proc addError(testName: string, fileName: string, errMsg: string) {
       this.testRan();
       var fileAdd = fileName + ": " + testName;
-      this.errors.push_back((fileAdd, errMsg));
+      this.errors.append((fileAdd, errMsg));
     }
 
     /*called when error occured */
     proc addFailure(testName: string, fileName: string, errMsg: string) {
       this.testRan();
       var fileAdd = fileName + ": " + testName;
-      this.failures.push_back((fileAdd, errMsg));
+      this.failures.append((fileAdd, errMsg));
     }
 
     /*Called when a test has completed successfully*/
@@ -45,7 +46,7 @@ module TestResult {
     proc addSkip(testName: string, fileName: string, errMsg: string) {
       this.testRan();
       var fileAdd = fileName + ": " + testName;
-      this.skipped.push_back((fileAdd, errMsg));
+      this.skipped.append((fileAdd, errMsg));
     }
 
     /*Tells whether or not this result was a success.*/
@@ -96,20 +97,20 @@ module TestResult {
       if this.testsRun != 0 {
         writeln("Run ", run, " ", printTest(run));
         writeln();
-        var infos: [1..0](string);
+        var infos: list((string));
         if !this.wasSuccessful() {
           write("FAILED");
           var failed = this.numFailedTests(),
             errored = this.numErroredTests();
           if failed then
-            infos.push_back("failures = " + failed:string);
+            infos.append("failures = " + failed:string);
           if errored then
-            infos.push_back("errors = " + errored:string);
+            infos.append("errors = " + errored:string);
         }
         else
           write("OK");
         if skipped then
-          infos.push_back("skipped = " + skipped:string);
+          infos.append("skipped = " + skipped:string);
         if infos.size {
           write(" ");
           for info in infos do write(info, " ");

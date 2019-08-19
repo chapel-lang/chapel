@@ -119,8 +119,8 @@ if (!multiConfs) { configurations = ['']; }
 var defaultConfiguration = configurations[0];
 
 // Experimental: used to toggle how stroke pattern and line colors are used for
-// multi-configs. Default to using it for 16 node xc in a hacky way
-var diffColorForEachConfig = pageTitle.indexOf("16 node XC") >= 0;
+// multi-configs. Default to using it for 16 node configs
+var diffColorForEachConfig = pageTitle.indexOf("16 node ") >= 0;
 
 var lastFilterVal = "";
 

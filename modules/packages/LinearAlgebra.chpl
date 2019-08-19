@@ -1090,31 +1090,6 @@ proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK 
   return eig(A, left=false, right=false);
 }
 
-/* To be removed after 1.19.0 */
-pragma "no doc"
-proc eigvals(A: [] ?t, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
-  if right then
-    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, right=right);
-}
-
-/* To be removed after 1.19.0 */
-pragma "no doc"
-proc eigvals(A: [] ?t, param left: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
-  if left then
-    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, left=left);
-}
-
-/* To be removed after 1.19.0 */
-pragma "no doc"
-proc eigvals(A: [] ?t, param left: bool, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
-  if left || right then
-    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, left=left, right=right);
-}
-
-
 
 /* Find the eigenvalues and eigenvectors of matrix ``A``. ``A`` must be square.
 
@@ -1857,16 +1832,17 @@ module Sparse {
 
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
-    var indices: [1..0] 2*D.idxType;
+    use Lists;
+    var indices: list(2*D.idxType);
     for i in D.dim(1) {
       for j in D.dimIter(2, i) {
-        indices.push_back((j, i));
+        indices.append((j, i));
       }
     }
 
     const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
-    Dom += indices;
+    Dom += indices.toArray();
     return Dom;
   }
 

@@ -2684,7 +2684,7 @@ proc _isSimpleIoType(type t) param return
 
 pragma "no doc"
 proc _isIoPrimitiveType(type t) param return
-  _isSimpleIoType(t) || (t == string) || (t == _bytes);
+  _isSimpleIoType(t) || (t == string) || (t == bytes);
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
@@ -2730,8 +2730,8 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
     return ret;
-  } else if t == _bytes {
-    // handle _bytes
+  } else if t == bytes {
+    // handle bytes
     // for now, do nothing and let the function return EINVAL
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -2780,7 +2780,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     // handle string
     const local_x = x.localize();
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
-  } else if t == _bytes {
+  } else if t == bytes {
     // handle bytes
     const local_x = x.localize();
     return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
@@ -2869,8 +2869,8 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
                                       _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
     return ret;
-  } else if t == _bytes {
-    // handle _bytes
+  } else if t == bytes {
+    // handle bytes
     // for now, do nothing and let the function return EINVAL
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
@@ -2937,7 +2937,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
   } else if t == string {
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
-  } else if t == _bytes {
+  } else if t == bytes {
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if isEnumType(t) {
@@ -5337,7 +5337,7 @@ proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
 }
 
 private inline
-proc _toBytes(x:_bytes)
+proc _toBytes(x:bytes)
 {
   return (x, true);
 }
@@ -5345,14 +5345,14 @@ proc _toBytes(x:_bytes)
 private inline
 proc _toBytes(x:string)
 {
-  return (x:_bytes, true);
+  return (x:bytes, true);
 }
 
 // don't allow anything else to be cast to bytes for now
 private inline
 proc _toBytes(x:?t)
 {
-  return ("":_bytes, false);
+  return ("":bytes, false);
 }
 
 private inline
@@ -5361,12 +5361,12 @@ proc _toString(x:string)
   return (x, true);
 }
 private inline
-proc _toString(x:_bytes)
+proc _toString(x:bytes)
 {
   return ("", false);
 }
 private inline
-proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=_bytes && t!=string)
+proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=bytes && t!=string)
 {
   return (x:string, true);
 }
@@ -5376,7 +5376,7 @@ proc _toString(x:?t) where !_isIoPrimitiveType(t)
   return ("", false);
 }
 private inline
-proc _toStringFromBytesOrString(x:_bytes)
+proc _toStringFromBytesOrString(x:bytes)
 {
   return (new string(x.buff, length=x.length, size=x._size,
                      isowned=false, needToCopy=false), true);
@@ -6228,6 +6228,13 @@ proc channel.writef(fmtStr:string): bool throws {
 
    Read arguments according to a format string. See
    :ref:`about-io-formatted-io`.
+
+   .. note::
+
+      Intents for all arguments except the format string are `ref`. If `readf`
+      is used with formats that require an additional argument such as `%*i` and
+      `%*S`, then those arguments cannot be constants. Instead, store the value
+      into a variable and pass that.
 
    :arg fmt: the format string
    :arg args: the arguments to read

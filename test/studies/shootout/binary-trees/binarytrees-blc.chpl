@@ -64,7 +64,7 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  var left, right: unmanaged Tree;
+  var left, right: unmanaged Tree?;
 
   //
   // A Tree-building initializer

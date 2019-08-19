@@ -68,8 +68,6 @@ proc errstr(errNlb:bool, errM:bool) return
   else
     if errM then "error: mm" else "ok";
 
-/////////////////////////////////////////////////////////////////////////////
-
 proc checkConfig(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
                  skipIfNonNilableNil: bool)
 {
@@ -81,6 +79,9 @@ proc checkConfig(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
   return false;
 // another option: rhsNlb = rhsNlbArg | rhsM == nil;
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// todo: factor our common code between cInitVar() and similar procs below
 
 config const ivDir = "nilability-init-var";
 
@@ -141,6 +142,213 @@ for lhs in allM {
     cInitVar(true, lhs, false, rhs, true);
     cInitVar(false, lhs, true, rhs);
     cInitVar(false, lhs, false, rhs, true);
+    writeln();
+  }
+  writeln();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+config const dfiDir = "nilability-init-field-dflt";
+
+proc cDefaultFieldInit(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
+                       skipIfNNNil = false)
+{
+  if checkConfig(lhsNlb, lhsM, rhsNlb, rhsM, skipIfNNNil) then return;
+  const errNlb = !lhsNlb && rhsNlb;
+  const errM   = ! mmOK(lhsM, rhsM);
+  const errS   = errstr(errNlb, errM);
+
+  var path = "init-field-dflt-%s-%s-from-%s-%s".format(
+    lhsNlb.strn, lhsM.strm, rhsNlb.strn, rhsM.strm);
+  writeln(path);
+  if ! dfiDir.isEmpty() {
+    mkdir(dfiDir, parents=true); path = dfiDir + "/" + path; }
+  var chan = open(path + ".chpl", iomode.cw).writer();
+  proc write(args...) { chan.writef((...args)); }
+
+  var rhsDef = "", rhsUse = "rhs";
+  if rhsM == mNil then rhsUse = "nil";
+  else if rhsNlb then rhsDef = 'var rhs: %s MyClass?;'.format(rhsM.strm);
+  else                rhsDef = 'var rhs = new %s MyClass();'.format(rhsM.strm);
+
+  var lhsQ = if lhsNlb then "?" else "";
+
+  var lastStmt = "";
+  if errNlb || errM then lastStmt = 'compilerError("done");';
+  else if rhsM == mUnm && !rhsNlb then lastStmt = 'delete rhs;';
+    
+  write("//  lhs: %s  rhs: %s  %s\n",
+        str(lhsNlb, lhsM), str(rhsNlb, rhsM), errS);
+  write("""
+class MyClass {  var x: int;  }
+
+%s
+
+record MyRecord {
+  var lhs: %s MyClass%s = %s;
+}
+
+var myr = new MyRecord();
+
+%s
+""", rhsDef, lhsM.strm, lhsQ, rhsUse, lastStmt);
+
+  // now, the .good file
+  var good = open(path + ".good", iomode.cw).writer();
+  if errNlb || errM then
+    good.writeln(errS);
+  // else leave it empty
+}
+
+writeln(); writeln();
+writeln("cDefaultFieldInit: dir=", dfiDir);
+writeln(); writeln();
+for lhs in allM {
+  for rhs in allMnil {
+    cDefaultFieldInit(true, lhs, true, rhs);
+    cDefaultFieldInit(true, lhs, false, rhs, true);
+    cDefaultFieldInit(false, lhs, true, rhs);
+    cDefaultFieldInit(false, lhs, false, rhs, true);
+    writeln();
+  }
+  writeln();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+config const afiDir = "nilability-init-field-arg";
+
+proc cArgumentFieldInit(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
+                        skipIfNNNil = false)
+{
+  if checkConfig(lhsNlb, lhsM, rhsNlb, rhsM, skipIfNNNil) then return;
+  const errNlb = !lhsNlb && rhsNlb;
+  const errM   = ! mmOK(lhsM, rhsM);
+  const errS   = errstr(errNlb, errM);
+
+  var path = "init-field-arg-%s-%s-from-%s-%s".format(
+    lhsNlb.strn, lhsM.strm, rhsNlb.strn, rhsM.strm);
+  writeln(path);
+  if ! afiDir.isEmpty() {
+    mkdir(afiDir, parents=true); path = afiDir + "/" + path; }
+  var chan = open(path + ".chpl", iomode.cw).writer();
+  proc write(args...) { chan.writef((...args)); }
+
+  var rhsDef = "", rhsUse = "rhs";
+  if rhsM == mNil then rhsUse = "nil";
+  else if rhsNlb then rhsDef = 'var rhs: %s MyClass?;'.format(rhsM.strm);
+  else                rhsDef = 'var rhs = new %s MyClass();'.format(rhsM.strm);
+
+  var lhsQ = if lhsNlb then "?" else "";
+
+  var lastStmt = "";
+  if errNlb || errM then lastStmt = 'compilerError("done");';
+  else if rhsM == mUnm && !rhsNlb then lastStmt = 'delete rhs;';
+    
+  write("//  lhs: %s  rhs: %s  %s\n",
+        str(lhsNlb, lhsM), str(rhsNlb, rhsM), errS);
+  write("""
+class MyClass {  var x: int;  }
+
+%s
+
+record MyRecord {
+  var lhs: %s MyClass%s;
+  proc init(in rhs) where ! isSubtype(rhs.type, MyRecord) {
+    lhs = rhs;
+  }
+}
+
+var myr = new MyRecord(%s);
+
+%s
+""", rhsDef, lhsM.strm, lhsQ, rhsUse, lastStmt);
+
+  // now, the .good file
+  var good = open(path + ".good", iomode.cw).writer();
+  if errNlb || errM then
+    good.writeln(errS);
+  // else leave it empty
+}
+
+writeln(); writeln();
+writeln("cArgumentFieldInit: dir=", afiDir);
+writeln(); writeln();
+for lhs in allM {
+  for rhs in allMnil {
+    cArgumentFieldInit(true, lhs, true, rhs);
+    cArgumentFieldInit(true, lhs, false, rhs, true);
+    cArgumentFieldInit(false, lhs, true, rhs);
+    cArgumentFieldInit(false, lhs, false, rhs, true);
+    writeln();
+  }
+  writeln();
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+config const asgnDir = "nilability-assign";
+
+proc cAssign(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
+             skipIfNNNil = false)
+{
+  if checkConfig(lhsNlb, lhsM, rhsNlb, rhsM, skipIfNNNil) then return;
+  const errNlb = !lhsNlb && rhsNlb;
+  const errM   = ! mmOK(lhsM, rhsM);
+  const errS   = errstr(errNlb, errM);
+
+  var path = "assign-%s-%s-from-%s-%s".format(
+    lhsNlb.strn, lhsM.strm, rhsNlb.strn, rhsM.strm);
+  writeln(path);
+  if ! asgnDir.isEmpty() {
+    mkdir(asgnDir, parents=true); path = asgnDir + "/" + path; }
+  var chan = open(path + ".chpl", iomode.cw).writer();
+  proc write(args...) { chan.writef((...args)); }
+
+  var rhsDef = "", rhsUse = "rhs";
+  if rhsM == mNil then rhsUse = "nil";
+  else if rhsNlb then rhsDef = 'var rhs: %s MyClass?;'.format(rhsM.strm);
+  else                rhsDef = 'var rhs = new %s MyClass();'.format(rhsM.strm);
+
+  var lhsDef = "";
+  if lhsNlb then lhsDef = 'var lhs: %s MyClass?;'.format(lhsM.strm);
+  else           lhsDef = 'var lhs = new %s MyClass();'.format(lhsM.strm);
+
+  var compErr = if errNlb || errM then 'compilerError("done");\n' else '';
+  var delRhs  = if rhsM == mUnm && !rhsNlb then 'delete rhs;\n' else '';
+  var delLhs  = if lhsM == mUnm && !lhsNlb then 'delete lhs;\n' else '';
+    
+  write("//  lhs: %s  rhs: %s  %s\n",
+        str(lhsNlb, lhsM), str(rhsNlb, rhsM), errS);
+  write("""
+class MyClass {  var x: int;  }
+
+%s
+%s
+
+lhs = %s;
+
+%s%s%s
+""",
+lhsDef, rhsDef, rhsUse, compErr, delRhs, delLhs);
+
+  // now, the .good file
+  var good = open(path + ".good", iomode.cw).writer();
+  if errNlb || errM then
+    good.writeln(errS);
+  // else leave it empty
+}
+
+writeln(); writeln();
+writeln("cAssign: dir=", asgnDir);
+writeln(); writeln();
+for lhs in allM {
+  for rhs in allMnil {
+    cAssign(true, lhs, true, rhs);
+    cAssign(true, lhs, false, rhs, true);
+    cAssign(false, lhs, true, rhs);
+    cAssign(false, lhs, false, rhs, true);
     writeln();
   }
   writeln();

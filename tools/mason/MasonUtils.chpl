@@ -20,6 +20,7 @@
 
 
 /* A helper file of utilities for Mason */
+private use Lists;
 use Spawn;
 use FileSystem;
 use TOML;
@@ -196,6 +197,21 @@ proc runSpackCommand(command) {
 }
 
 
+proc hasOptions(args: list(string), const opts: string ...) {
+  var ret = false;
+
+  for o in opts {
+    const found = args.count(o) != 0;
+    if found {
+      ret = true;
+      break;
+    }
+  }
+
+  return ret;
+}
+
+
 proc hasOptions(args : [] string, const opts : string ...) {
   var ret = false;
 
@@ -209,6 +225,7 @@ proc hasOptions(args : [] string, const opts : string ...) {
 
   return ret;
 }
+
 
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;

@@ -1,13 +1,13 @@
 // this is the bytes version of types/string/bwross/string_byte_index.chpl
-var s:_bytes = "hello world";
+var s:bytes = "hello world";
 
 // bytes.find
-write(s.find(" ":_bytes), " ");
-write(s.find("hello":_bytes), " ");
-write(s.find("world":_bytes), " ");
-write(s.find("nowhere":_bytes), " ");
-write(s.find(s), " ":_bytes);
-writeln(s.find("":_bytes));
+write(s.find(" ":bytes), " ");
+write(s.find("hello":bytes), " ");
+write(s.find("world":bytes), " ");
+write(s.find("nowhere":bytes), " ");
+write(s.find(s), " ":bytes);
+writeln(s.find("":bytes));
 writeln();
 
 // bytes.this(range)
@@ -30,4 +30,4 @@ writeln(s[3]);
 writeln();
 
 // all together now!
-writeln(s[1..s.find(" ":_bytes)], "beautifu", s[3], s[s.find(" ":_bytes)..]);
+writeln(s[1..s.find(" ":bytes)], "beautifu", s[3], s[s.find(" ":bytes)..]);

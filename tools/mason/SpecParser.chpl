@@ -18,6 +18,7 @@
  */
 
 
+private use Lists;
 use MasonUtils;
 use MasonExternal;
 use Regexp;
@@ -49,7 +50,7 @@ config const debugSpecParser=false;
 proc getSpecFields(spec: string) {
   var specFields: 4*string;
   try! {
-    const tokenList = readSpec(spec);
+    var tokenList = readSpec(spec);
     const specInfo = parseSpec(tokenList);
     var compiler = specInfo[3];
     if compiler.length < 1 {
@@ -89,7 +90,7 @@ proc readSpec(spec: string) {
     
   
 
-  var tokenList: [1..0] string;
+  var tokenList: list(string);
   const pattern = compile("|".join(versRange,
                                    vers,
                                    minVers,
@@ -110,14 +111,14 @@ proc readSpec(spec: string) {
         writeln("Token: " + token);
         writeln();
       }
-      tokenList.push_back(token);
+      tokenList.append(token);
     }
   }
   return tokenList;
 }
 
 
-proc parseSpec(tokenList: [?d] string) throws {
+proc parseSpec(ref tokenList: list(string)) throws {
 
   const rVers = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
   const rCompiler = compile("(\\%[A-Za-z0-9\\-\\_]+[\\-a-zA-Z]*)");
@@ -134,13 +135,13 @@ proc parseSpec(tokenList: [?d] string) throws {
   var compVersion: string;
   // This includes more than just variants
   // variants, arch, dependencies etc...
-  var variants: [0..1] string;
+  var variants: list(string);
 
   if tokenList.size < 0 {
     throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
-    var toke = tokenList.pop_front();
+    var toke = try! tokenList.pop(1);
 
     // get package name (should always be first token)
     if package.length < 1 {
@@ -161,7 +162,7 @@ proc parseSpec(tokenList: [?d] string) throws {
         compiler = "".join(compiler, compVersion);
       }
       else {
-        variants.push_back(toke);
+        variants.append(toke);
       }
     }
     else if rCompiler.match(toke) {
@@ -175,18 +176,18 @@ proc parseSpec(tokenList: [?d] string) throws {
         compiler = toke.strip("%");
       }
       else {
-        variants.push_back(toke);
+        variants.append(toke);
       }
     }
     else {
       // catch corner case where some compilers like "-"
       // include non-spec charactes e.g. clang@9.0.0-apple
       if !toke.startsWith("-") {
-        variants.push_back(toke);
+        variants.append(toke);
       }
     }
   }
-  return (package, pkgVersion, compiler, " ".join(variants).strip());
+  return (package, pkgVersion, compiler, " ".join(variants.these()).strip());
 }
 
 

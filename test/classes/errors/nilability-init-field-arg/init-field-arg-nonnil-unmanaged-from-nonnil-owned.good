@@ -1,0 +1,2 @@
+init-field-arg-nonnil-unmanaged-from-nonnil-owned.chpl:9: In initializer:
+init-field-arg-nonnil-unmanaged-from-nonnil-owned.chpl:10: error: cannot assign to unmanaged MyClass from owned MyClass

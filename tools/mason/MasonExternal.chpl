@@ -19,6 +19,7 @@
 
 config const spackVersion = "releases/v0.11.2";
 
+private use Lists;
 use MasonUtils;
 use FileSystem;
 use MasonHelp;
@@ -272,10 +273,10 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 
 
 /* Retrieves build information for MasonUpdate */
-proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throws {
+proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
 
   // put above try b/c compiler comlains about return value
-  var depList: [1..0] unmanaged Toml;
+  var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
   var spkgToml: [spkgDom] unmanaged Toml;
   var spkgInfo = new unmanaged Toml(spkgToml);
@@ -301,13 +302,13 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
       spkgInfo.set("libs", libs);
       spkgInfo.set("include", include);
 
-      while dependencies.domain.size > 0 {
-        var dep = dependencies[dependencies.domain.first];
+      while dependencies.size > 0 {
+        var dep = dependencies[1];
         var depSpec = dep.split("@", 1);
         var name = depSpec[1];
 
         // put dep into current packages dep list
-        depList.push_back(new unmanaged Toml(name));
+        depList.append(new unmanaged Toml(name));
 
         // get dependencies of dep
         var depsOfDep = getSpkgDependencies(dep);
@@ -317,10 +318,11 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        dependencies.remove(dependencies.domain.first);
+        try! dependencies.pop(1);
       }
-      if depList.domain.size > 0 {
-        spkgInfo.set("dependencies", depList);
+      if depList.size > 0 {
+        // Temporarily use toArray here to avoid supporting list.
+        spkgInfo.set("dependencies", depList.toArray());
       }
     }
     else {
@@ -348,7 +350,7 @@ proc getSpkgDependencies(spec: string) throws {
   const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
-  var dependencies: [1..0] string; // a list of pkg dependencies
+  var dependencies: list(string);
   for item in pkgInfo.split() {
 
     if item.rfind(spec) != 0 {
@@ -356,7 +358,7 @@ proc getSpkgDependencies(spec: string) throws {
     }
     else if found == true {
       const dep = item.strip("^");
-      dependencies.push_back(dep); // format: pkg@version%compiler
+      dependencies.append(dep);
     }
   }
   if !found {

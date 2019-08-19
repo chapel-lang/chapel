@@ -9,7 +9,7 @@ record Count {
 }
 
 record Wrapper {
-  var ptr: unmanaged object;
+  var ptr: unmanaged object?;
   proc init() { ptr = new unmanaged object(); }
   proc init=(arg: Wrapper) { ptr = nil; } // do not allocate a new object
   proc deinit() { delete ptr; }

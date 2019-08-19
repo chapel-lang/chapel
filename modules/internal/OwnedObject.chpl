@@ -383,6 +383,10 @@ module OwnedObject {
          pragma "leaves arg nil"
          ref rhs: _owned) {
 
+    if !chpl_legacyNilClasses && isNonNilableClass(lhs)
+                              && isNilableClass(rhs) then
+      compilerError("cannot assign to a non-nilable owned from a nilable owned");
+
     // Work around issues in associative arrays of owned
     // TODO: remove this workaround
     if lhs.chpl_p == nil && rhs.chpl_p == nil then

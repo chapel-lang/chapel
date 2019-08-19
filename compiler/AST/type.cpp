@@ -571,6 +571,9 @@ void initPrimitiveTypes() {
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
+  dtBytes                              = new AggregateType(AGGREGATE_RECORD);
+  dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
+
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);

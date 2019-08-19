@@ -6701,12 +6701,17 @@ static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
 }
 
 static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
+  bool isUndecorated = false;
+
   INT_ASSERT(newExpr->parentSymbol);
   if (isClass(newType) &&
       !isReferenceType(newType) &&
       !newType->symbol->hasFlag(FLAG_DATA_CLASS) &&
       !newType->symbol->hasFlag(FLAG_NO_OBJECT) &&
       !newType->symbol->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS)) {
+
+    // Assume it is undecorated and below we will determine if otherwise
+    isUndecorated = true;
 
     SymExpr* checkSe = NULL;
     if (CallExpr* parentCall = toCallExpr(newExpr->parentExpr))
@@ -6718,29 +6723,32 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
     if (checkSe) {
       for_SymbolSymExprs(se, checkSe->symbol()) {
         // Check that 'new' was used either in
-        // chpl__toraw or in an initialization of Owned/Shared/etc.
+        // PRIM_TO_UNMANAGED_CLASS or in an initialization of Owned/Shared/etc.
         if (se == checkSe) {
-          // OK
+          // do nothing
         } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
           if (parentCall->isNamed("chpl__tounmanaged") || // TODO -- remove case
               parentCall->isNamed("chpl__delete") || // TODO -- remove case
               parentCall->isNamed("chpl__buildDistValue") ||
               parentCall->isNamed("chpl_fix_thrown_error")) {
-            // OK
+            // treat these as decorated
+            isUndecorated = false;
           } else if (parentCall->isPrimitive(PRIM_NEW) &&
                      parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
             // OK e.g. new Owned(new MyClass())
+            isUndecorated = false;
           } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
             // OK e.g. new raw MyClass() / new owned MyClass()
+            isUndecorated = false;
           } else {
-            return true;
+            // do nothing (this use is undecorated)
           }
         }
       }
     }
   }
 
-  return false;
+  return isUndecorated;
 }
 
 static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager) {
@@ -9331,7 +9339,9 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
 
   // Allow default-init assign to work around current compiler oddities.
   // In a future where init= is always used, we can remove this case.
-  if (val->hasFlag(FLAG_INITIALIZED_LATER))
+  // Skip this error for a param - it will get "not of a supported param type"
+  if (val->hasFlag(FLAG_INITIALIZED_LATER) ||
+      val->hasFlag(FLAG_PARAM))
     return;
 
   const char* descr = val->name;

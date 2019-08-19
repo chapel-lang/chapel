@@ -1516,6 +1516,11 @@ module ChapelBase {
   pragma "suppress lvalue error"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init) {
+    if !chpl_legacyNilClasses && isNonNilableClassType(t)
+                              && isNilableClassType(init.type) then
+      compilerError("default-initializing a field with a non-nilable type ",
+          t:string, " from an instance of nilable ", init.type:string);
+
     pragma "no auto destroy" var x: t;
     x = init;
     return x;
@@ -1536,6 +1541,10 @@ module ChapelBase {
   pragma "no copy return"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init: _nilType) {
+    if !chpl_legacyNilClasses && isNonNilableClassType(t) then
+      compilerError("default-initializing a field with a non-nilable type ",
+                    t:string, " from nil");
+
     pragma "no auto destroy" var x: t;
     return x;
   }

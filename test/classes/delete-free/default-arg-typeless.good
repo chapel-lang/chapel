@@ -1,2 +1,9 @@
-Supplied bar
+Calling foo
+owned C
+{x = 0}
+Calling bar
+owned C
+{x = 0}
+Calling baz
+borrowed C
 {x = 0}

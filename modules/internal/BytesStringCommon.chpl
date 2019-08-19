@@ -22,7 +22,7 @@ module BytesStringCommon {
   private use ByteBufferHelpers;
 
   private proc isBytesOrStringType(type t) param: bool {
-    return t==_bytes || t==string;
+    return t==bytes || t==string;
   }
 
   private proc assertArgType(type t, param methodName: string) param {
@@ -85,7 +85,7 @@ module BytesStringCommon {
   }
 
   proc getIndexType(type t) type {
-    if t==_bytes then return Bytes.idxType;
+    if t==bytes then return Bytes.idxType;
     else if t==string then return String.byteIndex;
     else compilerError("This function should only be used by bytes or string");
   }

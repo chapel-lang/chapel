@@ -1,0 +1,1 @@
+fasta3.chpl:119: error: attempt to redefine reserved type 'bytes'

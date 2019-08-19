@@ -1117,8 +1117,7 @@ const char* toString(FnSymbol* fn) {
         fn = fn->instantiatedFrom;
       }
 
-      if (fn->isMethod()) {
-        INT_ASSERT(fn->_this);
+      if (fn->isMethod() && fn->_this != NULL) {
         retval = astr(toString(fn->_this->type, false), ".", fn->name);
 
       } else if (fn->hasFlag(FLAG_MODULE_INIT) == true) {

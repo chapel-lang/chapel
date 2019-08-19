@@ -260,14 +260,6 @@ module String {
     }
   }
 
-  /*
-   Deprecated, use `codepointIndex`.
-  */
-  proc codePointIndex type {
-    compilerWarning("codePointIndex is deprecated - please use codepointIndex instead");
-    return codepointIndex;
-  }
-
   // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
   proc chpl_build_bounded_range(low: ?t, high: t)
@@ -680,14 +672,6 @@ module String {
     }
 
     /*
-      Deprecated, use :proc:`string.numCodepoints`.
-      */
-    inline proc ulength {
-      compilerWarning("ulength is deprecated - please use numCodepoints instead");
-      return this.numCodepoints;
-    }
-
-    /*
        Gets a version of the :record:`string` that is on the currently
        executing locale.
 
@@ -768,7 +752,7 @@ module String {
     /*
       Iterates over the string byte by byte.
     */
-    iter bytes(): uint(8) {
+    iter chpl_bytes(): byteType {
       var localThis: string = this.localize();
 
       for i in 0..#localThis.len {
@@ -792,15 +776,6 @@ module String {
         yield cp;
         i += nbytes;
       }
-    }
-
-    /*
-      Deprecated, use :proc:`string.codepoints`.
-    */
-    iter uchars(): int(32) {
-      compilerWarning("uchars is deprecated - please use codepoints instead");
-      for cp in this.codepoints() do
-        yield cp;
     }
 
     /*
@@ -1071,14 +1046,6 @@ module String {
     pragma "no doc"
     inline proc substring(r: range) {
       compilerError("substring removed: use string[range]");
-    }
-
-    /*
-     Deprecated, use :proc:`string.isEmpty`.
-     */
-    inline proc isEmptyString() : bool {
-      compilerWarning("isEmptyString is deprecated - please use isEmpty instead");
-      return this.isEmpty();
     }
 
     /*
@@ -2199,15 +2166,6 @@ module String {
     var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);
     return s;
   }
-
-  /*
-    Deprecated, use :proc:`codepointToString`.
-  */
-  inline proc codePointToString(i: int(32)) {
-    compilerWarning("codePointToString is deprecated - please use codepointToString instead");
-    return codepointToString(i);
-  }
-
 
   //
   // Casts (casts to & from other primitive types are in StringCasts)

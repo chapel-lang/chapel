@@ -29,7 +29,7 @@ class XmlTag : XmlElement {
   }
 }
 
-var parsedElements: [AllPairs] single unmanaged XmlElement;
+var parsedElements: [AllPairs] single unmanaged XmlElement?;
 
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
@@ -60,7 +60,7 @@ proc main {
     writeln("Parse failed");
   else {
     writeln("Parse succeeded!");
-    parsedElements(minindex,maxindex).print;
+    parsedElements(minindex,maxindex)!.print;
   }
 
   for i in AllPairs do
@@ -146,7 +146,7 @@ proc processTag(i,j) {
   var elt = new unmanaged XmlTag(j-i+1, tagName);
   start = min reduce ([x in StartIndices] if x > start then x);
   while (start < stop) {
-    var item : unmanaged XmlElement = nil;
+    var item : unmanaged XmlElement? = nil;
     for e in EndIndices do
       if e > start && e < stop &&
         item == nil && parsedElements(start, e) != nil {
@@ -162,7 +162,7 @@ proc processTag(i,j) {
       if curSize == elt.numChildren then
         elt.childrenValueSpace = {1..curSize*2};
       elt.numChildren += 1;
-      elt.childrenValues(elt.numChildren) = item;
+      elt.childrenValues(elt.numChildren) = item!;
       start += item.length;
     }     
   }
