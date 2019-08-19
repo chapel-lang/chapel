@@ -31,11 +31,11 @@ proc main() {
 
   var A: [Space] eltType;
 
-  addDiag(A, 0, 2);
-  addDiag(A, 1, -1);
-  addDiag(A, -1, -1);
-  addDiag(A, 10, 0.5);
-  addDiag(A, -10, 0.5);
+  setDiag(A, 0, 2);
+  setDiag(A, 1, -1);
+  setDiag(A, -1, -1);
+  setDiag(A, 10, 0.5);
+  setDiag(A, -10, 0.5);
 
   for 1..iters {
     t.start();
