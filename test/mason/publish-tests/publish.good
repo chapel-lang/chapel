@@ -1,2 +1,2 @@
 Created new library project: publishCheck
-ERROR: publishCheck already exists in the Bricks
+Unable to publish your package to the registry, make sure your package is a git repository.

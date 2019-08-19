@@ -26,7 +26,7 @@ use MasonEnv;
 use MasonNew;
 use MasonModify;
 use Random;
-
+use MasonUpdate;
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
    Returns the help output in '-h' or '--help' exits in the arguments.
    If --dry-run is passed then it checks to see if the package is able to be published.
@@ -43,8 +43,8 @@ proc masonPublish(args: [] string) throws {
     var username = getUsername();
     var isLocal = false;
 
-    const badSyntaxMessage = 'Arguments do not meet the "mason publish [options] <registry>" syntax';
-    if args.size > 4 {
+    const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
+    if args.size > 5 {
       throw new owned MasonError(badSyntaxMessage);
     }
     for arg in args[2..] {
@@ -57,6 +57,8 @@ proc masonPublish(args: [] string) throws {
     else {
       isLocal = isRegistryPathLocal(registryPath);
     }
+
+    updateRegistry('Mason.toml', args);
 
     if checkRegistryPath(registryPath, isLocal) {
       if dry {
@@ -99,7 +101,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
         return true;
       }
       else {
-        throw new owned MasonError(registryPath + " is not a valid path");
+        throw new owned MasonError(registryPath + " is not a valid path to a local mason-registry.");
         exit(0);
       }
     }
@@ -254,8 +256,7 @@ proc cloneMasonReg(username: string, safeDir : string, registryPath : string) th
     }
   }
   catch {
-    writeln('Error cloning the fork of mason-registry');
-    writeln('Make sure you have forked the mason-registry on GitHub');
+    throw new owned MasonError('Error cloning the fork of mason-registry. Make sure you have forked the mason-registry on GitHub');
     exit(1);
   }
 }
@@ -284,7 +285,7 @@ proc branchMasonReg(username: string, name: string, safeDir: string, registryPat
     return ret;
   }
   catch {
-    writeln('Error branching the registry, make sure you have a remote origin set up');
+    throw new owned MasonError('Error branching the registry, make sure you have a remote origin set up');
     exit(1);
   }
 }
@@ -299,7 +300,7 @@ proc getPackageName() throws {
     return name;
   }
   catch {
-    writeln('Error getting the name of your package, ensure your package is a mason project');
+    throw new owned MasonError('Issue getting the name of your package, ensure your package is a mason project.');
     exit(1);
   }
 }
@@ -336,8 +337,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
     }
   }
   catch {
-    writeln('ERROR: ' + name + ' already exists in the Bricks');
     if !isLocal then rmTree(safeDir + '/');
-    exit(1);
+    throw new owned MasonError('Unable to publish your package to the registry, make sure your package is a git repository.');
   }
 }
