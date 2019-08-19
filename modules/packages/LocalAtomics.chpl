@@ -20,7 +20,7 @@
 module LocalAtomics {
 
   if CHPL_TARGET_ARCH != "x86_64" {
-    compilerWarning("Program compiled for ", CHPL_TARGET_ARCH, " but target should be x86_64");
+    compilerWarning("The LocaleAtomics package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 supported.");
   }
 
   extern {
