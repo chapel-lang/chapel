@@ -208,6 +208,11 @@ static void checkPrivateDecls(DefExpr* def) {
   if (def->sym->hasFlag(FLAG_PRIVATE) == true) {
     // The symbol has been declared private.
     if (def->inTree()) {
+
+      if (isTypeSymbol(def->sym) || def->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_FATAL_CONT(def, "Can't apply private to types yet");
+      }
+
       if (isFnSymbol(def->parentSymbol) == true) {
         // The parent symbol of this definition is a FnSymbol.
         // Private symbols at the function scope are meaningless

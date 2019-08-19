@@ -1,1 +1,1 @@
-typeAlias.chpl:1: syntax error: near 'type'
+typeAlias.chpl:1: error: Can't apply private to types yet
