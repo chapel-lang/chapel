@@ -48,6 +48,7 @@ proc masonPublish(ref args: list(string)) throws {
     }
     var dry = hasOptions(args, "--dry-run");
     var registryPath = '';
+
     var username = getUsername();
     var isLocal = false;
 
