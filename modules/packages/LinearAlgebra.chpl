@@ -1042,7 +1042,7 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
-proc _lu (in A: [?Adom] ?eltType) {
+private proc _lu (in A: [?Adom] ?eltType) {
   const n = Adom.shape(1);
   const LUDom = {1..n, 1..n};
 
@@ -1093,7 +1093,7 @@ proc _lu (in A: [?Adom] ?eltType) {
 /*
   Compute an LU factorization of square matrix `A` 
   using partial pivoting, such that `A = P * L * U` where P
-  is a permutation matrix. 
+  is a permutation matrix. Return a tuple of size 2 `(LU, ipiv)`.
   
   `L` and `U` are stored in the same matrix `LU` where 
   the unit diagonal elements of L are not stored.
@@ -1102,7 +1102,6 @@ proc _lu (in A: [?Adom] ?eltType) {
   was interchanged with row `ipiv(i)`.
   
 */
-
 proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for LU factorization");
@@ -1114,32 +1113,34 @@ proc lu (A: [?Adom] ?eltType) {
   return (LU,ipiv);
 }
 
-proc permute (ipiv, A: [?Adom] ?eltType, transpose=false) {
+/* Return a new array as the permuted form of `A` according to 
+    permutation array `ipiv`.*/
+private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(1);
   
   var B: [Adom] eltType;
   
   if Adom.rank == 1 {
     if transpose {
-      forall i in 1..n {
-        B[i] = A[ipiv(i)];
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[i] = A[pi];
       }
     }
     else {
-      forall i in 1..n {
-        B[ipiv(i)] = A[i];
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[pi] = A[i];
       }
     }
   }
   else if Adom.rank == 2 {
     if transpose {
-      forall i in 1..n {
-        B[i,..] = A[ipiv(i),..];
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[i, ..] = A[pi, ..];
       }
     }
     else {
-      forall i in 1..n {
-        B[ipiv(i),..] = A[i,..];
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[pi, ..] = A[i, ..];
       }
     }
   }
@@ -1173,8 +1174,9 @@ proc det (A: [?Adom] ?eltType) {
 }
 
 /* Return the solution ``x`` to the linear system `` L * x = b `` 
-    where ``L`` is a lower triangular matrix. `unit_diag` will set the diagonal
-    elements to 1 within this procedure.
+    where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
+    will assume the diagonal elements as `1` and will not be referenced 
+    within this procedure.
 */
 proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType, 
                   unit_diag = true) {
