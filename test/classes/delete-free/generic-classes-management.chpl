@@ -23,6 +23,7 @@ module testmodule {
     writeln(arg.type:string, " ", arg);
   }
 
+
   // accepts non-nilable shared any-class
   proc acceptsSharedNonNilable( in arg: shared class ) {
     writeln(arg.type:string, " ", arg);
@@ -39,6 +40,38 @@ module testmodule {
   }
 
  
+  // accepts non-nilable borrowed any-class
+  proc acceptsBorrowedNonNilable( arg: borrowed class ) {
+    writeln(arg.type:string, " ", arg);
+  }
+
+  // accepts nilable borrowed any-class
+  proc acceptsBorrowedNilable( arg: borrowed class? ) {
+    writeln(arg.type:string, " ", arg);
+  }
+
+  // accepts any-nilable borrowed any-class
+  proc acceptsBorrowedAny( arg: borrowed ) {
+    writeln(arg.type:string, " ", arg);
+  }
+
+
+  // accepts non-nilable unmanaged any-class
+  proc acceptsUnmanagedNonNilable( in arg: unmanaged class ) {
+    writeln(arg.type:string, " ", arg);
+  }
+
+  // accepts nilable unmanaged any-class
+  proc acceptsUnmanagedNilable( in arg: unmanaged class? ) {
+    writeln(arg.type:string, " ", arg);
+  }
+
+  // accepts any-nilable unmanaged any-class
+  proc acceptsUnmanagedAny( in arg: unmanaged ) {
+    writeln(arg.type:string, " ", arg);
+  }
+
+
   // accepts any-management non-nilable any-class
   proc acceptsClassAnyManagementNonNilable( in arg: class ) {
     writeln(arg.type:string, " ", arg);
@@ -171,6 +204,132 @@ module testmodule {
       assert(!canResolve(fnName, myUnmanagedNilable));
       assert(!canResolve(fnName, myInt));
     }
+
+    {
+      param fnName = "acceptsBorrowedNonNilable";
+      writeln(fnName);
+      acceptsBorrowedNonNilable(myOwnedNonNilable);
+      acceptsBorrowedNonNilable(mySharedNonNilable);
+      acceptsBorrowedNonNilable(myBorrowedNonNilable);
+      acceptsBorrowedNonNilable(myUnmanagedNonNilable);
+      assert(canResolve(fnName, myOwnedNonNilable));
+      myOwnedNonNilable = new owned MyClass();
+      assert(!canResolve(fnName, myOwnedNilable));
+      myOwnedNilable = new owned MyClass();
+      assert(canResolve(fnName, mySharedNonNilable));
+      assert(!canResolve(fnName, mySharedNilable));
+      assert(canResolve(fnName, myBorrowedNonNilable));
+      assert(!canResolve(fnName, myBorrowedNilable));
+      assert(canResolve(fnName, myUnmanagedNonNilable));
+      assert(!canResolve(fnName, myUnmanagedNilable));
+      assert(!canResolve(fnName, myInt));
+    }
+
+    {
+      param fnName = "acceptsBorrowedNilable";
+      writeln(fnName);
+      acceptsBorrowedNilable(myOwnedNonNilable);
+      myOwnedNonNilable = new owned MyClass();
+      acceptsBorrowedNilable(myOwnedNilable);
+      myOwnedNilable = new owned MyClass();
+      acceptsBorrowedNilable(mySharedNonNilable);
+      acceptsBorrowedNilable(mySharedNilable);
+      acceptsBorrowedNilable(myBorrowedNonNilable);
+      acceptsBorrowedNilable(myBorrowedNilable);
+      acceptsBorrowedNilable(myUnmanagedNonNilable);
+      acceptsBorrowedNilable(myUnmanagedNilable);
+      assert(canResolve(fnName, myOwnedNonNilable));
+      myOwnedNonNilable = new owned MyClass();
+      assert(canResolve(fnName, myOwnedNilable));
+      myOwnedNilable = new owned MyClass();
+      assert(canResolve(fnName, mySharedNonNilable));
+      assert(canResolve(fnName, mySharedNilable));
+      assert(canResolve(fnName, myBorrowedNonNilable));
+      assert(canResolve(fnName, myBorrowedNilable));
+      assert(canResolve(fnName, myUnmanagedNonNilable));
+      assert(canResolve(fnName, myUnmanagedNilable));
+      assert(!canResolve(fnName, myInt));
+    }
+
+    {
+      param fnName = "acceptsBorrowedAny";
+      writeln(fnName);
+      acceptsBorrowedAny(myOwnedNonNilable);
+      myOwnedNonNilable = new owned MyClass();
+      acceptsBorrowedAny(myOwnedNilable);
+      myOwnedNilable = new owned MyClass();
+      acceptsBorrowedAny(mySharedNonNilable);
+      acceptsBorrowedAny(mySharedNilable);
+      acceptsBorrowedAny(myBorrowedNonNilable);
+      acceptsBorrowedAny(myBorrowedNilable);
+      acceptsBorrowedAny(myUnmanagedNonNilable);
+      acceptsBorrowedAny(myUnmanagedNilable);
+      assert(canResolve(fnName, myOwnedNonNilable));
+      myOwnedNonNilable = new owned MyClass();
+      assert(canResolve(fnName, myOwnedNilable));
+      myOwnedNilable = new owned MyClass();
+      assert(canResolve(fnName, mySharedNonNilable));
+      assert(canResolve(fnName, mySharedNilable));
+      assert(canResolve(fnName, myBorrowedNonNilable));
+      assert(canResolve(fnName, myBorrowedNilable));
+      assert(canResolve(fnName, myUnmanagedNonNilable));
+      assert(canResolve(fnName, myUnmanagedNilable));
+      assert(!canResolve(fnName, myInt));
+    }
+
+    {
+      param fnName = "acceptsUnmanagedNonNilable";
+      writeln(fnName);
+      acceptsUnmanagedNonNilable(myUnmanagedNonNilable);
+      assert(!canResolve(fnName, myOwnedNonNilable));
+      myOwnedNonNilable = new owned MyClass();
+      assert(!canResolve(fnName, myOwnedNilable));
+      myOwnedNilable = new owned MyClass();
+      assert(!canResolve(fnName, mySharedNonNilable));
+      assert(!canResolve(fnName, mySharedNilable));
+      assert(!canResolve(fnName, myBorrowedNonNilable));
+      assert(!canResolve(fnName, myBorrowedNilable));
+      assert(canResolve(fnName, myUnmanagedNonNilable));
+      assert(!canResolve(fnName, myUnmanagedNilable));
+      assert(!canResolve(fnName, myInt));
+    }
+
+    {
+      param fnName = "acceptsUnmanagedNilable";
+      writeln(fnName);
+      acceptsUnmanagedNilable(myUnmanagedNonNilable);
+      acceptsUnmanagedNilable(myUnmanagedNilable);
+      assert(!canResolve(fnName, myOwnedNonNilable));
+      myOwnedNonNilable = new owned MyClass();
+      assert(!canResolve(fnName, myOwnedNilable));
+      myOwnedNilable = new owned MyClass();
+      assert(!canResolve(fnName, mySharedNonNilable));
+      assert(!canResolve(fnName, mySharedNilable));
+      assert(!canResolve(fnName, myBorrowedNonNilable));
+      assert(!canResolve(fnName, myBorrowedNilable));
+      assert(canResolve(fnName, myUnmanagedNonNilable));
+      assert(canResolve(fnName, myUnmanagedNilable));
+      assert(!canResolve(fnName, myInt));
+    }
+
+    {
+      param fnName = "acceptsUnmanagedAny";
+      writeln(fnName);
+      acceptsUnmanagedAny(myUnmanagedNonNilable);
+      acceptsUnmanagedAny(myUnmanagedNilable);
+      assert(!canResolve(fnName, myOwnedNonNilable));
+      myOwnedNonNilable = new owned MyClass();
+      assert(!canResolve(fnName, myOwnedNilable));
+      myOwnedNilable = new owned MyClass();
+      assert(!canResolve(fnName, mySharedNonNilable));
+      assert(!canResolve(fnName, mySharedNilable));
+      assert(!canResolve(fnName, myBorrowedNonNilable));
+      assert(!canResolve(fnName, myBorrowedNilable));
+      assert(canResolve(fnName, myUnmanagedNonNilable));
+      assert(canResolve(fnName, myUnmanagedNilable));
+      assert(!canResolve(fnName, myInt));
+    }
+
 
     {
       param fnName = "acceptsClassAnyManagementNonNilable";
