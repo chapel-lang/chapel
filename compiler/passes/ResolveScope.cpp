@@ -244,7 +244,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtUnmanaged->symbol);
   extend(dtUnmanagedNonNilable->symbol);
   extend(dtUnmanagedNilable->symbol);
-  extend(dtAnyManagement->symbol);
+  extend(dtAnyManagementAnyNilable->symbol);
   extend(dtAnyManagementNonNilable->symbol);
   extend(dtAnyManagementNilable->symbol);
 

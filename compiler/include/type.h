@@ -397,7 +397,7 @@ TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
-TYPE_EXTERN PrimitiveType*    dtAnyManagement;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementAnyNilable;
 TYPE_EXTERN PrimitiveType*    dtAnyManagementNonNilable;
 TYPE_EXTERN PrimitiveType*    dtAnyManagementNilable;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;

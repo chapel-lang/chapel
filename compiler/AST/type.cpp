@@ -753,10 +753,10 @@ void initPrimitiveTypes() {
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  // aka class
-  dtAnyManagement = createInternalType("_anyManagement", "_anyManagement");
-  dtAnyManagement->symbol->addFlag(FLAG_GENERIC);
+  dtAnyManagementAnyNilable = createInternalType("_anyManagementAnyNilable", "_anyManagementAnyNilable");
+  dtAnyManagementAnyNilable->symbol->addFlag(FLAG_GENERIC);
 
+  // aka class
   dtAnyManagementNonNilable = createInternalType("_anyManagementNonNilable", "_anyManagementNonNilable");
   dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
 
@@ -1055,7 +1055,7 @@ bool isBuiltinGenericClassType(Type* t) {
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
          t == dtUnmanagedNonNilable ||
-         t == dtAnyManagement ||
+         t == dtAnyManagementAnyNilable ||
          t == dtAnyManagementNonNilable ||
          t == dtAnyManagementNilable;
 }

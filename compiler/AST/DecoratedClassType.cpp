@@ -267,7 +267,7 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED_NILABLE:
       INT_FATAL("should be handled above");
     case CLASS_TYPE_GENERIC:
-      return dtAnyManagement;
+      return dtAnyManagementAnyNilable;
     case CLASS_TYPE_GENERIC_NONNIL:
       return dtAnyManagementNonNilable;
     case CLASS_TYPE_GENERIC_NILABLE:
@@ -327,7 +327,7 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
     return CLASS_TYPE_UNMANAGED_NONNIL;
   if (t == dtUnmanagedNilable)
     return CLASS_TYPE_UNMANAGED_NILABLE;
-  if (t == dtAnyManagement)
+  if (t == dtAnyManagementAnyNilable)
     return CLASS_TYPE_GENERIC;
   if (t == dtAnyManagementNonNilable)
     return CLASS_TYPE_GENERIC_NONNIL;

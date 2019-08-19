@@ -1755,7 +1755,7 @@ sub_type_level_expr:
     { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
 
 | TCLASS
-    { $$ = new SymExpr(dtAnyManagement->symbol); }
+    { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
 | TRECORD
     { $$ = new SymExpr(dtValue->symbol); }
 /*| TENUM
