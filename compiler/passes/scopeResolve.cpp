@@ -2323,9 +2323,13 @@ static void resolveUnmanagedBorrows() {
                 INT_FATAL("case not handled");
                 break;
               case CLASS_TYPE_GENERIC:
+                dt = dtAnyManagementAnyNilable;
+                break;
               case CLASS_TYPE_GENERIC_NONNIL:
+                dt = dtAnyManagementNonNilable;
+                break;
               case CLASS_TYPE_GENERIC_NILABLE:
-                INT_FATAL("case not handled");
+                dt = dtAnyManagementNilable;
                 break;
               // no default intentionally
             }
@@ -2340,6 +2344,7 @@ static void resolveUnmanagedBorrows() {
     }
 
     // fix e.g. unmanaged!
+    // TODO: remove this code
     if (call->isNamedAstr(astrPostfixBang)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -2361,6 +2366,35 @@ static void resolveUnmanagedBorrows() {
           if (replace) {
             SET_LINENO(call);
             call->replace(new SymExpr(replace->symbol));
+          }
+        }
+      }
+    }
+
+    // Fix e.g. call _owned class?
+    if (call->numActuals() == 1) {
+      SymExpr* se1 = toSymExpr(call->baseExpr);
+      SymExpr* se2 = toSymExpr(call->get(1));
+      if (se1 != NULL && se2 != NULL) {
+        TypeSymbol* ts1 = toTypeSymbol(se1->symbol());
+        TypeSymbol* ts2 = toTypeSymbol(se2->symbol());
+        if (ts1 != NULL && ts2 != NULL && isManagedPtrType(ts1->type)) {
+          AggregateType* mgmt = toAggregateType(ts1->type);
+          if (DecoratedClassType* mt = toDecoratedClassType(ts1->type))
+            mgmt = mt->getCanonicalClass();
+
+          Type* t = ts2->type;
+          Type* useType = NULL;
+          if (t == dtAnyManagementAnyNilable)
+            useType = mgmt; // e.g. just _owned
+          else if (t == dtAnyManagementNonNilable)
+            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+          else if (t == dtAnyManagementNilable)
+            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
+
+          if (useType != NULL) {
+            SET_LINENO(call);
+            call->replace(new SymExpr(useType->symbol));
           }
         }
       }
