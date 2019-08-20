@@ -84,7 +84,6 @@ installed, do the following:
      export CHPL_LAUNCHER=slurm-srun
      export CRAYPE_LINK_TYPE=dynamic
      export LIBFABRIC_DIR=/opt/cray/libfabric/1.8.0a1-85f6e641a
-     export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
 
 4) Compile an example program like this::
 
