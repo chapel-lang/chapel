@@ -105,7 +105,7 @@ private proc gitInit(name: string, show: bool) {
 }
 
 private proc addGitIgnore(name: string) {
-  var toIgnore = "target/\nMason.lock" + '\n';
+  var toIgnore = "target/\nMason.lock\n";
   var gitIgnore = open(name+"/.gitignore", iomode.cw);
   var GIwriter = gitIgnore.writer();
   GIwriter.write(toIgnore);
