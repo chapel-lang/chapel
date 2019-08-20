@@ -34,7 +34,7 @@ Class. We use :proc:`~UnitTest.main()` to run the tests.
   built separately. However, this functionality will eventually be integrated into mason.
 
 Assert Functions
-================
+----------------
 
 Here are the assert functions available in the UnitTest module:
 
@@ -48,10 +48,10 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertLessThan`
 
 Examples
-=========
+--------
 
 Basic Usage
--------------
+^^^^^^^^^^^
 
 Here is a minimal example demonstrating how to use the UnitTest module:
 
@@ -88,7 +88,7 @@ Output:
 
 
 Skipping Tests
----------------
+^^^^^^^^^^^^^^^
 
 You can skip tests unconditionally with :proc:`~Test.skip` and 
 conditionally with :proc:`~Test.skipIf`:
@@ -132,7 +132,7 @@ Output:
 
 
 Specifying locales
-------------------
+^^^^^^^^^^^^^^^^^^
 
 You can specify the num of locales of a test using these method.
 
@@ -183,7 +183,7 @@ You can mention the range of locales using :proc:`~Test.maxLocales` and
   }
 
 Specifying Dependencies
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 :proc:`~Test.dependsOn`
 
