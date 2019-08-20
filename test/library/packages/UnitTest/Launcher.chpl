@@ -135,8 +135,8 @@ module Launcher {
       if isFile(executableReal) {
         FileSystem.remove(executableReal);
       }
-      var sub = spawn(["chpl", file, "-o", executable, "-M.", 
-                      "--comm", comm], stderr = PIPE); //Compiling the file
+      var sub = spawn(["chpl", file, "-o", executable, "--comm", comm], 
+                        stderr = PIPE); //Compiling the file
       var compError: string;
       if sub.stderr.readline(line) {
         compError = line;
