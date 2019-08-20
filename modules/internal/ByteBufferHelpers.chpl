@@ -24,6 +24,8 @@ module ByteBufferHelpers {
   type byteType = uint(8);
   pragma "no doc"
   type bufferType = c_ptr(uint(8));
+  pragma "no doc"
+  type locIdType = chpl_nodeID.type;
 
   // Growth factor to use when extending the buffer for appends
   config param chpl_stringGrowthFactor = 1.5;
@@ -96,7 +98,7 @@ module ByteBufferHelpers {
     chpl_here_free(buf);
   }
 
-  proc bufferCopy(buf, off, len, loc) {
+  proc bufferCopy(buf: bufferType, off: int, len: int, loc: locIdType) {
     if !_local && loc != chpl_nodeID {
       var newBuf = bufferCopyRemote(loc, buf+off, len);
       return (newBuf, len);
