@@ -458,7 +458,7 @@ module OwnedObject {
   // cast to owned?, no class downcast
   pragma "no doc"
   inline proc _cast(type t:owned class?, pragma "nil from arg" in x:owned class)
-    where isSubtype(x.chpl_t,t.chpl_t)
+    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;

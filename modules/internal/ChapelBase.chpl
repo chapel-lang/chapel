@@ -1686,10 +1686,10 @@ module ChapelBase {
     if isRecord(arg) then
       // special case for records as a more likely occurrence
       compilerError("'delete' is not allowed on records");
-    if !isSubtype(arg.type, borrowed class?) then
+    if !isCoercible(arg.type, borrowed class?) then
       compilerError("'delete' is not allowed on non-class type ",
                     arg.type:string);
-    if !isSubtype(arg.type, unmanaged class?) then
+    if !isCoercible(arg.type, unmanaged class?) then
       compilerError("'delete' can only be applied to unmanaged classes");
 
     if (arg != nil) {
