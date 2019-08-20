@@ -8,11 +8,11 @@ config const n = 20;
 
 proc getSparse(d, stride) {
   var sdom: sparse subdomain(d);
-  var indices: [1..0] 2*d.idxType;
+  var indices: list(2*d.idxType);
   for (i,j) in d by stride {
-    indices.push_back((i,j));
+    indices.append((i,j));
   }
-  sdom += indices;
+  sdom += indices.toArray();
   return sdom;
 }
 
