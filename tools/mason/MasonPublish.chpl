@@ -27,18 +27,26 @@ use MasonNew;
 use MasonModify;
 use Random;
 use MasonUpdate;
+private use Lists;
+
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
    Returns the help output in '-h' or '--help' exits in the arguments.
    If --dry-run is passed then it checks to see if the package is able to be published.
    Takes in the username of the package owner as an argument
  */
-proc masonPublish(args: [] string) throws {
+proc masonPublish(args: [?d] string) {
+  var listArgs: list(string);
+    for x in args do listArgs.append(x);
+    masonPublish(listArgs);
+}
+
+proc masonPublish(ref args: list(string)) throws {
   try! {
     if hasOptions(args, "-h", "--help") {
       masonPublishHelp();
       exit(0);
     }
-    var dry = false;
+    var dry = hasOptions(args, "--dry-run");
     var registryPath = '';
     var username = getUsername();
     var isLocal = false;
@@ -47,10 +55,14 @@ proc masonPublish(args: [] string) throws {
     if args.size > 5 {
       throw new owned MasonError(badSyntaxMessage);
     }
-    for arg in args[2..] {
-      if arg == '--dry-run' then dry = true;
-      else registryPath = arg;
+
+    if args.size > 2 {
+      var potentialPath = args.pop();
+      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') {
+        registryPath = args.pop();
+      }
     }
+
     if registryPath.isEmpty() {
       registryPath = MASON_HOME;
     }
