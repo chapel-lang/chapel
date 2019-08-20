@@ -302,19 +302,6 @@ module Lists {
       const remaining = _totalCapacity - _size;
       _sanity(remaining >= 0);
 
-      /*
-      writeln("In function maybeAcquireMem >>");
-      writeln("Total capacity is: ", _totalCapacity);
-      writeln("Current size is: ", _size);
-      writeln("Slots requested: ", amount);
-      writeln("Remaining slots: ", remaining);
-      for i in 0..#_arrayCapacity {
-        var x = if _arrays[i] == nil then "N" else "X";
-        write(x);
-      }
-      writeln();
-      */
-
       if remaining >= amount then
         return;
 
@@ -454,15 +441,9 @@ module Lists {
 
       :arg x: An element to append.
     */
-    proc append(x: eltType) {
-      //
-      // TODO: Use a local copy until this pragma works with formals.
-      // See: https://github.com/chapel-lang/chapel/issues/13225
-      //
-      pragma "no auto destroy"
-      var cpy = x;
+    proc append(pragma "no auto destroy" in x: eltType) lifetime this < x {
       _enter();
-      _append_by_ref(cpy);
+      _append_by_ref(x);
       _leave();
     }
 
@@ -475,7 +456,6 @@ module Lists {
       // calling _append().
       //
       for item in collection {
-        // See: https://github.com/chapel-lang/chapel/issues/13225
         pragma "no auto destroy"
         var cpy = item;
         _append_by_ref(cpy);
@@ -489,7 +469,7 @@ module Lists {
       :arg other: A list containing elements of the same type as those
         contained in this list.
     */
-    proc extend(other: list(eltType, ?)) {
+    proc extend(other: list(eltType, ?)) lifetime this < other {
       _enter();
       _extendGeneric(other);
       _leave();
@@ -502,7 +482,7 @@ module Lists {
       :arg other: An array containing elements of the same type as those
         contained in this list.
     */
-    proc extend(other: [?d] eltType) {
+    proc extend(other: [?d] eltType) lifetime this < other {
       _enter();
       _extendGeneric(other);
       _leave();
@@ -524,16 +504,14 @@ module Lists {
 
       :throws IllegalArgumentError: If the given index is out of bounds.
     */
-    proc insert(i: int, x: eltType) throws {
-      _enter();
+    proc insert(i: int, pragma "no auto destroy" in x: eltType) throws
+         lifetime this < x {
 
-      // TODO: Use a local copy until this pragma works with formals.
-      pragma "no auto destroy"
-      var cpy = x;
+      _enter();
 
       // Handle special case of `a.insert((a.size + 1), x)` here.
       if i == _size + 1 {
-        _append_by_ref(cpy);
+        _append_by_ref(x);
         _leave();
         return;
       }
@@ -541,7 +519,7 @@ module Lists {
       try _boundsCheckLeaveOnThrow(i);
       // May acquire memory based on size before insert.
       _expand(i);
-      ref src = cpy;
+      ref src = x;
       ref dst = _getRef(i);
       _move(src, dst);
       _size += 1;
