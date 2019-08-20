@@ -1309,7 +1309,7 @@ proc svd(A: [?Adom] ?t) throws
 }
 
 /* 
-  Compute the approximate solution to ``A * x = b`` using Jacobi method,
+  Compute the approximate solution to ``A * x = b`` using the Jacobi method.
   iteration will stop when ``maxiter`` is reached or error is smaller than
   ``tol``, whichever comes first. Return the number of iterations performed.
   
@@ -1319,13 +1319,13 @@ proc svd(A: [?Adom] ?t) throws
     will be stored in the same array.
 */
 proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
-            b: [Xdom] eltType, tol, maxiter) {
+            b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
     halt("Wrong shape of input matrix or vector");
   if Adom.shape(1) != Adom.shape(2) then
     halt("Matrix A is not a square");
   if Adom.shape(1) != Xdom.shape(1) then
-    halt("Mismatch shape");
+    halt("Mismatch shape between matrix side length and vector length");
 
   var itern = 0, err: eltType = 1;
 
@@ -1340,8 +1340,8 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
       }
       t(i) = (b(i) - sigma) / A(i,i);
     }
-    err = max reduce abs(t[..] - X[..]);
-    X[..] = t[..];
+    err = max reduce abs(t - X);
+    X = t;
     if err < tol {
       break;
     }
@@ -2018,8 +2018,8 @@ module Sparse {
     return A;
   }
   
- /* Compute the approximate solution to ``A * x = b`` using Jacobi method,
-    iteration will stop when ``maxiter`` is reached or error is smaller than
+ /* Compute the approximate solution to ``A * x = b`` using the Jacobi method.
+    Iteration will stop when ``maxiter`` is reached or error is smaller than
     ``tol``, whichever comes first. Return the number of iterations performed.
     
     .. note::
@@ -2029,13 +2029,13 @@ module Sparse {
       
     */
   proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
-              b: [Xdom] eltType, tol, maxiter) where isCSArr(A) {
+              b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
       halt("Wrong shape of input matrix or vector");
     if Adom.shape(1) != Adom.shape(2) then
       halt("Matrix A is not a square");
     if Adom.shape(1) != Xdom.shape(1) then
-      halt("Mismatch shape");
+      halt("Mismatch shape between matrix side length and vector length");
   
     var itern = 0, err: eltType = 1;
   
@@ -2050,12 +2050,13 @@ module Sparse {
         }
         t(i) = (b(i) - sigma) / A(i,i);
       }
-      err = max reduce abs(t[..] - X[..]);
-      X[..] = t[..];
+      err = max reduce abs(t - X);
+      X = t;
       if err < tol {
         break;
       }
     }
+    return itern;
   }
 
   //
