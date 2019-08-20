@@ -1203,6 +1203,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_DEFAULT_INIT_FIELD: {
+    SymExpr* initVal = toSymExpr(call->get(4)->remove());
+    SymExpr* toType = toSymExpr(call->get(3)->remove());
+    checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
+
+    retval = new CallExpr("_createFieldDefault", toType, initVal);
+    call->replace(retval);
+
+    break;
+  }
+
   case PRIM_REDUCE_ASSIGN: {
     // Convert this 'call' into a call to accumulateOntoState().
     INT_ASSERT(call->numActuals() == 2);

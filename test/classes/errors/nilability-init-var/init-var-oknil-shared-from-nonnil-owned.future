@@ -5,5 +5,6 @@ Not only that, but the reported error is unclear.
 
 Tests affected by this issue:
 
-    init-var-oknil-shared-from-nonnil-owned
     init-field-arg-oknil-shared-from-nonnil-owned
+    init-field-dflt-oknil-shared-from-nonnil-owned
+    init-var-oknil-shared-from-nonnil-owned
