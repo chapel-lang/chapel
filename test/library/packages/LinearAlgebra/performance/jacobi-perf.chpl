@@ -13,50 +13,6 @@ config const n = 128,
 var t: Timer;
 var itern: int;
 
-// Remove after #13515 is merged
-proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0) 
-              where isDenseArr(X){
-  var start, end = 0;
-  if (k >= 0) { // upper or main diagonal
-    start = 1;
-    end = D.shape(1) - k;
-  }
-  else { // lower diagonal
-    start = 1 - k;
-    end = D.shape(1);
-  }
-  forall row in {start..end} {
-    X(row, row+k) = val;
-  }
-}
-
-proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
-                where isSparseArr(X) { 
-    if D.rank != 2 then
-      halt("Wrong rank for setDiag");
-
-    if D.shape(1) != D.shape(2) then
-      halt("setDiag only supports square matrices");
-
-    var start, end = 0;
-    if (k >= 0) { // upper or main diagonal
-      start = 1;
-      end = D.shape(1) - k;
-    }
-    else { // lower diagonal
-      start = 1 - k;
-      end = D.shape(1);
-    }
-    var indices : [start..end] (D.idxType, D.idxType);
-    forall ind in {start..end} {
-      indices[ind] = (ind, ind+k);
-    }
-    D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
-    forall ind in indices {
-      X(ind) = val;
-    }
-}
-
 // Dense
 
 var Xdom = {1..n};
@@ -91,7 +47,7 @@ setDiag(CSA, -1, -1);
 
 t.clear();
 t.start();
-itern = jacobi(A,X,b, tol, maxiter);
+itern = jacobi(CSA,X,b, tol, maxiter);
 t.stop();
 if !correctness {
   writeln(itern);
