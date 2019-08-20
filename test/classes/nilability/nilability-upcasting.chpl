@@ -128,6 +128,8 @@ module test {
         writeln(x.type:string, " ", x);
         var y = cb:borrowed;
         writeln(y.type:string, " ", y);
+        var z = cb:borrowed class;
+        writeln(y.type:string, " ", y);
       }
       // cbq
       {
@@ -154,6 +156,8 @@ module test {
         writeln(x.type:string, " ", x);
         var y = cu:borrowed class;
         writeln(y.type:string, " ", y);
+        var z = cu:borrowed;
+        writeln(z.type:string, " ", z);
       }
       // cuq
       {
@@ -230,6 +234,8 @@ module test {
         writeln(x.type:string, " ", x);
         var y = cbq:borrowed class?;
         writeln(y.type:string, " ", y);
+        var z = cbq:borrowed;
+        writeln(z.type:string, " ", z);
       }
       // cu
       {
@@ -246,6 +252,8 @@ module test {
         writeln(x.type:string, " ", x);
         var y = cbq:borrowed class?;
         writeln(y.type:string, " ", y);
+        var z = cbq:borrowed;
+        writeln(z.type:string, " ", z);
       }
       // nbq
       {
@@ -256,6 +264,9 @@ module test {
         var y = nbq:borrowed class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
+        var z = nbq:borrowed;
+        writeln(z.type:string, " ", z);
+        assert(z == nil);
       }
       // nuq
       {
@@ -266,6 +277,9 @@ module test {
         var y = nuq:borrowed class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
+        var z = nuq:borrowed;
+        writeln(z.type:string, " ", z);
+        assert(z == nil);
       }
     }
 
@@ -280,6 +294,8 @@ module test {
         writeln(x.type:string, " ", x);
         var y = cb:unmanaged class;
         writeln(y.type:string, " ", y);
+        var z = cb:unmanaged;
+        writeln(z.type:string, " ", z);
       }
       // cbq
       {
@@ -304,8 +320,10 @@ module test {
         writeln("cu:unmanaged Child");
         var x = cu:unmanaged Child;
         writeln(x.type:string, " ", x);
-        var y = cu:unmanaged;
+        var y = cu:unmanaged class;
         writeln(y.type:string, " ", y);
+        var z = cu:unmanaged;
+        writeln(z.type:string, " ", z);
       }
       // cuq
       {
@@ -382,6 +400,8 @@ module test {
         writeln(x.type:string, " ", x);
         var y = cbq:unmanaged class?;
         writeln(y.type:string, " ", y);
+        var z = cbq:unmanaged;
+        writeln(z.type:string, " ", z);
       }
       // cu
       {
@@ -398,6 +418,8 @@ module test {
         writeln(x.type:string, " ", x);
         var y = cbq:unmanaged class?;
         writeln(y.type:string, " ", y);
+        var z = cbq:unmanaged;
+        writeln(z.type:string, " ", z);
       }
       // nbq
       {
@@ -408,6 +430,9 @@ module test {
         var y = nbq:unmanaged class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
+        var z = nbq:unmanaged;
+        writeln(z.type:string, " ", z);
+        assert(z == nil);
       }
       // nuq
       {
@@ -418,6 +443,9 @@ module test {
         var y = nuq:unmanaged class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
+        var z = nuq:unmanaged;
+        writeln(z.type:string, " ", z);
+        assert(z == nil);
       }
     }
 
