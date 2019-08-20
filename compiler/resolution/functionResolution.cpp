@@ -5718,11 +5718,11 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
   if (! fLegacyNilableClasses &&
       isNonNilableClassType(lhs) && isNilableClassType(rhs))
-    USR_FATAL(userCall(call), "cannot %s %s from a nilable %s",
+    USR_FATAL(userCall(call), "cannot %s '%s' from a nilable '%s'",
               describeLHS(call, " non-nilable"), toString(lhs), toString(rhs));
 
   if (managementMismatch(lhs, rhs))
-    USR_FATAL(userCall(call), "cannot %s %s from a %s",
+    USR_FATAL(userCall(call), "cannot %s '%s' from a '%s'",
               describeLHS(call, ""), toString(lhs), toString(rhs));
 }
 
