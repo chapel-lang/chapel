@@ -346,6 +346,8 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   ssize_t amt = 0;
   err_t errcode;
 
+  printf("qio_channel_read_string\n");
+
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
   if( threadsafe ) {
@@ -461,9 +463,11 @@ unlock:
 
   return err;
 }
-
 // allocates and returns a string.
-qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes)
+static
+qioerr qio_channel_scan_string_or_bytes(const int threadsafe, qio_channel_t*
+    restrict ch, const char* restrict * restrict out, int64_t* restrict len_out,
+    ssize_t maxlen_bytes, const int byte_esc)
 {
   qioerr err;
   char* restrict ret = NULL;
@@ -598,21 +602,38 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
       if( err ) break;
 
       if( handle_0x && chr == 'x' ) {
-        // handle \x20
-        tmpi = 0;
-        err = qio_channel_read_char(false, ch, &tmpchr);
-        if( err ) break;
-        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-        if( err ) break;
-        tmpi += qio_nbytes_char(tmpchr);
+        if( byte_esc ) {
+          tmpchr = qio_channel_read_byte(false, ch);
+          if(tmpchr < 0) {
+            err = qio_int_to_err(-tmpchr);
+            break;
+          }
+          tmp[0] = tmpchr;
+          tmpchr = qio_channel_read_byte(false, ch);
+          if(tmpchr < 0) {
+            err = qio_int_to_err(-tmpchr);
+            break;
+          }
+          tmp[1] = tmpchr;
+          tmp[2] = '\0';
+        }
+        else {
+          // handle \x20
+          tmpi = 0;
+          err = qio_channel_read_char(false, ch, &tmpchr);
+          if( err ) break;
+          err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+          if( err ) break;
+          tmpi += qio_nbytes_char(tmpchr);
 
-        err = qio_channel_read_char(false, ch, &tmpchr);
-        if( err ) break;
-        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-        if( err ) break;
-        tmpi += qio_nbytes_char(tmpchr);
+          err = qio_channel_read_char(false, ch, &tmpchr);
+          if( err ) break;
+          err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+          if( err ) break;
+          tmpi += qio_nbytes_char(tmpchr);
 
-        tmp[tmpi] = '\0';
+          tmp[tmpi] = '\0';
+        }
 
         errno = 0;
         conv = strtol(tmp, NULL, 16);
@@ -762,6 +783,24 @@ unlock:
   }
 
   return err;
+}
+//
+// allocates and returns a string.
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
+    const char* restrict * restrict out, int64_t* restrict len_out, ssize_t
+    maxlen_bytes)
+{
+  return qio_channel_scan_string_or_bytes(threadsafe, ch, out, len_out,
+                                          maxlen_bytes, 0);
+}
+
+// allocates and returns a string.
+qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch,
+    const char* restrict * restrict out, int64_t* restrict len_out, ssize_t
+    maxlen_bytes)
+{
+  return qio_channel_scan_string_or_bytes(threadsafe, ch, out, len_out,
+                                          maxlen_bytes, 1);
 }
 
 qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore)

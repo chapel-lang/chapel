@@ -732,6 +732,8 @@ qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict c
 
 qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
 
+qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
+
 // reads match exactly - skipping whitespace before it if skipwsbefore is set.
 // returns 0 if it matched, or EFORMAT if it did not.
 qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore);

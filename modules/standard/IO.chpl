@@ -1165,6 +1165,7 @@ private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_chann
 private extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+private extern proc qio_channel_scan_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
 private extern proc qio_channel_print_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
@@ -2731,8 +2732,12 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if t == bytes {
-    // handle bytes
-    // for now, do nothing and let the function return EINVAL
+    // handle _bytes
+    var len:int(64);
+    var tx: c_string;
+    var ret = qio_channel_scan_bytes(false, _channel_internal, tx, len, -1);
+    x = new bytes(tx, length=len, needToCopy=false);
+    return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
@@ -2870,8 +2875,14 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     x = new string(tx, length=len, needToCopy=false);
     return ret;
   } else if t == bytes {
-    // handle bytes
-    // for now, do nothing and let the function return EINVAL
+    // handle _bytes (nothing special for bytes vs string in this case)
+    var len:int(64);
+    var tx: c_string;
+    var ret = qio_channel_read_string(false, byteorder:c_int,
+                                      qio_channel_str_style(_channel_internal),
+                                      _channel_internal, tx, len, -1);
+    x = new bytes(tx, length=len, needToCopy=false);
+    return ret;
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
     var err:syserr = ENOERR;
