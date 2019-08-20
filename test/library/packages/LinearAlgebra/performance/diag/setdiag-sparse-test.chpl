@@ -1,5 +1,5 @@
 /*
-Sparse diagonal creation performance testing
+Sparse diagonal creation performance testing intended for manual usage
 */
 
 use LinearAlgebra;
