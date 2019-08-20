@@ -21,7 +21,7 @@ writeln(bq.type:string);
 var bbq = bq.borrow();
 writeln(bbq.type:string);
 
-var uq = bq:unmanaged?;
+var uq = bq:unmanaged class?;
 writeln(uq.type:string);
 
 var buq = uq.borrow();

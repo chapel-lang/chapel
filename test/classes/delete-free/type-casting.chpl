@@ -18,7 +18,7 @@ proc makeBorrowedQ1(type t) type {
   return borrowed t?;
 }
 proc makeBorrowedQ2(type t) type {
-  return t:borrowed?;
+  return t:borrowed class?;
 }
 
 proc check(param arg:bool) {
