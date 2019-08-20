@@ -6,6 +6,9 @@
    which index values are opaque/anonymous. They are designed to
    support unstructured arrays like graphs. They are a special case of
    :ref:`associative domains and arrays <primers-associative>`.
+
+   Note: Opaque domains and arrays are deprecated as of Chapel 1.20
+   and are expected to be removed in future versions of Chapel.
 */
 
 //

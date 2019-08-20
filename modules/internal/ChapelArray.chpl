@@ -1000,6 +1000,7 @@ module ChapelArray {
     }
 
     proc newOpaqueDom(type idxType, param parSafe: bool=true) {
+      compilerWarning("Opaque domains are deprecated - please switch to another domain type");
       var x = _value.dsiNewOpaqueDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
