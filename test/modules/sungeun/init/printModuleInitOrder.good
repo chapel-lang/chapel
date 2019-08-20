@@ -59,7 +59,6 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelError
-    ChapelDynDispHack
     ChapelTaskData
     Assert
     AlignedTSupport
