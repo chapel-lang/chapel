@@ -26,8 +26,8 @@ iter helper(param dim : int, param rank : int, ranges) {
 proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
   //
   // The commented out code below triggers a strange bug related to the RTTI
-  // info for domains not being initialized correctly. However, using a type
-  // query or "new" instead does not exhibit this problem.
+  // info for domains not being initialized correctly. However, using a "new"
+  // expression instead provides a workaround to this problem.
   //
   // See: #13808
   //
