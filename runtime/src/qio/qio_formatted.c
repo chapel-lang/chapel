@@ -278,6 +278,46 @@ qioerr _peek_until_char(qio_channel_t* ch, int32_t term_chr, int64_t* amt_read_o
 
 // always appends room for a NULL byte at the end.
 static
+qioerr _append_byte(char* restrict * restrict buf, size_t* restrict buf_len, size_t* restrict buf_max, int8_t byte)
+{
+  char* buf_in = *buf;
+  size_t len_in = *buf_len;
+  size_t max_in = *buf_max;
+  char* newbuf;
+  size_t newsz;
+  size_t need;
+  size_t chbytes;
+
+  need = len_in + 2; // one for the byte the other for the null character
+  if( need < len_in || need > (SSIZE_MAX-1) ) {
+    // Too big.
+    QIO_RETURN_CONSTANT_ERROR(EOVERFLOW, "");
+  }
+  // First, make sure that there is room.
+  if( need >= max_in ) {
+    // Reallocate buffer.
+    newsz = 2 * max_in;
+    if( newsz < 16  ) newsz = 16;
+    if( newsz < need  ) newsz = need;
+    newbuf = qio_realloc(buf_in, newsz);
+    if( ! newbuf ) return QIO_ENOMEM;
+    buf_in = newbuf;
+    max_in = newsz;
+  }
+
+  // Now store it in the buffer.
+  buf_in[len_in] = byte;
+  len_in += 1;
+
+  *buf = buf_in;
+  *buf_len = len_in;
+  *buf_max = max_in;
+
+  return 0;
+}
+
+// always appends room for a NULL byte at the end.
+static
 qioerr _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size_t* restrict buf_max, int32_t chr)
 {
   char* buf_in = *buf;
@@ -461,11 +501,11 @@ unlock:
 
   return err;
 }
+
 // allocates and returns a string.
-static
-qioerr qio_channel_scan_string_or_bytes(const int threadsafe, qio_channel_t*
-    restrict ch, const char* restrict * restrict out, int64_t* restrict len_out,
-    ssize_t maxlen_bytes, const int byte_esc)
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
+    const char* restrict * restrict out, int64_t* restrict len_out, ssize_t
+    maxlen_bytes)
 {
   qioerr err;
   char* restrict ret = NULL;
@@ -600,38 +640,21 @@ qioerr qio_channel_scan_string_or_bytes(const int threadsafe, qio_channel_t*
       if( err ) break;
 
       if( handle_0x && chr == 'x' ) {
-        if( byte_esc ) {
-          tmpchr = qio_channel_read_byte(false, ch);
-          if(tmpchr < 0) {
-            err = qio_int_to_err(-tmpchr);
-            break;
-          }
-          tmp[0] = tmpchr;
-          tmpchr = qio_channel_read_byte(false, ch);
-          if(tmpchr < 0) {
-            err = qio_int_to_err(-tmpchr);
-            break;
-          }
-          tmp[1] = tmpchr;
-          tmp[2] = '\0';
-        }
-        else {
-          // handle \x20
-          tmpi = 0;
-          err = qio_channel_read_char(false, ch, &tmpchr);
-          if( err ) break;
-          err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-          if( err ) break;
-          tmpi += qio_nbytes_char(tmpchr);
+        // handle \x20
+        tmpi = 0;
+        err = qio_channel_read_char(false, ch, &tmpchr);
+        if( err ) break;
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+        if( err ) break;
+        tmpi += qio_nbytes_char(tmpchr);
 
-          err = qio_channel_read_char(false, ch, &tmpchr);
-          if( err ) break;
-          err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-          if( err ) break;
-          tmpi += qio_nbytes_char(tmpchr);
+        err = qio_channel_read_char(false, ch, &tmpchr);
+        if( err ) break;
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+        if( err ) break;
+        tmpi += qio_nbytes_char(tmpchr);
 
-          tmp[tmpi] = '\0';
-        }
+        tmp[tmpi] = '\0';
 
         errno = 0;
         conv = strtol(tmp, NULL, 16);
@@ -782,23 +805,250 @@ unlock:
 
   return err;
 }
-//
-// allocates and returns a string.
-qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
-    const char* restrict * restrict out, int64_t* restrict len_out, ssize_t
-    maxlen_bytes)
-{
-  return qio_channel_scan_string_or_bytes(threadsafe, ch, out, len_out,
-                                          maxlen_bytes, 0);
-}
 
 // allocates and returns a string.
 qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch,
     const char* restrict * restrict out, int64_t* restrict len_out, ssize_t
     maxlen_bytes)
 {
-  return qio_channel_scan_string_or_bytes(threadsafe, ch, out, len_out,
-                                          maxlen_bytes, 1);
+  qioerr err;
+  char* restrict ret = NULL;
+  size_t ret_len = 0;
+  size_t ret_max = 0;
+  int32_t term_chr;
+  int32_t chr;
+  char tmp[4*MB_LEN_MAX + 1]; // room for XXXX in \uXXXX
+  int32_t tmpchr;
+  int tmpi;
+  int handle_back;
+  int handle_0x;
+  int stop_space;
+  unsigned long conv, conv2;
+  qio_style_t* style;
+  ssize_t nread = 0;
+  int64_t mark_offset;
+  int64_t end_offset;
+  ssize_t maxlen_chars = SSIZE_MAX - 1;
+  int found_term = 0;
+
+  if( maxlen_bytes <= 0 ) maxlen_bytes = SSIZE_MAX - 1;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  style = &ch->style;
+
+  if( style->max_width_characters < UINT32_MAX &&
+      style->max_width_characters < maxlen_chars ) {
+    maxlen_chars = style->max_width_characters;
+  }
+  if( style->max_width_bytes < UINT32_MAX &&
+      style->max_width_bytes < maxlen_bytes ) {
+    maxlen_bytes = style->max_width_bytes;
+  }
+
+  // Allocate room for our buffer...
+  err = _append_byte(&ret, &ret_len, &ret_max, 0);
+  if( err ) goto unlock;
+  ret_len = 0;
+
+  mark_offset = qio_channel_offset_unlocked(ch);
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  term_chr = style->string_end;
+  if( style->string_format == QIO_STRING_FORMAT_WORD ) {
+    handle_back = 0;
+    handle_0x = 0;
+    stop_space = 1;
+  } else if( style->string_format == QIO_STRING_FORMAT_BASIC ) {
+    handle_back = 1;
+    handle_0x = 0;
+    stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_CHPL ) {
+    handle_back = 1;
+    handle_0x = 1;
+    stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_JSON ) {
+    handle_back = 1;
+    handle_0x = 0;
+    stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_TOEND ) {
+    handle_back = 0;
+    handle_0x = 0;
+    stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_TOEOF ) {
+    handle_back = 0;
+    handle_0x = 0;
+    stop_space = 0;
+    term_chr = -1;
+  } else {
+    handle_back = 1;
+    handle_0x = 1;
+    stop_space = 0;
+  }
+
+  err = 0;
+  for( nread = 0;
+      // limit # characters
+      nread < maxlen_chars &&
+      // stop on error
+      !err &&
+      // limit # bytes
+      qio_channel_offset_unlocked(ch) - mark_offset < maxlen_bytes;
+      nread++ ) {
+    chr = qio_channel_read_byte(false, ch);
+    if(chr < 0) {
+      err = qio_int_to_err(-chr);
+      break;
+    }
+
+    // If we're using FORMAT_WORD, skip any whitespace at the beginning
+    if( nread == 0 ) {
+      while( !(style->string_format == QIO_STRING_FORMAT_TOEND ||
+               style->string_format == QIO_STRING_FORMAT_TOEOF) &&
+             iswspace(chr) ) {
+        // Read the next byte!
+        chr = qio_channel_read_byte(false, ch);
+        if(chr < 0) {
+          err = qio_int_to_err(-chr);
+          break;
+        }
+      }
+      if( err ) break;
+
+      if( style->string_format == QIO_STRING_FORMAT_WORD ||
+          style->string_format == QIO_STRING_FORMAT_TOEND ||
+          style->string_format == QIO_STRING_FORMAT_TOEOF ) {
+        // OK, use the byte we have
+      } else if( chr == 'b' ) {
+        // Read the next byte hoping that it is string_start
+        chr = qio_channel_read_byte(false, ch);
+        if(chr < 0) {
+          err = qio_int_to_err(-chr);
+          break;
+        }
+        if (chr == style->string_start) {
+          // Read the next byte
+          chr = qio_channel_read_byte(false, ch);
+          if(chr < 0) {
+            err = qio_int_to_err(-chr);
+            break;
+          }
+        } else {
+          QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing bytes start");
+          break;
+        }
+      } else {
+        // Format error.
+        QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing bytes start");
+        break;
+      }
+    }
+
+    // if it's a \ we'll probably do something special.
+    if( handle_back && chr == '\\' ) {
+      // Get the next byte.
+      chr = qio_channel_read_byte(false, ch);
+      if(chr < 0) {
+        err = qio_int_to_err(-chr);
+        break;
+      }
+
+      if( handle_0x && chr == 'x' ) {
+        tmpchr = qio_channel_read_byte(false, ch);
+        if(tmpchr < 0) {
+          err = qio_int_to_err(-tmpchr);
+          break;
+        }
+        tmp[0] = tmpchr;
+        tmpchr = qio_channel_read_byte(false, ch);
+        if(tmpchr < 0) {
+          err = qio_int_to_err(-tmpchr);
+          break;
+        }
+        tmp[1] = tmpchr;
+        tmp[2] = '\0';
+
+        errno = 0;
+        conv = strtol(tmp, NULL, 16);
+        if( (conv == ULONG_MAX || conv == 0) && errno ) {
+          err = qio_mkerror_errno();
+          break;
+        }
+
+        err = _append_byte(&ret, &ret_len, &ret_max, conv);
+      } else {
+        // a backslash'd character.
+        if( chr == 'a' ) chr = '\a';
+        else if( chr == 'b' ) chr = '\b';
+        else if( chr == 't' ) chr = '\t';
+        else if( chr == 'n' ) chr = '\n';
+        else if( chr == 'v' ) chr = '\v';
+        else if( chr == 'f' ) chr = '\f';
+        else if( chr == 'r' ) chr = '\r';
+        err = _append_byte(&ret, &ret_len, &ret_max, chr);
+      }
+    } else if((stop_space && iswspace(chr)) || ((!stop_space) && (chr == term_chr )) ) {
+      if(style->string_format == QIO_STRING_FORMAT_TOEND) {
+        err = _append_byte(&ret, &ret_len, &ret_max, chr);
+      }
+      found_term = 1;
+      break;
+    } else {
+      err = _append_byte(&ret, &ret_len, &ret_max, chr);
+    }
+  }
+
+  // Add the NULL... space for this is allocated in _append_byte.
+  ret[ret_len] = '\0';
+
+  end_offset = qio_channel_offset_unlocked(ch);
+
+  if(style->string_format == QIO_STRING_FORMAT_WORD) {
+
+    // Unget the terminating character - there must
+    // be one (or else err!=0)
+    if( err == 0 && found_term ) {
+      // Unget the terminating character.
+      qio_channel_revert_unlocked(ch);
+      qio_channel_advance_unlocked(ch, end_offset - mark_offset - 1);
+      goto unlock;
+    }
+
+  }
+
+  // Now we'll ignore EOF for some styles.
+  if(style->string_format == QIO_STRING_FORMAT_WORD ||
+     style->string_format == QIO_STRING_FORMAT_TOEND ||
+     style->string_format == QIO_STRING_FORMAT_TOEOF) {
+    // Not an error to reach EOF with these ones.
+    if( ret_len > 0 && qio_err_to_int(err) == EEOF ) err = 0;
+  }
+
+  if( err ) {
+    qio_channel_revert_unlocked(ch);
+  } else {
+    qio_channel_commit_unlocked(ch);
+  }
+unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  if( err ) qio_free(ret);
+  else {
+    if( ret ) {
+      *out = ret;
+      *len_out = ret_len;
+    }
+  }
+
+  return err;
 }
 
 qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore)
