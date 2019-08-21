@@ -797,7 +797,7 @@ module ChapelBase {
   inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
   inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
 
-  inline proc min(x: real(?w), y: real(w)) return if (x < y) & ! isnan(y) then x else y;
+  inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
   inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
 
   inline proc min(x: imag(?w), y: imag(w)) {
