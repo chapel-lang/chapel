@@ -545,15 +545,6 @@ Reads and returns the stored value. Defined for all atomic types.
 \end{protobody}
 
 \pagebreak
-\index{peek (atomic var)@\chpl{peek} (atomic var)}
-\index{predefined functions!peek (atomic var)@\chpl{peek} (atomic var)}
-\begin{protohead}
-proc (atomic t).peek(): t
-\end{protohead}
-\begin{protobody}
-Reads and returns the stored value using memory\_order\_relaxed.
-Defined for all atomic types.
-\end{protobody}
 
 \index{write (atomic var)@\chpl{write} (atomic var)}
 \index{predefined functions!write (atomic var)@\chpl{write} (atomic var)}
@@ -562,16 +553,6 @@ proc (atomic t).write(v: t, memory_order order)
 \end{protohead}
 \begin{protobody}
 Stores \chpl{v} as the new value. Defined for all atomic types.
-\end{protobody}
-
-\index{poke (atomic var)@\chpl{poke} (atomic var)}
-\index{predefined functions!poke (atomic var)@\chpl{poke} (atomic var)}
-\begin{protohead}
-proc (atomic t).poke(v: t)
-\end{protohead}
-\begin{protobody}
-Stores \chpl{v} as the new value using memory\_order\_relaxed.
-Defined for all atomic types.
 \end{protobody}
 
 \index{exchange (atomic var)@\chpl{exchange} (atomic var)}
