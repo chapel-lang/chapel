@@ -37,8 +37,8 @@ proc masonTest(args) throws {
   var update = true;
 
   if MASON_OFFLINE == 'true' then update = false;
-
-  var compopts: [1..0] string;
+  var compopts: list(string);
+  
 
 
   if args.size > 2 {

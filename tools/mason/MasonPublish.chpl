@@ -47,6 +47,8 @@ proc masonPublish(ref args: list(string)) throws {
       exit(0);
     }
     var dry = hasOptions(args, "--dry-run");
+    var update = hasOptions(args, '--update');
+    var noUpdate = hasOptions(args, '--no-update');
     var registryPath = '';
 
     var username = getUsername();
@@ -71,8 +73,13 @@ proc masonPublish(ref args: list(string)) throws {
     else {
       isLocal = isRegistryPathLocal(registryPath);
     }
-
-    updateRegistry('Mason.toml', args);
+    if (MASON_OFFLINE == 'true' && !update) || noUpdate == true {
+      if !isLocal {
+        throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
+      }
+      
+    }
+    else updateRegistry('Mason.toml', args);
 
     if checkRegistryPath(registryPath, isLocal) {
       if dry {
