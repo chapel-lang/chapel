@@ -396,14 +396,9 @@ module ChapelError {
   }
 
   pragma "no doc"
-  pragma "insert line file info"
-  pragma "always propagate line file info"
+  pragma "last resort"
   proc chpl_fix_thrown_error(err: unmanaged Error?): unmanaged Error {
-    // TODO: This should be an error in the future,
-    // for now the compiler already adds a warning in this case.
-    //compilerWarning("Throwing unmanaged error - please throw owned", 1);
-
-    return chpl_do_fix_thrown_error(err);
+    compilerError("Throwing unmanaged error - please throw owned", 1);
   }
 
   pragma "no doc"
