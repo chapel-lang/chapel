@@ -18,7 +18,7 @@ proc test_squared(test: borrowed Test) throws {
     // This is a test function
     writeln("c");
 }
-var test: owned Test;
+var test: owned Test = new owned Test();
 var a = __primitive("gather tests", test.borrow());
 writeln(a);
 var c = __primitive("get test by name","test_squared");
