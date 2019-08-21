@@ -1,1 +1,1 @@
---no-legacy-nilable-classes --nil-checks
+--no-legacy-classes --nil-checks
