@@ -286,7 +286,6 @@ qioerr _append_byte(char* restrict * restrict buf, size_t* restrict buf_len, siz
   char* newbuf;
   size_t newsz;
   size_t need;
-  size_t chbytes;
 
   need = len_in + 2; // one for the byte the other for the null character
   if( need < len_in || need > (SSIZE_MAX-1) ) {
@@ -815,11 +814,10 @@ qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, 
   int32_t chr;
   char tmp[4*MB_LEN_MAX + 1]; // room for XXXX in \uXXXX
   int32_t tmpchr;
-  int tmpi;
   int handle_back;
   int handle_0x;
   int stop_space;
-  unsigned long conv, conv2;
+  unsigned long conv;
   qio_style_t* style;
   ssize_t nread = 0;
   int64_t mark_offset;
