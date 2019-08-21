@@ -1,2 +1,2 @@
-override-iter-missing.chpl:11: warning: Child.myiter overrides parent class method Parent.myiter but missing override keyword
-override-iter-missing.chpl:14: warning: Child.these overrides parent class method Parent.these but missing override keyword
+override-iter-missing.chpl:11: error: Child.myiter overrides parent class method Parent.myiter but missing override keyword
+override-iter-missing.chpl:14: error: Child.these overrides parent class method Parent.these but missing override keyword

@@ -371,10 +371,10 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
         !cfn->hasFlag(FLAG_OVERRIDE)) {
       const char* ptype = pfn->_this->type->symbol->name;
       const char* ctype = cfn->_this->type->symbol->name;
-      USR_WARN(cfn, "%s.%s overrides parent class method %s.%s but "
-                    "missing override keyword",
-                    ctype, cfn->name,
-                    ptype, cfn->name);
+      USR_FATAL_CONT(cfn, "%s.%s overrides parent class method %s.%s but "
+                          "missing override keyword",
+                          ctype, cfn->name,
+                          ptype, cfn->name);
       // Add the flag to avoid duplicate errors
       cfn->addFlag(FLAG_OVERRIDE);
     }
@@ -1089,10 +1089,9 @@ static void checkMethodsOverride() {
                                     "to override",
                                      ct->symbol->name, fn->name);
               } else {
-                gdbShouldBreakHere();
-                USR_WARN(fn, "%s.%s override keyword required for method "
-                             "matching signature of superclass method",
-                             ct->symbol->name, fn->name);
+                USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
+                                   "matching signature of superclass method",
+                                   ct->symbol->name, fn->name);
               }
 
               erroredFunctions.insert(eFn);
