@@ -40,20 +40,6 @@ It owns: {7}
 I own:   {}
 It owns: {7}
 
-DefaultOpaqueDom(_OpaqueIndex,true):
-I own:   {{}}
-It owns: {}
-I own:   {{}}
-It owns: {}
-(<no communication>)
-
-From locale 1:
-DefaultOpaqueDom(_OpaqueIndex,true):
-I own:   {}
-It owns: {{}}
-I own:   {}
-It owns: {{}}
-
 [domain(1,int(64),false)] real(64):
 I own:   {1..10}
 It owns: {1..0}
@@ -95,18 +81,4 @@ I own:   {}
 It owns: {7}
 I own:   {}
 It owns: {7}
-
-[DefaultOpaqueDom(_OpaqueIndex,true)] real(64):
-I own:   {{}}
-It owns: {}
-I own:   {{}}
-It owns: {}
-(<no communication>)
-
-From locale 1:
-[DefaultOpaqueDom(_OpaqueIndex,true)] real(64):
-I own:   {}
-It owns: {{}}
-I own:   {}
-It owns: {{}}
 

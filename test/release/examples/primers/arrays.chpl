@@ -385,5 +385,5 @@ writeln("Y is:\n", Y);
 //
 // For further information, see the :ref:`Domain Primer <primers-domains>`
 // and other array primers: :ref:`Sparse <primers-sparse>`,
-// :ref:`Opaque <primers-opaque-domains>`, :ref:`Associative <primers-associative>`.
+// :ref:`Associative <primers-associative>`.
 //

@@ -7,22 +7,17 @@ config const modify = false;
 var DR = {1..10};
 var DA = {3.4};
 var DS: sparse subdomain(DR) = {7};
-var DO: domain(opaque);
-DO.create();
 
 var AR: [DR] real;
 var AA: [DA] real;
 var AS: [DS] real;
-var AO: [DO] real;
 
 testit(DR);
 testit(DA);
 testit(DS);
-testit(DO);
 testit(AR);
 testit(AA);
 testit(AS);
-testit(AO);
 
 proc testit(ref D) {
   if isDomain(D) then

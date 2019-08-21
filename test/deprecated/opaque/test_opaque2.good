@@ -1,0 +1,2 @@
+test_opaque2.chpl:1: warning: Opaque domains are deprecated - please switch to another domain type
+1 2 3
