@@ -161,19 +161,19 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
       branchMasonReg(username, name, safeDir, registryPath);
     }
 
-    addPackageToBricks(packageLocation, safeDir, name, registryPath, isLocal);
-
+    const version = addPackageToBricks(packageLocation, safeDir, name, registryPath, isLocal);
+    const message : string  = 'Adding' +  name + '@' +version + ' package to registry via mason publish';
     if !isLocal {
       gitC(safeDir + "/mason-registry", "git add .");
-      gitC(safeDir + "/mason-registry", "git commit -m '" + name + "'");
+      gitC(safeDir + "/mason-registry", "git commit -m '" + message + "'");
       gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
       rmTree(safeDir + '/');
       writeln('--------------------------------------------------------------------');
       writeln('Go to the above link to open up a Pull Request to the mason-registry');
      }
-    else {
+    else {      
       gitC(safeDir, 'git add Bricks/' + name);
-      gitC(safeDir, "git commit -m '" + name + "'" );
+      gitC(safeDir, "git commit -m '" + message + "'" );
     }
 
   }
@@ -339,14 +339,17 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         baseToml["brick"].set("source", url[1..url.length-1]);
         tomlWriter.write(baseToml);
         tomlWriter.close();
+        return name + '@' + versionNum; 
       }
       else {
         throw new owned MasonError('A package with that name and version number already exists in the Bricks.');
+        exit(1);
       }
     }
     else {
       if !exists(safeDir + '/.git') {
         throw new owned MasonError('Unable to publish your package to the registry, make sure your package is a git repository.');
+        exit(1);
       }
       if !exists(safeDir + '/Bricks/' + name) {
         mkdir(safeDir + "/Bricks/" + name);
@@ -360,9 +363,11 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         tomlWriter.close();
         const gitMessageString = ('git tag -a v' + versionNum + ' -m  "' + name + '"');
         gitC(projectLocal, gitMessageString);
+        return name + '@' + versionNum;
       }
       else {
         throw new owned MasonError('A package with that name and version already exists in the Bricks.');
+        exit(1);
       }
     }
   }
