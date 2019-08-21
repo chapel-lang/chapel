@@ -457,8 +457,8 @@ module OwnedObject {
 
   // cast to owned?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:owned?, pragma "nil from arg" in x:owned!)
-    where isSubtype(x.chpl_t,t.chpl_t)
+  inline proc _cast(type t:owned class?, pragma "nil from arg" in x:owned class)
+    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
@@ -468,7 +468,7 @@ module OwnedObject {
 
   // cast to owned?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:owned?, pragma "nil from arg" in x:owned?)
+  inline proc _cast(type t:owned class?, pragma "nil from arg" in x:owned class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -479,7 +479,7 @@ module OwnedObject {
 
   // cast to owned!, no class downcast, no casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:owned!, pragma "nil from arg" in x:owned!)
+  inline proc _cast(type t:owned class, pragma "nil from arg" in x:owned class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -490,7 +490,7 @@ module OwnedObject {
 
   // cast to owned!, no class downcast, casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:owned!, pragma "nil from arg" in x:owned?) throws
+  inline proc _cast(type t:owned class, pragma "nil from arg" in x:owned class?) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -503,7 +503,7 @@ module OwnedObject {
   }
 
   // this version handles downcast to non-nil owned
-  inline proc _cast(type t:owned!, ref x:owned?) throws
+  inline proc _cast(type t:owned class, ref x:owned class?) throws
     where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
   {
     if x.chpl_p == nil {
@@ -514,7 +514,7 @@ module OwnedObject {
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
-  inline proc _cast(type t:owned!, ref x:owned!) throws
+  inline proc _cast(type t:owned class, ref x:owned class) throws
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
@@ -525,7 +525,7 @@ module OwnedObject {
 
 
   // this version handles downcast to nilable owned
-  inline proc _cast(type t:owned?, ref x:owned?)
+  inline proc _cast(type t:owned class?, ref x:owned class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
@@ -536,7 +536,7 @@ module OwnedObject {
     return new _owned(castPtr);
   }
   // this version handles downcast to nilable owned
-  inline proc _cast(type t:owned?, ref x:owned!)
+  inline proc _cast(type t:owned class?, ref x:owned class)
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
@@ -575,6 +575,6 @@ module OwnedObject {
     return _to_nonnil(x.chpl_p);
   }
   inline proc postfix!(type t:_owned) type {
-    return _owned(_to_nonnil(t.chpl_t));
+    return _to_borrowed(_to_nonnil(t.chpl_t));
   }
 }

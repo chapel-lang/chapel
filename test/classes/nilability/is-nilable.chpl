@@ -63,11 +63,6 @@ module test {
     writeln("shared MyClass ", isNilableClass(shared MyClass));
     writeln("unmanaged MyClass ", isNilableClass(unmanaged MyClass));
     writeln();
-    writeln("owned MyClass! ", isNilableClass(owned MyClass!));
-    writeln("borrowed MyClass! ", isNilableClass(borrowed MyClass!));
-    writeln("shared MyClass! ", isNilableClass(shared MyClass!));
-    writeln("unmanaged MyClass! ", isNilableClass(unmanaged MyClass!));
-    writeln();
     writeln("owned MyClass? ", isNilableClass(owned MyClass?));
     writeln("borrowed MyClass? ", isNilableClass(borrowed MyClass?));
     writeln("shared MyClass? ", isNilableClass(shared MyClass?));
@@ -105,11 +100,6 @@ module test {
     writeln("borrowed MyClass ", isNonNilableClass(borrowed MyClass));
     writeln("shared MyClass ", isNonNilableClass(shared MyClass));
     writeln("unmanaged MyClass ", isNonNilableClass(unmanaged MyClass));
-    writeln();
-    writeln("owned MyClass! ", isNonNilableClass(owned MyClass!));
-    writeln("borrowed MyClass! ", isNonNilableClass(borrowed MyClass!));
-    writeln("shared MyClass! ", isNonNilableClass(shared MyClass!));
-    writeln("unmanaged MyClass! ", isNonNilableClass(unmanaged MyClass!));
     writeln();
     writeln("owned MyClass? ", isNonNilableClass(owned MyClass?));
     writeln("borrowed MyClass? ", isNonNilableClass(borrowed MyClass?));

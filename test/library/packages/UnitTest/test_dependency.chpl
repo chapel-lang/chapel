@@ -15,4 +15,4 @@ proc D(test: borrowed Test) throws {
   test.dependsOn(B,A);
 }
 
-UnitTest.runTest(D,C,B,A);
+UnitTest.main();

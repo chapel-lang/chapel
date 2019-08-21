@@ -1,0 +1,8 @@
+owned MyClass ! -> borrowed MyClass
+owned MyClass? ! -> borrowed MyClass
+shared MyClass ! -> borrowed MyClass
+shared MyClass? ! -> borrowed MyClass
+unmanaged MyClass ! -> borrowed MyClass
+unmanaged MyClass? ! -> borrowed MyClass
+borrowed MyClass ! -> borrowed MyClass
+borrowed MyClass? ! -> borrowed MyClass

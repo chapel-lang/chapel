@@ -7,8 +7,10 @@ Initializing Modules:
      HaltWrappers
     CString
     Bytes
-    String
-     StringCasts
+     ByteBufferHelpers
+     BytesStringCommon
+      String
+       StringCasts
     OwnedObject
     ChapelDebugPrint
     ChapelBase
@@ -44,7 +46,6 @@ Initializing Modules:
           Regexp
         DefaultAssociative
         ExternalArray
-        Lists
         RangeChunk
        ChapelNumLocales
        Sys
@@ -57,7 +58,6 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelError
-    ChapelDynDispHack
     ChapelTaskData
     Assert
     AlignedTSupport

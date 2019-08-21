@@ -1062,10 +1062,10 @@ module DefaultRectangular {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
+        var numElts:intIdxType = 0;
         if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
-          var numElts:intIdxType = 0;
           // dataAllocRange may be empty or contain a meaningful value
           if rank == 1 && !stridable then
             numElts = dataAllocRange.length;
@@ -1075,8 +1075,8 @@ module DefaultRectangular {
           if needsDestroy {
             dsiDestroyDataHelper(data, numElts);
           }
-          _ddata_free(data, numElts);
         }
+        _ddata_free(data, numElts);
       }
     }
 
@@ -1945,8 +1945,6 @@ module DefaultRectangular {
 
 
   private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
-    use Lists;
-
     param minRank = min(LHS.rank, RHS.rank);
     type  idxType = LHS.idxType;
     type  intIdxType = LHS.intIdxType;
@@ -1961,10 +1959,10 @@ module DefaultRectangular {
 
     const (LeftActives, RightActives, inferredRank) = bulkCommComputeActiveDims(LeftDims, RightDims);
 
-    var DimSizes = new list(LeftDims(1).size.type);
+    var DimSizes: [1..inferredRank] LeftDims(1).size.type;
     for i in 1..inferredRank {
       const dimIdx = LeftActives(i);
-      DimSizes.append(LeftDims(dimIdx).size);
+      DimSizes[i] = LeftDims(dimIdx).size;
     }
 
     if debugDefaultDistBulkTransfer {

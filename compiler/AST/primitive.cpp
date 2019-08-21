@@ -454,11 +454,15 @@ static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
+  // todo: switch to using combineDecorators()
   ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NONNIL;
+
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     t = dt->getCanonicalClass();
-    if (dt->isNilable())
-      decorator = CLASS_TYPE_UNMANAGED_NILABLE;
   } else if (isManagedPtrType(t)) {
     t = getManagedPtrBorrowType(t);
   }
@@ -475,6 +479,7 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
+  // todo: switch to using combineDecorators()
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
 
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
@@ -626,6 +631,9 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
+  // dst, aggregate name, field name, type to default-init, value to init from
+  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
+
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
@@ -775,6 +783,7 @@ initPrimitive() {
   prim_def(PRIM_IS_SUBTYPE_ALLOW_VALUES, "is_subtype_allow_values", returnInfoBool);
   // same as above but excludes same type
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
+  prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false);

@@ -1,2 +1,2 @@
 init-field-arg-nonnil-unmanaged-from-nonnil-owned.chpl:9: In initializer:
-init-field-arg-nonnil-unmanaged-from-nonnil-owned.chpl:10: error: cannot assign to unmanaged MyClass from owned MyClass
+init-field-arg-nonnil-unmanaged-from-nonnil-owned.chpl:10: error: cannot initialize field MyRecord.lhs of type 'unmanaged MyClass' from a 'owned MyClass'

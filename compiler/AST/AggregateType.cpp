@@ -43,6 +43,7 @@
 #include <queue>
 
 AggregateType* dtObject = NULL;
+AggregateType* dtBytes  = NULL;
 AggregateType* dtString = NULL;
 AggregateType* dtLocale = NULL;
 
@@ -1982,7 +1983,11 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           } else {
             fieldToArgType(defPoint, arg);
 
-            CallExpr* def    = new CallExpr("_createFieldDefault",
+            CallExpr* def    = new CallExpr(PRIM_DEFAULT_INIT_FIELD,
+                    // It would be easiest to just put 'field' here, however
+                    // it is replaced with 'arg' in buildDefaultInitializer().
+                    new_StringSymbol(field->defPoint->parentSymbol->name),
+                                            new_StringSymbol(field->name),
                                             defPoint->exprType->copy(),
                                             defPoint->init->copy());
 

@@ -216,6 +216,24 @@ Type* canonicalClassType(Type* t) {
   return canonicalDecoratedClassType(t);
 }
 
+/* If t is a class like type or a managed type, this returns the
+   the DecoratedClassType or AggregateType that represents
+   overriding the decorator (if any) with d.
+
+   Note that a plain AggregateType representing a class means a borrowed class.
+
+   This function will transform generic class types, e.g.
+     dtUnmanagedNonNilable + BORROWED_NILABLE -> dtBorrowedNilable
+
+   Note that for owned/shared types, they represent the decorator in two
+   ways, depending on whether or not the contained class is specified.
+
+   e.g.
+
+   owned class? -> DecoratedClassType(MANAGED_NILABLE, _owned)
+   owned MyClass? -> _owned(DecoratedClassType(BORROWED_NILABLE, MyClass)
+
+ */
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
   // no _ddata c_ptr etc
@@ -267,7 +285,7 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED_NILABLE:
       INT_FATAL("should be handled above");
     case CLASS_TYPE_GENERIC:
-      return dtAnyManagement;
+      return dtAnyManagementAnyNilable;
     case CLASS_TYPE_GENERIC_NONNIL:
       return dtAnyManagementNonNilable;
     case CLASS_TYPE_GENERIC_NILABLE:
@@ -327,7 +345,7 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
     return CLASS_TYPE_UNMANAGED_NONNIL;
   if (t == dtUnmanagedNilable)
     return CLASS_TYPE_UNMANAGED_NILABLE;
-  if (t == dtAnyManagement)
+  if (t == dtAnyManagementAnyNilable)
     return CLASS_TYPE_GENERIC;
   if (t == dtAnyManagementNonNilable)
     return CLASS_TYPE_GENERIC_NONNIL;

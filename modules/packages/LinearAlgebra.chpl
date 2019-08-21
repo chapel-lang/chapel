@@ -433,6 +433,31 @@ proc eye(Dom: domain(2), type eltType=real) {
 // Matrix Operations
 //
 
+
+/* Sets the value of a diagonal in a matrix. If the matrix is sparse, 
+    indices on the diagonal will be added to its domain
+
+    ``k > 0``, represents an upper diagonal starting
+    from the ``k``th column, ``k == 0`` represents the main 
+    diagonal, ``k < 0`` represents a lower diagonal starting
+    from the ``-k``th row. ``k`` is 0-indexed.
+*/
+proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0) 
+              where isDenseMatrix(X) {
+  var start, end = 0;
+  if (k >= 0) { // upper or main diagonal
+    start = 1;
+    end = D.shape(1) - k;
+  }
+  else { // lower diagonal
+    start = 1 - k;
+    end = D.shape(1);
+  }
+  forall row in {start..end} {
+    X(row, row+k) = val;
+  }
+}
+
 pragma "no doc"
 inline proc transpose(D: domain(1)) {
   return D;
@@ -631,15 +656,61 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+pragma "no doc"
+/* Returns ``true`` if the domain is distributed */
+private proc isDistributed(a) param {
+  return !isSubtype(a.domain.dist.type, DefaultDist);
+}
 
 /* Inner product of 2 vectors. */
-proc inner(A: [?Adom], B: [?Bdom]) {
+proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
+    
+  var result: eltType = 0;
+  
+  if !isDistributed(A) {
+    result = + reduce (A*B);
+  }
+  else {
+    // Replaces `+ reduce (A*B)` for improved distributed performance
 
-  return + reduce(A[..]*B[..]);
+    var localResults: [Locales.domain] eltType = 0;
+
+    coforall l in Locales do on l {
+      const maxThreads = if dataParTasksPerLocale==0 
+                         then here.maxTaskPar else dataParTasksPerLocale;
+      const localDomain = A.localSubdomain();
+      const iterPerThread = divceil(localDomain.size, maxThreads);
+      var localResult: eltType = 0; 
+      var threadResults: [0..#maxThreads] eltType = 0;
+
+      coforall tid in 0..#maxThreads {
+        const startid = localDomain.low + tid * iterPerThread;
+        const temp_endid = startid + iterPerThread - 1;
+        const endid = if localDomain.high < temp_endid
+                      then  localDomain.high else temp_endid;
+        var myResult: eltType = 0;
+        for ind in startid..endid {
+          myResult += A.localAccess(ind) * B.localAccess(ind);
+        }
+        threadResults[tid] = myResult;
+      }
+
+      for tr in threadResults {
+        localResult += tr;
+      }
+      localResults[here.id] = localResult;
+    }
+
+    for r in localResults {
+      result += r;
+    }
+  }
+  
+  return result;
 }
 
 
@@ -702,6 +773,37 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+/*
+  Returns the inverse of ``A`` square matrix A.
+  
+  
+    .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
+*/
+proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+  if Adom.rank != 2 then
+    halt("Wrong rank for matrix inverse");
+
+  if !isSquare(A) then
+    halt("Matrix inverse only supports square matrices");
+
+  const n = Adom.shape(1);
+  var ipiv : [1..n] c_int;
+  
+  if (!overwrite) {
+    var A_clone = A;
+    LAPACK.getrf(lapack_memory_order.row_major, A_clone, ipiv);
+    LAPACK.getri(lapack_memory_order.row_major, A_clone, ipiv);
+    return A_clone;
+  }
+  
+  LAPACK.getrf(lapack_memory_order.row_major, A, ipiv);
+  LAPACK.getri(lapack_memory_order.row_major, A, ipiv);
+
+  return A;
+}
 
 /*
   Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
@@ -1090,31 +1192,6 @@ proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK 
   return eig(A, left=false, right=false);
 }
 
-/* To be removed after 1.19.0 */
-pragma "no doc"
-proc eigvals(A: [] ?t, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
-  if right then
-    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, right=right);
-}
-
-/* To be removed after 1.19.0 */
-pragma "no doc"
-proc eigvals(A: [] ?t, param left: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
-  if left then
-    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, left=left);
-}
-
-/* To be removed after 1.19.0 */
-pragma "no doc"
-proc eigvals(A: [] ?t, param left: bool, param right: bool) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
-  if left || right then
-    compilerWarning('eigvals() will only return eigenvalues in future releases. Use eig() instead.');
-  return eig(A, left=left, right=right);
-}
-
-
 
 /* Find the eigenvalues and eigenvectors of matrix ``A``. ``A`` must be square.
 
@@ -1360,14 +1437,28 @@ proc isDenseArr(A: [?D]) param : bool {
 pragma "no doc"
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isDenseDom(D: domain) param : bool {
-  return isRectangularDom(D) && (D.dist.type == defaultDist.type || D.dist.type < ArrayViewRankChangeDist);
+  return isRectangularDom(D);
+}
+
+// TODO: Add this to public interface eventually
+pragma "no doc"
+/* Returns ``true`` if the array is N-dimensional non-distributed array. */
+proc isLocalArr(A: [?D]) param : bool {
+  return isLocalDom(D);
+}
+
+// TODO: Add this to public interface eventually
+pragma "no doc"
+/* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
+proc isLocalDom(D: domain) param : bool {
+  return (D.dist.type == defaultDist.type || D.dist.type < ArrayViewRankChangeDist);
 }
 
 // TODO: Add this to public interface eventually
 pragma "no doc"
 /* Returns ``true`` if the array is dense 2-dimensional non-distributed array. */
 proc isDenseMatrix(A: []) param : bool {
-  return A.rank == 2 && isDenseArr(A);
+  return A.rank == 2 && isDenseArr(A) && isLocalArr(A);
 }
 
 // Work-around for #8543
@@ -1516,7 +1607,9 @@ module Sparse {
 
   pragma "no doc"
   /* Return a CSR matrix over domain: ``Dom`` - Dense case */
-  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && isDenseDom(Dom) {
+  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && 
+                                                       isDenseDom(Dom) &&
+                                                       isLocalDom(Dom) {
     var csrDom = CSRDomain(Dom);
     var M: [csrDom] eltType;
     return M;
@@ -1976,6 +2069,34 @@ module Sparse {
       A[i,i] = 1 : eltType;
     }
     return A;
+  }
+
+  pragma "no doc"
+  proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
+                where isSparseArr(X) { 
+      if D.rank != 2 then
+        halt("Wrong rank for setDiag");
+
+      if D.shape(1) != D.shape(2) then
+        halt("setDiag only supports square matrices");
+        
+      var start, end = 0;
+      if (k >= 0) { // upper or main diagonal
+        start = 1;
+        end = D.shape(1) - k;
+      }
+      else { // lower diagonal
+        start = 1 - k;
+        end = D.shape(1);
+      }
+      var indices : [start..end] (D.idxType, D.idxType);
+      forall ind in {start..end} {
+        indices[ind] = (ind, ind+k);
+      }
+      D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
+      forall ind in indices {
+        X(ind) = val;
+      }
   }
 
   //
