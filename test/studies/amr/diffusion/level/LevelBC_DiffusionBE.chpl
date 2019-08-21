@@ -6,12 +6,12 @@ use LevelBC_def;
 //|/__________________________________________|/
 class ZeroFluxDiffusionBC: LevelBC {
   
-  proc apply(q: unmanaged LevelVariable, t: real) {
+  override proc apply(q: unmanaged LevelVariable, t: real) {
     apply_Homogeneous(q);
   }
 
   
-  proc apply_Homogeneous(q: unmanaged LevelVariable) {
+  override proc apply_Homogeneous(q: unmanaged LevelVariable) {
     
     for grid in level.grids {
     
