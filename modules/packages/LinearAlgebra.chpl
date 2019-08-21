@@ -715,7 +715,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
 
-  if Adom.shape(1) != Adom.shape(2) then
+  if !isSquare(A) then
     halt("Matrix inverse only supports square matrices");
 
   const n = Adom.shape(1);
