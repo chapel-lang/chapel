@@ -46,7 +46,6 @@ Initializing Modules:
           Regexp
         DefaultAssociative
         ExternalArray
-        Lists
         RangeChunk
        ChapelNumLocales
        Sys
