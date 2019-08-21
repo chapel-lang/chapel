@@ -328,29 +328,46 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
     const versionNum = tomlFile['brick']['version'].s;
 
     if !isLocal {
-      mkdir(safeDir + "/mason-registry/Bricks/" + name);
-      const baseToml = tomlFile;
-      var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
-      var tomlWriter = newToml.writer();
-      const url = gitUrl();
-      baseToml["brick"].set("source", url[1..url.length-1]);
-      tomlWriter.write(baseToml);
-      tomlWriter.close();
+      if !exists(safeDir + "/mason-registry/Bricks/" + name) {
+        mkdir(safeDir + "/mason-registry/Bricks/" + name);
+      }
+      else if !exists(safeDir + '/mason-registry/Bricks/' + name + "/" + versionNum + ".toml") {
+        const baseToml = tomlFile;
+        var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
+        var tomlWriter = newToml.writer();
+        const url = gitUrl();
+        baseToml["brick"].set("source", url[1..url.length-1]);
+        tomlWriter.write(baseToml);
+        tomlWriter.close();
+      }
+      else {
+        throw new owned MasonError('A package with that name and version number already exists in the Bricks.');
+      }
     }
     else {
-      mkdir(safeDir + "/Bricks/" + name);
-      const baseToml = tomlFile;
-      var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
-      var tomlWriter = newToml.writer();
-      baseToml["brick"].set("source", projectLocal);
-      tomlWriter.write(baseToml);
-      tomlWriter.close();
-      const gitMessageString = ('git tag -a v' + versionNum + ' -m  "' + name + '"');
-      gitC(projectLocal, gitMessageString);
+      if !exists(safeDir + '/.git') {
+        throw new owned MasonError('Unable to publish your package to the registry, make sure your package is a git repository.');
+      }
+      if !exists(safeDir + '/Bricks/' + name) {
+        mkdir(safeDir + "/Bricks/" + name);
+      }
+      else if !exists(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml") {
+        const baseToml = tomlFile;
+        var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
+        var tomlWriter = newToml.writer();
+        baseToml["brick"].set("source", projectLocal);
+        tomlWriter.write(baseToml);
+        tomlWriter.close();
+        const gitMessageString = ('git tag -a v' + versionNum + ' -m  "' + name + '"');
+        gitC(projectLocal, gitMessageString);
+      }
+      else {
+        throw new owned MasonError('A package with that name and version already exists in the Bricks.');
+      }
     }
   }
-  catch {
-    if !isLocal then rmTree(safeDir + '/');
-    throw new owned MasonError('Unable to publish your package to the registry, make sure your package is a git repository.');
+  catch e : MasonError {
+    writeln(e.message());
+    exit(1);
   }
 }
