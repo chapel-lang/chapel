@@ -131,7 +131,6 @@ typedef struct qbytes_s {
   uint32_t unused3; // this could be locale UID of the pointer!
 } qbytes_t;
 
-// These are necessary for extern class in Chapel.
 typedef qbytes_t _qbytes_ptr_t;
 typedef qbytes_t* qbytes_ptr_t;
 #define QBYTES_PTR_NULL NULL

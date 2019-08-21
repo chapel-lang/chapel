@@ -2254,11 +2254,13 @@ static void resolveUnmanagedBorrows() {
           if (isClassLike(ts->type)) {
             decorator = classTypeDecorator(ts->type);
             if (ts->type == dtBorrowed || ts->type == dtUnmanaged)
-              USR_WARN(call, "Please %s class? and not %s?", ts->name, ts->name);
+              USR_WARN(call, "Please use %s class? instead of %s?",
+                              ts->name, ts->name);
           } else if (isManagedPtrType(ts->type) &&
                      call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
             decorator = CLASS_TYPE_MANAGED;
-            USR_WARN(call, "Please %s class? and not %s?", ts->name, ts->name);
+            USR_WARN(call, "Please use %s class? instead of %s?",
+                           ts->name, ts->name);
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
@@ -2366,7 +2368,7 @@ static void resolveUnmanagedBorrows() {
           } else if (isManagedPtrType(ts->type)) {
             AggregateType* at = toAggregateType(ts->type);
             replace = at->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
-            USR_WARN(call, "Please %s class and not %s!",
+            USR_WARN(call, "Please use %s class instead of %s!",
                      at->symbol->name, at->symbol->name);
           }
 
@@ -2390,13 +2392,13 @@ static void resolveUnmanagedBorrows() {
           if (DecoratedClassType* mt = toDecoratedClassType(ts1->type))
             mgmt = mt->getCanonicalClass();
 
-          Type* t = ts2->type;
+          Type* t2 = ts2->type;
           Type* useType = NULL;
-          if (t == dtAnyManagementAnyNilable)
+          if (t2 == dtAnyManagementAnyNilable)
             useType = mgmt; // e.g. just _owned
-          else if (t == dtAnyManagementNonNilable)
+          else if (t2 == dtAnyManagementNonNilable)
             useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
-          else if (t == dtAnyManagementNilable)
+          else if (t2 == dtAnyManagementNilable)
             useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
 
           if (useType != NULL) {

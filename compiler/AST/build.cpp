@@ -1789,7 +1789,6 @@ buildFunctionDecl(FnSymbol*   fn,
   else
   {
     fn->addFlag(FLAG_NO_FN_BODY);
-    fn->insertAtTail(buildChapelStmt(new BlockStmt()));
   }
 
   fn->doc = docs;

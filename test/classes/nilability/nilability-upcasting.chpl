@@ -129,7 +129,7 @@ module test {
         var y = cb:borrowed;
         writeln(y.type:string, " ", y);
         var z = cb:borrowed class;
-        writeln(y.type:string, " ", y);
+        writeln(z.type:string, " ", z);
       }
       // cbq
       {
