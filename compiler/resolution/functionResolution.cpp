@@ -683,6 +683,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  // TODO: update this to exclude implementation records, see isRecordType
+  if (formalType == dtAnyRecord && isRecord(actualType)) {
+    return true;
+  }
+
+
   if (actualType == formalType) {
     return true;
   }

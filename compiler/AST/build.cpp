@@ -1642,8 +1642,11 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
-// Creates a dummy function that accumulates flags & cname
-FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef) {
+  DefExpr* def = toDefExpr(blockFnDef->body.tail);
+  INT_ASSERT(def);
+  FnSymbol* fn = toFnSymbol(def->sym);
+  INT_ASSERT(fn);
 
   const char* cname = "";
   // Look for a string literal we can use
@@ -1654,28 +1657,34 @@ FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
     }
   }
 
-  FnSymbol* ret = new FnSymbol(cname);
-
   if (externOrExport == FLAG_EXTERN) {
-    ret->addFlag(FLAG_LOCAL_ARGS);
-    ret->addFlag(FLAG_EXTERN);
+    fn->addFlag(FLAG_LOCAL_ARGS);
+    fn->addFlag(FLAG_EXTERN);
   }
   if (externOrExport == FLAG_EXPORT) {
-    ret->addFlag(FLAG_LOCAL_ARGS);
-    ret->addFlag(FLAG_EXPORT);
+    fn->addFlag(FLAG_LOCAL_ARGS);
+    fn->addFlag(FLAG_EXPORT);
+  }
+  if (fn->isIterator())
+  {
+    USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
   }
 
   // Handle non-trivial param names that need to be resolved,
   // but don't do this under chpldoc
-  if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
+  if (cname[0] != '\0') {
+    // The user explicitly named this function (controls mangling).
+    fn->cname = cname;
+  } else if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
+    // cname should be set based upon param
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
                                       new SymExpr(dtString->symbol),
                                       paramCNameExpr, NULL);
-    ret->insertFormalAtTail(argDef);
+    fn->insertFormalAtTail(argDef);
   }
 
-  return ret;
+  return blockFnDef;
 }
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
@@ -1743,17 +1752,11 @@ buildFunctionDecl(FnSymbol*   fn,
 
   if (optThrowsError)
   {
-    if (fn->hasFlag(FLAG_EXTERN))
-      USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
-
     fn->throwsErrorInit();
   }
 
   if (optWhere)
   {
-    if (fn->hasFlag(FLAG_EXPORT))
-      USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
-
     fn->where = new BlockStmt(optWhere);
   }
 
@@ -1785,26 +1788,7 @@ buildFunctionDecl(FnSymbol*   fn,
   }
   else
   {
-    if (!fn->hasFlag(FLAG_EXTERN)) {
-      //
-      // Chapel doesn't really support procedures with no-op bodies (a
-      // semicolon only).  Doing so is likely to cause confusion for C
-      // programmers who will think of it as a prototype, but we don't
-      // support prototypes, so require such programmers to type the
-      // empty body instead.  This is consistent with the current draft
-      // of the spec as well.
-      //
-      USR_FATAL(fn, "no-op procedures are only legal for extern functions");
-      //
-      // this is a way to make this branch robust to downstream passes
-      // if we got past this USR_FATAL for any reason or decide we
-      // want to support this case -- it changes the NULL pointer that
-      // is the body the parser created into a no-op body.
-      //
-      //
-      fn->insertAtTail(buildChapelStmt(new BlockStmt()));
-    }
-
+    fn->addFlag(FLAG_NO_FN_BODY);
   }
 
   fn->doc = docs;
