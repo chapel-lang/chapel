@@ -138,7 +138,7 @@ proc updateRegistry(tf: string, args: list(string)) {
   if args.count("--no-update") != 0 then
     return;
 
-  if MASON_OFFLINE == 'true' && !args.find('--update')[1] {
+  if MASON_OFFLINE == 'true' && (args.count('--update') == 0) {
     return;
   }
 
