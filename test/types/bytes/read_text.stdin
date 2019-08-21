@@ -1,2 +1,2 @@
 some_bytes
-"some_bytes"
+b"some_bytes"

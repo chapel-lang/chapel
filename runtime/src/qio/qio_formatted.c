@@ -918,7 +918,7 @@ qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, 
           style->string_format == QIO_STRING_FORMAT_TOEND ||
           style->string_format == QIO_STRING_FORMAT_TOEOF ) {
         // OK, use the byte we have
-      } else if( chr == 'b' ) {
+      } else if( chr == style->bytes_prefix ) {
         // Read the next byte hoping that it is string_start
         chr = qio_channel_read_byte(false, ch);
         if(chr < 0) {
@@ -1566,6 +1566,12 @@ qioerr qio_channel_print_string_or_bytes(const int threadsafe, qio_channel_t* re
     if( err ) goto rewind;
   } else {
     if(byte_esc) {
+      // Write b.
+      err = qio_channel_write_char(false, ch, style->bytes_prefix);
+      if( err ) goto rewind;
+      // Write string_start.
+      err = qio_channel_write_char(false, ch, style->string_start);
+      if( err ) goto rewind;
       for( i = 0; i < len; i+=clen ) {
         tmplen = _qio_byte_escape(ptr[i], style->string_end, style->string_format, tmp, NULL, NULL);
         if( tmplen < 0 ) {
@@ -1576,6 +1582,9 @@ qioerr qio_channel_print_string_or_bytes(const int threadsafe, qio_channel_t* re
         err = qio_channel_write_amt(false, ch, tmp, tmplen);
         if( err ) goto rewind;
       }
+      // Write string_end.
+      err = qio_channel_write_char(false, ch, style->string_end);
+      if( err ) goto rewind;
     }
     else {
       // Write string_start.
