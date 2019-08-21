@@ -503,9 +503,7 @@ unlock:
 }
 
 // allocates and returns a string.
-qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
-    const char* restrict * restrict out, int64_t* restrict len_out, ssize_t
-    maxlen_bytes)
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes)
 {
   qioerr err;
   char* restrict ret = NULL;
@@ -807,9 +805,7 @@ unlock:
 }
 
 // allocates and returns a string.
-qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch,
-    const char* restrict * restrict out, int64_t* restrict len_out, ssize_t
-    maxlen_bytes)
+qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes)
 {
   qioerr err;
   char* restrict ret = NULL;
