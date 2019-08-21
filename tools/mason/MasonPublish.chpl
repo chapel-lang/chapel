@@ -331,7 +331,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
       if !exists(safeDir + "/mason-registry/Bricks/" + name) {
         mkdir(safeDir + "/mason-registry/Bricks/" + name);
       }
-      else if !exists(safeDir + '/mason-registry/Bricks/' + name + "/" + versionNum + ".toml") {
+      if !exists(safeDir + '/mason-registry/Bricks/' + name + "/" + versionNum + ".toml") {
         const baseToml = tomlFile;
         var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
@@ -351,7 +351,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
       if !exists(safeDir + '/Bricks/' + name) {
         mkdir(safeDir + "/Bricks/" + name);
       }
-      else if !exists(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml") {
+      if !exists(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml") {
         const baseToml = tomlFile;
         var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
