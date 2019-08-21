@@ -966,7 +966,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
           // make MyClass mean generic-management unless
           // --legacy-nilable-classes is passed.
-          bool defaultIsGenericHere = !fLegacyNilableClasses;
+          bool defaultIsGenericHere = !fLegacyClasses;
           if (defaultIsGenericHere) {
             // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
             ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;

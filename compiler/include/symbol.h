@@ -746,7 +746,7 @@ extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
 extern VarSymbol *gNilChecking;
-extern VarSymbol *gLegacyNilClasses;
+extern VarSymbol *gLegacyClasses;
 extern VarSymbol *gOverloadSetsChecks;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;

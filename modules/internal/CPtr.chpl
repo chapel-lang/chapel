@@ -285,7 +285,7 @@ module CPtr {
   pragma "no doc"
   inline proc _cast(type t:_anyManagementAnyNilable, x:c_void_ptr) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
-      if !chpl_legacyNilClasses {
+      if !chpl_legacyClasses {
         compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
         compilerWarning("cast to "+ _to_nilable(t):string +" instead");
       }
