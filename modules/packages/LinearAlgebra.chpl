@@ -1678,6 +1678,49 @@ module Sparse {
     }
     return Y;
   }
+  
+  /* Sparse Matrix-vector multiplication with distributed support */
+  proc _sparsematvecMult(const ref A: [?Adom] ?eltType, const ref X: [?Xdom] eltType) where isSparseArr(A) {
+    var Y: [Xdom] eltType;
+    var locks$: [LocaleSpace] sync bool;
+    coforall l in Locales do on l {
+      const localDomain = A.localSubdomain();
+      var (low_i, low_j) = localDomain.low;
+      var (high_i, high_j) = localDomain.high;
+      var rowResults: [low_i..high_i] eltType = 0;
+
+      forall (i,j) in localDomain {
+          rowResults[i] += A[i,j] * X[j];
+      }
+      
+      // Writing result
+      // This part assumes 0-based indexing of Adom
+      const numRowsPerSynch = localDomain.dim(1).size / A.domain.dist.targetLocales().shape(2);
+      const targetLoc = A.domain.dist.targetLocales();
+      var numLocsInRow = targetLoc.shape(2);
+      var rowid, colid: int;
+      for (ind, Loc) in zip(targetLoc.domain, targetLoc) {
+        if Loc==here {
+          rowid = ind(1);
+          colid = ind(2);
+        }
+      }
+      for it in 0..#numLocsInRow {
+        const myIdInRow = (colid + it) % numLocsInRow,
+              myId = rowid * numLocsInRow + myIdInRow,
+              isLastInRow = (myIdInRow % numLocsInRow == numLocsInRow - 1),
+              curStart = low_i + myIdInRow * numRowsPerSynch,
+              curEnd = if isLastInRow then high_i else (curStart+numRowsPerSynch-1);
+
+        locks$[myId] = true;
+        for i in curStart..curEnd {
+          Y[i] += rowResults[i];
+        }
+        locks$[myId];
+      }   
+    }
+    return Y;
+  }
 
   pragma "no doc"
   /* Sparse matrix-matrix multiplication.
