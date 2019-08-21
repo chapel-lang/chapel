@@ -3,6 +3,7 @@ use Sort;
 //use BlockDist;
 use Time;
 use Barriers;
+use PeekPoke;
 
 config const seed = SeedGenerator.oddCurrentTime;
 config const skew = false;
