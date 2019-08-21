@@ -1,5 +1,5 @@
 type-tests.isSubtype.chpl:15: warning: isSubtype - scalars
-type-tests.isSubtype.chpl:16: warning: int, real   true
+type-tests.isSubtype.chpl:16: warning: int, real   false
 type-tests.isSubtype.chpl:17: warning: real, real  true
 type-tests.isSubtype.chpl:19: warning: isSubtype - domains and arrays
 type-tests.isSubtype.chpl:20: warning: D1, D2            true
@@ -60,9 +60,9 @@ type-tests.isSubtype.chpl:94: warning: U1,       AA1.type false
 type-tests.isSubtype.chpl:95: warning: U1,       C1       false
 type-tests.isSubtype.chpl:96: warning: U1,       R1       false
 type-tests.isSubtype.chpl:98: warning: isProperSubtype - scalars
-type-tests.isSubtype.chpl:99: warning: int, real   true
+type-tests.isSubtype.chpl:99: warning: int, real   false
 Note: This source location is a guess.
-type-tests.isSubtype.chpl:99: warning: int, real   true
+type-tests.isSubtype.chpl:99: warning: int, real   false
 type-tests.isSubtype.chpl:100: warning: real, real  false
 type-tests.isSubtype.chpl:102: warning: isProperSubtype - domains and arrays
 type-tests.isSubtype.chpl:103: warning: D1, D2            false

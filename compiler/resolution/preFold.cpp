@@ -256,7 +256,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
             if (!fn->hasFlag(FLAG_GENERIC) && fn->instantiatedFrom == NULL) {
               const char* name = astr(fn->name);
               resolveSignature(fn);
-              if(isSubTypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
+              if(isSubtypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
                 totalTest++;
                 CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
                 fn->defPoint->getStmtExpr()->insertAfter(newCall);
