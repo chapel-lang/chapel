@@ -1405,14 +1405,45 @@ qioerr _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_
 }
 
 static
+qioerr _qio_channel_setup_file_mmap(qio_channel_t* ch)
+{
+  qioerr err = 0;
+
+  if ( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MMAP &&
+       (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
+    int64_t uselen;
+    int64_t start = ch->mark_stack[0];
+
+    if( ch->file->mmap ) {
+      uselen = ch->file->mmap->len - start;
+      if( ch->end_pos < INT64_MAX ) {
+        if( start + uselen > ch->end_pos ) {
+          uselen = ch->end_pos - start;
+        }
+      }
+      if( uselen > 0 ) {
+        // Put the mmap data into the buffer.
+        err = qbuffer_append(&ch->buf, ch->file->mmap, start, uselen);
+        ch->av_end = start+uselen;
+      }
+    }
+  }
+
+  return err;
+}
+
+
+static
 qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
 {
   qioerr err;
   int64_t start = ch->mark_stack[0];
-  void* expect_end = NULL;
 
   // protect against channel position beyond end of file.
-  if( start > ch->end_pos ) start = ch->end_pos;
+  if( start > ch->end_pos ) {
+    start = ch->end_pos;
+    ch->mark_stack[0] = start;
+  }
 
   // If the buffer is not initialized, we have to create it.
   err = qbuffer_init(&ch->buf);
@@ -1430,40 +1461,10 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
 
   // Further matters... if the file has been MMAP'd,
   // put the mmap'd region into our buffer.
-  err = 0;
+  err = _qio_channel_setup_file_mmap(ch);
+  if (err) return err;
 
-  if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MMAP &&
-      (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
-    int64_t uselen;
-
-    if( ch->file->mmap ) {
-      uselen = ch->file->mmap->len - start;
-      if( ch->end_pos < INT64_MAX ) {
-        if( start + uselen > ch->end_pos ) {
-          uselen = ch->end_pos - start;
-        }
-      }
-      if( uselen > 0 ) {
-        // Put the mmap data into the buffer.
-        err = qbuffer_append(&ch->buf, ch->file->mmap, start, uselen);
-      }
-      expect_end = qio_ptr_add(ch->file->mmap->data, uselen + start);
-    }
-  }
-
-  // We should only have cached_cur/end set if it's an mmap'd file,
-  // and in that case we should know cached_end is the end of the
-  // file. If that's the case, we should be all set just by
-  // adding to the qbuffer the file data.
-  // We do not check cached_start since we might have moved
-  // the mark_stack along with changing cached_start
-  if ( ch->cached_end != expect_end ) {
-    chpl_internal_error("_qio_channel_makebuffer_unlocked() failed");
-  }
-
-  ch->mark_stack[0] = qbuffer_start_offset(&ch->buf);
-
-  return err;
+  return 0;
 }
 
 static inline
@@ -1475,6 +1476,7 @@ qioerr _qio_channel_needbuffer_unlocked(qio_channel_t* ch)
     return _qio_channel_makebuffer_unlocked(ch);
   }
 }
+
 
 qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style)
 {
@@ -3931,23 +3933,8 @@ qioerr qio_channel_seek(qio_channel_t* ch, int64_t start, int64_t end)
     qio_unlock(&ch->file->lock);
 
     // Use file->mmap if possible
-    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MMAP &&
-        (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
-      int64_t uselen;
-
-      if( ch->file->mmap ) {
-        uselen = ch->file->mmap->len - start;
-        if( ch->end_pos < INT64_MAX ) {
-          if( start + uselen > ch->end_pos ) {
-            uselen = ch->end_pos - start;
-          }
-        }
-        if( uselen > 0 ) {
-          // Put the mmap data into the buffer.
-          err = qbuffer_append(&ch->buf, ch->file->mmap, start, uselen);
-        }
-      }
-    }
+    err = _qio_channel_setup_file_mmap(ch);
+    if (err) return err;
 
   } else {
     // Just change the buffer start.
