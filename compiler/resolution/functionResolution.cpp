@@ -556,7 +556,8 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
 
   if (SymExpr* se = toSymExpr(actual))
     if (se->symbol()->isParameter()                   ==  true &&
-        isString(se->symbol())                        == false)
+        isString(se->symbol())                        == false &&
+        isBytes(se->symbol())                         == false)
       retval = false;
 
   return retval;
@@ -5945,9 +5946,11 @@ static void resolveInitVar(CallExpr* call) {
     // the variable we are initializing.
     src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
-    // Don't need to copy string literals when initializing a string
+    // Don't need to copy string/bytes literals when initializing 
     bool moveStringLiteral = src->hasFlag(FLAG_CHAPEL_STRING_LITERAL) &&
                              targetType->getValType() == dtString;
+    bool moveBytesLiteral  = src->hasFlag(FLAG_CHAPEL_BYTES_LITERAL) &&
+                             targetType->getValType() == dtBytes;
 
     // The LHS will "own" the temp without an auto-destroy, provided the
     // types are the same.
@@ -5956,7 +5959,7 @@ static void resolveInitVar(CallExpr* call) {
                         srcType->getValType() == targetType->getValType() &&
                         src->isRef() == false;
 
-    if (moveStringLiteral || canStealTemp) {
+    if (moveStringLiteral || moveBytesLiteral || canStealTemp) {
       dst->type = src->type;
 
       call->primitive = primitives[PRIM_MOVE];

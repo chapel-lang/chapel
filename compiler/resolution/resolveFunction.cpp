@@ -128,7 +128,8 @@ static void resolveFormals(FnSymbol* fn) {
     }
 
     if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
-      if (formal->type                             != dtString ||
+      if ((formal->type                             != dtString &&
+           formal->type                             != dtBytes) ||
           formal->hasFlag(FLAG_INSTANTIATED_PARAM) == false) {
         updateIfRefFormal(fn, formal);
       }
