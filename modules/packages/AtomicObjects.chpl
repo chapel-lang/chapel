@@ -545,11 +545,11 @@ module AtomicObjects {
     }
 
     proc writeABA(newObj: ABA(objType)) {
-      doABACheck();
       write128bit(atomicVar:c_void_ptr, c_ptrTo(newObj));
     }
 
     proc writeABA(newObj: objType) {
+      doABACheck();
       writeABA(new ABA(objType, toPointer(objType), atomicVar[0]._ABA_cnt.read() + 1));
     }
 
@@ -558,7 +558,7 @@ module AtomicObjects {
     }
 
     proc readWriteThis(f) {
-      f <~> atomicVar[0];
+      f <~> atomicVariable.read();
     }
   }
 }
