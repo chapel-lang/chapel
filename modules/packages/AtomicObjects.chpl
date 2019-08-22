@@ -184,6 +184,11 @@ module AtomicObjects {
   param compressedLocIdOffset = 48;
 
   pragma "no doc"
+  inline proc castToObj(type objType, addr) {
+    return __primitive("cast", objType, uintToCVoidPtr(addr));
+  }
+
+  pragma "no doc"
   inline proc uintToCVoidPtr(addr) {
     return __primitive("cast", c_void_ptr, addr);
   }
@@ -235,7 +240,7 @@ module AtomicObjects {
     // faster compression method so we need to decompress it in the same way...
     var locId = descr >> compressedLocIdOffset;
     var addr = descr & compressedAddrMask;
-    if locId == 0 then return __primitive("cast", objType, uintToCVoidPtr(addr));
+    if locId == 0 then return castToObj(objType, addr);
 
     // We've created the wide pointer, but unfortunately Chapel does not support
     // the ability to cast it to the actual object, so we have to do some
@@ -259,7 +264,7 @@ module AtomicObjects {
   record ABA {
     type __ABA_objType;
     pragma "no doc"
-    var __ABA_obj : objType;
+    var __ABA_obj : __ABA_objType;
     pragma "no doc"
     var __ABA_cnt : uint(64);
 
@@ -314,87 +319,187 @@ module AtomicObjects {
     proc init(type objType) {
       this.objType = objType;
     }
-
-    inline proc getObject() {
-      var ptr = this._ABA_ptr;
-      return __primitive("cast", objType, decompress(objType, this._ABA_ptr.read()));
-    }
-
-    inline proc getABACounter() {
-      return this._ABA_cnt.read();
-    }
-
-
-    proc readWriteThis(f) {
-      f <~> "ptr: " <~> getObject() <~> ", cnt: " <~> getABACounter();
-    }
-
-    forwarding getObject();
   }
 
+  /*
+    Special case operator that compares two ``ABA`` wrappers.
+  */
   proc ==(const ref aba1 : ABA, const ref aba2 : ABA) {
-    return aba1.cnt == ab2.cnt && aba1.obj == aba2.obj;
+    return aba1.cnt == aba2.cnt && aba1.obj == aba2.obj;
   }
 
   proc ==(const ref aba : ABA, other) {
     return aba.obj == other;
   }
 
-  /*
-     Provides a software solution to the problem of applying atomic operations using
-     128-bit wide pointers via compression. The algorithm used for compression (and
-     decompression) rely on the number locales. In majority of cases where numLocales
-     is within a 16 bit range, we can encode it in the upper 16 bits of the address
-     as only 2^48 bits of the virtual address space is ever used.
-     */
-  record LocalAtomicObject {
+  proc >(const ref aba : ABA, other) {
+    return aba.obj > other;
+  }
+
+  proc >=(const ref aba : ABA, other) {
+    return aba.obj >= other;
+  }
+
+  proc <(const ref aba : ABA, other) {
+    return aba.obj < other;
+  }
+
+  proc <=(const ref aba : ABA, other) {
+    return aba.obj <= other;
+  }
+
+  proc +(const ref aba : ABA, other) {
+    return aba.obj + other;
+  }
+
+  proc -(const ref aba : ABA, other) {
+    return aba.obj - other;
+  }
+
+  proc *(const ref aba : ABA, other) {
+    return aba.obj * other;
+  }
+
+  proc /(const ref aba : ABA, other) {
+    return aba.obj / other;
+  }
+
+  proc +=(const ref aba : ABA, other) {
+    aba.obj += other;
+  }
+
+  proc -=(const ref aba : ABA, other) {
+    aba.obj -= other;
+  }
+
+  proc *=(const ref aba : ABA, other) {
+    aba.obj *= other;
+  }
+
+  proc /=(const ref aba : ABA, other) {
+    aba.obj /= other;
+  }
+
+  proc ^(const ref aba : ABA, other) {
+    return aba.obj ^ other;
+  }
+
+  proc |(const ref aba : ABA, other) {
+    return aba.obj | other;
+  }
+
+  proc ^=(const ref aba : ABA, other) {
+    aba.obj ^= other;
+  }
+
+  proc |=(const ref aba : ABA, other) {
+    aba.obj |= other;
+  }
+
+  proc <<(const ref aba : ABA, other) {
+    return aba.obj << other;
+  }
+
+  proc >>(const ref aba : ABA, other) {
+    return aba.obj >> other;
+  }
+
+  proc <<=(const ref aba : ABA, other) {
+    aba.obj <<= other;
+  }
+
+  proc >>=(const ref aba : ABA, other) {
+    aba.obj >>= other;
+  }
+
+  record AtomicObject {
     type objType;
-    var atomicVar : _ddata(ABA(objType));
+    // If this atomic instance provides ABA support
+    param hasABASupport : bool;
+    // If this atomic instance provides global atomics
+    param hasGlobalSupport : bool;
+    var atomicVar : if hasABASupport then _ddata(_ABAInternal(objType)) else atomic uint(64);
 
-    proc init(type objType) {
-      if !isUnmanagedClass(objType) then compilerError("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
+    proc init(type objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
+      if !isUnmanagedClass(objType) { 
+        compilerError("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
+      }
       this.objType = objType;
+      this.hasABASupport = hasABASupport;
+      this.hasGlobalSupport = hasGlobalSupport;
       this.complete();
-      var ptr : c_void_ptr;
-      posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType)));
-      this.atomicVar = ptr:_ddata(ABA(objType));
-      c_memset(ptr, 0, c_sizeof(ABA(objType)));
+      if hasABASupport {
+        var ptr : c_void_ptr;
+        posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType)));
+        this.atomicVar = ptr:_ddata(_ABAInternal(objType));
+        c_memset(ptr, 0, c_sizeof(ABA(objType)));
+      }
     }
 
-    proc init(type objType, defaultValue : objType) {
-      if !isUnmanagedClass(objType) then compilerError("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
-      this.objType = objType;
-      this.complete();
-      localityCheck(defaultValue);
-      var ptr : c_void_ptr;
-      posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType)));
-      this.atomicVar = ptr:_ddata(ABA(objType));
-      c_memset(atomicVar, 0, c_sizeof(ABA(objType)));      
-      this.atomicVar[0]._ABA_ptr.write(compress(defaultValue));
+    proc init(type objType, defaultValue : objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
+      init(objType, hasABASupport, hasGlobalSupport);
+      var ptr : uint(64);
+      if hasGlobalSupport {
+        ptr = compress(defaultValue);
+      } else {
+        ptr = getAddr(defaultValue);
+      }
+      
+      if hasABASupport {
+        atomicVar[0]._ABA_ptr.write(ptr);
+      } else {
+        atomicVar.write(ptr);
+      }
     }
 
-
+    pragma "no doc"
+    inline proc atomicVariable ref {
+      if hasABASupport {
+        return atomicVar[0]._ABA_ptr;
+      } else {
+        return atomicVar;
+      }
+    }
+    
+    pragma "no doc"
     inline proc localityCheck(objs...) {
       if boundsChecking && (|| reduce [obj in objs] obj.locale != this.locale) then
         halt("Locality check failed on ", for obj in objs do getAddrAndLocality(obj), " when expected to be hosted on ", this.locale);
     }
 
+    pragma "no doc"
+    inline proc doABACheck() param {
+      if !hasABASupport {
+        compilerWarning("Attempt to use ABA API from ", this.type);
+      }
+    }
+
     proc readABA() : ABA(objType) {
+      doABACheck();
       var ret : ABA(objType);
       on this {
-        var dest : ABA(objType);
-        read128bit(atomicVar:c_void_ptr, c_ptrTo(dest));
+        local {
+          var dest : ABA(objType);
+          read128bit(atomicVar:c_void_ptr, c_ptrTo(dest));
+        }
         ret = dest;
       }
       return ret;
     }
 
     proc read() : objType {
-      return __primitive("cast", objType, atomicVar[0].getObject());
+      if hasGlobalSupport {
+        return decompress(objType, atomicVariable.read());
+      } else {
+        return castToObj(objType, atomicVariable.read());
+      }
     }
 
     proc compareExchange(expectedObj : objType, newObj : objType) : bool {
-      return atomicVar[0]._ABA_ptr.compareExchange(compress(expectedObj), compress(newObj));
+      if hasABASupport {
+
+      }
+      return atomicVariable.compareExchange(compress(expectedObj), compress(newObj));
     }
 
     proc compareExchangeABA(expectedObj : ABA(objType), newObj : objType) : bool {
