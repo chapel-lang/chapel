@@ -712,7 +712,19 @@ module String {
           on the same locale as the string.
      */
     inline proc c_str(): c_string {
-      return getCStr(this);
+      // 2018/08/22 ENGIN TODO: normally we'd like to be able to use get_c_str
+      // from the commons module, however, this causes [hard-to-understand]
+      // errors with intel compilers.  So, this method still uses old-school
+      // implementation
+      // return get_c_str(this);
+      inline proc _cast(type t:c_string, x:bufferType) {
+        return __primitive("cast", t, x);
+      }
+
+      if _local == false && this.locale_id != chpl_nodeID then
+        halt("Cannot call .c_str() on a remote string");
+
+      return this.buff:c_string;
     }
 
     pragma "no doc"
