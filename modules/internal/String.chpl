@@ -715,7 +715,7 @@ module String {
       // 2018/08/22 ENGIN TODO: normally we'd like to be able to use get_c_str
       // from the commons module, however, this causes [hard-to-understand]
       // errors with intel compilers.  So, this method still uses old-school
-      // implementation
+      // implementation. See (#448 chapel-private)
       // return get_c_str(this);
       inline proc _cast(type t:c_string, x:bufferType) {
         return __primitive("cast", t, x);
