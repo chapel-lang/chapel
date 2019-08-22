@@ -1487,8 +1487,8 @@ error:
 #undef WRITEC
 }
 
-static
-qioerr qio_channel_print_string_or_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len, const int byte_esc)
+inline
+qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
   qioerr err;
   ssize_t i;
@@ -1565,51 +1565,28 @@ qioerr qio_channel_print_string_or_bytes(const int threadsafe, qio_channel_t* re
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
   } else {
-    if(byte_esc) {
-      // Write b.
-      err = qio_channel_write_char(false, ch, style->bytes_prefix);
-      if( err ) goto rewind;
-      // Write string_start.
-      err = qio_channel_write_char(false, ch, style->string_start);
-      if( err ) goto rewind;
-      for( i = 0; i < len; i+=clen ) {
-        tmplen = _qio_byte_escape(ptr[i], style->string_end, style->string_format, tmp, NULL, NULL);
-        if( tmplen < 0 ) {
-          QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
-          goto rewind;
-        }
+    // Write string_start.
+    err = qio_channel_write_char(false, ch, style->string_start);
+    if( err ) goto rewind;
 
-        err = qio_channel_write_amt(false, ch, tmp, tmplen);
-        if( err ) goto rewind;
-      }
-      // Write string_end.
-      err = qio_channel_write_char(false, ch, style->string_end);
-      if( err ) goto rewind;
-    }
-    else {
-      // Write string_start.
-      err = qio_channel_write_char(false, ch, style->string_start);
+    // Write the string while translating it.
+    for( i = 0; i < len; i+=clen ) {
+      err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
       if( err ) goto rewind;
 
-      // Write the string while translating it.
-      for( i = 0; i < len; i+=clen ) {
-        err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
-        if( err ) goto rewind;
-
-        tmplen = _qio_chr_escape(chr, style->string_end, style->string_format, tmp, NULL, NULL);
-        if( tmplen < 0 ) {
-          QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
-          goto rewind;
-        }
-
-        err = qio_channel_write_amt(false, ch, tmp, tmplen);
-        if( err ) goto rewind;
+      tmplen = _qio_chr_escape(chr, style->string_end, style->string_format, tmp, NULL, NULL);
+      if( tmplen < 0 ) {
+        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
+        goto rewind;
       }
 
-      // Write string_end.
-      err = qio_channel_write_char(false, ch, style->string_end);
+      err = qio_channel_write_amt(false, ch, tmp, tmplen);
       if( err ) goto rewind;
     }
+
+    // Write string_end.
+    err = qio_channel_write_char(false, ch, style->string_end);
+    if( err ) goto rewind;
     if( overfull ) {
       err = qio_channel_write_char(false, ch, '.');
       if( err ) goto rewind;
@@ -1645,13 +1622,6 @@ unlock:
   }
 
   return err;
-}
-
-
-inline
-qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
-{
-  return qio_channel_print_string_or_bytes(threadsafe, ch, ptr, len, 0);
 }
 
 inline
