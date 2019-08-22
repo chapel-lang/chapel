@@ -1,4 +1,4 @@
-use Maps;
+use Map;
 
 var m0 = new map(int, int);
 var m1 = new map(int, int);

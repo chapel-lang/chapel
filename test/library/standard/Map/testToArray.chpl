@@ -1,4 +1,4 @@
-use Maps;
+use Map;
 
 var m = new map(int, int);
 for i in -10..10 do

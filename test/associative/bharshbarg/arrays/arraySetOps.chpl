@@ -1,4 +1,4 @@
-use Maps;
+use Map;
 
 config const n = 100;
 

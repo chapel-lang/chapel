@@ -1,4 +1,4 @@
-use Maps;
+use Map;
 use utilFunctions;
 
 var m1 = new map(string, int, true);

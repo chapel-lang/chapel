@@ -26,7 +26,7 @@
   constructed from another map, the new map will inherit the parallel safety
   mode of its originating map.
 */
-module Maps {
+module Map {
 
   // Lock code lifted from modules/standard/Lists.chpl.
   // Maybe they should be combined into a Locks module.

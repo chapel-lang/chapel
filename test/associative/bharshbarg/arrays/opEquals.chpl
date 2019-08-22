@@ -1,4 +1,4 @@
-use Maps;
+use Map;
 
 proc pretty(ref a : map) {
   write("{ ");

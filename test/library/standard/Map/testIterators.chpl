@@ -1,4 +1,4 @@
-use Maps, BigInteger;
+use Map, BigInteger;
 use utilFunctions;
 
 var fac = new map(int, bigint);
