@@ -469,6 +469,10 @@ bool isString(Symbol* symbol) {
   return isString(symbol->type);
 }
 
+bool isBytes(Symbol* symbol) {
+  return isBytes(symbol->type);
+}
+
 bool isUserDefinedRecord(Symbol* symbol) {
   return isUserDefinedRecord(symbol->type);
 }
@@ -1573,7 +1577,7 @@ void createInitStringLiterals() {
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
-static VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
+VarSymbol *new_StringSymbol(const char *str) {
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
@@ -1601,7 +1605,7 @@ static VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
 
   int strLength = unescapeString(str, cstrMove).length();
 
-  s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), t);
+  s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
   s->addFlag(FLAG_LOCALE_PRIVATE);
@@ -1612,7 +1616,7 @@ static VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
   CallExpr *initCall = new CallExpr(PRIM_NEW,
-      new SymExpr(t->symbol),
+      new SymExpr(dtString->symbol),
       cstrTemp,
       new_IntSymbol(strLength));
   initCall->insertAtTail(gFalse); // owned = false
@@ -1638,11 +1642,62 @@ static VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
 }
 
 VarSymbol *new_BytesSymbol(const char *str) {
-  return new_StringOrBytesSymbol(str, dtBytes);
-}
+  Immediate imm;
+  imm.const_kind = CONST_KIND_STRING;
+  imm.string_kind = STRING_KIND_BYTES;
+  imm.v_string = astr(str);
+  VarSymbol *s = stringLiteralsHash.get(&imm);
+  if (s) {
+    return s;
+  }
 
-VarSymbol *new_StringSymbol(const char *str) {
-  return new_StringOrBytesSymbol(str, dtString);
+  if (resolved) {
+    INT_FATAL("new_BytesSymbol called after function resolution.");
+  }
+
+  // Bytes (as record) literals are inserted from the very beginning on the
+  // parser all the way through resolution (postFold). Since resolution happens
+  // after normalization we need to insert everything in normalized form. We
+  // also need to disable parts of normalize from running on literals inserted
+  // at parse time.
+  VarSymbol* bytesTemp = newTemp("call_tmp");
+  CallExpr *bytesMove = new CallExpr(PRIM_MOVE, bytesTemp, new_CStringSymbol(str));
+
+  int bytesLength = unescapeString(str, bytesMove).length();
+  s = new VarSymbol(astr("_bytes_literal_", istr(literal_id++)), dtBytes);
+  s->addFlag(FLAG_NO_AUTO_DESTROY);
+  s->addFlag(FLAG_CONST);
+  s->addFlag(FLAG_LOCALE_PRIVATE);
+  s->addFlag(FLAG_CHAPEL_BYTES_LITERAL);
+
+  DefExpr* bytesLitDef = new DefExpr(s);
+  // DefExpr(s) always goes into the module scope to make it a global
+  stringLiteralModule->block->insertAtTail(bytesLitDef);
+
+  CallExpr *initCall = new CallExpr(PRIM_NEW,
+                                    new SymExpr(dtBytes->symbol),
+                                    bytesTemp,
+                                    new_IntSymbol(bytesLength));
+  initCall->insertAtTail(gFalse); // owned = false
+  initCall->insertAtTail(gFalse); // needToCopy = false
+
+  CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
+
+  if (initStringLiterals == NULL) {
+    createInitStringLiterals();
+    initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
+  }
+
+  Expr* insertPt = initStringLiteralsEpilogue->defPoint;
+
+  insertPt->insertBefore(new DefExpr(bytesTemp));
+  insertPt->insertBefore(bytesMove);
+  insertPt->insertBefore(moveCall);
+
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  stringLiteralsHash.put(s->immediate, s);
+  return s;
 }
 
 VarSymbol *new_CStringSymbol(const char *str) {
@@ -1874,6 +1929,8 @@ immediate_type(Immediate *imm) {
         return dtString;
       } else if (imm->string_kind == STRING_KIND_C_STRING) {
         return dtStringC;
+      } else if (imm->string_kind == STRING_KIND_BYTES) {
+        return dtBytes;
       } else {
         INT_FATAL("unhandled string immediate type");
         break;
