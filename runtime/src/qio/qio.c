@@ -93,7 +93,6 @@ ssize_t qio_mmap_chunk_iobufs = 128; // mmap 128 iobufs at a time (8M)
 
 // Future - possibly set this based on ulimit?
 ssize_t qio_initial_mmap_max = 8*1024*1024;
-bool qio_allow_default_mmap = true;
 
 #ifdef _chplrt_H_
 qioerr qio_lock(qio_lock_t* x) {
@@ -541,22 +540,20 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
           // Always default to fread/fwrite with FILE* file pointers.
           method = QIO_METHOD_FREADFWRITE;
         } else if( fdflags & QIO_FDFLAG_SEEKABLE ) {
-          if( hints & QIO_HINT_NOREUSE ) method = QIO_METHOD_PREADPWRITE;
-          else if( hints & QIO_HINT_CACHED ) method = QIO_METHOD_MMAP;
-          else {
-            // default case
-            if( qio_allow_default_mmap && (!writing) &&
-                qio_too_small_for_default_mmap <= file_size &&
-                (qbytes_iobuf_size & 4095) == 0) {
-              // not writing, not too small, not too big, iobuf size multiple of 4k.
-              method = QIO_METHOD_MMAP;
-            } else {
-              method = QIO_METHOD_PREADPWRITE;
-            }
-          }
+          bool mmap_ok =
+                 (file_size > 0 &&
+                  ((hints & QIO_HINT_PARALLEL) || (hints & QIO_HINT_CACHED)) &&
+                  (qbytes_iobuf_size & 4095) == 0);
+          if (file->mmap != NULL)
+            mmap_ok = true;
+          if (hints & QIO_HINT_NOREUSE)
+            mmap_ok = false;
+
+          if (mmap_ok)
+            method = QIO_METHOD_MMAP;
+          else
+            method = QIO_METHOD_PREADPWRITE;
         } else {
-          // TODO: use libevent
-          // for now, we just use READWRITE.
           method = QIO_METHOD_READWRITE;
         }
       }
@@ -1425,6 +1422,7 @@ qioerr _qio_channel_setup_file_mmap(qio_channel_t* ch)
         // Put the mmap data into the buffer.
         err = qbuffer_append(&ch->buf, ch->file->mmap, start, uselen);
         ch->av_end = start+uselen;
+        _qio_buffered_setup_cached(ch);
       }
     }
   }
