@@ -143,6 +143,8 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
       char const * fmt = NULL;
       if (imm.string_kind == STRING_KIND_C_STRING)
         fmt = "c\"%s\"";
+      else if (imm.string_kind == STRING_KIND_BYTES)
+        fmt = "b\"%s\"";
       else
         fmt = "\"%s\"";
       res = snprintf(str, max, fmt, imm.v_string);
@@ -257,6 +259,8 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
       char const * fmt = NULL;
       if (imm.string_kind == STRING_KIND_C_STRING)
         fmt = "c\"%s\"";
+      else if (imm.string_kind == STRING_KIND_BYTES)
+        fmt = "b\"%s\"";
       else
         fmt = "\"%s\"";
       res = fprintf(fp, fmt, imm.v_string);
