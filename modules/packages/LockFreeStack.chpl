@@ -19,12 +19,12 @@
 
 module LockFreeStack {
   use EpochManager;
-  use LocalAtomics;
+  use AtomicObjects;
 
-  class node {
+  class Node {
     type eltType;
     var val : eltType;
-    var next : unmanaged node(eltType);
+    var next : unmanaged Node(eltType);
 
     proc init(val : ?eltType) {
       this.eltType = eltType;
@@ -38,7 +38,7 @@ module LockFreeStack {
 
   class LockFreeStack {
     type objType;
-    var _top : LocalAtomicObject(unmanaged node(objType));
+    var _top : AtomicObject(unmanaged Node(objType), hasGlobalSupport=false, hasABASupport=false);
     var _manager = new owned EpochManager();
 
     proc init(type objType) {
@@ -50,7 +50,7 @@ module LockFreeStack {
     }
 
     proc push(newObj : objType, tok) {
-      var n = new unmanaged node(newObj);
+      var n = new unmanaged Node(newObj);
       tok.pin();
       do {
         var oldTop = _top.read();
@@ -60,7 +60,7 @@ module LockFreeStack {
     }
 
     proc pop(tok) : (bool, objType) {
-      var oldTop : unmanaged node(objType);
+      var oldTop : unmanaged Node(objType);
       tok.pin();
       do {
         oldTop = _top.read();

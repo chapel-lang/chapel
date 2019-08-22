@@ -19,12 +19,12 @@
 
 module LockFreeQueue {
   use EpochManager;
-  use LocalAtomics;
+  use AtomicObjects;
 
-  class node {
+  class Node {
     type eltType;
     var val : eltType;
-    var next : LocalAtomicObject(unmanaged node(eltType));
+    var next : AtomicObject(unmanaged Node(eltType), hasGlobalSupport=false, hasABASupport=false);
 
     proc init(val : ?eltType) {
       this.eltType = eltType;
@@ -38,14 +38,14 @@ module LockFreeQueue {
 
   class LockFreeQueue {
     type objType;
-    var _head : LocalAtomicObject(unmanaged node(objType));
-    var _tail : LocalAtomicObject(unmanaged node(objType));
+    var _head : AtomicObject(unmanaged Node(objType), hasGlobalSupport=false, hasABASupport=false);
+    var _tail : AtomicObject(unmanaged Node(objType), hasGlobalSupport=false, hasABASupport=false);
     var _manager = new owned EpochManager();
 
     proc init(type objType) {
       this.objType = objType;
       this.complete();
-      var _node = new unmanaged node(objType);
+      var _node = new unmanaged Node(objType);
       _head.write(_node);
       _tail.write(_node);
     }
@@ -55,7 +55,7 @@ module LockFreeQueue {
     }
 
     proc enqueue(newObj : objType, tok) {
-      var n = new unmanaged node(newObj);
+      var n = new unmanaged Node(newObj);
       tok.pin();
       while (true) {
         var curr_tail = _tail.read();
