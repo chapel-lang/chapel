@@ -72,6 +72,9 @@ proc masonPublish(ref args: list(string)) throws {
     }
 
     updateRegistry('Mason.toml', args);
+    if !isLocal && !doesGitOriginExist() && !dry {
+      throw new owned MasonError('Your package must have a git origin remote in order to publish to a remote registry.');  
+    }
 
     if checkRegistryPath(registryPath, isLocal) {
       if dry {
@@ -181,6 +184,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
     else {
       gitC(safeDir, 'git add Bricks/' + name);
       commitSubProcess(safeDir, command);
+      writeln('Succesfully published package to ' + registryPath);
     }
 
   }
@@ -390,7 +394,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
       }
     }
   }
-  catch e : MasonError {
+  catch e {
     writeln(e.message());
     exit(1);
   }
