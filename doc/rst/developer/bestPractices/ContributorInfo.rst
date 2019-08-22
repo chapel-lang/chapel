@@ -927,7 +927,7 @@ Final merge message
 +++++++++++++++++++
 
 When merging, copy and paste the PR description into the GitHub merge dialogue
-box. Include the title of the PR which should already be there.
+box. Ensure that the title of the PR is at the top.
 
 It is good practice to @-mention the reviewer(s) at the end of the PR.
 This is typically formatted in brackets:
@@ -955,8 +955,8 @@ non-meaningful commits:
 Note that this can be particularly cumbersome when there has been significant
 conflicting changes made on upstream master, so is not a hard requirement.
 
-On the other hand, if the changes made are relatively trivial or unimportant,
-selecting "squash and merge" when merging will reduce all the commits into 1.
+An alternative approach is to use the "squash and merge" option on the github
+merge button which will reduce all commits to a single commit.
 
 It's not generally possible to completely remove a commit from git by the time
 it makes it in to the master branch. So be very careful not to commit anything
