@@ -32,7 +32,9 @@ module BytesStringCommon {
     }
   }
 
-  proc getCStr(const ref x: ?t): c_string {
+  // 2019/8/22 Engin: This proc needs to be inlined to avoid an Intel compiler
+  // issue (#448 chapel-private)
+  inline proc getCStr(const ref x: ?t): c_string {
     assertArgType(t, "getCStr");
     inline proc _cast(type t:c_string, b:bufferType) {
       return __primitive("cast", t, b);
