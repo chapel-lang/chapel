@@ -10,7 +10,7 @@ class testClass {
 
 var s1: set(int);
 var s2: set(testRecord);
-var s3: set(testClass);
+var s3: set(borrowed testClass);
 
 assert(s1.size == 0);
 assert(s2.size == 0);

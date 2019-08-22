@@ -98,7 +98,7 @@ module ChapelBase {
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
   {
-    if isNonNilableClassType(a.type) && !chpl_legacyNilClasses {
+    if isNonNilableClassType(a.type) && !chpl_legacyClasses {
       compilerError("cannot assign to " + a.type:string + " from nil");
     }
     __primitive("=", a, nil);
@@ -1232,7 +1232,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "task complete impl fn"
   pragma "down end count fn"
-  proc _downDynamicEndCount(err: unmanaged Error) {
+  proc _downDynamicEndCount(err: unmanaged Error?) {
     var e = __primitive("get dynamic end count");
     _downEndCount(e, err);
   }
@@ -1315,13 +1315,13 @@ module ChapelBase {
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
   {
-    if !chpl_legacyNilClasses {
+    if !chpl_legacyClasses {
       compilerError("cannot cast nil to " + t:string);
     }
   }
   inline proc _cast(type t:borrowed class, x:_nilType)
   {
-    if !chpl_legacyNilClasses {
+    if !chpl_legacyClasses {
       compilerError("cannot cast nil to " + t:string);
     }
   }
@@ -1516,8 +1516,8 @@ module ChapelBase {
   pragma "suppress lvalue error"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init) {
-    if !chpl_legacyNilClasses && isNonNilableClassType(t)
-                              && isNilableClassType(init.type) then
+    if !chpl_legacyClasses && isNonNilableClassType(t)
+                           && isNilableClassType(init.type) then
       compilerError("default-initializing a field with a non-nilable type ",
           t:string, " from an instance of nilable ", init.type:string);
 
@@ -1539,7 +1539,7 @@ module ChapelBase {
   pragma "no copy return"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init: _nilType) {
-    if !chpl_legacyNilClasses && isNonNilableClassType(t) then
+    if !chpl_legacyClasses && isNonNilableClassType(t) then
       compilerError("default-initializing a field with a non-nilable type ",
                     t:string, " from nil");
 

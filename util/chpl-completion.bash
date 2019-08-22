@@ -89,7 +89,7 @@ _chpl ()
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
---legacy-nilable-classes \
+--legacy-classes \
 --lib-linkage \
 --lib-search-path \
 --library \
@@ -167,7 +167,7 @@ _chpl ()
 --no-inline \
 --no-inline-iterators \
 --no-interprocedural-alias-analysis \
---no-legacy-nilable-classes \
+--no-legacy-classes \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \

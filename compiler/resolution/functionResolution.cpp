@@ -211,7 +211,7 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 
 static bool useLegacyNilability(Expr* at) {
-  if (fLegacyNilableClasses) return true;
+  if (fLegacyClasses) return true;
 
   if (at != NULL) {
     FnSymbol* fn = at->getFunction();
@@ -5786,7 +5786,7 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
 }
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
-  if (! fLegacyNilableClasses &&
+  if (! fLegacyClasses &&
       isNonNilableClassType(lhs) && isNilableClassType(rhs))
     USR_FATAL(userCall(call), "cannot %s '%s' from a nilable '%s'",
               describeLHS(call, " non-nilable"), toString(lhs), toString(rhs));

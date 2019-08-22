@@ -965,8 +965,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         if (usymExpr->getModule()->modTag == MOD_USER) {
 
           // make MyClass mean generic-management unless
-          // --legacy-nilable-classes is passed.
-          bool defaultIsGenericHere = !fLegacyNilableClasses;
+          // --legacy-classes is passed.
+          bool defaultIsGenericHere = !fLegacyClasses;
           if (defaultIsGenericHere) {
             // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
             ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;

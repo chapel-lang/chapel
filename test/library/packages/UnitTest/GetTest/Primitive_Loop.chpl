@@ -19,7 +19,7 @@ proc test_squared(test: borrowed Test) throws {
 }
 
 
-var test: owned Test;
+var test: owned Test = new owned Test();
 param a = __primitive("gather tests", test.borrow());
 writeln(a);
 for param i in 1..a {

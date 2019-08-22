@@ -25,8 +25,8 @@ class WakeupSyncVarHack {
   var wakeup: sync WakeupType;
 }
 
-pragma "locale private" var wakeup: unmanaged WakeupSyncVarHack;
-pragma "locale private" var endCount: unmanaged MyEndCount;
+pragma "locale private" var wakeup: unmanaged WakeupSyncVarHack?;
+pragma "locale private" var endCount: unmanaged MyEndCount?;
 
 proc setupTerminationDetection() {
   for loc in Locales do on loc {

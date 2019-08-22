@@ -1128,7 +1128,7 @@ module UnitTest {
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
     //Variable for passing to the primitive
-    var testObjGather: owned Test;
+    var testObjGather: owned Test = new Test();
     // gather all the tests
     param n = __primitive("gather tests", testObjGather.borrow());
 

@@ -275,7 +275,7 @@ module SharedObject {
     pragma "no doc"
     proc init=(pragma "nil from arg" in take: owned) {
       if isNonNilableClass(this.type) && isNilableClass(take) &&
-         !chpl_legacyNilClasses
+         !chpl_legacyClasses
       then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
@@ -289,7 +289,7 @@ module SharedObject {
      */
     proc init=(pragma "nil from arg" const ref src:_shared(?)) {
       if isNonNilableClass(this.type) && isNilableClass(src) &&
-         !chpl_legacyNilClasses
+         !chpl_legacyClasses
       then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
@@ -316,7 +316,7 @@ module SharedObject {
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 
-      if _to_nilable(chpl_t) != chpl_t && !chpl_legacyNilClasses {
+      if _to_nilable(chpl_t) != chpl_t && !chpl_legacyClasses {
         compilerError("Assigning non-nilable shared to nil");
       }
 
@@ -381,7 +381,7 @@ module SharedObject {
     proc /*const*/ borrow() {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
-      } else if chpl_legacyNilClasses {
+      } else if chpl_legacyClasses {
         return _to_nonnil(chpl_p);
       } else {
         return chpl_p!;
@@ -400,8 +400,8 @@ module SharedObject {
      ``lhs`` will refer to the same object as ``rhs``.
    */
   proc =(ref lhs:_shared, rhs: _shared) {
-    if !chpl_legacyNilClasses && isNonNilableClass(lhs)
-                              && isNilableClass(rhs) then
+    if !chpl_legacyClasses && isNonNilableClass(lhs)
+                           && isNilableClass(rhs) then
       compilerError("cannot assign to a non-nilable shared from a nilable shared");
 
     // retain-release
@@ -428,7 +428,7 @@ module SharedObject {
 
   pragma "no doc"
   proc =(ref lhs:shared, rhs:_nilType) {
-    if _to_nilable(lhs.chpl_t) != lhs.chpl_t && !chpl_legacyNilClasses {
+    if _to_nilable(lhs.chpl_t) != lhs.chpl_t && !chpl_legacyClasses {
       compilerError("Assigning non-nilable shared to nil");
     }
     lhs.clear();
@@ -540,7 +540,7 @@ module SharedObject {
   // cast from nil to shared
   pragma "no doc"
   inline proc _cast(type t:_shared, pragma "nil from arg" x:_nilType) {
-    if _to_nilable(t.chpl_t) != t.chpl_t && !chpl_legacyNilClasses then
+    if _to_nilable(t.chpl_t) != t.chpl_t && !chpl_legacyClasses then
       compilerError("Illegal cast from nil to non-nilable shared type");
 
     var tmp:t;
