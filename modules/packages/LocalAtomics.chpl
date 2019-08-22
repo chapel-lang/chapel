@@ -17,16 +17,58 @@
  * limitations under the License.
  */
 
-module LocalAtomics {
+/*
+  .. note:: 
+
+    This package relies on Chapel ``extern`` code blocks and so requires that
+    ``CHPL_LLVM=llvm`` or ``CHPL_LLVM=system`` and that the Chapel compiler is
+    built with LLVM enabled. As well, currently only ``CHPL_TARGET_ARCH=x86_64``
+    is supported as we make use of the x86-64 instruction: CMPXCHG16B_.
+
+    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+    
+  This module provides support for performing atomic operations on pointers
+  to  ``unmanaged`` classes, which can be thought of as building blocks for
+  creating non-blocking algorithms and data structures.
+
+  .. note::
+
+    Only ``unmanaged`` classes are supported as they are represented, internally,
+    as raw 64-bit or 128-bit pointers. We do not support ``shared`` or ``owned``
+    objects as they are essentially wrappers around an ``unmanaged`` object, and
+    ``borrowed`` objects require a static lifetime.
+
+  .. warning::
+
+    Currently, ``AtomicObject`` only supports up to 65535 locales, and also works on
+    the assumption that only the lowest 48 bits of the virtual address space will ever
+    be used. An exascale solution that allows for an arbitrary number of compute nodes
+    and for the entire 64-bit address space to be utilized is future work that is in-progress.
+
+  ABA Wrapper
+  -----------
+
+  .. note::
+
+    We ``forward`` all accesses to the ``ABA`` wrapper to the object it is wrapping 
+    so that whether or not the ABA versions of the ``AtomicObject`` API is used, it
+    becomes as transparent as possible. This applies to all method and field accesses.
+    As forwarding does not apply to operators, common operators are explicitly defined
+    in such a way that they will also be forwarded to the object being wrapped.
+
+
+*/
+module AtomicObjects {
 
   if CHPL_TARGET_ARCH != "x86_64" {
-    compilerWarning("The LocaleAtomics package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 supported.");
+    compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");
   }
 
+  // Declaration of ``CMPXCHG16B`` primitives.
   extern {
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+    #include <stdint.h>
+    #include <stdio.h>
+    #include <stdlib.h>
 
     struct uint128 {
       uint64_t lo;
@@ -105,31 +147,48 @@ module LocalAtomics {
     }
   }
 
+  pragma "no doc"
   extern type atomic_uint_least64_t;
-  // We require this to create a wide pointer after decompression.
+
+  pragma "no doc"
   extern type wide_ptr_t;
+
+  pragma "no doc"
   extern type c_nodeid_t;
+
+  pragma "no doc"
   extern proc chpl_return_wide_ptr_node(c_nodeid_t, c_void_ptr) : wide_ptr_t;
 
   /*
-     The core `GlobalAtomicObject` which manages compression and decompression
-     for atomic objects. It should be noted that if numLocales >= 2^17, then any
+     Constants used for managing compression and decompression for atomic objects. 
+     It should be noted that if numLocales >= 2^16, then any
      object being operated on is added to the descriptor table, which will leak data
      if never freed with '_delete' (although if the memory is reused,
      so will the memory managed by this object). The descriptor table will be cleaned
      up automatically when this goes out of scope.
-     */
+  */
 
+  if numLocales >= 2**16 {
+    writeln("[WARNING]: AtomicObjects currently only supports up to 65535 locales!");
+  }
+
+  pragma "no doc"
   param compressedAddrMask = 0x0000FFFFFFFFFFFF;
+  pragma "no doc"
   param compressedLocaleIdMask = 0xFFFF;
+  pragma "no doc"
   param tableLocaleIdMask = 0xFFFFFFFF;
+  pragma "no doc"
   param tableIdxMask = 0xFFFFFFFF;
+  pragma "no doc"
   param compressedLocIdOffset = 48;
 
+  pragma "no doc"
   inline proc uintToCVoidPtr(addr) {
     return __primitive("cast", c_void_ptr, addr);
   }
 
+  pragma "no doc"
   // This is busted: $CHPL_HOME/test/optimizations/widepointers/return.future
   inline proc widePointerCheck(obj) {
     if !__primitive("is wide pointer", obj) {
@@ -140,18 +199,21 @@ module LocalAtomics {
     }
   }
 
+  pragma "no doc"
   inline proc getAddrAndLocality(obj) : (locale, uint(64)) {
     return (obj.locale, getAddr(obj));
   }
 
+  pragma "no doc"
   inline proc getAddr(obj) : uint(64) {
     return __primitive("cast", uint(64), __primitive("_wide_get_addr", obj));
   }
 
 
+  pragma "no doc"
   /*
      Compresses an object into a descriptor.
-     */
+  */
   proc compress(obj) : uint {
     if obj == nil then return 0;
 
@@ -162,9 +224,10 @@ module LocalAtomics {
     return (locId << compressedLocIdOffset) | (addr & compressedAddrMask);
   }
 
+  pragma "no doc"
   /*
      Decompresses a descriptor into the wide pointer object.
-     */
+  */
   proc decompress(type objType, descr:uint) : objType {
     if descr == 0 then return nil;
 
@@ -192,11 +255,47 @@ module LocalAtomics {
      itself, via 'forwarding'. This type should not be created by the user, and instead
      should be created by LocalAtomicObject. The object protected by this ABA wrapper can
      be extracted via 'getObject'.
-     */
+  */
   record ABA {
+    type __ABA_objType;
+    pragma "no doc"
+    var __ABA_obj : objType;
+    pragma "no doc"
+    var __ABA_cnt : uint(64);
+
+    proc init(obj : ?objType, cnt : uint(64)) {
+      this.__ABA_objType = objType;
+      this.__ABA_obj = obj;
+      this.__ABA_cnt = cnt;
+    }
+
+    proc init(type objType) {
+      this.__ABA_objType = objType;
+    }
+
+    proc init=(other : ABA(?objType)) {
+      this.__ABA_objType = objType;
+      this.__ABA_obj = other.obj;
+      this.__ABA_cnt = other.cnt;
+    }
+
+    inline proc getObject() {
+      return __ABA_obj;
+    }
+
+    proc readWriteThis(f) {
+      f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.__ABA_obj <~> "}";
+    }
+
+    forwarding this.__ABA_obj;
+  }
+
+  pragma "no doc"
+  record _ABAInternal {
     type objType;
-    // Runtime version of atomics so that we can read these without overhead
+    pragma "no doc"
     var _ABA_ptr : atomic uint(64);
+    pragma "no doc"
     var _ABA_cnt : atomic uint(64);
 
     proc init(type objType, ptr : uint(64), cnt : uint(64)) {
@@ -233,9 +332,12 @@ module LocalAtomics {
     forwarding getObject();
   }
 
-  proc ==(const ref _arg1 : ABA, const ref _arg2 : ABA) {
-    if (_arg1._ABA_ptr.read() == _arg2._ABA_ptr.read() && _arg1._ABA_cnt.read() == _arg2._ABA_cnt.read()) then return true;
-    return false;
+  proc ==(const ref aba1 : ABA, const ref aba2 : ABA) {
+    return aba1.cnt == ab2.cnt && aba1.obj == aba2.obj;
+  }
+
+  proc ==(const ref aba : ABA, other) {
+    return aba.obj == other;
   }
 
   /*
