@@ -299,6 +299,10 @@ checkParsedVar(VarSymbol* var) {
     USR_FATAL_CONT(var->defPoint,
                    "Configuration %s are allowed only at module scope.", varType);
   }
+
+  // Export vars are not yet supported
+  if (var->hasFlag(FLAG_EXPORT))
+    USR_FATAL_CONT(var->defPoint, "Export variables are not yet supported");
 }
 
 
