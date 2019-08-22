@@ -505,13 +505,13 @@ module ChapelLocale {
         }
         // Let the others go
         for f in flags do
-          f.s.testAndSet();
+          f!.s.testAndSet();
       } else {
         var f = new unmanaged localesSignal();
         // expose my flag to locale 0
         flags[locIdx] = f;
         // wait (locally) for locale 0 to set my flag
-        f.s.waitFor(true);
+        f!.s.waitFor(true);
         // clean up
         delete f;
       }
