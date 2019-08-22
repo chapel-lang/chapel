@@ -35,13 +35,17 @@ ARR[1+2] = min(real);
 ARR[n-2] = max(real);
 assert(min reduce ARR == min(real));
 assert(max reduce ARR == max(real));
+assert(minloc reduce zip(ARR, ARR.domain) == (min(real), 1+2));
+assert(maxloc reduce zip(ARR, ARR.domain) == (max(real), n-2));
 testNans();
 
 // also add +- infinity
 ARR[1+1] = plusinf;
 ARR[n-1] = minusinf;
 assert(min reduce ARR == -INFINITY);
-assert(max reduce ARR == INFINITY);
+assert(max reduce ARR ==  INFINITY);
+assert(minloc reduce zip(ARR, ARR.domain) == (-INFINITY, n-1));
+assert(maxloc reduce zip(ARR, ARR.domain) == ( INFINITY, 1+1));
 testNans();
 
 writeln("done");
@@ -52,9 +56,17 @@ proc testNans() {
     for i2 in 1..n do
       testNan(ARR, i1, i2);
 }
-proc testNan(in ARR, idx1, idx2) {
-  ARR[idx1] = nan;
-  ARR[idx2] = nan;
-  assert(isnan(min reduce ARR));
-  assert(isnan(max reduce ARR));
+proc testNan(in AA, idx1, idx2) {
+  AA[idx1] = nan;
+  AA[idx2] = nan;
+  assert(isnan(min reduce AA));
+  assert(isnan(max reduce AA));
+
+  const minn = minloc reduce zip(AA, AA.domain);
+  assert(isnan(minn(1)));
+  assert(minn(2) == min(idx1,idx2));
+
+  const maxn = maxloc reduce zip(AA, AA.domain);
+  assert(isnan(maxn(1)));
+  assert(maxn(2) == min(idx1,idx2));
 }
