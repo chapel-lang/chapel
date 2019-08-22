@@ -31,7 +31,7 @@ private use Lists;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
    Returns the help output in '-h' or '--help' exits in the arguments.
-   If --dry-run is passed then it checks to see if the package is able to be published.
+   If --dry-run is passed  then it checks to see if the package is able to be published.
    Takes in the username of the package owner as an argument
  */
 proc masonPublish(args: [?d] string) {
@@ -162,24 +162,44 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
     }
 
     const version = addPackageToBricks(packageLocation, safeDir, name, registryPath, isLocal);
-    const message : string  = 'Adding' +  name + '@' +version + ' package to registry via mason publish';
+    var command : list(string);
+    var  message = ' "Adding %s package to registry via mason publish"'.format(version);
+    var gitString = ("git commit -m").split();
+    command.append('git');
+    command.append('commit');
+    command.append('-m');
+    command.append(message);
+
     if !isLocal {
       gitC(safeDir + "/mason-registry", "git add .");
-      gitC(safeDir + "/mason-registry", "git commit -m '" + message + "'");
+      commitSubProcess(safeDir + '/mason-registry', command);
       gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
       rmTree(safeDir + '/');
       writeln('--------------------------------------------------------------------');
       writeln('Go to the above link to open up a Pull Request to the mason-registry');
      }
-    else {      
+    else {
       gitC(safeDir, 'git add Bricks/' + name);
-      gitC(safeDir, "git commit -m '" + message + "'" );
+      commitSubProcess(safeDir, command);
     }
 
   }
   catch e {
     writeln(e.message());
   }
+}
+
+/* Subprocess function designed to pass a message to 'git commit' without gettthe string
+ split by the MasonUtils runCommand()/
+ */
+private proc commitSubProcess(dir, command) throws {
+  var spawnArgs = [command[1], command[2], command[3], command[4]];
+  const oldDir = here.cwd();
+  here.chdir(dir);
+  var commitSpawn = spawn(spawnArgs, stdout=PIPE, stderr=PIPE);
+  commitSpawn.wait();
+  here.chdir(oldDir);
+  return commitSpawn;
 }
 
 /* If --dry-run is passed then it takes the username and checks to see if the mason-registry is forked
@@ -203,7 +223,7 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
       writeln('> git checkout -b [package name]');
       writeln('Package Name will be added to the Bricks in the mason-registry');
       writeln('> git add .');
-      writeln('> git commit -m [package name]');
+      writeln('> git commit -m [package info]');
       writeln('> git push --set-upstream origin [package name]');
       exit(0);
     }
@@ -326,7 +346,6 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
     const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
     const versionNum = tomlFile['brick']['version'].s;
-
     if !isLocal {
       if !exists(safeDir + "/mason-registry/Bricks/" + name) {
         mkdir(safeDir + "/mason-registry/Bricks/" + name);
