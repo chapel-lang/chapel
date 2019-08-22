@@ -88,8 +88,8 @@ module testmodule {
     var myOwnedNilable:owned MyClass? = new owned MyClass();
     var mySharedNonNilable:shared MyClass = new shared MyClass();
     var mySharedNilable:shared MyClass? = new shared MyClass();
-    var myBorrowedNonNilable:borrowed MyClass = myOwnedNonNilable.borrow();
-    var myBorrowedNilable:borrowed MyClass? = myOwnedNilable.borrow();
+    var myBorrowedNonNilable:borrowed MyClass = (new owned MyClass()).borrow();
+    var myBorrowedNilable:borrowed MyClass? = (new owned MyClass()).borrow();
     var myUnmanagedNonNilable:unmanaged MyClass = myBorrowedNonNilable:unmanaged;
     var myUnmanagedNilable:unmanaged MyClass? = myBorrowedNilable:unmanaged;
     var myInt = 1;
