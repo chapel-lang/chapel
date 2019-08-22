@@ -460,17 +460,45 @@ module AtomicObjects {
         return atomicVar;
       }
     }
-    
+
+    // Object(objType) -> Pointer(uint(64))
+    pragma "no doc"
+    inline proc toPointer(obj:objType) : uint(64) {
+      if hasGlobalSupport {
+        return compress(obj);
+      } else {
+        // Check if an object is non-local when 'hasGlobalSupport' is false
+        // Note: Both `_local` and `boundsChecking` are compile-time constants
+        // and will compile this away.
+        if !_local && boundsChecking {
+          localityCheck(obj);
+        }
+        return getAddr(obj);
+      }
+    }
+
+    // Pointer(uint(64)) -> Object(objType)
+    pragma "no doc"
+    inline proc fromPointer(ptr : uint(64)) : objType {
+      if hasGlobalSupport {
+        return decompress(objType, ptr);
+      } else {
+        return castToObj(objType, ptr);
+      }
+    }
+
     pragma "no doc"
     inline proc localityCheck(objs...) {
       if boundsChecking && (|| reduce [obj in objs] obj.locale != this.locale) then
         halt("Locality check failed on ", for obj in objs do getAddrAndLocality(obj), " when expected to be hosted on ", this.locale);
     }
 
+    // Called from ABA API, which ensures that the ABA API is only called on an
+    // AtomicObject which supports data
     pragma "no doc"
     inline proc doABACheck() param {
       if !hasABASupport {
-        compilerWarning("Attempt to use ABA API from ", this.type);
+        compilerWarning("Attempt to use ABA API from AtomicObject(hasABASupport=", hasABASupport, ", hasGlobalSupport=", hasGlobalSupport, ")");
       }
     }
 
@@ -478,35 +506,27 @@ module AtomicObjects {
       doABACheck();
       var ret : ABA(objType);
       on this {
-        local {
-          var dest : ABA(objType);
-          read128bit(atomicVar:c_void_ptr, c_ptrTo(dest));
-        }
+        var dest : ABA(objType);
+        read128bit(atomicVar:c_void_ptr, c_ptrTo(dest));
         ret = dest;
       }
       return ret;
     }
 
     proc read() : objType {
-      if hasGlobalSupport {
-        return decompress(objType, atomicVariable.read());
-      } else {
-        return castToObj(objType, atomicVariable.read());
-      }
+      return fromPointer(atomicVariable.read());
     }
 
     proc compareExchange(expectedObj : objType, newObj : objType) : bool {
-      if hasABASupport {
-
-      }
-      return atomicVariable.compareExchange(compress(expectedObj), compress(newObj));
+      return atomicVariable.compareExchange(toPointer(expectedObj), toPointer(newObj));
     }
 
     proc compareExchangeABA(expectedObj : ABA(objType), newObj : objType) : bool {
+      doABACheck();
       var ret : bool;
       on this {
         var cmp = expectedObj;
-        var val = new ABA(objType, compress(newObj), atomicVar[0].getABACounter() + 1);
+        var val = new ABA(objType, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
         ret = cas128bit(atomicVar:c_void_ptr, c_ptrTo(cmp), c_ptrTo(val)) : bool;
       }
       return ret;
@@ -517,7 +537,7 @@ module AtomicObjects {
     }
 
     proc write(newObj:objType) {
-      atomicVar[0]._ABA_ptr.write(compress(newObj));
+      atomicVariable.write(toPointer(newObj));
     }
 
     proc write(newObj:ABA(objType)) {
@@ -525,31 +545,16 @@ module AtomicObjects {
     }
 
     proc writeABA(newObj: ABA(objType)) {
-      write128bit(atomicVar, c_ptrTo(newObj));
+      doABACheck();
+      write128bit(atomicVar:c_void_ptr, c_ptrTo(newObj));
     }
 
     proc writeABA(newObj: objType) {
-      writeABA(new ABA(objType, compress(objType), atomicVar[0].getABACounter() + 1));
+      writeABA(new ABA(objType, toPointer(objType), atomicVar[0]._ABA_cnt.read() + 1));
     }
 
     inline proc exchange(newObj:objType) {
-      return decompress(objType, atomicVar[0]._ABA_ptr.exchange(compress(newObj)));
-    }
-
-    // handle wrong types
-    inline proc write(newObj) {
-      compilerError("Incompatible object type in LocalAtomicObject.write: ",
-          newObj.type : string);
-    }
-
-    inline proc compareExchange(expectedObj, newObj) {
-      compilerError("Incompatible object type in LocalAtomicObject.compareExchange: (",
-          expectedObj.type : string, ",", newObj.type : string, ")");
-    }
-
-    inline proc exchange(newObj) {
-      compilerError("Incompatible object type in LocalAtomicObject.exchange: ",
-          newObj.type : string);
+      return fromPointer(objType, atomicVariable.exchange(toPointer(newObj)));
     }
 
     proc readWriteThis(f) {
