@@ -448,7 +448,7 @@ Merge (merge master into your branch):
     git merge upstream/master
 
     # or:
-    git pull upstream <branch_name>
+    git pull upstream master
 
     # with feature branch checked out:
     git merge [--no-ff] upstream/master
@@ -861,7 +861,8 @@ developer to get early feedback on a change.
 
 The status of a WIP PR can be stated by using the GitHub "draft PR" feature.
 The PR description should include what steps need to be taken before the PR is
-ready for final review.
+ready for final review. If a WIP PR was not opened as draft PR, it can be
+marked with the ``stat: work in progress`` label by a core contributor.
 
 It is perfectly acceptable to abandon such PRs (especially in favor of a cleaned
 up version of the code) when the git history becomes too large, so long as a
@@ -926,9 +927,9 @@ Final merge message
 +++++++++++++++++++
 
 When merging, copy and paste the PR description into the GitHub merge dialogue
-box, include the title of the PR which should already be there.
+box. Include the title of the PR which should already be there.
 
-It is good practice to add mention of the reviewer(s) at the end of the PR.
+It is good practice to @-mention the reviewer(s) at the end of the PR.
 This is typically formatted in brackets:
 
 .. code-block:: bash
@@ -950,6 +951,12 @@ non-meaningful commits:
 
     git fetch upstream
     git rebase -i upstream/master
+
+Note that this can be particularly cumbersome when there has been significant
+conflicting changes made on upstream master, so is not a hard requirement.
+
+On the other hand, if the changes made are relatively trivial or unimportant,
+selecting "squash and merge" when merging will reduce all the commits into 1.
 
 It's not generally possible to completely remove a commit from git by the time
 it makes it in to the master branch. So be very careful not to commit anything
