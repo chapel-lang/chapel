@@ -415,7 +415,7 @@ proc masonCleanHelp() {
 }
 
 
-proc masonPublishHelp(){
+proc masonPublishHelp() {
   writeln("Publish a package to the mason-registry repository");
   writeln();
   writeln("Usage:");
@@ -426,6 +426,7 @@ proc masonPublishHelp(){
   writeln("    -h, --help                   Display this message");
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --no-update                  Prevents registrys from being updated when a package is published.');
+  writeln('    --update                     Override MASON_OFFLINE=true and enable internet access.');
   writeln();
   writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');
 }
