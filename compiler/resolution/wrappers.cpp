@@ -213,7 +213,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
 static bool      defaultedFormalUsesDefaultForType(ArgSymbol* formal);
 
-static bool      formalDefaultIsCallOrNil(ArgSymbol* formal);
+static bool      formalDefaultIsVariable(ArgSymbol* formal);
 
 static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
                                                     BlockStmt* wrapFn,
@@ -707,7 +707,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     // Instead, we'll set temp to a ref or not based on FLAG_MAYBE_REF.
     bool addAddrOf = false;
     if ((formalIntent & INTENT_FLAG_REF) != 0 &&
-        !formalDefaultIsCallOrNil(formal))
+        formalDefaultIsVariable(formal))
       addAddrOf = true;
 
     defaultedFormalApplyDefaultValue(fn, formal, addAddrOf, block, temp);
@@ -849,19 +849,29 @@ static bool defaultedFormalUsesDefaultForType(ArgSymbol* formal) {
   return retval;
 }
 
-static bool formalDefaultIsCallOrNil(ArgSymbol* formal) {
+static bool formalDefaultIsVariable(ArgSymbol* formal) {
   Expr* e = formal->defaultExpr->body.tail;
-  if (e == NULL)
-    return false;
-
-  if (isCallExpr(e))
-    return true;
+  INT_ASSERT(e != NULL);
 
   SymExpr* se = toSymExpr(e);
-  if (se && se->symbol()->type == dtNil)
-    return true; // it's nil
+  if (se) {
+    Symbol* s = se->symbol();
+    // Is it nil or other special internal types?
+    if (s->type == dtNil || s->type == dtNothing || s->type == dtVoid)
+      return false; // treat these as non-variables (no ref, please)
+    // Is it an immediate?
+    if (s->isImmediate() || s->isParameter())
+      return false; // treat these as non-variables (no ref, please)
+    // Is it another argument?
+    if (isArgSymbol(se->symbol()))
+      return true; // other arguments are referenced
+    // Is it an outer variable?
+    if (s->defPoint->parentSymbol != formal)
+      return true; // outer variables are referenced
+  }
 
-  // not a call, but not nil either
+  // Otherwise, it is a call of some sort, possibly including
+  // a VarSymbol storing the result of a call (as is the case with new).
   return false;
 }
 
