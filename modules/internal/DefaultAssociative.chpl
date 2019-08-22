@@ -677,6 +677,7 @@ module DefaultAssociative {
           return data(0);
         } else {
           // grow the table
+          warning("Implicitly adding indices to the array's domain is deprecated. Use Map.map instead.");
           const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
 
           // and return the element

@@ -1,0 +1,1 @@
+array-implicit-add-index.chpl:4: warning: Implicitly adding indices to the array's domain is deprecated. Use Map.map instead.
