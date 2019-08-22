@@ -28,7 +28,6 @@ writeln(min(nan,num), max(nan,num), min(num,nan), max(num,nan));
 // reduce ARR with normal contents
 assert(min reduce ARR == num);
 assert(max reduce ARR == num);
-writeln(min reduce ARR, max reduce ARR);
 testNans();
 
 // add smallest, largest reals
