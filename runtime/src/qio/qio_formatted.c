@@ -1657,7 +1657,136 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
 inline
 qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
-  return qio_channel_print_string_or_bytes(threadsafe, ch, ptr, len, 1);
+  qioerr err;
+  ssize_t i;
+  int clen = 1;
+  int32_t chr;
+  qio_style_t* style;
+  char tmp[JSON_ESC_MAX];
+  int tmplen;
+  ssize_t width = 0;
+  qio_truncate_info_t ti;
+  ssize_t use_len;
+  int overfull = 0;
+  ti.max_columns = SSIZE_MAX;
+  ti.max_chars = SSIZE_MAX;
+  ti.max_bytes = SSIZE_MAX;
+  ti.ret_bytes = -1;
+
+  if( !ptr || len == 0 ) {
+    // hilde sez: Having a distinguished value for empty strings is
+    // undesirable.
+    ptr = "";
+    len = 0;
+  }
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  style = &ch->style;
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  if( style->max_width_columns != UINT32_MAX )
+    ti.max_columns = style->max_width_columns;
+  if( style->max_width_characters != UINT32_MAX )
+    ti.max_chars = style->max_width_characters;
+
+  // Compute the size of the string, in case we have to
+  // do padding.
+  if( style->min_width_columns > 0 ||
+      style->max_width_columns != UINT32_MAX ||
+      style->max_width_characters != UINT32_MAX ) {
+
+    err = qio_quote_string_length(style->string_start, style->string_end, style->string_format, ptr, len, &ti);
+    if( err ) goto rewind;
+
+    use_len = ti.ret_truncated_at_byte;
+    overfull = ti.ret_truncated;
+    len = use_len;
+    if( ti.ret_columns >= 0 ) width = ti.ret_columns;
+    else if( ti.ret_chars >= 0 ) width = ti.ret_chars;
+    else width = ti.ret_bytes;
+    if( width < 0 ) width = 0;
+
+    if( style->min_width_columns > 0 ) {
+      if( !style->leftjustify && width < style->min_width_columns ) {
+        // Put what we need to for getting to the min_width.
+        for( i = 0; i < style->min_width_columns - width; i++ ) {
+          err = qio_channel_write_char(false, ch, style->pad_char);
+          if( err ) goto rewind;
+        }
+      }
+    }
+  }
+
+
+  // write the string itself, possible with some escape-handling.
+  if( style->string_format == QIO_STRING_FORMAT_WORD ||
+      style->string_format == QIO_STRING_FORMAT_TOEND ) {
+    // Do not interpret the string in any way... just write it.
+    if( ti.ret_bytes != -1 ) len = ti.ret_bytes;
+    err = qio_channel_write_amt(false, ch, ptr, len);
+    if( err ) goto rewind;
+  } else {
+    // TODO write_chars must disappear
+    // Write b.
+    err = qio_channel_write_char(false, ch, style->bytes_prefix);
+    if( err ) goto rewind;
+    // Write string_start.
+    err = qio_channel_write_char(false, ch, style->string_start);
+    if( err ) goto rewind;
+    for( i = 0; i < len; i+=clen ) {
+      tmplen = _qio_byte_escape(ptr[i], style->string_end, style->string_format, tmp, NULL, NULL);
+      if( tmplen < 0 ) {
+        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
+        goto rewind;
+      }
+
+      err = qio_channel_write_amt(false, ch, tmp, tmplen);
+      if( err ) goto rewind;
+    }
+    // Write string_end.
+    err = qio_channel_write_char(false, ch, style->string_end);
+    if( err ) goto rewind;
+    if( overfull ) {
+      err = qio_channel_write_char(false, ch, '.');
+      if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, '.');
+      if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, '.');
+      if( err ) goto rewind;
+    }
+  }
+
+  if( style->min_width_columns > 0 ) {
+    if( style->leftjustify && width < style->min_width_columns ) {
+      // Put what we need to for getting to the min_width.
+      for( i = 0; i < style->min_width_columns - width; i++ ) {
+        err = qio_channel_write_char(false, ch, style->pad_char);
+        if( err ) goto rewind;
+      }
+    }
+  }
+
+  err = 0;
+rewind:
+  if( err ) {
+    qio_channel_revert_unlocked(ch);
+  } else {
+    qio_channel_commit_unlocked(ch);
+  }
+
+unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
 }
 
 // Returns length information for how we would quote ptr
