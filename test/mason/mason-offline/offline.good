@@ -1,0 +1,1 @@
+Cannot update the mason-registry when MASON_OFFLINE is set to true. Use "--update" to override.
