@@ -399,11 +399,10 @@ module SharedObject {
      no other :record:`shared` referring to it. On return,
      ``lhs`` will refer to the same object as ``rhs``.
    */
-  proc =(ref lhs:_shared, rhs: _shared) {
-    if !chpl_legacyClasses && isNonNilableClass(lhs)
-                           && isNilableClass(rhs) then
-      compilerError("cannot assign to a non-nilable shared from a nilable shared");
-
+  proc =(ref lhs:_shared, rhs: _shared)
+    where chpl_legacyClasses ||
+          ! (isNonNilableClass(lhs) && isNilableClass(rhs))
+  {
     // retain-release
     if rhs.chpl_pn != nil then
       rhs.chpl_pn!.retain();
@@ -419,18 +418,16 @@ module SharedObject {
      On return, ``lhs`` will refer to the object previously
      managed by ``rhs``, and ``rhs`` will refer to `nil`.
    */
-  proc =(ref lhs:_shared, in rhs:owned) {
-    if isNonNilableClass(lhs) && isNilableClass(rhs) then
-      compilerError("cannot assign to a non-nilable shared variable from a nilable owned");
-
+  proc =(ref lhs:_shared, in rhs:owned)
+    where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
+  {
     lhs.retain(rhs.release());
   }
 
   pragma "no doc"
-  proc =(ref lhs:shared, rhs:_nilType) {
-    if _to_nilable(lhs.chpl_t) != lhs.chpl_t && !chpl_legacyClasses {
-      compilerError("Assigning non-nilable shared to nil");
-    }
+  proc =(ref lhs:shared, rhs:_nilType)
+    where chpl_legacyClasses || ! isNonNilableClass(lhs)
+  {
     lhs.clear();
   }
 

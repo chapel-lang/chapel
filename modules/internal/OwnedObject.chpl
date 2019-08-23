@@ -381,12 +381,10 @@ module OwnedObject {
   */
   proc =(ref lhs:_owned,
          pragma "leaves arg nil"
-         ref rhs: _owned) {
-
-    if !chpl_legacyClasses && isNonNilableClass(lhs)
-                              && isNilableClass(rhs) then
-      compilerError("cannot assign to a non-nilable owned from a nilable owned");
-
+         ref rhs: _owned)
+    where chpl_legacyClasses ||
+          ! (isNonNilableClass(lhs) && isNilableClass(rhs))
+  {
     // Work around issues in associative arrays of owned
     // TODO: remove this workaround
     if lhs.chpl_p == nil && rhs.chpl_p == nil then
@@ -408,10 +406,9 @@ module OwnedObject {
   }
 
   pragma "no doc"
-  proc =(ref lhs:_owned, rhs:_nilType) {
-    if _to_nilable(lhs.chpl_t) != lhs.chpl_t && !chpl_legacyClasses {
-      compilerError("Assigning non-nilable owned to nil");
-    }
+  proc =(ref lhs:_owned, rhs:_nilType)
+    where chpl_legacyClasses || ! isNonNilableClass(lhs)
+  {
     lhs.clear();
   }
   /*
