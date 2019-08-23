@@ -1,5 +1,12 @@
 # Submitted Chapel Computer Language Benchmarks Game Codes
 
+Developer Note:
+
+ *This directory is intended to reflect the code submitted to the
+  benchmarks game website. If tests in this directory start failing,
+  DO NOT update the tests. Instead, give them a .notest or .future
+  file to disable them causing testing noise.*
+
 This directory contains
 [Chapel versions](http://benchmarksgame.alioth.debian.org/u64q/chapel.html)
 of the
