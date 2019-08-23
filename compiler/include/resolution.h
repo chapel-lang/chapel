@@ -154,6 +154,7 @@ FnSymbol* getTheIteratorFn(Type* icType);
 // task intents
 extern Symbol* markPruned;
 bool isReduceOp(Type* type);
+void convertFieldsOfRecordThis(FnSymbol* fn);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);

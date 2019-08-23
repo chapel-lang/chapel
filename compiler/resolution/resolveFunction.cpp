@@ -483,6 +483,9 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
         markIterator(fn);
       }
 
+      if (needsCapture(fn))
+        convertFieldsOfRecordThis(fn);
+
       insertFormalTemps(fn);
 
       resolveBlockStmt(fn->body);

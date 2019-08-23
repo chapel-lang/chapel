@@ -1,0 +1,20 @@
+fields-of-this-2-const-var.chpl:33: error: const actual is passed to 'ref' formal 'this' of w1()
+fields-of-this-2-const-var.chpl:5: note: to formal of type QQ
+fields-of-this-2-const-var.chpl:9: note: to ref formal here
+fields-of-this-2-const-var.chpl:10: note: passed as ref here
+fields-of-this-2-const-var.chpl:6: note: to ref formal here
+fields-of-this-2-const-var.chpl:10: note: passed as ref here
+fields-of-this-2-const-var.chpl:11: note: passed as ref here
+fields-of-this-2-const-var.chpl:11: note: passed as ref here
+fields-of-this-2-const-var.chpl:38: error: const actual is passed to 'ref' formal 'this' of w3()
+fields-of-this-2-const-var.chpl:5: note: to formal of type QQ
+fields-of-this-2-const-var.chpl:19: note: to ref formal here
+fields-of-this-2-const-var.chpl:23: note: passed as ref here
+fields-of-this-2-const-var.chpl:15: note: to ref formal here
+fields-of-this-2-const-var.chpl:16: note: passed as ref here
+fields-of-this-2-const-var.chpl:9: note: to ref formal here
+fields-of-this-2-const-var.chpl:10: note: passed as ref here
+fields-of-this-2-const-var.chpl:6: note: to ref formal here
+fields-of-this-2-const-var.chpl:10: note: passed as ref here
+fields-of-this-2-const-var.chpl:11: note: passed as ref here
+fields-of-this-2-const-var.chpl:11: note: passed as ref here
