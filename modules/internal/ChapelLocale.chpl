@@ -511,7 +511,7 @@ module ChapelLocale {
         // expose my flag to locale 0
         flags[locIdx] = f;
         // wait (locally) for locale 0 to set my flag
-        f!.s.waitFor(true);
+        f.s.waitFor(true);
         // clean up
         delete f;
       }

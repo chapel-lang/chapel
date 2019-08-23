@@ -6752,9 +6752,20 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (ne->name == astr_chpl_manager) {
         manager = canonicalDecoratedClassType(ne->actual->typeInfo());
         expr->remove();
+        break;
       }
     }
   }
+
+  // adjust for the cases like 'new C()?'
+  if (manager == NULL) {
+    if (SymExpr* arg1 = toSymExpr(newExpr->get(1)))
+      if (DecoratedClassType* dt1 = toDecoratedClassType(arg1->symbol()->type))
+        if (dt1->getDecorator() == CLASS_TYPE_GENERIC_NILABLE)
+          newExpr->insertAtHead(dtOwned->symbol), gdbShouldBreakHere();
+    
+  }
+  
   // adjust the type to initialize for managed new cases
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
