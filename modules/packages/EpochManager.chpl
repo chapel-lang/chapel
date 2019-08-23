@@ -103,12 +103,12 @@ module EpochManager {
   pragma "no doc"
   module LockFreeLinkedListModule {
 
-    use LocalAtomics;
+    use AtomicObjects;
 
-    class node {
+    class Node {
       type eltType;
       var val : eltType;
-      var next : unmanaged node(eltType);
+      var next : unmanaged Node(eltType);
 
       proc init(val : ?eltType) {
         this.eltType = eltType;
@@ -122,14 +122,14 @@ module EpochManager {
 
     class LockFreeLinkedList {
       type objType;
-      var _head : LocalAtomicObject(unmanaged node(objType));
+      var _head : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
 
       proc init(type objType) {
         this.objType = objType;
       }
 
       proc append(newObj : objType) {
-        var _node = new unmanaged node(newObj);
+        var _node = new unmanaged Node(newObj);
         do {
           var oldHead = _head.readABA();
           _node.next = oldHead.getObject();
@@ -158,13 +158,13 @@ module EpochManager {
   pragma "no doc"
   module LockFreeQueueModule {
 
-    use LocalAtomics;
+    use AtomicObjects;
 
-    class node {
+    class Node {
       type eltType;
       var val : eltType;
-      var next : LocalAtomicObject(unmanaged node(eltType));
-      var freeListNext : unmanaged node(eltType);
+      var next : AtomicObject(unmanaged Node(eltType), hasABASupport=true, hasGlobalSupport=true);
+      var freeListNext : unmanaged Node(eltType);
 
       proc init(val : ?eltType) {
         this.eltType = eltType;
@@ -178,9 +178,9 @@ module EpochManager {
 
     class LockFreeQueue {
       type objType;
-      var _head : LocalAtomicObject(unmanaged node(objType));
-      var _tail : LocalAtomicObject(unmanaged node(objType));
-      var _freeListHead : LocalAtomicObject(unmanaged node(objType));
+      var _head : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
+      var _tail : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
+      var _freeListHead : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
       // Flag to set if objects held in the queue are to be deleted or not.
       // By default initialised to true.
       const delete_val : bool;
@@ -189,7 +189,7 @@ module EpochManager {
         this.objType = objType;
         delete_val = true;
         this.complete();
-        var _node = new unmanaged node(objType);
+        var _node = new unmanaged Node(objType);
         _head.write(_node);
         _tail.write(_node);
       }
@@ -198,19 +198,19 @@ module EpochManager {
         this.objType = objType;
         this.delete_val = delete_val;
         this.complete();
-        var _node = new unmanaged node(objType);
+        var _node = new unmanaged Node(objType);
         _head.write(_node);
         _tail.write(_node);
       }
 
-      proc recycle_node() : unmanaged node(objType) {
-        var oldTop : ABA(unmanaged node(objType));
-        var n : unmanaged node(objType);
+      proc recycle_node() : unmanaged Node(objType) {
+        var oldTop : ABA(unmanaged Node(objType));
+        var n : unmanaged Node(objType);
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
           if (n == nil) {
-            n = new unmanaged node(objType);
+            n = new unmanaged Node(objType);
             return n;
           }
           var newTop = n.freeListNext;
@@ -274,7 +274,7 @@ module EpochManager {
       }
 
       // TODO: Reclaim retired nodes after a while
-      proc retire_node(nextObj : unmanaged node(objType)) {
+      proc retire_node(nextObj : unmanaged Node(objType)) {
         nextObj.val = nil;
         do {
           var oldTop = _freeListHead.readABA();
@@ -327,11 +327,11 @@ module EpochManager {
   pragma "no doc"
   module LimboListModule {
 
-    use LocalAtomics;
+    use AtomicObjects;
 
-    class _node {
+    class Node {
       var val : unmanaged object;
-      var next : unmanaged _node;
+      var next : unmanaged Node;
 
       proc init(val : unmanaged object) {
         this.val = val;
@@ -339,8 +339,8 @@ module EpochManager {
     }
 
     class LimboList {
-      var _head : LocalAtomicObject(unmanaged _node);
-      var _freeListHead : LocalAtomicObject(unmanaged _node);
+      var _head : AtomicObject(unmanaged Node, hasABASupport=true, hasGlobalSupport=true);
+      var _freeListHead : AtomicObject(unmanaged Node, hasABASupport=true, hasGlobalSupport=true);
 
       proc push(obj : unmanaged object) {
         var node = recycle_node(obj);
@@ -348,14 +348,14 @@ module EpochManager {
         node.next = oldHead;
       }
 
-      proc recycle_node(obj : unmanaged object) : unmanaged _node {
-        var oldTop : ABA(unmanaged _node);
-        var n : unmanaged _node;
+      proc recycle_node(obj : unmanaged object) : unmanaged Node {
+        var oldTop : ABA(unmanaged Node);
+        var n : unmanaged Node;
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
           if (n == nil) {
-            n = new unmanaged _node(obj);
+            n = new unmanaged Node(obj);
             return n;
           }
           var newTop = n.next;
@@ -364,7 +364,7 @@ module EpochManager {
         return n;
       }
 
-      proc retire_node(nextObj : unmanaged _node) {
+      proc retire_node(nextObj : unmanaged Node) {
         nextObj.val = nil;
         do {
           var oldTop = _freeListHead.readABA();
@@ -496,9 +496,9 @@ module EpochManager {
 
   }
 
-  use LockFreeLinkedListModule;
-  use LockFreeQueueModule;
-  use LimboListModule;
+  private use LockFreeLinkedListModule;
+  private use LockFreeQueueModule;
+  private use LimboListModule;
 
   /*
     :class:`EpochManager` manages reclamation of objects, ensuring

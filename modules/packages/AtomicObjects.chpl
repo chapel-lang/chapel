@@ -122,6 +122,87 @@ module AtomicObjects {
       }
     }
 
+    static inline void write128bit_special(void *srcvp, void *valvp) {
+      uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
+      uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
+      uint128_t *src = srcvp;
+      uint128_t *cmp = &cmp_val;
+      uint128_t *with = &with_val;
+      char successful = 0;
+      with->hi = cmp->hi + 1;
+
+      while (!successful) {
+        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
+            "setz %7; "
+            : "=a" (cmp->lo),
+            "=d" (cmp->hi)
+            : "0" (cmp->lo),
+            "1" (cmp->hi),
+            "b" (with->lo),
+            "c" (with->hi),
+            "r" (src),
+            "m" (successful)
+            : "cc", "memory");
+        if (!successful) {
+          with->hi = cmp->hi + 1;
+        }
+      }
+    }
+
+    static inline void exchange128bit(void *srcvp, void *valvp, void *retvalvp) {
+      uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
+      uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
+      uint128_t *src = srcvp;
+      uint128_t *cmp = &cmp_val;
+      uint128_t *with = &with_val;
+      char successful = 0;
+
+      while (!successful) {
+        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
+            "setz %7; "
+            : "=a" (cmp->lo),
+            "=d" (cmp->hi)
+            : "0" (cmp->lo),
+            "1" (cmp->hi),
+            "b" (with->lo),
+            "c" (with->hi),
+            "r" (src),
+            "m" (successful)
+            : "cc", "memory");
+      }
+
+      *(uint128_t *) retvalvp = cmp_val; 
+    }
+
+    static inline void exchange128bit_special(void *srcvp, void *valvp, void *retvalvp) {
+      uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
+      uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
+      uint128_t *src = srcvp;
+      uint128_t *cmp = &cmp_val;
+      uint128_t *with = &with_val;
+      char successful = 0;
+      with->hi = cmp->hi + 1;
+
+      while (!successful) {
+        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
+            "setz %7; "
+            : "=a" (cmp->lo),
+            "=d" (cmp->hi)
+            : "0" (cmp->lo),
+            "1" (cmp->hi),
+            "b" (with->lo),
+            "c" (with->hi),
+            "r" (src),
+            "m" (successful)
+            : "cc", "memory");
+        if (!successful) {
+          with->hi = cmp->hi + 1;
+        }
+      }
+
+      *(uint128_t *) retvalvp = cmp_val; 
+    }
+    
     static inline void read128bit(void *srcvp, void *dstvp) {
       uint128_t __attribute__ ((aligned (16))) src_val = * (uint128_t *) srcvp;
       uint128_t __attribute__ ((aligned (16))) cmp_val = src_val;
@@ -240,7 +321,7 @@ module AtomicObjects {
     // faster compression method so we need to decompress it in the same way...
     var locId = descr >> compressedLocIdOffset;
     var addr = descr & compressedAddrMask;
-    if locId == 0 then return castToObj(objType, addr);
+    if locId == here.id then return castToObj(objType, addr);
 
     // We've created the wide pointer, but unfortunately Chapel does not support
     // the ability to cast it to the actual object, so we have to do some
@@ -264,35 +345,47 @@ module AtomicObjects {
   record ABA {
     type __ABA_objType;
     pragma "no doc"
-    var __ABA_obj : __ABA_objType;
+    var __ABA_ptr : uint(64);
     pragma "no doc"
     var __ABA_cnt : uint(64);
 
-    proc init(obj : ?objType, cnt : uint(64)) {
-      this.__ABA_objType = objType;
-      this.__ABA_obj = obj;
+    pragma "no doc"
+    proc init(type __ABA_objType, ptr : uint(64), cnt : uint(64)) {
+      this.__ABA_objType = __ABA_objType;
+      this.__ABA_ptr = ptr;
       this.__ABA_cnt = cnt;
     }
 
-    proc init(type objType) {
+    pragma "no doc"
+    proc init(obj : ?objType, cnt : uint(64)) {
       this.__ABA_objType = objType;
+      this.__ABA_ptr = compress(obj);
+      this.__ABA_cnt = cnt;
+    }
+    
+    proc init(type __ABA_objType) {
+      this.__ABA_objType = __ABA_objType;
     }
 
     proc init=(other : ABA(?objType)) {
       this.__ABA_objType = objType;
-      this.__ABA_obj = other.obj;
-      this.__ABA_cnt = other.cnt;
+      this.__ABA_ptr = other.__ABA_ptr;
+      this.__ABA_cnt = other.__ABA_cnt;
     }
 
     inline proc getObject() {
-      return __ABA_obj;
+      return decompress(__ABA_objType, __ABA_ptr);
+    }
+
+    inline proc getABACount() {
+      return __ABA_cnt;
     }
 
     proc readWriteThis(f) {
-      f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.__ABA_obj <~> "}";
+      f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.getObject() <~> "}";
     }
 
-    forwarding this.__ABA_obj;
+    forwarding this.getObject();
   }
 
   pragma "no doc"
@@ -325,91 +418,99 @@ module AtomicObjects {
     Special case operator that compares two ``ABA`` wrappers.
   */
   proc ==(const ref aba1 : ABA, const ref aba2 : ABA) {
-    return aba1.cnt == aba2.cnt && aba1.obj == aba2.obj;
+    return aba1.__ABA_cnt == aba2.__ABA_cnt && aba1.__ABA_ptr == aba2.__ABA_ptr;
+  }
+
+  proc !=(const ref aba1 : ABA, const ref aba2 : ABA) {
+    return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
   }
 
   proc ==(const ref aba : ABA, other) {
-    return aba.obj == other;
+    return aba.getObject() == other;
+  }
+
+  proc !=(const ref aba : ABA, other) {
+    return aba.getObject() != other;
   }
 
   proc >(const ref aba : ABA, other) {
-    return aba.obj > other;
+    return aba.getObject() > other;
   }
 
   proc >=(const ref aba : ABA, other) {
-    return aba.obj >= other;
+    return aba.getObject() >= other;
   }
 
   proc <(const ref aba : ABA, other) {
-    return aba.obj < other;
+    return aba.getObject() < other;
   }
 
   proc <=(const ref aba : ABA, other) {
-    return aba.obj <= other;
+    return aba.getObject() <= other;
   }
 
   proc +(const ref aba : ABA, other) {
-    return aba.obj + other;
+    return aba.getObject() + other;
   }
 
   proc -(const ref aba : ABA, other) {
-    return aba.obj - other;
+    return aba.getObject() - other;
   }
 
   proc *(const ref aba : ABA, other) {
-    return aba.obj * other;
+    return aba.getObject() * other;
   }
 
   proc /(const ref aba : ABA, other) {
-    return aba.obj / other;
+    return aba.getObject() / other;
   }
 
   proc +=(const ref aba : ABA, other) {
-    aba.obj += other;
+    aba.getObject() += other;
   }
 
   proc -=(const ref aba : ABA, other) {
-    aba.obj -= other;
+    aba.getObject() -= other;
   }
 
   proc *=(const ref aba : ABA, other) {
-    aba.obj *= other;
+    aba.getObject() *= other;
   }
 
   proc /=(const ref aba : ABA, other) {
-    aba.obj /= other;
+    aba.getObject() /= other;
   }
 
   proc ^(const ref aba : ABA, other) {
-    return aba.obj ^ other;
+    return aba.getObject() ^ other;
   }
 
   proc |(const ref aba : ABA, other) {
-    return aba.obj | other;
+    return aba.getObject() | other;
   }
 
   proc ^=(const ref aba : ABA, other) {
-    aba.obj ^= other;
+    aba.getObject() ^= other;
   }
 
   proc |=(const ref aba : ABA, other) {
-    aba.obj |= other;
+    aba.getObject() |= other;
   }
 
   proc <<(const ref aba : ABA, other) {
-    return aba.obj << other;
+    return aba.getObject() << other;
   }
 
   proc >>(const ref aba : ABA, other) {
-    return aba.obj >> other;
+    return aba.getObject() >> other;
   }
 
   proc <<=(const ref aba : ABA, other) {
-    aba.obj <<= other;
+    aba.getObject() <<= other;
   }
 
   proc >>=(const ref aba : ABA, other) {
-    aba.obj >>= other;
+    aba.getObject() >>= other;
   }
 
   record AtomicObject {
@@ -526,6 +627,8 @@ module AtomicObjects {
       var ret : bool;
       on this {
         var cmp = expectedObj;
+        // Note that no 'cas128bit_special' is needed here as the 'cas128bit' will detect
+        // a change from the expectedObj passed, which of course includes the _ABA_cnt.
         var val = new ABA(objType, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
         ret = cas128bit(atomicVar:c_void_ptr, c_ptrTo(cmp), c_ptrTo(val)) : bool;
       }
@@ -545,16 +648,38 @@ module AtomicObjects {
     }
 
     proc writeABA(newObj: ABA(objType)) {
+      doABACheck();
       write128bit(atomicVar:c_void_ptr, c_ptrTo(newObj));
     }
 
     proc writeABA(newObj: objType) {
       doABACheck();
-      writeABA(new ABA(objType, toPointer(objType), atomicVar[0]._ABA_cnt.read() + 1));
+      // Note: We do not invoke `write128bit` here as we _must_ ensure that _ABA_cnt
+      // is one plus the previous, otherwise we inject a race condition where a task
+      // gets preempted after reading the _ABA_cnt but _before_ it finishes the
+      // `write128bit` operation; this race condition makes it possible for an older
+      // _ABA_cnt to be written back, which by itself opens the possibility for other
+      // ABA race conditions that we're trying to solve. 'write128bit_special' solves this
+      // by setting the 'with' upper 64-bits equal to one plus the actual 'cmp' upper 64-bits.
+      write128bit_special(new ABA(objType, toPointer(objType), 0));
     }
 
     inline proc exchange(newObj:objType) {
-      return fromPointer(objType, atomicVariable.exchange(toPointer(newObj)));
+      return fromPointer(atomicVariable.exchange(toPointer(newObj)));
+    }
+
+    inline proc exchangeABA(newObj : objType) {
+      doABACheck();
+      var ret : objType;
+      on this {
+        var retval : ABA(objType);
+        var _newObj = newObj;
+        var val = new ABA(objType, toPointer(newObj), 0);
+        exchange128bit_special(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
+        ret = retval.getObject();
+      }
+
+      return ret; 
     }
 
     proc readWriteThis(f) {

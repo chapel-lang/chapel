@@ -1,4 +1,4 @@
-use LocalAtomics;
+use AtomicObjects;
 
 class C {
   var x : int;
@@ -6,13 +6,11 @@ class C {
 
 proc main() {
   var x = new unmanaged C(1);
-  var atomicObj = new LocalAtomicObject(unmanaged C);
+  var atomicObj = new AtomicObject(unmanaged C, hasABASupport=true);
   atomicObj.write(x);
   var y = atomicObj.read();
-  writeln(atomicObj.read().type:string);
   writeln(y);
   var z = atomicObj.readABA();
-  writeln(z.type : string);
   writeln(z);
   var w = new unmanaged C(2);
   writeln(atomicObj.compareExchange(x, z.getObject()));
@@ -40,4 +38,13 @@ proc main() {
   var c = atomicObj.readABA();
 
   writeln(a==c);
+
+  atomicObj.exchangeABA(c.getObject());
+  var currABACnt = atomicObj.readABA().getABACount();
+  forall 1 .. 1024 * 1024 {
+    assert(c != atomicObj.exchangeABA(c.getObject()), "Failed assertion for comparison after exchangeABA");
+  }
+  var deltaABACnt = atomicObj.readABA().getABACount() - currABACnt;
+  writeln(deltaABACnt);
+  assert(deltaABACnt == 1024 * 1024);
 }
