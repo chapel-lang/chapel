@@ -1,16 +1,12 @@
 // Array Vector Operations
 
 //
-// **DEPRECATION WARNING**
+// .. warning::
 //
 // Vector operations on arrays have been deprecated for the 1.20 release, and
-// are no longer officially supported. The `list` type has been added to the
-// standard library, and is intended to provide suitable replacements for
-// these deprecated operations.
-//
-// Use the following tutorial at your own risk. 
-//
-// ---
+// will be removed in future releases. The ``list`` type from the :mod:`List`
+// module has been added to the standard library, and is intended to provide
+// suitable replacements for these deprecated operations.
 //
 
 //
