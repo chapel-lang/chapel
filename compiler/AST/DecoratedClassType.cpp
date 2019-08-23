@@ -39,6 +39,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
+
     case CLASS_TYPE_UNMANAGED:
       if (developer)
         return astr("unmanaged anynil ", className);
@@ -51,6 +52,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
+
     case CLASS_TYPE_MANAGED:
       if (developer)
         return astr("managed anynil ", className);
@@ -60,12 +62,13 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       if (developer)
         return astr("managed ", className, "!");
       else
-        return astr(className, "!");
+        return astr(className);
     case CLASS_TYPE_MANAGED_NILABLE:
       if (developer)
         return astr("managed ", className, "?");
       else
         return astr(className, "?");
+
     case CLASS_TYPE_GENERIC:
       if (developer)
         return astr("anymanaged anynil ", className);
@@ -81,6 +84,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr("anymanaged ", className, "?");
       else
         return astr(className, "?");
+
     // no default for help from compilation errors
   }
   INT_FATAL("Case not handled");
