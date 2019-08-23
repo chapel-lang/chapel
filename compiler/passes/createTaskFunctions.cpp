@@ -118,45 +118,28 @@ void initForTaskIntents() {
 
 // Return the tiMark symbol for the given ForallIntentTag.
 // Do not invoke on TFI_REDUCE, TPV and helper intents.
-ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
-  ArgSymbol* retval = NULL;
+ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar) {
+  switch (svar->intent) {
+    case TFI_DEFAULT:     return tiMarkBlank;
+    case TFI_CONST:       return tiMarkConstDflt;
+    case TFI_IN:          return tiMarkIn;
+    case TFI_CONST_IN:    return tiMarkConstIn;
+    case TFI_REF:         return tiMarkRef;
+    case TFI_CONST_REF:   return tiMarkConstRef;
 
-  switch (intent) {
-    case TFI_DEFAULT:
-      retval = tiMarkBlank;
-      break;
-
-    case TFI_CONST:
-      retval = tiMarkConstDflt;
-      break;
-
-    case TFI_IN:
-      retval = tiMarkIn;
-      break;
-
-    case TFI_CONST_IN:
-      retval = tiMarkConstIn;
-      break;
-
-    case TFI_REF:
-      retval = tiMarkRef;
-      break;
-
-    case TFI_CONST_REF:
-      retval = tiMarkConstRef;
+    case TFI_TASK_PRIVATE:
+      USR_FATAL_CONT(svar, "task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks");
       break;
 
     case TFI_IN_PARENT:
-    case TFI_REDUCE:
+    case TFI_REDUCE:      // reduce intents are handled in addTaskIntent()
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
     case TFI_REDUCE_PARENT_OP:
-    case TFI_TASK_PRIVATE:
       INT_FATAL("unexpected intent in tiMarkForForallIntent()");
       break;
   }
-
-  return retval;
+  return tiMarkBlank; //dummy
 }
 
 
