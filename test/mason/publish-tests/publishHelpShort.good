@@ -7,7 +7,8 @@ Options:
     <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry
     -h, --help                   Display this message
     --dry-run                    Check to see if package is ready to be published
-    --no-update                  Prevents registries from being updated when a package is published.
     --check                      Runs check to see if package can be published successfully to <registry>
+    --no-update                  Prevents registries from being updated when a package is published.
+    --update                     Override MASON_OFFLINE=true and enable internet access.
 
 Publishing requires the mason-registry to be forked and the package to have a remote origin.
