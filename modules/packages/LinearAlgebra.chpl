@@ -1400,6 +1400,10 @@ Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
 Only the ``CS(compressRows=true)`` (CSR) layout of the
 :mod:`LayoutCS` layout module is currently supported.
 
+Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
+All sparse operations support the CSR layout (``LayoutCS.CS(compressRows=true)``)
+and some operations support COO layout (default sparse array layout).
+
 See the :ref:`Sparse Primer <primers-sparse>` for more information about working
 with sparse domains and arrays in Chapel.
 
@@ -1886,7 +1890,7 @@ module Sparse {
   /* Transpose CSR matrix */
   proc _array.T where isCSArr(this) { return transpose(this); }
 
-  /* Element-wise addition. */
+  /* Element-wise addition, supports CSR and COO. */
   proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
@@ -1900,6 +1904,7 @@ module Sparse {
     return S;
   }
 
+  pragma "no doc"
   proc _array.plus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                               && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -1914,7 +1919,7 @@ module Sparse {
     return S;
   }
 
-  /* Element-wise subtraction. */
+  /* Element-wise subtraction, supports CSR and COO.  */
   proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
@@ -1928,6 +1933,7 @@ module Sparse {
     return S;
   }
 
+  pragma "no doc"
   proc _array.minus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                                && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -1942,7 +1948,7 @@ module Sparse {
     return S;
   }
 
-  /* Element-wise multiplication. */
+  /* Element-wise multiplication, supports CSR and COO.  */
   proc _array.times(A) where isCSArr(this) && isCSArr(A) {
     if this.domain.parentDom != A.domain.parentDom then
       halt('Cannot subtract sparse arrays with non-matching parent domains');
@@ -1963,6 +1969,7 @@ module Sparse {
     return B;
   }
   
+  pragma "no doc"
   proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                                && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -1979,7 +1986,7 @@ module Sparse {
     return S;
   }
 
-  /* Element-wise division. */
+  /* Element-wise division, supports CSR and COO.  */
   proc _array.elementDiv(A) where isCSArr(this) && isCSArr(A) {
     if this.domain.parentDom != A.domain.parentDom then
       halt('Cannot element-wise divide sparse arrays with non-matching parent domains');
@@ -2000,6 +2007,7 @@ module Sparse {
     return B;
   }
   
+  pragma "no doc"
   proc _array.elementDiv(A: [?Adom] ?eltType) where 
                                             isSparseArr(this) && !isCSArr(this)
                                             && isSparseArr(A) && !isCSArr(A) {
