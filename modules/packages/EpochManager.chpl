@@ -19,11 +19,11 @@
 
 /*
 
-To use the :class:`EpochManager`, first create an instance.
+To use the :class:`LocalEpochManager`, first create an instance.
 
 .. code-block:: chapel
 
- var manager = new EpochManager();
+ var manager = new LocalEpochManager();
 
 
 Registering a Task
@@ -501,10 +501,10 @@ module EpochManager {
   private use LimboListModule;
 
   /*
-    :class:`EpochManager` manages reclamation of objects, ensuring
+    :class:`LocalEpochManager` manages reclamation of objects, ensuring
     thread-safety.
   */
-  class EpochManager {
+  class LocalEpochManager {
 
     //  Total number of epochs
     pragma "no doc"
@@ -680,7 +680,7 @@ module EpochManager {
   }
 
   /*
-    Handle to :class:`EpochManager`
+    Handle to :class:`LocalEpochManager`
   */
   class TokenWrapper {
 
@@ -688,10 +688,10 @@ module EpochManager {
     var _tok : unmanaged _token;
 
     pragma "no doc"
-    var manager : unmanaged EpochManager;
+    var manager : unmanaged LocalEpochManager;
 
     pragma "no doc"
-    proc init(_tok : unmanaged _token, manager : unmanaged EpochManager) {
+    proc init(_tok : unmanaged _token, manager : unmanaged LocalEpochManager) {
       this._tok = _tok;
       this.manager = manager;
     }
@@ -746,11 +746,11 @@ module EpochManager {
   private use VectorModule;
 
   /*
-    :record:`DistributedEpochManager` manages reclamation of objects, ensuring
+    :record:`EpochManager` manages reclamation of objects, ensuring
     thread-safety. It employs privatization.
   */
   pragma "always RVF"
-  record DistributedEpochManager {
+  record EpochManager {
 
     pragma "no doc"
     var _pid : int = -1;
@@ -759,7 +759,7 @@ module EpochManager {
       Default initialize with instance of privatized class.
     */
     proc init() {
-      this._pid = (new unmanaged DistributedEpochManagerImpl()).pid;
+      this._pid = (new unmanaged EpochManagerImpl()).pid;
     }
 
     /*
@@ -767,18 +767,18 @@ module EpochManager {
     */
     proc destroy() {
       coforall loc in Locales do on loc {
-        delete chpl_getPrivatizedCopy(unmanaged DistributedEpochManagerImpl, _pid);
+        delete chpl_getPrivatizedCopy(unmanaged EpochManagerImpl, _pid);
       }
     }
 
-    forwarding chpl_getPrivatizedCopy(unmanaged DistributedEpochManagerImpl, _pid);
+    forwarding chpl_getPrivatizedCopy(unmanaged EpochManagerImpl, _pid);
   }
 
   /*
     The class which is privatized on each locale for
-    :record:`DistributedEpochManager`.
+    :record:`EpochManager`.
   */
-  class DistributedEpochManagerImpl {
+  class EpochManagerImpl {
 
     pragma "no doc"
     var pid : int;
@@ -1054,7 +1054,7 @@ module EpochManager {
 
     pragma "no doc"
     proc dsiPrivatize(privatizedData) {
-      return new unmanaged DistributedEpochManagerImpl(this, pid, this.global_epoch);
+      return new unmanaged EpochManagerImpl(this, pid, this.global_epoch);
     }
 
     pragma "no doc"
@@ -1082,7 +1082,7 @@ module EpochManager {
   }
 
   /*
-    Handle to :record:`DistributedEpochManager`
+    Handle to :record:`EpochManager`
   */
   class DistTokenWrapper {
 
@@ -1090,10 +1090,10 @@ module EpochManager {
     var _tok : unmanaged _token;
 
     pragma "no doc"
-    var manager : unmanaged DistributedEpochManagerImpl;
+    var manager : unmanaged EpochManagerImpl;
 
     pragma "no doc"
-    proc init(_tok : unmanaged _token, manager : unmanaged DistributedEpochManagerImpl) {
+    proc init(_tok : unmanaged _token, manager : unmanaged EpochManagerImpl) {
       this._tok = _tok;
       this.manager = manager;
     }

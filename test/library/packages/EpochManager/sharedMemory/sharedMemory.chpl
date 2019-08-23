@@ -11,7 +11,7 @@ class C {
 proc main() {
 
   // Creating a manager instance
-  var manager = new unmanaged EpochManager();
+  var manager = new unmanaged LocalEpochManager();
 
   // registering task with the manager
   forall i in 1..4 with (var tok = manager.register()) {

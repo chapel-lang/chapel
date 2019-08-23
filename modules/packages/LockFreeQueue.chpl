@@ -40,7 +40,7 @@ module LockFreeQueue {
     type objType;
     var _head : AtomicObject(unmanaged Node(objType), hasGlobalSupport=false, hasABASupport=false);
     var _tail : AtomicObject(unmanaged Node(objType), hasGlobalSupport=false, hasABASupport=false);
-    var _manager = new owned EpochManager();
+    var _manager = new owned LocalEpochManager();
 
     proc init(type objType) {
       this.objType = objType;

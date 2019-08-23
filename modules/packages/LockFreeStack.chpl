@@ -39,7 +39,7 @@ module LockFreeStack {
   class LockFreeStack {
     type objType;
     var _top : AtomicObject(unmanaged Node(objType), hasGlobalSupport=false, hasABASupport=false);
-    var _manager = new owned EpochManager();
+    var _manager = new owned LocalEpochManager();
 
     proc init(type objType) {
       this.objType = objType;
