@@ -50,11 +50,11 @@ module LockFreeQueue {
       _tail.write(_node);
     }
 
-    proc getToken() {
+    proc getToken() : owned TokenWrapper {
       return _manager.register();
     }
 
-    proc enqueue(newObj : objType, tok) {
+    proc enqueue(newObj : objType, tok : owned TokenWrapper = getToken()) {
       var n = new unmanaged Node(newObj);
       tok.pin();
       while (true) {
@@ -73,7 +73,7 @@ module LockFreeQueue {
       tok.unpin();
     }
 
-    proc dequeue(tok) : (bool, objType) {
+    proc dequeue(tok : owned TokenWrapper = getToken()) : (bool, objType) {
       tok.pin();
       while (true) {
         var curr_head = _head.read();

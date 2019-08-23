@@ -45,11 +45,11 @@ module LockFreeStack {
       this.objType = objType;
     }
 
-    proc getToken() {
+    proc getToken() : owned TokenWrapper {
       return _manager.register();
     }
 
-    proc push(newObj : objType, tok) {
+    proc push(newObj : objType, tok : owned TokenWrapper = getToken()) {
       var n = new unmanaged Node(newObj);
       tok.pin();
       do {
@@ -59,7 +59,7 @@ module LockFreeStack {
       tok.unpin();
     }
 
-    proc pop(tok) : (bool, objType) {
+    proc pop(tok : owned TokenWrapper = getToken()) : (bool, objType) {
       var oldTop : unmanaged Node(objType);
       tok.pin();
       do {
