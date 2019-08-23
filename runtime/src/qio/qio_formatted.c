@@ -1636,7 +1636,6 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
   qioerr err;
   ssize_t i;
   int clen = 1;
-  int32_t chr;
   qio_style_t* style;
   char tmp[JSON_ESC_MAX];
   int tmplen;
@@ -1780,7 +1779,6 @@ qioerr qio_quote_bytes_length(uint8_t string_start, uint8_t string_end, uint8_t 
   int end_quote_size;
   int start_quote_size;
   int clen = 1;
-  int32_t chr;
   ssize_t max_cols = (ti)?(ti->max_columns):(SSIZE_MAX);
   ssize_t max_chars = (ti)?(ti->max_chars):(SSIZE_MAX);
   ssize_t max_bytes = (ti)?(ti->max_bytes):(SSIZE_MAX);
