@@ -592,7 +592,7 @@ module EpochManager {
 
     // Attempt to announce a new epoch
     pragma "no doc"
-    proc try_advance() : uint {
+    proc tryAdvance() : uint {
       var epoch = global_epoch.read();
       for tok in allocated_list {
         var local_epoch = tok.local_epoch.read();
@@ -640,9 +640,9 @@ module EpochManager {
         if (is_setting_epoch.testAndSet()) {
           return;
         }
-        var reclaim_epoch = try_advance();
+        var reclaim_epoch = tryAdvance();
         if (reclaim_epoch == 0) {
-          // try_advance failed
+          // tryAdvance failed
           is_setting_epoch.clear();
           return;
         }
