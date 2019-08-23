@@ -81,6 +81,7 @@
 #endif
 
 static qioerr open_flags_for_string(const char* s, int *flags_out);
+static void _qio_buffered_advance_cached_leave_bits(qio_channel_t* ch);
 
 // A few global variables that control which I/O strategy is used.
 // See choose_io_method.
@@ -1435,8 +1436,14 @@ static
 qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
 {
   qioerr err;
-  int64_t start = ch->mark_stack[0];
+  int64_t start = -1;
 
+  // If we already had advanced in the buffered data, take that into account
+  // (comes up with initial file mapping).
+  // But, do not change the bits currently stored.
+  _qio_buffered_advance_cached_leave_bits(ch);
+
+  start = ch->mark_stack[0];
   // protect against channel position beyond end of file.
   if( start > ch->end_pos ) {
     start = ch->end_pos;
@@ -2328,23 +2335,13 @@ qioerr _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
 }
 
 
-/* This function updates our buffer ch->buf with the
- * current position from the fast-path pointer ch->cached_cur
- */
-void _qio_buffered_advance_cached(qio_channel_t* ch)
+// handle updating the position based on the cached pointer
+// but does nothing for bits partially written.
+static
+void _qio_buffered_advance_cached_leave_bits(qio_channel_t* ch)
 {
-  qioerr err;
   int64_t cur_pos_cached;
   int64_t cur_pos_buf;
-
-  // flush any bits stored up.
-  // Note that we only store up bits for
-  // more than a byte if we've got a buffered
-  // channel and cached->cur has room for
-  // 2 8-byte words. So we can only lose
-  // up to a byte from this particular
-  // call failing.
-  err = _qio_flush_bits_if_needed_unlocked(ch);
 
   // The cached data is from
   //   ch->cached_start_pos to
@@ -2369,6 +2366,25 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
     ch->cached_end = NULL;
     ch->cached_start = NULL;
   }
+}
+
+/* This function updates our buffer ch->buf with the
+ * current position from the fast-path pointer ch->cached_cur
+ */
+void _qio_buffered_advance_cached(qio_channel_t* ch)
+{
+  qioerr err;
+
+  // flush any bits stored up.
+  // Note that we only store up bits for
+  // more than a byte if we've got a buffered
+  // channel and cached->cur has room for
+  // 2 8-byte words. So we can only lose
+  // up to a byte from this particular
+  // call failing.
+  err = _qio_flush_bits_if_needed_unlocked(ch);
+
+  _qio_buffered_advance_cached_leave_bits(ch);
 
   _qio_channel_set_error_unlocked(ch, err);
 }
