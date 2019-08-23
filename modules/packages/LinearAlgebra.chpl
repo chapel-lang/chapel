@@ -1397,10 +1397,6 @@ A high-level interface to linear algebra operations and procedures for sparse
 matrices (2D arrays).
 
 Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
-Only the ``CS(compressRows=true)`` (CSR) layout of the
-:mod:`LayoutCS` layout module is currently supported.
-
-Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
 All sparse operations support the CSR layout (``LayoutCS.CS(compressRows=true)``)
 and some operations support COO layout (default sparse array layout).
 
