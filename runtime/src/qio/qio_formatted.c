@@ -1671,6 +1671,7 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
       style->max_width_columns != UINT32_MAX ||
       style->max_width_characters != UINT32_MAX ) {
 
+    // TODO we shouldn't call this from print_bytes
     err = qio_quote_string_length(style->string_start, style->string_end, style->string_format, ptr, len, &ti);
     if( err ) goto rewind;
 
@@ -1686,7 +1687,7 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
       if( !style->leftjustify && width < style->min_width_columns ) {
         // Put what we need to for getting to the min_width.
         for( i = 0; i < style->min_width_columns - width; i++ ) {
-          err = qio_channel_write_char(false, ch, style->pad_char);
+          err = qio_channel_write_byte(false, ch, style->pad_char);
           if( err ) goto rewind;
         }
       }
@@ -1702,12 +1703,11 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
   } else {
-    // TODO write_chars must disappear
     // Write b.
-    err = qio_channel_write_char(false, ch, style->bytes_prefix);
+    err = qio_channel_write_byte(false, ch, style->bytes_prefix);
     if( err ) goto rewind;
     // Write string_start.
-    err = qio_channel_write_char(false, ch, style->string_start);
+    err = qio_channel_write_byte(false, ch, style->string_start);
     if( err ) goto rewind;
     for( i = 0; i < len; i+=clen ) {
       tmplen = _qio_byte_escape(ptr[i], style->string_end, style->string_format, tmp, NULL, NULL);
@@ -1720,14 +1720,14 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
       if( err ) goto rewind;
     }
     // Write string_end.
-    err = qio_channel_write_char(false, ch, style->string_end);
+    err = qio_channel_write_byte(false, ch, style->string_end);
     if( err ) goto rewind;
     if( overfull ) {
-      err = qio_channel_write_char(false, ch, '.');
+      err = qio_channel_write_byte(false, ch, '.');
       if( err ) goto rewind;
-      err = qio_channel_write_char(false, ch, '.');
+      err = qio_channel_write_byte(false, ch, '.');
       if( err ) goto rewind;
-      err = qio_channel_write_char(false, ch, '.');
+      err = qio_channel_write_byte(false, ch, '.');
       if( err ) goto rewind;
     }
   }
@@ -1736,7 +1736,7 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
     if( style->leftjustify && width < style->min_width_columns ) {
       // Put what we need to for getting to the min_width.
       for( i = 0; i < style->min_width_columns - width; i++ ) {
-        err = qio_channel_write_char(false, ch, style->pad_char);
+        err = qio_channel_write_byte(false, ch, style->pad_char);
         if( err ) goto rewind;
       }
     }
