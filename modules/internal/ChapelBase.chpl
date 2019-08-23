@@ -30,6 +30,9 @@ module ChapelBase {
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
 
+  // minimum buffer size allocated for string/bytes
+  config param chplStringMinAllocSize = 0;
+
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
   proc _throwOpError(param op: string) {
