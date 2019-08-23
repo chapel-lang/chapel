@@ -31,7 +31,7 @@ module ChapelBase {
   config param CHPL_CACHE_REMOTE: bool = false;
 
   // minimum buffer size allocated for string/bytes
-  config param chplStringMinAllocSize = 0;
+  config param chpl_stringMinAllocSize = 0;
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.

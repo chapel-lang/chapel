@@ -58,7 +58,7 @@ module ByteBufferHelpers {
 
   proc bufferAlloc(requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize),
-                          chplStringMinAllocSize);
+                          chpl_stringMinAllocSize);
     var buf = chpl_here_alloc(allocSize,
                               offset_STR_COPY_DATA): bufferType;
     return (buf, allocSize);
@@ -72,7 +72,7 @@ module ByteBufferHelpers {
 
   proc bufferRealloc(buf, requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
-                          chplStringMinAllocSize);
+                          chpl_stringMinAllocSize);
     var newBuff = chpl_here_realloc(buf, allocSize,
                                 offset_STR_COPY_DATA): bufferType;
     return (newBuff, allocSize);
