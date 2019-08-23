@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-private use Lists;
+private use List;
 use MasonUtils;
 use MasonHelp;
 

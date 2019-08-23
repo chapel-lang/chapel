@@ -398,7 +398,7 @@
 %type <pch> ident_use ident_def ident_fn_def
 %type <pch> internal_type_ident_def reserved_type_ident_use
 %type <pch> fn_ident assignop_ident opt_label_ident
-%type <pch> opt_string
+//%type <pch> opt_string
 
 
 
@@ -425,6 +425,10 @@
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> private_decl
 %type <pblockstmt> forwarding_stmt
+%type <pblockstmt> extern_export_decl_stmt
+/*%type <pblockstmt> extern_record_stmt
+%type <pblockstmt> extern_export_proc_stmt
+%type <pfnsymbol> extern_export_linkage_spec*/
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
 %type <pblockstmt> defer_stmt
@@ -759,19 +763,15 @@ reserved_type_ident_use:
      different names. */
   TSYNC      { $$ = "_syncvar"; }
 | TSINGLE    { $$ = "_singlevar"; }
-/*| TOWNED     { $$ = "_owned"; }
-| TSHARED    { $$ = "_shared"; }
-| TBORROWED  { $$ = "_borrowed"; }
-| TUNMANAGED { $$ = "_unmanaged"; }*/
 | TDOMAIN    { $$ = "_domain"; }
 | TINDEX     { $$ = "_index"; }
 ;
 
 
-opt_string:
+/*opt_string:
                 { $$ = NULL; }
 | STRINGLITERAL { $$ = $1; }
-;
+;*/
 
 do_stmt:
   TDO stmt    { $$ = $2; }
@@ -788,15 +788,16 @@ class_level_stmt:
 | private_decl
 | TPUBLIC private_decl  { $$ = $2; }
 | TPRIVATE private_decl { applyPrivateToBlock($2); $$ = $2; }
-| enum_decl_stmt
-| type_alias_decl_stmt
-| class_decl_stmt
-| forwarding_stmt
 ;
 
 private_decl:
   fn_decl_stmt
 | var_decl_stmt
+| enum_decl_stmt
+| type_alias_decl_stmt
+| class_decl_stmt
+| forwarding_stmt
+| extern_export_decl_stmt
 ;
 
 forwarding_stmt:
@@ -804,6 +805,71 @@ forwarding_stmt:
 | TFORWARDING expr TEXCEPT except_ls TSEMI  { $$ = buildForwardingStmt($2, $4, true); }
 | TFORWARDING expr TONLY opt_only_ls TSEMI  { $$ = buildForwardingStmt($2, $4, false); }
 | TFORWARDING var_decl_stmt { $$ = buildForwardingDeclStmt($2); }
+;
+
+extern_export_decl_stmt:
+  TEXTERN TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($3,
+                                             NULL,
+                                             AGGREGATE_RECORD,
+                                             $4,
+                                             $6,
+                                             FLAG_EXTERN,
+                                             @2.comment));
+    }
+| TEXTERN STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4,
+                                             $2,
+                                             AGGREGATE_RECORD,
+                                             $5,
+                                             $7,
+                                             FLAG_EXTERN,
+                                             @3.comment));
+    }
+| TEXPORT TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($3,
+                                             NULL,
+                                             AGGREGATE_RECORD,
+                                             $4,
+                                             $6,
+                                             FLAG_EXPORT,
+                                             @2.comment));
+    }
+| TEXPORT STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4,
+                                             $2,
+                                             AGGREGATE_RECORD,
+                                             $5,
+                                             $7,
+                                             FLAG_EXPORT,
+                                             @3.comment));
+    }
+
+| TEXTERN opt_expr fn_decl_stmt
+    {
+      $$ = buildExternExportFunctionDecl(FLAG_EXTERN, $2, $3);
+    }
+| TEXPORT opt_expr fn_decl_stmt
+    {
+      $$ = buildExternExportFunctionDecl(FLAG_EXPORT, $2, $3);
+    }
+
+| TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      $3->insert(FLAG_EXTERN);
+      $$ = buildVarDecls($4, context->latestComment, $3, $2);
+      context->latestComment = NULL;
+    }
+| TEXPORT opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      $3->insert(FLAG_EXPORT);
+      $$ = buildVarDecls($4, context->latestComment, $3, $2);
+      context->latestComment = NULL;
+    }
 ;
 
 extern_block_stmt:
@@ -964,16 +1030,6 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_string class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             $2,
-                                             $3,
-                                             $5,
-                                             $7,
-                                             FLAG_EXTERN,
-                                             @3.comment));
-    }
 | class_tag ident_def opt_inherit TLCBR error TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($2,
@@ -984,16 +1040,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_string class_tag ident_def opt_inherit TLCBR error TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             $2,
-                                             $3,
-                                             $5,
-                                             new BlockStmt(),
-                                             FLAG_EXTERN,
-                                             @3.comment));
-    }
+  /* see also extern_decl_stmt */
 ;
 
 class_tag:
@@ -1127,18 +1174,6 @@ linkage_spec:
 | TINLINE       {
                   $$ = new FnSymbol("");
                   $$->addFlag(FLAG_INLINE);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-| TEXPORT opt_expr {
-                  $$ = buildLinkageFn(FLAG_EXPORT, $2);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-| TEXTERN opt_expr {
-                  $$ = buildLinkageFn(FLAG_EXTERN, $2);
 
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
@@ -1457,12 +1492,6 @@ var_decl_stmt:
       $$ = buildVarDecls($3, context->latestComment, $2);
       context->latestComment = NULL;
     }
-| TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      $3->insert(FLAG_EXTERN);
-      $$ = buildVarDecls($4, context->latestComment, $3, $2);
-      context->latestComment = NULL;
-    }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       $$ = buildVarDecls($2, context->latestComment, $1);
@@ -1713,7 +1742,7 @@ sub_type_level_expr:
 | TOWNED expr
     { $$ = new CallExpr( "_owned", $2); }
 | TUNMANAGED
-    { $$ = new UnresolvedSymExpr("_unmanaged"); }
+    { $$ = new SymExpr(dtUnmanaged->symbol); }
 | TUNMANAGED expr
     { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
 | TSHARED
@@ -1721,9 +1750,17 @@ sub_type_level_expr:
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
 | TBORROWED
-    { $$ = new UnresolvedSymExpr("_borrowed"); }
+    { $$ = new SymExpr(dtBorrowed->symbol); }
 | TBORROWED expr
     { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
+
+| TCLASS
+    { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
+| TRECORD
+    { $$ = new SymExpr(dtAnyRecord->symbol); }
+| TENUM
+    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
+
 ;
 
 for_expr:

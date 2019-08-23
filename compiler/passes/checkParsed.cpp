@@ -208,6 +208,11 @@ static void checkPrivateDecls(DefExpr* def) {
   if (def->sym->hasFlag(FLAG_PRIVATE) == true) {
     // The symbol has been declared private.
     if (def->inTree()) {
+
+      if (isTypeSymbol(def->sym) || def->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_FATAL_CONT(def, "Can't apply private to types yet");
+      }
+
       if (isFnSymbol(def->parentSymbol) == true) {
         // The parent symbol of this definition is a FnSymbol.
         // Private symbols at the function scope are meaningless
@@ -294,11 +299,35 @@ checkParsedVar(VarSymbol* var) {
     USR_FATAL_CONT(var->defPoint,
                    "Configuration %s are allowed only at module scope.", varType);
   }
+
+  // Export vars are not yet supported
+  if (var->hasFlag(FLAG_EXPORT))
+    USR_FATAL_CONT(var->defPoint, "Export variables are not yet supported");
 }
 
 
 static void
 checkFunction(FnSymbol* fn) {
+
+  // Chapel doesn't really support procedures with no-op bodies (a
+  // semicolon only).  Doing so is likely to cause confusion for C
+  // programmers who will think of it as a prototype, but we don't
+  // support prototypes, so require such programmers to type the
+  // empty body instead.  This is consistent with the current draft
+  // of the spec as well.
+  if (fn->hasFlag(FLAG_NO_FN_BODY) && !fn->hasFlag(FLAG_EXTERN))
+    USR_FATAL_CONT(fn, "no-op procedures are only legal for extern functions");
+
+  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))
+    USR_FATAL_CONT(fn, "Extern functions cannot have a body");
+
+  if (fn->hasFlag(FLAG_EXTERN) && fn->throwsError())
+    USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
+
+  if (fn->hasFlag(FLAG_EXPORT) && fn->where != NULL)
+    USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
+
+
   if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 

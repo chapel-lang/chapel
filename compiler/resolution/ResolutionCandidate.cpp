@@ -406,7 +406,7 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
 
       AggregateType* at = toAggregateType(canonicalActual);
 
-      if (canInstantiateOrCoerceDecorators(actualD, formalD, false)) {
+      if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
         if (canonicalActual == canonicalFormal ||
             isDispatchParent(canonicalActual, canonicalFormal) ||
             (at && at->instantiatedFrom &&
@@ -497,6 +497,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
     if (canInstantiateDecorators(actualDec, formalDec) ||
         (allowCoercion && canInstantiateOrCoerceDecorators(actualDec,
                                                            formalDec,
+                                                           true,
                                                            implicitBang))) {
       // Can the canonical formal type instantiate with the canonical actual?
 

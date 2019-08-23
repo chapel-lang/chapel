@@ -54,6 +54,12 @@ static std::map<std::string,
 //lookup table/cache for function captures
 static std::map<FnSymbol*, FnSymbol*>                      functionCaptureMap;
 
+// stores the test functions
+static std::vector<Expr* >                                 testCaptureVector;
+
+// lookup table for test function names and their index in testCaptureVector
+static std::map<std::string,int>                           testNameIndex;
+
 static Expr*          preFoldPrimOp(CallExpr* call);
 
 static Expr*          preFoldNamed (CallExpr* call);
@@ -233,6 +239,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_GATHER_TESTS: {
     int  totalTest = 0;
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of 'gather tests'. Expected an argument of type 'Test'");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to 'gather tests'");
+    }
+    
+    Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->throwsError()) {
         ModuleSymbol *mod = fn->getModule();
@@ -240,33 +255,76 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           if (fn->numFormals() == 1) {
             if (!fn->hasFlag(FLAG_GENERIC) && fn->instantiatedFrom == NULL) {
               const char* name = astr(fn->name);
-
-              // temporarily add a call to try resolving.
-              CallExpr* tryCall = new CallExpr(name);
-              // Add our new call to the AST temporarily.
-              call->getStmtExpr()->insertAfter(tryCall);
-
-              // copy actual args into tryCall.
-              for_actuals(actual, call) {
-                tryCall->insertAtTail(actual->copy());
-              }
-
-              // Try to resolve it.
-              if (tryResolveCall(tryCall)) {
+              resolveSignature(fn);
+              if(isSubtypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
                 totalTest++;
+                CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
+                fn->defPoint->getStmtExpr()->insertAfter(newCall);
+                testCaptureVector.push_back(createFunctionAsValue(newCall));
+                newCall->remove();
+                testNameIndex[name] = totalTest;
               }
-
-              // remove the call from the AST
-              tryCall->remove();
             }
           }
         }
-        
       }
     }
     retval=new SymExpr(new_IntSymbol(totalTest));
     call->replace(retval);
     break;
+  }
+
+  case PRIM_GET_TEST_BY_INDEX: {
+    int64_t index    =        0;
+    
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of 'get test by index'. Expected an argument of type 'int'");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to 'get test by index'");
+    }
+
+    if (!get_int(call->get(1), &index)) {
+      USR_FATAL(call, "illegal type for index. Expected an 'int' got '%s'",
+                call->get(1)->getValType()->name());
+    }
+
+    int64_t n = testCaptureVector.size();
+    if (index <= 0 || index > n) {
+      USR_FATAL(call, "index '%i' out of bounds, expected to be between '1' and '%i'",
+                index, n);
+    }
+
+    retval = testCaptureVector[index-1]->copy();
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_GET_TEST_BY_NAME: {
+    const char* name = NULL;
+
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of 'get test by name'. Expected a test function name.");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to 'get test by name'");
+    }
+
+    if(!get_string(call->get(1), &name)) {
+      USR_FATAL(call, "illegal type for expected test name. Expected a 'string' got '%s'",
+                call->get(1)->getValType()->name());
+    }
+    if (testNameIndex.find(name) != testNameIndex.end()) {
+      int index = testNameIndex[name];
+      retval = testCaptureVector[index-1]->copy();
+      call->replace(retval);
+      break; 
+    }
+    else {
+      USR_FATAL(call, "No test function with name '%s'",name);
+    }
   }
 
   case PRIM_CALL_RESOLVES:
@@ -1141,6 +1199,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       USR_FATAL(call,
                 "invalid query -- queried field must be a type or parameter");
     }
+
+    break;
+  }
+
+  case PRIM_DEFAULT_INIT_FIELD: {
+    SymExpr* initVal = toSymExpr(call->get(4)->remove());
+    SymExpr* toType = toSymExpr(call->get(3)->remove());
+    checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
+
+    retval = new CallExpr("_createFieldDefault", toType, initVal);
+    call->replace(retval);
 
     break;
   }

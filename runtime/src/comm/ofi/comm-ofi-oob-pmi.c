@@ -32,12 +32,26 @@
 #include "error.h"
 
 #include <assert.h>
-#include <pmi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 
 #include "comm-ofi-internal.h"
+
+
+#define PMI_SUCCESS 0
+#define PMI2_ID_NULL -1
+
+typedef int PMI_BOOL;
+#define PMI_TRUE     1
+#define PMI_FALSE    0
+
+extern int PMI2_Initialized(void);
+extern int PMI2_Init(int* spawned, int* size, int* rank, int* appnum);
+extern int PMI2_Finalize(void);
+extern int PMI_Barrier(void);
+extern int PMI_Allgather(void*, void*, int);
+extern int PMI_Bcast(void*, int);
 
 
 #define PMI_CHK(expr) CHK_EQ_TYPED(expr, PMI_SUCCESS, int, "d")

@@ -107,7 +107,7 @@ proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 // TODO: Optimize & Parallelize
 /* Sparse CSR-CSC multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
-  use Lists;
+  use List;
 
   if !(ADom._value.compressRows && !BDom._value.compressRows) then
     compilerError('Only CSR-CSC multiplication is currently supported');

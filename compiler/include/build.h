@@ -143,7 +143,7 @@ DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol* fn);
 
-FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr);
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
 
 FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
                               const char* name,

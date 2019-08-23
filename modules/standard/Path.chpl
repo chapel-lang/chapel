@@ -64,7 +64,7 @@
 */
 module Path {
 
-private use Lists;
+private use List;
 use SysError;
 private use Sys;
 

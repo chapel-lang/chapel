@@ -631,6 +631,9 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
+  // dst, aggregate name, field name, type to default-init, value to init from
+  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
+
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
@@ -780,6 +783,7 @@ initPrimitive() {
   prim_def(PRIM_IS_SUBTYPE_ALLOW_VALUES, "is_subtype_allow_values", returnInfoBool);
   // same as above but excludes same type
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
+  prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false);

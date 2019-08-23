@@ -109,12 +109,22 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
 
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal,
+                         bool allowNonSubtypes,
                          bool implicitBang);
 bool canInstantiateDecorators(ClassTypeDecorator actual,
                               ClassTypeDecorator formal);
 bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
                                       ClassTypeDecorator formal,
+                                      bool allowNonSubtypes,
                                       bool implicitBang);
+
+bool canCoerceAsSubtype(Type*     actualType,
+                        Symbol*   actualSym,
+                        Type*     formalType,
+                        ArgSymbol* formalSym,
+                        FnSymbol* fn,
+                        bool*     promotes = NULL,
+                        bool*     paramNarrows = NULL);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
@@ -234,13 +244,16 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 
 void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 
+void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
+
 void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 

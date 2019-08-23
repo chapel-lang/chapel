@@ -1,7 +1,7 @@
 module LCALSDataTypes {
   use LCALSParams;
   use LCALSEnums;
-  use Lists;
+  use List;
 
   //
   // This is a vector wrapper that uses 0-based indexing.

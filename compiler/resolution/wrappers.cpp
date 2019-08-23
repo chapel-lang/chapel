@@ -1066,6 +1066,16 @@ static bool needToAddCoercion(Type*      actualType,
       formal->hasFlag(FLAG_TYPE_VARIABLE))
     return false;
 
+  // Avoid adding coercions from nil because these generate
+  // errors for some C compilers.
+  if (actualType == dtNil && isClassLikeOrPtr(formalType))
+    return false;
+
+  // One day, we shouldn't need coercion if canCoerceAsSubtype
+  // returns true. That would cover the above case. However,
+  // the emitted C code doesn't encode the class hierarchy in
+  // the type system. (But we could do this for LLVM, say).
+
   if (canCoerce(actualType, actualSym, formalType, formal, fn))
     return true;
 
@@ -1506,7 +1516,7 @@ static void handleInIntents(FnSymbol* fn,
   Expr* nextActual = NULL;
 
   for_formals(formal, fn) {
-
+    SET_LINENO(currActual);
     nextActual = currActual->next;
 
     Symbol* actualSym  = info.actuals.v[j];

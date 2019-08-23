@@ -270,7 +270,7 @@ else
     gen_version_gcc=7.3.0
     # Also, the next time this gets updated, try removing the craype pin in
     # load_prgenv_cray
-    gen_version_cce=8.7.7
+    gen_version_cce=8.7.8
 
     target_cpu_module=craype-arm-thunderx2
 

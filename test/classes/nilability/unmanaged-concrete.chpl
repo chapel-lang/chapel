@@ -7,7 +7,7 @@ class GEN {
 proc main {
   var ARR1: [LocaleSpace] borrowed GEN(int);
   var ARR2: [LocaleSpace] unmanaged GEN(int);
-  var al: unmanaged GEN(int) = new unmanaged GEN(int);
+  var al = new unmanaged GEN(int);
 
   compilerWarning(ARR1.type:string);
   compilerWarning(ARR2.type:string);
