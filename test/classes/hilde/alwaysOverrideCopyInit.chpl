@@ -5,7 +5,7 @@ class C
 
 record MyRecord
 {
-  var c:C;
+  var c:borrowed C?;
 }
 
 proc MyRecord.chpl__initCopy(r: MyRecord)
