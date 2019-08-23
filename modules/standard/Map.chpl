@@ -439,16 +439,22 @@ module Map {
     return !(a == b);
   }
 
+  /* Returns a new map containing the keys and values in either a or b. */
   proc +(a: map(?parSafe, ?keyType, ?valueType),
          b: map(parSafe, keyType, valueType)) {
     return a | b;
   }
 
+  /*
+    Sets the left-hand side map to contain the keys and values in either
+    a or b.
+   */
   proc +=(ref a: map(?parSafe, ?keyType, ?valueType),
           b: map(parSafe, keyType, valueType)) {
     a |= b;
   }
 
+  /* Returns a new map containing the keys and values in either a or b. */
   proc |(a: map(?parSafe, ?keyType, ?valueType),
          b: map(parSafe, keyType, valueType)) {
     var newMap = new map(keyType, valueType, parSafe);
@@ -459,12 +465,16 @@ module Map {
     return newMap;
   }
 
+  /* Sets the left-hand side map to contain the keys and values in either
+     a or b.
+   */
   proc |=(ref a: map(?parSafe, ?keyType, ?valueType),
           b: map(parSafe, keyType, valueType)) {
     // add keys/values from b to a if they weren't already in a
     for k in b do a.add(k, b.vals[k]);
   }
 
+  /* Returns a new map containing the keys that are in both a and b. */
   proc &(a: map(?parSafe, ?keyType, ?valueType),
          b: map(parSafe, keyType, valueType)) {
     var newMap = new map(keyType, valueType, parSafe);
@@ -474,6 +484,8 @@ module Map {
     return newMap;
   }
 
+  /* Sets the left-hand side map to contain the keys that are in both a and b.
+   */
   proc &=(ref a: map(?parSafe, ?keyType, ?valueType),
           b: map(parSafe, keyType, valueType)) {
     for k in a {
@@ -481,6 +493,7 @@ module Map {
     }
   }
 
+  /* Returns a new map containing the keys that are only in a, but not b. */
   proc -(a: map(?parSafe, ?keyType, ?valueType),
          b: map(parSafe, keyType, valueType)) {
     var newMap = new map(keyType, valueType, parSafe);
@@ -491,12 +504,16 @@ module Map {
     return newMap;
   }
 
+  /* Sets the left-hand side map to contain the keys that are in the
+     left-hand map, but not the right-hand map. */
   proc -=(ref a: map(?parSafe, ?keyType, ?valueType),
           b: map(parSafe, keyType, valueType)) {
     for k in a do
       if b.contains(k) then a.remove(k);
   }
 
+  /* Returns a new map containing the keys that are in either a or b, but
+     not both. */
   proc ^(a: map(?parSafe, ?keyType, ?valueType),
          b: map(parSafe, keyType, valueType)) {
     var newMap = new map(keyType, valueType, parSafe);
@@ -509,6 +526,8 @@ module Map {
     return newMap;
   }
 
+  /* Sets the left-hand side map to contain the keys that are in either the
+     left-hand map or the right-hand map, but not both. */
   proc ^=(ref a: map(?parSafe, ?keyType, ?valueType),
           b: map(parSafe, keyType, valueType)) {
     for k in b {
