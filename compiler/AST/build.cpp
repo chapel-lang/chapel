@@ -1660,6 +1660,10 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
   if (externOrExport == FLAG_EXTERN) {
     fn->addFlag(FLAG_LOCAL_ARGS);
     fn->addFlag(FLAG_EXTERN);
+
+    // extern functions with no declared return type will return void
+    if (fn->retExprType == NULL)
+      fn->retType = dtVoid;
   }
   if (externOrExport == FLAG_EXPORT) {
     fn->addFlag(FLAG_LOCAL_ARGS);
@@ -1747,8 +1751,6 @@ buildFunctionDecl(FnSymbol*   fn,
 
   if (optRetType)
     fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
-  else if (fn->hasFlag(FLAG_EXTERN))
-    fn->retType     = dtVoid;
 
   if (optThrowsError)
   {
