@@ -43,6 +43,15 @@ proc MASON_CACHED_REGISTRY {
   return cachedRegistry;
 }
 
+proc MASON_OFFLINE {
+	  const offlineEnv = getEnv('MASON_OFFLINE');
+	  const default = 'false';
+	
+	  const offline = if offlineEnv == 'true' then offlineEnv else default;
+	
+	  return offline;
+}
+
 /* Read the MASON_REGISTRY environment variable.  It should be a comma
    separated list of registry 'name|location' pairs. Returns an array of
    tuples containing (name, location). If 'name|' is omitted, it defaults
@@ -141,6 +150,7 @@ proc masonEnv(args) {
 
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
+  printVar('MASON_OFFLIBE', MASON_OFFLINE);
 
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);

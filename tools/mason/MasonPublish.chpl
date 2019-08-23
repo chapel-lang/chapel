@@ -47,12 +47,16 @@ proc masonPublish(ref args: list(string)) throws {
       masonPublishHelp();
       exit(0);
     }
+
     var dry = hasOptions(args, "--dry-run");
     var checkFlag = hasOptions(args, '--check');
     var registryPath = '';
     var username = getUsername();
     var isLocal = false;
     var travis = hasOptions(args, '--travis');
+	  var update = hasOptions(args, '--update');
+	  var noUpdate = hasOptions(args, '--no-update');
+
     const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
     if args.size > 5 {
       throw new owned MasonError(badSyntaxMessage);
@@ -60,7 +64,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     if args.size > 2 {
       var potentialPath = args.pop();
-      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') {
+          if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') && (potentialPath != '--upodate') {
         registryPath = potentialPath;
       }
       args.append(potentialPath);
@@ -77,7 +81,14 @@ proc masonPublish(ref args: list(string)) throws {
       check(username, registryPath, isLocal, travis);
     }
 
-    updateRegistry('Mason.toml', args);
+    if (MASON_OFFLINE == 'true' && !update) || noUpdate == true {
+	      if !isLocal {
+	        throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
+	      }
+	
+	    }
+	  else updateRegistry('Mason.toml', args);
+
     if !isLocal && !doesGitOriginExist() && !dry {
       throw new owned MasonError('Your package must have a git origin remote in order to publish to a remote registry.');
     }

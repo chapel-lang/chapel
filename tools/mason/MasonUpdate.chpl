@@ -138,6 +138,11 @@ proc updateRegistry(tf: string, args: list(string)) {
   if args.count("--no-update") != 0 then
     return;
 
+  if MASON_OFFLINE == 'true' && (args.count('--update') == 0) {
+	    writeln('Cannot update the mason-registry when MASON_OFFLINE is set to true. Use "--update" to override.');
+	    return;
+	}
+
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
