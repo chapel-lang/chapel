@@ -1035,9 +1035,8 @@ proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
   var U = Matrix(A);
-  const zero = 0: eltType;
   forall (i, j) in D do
-    if (i > j-k) then U[i, j] = zero;
+    if (i > j-k) then U[i, j] = 0;
   return U;
 }
 
@@ -1048,11 +1047,9 @@ proc isDiag(A: [?D] ?eltType) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
 
-  const zero = 0: eltType;
-
   // Check if any element not along the diagonal is nonzero
   for (i, j) in D {
-    if i != j && A[i, j] != zero then return false;
+    if i != j && A[i, j] != 0 then return false;
   }
   return true;
 }
@@ -1098,9 +1095,8 @@ proc isSymmetric(A: [?D]) : bool {
 proc isTril(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
-  const zero = 0: eltType;
   for (i, j) in D do
-    if (i < j-k) && (A[i, j] != zero) then
+    if (i < j-k) && (A[i, j] != 0) then
       return false;
   return true;
 }
@@ -1113,9 +1109,8 @@ proc isTril(A: [?D] ?eltType, k=0) : bool {
 proc isTriu(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
-  const zero = 0: eltType;
   for (i, j) in D do
-    if (i > j-k) && (A[i, j] != zero) then
+    if (i > j-k) && (A[i, j] != 0) then
       return false;
   return true;
 }
@@ -1635,9 +1630,8 @@ module Sparse {
     var D = CSRDomain(Dom);
     var M: [D] eltType;
 
-    const zero = 0: Atype;
     for (i,j) in Dom {
-      if A[i,j] != zero {
+      if A[i,j] != 0 {
         D += (i,j);
         M[i,j] += A[i,j];
       }
