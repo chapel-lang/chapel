@@ -1,0 +1,1 @@
+listInitUnboundedRange.chpl:7: error: Cannot init list from unbounded range: range(int(64),boundedLow,false)

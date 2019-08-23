@@ -1,36 +1,29 @@
-use List;
+private use List;
 
-config const testElem = 42;
-config const testIters = 1024;
+config const testIters = 8;
 
-type listType = int;
-param listLock = true;
+var lst: list(int);
 
-var lst: list(listType, listLock);
-
-for i in 1..8 do {
+for i in 1..testIters do
   lst.append(i);
-}
 
-writeln(lst);
+assert(lst.size == testIters);
 
-for i in 5..8 do {
-  lst.insert(i, testElem);
-}
+var removed = lst.remove(testIters);
 
-writeln(lst);
+assert(lst.size == (testIters - 1));
+assert(removed == 1);
 
-while true do
-  try {
-    lst.remove(testElem);
-    writeln(lst);
-  } catch {
-    break;
-  }
+//
+// Nothing should happen when a user attempts to remove an element not
+// present in the list.
+//
 
-try {
-  lst.remove(testElem);
-} catch e {
-  writeln(e);
-}
+var oldSize = lst.size;
+
+removed = lst.remove(testIters);
+
+assert(removed == 0);
+assert(lst.size == oldSize);
+
 

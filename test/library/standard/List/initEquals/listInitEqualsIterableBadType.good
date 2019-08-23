@@ -1,0 +1,1 @@
+listInitEqualsIterableBadType.chpl:29: error: In init of list(real(64),false) - bad iterator type: int(64)
