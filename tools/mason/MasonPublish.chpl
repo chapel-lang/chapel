@@ -351,6 +351,9 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
     var tomlFile = new owned(parseToml(toParse));
     const versionNum = tomlFile['brick']['version'].s;
     if !isLocal {
+      if !exists(safeDir + '/mason-registry/Bricks/') {
+        throw new owned MasonError('Registry does not have the expected structure. Ensure your registry has a Bricks directory.');
+      }
       if !exists(safeDir + "/mason-registry/Bricks/" + name) {
         mkdir(safeDir + "/mason-registry/Bricks/" + name);
       }
