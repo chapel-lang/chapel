@@ -1,4 +1,5 @@
 use EpochManager;
+use CyclicDist;
 use Random;
 
 class C {
@@ -27,7 +28,7 @@ proc main() {
     tok.pin();
 
     // delete obj
-    tok.delete_obj(obj);
+    tok.deferDelete(obj);
 
     // unpin the task
     tok.unpin();

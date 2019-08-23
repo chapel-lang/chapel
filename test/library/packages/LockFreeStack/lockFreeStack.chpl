@@ -18,5 +18,5 @@ proc main() {
       for i in 1..OperationsPerThread do lfs.pop(tok);
     }
   }
-  lfs.try_reclaim();
+  lfs.tryReclaim();
 }

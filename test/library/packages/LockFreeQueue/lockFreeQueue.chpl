@@ -18,5 +18,5 @@ proc main() {
       for i in 1..OperationsPerThread do lfq.dequeue(tok);
     }
   }
-  lfq.try_reclaim();
+  lfq.tryReclaim();
 }

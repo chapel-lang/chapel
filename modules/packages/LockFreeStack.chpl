@@ -72,13 +72,13 @@ module LockFreeStack {
         var newTop = oldTop.next;
       } while (!_top.compareExchange(oldTop, newTop));
       var retval = oldTop.val;
-      tok.delete_obj(oldTop);
+      tok.deferDelete(oldTop);
       tok.unpin();
       return (true, retval);
     }
 
-    proc try_reclaim() {
-      _manager.try_reclaim();
+    proc tryReclaim() {
+      _manager.tryReclaim();
     }
   }
 }

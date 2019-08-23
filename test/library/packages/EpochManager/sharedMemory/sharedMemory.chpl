@@ -22,13 +22,13 @@ proc main() {
     tok.pin();
 
     // delete b
-    tok.delete_obj(b);
+    tok.deferDelete(b);
 
     // unpin the task
     tok.unpin();
   }
   // attempt to reclaim memory
-  manager.try_reclaim();
+  manager.tryReclaim();
 
   delete manager;
 }

@@ -91,7 +91,7 @@ module LockFreeQueue {
         else {
           var ret_val = next_node.val;
           if (_head.compareExchange(curr_head, next_node)) {
-            tok.delete_obj(curr_head);
+            tok.deferDelete(curr_head);
             tok.unpin();
             return (true, ret_val);
           }
@@ -103,8 +103,8 @@ module LockFreeQueue {
       return (false, retval);
     }
 
-    proc try_reclaim() {
-      _manager.try_reclaim();
+    proc tryReclaim() {
+      _manager.tryReclaim();
     }
   }
 }

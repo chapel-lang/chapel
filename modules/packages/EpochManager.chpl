@@ -23,13 +23,13 @@ To use the :class:`EpochManager`, first create an instance.
 
 .. code-block:: chapel
 
- var manager = new unmanaged EpochManager();
+ var manager = new EpochManager();
 
 
 Registering a Task
 ------------------
 A task must be registered with the manager in order to use the manager.
-Registration returns a token.
+Registration returns a token that is used when a task inters or exits a critical section.
 
 .. code-block:: chapel
 
@@ -58,7 +58,7 @@ To `delete` an object:
 
 .. code-block:: chapel
 
- tok.delete_obj(myObj);
+ tok.deferDelete(myObj);
 
 
 .. note::
@@ -72,18 +72,18 @@ To try to reclaim memory:
 
 .. code-block:: chapel
 
- tok.try_reclaim();
+ tok.tryReclaim();
 
 
 .. note::
- Alternatively, a task may call ``manager.try_reclaim()``.
+ Alternatively, a task may call ``manager.tryReclaim()``.
 
 
 Unregister a Task
 -----------------
 In the end, a registered task needs to `unregister` from the manager. The
 registration token is a scoped variable, and hence the ending of the scope in
-which the task registered would automatically `unregister` the task.
+which the task registered wiill automatically `unregister` the task.
 `unregister` can also be performed manually:
 
 .. code-block:: chapel
@@ -203,7 +203,7 @@ module EpochManager {
         _tail.write(_node);
       }
 
-      proc recycle_node() : unmanaged Node(objType) {
+      proc recycleNode() : unmanaged Node(objType) {
         var oldTop : ABA(unmanaged Node(objType));
         var n : unmanaged Node(objType);
         do {
@@ -221,7 +221,7 @@ module EpochManager {
       }
 
       proc enqueue(newObj : objType) {
-        var n = recycle_node();
+        var n = recycleNode();
         n.val = newObj;
 
         // Now enqueue
@@ -263,7 +263,7 @@ module EpochManager {
             else {
               var ret_val = next_node.val;
               if (_head.compareExchangeABA(curr_head, next_node)) {
-                retire_node(head_node);
+                retireNode(head_node);
                 return ret_val;
               }
             }
@@ -274,7 +274,7 @@ module EpochManager {
       }
 
       // TODO: Reclaim retired nodes after a while
-      proc retire_node(nextObj : unmanaged Node(objType)) {
+      proc retireNode(nextObj : unmanaged Node(objType)) {
         nextObj.val = nil;
         do {
           var oldTop = _freeListHead.readABA();
@@ -343,12 +343,12 @@ module EpochManager {
       var _freeListHead : AtomicObject(unmanaged Node, hasABASupport=true, hasGlobalSupport=true);
 
       proc push(obj : unmanaged object) {
-        var node = recycle_node(obj);
+        var node = recycleNode(obj);
         var oldHead = _head.exchange(node);
         node.next = oldHead;
       }
 
-      proc recycle_node(obj : unmanaged object) : unmanaged Node {
+      proc recycleNode(obj : unmanaged object) : unmanaged Node {
         var oldTop : ABA(unmanaged Node);
         var n : unmanaged Node;
         do {
@@ -364,7 +364,7 @@ module EpochManager {
         return n;
       }
 
-      proc retire_node(nextObj : unmanaged Node) {
+      proc retireNode(nextObj : unmanaged Node) {
         nextObj.val = nil;
         do {
           var oldTop = _freeListHead.readABA();
@@ -614,7 +614,7 @@ module EpochManager {
     }
 
     pragma "no doc"
-    proc delete_obj(tok : unmanaged _token, x : unmanaged object) {
+    proc deferDelete(tok : unmanaged _token, x : unmanaged object) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
         writeln("Bad local epoch! Please pin! Using global epoch!");
@@ -627,7 +627,7 @@ module EpochManager {
       Try to announce a new epoch. If successful, reclaim objects which are
       safe to reclaim
     */
-    proc try_reclaim() {
+    proc tryReclaim() {
       var count = EBR_EPOCHS;
 
       // if nothing to reclaim, try the next epoch, but loop only for one
@@ -654,7 +654,7 @@ module EpochManager {
         while (head != nil) {
           var next = head.next;
           delete head.val;
-          reclaim_limbo_list.retire_node(head);
+          reclaim_limbo_list.retireNode(head);
           head = next;
         }
       }
@@ -715,16 +715,16 @@ module EpochManager {
 
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
-    proc delete_obj(x) {
-      manager.delete_obj(this._tok, x);
+    proc deferDelete(x) {
+      manager.deferDelete(this._tok, x);
     }
 
     /*
       Try to announce a new epoch. If successful, reclaim objects which are
       safe to reclaim
     */
-    proc try_reclaim() {
-      manager.try_reclaim();
+    proc tryReclaim() {
+      manager.tryReclaim();
     }
 
     /*
@@ -743,7 +743,7 @@ module EpochManager {
     }
   }
 
-  use VectorModule;
+  private use VectorModule;
 
   /*
     :record:`DistributedEpochManager` manages reclamation of objects, ensuring
@@ -936,7 +936,7 @@ module EpochManager {
     }
 
     pragma "no doc"
-    proc delete_obj(tok : unmanaged _token, x : unmanaged object) {
+    proc deferDelete(tok : unmanaged _token, x : unmanaged object) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
         writeln("Bad local epoch! Please pin! Using global epoch!");
@@ -961,7 +961,7 @@ module EpochManager {
       Try to announce a new epoch. If successful, reclaim objects which are
       safe to reclaim
     */
-    proc try_reclaim() {
+    proc tryReclaim() {
       if (is_setting_epoch.testAndSet()) then return;
       if (global_epoch.is_setting_epoch.testAndSet()) {
         is_setting_epoch.clear();
@@ -1117,16 +1117,16 @@ module EpochManager {
 
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
-    proc delete_obj(x) {
-      manager.delete_obj(this._tok, x);
+    proc deferDelete(x) {
+      manager.deferDelete(this._tok, x);
     }
 
     /*
       Try to announce a new epoch. If successful, reclaim objects which are
       safe to reclaim
     */
-    proc try_reclaim() {
-      manager.try_reclaim();
+    proc tryReclaim() {
+      manager.tryReclaim();
     }
 
     /*
