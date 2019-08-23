@@ -1,4 +1,4 @@
-private use Lists;
+private use List;
 
 config const testIters = 8;
 

@@ -1950,7 +1950,7 @@ module Sparse {
 
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
-    use Lists;
+    use List;
     var indices: list(2*D.idxType);
     for i in D.dim(1) {
       for j in D.dimIter(2, i) {

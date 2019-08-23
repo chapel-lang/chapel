@@ -1,4 +1,4 @@
-use Lists;
+use List;
 
 config const testNum = 42;
 

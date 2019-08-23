@@ -1,4 +1,4 @@
-use Lists;
+use List;
 
 type listType = int;
 param listLock = true;

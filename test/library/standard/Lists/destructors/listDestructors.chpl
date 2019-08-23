@@ -1,4 +1,4 @@
-use Lists;
+use List;
 
 config type listType = DummyRecord;
 config param listLock = true;

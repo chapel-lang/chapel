@@ -3,7 +3,7 @@
   to use list.append instead.
 */
 
-use Lists;
+use List;
 
 var wrappedLists: list(WrappedList);
 

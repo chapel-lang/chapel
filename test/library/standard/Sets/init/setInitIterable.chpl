@@ -1,5 +1,5 @@
-use Sets;
-use Lists;
+use Set;
+use List;
 
 config const testIters = 8;
 

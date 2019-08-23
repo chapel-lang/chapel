@@ -1,4 +1,4 @@
-use Sets;
+use Set;
 
 config const testIters = 1;
 

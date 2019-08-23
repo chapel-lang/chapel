@@ -1,4 +1,4 @@
-private use Lists;
+private use List;
 
 class C {
   var x : int;

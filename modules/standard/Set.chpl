@@ -35,7 +35,7 @@
   constructed from another set, the new set will inherit the parallel safety
   mode of its originating set.
 */
-module Sets {
+module Set {
 
   //
   // Use this to restrict our secondary initializer to only resolve when the

@@ -1,4 +1,4 @@
-use Lists;
+use List;
 
 config type listType = int;
 config param listLock = true;

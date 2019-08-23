@@ -1,4 +1,4 @@
-use Lists;
+use List;
 
 // Control these via COMPOPTS to test class types and no parallel safety.
 config type listType = int;

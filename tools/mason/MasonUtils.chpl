@@ -20,7 +20,7 @@
 
 
 /* A helper file of utilities for Mason */
-private use Lists;
+private use List;
 use Spawn;
 use FileSystem;
 use TOML;

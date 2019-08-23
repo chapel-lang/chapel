@@ -1,4 +1,4 @@
-use Sets;
+use Set;
 
 record testRecord {
   var dummy: int = 0;
