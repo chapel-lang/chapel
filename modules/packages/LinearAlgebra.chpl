@@ -814,6 +814,9 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
     ``matPow`` will utilize the :mod:`BLAS` module for improved performance, if
     available. Compile with ``--set blasImpl=none`` to opt out of the
     :mod:`BLAS` implementation.
+
+    If ``b`` is negative, ``matPow`` will depend on :mod:`LAPACK` module, and will
+    generate a compiler error if ``lapackImpl`` is ``none``.
 */
 proc matPow(A: [], b) where isNumeric(b) {
   // TODO -- flatten recursion into while-loop
@@ -822,6 +825,11 @@ proc matPow(A: [], b) where isNumeric(b) {
     compilerError("matPow only support powers of integers");
   if !isSquare(A) then
     halt("Array not square");
+
+  if (b < 0) {
+    var A_inv = inv(A);
+    return _expBySquaring(A_inv, -b).value;
+  }
 
   return _expBySquaring(A, b).value;
 }
