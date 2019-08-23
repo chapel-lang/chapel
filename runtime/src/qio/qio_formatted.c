@@ -1332,22 +1332,28 @@ int _qio_byte_escape(uint8_t b, int32_t string_end, int string_format, char* tmp
   int cwidth;
   if( b == string_end || b == '\\' ||
       b == '\'' || b == '"' || b == '\n' ) {
-    tmp[0] = '\\';
-    if( b == '\n' ) {
-      tmpchr = 'n';
-    } else {
-      tmpchr = b;
+    if(tmp) {
+      tmp[0] = '\\';
+      if( b == '\n' ) {
+        tmpchr = 'n';
+      } else {
+        tmpchr = b;
+      }
+      tmp[1] = tmpchr;
     }
-    tmp[1] = tmpchr;
     cwidth = 2;
   } else if( b >= 128 || !isprint(b) ) {
-    tmp[0] = '\\';
-    tmp[1] = 'x';
-    tmp[2] = _qio_tohex((b >> 4) & 0xf);
-    tmp[3] = _qio_tohex((b >> 0) & 0xf);
+    if(tmp) {
+      tmp[0] = '\\';
+      tmp[1] = 'x';
+      tmp[2] = _qio_tohex((b >> 4) & 0xf);
+      tmp[3] = _qio_tohex((b >> 0) & 0xf);
+    }
     cwidth = 4;
   } else {
-    tmp[0] = b;
+    if(tmp) {
+      tmp[0] = b;
+    }
     cwidth = 1;
   }
 
@@ -1671,8 +1677,7 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
       style->max_width_columns != UINT32_MAX ||
       style->max_width_characters != UINT32_MAX ) {
 
-    // TODO we shouldn't call this from print_bytes
-    err = qio_quote_string_length(style->string_start, style->string_end, style->string_format, ptr, len, &ti);
+    err = qio_quote_bytes_length(style->string_start, style->string_end, style->string_format, ptr, len, &ti);
     if( err ) goto rewind;
 
     use_len = ti.ret_truncated_at_byte;
@@ -1757,6 +1762,105 @@ unlock:
   }
 
   return err;
+}
+
+// Returns length information for how we would quote ptr
+// without actually saving it anywhere. 
+qioerr qio_quote_bytes_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti)
+{
+  ssize_t i; // how far along the input are we (ie ptr[i])
+  ssize_t quoted_bytes = 0; // how many bytes of output?
+  ssize_t quoted_chars = 0; // how many chars of output?
+  ssize_t quoted_cols = 0; // how many columns of output?
+  ssize_t safe_i = 0;
+  ssize_t safe_quoted_bytes = 0;
+  ssize_t safe_quoted_chars = 0;
+  ssize_t safe_quoted_cols = 0;
+  int ellipses_size;
+  int end_quote_size;
+  int start_quote_size;
+  int clen = 1;
+  int32_t chr;
+  ssize_t max_cols = (ti)?(ti->max_columns):(SSIZE_MAX);
+  ssize_t max_chars = (ti)?(ti->max_chars):(SSIZE_MAX);
+  ssize_t max_bytes = (ti)?(ti->max_bytes):(SSIZE_MAX);
+  int overfull = 0;
+  int tmplen, tmpchars, tmpcols;
+
+  // write the string itself, possible with some escape-handling.
+  if( string_format == QIO_STRING_FORMAT_WORD ||
+      string_format == QIO_STRING_FORMAT_TOEND ) {
+    ellipses_size = 0;
+    end_quote_size = 0;
+    start_quote_size = 0;
+  } else {
+    ellipses_size = 3; // ie ...
+    end_quote_size = 1; // ie a double quote
+    start_quote_size = 2; // ie b"
+    // Smallest pattern is b""...
+    if( max_cols < 6 ) max_cols = 6;
+    if( max_chars < 6 ) max_chars = 6;
+    if( max_bytes < 6 ) max_bytes = 6;
+  }
+
+  // Account for the starting quote.
+  quoted_bytes += start_quote_size;
+  quoted_chars += start_quote_size;
+  quoted_cols += start_quote_size;
+
+  // we need to compute the number of characters
+  // and the total number of columns.
+  for( i = 0; i < len; i+=clen ) {
+    tmplen = _qio_byte_escape(ptr[i], string_end, string_format, NULL,
+                              &tmpchars, &tmpcols);
+    if( quoted_bytes + ellipses_size + end_quote_size <= max_bytes &&
+        quoted_chars + ellipses_size + end_quote_size <= max_chars &&
+        quoted_cols + ellipses_size + end_quote_size <= max_cols) {
+      safe_i = i;
+      safe_quoted_bytes = quoted_bytes;
+      safe_quoted_chars = quoted_chars;
+      safe_quoted_cols = quoted_cols;
+    }
+    quoted_bytes += tmplen;
+    quoted_chars += tmpchars;
+    quoted_cols += tmpcols;
+    if( quoted_bytes + end_quote_size > max_bytes ||
+        quoted_chars + end_quote_size > max_chars ||
+        quoted_cols + end_quote_size > max_cols ) {
+      // We have over-filled.
+      overfull = 1;
+      break;
+    }
+  }
+
+  if( overfull ) {
+    i = safe_i;
+    // and add end quote and ellipses.
+    quoted_bytes = safe_quoted_bytes;
+    quoted_chars = safe_quoted_chars;
+    quoted_cols = safe_quoted_cols;
+  }
+
+  // Account for the end quote
+  quoted_bytes += end_quote_size;
+  quoted_chars += end_quote_size;
+  quoted_cols += end_quote_size;
+
+  if( overfull ) {
+    // Account for the ellipses
+    quoted_bytes += ellipses_size;
+    quoted_chars += ellipses_size;
+    quoted_cols += ellipses_size;
+  }
+
+  if( ti ) {
+    ti->ret_columns = quoted_cols;
+    ti->ret_chars = quoted_chars;
+    ti->ret_bytes = quoted_bytes;
+    ti->ret_truncated_at_byte = i;
+    ti->ret_truncated = overfull;
+  }
+  return 0;
 }
 
 // Returns length information for how we would quote ptr
