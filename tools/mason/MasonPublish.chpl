@@ -193,7 +193,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
   }
 }
 
-/* Subprocess function designed to pass a message to 'git commit' without gettthe string
+/* Subprocess function designed to pass a message to 'git commit' without get the string
  split by the MasonUtils runCommand()/
  */
 private proc commitSubProcess(dir, command) throws {
