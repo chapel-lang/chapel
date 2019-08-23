@@ -791,6 +791,10 @@ extern record iostyle { // aka qio_style_t
      on what the values of ``str_style`` mean.
    */
   var string_format:uint(8) = iostringformat.word:uint(8);
+
+  /* What character do we start bytes with, when appropriate? Default is " */
+  var bytes_prefix:style_char_t = 0x62; // b
+
   // numeric scanning/printing choices
   /* When reading or writing a numeric value in a text mode channel,
      what base should be used for the number? Default of 0 means decimal.
