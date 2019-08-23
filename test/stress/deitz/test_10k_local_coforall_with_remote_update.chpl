@@ -4,7 +4,7 @@ class C {
   var A: [1..n] int;
 }
 
-var c: unmanaged C;
+var c: unmanaged C?;
 
 on Locales(1) {
   c = new unmanaged C();
