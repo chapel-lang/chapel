@@ -60,7 +60,7 @@ proc masonTest(args) throws {
         update = false;
       }
       else if arg == '--update' {
-	        update = true;
+	      update = true;
 	    }
       else {
         compopts.append(arg);

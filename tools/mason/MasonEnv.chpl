@@ -44,12 +44,12 @@ proc MASON_CACHED_REGISTRY {
 }
 
 proc MASON_OFFLINE {
-	  const offlineEnv = getEnv('MASON_OFFLINE');
-	  const default = 'false';
+  const offlineEnv = getEnv('MASON_OFFLINE');
+	const default = 'false';
 	
-	  const offline = if offlineEnv == 'true' then offlineEnv else default;
+  const offline = if offlineEnv == 'true' then offlineEnv else default;
 	
-	  return offline;
+  return offline;
 }
 
 /* Read the MASON_REGISTRY environment variable.  It should be a comma
