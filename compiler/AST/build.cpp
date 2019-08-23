@@ -1660,6 +1660,10 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
   if (externOrExport == FLAG_EXTERN) {
     fn->addFlag(FLAG_LOCAL_ARGS);
     fn->addFlag(FLAG_EXTERN);
+
+    // extern functions with no declared return type will return void
+    if (fn->retExprType == NULL)
+      fn->retType = dtVoid;
   }
   if (externOrExport == FLAG_EXPORT) {
     fn->addFlag(FLAG_LOCAL_ARGS);
@@ -1747,8 +1751,6 @@ buildFunctionDecl(FnSymbol*   fn,
 
   if (optRetType)
     fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
-  else if (fn->hasFlag(FLAG_EXTERN))
-    fn->retType     = dtVoid;
 
   if (optThrowsError)
   {
@@ -1765,29 +1767,20 @@ buildFunctionDecl(FnSymbol*   fn,
     fn->lifetimeConstraints = new BlockStmt(optLifetimeConstraints);
   }
 
-  if (optFnBody)
-  {
+  if (optFnBody) {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot have a body.");
 
-    if (fn->body->length() == 0)
-    {
+    if (fn->body->length() == 0) {
       // Copy the statements from optFnBody to the function's
       // body to preserve line numbers
-      for_alist(expr, optFnBody->body)
-      {
+      for_alist(expr, optFnBody->body) {
         fn->body->insertAtTail(expr->remove());
       }
-
-    }
-    else
-    {
+    } else {
       fn->insertAtTail(optFnBody);
     }
-
-  }
-  else
-  {
+  } else {
     fn->addFlag(FLAG_NO_FN_BODY);
   }
 
