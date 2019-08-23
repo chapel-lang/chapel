@@ -45,10 +45,10 @@ proc MASON_CACHED_REGISTRY {
 
 proc MASON_OFFLINE {
   const offlineEnv = getEnv('MASON_OFFLINE');
-	const default = 'false';
-	
+  const default = 'false';
+
   const offline = if offlineEnv == 'true' then offlineEnv else default;
-	
+
   return offline;
 }
 

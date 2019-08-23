@@ -42,7 +42,7 @@ proc masonExternal(args: [] string) {
       if isDir(SPACK_ROOT) then
         throw new owned MasonError("Spack backend is already installed");
       else if MASON_OFFLINE == 'true' then
-	        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
+        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
       else {
         setupSpack();
         exit(0);
