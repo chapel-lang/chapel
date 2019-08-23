@@ -38,6 +38,17 @@
     objects as they are essentially wrappers around an ``unmanaged`` object, and
     ``borrowed`` objects require a static lifetime.
 
+  Global Atomics
+  --------------
+
+  By default, the ``AtomicObject`` can support atomic operations on potentially remote
+  objects. This does add some additional overhead and can be turned off during initialization.
+
+  .. code-block:: chpl
+
+    var atomicVar : AtomicObject(unmanaged Obj, hasGlobalSupport=false);
+
+
   .. warning::
 
     Currently, ``AtomicObject`` only supports up to 65535 locales, and also works on
@@ -48,6 +59,34 @@
   ABA Wrapper
   -----------
 
+  The 'ABA' problem occurs when a task *T1* reads the value *A* from location *L*, 
+  another task *T2* writes *B* to *L*, and another task *T3* writes the value *A* to *L*; 
+  once *T1* checks to see if *L* has changed, it will incorrectly assume that it has not. 
+  To make this more concrete, think of *A* and *B* both as a node in a linked list; 
+  *T1* reads *A*, *T2* allocates a new node *B* and writes it to *L* and deletes *A*, 
+  and *T3* allocates a new node which just so happens to be the same piece of memory that 
+  *A* had before and writes it to *L*. Atomic operations such the ``compareExchange`` 
+  will succeed despite the fact that the nodes are not the same as it will perform 
+  the operation based on the virtual address.
+
+  The ``ABA`` wrapper is one solution to this problem by coupling a 64-bit count alongside
+  the normal 64-bit virtual address or the 48-bits of virtual address and 16-bit locality
+  information. ``AtomicObject`` has its own ABA variants of its API, which can both take and return
+  ``ABA`` wrappers. Examples of how they can be used can be observed below. It is safe to
+  mix-and-match both ABA and non-ABA variants of the API, but only the ABA variants will advance
+  the ABA counter.
+
+  .. code-block:: chpl
+
+    var atomicVar : AtomicObject(unmanaged Obj, hasABASupport=true);
+    var obj1 = new unmanaged Obj();
+    var obj2 = new unmanaged Obj();
+    atomicVar.write(obj1);
+    var a = atomicVar.readABA();
+    var b = atomicVar.writeABA(obj2);
+    atomicVar.writeABA(obj1);
+    assert(atomicVar.compareExchange(obj1, obj2) == false, "This should always fail!");
+
   .. note::
 
     We ``forward`` all accesses to the ``ABA`` wrapper to the object it is wrapping 
@@ -55,6 +94,7 @@
     becomes as transparent as possible. This applies to all method and field accesses.
     As forwarding does not apply to operators, common operators are explicitly defined
     in such a way that they will also be forwarded to the object being wrapped.
+
 
 
 */
