@@ -78,7 +78,6 @@ MODULES_TO_DOCUMENT = \
 	standard/IO.chpl \
 	standard/LinkedLists.chpl \
 	standard/List.chpl \
-	standard/Lists.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
@@ -86,7 +85,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
 	standard/Regexp.chpl \
-	standard/Sets.chpl \
+	standard/Set.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \

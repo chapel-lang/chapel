@@ -1,7 +1,7 @@
 pragma "safe"
 module BadAppendBorrow {
 
-use Lists;
+use List;
 
 class I {
   var dom: domain(1);
