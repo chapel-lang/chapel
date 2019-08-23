@@ -78,6 +78,7 @@ MODULES_TO_DOCUMENT = \
 	standard/IO.chpl \
 	standard/LinkedLists.chpl \
 	standard/List.chpl \
+	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Path.chpl \

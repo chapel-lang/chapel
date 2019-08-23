@@ -14,6 +14,6 @@ proc foo(x) type {
 }
 
 proc main {
-  var a: foo(3);
+  var a: borrowed foo(3)?;
   writeln(a.type:string);
 }
