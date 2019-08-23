@@ -36,5 +36,17 @@ forall i in 1..N with (var tok = lfq.getToken(), + reduce total) {
 }
 assert(total == expected, total, "!=", expected);
 lfq.tryReclaim();
+timer.stop();
 if printTiming then writeln("Token: ", timer.elapsed());
+timer.clear();
+
+timer.start();
+forall i in 1..N with (var tok = lfq.getToken()) {
+    lfq.enqueue(i, tok);
+}
+
+total = + reduce lfq.drain();
+assert(total == expected, total, "!=", expected);
+lfq.tryReclaim();
+if printTiming then writeln("Drain: ", timer.elapsed());
 timer.clear();
