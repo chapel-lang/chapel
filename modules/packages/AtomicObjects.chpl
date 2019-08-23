@@ -668,18 +668,32 @@ module AtomicObjects {
       return fromPointer(atomicVariable.exchange(toPointer(newObj)));
     }
 
-    inline proc exchangeABA(newObj : objType) {
+    inline proc exchangeABA(newObj : objType) : ABA(objType) {
       doABACheck();
-      var ret : objType;
+      var ret : ABA(objType);
       on this {
         var retval : ABA(objType);
         var _newObj = newObj;
         var val = new ABA(objType, toPointer(newObj), 0);
         exchange128bit_special(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
-        ret = retval.getObject();
+        ret = retval;
       }
 
       return ret; 
+    }
+
+    inline proc exchangeABA(newObj: ABA(objType)) : ABA(objType) {
+      doABACheck();
+      var ret : ABA(objType);
+      on this {
+        var retval : ABA(objType);
+        var _newObj = newObj;
+        var val = newObj;
+        exchange128bit(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
+        ret = retval;
+      }
+
+      return ret;
     }
 
     proc readWriteThis(f) {
