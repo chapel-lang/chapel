@@ -27,7 +27,7 @@ use MasonNew;
 use MasonModify;
 use Random;
 use MasonUpdate;
-private use Lists;
+private use List;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
    Returns the help output in '-h' or '--help' exits in the arguments.
