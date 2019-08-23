@@ -1767,29 +1767,20 @@ buildFunctionDecl(FnSymbol*   fn,
     fn->lifetimeConstraints = new BlockStmt(optLifetimeConstraints);
   }
 
-  if (optFnBody)
-  {
+  if (optFnBody) {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot have a body.");
 
-    if (fn->body->length() == 0)
-    {
+    if (fn->body->length() == 0) {
       // Copy the statements from optFnBody to the function's
       // body to preserve line numbers
-      for_alist(expr, optFnBody->body)
-      {
+      for_alist(expr, optFnBody->body) {
         fn->body->insertAtTail(expr->remove());
       }
-
-    }
-    else
-    {
+    } else {
       fn->insertAtTail(optFnBody);
     }
-
-  }
-  else
-  {
+  } else {
     fn->addFlag(FLAG_NO_FN_BODY);
   }
 
