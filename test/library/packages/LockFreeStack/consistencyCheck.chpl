@@ -36,5 +36,17 @@ forall i in 1..N with (var tok = lfs.getToken(), + reduce total) {
 }
 assert(total == expected, total, "!=", expected);
 lfs.tryReclaim();
+timer.stop();
 if printTiming then writeln("Token: ", timer.elapsed());
+timer.clear();
+
+timer.start();
+forall i in 1..N with (var tok = lfs.getToken()) {
+    lfs.push(i, tok);
+}
+
+total = + reduce lfs.drain();
+assert(total == expected, total, "!=", expected);
+lfs.tryReclaim();
+if printTiming then writeln("Drain: ", timer.elapsed());
 timer.clear();

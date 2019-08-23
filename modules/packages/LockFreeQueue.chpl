@@ -69,6 +69,7 @@ module LockFreeQueue {
         else {
           _tail.compareExchange(curr_tail, next);
         }
+        chpl_task_yield();
       }
       tok.unpin();
     }
@@ -96,6 +97,7 @@ module LockFreeQueue {
             return (true, ret_val);
           }
         }
+        chpl_task_yield();
       }
 
       tok.unpin();
