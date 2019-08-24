@@ -559,22 +559,23 @@ module AtomicObjects {
     param hasABASupport : bool;
     // If this atomic instance provides global atomics
     param hasGlobalSupport : bool;
-    var atomicVar : if hasABASupport then _ddata(_ABAInternal(objType)) else atomic uint(64);
+    var atomicVar : if hasABASupport then _ddata(_ABAInternal(objType?)) else atomic uint(64);
 
     proc init(type objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
       if !isUnmanagedClass(objType) { 
-        compilerError("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
+        compilerError ("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
       }
-      this.objType = objType;
+      this.objType = objType?;
       this.hasABASupport = hasABASupport;
       this.hasGlobalSupport = hasGlobalSupport;
       this.complete();
       if hasABASupport {
         var ptr : c_void_ptr;
-        posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType)));
-        this.atomicVar = ptr:_ddata(_ABAInternal(objType));
-        c_memset(ptr, 0, c_sizeof(ABA(objType)));
+        posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(this.objType)));
+        this.atomicVar = ptr:_ddata(_ABAInternal(this.objType));
+        c_memset(ptr, 0, c_sizeof(ABA(this.objType)));
       }
+      compilerWarning(this.objType:string);
     }
 
     proc init(type objType, defaultValue : objType, param hasABASupport = false, param hasGlobalSupport = !_local) {

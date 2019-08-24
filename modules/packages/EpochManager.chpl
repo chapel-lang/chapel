@@ -339,8 +339,8 @@ module EpochManager {
     }
 
     class LimboList {
-      var _head : AtomicObject(unmanaged Node, hasABASupport=true, hasGlobalSupport=true);
-      var _freeListHead : AtomicObject(unmanaged Node, hasABASupport=true, hasGlobalSupport=true);
+      var _head : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
+      var _freeListHead : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
 
       proc push(obj : unmanaged object) {
         var node = recycleNode(obj);
