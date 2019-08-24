@@ -806,8 +806,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 }
 
 /*
-  Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
-  integral type.
+  Return the matrix ``A`` to the ``bth`` power, where ``b`` is am integer.
 
   .. note::
 
