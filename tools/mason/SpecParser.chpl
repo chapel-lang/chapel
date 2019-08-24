@@ -18,7 +18,7 @@
  */
 
 
-private use Lists;
+private use List;
 use MasonUtils;
 use MasonExternal;
 use Regexp;

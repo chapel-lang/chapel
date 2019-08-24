@@ -1,5 +1,5 @@
 
-private use Lists;
+private use List;
 use MasonUpdate;
 use MasonUtils;
 use TOML;

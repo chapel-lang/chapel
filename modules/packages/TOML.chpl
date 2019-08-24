@@ -34,7 +34,7 @@ pragma "error mode fatal"
 module TOML {
 
 
-private use Lists;
+private use List;
 use TomlParser;
 private use TomlReader;
 

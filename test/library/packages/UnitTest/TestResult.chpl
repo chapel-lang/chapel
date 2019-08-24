@@ -8,7 +8,7 @@
   formatted traceback of the error that occurred.
 */
 module TestResult {
-  private use Lists;
+  private use List;
   class TestResult {
     type tupType = 2*string;
     var failures: list(tupType),
