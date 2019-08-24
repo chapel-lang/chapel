@@ -542,19 +542,25 @@ module List {
     }
 
     //
-    // Shift elements including and after index `shift` positions to the right
-    // in memory, possibly resizing. May expand memory if necessary.
+    // Shift elements including and after index `idx` so that they are mmoved
+    // `shift` positions to the right in memory, possibly resizing. May
+    // expand memory if necessary.
     //
     pragma "no doc"
     proc _expand(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
-      _maybeAcquireMem(1);
+      if shift <= 0 then
+        return;
 
-      for i in idx.._size by -1 {
-        ref src = _getRef(i);
-        ref dst = _getRef(i + 1);
-        _move(src, dst);
+      on this {
+        _maybeAcquireMem(shift);
+
+        for i in idx.._size by -1 {
+          ref src = _getRef(i);
+          ref dst = _getRef(i + shift);
+          _move(src, dst);
+        }
       }
     }
 
@@ -693,8 +699,8 @@ module List {
         Inserting an element into this list may invalidate existing references
         to the elements contained in this list.
 
-      :arg i: The index of the element at which to insert.
-      :type i: `int`
+      :arg idx: The index into this list at which to insert.
+      :type idx: `int`
 
       :arg x: The element to insert.
       :type x: `eltType`
@@ -702,7 +708,7 @@ module List {
       :return: `true` if `x` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(i: int, pragma "no auto destroy" in x: eltType): bool
+    proc insert(idx: int, pragma "no auto destroy" in x: eltType): bool
          lifetime this < x {
       var result = false;
 
@@ -710,13 +716,13 @@ module List {
         _enter();
 
       // Handle special case of `a.insert((a.size + 1), x)` here.
-      if (i == _size + 1) {
+      if (idx == _size + 1) {
         _appendByRef(x);
         result = true;
-      } else if _withinBounds(i) {
-        _expand(i);
+      } else if _withinBounds(idx) {
+        _expand(idx);
         ref src = x;
-        ref dst = _getRef(i);
+        ref dst = _getRef(idx);
         _move(src, dst);
         _size += 1;
         result = true;
@@ -728,10 +734,44 @@ module List {
       return result;  
     }
 
+    pragma "no doc"
+    proc _insertGenericKnownSize(idx: int, items, size: int): bool {
+      var result = false;
+
+      _sanity(size >= 0);
+
+      if size == 0 then
+        return true;
+
+      on this {
+        if (idx == _size + 1) {
+          _extendGeneric(items);
+          result = true;
+        } else if _withinBounds(idx) {
+          _expand(idx, size);
+          var i = idx;
+
+          for x in items {
+            pragma "no auto destroy"
+            var cpy = x;
+            ref src = cpy;
+            ref dst = _getRef(i);
+            _move(src, dst);
+            _size += 1;
+            i += 1;
+          }
+
+          result = true;
+        }
+      }
+
+      return result;
+    }
+
     /*
-      Insert an array of elements `arr` into this list at index `i`, shifting
-      all elements at and following the index `arr.size` positions to the
-      right. 
+      Insert an array of elements `arr` into this list at index `idx`,
+      shifting all elements at and following the index `arr.size` positions
+      to the right. 
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
@@ -741,18 +781,66 @@ module List {
         Inserting elements into this list may invalidate existing references
         to the elements contained in this list.
 
-      :arg i: The index of the element at which to insert.
-      :type i: `int`
+      :arg idx: The index into this list at which to insert.
+      :type idx: `int`
 
       :arg arr: An array of elements to insert.
-      :type x: `eltType`
+      :type x: `[] eltType`
 
       :return: `true` if `arr` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(i: int, const ref arr: [?d] eltType): bool {
+    proc insert(idx: int, const ref arr: [?d] eltType): bool
+         lifetime this < arr {
 
+      var result = false;
 
+      on this {
+        _enter();
+        result = _insertGenericKnownSize(idx, arr, arr.size);
+        _leave();
+      }
+
+      return result;
+    }
+
+    /*
+      Insert a list of elements `lst` into this list at index `idx`, shifting
+      all elements at and following the index `lst.size` positions to the
+      right.
+
+      If the insertion is successful, this method returns `true`. If the given
+      index is out of bounds, this method does nothing and returns `false`.
+
+      .. warning::
+
+        Inserting elements into this list may invalidate existing references
+        to the elements contained in this list.
+
+      :arg idx: The index into this list at which to insert.
+      :type idx: `int`
+
+      :arg lst: A list of elements to insert.
+      :type lst: list(eltType)
+
+      :return: `true` if `lst` was inserted, `false` otherwise.
+      :rtype: `bool`
+    */
+    proc insert(idx: int, const ref lst: list(eltType)): bool
+         lifetime this < lst {
+      
+      var result = false;
+      
+      // Prevent deadlock if we are trying to insert this into itself.
+      const size = lst.size;
+
+      on this {
+        _enter();
+        result = _insertGenericKnownSize(idx, lst, size);
+        _leave();
+      }
+
+      return result;
     }
 
     /*
