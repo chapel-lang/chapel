@@ -918,7 +918,9 @@ qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, 
           style->string_format == QIO_STRING_FORMAT_TOEND ||
           style->string_format == QIO_STRING_FORMAT_TOEOF ) {
         // OK, use the byte we have
-      } else if( chr == style->bytes_prefix ) {
+      } else if( style->bytes_prefix != 0 &&
+                 chr == style->bytes_prefix ) {
+        // style->bytes_prefix is set and the character is a match:
         // Read the next byte hoping that it is string_start
         chr = qio_channel_read_byte(false, ch);
         if(chr < 0) {
@@ -934,6 +936,16 @@ qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, 
           }
         } else {
           QIO_GET_CONSTANT_ERROR(err, EFORMAT, "missing bytes start");
+          break;
+        }
+      } else if ( style->bytes_prefix == 0 &&
+                  chr == style->string_start) {
+        // we are OK with reading "some bytes" into a bytes object as long as
+        // the bytes_prefix is set to 0.
+        // so, go ahead and read the next byte
+        chr = qio_channel_read_byte(false, ch);
+        if(chr < 0) {
+          err = qio_int_to_err(-chr);
           break;
         }
       } else {
