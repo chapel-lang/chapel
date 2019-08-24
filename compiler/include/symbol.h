@@ -124,7 +124,7 @@ enum ForallIntentTag {
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
-ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
+ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
 
 // parser support
 enum ShadowVarPrefix {

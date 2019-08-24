@@ -923,7 +923,7 @@ void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
     ti->insertAtTail(ri);
     ti->insertAtTail(ovar);
   } else {
-    ArgSymbol* tiMark = tiMarkForForallIntent(svar->intent);
+    ArgSymbol* tiMark = tiMarkForForallIntent(svar);
     INT_ASSERT(tiMark != NULL);
     ti->insertAtTail(tiMark);
     ti->insertAtTail(ovar);
