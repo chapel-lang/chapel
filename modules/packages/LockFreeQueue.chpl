@@ -76,15 +76,15 @@
       }
     } 
 
-    Also provided, is a utility method for draining the stack of all elements,
-    called ``drain``. This iterator will implicitly call ``tryReclaim`` at the
-    end and will optimally create one token per task.
+  Also provided, is a utility method for draining the stack of all elements,
+  called ``drain``. This iterator will implicitly call ``tryReclaim`` at the
+  end and will optimally create one token per task.
 
-    .. code-block:: chpl
+  .. code-block:: chpl
 
-      var lfq = new LockFreeQueue(int);
-      forall i in 1..N with (var tok = lfq.getToken()) do lfq.enqueue(i,tok);
-      var total = + reduce lfq.drain();
+    var lfq = new LockFreeQueue(int);
+    forall i in 1..N with (var tok = lfq.getToken()) do lfq.enqueue(i,tok);
+    var total = + reduce lfq.drain();
   
   .. [#] Michael, Maged M., and Michael L. Scott. 
       Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms. 

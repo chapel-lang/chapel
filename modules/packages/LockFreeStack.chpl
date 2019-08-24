@@ -77,15 +77,15 @@
       }
     } 
 
-    Also provided, is a utility method for draining the stack of all elements,
-    called ``drain``. This iterator will implicitly call ``tryReclaim`` at the
-    end and will optimally create one token per task.
+  Also provided, is a utility method for draining the stack of all elements,
+  called ``drain``. This iterator will implicitly call ``tryReclaim`` at the
+  end and will optimally create one token per task.
 
-    .. code-block:: chpl
+  .. code-block:: chpl
 
-      var lfs = new LockFreeStack(int);
-      forall i in 1..N with (var tok = lfs.getToken()) do lfs.push(i,tok);
-      var total = + reduce lfs.drain();
+    var lfs = new LockFreeStack(int);
+    forall i in 1..N with (var tok = lfs.getToken()) do lfs.push(i,tok);
+    var total = + reduce lfs.drain();
   
   .. [#] Hendler, Danny, Nir Shavit, and Lena Yerushalmi. 
       "A scalable lock-free stack algorithm." Proceedings of the sixteenth annual 
