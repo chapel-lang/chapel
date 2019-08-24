@@ -20,7 +20,7 @@
 
 
 /* A helper file of utilities for Mason */
-private use Lists;
+private use List;
 use Spawn;
 use FileSystem;
 use TOML;
@@ -367,7 +367,7 @@ proc getChapelVersionStr() {
   return chplVersion;
 }
 
-proc gitC(newDir, command, quiet=false) {
+proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
 
   const oldDir = here.cwd();

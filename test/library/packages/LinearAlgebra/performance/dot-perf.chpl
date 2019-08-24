@@ -1,5 +1,5 @@
 /*
-Dense dot product performance testing
+Dense dot product performance testing intended for manual usage.
 */
 
 use LinearAlgebra;

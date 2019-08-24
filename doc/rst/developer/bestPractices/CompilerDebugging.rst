@@ -36,24 +36,24 @@ Place the following in your ``~/.gdbinit``:
 
 .. code-block:: bash
 
-  ###########
-  # short for "set up for chapel"
-  define schp
-  echo setting for Chapel in $arg0 \n
-  set environment CHPL_HOME $arg0         # needed if not already in environment
-  set environment CHPL_DEVELOPER 1        # ditto
-  source $arg0/compiler/etc/gdb.commands  # done automatically by 'chpl --gdb'
-  sdirs $arg0
-  end
+     ###########
+     # short for "set up for chapel"
+     define schp
+     echo setting for Chapel in $arg0 \n
+     set environment CHPL_HOME $arg0         # needed if not already in environment
+     set environment CHPL_DEVELOPER 1        # ditto
+     source $arg0/compiler/etc/gdb.commands  # done automatically by 'chpl --gdb'
+     sdirs $arg0
+     end
 
- # needed (I think) only for debugging the generated code
- define sdirs
-  directory $arg0/modules/internal
-  directory $arg0/modules/standard
-  directory $arg0/modules/dists
-  directory $arg0/modules/layouts
-  end
- ###########
+    # needed (I think) only for debugging the generated code
+    define sdirs
+     directory $arg0/modules/internal
+     directory $arg0/modules/standard
+     directory $arg0/modules/dists
+     directory $arg0/modules/layouts
+     end
+    ###########
 
 
 then call ``schp`` from the gdb prompt (do not use ``~`` or ``$CHPL_HOME``), e.g.:
@@ -72,16 +72,16 @@ Here are some other useful additions to your ``~/.gdbinit``:
 
 .. code-block:: bash
 
- ###########
- set print pretty
- set print object on
- set unwindonsignal on
- ###########
+    ###########
+    set print pretty
+    set print object on
+    set unwindonsignal on
+    ###########
 
 
 The ``set print object on`` makes ``gdb`` print a C++ object based on its
 dynamic, rather than static, type. E.g. if the variable ``p`` has the
-(static) type Expr*, then 'print *p' in gdb will include the fields
+(static) type ``Expr*``, then ``print *p`` in gdb will include the fields
 corresponding to whatever subclass of Expr 'p' is pointing to at the
 moment (e.g. DefExpr, SymExpr, etc.).
 

@@ -1,0 +1,4 @@
+opaqueAssignment.chpl:1: warning: Opaque domains are deprecated - please switch to another domain type
+opaqueAssignment.chpl:2: warning: Opaque domains are deprecated - please switch to another domain type
+0
+0

@@ -621,7 +621,9 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
   CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
-  dtValue = createInternalType("value", "_chpl_value");
+  // parses from record
+  dtAnyRecord = createInternalType("record", "_anyRecord");
+  dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
   gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
   gIteratorBreakToken->addFlag(FLAG_CONST);
@@ -710,6 +712,8 @@ void initPrimitiveTypes() {
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
+  // parses from enum
+  // TODO: remove enumerated and replace it with enum
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
@@ -732,7 +736,7 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
-  dtBorrowed = createInternalType("_borrowed", "_borrowed");
+  dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
   dtBorrowedNonNilable = createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
@@ -741,7 +745,7 @@ void initPrimitiveTypes() {
   dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
   dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
+  dtUnmanaged = createInternalType("unmanaged", "unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanagedNonNilable = createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
@@ -750,10 +754,11 @@ void initPrimitiveTypes() {
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyManagement = createInternalType("_anyManagement", "_anyManagement");
-  dtAnyManagement->symbol->addFlag(FLAG_GENERIC);
+  dtAnyManagementAnyNilable = createInternalType("_anyManagementAnyNilable", "_anyManagementAnyNilable");
+  dtAnyManagementAnyNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyManagementNonNilable = createInternalType("_anyManagementNonNilable", "_anyManagementNonNilable");
+  // parses from class
+  dtAnyManagementNonNilable = createInternalType("class", "_anyManagementNonNilable");
   dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyManagementNilable = createInternalType("_anyManagementNilable", "_anyManagementNilable");
@@ -857,9 +862,9 @@ void initCompilerGlobals() {
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
 
-  gLegacyNilClasses = new VarSymbol("chpl_legacyNilClasses", dtBool);
-  gLegacyNilClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyNilClasses, fLegacyNilableClasses);
+  gLegacyClasses = new VarSymbol("chpl_legacyClasses", dtBool);
+  gLegacyClasses->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gLegacyClasses, fLegacyClasses);
 
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);
@@ -1051,7 +1056,7 @@ bool isBuiltinGenericClassType(Type* t) {
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
          t == dtUnmanagedNonNilable ||
-         t == dtAnyManagement ||
+         t == dtAnyManagementAnyNilable ||
          t == dtAnyManagementNonNilable ||
          t == dtAnyManagementNilable;
 }

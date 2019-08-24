@@ -46,7 +46,6 @@ Initializing Modules:
           Regexp
         DefaultAssociative
         ExternalArray
-        Lists
         RangeChunk
        ChapelNumLocales
        Sys
@@ -59,7 +58,6 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelError
-    ChapelDynDispHack
     ChapelTaskData
     Assert
     AlignedTSupport

@@ -443,7 +443,7 @@ proc eye(Dom: domain(2), type eltType=real) {
     from the ``-k``th row. ``k`` is 0-indexed.
 */
 proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0) 
-              where isDenseArr(X){
+              where isDenseMatrix(X) {
   var start, end = 0;
   if (k >= 0) { // upper or main diagonal
     start = 1;
@@ -773,6 +773,37 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+/*
+  Returns the inverse of ``A`` square matrix A.
+  
+  
+    .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
+*/
+proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+  if Adom.rank != 2 then
+    halt("Wrong rank for matrix inverse");
+
+  if !isSquare(A) then
+    halt("Matrix inverse only supports square matrices");
+
+  const n = Adom.shape(1);
+  var ipiv : [1..n] c_int;
+  
+  if (!overwrite) {
+    var A_clone = A;
+    LAPACK.getrf(lapack_memory_order.row_major, A_clone, ipiv);
+    LAPACK.getri(lapack_memory_order.row_major, A_clone, ipiv);
+    return A_clone;
+  }
+  
+  LAPACK.getrf(lapack_memory_order.row_major, A, ipiv);
+  LAPACK.getri(lapack_memory_order.row_major, A, ipiv);
+
+  return A;
+}
 
 /*
   Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
@@ -1406,14 +1437,28 @@ proc isDenseArr(A: [?D]) param : bool {
 pragma "no doc"
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isDenseDom(D: domain) param : bool {
-  return isRectangularDom(D) && (D.dist.type == defaultDist.type || D.dist.type < ArrayViewRankChangeDist);
+  return isRectangularDom(D);
+}
+
+// TODO: Add this to public interface eventually
+pragma "no doc"
+/* Returns ``true`` if the array is N-dimensional non-distributed array. */
+proc isLocalArr(A: [?D]) param : bool {
+  return isLocalDom(D);
+}
+
+// TODO: Add this to public interface eventually
+pragma "no doc"
+/* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
+proc isLocalDom(D: domain) param : bool {
+  return (D.dist.type == defaultDist.type || D.dist.type < ArrayViewRankChangeDist);
 }
 
 // TODO: Add this to public interface eventually
 pragma "no doc"
 /* Returns ``true`` if the array is dense 2-dimensional non-distributed array. */
 proc isDenseMatrix(A: []) param : bool {
-  return A.rank == 2 && isDenseArr(A);
+  return A.rank == 2 && isDenseArr(A) && isLocalArr(A);
 }
 
 // Work-around for #8543
@@ -1562,7 +1607,9 @@ module Sparse {
 
   pragma "no doc"
   /* Return a CSR matrix over domain: ``Dom`` - Dense case */
-  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && isDenseDom(Dom) {
+  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && 
+                                                       isDenseDom(Dom) &&
+                                                       isLocalDom(Dom) {
     var csrDom = CSRDomain(Dom);
     var M: [csrDom] eltType;
     return M;
@@ -1903,7 +1950,7 @@ module Sparse {
 
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
-    use Lists;
+    use List;
     var indices: list(2*D.idxType);
     for i in D.dim(1) {
       for j in D.dimIter(2, i) {

@@ -211,7 +211,7 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 
 static bool useLegacyNilability(Expr* at) {
-  if (fLegacyNilableClasses) return true;
+  if (fLegacyClasses) return true;
 
   if (at != NULL) {
     FnSymbol* fn = at->getFunction();
@@ -683,6 +683,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  // TODO: update this to exclude implementation records, see isRecordType
+  if (formalType == dtAnyRecord && isRecord(actualType)) {
+    return true;
+  }
+
+
   if (actualType == formalType) {
     return true;
   }
@@ -1045,6 +1051,7 @@ ClassTypeDecorator removeGenericNilability(ClassTypeDecorator actual) {
  */
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal,
+                         bool allowNonSubtypes,
                          bool implicitBang) {
 
   if (actual == formal)
@@ -1056,6 +1063,10 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
   if (actual == formal)
     return true;
 
+  // Don't consider implicit coercion from nilable to non-nilable as subtyping.
+  if (allowNonSubtypes == false)
+    implicitBang = false;
+
   switch (formal) {
     case CLASS_TYPE_BORROWED:
       // borrowed but generic nilability
@@ -1066,7 +1077,8 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
       return isDecoratorNonNilable(actual) || implicitBang;
     case CLASS_TYPE_BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
-      return true;
+      // but only subtypes if the actual is already nilable.
+      return allowNonSubtypes || isDecoratorNilable(actual);
     case CLASS_TYPE_UNMANAGED:
       // unmanaged but generic nilability
       // This would be instantiation
@@ -1074,12 +1086,10 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_UNMANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to unmanaged
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
+      return (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       // Can't coerce borrowed to unmanaged
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE;
+      return (allowNonSubtypes && actual == CLASS_TYPE_UNMANAGED_NONNIL);
 
     case CLASS_TYPE_MANAGED:
       // managed but generic nilability
@@ -1088,12 +1098,10 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
     case CLASS_TYPE_MANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to managed
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
+      return (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
     case CLASS_TYPE_MANAGED_NILABLE:
       // Can't coerce borrowed to managed
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
+      return (allowNonSubtypes && actual == CLASS_TYPE_MANAGED_NONNIL);
 
     case CLASS_TYPE_GENERIC:
       return false; // instantiation not coercion
@@ -1102,7 +1110,7 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
       return implicitBang && actual == CLASS_TYPE_GENERIC_NILABLE;
     case CLASS_TYPE_GENERIC_NILABLE:
       // generally instantiation
-      return actual == CLASS_TYPE_GENERIC_NONNIL;
+      return allowNonSubtypes && actual == CLASS_TYPE_GENERIC_NONNIL;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1168,6 +1176,7 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
 // Can we instatiate or coerce or both?
 bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
                                       ClassTypeDecorator formal,
+                                      bool allowNonSubtypes,
                                       bool implicitBang) {
   if (actual == formal)
     return true;
@@ -1178,6 +1187,10 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
   if (actual == formal)
     return true;
 
+  // Don't consider implicit coercion from nilable to non-nilable as subtyping.
+  if (allowNonSubtypes == false)
+    implicitBang = false;
+
   switch (formal) {
     case CLASS_TYPE_BORROWED:
       // can borrow from anything, could instantiate as borrowed?
@@ -1187,28 +1200,24 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
       return isDecoratorNonNilable(actual) || implicitBang;
     case CLASS_TYPE_BORROWED_NILABLE:
       // can borrow from anything, can always coerce to nilable
-      return true;
+      return allowNonSubtypes || isDecoratorNilable(actual);;
 
     case CLASS_TYPE_UNMANAGED:
       // no coercions to unmanaged
       return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
              actual == CLASS_TYPE_UNMANAGED_NILABLE;
     case CLASS_TYPE_UNMANAGED_NONNIL:
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
+      return (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
     case CLASS_TYPE_UNMANAGED_NILABLE:
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE;
+      return (allowNonSubtypes && actual == CLASS_TYPE_UNMANAGED_NONNIL);
 
     case CLASS_TYPE_MANAGED:
       return actual == CLASS_TYPE_MANAGED_NONNIL ||
              actual == CLASS_TYPE_MANAGED_NILABLE;
     case CLASS_TYPE_MANAGED_NONNIL:
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
+      return (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
     case CLASS_TYPE_MANAGED_NILABLE:
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
+      return (allowNonSubtypes && actual == CLASS_TYPE_MANAGED_NONNIL);
 
     case CLASS_TYPE_GENERIC:
       // accepts anything
@@ -1217,7 +1226,7 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
       // accepts anything nonnil
       return isDecoratorNonNilable(actual) || implicitBang;
     case CLASS_TYPE_GENERIC_NILABLE:
-      return true;
+      return allowNonSubtypes || isDecoratorNilable(actual);
 
     // no default for compiler warnings to know when to update it
   }
@@ -1246,33 +1255,24 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
   return false;
 }
 
+// The compiler considers many patterns of "subtyping" as things
+// that require coercions (they often require coercions in the generated C).
+// However not all coercions are created equal. Some of them are implementing
+// subtyping.
+// Here we consider a coercion to be implementing "subtyping" and return
+// true for this call if, in an ideal implementation, the actual could
+// be passed to a `const ref` argument of the formal type.
+bool canCoerceAsSubtype(Type*     actualType,
+                        Symbol*   actualSym,
+                        Type*     formalType,
+                        ArgSymbol* formalSym,
+                        FnSymbol* fn,
+                        bool*     promotes,
+                        bool*     paramNarrows) {
 
-//
-// returns true iff dispatching the actualType to the formalType
-// results in a coercion.
-//
-// fn is the function being called usually but in resolveReturnType it
-// is the function we're finding return types for.
-bool canCoerce(Type*     actualType,
-               Symbol*   actualSym,
-               Type*     formalType,
-               ArgSymbol* formalSym,
-               FnSymbol* fn,
-               bool*     promotes,
-               bool*     paramNarrows) {
-  bool tmpParamNarrows = false;
-  if (canParamCoerce(actualType, actualSym, formalType, &tmpParamNarrows)) {
-    if (paramNarrows) *paramNarrows = tmpParamNarrows;
+  if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
+      (!isNonNilableClassType(formalType) || useLegacyNilability(actualSym)))
     return true;
-  }
-
-  if (isSyncType(actualType) || isSingleType(actualType)) {
-    Type* baseType = actualType->getField("valType")->type;
-
-    // sync can't store an array or a param, so no need to
-    // propagate promotes / paramNarrows
-    return canDispatch(baseType, NULL, formalType, formalSym, fn);
-  }
 
   if (isManagedPtrType(actualType)) {
     Type* actualBaseType = getManagedPtrBorrowType(actualType);
@@ -1309,18 +1309,6 @@ bool canCoerce(Type*     actualType,
       return true;
   }
 
-  if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
-    return true;
-  }
-
-  if (actualType->symbol->hasFlag(FLAG_REF))
-    // ref can't store a param, so no need to propagate paramNarrows
-    return canDispatch(actualType->getValType(), actualSym,
-                       // MPF: Should this be formalType->getValType() ?
-                       formalType, formalSym,
-                       fn,
-                       promotes);
-
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
     return true;
 
@@ -1346,11 +1334,95 @@ bool canCoerce(Type*     actualType,
       toAggregateType(canonicalDecoratedClassType(formalType));
     ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
 
+    // Check that the decorators allow coercion
+    if (canCoerceDecorators(actualDecorator, formalDecorator,
+                            /*allowNonSubtypes*/ false,
+                            /*implicitBang*/false)) {
+      // are the decorated class types the same?
+      if (actualC == formalC)
+        return true;
+
+      // are we passing a subclass?
+      AggregateType* actualParent = actualC;
+      while (actualParent != NULL) {
+        if (actualParent == formalC)
+          return true;
+        if (actualParent == dtObject)
+          break;
+        actualParent = actualParent->dispatchParents.only();
+      }
+    }
+  }
+
+  return false;
+}
+
+
+//
+// returns true iff dispatching the actualType to the formalType
+// results in a coercion.
+//
+// fn is the function being called usually but in resolveReturnType it
+// is the function we're finding return types for.
+bool canCoerce(Type*     actualType,
+               Symbol*   actualSym,
+               Type*     formalType,
+               ArgSymbol* formalSym,
+               FnSymbol* fn,
+               bool*     promotes,
+               bool*     paramNarrows) {
+  bool tmpPromotes = false;
+  bool tmpParamNarrows = false;
+  if (canParamCoerce(actualType, actualSym, formalType, &tmpParamNarrows)) {
+    if (paramNarrows) *paramNarrows = tmpParamNarrows;
+    return true;
+  }
+
+  tmpParamNarrows = false;
+  tmpPromotes = false;
+  if (canCoerceAsSubtype(actualType, actualSym, formalType, formalSym, fn,
+                         &tmpPromotes, &tmpParamNarrows)) {
+    if (promotes) *promotes = tmpPromotes;
+    if (paramNarrows) *paramNarrows = tmpParamNarrows;
+    return true;
+  }
+
+  if (isSyncType(actualType) || isSingleType(actualType)) {
+    Type* baseType = actualType->getField("valType")->type;
+
+    // sync can't store an array or a param, so no need to
+    // propagate promotes / paramNarrows
+    return canDispatch(baseType, NULL, formalType, formalSym, fn);
+  }
+
+  if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
+    return true;
+  }
+
+  if (actualType->symbol->hasFlag(FLAG_REF))
+    // ref can't store a param, so no need to propagate paramNarrows
+    return canDispatch(actualType->getValType(), actualSym,
+                       // MPF: Should this be formalType->getValType() ?
+                       formalType, formalSym,
+                       fn,
+                       promotes);
+
+  // Check for class subtyping
+  // Class subtyping needs coercions in order to generate C code.
+  if (isClassLike(actualType) && isClassLike(formalType)) {
+    AggregateType* actualC =
+      toAggregateType(canonicalDecoratedClassType(actualType));
+    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    AggregateType* formalC =
+      toAggregateType(canonicalDecoratedClassType(formalType));
+    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+
     bool implicitBang = allowImplicitNilabilityRemoval(actualType, actualSym,
                                                        formalType, formalSym);
 
     // Check that the decorators allow coercion
-    if (canCoerceDecorators(actualDecorator, formalDecorator, implicitBang)) {
+    if (canCoerceDecorators(actualDecorator, formalDecorator,
+                            /*allowNonSubtypes*/ true, implicitBang)) {
       // are the decorated class types the same?
       if (actualC == formalC)
         return true;
@@ -1403,10 +1475,6 @@ bool doCanDispatch(Type*     actualType,
       isGenericInstantiation(formalType, actualType))
     return true;
 
-  if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
-      (!isNonNilableClassType(formalType) || useLegacyNilability(actualSym)))
-    return true;
-
   if (actualType->refType == formalType &&
       // This is a workaround for type problems with tuples
       // in implement forall intents...
@@ -1447,6 +1515,8 @@ bool doCanDispatch(Type*     actualType,
   return false;
 }
 
+// if paramCoerce is true, only check for param coercions (and not other
+// coercions).
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
@@ -2899,7 +2969,7 @@ static bool isAcceptableMethodChoice(CallExpr* call,
   AggregateType* actualClass = toAggregateType(actualType);
   if (actualClass == NULL || ! actualClass->isClass())
     return false;  // a method not on a class
-    
+
   ModuleSymbol* actualMod = actualClass->getModule();
   if (actualMod == bestFn->getModule())
     return true;  // bestFn and the receiver's class are in the same module
@@ -5673,8 +5743,8 @@ static bool managementMismatch(Type* lhs, Type* rhs) {
 }
 
 // Looks for this pattern:
-//   init var( temp, initValue ) 
-//   init field( parentAggregate, "fieldName", temp ) 
+//   init var( temp, initValue )
+//   init field( parentAggregate, "fieldName", temp )
 // and returns the 'init field' call.
 static CallExpr* fieldInitFrom(Symbol* temp) {
   // Todo: have PRIM_INIT_VAR be considered a "def" by isDefAndOrUse(),
@@ -5713,10 +5783,10 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
 
   // Nothing clicked. Assume assignment.
   return astr("assign to a", nonnilable);
-}    
+}
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
-  if (! fLegacyNilableClasses &&
+  if (! fLegacyClasses &&
       isNonNilableClassType(lhs) && isNilableClassType(rhs))
     USR_FATAL(userCall(call), "cannot %s '%s' from a nilable '%s'",
               describeLHS(call, " non-nilable"), toString(lhs), toString(rhs));
@@ -6828,7 +6898,7 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
   INT_ASSERT(newExpr->parentSymbol);
   Type* cType = canonicalDecoratedClassType(newType);
 
-  if (isClass(cType) && isSubTypeOrInstantiation(cType, dtError, newExpr)) {
+  if (isClass(cType) && isSubtypeOrInstantiation(cType, dtError, newExpr)) {
 
     bool unmanaged = false;
     bool borrowed = false;
@@ -6836,7 +6906,7 @@ static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager
     bool undecorated = false;
 
     if (manager == dtOwned ||
-        isSubTypeOrInstantiation(newType, dtOwned, newExpr))
+        isSubtypeOrInstantiation(newType, dtOwned, newExpr))
       owned = true;
     else if (manager == dtUnmanaged ||
             (isDecoratedClassType(newType) &&
@@ -9373,8 +9443,8 @@ static void resolvePrimInit(CallExpr* call,
 }
 
 // Does 'val' feed into a tuple? Ex.:
-//   default init var( elt_x1 type owned Foo ) 
-//   .=( tup "x1" elt_x1 ) 
+//   default init var( elt_x1 type owned Foo )
+//   .=( tup "x1" elt_x1 )
 static bool isTupleComponent(Symbol* val, CallExpr* call) {
   CallExpr* otherUse = NULL;
   for_SymbolSymExprs(se, val)

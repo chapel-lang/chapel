@@ -4,7 +4,7 @@
   subdirectories (defaults to true) using `--subdir`
 */
 module Launcher {
-  use Lists;
+  use List;
   use FileSystem;
   use Spawn;
   use Path;

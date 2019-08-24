@@ -64,7 +64,6 @@ module ChapelStandard {
   use MemTracking;
   use ChapelUtil;
   use ChapelError;
-  use ChapelDynDispHack;
   use ChapelTaskData;
   use ChapelSerializedBroadcast;
   use ExternalString;

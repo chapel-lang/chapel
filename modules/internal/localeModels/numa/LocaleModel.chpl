@@ -95,7 +95,6 @@ module LocaleModel {
 
     iter getChildren() : locale {
       halt("No children to iterate over.");
-      yield nil;
     }
   }
 

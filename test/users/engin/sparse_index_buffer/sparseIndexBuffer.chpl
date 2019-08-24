@@ -1,6 +1,6 @@
 use BlockDist;
 use LayoutCS;
-use Lists;
+use List;
 
 var parentDom1D = {1..100};
 var parentDom2D = {1..100, 1..100};

@@ -1,4 +1,4 @@
-private use Lists;
+private use List;
 use util;
 
 config const n = 15;
@@ -24,7 +24,16 @@ iter helper(param dim : int, param rank : int, ranges) {
 }
 
 proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
-  var ret : list(domain(rank, stridable=true));
+  //
+  // The commented out code below triggers a strange bug related to the RTTI
+  // info for domains not being initialized correctly. However, using a "new"
+  // expression instead provides a workaround to this problem.
+  //
+  // See: #13808
+  //
+  // var ret : list(domain(rank, stridable=true));
+  //
+  var ret = new list(domain(rank, stridable=true));
 
   var innerDom = {1..0};
   var perDim : [1..rank] [innerDom] range(stridable=true);

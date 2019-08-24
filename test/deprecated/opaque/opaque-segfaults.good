@@ -1,0 +1,3 @@
+opaque-segfaults.chpl:8: warning: Opaque domains are deprecated - please switch to another domain type
+opaque-segfaults.chpl:9: warning: Opaque domains are deprecated - please switch to another domain type
+Created the random graph

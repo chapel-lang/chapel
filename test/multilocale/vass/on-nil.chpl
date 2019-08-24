@@ -49,7 +49,7 @@ on Locales[1] {
 
 writeln("PART 3a");
 {
-  var loc = here;
+  var loc:locale? = here;
   on Locales[1] {
     loc = nil;
     on Locales[2] {
@@ -64,7 +64,7 @@ writeln("PART 3a");
 
 writeln("PART 3b");
 {
-  var obj = new object();
+  var obj:object? = new object();
   on Locales[1] {
     obj = nil;
     on Locales[2] {

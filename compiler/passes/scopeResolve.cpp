@@ -965,8 +965,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         if (usymExpr->getModule()->modTag == MOD_USER) {
 
           // make MyClass mean generic-management unless
-          // --legacy-nilable-classes is passed.
-          bool defaultIsGenericHere = !fLegacyNilableClasses;
+          // --legacy-classes is passed.
+          bool defaultIsGenericHere = !fLegacyClasses;
           if (defaultIsGenericHere) {
             // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
             ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
@@ -2253,9 +2253,14 @@ static void resolveUnmanagedBorrows() {
           ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
           if (isClassLike(ts->type)) {
             decorator = classTypeDecorator(ts->type);
+            if (ts->type == dtBorrowed || ts->type == dtUnmanaged)
+              USR_WARN(call, "Please use %s class? instead of %s?",
+                              ts->name, ts->name);
           } else if (isManagedPtrType(ts->type) &&
                      call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
             decorator = CLASS_TYPE_MANAGED;
+            USR_WARN(call, "Please use %s class? instead of %s?",
+                           ts->name, ts->name);
           } else {
             const char* type = NULL;
             if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
@@ -2323,9 +2328,13 @@ static void resolveUnmanagedBorrows() {
                 INT_FATAL("case not handled");
                 break;
               case CLASS_TYPE_GENERIC:
+                dt = dtAnyManagementAnyNilable;
+                break;
               case CLASS_TYPE_GENERIC_NONNIL:
+                dt = dtAnyManagementNonNilable;
+                break;
               case CLASS_TYPE_GENERIC_NILABLE:
-                INT_FATAL("case not handled");
+                dt = dtAnyManagementNilable;
                 break;
               // no default intentionally
             }
@@ -2340,6 +2349,7 @@ static void resolveUnmanagedBorrows() {
     }
 
     // fix e.g. unmanaged!
+    // TODO: remove this code
     if (call->isNamedAstr(astrPostfixBang)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -2347,20 +2357,53 @@ static void resolveUnmanagedBorrows() {
 
           if (ts == dtBorrowed->symbol ||
               ts == dtBorrowedNonNilable->symbol ||
-              ts == dtBorrowedNilable->symbol)
+              ts == dtBorrowedNilable->symbol) {
             replace = dtBorrowedNonNilable;
-          else if (ts == dtUnmanaged->symbol ||
+            USR_WARN(call, "Please borrowed class and not borrowed!");
+          } else if (ts == dtUnmanaged->symbol ||
                    ts == dtUnmanagedNonNilable->symbol ||
-                   ts == dtUnmanagedNilable->symbol)
+                   ts == dtUnmanagedNilable->symbol) {
             replace = dtUnmanagedNonNilable;
-          else if (isManagedPtrType(ts->type)) {
+            USR_WARN(call, "Please unmanaged class and not unmanaged!");
+          } else if (isManagedPtrType(ts->type)) {
             AggregateType* at = toAggregateType(ts->type);
             replace = at->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+            USR_WARN(call, "Please use %s class instead of %s!",
+                     at->symbol->name, at->symbol->name);
           }
 
           if (replace) {
             SET_LINENO(call);
             call->replace(new SymExpr(replace->symbol));
+          }
+        }
+      }
+    }
+
+    // Fix e.g. call _owned class?
+    if (call->numActuals() == 1) {
+      SymExpr* se1 = toSymExpr(call->baseExpr);
+      SymExpr* se2 = toSymExpr(call->get(1));
+      if (se1 != NULL && se2 != NULL) {
+        TypeSymbol* ts1 = toTypeSymbol(se1->symbol());
+        TypeSymbol* ts2 = toTypeSymbol(se2->symbol());
+        if (ts1 != NULL && ts2 != NULL && isManagedPtrType(ts1->type)) {
+          AggregateType* mgmt = toAggregateType(ts1->type);
+          if (DecoratedClassType* mt = toDecoratedClassType(ts1->type))
+            mgmt = mt->getCanonicalClass();
+
+          Type* t2 = ts2->type;
+          Type* useType = NULL;
+          if (t2 == dtAnyManagementAnyNilable)
+            useType = mgmt; // e.g. just _owned
+          else if (t2 == dtAnyManagementNonNilable)
+            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+          else if (t2 == dtAnyManagementNilable)
+            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
+
+          if (useType != NULL) {
+            SET_LINENO(call);
+            call->replace(new SymExpr(useType->symbol));
           }
         }
       }

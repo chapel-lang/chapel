@@ -230,11 +230,11 @@ proc isSharedClassType(type t:_shared)       param return true;
 pragma "no doc"
 proc isSharedClassType(type t)               param return false;
 pragma "no doc"
-proc isUnmanagedClassType(type t:_unmanaged) param return true;
+proc isUnmanagedClassType(type t:unmanaged)  param return true;
 pragma "no doc"
 proc isUnmanagedClassType(type t)            param return false;
 pragma "no doc"
-proc isBorrowedClassType(type t:_borrowed)   param return true;
+proc isBorrowedClassType(type t:borrowed)    param return true;
 pragma "no doc"
 proc isBorrowedClassType(type t)             param return false;
 

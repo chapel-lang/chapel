@@ -424,7 +424,6 @@ module HDFS {
       var count = fs.release();
       if count == 0 {
         delete fs;
-        fs = nil;
       }
       return ENOERR;
     }

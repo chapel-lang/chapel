@@ -19,7 +19,7 @@
 
 config const spackVersion = "releases/v0.11.2";
 
-private use Lists;
+private use List;
 use MasonUtils;
 use FileSystem;
 use MasonHelp;
