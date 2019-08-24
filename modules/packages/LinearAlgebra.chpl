@@ -1322,7 +1322,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
     halt("Wrong shape of input matrix or vector");
-  if Adom.shape(1) != Adom.shape(2) then
+  if !isSquare(A) then
     halt("Matrix A is not a square");
   if Adom.shape(1) != Xdom.shape(1) then
     halt("Mismatch shape between matrix side length and vector length");
