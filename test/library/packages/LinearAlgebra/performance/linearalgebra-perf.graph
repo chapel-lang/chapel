@@ -35,12 +35,6 @@ graphtitle: LinearAlgebra.Sparse.dot() - squaring NxN matrices - small (N = 10e3
 ylabel: Time
 
 perfkeys: LinearAlgebra.jacobi:, LinearAlgebra.Sparse.jacobi:
-files: jacobi-n1024.dat, jacobi-n1024.dat
-graphkeys: Dense, Sparse
-graphtitle: Jacobi method - solving 1024 unknowns - dense and sparse
-ylabel: Time
-
-perfkeys: LinearAlgebra.jacobi:, LinearAlgebra.Sparse.jacobi:
 files: jacobi-n512.dat, jacobi-n512.dat
 graphkeys: Dense, Sparse
 graphtitle: Jacobi method - solving 512 unknowns - dense and sparse

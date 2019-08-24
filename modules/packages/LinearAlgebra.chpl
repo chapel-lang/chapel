@@ -1317,6 +1317,8 @@ proc svd(A: [?Adom] ?t) throws
     ``X`` is passed as a reference, meaning the initial solution guess can be
     stored in ``X`` before calling the procedure, and the approximate solution 
     will be stored in the same array.
+    
+    Dense and CSR arrays are supported.
 */
 proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
@@ -2018,16 +2020,7 @@ module Sparse {
     return A;
   }
   
- /* Compute the approximate solution to ``A * x = b`` using the Jacobi method.
-    Iteration will stop when ``maxiter`` is reached or error is smaller than
-    ``tol``, whichever comes first. Return the number of iterations performed.
-    
-    .. note::
-      ``X`` is passed as a reference, meaning the initial solution guess can be
-      stored in ``X`` before calling the procedure, and the approximate solution 
-      will be stored in the same array.
-      
-    */
+  pragma "no doc"
   proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
