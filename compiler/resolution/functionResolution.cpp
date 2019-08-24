@@ -6762,8 +6762,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
     if (SymExpr* arg1 = toSymExpr(newExpr->get(1)))
       if (DecoratedClassType* dt1 = toDecoratedClassType(arg1->symbol()->type))
         if (dt1->getDecorator() == CLASS_TYPE_GENERIC_NILABLE)
-          newExpr->insertAtHead(dtOwned->symbol), gdbShouldBreakHere();
-    
+          newExpr->insertAtHead(dtOwned->symbol);
   }
   
   // adjust the type to initialize for managed new cases
