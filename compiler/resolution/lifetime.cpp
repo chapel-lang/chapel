@@ -342,11 +342,7 @@ static void checkFunction(FnSymbol* fn) {
   if (fCompileTimeNilChecking) {
     // Determine cases where the compiler can prove
     // a reference-type variable is 'nil'
-    // TODO: enable this for internal modules as well.
-    // It was initially enabled only for user code
-    // as a convenience during development.
-    if (fn->getModule()->modTag == MOD_USER)
-      findNilDereferences(fn);
+    findNilDereferences(fn);
 
     // TODO:
     // Determine cases where the compiler can prove

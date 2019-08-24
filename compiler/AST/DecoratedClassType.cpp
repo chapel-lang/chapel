@@ -127,6 +127,7 @@ DecoratedClassType::DecoratedClassType(AggregateType* cls, ClassTypeDecorator d)
 
   canonicalClass = cls;
   decorator = d;
+  gDecoratedClassTypes.add(this);
 }
 
 
@@ -220,11 +221,45 @@ Type* canonicalClassType(Type* t) {
   return canonicalDecoratedClassType(t);
 }
 
-/* If t is a class like type or a managed type, this returns the
+/* If 't' is a class like type or a managed type, this returns
    the DecoratedClassType or AggregateType that represents
-   overriding the decorator (if any) with d.
+   overriding the decorator in 't' (if any) with 'd'.
 
-   Note that a plain AggregateType representing a class means a borrowed class.
+   (A) When 't' is or wraps some MyClass, the result is:
+
+    (a1) owned or shared, non-nilable:
+           // owned non-nilable MyClass
+           _owned(MyClass)
+
+    (a2) owned or shared, nilable or generic nilability:
+           // owned nilable MyClass
+           _owned(DecoratedClassType(CLASS_TYPE_BORROWED_NILABLE, MyClass))
+
+    (a3) borrowed or unmanaged or generic management, any nilability:
+           // unmanaged, generic nilability
+           DecoratedClassType(CLASS_TYPE_UNMANAGED, MyClass)
+           // generic management, non-nilable
+           DecoratedClassType(CLASS_TYPE_GENERIC_NONNIL, MyClass)
+
+    (a4) ... except the canonical type:
+           // borrowed, non-nilable
+           MyClass
+
+    where 'MyClass' denotes its AggregateType.
+
+   (B) When 't' is generic w.r.t. the underlying class, the result is:
+
+    (b1) owned or shared, any nilability:
+           // owned, nilable
+           DecoratedClassType(CLASS_TYPE_MANAGED_NILABLE, dtOwned)
+
+    (b2) borrowed or unmanaged or generic management, any nilability:
+           // borrowed, generic nilability
+           dtBorrowed
+           // unmanaged, non-nilable
+           dtUnmanagedNonNilable
+           // generic management, generic nilability
+           dtAnyManagementAnyNilable
 
    This function will transform generic class types, e.g.
      dtUnmanagedNonNilable + BORROWED_NILABLE -> dtBorrowedNilable
@@ -232,10 +267,7 @@ Type* canonicalClassType(Type* t) {
    Note that for owned/shared types, they represent the decorator in two
    ways, depending on whether or not the contained class is specified.
 
-   e.g.
-
-   owned class? -> DecoratedClassType(MANAGED_NILABLE, _owned)
-   owned MyClass? -> _owned(DecoratedClassType(BORROWED_NILABLE, MyClass)
+   A plain AggregateType represents a non-nilable borrowed class.
 
  */
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
