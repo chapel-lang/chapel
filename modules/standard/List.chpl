@@ -1010,40 +1010,46 @@ module List {
 
     /*
       Return a one-based index into this list of the first item whose value
-      is equal to x.
+      is equal to `x`. If no such element can be found, or either of the
+      indexes `start` or `end` are out of bounds, this method returns the
+      value `-1`.
 
       :arg x: An element to search for.
+      :type x: `eltType`
+
       :arg start: The start index to start searching from.
+      :type start: `int`
+
       :arg end: The end index to stop searching at.
+      :type end: `int`
 
-      :return: The index of the element to search for.
+      :return: The index of the element to search for, or `-1` on error.
       :rtype: `int`
-
-      :throws IllegalArgumentError: If the given element cannot be found.
     */
-    proc indexOf(x: eltType, start: int=1, end: int=size): int throws {
-      _enter();
+    proc indexOf(x: eltType, start: int=1, end: int=size): int {
+      param error = -1;
 
-      try _boundsCheckLeaveOnThrow(start,
-          "Start index out of bounds: " + start:string);
-      try _boundsCheckLeaveOnThrow(end,
-          "End index out of bounds: " + end:string);
+      if !_withinBounds(start) || !_withinBounds(end) then
+        return error;
 
-      for i in start..end do
-        if x == _getRef(i) {
-          _leave();
-          return i;
-        }
+      if end < start then
+        return error;
 
-      _leave();
+      var result = error;
 
-      // TODO: Introduce ValueError and use that here instead.
-      const msg = "No such element: " + x:string;
-      throw new owned
-        IllegalArgumentError(msg);
+      on this {
+        _enter();
 
-      // Should never reach here.
-      return -1;
+        for i in start..end do
+          if x == _getRef(i) {
+            result = i;
+            break;
+          }
+
+        _leave();
+      }
+
+      return result;
     }
 
     /*

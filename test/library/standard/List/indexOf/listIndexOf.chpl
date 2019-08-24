@@ -1,34 +1,45 @@
-use List;
-
-config type listType = int;
-config param listLock = true;
+private use List;
 
 config const testIters = 8;
 
-var lst = new list(listType, listLock);
+var lst: list(int, true);
 
-try {
-  lst.indexOf(0);
-} catch e {
-  writeln(e);
-}
+var idx = lst.indexOf(testIters);
 
-for i in 1..testIters do {
+assert(idx < 0);
+
+idx = lst.indexOf(testIters, -1);
+
+assert(idx < 0);
+
+idx = lst.indexOf(testIters, 1, lst.size);
+
+assert(idx < 0);
+
+for i in 1..testIters {
   lst.append(i);
-  const idx = lst.indexOf(i);
-  writeln(idx);
+  idx = lst.indexOf(i);
+  assert(idx == i);
 }
 
-for i in 1..testIters by -1 do {
-  const idx = lst.indexOf(i, i);
-  writeln(idx);
-}
+for i in 1..testIters do
+  lst.append(i);
+
+idx = lst.indexOf(testIters, testIters + 1);
+
+assert(idx > testIters);
+
+idx = lst.indexOf(testIters, 1, testIters - 1);
+assert(idx < 0);
+
+idx = lst.indexOf(testIters, testIters + 1, testIters * 2 - 1);
+assert(idx < 0);
 
 lst.clear();
 
-try {
-  lst.indexOf(0);
-} catch e {
-  writeln(e);
-}
+idx = lst.indexOf(testIters);
+assert(idx < 0);
+
+idx = lst.indexOf(testIters, testIters, testIters * 2);
+assert(idx < 0);
 
