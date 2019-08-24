@@ -542,11 +542,11 @@ module List {
     }
 
     //
-    // Shift elements including and after index one to the right in memory,
-    // possibly resizing. May expand memory if necessary.
+    // Shift elements including and after index `shift` positions to the right
+    // in memory, possibly resizing. May expand memory if necessary.
     //
     pragma "no doc"
-    proc _expand(idx: int) {
+    proc _expand(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
       _maybeAcquireMem(1);
@@ -559,12 +559,14 @@ module List {
     }
 
     //
-    // Shift all elements after index one to the left in memory, possibly
-    // resizing. This assumes the element at `idx` has already been
-    // deinitialized if that is necessary. May release memory if possible.
+    // Move all elements at and following the index `shift` left in memory
+    // so that they begin at index `idx`, possibly resizing. May release
+    // memory if possible.
+    //
+    // This method does not fire destructors, so do so before calling it.
     //
     pragma "no doc"
-    proc _collapse(idx: int) {
+    proc _collapse(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
       if idx == _size then
@@ -724,6 +726,33 @@ module List {
       }
 
       return result;  
+    }
+
+    /*
+      Insert an array of elements `arr` into this list at index `i`, shifting
+      all elements at and following the index `arr.size` positions to the
+      right. 
+
+      If the insertion is successful, this method returns `true`. If the given
+      index is out of bounds, this method does nothing and returns `false`.
+
+      .. warning::
+
+        Inserting elements into this list may invalidate existing references
+        to the elements contained in this list.
+
+      :arg i: The index of the element at which to insert.
+      :type i: `int`
+
+      :arg arr: An array of elements to insert.
+      :type x: `eltType`
+
+      :return: `true` if `arr` was inserted, `false` otherwise.
+      :rtype: `bool`
+    */
+    proc insert(i: int, const ref arr: [?d] eltType): bool {
+
+
     }
 
     /*
