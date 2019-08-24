@@ -6,8 +6,8 @@ int(32) : true
 MyClass : true
 borrowed MyClass : true
 RAtomicT(int(64)) : false
-_syncvar(int(64)) : false
-_singlevar(int(64)) : false
+sync int(64) : false
+single int(64) : false
 NotPod1 : false
 NotPod2 : false
 NotPod3 : false

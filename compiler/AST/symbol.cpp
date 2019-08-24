@@ -1276,6 +1276,19 @@ void TypeSymbol::renameInstantiatedSingle(Symbol* sym) {
     renameInstantiatedIndividual(sym);
   }
   renameInstantiatedEnd();
+
+  // Fix up the user-visible name for some Chapel-defined types.
+  // If we do this in fixTypeNames(), it will not take effect for the types
+  // of the fields of a generic record. Except when the type is an array. (??)
+  if (! developer) {
+    if (isManagedPtrType(this->type)) {
+      this->name = toString(this->type, false);
+    } else if (this->hasFlag(FLAG_SYNC)) {
+      this->name = astr("sync ", sym->name);
+    } else if (this->hasFlag(FLAG_SINGLE)) {
+      this->name = astr("single ", sym->name);
+    }
+  }
 }
 
 void TypeSymbol::renameInstantiatedFromSuper(TypeSymbol* superSym) {
