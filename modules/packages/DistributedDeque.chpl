@@ -209,7 +209,7 @@ module DistributedDeque {
       documentation.
     */
     // This is unused, and merely for documentation purposes. See '_value'.
-    var _impl : DistributedDequeImpl(eltType)?;
+    var _impl : unmanaged DistributedDequeImpl(eltType)?;
 
     // Privatization id
     pragma "no doc"
@@ -229,7 +229,7 @@ module DistributedDeque {
       if _pid == -1 {
         halt("DistDeque is uninitialized...");
       }
-      return chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid);
+      return chpl_getPrivatizedCopy(unmanaged DistributedDequeImpl(eltType), _pid);
     }
 
     forwarding _value;
@@ -630,7 +630,7 @@ module DistributedDeque {
       for slot in slots do slot.lock$ = true;
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
-      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType)?);
+      var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
       for i in 0 .. #nSlots {
         var node = slots[i].head;
         if node == nil {
@@ -693,7 +693,7 @@ module DistributedDeque {
       for slot in slots do slot.lock$ = true;
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
-      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType)?);
+      var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
       for i in 0 .. #nSlots {
         var node = slots[i].tail;
         nodes[i] = (node!.size, node!.tailIdx, node);
