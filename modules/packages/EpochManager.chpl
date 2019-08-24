@@ -108,7 +108,7 @@ module EpochManager {
     class Node {
       type eltType;
       var val : eltType;
-      var next : unmanaged Node(eltType);
+      var next : unmanaged Node(eltType)?;
 
       proc init(val : ?eltType) {
         this.eltType = eltType;
@@ -122,7 +122,7 @@ module EpochManager {
 
     class LockFreeLinkedList {
       type objType;
-      var _head : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
+      var _head : AtomicObject(unmanaged Node(objType)?, hasABASupport=true, hasGlobalSupport=true);
 
       proc init(type objType) {
         this.objType = objType;
@@ -163,8 +163,8 @@ module EpochManager {
     class Node {
       type eltType;
       var val : eltType;
-      var next : AtomicObject(unmanaged Node(eltType), hasABASupport=true, hasGlobalSupport=true);
-      var freeListNext : unmanaged Node(eltType);
+      var next : AtomicObject(unmanaged Node(eltType)?, hasABASupport=true, hasGlobalSupport=true);
+      var freeListNext : unmanaged Node(eltType)?;
 
       proc init(val : ?eltType) {
         this.eltType = eltType;
@@ -180,7 +180,7 @@ module EpochManager {
       type objType;
       var _head : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
       var _tail : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
-      var _freeListHead : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
+      var _freeListHead : AtomicObject(unmanaged Node(objType)?, hasABASupport=true, hasGlobalSupport=true);
       // Flag to set if objects held in the queue are to be deleted or not.
       // By default initialised to true.
       const delete_val : bool;
@@ -204,20 +204,19 @@ module EpochManager {
       }
 
       proc recycleNode() : unmanaged Node(objType) {
-        var oldTop : ABA(unmanaged Node(objType));
-        var n : unmanaged Node(objType);
+        var oldTop : ABA(unmanaged Node(objType)?);
+        var n : unmanaged Node(objType)?;
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
           if (n == nil) {
-            n = new unmanaged Node(objType);
-            return n;
+            return new unmanaged Node(objType);
           }
           var newTop = n.freeListNext;
         } while (!_freeListHead.compareExchangeABA(oldTop, newTop));
         n.next.write(nil);
         n.freeListNext = nil;
-        return n;
+        return n!;
       }
 
       proc enqueue(newObj : objType) {
@@ -330,10 +329,10 @@ module EpochManager {
     use AtomicObjects;
 
     class Node {
-      var val : unmanaged object;
-      var next : unmanaged Node;
+      var val : unmanaged object?;
+      var next : unmanaged Node?;
 
-      proc init(val : unmanaged object) {
+      proc init(val : unmanaged object?) {
         this.val = val;
       }
     }
@@ -349,19 +348,18 @@ module EpochManager {
       }
 
       proc recycleNode(obj : unmanaged object) : unmanaged Node {
-        var oldTop : ABA(unmanaged Node);
-        var n : unmanaged Node;
+        var oldTop : ABA(unmanaged Node?);
+        var n : unmanaged Node?;
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
           if (n == nil) {
-            n = new unmanaged Node(obj);
-            return n;
+            return new unmanaged Node(obj);
           }
           var newTop = n.next;
         } while (!_freeListHead.compareExchangeABA(oldTop, newTop));
         n.val = obj;
-        return n;
+        return n!;
       }
 
       proc retireNode(nextObj : unmanaged Node) {
@@ -807,6 +805,8 @@ module EpochManager {
     pragma "no doc"
     var is_setting_epoch : atomic bool;
 
+
+    // TODO: May need to set these to nil-able?
     //  List of all tokens on current locale
     pragma "no doc"
     var allocated_list : unmanaged LockFreeLinkedList(unmanaged _token);
