@@ -186,7 +186,10 @@ module ChapelBase {
   inline proc <=(a: int(?w), b: int(w)) return __primitive("<=", a, b);
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
-  inline proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
+  inline proc <=(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<=", a, b);
+  }
   proc <=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -199,7 +202,10 @@ module ChapelBase {
   inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
-  inline proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
+  inline proc >=(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">=", a, b);
+  }
   proc >=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -212,7 +218,10 @@ module ChapelBase {
   inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
-  inline proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
+  inline proc <(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<", a, b);
+  }
   proc <(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -225,7 +234,10 @@ module ChapelBase {
   inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
-  inline proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
+  inline proc >(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">", a, b);
+  }
   proc >(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -239,25 +251,37 @@ module ChapelBase {
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <=(param a: real(?w), param b: real(w)) param return __primitive("<=", a, b);
-  inline proc <=(param a: imag(?w), param b: imag(w)) param return __primitive("<=", a, b);
+  inline proc <=(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<=", a, b);
+  }
 
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >=(param a: real(?w), param b: real(w)) param return __primitive(">=", a, b);
-  inline proc >=(param a: imag(?w), param b: imag(w)) param return __primitive(">=", a, b);
+  inline proc >=(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">=", a, b);
+  }
 
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
   inline proc <(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <(param a: real(?w), param b: real(w)) param return __primitive("<", a, b);
-  inline proc <(param a: imag(?w), param b: imag(w)) param return __primitive("<", a, b);
+  inline proc <(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<", a, b);
+  }
 
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
   inline proc >(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >(param a: real(?w), param b: real(w)) param return __primitive(">", a, b);
-  inline proc >(param a: imag(?w), param b: imag(w)) param return __primitive(">", a, b);
+  inline proc >(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">", a, b);
+  }
 
   //
   // unary + and - on primitive types
@@ -773,8 +797,8 @@ module ChapelBase {
   inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
   inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
 
-  inline proc min(x: real(?w), y: real(w)) return if x < y then x else y;
-  inline proc max(x: real(?w), y: real(w)) return if x > y then x else y;
+  inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
+  inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
 
   inline proc min(x: imag(?w), y: imag(w)) return if x < y then x else y;
   inline proc max(x: imag(?w), y: imag(w)) return if x > y then x else y;

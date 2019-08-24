@@ -702,6 +702,8 @@ minimum-with-location reduction returns the lowest index position with
 the minimum value (as defined by the \verb@<@ operator).  The
 maximum-with-location reduction returns the lowest index position with
 the maximum value (as defined by the \verb@>@ operator).
+When a minimum, maximum, minimum-with-location, or maximum-with-location
+reduction encounters a NaN, the result is a NaN.
 
 The expression on the right-hand side of the \chpl{reduce} keyword
 can be of any type that can be iterated over, provided

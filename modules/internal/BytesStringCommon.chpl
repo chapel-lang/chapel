@@ -304,7 +304,7 @@ module BytesStringCommon {
       //resize the buffer if needed
       if lhs._size <= newLength {
         const requestedSize = max(newLength+1,
-                                  lhs.len*chpl_stringGrowthFactor):int;
+                                  (lhs.len*chpl_stringGrowthFactor):int);
         if lhs.isowned {
           var (newBuff, allocSize) = bufferRealloc(lhs.buff, requestedSize);
           lhs.buff = newBuff;
