@@ -28,6 +28,7 @@
 #include "stlUtil.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
+#include "view.h"
 
 #include "iterator.h"
 
@@ -125,6 +126,11 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
     if (call->isPrimitive(PRIM_RT_ERROR))
       return 1;
 
+    if (call->isPrimitive(PRIM_THROW)) {
+      //      printf("Found a throws\n");
+      return 1;
+    }
+    
     if (call->isPrimitive(PRIM_MOVE) ||
         call->isPrimitive(PRIM_ASSIGN))
     {
@@ -183,14 +189,63 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (TryStmt* tryStmt = toTryStmt(expr))
   {
     int result = INT_MAX;
-    for_alist(c, tryStmt->_catches)
+    // This indicates whether or not we find a catch-all case, in
+    // which case nothing can escape us unless the individual clauses
+    // let it; if this is a try! statement, it doesn't need a
+    // catch-all case, so set it to true
+    //
+    bool foundCatchall = tryStmt->tryBang();
+    for_alist(c, tryStmt->_catches) {
+      //      list_view(c);
       result = std::min(result, isDefinedAllPaths(c, ret, refs));
+      if (toCatchStmt(c)->isCatchall()) {
+        foundCatchall = true;
+      }
+      //      printf("catch: %d\n", result);
+    }
 
-    return std::min(result, isDefinedAllPaths(tryStmt->body(), ret, refs));
+
+    //    list_view(tryStmt->body());
+    result = std::min(result, isDefinedAllPaths(tryStmt->body(), ret, refs));
+    //    printf("try: %d\n", result);
+
+    // even if the try and all catches are air-tight, if there's no
+    // catch-all, we can escape via an uncaught error, and will need
+    // for our parent statement to contain returns as well...
+    if (result == 1 && !foundCatchall) {
+      result = 0;
+    }
+    return result;
   }
 
-  if (CatchStmt* catchStmt = toCatchStmt(expr))
-    return isDefinedAllPaths(catchStmt->body(), ret, refs);
+  if (CatchStmt* catchStmt = toCatchStmt(expr)) {
+    if (catchStmt->isCatchall()) {
+      // if this is a catch-all, the answer is whatever its body says
+      return isDefinedAllPaths(catchStmt->body(), ret, refs);
+    } else {
+      // otherwise, this is a case that looks like
+      // 'if (errorMatches) { user code } else { /* nothing */ }
+      // where that else clause causes problems with sane control flow,
+      // so we need to special-case it (later the following catch block
+      // will be inlined there.  TODO: Why isn't this done outright?
+
+      // Find the else body in the last CondStmt in the catch block body.
+      // This should always exist after CatchStmt::cleanup
+      // for non-catchall errors.
+
+      CondStmt* finalCond = NULL;
+      for_alist_backward(node, catchStmt->body()->body) {
+        if (CondStmt* cond = toCondStmt(node)) {
+          finalCond = cond;
+          break;
+        }
+      }
+      INT_ASSERT(finalCond != NULL && finalCond->elseStmt != NULL);
+
+      // only check its then-clause
+      return isDefinedAllPaths(finalCond->thenStmt, ret, refs);
+    }
+  }
 
   if (BlockStmt* block = toBlockStmt(expr))
   {
