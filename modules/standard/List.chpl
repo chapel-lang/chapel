@@ -644,6 +644,64 @@ module List {
       return result;
     }
 
+    /*
+      Returns a reference to the first item in this list.
+
+      :return: A reference to the first item in this list.
+      :rtype: `ref eltType`
+
+      :throws IllegalArgumentError: If this list is empty.
+    */
+    proc first() ref throws {
+      // Hack to initialize a reference (may be invalid).
+      ref result = _getRef(1);
+
+      on this {
+        _enter();
+
+        if _size == 0 {
+          _leave();
+          const msg = "Called \"first\" on an empty list.";
+          throw new owned
+            IllegalArgumentError(msg);
+        }
+
+        result = _getRef(1);
+        _leave();
+      }
+
+      return result;
+    }
+
+    /*
+      Returns a reference to the last item in this list.
+
+      :return: A reference to the last item in this list.
+      :rtype: `ref eltType`
+
+      :throws IllegalArgumentError: If this list is empty.
+    */
+    proc last() ref throws {
+      // Hack to initialize a reference (may be invalid).
+      ref result = _getRef(1);
+
+      on this {
+        _enter();
+
+        if _size == 0 {
+          _leave();
+          const msg = "Called \"last\" on an empty list.";
+          throw new owned
+            IllegalArgumentError(msg);
+        }
+
+        result = _getRef(_size);
+        _leave();
+      }
+    
+      return result;
+    }
+
     pragma "no doc"
     inline proc _extendGeneric(collection) {
 
@@ -665,11 +723,17 @@ module List {
 
       :arg other: A list containing elements of the same type as those
         contained in this list.
+      :type other: `list(eltType)`
     */
     proc extend(other: list(eltType, ?)) lifetime this < other {
       _enter();
       _extendGeneric(other);
       _leave();
+    }
+
+    proc extend(other: [?d] eltType) lifetime this < other {
+      
+
     }
 
     /*
@@ -875,7 +939,7 @@ module List {
         for i in 1..(_size - removed) {
           ref item = _getRef(i);
         
-          // TODO: Reduce shifts to O(n) by marking holes.
+          // TODO: Reduce shifts to O(n) by marking holes?
           if x == item {
             _destroy(item);
             _collapse(i);
@@ -905,40 +969,50 @@ module List {
         Popping an element from this list will invalidate any reference to
         the element taken while it was contained in this list.
 
-      :arg i: The index of the element to remove. Defaults to the last item
-        in this list.
+      :arg idx: The index of the element to remove. Defaults to the last item
+                 in this list.
+      :type idx: `int`
 
       :return: The item removed.
+      :rtype: `eltType`
 
-      :throws IllegalArgumentError: If the given index is out of bounds.
-      :throws IllegalArgumentError: If the list is empty.
+      :throws IllegalArgumentError: If the index `idx` is out of bounds.
+      :throws IllegalArgumentError: If this list is empty.
     */
-    proc pop(i: int=size): eltType throws {
-      _enter();
+    proc pop(idx: int=size): eltType throws {
+      //
+      // TODO: What about situations where `eltType` does not have a default
+      // constructor?
+      //
+      var result: eltType;
 
-      if _size <= 0 {
+      on this {
+        _enter();
+
+        if _size <= 0 then {
+          _leave();
+          const msg = "Called \"pop\" on an empty list.";
+          throw new owned
+            IllegalArgumentError(msg);
+        }
+
+        if !_withinBounds(idx) {
+          _leave();
+          const msg = "List \"pop\" index out of bounds: " + idx:string;
+          throw new owned
+            IllegalArgumentError(msg);
+        }
+
+        ref item = _getRef(idx);
+        result = item;
+        _destroy(item);
+        // May release memory based on size before pop.
+        _collapse(idx);
+        _size -= 1;
+
         _leave();
-        const msg = "Pop called on empty list.";
-        throw new owned
-          IllegalArgumentError(msg);
       }
-      
-      try _boundsCheckLeaveOnThrow(i);
 
-      //
-      // What about situations where "result" does not have a default init?
-      // In such situations we would have to initialize result from a
-      // reference to item, as below, rather than a default init followed by
-      // a move.
-      //
-      ref item = _getRef(i);
-      var result = item;
-      _destroy(item);
-      // May release memory based on size before pop.
-      _collapse(i);
-      _size -= 1;
-
-      _leave();
       return result;
     }
 
