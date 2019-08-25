@@ -317,6 +317,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc const read(order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("load", bool)
         proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
 
@@ -327,6 +328,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc write(value:bool, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("store", bool)
         proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): void;
 
@@ -335,6 +337,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc exchange(value:bool, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("exchange", bool)
         proc atomic_exchange(ref obj:externT(bool), value:bool, order:memory_order): bool;
 
@@ -350,6 +353,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("compare_exchange_weak", bool)
         proc atomic_compare_exchange_weak(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
@@ -360,6 +364,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
@@ -380,6 +385,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc const waitFor(value:bool, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       on this {
         while (this.read(order=memoryOrder.relaxed) != value) {
           chpl_task_yield();
@@ -698,6 +704,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc const read(order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("load", T)
         proc atomic_load(const ref obj:externT(T), order:memory_order): T;
 
@@ -708,6 +715,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc write(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("store", T)
         proc atomic_store(ref obj:externT(T), value:T, order:memory_order): void;
 
@@ -716,6 +724,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc exchange(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("exchange", T)
         proc atomic_exchange(ref obj:externT(T), value:T, order:memory_order): T;
 
@@ -731,6 +740,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("compare_exchange_weak", T)
         proc atomic_compare_exchange_weak(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
@@ -741,6 +751,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("compare_exchange_strong", T)
         proc atomic_compare_exchange_strong(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
@@ -751,6 +762,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc fetchAdd(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("fetch_add", T)
         proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -761,6 +773,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc add(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("fetch_add", T)
         proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -769,6 +782,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc fetchSub(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("fetch_sub", T)
         proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -779,6 +793,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc sub(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       extern externFunc("fetch_sub", T)
         proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -787,6 +802,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc fetchOr(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -798,6 +814,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc or(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -807,6 +824,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc fetchAnd(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -818,6 +836,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc and(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -827,6 +846,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc fetchXor(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -838,6 +858,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc xor(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -847,6 +868,7 @@ module Atomics {
 
     pragma "no doc"
     inline proc const waitFor(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       on this {
         while (this.read(order=memoryOrder.relaxed) != value) {
           chpl_task_yield();
