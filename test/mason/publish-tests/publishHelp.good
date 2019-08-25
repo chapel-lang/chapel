@@ -8,5 +8,6 @@ Options:
     -h, --help                   Display this message
     --dry-run                    Check to see if package is ready to be published
     --no-update                  Prevents registrys from being updated when a package is published.
+    --check                      Runs check to see if package can be published successfully to <registry>
 
 Publishing requires the mason-registry to be forked and the package to have a remote origin.

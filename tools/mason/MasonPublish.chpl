@@ -73,7 +73,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     updateRegistry('Mason.toml', args);
     if !isLocal && !doesGitOriginExist() && !dry {
-      throw new owned MasonError('Your package must have a git origin remote in order to publish to a remote registry.');  
+      throw new owned MasonError('Your package must have a git origin remote in order to publish to a remote registry.');
     }
 
     if checkRegistryPath(registryPath, isLocal) {
@@ -365,7 +365,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         baseToml["brick"].set("source", url[1..url.length-1]);
         tomlWriter.write(baseToml);
         tomlWriter.close();
-        return name + '@' + versionNum; 
+        return name + '@' + versionNum;
       }
       else {
         throw new owned MasonError('A package with that name and version number already exists in the Bricks.');
@@ -401,4 +401,142 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
     writeln(e.message());
     exit(1);
   }
+}
+/* check is a function to run a quick list of checks of the package, the registry path, and other issues that may
+   prevent a package from being published to a registry.
+ */
+proc check(username : string, path : string, trueIfLocal) throws {
+  const spacer = '------------------------------------------------------';
+  const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
+  const projectCheckHome = here.cwd();
+  writeln('Mason Project Check:');
+
+  if !package {
+    writeln('    Could not find your configuration file (Mason.toml)');
+    writeln('    Ensure your project is a mason package');
+    }
+  else {
+    writeln('    Package is a Mason package and has a Mason.toml');
+  }
+  writeln(spacer);
+
+  if package {
+    writeln('Main Module Check:');
+    if moduleCheck(projectCheckHome) {
+      writeln('    Your package has only one main module, can be published to a registry.');
+    }
+    else writeln('    Packages with more than one modules cannot be published.');
+    writeln(spacer);
+  }
+
+  if package {
+    writeln('Git Remote Check:');
+    if doesGitOriginExist() {
+      writeln('    Package has a git remote origin and can be published to a remote registry');
+      writeln('    Remote Origin: ' + getRemoteOrigin());
+    }
+    else writeln('    Package has no remote origin and cannot be publish to a registry with path:' + path);
+    writeln(spacer);
+  }
+  writeln('Checking Registry with ' + path + ' path.');
+  registryPathCheck(path, username, trueIfLocal);
+  writeln(spacer);
+
+  writeln('The current mason envoirnment is:');
+  returnMasonEnv();
+  if MASON_REGISTRY.size == 1 {
+    writeln('    In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
+  }
+  writeln(spacer);
+  if package {
+    writeln('Attmepting to build package using following options:');
+    writeln('    show = false');
+    writeln('    release = false');
+    writeln('    force = false');
+    writeln('    opt = false');
+    writeln('    example = false');
+    writeln('If these are different than what is required to build your package you can disregard this check');
+    attemptToBuild();
+  }
+  exit(0);
+}
+
+private proc attemptToBuild() throws {
+  try! {
+    const buildArgs = ['mason', 'build'];
+    masonBuild(buildArgs);
+  }
+  catch e {
+    writeln(e.message());
+    exit(0);
+  }
+}
+
+/* registryPathCheck accepts the path, userbname, and trueIfLocal in order to check whether the registry that someone
+   is trying to publish to is properly set up and has the correctr structure.
+ */
+private proc registryPathCheck(path : string, username : string, trueIfLocal : bool) throws {
+  if path == MASON_HOME {
+    var forkCheck = usernameCheck(username);
+    if forkCheck == 0 {
+      writeln('    The mason-registry is forked under username: ' + username);
+    }
+    else {
+      writeln('    You must have a fork of the mason-registry to publish a package');
+    }
+  }
+  else {
+    if trueIfLocal {
+      const isLocalGit = exists(path + '/.git');
+      const hasBricks = exists(path + '/Bricks/');
+      if !isLocalGit {
+        writeln('   Registry with path ' + path + ' is not a git repository.');
+        writeln("   Local registrys must be git repositorys in order to publish");
+      }
+      else if !hasBricks {
+        writeln('   The registry with path ' + path + ' does not have proper registry structure');
+        writeln("   A registry must have a /Bricks/ directory to be a valid registry");
+      }
+      else {
+        writeln('   The local registry with path ' + path + ' is a valid registry to be publish too');
+      }
+    }
+  }
+}
+
+/* Grabs the remote origin of the package
+ */
+private proc getRemoteOrigin() {
+  const packageDir = here.cwd();
+  var gitRemoteOrigin = gitC(packageDir, 'git config --get remote.origin.url', true);
+  return gitRemoteOrigin;
+}
+
+/* Makes sure that the directory `mason publish --check is called in is a mason package
+ */
+private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
+  const (dirname, basename) = splitPath(cwd);
+  if dirname == '/' {
+    return 'false';
+  }
+  const tomlFile = joinPath(cwd, tomlName);
+  if exists(tomlFile) {
+    return 'true';
+  }
+  return ensureMasonProject(dirname, tomlName);
+}
+
+/* Checks to make sure the package only has one main module
+ */
+private proc moduleCheck(projectHome : string) throws {
+  const subModules = listdir(projectHome + '/src');
+  if subModules.size > 1 then return false;
+  else return true;
+}
+
+/* Returns the mason env
+ */
+private proc returnMasonEnv() {
+  const fakeArgs = ['mason', 'env'];
+  masonEnv(fakeArgs);
 }
