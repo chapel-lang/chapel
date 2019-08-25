@@ -110,8 +110,7 @@ proc masonBuildHelp() {
   writeln('        --release                Compile to target/release with optimizations (--fast)');
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
-  writeln('        --no-update              Do not update the mason registry before building');
-  writeln('        --update                 Override --no-update is MASON_OFFLINE is set to true');
+  writeln('        --[no-]update            [Do not] Update the mason registry before building');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
@@ -355,8 +354,7 @@ proc masonTestHelp() {
   writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
   writeln("        --parallel              Run tests in parallel(sequential by default)");
-  writeln("        --no-update             Do not update the mason-registry when testing");
-  writeln("        --update                Override --no-update if MASON_OFFLINE is set to 'true'");
+  writeln("        --[no]-update           [Do not] Update the mason-registry when testing");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");
@@ -426,8 +424,7 @@ proc masonPublishHelp(){
   writeln("    -h, --help                   Display this message");
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
-  writeln('    --no-update                  Prevents registrys from being updated when a package is published.');
-  writeln('    --update                     Override MASON_OFFLINE=true and enable internet access.');
+  writeln('    --[no-]update                [Do not] Prevent registries from being updated when a package is published.');
   writeln();
   writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');
 }
