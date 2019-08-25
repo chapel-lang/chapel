@@ -316,7 +316,7 @@ module Atomics {
     // Deprecated //
 
     pragma "no doc"
-    inline proc const read(order:memory_order = memory_order_seq_cst): bool {
+    inline proc const read(order:memory_order): bool {
       extern externFunc("load", bool)
         proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
 
@@ -326,7 +326,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
+    inline proc write(value:bool, order:memory_order): void {
       extern externFunc("store", bool)
         proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): void;
 
@@ -334,7 +334,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc exchange(value:bool, order:memory_order): bool {
       extern externFunc("exchange", bool)
         proc atomic_exchange(ref obj:externT(bool), value:bool, order:memory_order): bool;
 
@@ -344,12 +344,12 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
     pragma "no doc"
-    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order): bool {
       extern externFunc("compare_exchange_weak", bool)
         proc atomic_compare_exchange_weak(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
@@ -359,7 +359,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order): bool {
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
@@ -369,17 +369,17 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc testAndSet(order:memory_order = memory_order_seq_cst): bool {
+    inline proc testAndSet(order:memory_order): bool {
       return this.exchange(true, order);
     }
 
     pragma "no doc"
-    inline proc clear(order:memory_order = memory_order_seq_cst): void {
+    inline proc clear(order:memory_order): void {
       this.write(false, order);
     }
 
     pragma "no doc"
-    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
+    inline proc const waitFor(value:bool, order:memory_order): void {
       on this {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
@@ -697,7 +697,7 @@ module Atomics {
     // Deprecated //
 
     pragma "no doc"
-    inline proc const read(order:memory_order = memory_order_seq_cst): T {
+    inline proc const read(order:memory_order): T {
       extern externFunc("load", T)
         proc atomic_load(const ref obj:externT(T), order:memory_order): T;
 
@@ -707,7 +707,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc write(value:T, order:memory_order): void {
       extern externFunc("store", T)
         proc atomic_store(ref obj:externT(T), value:T, order:memory_order): void;
 
@@ -715,7 +715,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc exchange(value:T, order:memory_order): T {
       extern externFunc("exchange", T)
         proc atomic_exchange(ref obj:externT(T), value:T, order:memory_order): T;
 
@@ -725,12 +725,12 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc compareExchange(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchange(expected:T, desired:T, order:memory_order): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
     pragma "no doc"
-    inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order): bool {
       extern externFunc("compare_exchange_weak", T)
         proc atomic_compare_exchange_weak(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
@@ -740,7 +740,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order): bool {
       extern externFunc("compare_exchange_strong", T)
         proc atomic_compare_exchange_strong(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
@@ -750,7 +750,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc fetchAdd(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchAdd(value:T, order:memory_order): T {
       extern externFunc("fetch_add", T)
         proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -760,7 +760,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc add(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc add(value:T, order:memory_order): void {
       extern externFunc("fetch_add", T)
         proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -768,7 +768,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc fetchSub(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchSub(value:T, order:memory_order): T {
       extern externFunc("fetch_sub", T)
         proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -778,7 +778,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc sub(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc sub(value:T, order:memory_order): void {
       extern externFunc("fetch_sub", T)
         proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
@@ -786,7 +786,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchOr(value:T, order:memory_order): T {
       if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -797,7 +797,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc or(value:T, order:memory_order): void {
       if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -806,7 +806,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchAnd(value:T, order:memory_order): T {
       if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -817,7 +817,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc and(value:T, order:memory_order): void {
       if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -826,7 +826,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchXor(value:T, order:memory_order): T {
       if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -837,7 +837,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc xor(value:T, order:memory_order): void {
       if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -846,7 +846,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc const waitFor(value:T, order:memory_order): void {
       on this {
         while (this.read(order=memory_order_relaxed) != value) {
           chpl_task_yield();
