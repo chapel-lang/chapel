@@ -454,7 +454,7 @@ proc tls_signalling() {
         tls.signal.add(1);
 
       tls.deferredSignal = 1;
-      tls.happensBeforeSignal.add(1, order=memory_order_relaxed);
+      tls.happensBeforeSignal.add(1, order=memoryOrder.relaxed);
     }
 
     // Complete all of the deferred signals

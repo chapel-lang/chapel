@@ -398,7 +398,7 @@ record AtomicBufferPointers {
     }
 
     wr.write(val);
-    numReading.write(0, memory_order_relaxed);
+    numReading.write(0, memoryOrder.relaxed);
   }
 
   // Gets the write pointer.
@@ -415,7 +415,7 @@ record AtomicBufferPointers {
   // Gets (write pointer, read pointer) and increments write pointer
   proc incWrite() {
     var val = packOffset(1, 0);
-    var got = wr.fetchAdd(val, memory_order_relaxed);
+    var got = wr.fetchAdd(val, memoryOrder.relaxed);
     return unpack(got);
   }
 
@@ -424,22 +424,22 @@ record AtomicBufferPointers {
   proc decRead() {
     // numReading.add should not move after following fetch_sub
     // b/c another thread could write to our block, isReading() returning false
-    numReading.fetchAdd(1, memory_order_acquire);
+    numReading.fetchAdd(1, memoryOrder.acquire);
     var val = packOffset(0, 1);
-    var got = wr.fetchSub(val, memory_order_relaxed);
+    var got = wr.fetchSub(val, memoryOrder.relaxed);
     return unpack(got);
   }
 
   // Decreases the read counter
   proc stopRead() {
     // synchronizes with threads wanting to write to this bucket
-    numReading.fetchSub(1, memory_order_release);
+    numReading.fetchSub(1, memoryOrder.release);
   }
 
   // Returns true if any thread is currently reading this bucket
   proc isReading() {
     // synchronize with threads currently reading from this bucket
-    return numReading.read(memory_order_acquire) != 0;
+    return numReading.read(memoryOrder.acquire) != 0;
   }
 }
 
@@ -895,7 +895,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
       // Update AllCounts
       forall bucketi in 0..#nBuckets {
         // (Note, forall might allow communication optimization)
-        AtomicCounts[bucketi].add(LocalCounts[bucketi], memory_order_relaxed);
+        AtomicCounts[bucketi].add(LocalCounts[bucketi], memoryOrder.relaxed);
       }
 
       // Make sure every task finishes the local classification & counting
@@ -906,7 +906,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
       var AllCounts:[0..nBuckets] int;
       forall bucketi in 0..#nBuckets {
         // (Note, forall might allow communication optimization)
-        AllCounts[bucketi] = AtomicCounts[bucketi].read(memory_order_relaxed);
+        AllCounts[bucketi] = AtomicCounts[bucketi].read(memoryOrder.relaxed);
       }
       AllCounts[nBuckets] = 0;
 
