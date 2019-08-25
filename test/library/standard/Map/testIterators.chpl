@@ -1,5 +1,12 @@
 use Map, BigInteger;
-use utilFunctions;
+
+proc factorial(n: int) {
+  use BigInteger;
+  var bi = new bigint(1);
+
+  for i in 2..n do bi *= i;
+  return bi;
+}
 
 var fac = new map(int, bigint);
 
