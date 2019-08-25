@@ -425,7 +425,7 @@ module AtomicObjects {
       f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.getObject() <~> "}";
     }
 
-    forwarding this.getObject();
+    forwarding this.getObject()!;
   }
 
   pragma "no doc"

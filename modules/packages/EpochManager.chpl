@@ -227,11 +227,11 @@ module EpochManager {
         while (true) {
           var tail = _tail.readABA();
           var next = tail.next.readABA();
-          var next_node = next!.getObject();
+          var next_node = next.getObject();
           var curr_tail = _tail.readABA();
           if (tail == curr_tail) {
             if (next_node == nil) {
-              if (curr_tail!.next.compareExchangeABA(next, n)) {
+              if (curr_tail.next.compareExchangeABA(next, n)) {
                 _tail.compareExchangeABA(curr_tail, n);
                 break;
               }
@@ -260,7 +260,7 @@ module EpochManager {
               _tail.compareExchangeABA(curr_tail, next_node);
             }
             else {
-              var ret_val = next_node.val;
+              var ret_val = next_node!.val;
               if (_head.compareExchangeABA(curr_head, next_node)) {
                 retireNode(head_node);
                 return ret_val;
@@ -675,7 +675,7 @@ module EpochManager {
   class TokenWrapper {
 
     pragma "no doc"
-    var _tok : unmanaged _token;
+    var _tok : unmanaged _token?;
 
     pragma "no doc"
     var manager : unmanaged LocalEpochManager;
@@ -721,7 +721,7 @@ module EpochManager {
       Unregister the handle from the manager
     */
     proc unregister() {
-      manager.unregister(this._tok);
+      manager.unregister(this._tok!);
       this._tok = nil;
     }
 
