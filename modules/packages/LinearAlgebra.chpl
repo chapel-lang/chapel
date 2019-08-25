@@ -1687,34 +1687,35 @@ module Sparse {
       const localDomain = A.localSubdomain();
       var (low_i, low_j) = localDomain.low;
       var (high_i, high_j) = localDomain.high;
-      var rowResults: [low_i..high_i] eltType = 0;
+      var localResults: [low_i..high_i] eltType = 0;
 
       forall (i,j) in localDomain {
-          rowResults[i] += A[i,j] * X[j];
+          localResults[i] += A[i,j] * X[j];
       }
       
       // Writing result
       // This part assumes 0-based indexing of Adom
-      const numRowsPerSynch = localDomain.dim(1).size / A.domain.dist.targetLocales().shape(2);
       const targetLoc = A.domain.dist.targetLocales();
-      var numLocsInRow = targetLoc.shape(2);
-      var rowid, colid: int;
-      for (ind, Loc) in zip(targetLoc.domain, targetLoc) {
-        if Loc==here {
-          rowid = ind(1);
-          colid = ind(2);
+      const numLocsInRow = targetLoc.shape(2);
+      const numRowsPerSynch = localDomain.dim(1).size / numLocsInRow;
+      var rowId, colId: int;
+      // Finding the row and col id of this locale in naive way 
+      for (ind, loc) in zip(targetLoc.domain, targetLoc) {
+        if loc == here {
+          rowId = ind(1);
+          colId = ind(2);
         }
       }
       for it in 0..#numLocsInRow {
-        const myIdInRow = (colid + it) % numLocsInRow,
-              myId = rowid * numLocsInRow + myIdInRow,
+        const myIdInRow = (colId + it) % numLocsInRow,
+              myId = rowId * numLocsInRow + myIdInRow,
               isLastInRow = (myIdInRow % numLocsInRow == numLocsInRow - 1),
               curStart = low_i + myIdInRow * numRowsPerSynch,
               curEnd = if isLastInRow then high_i else (curStart+numRowsPerSynch-1);
 
         locks$[myId] = true;
         for i in curStart..curEnd {
-          Y[i] += rowResults[i];
+          Y[i] += localResults[i];
         }
         locks$[myId];
       }   
