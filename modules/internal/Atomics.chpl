@@ -886,7 +886,7 @@ module Atomics {
     pragma "last resort"
     inline proc const peek(): T {
       compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
-      return this.read(order=memory_order_relaxed);
+      return this.read(order=memoryOrder.relaxed);
     }
 
     /*
@@ -898,7 +898,7 @@ module Atomics {
     pragma "last resort"
     inline proc poke(value:T): void {
       compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
-      this.write(value, order=memory_order_relaxed);
+      this.write(value, order=memoryOrder.relaxed);
     }
   }
 
