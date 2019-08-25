@@ -79,9 +79,8 @@ proc masonPublish(ref args: list(string)) throws {
 
     if checkFlag {
       check(username, registryPath, isLocal, travis);
-    }
 
-    if (MASON_OFFLINE == 'true' && !update) || noUpdate == true {
+    if (MASON_OFFLINE && !update) || noUpdate == true {
 	      if !isLocal {
 	        throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
 	      }
