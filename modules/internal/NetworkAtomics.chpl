@@ -119,6 +119,78 @@ module NetworkAtomics {
 
     // Deprecated //
 
+    pragma "no doc"
+    inline proc const read(order:memory_order = memory_order_seq_cst): bool {
+      pragma "insert line file info" extern externFunc("read", int(64))
+        proc atomic_read(ref result:int(64), l:int(32), const obj:c_void_ptr, order:memory_order): void;
+
+      var ret: int(64);
+      atomic_read(ret, _localeid(), _addr(), order);
+      return ret:bool;
+    }
+
+    pragma "no doc"
+    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
+      pragma "insert line file info" extern externFunc("write", int(64))
+        proc atomic_write(ref desired:int(64), l:int(32), obj:c_void_ptr, order:memory_order): void;
+
+      var v = value:int(64);
+      atomic_write(v, _localeid(), _addr(), order);
+    }
+
+    pragma "no doc"
+    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
+      pragma "insert line file info" extern externFunc("xchg", int(64))
+        proc atomic_xchg(ref desired:int(64), l:int(32), obj:c_void_ptr, ref result:int(64), order:memory_order): void;
+
+      var ret:int(64);
+      var v = value:int(64);
+      atomic_xchg(v, _localeid(), _addr(), ret, order);
+      return ret:bool;
+    }
+
+    pragma "no doc"
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+      pragma "insert line file info" extern externFunc("cmpxchg", int(64))
+        proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), obj:c_void_ptr, ref result:bool(32), order:memory_order): void;
+
+      var ret:bool(32);
+      var te = expected:int(64);
+      var td = desired:int(64);
+      atomic_cmpxchg(te, td, _localeid(), _addr(), ret, order);
+      return ret:bool;
+    }
+
+    pragma "no doc"
+    inline proc testAndSet(order:memory_order = memory_order_seq_cst): bool {
+      return this.exchange(true, order);
+    }
+
+    pragma "no doc"
+    inline proc clear(order:memory_order = memory_order_seq_cst): void {
+      this.write(false, order);
+    }
+
+    pragma "no doc"
+    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
+      on this {
+        while (this.read(order=memory_order_relaxed) != value) {
+          chpl_task_yield();
+        }
+        chpl_atomic_thread_fence(order);
+      }
+    }
+
     pragma "last resort"
     inline proc const peek(): bool {
       compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
@@ -314,6 +386,174 @@ module NetworkAtomics {
     }
 
     // Deprecated //
+
+    pragma "no doc"
+    inline proc const read(order:memory_order = memory_order_seq_cst): T {
+      pragma "insert line file info" extern externFunc("read", T)
+        proc atomic_read(ref result:T, l:int(32), const obj:c_void_ptr, order:memory_order): void;
+
+      var ret:T;
+      atomic_read(ret, _localeid(), _addr(), order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
+      pragma "insert line file info" extern externFunc("write", T)
+        proc atomic_write(ref desired:T, l:int(32), obj:c_void_ptr, order:memory_order): void;
+
+      var v = value;
+      atomic_write(v, _localeid(), _addr(), order);
+    }
+
+    pragma "no doc"
+    inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
+      pragma "insert line file info" extern externFunc("xchg", T)
+        proc atomic_xchg(ref desired:T, l:int(32), obj:c_void_ptr, ref result:T, order:memory_order): void;
+
+      var ret:T;
+      var v = value;
+      atomic_xchg(v, _localeid(), _addr(), ret, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc compareExchange(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+      pragma "insert line file info" extern externFunc("cmpxchg", T)
+        proc atomic_cmpxchg(ref expected:T, ref desired:T, l:int(32), obj:c_void_ptr, ref result:bool(32), order:memory_order): void;
+
+      var ret:bool(32);
+      var te = expected;
+      var td = desired;
+      atomic_cmpxchg(te, td, _localeid(), _addr(), ret, order);
+      return ret:bool;
+    }
+
+    pragma "no doc"
+    inline proc fetchAdd(value:T, order:memory_order = memory_order_seq_cst): T {
+      pragma "insert line file info" extern externFunc("fetch_add", T)
+        proc atomic_fetch_add(ref op:T, l:int(32), obj:c_void_ptr, ref result:T, order:memory_order): void;
+
+      var ret:T;
+      var v = value;
+      atomic_fetch_add(v, _localeid(), _addr(), ret, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc add(value:T, order:memory_order = memory_order_seq_cst): void {
+      pragma "insert line file info" extern externFunc("add", T)
+        proc atomic_add(ref op:T, l:int(32), obj:c_void_ptr, order:memory_order): void;
+
+      var v = value;
+      atomic_add(v, _localeid(), _addr(), order);
+    }
+
+    pragma "no doc"
+    inline proc fetchSub(value:T, order:memory_order = memory_order_seq_cst): T {
+      pragma "insert line file info" extern externFunc("fetch_sub", T)
+        proc atomic_fetch_sub(ref op:T, l:int(32), obj:c_void_ptr, ref result:T, order:memory_order): void;
+
+      var ret:T;
+      var v = value;
+      atomic_fetch_sub(v, _localeid(), _addr(), ret, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc sub(value:T, order:memory_order = memory_order_seq_cst): void {
+      pragma "insert line file info" extern externFunc("sub", T)
+        proc atomic_sub(ref op:T, l:int(32), obj:c_void_ptr, order:memory_order): void;
+
+      var v = value;
+      atomic_sub(v, _localeid(), _addr(), order);
+    }
+
+    pragma "no doc"
+    inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("fetch_or", T)
+        proc atomic_fetch_or(ref op:T, l:int(32), obj:c_void_ptr, ref result:T, order:memory_order): void;
+
+      var ret:T;
+      var v = value;
+      atomic_fetch_or(v, _localeid(), _addr(), ret, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("or", T)
+        proc atomic_or(ref op:T, l:int(32), obj:c_void_ptr, order:memory_order): void;
+
+      var v = value;
+      atomic_or(v, _localeid(), _addr(), order);
+    }
+
+    pragma "no doc"
+    inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("fetch_and", T)
+        proc atomic_fetch_and(ref op:T, l:int(32), obj:c_void_ptr, ref result:T, order:memory_order): void;
+
+      var ret:T;
+      var v = value;
+      atomic_fetch_and(v, _localeid(), _addr(), ret, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("and", T)
+        proc atomic_and(ref op:T, l:int(32), obj:c_void_ptr, order:memory_order): void;
+
+      var v = value;
+      atomic_and(v, _localeid(), _addr(), order);
+    }
+
+    pragma "no doc"
+    inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
+      if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("fetch_xor", T)
+        proc atomic_fetch_xor(ref op:T, l:int(32), obj:c_void_ptr, ref result:T, order:memory_order): void;
+
+      var ret:T;
+      var v = value;
+      atomic_fetch_xor(v, _localeid(), _addr(), ret, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
+      if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
+      pragma "insert line file info" extern externFunc("xor", T)
+        proc atomic_xor(ref op:T, l:int(32), obj:c_void_ptr, order:memory_order): void;
+
+      var v = value;
+      atomic_xor(v, _localeid(), _addr(), order);
+    }
+
+    pragma "no doc"
+    inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
+      on this {
+        while (this.read(order=memory_order_relaxed) != value) {
+          chpl_task_yield();
+        }
+        chpl_atomic_thread_fence(order);
+      }
+    }
 
     pragma "last resort"
     inline proc const peek(): T {
