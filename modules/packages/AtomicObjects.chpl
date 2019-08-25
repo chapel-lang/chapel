@@ -306,7 +306,7 @@ module AtomicObjects {
 
   pragma "no doc"
   inline proc castToObj(type objType, addr) {
-    return __primitive("cast", objType, uintToCVoidPtr(addr));
+    return __primitive("cast", objType?, uintToCVoidPtr(addr));
   }
 
   pragma "no doc"
@@ -343,7 +343,7 @@ module AtomicObjects {
   proc compress(obj) : uint {
     if obj == nil then return 0;
 
-    // Perform a faster compression by packing the 48 usable bits of the virtual
+    // Perform compression by packing the 48 usable bits of the virtual
     // address with 16 bits of the locale/node id.
     var locId : uint(64) = obj.locale.id : uint(64);
     var addr = getAddr(obj);
@@ -354,7 +354,7 @@ module AtomicObjects {
   /*
      Decompresses a descriptor into the wide pointer object.
   */
-  proc decompress(type objType, descr:uint) : objType {
+  proc decompress(type objType, descr:uint) : objType? {
     if descr == 0 then return nil;
 
     // If we have less than 2^16 locales, then we know we performed the
@@ -369,10 +369,10 @@ module AtomicObjects {
     // the stack and memcpy our wideptr into the other. This is needed so we
     // have the same type.
     var wideptr = chpl_return_wide_ptr_node(locId, uintToCVoidPtr(addr));
-    var newObj : objType;
+    var newObj : objType?;
     on Locales[here.id] do newObj = nil;
     c_memcpy(c_ptrTo(newObj), c_ptrTo(wideptr), 16);
-    return newObj;
+    return newObj!;
   }
 
   /*
@@ -413,7 +413,7 @@ module AtomicObjects {
       this.__ABA_cnt = other.__ABA_cnt;
     }
 
-    inline proc getObject() {
+    inline proc getObject() : __ABA_objType? {
       return decompress(__ABA_objType, __ABA_ptr);
     }
 
@@ -565,17 +565,16 @@ module AtomicObjects {
       if !isUnmanagedClass(objType) { 
         compilerError ("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
       }
-      this.objType = objType?;
+      this.objType = objType;
       this.hasABASupport = hasABASupport;
       this.hasGlobalSupport = hasGlobalSupport;
       this.complete();
       if hasABASupport {
         var ptr : c_void_ptr;
-        posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(this.objType)));
-        this.atomicVar = ptr:_ddata(_ABAInternal(this.objType));
-        c_memset(ptr, 0, c_sizeof(ABA(this.objType)));
+        posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType?)));
+        this.atomicVar = ptr:_ddata(_ABAInternal(objType?));
+        c_memset(ptr, 0, c_sizeof(ABA(objType?)));
       }
-      compilerWarning(this.objType:string);
     }
 
     proc init(type objType, defaultValue : objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
@@ -605,7 +604,7 @@ module AtomicObjects {
 
     // Object(objType) -> Pointer(uint(64))
     pragma "no doc"
-    inline proc toPointer(obj:objType) : uint(64) {
+    inline proc toPointer(obj:objType?) : uint(64) {
       if hasGlobalSupport {
         return compress(obj);
       } else {
@@ -621,7 +620,7 @@ module AtomicObjects {
 
     // Pointer(uint(64)) -> Object(objType)
     pragma "no doc"
-    inline proc fromPointer(ptr : uint(64)) : objType {
+    inline proc fromPointer(ptr : uint(64)) : objType? {
       if hasGlobalSupport {
         return decompress(objType, ptr);
       } else {
@@ -644,56 +643,56 @@ module AtomicObjects {
       }
     }
 
-    proc readABA() : ABA(objType) {
+    proc readABA() : ABA(objType?) {
       doABACheck();
-      var ret : ABA(objType);
+      var ret : ABA(objType?);
       on this {
-        var dest : ABA(objType);
+        var dest : ABA(objType?);
         read128bit(atomicVar:c_void_ptr, c_ptrTo(dest));
         ret = dest;
       }
       return ret;
     }
 
-    proc read() : objType {
+    proc read() : objType? {
       return fromPointer(atomicVariable.read());
     }
 
-    proc compareExchange(expectedObj : objType, newObj : objType) : bool {
+    proc compareExchange(expectedObj : objType?, newObj : objType?) : bool {
       return atomicVariable.compareExchange(toPointer(expectedObj), toPointer(newObj));
     }
 
-    proc compareExchangeABA(expectedObj : ABA(objType), newObj : objType) : bool {
+    proc compareExchangeABA(expectedObj : ABA(objType?), newObj : objType?) : bool {
       doABACheck();
       var ret : bool;
       on this {
         var cmp = expectedObj;
         // Note that no 'cas128bit_special' is needed here as the 'cas128bit' will detect
         // a change from the expectedObj passed, which of course includes the _ABA_cnt.
-        var val = new ABA(objType, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
+        var val = new ABA(objType?, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
         ret = cas128bit(atomicVar:c_void_ptr, c_ptrTo(cmp), c_ptrTo(val)) : bool;
       }
       return ret;
     }
 
-    proc compareExchangeABA(expectedObj : ABA(objType), newObj : ABA(objType)) : bool {
+    proc compareExchangeABA(expectedObj : ABA(objType?), newObj : ABA(objType?)) : bool {
       compareExchangeABA(expectedObj, newObj.getObject());
     }
 
-    proc write(newObj:objType) {
+    proc write(newObj:objType?) {
       atomicVariable.write(toPointer(newObj));
     }
 
-    proc write(newObj:ABA(objType)) {
+    proc write(newObj:ABA(objType?)) {
       write(newObj.getObject());
     }
 
-    proc writeABA(newObj: ABA(objType)) {
+    proc writeABA(newObj: ABA(objType?)) {
       doABACheck();
       write128bit(atomicVar:c_void_ptr, c_ptrTo(newObj));
     }
 
-    proc writeABA(newObj: objType) {
+    proc writeABA(newObj: objType?) {
       doABACheck();
       // Note: We do not invoke `write128bit` here as we _must_ ensure that _ABA_cnt
       // is one plus the previous, otherwise we inject a race condition where a task
@@ -702,20 +701,20 @@ module AtomicObjects {
       // _ABA_cnt to be written back, which by itself opens the possibility for other
       // ABA race conditions that we're trying to solve. 'write128bit_special' solves this
       // by setting the 'with' upper 64-bits equal to one plus the actual 'cmp' upper 64-bits.
-      write128bit_special(new ABA(objType, toPointer(objType), 0));
+      write128bit_special(new ABA(objType?, toPointer(newObj), 0));
     }
 
-    inline proc exchange(newObj:objType) {
+    inline proc exchange(newObj:objType?) : objType? {
       return fromPointer(atomicVariable.exchange(toPointer(newObj)));
     }
 
-    inline proc exchangeABA(newObj : objType) : ABA(objType) {
+    inline proc exchangeABA(newObj : objType?) : ABA(objType?) {
       doABACheck();
-      var ret : ABA(objType);
+      var ret : ABA(objType?);
       on this {
-        var retval : ABA(objType);
+        var retval : ABA(objType?);
         var _newObj = newObj;
-        var val = new ABA(objType, toPointer(newObj), 0);
+        var val = new ABA(objType?, toPointer(newObj), 0);
         exchange128bit_special(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
         ret = retval;
       }
@@ -723,11 +722,11 @@ module AtomicObjects {
       return ret; 
     }
 
-    inline proc exchangeABA(newObj: ABA(objType)) : ABA(objType) {
+    inline proc exchangeABA(newObj: ABA(objType?)) : ABA(objType?) {
       doABACheck();
-      var ret : ABA(objType);
+      var ret : ABA(objType?);
       on this {
-        var retval : ABA(objType);
+        var retval : ABA(objType?);
         var _newObj = newObj;
         var val = newObj;
         exchange128bit(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));

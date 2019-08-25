@@ -107,8 +107,8 @@ module EpochManager {
 
     class Node {
       type eltType;
-      var val : eltType;
-      var next : unmanaged Node(eltType)?;
+      var val : eltType?;
+      var next : unmanaged Node(eltType?)?;
 
       proc init(val : ?eltType) {
         this.eltType = eltType;
@@ -122,13 +122,13 @@ module EpochManager {
 
     class LockFreeLinkedList {
       type objType;
-      var _head : AtomicObject(unmanaged Node(objType)?, hasABASupport=true, hasGlobalSupport=true);
+      var _head : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=true);
 
       proc init(type objType) {
         this.objType = objType;
       }
 
-      proc append(newObj : objType) {
+      proc append(newObj : objType?) {
         var _node = new unmanaged Node(newObj);
         do {
           var oldHead = _head.readABA();
@@ -147,7 +147,7 @@ module EpochManager {
       proc deinit() {
         var ptr = _head.read();
         while (ptr != nil) {
-          var next = ptr.next;
+          var next = ptr!.next;
           delete ptr;
           ptr = next;
         }
@@ -162,9 +162,9 @@ module EpochManager {
 
     class Node {
       type eltType;
-      var val : eltType;
-      var next : AtomicObject(unmanaged Node(eltType)?, hasABASupport=true, hasGlobalSupport=true);
-      var freeListNext : unmanaged Node(eltType)?;
+      var val : eltType?;
+      var next : AtomicObject(unmanaged Node(eltType?)?, hasABASupport=true, hasGlobalSupport=true);
+      var freeListNext : unmanaged Node(eltType?)?;
 
       proc init(val : ?eltType) {
         this.eltType = eltType;
@@ -178,9 +178,9 @@ module EpochManager {
 
     class LockFreeQueue {
       type objType;
-      var _head : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
-      var _tail : AtomicObject(unmanaged Node(objType), hasABASupport=true, hasGlobalSupport=true);
-      var _freeListHead : AtomicObject(unmanaged Node(objType)?, hasABASupport=true, hasGlobalSupport=true);
+      var _head : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=true);
+      var _tail : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=true);
+      var _freeListHead : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=true);
       // Flag to set if objects held in the queue are to be deleted or not.
       // By default initialised to true.
       const delete_val : bool;
@@ -189,7 +189,7 @@ module EpochManager {
         this.objType = objType;
         delete_val = true;
         this.complete();
-        var _node = new unmanaged Node(objType);
+        var _node = new unmanaged Node(objType?);
         _head.write(_node);
         _tail.write(_node);
       }
@@ -198,24 +198,24 @@ module EpochManager {
         this.objType = objType;
         this.delete_val = delete_val;
         this.complete();
-        var _node = new unmanaged Node(objType);
+        var _node = new unmanaged Node(objType?);
         _head.write(_node);
         _tail.write(_node);
       }
 
-      proc recycleNode() : unmanaged Node(objType) {
-        var oldTop : ABA(unmanaged Node(objType)?);
-        var n : unmanaged Node(objType)?;
+      proc recycleNode() : unmanaged Node(objType?) {
+        var oldTop : ABA(unmanaged Node(objType?)?);
+        var n : unmanaged Node(objType?)?;
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
           if (n == nil) {
-            return new unmanaged Node(objType);
+            return new unmanaged Node(objType?);
           }
-          var newTop = n.freeListNext;
+          var newTop = n!.freeListNext;
         } while (!_freeListHead.compareExchangeABA(oldTop, newTop));
-        n.next.write(nil);
-        n.freeListNext = nil;
+        n!.next.write(nil);
+        n!.freeListNext = nil;
         return n!;
       }
 
@@ -227,11 +227,11 @@ module EpochManager {
         while (true) {
           var tail = _tail.readABA();
           var next = tail.next.readABA();
-          var next_node = next.getObject();
+          var next_node = next!.getObject();
           var curr_tail = _tail.readABA();
           if (tail == curr_tail) {
             if (next_node == nil) {
-              if (curr_tail.next.compareExchangeABA(next, n)) {
+              if (curr_tail!.next.compareExchangeABA(next, n)) {
                 _tail.compareExchangeABA(curr_tail, n);
                 break;
               }
@@ -273,7 +273,7 @@ module EpochManager {
       }
 
       // TODO: Reclaim retired nodes after a while
-      proc retireNode(nextObj : unmanaged Node(objType)) {
+      proc retireNode(nextObj : unmanaged Node(objType?)) {
         nextObj.val = nil;
         do {
           var oldTop = _freeListHead.readABA();
@@ -298,24 +298,16 @@ module EpochManager {
 
       proc deinit() {
         var ptr = _head.read();
-        if (delete_val) {
-          while (ptr != nil) {
-            _head = ptr.next;
-            delete ptr.val;
-            delete ptr;
-            ptr = _head.read();
-          }
-        } else {
-          while (ptr != nil) {
-            _head = ptr.next;
-            delete ptr;
-            ptr = _head.read();
-          }
+        while (ptr != nil) {
+          var tmp = ptr!.next.read();
+          if delete_val then delete ptr!.val;
+          delete ptr;
+          ptr = tmp;
         }
 
         ptr = _freeListHead.read();
         while (ptr != nil) {
-          var head = ptr.freeListNext;
+          var head = ptr!.freeListNext;
           delete ptr;
           ptr = head;
         }
@@ -377,8 +369,8 @@ module EpochManager {
       proc deinit() {
         var ptr = _head.read();
         while (ptr != nil) {
-          var next = ptr.next;
-          delete ptr.val;
+          var next = ptr!.next;
+          delete ptr!.val;
           delete ptr;
           ptr = next;
         }
@@ -851,10 +843,10 @@ module EpochManager {
     //  Initializer for slave locales
     pragma "no doc"
     proc init(other, privatizedData, global_epoch) {
-      allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
-      free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
-      this.complete();
       this.global_epoch = global_epoch;
+      this.allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
+      this.free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
+      this.complete();
 
       // Initialise the free list pool with here.maxTaskPar tokens
       forall i in 0..#here.maxTaskPar {

@@ -97,7 +97,7 @@ module LockFreeQueue {
   class Node {
     type eltType;
     var val : eltType;
-    var next : AtomicObject(unmanaged Node(eltType), hasGlobalSupport=false, hasABASupport=false);
+    var next : AtomicObject(unmanaged Node(eltType)?, hasGlobalSupport=false, hasABASupport=false);
 
     proc init(val : ?eltType) {
       this.eltType = eltType;

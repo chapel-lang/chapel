@@ -98,7 +98,7 @@ module LockFreeStack {
   class Node {
     type eltType;
     var val : eltType;
-    var next : unmanaged Node(eltType);
+    var next : unmanaged Node(eltType)?;
 
     proc init(val : ?eltType) {
       this.eltType = eltType;
@@ -112,7 +112,7 @@ module LockFreeStack {
 
   class LockFreeStack {
     type objType;
-    var _top : AtomicObject(unmanaged Node(objType), hasGlobalSupport=false, hasABASupport=false);
+    var _top : AtomicObject(unmanaged Node(objType)?, hasGlobalSupport=false, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
 
     proc init(type objType) {
@@ -124,7 +124,7 @@ module LockFreeStack {
     }
 
     proc push(newObj : objType, tok : owned TokenWrapper = getToken()) {
-      var n = new unmanaged Node(newObj);
+      var n = new unmanaged Node(newObj)?;
       tok.pin();
       do {
         var oldTop = _top.read();
@@ -134,7 +134,7 @@ module LockFreeStack {
     }
 
     proc pop(tok : owned TokenWrapper = getToken()) : (bool, objType) {
-      var oldTop : unmanaged Node(objType);
+      var oldTop : unmanaged Node(objType)?;
       tok.pin();
       do {
         oldTop = _top.read();
