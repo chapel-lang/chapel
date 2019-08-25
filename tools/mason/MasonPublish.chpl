@@ -80,13 +80,11 @@ proc masonPublish(ref args: list(string)) throws {
     if checkFlag {
       check(username, registryPath, isLocal, travis);
 
-    if (MASON_OFFLINE && !update) || noUpdate == true {
-	      if !isLocal {
-	        throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
-	      }
-	
-	    }
-	  else updateRegistry('Mason.toml', args);
+    if ((MASON_OFFLINE  && !update) || noUpdate == true) && !falseIfRemotePath() {
+      if !isLocal {
+        throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
+      }
+      else updateRegistry('Mason.toml', args);
 
     if !isLocal && !doesGitOriginExist() && !dry {
       throw new owned MasonError('Your package must have a git origin remote in order to publish to a remote registry.');
@@ -288,35 +286,7 @@ private proc checkIfForkExists(username: string) {
 private proc getUsername() {
   var usernameUrl = gitUrl();
   var tail = usernameUrl.find("/")-1: int;
-  var head = usernameUrl.find(":")+1: int;
-  var username = usernameUrl(head..tail);
-  return username;
-}
-
-/* Clones the mason registry fork from the users repo. Takes username as input.
- */
-proc cloneMasonReg(username: string, safeDir : string, registryPath : string) throws {
-  try! {
-    if registryPath == MASON_HOME {
-      const gitClone = 'git clone --quiet git@github.com:';
-      var ret = gitC(safeDir, gitClone  + username + "/mason-registry mason-registry", false);
-      return ret;
-    }
-    else {
-      const gitRegistryPath = 'git clone --quiet ';
-      var gitCall = gitC(safeDir, gitRegistryPath + registryPath + ' mason-registry', false);
-      return gitCall;
-    }
-  }
-  catch {
-    throw new owned MasonError('Error cloning the fork of mason-registry. Make sure you have forked the mason-registry on GitHub');
-    exit(1);
-  }
-}
-
-/* Checks to see if 'git config --get remote.origin.url' exists
- */
-proc doesGitOriginExist() {
+  va doesGitOriginExist() {
   var urlExists = runCommand("git config --get remote.origin.url", true);
   return !urlExists.isEmpty();
 }
@@ -418,6 +388,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
     exit(1);
   }
 }
+
 /* check is a function to run a quick list of checks of the package, the registry path, and other issues that may
    prevent a package from being published to a registry.
  */
@@ -614,4 +585,13 @@ private proc moduleCheck(projectHome : string) throws {
 private proc returnMasonEnv() {
   const fakeArgs = ['mason', 'env'];
   masonEnv(fakeArgs);
+
+private proc falseIfRemotePath() {
+  var registryInEnv = MASON_REGISTRY;
+  for (name, registry) in registryInEnv {
+    if registry.find(':') != 0 {
+      return false;
+    }
+  }
+  return true;
 }
