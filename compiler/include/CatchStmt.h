@@ -56,7 +56,15 @@ public:
 
   const char* name() const;
   Expr*       type() const;
+
+  // body() returns the body of the catch block, including the
+  // conditional testing its filter (e.g., `e: MyError`) if there is
+  // one; bodyWithoutTest() just returns the code block that follows
+  // the test without that conditional
+
   BlockStmt*  body() const;
+  BlockStmt*  bodyWithoutTest() const;
+
   bool        isCatchall() const;
 
   void                accept(AstVisitor* visitor);

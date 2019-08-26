@@ -213,35 +213,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   }
 
   if (CatchStmt* catchStmt = toCatchStmt(expr)) {
-    if (catchStmt->isCatchall()) {
-      // if this is a catch-all, the answer is whatever its body says
-      return isDefinedAllPaths(catchStmt->body(), ret, refs);
-    } else {
-      // otherwise, this is a case that (unfortunately) looks like this:
-      //
-      // 'if (errorMatches) { user code } else { /* nothing */ }
-      //
-      // where that else clause doesn't reflect the true control flow,
-      // so we need to special-case it (later the next catch block
-      // will be inlined there).  Open Q: Why isn't this done
-      // outright?
-
-      // Find the else body in the last CondStmt in the catch block body.
-      // This should always exist after CatchStmt::cleanup
-      // for non-catchall errors.
-
-      CondStmt* finalCond = NULL;
-      for_alist_backward(node, catchStmt->body()->body) {
-        if (CondStmt* cond = toCondStmt(node)) {
-          finalCond = cond;
-          break;
-        }
-      }
-      INT_ASSERT(finalCond != NULL && finalCond->elseStmt != NULL);
-
-      // only check its then-clause
-      return isDefinedAllPaths(finalCond->thenStmt, ret, refs);
-    }
+    return isDefinedAllPaths(catchStmt->bodyWithoutTest(), ret, refs);
   }
 
   if (BlockStmt* block = toBlockStmt(expr))
