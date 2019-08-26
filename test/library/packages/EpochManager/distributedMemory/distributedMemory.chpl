@@ -39,4 +39,3 @@ proc main() {
   
   manager.destroy();
 }
-

@@ -32,4 +32,3 @@ proc main() {
 
   delete manager;
 }
-
