@@ -1303,8 +1303,8 @@ bool canCoerceAsSubtype(Type*     actualType,
   }
 
   // Handle coercions nil -> owned/shared
-  if (actualType == dtNil && isManagedPtrType(formalType)) {
-    Type* formalBorrowType = getManagedPtrBorrowType(formalType);
+  if (actualType == dtNil && isManagedPtrType(formalType->getValType())) {
+    Type* formalBorrowType = getManagedPtrBorrowType(formalType->getValType());
     if (isNilableClassType(formalBorrowType) || useLegacyNilability(actualSym))
       return true;
   }
