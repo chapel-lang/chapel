@@ -313,7 +313,10 @@ module ChapelReduce {
     proc identity return _maxloc_id(eltType);
     proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
-      if x(1) > state(1) ||
+      var cond1 = x(1) > state(1);  // workaround for a target compiler bug
+      if CHPL_TARGET_COMPILER == "cray-prgenv-cray" && x(1) > state(1)
+      then cond1 = x(1) > state(1);
+      if cond1 /*x(1) > state(1)*/ ||
         ((x(1) == state(1)) && (x(2) < state(2))) ||
         (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
       then
@@ -331,7 +334,10 @@ module ChapelReduce {
     proc identity return _minloc_id(eltType);
     proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
-      if x(1) < state(1) ||
+      var cond1 = x(1) < state(1);  // workaround for a target compiler bug
+      if CHPL_TARGET_COMPILER == "cray-prgenv-cray" && x(1) < state(1)
+      then cond1 = x(1) < state(1);
+      if cond1 /*x(1) < state(1)*/ ||
         ((x(1) == state(1)) && (x(2) < state(2))) ||
         (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
       then
