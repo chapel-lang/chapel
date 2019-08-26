@@ -1,32 +1,57 @@
-use Map, BigInteger;
+use Map;
 
-proc factorial(n: int) {
-  use BigInteger;
-  var bi = new bigint(1);
+record FacInt {
+  var n: uint = 0;
+  var nFac: uint = 1;
 
-  for i in 2..n do bi *= i;
-  return bi;
+  proc init() {
+    n = 0;
+    nFac = 1;
+  }
+
+  proc init(n: uint) {
+    this.n = n;
+    this.complete();
+    this.nFac = factorial(n);
+  }
+
+  proc const factorial(n: uint) {
+    var bi: uint = 1;
+    if n > 15 then
+      halt("I only do small numbers");
+
+    for i in 2..n do bi *= i;
+    return bi;
+  }
 }
 
-var fac = new map(int, bigint);
-
-for i in 1..100 {
-  fac[i] = factorial(i);
+proc <(a: FacInt, b: FacInt) {
+  return a.n < b.n;
 }
 
-var A: [1..fac.size] (int, bigint);
+proc >(a: FacInt, b: FacInt) {
+  return a.n > b.n;
+}
+
+var fac = new map(int, FacInt);
+
+for i in 1..15 {
+  fac[i] = new FacInt(i: uint);
+}
+
+var A: [1..fac.size] (int, FacInt);
 for key in fac {
   A[key] = (key, fac[key]);
 }
-writeln(A);
+writeln(A.sorted());
 
-var B: [1..fac.size] (int, bigint);
+var B: [1..fac.size] (int, FacInt);
 for item in fac.items() {
   B[item(1)] = item;
 }
-writeln(B);
+writeln(B.sorted());
 
-var C: [1..fac.size] bigint;
+var C: [1..fac.size] FacInt;
 for (val, i) in zip(fac.values(), 1..) {
   C[i] = val;
 }
