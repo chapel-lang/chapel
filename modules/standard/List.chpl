@@ -99,11 +99,6 @@ module List {
     }
   }
 
-  pragma "no doc"
-  proc hasThese(container) param {
-    return canResolveMethod(container, "these");
-  }
-
   /*
     A list is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. Unlike a stack, the
@@ -143,7 +138,9 @@ module List {
       Initializes an empty list containing elements of the given type.
 
       :arg eltType: The type of the elements of this list.
+
       :arg parSafe: If `true`, this list will use parallel safe operations.
+      :type parSafe: `param bool`
     */
     proc init(type eltType, param parSafe=false) {
       this.eltType = eltType;
@@ -159,9 +156,12 @@ module List {
       Used in new expressions.
 
       :arg other: The list to initialize from.
+      :type other: `list(?t)`
+
       :arg parSafe: If `true`, this list will use parallel safe operations.
+      :type parSafe: `param bool`
     */
-    proc init(const ref other: list(?t), param parSafe=false) {
+    proc init(other: list(?t), param parSafe=false) {
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -175,9 +175,12 @@ module List {
       Used in new expressions.
 
       :arg other: The array to initialize from.
+      :type other: `[?d] ?t`
+
       :arg parSafe: If `true`, this list will use parallel safe operations.
+      :type parSafe: `param bool`
     */
-    proc init(const ref other: [?d] ?t, param parSafe=false) {
+    proc init(other: [?d] ?t, param parSafe=false) {
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -196,39 +199,22 @@ module List {
         a compiler error.
 
       :arg other: The range to initialize from.
+      :type other: `range(?t)`
+
+      :arg parSafe: If `true`, this list will use parallel safe operations.
+      :type parSafe: `param bool`
     */
-    proc init(const ref other: range(?t), param parSafe=false) {
+    proc init(other: range(?t), param parSafe=false) {
       this.eltType = t;
       this.parSafe = parSafe;
 
       if !isBoundedRange(other) {
+        param e = this.type:string;
         param f = other.type:string;
-        compilerError("Cannot init list from unbounded range: " + f);
+        param msg = "Cannot init " + e + " from unbounded " + f;
+        compilerError(msg);
       }
 
-      this.complete();
-      _commonInitFromIterable(other);
-    }
-
-    /*
-      Initializes a list containing elements that are copy initialized from
-      the elements contained in any iterable type. The formal argument
-      "iterable" must have an iterator named "these" defined for its type.
-
-      Used in `new` expressions.
-
-      :arg other: The iterable type to initialize from.
-    */
-    pragma "no doc"
-    proc init(other, param parSafe=false) {
-
-      if !canResolveMethod(other, "these") {
-        param f = other.type:string;
-        compilerError("No method named \"these\" defined for: " + f);
-      }
-
-      this.eltType = iteratorIndexType(other);
-      this.parSafe = parSafe;
       this.complete();
       _commonInitFromIterable(other);
     }
@@ -238,8 +224,9 @@ module List {
       the elements contained in another list.
 
       :arg other: The list to initialize from.
+      :type other: `list(this.type.eltType)`
     */
-    proc init=(const ref other: list(this.type.eltType)) {
+    proc init=(other: list(this.type.eltType, ?p)) {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();
@@ -251,8 +238,9 @@ module List {
       the elements contained in an array.
 
       :arg other: The array to initialize from.
+      :type other: `[?d] this.type.eltType`
     */
-    proc init=(const ref other: [?d] this.type.eltType) {
+    proc init=(other: [?d] this.type.eltType) {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();
@@ -269,51 +257,17 @@ module List {
         a compiler error.
 
       :arg other: The range to initialize from.
+      :type other: range(this.type.eltType)`
     */
-    proc init=(const ref other: range(?t)) {
+    proc init=(other: range(this.type.eltType, ?b, ?d)) {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-
-      if eltType != t {
-        param e = this.type:string;
-        param f = t:string;
-        compilerError("In init of " + e + " - bad range type: " + f);
-      }
 
       if !isBoundedRange(other) {
-        param f = other.type:string;
-        compilerError("Cannot init list from unbounded range: " + f);
-      }
-
-      this.complete();
-      _commonInitFromIterable(other);
-    }
-
-    /*
-      Initializes a list containing elements that are copy initialized from
-      the elements contained in any iterable type. The formal argument
-      "iterable" must have an iterator named "these" defined for its type.
-
-      :arg other: The iterable type to initialize from.
-    */
-    pragma "no doc"
-    proc init=(other) {
-      this.eltType = this.type.eltType;
-      this.parSafe = this.type.parSafe;
-
-      //
-      // TODO: Can Reflection provide a method like "canResolveIterator"?
-      //
-      if !canResolveMethod(other, "these") {
-        param f = other.type:string;
-        compilerError("No method named \"these\" defined for: " + f);
-      }
-
-      type iterType = iteratorIndexType(other);
-      if iterType != eltType {
         param e = this.type:string;
-        param f = iterType:string;
-        compilerError("In init of " + e + " - bad iterator type: " + f);
+        param f = other.type:string;
+        param msg = "Cannot init " + e + " from unbounded " + f;
+        compilerError(msg);
       }
 
       this.complete();
@@ -607,11 +561,13 @@ module List {
       Add an element to the end of this list.
 
       :arg x: An element to append.
+      :type x: `eltType`
     */
     proc append(pragma "no auto destroy" in x: eltType) lifetime this < x {
-      _enter();
+      on this { _enter(); }
+      // TODO: Can't use on statement here without getting a memory leak.
       _appendByRef(x);
-      _leave();
+      on this { _leave(); }
     }
 
     /*
@@ -647,10 +603,14 @@ module List {
     /*
       Returns a reference to the first item in this list.
 
+      .. warning::
+
+        Calling this method on an empty list will cause the currently running
+        program to halt. If the `--fast` flag is used, no safety checks will
+        be performed.
+
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
-
-      :throws IllegalArgumentError: If this list is empty.
     */
     proc first() ref throws {
       // Hack to initialize a reference (may be invalid).
@@ -659,11 +619,10 @@ module List {
       on this {
         _enter();
 
-        if _size == 0 {
+        if boundsChecking && _size == 0 {
           _leave();
           const msg = "Called \"first\" on an empty list.";
-          throw new owned
-            IllegalArgumentError(msg);
+          halt(msg);
         }
 
         result = _getRef(1);
@@ -676,23 +635,26 @@ module List {
     /*
       Returns a reference to the last item in this list.
 
+      .. warning::
+
+        Calling this method on an empty list will cause the currently running
+        program to halt. If the `--fast` flag is used, no safety checks will
+        be performed.
+
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
-
-      :throws IllegalArgumentError: If this list is empty.
     */
-    proc last() ref throws {
+    proc last() ref {
       // Hack to initialize a reference (may be invalid).
       ref result = _getRef(1);
 
       on this {
         _enter();
 
-        if _size == 0 {
+        if boundsChecking && _size == 0 {
           _leave();
           const msg = "Called \"last\" on an empty list.";
-          throw new owned
-            IllegalArgumentError(msg);
+          halt(msg);
         }
 
         result = _getRef(_size);
@@ -710,10 +672,12 @@ module List {
       // if we resized once and then performed repeated moves, rather than
       // calling _append().
       //
-      for item in collection {
-        pragma "no auto destroy"
-        var cpy = item;
-        _appendByRef(cpy);
+      on this {
+        for item in collection {
+          pragma "no auto destroy"
+          var cpy = item;
+          _appendByRef(cpy);
+        }
       }
     }
 
@@ -726,14 +690,11 @@ module List {
       :type other: `list(eltType)`
     */
     proc extend(other: list(eltType, ?)) lifetime this < other {
-      _enter();
-      _extendGeneric(other);
-      _leave();
-    }
-
-    proc extend(other: [?d] eltType) lifetime this < other {
-      
-
+      on this {
+        _enter();
+        _extendGeneric(other);
+        _leave();
+      }
     }
 
     /*
@@ -742,11 +703,41 @@ module List {
 
       :arg other: An array containing elements of the same type as those
         contained in this list.
+      :type other: `[?d] eltType`
     */
     proc extend(other: [?d] eltType) lifetime this < other {
-      _enter();
-      _extendGeneric(other);
-      _leave();
+      on this {
+        _enter();
+        _extendGeneric(other);
+        _leave();
+      }
+    }
+
+    /*
+      Extends this list by appending a copy of each element yielded by a
+      range.
+
+      .. note::
+
+        Attempting to initialize a list from an unbounded range will trigger
+        a compiler error.
+
+      :arg other: The range to initialize from.
+      :type other: `range(eltType)`
+    */
+    proc extend(other: range(?t, ?b, ?d)) lifetime this < other {
+      if !isBoundedRange(other) {
+        param e = this.type:string;
+        param f = other.type:string;
+        param msg = "Cannot extend " + e + " with unbounded " + f;
+        compilerError(msg);
+      }
+
+      on this {
+        _enter();
+        _extendGeneric(other);
+        _leave();
+      }
     }
 
     /*
@@ -854,8 +845,7 @@ module List {
       :return: `true` if `arr` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, const ref arr: [?d] eltType): bool
-         lifetime this < arr {
+    proc insert(idx: int, arr: [?d] eltType): bool lifetime this < arr {
 
       var result = false;
 
@@ -885,13 +875,12 @@ module List {
       :type idx: `int`
 
       :arg lst: A list of elements to insert.
-      :type lst: list(eltType)
+      :type lst: `list(eltType)`
 
       :return: `true` if `lst` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, const ref lst: list(eltType)): bool
-         lifetime this < lst {
+    proc insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
       
       var result = false;
       
@@ -969,42 +958,49 @@ module List {
         Popping an element from this list will invalidate any reference to
         the element taken while it was contained in this list.
 
+      .. warning::
+
+        Calling this method on an empty list or with values of `idx` that
+        are out of bounds will cause the currently running program to halt.
+        If the `--fast` flag is used, no safety checks will be performed.
+
       :arg idx: The index of the element to remove. Defaults to the last item
                  in this list.
       :type idx: `int`
 
       :return: The item removed.
       :rtype: `eltType`
-
-      :throws IllegalArgumentError: If the index `idx` is out of bounds.
-      :throws IllegalArgumentError: If this list is empty.
     */
-    proc pop(idx: int=size): eltType throws {
-      //
-      // TODO: What about situations where `eltType` does not have a default
-      // constructor?
-      //
+    proc pop(idx: int=size): eltType {
+      // We just need memory here, avoid possible side effects.
+      pragma "no init"
       var result: eltType;
 
       on this {
         _enter();
 
-        if _size <= 0 then {
+        if boundsChecking && _size <= 0 then {
           _leave();
           const msg = "Called \"pop\" on an empty list.";
-          throw new owned
-            IllegalArgumentError(msg);
+          halt(msg);
         }
 
-        if !_withinBounds(idx) {
+        if boundsChecking && !_withinBounds(idx) {
           _leave();
           const msg = "List \"pop\" index out of bounds: " + idx:string;
-          throw new owned
-            IllegalArgumentError(msg);
+          halt(msg);
         }
 
         ref item = _getRef(idx);
-        result = item;
+
+        //
+        // This workaround is necessary because we cannot return from on
+        // statements right now.
+        //
+        pragma "no auto destroy"
+        var tmp = item;
+        _move(tmp, result);
+
         _destroy(item);
         // May release memory based on size before pop.
         _collapse(idx);
@@ -1074,9 +1070,7 @@ module List {
       _sanity(_size == 0);
       _sanity(_arrays == nil);
 
-      //
       // All array operations assume a consistent initial state.
-      //
       _firstTimeInitializeArrays();
 
       _leave();
@@ -1130,6 +1124,7 @@ module List {
       Return the number of times a given element is found in this list.
 
       :arg x: An element to count.
+      :type x: `eltType`
 
       :return: The number of times a given element is found in this list.
       :rtype: `int`
@@ -1201,7 +1196,7 @@ module List {
 
       :yields: A reference to one of the elements contained in this list.
     */
-    iter these() ref {
+    iter const these() ref {
       for i in 1.._size {
         ref result = _getRef(i);
         yield result;
@@ -1209,7 +1204,7 @@ module List {
     }
 
     pragma "no doc"
-    iter these(param tag) where tag == iterKind.standalone {
+    iter const these(param tag) where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1246,7 +1241,7 @@ module List {
     // going on and what our responsibilities are.
     //
     pragma "no doc"
-    iter these(param tag) where tag == iterKind.leader {
+    iter const these(param tag) where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1261,7 +1256,7 @@ module List {
     }
 
     pragma "no doc"
-    iter these(param tag, follow) where tag == iterKind.follower {
+    iter const these(param tag, follow) where tag == iterKind.follower {
       const (lo, hi) = follow;
 
       //
@@ -1309,7 +1304,7 @@ module List {
       :return: `true` if this list is empty.
       :rtype: `bool`
     */
-    inline proc const isEmpty(): bool {
+    proc const isEmpty(): bool {
 
       //
       // TODO: We can make _size atomic to avoid having to worry about guard-
@@ -1369,7 +1364,7 @@ module List {
     :arg lhs: The list to assign to.
     :arg rhs: The list to assign from. 
   */
-  proc =(ref lhs: list(?t, ?), const ref rhs: list(t, ?)) {
+  proc =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
@@ -1383,7 +1378,7 @@ module List {
     :return: `true` if the contents of two lists are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: list(?t, ?), const ref b: list(t, ?)): bool {
+  proc ==(a: list(?t, ?), b: list(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -1406,7 +1401,7 @@ module List {
     :return: `true` if the contents of two lists are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: list(?t, ?), const ref b: list(t, ?)): bool {
+  proc !=(a: list(?t, ?), b: list(t, ?)): bool {
     return !(a == b);
   }
 

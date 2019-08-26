@@ -1,28 +1,20 @@
-use List;
+private use List;
 
-// Control these via COMPOPTS to test class types and no parallel safety.
-config type listType = int;
-config param listLock = true;
+config const testIters = 8;
 
-var lst1 = new list(listType, listLock);
+var lst1: list(int, true) = 1..testIters;
+var lst2: list(int, true);
 
-for i in 1..5 do
-  lst1.append(i);
+lst2.extend(lst1);
 
-writeln(lst1);
+for (x, y) in zip(lst1, lst2) do
+  assert(x == y);
 
-var lst2 = new list(listType, listLock);
+lst2.extend(lst1);
 
-for i in 6..10 do
-  lst2.append(i);
+assert(lst2.size > lst1.size);
 
-writeln(lst2);
+for i in 1..testIters do
+  assert(lst1[i] == lst2[testIters + i]);
 
-lst1.extend(lst2);
 
-writeln(lst1);
-
-lst2.clear();
-
-writeln(lst1);
-writeln(lst2);

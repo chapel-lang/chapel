@@ -1,4 +1,4 @@
-private use Lists;
+private use List;
 
 //
 // Initialize a list from an array.

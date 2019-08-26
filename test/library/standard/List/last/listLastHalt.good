@@ -1,0 +1,1 @@
+listLastHalt.chpl:5: error: halt reached - Called "last" on an empty list.

@@ -1,0 +1,1 @@
+listPopHaltBadIndex.chpl:10: error: halt reached - List "pop" index out of bounds: 9

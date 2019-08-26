@@ -1,0 +1,1 @@
+listExtendUnboundedRange.chpl:9: error: Cannot extend list(int(64),true) with unbounded range(int(64),boundedLow,false)
