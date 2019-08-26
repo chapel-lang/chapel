@@ -2420,10 +2420,8 @@ module TwoArrayPartitioning {
             assert(total == localDomain.numIndices);
           }
           // Now store the counts into the global counts array
-          for bin in vectorizeOnly(0..#nBuckets) {
-            state.perLocale[0].globalCounts[bin*nTasks + tid] = localCounts[bin];
-          }
-          //state.globalCounts[tid.. by nTasks] = localCounts;
+          ref globalCounts = state.perLocale[0].globalCounts;
+          globalCounts[tid.. by nTasks] = localCounts;
         }
       }
       // Now the data is in Scratch
