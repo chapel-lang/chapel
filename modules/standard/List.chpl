@@ -359,13 +359,19 @@ module List {
     pragma "no doc"
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        on this {
+          _lock$.lock();
+        }
+      return;
     }
 
     pragma "no doc"
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        on this {
+          _lock$.unlock();
+        }
+      return;
     }
 
     pragma "no doc"
@@ -564,10 +570,14 @@ module List {
       :type x: `eltType`
     */
     proc append(pragma "no auto destroy" in x: eltType) lifetime this < x {
-      on this { _enter(); }
-      // TODO: Can't use on statement here without getting a memory leak.
+      _enter();
+
+      //
+      // TODO: Can't use on statement here without getting a memory leak on
+      // gasnet/multilocale configurations.
+      //
       _appendByRef(x);
-      on this { _leave(); }
+      _leave();
     }
 
     /*
@@ -613,7 +623,7 @@ module List {
       :rtype: `ref eltType`
     */
     proc first() ref throws {
-      // Hack to initialize a reference (may be invalid).
+      // Hack to initialize a reference (may be invalid memory).
       ref result = _getRef(1);
 
       on this {
@@ -645,7 +655,7 @@ module List {
       :rtype: `ref eltType`
     */
     proc last() ref {
-      // Hack to initialize a reference (may be invalid).
+      // Hack to initialize a reference (may be invalid memory).
       ref result = _getRef(1);
 
       on this {
@@ -689,7 +699,7 @@ module List {
         contained in this list.
       :type other: `list(eltType)`
     */
-    proc extend(other: list(eltType, ?)) lifetime this < other {
+    proc extend(other: list(eltType, ?p)) lifetime this < other {
       on this {
         _enter();
         _extendGeneric(other);
@@ -725,7 +735,7 @@ module List {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
     */
-    proc extend(other: range(?t, ?b, ?d)) lifetime this < other {
+    proc extend(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
@@ -1197,6 +1207,7 @@ module List {
       :yields: A reference to one of the elements contained in this list.
     */
     iter these() ref {
+      // TODO: We can just iterate through the _ddata directly here.
       for i in 1.._size {
         ref result = _getRef(i);
         yield result;
@@ -1206,15 +1217,15 @@ module List {
     pragma "no doc"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
-      const minChunkSize = 32;
+      const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
-      const numTasks = if hasOneChunk then 1 else dataParTasksPerLocale;
-      const chunkSize = floor(osz / numTasks);
+      const numTasks = if hasOneChunk then 1 else here.maxTaskPar;
+      const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk do
+        for i in chunk(1) do
           yield this[i + 1];
       }
     }
@@ -1225,21 +1236,15 @@ module List {
 
       if tid <= 0 {
         lo = 0;
-        hi = chunkSize + trailing;
+        hi = chunkSize + trailing - 1;
       } else {
-        lo = chunkSize * tid;
-        hi = lo + chunkSize;
+        lo = chunkSize * tid + trailing;
+        hi = lo + chunkSize - 1;
       }
 
-      return lo..hi;
+      return (lo..hi,);
     }
 
-    //
-    // TODO: Should I lock chunks to the same locale as this? I'm still a bit
-    // confused about the structure of leader/followThiser iterators, let's
-    // continue to read the examples so that we better understand what is
-    // going on and what our responsibilities are.
-    //
     pragma "no doc"
     iter these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
@@ -1249,6 +1254,7 @@ module List {
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
+      // TODO: We can just use the range iterator like above.
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
         yield chunk;
@@ -1261,12 +1267,8 @@ module List {
       //
       // TODO: A faster scheme would access the _ddata directly to avoid
       // the penalty of logarithmic indexing over and over again.
-      // TODO: We pay the potentialy penalty (boy that's a tongue twister)
-      // of many remote accesses on the _ddata for now (IE, if this
-      // follower is executed on a remote locale), and can fix it later
-      // if it is actually a problem.
       //
-      for i in followThis do
+      for i in followThis(1) do
         yield this[i + 1];
     }
 

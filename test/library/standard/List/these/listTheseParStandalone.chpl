@@ -1,12 +1,23 @@
 private use List;
 
-config const testIters = 8;
+config const testIters = 137;
 
-const arr: [1..testIters] int = 1..testIters;
+var lst1: list(int);
+var lst2: list(int, true);
 
-var lst: list(int) = arr;
+for i in 1..testIters do
+  lst1.append(i);
 
-forall (x, y) in zip(arr, lst) do
-  writeln("arr is ", x.type:string, " ", x, " lst is ", y.type:string, " ", y);
+forall x in lst1 do
+  x *= 2;
+
+// List 2 has `parSafe=true`, here.
+forall x in lst1 with (ref lst2) do
+  lst2.append(x);
+
+lst2.sort();
+
+for (x, y) in zip(lst1, lst2) do
+  assert(x == y);
 
 
