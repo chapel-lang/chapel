@@ -802,14 +802,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_IS_RECORD_TYPE: {
-    AggregateType* at = toAggregateType(call->get(1)->typeInfo());
+    Type* t = call->get(1)->typeInfo();
 
-    if (isRecord(at) == true) {
+    if (isUserRecord(t))
       retval = new SymExpr(gTrue);
-
-    } else {
+    else
       retval = new SymExpr(gFalse);
-    }
 
     call->replace(retval);
 
