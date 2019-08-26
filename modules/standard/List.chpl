@@ -1277,15 +1277,9 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) {
+    proc readWriteThis(ch: channel) {
       _enter();
       
-      //
-      // TODO: Should this method throw? The current implementation uses <~>
-      // so that it does not have to throw, but it also will not report
-      // any IO errors.
-      //
-
       ch <~> "[";
 
       for i in 1..(_size - 1) do
