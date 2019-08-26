@@ -3,7 +3,7 @@ use Math;
 use LinearAlgebra;
 use LinearAlgebra.Sparse;
 
-config const m=1000,
+config const m=4,
              iters=10,
              /* Omit timing output */
              correctness=false;
@@ -32,19 +32,25 @@ proc main() {
   var A: [Space] eltType;
 
   setDiag(A, 0, 2);
-  setDiag(A, 1, -1);
-  setDiag(A, -1, -1);
-  setDiag(A, 10, 0.5);
-  setDiag(A, -10, 0.5);
+  setDiag(A, 1, 0.5);
+  setDiag(A, -2, -0.5);
+
+  var LU: [A.domain] eltType;
+  var ipiv: [A.domain.dim(1)] eltType;
 
   for 1..iters {
     t.start();
-    var (LU, ipiv) = lu(A);
+    (LU, ipiv) = lu(A);
     t.stop();
   }
 
   if !correctness then
     writeln('LinearAlgebra.lu: ', t.elapsed() / iters);
+  else
+    writeln(LU);
+
+  
+
   t.clear();
 }
 
