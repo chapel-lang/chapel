@@ -1091,6 +1091,29 @@ bool isRecord(Type* t) {
   return false;
 }
 
+bool isUserRecord(Type* t) {
+  if (!isRecord(t))
+    return false;
+
+  // Check for lots of exceptions - types that are implemented
+  // as records but that isn't the user view.
+  if (t == dtString ||
+      t == dtBytes ||
+      t->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DOMAIN) ||
+      t->symbol->hasFlag(FLAG_ARRAY) ||
+      t->symbol->hasFlag(FLAG_RANGE) ||
+      t->symbol->hasFlag(FLAG_TUPLE) ||
+      t->symbol->hasFlag(FLAG_SYNC) ||
+      t->symbol->hasFlag(FLAG_SINGLE) ||
+      t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
+      t->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    return false;
+
+  return true;
+}
+
 bool isUnion(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isUnion();

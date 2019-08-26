@@ -27,6 +27,7 @@ var tu3 = (1,2,3);       test("tuple-3", tu3);
 var atm: atomic int;     test("atomic", atm);
 var snc: sync int;       test("sync", snc);
 var sng: single int;     test("single", sng);
+var oc: owned C = new owned C();            test("owned class", oc);
 compilerError("done"); // no need for a C compile
 
 proc test(param msg, v) {
