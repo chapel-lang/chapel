@@ -1,7 +1,7 @@
 use LinearAlgebra;
 use LinearAlgebra.Sparse;
 use BlockDist;
-use Lists;
+use List;
 
 config const n = 16;
 config const stride = 7;
