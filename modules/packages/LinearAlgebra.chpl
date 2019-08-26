@@ -1144,6 +1144,192 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
+private proc _lu (in A: [?Adom] ?eltType) {
+  const n = Adom.shape(1);
+  const LUDom = {1..n, 1..n};
+
+  // TODO: Reduce memory usage
+  var L, U, LU: [LUDom] eltType;
+
+  var ipiv: [{1..n}] int = [i in {1..n}] i;
+  
+  var numSwap: int = 0;
+
+  for i in 1..n { 
+
+    var max = A[i,i], swaprow = i;
+    for row in (i+1)..n {
+      if (abs(A[row,i]) > abs(max)) {
+        max = A[row,i];
+        swaprow = row;
+      }
+    }
+    if (swaprow != i) {
+      A[i,..] <=> A[swaprow,..];
+      L[i,..] <=> L[swaprow,..];
+      ipiv[i] <=> ipiv[swaprow];
+      numSwap+=1;
+    }
+
+    forall k in i..n {
+      var sum = + reduce (L[i,..] * U[..,k]);
+      U[i,k] = A[i,k] - sum;
+    }
+
+    L[i,i] = 1;
+
+    forall k in (i+1)..n {
+      var sum = + reduce (L[k,..] * U[..,i]);
+      L[k,i] = (A[k,i] - sum) / U[i,i];
+    }
+  } 
+
+  LU = L + U;
+  forall i in 1..n {
+    LU(i,i) = U(i,i);
+  }
+
+  return (LU,ipiv,numSwap);
+}
+
+/*
+  Compute an LU factorization of square matrix `A` 
+  using partial pivoting, such that `A = P * L * U` where P
+  is a permutation matrix. Return a tuple of size 2 `(LU, ipiv)`.
+  
+  `L` and `U` are stored in the same matrix `LU` where 
+  the unit diagonal elements of L are not stored.
+  
+  `ipiv` contains the pivot indices such that row i of `A` 
+  was interchanged with row `ipiv(i)`.
+  
+*/
+proc lu (A: [?Adom] ?eltType) {
+  if Adom.rank != 2 then
+    halt("Wrong rank for LU factorization");
+
+  if Adom.shape(1) != Adom.shape(2) then
+    halt("LU factorization only supports square matrices");
+
+  var (LU, ipiv, numSwap) = _lu(A);
+  return (LU,ipiv);
+}
+
+/* Return a new array as the permuted form of `A` according to 
+    permutation array `ipiv`.*/
+private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
+  const n = Adom.shape(1);
+  
+  var B: [Adom] eltType;
+  
+  if Adom.rank == 1 {
+    if transpose {
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[i] = A[pi];
+      }
+    }
+    else {
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[pi] = A[i];
+      }
+    }
+  }
+  else if Adom.rank == 2 {
+    if transpose {
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[i, ..] = A[pi, ..];
+      }
+    }
+    else {
+      forall (i,pi) in zip(1..n, ipiv) {
+        B[pi, ..] = A[i, ..];
+      }
+    }
+  }
+  return B;
+}
+
+/* Return the determinant of a square matrix.
+
+    .. note::
+
+      This procedure performs LU factorization to compute the 
+      determinant. In certain cases, e.g. having a lower/upper
+      triangular matrix, it is more desirable to compute the 
+      determinant manually.
+*/
+
+proc det (A: [?Adom] ?eltType) {
+  if Adom.rank != 2 then
+    halt("Wrong rank for computing determinant");
+
+  if Adom.shape(1) != Adom.shape(2) then
+    halt("Determinant can only be computed from square matrices");
+
+  var (LU,ipiv,numSwap) = _lu(A);
+  const pdet = if numSwap % 2 == 0 then 1 else -1;
+
+  // L[i,i] always = 1, so we only need to take the 
+  // diagonal product of U
+
+  return (* reduce [i in Adom.dim(1)] LU[i,i]) * pdet;
+}
+
+/* Return the solution ``x`` to the linear system `` L * x = b `` 
+    where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
+    will assume the diagonal elements as `1` and will not be referenced 
+    within this procedure.
+*/
+proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType, 
+                  unit_diag = true) {
+  const n = Ldom.shape(1);
+  var y = b;
+  
+  for i in 1..n {
+    const sol = if unit_diag then y(i) else y(i) / L(i,i);
+    y(i) = sol;
+    
+    if (i < n) {
+      forall j in (i+1)..n {
+        y(j) -= L(j,i) * sol;
+      }
+    }
+  }
+  
+  return y;
+}
+
+/* Return the solution ``x`` to the linear system `` U * x = b `` 
+    where ``U`` is an upper triangular matrix.
+*/
+proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
+  const n = Udom.shape(1);
+  var y = b;
+  
+  for i in 1..n by -1 {
+    const sol = y(i) / U(i,i);
+    y(i) = sol;
+    
+    if (i > 1) {
+      forall j in 1..(i-1) by -1 {
+        y(j) -= U(j,i) * sol;
+      }
+    }
+  }
+  
+  return y;
+}
+
+/* Return the solution ``x`` to the linear system ``A * x = b``.
+*/
+proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
+  var (LU, ipiv) = lu(A);
+  b = permute (ipiv, b, true);
+  var z = solve_tril(LU, b);
+  var x = solve_triu(LU, z);
+  return x;
+}
+
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
