@@ -308,6 +308,10 @@ Expr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
+Expr* buildBytesLiteral(const char* pch) {
+  return new SymExpr(new_BytesSymbol(pch));
+}
+
 Expr* buildCStringLiteral(const char* pch) {
   return new SymExpr(new_CStringSymbol(pch));
 }

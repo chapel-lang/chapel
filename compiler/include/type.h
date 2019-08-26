@@ -478,6 +478,7 @@ bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
 bool isString(Type* type);
+bool isBytes(Type* type);
 bool isUserDefinedRecord(Type* type);
 
 bool isPrimitiveScalar(Type* type);

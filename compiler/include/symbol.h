@@ -260,6 +260,7 @@ private:
 
 
 bool isString(Symbol* symbol);
+bool isBytes(Symbol* symbol);
 bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
@@ -615,6 +616,9 @@ std::string unescapeString(const char* const str, BaseAST* astForError);
 
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+//
+// Creates a new bytes literal with the given value.
+VarSymbol *new_BytesSymbol(const char *s);
 
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);

@@ -300,6 +300,7 @@
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
 %token <pch> STRINGLITERAL
+%token <pch> BYTESLITERAL
 %token <pch> CSTRINGLITERAL
 %token <pch> EXTERNCODE
 
@@ -2005,6 +2006,7 @@ literal_expr:
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
+| BYTESLITERAL          { $$ = buildBytesLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }

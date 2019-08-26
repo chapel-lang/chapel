@@ -255,7 +255,7 @@ static bool isInCForLoopHeader(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isDeadStringLiteral(VarSymbol* string);
+static bool isDeadStringOrBytesLiteral(VarSymbol* string);
 static void removeDeadStringLiteral(DefExpr* defExpr);
 
 static void deadStringLiteralElimination() {
@@ -274,7 +274,7 @@ static void deadStringLiteralElimination() {
 
       if (DefExpr* defExpr = toDefExpr(stmt)) {
         if (VarSymbol* symbol = toVarSymbol(defExpr->sym)) {
-          if (isDeadStringLiteral(symbol) == true) {
+          if (isDeadStringOrBytesLiteral(symbol) == true) {
             removeDeadStringLiteral(defExpr);
 
             numDeadLiteral = numDeadLiteral + 1;
@@ -301,10 +301,11 @@ static void deadStringLiteralElimination() {
 }
 
 // Noakes 2017/03/04: All literals have 1 def. Dead literals have 0 uses.
-static bool isDeadStringLiteral(VarSymbol* string) {
+static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
   bool retval = false;
 
-  if (string->hasFlag(FLAG_CHAPEL_STRING_LITERAL) == true) {
+  if (string->hasFlag(FLAG_CHAPEL_STRING_LITERAL) == true ||
+      string->hasFlag(FLAG_CHAPEL_BYTES_LITERAL) == true) {
     int numDefs = string->countDefs();
     int numUses = string->countUses();
 

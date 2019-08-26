@@ -67,6 +67,7 @@ symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tupl
 symbolFlag( FLAG_BUILD_TUPLE_TYPE , ypr, "build tuple type" , "used to mark the build_tuple type functions")
 
 symbolFlag( FLAG_CHAPEL_STRING_LITERAL, npr, "chapel string literal id" , "mark Chapel strings created from literals")
+symbolFlag( FLAG_CHAPEL_BYTES_LITERAL, npr, "chapel bytes literal id" , "mark Chapel bytes created from literals")
 // When resolution encounters the def of the variable 'chpl__iter',
 // as indicated by this flag, it launches into enacting forall intents
 // for the forall loop that this variable was created for.

@@ -972,6 +972,7 @@ bool isLegalParamType(Type* t) {
           is_complex_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
+          isBytes(t) ||
           t == dtStringC ||
           t == dtUnknown);
 }
@@ -1324,6 +1325,10 @@ bool isArrayClass(Type* type) {
 
 bool isString(Type* type) {
   return type == dtString;
+}
+
+bool isBytes(Type* type) {
+  return type == dtBytes;
 }
 
 //
