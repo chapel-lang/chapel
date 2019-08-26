@@ -20,8 +20,6 @@ writeln(LU);
 writeln();
 writeln(ipiv);
 writeln();
-writeln(permute(ipiv, A, true));
-writeln();
 writeln(det(LU));
 writeln(det(A));
 writeln();
