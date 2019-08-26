@@ -364,23 +364,6 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  pragma "last resort"
-  proc chpl_fix_thrown_error(err: borrowed Error?): unmanaged Error {
-    compilerError("Throwing borrowed error - please throw owned", 1);
-
-    return chpl_do_fix_thrown_error(_to_unmanaged(err));
-  }
-
-  pragma "no doc"
-  pragma "insert line file info"
-  pragma "last resort"
-  proc chpl_fix_thrown_error(type errType) {
-    compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
-  }
-
-  pragma "no doc"
-  pragma "insert line file info"
-  pragma "always propagate line file info"
   proc chpl_do_fix_thrown_error(err: unmanaged Error?): unmanaged Error {
 
     var fixErr: unmanaged Error? = err;
@@ -393,17 +376,6 @@ module ChapelError {
     fixErr!.thrownFileId = fileId;
 
     return _to_nonnil(fixErr);
-  }
-
-  pragma "no doc"
-  pragma "insert line file info"
-  pragma "always propagate line file info"
-  proc chpl_fix_thrown_error(err: unmanaged Error?): unmanaged Error {
-    // TODO: This should be an error in the future,
-    // for now the compiler already adds a warning in this case.
-    //compilerWarning("Throwing unmanaged error - please throw owned", 1);
-
-    return chpl_do_fix_thrown_error(err);
   }
 
   pragma "no doc"
@@ -429,26 +401,25 @@ module ChapelError {
 
   pragma "no doc"
   pragma "last resort"
-  proc chpl_fix_thrown_error(err: ?t) where isRecordType(t) &&
-                                            !isClassType(t) {
-    compilerError("Cannot throw an instance of type \'", t: string,
-                  "\', not a subtype of Error");
+  proc chpl_fix_thrown_error(err) {
+    type t = err.type;
+    if isCoercible(t, borrowed Error?) {
+      compilerError("Cannot throw an instance of type \'", t:string,
+                    "\' - please throw owned", 1);
+    } else if isClassType(t) {
+      compilerError("Cannot throw an instance of type \'",
+                    (t: borrowed): string,
+                    "\', not a subtype of Error");
+    } else {
+      compilerError("Cannot throw an instance of type \'", t: string,
+                    "\', not a subtype of Error");
+    }
   }
 
   pragma "no doc"
   pragma "last resort"
-  proc chpl_fix_thrown_error(err: ?t) where isClassType(t) &&
-                                            !isSubtype(t:borrowed, Error) {
-    compilerError("Cannot throw an instance of type \'", (t: borrowed): string,
-                  "\', not a subtype of Error");
-  }
-
-  pragma "no doc"
-  pragma "last resort"
-  proc chpl_fix_thrown_error(err: ?t) where !isRecordType(t) &&
-                                            !isClassType(t) {
-    compilerError("Cannot throw an instance of type \'", t: string,
-                  "\', not a subtype of Error");
+  proc chpl_fix_thrown_error(type errType) {
+    compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
   }
 
   pragma "no doc"

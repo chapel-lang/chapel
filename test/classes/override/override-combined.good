@@ -1,4 +1,4 @@
 override-combined.chpl:9: error: Child.g override keyword present but no superclass method matches signature to override
-override-combined.chpl:12: warning: Child.f override keyword required for method matching signature of superclass method
+override-combined.chpl:12: error: Child.f override keyword required for method matching signature of superclass method
 override-combined.chpl:15: error: Child.g_generic override keyword present but no superclass method matches signature to override
-override-combined.chpl:18: warning: Child.f_generic override keyword required for method matching signature of superclass method
+override-combined.chpl:18: error: Child.f_generic override keyword required for method matching signature of superclass method

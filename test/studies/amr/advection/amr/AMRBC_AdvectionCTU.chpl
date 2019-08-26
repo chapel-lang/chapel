@@ -1,14 +1,14 @@
 use AMRBC_def;
 
 class ZeroInflowBC: AMRBC {
-  
-  proc apply(level_idx: int, q: unmanaged LevelVariable, t: real) {
+
+  override proc apply(level_idx: int, q: unmanaged LevelVariable, t: real) {
     apply_Homogeneous(level_idx, q);
   }
-  
-  proc apply_Homogeneous(level_idx: int, q: unmanaged LevelVariable) 
+
+  override proc apply_Homogeneous(level_idx: int, q: unmanaged LevelVariable)
   {
-    
+
     //---- Safety check ----
     assert(hierarchy.levels(level_idx) == q.level);
 
@@ -19,5 +19,5 @@ class ZeroInflowBC: AMRBC {
 	      q(grid, ghost_domain) = 0.0;
     }
   }
-  
+
 }

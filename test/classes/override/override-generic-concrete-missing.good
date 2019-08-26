@@ -1,1 +1,1 @@
-override-generic-concrete-missing.chpl:13: warning: D(int(64)).foo overrides parent class method C.foo but missing override keyword
+override-generic-concrete-missing.chpl:13: error: D(int(64)).foo overrides parent class method C.foo but missing override keyword

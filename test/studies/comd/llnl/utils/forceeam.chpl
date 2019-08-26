@@ -114,7 +114,7 @@ class ForceEAM : Force {
     this.eamPot = nil;
   }
 
-  proc epilogue() : void {
+  override proc epilogue() : void {
 if useChplVis then tagVdebug("setupEAMForce");
     this.eamPot = new unmanaged EAMPot();
     const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};

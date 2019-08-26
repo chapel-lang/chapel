@@ -1,3 +1,0 @@
-cast-to-c-string.chpl:6: warning: cast from integral to c_string is deprecated
-cast-to-c-string.chpl:7: warning: cast from real to c_string is deprecated
-cast-to-c-string.chpl:8: warning: cast from imag to c_string is deprecated

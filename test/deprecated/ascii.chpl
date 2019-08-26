@@ -1,6 +1,6 @@
 //
 // When ascii() is removed, remember to rename __primitive("ascii") as well.
-//
+// ... and remove ascii for c_string
 
 module unitTest {
 
