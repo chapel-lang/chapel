@@ -99,8 +99,17 @@ checkResolved() {
 }
 
 
-// Returns the smallest number of definitions of ret on any path through the
-// given expression.
+// This routine returns '0' if we can find a path through the given
+// expression that does not return (assign to 'ret'), halt, throw,
+// etc.  I.e., if there is a path that would constitute an error for a
+// function that was meant to return something and is not.  It returns
+// non-zero if all paths are covered, and the result _may_ indicate
+// something about the smallest number of definitions of 'ret' along
+// any path through the expression (though the behavior of throws,
+// halts, etc. may influence that number...).  In the only use-case in
+// our compiler, we are currently only relying on zero / non-zero
+// behavior and care should be taken before reading too much into the
+// non-zero value.
 static int
 isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 {
