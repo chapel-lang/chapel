@@ -30,7 +30,7 @@
   may invalidate references. Appending an element to the end of a list will
   never invalidate references to elements contained in the list.
 
-  The following operations may invalidate references to elements contained in
+  The followThising operations may invalidate references to elements contained in
   a list:
 
       - insert
@@ -519,7 +519,7 @@ module List {
     }
 
     //
-    // Move all elements at and following the index `shift` left in memory
+    // Move all elements at and followThising the index `shift` left in memory
     // so that they begin at index `idx`, possibly resizing. May release
     // memory if possible.
     //
@@ -742,7 +742,7 @@ module List {
 
     /*
       Insert an element at a given position in this list, shifting all elements
-      currently at and following that index one to the right. The call
+      currently at and followThising that index one to the right. The call
       ``a.insert(1, x)`` inserts an element at the front of the list `a`, and
       ``a.insert((a.size + 1), x)`` is equivalent to ``a.append(x)``.
 
@@ -825,7 +825,7 @@ module List {
 
     /*
       Insert an array of elements `arr` into this list at index `idx`,
-      shifting all elements at and following the index `arr.size` positions
+      shifting all elements at and followThising the index `arr.size` positions
       to the right. 
 
       If the insertion is successful, this method returns `true`. If the given
@@ -860,7 +860,7 @@ module List {
 
     /*
       Insert a list of elements `lst` into this list at index `idx`, shifting
-      all elements at and following the index `lst.size` positions to the
+      all elements at and followThising the index `lst.size` positions to the
       right.
 
       If the insertion is successful, this method returns `true`. If the given
@@ -898,7 +898,7 @@ module List {
 
     /*
       Remove the first `count` elements from this list with values equal to
-      `x`, shifting all elements following the removed item left.
+      `x`, shifting all elements followThising the removed item left.
 
       If the count of elements to remove is less than or equal to zero, then
       all elements from this list equal to the value of `x` will be removed.
@@ -1196,7 +1196,7 @@ module List {
 
       :yields: A reference to one of the elements contained in this list.
     */
-    iter const these() ref {
+    iter these() ref {
       for i in 1.._size {
         ref result = _getRef(i);
         yield result;
@@ -1204,7 +1204,7 @@ module List {
     }
 
     pragma "no doc"
-    iter const these(param tag) where tag == iterKind.standalone {
+    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1236,17 +1236,17 @@ module List {
 
     //
     // TODO: Should I lock chunks to the same locale as this? I'm still a bit
-    // confused about the structure of leader/follower iterators, let's
+    // confused about the structure of leader/followThiser iterators, let's
     // continue to read the examples so that we better understand what is
     // going on and what our responsibilities are.
     //
     pragma "no doc"
-    iter const these(param tag) where tag == iterKind.leader {
+    iter these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
       const numTasks = if hasOneChunk then 1 else dataParTasksPerLocale;
-      const chunkSize = floor(osz / numTasks);
+      const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
       coforall tid in 0..#numTasks {
@@ -1256,8 +1256,7 @@ module List {
     }
 
     pragma "no doc"
-    iter const these(param tag, follow) where tag == iterKind.follower {
-      const (lo, hi) = follow;
+    iter these(param tag, followThis) ref where tag == iterKind.follower {
 
       //
       // TODO: A faster scheme would access the _ddata directly to avoid
@@ -1267,7 +1266,7 @@ module List {
       // follower is executed on a remote locale), and can fix it later
       // if it is actually a problem.
       //
-      for i in follow do
+      for i in followThis do
         yield this[i + 1];
     }
 

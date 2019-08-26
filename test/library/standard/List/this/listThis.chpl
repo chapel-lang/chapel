@@ -1,29 +1,16 @@
-use List;
+private use List;
 
-type listType = int;
-param listLock = true;
+config const testIters = 8;
 
-var lst = new list(listType, listLock);
+var lst: list(int);
 
-for i in 1..8 do
+for i in 1..testIters do
   lst.append(i);
 
-writeln(lst);
+assert(!lst.isEmpty());
 
-for i in lst do
-  writeln(i);
-
-writeln(lst);
-
-for i in lst do
-  i *= 2;
-
-writeln(lst);
-
-for i in 1..lst.size by -1 do
-  lst[i] /= 2;
-
-writeln(lst);
+for i in 1..testIters do
+  lst[i] *= 2;
 
 // Perform an in place reversal of the list.
 for i in 1..(lst.size / 2) do {
@@ -32,5 +19,8 @@ for i in 1..(lst.size / 2) do {
   a <=> b;
 }
 
-writeln(lst);
+for i in 1..testIters do
+  lst[i] /= 2;
 
+for i in 1..testIters do
+  assert((testIters - i + 1) == lst[i]);
