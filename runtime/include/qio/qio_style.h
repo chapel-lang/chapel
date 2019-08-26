@@ -123,6 +123,8 @@ typedef struct qio_style_s {
      */
   uint8_t string_format;
 
+  style_char_t bytes_prefix; // normally 'b'
+
   // numeric scanning/printing choices
   uint8_t base; // 0 is %i; other valid values are 2 8 10 16
   style_char_t point_char; // normally '.'
@@ -243,6 +245,8 @@ void qio_style_init_default(qio_style_t* s)
   s->string_start = '\"';
   s->string_end = '\"';
   s->string_format = 0;
+
+  s->bytes_prefix = 'b';
 
   s->base = 0;
   s->point_char = '.';

@@ -80,7 +80,7 @@ module ChapelSyncvar {
     if isSupported(t) == false then
       compilerError("sync/single types cannot contain type '", t : string, "'");
 
-    if !chpl_legacyNilClasses && isNonNilableClass(t) then
+    if !chpl_legacyClasses && isNonNilableClass(t) then
       compilerError("sync/single types cannot contain non-nilable classes");
 
     if isGenericType(t) then
@@ -93,9 +93,9 @@ module ChapelSyncvar {
   // use native sync vars if they're enabled and supported for the valType
   private proc getSyncClassType(type valType) type {
     if useNativeSyncVar && supportsNativeSyncVar(valType) {
-      return _qthreads_synccls(valType);
+      return unmanaged _qthreads_synccls(valType);
     } else {
-      return _synccls(valType);
+      return unmanaged _synccls(valType);
     }
   }
 
@@ -114,7 +114,7 @@ module ChapelSyncvar {
   record _syncvar {
     type valType;                              // The compiler knows this name
 
-    var  wrapped : getSyncClassType(valType) = nil;
+    var  wrapped : unmanaged getSyncClassType(valType);
     var  isOwned : bool                      = true;
 
     pragma "dont disable remote value forwarding"
@@ -152,7 +152,7 @@ module ChapelSyncvar {
     pragma "dont disable remote value forwarding"
     proc deinit() {
       if isOwned == true then
-        delete _to_unmanaged(wrapped);
+        delete wrapped;
     }
 
     // Do not allow implicit reads of sync vars.
@@ -328,7 +328,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _syncvar(?)) {
     if x.isOwned == true then
-      delete _to_unmanaged(x.wrapped);
+      delete x.wrapped;
   }
 
   pragma "no doc"
@@ -641,7 +641,7 @@ module ChapelSyncvar {
   record _singlevar {
     type valType;                              // The compiler knows this name
 
-    var  wrapped : _singlecls(valType) = nil;
+    var  wrapped : unmanaged _singlecls(valType);
     var  isOwned : bool                = true;
 
     proc init(type valType) {
@@ -677,7 +677,7 @@ module ChapelSyncvar {
     pragma "dont disable remote value forwarding"
     proc deinit() {
       if isOwned == true then
-        delete _to_unmanaged(wrapped);
+        delete wrapped;
     }
 
     // Do not allow implicit reads of single vars.
@@ -771,7 +771,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _singlevar(?)) {
     if x.isOwned == true then
-      delete _to_unmanaged(x.wrapped);
+      delete x.wrapped;
   }
 
   pragma "no doc"

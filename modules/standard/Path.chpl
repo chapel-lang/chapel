@@ -64,7 +64,7 @@
 */
 module Path {
 
-private use Lists;
+private use List;
 use SysError;
 private use Sys;
 
@@ -413,20 +413,6 @@ proc file.getParentName(): string throws {
   } catch {
     return "unknown";
   }
-}
-
-pragma "no doc"
-proc file.getParentName(out error:syserr): string {
-  compilerWarning("This version of file.getParentName() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.getParentName();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "unknown";
 }
 
 /* Determines whether the path specified is an absolute path.

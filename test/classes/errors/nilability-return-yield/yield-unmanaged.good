@@ -1,0 +1,2 @@
+yield-unmanaged.chpl:3: In iterator 'I':
+yield-unmanaged.chpl:3: error: cannot yield 'unmanaged C?' when the declared return type is 'unmanaged C'

@@ -266,9 +266,9 @@ module ChapelArray {
     }
 
     proc _freePrivatizedClassHelp(pid, original) {
-      var prv = chpl_getPrivatizedCopy(object, pid);
+      var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
       if prv != original then
-        delete _to_unmanaged(prv);
+        delete prv;
 
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
@@ -395,8 +395,10 @@ module ChapelArray {
   // opaque domains is _OpaqueIndex, not opaque.  This function is
   // essentially a wrapper around the function that actually builds up
   // the runtime type.
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type
+  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type {
+      compilerWarning("Opaque domains are deprecated - please switch to another domain type");
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
+  }
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
@@ -3609,15 +3611,18 @@ module ChapelArray {
   // promotion for associative array addition doesn't really make sense. instead,
   // we really just want a union
   proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     return a | b;
   }
 
   proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("+=");
     a |= b;
   }
 
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain | b.domain;
     var ret : [newDom] a.eltType;
     serial !newDom._value.parSafe {
@@ -3628,6 +3633,7 @@ module ChapelArray {
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("|=");
     serial !a.domain._value.parSafe {
       forall i in b.domain do a.domain.add(i);
@@ -3636,6 +3642,7 @@ module ChapelArray {
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain & b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3645,6 +3652,7 @@ module ChapelArray {
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("&=");
     serial !a.domain._value.parSafe {
       forall k in a.domain {
@@ -3654,6 +3662,7 @@ module ChapelArray {
   }
 
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain - b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3664,6 +3673,7 @@ module ChapelArray {
   }
 
   proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("-=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
@@ -3672,6 +3682,7 @@ module ChapelArray {
 
 
   proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain ^ b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3686,6 +3697,7 @@ module ChapelArray {
   }
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("^=");
     serial !a.domain._value.parSafe {
       forall k in b.domain {

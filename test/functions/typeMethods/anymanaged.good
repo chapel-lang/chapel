@@ -33,15 +33,15 @@ anymanaged.chpl:70: warning:  (borrowed C?).mB()  true
 anymanaged.chpl:71: warning: (unmanaged C ).mB()  true
 anymanaged.chpl:72: warning: (unmanaged C?).mB()  true
 anymanaged.chpl:74: warning: 
-anymanaged.chpl:76: warning:            C  .mBn()  true
+anymanaged.chpl:76: warning:            C  .mBn()  false
 anymanaged.chpl:77: warning:           (C?).mBn()  true
-anymanaged.chpl:78: warning:     (owned C ).mBn()  true
+anymanaged.chpl:78: warning:     (owned C ).mBn()  false
 anymanaged.chpl:79: warning:     (owned C?).mBn()  true
-anymanaged.chpl:80: warning:    (shared C ).mBn()  true
+anymanaged.chpl:80: warning:    (shared C ).mBn()  false
 anymanaged.chpl:81: warning:    (shared C?).mBn()  true
-anymanaged.chpl:82: warning:  (borrowed C ).mBn()  true
+anymanaged.chpl:82: warning:  (borrowed C ).mBn()  false
 anymanaged.chpl:83: warning:  (borrowed C?).mBn()  true
-anymanaged.chpl:84: warning: (unmanaged C ).mBn()  true
+anymanaged.chpl:84: warning: (unmanaged C ).mBn()  false
 anymanaged.chpl:85: warning: (unmanaged C?).mBn()  true
 anymanaged.chpl:87: warning: 
 anymanaged.chpl:89: warning:            C  .mo()  false
@@ -57,7 +57,7 @@ anymanaged.chpl:98: warning: (unmanaged C?).mo()  false
 anymanaged.chpl:100: warning: 
 anymanaged.chpl:102: warning:            C  .mon()  false
 anymanaged.chpl:103: warning:           (C?).mon()  false
-anymanaged.chpl:104: warning:     (owned C ).mon()  true
+anymanaged.chpl:104: warning:     (owned C ).mon()  false
 anymanaged.chpl:105: warning:     (owned C?).mon()  true
 anymanaged.chpl:106: warning:    (shared C ).mon()  false
 anymanaged.chpl:107: warning:    (shared C?).mon()  false
@@ -81,7 +81,7 @@ anymanaged.chpl:128: warning:            C  .msn()  false
 anymanaged.chpl:129: warning:           (C?).msn()  false
 anymanaged.chpl:130: warning:     (owned C ).msn()  false
 anymanaged.chpl:131: warning:     (owned C?).msn()  false
-anymanaged.chpl:132: warning:    (shared C ).msn()  true
+anymanaged.chpl:132: warning:    (shared C ).msn()  false
 anymanaged.chpl:133: warning:    (shared C?).msn()  true
 anymanaged.chpl:134: warning:  (borrowed C ).msn()  false
 anymanaged.chpl:135: warning:  (borrowed C?).msn()  false
@@ -99,15 +99,15 @@ anymanaged.chpl:148: warning:  (borrowed C?).mb()  false
 anymanaged.chpl:149: warning: (unmanaged C ).mb()  true
 anymanaged.chpl:150: warning: (unmanaged C?).mb()  false
 anymanaged.chpl:152: warning: 
-anymanaged.chpl:154: warning:            C  .mbn()  true
+anymanaged.chpl:154: warning:            C  .mbn()  false
 anymanaged.chpl:155: warning:           (C?).mbn()  true
-anymanaged.chpl:156: warning:     (owned C ).mbn()  true
+anymanaged.chpl:156: warning:     (owned C ).mbn()  false
 anymanaged.chpl:157: warning:     (owned C?).mbn()  true
-anymanaged.chpl:158: warning:    (shared C ).mbn()  true
+anymanaged.chpl:158: warning:    (shared C ).mbn()  false
 anymanaged.chpl:159: warning:    (shared C?).mbn()  true
-anymanaged.chpl:160: warning:  (borrowed C ).mbn()  true
+anymanaged.chpl:160: warning:  (borrowed C ).mbn()  false
 anymanaged.chpl:161: warning:  (borrowed C?).mbn()  true
-anymanaged.chpl:162: warning: (unmanaged C ).mbn()  true
+anymanaged.chpl:162: warning: (unmanaged C ).mbn()  false
 anymanaged.chpl:163: warning: (unmanaged C?).mbn()  true
 anymanaged.chpl:165: warning: 
 anymanaged.chpl:167: warning:            C  .mu()  false
@@ -129,7 +129,7 @@ anymanaged.chpl:184: warning:    (shared C ).mun()  false
 anymanaged.chpl:185: warning:    (shared C?).mun()  false
 anymanaged.chpl:186: warning:  (borrowed C ).mun()  false
 anymanaged.chpl:187: warning:  (borrowed C?).mun()  false
-anymanaged.chpl:188: warning: (unmanaged C ).mun()  true
+anymanaged.chpl:188: warning: (unmanaged C ).mun()  false
 anymanaged.chpl:189: warning: (unmanaged C?).mun()  true
 anymanaged.chpl:191: warning: 
 anymanaged.chpl:193: warning: ========= D =========
@@ -167,15 +167,15 @@ anymanaged.chpl:230: warning:  (borrowed D?).mB()  true
 anymanaged.chpl:231: warning: (unmanaged D ).mB()  true
 anymanaged.chpl:232: warning: (unmanaged D?).mB()  true
 anymanaged.chpl:234: warning: 
-anymanaged.chpl:236: warning:            D  .mBn()  true
+anymanaged.chpl:236: warning:            D  .mBn()  false
 anymanaged.chpl:237: warning:           (D?).mBn()  true
-anymanaged.chpl:238: warning:     (owned D ).mBn()  true
+anymanaged.chpl:238: warning:     (owned D ).mBn()  false
 anymanaged.chpl:239: warning:     (owned D?).mBn()  true
-anymanaged.chpl:240: warning:    (shared D ).mBn()  true
+anymanaged.chpl:240: warning:    (shared D ).mBn()  false
 anymanaged.chpl:241: warning:    (shared D?).mBn()  true
-anymanaged.chpl:242: warning:  (borrowed D ).mBn()  true
+anymanaged.chpl:242: warning:  (borrowed D ).mBn()  false
 anymanaged.chpl:243: warning:  (borrowed D?).mBn()  true
-anymanaged.chpl:244: warning: (unmanaged D ).mBn()  true
+anymanaged.chpl:244: warning: (unmanaged D ).mBn()  false
 anymanaged.chpl:245: warning: (unmanaged D?).mBn()  true
 anymanaged.chpl:247: warning: 
 anymanaged.chpl:249: warning:            D  .mo()  false
@@ -191,7 +191,7 @@ anymanaged.chpl:258: warning: (unmanaged D?).mo()  false
 anymanaged.chpl:260: warning: 
 anymanaged.chpl:262: warning:            D  .mon()  false
 anymanaged.chpl:263: warning:           (D?).mon()  false
-anymanaged.chpl:264: warning:     (owned D ).mon()  true
+anymanaged.chpl:264: warning:     (owned D ).mon()  false
 anymanaged.chpl:265: warning:     (owned D?).mon()  true
 anymanaged.chpl:266: warning:    (shared D ).mon()  false
 anymanaged.chpl:267: warning:    (shared D?).mon()  false
@@ -215,7 +215,7 @@ anymanaged.chpl:288: warning:            D  .msn()  false
 anymanaged.chpl:289: warning:           (D?).msn()  false
 anymanaged.chpl:290: warning:     (owned D ).msn()  false
 anymanaged.chpl:291: warning:     (owned D?).msn()  false
-anymanaged.chpl:292: warning:    (shared D ).msn()  true
+anymanaged.chpl:292: warning:    (shared D ).msn()  false
 anymanaged.chpl:293: warning:    (shared D?).msn()  true
 anymanaged.chpl:294: warning:  (borrowed D ).msn()  false
 anymanaged.chpl:295: warning:  (borrowed D?).msn()  false
@@ -233,15 +233,15 @@ anymanaged.chpl:308: warning:  (borrowed D?).mb()  false
 anymanaged.chpl:309: warning: (unmanaged D ).mb()  true
 anymanaged.chpl:310: warning: (unmanaged D?).mb()  false
 anymanaged.chpl:312: warning: 
-anymanaged.chpl:314: warning:            D  .mbn()  true
+anymanaged.chpl:314: warning:            D  .mbn()  false
 anymanaged.chpl:315: warning:           (D?).mbn()  true
-anymanaged.chpl:316: warning:     (owned D ).mbn()  true
+anymanaged.chpl:316: warning:     (owned D ).mbn()  false
 anymanaged.chpl:317: warning:     (owned D?).mbn()  true
-anymanaged.chpl:318: warning:    (shared D ).mbn()  true
+anymanaged.chpl:318: warning:    (shared D ).mbn()  false
 anymanaged.chpl:319: warning:    (shared D?).mbn()  true
-anymanaged.chpl:320: warning:  (borrowed D ).mbn()  true
+anymanaged.chpl:320: warning:  (borrowed D ).mbn()  false
 anymanaged.chpl:321: warning:  (borrowed D?).mbn()  true
-anymanaged.chpl:322: warning: (unmanaged D ).mbn()  true
+anymanaged.chpl:322: warning: (unmanaged D ).mbn()  false
 anymanaged.chpl:323: warning: (unmanaged D?).mbn()  true
 anymanaged.chpl:325: warning: 
 anymanaged.chpl:327: warning:            D  .mu()  false
@@ -263,7 +263,7 @@ anymanaged.chpl:344: warning:    (shared D ).mun()  false
 anymanaged.chpl:345: warning:    (shared D?).mun()  false
 anymanaged.chpl:346: warning:  (borrowed D ).mun()  false
 anymanaged.chpl:347: warning:  (borrowed D?).mun()  false
-anymanaged.chpl:348: warning: (unmanaged D ).mun()  true
+anymanaged.chpl:348: warning: (unmanaged D ).mun()  false
 anymanaged.chpl:349: warning: (unmanaged D?).mun()  true
 anymanaged.chpl:351: warning: 
 anymanaged.chpl:353: warning: ========= E =========

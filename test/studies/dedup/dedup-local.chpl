@@ -1,7 +1,7 @@
 use FileSystem;
 use Spawn;
 use Sort;
-use Lists;
+use List;
 
 config const verbose = false;
 

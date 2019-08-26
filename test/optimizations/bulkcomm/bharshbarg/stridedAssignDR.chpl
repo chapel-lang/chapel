@@ -1,4 +1,4 @@
-private use Lists;
+private use List;
 use util;
 
 config const n = 15;

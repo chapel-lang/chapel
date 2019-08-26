@@ -109,12 +109,22 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
 
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal,
+                         bool allowNonSubtypes,
                          bool implicitBang);
 bool canInstantiateDecorators(ClassTypeDecorator actual,
                               ClassTypeDecorator formal);
 bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
                                       ClassTypeDecorator formal,
+                                      bool allowNonSubtypes,
                                       bool implicitBang);
+
+bool canCoerceAsSubtype(Type*     actualType,
+                        Symbol*   actualSym,
+                        Type*     formalType,
+                        ArgSymbol* formalSym,
+                        FnSymbol* fn,
+                        bool*     promotes = NULL,
+                        bool*     paramNarrows = NULL);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
@@ -144,6 +154,7 @@ FnSymbol* getTheIteratorFn(Type* icType);
 // task intents
 extern Symbol* markPruned;
 bool isReduceOp(Type* type);
+void convertFieldsOfRecordThis(FnSymbol* fn);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
@@ -242,7 +253,8 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 

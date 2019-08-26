@@ -269,7 +269,7 @@ proc AccumStencil.dsiClone() {
                    dataParMinGranularity, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
 }
 
-proc AccumStencil.dsiDestroyDist() {
+override proc AccumStencil.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -287,7 +287,7 @@ proc AccumStencil.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
+override proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
                                   param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("AccumStencil domain index type does not match distribution's");
@@ -490,7 +490,7 @@ proc LocAccumStencil.init(param rank: int,
   }
 }
 
-proc AccumStencilDom.dsiMyDist() return dist;
+override proc AccumStencilDom.dsiMyDist() return dist;
 
 proc AccumStencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -730,7 +730,7 @@ proc AccumStencilDom.setup() {
   }
 }
 
-proc AccumStencilDom.dsiDestroyDom() {
+override proc AccumStencilDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
     on locDoms(localeIdx) do
       delete locDoms(localeIdx);
@@ -758,7 +758,7 @@ proc AccumStencilArr.dsiDisplayRepresentation() {
   }
 }
 
-proc AccumStencilArr.dsiGetBaseDom() return dom;
+override proc AccumStencilArr.dsiGetBaseDom() return dom;
 
 //
 // NOTE: Each locale's myElems array must be initialized prior to setting up
@@ -798,7 +798,7 @@ proc AccumStencilArr.setup() {
   if doRADOpt && disableAccumStencilLazyRAD then setupRADOpt();
 }
 
-proc AccumStencilArr.dsiDestroyArr() {
+override proc AccumStencilArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       if !ignoreFluff then
@@ -1402,7 +1402,7 @@ proc AccumStencilArr.dsiUpdateFluff() {
   }
 }
 
-proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, BoundedRangeType.bounded, stridable)) {
+override proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, BoundedRangeType.bounded, stridable)) {
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
@@ -1417,7 +1417,7 @@ proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, BoundedRangeType
 }
 
 // Call this *after* the domain has been reallocated
-proc AccumStencilArr.dsiPostReallocate() {
+override proc AccumStencilArr.dsiPostReallocate() {
   if doRADOpt then setupRADOpt();
 }
 

@@ -1,0 +1,2 @@
+catchEMissingCase.chpl:14: In function 'bar':
+catchEMissingCase.chpl:14: error: control reaches end of function that returns a value

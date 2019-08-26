@@ -1,7 +1,7 @@
 use FileSystem;
 use Spawn;
 use Sort;
-use Lists;
+use List;
 
 // a SHA-1 hash is 160 bits, so it fits in 3 64-bit ints.
 type Hash = (20*uint(8));

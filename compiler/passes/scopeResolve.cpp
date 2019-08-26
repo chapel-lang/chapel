@@ -960,20 +960,15 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         sym = t->symbol;
       } else if (isClass(sym->type)) {
         // e.g. 'MyClass' becomes 'MyClass with any management'
-
-        // TODO: remove constraint for user code only
-        if (usymExpr->getModule()->modTag == MOD_USER) {
-
           // make MyClass mean generic-management unless
-          // --legacy-nilable-classes is passed.
-          bool defaultIsGenericHere = !fLegacyNilableClasses;
+          // --legacy-classes is passed.
+          bool defaultIsGenericHere = !fLegacyClasses;
           if (defaultIsGenericHere) {
             // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
             ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
             Type* t = getDecoratedClass(sym->type, d);
             sym = t->symbol;
           }
-        }
       }
     }
 

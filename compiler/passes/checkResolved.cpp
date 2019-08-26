@@ -99,8 +99,17 @@ checkResolved() {
 }
 
 
-// Returns the smallest number of definitions of ret on any path through the
-// given expression.
+// This routine returns '0' if we can find a path through the given
+// expression that does not return (assign to 'ret'), halt, throw,
+// etc.  I.e., if there is a path that would constitute an error for a
+// function that was meant to return something and is not.  It returns
+// non-zero if all paths are covered, and the result _may_ indicate
+// something about the smallest number of definitions of 'ret' along
+// any path through the expression (though the behavior of throws,
+// halts, etc. may influence that number...).  In the only use-case in
+// our compiler, we are currently only relying on zero / non-zero
+// behavior and care should be taken before reading too much into the
+// non-zero value.
 static int
 isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 {
@@ -124,6 +133,10 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
     if (call->isPrimitive(PRIM_RT_ERROR))
       return 1;
+
+    if (call->isPrimitive(PRIM_THROW)) {
+      return 1;
+    }
 
     if (call->isPrimitive(PRIM_MOVE) ||
         call->isPrimitive(PRIM_ASSIGN))
@@ -183,14 +196,34 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (TryStmt* tryStmt = toTryStmt(expr))
   {
     int result = INT_MAX;
-    for_alist(c, tryStmt->_catches)
-      result = std::min(result, isDefinedAllPaths(c, ret, refs));
 
-    return std::min(result, isDefinedAllPaths(tryStmt->body(), ret, refs));
+    // This indicates whether or not we find a catch-all case, in
+    // which case nothing can escape us unless the individual clauses
+    // let it; if this is a try! statement, it doesn't need a
+    // catch-all case, so set it to true
+    //
+    bool foundCatchall = tryStmt->tryBang();
+    for_alist(c, tryStmt->_catches) {
+      result = std::min(result, isDefinedAllPaths(c, ret, refs));
+      if (toCatchStmt(c)->isCatchall()) {
+        foundCatchall = true;
+      }
+    }
+
+    result = std::min(result, isDefinedAllPaths(tryStmt->body(), ret, refs));
+
+    // even if the try and all catches are air-tight, if there's no
+    // catch-all, we can escape via an uncaught error, and will need
+    // for our parent statement to contain returns as well...
+    if (result == 1 && !foundCatchall) {
+      result = 0;
+    }
+    return result;
   }
 
-  if (CatchStmt* catchStmt = toCatchStmt(expr))
-    return isDefinedAllPaths(catchStmt->body(), ret, refs);
+  if (CatchStmt* catchStmt = toCatchStmt(expr)) {
+    return isDefinedAllPaths(catchStmt->bodyWithoutTest(), ret, refs);
+  }
 
   if (BlockStmt* block = toBlockStmt(expr))
   {

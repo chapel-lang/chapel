@@ -16,5 +16,5 @@ proc dummy_test_varargs(test: borrowed Test ...?n) {
     //this is var arg test
 }
 
-var test: owned Test;
+var test: owned Test = new owned Test();
 writeln(__primitive("gather tests", test.borrow()));
