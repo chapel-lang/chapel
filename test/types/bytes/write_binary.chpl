@@ -1,4 +1,4 @@
-var b: bytes = "test";
+var b = b"test";
 writef("<%|4s> ", b);
 writef("<%|*s> ", 4, b);
 writef("<%|0S> ", b);
