@@ -28,6 +28,7 @@ use MasonModify;
 use Random;
 use MasonUpdate;
 private use List;
+use MasonBuild;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
    Returns the help output in '-h' or '--help' exits in the arguments.
@@ -47,6 +48,7 @@ proc masonPublish(ref args: list(string)) throws {
       exit(0);
     }
     var dry = hasOptions(args, "--dry-run");
+    var checkFlag = hasOptions(args, '--check');
     var registryPath = '';
     var username = getUsername();
     var isLocal = false;
@@ -58,7 +60,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     if args.size > 2 {
       var potentialPath = args.pop();
-      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') {
+      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') {
         registryPath = potentialPath;
       }
       args.append(potentialPath);
@@ -69,6 +71,10 @@ proc masonPublish(ref args: list(string)) throws {
     }
     else {
       isLocal = isRegistryPathLocal(registryPath);
+    }
+
+    if checkFlag {
+      check(username, registryPath, isLocal);
     }
 
     updateRegistry('Mason.toml', args);
@@ -255,7 +261,7 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
  */
 private proc usernameCheck(username: string) {
   const gitRemote = 'git ls-remote https://github.com/';
-  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry');
+  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry', false);
   return usernameCheck;
 }
 
@@ -461,6 +467,8 @@ proc check(username : string, path : string, trueIfLocal) throws {
   exit(0);
 }
 
+/* Attempts to build the package/
+ */
 private proc attemptToBuild() throws {
   try! {
     const buildArgs = ['mason', 'build'];
