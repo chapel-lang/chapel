@@ -43,7 +43,7 @@
  */
 module PeekPoke {
   /*
-     :returns: The stored value non-atomically
+     Non-atomically reads the stored value.
   */
   inline proc const AtomicBool.peek(): bool {
     return this.read(order=memory_order_relaxed);
@@ -54,7 +54,7 @@ module PeekPoke {
   }
 
   /*
-     Stores `value` as the new value non-atomically
+     Non-atomically writes `value`.
   */
   inline proc AtomicBool.poke(value:bool): void {
     this.write(value, order=memory_order_relaxed);
@@ -66,7 +66,7 @@ module PeekPoke {
 
 
   /*
-     :returns: The stored value non-atomically
+     Non-atomically reads the stored value.
   */
   inline proc const AtomicT.peek(): T {
     return this.read(order=memory_order_relaxed);
@@ -78,7 +78,7 @@ module PeekPoke {
 
 
   /*
-     Stores `value` as the new value non-atomically
+     Non-atomically writes `value`.
   */
   inline proc AtomicT.poke(value:T): void {
     this.write(value, order=memory_order_relaxed);

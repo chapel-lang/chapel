@@ -316,7 +316,7 @@ module Atomics {
     // Deprecated //
 
     /*
-       :returns: The stored value non-atomically
+       Non-atomically reads the stored value.
 
        .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
 
@@ -328,7 +328,7 @@ module Atomics {
     }
 
     /*
-       Stores `value` as the new value non-atomically
+       Non-atomically writes `value`.
 
        .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
 
@@ -624,7 +624,7 @@ module Atomics {
     // Deprecated //
 
     /*
-       :returns: The stored value non-atomically
+       Non-atomically reads the stored value.
 
        .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
 
@@ -636,7 +636,7 @@ module Atomics {
     }
 
     /*
-       Stores `value` as the new value non-atomically
+       Non-atomically writes `value`.
 
        .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
 
