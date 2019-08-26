@@ -2,7 +2,7 @@ use LinearAlgebra;
 use LinearAlgebra.Sparse;
 use BlockDist;
 use LayoutCS;
-use Lists;
+use List;
 
 config const n = 20;
 
