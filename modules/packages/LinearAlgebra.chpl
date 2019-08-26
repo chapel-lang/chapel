@@ -1571,6 +1571,49 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
+/* 
+  Compute the approximate solution to ``A * x = b`` using the Jacobi method.
+  iteration will stop when ``maxiter`` is reached or error is smaller than
+  ``tol``, whichever comes first. Return the number of iterations performed.
+  
+  .. note::
+    ``X`` is passed as a reference, meaning the initial solution guess can be
+    stored in ``X`` before calling the procedure, and the approximate solution 
+    will be stored in the same array.
+    
+    Dense and CSR arrays are supported.
+*/
+proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+            b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
+  if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
+    halt("Wrong shape of input matrix or vector");
+  if !isSquare(A) then
+    halt("Matrix A is not a square");
+  if Adom.shape(1) != Xdom.shape(1) then
+    halt("Mismatch shape between matrix side length and vector length");
+
+  var itern = 0, err: eltType = 1;
+
+  var t: [Xdom] eltType = 0;
+
+  while (itern < maxiter) {
+    itern = itern + 1;
+    forall i in Adom.dim(1) {
+      var sigma = 0.0;
+      for j in Adom.dim(2) {
+        if i!=j then sigma += A(i,j) * X(j);
+      }
+      t(i) = (b(i) - sigma) / A(i,i);
+    }
+    err = max reduce abs(t - X);
+    X = t;
+    if err < tol {
+      break;
+    }
+  }
+  return itern;
+}
+
 
 pragma "no doc"
 proc eig(A: [] ?t, param left = false, param right = false)
@@ -2255,6 +2298,38 @@ module Sparse {
       A[i,i] = 1 : eltType;
     }
     return A;
+  }
+  
+  pragma "no doc"
+  proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+              b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
+    if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
+      halt("Wrong shape of input matrix or vector");
+    if Adom.shape(1) != Adom.shape(2) then
+      halt("Matrix A is not a square");
+    if Adom.shape(1) != Xdom.shape(1) then
+      halt("Mismatch shape between matrix side length and vector length");
+  
+    var itern = 0, err: eltType = 1;
+  
+    var t: [Xdom] eltType = 0;
+  
+    while (itern < maxiter) {
+      itern = itern + 1;
+      forall i in Adom.dim(1) {
+        var sigma = 0.0;
+        for j in Adom.dimIter(2,i) {
+          if i!=j then sigma += A(i,j) * X(j);
+        }
+        t(i) = (b(i) - sigma) / A(i,i);
+      }
+      err = max reduce abs(t - X);
+      X = t;
+      if err < tol {
+        break;
+      }
+    }
+    return itern;
   }
 
   pragma "no doc"
