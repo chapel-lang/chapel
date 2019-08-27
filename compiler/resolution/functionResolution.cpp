@@ -6884,7 +6884,8 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
                      parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
             // OK e.g. new Owned(new MyClass())
             isUndecorated = false;
-          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+                     parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
             // OK e.g. new raw MyClass() / new owned MyClass()
             isUndecorated = false;
           } else {

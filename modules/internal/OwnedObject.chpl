@@ -318,7 +318,10 @@ module OwnedObject {
 
        Here `t` refers to the object type managed by this :record:`owned`.
      */
-    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
+      if !isCoercible(newPtr.type, chpl_t) then
+        compilerError("Calling retain with invalid type");
+
       var oldPtr = chpl_p;
       chpl_p = newPtr;
       if oldPtr then

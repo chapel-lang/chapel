@@ -727,8 +727,10 @@ static bool isStableClassType(Type* t) {
 static bool callSpecifiesClassKind(CallExpr* call) {
   return (call->isNamed("_to_borrowed") ||
           call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
           call->isNamed("_to_unmanaged") ||
           call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
           call->isNamed("_owned") ||
           call->isNamed("_shared") ||
           call->isNamed("Owned") ||
@@ -2237,7 +2239,9 @@ static void resolveUnmanagedBorrows() {
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+        call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
         call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
 
@@ -2258,9 +2262,11 @@ static void resolveUnmanagedBorrows() {
                            ts->name, ts->name);
           } else {
             const char* type = NULL;
-            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+                call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
               type = "unmanaged";
-            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS))
+            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
               type = "borrowed";
             else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS))
               type = "?";
@@ -2274,11 +2280,13 @@ static void resolveUnmanagedBorrows() {
           }
 
           // Compute the decorated class type
-          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
             int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
             int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;

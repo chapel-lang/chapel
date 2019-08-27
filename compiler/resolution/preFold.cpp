@@ -692,11 +692,36 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
 
   case PRIM_TO_UNMANAGED_CLASS:
+  case PRIM_TO_UNMANAGED_CLASS_CHECKED:
   case PRIM_TO_BORROWED_CLASS:
+  case PRIM_TO_BORROWED_CLASS_CHECKED:
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
     Expr* e = call->get(1);
+
+    if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+      const char* msg = NULL;
+      if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
+        msg = "unmanaged";
+      else
+        msg = "borrowed";
+
+      // make it an error if argument is not unknown management
+      if (fLegacyClasses == false) {
+        Type* t = e->typeInfo();
+        if (!isClassLikeOrManaged(t))
+          USR_FATAL_CONT(call, "cannot make %s into a %s class",
+                               toString(t), msg);
+        if (!isTypeExpr(e))
+          USR_FATAL_CONT(call, "cannot use decorator %s on a value", msg);
+        ClassTypeDecorator d = classTypeDecorator(t);
+        if (!isDecoratorUnknownManagement(d))
+          USR_FATAL_CONT(call, "duplicate decorators - %s %s",
+                               msg, toString(t));
+      }
+    }
 
     if (isTypeExpr(e)) {
       retval = new SymExpr(totype->symbol);
