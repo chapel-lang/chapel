@@ -36,6 +36,8 @@ private use BlockDist;
 private use DSIUtil;
 private use ChapelUtil;
 private use CommDiagnostics;
+private use ChapelLocks;
+private use ChapelDebugPrint;
 
 
 //
