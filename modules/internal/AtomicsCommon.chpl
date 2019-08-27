@@ -49,7 +49,7 @@ module AtomicsCommon {
       if CHPL_CACHE_REMOTE {
         got = _cnt.fetchSub(1, order=memoryOrder.release);
         if got == 1 {
-          atomic_fence(memoryOrder.acquire);
+          atomicFence(memoryOrder.acquire);
           return 0;
         }
         return got - 1;

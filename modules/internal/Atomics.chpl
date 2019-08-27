@@ -90,15 +90,17 @@ module Atomics {
   pragma "no doc"
   extern proc chpl_atomic_signal_fence(order:memory_order);
 
-  // these can be called just the way they are:
-  //extern proc chpl_atomic_thread_fence(order:memory_order);
-  //extern proc chpl_atomic_signal_fence(order:memory_order);
-  // but they only handle the local portion of a fence.
-  // To include PUTs or GETs in the fence, use atomic_fence instead:
+  // non user-facing fence that is called by the compiler
   pragma "no doc"
   proc atomic_fence(order:memory_order = memory_order_seq_cst) {
     chpl_atomic_thread_fence(order);
     chpl_rmem_consist_fence(order);
+  }
+
+  /* An atomic fence that establishes an ordering of non-atomic and relaxed
+     atomic operations. */
+  inline proc atomicFence(param order: memoryOrder = memoryOrder.seqCst) {
+    atomic_fence(c_memory_order(order));
   }
 
   private proc isSupported(type T) param {
