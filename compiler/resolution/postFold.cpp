@@ -149,6 +149,9 @@ static Expr* postFoldNormal(CallExpr* call) {
     } else if (ret == gVoid) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
+    } else if (ret == gUninstantiated) {
+      retval = new SymExpr(gUninstantiated);
+      call->replace(retval);
     }
   }
 
@@ -691,7 +694,8 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
         rhsSym = paramMap.get(rhsSym);
       }
       if (rhsSym->isImmediate() == true ||
-          isEnumSymbol(rhsSym)  == true) {
+          isEnumSymbol(rhsSym)  == true ||
+          rhsSym == gUninstantiated) {
         paramMap.put(lhsSym, rhsSym);
 
         lhsSym->defPoint->remove();

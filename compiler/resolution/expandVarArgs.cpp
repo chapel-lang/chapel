@@ -153,6 +153,10 @@ static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
     if (formal->variableExpr != NULL) {
       if (isDefExpr(formal->variableExpr->body.tail) == true) {
         isQueryVariable = true;
+      } else if (SymExpr* se = toSymExpr(formal->variableExpr->body.tail)) {
+        if (se->symbol() == gUninstantiated) {
+          isQueryVariable = true;
+        }
       }
 
       numVarArgs = numVarArgs + 1;
@@ -229,16 +233,18 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
         fn->defPoint->insertBefore(new DefExpr(retval));
 
         // newSym queries the number of varargs. Replace it with int literal.
-        Symbol*    defSym     = toDefExpr(block->body.tail)->sym;
-        Symbol*    newSym     = substitutions.get(defSym);
-        VarSymbol* nVar       = new_IntSymbol(numCopies);
-        SymExpr*   newSymExpr = new SymExpr(nVar);
+        if (DefExpr* def = toDefExpr(block->body.tail)) {
+          Symbol*    defSym     = def->sym;
+          Symbol*    newSym     = substitutions.get(defSym);
+          VarSymbol* nVar       = new_IntSymbol(numCopies);
+          SymExpr*   newSymExpr = new SymExpr(nVar);
 
-        newSymExpr->astloc = newSym->astloc;
+          newSymExpr->astloc = newSym->astloc;
 
-        newSym->defPoint->replace(newSymExpr);
+          newSym->defPoint->replace(newSymExpr);
 
-        subSymbol(retval, newSym, nVar);
+          subSymbol(retval, newSym, nVar);
+        }
 
         formal = toArgSymbol(substitutions.get(formal));
 
