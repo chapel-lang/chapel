@@ -62,6 +62,12 @@
     I.E when ``CHPL_NETWORK_ATOMICS!="none"``, which is provides a significant improvement
     in performance on systems where they are support, notable on a Cray-XC.
 
+  .. warning:: 
+
+    Currently, ``hasGlobalSupport=true`` is necessary when using it from multiple locales, even
+    if it is intended to be used locally. This is due to there being no compiler primitive to create
+    a 'wide' class, nor a way to cast a wide-pointer to create a wide class.
+
   ABA Wrapper
   -----------
 
@@ -286,14 +292,16 @@ prototype module AtomicObjects {
   /*
      Compresses an object into a descriptor.
   */
-  proc compress(obj) : uint {
+  proc compress(obj : ?objType) : uint {
     if obj == nil then return 0;
 
     // Perform compression by packing the 48 usable bits of the virtual
     // address with 16 bits of the locale/node id.
     var locId : uint(64) = obj.locale.id : uint(64);
     var addr = getAddr(obj);
-    return (locId << compressedLocIdOffset) | (addr & compressedAddrMask);
+    var ret = (locId << compressedLocIdOffset) | (addr & compressedAddrMask);
+    if boundsChecking then assert(decompress(objType, ret) == obj);
+    return ret;
   }
 
   pragma "no doc"
@@ -409,94 +417,6 @@ prototype module AtomicObjects {
 
   proc !=(const ref aba1 : ABA, const ref aba2 : ABA) {
     return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
-  }
-
-  proc ==(const ref aba : ABA, other) {
-    return aba.getObject() == other;
-  }
-
-  proc !=(const ref aba : ABA, other) {
-    return aba.getObject() != other;
-  }
-
-  proc >(const ref aba : ABA, other) {
-    return aba.getObject() > other;
-  }
-
-  proc >=(const ref aba : ABA, other) {
-    return aba.getObject() >= other;
-  }
-
-  proc <(const ref aba : ABA, other) {
-    return aba.getObject() < other;
-  }
-
-  proc <=(const ref aba : ABA, other) {
-    return aba.getObject() <= other;
-  }
-
-  proc +(const ref aba : ABA, other) {
-    return aba.getObject() + other;
-  }
-
-  proc -(const ref aba : ABA, other) {
-    return aba.getObject() - other;
-  }
-
-  proc *(const ref aba : ABA, other) {
-    return aba.getObject() * other;
-  }
-
-  proc /(const ref aba : ABA, other) {
-    return aba.getObject() / other;
-  }
-
-  proc +=(const ref aba : ABA, other) {
-    aba.getObject() += other;
-  }
-
-  proc -=(const ref aba : ABA, other) {
-    aba.getObject() -= other;
-  }
-
-  proc *=(const ref aba : ABA, other) {
-    aba.getObject() *= other;
-  }
-
-  proc /=(const ref aba : ABA, other) {
-    aba.getObject() /= other;
-  }
-
-  proc ^(const ref aba : ABA, other) {
-    return aba.getObject() ^ other;
-  }
-
-  proc |(const ref aba : ABA, other) {
-    return aba.getObject() | other;
-  }
-
-  proc ^=(const ref aba : ABA, other) {
-    aba.getObject() ^= other;
-  }
-
-  proc |=(const ref aba : ABA, other) {
-    aba.getObject() |= other;
-  }
-
-  proc <<(const ref aba : ABA, other) {
-    return aba.getObject() << other;
-  }
-
-  proc >>(const ref aba : ABA, other) {
-    return aba.getObject() >> other;
-  }
-
-  proc <<=(const ref aba : ABA, other) {
-    aba.getObject() <<= other;
-  }
-
-  proc >>=(const ref aba : ABA, other) {
-    aba.getObject() >>= other;
   }
 
   record AtomicObject {

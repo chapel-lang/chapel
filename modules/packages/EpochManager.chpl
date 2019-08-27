@@ -131,7 +131,7 @@ prototype module EpochManager {
 
     class LockFreeLinkedList {
       type objType;
-      var _head : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=false);
+      var _head : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=true);
 
       proc init(type objType) {
         this.objType = objType;
@@ -145,7 +145,7 @@ prototype module EpochManager {
         } while(!_head.compareExchangeABA(oldHead, _node));
       }
 
-      iter these() : objType {
+      iter these() : objType? {
         var ptr = _head.read();
         while (ptr != nil) {
           yield ptr.val;
@@ -173,7 +173,7 @@ prototype module EpochManager {
     class Node {
       type eltType;
       var val : eltType?;
-      var next : AtomicObject(unmanaged Node(eltType?)?, hasABASupport=true, hasGlobalSupport=false);
+      var next : AtomicObject(unmanaged Node(eltType?)?, hasABASupport=true, hasGlobalSupport=true);
       var freeListNext : unmanaged Node(eltType?)?;
 
       proc init(val : ?eltType) {
@@ -189,9 +189,9 @@ prototype module EpochManager {
     class LockFreeQueue {
       type objType;
       // Head and Tail can never be nil in Michael & Scott Queue
-      var _head : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=false);
-      var _tail : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=false);
-      var _freeListHead : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=false);
+      var _head : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=true);
+      var _tail : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=true);
+      var _freeListHead : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=true);
       // Flag to set if objects held in the queue are to be deleted or not.
       // By default initialised to true.
       const delete_val : bool;
@@ -341,16 +341,16 @@ prototype module EpochManager {
     }
 
     class LimboList {
-      var _head : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=false);
-      var _freeListHead : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=false);
+      var _head : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
+      var _freeListHead : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
 
-      proc push(obj : unmanaged object) {
+      proc push(obj : unmanaged object?) {
         var node = recycleNode(obj);
         var oldHead = _head.exchange(node);
         node.next = oldHead;
       }
 
-      proc recycleNode(obj : unmanaged object) : unmanaged Node {
+      proc recycleNode(obj : unmanaged object?) : unmanaged Node {
         var oldTop : ABA(unmanaged Node?);
         var n : unmanaged Node?;
         do {
@@ -615,7 +615,7 @@ prototype module EpochManager {
     }
 
     pragma "no doc"
-    proc deferDelete(tok : unmanaged _token, x : unmanaged object) {
+    proc deferDelete(tok : unmanaged _token, x : unmanaged object?) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
         writeln("Bad local epoch! Please pin! Using global epoch!");
@@ -655,7 +655,7 @@ prototype module EpochManager {
         while (head != nil) {
           var next = head.next;
           delete head.val;
-          reclaim_limbo_list.retireNode(head);
+          reclaim_limbo_list.retireNode(head!);
           head = next;
         }
       }
@@ -716,7 +716,7 @@ prototype module EpochManager {
 
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
-    proc deferDelete(x) {
+    proc deferDelete(x : unmanaged object?) {
       manager.deferDelete(this._tok!, x);
     }
 
@@ -900,7 +900,7 @@ prototype module EpochManager {
       }
       tok.is_registered.write(true);
       // return tok;
-      return new owned DistTokenWrapper(tok, this:unmanaged);
+      return new owned DistTokenWrapper(tok!, this:unmanaged);
     }
 
     pragma "no doc"
@@ -939,7 +939,7 @@ prototype module EpochManager {
     }
 
     pragma "no doc"
-    proc deferDelete(tok : unmanaged _token, x : unmanaged object) {
+    proc deferDelete(tok : unmanaged _token, x : unmanaged object?) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
         writeln("Bad local epoch! Please pin! Using global epoch!");
@@ -1040,7 +1040,7 @@ prototype module EpochManager {
           while (head != nil) {
             var obj = head.val;
             var next = head.next;
-            _this.objsToDelete[obj.locale.id].append(obj);
+            _this.objsToDelete[obj.locale.id].append(obj!);
             delete head;
             head = next;
           }
@@ -1120,7 +1120,7 @@ prototype module EpochManager {
 
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
-    proc deferDelete(x) {
+    proc deferDelete(x:unmanaged object?) {
       manager.deferDelete(this._tok!, x);
     }
 

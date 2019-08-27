@@ -97,8 +97,8 @@ prototype module LockFreeStack {
 
   class Node {
     type eltType;
-    var val : eltType;
-    var next : unmanaged Node(eltType)?;
+    var val : eltType?;
+    var next : unmanaged Node(eltType?)?;
 
     proc init(val : ?eltType) {
       this.eltType = eltType;
@@ -112,7 +112,7 @@ prototype module LockFreeStack {
 
   class LockFreeStack {
     type objType;
-    var _top : AtomicObject(unmanaged Node(objType)?, hasGlobalSupport=false, hasABASupport=false);
+    var _top : AtomicObject(unmanaged Node(objType?)?, hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
 
     proc init(type objType) {
@@ -124,18 +124,22 @@ prototype module LockFreeStack {
     }
 
     proc push(newObj : objType, tok : owned TokenWrapper = getToken()) {
-      var n = new unmanaged Node(newObj)?;
+      var n = new unmanaged Node(newObj);
       tok.pin();
+      var shouldYield = false;
       do {
         var oldTop = _top.read();
         n.next = oldTop;
+        if shouldYield then chpl_task_yield();
+        shouldYield = true;
       } while (!_top.compareExchange(oldTop, n));
       tok.unpin();
     }
 
     proc pop(tok : owned TokenWrapper = getToken()) : (bool, objType) {
-      var oldTop : unmanaged Node(objType)?;
+      var oldTop : unmanaged Node(objType?)?;
       tok.pin();
+      var shouldYield = false;
       do {
         oldTop = _top.read();
         if (oldTop == nil) {
@@ -144,6 +148,8 @@ prototype module LockFreeStack {
           return (false, retval);
         }
         var newTop = oldTop.next;
+        if shouldYield then chpl_task_yield();
+        shouldYield = true;
       } while (!_top.compareExchange(oldTop, newTop));
       var retval = oldTop.val;
       tok.deferDelete(oldTop);
@@ -151,7 +157,7 @@ prototype module LockFreeStack {
       return (true, retval);
     }
 
-    iter drain() {
+    iter drain() : objType? {
       var tok = getToken();
       var (hasElt, elt) = pop(tok);
       while hasElt {
@@ -161,7 +167,7 @@ prototype module LockFreeStack {
       tryReclaim();
     }
 
-    iter drain(param tag : iterKind) where tag == iterKind.standalone {
+    iter drain(param tag : iterKind) : objType? where tag == iterKind.standalone {
       coforall tid in 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = pop(tok);
