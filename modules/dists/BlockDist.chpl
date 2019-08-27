@@ -448,7 +448,7 @@ proc Block.init(boundingBox: domain,
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
-  this.sparseLayoutType = sparseLayoutType:unmanaged;
+  this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
 
   this.complete();
 
