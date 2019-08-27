@@ -189,6 +189,20 @@ proc getFieldIndex(type t, param s:string) param : int
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
+proc isFieldBound(type t, param s : string) param : bool {
+  return __primitive("is bound", t, s);
+}
+
+proc isPartialGeneric(type t) param : bool {
+  for param i in 1..numFields(t) {
+    param name = getFieldName(t, i);
+    if isFieldBound(t, name) == false then
+      return true;
+  }
+
+  return false;
+}
+
 /* Returns true if a function named `fname` taking no arguments
    could be called in the current scope.
    */
