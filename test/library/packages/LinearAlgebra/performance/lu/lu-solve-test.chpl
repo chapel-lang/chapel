@@ -17,8 +17,6 @@ proc sinMatrix(n) {
 var A = sinMatrix(n);
                
 var (LU, ipiv) = lu(A);
-writeln(LU);
-writeln();
 writeln(ipiv);
 writeln();
 writeln(det(LU));
