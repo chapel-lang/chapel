@@ -1389,6 +1389,14 @@ static void resolveModuleCall(CallExpr* call) {
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
+        // Adjust class types to undecorated
+        if (sym && isClass(sym->type) && !fLegacyClasses) {
+          // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+          ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+          Type* t = getDecoratedClass(sym->type, d);
+          sym = t->symbol;
+        }
+
         // Failing that, try looking in an extern block.
 #ifdef HAVE_LLVM
         if (sym == NULL && gExternBlockStmts.size() > 0) {
@@ -1444,7 +1452,7 @@ static void resolveModuleCall(CallExpr* call) {
 // for new SomeModule.SomeType.
 static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
   if (TypeSymbol* ts = toTypeSymbol(sym)) {
-    if (isAggregateType(ts->type)) {
+    if (isAggregateType(canonicalClassType(ts->type))) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
           if (grandParentCall->isPrimitive(PRIM_NEW)) {
