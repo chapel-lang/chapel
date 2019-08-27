@@ -108,8 +108,7 @@ module List {
 
     The list type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
-    `parSafe = true` in any list constructor. A list constructed from another
-    list inherits the parallel safety mode of that list by default.
+    `parSafe = true` in any list constructor.
   */
   record list {
 
