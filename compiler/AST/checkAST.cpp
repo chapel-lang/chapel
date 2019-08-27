@@ -323,7 +323,7 @@ void checkReturnTypesHaveRefTypes()
     if (retType->symbol->hasFlag(FLAG_REF))
       continue;
 
-    if (retType->refType == NULL)
+    if (fn->retTag != RET_TYPE && retType->refType == NULL)
       INT_FATAL(fn, "every return type must also have a ref type.");
   }
 }
