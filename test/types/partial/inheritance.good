@@ -1,0 +1,7 @@
+Child(int(64),U=real(64))
+Child(int(64),U=real(64),y=5.0)
+Child(int(64),100,real(64),5.0)
+
+Z(int(64),p=100)
+Z(int(64),p=100,U=real(64))
+Z(int(64),false,100,real(64),123.456)

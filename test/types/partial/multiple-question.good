@@ -1,0 +1,8 @@
+multiple-question.chpl:2: In function 'foo':
+multiple-question.chpl:2: error: formal 'r' may not have a type expression with multiple '?'
+multiple-question.chpl:2: note: '?' cannot be used to positionally indicate uninstantiated fields
+multiple-question.chpl:10: In function 'bar':
+multiple-question.chpl:10: error: formal 'r' may not have a type expression with multiple '?'
+multiple-question.chpl:10: note: '?' cannot be used to positionally indicate uninstantiated fields
+multiple-question.chpl:10: error: type expression of formal 'r' cannot use '?' before unnamed arguments to a type specifier
+multiple-question.chpl:10: note: '?' cannot be used to positionally indicate uninstantiated fields

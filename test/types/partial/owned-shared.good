@@ -1,0 +1,8 @@
+owned Parent(int(64),3): {x = (0, 0, 0)}
+owned Parent(int(64),3): {x = (0, 0, 0)}
+owned Parent(int(64),3): {x = (0, 0, 0), y = 0.0}
+owned Child(int(64),3,real(64)): {x = (0, 0, 0), y = 0.0}
+shared Parent(int(64),3): {x = (0, 0, 0)}
+shared Parent(int(64),3): {x = (0, 0, 0)}
+shared Parent(int(64),3): {x = (0, 0, 0), y = 0.0}
+shared Child(int(64),3,real(64)): {x = (0, 0, 0), y = 0.0}
