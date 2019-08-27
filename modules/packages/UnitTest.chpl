@@ -38,14 +38,22 @@ Assert Functions
 
 Here are the assert functions available in the UnitTest module:
 
-- :proc:`~Test.skip`
-- :proc:`~Test.skipIf`
 - :proc:`~Test.assertTrue`
 - :proc:`~Test.assertFalse`
 - :proc:`~Test.assertEqual`
 - :proc:`~Test.assertNotEqual`
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
+
+UnitTest module also provides multiple methods for specifying test Metadata:
+
+- :proc:`~Test.skip`
+- :proc:`~Test.skipIf`
+- :proc:`~Test.addNumLocales`
+- :proc:`~Test.maxLocales`
+- :proc:`~Test.minLocales`
+- :proc:`~Test.dependsOn`
+
 
 Examples
 --------
