@@ -6786,10 +6786,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         }
       } else {
         // Manager is specified, so check for duplicate management decorators
-        if (!isClassLikeOrManaged(type))
-          USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
-                                  toString(manager), toString(type));
-
         checkDuplicateDecorators(manager, type, newExpr);
       }
 
@@ -6801,15 +6797,13 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         AggregateType* at = toAggregateType(type);
 
         // fail if it's a record
-        if (isRecord(at) && !isManagedPtrType(at)) {
-          const char* name = manager->symbol->name;
-          // skip leading underscore
-          if (name[0] == '_')
-            name = &name[1];
-
+        if (isRecord(at) && !isManagedPtrType(at))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
-                         name, at->symbol->name);
-        }
+                                  toString(manager), toString(type));
+        else if (!isClassLikeOrManaged(type))
+          USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
+                                   toString(manager), toString(type));
+
 
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
