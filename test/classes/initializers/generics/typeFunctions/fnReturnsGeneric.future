@@ -1,9 +1,0 @@
-Feature Request: Allow type functions that return a generic class
-
-This test shows that we can't write a type function that returns a generic class
-and use it to create a new object.  When the error message is avoided, we will
-encounter an issue at checkReturnTypesHaveRefTypes because it expects every used
-type to have a refType, but we don't generate refTypes for generic types, only
-their instantiations.  Additionally, if we throw --verify, it will complain that
-the type is not in the tree - this is because the return type is not counted as
-a "use" when determining whether to clean the type up at the end of resolution.
