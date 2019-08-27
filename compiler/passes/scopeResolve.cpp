@@ -1654,8 +1654,8 @@ static void lookup(const char*           name,
                    std::vector<Symbol*>& symbols) {
   bool debug = false;
   if (strcmp("MMM", name) == 0) {
-    debug = true;
-    printf("Looking up MMM\n");
+    //    debug = true;
+    //    printf("Looking up MMM\n");
   }
 
   if (!visited.set_in(scope)) {
