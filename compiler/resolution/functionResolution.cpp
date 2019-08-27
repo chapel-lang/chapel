@@ -9534,7 +9534,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // extern types (but not memory_order)
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
-             !type->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE)) {
+             !type->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
 
     // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);

@@ -214,22 +214,22 @@ module ChapelLocale {
 
     pragma "no doc"
     inline proc runningTaskCntSet(val : int) {
-      runningTaskCounter.write(val, memory_order_relaxed);
+      runningTaskCounter.write(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntAdd(val : int) {
-      runningTaskCounter.add(val, memory_order_relaxed);
+      runningTaskCounter.add(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntSub(val : int) {
-      runningTaskCounter.sub(val, memory_order_relaxed);
+      runningTaskCounter.sub(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCnt() {
-      var rtc = runningTaskCounter.read(memory_order_relaxed);
+      var rtc = runningTaskCounter.read(memoryOrder.relaxed);
       return if (rtc <= 0) then 1 else rtc;
     }
     //------------------------------------------------------------------------}

@@ -46,7 +46,7 @@ module PeekPoke {
      Non-atomically reads the stored value.
   */
   inline proc const AtomicBool.peek(): bool {
-    return this.read(order=memory_order_relaxed);
+    return this.read(order=memoryOrder.relaxed);
   }
   pragma "no doc"
   inline proc const RAtomicBool.peek(): bool {
@@ -57,7 +57,7 @@ module PeekPoke {
      Non-atomically writes `value`.
   */
   inline proc AtomicBool.poke(value:bool): void {
-    this.write(value, order=memory_order_relaxed);
+    this.write(value, order=memoryOrder.relaxed);
   }
   pragma "no doc"
   inline proc RAtomicBool.poke(value:bool): void {
@@ -69,7 +69,7 @@ module PeekPoke {
      Non-atomically reads the stored value.
   */
   inline proc const AtomicT.peek(): T {
-    return this.read(order=memory_order_relaxed);
+    return this.read(order=memoryOrder.relaxed);
   }
   pragma "no doc"
   inline proc const RAtomicT.peek(): T {
@@ -81,7 +81,7 @@ module PeekPoke {
      Non-atomically writes `value`.
   */
   inline proc AtomicT.poke(value:T): void {
-    this.write(value, order=memory_order_relaxed);
+    this.write(value, order=memoryOrder.relaxed);
   }
   pragma "no doc"
   inline proc RAtomicT.poke(value:T): void {
