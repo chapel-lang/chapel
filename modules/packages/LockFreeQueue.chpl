@@ -90,7 +90,7 @@
       Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms. 
       No. TR-600. ROCHESTER UNIV NY DEPT OF COMPUTER SCIENCE, 1995.
 */
-module LockFreeQueue {
+prototype module LockFreeQueue {
   use EpochManager;
   use AtomicObjects;
 

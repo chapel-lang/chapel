@@ -56,6 +56,12 @@
     be used. An exascale solution that allows for an arbitrary number of compute nodes
     and for the entire 64-bit address space to be utilized is future work that is in-progress.
 
+  .. note::
+
+    When ``hasGlobalSupport=true`` and ``hasABASupport=false``, it will enable RDMA atomics,
+    I.E when ``CHPL_NETWORK_ATOMICS!="none"``, which is provides a significant improvement
+    in performance on systems where they are support, notable on a Cray-XC.
+
   ABA Wrapper
   -----------
 
@@ -92,13 +98,10 @@
     We ``forward`` all accesses to the ``ABA`` wrapper to the object it is wrapping 
     so that whether or not the ABA versions of the ``AtomicObject`` API is used, it
     becomes as transparent as possible. This applies to all method and field accesses.
-    As forwarding does not apply to operators, common operators are explicitly defined
-    in such a way that they will also be forwarded to the object being wrapped.
-
 
 
 */
-module AtomicObjects {
+prototype module AtomicObjects {
 
   if CHPL_TARGET_ARCH != "x86_64" {
     compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");
@@ -110,10 +113,30 @@ module AtomicObjects {
     #include <stdio.h>
     #include <stdlib.h>
 
-    struct uint128 {
+    typedef struct uint128 {
       uint64_t lo;
       uint64_t hi;
-    };
+    } uint128_t;
+
+    // src: Address of a 16-byte aligned address or else General Protection Fault (GPF)
+    // cmp: Expected value
+    // with: New value to replace old
+    // Returns: If successful or not
+    static inline int _cas128bit(uint128_t *src, uint128_t *cmp, uint128_t *with) {
+      char result;
+      __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
+        "setz %7; "
+        : "=a" (cmp->lo),
+        "=d" (cmp->hi)
+        : "0" (cmp->lo),
+        "1" (cmp->hi),
+        "b" (with->lo),
+        "c" (with->hi),
+        "r" (src),
+        "m" (result)
+        : "cc", "memory"); 
+        return result;
+    }
 
     typedef struct uint128 uint128_t;
     static inline int cas128bit(void *srcvp, void *cmpvp, void *withvp) {
@@ -122,19 +145,7 @@ module AtomicObjects {
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
-      char result;
-
-      __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-          "setz %7; "
-          : "=a" (cmp->lo),
-          "=d" (cmp->hi)
-          : "0" (cmp->lo),
-          "1" (cmp->hi),
-          "b" (with->lo),
-          "c" (with->hi),
-          "r" (src),
-          "m" (result)
-          : "cc", "memory");
+      char result = _cas128bit(src, cmp, with);
       *(uint128_t *) cmpvp = cmp_val;
       return result;
     }
@@ -145,47 +156,22 @@ module AtomicObjects {
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
-      char successful = 0;
-
-      while (!successful) {
-        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-            "setz %7; "
-            : "=a" (cmp->lo),
-            "=d" (cmp->hi)
-            : "0" (cmp->lo),
-            "1" (cmp->hi),
-            "b" (with->lo),
-            "c" (with->hi),
-            "r" (src),
-            "m" (successful)
-            : "cc", "memory");
-      }
+      while (!_cas128bit(src, cmp, with)) ;
     }
 
+    // Special-case which will update the ABA count of valvp to be
+    // one plus the srcvp. This is needed as ABA count needs to be monotonically
+    // increasing.
     static inline void write128bit_special(void *srcvp, void *valvp) {
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
       uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
-      char successful = 0;
-      with->hi = cmp->hi + 1;
 
-      while (!successful) {
-        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-            "setz %7; "
-            : "=a" (cmp->lo),
-            "=d" (cmp->hi)
-            : "0" (cmp->lo),
-            "1" (cmp->hi),
-            "b" (with->lo),
-            "c" (with->hi),
-            "r" (src),
-            "m" (successful)
-            : "cc", "memory");
-        if (!successful) {
-          with->hi = cmp->hi + 1;
-        }
+      with->hi = cmp->hi + 1;
+      while (!_cas128bit(src, cmp, with)) {
+        with->hi = cmp->hi + 1;
       }
     }
 
@@ -195,51 +181,24 @@ module AtomicObjects {
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
-      char successful = 0;
-
-      while (!successful) {
-        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-            "setz %7; "
-            : "=a" (cmp->lo),
-            "=d" (cmp->hi)
-            : "0" (cmp->lo),
-            "1" (cmp->hi),
-            "b" (with->lo),
-            "c" (with->hi),
-            "r" (src),
-            "m" (successful)
-            : "cc", "memory");
-      }
-
+      while (!_cas128bit(src, cmp, with)) ;
       *(uint128_t *) retvalvp = cmp_val; 
     }
 
+    // Special-case which will update the ABA count of valvp to be
+    // one plus the srcvp. This is needed as ABA count needs to be monotonically
+    // increasing.
     static inline void exchange128bit_special(void *srcvp, void *valvp, void *retvalvp) {
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
       uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
-      char successful = 0;
+      
       with->hi = cmp->hi + 1;
-
-      while (!successful) {
-        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-            "setz %7; "
-            : "=a" (cmp->lo),
-            "=d" (cmp->hi)
-            : "0" (cmp->lo),
-            "1" (cmp->hi),
-            "b" (with->lo),
-            "c" (with->hi),
-            "r" (src),
-            "m" (successful)
-            : "cc", "memory");
-        if (!successful) {
-          with->hi = cmp->hi + 1;
-        }
+      while (!_cas128bit(src, cmp, with)) {
+        with->hi = cmp->hi + 1;
       }
-
       *(uint128_t *) retvalvp = cmp_val; 
     }
     
@@ -250,20 +209,7 @@ module AtomicObjects {
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
-      char result;
-
-      __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-          "setz %7; "
-          : "=a" (cmp->lo),
-          "=d" (cmp->hi)
-          : "0" (cmp->lo),
-          "1" (cmp->hi),
-          "b" (with->lo),
-          "c" (with->hi),
-          "r" (src),
-          "m" (result)
-          : "cc", "memory");
-
+      _cas128bit(src, cmp, with);
       *(uint128_t *)dstvp = cmp_val;
     }
   }

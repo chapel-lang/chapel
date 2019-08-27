@@ -91,7 +91,7 @@
       "A scalable lock-free stack algorithm." Proceedings of the sixteenth annual 
       ACM symposium on Parallelism in algorithms and architectures. ACM, 2004.
 */
-module LockFreeStack {
+prototype module LockFreeStack {
   use EpochManager;
   use AtomicObjects;
 

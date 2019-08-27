@@ -107,10 +107,10 @@
     manager.destroy();
 
 */
-module EpochManager {
+prototype module EpochManager {
 
   pragma "no doc"
-  module LockFreeLinkedListModule {
+  prototype module LockFreeLinkedListModule {
 
     use AtomicObjects;
 
@@ -131,7 +131,7 @@ module EpochManager {
 
     class LockFreeLinkedList {
       type objType;
-      var _head : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=true);
+      var _head : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=false);
 
       proc init(type objType) {
         this.objType = objType;
@@ -164,15 +164,16 @@ module EpochManager {
     }
   }
 
+  // Michael & Scott Queue: https://www.cs.rochester.edu/u/scott/papers/1996_PODC_queues.pdf
   pragma "no doc"
-  module LockFreeQueueModule {
+  prototype module LockFreeQueueModule {
 
     use AtomicObjects;
 
     class Node {
       type eltType;
       var val : eltType?;
-      var next : AtomicObject(unmanaged Node(eltType?)?, hasABASupport=true, hasGlobalSupport=true);
+      var next : AtomicObject(unmanaged Node(eltType?)?, hasABASupport=true, hasGlobalSupport=false);
       var freeListNext : unmanaged Node(eltType?)?;
 
       proc init(val : ?eltType) {
@@ -187,9 +188,10 @@ module EpochManager {
 
     class LockFreeQueue {
       type objType;
-      var _head : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=true);
-      var _tail : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=true);
-      var _freeListHead : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=true);
+      // Head and Tail can never be nil in Michael & Scott Queue
+      var _head : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=false);
+      var _tail : AtomicObject(unmanaged Node(objType?), hasABASupport=true, hasGlobalSupport=false);
+      var _freeListHead : AtomicObject(unmanaged Node(objType?)?, hasABASupport=true, hasGlobalSupport=false);
       // Flag to set if objects held in the queue are to be deleted or not.
       // By default initialised to true.
       const delete_val : bool;
@@ -252,7 +254,7 @@ module EpochManager {
         }
       }
 
-      proc dequeue() : objType {
+      proc dequeue() : objType? {
         while (true) {
           var head = _head.readABA();
           var head_node = head.getObject();
@@ -271,7 +273,7 @@ module EpochManager {
             else {
               var ret_val = next_node!.val;
               if (_head.compareExchangeABA(curr_head, next_node)) {
-                retireNode(head_node);
+                retireNode(head_node!);
                 return ret_val;
               }
             }
@@ -325,7 +327,7 @@ module EpochManager {
   }
 
   pragma "no doc"
-  module LimboListModule {
+  prototype module LimboListModule {
 
     use AtomicObjects;
 
@@ -339,8 +341,8 @@ module EpochManager {
     }
 
     class LimboList {
-      var _head : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
-      var _freeListHead : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
+      var _head : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=false);
+      var _freeListHead : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=false);
 
       proc push(obj : unmanaged object) {
         var node = recycleNode(obj);
@@ -388,7 +390,7 @@ module EpochManager {
   }
 
   pragma "no doc"
-  module VectorModule {
+  prototype module VectorModule {
     /**
      * Obtained from https://github.com/pnnl/chgl/blob/master/src/Vectors.chpl
      */
@@ -564,7 +566,7 @@ module EpochManager {
       }
       tok.is_registered.write(true);
       // return tok;
-      return new owned TokenWrapper(tok, this:unmanaged);
+      return new owned TokenWrapper(tok!, this:unmanaged);
     }
 
     pragma "no doc"
@@ -699,14 +701,14 @@ module EpochManager {
       `Pin` a task
     */
     proc pin() {
-      manager.pin(this._tok);
+      manager.pin(this._tok!);
     }
 
     /*
       `Unpin` a task
     */
     proc unpin() {
-      manager.unpin(this._tok);
+      manager.unpin(this._tok!);
     }
 
     /*
@@ -715,7 +717,7 @@ module EpochManager {
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
     proc deferDelete(x) {
-      manager.deferDelete(this._tok, x);
+      manager.deferDelete(this._tok!, x);
     }
 
     /*
@@ -1088,7 +1090,7 @@ module EpochManager {
   class DistTokenWrapper {
 
     pragma "no doc"
-    var _tok : unmanaged _token;
+    var _tok : unmanaged _token?;
 
     pragma "no doc"
     var manager : unmanaged EpochManagerImpl;
@@ -1103,14 +1105,14 @@ module EpochManager {
       `Pin` a task
     */
     proc pin() {
-      manager.pin(this._tok);
+      manager.pin(this._tok!);
     }
 
     /*
       `Unpin` a task
     */
     proc unpin() {
-      manager.unpin(this._tok);
+      manager.unpin(this._tok!);
     }
 
     /*
@@ -1119,7 +1121,7 @@ module EpochManager {
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
     proc deferDelete(x) {
-      manager.deferDelete(this._tok, x);
+      manager.deferDelete(this._tok!, x);
     }
 
     /*
@@ -1134,7 +1136,7 @@ module EpochManager {
       Unregister the handle from the manager
     */
     proc unregister() {
-      manager.unregister(this._tok);
+      manager.unregister(this._tok!);
       this._tok = nil;
     }
 
