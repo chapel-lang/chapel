@@ -1,0 +1,28 @@
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned owned MyClass
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned shared MyClass
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned unmanaged MyClass
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned borrowed MyClass
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged owned MyClass
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged shared MyClass
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged unmanaged MyClass
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged borrowed MyClass
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed owned MyClass
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed shared MyClass
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed unmanaged MyClass
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed borrowed MyClass
+duplicate-management.chpl:50: In function 'to':
+duplicate-management.chpl:50: error: duplicate decorators - owned owned MyClass
+duplicate-management.chpl:50: In function 'to':
+duplicate-management.chpl:50: error: duplicate decorators - owned shared MyClass
