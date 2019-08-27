@@ -45,6 +45,9 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
 
+Test Metadata Functions
+-----------------------
+
 UnitTest module also provides multiple methods for specifying test Metadata:
 
 - :proc:`~Test.skip`
