@@ -145,6 +145,11 @@ prototype module AtomicObjects {
     }
 
     typedef struct uint128 uint128_t;
+
+    // srcvp: Address of a 16-byte aligned address or else General Protection Fault (GPF)
+    // cmpvp: Expected value
+    // withvp: New value to replace old
+    // Returns: If successful or not
     static inline int cas128bit(void *srcvp, void *cmpvp, void *withvp) {
       uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) cmpvp;
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) withvp;      
