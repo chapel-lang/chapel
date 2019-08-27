@@ -44,6 +44,7 @@ static IntentTag constIntentForType(Type* t) {
       t == dtCFnPtr ||
       t == dtNothing ||
       t == dtVoid ||
+      t == dtUninstantiated ||
       t->symbol->hasFlag(FLAG_RANGE) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
@@ -121,6 +122,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtVoid                             ||
              t == dtOpaque                           ||
              t == dtNothing                          ||
+             t == dtUninstantiated                   ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||
              t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
              t->symbol->hasFlag(FLAG_EXTERN)) {

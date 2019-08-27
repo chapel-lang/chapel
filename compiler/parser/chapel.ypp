@@ -227,8 +227,6 @@
   #include <cstring>
   #include <stdint.h>
 
-  static int query_uid = 1;
-
   #define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
     if (N) {                                                              \
       (Current).first_line   = (Rhs)[1].first_line;                       \
@@ -473,7 +471,7 @@
 %type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pdefexpr> query_expr opt_query_expr
+%type <pexpr> query_expr opt_query_expr
 
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
@@ -1389,17 +1387,21 @@ query_expr:
   TQUESTION ident_def
     { $$ = new DefExpr(new VarSymbol($2)); }
 | TQUESTION
-    { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
+    { $$ = new SymExpr(gUninstantiated); }
 ;
 
 opt_query_expr:
-    { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
+    { $$ = new SymExpr(gUninstantiated); }
 | query_expr
 ;
 
 var_arg_expr:
   TDOTDOTDOT expr            { $$ = $2; }
-| TDOTDOTDOT opt_query_expr  { $2->sym->addFlag(FLAG_PARAM); $$ = $2; }
+| TDOTDOTDOT opt_query_expr  { if (DefExpr* def = toDefExpr($2)) {
+                                 def->sym->addFlag(FLAG_PARAM);
+                               }
+                               $$ = $2;
+                             }
 ;
 
 opt_lifetime_where:
@@ -1717,6 +1719,9 @@ type_level_expr:
     { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
 ;
 
+/* TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would
+not work.
+*/
 sub_type_level_expr:
   nil_expr
 | lhs_expr                  // var b: a.type || (?,?) || foo()
@@ -2038,7 +2043,9 @@ binary_op_expr:
 | expr TSHIFTRIGHT expr    { $$ = new CallExpr(">>", $1, $3); }
 | expr TMOD expr           { $$ = new CallExpr("%", $1, $3); }
 | expr TEQUAL expr         { $$ = new CallExpr("==", $1, $3); }
+| expr TEQUAL TQUESTION    { $$ = new CallExpr("==", $1, gUninstantiated); }
 | expr TNOTEQUAL expr      { $$ = new CallExpr("!=", $1, $3); }
+| expr TNOTEQUAL TQUESTION { $$ = new CallExpr("!=", $1, gUninstantiated); }
 | expr TLESSEQUAL expr     { $$ = new CallExpr("<=", $1, $3); }
 | expr TGREATEREQUAL expr  { $$ = new CallExpr(">=", $1, $3); }
 | expr TLESS expr          { $$ = new CallExpr("<", $1, $3); }
