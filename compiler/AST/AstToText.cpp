@@ -536,11 +536,8 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
         {
           if (VarSymbol* sym = toVarSymbol(sel->sym))
           {
-            if (strncmp(sym->name, "chpl__query", 11) != 0)
-            {
-              mText += "?";
-              mText += sym->name;
-            }
+            mText += "?";
+            mText += sym->name;
           }
           else
           {
@@ -552,7 +549,12 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
 
         else
         {
-          appendExpr(expr, false);
+          SymExpr* se = toSymExpr(expr);
+          bool unnamed = se && se->symbol() == gUninstantiated;
+
+          if (!unnamed) {
+            appendExpr(expr, false);
+          }
         }
       }
       else
