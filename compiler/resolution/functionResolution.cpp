@@ -6786,14 +6786,16 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         }
       } else {
         // Manager is specified, so check for duplicate management decorators
-        if (!isClassLikeOrManaged(type)) {
-          USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
-                                  toString(manager), toString(type));
-        } else {
-          ClassTypeDecorator d = classTypeDecorator(type);
-          if (!isDecoratorUnknownManagement(d))
-            USR_FATAL_CONT(newExpr, "duplicate decorators - %s %s",
+        if (fLegacyClasses == false) {
+          if (!isClassLikeOrManaged(type)) {
+            USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
                                     toString(manager), toString(type));
+          } else {
+            ClassTypeDecorator d = classTypeDecorator(type);
+            if (!isDecoratorUnknownManagement(d))
+              USR_FATAL_CONT(newExpr, "duplicate decorators - %s %s",
+                                      toString(manager), toString(type));
+          }
         }
       }
 

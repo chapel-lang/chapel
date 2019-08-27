@@ -1259,8 +1259,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
       if (isNilableClassType(symType))
         d = CLASS_TYPE_BORROWED_NILABLE;
       if (isManagedPtrType(symType))
-        USR_FATAL_CONT(insnPoint, "duplicate decorators - %s %s",
-                                  toString(this), toString(symType));
+        if (fLegacyClasses == false)
+          USR_FATAL_CONT(insnPoint, "duplicate decorators - %s %s",
+                                    toString(this), toString(symType));
       symType = ::getDecoratedClass(symType, d);
     }
   }
