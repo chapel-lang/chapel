@@ -434,15 +434,15 @@ proc eye(Dom: domain(2), type eltType=real) {
 //
 
 
-/* Sets the value of a diagonal in a matrix. If the matrix is sparse, 
+/* Sets the value of a diagonal in a matrix. If the matrix is sparse,
     indices on the diagonal will be added to its domain
 
     ``k > 0``, represents an upper diagonal starting
-    from the ``k``th column, ``k == 0`` represents the main 
+    from the ``k``th column, ``k == 0`` represents the main
     diagonal, ``k < 0`` represents a lower diagonal starting
     from the ``-k``th row. ``k`` is 0-indexed.
 */
-proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0) 
+proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
               where isDenseMatrix(X) {
   var start, end = 0;
   if (k >= 0) { // upper or main diagonal
@@ -668,9 +668,9 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
     compilerError("Rank sizes are not 1");
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
-    
+
   var result: eltType = 0;
-  
+
   if !isDistributed(A) {
     result = + reduce (A*B);
   }
@@ -680,11 +680,11 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
     var localResults: [Locales.domain] eltType = 0;
 
     coforall l in Locales do on l {
-      const maxThreads = if dataParTasksPerLocale==0 
+      const maxThreads = if dataParTasksPerLocale==0
                          then here.maxTaskPar else dataParTasksPerLocale;
       const localDomain = A.localSubdomain();
       const iterPerThread = divceil(localDomain.size, maxThreads);
-      var localResult: eltType = 0; 
+      var localResult: eltType = 0;
       var threadResults: [0..#maxThreads] eltType = 0;
 
       coforall tid in 0..#maxThreads {
@@ -709,7 +709,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
       result += r;
     }
   }
-  
+
   return result;
 }
 
@@ -775,8 +775,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 /*
   Returns the inverse of ``A`` square matrix A.
-  
-  
+
+
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
@@ -791,14 +791,14 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 
   const n = Adom.shape(1);
   var ipiv : [1..n] c_int;
-  
+
   if (!overwrite) {
     var A_clone = A;
     LAPACK.getrf(lapack_memory_order.row_major, A_clone, ipiv);
     LAPACK.getri(lapack_memory_order.row_major, A_clone, ipiv);
     return A_clone;
   }
-  
+
   LAPACK.getrf(lapack_memory_order.row_major, A, ipiv);
   LAPACK.getri(lapack_memory_order.row_major, A, ipiv);
 
@@ -1042,8 +1042,12 @@ proc triu(A: [?D] ?eltType, k=0) {
 
 
 
-/* Return `true` if matrix is diagonal */
-proc isDiag(A: [?D] ?eltType) {
+/* Return `true` if matrix is diagonal. */
+proc isDiag(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isDiag(A);
+}
+
+private proc _isDiag(A: [?D] ?eltType) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
 
@@ -1056,7 +1060,7 @@ proc isDiag(A: [?D] ?eltType) {
 
 
 /* Return `true` if matrix is Hermitian */
-proc isHermitian(A: [?D]) {
+proc isHermitian(A: [?D]) where isDenseMatrix(A) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
   if !isSquare(A) then
@@ -1072,7 +1076,7 @@ proc isHermitian(A: [?D]) {
 
 
 /* Return `true` if matrix is symmetric */
-proc isSymmetric(A: [?D]) : bool {
+proc isSymmetric(A: [?D]) where isDenseMatrix(A) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
   if !isSquare(A) then
@@ -1518,9 +1522,9 @@ A common usage of this interface might look like this:
   // var A: [D] int;
 
   // Add indices to the sparse domain along the diagonal
-  D += (0,0);
   D += (1,1);
   D += (2,2);
+  D += (3,3);
 
   // Set all nonzero indices to the value of 1
   A = 1;
@@ -1602,7 +1606,7 @@ module Sparse {
 
   pragma "no doc"
   /* Return a CSR matrix over domain: ``Dom`` - Dense case */
-  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && 
+  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 &&
                                                        isDenseDom(Dom) &&
                                                        isLocalDom(Dom) {
     var csrDom = CSRDomain(Dom);
@@ -2067,13 +2071,13 @@ module Sparse {
 
   pragma "no doc"
   proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
-                where isSparseArr(X) { 
+                where isSparseArr(X) {
       if D.rank != 2 then
         halt("Wrong rank for setDiag");
 
       if D.shape(1) != D.shape(2) then
         halt("setDiag only supports square matrices");
-        
+
       var start, end = 0;
       if (k >= 0) { // upper or main diagonal
         start = 1;
@@ -2092,6 +2096,41 @@ module Sparse {
         X(ind) = val;
       }
   }
+
+
+  /* Return ``true`` if sparse matrix is diagonal. Supports CSR and COO arrays. */
+  proc isDiag(A: [?D] ?eltType) where isSparseArr(A) {
+    return _isDiag(A);
+  }
+
+
+  /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
+  proc isHermitian(A: [?D]) where isSparseArr(A) {
+    if D.rank != 2 then
+      compilerError("Rank size is not 2");
+    if !isSquare(A) then
+      return false;
+
+    for (i, j) in D {
+      if A[i, j] != conjg(A[j, i]) then return false;
+    }
+    return true;
+  }
+
+
+  /* Return ``true`` if sparse matrix is symmetric. Supports CSR and COO arrays. */
+  proc isSymmetric(A: [?D]) where isSparseArr(A): bool {
+    if D.rank != 2 then
+      compilerError("Rank size is not 2");
+    if !isSquare(A) then
+      return false;
+
+    for (i, j) in D {
+      if A[i, j] != A[j, i] then return false;
+    }
+    return true;
+  }
+
 
   //
   // Type helpers
