@@ -2056,12 +2056,17 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   wrapper->addFlag(FLAG_INLINE);
 
+  Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
+
+  CallExpr* n = new CallExpr(PRIM_NEW,
+                             new NamedExpr(astr_chpl_manager,
+                                           new SymExpr(dtUnmanaged->symbol)),
+                             new SymExpr(undecorated->symbol));
+
   wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
                                      new CallExpr(PRIM_CAST,
                                                   parent->symbol,
-                                                  new CallExpr(PRIM_NEW,
-                                                               new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
-                                                               new SymExpr(ct->symbol)))));
+                                                  n)));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 
