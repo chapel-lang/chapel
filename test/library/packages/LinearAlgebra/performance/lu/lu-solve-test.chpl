@@ -2,6 +2,7 @@ use LinearAlgebra;
 use Math;
 
 config const n = 10;
+config const epsilon = 0.000001;
 
 proc sinMatrix(n) {
   var A = Matrix(n);
@@ -32,7 +33,13 @@ B[3,..] = [2.0, 5.0, 2.0, 1.0, 1.0];
 B[4,..] = [-2.0,1.0, 2.5, 3.0, 1.0];
 B[5,..] = [-1.0,1.0, 0.0, 3.5, 0.5];
 var b: [{1..5}] real = [1,2,3,4,5];
+var c: [{1..5}] real = [1,2,3,4,5];
 
 var x = solve(B, b);
 
-writeln(x);
+for (control, result) in zip(c, dot(B,x)) {
+  if abs(control-result) > epsilon {
+    halt("Verification failed");
+  }
+}
+writeln("Verification successful");
