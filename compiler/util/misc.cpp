@@ -53,6 +53,7 @@ static int         err_print        =    0;
 static int         err_ignore       =    0;
 
 static FnSymbol*   err_fn           = NULL;
+static bool        err_fn_header_printed = false;
 
 static bool forceWidePtrs();
 
@@ -242,6 +243,62 @@ static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
   return retval;
 }
 
+// Print instantiation information for err_fn.
+// Should be called at USR_STOP or just before the next
+// error changing err_fn is printed.
+static void printInstantiationNoteForLastError() {
+  if (err_fn_header_printed && err_fn && err_fn->instantiatedFrom) {
+
+    // Find the first call to the function within the instantiation point,
+    // so that we can have a better error message line number.
+    BlockStmt* instantiationPoint = err_fn->instantiationPoint();
+    Expr* bestPoint = instantiationPoint;
+    std::vector<CallExpr*> calls;
+    collectFnCalls(instantiationPoint, calls);
+    for_vector(CallExpr, call, calls) {
+      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+        if (fn == err_fn) {
+          bestPoint = call;
+          break;
+        }
+      }
+    }
+
+    // TODO
+    err_fn->userString = NULL;
+
+    fprintf(stderr,
+            "%s:%d: %s '%s' instantiated here",
+            cleanFilename(bestPoint),
+            bestPoint->linenum(),
+            (err_fn->isIterator() ? "Iterator" : "Function"),
+            err_fn->name);
+
+    bool printedWith = false;
+    FnSymbol* genericFn = err_fn->instantiatedFrom;
+
+    for_formals(genericArg, genericFn) {
+      Symbol* sym = err_fn->substitutions.get(genericArg);
+      if (sym != NULL) {
+        if (printedWith == false) {
+          printedWith = true;
+          fprintf(stderr, " with");
+        }
+        Type* t = sym->getValType();
+        fprintf(stderr, " %s:%s", genericArg->name, toString(t));
+        Immediate* imm = getSymbolImmediate(sym);
+        if (imm) {
+          const size_t bufSize = 128;
+          char buf[bufSize];
+          snprint_imm(buf, bufSize, *imm);
+          fprintf(stderr, " = %s", buf);
+        }
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+}
+
 static bool printErrorHeader(const BaseAST* ast) {
   if (!err_print) {
     if (const Expr* expr = toConstExpr(ast)) {
@@ -255,6 +312,8 @@ static bool printErrorHeader(const BaseAST* ast) {
       fn = findNonTaskCaller(fn);
 
       if (fn && fn != err_fn) {
+        printInstantiationNoteForLastError();
+
         err_fn = fn;
 
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
@@ -297,6 +356,8 @@ static bool printErrorHeader(const BaseAST* ast) {
                       (err_fn->isIterator() ? "iterator" : "function"),
                       err_fn->name);
             }
+            // We printed the header, so can print instantiation notes.
+            err_fn_header_printed = true;
           }
         }
       }
@@ -568,6 +629,8 @@ static void vhandleError(FILE*          file,
 
 
 void exitIfFatalErrorsEncountered() {
+  printInstantiationNoteForLastError();
+
   if (exit_eventually) {
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
