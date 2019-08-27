@@ -217,6 +217,8 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
               if (strcmp(modSym->name, use->unresolved) == 0) {
                 printf("patching in %s\n", modSym->name);
                 SET_LINENO(this);
+                scope->extend(modSym);
+                scope->describe();
                 scope->enclosingModule()->moduleUseAdd(modSym);
                 updateEnclosingBlock(scope, modSym);
                 validateList();
