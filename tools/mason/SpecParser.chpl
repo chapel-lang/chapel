@@ -141,7 +141,7 @@ proc parseSpec(ref tokenList: list(string)) throws {
     throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
-    var toke = try! tokenList.pop(1);
+    var toke = tokenList.pop(1);
 
     // get package name (should always be first token)
     if package.length < 1 {

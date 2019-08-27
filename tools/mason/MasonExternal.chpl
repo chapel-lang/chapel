@@ -318,7 +318,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        try! dependencies.pop(1);
+        dependencies.pop(1);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.

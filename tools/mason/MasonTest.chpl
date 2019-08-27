@@ -82,11 +82,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
-    //
-    // TODO: Temporarily use `toArray` here because `list` does not yet
-    // support parallel iteration, which the `getSrcCode` method _must_
-    // have for good performance.
-    //
+
     getSrcCode(sourceList, show);
     const project = lockFile["root"]["name"].s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");

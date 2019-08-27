@@ -365,7 +365,7 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    try! deps.pop(1);
+    deps.pop(1);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
