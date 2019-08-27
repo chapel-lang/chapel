@@ -787,9 +787,11 @@ int FnSymbol::hasGenericFormals(SymbolMap* map) const {
         }
       }
 
+    }
+
     // init= on generic types need to be considered generic so that 'this.type'
     // stuff will resolve.
-    } else if (isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
+    if (map == NULL && formal == _this && isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
       isGeneric = true;
     }
 
