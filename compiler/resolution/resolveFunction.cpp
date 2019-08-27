@@ -506,6 +506,11 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
         ensureInMethodList(fn);
       }
 
+      if (fn->isCopyInit()) {
+        Symbol* act = toSymExpr(forCall->get(2))->symbol();
+        act->type = fn->_this->getValType();
+      }
+
       if (forCall != NULL) {
         resolveAlsoParallelIterators(fn, forCall);
       }
@@ -1182,11 +1187,6 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     fn->retType = retType;
 
-    if (retType->symbol->hasFlag(FLAG_GENERIC) &&
-        fn->retTag == RET_TYPE) {
-      USR_FATAL_CONT(fn, "returning a generic type variable is not supported");
-    }
-
   } else {
 
     // Update the yielded type argument if it was requested
@@ -1659,6 +1659,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
             bool typesDiffer = (rhsType          != lhsType &&
                                 rhsType->refType != lhsType &&
                                 rhsType          != lhsType->refType);
+            bool isTypeOf = rhsCall && rhsCall->isPrimitive(PRIM_TYPEOF);
 
             SET_LINENO(rhs);
 
@@ -1809,7 +1810,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 casts.add(cast);
               }
 
-            } else {
+            } else if (!isTypeOf) {
               // handle adding casts for a regular PRIM_MOVE
 
               if (typesDiffer) {
