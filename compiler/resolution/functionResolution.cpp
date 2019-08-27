@@ -760,7 +760,7 @@ bool canInstantiate(Type* actualType, Type* formalType) {
       if (isBuiltinGenericClassType(formalC))
         return true;
 
-      if (AggregateType* atActual = toAggregateType(actualC)) {
+      if (isAggregateType(actualC)) {
         if (instantiatedFieldsMatch(actualType, formalType)) {
           return true;
         }
@@ -768,7 +768,7 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     }
   } else {
     // Check for e.g. R(int) -> R (classes are handled above)
-    if (AggregateType* atActual = toAggregateType(actualType)) {
+    if (isAggregateType(actualType)) {
       if (instantiatedFieldsMatch(actualType, formalType)) {
         return true;
       }

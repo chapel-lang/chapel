@@ -3230,7 +3230,7 @@ static bool doesCallContainGenericActual(CallExpr* call) {
       if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type))) {
         if (at->isGeneric() &&
             !at->isGenericWithDefaults() &&
-            at->genericFields.size() != call->numActuals()) {
+            at->genericFields.size() != (unsigned int)(call->numActuals())) {
           return true;
         }
       }

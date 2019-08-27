@@ -1609,8 +1609,6 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
     }
   }
 
-  Symbol* renameTo = NULL;
-
   symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
 
   retval->instantiatedFrom = this;
@@ -1652,12 +1650,10 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
     }
 
     retval->substitutions.put(field, sym);
-    renameTo = sym;
     paramMap.put(field,sym);
 
   } else {
     retval->substitutions.put(field, symType->symbol);
-    renameTo = symType->symbol;
   }
 
   if (field->hasFlag(FLAG_TYPE_VARIABLE) == true && givesType(sym) == true) {
