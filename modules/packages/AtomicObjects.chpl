@@ -437,7 +437,8 @@ prototype module AtomicObjects {
       this.complete();
       if hasABASupport {
         var ptr : c_void_ptr;
-        posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType?)));
+        var retval = posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType?)));
+        if retval then halt();
         this.atomicVar = ptr:_ddata(_ABAInternal(objType?));
         c_memset(ptr, 0, c_sizeof(ABA(objType?)));
       }
