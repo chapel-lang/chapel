@@ -1254,10 +1254,13 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
   Type* symType = sym->typeInfo();
   // Normalize `_owned(anymanaged-MyClass)` to `_owned(borrowed MyClass)`
   if (isManagedPtrType(this)) {
-    if (isClassLike(symType)) {
+    if (isClassLikeOrManaged(symType)) {
       ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
       if (isNilableClassType(symType))
         d = CLASS_TYPE_BORROWED_NILABLE;
+      if (isManagedPtrType(symType))
+        USR_FATAL_CONT(insnPoint, "duplicate decorators - %s %s",
+                                  toString(this), toString(symType));
       symType = ::getDecoratedClass(symType, d);
     }
   }
