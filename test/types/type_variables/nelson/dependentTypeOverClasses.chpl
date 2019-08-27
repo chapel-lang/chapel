@@ -9,7 +9,7 @@ class N {
 }
 
 proc main() {
-  var n = new owned N(X=unmanaged A);
+  var n = new owned N(X=A);
   n.x.hello();
 }
 
