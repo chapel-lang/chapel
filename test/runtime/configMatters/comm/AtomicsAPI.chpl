@@ -1,8 +1,6 @@
 // Functions to test the atomics API
 
 // TODO Add functions to test non sequentially consistent memory orders:
-// - peak()
-// - poke()
 // - fences
 // - memory_orders passed to functions
 

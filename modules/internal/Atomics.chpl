@@ -308,23 +308,35 @@ module Atomics {
       }
     }
 
+    pragma "no doc"
+    proc const writeThis(x) {
+      x <~> read();
+    }
+
+    // Deprecated //
+
     /*
-       :returns: Stored value using memory_order_relaxed.
+       Non-atomically reads the stored value.
+
+       .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
+
     */
+    pragma "last resort"
     inline proc const peek(): bool {
+      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
       return this.read(order=memory_order_relaxed);
     }
 
     /*
-       Stores `value` as the new value using memory_order_relaxed.
-    */
-    inline proc poke(value:bool): void {
-      this.write(value, order=memory_order_relaxed);
-    }
+       Non-atomically writes `value`.
 
-    pragma "no doc"
-    proc const writeThis(x) {
-      x <~> read();
+       .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
+
+    */
+    pragma "last resort"
+    inline proc poke(value:bool): void {
+      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
+      this.write(value, order=memory_order_relaxed);
     }
   }
 
@@ -604,23 +616,35 @@ module Atomics {
       }
     }
 
+    pragma "no doc"
+    proc const writeThis(x) {
+      x <~> read();
+    }
+
+    // Deprecated //
+
     /*
-       :returns: Stored value using memory_order_relaxed.
+       Non-atomically reads the stored value.
+
+       .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
+
     */
+    pragma "last resort"
     inline proc const peek(): T {
+      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
       return this.read(order=memory_order_relaxed);
     }
 
     /*
-       Stores `value` as the new value using memory_order_relaxed.
-    */
-    inline proc poke(value:T): void {
-      this.write(value, order=memory_order_relaxed);
-    }
+       Non-atomically writes `value`.
 
-    pragma "no doc"
-    proc const writeThis(x) {
-      x <~> read();
+       .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
+
+    */
+    pragma "last resort"
+    inline proc poke(value:T): void {
+      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
+      this.write(value, order=memory_order_relaxed);
     }
   }
 
