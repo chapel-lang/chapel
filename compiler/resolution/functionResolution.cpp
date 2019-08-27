@@ -6779,8 +6779,21 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             manager = dtUnmanaged;
           else
             manager = dtOwned;
+        } else if (isClass(type) && !fLegacyClasses) {
+          manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           manager = dtOwned;
+        }
+      } else {
+        // Manager is specified, so check for duplicate management decorators
+        if (!isClassLikeOrManaged(type)) {
+          USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
+                                  toString(manager), toString(type));
+        } else {
+          ClassTypeDecorator d = classTypeDecorator(type);
+          if (!isDecoratorUnknownManagement(d))
+            USR_FATAL_CONT(newExpr, "duplicate decorators - %s %s",
+                                    toString(manager), toString(type));
         }
       }
 
