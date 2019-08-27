@@ -13,6 +13,7 @@ Initializing Modules:
     ChapelBase
     Atomics
      MemConsistency
+    NetworkAtomics
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -36,6 +37,7 @@ Initializing Modules:
           MergeSort
           SelectionSort
         ChapelDistribution
+         ChapelLocks
          LinkedLists
         SysError
         ChapelDebugPrint
