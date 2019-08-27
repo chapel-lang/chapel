@@ -186,6 +186,9 @@ prototype module AtomicObjects {
       }
     }
 
+    // srcvp: Address of a 16-byte aligned address or else General Protection Fault (GPF)
+    // valvp: New value to replace the old
+    // retvalp: Stores the old value
     static inline void exchange128bit(void *srcvp, void *valvp, void *retvalvp) {
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
       uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
@@ -236,15 +239,6 @@ prototype module AtomicObjects {
 
   pragma "no doc"
   extern proc chpl_return_wide_ptr_node(c_nodeid_t, c_void_ptr) : wide_ptr_t;
-
-  /*
-     Constants used for managing compression and decompression for atomic objects. 
-     It should be noted that if numLocales >= 2^16, then any
-     object being operated on is added to the descriptor table, which will leak data
-     if never freed with '_delete' (although if the memory is reused,
-     so will the memory managed by this object). The descriptor table will be cleaned
-     up automatically when this goes out of scope.
-  */
 
   if numLocales >= 2**16 {
     writeln("[WARNING]: AtomicObjects currently only supports up to 65535 locales!");
@@ -329,9 +323,10 @@ prototype module AtomicObjects {
     // have the same type.
     var wideptr = chpl_return_wide_ptr_node(locId, uintToCVoidPtr(addr));
     var newObj : objType?;
+    // Ensure that newObj is a wide pointer
     on Locales[here.id] do newObj = nil;
     c_memcpy(c_ptrTo(newObj), c_ptrTo(wideptr), 16);
-    return newObj!;
+    return newObj;
   }
 
   /*
