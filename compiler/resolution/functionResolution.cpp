@@ -6786,17 +6786,11 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         }
       } else {
         // Manager is specified, so check for duplicate management decorators
-        if (fLegacyClasses == false) {
-          if (!isClassLikeOrManaged(type)) {
-            USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
-                                    toString(manager), toString(type));
-          } else {
-            ClassTypeDecorator d = classTypeDecorator(type);
-            if (!isDecoratorUnknownManagement(d))
-              USR_FATAL_CONT(newExpr, "duplicate decorators - %s %s",
-                                      toString(manager), toString(type));
-          }
-        }
+        if (!isClassLikeOrManaged(type))
+          USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
+                                  toString(manager), toString(type));
+
+        checkDuplicateDecorators(manager, type, newExpr);
       }
 
       // if manager is set, and we're not calling the manager's init function,
@@ -9738,6 +9732,18 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
     }
   }
 
+}
+
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
+  if (fLegacyClasses == false) {
+    if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
+      ClassTypeDecorator d = classTypeDecorator(decorated);
+
+      if (!isDecoratorUnknownManagement(d))
+        USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
+                             toString(decorator), toString(decorated));
+    }
+  }
 }
 
 /************************************* | **************************************
