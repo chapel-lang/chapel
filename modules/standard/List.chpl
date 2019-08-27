@@ -432,37 +432,40 @@ module List {
         //
         // Double the block array if we've run out of space.
         //
-        if lastArrayIdx >= (_arrayCapacity - 1) {
-          var _narrays = _makeBlockArray(_arrayCapacity * 2);
+        if lastArrayIdx >= (_arrayCapacity - 1) then
+          on this {
+            var _narrays = _makeBlockArray(_arrayCapacity * 2);
 
-          for i in 0..#_arrayCapacity do
-            _narrays[i] = _arrays[i];
+            for i in 0..#_arrayCapacity do
+              _narrays[i] = _arrays[i];
 
-          _freeBlockArray(_arrays, _arrayCapacity);
-          _arrays = _narrays;
-          _arrayCapacity *= 2;
-        }
+            _freeBlockArray(_arrays, _arrayCapacity);
+            _arrays = _narrays;
+            _arrayCapacity *= 2;
+          }
 
         //
         // Add a new block to the block array that is twice the size of the
         // previous block.
         //
-        const oldLast = _arrays[lastArrayIdx];
-        const oldLastCapacity = _getArrayCapacity(lastArrayIdx);
+        on this {
+          const oldLast = _arrays[lastArrayIdx];
+          const oldLastCapacity = _getArrayCapacity(lastArrayIdx);
+          lastArrayIdx += 1;
 
-        lastArrayIdx += 1;
+          ref newLast = _arrays[lastArrayIdx];
+          const newLastCapacity = oldLastCapacity * 2;
 
-        ref newLast = _arrays[lastArrayIdx];
-        const newLastCapacity = oldLastCapacity * 2;
+          _sanity(oldLast != nil);
+          _sanity(newLast == nil);
 
-        _sanity(oldLast != nil);
-        _sanity(newLast == nil);
+          newLast = _makeArray(newLastCapacity);
 
-        newLast = _makeArray(newLastCapacity);
-
-        _totalCapacity += newLastCapacity;
-        req -= newLastCapacity;
+          _totalCapacity += newLastCapacity;
+          req -= newLastCapacity;
+        }
       }
+      return;
     }
 
     //
@@ -522,6 +525,7 @@ module List {
           _move(src, dst);
         }
       }
+      return;
     }
 
     //
@@ -537,14 +541,17 @@ module List {
 
       if idx == _size then
         return;
+      
+      on this {
+        for i in idx..(_size - 1) {
+          ref src = _getRef(i + 1);
+          ref dst = _getRef(i);
+          _move(src, dst);
+        }
 
-      for i in idx..(_size - 1) {
-        ref src = _getRef(i + 1);
-        ref dst = _getRef(i);
-        _move(src, dst);
+        _maybeReleaseMem(1);
       }
-
-      _maybeReleaseMem(1);
+      return;
     }
 
     //
@@ -814,8 +821,8 @@ module List {
           result = true;
         } else if _withinBounds(idx) {
           _expand(idx, size);
-          var i = idx;
 
+          var i = idx;
           for x in items {
             pragma "no auto destroy"
             var cpy = x;
@@ -982,43 +989,37 @@ module List {
       :rtype: `eltType`
     */
     proc pop(idx: int=size): eltType {
-      // We just need memory here, avoid possible side effects.
-      pragma "no init"
-      var result: eltType;
 
-      on this {
-        _enter();
+      //
+      // TODO: We would like to put this in an on statement, but we can't yet
+      // because there is no way to "default initialize a non-nillable class",
+      // even if the variable is pragma "no init". Either we need to support
+      // returning from on statements, or make the "no init" pragma work with
+      // non-nillable classes.
+      //
+      _enter();
 
-        if boundsChecking && _size <= 0 then {
-          _leave();
-          const msg = "Called \"pop\" on an empty list.";
-          halt(msg);
-        }
-
-        if boundsChecking && !_withinBounds(idx) {
-          _leave();
-          const msg = "List \"pop\" index out of bounds: " + idx:string;
-          halt(msg);
-        }
-
-        ref item = _getRef(idx);
-
-        //
-        // This workaround is necessary because we cannot return from on
-        // statements right now.
-        //
-        pragma "no auto destroy"
-        var tmp = item;
-        _move(tmp, result);
-
-        _destroy(item);
-        // May release memory based on size before pop.
-        _collapse(idx);
-        _size -= 1;
-
+      if boundsChecking && _size <= 0 then {
         _leave();
+        const msg = "Called \"pop\" on an empty list.";
+        halt(msg);
       }
 
+      if boundsChecking && !_withinBounds(idx) {
+        _leave();
+        const msg = "List \"pop\" index out of bounds: " + idx:string;
+        halt(msg);
+      }
+
+      ref item = _getRef(idx);
+      var result = item;
+
+      _destroy(item);
+      // May release memory based on size before pop.
+      _collapse(idx);
+      _size -= 1;
+
+      _leave();
       return result;
     }
 
@@ -1030,37 +1031,44 @@ module List {
     //
     pragma "no doc"
     proc _fireAllDestructors() {
-      for i in 1.._size {
-        ref item = _getRef(i);
-        _destroy(item);
+      on this {
+        for i in 1.._size {
+          ref item = _getRef(i);
+          _destroy(item);
+        }
+        _size = 0;
       }
-      _size = 0;
+      return;
     }
 
     pragma "no doc"
     proc _freeAllArrays() {
 
-      if _arrays == nil then return;
+      if _arrays == nil then
+        return;
 
       _sanity(_totalCapacity != 0);
       _sanity(_arrayCapacity != 0);
+    
+      on this {
+        // Remember to use zero-based indexing with `_ddata`!
+        for i in 0..#_arrayCapacity {
+          ref array = _arrays[i];
+          if array == nil then
+            continue;
+          const capacity = _getArrayCapacity(i);
+          _totalCapacity -= capacity;
+          _freeArray(array, capacity);
+          array = nil;
+        }
 
-      // Remember to use zero-based indexing with `_ddata`!
-      for i in 0..#_arrayCapacity {
-        ref array = _arrays[i];
-        if array == nil then
-          continue;
-        const capacity = _getArrayCapacity(i);
-        _totalCapacity -= capacity;
-        _freeArray(array, capacity);
-        array = nil;
+        _sanity(_totalCapacity == 0);
+
+        _freeBlockArray(_arrays, _arrayCapacity);
+        _arrays = nil;
+        _size = 0;
       }
-
-      _sanity(_totalCapacity == 0);
-
-      _freeBlockArray(_arrays, _arrayCapacity);
-      _arrays = nil;
-      _size = 0;
+      return;
     }
 
     /*
@@ -1072,18 +1080,20 @@ module List {
         references to the elements contained in this list.
     */
     proc clear() {
-      _enter();
+      on this {
+        _enter();
 
-      _fireAllDestructors();
-      _freeAllArrays();
-      _sanity(_totalCapacity == 0);
-      _sanity(_size == 0);
-      _sanity(_arrays == nil);
+        _fireAllDestructors();
+        _freeAllArrays();
+        _sanity(_totalCapacity == 0);
+        _sanity(_size == 0);
+        _sanity(_arrays == nil);
 
-      // All array operations assume a consistent initial state.
-      _firstTimeInitializeArrays();
+        // All array operations assume a consistent initial state.
+        _firstTimeInitializeArrays();
 
-      _leave();
+        _leave();
+      }
     }
 
     /*
@@ -1140,15 +1150,22 @@ module List {
       :rtype: `int`
     */
     proc count(x: eltType): int {
-      _enter();
-
       var result = 0;
 
-      for i in 1.._size do
-        if x == _getRef(i) then
-          result += 1;
+      on this {
+        _enter();
 
-      _leave();
+        var count = 0;
+
+        for i in 1.._size do
+          if x == _getRef(i) then
+            count += 1;
+
+        result = count;
+
+        _leave();
+      }
+
       return result;
     }
 
@@ -1188,16 +1205,12 @@ module List {
       :return: An element from this list.
     */
     proc const this(i: int) ref {
-      _enter();
-
       if boundsChecking && !_withinBounds(i) {
-        _leave();
         const msg = "Invalid list index: " + i:string;
         halt(msg);
       }
 
       ref result = _getRef(i);
-      _leave();
       return result;
     }
 
@@ -1316,13 +1329,17 @@ module List {
       The current number of elements contained in this list.
     */
     inline proc const size {
+      var result = 0;
 
       //
       // TODO: Ditto the above code comment.
       //
-      _enter();
-      var result = _size;
-      _leave();
+      on this {
+        _enter();
+        result = _size;
+        _leave();
+      }
+
       return result;
     }
 
@@ -1333,14 +1350,20 @@ module List {
       :return: A new DefaultRectangular array.
     */
     proc toArray(): [] eltType {
-      _enter();
-
       var result: [1.._size] eltType;
 
-      for i in 1.._size do
-        result[i] = _getRef(i);
+      on this {
+        _enter();
 
-      _leave();
+        var tmp: [1.._size] eltType;
+
+        for i in 1.._size do
+          tmp[i] = _getRef(i);
+
+        result = tmp;
+
+        _leave();
+      }
 
       return result;
     }
