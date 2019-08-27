@@ -643,14 +643,18 @@ static bool instantiatedFieldsMatch(Type* actualType, Type* formalType) {
         formalIdx += 1;
       } else {
         const char* name = fields[i]->name;
-        Type* actualField = actual->getField(name)->type;
-        Type* formalField = formal->getField(name)->type;
-        if (actualField == formalField) {
-          ret = true;
-        } else if (formalField->symbol->hasFlag(FLAG_GENERIC) &&
-                   isAggregateType(formalField) &&
-                   isAggregateType(actualField) &&
-                   instantiatedFieldsMatch(actualField, formalField)) {
+        Symbol* actualField = actual->getField(name);
+        Symbol* formalField = formal->getField(name);
+        if (actualField->type == formalField->type) {
+          if (formalField->hasFlag(FLAG_PARAM)) {
+            ret = (paramMap.get(actualField) == paramMap.get(formalField));
+          } else {
+            ret = true;
+          }
+        } else if (formalField->type->symbol->hasFlag(FLAG_GENERIC) &&
+                   isAggregateType(formalField->type) &&
+                   isAggregateType(actualField->type) &&
+                   instantiatedFieldsMatch(actualField->type, formalField->type)) {
           ret = true;
         } else {
           ret = false;
