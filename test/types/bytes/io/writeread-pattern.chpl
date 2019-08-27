@@ -27,26 +27,53 @@ proc test(byteRange) {
   }
 
   var bytesChannel = opentmp();
-  var bytesWriter = bytesChannel.writer();
-  var bytesReader = bytesChannel.reader();
 
-  // write them to a channel
-  bytesWriter.writef("%ht", randomBytes);
-  bytesWriter.close();
-
-  // read them into a different object
-
-  var readBytes = b"";
-  bytesReader.readf("%ht", readBytes);
-  bytesReader.close();
-
-  // compare
-  if readBytes == randomBytes {
-    writeln("Success");
+  {
+    // write them to a channel
+    var bytesWriter = bytesChannel.writer();
+    bytesWriter.writef("%ht", randomBytes);
+    bytesWriter.close();
   }
-  else {
-    writeln("Failed: Bytes generated and read differ!");
+
+  {
+    // read them into a different object
+    var bytesReader = bytesChannel.reader();
+    var readBytes = b"";
+    bytesReader.readf("%ht", readBytes);
+    bytesReader.close();
+    // compare
+    if readBytes == randomBytes {
+      writeln("Success");
+    }
+    else {
+      writeln("Failed: Bytes generated and read differ!");
+    }
   }
+
+  {
+    // write them to a channel
+    var bytesWriter = bytesChannel.writer();
+    bytesWriter.writef("%|*s", randomBytes.length, randomBytes);
+    bytesWriter.close();
+  }
+
+  {
+    // read them into a different object
+    var bytesReader = bytesChannel.reader();
+    var readBytes = b"";
+    var readLen = randomBytes.length;
+    bytesReader.readf("%|*s", readLen, readBytes);
+    bytesReader.close();
+    // compare
+    if readBytes == randomBytes {
+      writeln("Success");
+    }
+    else {
+      writeln("Failed: Bytes generated and read differ!");
+    }
+  }
+
+
 }
 
 test(0..255);
