@@ -211,6 +211,25 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
 
     } else {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(src)) {
+        for_alist(stmt, theProgram->block->body) {
+          if (DefExpr* def = toDefExpr(stmt)) {
+            if (ModuleSymbol* modSym = toModuleSymbol(def->sym)) {
+              if (strcmp(modSym->name, use->unresolved) == 0) {
+                printf("patching in %s\n", modSym->name);
+                SET_LINENO(this);
+                scope->enclosingModule()->moduleUseAdd(modSym);
+                updateEnclosingBlock(scope, modSym);
+                validateList();
+                return;
+              }
+            }
+          }
+          /*
+          scope->enclosingModule()->moduleUseAdd(modSym);
+          updateEnclosingBlock(scope, sym);
+          validateList();
+          */
+        }
         USR_FATAL(this, "Cannot find module or enum '%s'", use->unresolved);
       } else {
         USR_FATAL(this, "Cannot find module or enum");

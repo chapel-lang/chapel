@@ -262,9 +262,16 @@ static void scopeResolve(const AList&        alist,
 
 static void scopeResolve(ModuleSymbol*       module,
                          const ResolveScope* parent) {
-  ResolveScope* scope = new ResolveScope(module, parent);
+  if (module->modTag == MOD_USER &&
+      module->defPoint->getModule() == theProgram) {
+    ResolveScope* scope = new ResolveScope(module, NULL);
 
-  scopeResolve(module->block->body, scope);
+    scopeResolve(module->block->body, scope);
+  } else {
+    ResolveScope* scope = new ResolveScope(module, parent);
+
+    scopeResolve(module->block->body, scope);
+  }
 }
 
 static void scopeResolve(BlockStmt*          block,
@@ -1645,6 +1652,11 @@ static void lookup(const char*           name,
                    Vec<BaseAST*>&        visited,
 
                    std::vector<Symbol*>& symbols) {
+  bool debug = false;
+  if (strcmp("MMM", name) == 0) {
+    debug = true;
+    printf("Looking up MMM\n");
+  }
 
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
@@ -1665,8 +1677,14 @@ static void lookup(const char*           name,
 
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
-      if (outerScope != NULL)
-        lookup(name, context, outerScope, visited, symbols);
+      if (outerScope != NULL) {
+        if (debug)
+          printf("doing an outerscope lookup\n");
+        if (scope->getModule()->modTag != MOD_USER ||
+            outerScope->getModule() != theProgram) {
+          lookup(name, context, outerScope, visited, symbols);
+        }
+      }
 
     } else {
       // Otherwise, look in the next scope up.
@@ -1677,6 +1695,8 @@ static void lookup(const char*           name,
         // within the aggregate type
         if (AggregateType* ct =
             toAggregateType(canonicalClassType(fn->_this->type))) {
+          if (debug)
+            printf("doing an aggregate type lookup\n");
           lookup(name, context, ct->symbol, visited, symbols);
         }
       }
@@ -1685,6 +1705,8 @@ static void lookup(const char*           name,
       if (symbols.size() == 0) {
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
+        if (debug)
+          printf("doing a last lookup\n");
         lookup(name, context, getScope(scope), visited, symbols);
       }
     }
