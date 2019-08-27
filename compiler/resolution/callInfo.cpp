@@ -131,7 +131,8 @@ void CallInfo::haltNotWellFormed() const {
                 "type unknown",
                 sym->name);
 
-    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
+    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true &&
+               sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       USR_FATAL_CONT(call,
                 "the type of the actual argument '%s' is generic",
                 sym->name);
