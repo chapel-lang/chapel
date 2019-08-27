@@ -506,7 +506,7 @@ prototype module AtomicObjects {
     pragma "no doc"
     inline proc doABACheck() param {
       if !hasABASupport {
-        compilerWarning("Attempt to use ABA API from AtomicObject(hasABASupport=", hasABASupport, ", hasGlobalSupport=", hasGlobalSupport, ")");
+        compilerError("Attempt to use ABA API from AtomicObject(hasABASupport=", hasABASupport, ", hasGlobalSupport=", hasGlobalSupport, ")");
       }
     }
 
