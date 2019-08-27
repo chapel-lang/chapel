@@ -326,7 +326,13 @@ prototype module EpochManager {
     }
   }
 
+
   pragma "no doc"
+  // The LimboList is a linked list that is optimized for insertion and bulk removal.
+  // Atomic exchanges are entirely wait-free and are at least an order of magnitude faster
+  // than compare-exchange based one. This data structure supports a multi-producer but
+  // single and non-concurrent consumer, which is ideal for when we reclaim from the limbo
+  // list when no other task has access to said limbo list.
   prototype module LimboListModule {
 
     use AtomicObjects;
@@ -923,22 +929,6 @@ prototype module EpochManager {
     }
 
     pragma "no doc"
-    proc getMinimumEpoch() : uint {
-      if active_tasks.read() > 0 {
-        var minEpoch = max(uint);
-        for tok in allocated_list {
-          var local_epoch = tok.local_epoch.read();
-          if (local_epoch > 0) then
-            minEpoch = min(minEpoch, local_epoch);
-        }
-
-        if (minEpoch != max(uint)) then return minEpoch;
-      }
-
-      return 0;
-    }
-
-    pragma "no doc"
     proc deferDelete(tok : unmanaged _token, x : unmanaged object?) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
@@ -971,16 +961,24 @@ prototype module EpochManager {
         return;
       };
 
-      var minEpoch = max(uint);
-      coforall loc in Locales with (min reduce minEpoch) do on loc {
-        var _this = getPrivatizedInstance();
-        var localeMinEpoch = _this.getMinimumEpoch();
-        if localeMinEpoch != 0 then
-          minEpoch = min(minEpoch, localeMinEpoch);
-      }
+      // TODO: Right now we do not utilize all 3 epochs; in the future,
+      // I need to check how crossbeam does it and go from there.
       const current_global_epoch = global_epoch.read();
-
-      if minEpoch == current_global_epoch || minEpoch == max(uint) {
+      var safeToReclaim = true;
+      coforall loc in Locales with (&& reduce safeToReclaim) do on loc {
+        var _this = getPrivatizedInstance();
+        if _this.active_tasks.read() != 0 {
+          for tok in _this.allocated_list {
+            var local_epoch = tok.local_epoch.read();
+            if (local_epoch != 0 && local_epoch != current_global_epoch) {
+              safeToReclaim = false;
+              break;
+            } 
+          }
+        }
+      }
+      
+      if safeToReclaim {
         const new_epoch = (current_global_epoch % EBR_EPOCHS) + 1;
         global_epoch.write(new_epoch);
         coforall loc in Locales do on loc {
