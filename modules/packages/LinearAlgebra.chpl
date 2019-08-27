@@ -434,15 +434,15 @@ proc eye(Dom: domain(2), type eltType=real) {
 //
 
 
-/* Sets the value of a diagonal in a matrix. If the matrix is sparse, 
+/* Sets the value of a diagonal in a matrix. If the matrix is sparse,
     indices on the diagonal will be added to its domain
 
     ``k > 0``, represents an upper diagonal starting
-    from the ``k``th column, ``k == 0`` represents the main 
+    from the ``k``th column, ``k == 0`` represents the main
     diagonal, ``k < 0`` represents a lower diagonal starting
     from the ``-k``th row. ``k`` is 0-indexed.
 */
-proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0) 
+proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
               where isDenseMatrix(X) {
   var start, end = 0;
   if (k >= 0) { // upper or main diagonal
@@ -609,7 +609,7 @@ private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   else if Adom.rank == 2 && Bdom.rank == 2 then
     return _matmatMult(A, B);
   else
-    compilerError("Rank sizes are not 1 or 2");
+    compilerError("Ranks are not 1 or 2");
 }
 
 
@@ -619,7 +619,7 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   where BLAS.isBLASType(eltType) && usingBLAS
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
-    compilerError("Rank sizes are not 2 and 1");
+    compilerError("Ranks are not 2 and 1");
   if !trans {
     if Adom.shape(2) != Xdom.shape(1) then
       halt("Mismatched shape in matrix-vector multiplication");
@@ -647,7 +647,7 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where BLAS.isBLASType(eltType) && usingBLAS
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
-    compilerError("Rank sizes are not 2");
+    compilerError("Ranks are not 2");
   if Adom.shape(2) != Bdom.shape(1) then
     halt("Mismatched shape in matrix-matrix multiplication");
 
@@ -665,12 +665,12 @@ private proc isDistributed(a) param {
 /* Inner product of 2 vectors. */
 proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
   if Adom.rank != 1 || Bdom.rank != 1 then
-    compilerError("Rank sizes are not 1");
+    compilerError("Ranks are not 1");
   if Adom.size != Bdom.size then
     halt("Mismatched size in inner multiplication");
-    
+
   var result: eltType = 0;
-  
+
   if !isDistributed(A) {
     result = + reduce (A*B);
   }
@@ -680,11 +680,11 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
     var localResults: [Locales.domain] eltType = 0;
 
     coforall l in Locales do on l {
-      const maxThreads = if dataParTasksPerLocale==0 
+      const maxThreads = if dataParTasksPerLocale==0
                          then here.maxTaskPar else dataParTasksPerLocale;
       const localDomain = A.localSubdomain();
       const iterPerThread = divceil(localDomain.size, maxThreads);
-      var localResult: eltType = 0; 
+      var localResult: eltType = 0;
       var threadResults: [0..#maxThreads] eltType = 0;
 
       coforall tid in 0..#maxThreads {
@@ -709,7 +709,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
       result += r;
     }
   }
-  
+
   return result;
 }
 
@@ -717,7 +717,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
 /* Outer product of 2 vectors. */
 proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.rank != 1 || Bdom.rank != 1 then
-    compilerError("Rank sizes are not 1");
+    compilerError("Ranks are not 1");
 
   var C: [{Adom.dim(1), Bdom.dim(1)}] eltType;
   forall (i,j) in C.domain do
@@ -732,7 +732,7 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   where !usingBLAS || !BLAS.isBLASType(eltType)
 {
   if Adom.rank != 2 || Xdom.rank != 1 then
-    compilerError("Rank sizes are not 2 and 1");
+    compilerError("Ranks are not 2 and 1");
 
   var Ydom = if trans then {Adom.dim(2)}
              else {Adom.dim(1)};
@@ -762,7 +762,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where !usingBLAS || !BLAS.isBLASType(eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
-    compilerError("Rank sizes are not 2 and 2");
+    compilerError("Ranks are not 2 and 2");
 
   var C: [Adom.dim(1), Bdom.dim(2)] eltType;
 
@@ -775,8 +775,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 /*
   Returns the inverse of ``A`` square matrix A.
-  
-  
+
+
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
@@ -791,14 +791,14 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 
   const n = Adom.shape(1);
   var ipiv : [1..n] c_int;
-  
+
   if (!overwrite) {
     var A_clone = A;
     LAPACK.getrf(lapack_memory_order.row_major, A_clone, ipiv);
     LAPACK.getri(lapack_memory_order.row_major, A_clone, ipiv);
     return A_clone;
   }
-  
+
   LAPACK.getrf(lapack_memory_order.row_major, A, ipiv);
   LAPACK.getri(lapack_memory_order.row_major, A, ipiv);
 
@@ -849,7 +849,7 @@ private proc _expBySquaring(x: ?t, n): _wrap(t) {
   ``A``. */
 proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.rank != 1 || Bdom.rank != 1 then
-    compilerError("Rank sizes are not 1");
+    compilerError("Ranks are not 1");
   if Adom.size != 3 || Bdom.size != 3 then
     halt("cross() expects arrays of 3 elements");
 
@@ -986,7 +986,7 @@ private proc _diag_mat(A:[?Adom] ?eltType){
  */
 proc tril(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
-    compilerError("Rank size is not 2");
+    compilerError("Rank is not 2");
   var L = Matrix(A);
   forall (i, j) in D do
     if (i < j-k) then L[i, j] = 0: eltType;
@@ -1033,35 +1033,36 @@ proc tril(A: [?D] ?eltType, k=0) {
  */
 proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
-    compilerError("Rank size is not 2");
+    compilerError("Rank is not 2");
   var U = Matrix(A);
-  const zero = 0: eltType;
   forall (i, j) in D do
-    if (i > j-k) then U[i, j] = zero;
+    if (i > j-k) then U[i, j] = 0;
   return U;
 }
 
 
 
-/* Return `true` if matrix is diagonal */
-proc isDiag(A: [?D] ?eltType) {
-  if D.rank != 2 then
-    compilerError("Rank size is not 2");
+/* Return `true` if matrix is diagonal. */
+proc isDiag(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isDiag(A);
+}
 
-  const zero = 0: eltType;
+private proc _isDiag(A: [?D] ?eltType) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
 
   // Check if any element not along the diagonal is nonzero
   for (i, j) in D {
-    if i != j && A[i, j] != zero then return false;
+    if i != j && A[i, j] != 0 then return false;
   }
   return true;
 }
 
 
 /* Return `true` if matrix is Hermitian */
-proc isHermitian(A: [?D]) {
+proc isHermitian(A: [?D]) where isDenseMatrix(A) {
   if D.rank != 2 then
-    compilerError("Rank size is not 2");
+    compilerError("Rank is not 2");
   if !isSquare(A) then
     return false;
 
@@ -1075,9 +1076,9 @@ proc isHermitian(A: [?D]) {
 
 
 /* Return `true` if matrix is symmetric */
-proc isSymmetric(A: [?D]) : bool {
+proc isSymmetric(A: [?D]) where isDenseMatrix(A) {
   if D.rank != 2 then
-    compilerError("Rank size is not 2");
+    compilerError("Rank is not 2");
   if !isSquare(A) then
     return false;
 
@@ -1097,10 +1098,9 @@ proc isSymmetric(A: [?D]) : bool {
  */
 proc isTril(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
-    compilerError("Rank size is not 2");
-  const zero = 0: eltType;
+    compilerError("Rank is not 2");
   for (i, j) in D do
-    if (i < j-k) && (A[i, j] != zero) then
+    if (i < j-k) && (A[i, j] != 0) then
       return false;
   return true;
 }
@@ -1112,10 +1112,9 @@ proc isTril(A: [?D] ?eltType, k=0) : bool {
  */
 proc isTriu(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
-    compilerError("Rank size is not 2");
-  const zero = 0: eltType;
+    compilerError("Rank is not 2");
   for (i, j) in D do
-    if (i > j-k) && (A[i, j] != zero) then
+    if (i > j-k) && (A[i, j] != 0) then
       return false;
   return true;
 }
@@ -1124,7 +1123,7 @@ proc isTriu(A: [?D] ?eltType, k=0) : bool {
 /* Return `true` if matrix is square */
 proc isSquare(A: [?D]) {
   if D.rank != 2 then
-    compilerError("Rank size is not 2");
+    compilerError("Rank is not 2");
   const (M, N) = A.shape;
   return M == N;
 }
@@ -1132,7 +1131,7 @@ proc isSquare(A: [?D]) {
 
 /* Return the trace (sum of diagonal elements) of ``A`` */
 proc trace(A: [?D] ?eltType) {
-  if D.rank != 2 then compilerError("Rank size not 2");
+  if D.rank != 2 then compilerError("Ranks not 2");
 
   const (m, n) = A.shape;
   const d = if m < n then 1 else 2;
@@ -1626,7 +1625,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
    If the size of A is ``x * y`` and of B is ``a * b`` then size of the resulting
    matrix will be ``(x * a) * (y * b)`` */
 proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
-  if ADom.rank != 2 || BDom.rank != 2 then compilerError("Rank size not 2");
+  if ADom.rank != 2 || BDom.rank != 2 then compilerError("Ranks not 2");
 
   const (rowA, colA) = A.shape;
   const (rowB, colB) = B.shape;
@@ -1752,9 +1751,9 @@ A common usage of this interface might look like this:
   // var A: [D] int;
 
   // Add indices to the sparse domain along the diagonal
-  D += (0,0);
   D += (1,1);
   D += (2,2);
+  D += (3,3);
 
   // Set all nonzero indices to the value of 1
   A = 1;
@@ -1836,7 +1835,7 @@ module Sparse {
 
   pragma "no doc"
   /* Return a CSR matrix over domain: ``Dom`` - Dense case */
-  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && 
+  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 &&
                                                        isDenseDom(Dom) &&
                                                        isLocalDom(Dom) {
     var csrDom = CSRDomain(Dom);
@@ -1864,9 +1863,8 @@ module Sparse {
     var D = CSRDomain(Dom);
     var M: [D] eltType;
 
-    const zero = 0: Atype;
     for (i,j) in Dom {
-      if A[i,j] != zero {
+      if A[i,j] != 0 {
         D += (i,j);
         M[i,j] += A[i,j];
       }
@@ -1949,7 +1947,7 @@ module Sparse {
       return _csrmatmatMult(A, B);
     }
     else {
-      compilerError("Rank sizes are not 1 or 2");
+      compilerError("Ranks are not 1 or 2");
     }
   }
 
@@ -1970,7 +1968,7 @@ module Sparse {
   {
 
     if Adom.rank != 2 || Xdom.rank != 1 then
-      compilerError("Rank sizes are not 2 and 1");
+      compilerError("Ranks are not 2 and 1");
 
     const Ydom = if trans then {Adom.dim(2)}
                     else {Adom.dim(1)};
@@ -2334,13 +2332,13 @@ module Sparse {
 
   pragma "no doc"
   proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
-                where isSparseArr(X) { 
+                where isSparseArr(X) {
       if D.rank != 2 then
         halt("Wrong rank for setDiag");
 
       if D.shape(1) != D.shape(2) then
         halt("setDiag only supports square matrices");
-        
+
       var start, end = 0;
       if (k >= 0) { // upper or main diagonal
         start = 1;
@@ -2359,6 +2357,41 @@ module Sparse {
         X(ind) = val;
       }
   }
+
+
+  /* Return ``true`` if sparse matrix is diagonal. Supports CSR and COO arrays. */
+  proc isDiag(A: [?D] ?eltType) where isSparseArr(A) {
+    return _isDiag(A);
+  }
+
+
+  /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
+  proc isHermitian(A: [?D]) where isSparseArr(A) {
+    if D.rank != 2 then
+      compilerError("Rank is not 2");
+    if !isSquare(A) then
+      return false;
+
+    for (i, j) in D {
+      if A[i, j] != conjg(A[j, i]) then return false;
+    }
+    return true;
+  }
+
+
+  /* Return ``true`` if sparse matrix is symmetric. Supports CSR and COO arrays. */
+  proc isSymmetric(A: [?D]) where isSparseArr(A): bool {
+    if D.rank != 2 then
+      compilerError("Rank is not 2");
+    if !isSquare(A) then
+      return false;
+
+    for (i, j) in D {
+      if A[i, j] != A[j, i] then return false;
+    }
+    return true;
+  }
+
 
   //
   // Type helpers
