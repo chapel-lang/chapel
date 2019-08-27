@@ -1,0 +1,2 @@
+-sDuplicateManagement=false # type-casting.good
+-sDuplicateManagement=true  # type-casting.errors.good
