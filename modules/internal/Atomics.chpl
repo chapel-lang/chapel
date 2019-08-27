@@ -23,15 +23,15 @@
    Note that when compiling with --cache-remote, the compiler
    will add fences to methods in atomic types with order arguments e.g.::
 
-     proc sub (... order:memory_order = memory_order_seq_cst):void {
-       on this do atomic_fetch_sub_explicit_...(_v, value, order);
+     proc sub (... param order:memoryOrder = memoryOrder.seqCst):void {
+       on this do atomic_fetch_sub_explicit_...(_v, value, c_memory_order(order));
      }
 
    becomes::
 
-     proc sub (... order:memory_order = memory_order_seq_cst):void {
+     proc sub (... param order:memoryOrder = memoryOrder.seqCst):void {
        chpl_rmem_consist_maybe_release(order);
-       on this do atomic_fetch_sub_explicit_...(_v, value, order);
+       on this do atomic_fetch_sub_explicit_...(_v, value, c_memory_order(order));
        chpl_rmem_consist_maybe_acquire(order);
      }
 
@@ -46,7 +46,7 @@
 
    waitFor methods also do not need the fences written here -
    because they will be added if the cache is enabled - but they
-   do need a thread fence after the loop of memory_order_relaxed
+   do need a thread fence after the loop of memoryOrder.relaxed
    transactions in order to correctly run in a comm=none compilation
    where the 'on' statement is omitted.
 */
@@ -70,14 +70,14 @@
    signed and unsigned integers, as well as all supported sizes of reals.
 
    Most atomic methods accept an optional argument named ``order`` of type
-   ``memory_order``. The ``order`` argument is used to specify the ordering
+   ``memoryOrder``. The ``order`` argument is used to specify the ordering
    constraints of atomic operations. The supported values are:
 
-     * memory_order_relaxed
-     * memory_order_acquire
-     * memory_order_release
-     * memory_order_acq_rel
-     * memory_order_seq_cst
+     * memoryOrder.relaxed
+     * memoryOrder.acquire
+     * memoryOrder.release
+     * memoryOrder.acqRel
+     * memoryOrder.seqCst
 */
 pragma "atomic module"
 module Atomics {
