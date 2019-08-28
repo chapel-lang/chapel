@@ -1106,7 +1106,7 @@ const char* FnSymbol::substitutionsToString(const char* sep) const {
     for_formals(genericArg, genericFn) {
       Symbol* sym = const_cast<FnSymbol*>(this)->substitutions.get(genericArg);
       if (sym != NULL) {
-	Type* t = sym->getValType();
+        Type* t = sym->getValType();
 
         // add a separator if this isn't the first one
         if (ret[0] != '\0')
