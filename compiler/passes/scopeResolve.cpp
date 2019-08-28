@@ -1889,6 +1889,8 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
         retval = sym;
       }
     } else {
+      // TODO: Move this logic into lookupNameLocally() itself (?) or
+      // otherwise refactor so that all callsites will use it (?)
       ModuleSymbol* thisMod = ast->getModule();
       if (strcmp(name, thisMod->name) == 0) {
         retval = thisMod;
