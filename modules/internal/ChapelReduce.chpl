@@ -21,10 +21,10 @@
 //
 module ChapelReduce {
   use ChapelStandard;
+  private use ChapelLocks;
 
   config param enableParScan = false;
-  if enableParScan then
-    compilerWarning("'enableParScan' has been deprecated (it is now always enabled)");
+  if enableParScan then compilerWarning("'enableParScan' has been deprecated (it is now always enabled)");
 
   proc chpl__scanStateResTypesMatch(op) param {
     type resType = op.generate().type;

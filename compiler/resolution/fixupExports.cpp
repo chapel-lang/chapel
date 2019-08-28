@@ -184,16 +184,38 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   if (t == dtString) {
     IntentTag tag = as->intent;
 
-    // TODO: After resolution, have abstract intents been normalized?
-    if (tag != INTENT_CONST &&
-        tag != INTENT_CONST_REF &&
-        tag != INTENT_BLANK) {
-      SET_LINENO(fn);
-      USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
-                          "\'%s\' may only have the %s",
-                          as->name, t->name(), fn->userString,
-                          intentDescrString(INTENT_CONST_REF));
-      return false;
+    if (fMultiLocaleInterop || strcmp(CHPL_COMM, "none")) {
+      // TODO: After resolution, have abstract intents been normalized?
+      if (tag != INTENT_IN &&
+          tag != INTENT_CONST_IN) {
+        SET_LINENO(fn);
+        if (tag == INTENT_BLANK) {
+          USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
+                         "routine \'%s\' may not be passed by const ref in "
+                         "multilocale libraries",
+                         as->name, t->name(), fn->userString);
+
+        } else {
+          USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
+                         "routine \'%s\' may not have the %s in "
+                         "multilocale libraries",
+                         as->name, t->name(), fn->userString,
+                         intentDescrString(tag));
+        }
+        return false;
+      }
+    } else {
+      // TODO: After resolution, have abstract intents been normalized?
+      if (tag != INTENT_CONST &&
+          tag != INTENT_CONST_REF &&
+          tag != INTENT_BLANK) {
+        SET_LINENO(fn);
+        USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
+                       "\'%s\' may not have the %s",
+                       as->name, t->name(), fn->userString,
+                       intentDescrString(tag));
+        return false;
+      }
     }
   }
 

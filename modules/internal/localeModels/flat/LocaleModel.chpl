@@ -31,6 +31,7 @@ module LocaleModel {
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
 
+  
   //
   // The task layer calls these to convert between full sublocales and
   // execution sublocales.  Full sublocales may contain more information
@@ -150,6 +151,14 @@ module LocaleModel {
       helpSetupLocaleFlat(this, local_name);
     }
     //------------------------------------------------------------------------}
+
+    override proc writeThis(f) {
+      // Most classes will define it like this:
+      //      f <~> name;
+      // but here it is defined thus for backward compatibility.
+      f <~> new ioLiteral("LOCALE") <~> chpl_id();
+    }
+
   }
 
   //

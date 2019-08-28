@@ -64,7 +64,8 @@
 static int  processIdentifier(yyscan_t scanner);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
-static int  processMultilineStringLiteral(yyscan_t scanner, const char* q);
+static int  processMultilineStringLiteral(yyscan_t scanner, const char* q,
+                                          int type);
 
 static int  processExtern(yyscan_t scanner);
 static int  processExternCode(yyscan_t scanner);
@@ -295,8 +296,10 @@ zip              return processToken(yyscanner, TZIP);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
 {ident}          return processIdentifier(yyscanner);
-"\"\"\""         return processMultilineStringLiteral(yyscanner, "\"");
-"'''"            return processMultilineStringLiteral(yyscanner, "'");
+"\"\"\""         return processMultilineStringLiteral(yyscanner, "\"", STRINGLITERAL);
+"'''"            return processMultilineStringLiteral(yyscanner, "'", STRINGLITERAL);
+"b\"\"\""        return processMultilineStringLiteral(yyscanner, "\"", BYTESLITERAL);
+"b'''"           return processMultilineStringLiteral(yyscanner, "'", BYTESLITERAL);
 "\""             return processStringLiteral(yyscanner, "\"", STRINGLITERAL);
 "\'"             return processStringLiteral(yyscanner, "\'", STRINGLITERAL);
 "b\""            return processStringLiteral(yyscanner, "\"", BYTESLITERAL);
@@ -446,7 +449,8 @@ static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   return type;
 }
 
-static int processMultilineStringLiteral(yyscan_t scanner, const char* q) {
+static int processMultilineStringLiteral(yyscan_t scanner, const char* q,
+                                         int type) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE* yyLval = yyget_lval(scanner);
   yyLval->pch = eatMultilineStringLiteral(scanner, q);
@@ -458,7 +462,7 @@ static int processMultilineStringLiteral(yyscan_t scanner, const char* q) {
     captureString.append(yyLval->pch);
     captureString.append(yyText);
   }
-  return STRINGLITERAL;
+  return type;
 }
 
 static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {

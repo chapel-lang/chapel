@@ -21,7 +21,7 @@ myD.foo(myD2);
 writeln("myD2.x = ", myD2.x);
 
 proc bar(x) {
-  var xx: x.type = new borrowed x.type();
+  var xx: x.type = new x.type();
   x.foo(xx);
   writeln("xx.x = ", xx.x);
 }

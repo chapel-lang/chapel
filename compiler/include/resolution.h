@@ -319,4 +319,6 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
                                   AggregateType* manager,
                                   Expr* ctx);
 
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
+
 #endif

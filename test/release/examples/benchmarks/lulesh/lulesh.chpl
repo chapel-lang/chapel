@@ -1691,5 +1691,5 @@ proc deprintatomic(title:string, x:[?D] atomic real, y:[] atomic real, z:[] atom
   for i in D do
     writef("%3i: %3.4er %3.4er %3.4er\n", 
            if use3DRepresentation then idx3DTo1D(i, D.dim(1).size) else i, 
-           x[i].peek(), y[i].peek(), z[i].peek());
+           x[i].read(), y[i].read(), z[i].read());
 }

@@ -1,4 +1,23 @@
 /*
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
 Module UnitTest provides support for automated testing in Chapel.
 Any function of the form
 
@@ -7,7 +26,7 @@ Any function of the form
   proc funcName(test: borrowed Test) throws {}
 
 is treated as a test function. These functions must accept an object of Test
-Class. We use :proc:`~UnitTest.runTest` to pass the tests.
+Class. We use :proc:`~UnitTest.main()` to run the tests.
 
 .. note::
 
@@ -15,12 +34,10 @@ Class. We use :proc:`~UnitTest.runTest` to pass the tests.
   built separately. However, this functionality will eventually be integrated into mason.
 
 Assert Functions
-================
+----------------
 
 Here are the assert functions available in the UnitTest module:
 
-- :proc:`~Test.skip`
-- :proc:`~Test.skipIf`
 - :proc:`~Test.assertTrue`
 - :proc:`~Test.assertFalse`
 - :proc:`~Test.assertEqual`
@@ -28,11 +45,24 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
 
+Test Metadata Functions
+-----------------------
+
+UnitTest module also provides multiple methods for specifying test Metadata:
+
+- :proc:`~Test.skip`
+- :proc:`~Test.skipIf`
+- :proc:`~Test.addNumLocales`
+- :proc:`~Test.maxLocales`
+- :proc:`~Test.minLocales`
+- :proc:`~Test.dependsOn`
+
+
 Examples
-=========
+--------
 
 Basic Usage
--------------
+^^^^^^^^^^^
 
 Here is a minimal example demonstrating how to use the UnitTest module:
 
@@ -69,7 +99,7 @@ Output:
 
 
 Skipping Tests
----------------
+^^^^^^^^^^^^^^^
 
 You can skip tests unconditionally with :proc:`~Test.skip` and 
 conditionally with :proc:`~Test.skipIf`:
@@ -113,7 +143,7 @@ Output:
 
 
 Specifying locales
-------------------
+^^^^^^^^^^^^^^^^^^
 
 You can specify the num of locales of a test using these method.
 
@@ -164,7 +194,7 @@ You can mention the range of locales using :proc:`~Test.maxLocales` and
   }
 
 Specifying Dependencies
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 :proc:`~Test.dependsOn`
 
@@ -210,6 +240,7 @@ Output:
 module UnitTest {
   use Reflection;
   use TestError;
+  use List, Map;
   pragma "no doc"
   config const testNames: string = "None";
   pragma "no doc"
@@ -235,7 +266,7 @@ module UnitTest {
     pragma "no doc"
     var dictDomain: domain(int);
     pragma "no doc"
-    var testDependsOn: [1..0] argType;
+    var testDependsOn: list(argType);
 
     /* Unconditionally skip a test.
 
@@ -1019,7 +1050,7 @@ module UnitTest {
     proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
       if testDependsOn.size == 0 {
         for eachSuperTest in tests {
-          this.testDependsOn.push_back(eachSuperTest);
+          this.testDependsOn.append(eachSuperTest);
         }
         throw new owned DependencyFound();
       }
@@ -1079,13 +1110,13 @@ module UnitTest {
   pragma "no doc"
   class TestSuite {
     var testCount = 0;
-    var _tests: [1..0] argType;
+    var _tests: list(argType);
     
     // TODO: Get lifetime checking working in this case and remove pragma unsafe.
     // Pragma "unsafe" disables the lifetime checker here.
     pragma "unsafe"
     proc addTest(test) {
-      this._tests.push_back(test);
+      this._tests.append(test);
       this.testCount += 1;
     }
 
@@ -1117,13 +1148,12 @@ module UnitTest {
   */
   proc main() throws {
 
-    var testNamesMap: domain(string);
-    var testStatus: [testNamesMap] bool,
-        testsFailed: [testNamesMap] bool,
-        testsErrored: [testNamesMap] bool,
-        testsLocalFails: [testNamesMap] bool,
-        testsPassed: [testNamesMap] bool,
-        testsSkipped: [testNamesMap] bool;
+    var testStatus: map(string, bool, parSafe=true),
+        testsFailed: map(string, bool, parSafe=true),
+        testsErrored: map(string, bool, parSafe=true),
+        testsLocalFails: map(string, bool, parSafe=true),
+        testsPassed: map(string, bool, parSafe=true),
+        testsSkipped: map(string, bool, parSafe=true);
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
@@ -1141,7 +1171,12 @@ module UnitTest {
     
     for test in testSuite {
       const testName = test: string;
-      testNamesMap += testName;
+      testStatus[testName] = false;
+      testsFailed[testName] = false;
+      testsErrored[testName] = false;
+      testsLocalFails[testName] = false;
+      testsPassed[testName] = false;
+      testsSkipped[testName] = false;
     }
     if testNames != "None" {
       for test in testNames.split(" ") {
@@ -1176,7 +1211,7 @@ module UnitTest {
     for test in testSuite {
       if !testStatus[test: string] {
         // Create a test object per test
-        var checkCircle: [1..0] string;
+        var checkCircle: list(string);
         var circleFound = false;
         var testObject = new Test();
         runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
@@ -1191,7 +1226,7 @@ module UnitTest {
                       ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = test: string; //test is a FCF:
-    checkCircle.push_back(testName);
+    checkCircle.append(testName);
     try {
       testResult.startTest(testName);
       test(testObject);
@@ -1207,9 +1242,9 @@ module UnitTest {
     catch e: DependencyFound {
       var allTestsRan = true;
       for superTest in testObject.testDependsOn {
-        var checkCircleStatus = checkCircle.find(superTest: string);
+        var checkCircleCount = checkCircle.count(superTest: string);
         // cycle is checked
-        if checkCircleStatus[1]{
+        if checkCircleCount > 0 {
           testsSkipped[testName] = true;
           circleFound = true;
           var failReason = testName + " skipped as circular dependency found";
@@ -1228,9 +1263,9 @@ module UnitTest {
             runTestMethod(testStatus, superTestObject, testsFailed, testsErrored, 
                           testsSkipped, testsLocalFails, superTest, checkCircle, 
                           circleFound);
-            var removeSuperTest = checkCircle.find(superTest: string);
-            if removeSuperTest[1] {
-              checkCircle.remove(removeSuperTest[2]);
+            var removeSuperTestCount = checkCircle.count(superTest: string);
+            if removeSuperTestCount > 0 {
+              checkCircle.remove(superTest: string);
             }
             // if super test failed
             if testsFailed[superTest: string] {
@@ -1319,5 +1354,65 @@ module UnitTest {
       testsErrored[testName] = true ;
     }
     testStatus[testName] = true;
+  }
+
+  module TestError {
+    /*
+    :class:`TestError` is a base class.
+    */
+    class TestError: Error {
+      var details: string;
+
+      proc init(details: string = "") {
+        this.details = details;  
+      }
+      
+      // Message function overridden here
+      override proc message() {
+        return this.details;
+      }
+    }
+
+    /*Assertion Error class. Raised when assert Function Failed*/
+    class AssertionError: TestError {
+      proc init(details: string = "") {
+        super.init(details);
+      }
+    }
+
+    /* TestSkipped Error Class. Raised when a test is skipped.*/
+    class TestSkipped: TestError {
+      proc init(details: string = "") {
+        super.init(details);
+      }
+    }
+
+    /* DependencyFound Error Class. Raised when a all dependency
+      of a test are not met.
+    */
+    class DependencyFound: TestError {
+      proc init(details: string = "") {
+        super.init(details);
+      }
+    }
+
+    /* TestIncorrectNumLocales Error Class. Raised when test is not run with
+      expected number of Locales.
+    */
+    class TestIncorrectNumLocales: TestError {
+      proc init(details: string = "") {
+        super.init(details);
+      }
+    }
+
+    /* UnexpectedLocales Error Class. Raised when test has
+        locales with which it can't be run.
+        Eg: MaxLocales < MinLocales
+    */
+    class UnexpectedLocales: TestError {
+      proc init(details: string = "") {
+        super.init(details);
+      }
+    }
   }
 }

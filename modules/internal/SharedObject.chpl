@@ -336,7 +336,11 @@ module SharedObject {
        If this record was the last :record:`shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
+      if !isCoercible(newPtr.type, chpl_t) then
+        compilerError("cannot retain '" + newPtr.type:string + "' " +
+                      "(expected '" + _to_unmanaged(chpl_t):string + "')");
+
       clear();
       this.chpl_p = newPtr;
       if newPtr != nil {

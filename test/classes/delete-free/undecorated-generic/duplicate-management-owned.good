@@ -1,0 +1,16 @@
+duplicate-management-owned.chpl:3: In function 'to':
+duplicate-management-owned.chpl:3: error: duplicate decorators - owned owned MyClass
+duplicate-management-owned.chpl:3: In function 'to':
+duplicate-management-owned.chpl:3: error: duplicate decorators - owned shared MyClass
+duplicate-management-owned.chpl:3: In function 'to':
+duplicate-management-owned.chpl:3: error: duplicate decorators - owned unmanaged MyClass
+duplicate-management-owned.chpl:3: In function 'to':
+duplicate-management-owned.chpl:3: error: duplicate decorators - owned borrowed MyClass
+duplicate-management-owned.chpl:19: In function 'ts':
+duplicate-management-owned.chpl:19: error: duplicate decorators - shared owned MyClass
+duplicate-management-owned.chpl:19: In function 'ts':
+duplicate-management-owned.chpl:19: error: duplicate decorators - shared shared MyClass
+duplicate-management-owned.chpl:19: In function 'ts':
+duplicate-management-owned.chpl:19: error: duplicate decorators - shared unmanaged MyClass
+duplicate-management-owned.chpl:19: In function 'ts':
+duplicate-management-owned.chpl:19: error: duplicate decorators - shared borrowed MyClass
