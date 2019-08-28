@@ -197,10 +197,20 @@ static void processGenericFields() {
 static void addToSymbolTable() {
   ResolveScope* rootScope = ResolveScope::getRootModule();
 
+  //  rootScope->describe();
+  
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      rootScope->extend(def->sym);
+      ModuleSymbol* mod = toModuleSymbol(def->sym);
+      // only put things in the root scope if they are not user modules
+      // or not modules at all
+      // TODO: Should eventually extend this to avoid putting any modules
+      // in the root scope, but only focusing on user code for now
+      if (mod == NULL || mod->modTag != MOD_USER) {
+        //        printf("Extending to include %s\n", def->sym->name);
+        rootScope->extend(def->sym);
+      }
     }
   }
 
@@ -264,7 +274,7 @@ static void scopeResolve(ModuleSymbol*       module,
                          const ResolveScope* parent) {
   if (module->modTag == MOD_USER &&
       module->defPoint->getModule() == theProgram) {
-    ResolveScope* scope = new ResolveScope(module, NULL);
+    ResolveScope* scope = new ResolveScope(module, parent);
 
     scopeResolve(module->block->body, scope);
   } else {
@@ -1653,9 +1663,9 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols) {
   bool debug = false;
-  if (strcmp("MMM", name) == 0) {
+  if (strcmp("c_void_ptr", name) == 0) {
     //    debug = true;
-    //    printf("Looking up MMM\n");
+    //    printf("Looking up %s\n", name);
   }
 
   if (!visited.set_in(scope)) {
@@ -1680,10 +1690,10 @@ static void lookup(const char*           name,
       if (outerScope != NULL) {
         if (debug)
           printf("doing an outerscope lookup\n");
-        if (scope->getModule()->modTag != MOD_USER ||
-            outerScope->getModule() != theProgram) {
+        //        if (scope->getModule()->modTag != MOD_USER ||
+        //            outerScope->getModule() != theProgram) {
           lookup(name, context, outerScope, visited, symbols);
-        }
+          //        }
       }
 
     } else {

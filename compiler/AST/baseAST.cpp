@@ -270,6 +270,29 @@ void destroyAst() {
   foreach_ast(destroy_gvec);
 }
 
+#include "view.h"
+
+static void definesModulesOnly(ModuleSymbol* mod) {
+  for_alist(stmt, theProgram->block->body) {
+    if (DefExpr* def = toDefExpr(stmt)) {
+      if (toModuleSymbol(def->sym) == NULL) {
+        if (developer) {
+          printf("Found a definition of a non-module in theProgram:\n");
+          list_view(def->sym);
+        } else {
+          INT_FATAL("Found a definition of a non-module in theProgram:\n");
+        }
+      }
+    } else {
+      if (developer) {
+        printf("Found a non-DefExpr in theProgram:\n");
+        list_view(def);
+      } else {
+        INT_FATAL("Found a non-DefExpr in theProgram:\n");
+      }
+    }
+  }
+}
 
 void
 verify() {
@@ -286,6 +309,7 @@ verify() {
 
   // rootModule does not pass isAlive(), yet is "alive" - needs to be  verified
   rootModule->verify();
+  definesModulesOnly(theProgram);
 }
 
 
