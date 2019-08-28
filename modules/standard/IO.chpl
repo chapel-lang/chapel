@@ -2740,7 +2740,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_bytes(false, _channel_internal, tx, len, -1);
-    x = new bytes(tx, length=len, needToCopy=false);
+    x = createBytesWithOwnedBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -2885,7 +2885,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = new bytes(tx, length=len, needToCopy=false);
+    x = createBytesWithOwnedBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);

@@ -269,7 +269,7 @@ module Bytes {
     */
     inline proc localize() : bytes {
       if _local || this.locale_id == chpl_nodeID {
-        return new bytes(this, isowned=false);
+        return createBytesWithBorrowedBuffer(this);
       } else {
         const x:bytes = this; // assignment makes it local
         return x;
@@ -296,7 +296,7 @@ module Bytes {
         then halt("index out of bounds of bytes: ", i);
       var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
                                    loc=this.locale_id);
-      return new bytes(buf, length=1, size=size, needToCopy=false);
+      return createBytesWithOwnedBuffer(buf, length=1, size=size);
     }
 
     /*
@@ -1095,7 +1095,7 @@ module Bytes {
   }
 
   inline proc _cast(type t: bytes, x: string) {
-    return new bytes(x);
+    return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
 
   /*
