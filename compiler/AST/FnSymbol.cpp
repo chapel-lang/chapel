@@ -1112,14 +1112,28 @@ const char* FnSymbol::substitutionsToString(const char* sep) const {
         if (ret[0] != '\0')
           ret = astr(ret, sep);
 
-        ret = astr(ret, genericArg->name, ": ", toString(t));
-	Immediate* imm = getSymbolImmediate(sym);
-	if (imm) {
-	  const size_t bufSize = 128;
-	  char buf[bufSize];
-	  snprint_imm(buf, bufSize, *imm);
-          ret = astr(ret, " = ", buf);
-	}
+        bool isParam = genericArg->intent == INTENT_PARAM ||
+                       genericArg->originalIntent == INTENT_PARAM;
+        bool isType = genericArg->intent == INTENT_TYPE ||
+                      genericArg->originalIntent == INTENT_TYPE ||
+                      genericArg->hasFlag(FLAG_TYPE_VARIABLE);
+
+        if (isParam) {
+          ret = astr(ret, "param ", genericArg->name);
+          if (isNumericParamDefaultType(t) == false)
+            ret = astr(ret, ": ", toString(t));
+          Immediate* imm = getSymbolImmediate(sym);
+          if (imm) {
+            const size_t bufSize = 128;
+            char buf[bufSize];
+            snprint_imm(buf, bufSize, *imm);
+            ret = astr(ret, " = ", buf);
+          }
+        } else if (isType) {
+          ret = astr(ret, "type ", genericArg->name, " = ", toString(t));
+        } else {
+          ret = astr(ret, genericArg->name, ": ", toString(t));
+        }
       }
     }
   }
