@@ -189,10 +189,23 @@ proc getFieldIndex(type t, param s:string) param : int
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
+/* Returns `true` if the given class or record's field named `s`
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg s: the name of a field
+   :returns: `true` if the field is instantiated
+*/
 proc isFieldBound(type t, param s : string) param : bool {
   return __primitive("is bound", t, s);
 }
 
+/* Returns `true` if the given class or record has a field that has not
+   been instantiated.
+
+   :arg t: a class or record type
+   :returns: `true` if any fields have not been instantiated.
+*/
 proc isPartialGeneric(type t) param : bool {
   for param i in 1..numFields(t) {
     param name = getFieldName(t, i);
