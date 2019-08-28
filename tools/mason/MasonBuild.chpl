@@ -36,6 +36,7 @@ proc masonBuild(args) throws {
   var compopts: list(string);
   var opt = false;
   var example = false;
+  var update = false;
 
   if args.size > 2 {
 
@@ -77,6 +78,9 @@ proc masonBuild(args) throws {
       }
       else if arg == '--example' {
         example = true;
+      }
+      else if arg == '--update' {
+        update = true;
       }
       // passed to UpdateLock
       else if arg == '--no-update' {

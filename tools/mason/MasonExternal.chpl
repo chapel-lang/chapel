@@ -372,6 +372,12 @@ proc getSpkgDependencies(spec: string) throws {
 
 /* Install an external package */
 proc installSpkg(args: [?d] string) throws {
+  if MASON_OFFLINE && args.count('--update') == 0 {
+    writeln('Cannot install Spack packages when MASON_OFFLINE=true');
+    writeln('Use --update to override');
+    return;
+  }
+
   if args.size < 4 {
     masonInstallHelp();
     exit(1);

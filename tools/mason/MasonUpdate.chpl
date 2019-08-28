@@ -135,11 +135,15 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args: list(string)) {
+  if args.count('update') != 0 {
+    args.append('--update');
+  }
+
   if args.count("--no-update") != 0 then
     return;
 
-  if MASON_OFFLINE == true && (args.count('--update') == 0) {
-    writeln('Cannot update the mason-registry when MASON_OFFLINE is set to true. Use "--update" to override.');
+  if MASON_OFFLINE && (args.count('--update') == 0) {
+    writeln('Skipping update due to MASON_OFFLINE=true');
     return;
   }
 

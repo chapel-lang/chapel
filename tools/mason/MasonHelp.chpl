@@ -110,7 +110,7 @@ proc masonBuildHelp() {
   writeln('        --release                Compile to target/release with optimizations (--fast)');
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
-  writeln('        --[no-]update            [Do not] Update the mason registry before building');
+  writeln('        --[no-]update            [Do not] update the mason registry before building');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
@@ -354,7 +354,7 @@ proc masonTestHelp() {
   writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
   writeln("        --parallel              Run tests in parallel(sequential by default)");
-  writeln("        --[no]-update           [Do not] Update the mason-registry when testing");
+  writeln("        --[no]-update           [Do not] update the mason-registry when testing");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");

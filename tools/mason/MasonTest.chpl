@@ -35,7 +35,7 @@ proc masonTest(args) throws {
   var run = true;
   var parallel = false;
   var update = true;
-  if MASON_OFFLINE == true then update = false;
+  if MASON_OFFLINE then update = false;
   var compopts: list(string);
 
   if args.size > 2 {
