@@ -320,7 +320,8 @@ module OwnedObject {
      */
     proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
       if !isCoercible(newPtr.type, chpl_t) then
-        compilerError("Calling retain with invalid type");
+        compilerError("cannot retain '" + newPtr.type:string + "' " +
+                      "(expected '" + _to_unmanaged(chpl_t):string + "')");
 
       var oldPtr = chpl_p;
       chpl_p = newPtr;
