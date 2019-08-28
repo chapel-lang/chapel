@@ -46,6 +46,94 @@ module BytesStringCommon {
     return x.buff:c_string;
   }
 
+  proc initWithBorrowedBuffer(ref x: ?t, other: t) {
+    assertArgType(t, "initWithBorrowedBuffer");
+
+    x.isowned = false;
+
+    const otherRemote = other.locale_id != chpl_nodeID;
+    const otherLen = other.length;
+
+    if otherLen > 0 {
+      x.len = otherLen;
+      if otherRemote {
+        // if other is remote, copy and own the buffer no matter what
+        x.isowned = true;
+        x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
+        x._size = otherLen+1;
+      }
+      else {
+        // if other is local just adjust my buff and _size
+        x.buff = other.buff;
+        x._size = other._size;
+      }
+    }
+  }
+
+  proc initWithBorrowedBuffer(ref x: ?t, other: bufferType, length:int, size:int) {
+    assertArgType(t, "initWithBorrowedBuffer");
+
+    x.isowned = false;
+
+    // here, we don't need to do anything special if length==0, the buffer may
+    // be allocated but empty
+    x.buff = other;
+    x._size = size;
+    x.len = length;
+  }
+
+  proc initWithOwnedBuffer(ref x: ?t, other: bufferType, length:int, size:int) {
+    assertArgType(t, "initWithOwnedBuffer");
+
+    x.isowned = true;
+
+    // here, we don't need to do anything special if length==0, the buffer may
+    // be allocated but empty
+    x.buff = other;
+    x._size = size;
+    x.len = length;
+  }
+
+  proc initWithNewBuffer(ref x: ?t, other: string) {
+    assertArgType(t, "initWithNewBuffer");
+
+    const otherRemote = other.locale_id != chpl_nodeID;
+    const otherLen = other.length;
+    x.isowned = true;
+
+    if otherLen > 0 {
+      x.len = otherLen;
+      if otherRemote {
+        // if s is remote, copy and own the buffer
+        x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
+        x._size = otherLen+1;
+      }
+      else {
+        // if s is local create a copy of its buffer and own it
+        const (buf, allocSize) = bufferCopyLocal(other.buff, otherLen);
+        x.buff = buf;
+        x.buff[x.len] = 0;
+        x._size = allocSize;
+      }
+    }
+  }
+
+  proc initWithNewBuffer(ref x: ?t, other: bufferType, length:int, size:int) {
+    assertArgType(t, "initWithNewBuffer");
+
+    const otherLen = length;
+    x.isowned = true;
+
+    if otherLen > 0 {
+      // create a copy of s's buffer and own it
+      const (buf, allocSize) = bufferCopyLocal(other:bufferType, otherLen);
+      x.buff = buf;
+      x.len = otherLen;
+      x.buff[x.len] = 0;
+      x._size = allocSize;
+    }
+  }
+
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
 
