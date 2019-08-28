@@ -240,6 +240,7 @@ Output:
 module UnitTest {
   use Reflection;
   use TestError;
+  use List;
   pragma "no doc"
   config const testNames: string = "None";
   pragma "no doc"
@@ -265,7 +266,7 @@ module UnitTest {
     pragma "no doc"
     var dictDomain: domain(int);
     pragma "no doc"
-    var testDependsOn: [1..0] argType;
+    var testDependsOn: list(argType);
 
     /* Unconditionally skip a test.
 
@@ -1049,7 +1050,7 @@ module UnitTest {
     proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
       if testDependsOn.size == 0 {
         for eachSuperTest in tests {
-          this.testDependsOn.push_back(eachSuperTest);
+          this.testDependsOn.append(eachSuperTest);
         }
         throw new owned DependencyFound();
       }
@@ -1109,13 +1110,13 @@ module UnitTest {
   pragma "no doc"
   class TestSuite {
     var testCount = 0;
-    var _tests: [1..0] argType;
+    var _tests: list(argType);
     
     // TODO: Get lifetime checking working in this case and remove pragma unsafe.
     // Pragma "unsafe" disables the lifetime checker here.
     pragma "unsafe"
     proc addTest(test) {
-      this._tests.push_back(test);
+      this._tests.append(test);
       this.testCount += 1;
     }
 
@@ -1206,7 +1207,7 @@ module UnitTest {
     for test in testSuite {
       if !testStatus[test: string] {
         // Create a test object per test
-        var checkCircle: [1..0] string;
+        var checkCircle: list(string);
         var circleFound = false;
         var testObject = new Test();
         runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
@@ -1221,7 +1222,7 @@ module UnitTest {
                       ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = test: string; //test is a FCF:
-    checkCircle.push_back(testName);
+    checkCircle.append(testName);
     try {
       testResult.startTest(testName);
       test(testObject);
@@ -1237,9 +1238,9 @@ module UnitTest {
     catch e: DependencyFound {
       var allTestsRan = true;
       for superTest in testObject.testDependsOn {
-        var checkCircleStatus = checkCircle.find(superTest: string);
+        var checkCircleCount = checkCircle.count(superTest: string);
         // cycle is checked
-        if checkCircleStatus[1]{
+        if checkCircleCount > 0 {
           testsSkipped[testName] = true;
           circleFound = true;
           var failReason = testName + " skipped as circular dependency found";
@@ -1258,9 +1259,9 @@ module UnitTest {
             runTestMethod(testStatus, superTestObject, testsFailed, testsErrored, 
                           testsSkipped, testsLocalFails, superTest, checkCircle, 
                           circleFound);
-            var removeSuperTest = checkCircle.find(superTest: string);
-            if removeSuperTest[1] {
-              checkCircle.remove(removeSuperTest[2]);
+            var removeSuperTestCount = checkCircle.count(superTest: string);
+            if removeSuperTestCount > 0 {
+              checkCircle.remove(superTest: string);
             }
             // if super test failed
             if testsFailed[superTest: string] {
