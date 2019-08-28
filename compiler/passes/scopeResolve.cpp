@@ -1407,7 +1407,7 @@ static void resolveModuleCall(CallExpr* call) {
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
         if (sym == NULL) {
-          printf("fff: %s\n", mbrName);
+          //          printf("fff: %s\n", mbrName);
         }
         
         // Failing that, try looking in an extern block.
@@ -1892,7 +1892,7 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
       ModuleSymbol* thisMod = ast->getModule();
       if (strcmp(name, thisMod->name) == 0) {
         retval = thisMod;
-        printf("Got a hit on %s\n", thisMod->name);
+        //        printf("Got a hit on %s\n", thisMod->name);
       }
     }
   }

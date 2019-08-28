@@ -399,7 +399,7 @@ bool ResolveScope::extend(Symbol* newSym) {
     }
 
   } else {
-    printf("eee: %s\n", name);
+    //    printf("eee: %s\n", name);
     mBindings[name] = newSym;
     retval          = true;
   }
@@ -492,11 +492,11 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
   const char* name   = usymExpr->unresolved;
   Symbol*     retval = lookupNameLocally(name);
   ModuleSymbol* thisMod = usymExpr->getModule();
-  printf("Giving it a second shot\n");
+  //  printf("Giving it a second shot\n");
   if (retval == NULL && strcmp(name, thisMod->name) == 0) {
     retval = thisMod;
   } else {
-    printf("But didn't hit\n");
+    //    printf("But didn't hit\n");
 
   }
 
@@ -530,7 +530,7 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
                 }
               }
             } else {
-              printf("bbb\n");
+              //              printf("bbb\n");
             }
           }
         }
@@ -658,7 +658,7 @@ Symbol* ResolveScope::lookupNameLocally(const char* name) const {
     if (toModuleSymbol(sym) == NULL || this != rootScope) {
       retval = it->second;
     } else {
-      printf("Skipped over %s\n", sym->name);
+      //      printf("Skipped over %s\n", sym->name);
     }
   }
 
@@ -715,7 +715,7 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     symbols.push_back(sym);
 
   } else {
-    printf("ccc\n");
+    //    printf("ccc\n");
 
     if (mUseList.size() > 0) {
       std::vector<const UseStmt*> useList = mUseList;
@@ -741,7 +741,7 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
               if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
                 symbols.push_back(sym);
               } else {
-                printf("ccc\n");
+                //                printf("ddd\n");
               }
             }
           }
