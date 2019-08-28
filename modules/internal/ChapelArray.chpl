@@ -168,7 +168,7 @@ module ChapelArray {
   use ArrayViewReindex;
 
   pragma "no doc"
-  config param showArrayAsVecWarnings = false;
+  config param showArrayAsVecWarnings = true;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
