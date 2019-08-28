@@ -467,8 +467,7 @@ proc check(username : string, path : string, trueIfLocal) throws {
   writeln(spacer);
   writeln();
   writeln();
-
-  
+ 
   exit(0);
 }
 
