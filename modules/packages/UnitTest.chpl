@@ -240,7 +240,7 @@ Output:
 module UnitTest {
   use Reflection;
   use TestError;
-  use List;
+  use List, Map;
   pragma "no doc"
   config const testNames: string = "None";
   pragma "no doc"
@@ -1148,13 +1148,12 @@ module UnitTest {
   */
   proc main() throws {
 
-    var testNamesMap: domain(string);
-    var testStatus: [testNamesMap] bool,
-        testsFailed: [testNamesMap] bool,
-        testsErrored: [testNamesMap] bool,
-        testsLocalFails: [testNamesMap] bool,
-        testsPassed: [testNamesMap] bool,
-        testsSkipped: [testNamesMap] bool;
+    var testStatus: map(string, bool, parSafe=true),
+        testsFailed: map(string, bool, parSafe=true),
+        testsErrored: map(string, bool, parSafe=true),
+        testsLocalFails: map(string, bool, parSafe=true),
+        testsPassed: map(string, bool, parSafe=true),
+        testsSkipped: map(string, bool, parSafe=true);
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
@@ -1172,7 +1171,12 @@ module UnitTest {
     
     for test in testSuite {
       const testName = test: string;
-      testNamesMap += testName;
+      testStatus[testName] = false;
+      testsFailed[testName] = false;
+      testsErrored[testName] = false;
+      testsLocalFails[testName] = false;
+      testsPassed[testName] = false;
+      testsSkipped[testName] = false;
     }
     if testNames != "None" {
       for test in testNames.split(" ") {
