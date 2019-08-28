@@ -1,1 +1,1 @@
-listPopHaltEmpty.chpl:5: error: halt reached - Called "pop" on an empty list.
+listPopHaltEmpty.chpl:5: error: halt reached - Called "list.pop" on an empty list.

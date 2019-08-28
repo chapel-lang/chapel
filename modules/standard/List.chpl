@@ -30,7 +30,7 @@
   may invalidate references. Appending an element to the end of a list will
   never invalidate references to elements contained in the list.
 
-  The followThising operations may invalidate references to elements contained in
+  The following operations may invalidate references to elements contained in
   a list:
 
       - insert
@@ -358,19 +358,13 @@ module List {
     pragma "no doc"
     inline proc _enter() {
       if parSafe then
-        on this {
-          _lock$.lock();
-        }
-      return;
+        _lock$.lock();
     }
 
     pragma "no doc"
     inline proc _leave() {
       if parSafe then
-        on this {
-          _lock$.unlock();
-        }
-      return;
+        _lock$.unlock();
     }
 
     pragma "no doc"
@@ -504,7 +498,7 @@ module List {
     }
 
     //
-    // Shift elements including and after index `idx` so that they are mmoved
+    // Shift elements including and after index `idx` so that they are moved
     // `shift` positions to the right in memory, possibly resizing. May
     // expand memory if necessary.
     //
@@ -528,7 +522,7 @@ module List {
     }
 
     //
-    // Move all elements at and followThising the index `shift` left in memory
+    // Move all elements at and following the index `shift` left in memory
     // so that they begin at index `idx`, possibly resizing. May release
     // memory if possible.
     //
@@ -602,13 +596,11 @@ module List {
       on this {
         _enter();
 
-        for i in 1.._size {
-          ref item = _getRef(i);
+        for item in this do
           if item == x {
             result = true;
             break;
           }
-        }
 
         _leave();
       }
@@ -637,8 +629,7 @@ module List {
 
         if boundsChecking && _size == 0 {
           _leave();
-          const msg = "Called \"first\" on an empty list.";
-          halt(msg);
+          halt("Called \"list.first\" on an empty list.");
         }
 
         result = _getRef(1);
@@ -669,8 +660,7 @@ module List {
 
         if boundsChecking && _size == 0 {
           _leave();
-          const msg = "Called \"last\" on an empty list.";
-          halt(msg);
+          halt("Called \"list.last\" on an empty list.");
         }
 
         result = _getRef(_size);
@@ -758,7 +748,7 @@ module List {
 
     /*
       Insert an element at a given position in this list, shifting all elements
-      currently at and followThising that index one to the right. The call
+      currently at and following that index one to the right. The call
       ``a.insert(1, x)`` inserts an element at the front of the list `a`, and
       ``a.insert((a.size + 1), x)`` is equivalent to ``a.append(x)``.
 
@@ -787,7 +777,7 @@ module List {
         _enter();
 
       // Handle special case of `a.insert((a.size + 1), x)` here.
-      if (idx == _size + 1) {
+      if idx == _size + 1 {
         _appendByRef(x);
         result = true;
       } else if _withinBounds(idx) {
@@ -815,7 +805,8 @@ module List {
         return true;
 
       on this {
-        if (idx == _size + 1) {
+        if idx == _size + 1 {
+          // TODO: In an ideal world, we'd resize only once.
           _extendGeneric(items);
           result = true;
         } else if _withinBounds(idx) {
@@ -841,7 +832,7 @@ module List {
 
     /*
       Insert an array of elements `arr` into this list at index `idx`,
-      shifting all elements at and followThising the index `arr.size` positions
+      shifting all elements at and following the index `arr.size` positions
       to the right. 
 
       If the insertion is successful, this method returns `true`. If the given
@@ -876,7 +867,7 @@ module List {
 
     /*
       Insert a list of elements `lst` into this list at index `idx`, shifting
-      all elements at and followThising the index `lst.size` positions to the
+      all elements at and following the index `lst.size` positions to the
       right.
 
       If the insertion is successful, this method returns `true`. If the given
@@ -914,7 +905,7 @@ module List {
 
     /*
       Remove the first `count` elements from this list with values equal to
-      `x`, shifting all elements followThising the removed item left.
+      `x`, shifting all elements following the removed item left.
 
       If the count of elements to remove is less than or equal to zero, then
       all elements from this list equal to the value of `x` will be removed.
@@ -944,7 +935,7 @@ module List {
         for i in 1..(_size - removed) {
           ref item = _getRef(i);
         
-          // TODO: Reduce shifts to O(n) by marking holes?
+          // TODO: Reduce total work to O(n) by marking holes?
           if x == item {
             _destroy(item);
             _collapse(i);
@@ -995,19 +986,18 @@ module List {
       // even if the variable is pragma "no init". Either we need to support
       // returning from on statements, or make the "no init" pragma work with
       // non-nillable classes.
+      // TODO: Add future for this memory leak.
       //
       _enter();
 
-      if boundsChecking && _size <= 0 then {
+      if boundsChecking && _size <= 0 {
         _leave();
-        const msg = "Called \"pop\" on an empty list.";
-        halt(msg);
+        halt("Called \"list.pop\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         _leave();
-        const msg = "List \"pop\" index out of bounds: " + idx:string;
-        halt(msg);
+        halt("Index for \"list.pop\" out of bounds: " + idx:string);
       }
 
       ref item = _getRef(idx);
@@ -1097,9 +1087,15 @@ module List {
 
     /*
       Return a one-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found, or either of the
-      indexes `start` or `end` are out of bounds, this method returns the
-      value `-1`.
+      is equal to `x`. If no such element can be found this method returns
+      the value -1.
+
+      .. warning::
+
+        Calling this method on an empty list or with values of `start` or 
+        `end` that are out of bounds will cause the currently running program
+        to halt. If the `--fast` flag is used, no safety checks will be
+        performed.
 
       :arg x: An element to search for.
       :type x: `eltType`
@@ -1114,10 +1110,15 @@ module List {
       :rtype: `int`
     */
     proc indexOf(x: eltType, start: int=1, end: int=size): int {
-      param error = -1;
+      if boundsChecking {
+        const msg = " index for \"list.indexOf\" out of bounds: ";
+        if !_withinBounds(start) then
+          halt("Start" + msg + start:string);
+        if !_withinBounds(end) then
+          halt("End" + msg + end:string);
+      }
 
-      if !_withinBounds(start) || !_withinBounds(end) then
-        return error;
+      param error = -1;
 
       if end < start then
         return error;
@@ -1356,7 +1357,7 @@ module List {
 
         var tmp: [1.._size] eltType;
 
-        for i in 1.._size do
+        forall i in 1.._size do
           tmp[i] = _getRef(i);
 
         result = tmp;

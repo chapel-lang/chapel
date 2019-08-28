@@ -1,1 +1,1 @@
-listFirstHalt.chpl:5: error: halt reached - Called "first" on an empty list.
+listFirstHalt.chpl:5: error: halt reached - Called "list.first" on an empty list.

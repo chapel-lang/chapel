@@ -6,7 +6,12 @@ private use List;
 //
 {
   const r = 1..1023;
-  var lst: list(int) = r;
-  for (x, y) in zip(r, lst) do
+  var lst1: list(int) = r;
+
+  // Both the long and short forms of `init=` should have the same type.
+  var lst2 = lst1;
+  assert(lst1.type == lst2.type);
+
+  for (x, y) in zip(r, lst1) do
     assert(x == y);
 }
