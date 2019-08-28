@@ -52,6 +52,7 @@
   into a list is O(1).
 */
 module List {
+  private use Sort;
 
   pragma "no doc"
   private const _initialCapacity = 8;
