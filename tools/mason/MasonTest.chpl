@@ -43,7 +43,7 @@ proc masonTest(args) throws {
   var parallel = false;
   var update = true;
   var compopts: list(string);
-
+  
   if args.size > 2 {
     for arg in args[2..] {
       if arg == '-h' || arg == '--help' {
@@ -446,7 +446,7 @@ proc testFile(file, ref result, ref testResults, show: bool) throws {
         skippedTestNames: list(string);
     var dictDomain: domain(int);
     var dict: [dictDomain] int;
-    var exitCode = runAndLog("./"+executable, fileName, result, numLocales, testsPassed,
+    const exitCode = runAndLog("./"+executable, fileName, result, numLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
               skippedTestNames);
     if exitCode != 0 {
@@ -515,14 +515,11 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames.toArray(): string;
   if testsPassed.size != 0 then passedTestStr = testsPassed.toArray(): string;
   if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames.toArray(): string;
-  
-  const testResCompOpts = " ".join("--testNames", testNamesStr, "--failedTestNames", failedTestNamesStr,
-                                  "--errorTestNames", erroredTestNamesStr, "--ranTests", passedTestStr,
-                                  "--skippedTestNames", skippedTestNamesStr);
-
-  const compCommand = " ".join(executable,"-nl", reqNumLocales: string, testResCompOpts);
-  var exec = runWithProcess(compCommand);
-
+  var exec = spawn([executable, "-nl", reqNumLocales: string, "--testNames", 
+            testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
+            erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
+            skippedTestNamesStr], stdout = PIPE, 
+            stderr = PIPE); //Executing the file
   //std output pipe
   while exec.stdout.readline(line) {
     if line.strip() == separator1 then sep1Found = true;
@@ -571,7 +568,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   exec.wait();//wait till the subprocess is complete
   exitCode = exec.exit_status;
   if haltOccured then
-  exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
+    exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
               skippedTestNames);
   if testNames.size != 0 {

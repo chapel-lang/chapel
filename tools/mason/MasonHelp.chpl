@@ -353,6 +353,8 @@ proc masonTestHelp() {
   writeln("    -h, --help                  Display this message");
   writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
+  writeln("        --keep-binary           Doesn't delete the binaries after running");
+  writeln("        --subdir                Descend recursively into subdirectories of given Directories");
   writeln("        --parallel              Run tests in parallel(sequential by default)");
   writeln();
   writeln("Test configuration is up to the user");
