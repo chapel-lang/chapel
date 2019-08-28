@@ -264,9 +264,6 @@ static void printInstantiationNoteForLastError() {
       }
     }
 
-    // TODO
-    err_fn->userString = NULL;
-
     fprintf(stderr,
             "%s:%d: %s '%s' instantiated here",
             cleanFilename(bestPoint),
@@ -274,26 +271,10 @@ static void printInstantiationNoteForLastError() {
             (err_fn->isIterator() ? "Iterator" : "Function"),
             err_fn->name);
 
-    bool printedWith = false;
-    FnSymbol* genericFn = err_fn->instantiatedFrom;
+    const char* subsDesc = err_fn->substitutionsToString();
 
-    for_formals(genericArg, genericFn) {
-      Symbol* sym = err_fn->substitutions.get(genericArg);
-      if (sym != NULL) {
-        if (printedWith == false) {
-          printedWith = true;
-          fprintf(stderr, " with");
-        }
-        Type* t = sym->getValType();
-        fprintf(stderr, " %s:%s", genericArg->name, toString(t));
-        Immediate* imm = getSymbolImmediate(sym);
-        if (imm) {
-          const size_t bufSize = 128;
-          char buf[bufSize];
-          snprint_imm(buf, bufSize, *imm);
-          fprintf(stderr, " = %s", buf);
-        }
-      }
+    if (subsDesc[0] != '\0') {
+      fprintf(stderr, " with %s", subsDesc);
     }
     fprintf(stderr, "\n");
   }

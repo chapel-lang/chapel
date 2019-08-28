@@ -1094,6 +1094,37 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
+const char* FnSymbol::substitutionsToString() const {
+  const char* sep = " ";
+  const char* ret = astr("");
+
+  FnSymbol* genericFn = this->instantiatedFrom;
+
+  if (genericFn != NULL) {
+    for_formals(genericArg, genericFn) {
+      Symbol* sym = const_cast<FnSymbol*>(this)->substitutions.get(genericArg);
+      if (sym != NULL) {
+	Type* t = sym->getValType();
+
+        // add a separator if this isn't the first one
+        if (ret[0] != '\0')
+          ret = astr(ret, sep);
+
+        ret = astr(ret, genericArg->name, ":", toString(t));
+	Immediate* imm = getSymbolImmediate(sym);
+	if (imm) {
+	  const size_t bufSize = 128;
+	  char buf[bufSize];
+	  snprint_imm(buf, bufSize, *imm);
+          ret = astr(ret, " = ", buf);
+	}
+      }
+    }
+  }
+
+  return ret;
+}
+
 const char* toString(FnSymbol* fn) {
   const char* retval = NULL;
 

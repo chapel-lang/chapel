@@ -192,6 +192,8 @@ public:
 
   bool                       retExprDefinesNonVoid()                     const;
 
+  const char*                substitutionsToString()                     const;
+
 private:
   virtual std::string        docsDirective();
 
