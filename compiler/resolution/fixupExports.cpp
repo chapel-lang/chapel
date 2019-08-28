@@ -191,7 +191,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
         SET_LINENO(fn);
         if (tag == INTENT_BLANK) {
           USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
-                         "routine \'%s\' may not be passed by ref in "
+                         "routine \'%s\' may not be passed by const ref in "
                          "multilocale libraries",
                          as->name, t->name(), fn->userString);
 
