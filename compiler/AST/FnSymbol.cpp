@@ -1094,8 +1094,10 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
-const char* FnSymbol::substitutionsToString() const {
-  const char* sep = " ";
+const char* FnSymbol::substitutionsToString(const char* sep) const {
+  if (sep == NULL || sep[0] == '\0')
+    sep = " ";
+
   const char* ret = astr("");
 
   FnSymbol* genericFn = this->instantiatedFrom;
@@ -1110,7 +1112,7 @@ const char* FnSymbol::substitutionsToString() const {
         if (ret[0] != '\0')
           ret = astr(ret, sep);
 
-        ret = astr(ret, genericArg->name, ":", toString(t));
+        ret = astr(ret, genericArg->name, ": ", toString(t));
 	Immediate* imm = getSymbolImmediate(sym);
 	if (imm) {
 	  const size_t bufSize = 128;

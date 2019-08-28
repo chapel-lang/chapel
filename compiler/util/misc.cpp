@@ -253,30 +253,39 @@ static void printInstantiationNoteForLastError() {
     // so that we can have a better error message line number.
     BlockStmt* instantiationPoint = err_fn->instantiationPoint();
     Expr* bestPoint = instantiationPoint;
-    std::vector<CallExpr*> calls;
-    collectFnCalls(instantiationPoint, calls);
-    for_vector(CallExpr, call, calls) {
-      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-        if (fn == err_fn) {
-          bestPoint = call;
-          break;
+
+    if (instantiationPoint != NULL) {
+      std::vector<CallExpr*> calls;
+      collectFnCalls(instantiationPoint, calls);
+      for_vector(CallExpr, call, calls) {
+        if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+          if (fn == err_fn) {
+            bestPoint = call;
+            break;
+          }
         }
       }
+
+      const char* subsDesc = err_fn->substitutionsToString(", ");
+
+      if (subsDesc == NULL || subsDesc[0] == '\0') {
+        fprintf(stderr,
+                "%s:%d: %s '%s' instantiated here\n",
+                cleanFilename(bestPoint),
+                bestPoint->linenum(),
+                (err_fn->isIterator() ? "Iterator" : "Function"),
+                err_fn->name);
+      } else {
+        fprintf(stderr,
+                "%s:%d: %s '%s' instantiated as: %s(%s)\n",
+                cleanFilename(bestPoint),
+                bestPoint->linenum(),
+                (err_fn->isIterator() ? "Iterator" : "Function"),
+                err_fn->name,
+                err_fn->name,
+                subsDesc);
+      }
     }
-
-    fprintf(stderr,
-            "%s:%d: %s '%s' instantiated here",
-            cleanFilename(bestPoint),
-            bestPoint->linenum(),
-            (err_fn->isIterator() ? "Iterator" : "Function"),
-            err_fn->name);
-
-    const char* subsDesc = err_fn->substitutionsToString();
-
-    if (subsDesc[0] != '\0') {
-      fprintf(stderr, " with %s", subsDesc);
-    }
-    fprintf(stderr, "\n");
   }
 }
 
