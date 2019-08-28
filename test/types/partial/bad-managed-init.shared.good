@@ -1,2 +1,2 @@
 bad-managed-init.chpl:9: In function 'main':
-bad-managed-init.chpl:13: error: Cannot coerce 'shared C(real(64),4)' to 'shared C(int(64))' in initialization
+bad-managed-init.chpl:13: error: cannot coerce 'shared C(real(64),4)' to 'shared C(int(64))' in initialization
