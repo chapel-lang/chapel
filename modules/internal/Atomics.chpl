@@ -94,7 +94,8 @@ module Atomics {
   pragma "no doc"
   proc atomic_fence(order:memory_order = memory_order_seq_cst) {
     chpl_atomic_thread_fence(order);
-    chpl_rmem_consist_fence(order);
+    if CHPL_CACHE_REMOTE then
+      chpl_rmem_consist_fence(order);
   }
 
   /* An atomic fence that establishes an ordering of non-atomic and relaxed
