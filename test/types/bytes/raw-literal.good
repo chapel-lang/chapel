@@ -1,4 +1,5 @@
-some\nbytes, Here are some more escapes:
+Value: some\nbytes, Here are some more escapes:
             \t \r \xff
+Type: bytes
 some\nbytes, Here are some more escapes:
             \t \r \xff
