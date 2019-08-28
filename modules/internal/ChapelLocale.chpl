@@ -494,7 +494,7 @@ module ChapelLocale {
           // have some risk of getting part of a wide pointer).
           // Without this fence, there is a race condition on
           // a weakly-ordered architecture.
-          atomic_fence();
+          atomicFence();
           var count = 0;
           for f in flags do
             if f then count += 1;

@@ -289,7 +289,7 @@ proc mini_lock5() {
     // This code is wrong and racy, but the analysis
     // should nonetheless detect it as "blocking"
     while myLock == 1 {
-      atomic_fence();
+      atomicFence();
       if myLock == 0 {
         myLock = 1;
         break;
