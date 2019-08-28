@@ -1788,6 +1788,122 @@ module String {
 
   } // end record string
 
+  //
+  // createString* functions
+  //
+
+  proc createStringWithBorrowedBuffer(s: string) {
+    var ret: string;
+    ret.isowned = false;
+
+    const sRemote = s.locale_id != chpl_nodeID;
+    const sLen = s.length;
+
+    if sLen > 0 {
+      ret.len = sLen;
+      if sRemote {
+        // if s is remote, copy and own the buffer no matter what
+        ret.isowned = true;
+        ret.buff = bufferCopyRemote(s.locale_id, s.buff, sLen);
+        ret._size = sLen+1;
+      }
+      else {
+        // if s is local just adjust my buff and _size
+        ret.buff = s.buff;
+        ret._size = s._size;
+      }
+    }
+
+    return ret;
+  }
+
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    ret.isowned = false;
+
+    // here, we don't need to do anything special if length==0, the buffer may
+    // be allocated but empty
+    ret.buff = s;
+    ret._size = size;
+    ret.len = length;
+
+    return ret;
+  }
+
+  proc createStringWithOwnedBuffer(s: string) {
+    // should we allow stealing ownership?
+    compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
+  }
+
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
+    return createStringWithOwnedBuffer(s: bufferType, length=length,
+                                                      size=length+1);
+  }
+
+  proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    ret.isowned = true;
+
+    ret.buff = s;
+    ret._size = size;
+    ret.len = length;
+
+    return ret;
+  }
+
+  proc createStringWithNewBuffer(s: string) {
+    var ret: string;
+
+    const sRemote = s.locale_id != chpl_nodeID;
+    const sLen = s.length;
+    ret.isowned = true;
+
+    if sLen > 0 {
+      ret.len = sLen;
+      if sRemote {
+        // if s is remote, copy and own the buffer
+        ret.buff = bufferCopyRemote(s.locale_id, s.buff, sLen);
+        ret._size = sLen+1;
+      }
+      else {
+        // if s is local create a copy of its buffer and own it
+        const (buf, allocSize) = bufferCopyLocal(s.buff, sLen);
+        ret.buff = buf;
+        ret.buff[sLen] = 0;
+        ret._size = allocSize;
+      }
+    }
+
+    return ret;
+  }
+
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
+    return createStringWithNewBuffer(s: bufferType, length=length,
+                                                    size=length+1);
+  }
+
+  proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+
+    const sLen = length;
+    ret.isowned = true;
+
+    if sLen > 0 {
+      ret.len = sLen;
+      // create a copy of s's buffer and own it
+      const (buf, allocSize) = bufferCopyLocal(s:bufferType, sLen);
+      ret.buff = buf;
+      ret.buff[sLen] = 0;
+      ret._size = allocSize;
+    }
+
+    return ret;
+  }
 
   //
   // Assignment functions
