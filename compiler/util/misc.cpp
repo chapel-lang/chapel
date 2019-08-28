@@ -309,7 +309,7 @@ static bool printErrorHeader(const BaseAST* ast) {
 
       if (fn && fn != err_fn) {
         printInstantiationNoteForLastError();
-
+        err_fn_header_printed = false;
         err_fn = fn;
 
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
