@@ -52,7 +52,7 @@ module BytesStringCommon {
     x.isowned = false;
 
     const otherRemote = other.locale_id != chpl_nodeID;
-    const otherLen = other.length;
+    const otherLen = other.numBytes;
 
     if otherLen > 0 {
       x.len = otherLen;
@@ -98,7 +98,7 @@ module BytesStringCommon {
     assertArgType(t, "initWithNewBuffer");
 
     const otherRemote = other.locale_id != chpl_nodeID;
-    const otherLen = other.length;
+    const otherLen = other.numBytes;
     x.isowned = true;
 
     if otherLen > 0 {

@@ -771,7 +771,7 @@ module ZMQ {
           throw new owned ZMQError("Error in Socket.getLastEndpoint(): " +
                                    errmsg);
         }
-        ret = new string(str, needToCopy=false);
+        ret = createStringWithOwnedBuffer(str);
       }
       return ret;
     }
@@ -941,7 +941,7 @@ module ZMQ {
         //
         // TODO: If *not crossing locales*, check for ownership and
         // conditionally have ZeroMQ free the memory.
-        var copy = new string(s=data, isowned=true);
+        var copy = createStringWithNewBuffer(s=data);
         copy.isowned = false;
 
         // Create the ZeroMQ message from the string buffer
@@ -1042,9 +1042,8 @@ module ZMQ {
         // Construct the string on the current locale, copying the data buffer
         // from the message object; then, release the message object
         var len = zmq_msg_size(msg):int;
-        var str = new string(buff=zmq_msg_data(msg):c_ptr(uint(8)),
-                             length=len, size=len+1,
-                             isowned=true, needToCopy=true);
+        var str = createStringWithNewBuffer(buff=zmq_msg_data(msg):c_ptr(uint(8)),
+                                            length=len, size=len+1);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }

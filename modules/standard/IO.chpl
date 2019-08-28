@@ -1562,7 +1562,7 @@ proc file.path : string throws {
     }
     chpl_free_c_string(tmp);
     if !err {
-      ret = new string(tmp2, needToCopy=false);
+      ret = createStringWithOwnedBuffer(tmp2);
     }
   }
   if err then try ioerror(err, "in file.path");
@@ -1708,7 +1708,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
       if path_err {
         path = "unknown";
       } else {
-        path = new string(str, len, isowned=true, needToCopy=false);
+        path = createStringWithOwnedBuffer(str, len);
       }
     }
 
@@ -1781,7 +1781,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var path_cs:c_string;
     var path_err = qio_file_path_for_fd(fd, path_cs);
     var path = if path_err then "unknown"
-                           else new string(path_cs, needToCopy=false);
+                           else createStringWithOwnedBuffer(path_cs);
     try ioerror(err, "in openfd", path);
   }
   return ret;
@@ -1823,7 +1823,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var path_cs:c_string;
     var path_err = qio_file_path_for_fp(fp, path_cs);
     var path = if path_err then "unknown"
-                           else new string(path_cs, needToCopy=false);
+                           else createStringWithOwnedBuffer(path_cs);
     try ioerror(err, "in openfp", path);
   }
   return ret;
@@ -2048,7 +2048,7 @@ pragma "no doc"
 inline proc _cast(type t:string, x: ioChar) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
-  return new string(csc, needToCopy=false);
+  return createStringWithOwnedBuffer(csc);
 }
 
 
@@ -2148,7 +2148,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = new string(tmp_path, needToCopy=false);
+      path = createStringWithOwnedBuffer(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -2166,7 +2166,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = new string(tmp_path, needToCopy=false);
+      path = createStringWithOwnedBuffer(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -2733,7 +2733,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    x = new string(tx, length=len, needToCopy=false);
+    x = createStringWithOwnedBuffer(tx, length=len);
     return ret;
   } else if t == bytes {
     // handle _bytes
@@ -2876,7 +2876,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = new string(tx, length=len, needToCopy=false);
+    x = createStringWithOwnedBuffer(tx, length=len);
     return ret;
   } else if t == bytes {
     // handle _bytes (nothing special for bytes vs string in this case)
@@ -3443,7 +3443,7 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
+      return createStringWithOwnedBuffer(buf, offset, offset+1);
     }
   }
 }
@@ -3670,7 +3670,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
       this._set_style(save_style);
     }
 
-    str_out = new string(tx, length=lenread, needToCopy=false);
+    str_out = createStringWithOwnedBuffer(tx, length=lenread);
   }
 
   if !err {
@@ -5393,8 +5393,8 @@ proc _toString(x:?t) where !_isIoPrimitiveType(t)
 private inline
 proc _toStringFromBytesOrString(x:bytes)
 {
-  return (new string(x.buff, length=x.length, size=x._size,
-                     isowned=false, needToCopy=false), true);
+  return (createStringWithBorrowedBuffer(x.buff, length=x.length, size=x._size),
+          true);
 }
 private inline
 proc _toStringFromBytesOrString(x:string)
@@ -6683,7 +6683,7 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
 
-  return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
+  return createStringWithOwnedBuffer(buf, offset, offset+1);
 }
 
 
@@ -6736,7 +6736,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error =
         qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
-    s = new string(ts, length=gotlen, needToCopy=false);
+    s = createStringWithOwnedBuffer(ts, length=gotlen);
   }
 
   if ! error {

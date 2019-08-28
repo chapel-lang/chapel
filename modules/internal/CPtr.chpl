@@ -275,11 +275,11 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_void_ptr) {
-    return new string(__primitive("ref to string", x), needToCopy=false);
+    return createStringWithOwnedBuffer(__primitive("ref to string", x));
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_ptr) {
-    return new string(__primitive("ref to string", x), needToCopy=false);
+    return createStringWithOwnedBuffer(__primitive("ref to string", x));
   }
   pragma "last resort"
   pragma "no doc"

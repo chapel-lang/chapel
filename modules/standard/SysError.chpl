@@ -58,7 +58,7 @@ class SystemError : Error {
   override proc message() {
     var strerror_err: err_t = ENOERR;
     var errstr              = sys_strerror_syserr_str(err, strerror_err);
-    var err_msg             = new string(errstr, isowned=true, needToCopy=false);
+    var err_msg             = createStringWithOwnedBuffer(errstr);
 
     if !details.isEmpty() then
       err_msg += " (" + details + ")";
@@ -384,9 +384,9 @@ private proc quote_string(s:string, len:ssize_t) {
   // This doesn't handle the case where ret==NULL as did the previous
   // version in QIO, but I'm not sure how that was used.
 
-  if err then return new string(qio_strdup("<error>"), isowned=true, needToCopy=false);
+  if err then return createStringWithOwnedBuffer(qio_strdup("<error>"));
 
-  return new string(ret, isowned=true, needToCopy=false);
+  return createStringWithOwnedBuffer(ret);
 }
 
 /* Create and throw a :class:`SystemError` if an error occurred, formatting a
@@ -462,7 +462,7 @@ proc errorToString(error:syserr):string
 {
   var strerror_err:err_t = ENOERR;
   const errstr = sys_strerror_syserr_str(error, strerror_err);
-  return new string(errstr, isowned=true, needToCopy=false);
+  return createStringWithOwnedBuffer(errstr);
 }
 
 }

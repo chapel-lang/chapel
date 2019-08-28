@@ -578,15 +578,15 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return new string(chpl__getInPlaceBufferData(data.shortData), data.len,
-                            data.size, isowned=true, needToCopy=true);
+          return createStringWithNewBuffer(
+                  chpl__getInPlaceBufferData(data.shortData), data.len,
+                  data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return new string(localBuff, data.len, data.size,
-                            isowned=true, needToCopy=false);
+          return createStringWithOwnedBuffer(localBuff, data.len, data.size);
         }
       } else {
-        return new string(data.buff, data.len, data.size, isowned = false, needToCopy=false);
+        return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
       }
     }
 
@@ -680,7 +680,7 @@ module String {
     */
     inline proc localize() : string {
       if _local || this.locale_id == chpl_nodeID {
-        return new string(this, isowned=false);
+        return createStringWithBorrowedBuffer(this);
       } else {
         const x:string = this; // assignment makes it local
         return x;
@@ -2203,7 +2203,7 @@ module String {
     var buffer = bufferAllocExact(2);
     buffer[0] = i;
     buffer[1] = 0;
-    var s = new string(buffer, 1, 2, isowned=true, needToCopy=false);
+    var s = createStringWithOwnedBuffer(buffer, 1, 2);
     return s;
   }
 
@@ -2216,7 +2216,7 @@ module String {
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
-    var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);
+    var s = createStringWithOwnedBuffer(buffer, mblength, mbsize);
     return s;
   }
 
