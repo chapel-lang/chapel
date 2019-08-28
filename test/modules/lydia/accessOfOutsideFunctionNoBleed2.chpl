@@ -11,8 +11,8 @@ module M {
     return 4 + y;
   }
 }
-
 module M2 {
+  use M only;
   proc main() {
     writeln(M.a(true));
     writeln(b(3));

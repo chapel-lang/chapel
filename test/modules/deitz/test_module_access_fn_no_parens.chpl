@@ -3,6 +3,7 @@ module M1 {
 }
 
 module M2 {
+  use M1;
   proc main {
     var f = 4;
     writeln(f);

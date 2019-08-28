@@ -12,7 +12,7 @@ const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j);
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
 const poolSize = numLocales;
-const t = new unmanaged taskpool(poolSize);
+const t = new unmanaged taskpool.taskpool(poolSize);
 
 proc buildjk() {
   cobegin {

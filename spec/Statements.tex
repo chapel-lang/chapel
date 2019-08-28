@@ -673,9 +673,10 @@ label outer for i in 1..n {
 \index{modules!using}
 \index{types!enumerated!using}
 
-The use statement provides access to the constants in an enumerated type or
-the public symbols of a module within the scope in which it appears without
-the need to provide a full qualified path.
+The use statement provides access to the constants in an enumerated
+type or the public symbols of a module, including the module itself,
+within the scope in which it appears without the need to provide a
+full qualified path.
 
 The syntax of the use statement is given by:
 
@@ -718,6 +719,7 @@ module M1 {
 }
 
 module M2 {
+  use M1;
   proc main() {
     writeln("In M2's main.");
     M1.foo();

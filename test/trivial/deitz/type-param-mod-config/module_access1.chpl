@@ -9,6 +9,8 @@ module N {
 }
 
 module O {
+  use M only;
+  use N only;
   proc foo() {
     M.x = 1;
     M.y = 2;
@@ -18,6 +20,8 @@ module O {
 }
 
 module P {
+  use M only;
+  use N only;
   proc bar() {
     writeln(M.x, M.y, N.x, N.y);
   }

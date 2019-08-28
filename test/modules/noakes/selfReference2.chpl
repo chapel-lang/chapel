@@ -28,6 +28,7 @@ module selfReference {
 
 module internal {
   proc test0() {
+    use internal only;
     internal.test1();
   }
 

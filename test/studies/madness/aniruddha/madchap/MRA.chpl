@@ -35,8 +35,8 @@ class Function {
     var   compressed   : bool; // keep track of what basis we are in
 
     // Sum and Difference coefficients
-    const sumC : unmanaged FTree;
-    const diffC: unmanaged FTree;
+    const sumC : unmanaged FTree.FTree;
+    const diffC: unmanaged FTree.FTree;
 
     // Two-Scale relationship matrices
     const hgDom: domain(2);
@@ -61,8 +61,8 @@ class Function {
 
     proc init(k:int=5, thresh:real=1e-5, f:unmanaged AFcn?=nil, initial_level:int=2,
               max_level:int=30, autorefine:bool=true, compressed:bool=false,
-              sumC:unmanaged FTree=new unmanaged FTree(order=k),
-              diffC:unmanaged FTree=new unmanaged FTree(order=k)) {
+              sumC:unmanaged FTree.FTree=new unmanaged FTree.FTree(order=k),
+              diffC:unmanaged FTree.FTree=new unmanaged FTree.FTree(order=k)) {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
         this.k = k;
         this.thresh = thresh;

@@ -9,6 +9,7 @@ module M1 {
 }
 
 module M2 {
+  use M1;
   proc main() {
     M1.foo();
   }

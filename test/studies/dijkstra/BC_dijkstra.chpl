@@ -18,7 +18,7 @@ module BC_dijkstra {
     }
 
     // Initialize heap
-    var heap = new unmanaged Heap(leafLevel = nNodes/2, IdsD = {0..(nNodes-1)});
+    var heap = new unmanaged NodesEdges.Heap(leafLevel = nNodes/2, IdsD = {0..(nNodes-1)});
 
     for i in D1 do heap.Ids[i] = -1;
 

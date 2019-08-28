@@ -6,8 +6,8 @@ use mink;
 use Common;
 
 // Verify the regular 1000 element arrays produce the correct mink values.
-var intResult = mink reduce intArray,
-  realResult = mink reduce realArray;
+var intResult = mink.mink reduce intArray,
+  realResult = mink.mink reduce realArray;
 writeln("mink int result: ", intResult);
 writeln("mink real result: ", realResult);
 
@@ -16,8 +16,8 @@ writeln("mink real result: ", realResult);
 var smallA: [1..5] real;
 
 randStream.fillRandom(smallA);
-writeln("mink int small result: ", mink reduce smallA);
+writeln("mink int small result: ", mink.mink reduce smallA);
 
 // Verify calling reduction on empty array returns array of max(eltType)
 // values.
-writeln("mink int empty result: ", mink reduce emptyArray);
+writeln("mink int empty result: ", mink.mink reduce emptyArray);

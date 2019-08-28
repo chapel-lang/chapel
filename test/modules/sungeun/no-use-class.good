@@ -1,2 +1,3 @@
-nil
-nil
+no-use-class.chpl:6: In function 'main':
+no-use-class.chpl:7: error: 'X' undeclared (first use this function)
+no-use-class.chpl:10: error: 'Z' undeclared (first use this function)

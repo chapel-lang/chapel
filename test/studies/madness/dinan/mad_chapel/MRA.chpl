@@ -31,8 +31,8 @@ class Function {
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var   s = new unmanaged FTree(order=k);
-    var   d = new unmanaged FTree(order=k);
+    var   s = new unmanaged FTree.FTree(order=k);
+    var   d = new unmanaged FTree.FTree(order=k);
 
     // FIXME: Ideally all of these matrices should be const as well but they
     //        can't be presently since they must be assigned in postinit()

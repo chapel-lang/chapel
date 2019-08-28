@@ -12,6 +12,7 @@ proc foo() {
 
 
 proc main() {
+  use Foo only;
   foo();
   Foo.foo();  // use a fully-qualified reference to Foo's foo()
 }
