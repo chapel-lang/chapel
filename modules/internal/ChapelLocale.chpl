@@ -66,7 +66,7 @@
  */
 module ChapelLocale {
 
-  use LocaleModel;
+  use LocaleModelMod;
 
   //
   // Node and sublocale types and special sublocale values.

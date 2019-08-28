@@ -210,6 +210,7 @@ static void addToSymbolTable() {
       if (mod == NULL /* || mod->modTag != MOD_USER */) {
         //        printf("Extending to include %s\n", def->sym->name);
         rootScope->extend(def->sym);
+      } else {
       }
     }
   }
@@ -275,11 +276,11 @@ static void scopeResolve(ModuleSymbol*       module,
   if (module->modTag == MOD_USER &&
       module->defPoint->getModule() == theProgram) {
     ResolveScope* scope = new ResolveScope(module, parent);
-
+    scope->extend(module);
     scopeResolve(module->block->body, scope);
   } else {
     ResolveScope* scope = new ResolveScope(module, parent);
-
+    scope->extend(module);
     scopeResolve(module->block->body, scope);
   }
 }
