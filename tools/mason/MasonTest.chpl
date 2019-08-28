@@ -30,8 +30,8 @@ use FileSystem;
 use TestResult;
 use Sys;
 
-config const subdir = true;
-config const keepExec = false;
+var subdir = false;
+var keepExec = false;
 config const setComm: string = "";
 var comm: string;
 
@@ -65,21 +65,29 @@ proc masonTest(args) throws {
       else if arg == '--no-update' {
         update = false;
       }
+      else if arg == '--keep-binary' {
+        keepExec = true;
+      }
+      else if arg == '--subdir' {
+        subdir = true;
+      }
       else {
         compopts.append(arg);
       }
     }
   }
+  getRuntimeComm();
   var uargs: list(string);
   if !update then uargs.append('--no-update');
   try! {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     UpdateLock(uargs);
+    compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
   }
   catch e: MasonError {
-    runUnitTest(compopts);
+    runUnitTest(compopts, show);
   }
 }
 
@@ -123,6 +131,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
       var resultDomain: domain(string);
       var testResults: [resultDomain] string;
+      var result =  new TestResult();
 
       for test in testNames {
 
@@ -144,8 +153,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         else {
           if show || !run then writeln("compiled ", test, " successfully");
           if parallel {
-            var result = runTestBinary(projectHome, testName, show);
-            if result != 0 {
+            var exitCode = runTestBinary(projectHome, testName, result, show);
+            if exitCode != 0 {
               testResults[testName] = "Failed";
             }
             else {
@@ -155,13 +164,21 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         }
       }
       if run && !parallel {
-        var testBinResults = runTestBinaries(projectHome, testNames, numTests, show);
+        var testBinResults = runTestBinaries(projectHome, testNames, numTests, result, show);
         resultDomain = testBinResults.domain;
         testResults = testBinResults;
       }
       if run {
-        const numPassed = testResults.count("Passed");
-        printTestResults(testResults, numTests, numPassed, show);
+        if result.testsRun != 0 {
+          result.printErrors();
+          writeln(result.separator2);
+          result.printResult();
+          exit(0);
+        }
+        else {
+          const numPassed = testResults.count("Passed");
+          printTestResults(testResults, numTests, numPassed, show);
+        }
       }
     }
     else {
@@ -176,23 +193,36 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 }
 
 
-private proc runTestBinary(projectHome: string, testName: string, show: bool) {
+private proc runTestBinary(projectHome: string, testName: string, ref result, show: bool) {
   const command = "".join(projectHome,'/target/test/', testName);
-  const testResult = runWithStatus(command, show);
-  return testResult;
+  var testNames: list(string),
+      failedTestNames: list(string),
+      erroredTestNames: list(string),
+      testsPassed: list(string),
+      skippedTestNames: list(string);
+  var dictDomain: domain(int);
+  var dict: [dictDomain] int;
+  const exitCode = runAndLog(command, testName+".chpl", result, numLocales, testsPassed,
+            testNames, dictDomain, dict, failedTestNames, erroredTestNames,
+            skippedTestNames);
+  if exitCode != 0 {
+    const testResult = runWithStatus(command, show);
+    return testResult;
+  }
+  return exitCode;
 }
 
 
 private proc runTestBinaries(projectHome: string, testNames: list(string),
-                             numTests: int, show: bool) {
+                             numTests: int, ref result, show: bool) {
 
   var resultDomain: domain(string);
   var testResults: [resultDomain] string;
 
   for test in testNames {
     const testName = basename(stripExt(test, ".chpl"));
-    const result = runTestBinary(projectHome, testName, show);
-    if result != 0 {
+    const exitCode = runTestBinary(projectHome, testName, result, show);
+    if exitCode != 0 {
       testResults[testName] = "Failed";
     }
     else {
@@ -308,7 +338,7 @@ proc getRuntimeComm() throws {
   }
 }
 
-proc runUnitTest(ref cmdLineCompopts: list(string)) {
+proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
   var comm_c: c_string;
   var dirs: list(string);
   var files: list(string);
@@ -318,12 +348,10 @@ proc runUnitTest(ref cmdLineCompopts: list(string)) {
     checkChpl.wait();
     var line: string;
     if checkChpl.stdout.readline(line) {
-      // get comm
-      getRuntimeComm();
 
       for a in cmdLineCompopts {
         try! {
-          if isFile(a) {
+          if isFile(a) && a.endsWith(".chpl") {
             files.append(a);
           }
           else if isDir(a) {
@@ -345,10 +373,12 @@ proc runUnitTest(ref cmdLineCompopts: list(string)) {
       }
       
       var result =  new TestResult();
+      var resultDomain: domain(string);
+      var testResults: [resultDomain] string;
 
       for tests in files {
         try {
-          testFile(tests, result);
+          testFile(tests, result, testResults, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test File: ", tests);
@@ -358,17 +388,24 @@ proc runUnitTest(ref cmdLineCompopts: list(string)) {
 
       for dir in dirs {
         try {
-          testDirectory(dir, result);
+          testDirectory(dir, result, testResults, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test Directory: ", dir);
           writeln(e);
         }
       }
-        
-      result.printErrors();
-      writeln(result.separator2);
-      result.printResult();
+      if result.testsRun != 0 {
+        result.printErrors();
+        writeln(result.separator2);
+        result.printResult();
+        exit(0);
+      }
+      else {
+        const numPassed = testResults.count("Passed");
+        const numFailed = testResults.count("Failed");
+        printTestResults(testResults, numPassed + numFailed, numPassed, show);
+      }
     }
     else {
       writeln("chpl not found.");
@@ -379,61 +416,67 @@ proc runUnitTest(ref cmdLineCompopts: list(string)) {
 
 pragma "no doc"
 /*Docs: Todo*/
-proc testFile(file, ref result) throws {
+proc testFile(file, ref result, ref testResults, show: bool) throws {
   var fileName = basename(file);
-  if fileName.endsWith(".chpl") {
-    var line: string;
-    var compErr = false;
-    var tempName = fileName.split(".chpl");
-    var executable = tempName[1];
-    var executableReal = executable + "_real";
-    if isFile(executable) {
-      FileSystem.remove(executable);
-    }
-    if isFile(executableReal) {
-      FileSystem.remove(executableReal);
-    }
-    var sub = spawn(["chpl", file, "-o", executable, "-M.", 
-                    "--comm", comm], stderr = PIPE); //Compiling the file
-    var compError: string;
-    if sub.stderr.readline(line) {
-      compError = line;
-      while sub.stderr.readline(line) do compError += line;
-      compErr = true;
-    }
-    sub.wait();
-    if !compErr {
-      var testNames: list(string),
-          failedTestNames: list(string),
-          erroredTestNames: list(string),
-          testsPassed: list(string),
-          skippedTestNames: list(string);
-      var dictDomain: domain(int);
-      var dict: [dictDomain] int;
-      runAndLog(executable, fileName, result, numLocales, testsPassed,
-                testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-                skippedTestNames);
-      if !keepExec {
-        FileSystem.remove(executable);
-        if isFile(executableReal) {
-          FileSystem.remove(executableReal);
-        }
+  var line: string;
+  var compErr = false;
+  var executable = stripExt(fileName,".chpl");
+  var executableReal = executable + "_real";
+  // remove the binaries if they exist
+  if isFile(executable) {
+    FileSystem.remove(executable);
+  }
+  if isFile(executableReal) {
+    FileSystem.remove(executableReal);
+  }
+
+  const moveTo = "-o " + executable;
+  const allCompOpts = "--comm " + comm;
+  const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
+  const compilation = runWithStatus(compCommand);
+
+  if compilation != 0 {
+    stderr.writeln("compilation failed for " + fileName);
+  }
+  else {
+    var testNames: list(string),
+        failedTestNames: list(string),
+        erroredTestNames: list(string),
+        testsPassed: list(string),
+        skippedTestNames: list(string);
+    var dictDomain: domain(int);
+    var dict: [dictDomain] int;
+    var exitCode = runAndLog("./"+executable, fileName, result, numLocales, testsPassed,
+              testNames, dictDomain, dict, failedTestNames, erroredTestNames,
+              skippedTestNames);
+    if exitCode != 0 {
+      const testResult = runWithStatus("./"+executable, show);
+      if testResult != 0 {
+        testResults[fileName] = "Failed";
+      }
+      else {
+        testResults[fileName] = "Passed";
       }
     }
     else {
-      writeln("Compilation Error in ", fileName);
-      writeln("Possible Reasons can be passing a non-test ",
-              "function to UnitTest.runTest()");
-      writeln(compError);
+      testResults[fileName] = "Passed";
+    }
+    if !keepExec {
+      FileSystem.remove(executable);
+      if isFile(executableReal) {
+        FileSystem.remove(executableReal);
+      }
     }
   }
 }
 
 pragma "no doc"
 /*Docs: Todo*/
-proc testDirectory(dir, ref result) throws {
+proc testDirectory(dir, ref result, ref testResults, show: bool) throws {
   for file in findfiles(startdir = dir, recursive = subdir) {
-    testFile(file, result);
+    if file.endsWith(".chpl") {
+      testFile(file, result, testResults, show);
+    }
   }
 }
 
@@ -441,7 +484,7 @@ pragma "no doc"
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
               ref testsPassed, ref testNames, ref dictDomain, ref dict, 
-              ref failedTestNames, ref erroredTestNames, ref skippedTestNames) throws 
+              ref failedTestNames, ref erroredTestNames, ref skippedTestNames): int throws 
 {
   var separator1 = result.separator1,
       separator2 = result.separator2;
@@ -458,6 +501,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
       skippedTestNamesStr = "None";
 
   var currentRunningTests: list(string);
+  var exitCode: int;
   
   //
   // List has a different `writeThis` format than arrays, since it encloses
@@ -471,11 +515,14 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames.toArray(): string;
   if testsPassed.size != 0 then passedTestStr = testsPassed.toArray(): string;
   if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames.toArray(): string;
-  var exec = spawn(["./"+executable, "-nl", reqNumLocales: string, "--testNames", 
-            testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
-            erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
-            skippedTestNamesStr], stdout = PIPE, 
-            stderr = PIPE); //Executing the file
+  
+  const testResCompOpts = " ".join("--testNames", testNamesStr, "--failedTestNames", failedTestNamesStr,
+                                  "--errorTestNames", erroredTestNamesStr, "--ranTests", passedTestStr,
+                                  "--skippedTestNames", skippedTestNamesStr);
+
+  const compCommand = " ".join(executable,"-nl", reqNumLocales: string, testResCompOpts);
+  var exec = runWithProcess(compCommand);
+
   //std output pipe
   while exec.stdout.readline(line) {
     if line.strip() == separator1 then sep1Found = true;
@@ -522,8 +569,9 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
   }
   exec.wait();//wait till the subprocess is complete
+  exitCode = exec.exit_status;
   if haltOccured then
-    runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
+  exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
               skippedTestNames);
   if testNames.size != 0 {
@@ -535,10 +583,11 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
       }
     }
     dictDomain.remove(reqLocales);
-    runAndLog(executable, fileName, result, reqLocales, testsPassed,
+    exitCode = runAndLog(executable, fileName, result, reqLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames, 
               skippedTestNames);
   }
+  return exitCode;
 }
 
 pragma "no doc"
