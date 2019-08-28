@@ -184,7 +184,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   if (t == dtString) {
     IntentTag tag = as->intent;
 
-    if (fMultiLocaleInterop) {
+    if (fMultiLocaleInterop || strcmp(CHPL_COMM, "none")) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_IN &&
           tag != INTENT_CONST_IN) {
