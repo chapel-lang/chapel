@@ -207,7 +207,7 @@ static void addToSymbolTable() {
       // or not modules at all
       // TODO: Should eventually extend this to avoid putting any modules
       // in the root scope, but only focusing on user code for now
-      if (mod == NULL || mod->modTag != MOD_USER) {
+      if (mod == NULL /* || mod->modTag != MOD_USER */) {
         //        printf("Extending to include %s\n", def->sym->name);
         rootScope->extend(def->sym);
       }

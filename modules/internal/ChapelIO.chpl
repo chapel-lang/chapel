@@ -198,6 +198,8 @@ appropriately before the elements can be read.
  */
 module ChapelIO {
   use ChapelBase; // for uint().
+  use LocaleModel only ;
+  use ChapelLocale;
   use SysBasic;
 
   // TODO -- this should probably be private
@@ -830,7 +832,7 @@ module ChapelIO {
     }
   }
 
-  override proc LocaleModel.writeThis(f) {
+  override proc (LocaleModel.LocaleModel).writeThis(f) {
     // Most classes will define it like this:
     //      f <~> name;
     // but here it is defined thus for backward compatibility.

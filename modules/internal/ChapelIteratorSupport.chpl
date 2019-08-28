@@ -39,6 +39,7 @@ pragma "error mode fatal" // avoid compiler errors here
 pragma "unsafe"
 module ChapelIteratorSupport {
   use ChapelStandard;
+  private use Reflection;
 
   //
   // module support for iterators
@@ -255,21 +256,18 @@ module ChapelIteratorSupport {
   }
 
   proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
-    use Reflection;
     if hasField(ir.type, "_shape_") then
       return ir._shape_.type != void;
     else
       return false;
   }
   inline proc chpl_iteratorHasDomainShape(ir: _iteratorRecord) param {
-    use Reflection;
     if hasField(ir.type, "_shape_") then
       return isSubtype(ir._shape_.type, BaseDom);
     else
       return false;
   }
   inline proc chpl_iteratorHasRangeShape(ir: _iteratorRecord) param {
-    use Reflection;
     if hasField(ir.type, "_shape_") then
       return isRange(ir._shape_.type);
     else
@@ -279,7 +277,6 @@ module ChapelIteratorSupport {
   // This is the static type of chpl_computeIteratorShape(ir).
   proc chpl_iteratorShapeStaticTypeOrVoid(type ir: _iteratorRecord) type
   {
-    use Reflection;
     if hasField(ir, "_shape_") then
       return __primitive("static field type", ir, "_shape_");
     else
