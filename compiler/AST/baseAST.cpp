@@ -272,6 +272,7 @@ void destroyAst() {
 
 #include "view.h"
 
+/*
 static void definesModulesOnly(ModuleSymbol* mod) {
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
@@ -293,6 +294,7 @@ static void definesModulesOnly(ModuleSymbol* mod) {
     }
   }
 }
+*/
 
 void
 verify() {
@@ -309,7 +311,7 @@ verify() {
 
   // rootModule does not pass isAlive(), yet is "alive" - needs to be  verified
   rootModule->verify();
-  definesModulesOnly(theProgram);
+  //  definesModulesOnly(theProgram);
 }
 
 
