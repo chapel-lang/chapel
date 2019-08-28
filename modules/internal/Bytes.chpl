@@ -1040,6 +1040,60 @@ module Bytes {
 
   } // end of record bytes
 
+  //
+  // createBytes* functions
+  //
+
+  inline proc createBytesWithBorrowedBuffer(s: bytes) {
+    var ret: bytes;
+    initWithBorrowedBuffer(ret, s);
+    return ret;
+  }
+
+  inline proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+    return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: bytes) {
+    // should we allow stealing ownership?
+    compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
+    return createBytesWithOwnedBuffer(s: bufferType, length=length,
+                                                      size=length+1);
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithOwnedBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  inline proc createBytesWithNewBuffer(s: bytes) {
+    var ret: bytes;
+    initWithNewBuffer(ret, s);
+    return ret;
+  }
+
+  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
+    return createBytesWithNewBuffer(s: bufferType, length=length,
+                                                    size=length+1);
+  }
+
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithNewBuffer(ret, s, length, size);
+    return ret;
+  }
+
   inline proc _cast(type t: bytes, x: string) {
     return new bytes(x);
   }

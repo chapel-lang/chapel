@@ -94,7 +94,7 @@ module BytesStringCommon {
     x.len = length;
   }
 
-  proc initWithNewBuffer(ref x: ?t, other: string) {
+  proc initWithNewBuffer(ref x: ?t, other: t) {
     assertArgType(t, "initWithNewBuffer");
 
     const otherRemote = other.locale_id != chpl_nodeID;
