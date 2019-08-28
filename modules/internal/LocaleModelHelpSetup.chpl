@@ -34,7 +34,7 @@ module LocaleModelHelpSetup {
   use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
-  use LocaleModelMod only;
+  use LocaleModel only;
 
   config param debugLocaleModel = false;
 
@@ -69,7 +69,7 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      const node = new unmanaged LocaleModel(dst);
+      const node = new unmanaged LocaleModel.LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -82,7 +82,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new unmanaged LocaleModel(dst);
+      const node = new unmanaged LocaleModel.LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -95,7 +95,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new unmanaged LocaleModel(dst);
+      const node = new unmanaged LocaleModel.LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -131,7 +131,7 @@ module LocaleModelHelpSetup {
     return if localSpawn() then _node_name + "-" + _node_id else _node_name;
   }
 
-  proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
+  proc helpSetupLocaleFlat(dst:borrowed LocaleModel.LocaleModel, out local_name:string) {
     local_name = getNodeName();
 
     extern proc chpl_task_getCallStackSize(): size_t;
@@ -149,7 +149,7 @@ module LocaleModelHelpSetup {
     dst.maxTaskPar = chpl_task_getMaxPar();
   }
 
-  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel.LocaleModel, out local_name:string, out numSublocales) {
     helpSetupLocaleFlat(dst, local_name);
 
     extern proc chpl_task_getNumSublocales(): int(32);
@@ -181,7 +181,7 @@ module LocaleModelHelpSetup {
     }
   }
 
-  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleAPU(dst:borrowed LocaleModel.LocaleModel, out local_name:string, out numSublocales) {
     helpSetupLocaleFlat(dst, local_name);
 
     extern proc chpl_task_getMaxPar(): uint(32);
