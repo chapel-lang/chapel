@@ -1,0 +1,2 @@
+Direct print: some	bytes with € (the euro char)
+Print repr: b"some\x09bytes with \xE2\x82\xAC (the euro char)"

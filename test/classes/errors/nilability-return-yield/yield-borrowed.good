@@ -1,0 +1,2 @@
+yield-borrowed.chpl:3: In iterator 'I':
+yield-borrowed.chpl:3: error: cannot yield 'borrowed C?' when the declared return type is 'borrowed C'

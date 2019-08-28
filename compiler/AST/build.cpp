@@ -308,6 +308,10 @@ Expr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
+Expr* buildBytesLiteral(const char* pch) {
+  return new SymExpr(new_BytesSymbol(pch));
+}
+
 Expr* buildCStringLiteral(const char* pch) {
   return new SymExpr(new_CStringSymbol(pch));
 }
@@ -923,7 +927,7 @@ void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
     ti->insertAtTail(ri);
     ti->insertAtTail(ovar);
   } else {
-    ArgSymbol* tiMark = tiMarkForForallIntent(svar->intent);
+    ArgSymbol* tiMark = tiMarkForForallIntent(svar);
     INT_ASSERT(tiMark != NULL);
     ti->insertAtTail(tiMark);
     ti->insertAtTail(ovar);

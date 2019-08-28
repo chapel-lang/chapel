@@ -454,6 +454,7 @@ bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
+bool isUserRecord(Type* t); // is it a record from the user viewpoint?
 bool isUnion(Type* t);
 
 bool isReferenceType(const Type* t);
@@ -477,6 +478,7 @@ bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
 bool isString(Type* type);
+bool isBytes(Type* type);
 bool isUserDefinedRecord(Type* type);
 
 bool isPrimitiveScalar(Type* type);

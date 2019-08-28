@@ -214,22 +214,22 @@ module ChapelLocale {
 
     pragma "no doc"
     inline proc runningTaskCntSet(val : int) {
-      runningTaskCounter.write(val, memory_order_relaxed);
+      runningTaskCounter.write(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntAdd(val : int) {
-      runningTaskCounter.add(val, memory_order_relaxed);
+      runningTaskCounter.add(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntSub(val : int) {
-      runningTaskCounter.sub(val, memory_order_relaxed);
+      runningTaskCounter.sub(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCnt() {
-      var rtc = runningTaskCounter.read(memory_order_relaxed);
+      var rtc = runningTaskCounter.read(memoryOrder.relaxed);
       return if (rtc <= 0) then 1 else rtc;
     }
     //------------------------------------------------------------------------}
@@ -378,7 +378,7 @@ module ChapelLocale {
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
   pragma "no doc"
-  pragma "locale private" var rootLocale : locale? = nil;
+  pragma "locale private" var rootLocale : unmanaged locale? = nil;
   pragma "no doc"
   pragma "locale private" var rootLocaleInitialized = false;
 
@@ -397,7 +397,7 @@ module ChapelLocale {
   // module.
   //
   pragma "no doc"
-  var origRootLocale : locale? = nil;
+  var origRootLocale : unmanaged locale? = nil;
 
   pragma "no doc"
   class AbstractRootLocale : locale {
@@ -511,7 +511,7 @@ module ChapelLocale {
         // expose my flag to locale 0
         flags[locIdx] = f;
         // wait (locally) for locale 0 to set my flag
-        f!.s.waitFor(true);
+        f.s.waitFor(true);
         // clean up
         delete f;
       }
@@ -727,6 +727,6 @@ module ChapelLocale {
   //
   pragma "no doc"
   proc deinit() {
-    delete _to_unmanaged(origRootLocale);
+    delete origRootLocale;
   }
 }

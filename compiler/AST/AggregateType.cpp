@@ -1254,10 +1254,14 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
   Type* symType = sym->typeInfo();
   // Normalize `_owned(anymanaged-MyClass)` to `_owned(borrowed MyClass)`
   if (isManagedPtrType(this)) {
-    if (isClassLike(symType)) {
+    if (isClassLikeOrManaged(symType)) {
       ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
       if (isNilableClassType(symType))
         d = CLASS_TYPE_BORROWED_NILABLE;
+
+      if (isManagedPtrType(symType))
+        checkDuplicateDecorators(this, symType, insnPoint);
+
       symType = ::getDecoratedClass(symType, d);
     }
   }
@@ -1342,6 +1346,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym, Type* symType) {
 AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint) {
   AggregateType* retval = toAggregateType(symbol->copy()->type);
   Symbol*        field  = retval->getField(genericField);
+  Symbol*     renameTo  = NULL;
 
   symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
 
@@ -1384,12 +1389,12 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
     }
 
     retval->substitutions.put(field, sym);
-    retval->symbol->renameInstantiatedSingle(sym);
+    renameTo = sym;
     paramMap.put(field,sym);
 
   } else {
     retval->substitutions.put(field, symType->symbol);
-    retval->symbol->renameInstantiatedSingle(symType->symbol);
+    renameTo = symType->symbol;
   }
 
   if (field->hasFlag(FLAG_TYPE_VARIABLE) == true && givesType(sym) == true) {
@@ -1410,6 +1415,8 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
       INT_FATAL("unexpected type for field instantiation");
     }
   }
+
+  retval->symbol->renameInstantiatedSingle(renameTo);
 
   forv_Vec(AggregateType, at, dispatchParents) {
     retval->dispatchParents.add(at);

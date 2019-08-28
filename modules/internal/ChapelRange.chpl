@@ -152,7 +152,7 @@
  */
 module ChapelRange {
 
-  private use ChapelBase, SysBasic;
+  private use ChapelBase, SysBasic, HaltWrappers;
 
   use Math;
 

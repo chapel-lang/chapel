@@ -1,5 +1,5 @@
-var b: bytes = "this is a bytes";
-var s: string = "this is a string";
+var b = b"this is a bytes";
+var s = "this is a string";
 var cs: c_string = "this is a c_string";
 
 writeln(b);
@@ -54,19 +54,19 @@ writeln();
 
 // TEST BASICS
 writeln("Basic functions");
-var emptyBytes: bytes = "";
+var emptyBytes = b"";
 writeln("Is emptyBytes empty: ", emptyBytes.isEmpty());
 writeln("Is emptyBytes space: ", emptyBytes.isSpace());
 
-var allWS = (" " + "\t" + "\n" + "\r" + "\v" + "\f"):bytes;
+var allWS = b" " + b"\t" + b"\n" + b"\r" + b"\v" + b"\f";
 writeln("Is allWS space: ", allWS.isSpace());
 writeln();
 
 // TEST CASING
 writeln("Casing");
-var allUpper: bytes = "ABCDEFGHIJKLOMNPQRSTUVWXYZ";
-var allLower: bytes = "abcdefghijklomnpqrstuvwxyz";
-var allDigit: bytes = "0123456789";
+var allUpper = b"ABCDEFGHIJKLOMNPQRSTUVWXYZ";
+var allLower = b"abcdefghijklomnpqrstuvwxyz";
+var allDigit = b"0123456789";
 
 writeln("Is allUpper all upper: ", allUpper.isUpper());
 writeln("Is allLower all lower: ", allLower.isLower());
@@ -77,8 +77,8 @@ writeln("Is allAlnum all upper: ", allAlnum.isUpper());
 writeln("Is allAlnum all lower: ", allAlnum.isLower());
 writeln("Is allAlnum all digits: ", allAlnum.isDigit());
 
-var helloChapel: bytes = "Hello Chapel!";
-var helloWorld: bytes = "Hello world!";
+var helloChapel = b"Hello Chapel!";
+var helloWorld = "Hello world!";
 writeln(helloChapel, " is title: ", helloChapel.isTitle());
 writeln(helloWorld, " is title: ", helloWorld.isTitle());
 
@@ -103,24 +103,24 @@ writeln();
 
 // TEST SEARCH ETC. -- this is getting too much without coercion
 writeln("Search tests");
-var bytes_to_search = new bytes("start lorem ipsum end");
-writeln(bytes_to_search.startsWith("start":bytes));  //t
-writeln(bytes_to_search.startsWith("lorem":bytes, "ipsum":bytes));  //f
-writeln(bytes_to_search.startsWith("end":bytes)); //f
-writeln(bytes_to_search.endsWith("start":bytes));  //f
-writeln(bytes_to_search.endsWith("lorem":bytes, "ipsum":bytes));  //f
-writeln(bytes_to_search.endsWith("end":bytes));   //t
+var bytes_to_search = b"start lorem ipsum end";
+writeln(bytes_to_search.startsWith(b"start"));  //t
+writeln(bytes_to_search.startsWith(b"lorem", "ipsum":bytes));  //f
+writeln(bytes_to_search.startsWith(b"end")); //f
+writeln(bytes_to_search.endsWith(b"start"));  //f
+writeln(bytes_to_search.endsWith(b"lorem", b"ipsum"));  //f
+writeln(bytes_to_search.endsWith(b"end"));   //t
 
-writeln(b.find("is":bytes)); //3
-writeln(b.rfind("is":bytes)); //6
-writeln(b.count("is":bytes)); //2
+writeln(b.find(b"is")); //3
+writeln(b.rfind(b"is")); //6
+writeln(b.count(b"is")); //2
 
-writeln(b.find("is":bytes, region=4..)); //6
-writeln(b.rfind("is":bytes, region=..5)); //3
-writeln(b.count("is":bytes, region=..5)); //1
+writeln(b.find(b"is", region=4..)); //6
+writeln(b.rfind(b"is", region=..5)); //3
+writeln(b.count(b"is", region=..5)); //1
 
-writeln(b.find("is is":bytes)); //3
-writeln("Make it plural ", b.replace("is is a":bytes, "ese are":bytes));
+writeln(b.find(b"is is")); //3
+writeln("Make it plural ", b.replace(b"is is a", b"ese are"));
 writeln();
 
 // TEST SPLIT/JOIN etc
@@ -133,32 +133,32 @@ for (num,byte) in zip(1.., b.split()) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test split with args");
-for (num,byte) in zip(1.., b.split("is":bytes)) do
+for (num,byte) in zip(1.., b.split(b"is")) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test join -- bytes varargs");
-var baseBytes = "/":bytes;
-writeln(baseBytes.join("dir1":bytes, "dir2":bytes, "file":bytes));
+var baseBytes = b"/";
+writeln(baseBytes.join(b"dir1", b"dir2", b"file"));
 
 writeln("Test join -- homogeneous tuple of bytes");
-writeln(baseBytes.join(("dir1":bytes, "dir2":bytes, "file":bytes)));
+writeln(baseBytes.join((b"dir1", b"dir2", b"file")));
 
 writeln("Test join -- array of bytes");
-writeln(baseBytes.join(["dir1":bytes, "dir2":bytes, "file":bytes]));
+writeln(baseBytes.join(b"dir1", b"dir2", b"file"));
 
 writeln("Test strip");
-var bytesToStrip: bytes = " \n  a \t text\n";
+var bytesToStrip = b" \n  a \t text\n";
 writeln("Default:", bytesToStrip.strip());
-writeln("Only space:", bytesToStrip.strip(chars=" ":bytes));
+writeln("Only space:", bytesToStrip.strip(chars=b" "));
 writeln("Only leading:", bytesToStrip.strip(trailing=false));
 
 writeln("Test partition");
-writeln(b.partition("a":bytes));
+writeln(b.partition(b"a"));
 
 iter byteYielder() {
-  yield "dir1":bytes;
-  yield "dir2":bytes;
-  yield "file":bytes;
+  yield b"dir1";
+  yield b"dir2";
+  yield b"file";
 }
 
 writeln("Test join -- iterable");
@@ -168,15 +168,15 @@ writeln();
 // TEST writeln behavior
 writeln("writeln behavior");
 writeln("Output 1");
-writeln("wordword":bytes);
+writeln(b"wordword");
 writeln("Output 2");
-writeln("word\x00word":bytes); // should print a junk char in between
+writeln(b"word\x00word"); // should print a junk char in between
 writeln("Output 3");
-writeln("word\tword":bytes);
+writeln(b"word\tword");
 writeln("Output 4");
-writeln("word\nword":bytes);
+writeln(b"word\nword");
 writeln("Output 5");
-writeln("word\rword":bytes); // should print "word"
+writeln(b"word\rword"); // should print "word"
 writeln("End of writeln tests");
 writeln();
 

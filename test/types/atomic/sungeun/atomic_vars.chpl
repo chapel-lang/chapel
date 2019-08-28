@@ -1,5 +1,5 @@
 config const printResults = false;
-var mo = memory_order_seq_cst; // can't have configs of extern types
+param mo = memoryOrder.seqCst;
 
 proc doit(type myType) {
   var ax: atomic myType;

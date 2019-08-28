@@ -227,7 +227,7 @@ module DistributedBag {
       documentation.
     */
     // This is unused, and merely for documentation purposes. See '_value'.
-    var _impl : DistributedBagImpl(eltType)?;
+    var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
     pragma "no doc"
@@ -249,7 +249,7 @@ module DistributedBag {
       if _pid == -1 {
         halt("DistBag is uninitialized...");
       }
-      return chpl_getPrivatizedCopy(DistributedBagImpl(eltType), _pid);
+      return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
     forwarding _value;
@@ -901,7 +901,7 @@ module DistributedBag {
     type eltType;
 
     // A handle to our parent 'distributed' bag, which is needed for work stealing.
-    var parentHandle : DistributedBagImpl(eltType);
+    var parentHandle : borrowed DistributedBagImpl(eltType);
 
     /*
       Helps evenly distribute and balance placement of elements in a best-effort

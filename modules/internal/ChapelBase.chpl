@@ -30,6 +30,9 @@ module ChapelBase {
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
 
+  // minimum buffer size allocated for string/bytes
+  config param chpl_stringMinAllocSize = 0;
+
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
   proc _throwOpError(param op: string) {
@@ -186,7 +189,10 @@ module ChapelBase {
   inline proc <=(a: int(?w), b: int(w)) return __primitive("<=", a, b);
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
-  inline proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
+  inline proc <=(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<=", a, b);
+  }
   proc <=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -199,7 +205,10 @@ module ChapelBase {
   inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
-  inline proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
+  inline proc >=(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">=", a, b);
+  }
   proc >=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -212,7 +221,10 @@ module ChapelBase {
   inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
-  inline proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
+  inline proc <(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<", a, b);
+  }
   proc <(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -225,7 +237,10 @@ module ChapelBase {
   inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
-  inline proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
+  inline proc >(a: imag(?w), b: imag(w)) {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">", a, b);
+  }
   proc >(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -239,25 +254,37 @@ module ChapelBase {
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <=(param a: real(?w), param b: real(w)) param return __primitive("<=", a, b);
-  inline proc <=(param a: imag(?w), param b: imag(w)) param return __primitive("<=", a, b);
+  inline proc <=(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<=", a, b);
+  }
 
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >=(param a: real(?w), param b: real(w)) param return __primitive(">=", a, b);
-  inline proc >=(param a: imag(?w), param b: imag(w)) param return __primitive(">=", a, b);
+  inline proc >=(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">=", a, b);
+  }
 
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
   inline proc <(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <(param a: real(?w), param b: real(w)) param return __primitive("<", a, b);
-  inline proc <(param a: imag(?w), param b: imag(w)) param return __primitive("<", a, b);
+  inline proc <(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive("<", a, b);
+  }
 
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
   inline proc >(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >(param a: real(?w), param b: real(w)) param return __primitive(">", a, b);
-  inline proc >(param a: imag(?w), param b: imag(w)) param return __primitive(">", a, b);
+  inline proc >(param a: imag(?w), param b: imag(w)) param {
+    compilerWarning("inequality comparisons on 'imag' are deprecated");
+    return __primitive(">", a, b);
+  }
 
   //
   // unary + and - on primitive types
@@ -379,16 +406,15 @@ module ChapelBase {
   inline proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
   inline proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
   inline proc /(a: real(?w), b: complex(w*2))
-    return let d = b.re*b.re+b.im*b.im in
-    (a*b.re/d, -a*b.im/d):complex(w*2);
+    return let d = abs(b) in
+    ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(w*2);
   inline proc /(a: complex(?w), b: real(w/2))
-  return (a.re/b, a.im/b):complex(w);
+    return (a.re/b, a.im/b):complex(w);
   inline proc /(a: imag(?w), b: complex(w*2))
-    return let d = b.re*b.re+b.im*b.im in
-    (_i2r(a)*b.im/d, _i2r(a)*b.re/d):complex(w*2);
+    return let d = abs(b) in
+    ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(w*2);
   inline proc /(a: complex(?w), b: imag(w/2))
-    return let d = _i2r(b)*_i2r(b) in
-    (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
+    return (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
 
   inline proc *(param a: int(?w), param b: int(w)) param return __primitive("*", a, b);
   inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
@@ -773,8 +799,8 @@ module ChapelBase {
   inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
   inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
 
-  inline proc min(x: real(?w), y: real(w)) return if x < y then x else y;
-  inline proc max(x: real(?w), y: real(w)) return if x > y then x else y;
+  inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
+  inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
 
   inline proc min(x: imag(?w), y: imag(w)) return if x < y then x else y;
   inline proc max(x: imag(?w), y: imag(w)) return if x > y then x else y;
@@ -1118,15 +1144,15 @@ module ChapelBase {
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
     if isAtomic(e.taskCnt) {
-      e.i.add(1, memory_order_release);
-      e.taskCnt.add(1, memory_order_release);
+      e.i.add(1, memoryOrder.release);
+      e.taskCnt.add(1, memoryOrder.release);
     } else {
       // note that this on statement does not have the usual
       // remote memory fence because of pragma "no remote memory fence"
       // above. So we do an acquire fence before it.
-      chpl_rmem_consist_fence(memory_order_release);
+      chpl_rmem_consist_fence(memoryOrder.release);
       on e {
-        e.i.add(1, memory_order_release);
+        e.i.add(1, memoryOrder.release);
         e.taskCnt += 1;
       }
     }
@@ -1139,7 +1165,7 @@ module ChapelBase {
   pragma "no remote memory fence"
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
-    e.i.add(numTasks:int, memory_order_release);
+    e.i.add(numTasks:int, memoryOrder.release);
 
     if countRunningTasks {
       here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
@@ -1166,7 +1192,7 @@ module ChapelBase {
     chpl_save_task_error(e, err);
     chpl_comm_task_end();
     // inform anybody waiting that we're done
-    e.i.sub(1, memory_order_release);
+    e.i.sub(1, memoryOrder.release);
   }
 
   // This function is called once by the initiating task.  As above, no
@@ -1185,7 +1211,7 @@ module ChapelBase {
     chpl_taskListExecute(e.taskList);
 
     // Wait for all tasks to finish
-    e.i.waitFor(0, memory_order_acquire);
+    e.i.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
@@ -1210,7 +1236,7 @@ module ChapelBase {
     chpl_taskListExecute(e.taskList);
 
     // Wait for all tasks to finish
-    e.i.waitFor(0, memory_order_acquire);
+    e.i.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       here.runningTaskCntSub(numTasks:int-1);

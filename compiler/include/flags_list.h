@@ -67,6 +67,7 @@ symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tupl
 symbolFlag( FLAG_BUILD_TUPLE_TYPE , ypr, "build tuple type" , "used to mark the build_tuple type functions")
 
 symbolFlag( FLAG_CHAPEL_STRING_LITERAL, npr, "chapel string literal id" , "mark Chapel strings created from literals")
+symbolFlag( FLAG_CHAPEL_BYTES_LITERAL, npr, "chapel bytes literal id" , "mark Chapel bytes created from literals")
 // When resolution encounters the def of the variable 'chpl__iter',
 // as indicated by this flag, it launches into enacting forall intents
 // for the forall loop that this variable was created for.
@@ -232,7 +233,8 @@ symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be c
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
 symbolFlag( FLAG_MAYBE_REF , npr, "maybe ref" , "symbol can resolve to a ref" )
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )
-symbolFlag( FLAG_MEMORY_ORDER_TYPE , ypr, "memory order type" , "type implementing memory order (normally called memory_order)" )
+symbolFlag( FLAG_MEMORY_ORDER_TYPE , ypr, "memory order type" , "type implementing chpl memory order (normally called memoryOrder)" )
+symbolFlag( FLAG_C_MEMORY_ORDER_TYPE , ypr, "c memory order type" , "type implementing c memory order (normally called memory_order)" )
 symbolFlag( FLAG_METHOD , npr, "method" , "function that is a method" )
 symbolFlag( FLAG_METHOD_PRIMARY , npr, "primary method" , "function that is a method and defined in type declaration" )
 symbolFlag( FLAG_MODIFIES_CONST_FIELDS , npr, "modifies const fields" , "... of 'this' argument" )

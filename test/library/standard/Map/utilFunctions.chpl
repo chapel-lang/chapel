@@ -15,11 +15,3 @@ proc intToEnglish(n: int): string {
       return tens[n / 10] + "-" + intToEnglish(n % 10);
   }
 }
-
-proc factorial(n: int) {
-  use BigInteger;
-  var bi = new bigint(1);
-
-  for i in 2..n do bi *= i;
-  return bi;
-}

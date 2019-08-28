@@ -1,0 +1,5 @@
+testing default stdout: (foo = 10, bar = b"some bytes")
+testing json stdout: {"foo":10, "bar":b"some bytes"}
+Writing JSON: {"foo": 4, "bar":b"some written bytes"}
+got is true
+Read: (foo = 4, bar = some written bytes)

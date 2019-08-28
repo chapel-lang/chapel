@@ -556,7 +556,8 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
 
   if (SymExpr* se = toSymExpr(actual))
     if (se->symbol()->isParameter()                   ==  true &&
-        isString(se->symbol())                        == false)
+        isString(se->symbol())                        == false &&
+        isBytes(se->symbol())                         == false)
       retval = false;
 
   return retval;
@@ -683,11 +684,9 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  // TODO: update this to exclude implementation records, see isRecordType
-  if (formalType == dtAnyRecord && isRecord(actualType)) {
+  if (formalType == dtAnyRecord && isUserRecord(actualType)) {
     return true;
   }
-
 
   if (actualType == formalType) {
     return true;
@@ -1303,8 +1302,8 @@ bool canCoerceAsSubtype(Type*     actualType,
   }
 
   // Handle coercions nil -> owned/shared
-  if (actualType == dtNil && isManagedPtrType(formalType)) {
-    Type* formalBorrowType = getManagedPtrBorrowType(formalType);
+  if (actualType == dtNil && isManagedPtrType(formalType->getValType())) {
+    Type* formalBorrowType = getManagedPtrBorrowType(formalType->getValType());
     if (isNilableClassType(formalBorrowType) || useLegacyNilability(actualSym))
       return true;
   }
@@ -5945,9 +5944,11 @@ static void resolveInitVar(CallExpr* call) {
     // the variable we are initializing.
     src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
-    // Don't need to copy string literals when initializing a string
+    // Don't need to copy string/bytes literals when initializing 
     bool moveStringLiteral = src->hasFlag(FLAG_CHAPEL_STRING_LITERAL) &&
                              targetType->getValType() == dtString;
+    bool moveBytesLiteral  = src->hasFlag(FLAG_CHAPEL_BYTES_LITERAL) &&
+                             targetType->getValType() == dtBytes;
 
     // The LHS will "own" the temp without an auto-destroy, provided the
     // types are the same.
@@ -5956,7 +5957,7 @@ static void resolveInitVar(CallExpr* call) {
                         srcType->getValType() == targetType->getValType() &&
                         src->isRef() == false;
 
-    if (moveStringLiteral || canStealTemp) {
+    if (moveStringLiteral || moveBytesLiteral || canStealTemp) {
       dst->type = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
@@ -6679,8 +6680,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
 static void handleUnstableNewError(CallExpr* newExpr, Type* newType);
 
-static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager);
-
 static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType);
 
 static void resolveNew(CallExpr* newExpr) {
@@ -6752,14 +6751,22 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (ne->name == astr_chpl_manager) {
         manager = canonicalDecoratedClassType(ne->actual->typeInfo());
         expr->remove();
+        break;
       }
     }
   }
+
+  // adjust for the cases like 'new C()?'
+  if (manager == NULL) {
+    if (SymExpr* arg1 = toSymExpr(newExpr->get(1)))
+      if (DecoratedClassType* dt1 = toDecoratedClassType(arg1->symbol()->type))
+        if (dt1->getDecorator() == CLASS_TYPE_GENERIC_NILABLE)
+          newExpr->insertAtHead(dtOwned->symbol);
+  }
+  
   // adjust the type to initialize for managed new cases
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
-
-      warnForThrowNotOwned(newExpr, type, manager);
 
       // set manager for new t(1,2,3)
       // where t is e.g Owned(MyClass)
@@ -6772,9 +6779,14 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             manager = dtUnmanaged;
           else
             manager = dtOwned;
+        } else if (isClass(type) && !fLegacyClasses) {
+          manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           manager = dtOwned;
         }
+      } else {
+        // Manager is specified, so check for duplicate management decorators
+        checkDuplicateDecorators(manager, type, newExpr);
       }
 
       // if manager is set, and we're not calling the manager's init function,
@@ -6785,15 +6797,13 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         AggregateType* at = toAggregateType(type);
 
         // fail if it's a record
-        if (isRecord(at) && !isManagedPtrType(at)) {
-          const char* name = manager->symbol->name;
-          // skip leading underscore
-          if (name[0] == '_')
-            name = &name[1];
-
+        if (isRecord(at) && !isManagedPtrType(at))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
-                         name, at->symbol->name);
-        }
+                                  toString(manager), toString(type));
+        else if (!isClassLikeOrManaged(type))
+          USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
+                                   toString(manager), toString(type));
+
 
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
@@ -6870,15 +6880,15 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
         } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
           if (parentCall->isNamed("chpl__tounmanaged") || // TODO -- remove case
               parentCall->isNamed("chpl__delete") || // TODO -- remove case
-              parentCall->isNamed("chpl__buildDistValue") ||
-              parentCall->isNamed("chpl_fix_thrown_error")) {
+              parentCall->isNamed("chpl__buildDistValue")) {
             // treat these as decorated
             isUndecorated = false;
           } else if (parentCall->isPrimitive(PRIM_NEW) &&
                      parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
             // OK e.g. new Owned(new MyClass())
             isUndecorated = false;
-          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+                     parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
             // OK e.g. new raw MyClass() / new owned MyClass()
             isUndecorated = false;
           } else {
@@ -6890,69 +6900,6 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
   }
 
   return isUndecorated;
-}
-
-static void warnForThrowNotOwned(CallExpr* newExpr, Type* newType, Type* manager) {
-  // This function implements a warning that should be removed in 1.20
-  // in favor of e.g. calling compilerError in chpl_fix_thrown_error.
-  INT_ASSERT(newExpr->parentSymbol);
-  Type* cType = canonicalDecoratedClassType(newType);
-
-  if (isClass(cType) && isSubtypeOrInstantiation(cType, dtError, newExpr)) {
-
-    bool unmanaged = false;
-    bool borrowed = false;
-    bool owned = false;
-    bool undecorated = false;
-
-    if (manager == dtOwned ||
-        isSubtypeOrInstantiation(newType, dtOwned, newExpr))
-      owned = true;
-    else if (manager == dtUnmanaged ||
-            (isDecoratedClassType(newType) &&
-             toDecoratedClassType(newType)->isUnmanaged()))
-      unmanaged = true;
-    else if (manager == NULL)
-      undecorated = true;
-    else if (manager == dtBorrowed)
-      borrowed = true;
-
-    if (owned)
-      return; // throw owned Error is OK
-
-    SymExpr* checkSe = NULL;
-    if (CallExpr* parentCall = toCallExpr(newExpr->parentExpr))
-      if (parentCall->isPrimitive(PRIM_MOVE) ||
-          parentCall->isPrimitive(PRIM_ASSIGN))
-        if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
-          checkSe = lhsSe;
-
-    if (checkSe) {
-      for_SymbolSymExprs(se, checkSe->symbol()) {
-        if (se == checkSe) {
-          // OK
-        } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
-          if (parentCall->isNamed("chpl_fix_thrown_error")) {
-            if (undecorated)
-              USR_WARN(parentCall,
-                       "please use 'throw new owned %s' "
-                       "instead of 'throw new %s'",
-                       cType->symbol->name, cType->symbol->name);
-            else if (unmanaged)
-              USR_WARN(parentCall,
-                       "please throw 'owned %s' instead of 'unmanaged %s'",
-                       cType->symbol->name, cType->symbol->name);
-            else if (borrowed)
-              USR_FATAL(parentCall,
-                       "please throw 'owned %s' instead of 'borrowed %s'",
-                       cType->symbol->name, cType->symbol->name);
-            else
-              USR_FATAL(parentCall, "only owned Errors can be thrown");
-          }
-        }
-      }
-    }
-  }
 }
 
 static bool isManagedPointerInit(SymExpr* typeExpr) {
@@ -9591,7 +9538,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // extern types (but not memory_order)
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
-             !type->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE)) {
+             !type->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
 
     // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);
@@ -9779,6 +9726,18 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
     }
   }
 
+}
+
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
+  if (fLegacyClasses == false) {
+    if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
+      ClassTypeDecorator d = classTypeDecorator(decorated);
+
+      if (!isDecoratorUnknownManagement(d))
+        USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
+                             toString(decorator), toString(decorated));
+    }
+  }
 }
 
 /************************************* | **************************************

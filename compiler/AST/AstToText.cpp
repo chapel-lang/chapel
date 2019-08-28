@@ -758,6 +758,8 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 
           if (var->immediate->string_kind == STRING_KIND_C_STRING)
             *ptr++ = 'c';
+          else if (var->immediate->string_kind == STRING_KIND_BYTES)
+            *ptr++ = 'b';
           *ptr++ = '"';
           strcpy(ptr, var->immediate->v_string);
           ptr = strchr(ptr, '\0');
@@ -1191,12 +1193,14 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       mText += "new ";
       appendExpr(expr->get(1), printingType);
     }
-    else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+    else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+             expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
     {
       mText += "unmanaged ";
       appendExpr(expr->get(1), printingType);
     }
-    else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS))
+    else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+             expr->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
     {
       mText += "borrowed ";
       appendExpr(expr->get(1), printingType);

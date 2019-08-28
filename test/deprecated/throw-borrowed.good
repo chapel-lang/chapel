@@ -1,5 +1,0 @@
-throw-borrowed.chpl:8: In function 'test':
-throw-borrowed.chpl:9: warning: please use 'throw new owned Error' instead of 'throw new Error'
-uncaught Error: 
-  throw-borrowed.chpl:9: thrown here
-  throw-borrowed.chpl:12: uncaught here
