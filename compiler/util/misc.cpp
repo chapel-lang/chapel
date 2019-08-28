@@ -268,20 +268,26 @@ static void printInstantiationNoteForLastError() {
 
       const char* subsDesc = err_fn->substitutionsToString(", ");
 
+      const char* intro = "";
+      if (strcmp(err_fn->name, "init") == 0)
+        intro = "Initializer";
+      else if (err_fn->isIterator())
+        intro = astr("Iterator ", "'", err_fn->name, "'");
+      else
+        intro = astr("Function ", "'", err_fn->name, "'");
+
       if (subsDesc == NULL || subsDesc[0] == '\0') {
         fprintf(stderr,
-                "%s:%d: %s '%s' instantiated here\n",
+                "%s:%d: %s instantiated here\n",
                 cleanFilename(bestPoint),
                 bestPoint->linenum(),
-                (err_fn->isIterator() ? "Iterator" : "Function"),
-                err_fn->name);
+                intro);
       } else {
         fprintf(stderr,
-                "%s:%d: %s '%s' instantiated as: %s(%s)\n",
+                "%s:%d: %s instantiated as: %s(%s)\n",
                 cleanFilename(bestPoint),
                 bestPoint->linenum(),
-                (err_fn->isIterator() ? "Iterator" : "Function"),
-                err_fn->name,
+                intro,
                 err_fn->name,
                 subsDesc);
       }
@@ -639,6 +645,9 @@ void considerExitingEndOfPass() {
   }
 }
 
+bool fatalErrorsEncountered() {
+  return exit_eventually || exit_end_of_pass;
+}
 
 static void handleInterrupt(int sig) {
   stopCatchingSignals();
