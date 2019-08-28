@@ -145,9 +145,11 @@ checkNamedArguments(CallExpr* call) {
 
 static const char* getClassKindSpecifier(CallExpr* call) {
   if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+      call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
       call->isNamed("_to_unmanaged"))
     return "unmanaged";
   if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+      call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
       call->isNamed("_to_borrowed"))
     return "borrowed";
   if (call->isNamed("_owned"))
