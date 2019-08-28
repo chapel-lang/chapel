@@ -484,6 +484,9 @@ module String {
       of a shallow copy.
      */
     proc init(s: string, isowned: bool = true) {
+      if showStringBytesInitDeprWarnings {
+        compilerWarning("string.init is deprecated. Use factory functions");
+      }
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -511,7 +514,8 @@ module String {
     }
 
     proc init=(s: string) {
-      this.init(s);
+      this.complete();
+      initWithNewBuffer(this, s);
     }
 
     /*
@@ -524,6 +528,9 @@ module String {
      */
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
+      if showStringBytesInitDeprWarnings {
+        compilerWarning("string.init is deprecated. Use factory functions");
+      }
       this.isowned = isowned;
       this.complete();
       const cs_len = length;
@@ -531,7 +538,8 @@ module String {
     }
 
     proc init=(cs: c_string) {
-      this.init(cs);
+      this.complete();
+      initWithNewBuffer(this, cs);
     }
 
     /*
@@ -547,6 +555,9 @@ module String {
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: bufferType, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
+      if showStringBytesInitDeprWarnings {
+        compilerWarning("string.init is deprecated. Use factory functions");
+      }
       this.isowned = isowned;
       this.complete();
       this.reinitString(buff, length, size, needToCopy);

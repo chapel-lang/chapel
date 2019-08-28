@@ -103,6 +103,9 @@ module Bytes {
       of a shallow copy.
      */
     proc init(s, isowned: bool = true) where s.type == string || s.type == bytes {
+      if showStringBytesInitDeprWarnings {
+        compilerWarning("bytes.init is deprecated. Use factory functions");
+      }
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -149,12 +152,14 @@ module Bytes {
 
     pragma "no doc"
     proc init=(b: bytes) {
-      this.init(b);
+      this.complete();
+      initWithNewBuffer(this, b);
     }
 
     pragma "no doc"
     proc init=(b: string) {
-      this.init(b);
+      this.complete();
+      initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
     /*
@@ -168,6 +173,9 @@ module Bytes {
 
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
+      if showStringBytesInitDeprWarnings {
+        compilerWarning("bytes.init is deprecated. Use factory functions");
+      }
       this.isowned = isowned;
       this.complete();
       const cs_len = length;
@@ -187,6 +195,9 @@ module Bytes {
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: c_ptr, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
+      if showStringBytesInitDeprWarnings {
+        compilerWarning("bytes.init is deprecated. Use factory functions");
+      }
       //different than string's similar constructor. Here we are not limited to
       //any type
       this.isowned = isowned;

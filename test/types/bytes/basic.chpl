@@ -9,7 +9,7 @@ writeln();
 
 // TEST INITIALIZERS
 writeln("Initializer tests");
-var b_from_s = createBytesWithNewBuffer(s);
+var b_from_s = createBytesWithNewBuffer(s:bytes);
 var b_from_cs = createBytesWithNewBuffer(cs);
 
 var c_char_arr = c_malloc(uint(8), 4);

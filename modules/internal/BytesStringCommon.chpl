@@ -21,6 +21,9 @@ module BytesStringCommon {
   use Bytes;
   private use ByteBufferHelpers;
 
+  pragma "no doc"
+  config param showStringBytesInitDeprWarnings = true;
+
   private proc isBytesOrStringType(type t) param: bool {
     return t==bytes || t==string;
   }
@@ -454,10 +457,18 @@ module BytesStringCommon {
   proc doMultiply(const ref x: ?t, n: integral) {
     assertArgType(t, "doMultiply");
 
-    if n <= 0 then return new t("");
-
     const sLen = x.numBytes;
-    if sLen == 0 then return new t("");
+    if isBytesType(t) {
+      if n <= 0 then return b"";
+      if sLen == 0 then return b"";
+    }
+    else if isStringType(t) {
+      if n <= 0 then return "";
+      if sLen == 0 then return "";
+    }
+    else {
+      compilerError("Unexpected type");
+    }
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
