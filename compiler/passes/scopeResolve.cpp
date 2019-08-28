@@ -194,24 +194,25 @@ static void processGenericFields() {
 // Eventually it should be possible to use the general implementation
 // to handle chpl__Program with little or no special casing.
 
+ResolveScope* rootScope;
 static void addToSymbolTable() {
-  ResolveScope* rootScope = ResolveScope::getRootModule();
+  rootScope = ResolveScope::getRootModule();
 
   //  rootScope->describe();
   
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      ModuleSymbol* mod = toModuleSymbol(def->sym);
+      //      ModuleSymbol* mod = toModuleSymbol(def->sym);
       // only put things in the root scope if they are not user modules
       // or not modules at all
       // TODO: Should eventually extend this to avoid putting any modules
       // in the root scope, but only focusing on user code for now
-      if (mod == NULL /* || mod->modTag != MOD_USER */) {
+      //      if (mod == NULL /* || mod->modTag != MOD_USER */) {
         //        printf("Extending to include %s\n", def->sym->name);
         rootScope->extend(def->sym);
-      } else {
-      }
+        //      } else {
+        //      }
     }
   }
 
@@ -276,11 +277,11 @@ static void scopeResolve(ModuleSymbol*       module,
   if (module->modTag == MOD_USER &&
       module->defPoint->getModule() == theProgram) {
     ResolveScope* scope = new ResolveScope(module, parent);
-    scope->extend(module);
+    //    scope->extend(module);
     scopeResolve(module->block->body, scope);
   } else {
     ResolveScope* scope = new ResolveScope(module, parent);
-    scope->extend(module);
+    //    scope->extend(module);
     scopeResolve(module->block->body, scope);
   }
 }
@@ -1405,6 +1406,10 @@ static void resolveModuleCall(CallExpr* call) {
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
+        if (sym == NULL) {
+          printf("fff: %s\n", mbrName);
+        }
+        
         // Failing that, try looking in an extern block.
 #ifdef HAVE_LLVM
         if (sym == NULL && gExternBlockStmts.size() > 0) {
@@ -1882,6 +1887,12 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
 
       } else {
         retval = sym;
+      }
+    } else {
+      ModuleSymbol* thisMod = ast->getModule();
+      if (strcmp(name, thisMod->name) == 0) {
+        retval = thisMod;
+        printf("Got a hit on %s\n", thisMod->name);
       }
     }
   }

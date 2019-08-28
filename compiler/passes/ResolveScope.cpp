@@ -399,6 +399,7 @@ bool ResolveScope::extend(Symbol* newSym) {
     }
 
   } else {
+    printf("eee: %s\n", name);
     mBindings[name] = newSym;
     retval          = true;
   }
@@ -490,6 +491,14 @@ Symbol* ResolveScope::lookup(UnresolvedSymExpr* usymExpr) const {
 Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
   const char* name   = usymExpr->unresolved;
   Symbol*     retval = lookupNameLocally(name);
+  ModuleSymbol* thisMod = usymExpr->getModule();
+  printf("Giving it a second shot\n");
+  if (retval == NULL && strcmp(name, thisMod->name) == 0) {
+    retval = thisMod;
+  } else {
+    printf("But didn't hit\n");
+
+  }
 
   if (retval == NULL && mUseList.size() > 0) {
     UseList useList = mUseList;
@@ -520,6 +529,8 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
                   symbols.push_back(sym);
                 }
               }
+            } else {
+              printf("bbb\n");
             }
           }
         }
@@ -639,9 +650,16 @@ Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
 Symbol* ResolveScope::lookupNameLocally(const char* name) const {
   Bindings::const_iterator it     = mBindings.find(name);
   Symbol*                  retval = NULL;
+  extern ResolveScope* rootScope;
 
   if (it != mBindings.end()) {
-    retval = it->second;
+    Symbol* sym = it->second;
+    // don't consider top-level modules to be visible
+    if (toModuleSymbol(sym) == NULL || this != rootScope) {
+      retval = it->second;
+    } else {
+      printf("Skipped over %s\n", sym->name);
+    }
   }
 
   return retval;
@@ -697,6 +715,8 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     symbols.push_back(sym);
 
   } else {
+    printf("ccc\n");
+
     if (mUseList.size() > 0) {
       std::vector<const UseStmt*> useList = mUseList;
 
@@ -720,6 +740,8 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
             if (ResolveScope* next = getScopeFor(scopeToUse)) {
               if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
                 symbols.push_back(sym);
+              } else {
+                printf("ccc\n");
               }
             }
           }
