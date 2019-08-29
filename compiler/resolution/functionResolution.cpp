@@ -253,7 +253,7 @@ void resolveFnForCall(FnSymbol* fn, CallExpr* call) {
   callStack.add(call);
 
   // do real work
-  resolveFunction(fn);
+  resolveFunction(fn, call);
 
   callStack.pop();
 }
@@ -620,6 +620,55 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   return retval;
 }
 
+static bool instantiatedFieldsMatch(Type* actualType, Type* formalType) {
+
+  AggregateType* actual = toAggregateType(actualType);
+  AggregateType* formal = toAggregateType(formalType);
+  if (actual == NULL || formal == NULL) {
+    return false;
+  }
+  if (actual == formal) {
+    return true;
+  }
+
+  AggregateType* root = actual->getRootInstantiation();
+  if (root == formal->getRootInstantiation()) {
+    unsigned int formalIdx = 0;
+    std::vector<Symbol*>& fields = root->genericFields;
+    std::vector<Symbol*>& formalFields = formal->genericFields;
+    bool ret = true;
+    for (unsigned int i = 0; i < fields.size(); i++) {
+      if (formalIdx < formalFields.size() &&
+          fields[i]->name == formalFields[formalIdx]->name) {
+        formalIdx += 1;
+      } else {
+        const char* name = fields[i]->name;
+        Symbol* actualField = actual->getField(name);
+        Symbol* formalField = formal->getField(name);
+        if (actualField->type == formalField->type) {
+          if (formalField->hasFlag(FLAG_PARAM)) {
+            ret = (paramMap.get(actualField) == paramMap.get(formalField));
+          } else {
+            ret = true;
+          }
+        } else if (formalField->type->symbol->hasFlag(FLAG_GENERIC) &&
+                   isAggregateType(formalField->type) &&
+                   isAggregateType(actualField->type) &&
+                   instantiatedFieldsMatch(actualField->type, formalField->type)) {
+          ret = true;
+        } else {
+          ret = false;
+          break;
+        }
+      }
+    }
+
+    return ret;
+  }
+
+  return false;
+}
+
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation. The special exception is that
 // it returns true when actualType == formalType (to simplify
@@ -711,21 +760,19 @@ bool canInstantiate(Type* actualType, Type* formalType) {
       if (isBuiltinGenericClassType(formalC))
         return true;
 
-      if (AggregateType* atActual = toAggregateType(actualC)) {
-        if (AggregateType* atFrom = atActual->instantiatedFrom) {
-          if (canInstantiate(atFrom, formalC) == true) {
-            return true;
-          }
+      if (isAggregateType(actualC)) {
+        if (instantiatedFieldsMatch(actualType, formalType)) {
+          return true;
         }
       }
     }
   } else {
     // Check for e.g. R(int) -> R (classes are handled above)
-    if (AggregateType* atActual = toAggregateType(actualType)) {
-      if (AggregateType* atFrom = atActual->instantiatedFrom) {
-        if (canInstantiate(atFrom, formalType) == true) {
-          return true;
-        }
+    // TODO: Is it correct to return true if the types match? That case isn't
+    // really an instantiation.
+    if (isAggregateType(actualType)) {
+      if (instantiatedFieldsMatch(actualType, formalType)) {
+        return true;
       }
     }
   }
@@ -1425,6 +1472,10 @@ bool canCoerce(Type*     actualType,
       // are the decorated class types the same?
       if (actualC == formalC)
         return true;
+      else if (formalC->symbol->hasFlag(FLAG_GENERIC) &&
+               instantiatedFieldsMatch(actualC, formalC)) {
+        return true;
+      }
 
       // are we passing a subclass?
       AggregateType* actualParent = actualC;
@@ -1469,7 +1520,7 @@ bool doCanDispatch(Type*     actualType,
 
   // MPF 2019-09 - for some reason resolving generic initializers
   // needs this adjustment, which started in PR #5424.
-  if (fn && fn->isInitializer() &&
+  if (fn && (fn->isInitializer() || fn->isCopyInit()) &&
       formalSym == fn->_this &&
       isGenericInstantiation(formalType, actualType))
     return true;
@@ -2840,6 +2891,18 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     if (ret && dt) {
       ret = getDecoratedClass(ret, dt->getDecorator());
       INT_ASSERT(ret);
+    } else if (ret && isManagedPtrType(ts->typeInfo())) {
+      // For owned/shared types, resolve the canonical class type specifier and
+      // re-wrap the resulting type in owned or shared.
+      AggregateType* managed = toAggregateType(ts->typeInfo());
+      if (managed->instantiatedFrom) {
+        AggregateType* root = managed->getRootInstantiation();
+        CallExpr* again = new CallExpr(root->symbol, ret->symbol);
+        info.call->getStmtExpr()->insertBefore(again);
+        resolveCall(again);
+        ret = again->typeInfo();
+        again->remove();
+      }
     }
   }
 
@@ -5834,7 +5897,7 @@ static void resolveInitVar(CallExpr* call) {
       //   var x : MyGenericType = <expr>;
       // if the type of <expr> is not an instantiation of 'MyGenericType'.
       // Left as future work until 'init=' design finalized.
-      if (inst == NULL) {
+      if (inst == NULL && isRecord(targetType) == false) {
         USR_FATAL(call, "Could not coerce '%s' to '%s' in initialization",
                   srcType->symbol->name,
                   targetType->symbol->name);
@@ -5986,7 +6049,9 @@ static void resolveInitVar(CallExpr* call) {
       if (foundOldStyleInit == false) {
         call->setUnresolvedFunction(astrInitEquals);
 
-        resolveCall(call);
+        resolveExpr(call);
+
+        dst->type = call->resolvedFunction()->_this->getValType();
       } else {
         FnSymbol* fn = call->resolvedFunction();
         if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
@@ -6973,11 +7038,11 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow);
+static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow, bool resolvePartials = false);
 static Type* resolveGenericActual(SymExpr* se, Type* type, bool decayToBorrow);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
-  return resolveGenericActual(se, false);
+  return resolveGenericActual(se, false, true);
 }
 
 void resolveGenericActuals(CallExpr* call) {
@@ -7002,7 +7067,7 @@ void resolveGenericActuals(CallExpr* call) {
   }
 }
 
-static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow) {
+static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow, bool resolvePartials) {
   Type* retval = se->typeInfo();
 
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -7010,7 +7075,6 @@ static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow) {
 
   } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
     if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      Type* origType = vs->typeInfo();
 
       // Fix for complicated extern vars like
       //   extern var x: c_ptr(c_int);
@@ -7021,7 +7085,10 @@ static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow) {
         vs->type = resolveTypeAlias(se);
       }
 
-      retval = resolveGenericActual(se, origType, decayToBorrow);
+      if (resolvePartials) {
+        Type* origType = vs->typeInfo();
+        retval = resolveGenericActual(se, origType);
+      }
     }
   }
 
@@ -7841,7 +7908,7 @@ static bool isObviousType(Type* type) {
 }
 
 static bool isObviousValue(Symbol* val) {
-  return val->isImmediate() || isEnumSymbol(val) || paramMap.get(val);
+  return val->isImmediate() || isEnumSymbol(val) || val == gUninstantiated || paramMap.get(val);
 }
 
 //

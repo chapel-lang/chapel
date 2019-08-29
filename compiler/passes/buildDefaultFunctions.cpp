@@ -25,6 +25,7 @@
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
+#include "IfExpr.h"
 #include "ModuleSymbol.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -375,20 +376,35 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     }
   }
 
+  Expr* toReturn = NULL;
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
   } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                  new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                               new SymExpr(_this),
-                                               new SymExpr(new_CStringSymbol(field->name)))));
+    toReturn = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                            new SymExpr(_this),
+                            new SymExpr(new_CStringSymbol(field->name)));
   } else {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                  new CallExpr(PRIM_GET_MEMBER,
-                                               new SymExpr(_this),
-                                               new SymExpr(new_CStringSymbol(field->name)))));
+    toReturn = new CallExpr(PRIM_GET_MEMBER,
+                            new SymExpr(_this),
+                            new SymExpr(new_CStringSymbol(field->name)));
+  }
+
+  if (toReturn != NULL) {
+    if (field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+      Symbol* alternate = NULL;
+      if (field->hasFlag(FLAG_PARAM))
+        alternate = gUninstantiated;
+      else
+        alternate = dtUninstantiated->symbol;
+
+      fn->insertAtTail(new CondStmt(new CallExpr(PRIM_IS_BOUND, _this, new_CStringSymbol(field->name)),
+                                    new CallExpr(PRIM_RETURN, toReturn),
+                                    new CallExpr(PRIM_RETURN, alternate)));
+    } else {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, toReturn));
+    }
   }
 
   DefExpr* def = new DefExpr(fn);

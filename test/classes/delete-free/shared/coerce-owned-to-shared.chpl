@@ -4,7 +4,7 @@ class MyClass {
 
 
 proc test() {
-  var o4 = new owned MyClass(4);
+  var o4 : owned MyClass? = new owned MyClass(4);
 
   var s4:shared  = o4;
 

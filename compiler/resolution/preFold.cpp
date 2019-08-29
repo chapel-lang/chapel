@@ -43,6 +43,7 @@
 
 #include <inttypes.h>
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
@@ -602,6 +603,28 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+    break;
+  }
+
+  case PRIM_IS_BOUND: {
+    AggregateType* at = NULL;
+    Type* thisType = call->get(1)->getValType();
+    if (AggregateType* type = toAggregateType(thisType)) {
+      at = type;
+    } else if (DecoratedClassType* dc = toDecoratedClassType(thisType)) {
+      at = dc->getCanonicalClass();
+    }
+
+    Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
+    Symbol* field = at->getField(imm->v_string);
+    if (at->symbol->hasFlag(FLAG_GENERIC) &&
+        std::find(at->genericFields.begin(), at->genericFields.end(), field) != at->genericFields.end()) {
+      retval = new SymExpr(gFalse);
+    } else {
+      retval = new SymExpr(gTrue);
+    }
+
+    call->replace(retval);
     break;
   }
 
@@ -1625,6 +1648,41 @@ static Expr* preFoldNamed(CallExpr* call) {
         }
       }
     }
+
+  // BHARSH TODO: Move the dtUninstantiated stuff over to resolveTypeComparisonCall
+  } else if (call->isNamed("==")) {
+    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
+      Type* lt = call->get(1)->getValType();
+      Type* rt = call->get(2)->getValType();
+
+      if (lt                                != dtUnknown &&
+          rt                                != dtUnknown &&
+          lt->symbol->hasFlag(FLAG_GENERIC) == false     &&
+          rt->symbol->hasFlag(FLAG_GENERIC) == false) {
+        retval = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+        call->replace(retval);
+      }
+    } else if (call->get(2)->getValType() == dtUninstantiated) {
+      retval = (call->get(1)->getValType() == dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(retval);
+    }
+
+
+  } else if (call->isNamed("!=")) {
+    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
+      Type* lt = call->get(1)->getValType();
+      Type* rt = call->get(2)->getValType();
+
+      if (lt                                != dtUnknown &&
+          rt                                != dtUnknown) {
+        retval = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+        call->replace(retval);
+      }
+    } else if (call->get(2)->getValType() == dtUninstantiated) {
+      retval = (call->get(1)->getValType() != dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(retval);
+    }
+
 
   } else if (call->isNamed("chpl__staticFastFollowCheck")  ||
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {

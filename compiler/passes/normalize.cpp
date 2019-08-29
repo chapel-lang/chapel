@@ -1996,6 +1996,14 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
 
+  // Generate a type constructor call
+  if (SymExpr* se = toSymExpr(init)) {
+    if (isTypeSymbol(se->symbol()) &&
+        (isAggregateType(se->typeInfo()) || isDecoratedClassType(se->typeInfo()))) {
+      init = new CallExpr(se->symbol());
+    }
+  }
+
   CallExpr* move = new CallExpr(PRIM_MOVE, var, init->copy());
 
   if (var->hasFlag(FLAG_EXTERN)) {
@@ -2935,10 +2943,11 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 
 static bool isParameterizedPrimitive(CallExpr* typeSpecifier);
 
-static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier);
+static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, CallExpr* typeSpecifier);
 
 static void cloneParameterizedPrimitive(FnSymbol* fn,
-                                        DefExpr*  def,
+                                        ArgSymbol* formal,
+                                        Expr*     query,
                                         int       width);
 
 static bool includesParameterizedPrimitive(FnSymbol* fn) {
@@ -2963,7 +2972,7 @@ static void replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
       if (CallExpr* typeSpecifier = toCallExpr(typeExpr->body.tail)) {
         if (isParameterizedPrimitive(typeSpecifier) == true) {
-          cloneParameterizedPrimitive(fn, typeSpecifier);
+          cloneParameterizedPrimitive(fn, formal, typeSpecifier);
 
           break;
         }
@@ -2977,17 +2986,20 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
   bool retval = false;
 
   if (SymExpr* callFnSymExpr = toSymExpr(typeSpecifier->baseExpr)) {
-    if (typeSpecifier->numActuals()      ==    1 &&
-        isDefExpr(typeSpecifier->get(1)) == true) {
-      Symbol* callFnSym = callFnSymExpr->symbol();
+    if (typeSpecifier->numActuals() == 1) {
+      Expr* first = typeSpecifier->get(1);
+      SymExpr* query = toSymExpr(first);
+      if (isDefExpr(first) || (query && query->symbol() == gUninstantiated)) {
+        Symbol* callFnSym = callFnSymExpr->symbol();
 
-      if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol ||
-          callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
-          callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol   ||
-          callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
-          callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol ||
-          callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
-        retval = true;
+        if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol ||
+            callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
+            callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol   ||
+            callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
+            callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol ||
+            callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
+          retval = true;
+        }
       }
     }
   }
@@ -3002,6 +3014,8 @@ static bool typeSpecifierUnnamedQuery(CallExpr* typeSpecifier) {
   if (typeSpecifier->numActuals()      ==    1) {
     if (DefExpr* de = toDefExpr(typeSpecifier->get(1))) {
       return strncmp("chpl__query", de->sym->name, strlen("chpl__query")) == 0;
+    } else if (SymExpr* se = toSymExpr(typeSpecifier->get(1))) {
+      return se->symbol() == gUninstantiated;
     }
   }
   return false;
@@ -3009,9 +3023,9 @@ static bool typeSpecifierUnnamedQuery(CallExpr* typeSpecifier) {
 
 
 // 'formal' is certain to be a parameterized primitive e.g int(?w)
-static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier) {
-  Symbol*    callFnSym     = toSymExpr(typeSpecifier->baseExpr)->symbol();
-  DefExpr*   def           = toDefExpr(typeSpecifier->get(1));
+static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, CallExpr* typeSpecifier) {
+  Symbol* callFnSym = toSymExpr(typeSpecifier->baseExpr)->symbol();
+  Expr*   query     = typeSpecifier->get(1);
 
   if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
     // If 'bool(?)', instantiate for 'bool', and all 'bool(w)'
@@ -3019,26 +3033,26 @@ static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier) {
     int start = typeSpecifierUnnamedQuery(typeSpecifier) ? BOOL_SIZE_SYS
                                                          : BOOL_SIZE_8;
     for (int i = start; i < BOOL_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, def, ((i == BOOL_SIZE_SYS) ?
-                                            BOOL_SYS_WIDTH :
-                                            get_width(dtBools[i])));
+      cloneParameterizedPrimitive(fn, formal, query, ((i == BOOL_SIZE_SYS) ?
+                                             BOOL_SYS_WIDTH :
+                                             get_width(dtBools[i])));
     }
 
   } else if (callFnSym == dtInt [INT_SIZE_DEFAULT]->symbol ||
              callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
     for (int i = INT_SIZE_8; i < INT_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, def, get_width(dtInt[i]));
+      cloneParameterizedPrimitive(fn, formal, query, get_width(dtInt[i]));
     }
 
   } else if (callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
              callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol) {
     for (int i = FLOAT_SIZE_32; i < FLOAT_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, def, get_width(dtReal[i]));
+      cloneParameterizedPrimitive(fn, formal, query, get_width(dtReal[i]));
     }
 
   } else if (callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
     for (int i = COMPLEX_SIZE_64; i < COMPLEX_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, def, get_width(dtComplex[i]));
+      cloneParameterizedPrimitive(fn, formal, query, get_width(dtComplex[i]));
     }
   }
 
@@ -3046,21 +3060,29 @@ static void cloneParameterizedPrimitive(FnSymbol* fn, CallExpr* typeSpecifier) {
 }
 
 static void cloneParameterizedPrimitive(FnSymbol* fn,
-                                        DefExpr*  def,
+                                        ArgSymbol* formal,
+                                        Expr*     query,
                                         int       width) {
-  SymbolMap             map;
-  FnSymbol*             newFn  = fn->copy(&map);
-  Symbol*               newSym = map.get(def->sym);
-  std::vector<SymExpr*> symExprs;
+  SymbolMap map;
+  FnSymbol* newFn = fn->copy(&map);
 
-  newSym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
+  if (DefExpr* def = toDefExpr(query)) {
+    Symbol* newSym = map.get(def->sym);
+    std::vector<SymExpr*> symExprs;
 
-  collectSymExprs(newFn, symExprs);
+    newSym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
 
-  for_vector(SymExpr, se, symExprs) {
-    if (se->symbol() == newSym) {
-      se->setSymbol(new_IntSymbol(width));
+    collectSymExprs(newFn, symExprs);
+
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == newSym) {
+        se->setSymbol(new_IntSymbol(width));
+      }
     }
+  } else {
+    ArgSymbol* newFormal = toArgSymbol(map.get(formal));
+    CallExpr* typeSpecifier = toCallExpr(newFormal->typeExpr->body.tail);
+    typeSpecifier->get(1)->replace(new SymExpr(new_IntSymbol(width)));
   }
 
   fn->defPoint->insertAfter(new DefExpr(newFn));
@@ -3146,6 +3168,11 @@ static void fixupQueryFormals(FnSymbol* fn) {
 
       } else if (isQueryForGenericTypeSpecifier(formal) == true) {
         expandQueryForGenericTypeSpecifier(fn, formal);
+      } else if (SymExpr* se = toSymExpr(tail)) {
+        if (se->symbol() == gUninstantiated) {
+          formal->typeExpr->remove();
+          formal->type = dtAny;
+        }
       }
     }
   }
@@ -3182,11 +3209,14 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
 static bool isGenericActual(Expr* expr) {
   if (isDefExpr(expr))
     return true;
-  if (SymExpr* se = toSymExpr(expr))
-    if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (se->symbol() == gUninstantiated) {
+      return true;
+    } else if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
       if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type)))
         if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
+  }
 
   return false;
 }
@@ -3198,6 +3228,19 @@ static bool isGenericActual(Expr* expr) {
 //  2. Call to a generic type with a type query expression within
 //       e.g. MyGenericClass(?) / MyGenericClass(?t) / MyGenericClass(t=?t)
 static bool doesCallContainGenericActual(CallExpr* call) {
+  // Is this a partial type expression?
+  if (SymExpr* se = toSymExpr(call->baseExpr)) {
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type))) {
+        if (at->isGeneric() &&
+            !at->isGenericWithDefaults() &&
+            at->genericFields.size() != (unsigned int)(call->numActuals())) {
+          return true;
+        }
+      }
+    }
+  }
+
   for_actuals(actual, call) {
     if (isGenericActual(actual)) {
       return true;
@@ -3332,16 +3375,20 @@ static void expandQueryForActual(FnSymbol*  fn,
     if (DefExpr* def = toDefExpr(actual)) {
       replaceQueryUses(formal, def, query, symExprs);
     } else if (SymExpr* se = toSymExpr(actual)) {
-      TypeSymbol* ts = toTypeSymbol(se->symbol());
-      INT_ASSERT(ts);
-      Expr* subtype = new SymExpr(ts);
-      addToWhereClause(fn, formal,
-                       new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
-                                    subtype, query->copy()));
+      if (se->symbol() == gUninstantiated) {
+        se->replace(query->copy());
+      } else {
+        TypeSymbol* ts = toTypeSymbol(se->symbol());
+        INT_ASSERT(ts);
+        Expr* subtype = new SymExpr(ts);
+        addToWhereClause(fn, formal,
+                         new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                                      subtype, query->copy()));
+      }
     } else {
       INT_FATAL("case not handled");
     }
-  } else if (subcall && doesCallContainGenericActual(subcall)) {
+  } else if (subcall && (doesCallContainGenericActual(subcall))) {
     Expr* subtype = NULL;
     if (TypeSymbol* ts = getTypeForSpecialConstructor(subcall)) {
       subtype = new SymExpr(ts);
@@ -3374,8 +3421,10 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                BaseAST* queried) {
 
   int position = 1;
+  bool isTuple = false;
 
   if (call->isNamed("_build_tuple")) {
+    isTuple = true;
     Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
     CallExpr* query  = makePrimQuery(queried, new_CStringSymbol("size"));
 
@@ -3462,8 +3511,29 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     // not a NamedExpr? handled in next loop.
   }
 
+  // Used to prevent redundant errors
+  bool foundUninstantiated = false;
+  bool multipleQuestionError = false;
+  bool positionalQuestionError = false;
+
   for_actuals(actual, call) {
     if (isNamedExpr(actual) == false) {
+      if (isSymExpr(actual) && toSymExpr(actual)->symbol() == gUninstantiated) {
+        if (!isTuple) {
+          if (foundUninstantiated && !multipleQuestionError) {
+            multipleQuestionError = true;
+            USR_FATAL_CONT(call, "formal '%s' may not have a type expression with multiple '?'", formal->name);
+            USR_PRINT(call, "'?' cannot be used to positionally indicate uninstantiated fields");
+          } else {
+            foundUninstantiated = true;
+          }
+        }
+      } else if (foundUninstantiated && !positionalQuestionError) {
+        positionalQuestionError = true;
+        USR_FATAL_CONT(call, "type expression of formal '%s' cannot use '?' before unnamed arguments to a type specifier", formal->name);
+        USR_PRINT(call, "'?' cannot be used to positionally indicate uninstantiated fields");
+      }
+
       CallExpr* query = gatheringNamedArgs->copy();
       query->insertAtTail(new SymExpr(new_IntSymbol(position)));
 

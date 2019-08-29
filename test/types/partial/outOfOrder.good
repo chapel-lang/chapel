@@ -1,0 +1,12 @@
+----- middle-first-last -----
+R(U=string)
+R(int(64),string)
+R(int(64),string,5)
+----- middle-last-first -----
+R(U=string,x=5)
+R(int(64),string,5)
+----- first-last-middle -----
+R(int(64),x=5)
+R(int(64),string,5)
+----- first-last-dependent -----
+D(uint(8),p=55:uint(8))

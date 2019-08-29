@@ -1,0 +1,23 @@
+unmanaged MyClass
+unmanaged MyClass(int(64))
+unmanaged MyClass(int(64),5)
+unmanaged MyClass(n=5)
+unmanaged MyClass(int(64),5)
+
+borrowed MyClass
+borrowed MyClass(int(64))
+borrowed MyClass(int(64),5)
+borrowed MyClass(n=5)
+borrowed MyClass(int(64),5)
+
+owned MyClass
+owned MyClass(int(64))
+owned MyClass(int(64),5)
+owned MyClass(n=5)
+owned MyClass(int(64),5)
+
+shared MyClass
+shared MyClass(int(64))
+shared MyClass(int(64),5)
+shared MyClass(n=5)
+shared MyClass(int(64),5)
