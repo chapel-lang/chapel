@@ -475,6 +475,7 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
     attemptToBuild();
   }
   writeln(spacer);
+  writeln('RESULTS');
   writeln(spacer);
 
   if packageTest && remoteTest && moduleTest && registryTest {
