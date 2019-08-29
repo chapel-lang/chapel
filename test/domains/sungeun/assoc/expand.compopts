@@ -1,2 +1,2 @@
--sparSafe=true
--sparSafe=false
+-sparSafe=true  # expand.1.good
+-sparSafe=false # expand.2.good
