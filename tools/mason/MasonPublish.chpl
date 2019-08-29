@@ -420,22 +420,22 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
   var remoteTest = true;
   writeln('Mason Project Check:');
   if !package {
-    writeln('    Could not find your configuration file (Mason.toml) (FAILED)');
-    writeln('    Ensure your project is a mason package');
+    writeln('   Could not find your configuration file (Mason.toml) (FAILED)');
+    writeln('   Ensure your project is a mason package');
     packageTest = false;
     }
   else {
-    writeln('    Package is a Mason package and has a Mason.toml (PASSED)');
+    writeln('   Package is a Mason package and has a Mason.toml (PASSED)');
   }
   writeln(spacer);
 
   if package {
     writeln('Main Module Check:');
     if moduleCheck(projectCheckHome) {
-      writeln('    Your package has only one main module, can be published to a registry. (PASSED)');
+      writeln('   Your package has only one main module, can be published to a registry. (PASSED)');
     }
     else {
-      writeln('    Packages with more than one modules cannot be published. (FAILED)');
+      writeln('   Packages with more than one modules cannot be published. (FAILED)');
       moduleTest = false; 
     }
     writeln(spacer);
@@ -444,11 +444,11 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
   if package {
     writeln('Git Remote Check:');
     if doesGitOriginExist() {
-      writeln('    Package has a git remote origin and can be published to a remote registry (PASSED)');
-      writeln('    Remote Origin: ' + getRemoteOrigin());
+      writeln('   Package has a git remote origin and can be published to a remote registry (PASSED)');
+      writeln('   Remote Origin: ' + getRemoteOrigin());
     }
     else {
-      writeln('    Package has no remote origin and cannot be publish to a registry with path:' + path + ' (FAILED)');
+      writeln('   Package has no remote origin and cannot be publish to a registry with path:' + path + ' (FAILED)');
       remoteTest = false;
     }
     writeln(spacer);
@@ -459,18 +459,18 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
   writeln('The current mason environment is:');
   returnMasonEnv();
   if MASON_REGISTRY.size == 1 {
-    writeln('    In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
+    writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
   }
   
   writeln(spacer);
   writeln(spacer);
   if package {
     writeln('Attempting to build package using following options:');
-    writeln('    show = false');
-    writeln('    release = false');
-    writeln('    force = true');
-    writeln('    opt = false');
-    writeln('    example = false');
+    writeln('   show = false');
+    writeln('   release = false');
+    writeln('   force = true');
+    writeln('   opt = false');
+    writeln('   example = false');
     writeln('If these are different than what is required to build your package you can disregard this check');
     attemptToBuild();
   }
@@ -533,11 +533,11 @@ private proc registryPathCheck(path : string, username : string, trueIfLocal : b
   if path == MASON_HOME {
     var forkCheck = usernameCheck(username);
     if forkCheck == 0 {
-      writeln('    The mason-registry is forked under username: ' + username + ' (PASSED)');
+      writeln('   The mason-registry is forked under username: ' + username + ' (PASSED)');
       return true;
     }
     else {
-      writeln('    You must have a fork of the mason-registry to publish a package (FAILED)');
+      writeln('   You must have a fork of the mason-registry to publish a package (FAILED)');
       return false;
     }
   }
