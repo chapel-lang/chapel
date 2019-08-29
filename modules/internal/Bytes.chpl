@@ -75,6 +75,14 @@ module Bytes {
 
   type idxType = int; 
 
+
+  private proc deprWarning() {
+    if showStringBytesInitDeprWarnings {
+      compilerWarning("bytes.init is deprecated - "+
+                      "please use createBytesWith* instead");
+    }
+  }
+
   record _bytes {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
@@ -103,6 +111,7 @@ module Bytes {
       of a shallow copy.
      */
     proc init(s, isowned: bool = true) where s.type == string || s.type == bytes {
+      deprWarning();
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -149,12 +158,14 @@ module Bytes {
 
     pragma "no doc"
     proc init=(b: bytes) {
-      this.init(b);
+      this.complete();
+      initWithNewBuffer(this, b);
     }
 
     pragma "no doc"
     proc init=(b: string) {
-      this.init(b);
+      this.complete();
+      initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
     /*
@@ -168,6 +179,7 @@ module Bytes {
 
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
+      deprWarning();
       this.isowned = isowned;
       this.complete();
       const cs_len = length;
@@ -187,6 +199,8 @@ module Bytes {
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: c_ptr, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
+      deprWarning();
+      writeln("Called 2");
       //different than string's similar constructor. Here we are not limited to
       //any type
       this.isowned = isowned;
@@ -269,7 +283,7 @@ module Bytes {
     */
     inline proc localize() : bytes {
       if _local || this.locale_id == chpl_nodeID {
-        return new bytes(this, isowned=false);
+        return createBytesWithBorrowedBuffer(this);
       } else {
         const x:bytes = this; // assignment makes it local
         return x;
@@ -296,7 +310,7 @@ module Bytes {
         then halt("index out of bounds of bytes: ", i);
       var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
                                    loc=this.locale_id);
-      return new bytes(buf, length=1, size=size, needToCopy=false);
+      return createBytesWithOwnedBuffer(buf, length=1, size=size);
     }
 
     /*
@@ -1040,8 +1054,62 @@ module Bytes {
 
   } // end of record bytes
 
+  //
+  // createBytes* functions
+  //
+
+  inline proc createBytesWithBorrowedBuffer(s: bytes) {
+    var ret: bytes;
+    initWithBorrowedBuffer(ret, s);
+    return ret;
+  }
+
+  inline proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+    return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: bytes) {
+    // should we allow stealing ownership?
+    compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
+    return createBytesWithOwnedBuffer(s: bufferType, length=length,
+                                                      size=length+1);
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithOwnedBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  inline proc createBytesWithNewBuffer(s: bytes) {
+    var ret: bytes;
+    initWithNewBuffer(ret, s);
+    return ret;
+  }
+
+  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
+    return createBytesWithNewBuffer(s: bufferType, length=length,
+                                                    size=length+1);
+  }
+
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithNewBuffer(ret, s, length, size);
+    return ret;
+  }
+
   inline proc _cast(type t: bytes, x: string) {
-    return new bytes(x);
+    return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
 
   /*

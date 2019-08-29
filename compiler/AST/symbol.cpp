@@ -1615,12 +1615,9 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  CallExpr *initCall = new CallExpr(PRIM_NEW,
-      new SymExpr(dtString->symbol),
-      cstrTemp,
-      new_IntSymbol(strLength));
-  initCall->insertAtTail(gFalse); // owned = false
-  initCall->insertAtTail(gFalse); // needToCopy = false
+  CallExpr *initCall = new CallExpr(astr("createStringWithBorrowedBuffer"),
+                                    cstrTemp,
+                                    new_IntSymbol(strLength));
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 
@@ -1674,12 +1671,10 @@ VarSymbol *new_BytesSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(bytesLitDef);
 
-  CallExpr *initCall = new CallExpr(PRIM_NEW,
-                                    new SymExpr(dtBytes->symbol),
+  CallExpr *initCall = new CallExpr(astr("createBytesWithBorrowedBuffer"),
                                     bytesTemp,
                                     new_IntSymbol(bytesLength));
-  initCall->insertAtTail(gFalse); // owned = false
-  initCall->insertAtTail(gFalse); // needToCopy = false
+
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 

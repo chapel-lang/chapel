@@ -1,0 +1,28 @@
+Initialize from bytes
+***ALLOCATE***
+***ALLOCATE***
+A Chapel bytes
+A Chapel bytes
+A Chapel bytes
+***FREE***
+***FREE***
+
+Initialize from c_string
+***ALLOCATE***
+ABC
+ABC
+ABC
+***FREE***
+***FREE***
+
+Initialize from c_ptr
+***ALLOCATE***
+ABC
+ABC
+ABC
+ABC
+A C
+A C
+***FREE***
+***FREE***
+
