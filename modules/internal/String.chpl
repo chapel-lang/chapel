@@ -448,6 +448,13 @@ module String {
     return x != 0;
   // End index arithmetic support
 
+  private proc deprWarning() {
+    if showStringBytesInitDeprWarnings {
+      compilerWarning("string.init is deprecated - "+
+                      "please use createStringWith* instead");
+    }
+  }
+
   //
   // String Implementation
   //
@@ -484,9 +491,7 @@ module String {
       of a shallow copy.
      */
     proc init(s: string, isowned: bool = true) {
-      if showStringBytesInitDeprWarnings {
-        compilerWarning("string.init is deprecated. Use factory functions");
-      }
+      deprWarning();
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -528,9 +533,7 @@ module String {
      */
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
-      if showStringBytesInitDeprWarnings {
-        compilerWarning("string.init is deprecated. Use factory functions");
-      }
+      deprWarning();
       this.isowned = isowned;
       this.complete();
       const cs_len = length;
@@ -555,9 +558,7 @@ module String {
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: bufferType, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
-      if showStringBytesInitDeprWarnings {
-        compilerWarning("string.init is deprecated. Use factory functions");
-      }
+      deprWarning();
       this.isowned = isowned;
       this.complete();
       this.reinitString(buff, length, size, needToCopy);

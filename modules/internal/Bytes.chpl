@@ -75,6 +75,14 @@ module Bytes {
 
   type idxType = int; 
 
+
+  private proc deprWarning() {
+    if showStringBytesInitDeprWarnings {
+      compilerWarning("bytes.init is deprecated - "+
+                      "please use createBytesWith* instead");
+    }
+  }
+
   record _bytes {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
@@ -103,9 +111,7 @@ module Bytes {
       of a shallow copy.
      */
     proc init(s, isowned: bool = true) where s.type == string || s.type == bytes {
-      if showStringBytesInitDeprWarnings {
-        compilerWarning("bytes.init is deprecated. Use factory functions");
-      }
+      deprWarning();
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -173,9 +179,7 @@ module Bytes {
 
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
-      if showStringBytesInitDeprWarnings {
-        compilerWarning("bytes.init is deprecated. Use factory functions");
-      }
+      deprWarning();
       this.isowned = isowned;
       this.complete();
       const cs_len = length;
@@ -195,9 +199,8 @@ module Bytes {
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: c_ptr, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
-      if showStringBytesInitDeprWarnings {
-        compilerWarning("bytes.init is deprecated. Use factory functions");
-      }
+      deprWarning();
+      writeln("Called 2");
       //different than string's similar constructor. Here we are not limited to
       //any type
       this.isowned = isowned;
