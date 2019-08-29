@@ -2,7 +2,7 @@ use LinearAlgebra;
 
 config const m=10;
 
-const Space = {1..m, 1..m};
+const Space = {42..#m, 24..#m};
 
 var A: [Space] real;
 
