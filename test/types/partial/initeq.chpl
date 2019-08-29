@@ -19,6 +19,11 @@ proc W.init=(other : ?T) where isSubtype(T, W) == false {
   this.x = other;
 }
 
+proc helper(type T, val) {
+  var x : T = val;
+  writeln("initialized '", T:string, "' from '", val.type:string, "' resulting in '", x.type:string, "'");
+}
+
 proc main() {
   {
     var r : R(string) = "hi";
@@ -31,5 +36,9 @@ proc main() {
     writeln(a);
     var b : W = 1234;
     writeln(b);
+  }
+  {
+    helper(W, "hello");
+    helper(W, 1234);
   }
 }
