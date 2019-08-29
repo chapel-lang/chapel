@@ -5460,7 +5460,7 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoP
       }
     } else {
       if isBytesType(t2) && isStringType(t) {
-        lhs = rhs.decode(DecodePolicy.Strict);
+        lhs = rhs.decode(decodePolicy.strict);
       }
       else {
         lhs = rhs:t;
