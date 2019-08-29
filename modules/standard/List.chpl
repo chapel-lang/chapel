@@ -109,6 +109,11 @@ module List {
     The list type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
     `parSafe = true` in any list constructor.
+
+    .. note::
+
+      Unlike arrays, the domain of the list type is fixed from `1..size`, and
+      cannot be changed.
   */
   record list {
 
