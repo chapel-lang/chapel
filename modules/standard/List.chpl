@@ -956,9 +956,72 @@ module List {
       return result;
     }
 
+    //
+    // Not sure if strictly necessary, since we're probably only going to
+    // call this from `pop`, but I added `unlockBeforeHalt` all the same.
+    //
+    pragma "no doc"
+    proc _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
+
+      //
+      // TODO: We would like to put this in an on statement, but we can't yet
+      // because there is no way to "default initialize a non-nillable class",
+      // even if the variable is pragma "no init". Either we need to support
+      // returning from on statements, or make the "no init" pragma work with
+      // non-nillable classes.
+      //
+
+      if boundsChecking && _size <= 0 {
+        if unlockBeforeHalt then
+          _leave();
+        halt("Called \"list.pop\" on an empty list.");
+      }
+
+      if boundsChecking && !_withinBounds(idx) {
+        if unlockBeforeHalt then
+          _leave();
+        halt("Index for \"list.pop\" out of bounds: " + idx:string);
+      }
+
+      ref item = _getRef(idx);
+      var result = item;
+
+      _destroy(item);
+      // May release memory based on size before pop.
+      _collapse(idx);
+      _size -= 1;
+
+      return result;
+    }
+
     /*
-      Remove the item at the given position in this list, and return it. If no
-      index is specified, remove and return the last item in this list.
+      Remove the element at the end of this list and return it.
+
+      .. warning::
+
+        Popping an element from this list will invalidate any reference to
+        the element taken while it was contained in this list.
+
+      .. warning::
+
+        Calling this method on an empty list will cause the currently running
+        program to halt. If the `--fast` flag is used, no safety checks will
+        be performed.
+
+      :return: The element popped.
+      :rtype: `eltType`
+    */
+    proc pop(): eltType {
+      _enter();
+      var result = _popAtIndex(_size);
+      _leave();
+      return result;
+    }
+
+    /*
+      Remove the element at the index `idx` from this list and return it. The
+      elements at indices after `idx` are shifted one to the left in memory,
+      making this operation O(n).
 
       .. warning::
 
@@ -971,43 +1034,15 @@ module List {
         are out of bounds will cause the currently running program to halt.
         If the `--fast` flag is used, no safety checks will be performed.
 
-      :arg idx: The index of the element to remove. Defaults to the last item
-                 in this list.
+      :arg idx: The index of the element to remove.
       :type idx: `int`
 
-      :return: The item removed.
+      :return: The element popped.
       :rtype: `eltType`
     */
-    proc pop(idx: int=size): eltType {
-
-      //
-      // TODO: We would like to put this in an on statement, but we can't yet
-      // because there is no way to "default initialize a non-nillable class",
-      // even if the variable is pragma "no init". Either we need to support
-      // returning from on statements, or make the "no init" pragma work with
-      // non-nillable classes.
-      // TODO: Add future for this memory leak.
-      //
+    proc pop(idx: int): eltType {
       _enter();
-
-      if boundsChecking && _size <= 0 {
-        _leave();
-        halt("Called \"list.pop\" on an empty list.");
-      }
-
-      if boundsChecking && !_withinBounds(idx) {
-        _leave();
-        halt("Index for \"list.pop\" out of bounds: " + idx:string);
-      }
-
-      ref item = _getRef(idx);
-      var result = item;
-
-      _destroy(item);
-      // May release memory based on size before pop.
-      _collapse(idx);
-      _size -= 1;
-
+      var result = _popAtIndex(idx);
       _leave();
       return result;
     }

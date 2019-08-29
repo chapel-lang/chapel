@@ -12,11 +12,3 @@ for i in 1..testIters by -1 {
   assert(elem == i);
 }
 
-for i in 1..testIters do
-  lst.append(i);
-
-for i in 1..testIters {
-  const elem = lst.pop(1);
-  assert(elem == i);
-}
-
