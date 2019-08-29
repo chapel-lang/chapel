@@ -6012,7 +6012,7 @@ static void resolveInitVar(CallExpr* call) {
     // the variable we are initializing.
     src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
-    // Don't need to copy string/bytes literals when initializing 
+    // Don't need to copy string/bytes literals when initializing
     bool moveStringLiteral = src->hasFlag(FLAG_CHAPEL_STRING_LITERAL) &&
                              targetType->getValType() == dtString;
     bool moveBytesLiteral  = src->hasFlag(FLAG_CHAPEL_BYTES_LITERAL) &&
@@ -6819,7 +6819,10 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
       if (ne->name == astr_chpl_manager) {
-        manager = canonicalDecoratedClassType(ne->actual->typeInfo());
+        Type* t = ne->actual->typeInfo();
+        ClassTypeDecorator d = classTypeDecorator(t);
+        manager = canonicalDecoratedClassType(t);
+        manager = getDecoratedClass(manager, d);
         expr->remove();
         break;
       }
@@ -6827,13 +6830,13 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   }
 
   // adjust for the cases like 'new C()?'
-  if (manager == NULL) {
+  /*if (manager == NULL) {
     if (SymExpr* arg1 = toSymExpr(newExpr->get(1)))
       if (DecoratedClassType* dt1 = toDecoratedClassType(arg1->symbol()->type))
         if (dt1->getDecorator() == CLASS_TYPE_GENERIC_NILABLE)
           newExpr->insertAtHead(dtOwned->symbol);
-  }
-  
+  }*/
+
   // adjust the type to initialize for managed new cases
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
@@ -6845,10 +6848,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         if (isManagedPtrType(type)) {
           manager = type;
         } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
-          if (dt->isUnmanaged())
-            manager = dtUnmanaged;
-          else
-            manager = dtOwned;
+          if (dt->isUnmanaged()) {
+            if (isNilableClassType(dt))
+              manager = dtUnmanagedNilable;
+            else
+              manager = dtUnmanaged;
+          } else {
+            if (isNilableClassType(dt))
+              manager = getDecoratedClass(dtOwned, CLASS_TYPE_MANAGED_NILABLE);
+            else
+              manager = dtOwned;
+          }
         } else if (isClass(type) && !fLegacyClasses) {
           manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
