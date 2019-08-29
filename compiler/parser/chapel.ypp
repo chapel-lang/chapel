@@ -458,7 +458,10 @@
 %type <pvecOfDefs> enum_ls
 
 %type <pcallexpr> zippered_iterator
-%type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
+%type <pexpr> fun_expr call_expr dot_expr
+/*%type <pexpr> lhs_expr */
+%type <pexpr> lhs_expr_not_ident
+%type <pexpr> unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> bool_literal literal_expr
 %type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
@@ -664,15 +667,25 @@ require_stmt:
 ;
 
 assignment_stmt:
-  lhs_expr assignop_ident opt_try_expr TSEMI
+  lhs_expr_not_ident assignop_ident opt_try_expr TSEMI
     { $$ = buildAssignment($1, $3, $2);   }
-| lhs_expr TSWAP           opt_try_expr TSEMI
+| ident_expr assignop_ident opt_try_expr TSEMI
+    { $$ = buildAssignment($1, $3, $2);   }
+| lhs_expr_not_ident TSWAP           opt_try_expr TSEMI
     { $$ = buildAssignment($1, $3, "<=>"); }
-| lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
+| ident_expr TSWAP           opt_try_expr TSEMI
+    { $$ = buildAssignment($1, $3, "<=>"); }
+| lhs_expr_not_ident TASSIGNREDUCE   opt_try_expr TSEMI
     { $$ = buildAssignment($1, $3, PRIM_REDUCE_ASSIGN); }
-| lhs_expr TASSIGNLAND     opt_try_expr TSEMI
+| ident_expr TASSIGNREDUCE   opt_try_expr TSEMI
+    { $$ = buildAssignment($1, $3, PRIM_REDUCE_ASSIGN); }
+| lhs_expr_not_ident TASSIGNLAND     opt_try_expr TSEMI
     { $$ = buildLAndAssignment($1, $3);    }
-| lhs_expr TASSIGNLOR      opt_try_expr TSEMI
+| ident_expr TASSIGNLAND     opt_try_expr TSEMI
+    { $$ = buildLAndAssignment($1, $3);    }
+| lhs_expr_not_ident TASSIGNLOR      opt_try_expr TSEMI
+    { $$ = buildLOrAssignment($1, $3);     }
+| ident_expr TASSIGNLOR      opt_try_expr TSEMI
     { $$ = buildLOrAssignment($1, $3);     }
 ;
 
@@ -1718,7 +1731,8 @@ type_level_expr:
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
 sub_type_level_expr:
   nil_expr
-| lhs_expr                  // var b: a.type || (?,?) || foo()
+| ident_expr
+| lhs_expr_not_ident        // var b: a.type || (?,?) || foo()
 | cond_expr                 // type b = if b then uint else int
 | unary_op_expr             // We allow binary exprs as types...why not unary?
 | binary_op_expr            // tuples, expr dmapped expr, overloaded binary ops
@@ -1899,7 +1913,8 @@ shadow_var_prefix:
 ;
 
 io_expr:
-  lhs_expr
+  ident_expr
+| lhs_expr_not_ident
 | io_expr TIO expr
     { $$ = new CallExpr("<~>", $1, $3); }
 ;
@@ -1949,12 +1964,17 @@ opt_try_expr:
 | TTRYBANG expr   { $$ = tryBangExpr($2); }
 | expr            { $$ = $1; }
 
-lhs_expr:
+lhs_expr_not_ident:
+  call_expr
+| dot_expr
+| parenthesized_expr
+
+/*lhs_expr:
   ident_expr
 | call_expr
 | dot_expr
 | parenthesized_expr
-;
+*/
 
 /* Representations of values which can be invoked as functions.
  * Rather than allowing any value these values were deliberately restricted
@@ -1964,8 +1984,16 @@ lhs_expr:
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
 fun_expr:
-  lhs_expr           { $$ = $1; }
+  ident_expr         { $$ = $1; }
+| lhs_expr_not_ident { $$ = $1; }
 | expr TBANG         { $$ = new CallExpr("postfix!", $1); }
+/*
+  lhs_expr %prec TNOELSE
+    { $$ = $1; }
+| lhs_expr TBANG %prec TBANG
+    { $$ = new CallExpr("postfix!", $1); }
+| lhs_expr TQUESTION %prec TQUESTION
+    { $$ = new CallExpr("postfix?", $1); }*/
 | lambda_decl_expr   { $$ = $1; }
 ;
 
@@ -2037,9 +2065,9 @@ binary_op_expr:
 | expr TSHIFTRIGHT expr    { $$ = new CallExpr(">>", $1, $3); }
 | expr TMOD expr           { $$ = new CallExpr("%", $1, $3); }
 | expr TEQUAL expr         { $$ = new CallExpr("==", $1, $3); }
-| expr TEQUAL TQUESTION    { $$ = new CallExpr("==", $1, gUninstantiated); }
+/*| expr TEQUAL TQUESTION    { $$ = new CallExpr("==", $1, gUninstantiated); }*/
 | expr TNOTEQUAL expr      { $$ = new CallExpr("!=", $1, $3); }
-| expr TNOTEQUAL TQUESTION { $$ = new CallExpr("!=", $1, gUninstantiated); }
+/*| expr TNOTEQUAL TQUESTION { $$ = new CallExpr("!=", $1, gUninstantiated); }*/
 | expr TLESSEQUAL expr     { $$ = new CallExpr("<=", $1, $3); }
 | expr TGREATEREQUAL expr  { $$ = new CallExpr(">=", $1, $3); }
 | expr TLESS expr          { $$ = new CallExpr("<", $1, $3); }
