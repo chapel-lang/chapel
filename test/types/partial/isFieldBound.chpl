@@ -17,8 +17,8 @@ proc main() {
   }
 
   writeln("----- partial -----");
-  writeln(T:string, " is partial? ", isPartialGeneric(T));
-  writeln(R:string, " is partial? ", isPartialGeneric(R));
+  writeln(T:string, " is partial? ", isGeneric(T));
+  writeln(R:string, " is partial? ", isGeneric(R));
   type X = R(int, 5, real, 10.0);
-  writeln(X:string, " is partial? ", isPartialGeneric(X));
+  writeln(X:string, " is partial? ", isGeneric(X));
 }

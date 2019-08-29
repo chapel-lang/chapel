@@ -200,22 +200,6 @@ proc isFieldBound(type t, param s : string) param : bool {
   return __primitive("is bound", t, s);
 }
 
-/* Returns `true` if the given class or record has a field that has not
-   been instantiated.
-
-   :arg t: a class or record type
-   :returns: `true` if any fields have not been instantiated.
-*/
-proc isPartialGeneric(type t) param : bool {
-  for param i in 1..numFields(t) {
-    param name = getFieldName(t, i);
-    if isFieldBound(t, name) == false then
-      return true;
-  }
-
-  return false;
-}
-
 /* Returns true if a function named `fname` taking no arguments
    could be called in the current scope.
    */
