@@ -1,15 +1,15 @@
 class node {
   type t;
   var element : t;
-  var next : unmanaged node(t);
+  var next : unmanaged node(t)?;
 }
 
 record foo {
   type t;
 
   var  length : int;
-  var  first  : unmanaged node(t);
-  var  last   : unmanaged node(t);
+  var  first  : unmanaged node(t)?;
+  var  last   : unmanaged node(t)?;
 
   proc append(e : t) {
    var anew : unmanaged node(t) = new unmanaged node(t);
@@ -23,6 +23,17 @@ record foo {
     }
     length += 1;
     return this;
+  }
+
+  proc cleanup() {
+    var cursor: unmanaged node(t)?;
+    var next: unmanaged node(t)?;
+    cursor = first;
+    while (cursor != nil) {
+      next = cursor!.next;
+      delete cursor;
+      cursor = next;
+    }
   }
 }
 
@@ -45,3 +56,5 @@ f.append(1);
 f.append(2);
 
 writeln(f);
+
+f.cleanup();

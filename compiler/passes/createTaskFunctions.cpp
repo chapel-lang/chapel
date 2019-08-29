@@ -20,6 +20,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "resolution.h"
 #include "stmt.h"
@@ -79,27 +80,27 @@ void initForTaskIntents() {
 
   tiMarkBlank     = new ArgSymbol(INTENT_BLANK,
                                   "tiMarkBlank",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkIn        = new ArgSymbol(INTENT_IN,
                                   "tiMarkIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstDflt = new ArgSymbol(INTENT_CONST,
                                   "tiMarkConstDflt",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstIn   = new ArgSymbol(INTENT_CONST_IN,
                                   "tiMarkConstIn",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkConstRef  = new ArgSymbol(INTENT_CONST_REF,
                                   "tiMarkConstRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkRef       = new ArgSymbol(INTENT_REF,
                                   "tiMarkRef",
-                                  dtVoid);
+                                  dtNothing);
 
   tiMarkHost = new FnSymbol("tiMarkHost");
 
@@ -115,88 +116,30 @@ void initForTaskIntents() {
   rootModule->block->insertAtTail(new DefExpr(tiMarkHost));
 }
 
-// Return a fixed ArgSymbol marker for the given intent, or NULL if n/a.
-ArgSymbol* tiMarkForIntent(IntentTag intent) {
-  ArgSymbol* retval = NULL;
+// Return the tiMark symbol for the given ForallIntentTag.
+// Do not invoke on TFI_REDUCE, TPV and helper intents.
+ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar) {
+  switch (svar->intent) {
+    case TFI_DEFAULT:     return tiMarkBlank;
+    case TFI_CONST:       return tiMarkConstDflt;
+    case TFI_IN:          return tiMarkIn;
+    case TFI_CONST_IN:    return tiMarkConstIn;
+    case TFI_REF:         return tiMarkRef;
+    case TFI_CONST_REF:   return tiMarkConstRef;
 
-  switch (intent) {
-    case INTENT_BLANK:
-      retval = tiMarkBlank;
-      break;
-
-    case INTENT_IN:
-      retval = tiMarkIn;
-      break;
-
-    case INTENT_CONST:
-      retval = tiMarkConstDflt;
-      break;
-
-    case INTENT_CONST_IN:
-      retval = tiMarkConstIn;
-      break;
-
-    case INTENT_CONST_REF:
-      retval = tiMarkConstRef;
-      break;
-
-    case INTENT_REF:
-      retval = tiMarkRef;
-      break;
-
-    case INTENT_INOUT:
-    case INTENT_OUT:
-    case INTENT_PARAM:
-    case INTENT_TYPE:
-    case INTENT_REF_MAYBE_CONST:
-      retval = NULL;
-      break;
-  }
-
-  return retval;
-}
-
-// Same except for ForallIntentTag.
-// Do not invoke on TFI_REDUCE.
-ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
-  ArgSymbol* retval = NULL;
-
-  switch (intent) {
-    case TFI_DEFAULT:
-      retval = tiMarkBlank;
-      break;
-
-    case TFI_CONST:
-      retval = tiMarkConstDflt;
-      break;
-
-    case TFI_IN:
-      retval = tiMarkIn;
-      break;
-
-    case TFI_CONST_IN:
-      retval = tiMarkConstIn;
-      break;
-
-    case TFI_REF:
-      retval = tiMarkRef;
-      break;
-
-    case TFI_CONST_REF:
-      retval = tiMarkConstRef;
+    case TFI_TASK_PRIVATE:
+      USR_FATAL_CONT(svar, "task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks");
       break;
 
     case TFI_IN_PARENT:
-    case TFI_REDUCE:
+    case TFI_REDUCE:      // reduce intents are handled in addTaskIntent()
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
     case TFI_REDUCE_PARENT_OP:
-    case TFI_TASK_PRIVATE:
       INT_FATAL("unexpected intent in tiMarkForForallIntent()");
       break;
   }
-
-  return retval;
+  return tiMarkBlank; //dummy
 }
 
 
@@ -205,6 +148,64 @@ ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+// Is 'type' a Reduce/Scan Op?
+// similar to isArrayClass()
+bool isReduceOp(Type* type) {
+  bool retval = false;
+
+  type = canonicalDecoratedClassType(type);
+
+  if (type->symbol->hasFlag(FLAG_REDUCESCANOP) == true) {
+    retval = true;
+
+  } else if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(AggregateType, t, at->dispatchParents) {
+      if (isReduceOp(t) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+//
+// Set up anchors, if not already, so we can add reduction-related code
+// via refRef->insertBefore() within 'fn'.
+//
+// "redRef" is short for "reference for reduction".
+// redRef1 goes at the beginning of fn, redRef2 at the end.
+//
+static void setupRedRefs(FnSymbol* fn, bool nested,
+                         Expr*& redRef1, Expr*& redRef2)
+{
+  if (redRef1) return;
+
+  // We will insert new ASTs at the beginning of 'fn' -> before 'redRef1',
+  // and at the end of 'fn' -> before 'redRef2'.
+  redRef1 = new CallExpr("redRef1");
+  redRef2 = new CallExpr("redRef2");
+  fn->insertAtHead(redRef1);
+  fn->insertBeforeEpilogue(redRef2);
+  if (nested) {
+    // move redRef2 one up so it is just before _downEndCount()
+    CallExpr* dc = toCallExpr(redRef2->prev);
+    INT_ASSERT(dc && dc->isNamed("_downEndCount"));
+    dc->insertBefore(redRef2->remove());
+  }
+}
+
+//
+// We won't need the redRef anchors any more. Remove them if we set them up.
+//
+static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
+  if (!redRef1) return;
+  redRef1->remove();
+  redRef2->remove();
+  redRef1 = redRef2 = NULL;
+}
 
 //
 // Find the _waitEndCount and _endCountFree calls that comes after 'fromHere'.
@@ -337,11 +338,10 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   headAnchor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
   headAnchor->insertBefore(new DefExpr(globalOp));
 
-  AggregateType* reduceAt = toAggregateType(reduceType->type);
-  INT_ASSERT(reduceAt);
+  Type* newT = getDecoratedClass(reduceType->type, CLASS_TYPE_GENERIC_NONNIL);
 
   CallExpr* newOp = new CallExpr(PRIM_NEW,
-                                 reduceAt->symbol,
+                                 newT->symbol,
                                  new NamedExpr("eltType", new SymExpr(eltType)),
                                  new NamedExpr(astr_chpl_manager,
                                              new SymExpr(dtUnmanaged->symbol)));
@@ -350,18 +350,21 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   insertInitialAccumulate(headAnchor, globalOp, origSym);
 
   Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
-  // Doing insertAfter() calls in reverse order.
-  // Can't insertBefore() on tailAnchor->next - that can be NULL.
-  tailAnchor->insertAfter("chpl__delete(%S)",
-                         globalOp);
-  tailAnchor->insertAfter("'='(%S, generate(%S,%S))",
-                         origSym, gMethodToken, globalOp);
+  // origSym = globalOp.generate() (via genTemp); delete globalOp;
+  VarSymbol* genTemp = newTemp("genTemp");
+  genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  tailAnchor->insertAfter(new DefExpr(genTemp),
+                          new CallExpr(PRIM_MOVE, genTemp,
+                            new CallExpr("generate", gMethodToken, globalOp)),
+                          new CallExpr("=", origSym, genTemp),
+                          new CallExpr("chpl__delete", globalOp));
 
   ArgSymbol* parentOp = new ArgSymbol(INTENT_BLANK, "reduceParent", dtUnknown);
   newFormal = parentOp;
 
   VarSymbol* currOp = new VarSymbol("reduceCurr");
   VarSymbol* svar  = new VarSymbol(origSym->name, origSym->type);
+  svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
   symReplace = svar;
 
   redRef1->insertBefore(new DefExpr(currOp));
@@ -415,9 +418,6 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
 //
 // Should we consider this symbol as possibly an outer variable
 // w.r.t. 'fn'?
-//
-// This is similar to the tests in findOuterVarsNew()
-// in implementForallIntents*.cpp
 //
 static bool considerAsOuterVar(Symbol* sym, FnSymbol* fn) {
   if (sym->defPoint->parentSymbol == fn         || // defined in 'fn'
@@ -484,13 +484,11 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-// Same as markOuterVarsWithIntents() in implementForallIntents.cpp,
-// except uses byrefVars instead of forallIntents.
 static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
   Symbol* marker = NULL;
 
-  // Keep in sync with setupForallIntents() - the actuals alternate:
+  // The actuals alternate:
   //  (tiMark arg | reduce opExpr), task-intent variable [, repeat]
   for_actuals(actual, byrefVars) {
     SymExpr* se = toSymExpr(actual);
@@ -500,6 +498,7 @@ static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
                     //                 or over chpl__reduceGlob
     Symbol* var = se->symbol();
     if (marker) {
+      checkTypeParamTaskIntent(se);
       SymbolMapElem* elem = uses.get_record(var);
       if (elem) {
         elem->value = marker;
@@ -524,7 +523,7 @@ static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
 // That includes the implicit 'this' in the constructor - see
 // the commit message for r21602. So we exclude those from consideration.
 // While there, we prune other things for forall intents.
-void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
+static void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
   form_Map(SymbolMapElem, e, uses) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
@@ -563,9 +562,8 @@ void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
 // The corresponding value is one of:
 //   markPruned   - if we should not do anything about that variable
 //   a "tiMarker" - if the variable is an outer variable;
-//                  the marker indicates the intent for this variable -
-//                  see tiMarkForIntent(); it is markUnspecified
-//                  if the intent is not given explicitly
+//                  the marker indicates the intent for this variable,
+//                  it is markUnspecified if the intent is not given explicitly
 //   a TypeSymbol - the same for the special case where the user requested
 //                  a reduce intent for this variable (see below)
 //
@@ -651,7 +649,7 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
   cleanupRedRefs(redRef1, redRef2);
 }
 
-void replaceVarUses(Expr* topAst, SymbolMap& vars) {
+static void replaceVarUses(Expr* topAst, SymbolMap& vars) {
   if (vars.n == 0) return;
   std::vector<SymExpr*> symExprs;
   collectSymExprs(topAst, symExprs);
@@ -680,7 +678,7 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
   int numFormals = fnSymbol->numFormals();
   if( numFormals >= 1 ) {
     ArgSymbol* lastFormal = fnSymbol->getFormal(numFormals);
-    int has_order_type = lastFormal->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE);
+    int has_order_type = lastFormal->typeInfo()->symbol->hasEitherFlag(FLAG_MEMORY_ORDER_TYPE, FLAG_C_MEMORY_ORDER_TYPE);
     int has_order_name = (0 == strcmp(lastFormal->name, "order"));
     if( has_order_name && ! has_order_type ) {
       INT_FATAL(lastFormal, "atomic method has order without type");

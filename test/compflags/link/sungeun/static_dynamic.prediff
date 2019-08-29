@@ -2,6 +2,8 @@
 
 import sys, os, subprocess, string
 
+from distutils.version import LooseVersion
+
 def testFailed(f, output):
     logfile = file(f, 'a')
     logfile.write('%s'%(output))
@@ -29,7 +31,9 @@ for l in chpl_env.split('\n'):
         val = env[1].strip()
     if var == 'CHPL_TARGET_PLATFORM':
         if val.find('cray-x') == 0:
-            defaultLinkStyle = 'statically'
+            pe_ver = os.getenv('CRAYPE_VERSION', '0.0.0.0')
+            if LooseVersion(pe_ver) < LooseVersion('2.6.0.1'):
+              defaultLinkStyle = 'statically'
 
     if var == 'CHPL_COMM':
         chpl_comm=val

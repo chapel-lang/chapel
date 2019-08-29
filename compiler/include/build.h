@@ -53,6 +53,7 @@ Expr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
 Expr* buildRealLiteral(const char* pch);
 Expr* buildImagLiteral(const char* pch);
 Expr* buildStringLiteral(const char* pch);
+Expr* buildBytesLiteral(const char* pch);
 Expr* buildCStringLiteral(const char* pch);
 
 Expr* buildDotExpr(BaseAST* base, const char* member);
@@ -61,9 +62,11 @@ Expr* buildDotExpr(const char* base, const char* member);
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
 
-BlockStmt* buildUseStmt(CallExpr* modules);
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except);
-bool processStringInRequireStmt(const char* str, bool parseTime);
+BlockStmt* buildUseStmt(CallExpr* modules, bool privateUse);
+BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
+                        bool privateUse);
+bool processStringInRequireStmt(const char* str, bool parseTime,
+                                const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
@@ -96,12 +99,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildDeleteStmt(CallExpr* exprlist);
-BlockStmt* buildForallLoopStmt(Expr* indices,
-                               Expr* iterator,
-                               ForallIntents* forall_intents,
-                               BlockStmt* body,
-                               bool zippered = false,
-                               VarSymbol* useThisGlobalOp = NULL);
 Expr* buildForLoopExpr(Expr* indices,
                        Expr* iterator,
                        Expr* expr,
@@ -147,7 +144,7 @@ DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol* fn);
 
-FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr);
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
 
 FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
                               const char* name,

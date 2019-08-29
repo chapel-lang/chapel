@@ -372,6 +372,24 @@ For example:
    Make sure your Python functionality is also complete before calling this
    function.
 
+Argument Default Values
+-----------------------
+
+Python has the capacity to support default values for arguments.  The ability to
+call Chapel exported functions with argument default values from Python is
+present, but is not yet fully supported.  See :ref:`the Caveat section
+<default-values>` for more details.
+
+For the cases that are not supported, the compiler will generate a warning. The
+argument must always be provided when calling the function.
+
+c_ptr Arguments
+---------------
+
+Python code can pass ``numpy`` arrays or ``ctypes`` pointers to ``c_ptr``
+arguments.
+
+
 Debugging Issues with --library-python
 --------------------------------------
 
@@ -383,6 +401,147 @@ third-party libraries).  These files are currently left in the same location as
 the generated library - if compilation fails due to generating one or more of
 these files incorrectly, you may be able to modify the file and re-run the
 Cython command yourself.
+
+.. _readme-libraries.Fortran:
+
+Using Your Library in Fortran
+=============================
+
+Prerequisites
+-------------
+
+To make use of your library in Fortran, a Fortran compiler that implements
+the ISO_Fortran_binding.h header and interface defined by ISO/IEC TS 29113
+is required.
+
+Compiling Your Chapel Library
+-----------------------------
+
+To create a Fortran compatible module in addition to the normally generated
+library and header, add ``--library-fortran`` to the compilation. This will
+create a Fortran module containing declarations for each Chapel function
+declared with ``export``. This module can be used from Fortran in order to
+make the functions exported from Chapel available.  At present, the generated
+module only handles basic types for function arguments and return types, and
+the compiler will emit warnings for any types it is unable to handle properly.
+
+Initializing and Using Your Library From Fortran
+------------------------------------------------
+
+Once the library and Fortran interface module are generated, you can ``use``
+the interface module and make calls to the functions it declares.
+
+Similarly to using your library with C and Python, you will need to call a
+set up function to ensure the Chapel runtime and standard modules are
+initialize. Unlike C and Python, your library currently needs to define
+this function itself.  The following should work after replacing
+``MyModuleName`` with the name of the actual module:
+
+.. code-block:: Chapel
+
+    export proc chpl_library_init_ftn() {
+      // Make the runtime/library initialization function visible
+      extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
+      var filename = c"fake";
+      // Initialize the internal runtime/library
+      chpl_library_init(1, c_ptrTo(filename): c_ptr(c_ptr(c_char)));;
+      // Initialize the main user module
+      chpl__init_MyModuleName();
+    }
+
+A simple Fortran example using a function ``myChapelFunction`` from the 
+``MyModuleName`` library is:
+
+.. code-block:: Fortran
+
+    program Example
+      ! use the interface module generated with --library-fortran
+      use MyModuleName
+      implicit none
+
+      integer(8) :: arg, ret
+      arg = 3
+
+      ! initialize the Chapel library using the function defined above
+      call chpl_library_init_ftn()
+
+      ! call a function from the Chapel library
+      ret = myChapelFunction(arg)
+
+      print *, ret
+    end program Example
+
+This would then be compiled with commands to first build the interface module,
+then to build the example program and link with the Chapel library and Chapel
+runtime libraries:
+
+.. code-block:: sh
+
+    ftn -c lib/MyModuleName.f90
+    ftn Example.f90 -Llib -lMyModuleName `$CHPL_HOME/util/config/compileline --libraries` -o Example
+
+Arrays
+======
+
+Arrays can be returned by exported Chapel functions as one of two C types:
+
+- ``chpl_external_array``
+
+  - For arrays that can be translated into native C or Python arrays.  In
+    Python, the contents of this type is copied into a Python array.
+
+- ``chpl_opaque_array``
+
+  - For arrays that are not currently translated.  In Python, this is used as a
+    field in a Python class named ``ChplOpaqueArray``.
+
+chpl_external_array
+-------------------
+
+A ``chpl_external_array`` can be created in C or returned by a Chapel function
+declared as returning specific Chapel array types.  To create a
+``chpl_external_array`` in C, you can call:
+
+- ``chpl_make_external_array(elt_size, num_elts)`` to create an empty array of
+  the given size.
+
+- ``chpl_make_external_array_ptr(elts, num_elts)`` where ``elts`` is an existing
+  array of the given size.
+
+Users should call ``chpl_free_external_array`` to indicate that they are done
+using the ``chpl_external_array`` instance if it was created for them by a
+Chapel function or via ``chpl_make_external_array``.  Users should explicitly
+free any memory that was stored in a ``chpl_external_array`` using
+``chpl_make_external_array_ptr``.
+
+.. note::
+   The names of these functions may change.
+
+chpl_opaque_array
+-----------------
+
+Chapel arrays that cannot be returned using ``chpl_external_array`` will be
+returned using ``chpl_opaque_array``.  ``chpl_opaque_array`` instances cannot be
+created outside of Chapel, nor can their contents be accessed.
+``chpl_opaque_array`` instances can only be received and sent to Chapel
+functions.
+
+Users should call ``cleanupOpaqueArray`` to indicate they are done using the
+``chpl_opaque_array`` instance.
+
+It is our intention to support as many Chapel array types as we can using
+``chpl_external_array``.  Chapel arrays types that are currently supported using
+``chpl_opaque_array`` may become supported by ``chpl_external_array`` instead
+in the future.
+
+Fortran arrays
+--------------
+
+A 1-D contiguous Fortran array can be passed to an exported Chapel function
+for an argument with the type ``[] t`` where ``t`` is a primitive type.  The
+Chapel compiler will automatically translate such an array into a Chapel array.
+This allows it to be used in all the ways any other Chapel array can be used,
+for example in parallel loops or reductions.
 
 Using Your Library in Chapel
 ============================
@@ -403,6 +562,14 @@ program.  Each library file must include the chapel runtime and standard modules
 for its own functionality and when two or more libraries are linked to a program
 this leads to multiple definitions of these functions.
 
+LLVM
+----
+
+LLVM support with ``--library`` is currently a work-in-progress.  For the 1.19
+release, it is only supported for C with a subset of the flags, and does not
+support arrays.  It also does not fully work with ``--dynamic`` compilation.  We
+expect to extend this support in later releases.
+
 
 .. _Exporting Symbols:
 
@@ -411,3 +578,16 @@ Exporting Symbols
 
 Only functions can be exported currently.  We hope to extend this support to
 types and global variables in the future.
+
+.. _default-values:
+
+Argument Default Values
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Python interoperability currently supports default values for function
+arguments, but only when the default value is a literal (e.g. ``4``,
+``"blah"``).  Default values that are more complicated are not currently
+supported.  We hope to extend this support in the future.
+
+C interoperability does not support default values for function arguments.  We
+do not anticipate supporting argument default values in C.

@@ -1,2 +1,3 @@
 accessPrivateUsedNephew3.chpl:17: In function 'main':
 accessPrivateUsedNephew3.chpl:18: error: unresolved call 'secretFunction(11)'
+accessPrivateUsedNephew3.chpl:18: note: because no functions named secretFunction found in scope

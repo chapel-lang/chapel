@@ -1,2 +1,0 @@
-default-value-dyn-owned.chpl:14: error: unresolved call 'something_default_bar(_owned(C))'
-default-value-dyn-owned.chpl:14: note: candidates are: something_default_bar(foo: _owned(B))

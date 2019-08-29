@@ -1,6 +1,6 @@
-perfkeys: (seconds):, (seconds):
-files: quickSort.dat, heapSort.dat
-graphkeys: quickSort, heapSort
+perfkeys: (seconds):, (seconds):, (seconds):
+files: quickSort.dat, heapSort.dat, mergeSort.dat
+graphkeys: quickSort, heapSort, mergeSort
 graphtitle: Linearithmic sorts on 2^24 bytes of shuffled data
 ylabel: Time (seconds)
 

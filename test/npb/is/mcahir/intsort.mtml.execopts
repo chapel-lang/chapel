@@ -1,1 +1,1 @@
---dataParTasksPerLocale=2 --printTime=false
+--dataParTasksPerLocale=2 --printTime=false --printNumLocales=false

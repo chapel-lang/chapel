@@ -18,6 +18,7 @@
  */
 
 
+private use List;
 use TOML;
 use Spawn;
 use MasonUtils;
@@ -35,7 +36,7 @@ proc masonExample(args) {
   var build = true;
   var release = false;
   var force = false;
-  var examples: [1..0] string;
+  var examples: list(string);
 
   for arg in args {
     if arg == '--show' {
@@ -60,11 +61,11 @@ proc masonExample(args) {
       continue;
     }
     else {
-      examples.push_back(arg);
+      examples.append(arg);
     }
   }
-  var uargs: [1..0] string;
-  if !build then uargs.push_back("--no-update");  
+  var uargs: list(string);
+  if !build then uargs.append("--no-update");  
   UpdateLock(uargs);
   runExamples(show, run, build, release, force, examples);
 }
@@ -80,6 +81,12 @@ private proc getBuildInfo(projectHome: string) {
   
   // Get project source code and dependencies
   const sourceList = genSourceList(lockFile);
+
+  //
+  // TODO: Temporarily use `toArray` here because `list` does not yet
+  // support parallel iteration, which the `getSrcCode` method _must_
+  // have for good performance.
+  //
   getSrcCode(sourceList, false);
   const project = lockFile["root"]["name"].s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
@@ -87,8 +94,11 @@ private proc getBuildInfo(projectHome: string) {
   // get the example names from lockfile or from example directory
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
+  var emptyCompopts = new list(string);
+  emptyCompopts.append("");
+
   // Get system, and external compopts
-  const compopts = getTomlCompopts(lockFile.borrow(), [""]);
+  const compopts = getTomlCompopts(lockFile.borrow(), emptyCompopts);
   const perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   // Close lock and toml
@@ -101,7 +111,7 @@ private proc getBuildInfo(projectHome: string) {
 
 // retrieves compopts and execopts for each example.
 // returns assoc array of <example_name> -> <(compopts, execopts)>
-private proc getExampleOptions(toml: Toml, exampleNames: [?d] string) {
+private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
 
   var exampleDomain: domain(string);
   var exampleOptions: [exampleDomain] (string, string);
@@ -144,19 +154,19 @@ private proc removeExampleBinary(projectHome: string, exampleName: string) {
 
 // Takes in examples found by mason and examples requested by user
 // outputs examples that should be built/run
-private proc determineExamples(exampleNames: [?d1] string,
-                               examplesRequested: [?d2] string) throws {
+private proc determineExamples(exampleNames: list(string),
+                               examplesRequested: list(string)) throws {
 
-  var examplesToRun: [1..0] string;
+  var examplesToRun: list(string);
 
   // check if user listed examples actually exist
-  if examplesRequested.domain.size > 0 {
+  if examplesRequested.size > 0 {
     for example in examplesRequested {
       if exampleNames.count(example) == 0 {
         throw new owned MasonError("Mason could not find example: " + example);
       }
       else {
-        examplesToRun.push_back(example);
+        examplesToRun.append(example);
       }
     }
     return examplesToRun;
@@ -167,7 +177,7 @@ private proc determineExamples(exampleNames: [?d1] string,
 
 
 private proc runExamples(show: bool, run: bool, build: bool, release: bool,
-                         force: bool, examplesRequested: [?d] string) throws {
+                         force: bool, examplesRequested: list(string)) throws {
 
   try! {
 
@@ -184,7 +194,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     const perExampleOptions = buildInfo[5];
     const projectName = basename(stripExt(projectPath, ".chpl"));
     
-    var numExamples = exampleNames.domain.size;
+    var numExamples = exampleNames.size;
     var examplesToRun = determineExamples(exampleNames, examplesRequested);
 
     // Clean out example binaries from previous runs
@@ -212,7 +222,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             // get the string of dependencies for compilation
             // also names example as --main-module
             const masonCompopts = getMasonDependencies(sourceList, exampleName);
-            var allCompOpts = " ".join(" ".join(compopts), masonCompopts,
+            var allCompOpts = " ".join(" ".join(compopts.these()), masonCompopts,
                                        exampleCompopts);
 
             const moveTo = "-o " + projectHome + "/target/example/" + exampleName;
@@ -271,13 +281,13 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
 }  
 
 
-private proc getMasonDependencies(sourceList: [?d] (string, string, string),
+private proc getMasonDependencies(sourceList: list(3*string),
                                  exampleName: string) {
 
   // Declare example to run as the main module
   var masonCompopts = " ".join(" --main-module", exampleName, " ");
 
-  if sourceList.numElements > 0 {
+  if sourceList.size > 0 {
     const depPath = MASON_HOME + "/src/";
 
     // Add dependencies to project
@@ -290,7 +300,7 @@ private proc getMasonDependencies(sourceList: [?d] (string, string, string),
 }
 
 private proc getExamples(toml: Toml, projectHome: string) {
-  var exampleNames: [1..0] string;
+  var exampleNames: list(string);
   const examplePath = joinPath(projectHome, "example");
 
   if toml.pathExists("examples.examples") {
@@ -299,7 +309,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
     var strippedExamples = examples.split(',').strip('[]');
     for example in strippedExamples {
       const t = example.strip().strip('"');
-      exampleNames.push_back(t);
+      exampleNames.append(t);
     }
     return exampleNames;
   }
@@ -307,7 +317,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
     var examples = findfiles(startdir=examplePath, recursive=true, hidden=false);
     for example in examples {
       if example.endsWith(".chpl") {
-        exampleNames.push_back(getExamplePath(example));
+        exampleNames.append(getExamplePath(example));
       }
     }
     return exampleNames;

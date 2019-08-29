@@ -1,4 +1,8 @@
-var str = "åbçdèfghíjklm";
+var str1 = "abcdefghijklm";
 
-writeln("str[12:codePointIndex..13:codePointIndex] = ", str[12:codePointIndex..13:codePointIndex]);
-writeln("str[12:codePointIndex..16:codePointIndex] = ", str[12:codePointIndex..16:codePointIndex]);
+writeln("str1[12:byteIndex..13:byteIndex] = ", str1[12:byteIndex..13:byteIndex]);
+
+var str2 = "åbçdèfghíjklm";
+
+writeln("str2[12:codepointIndex..13:codepointIndex] = ", str2[12:codepointIndex..13:codepointIndex]);
+writeln("str2[12:codepointIndex..16:codepointIndex] = ", str2[12:codepointIndex..16:codepointIndex]);

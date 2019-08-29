@@ -28,14 +28,18 @@ class mink : ReduceScanOp {
       }
   }
   
-  proc combine(s: borrowed mink(eltType))
+  proc accumulate(state: [])
   {
     for i in 1..k
       {
-        accumulate(s.v[i]);
+        accumulate(state[i]);
       }
   }
   
+  proc combine(s: borrowed mink(eltType)) {
+    accumulate(s.v);
+  }
+
   proc generate()
   {
     return v;

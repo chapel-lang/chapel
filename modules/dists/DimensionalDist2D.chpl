@@ -328,7 +328,7 @@ class DimensionalDom : BaseRectangularDom {
   // local domain descriptors, not reprivatized
   // INIT TODO: Used to use 'locDdescType' instead of 'locDescTypeHelper'. Can
   // we clean this up?
-  var localDdescs: [dist.targetIds] unmanaged locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
+  var localDdescs: [dist.targetIds] locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
 }
 
 class LocDimensionalDom {
@@ -1348,7 +1348,7 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
 iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;
-  var lastLocAdesc: this.localAdescs.eltType;
+  var lastLocAdesc: this.localAdescs.eltType?;
 
   // TODO: is this the right approach? (similar to serial)
   // e.g. is it right that the *global* subordinate 1-d descriptors are used?
@@ -1370,6 +1370,6 @@ iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
 
 //writeln("DimensionalArr follower on ", here.id, "  l=(", l1, ",", l2, ")  i=(", i1, ",", i2, ")");
 
-        yield lastLocAdesc.myStorageArr(i1, i2);
+        yield lastLocAdesc!.myStorageArr(i1, i2);
       }
 }

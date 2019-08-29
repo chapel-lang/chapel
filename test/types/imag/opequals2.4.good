@@ -1,1 +1,1 @@
-opequals2.chpl:8: error: type mismatch in assignment from real(64) to imag(64)
+opequals2.chpl:8: error: Cannot assign to imag(64) from real(64)

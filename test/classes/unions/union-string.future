@@ -1,0 +1,2 @@
+bug: memory error casting to string a union with an active string member
+#12405

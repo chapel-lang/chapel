@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "buildDefaultFunctions.h"
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
@@ -41,7 +42,6 @@ static void build_accessors(AggregateType* ct, Symbol* field);
 static void buildDefaultOfFunction(AggregateType* ct);
 
 static void build_union_assignment_function(AggregateType* ct);
-static void buildClassBorrowMethod(AggregateType* ct);
 
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
@@ -120,10 +120,6 @@ void buildDefaultFunctions() {
 
         if (isUnion(ct)) {
           build_union_assignment_function(ct);
-        }
-
-        if (isClass(ct)) {
-          buildClassBorrowMethod(ct);
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
@@ -321,7 +317,10 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 
   fn->setMethod(true);
 
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  Type* thisType = ct;
+  if (isClassLike(ct) && isClass(ct) && typeMethod)
+    thisType = ct->getDecoratedClass(CLASS_TYPE_GENERIC);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
   if (typeMethod) {
     _this->addFlag(FLAG_TYPE_VARIABLE);
@@ -604,7 +603,30 @@ static void build_chpl_entry_points() {
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+  if (!fMultiLocaleInterop) {
+    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+  } else {
+    // Create an extern definition for the multilocale library server's main
+    // function.  chpl_gen_main needs to call it in the course of its run, so
+    // that we correctly set up the runtime.
+    FnSymbol* chpl_mli_smain = new FnSymbol("chpl_mli_smain");
+    chpl_mli_smain->addFlag(FLAG_EXTERN);
+    chpl_mli_smain->addFlag(FLAG_LOCAL_ARGS);
+    // Takes the connection information
+    ArgSymbol* setup_conn = new ArgSymbol(INTENT_BLANK, "setup_conn",
+                                          dtStringC);
+    chpl_mli_smain->insertFormalAtTail(setup_conn);
+
+    mainModule->block->insertAtTail(new DefExpr(chpl_mli_smain));
+
+    VarSymbol* connection = newTemp("setup_conn");
+    chpl_gen_main->insertAtTail(new DefExpr(connection));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, connection,
+                                             new CallExpr("chpl_get_mli_connection",
+                                                          arg)));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_mli_smain", connection));
+    normalize(chpl_mli_smain);
+  }
 
   bool main_ret_set = false;
 
@@ -806,9 +828,9 @@ static void build_enum_first_function(EnumType* et) {
   if (defExpr)
     fn->insertAtTail(new CallExpr(PRIM_RETURN, defExpr->sym));
   else
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, dtVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   // If there are one or more enumerators for this type, return the first one
-  // listed.  Otherwise return void.
+  // listed.  Otherwise return nothing.
 
   DefExpr* fnDef = new DefExpr(fn);
   // needs to go in the base module because when called from _defaultOf(et),
@@ -1232,35 +1254,6 @@ static void build_union_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
-static void buildClassBorrowMethod(AggregateType* ct) {
-  if (function_exists("borrow", dtMethodToken, ct))
-    return;
-
-  FnSymbol* fn = new FnSymbol("borrow");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-
-  if (ct->isClass() && ct != dtObject)
-    fn->addFlag(FLAG_OVERRIDE);
-  else
-    fn->addFlag(FLAG_INLINE);
-
-  fn->cname = astr("borrow");
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->setMethod(true);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->insertFormalAtTail(fn->_this);
-
-  fn->retType = ct;
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
-
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, ct->symbol);
-  normalize(fn);
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1270,10 +1263,14 @@ static void buildClassBorrowMethod(AggregateType* ct) {
 static void check_not_pod(AggregateType* at) {
   if (function_exists("chpl__initCopy", at) == NULL) {
 
-    // Compiler-generated copy-initializers should not disable POD
-    FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
-    if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+    if (at->hasUserDefinedInitEquals()) {
       at->symbol->addFlag(FLAG_NOT_POD);
+    } else {
+      // Compiler-generated copy-initializers should not disable POD
+      FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
+      if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+        at->symbol->addFlag(FLAG_NOT_POD);
+      }
     }
   }
 }
@@ -1394,6 +1391,49 @@ static bool inheritsFromError(Type* t) {
   return retval;
 }
 
+
+// common code to create a writeThis() function without filling in the body
+FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
+  FnSymbol* fn = new FnSymbol("writeThis");
+
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  if (ct->isClass() && ct != dtObject)
+    fn->addFlag(FLAG_OVERRIDE);
+  else
+    fn->addFlag(FLAG_INLINE);
+
+  fn->cname = astr("_auto_", ct->symbol->name, "_write");
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
+
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
+  *filearg = fileArg;
+
+  fileArg->addFlag(FLAG_MARKED_GENERIC);
+
+  fn->setMethod(true);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(fn->_this);
+  fn->insertFormalAtTail(fileArg);
+
+  fn->retType = dtVoid;
+
+  DefExpr* def = new DefExpr(fn);
+
+  ct->symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  reset_ast_loc(def, ct->symbol);
+
+  ct->methods.add(fn);
+
+  return fn;
+}
+
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool hasReadWriteThis         = false;
   bool hasReadThis              = false;
@@ -1435,30 +1475,8 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
   // Make writeThis when appropriate
   if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
-    FnSymbol* fn = new FnSymbol("writeThis");
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    if (ct->isClass() && ct != dtObject)
-      fn->addFlag(FLAG_OVERRIDE);
-    else
-      fn->addFlag(FLAG_INLINE);
-
-    fn->cname = astr("_auto_", ct->symbol->name, "_write");
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-    fn->_this->addFlag(FLAG_ARG_THIS);
-
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
-
-    fileArg->addFlag(FLAG_MARKED_GENERIC);
-
-    fn->setMethod(true);
-
-    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(fileArg);
-
-    fn->retType = dtVoid;
+    ArgSymbol* fileArg = NULL;
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
 
     if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
@@ -1471,18 +1489,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
                                     fn->_this));
     }
 
-    DefExpr* def = new DefExpr(fn);
-
-    ct->symbol->defPoint->insertBefore(def);
-
-    fn->setMethod(true);
-    fn->addFlag(FLAG_METHOD_PRIMARY);
-
-    reset_ast_loc(def, ct->symbol);
-
     normalize(fn);
-
-    ct->methods.add(fn);
   }
 
   // Make readThis when appropriate

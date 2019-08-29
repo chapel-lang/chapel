@@ -10,19 +10,37 @@ proc main() {
   // Comparators
   const absKey = new AbsKeyCmp(),
         absComp = new AbsCompCmp(),
-        absKeyComp = new AbsKeyCompCmp(),
         revAbsKey = new ReverseComparator(absKey),
         revAbsComp = new ReverseComparator(absComp),
         tupleKey = new TupleCmp();
+  const absKeyClass = new AbsKeyCmpClass(),
+        absCompClass = new AbsCompCmpClass(),
+        revAbsKeyClass = new ReverseComparator(absKeyClass.borrow()),
+        revAbsCompClass = new ReverseComparator(absCompClass.borrow()),
+        tupleKeyClass = new TupleCmpClass();
+
 
   // Arrays and Domains
-  const largeD = {1..20}, // quickSort requires domain.size > 16
-        strideD = {2..8 by 2},
-      strideRevD = {2..8 by -2};
+
+  // First we test isSorted() against the arrays as written here, so
+  // they have to be sorted correctly to start with.  Then we'll
+  // shuffle them and sort them again.
+
+  // quickSort requires domain.size > 16
+  const largeD = {1..20},
+        strideD = {2..40 by 2},
+        strideAlignD = {2..41 by 2 align 3},
+        strideRevD = {2..40 by -2};
   var largeA: [largeD] int,
-      strideA: [strideD] int = [-3, -1, 4, 5],
-      strideRevA: [strideRevD] int = [-3, -1, 4, 5];
-    [i in largeD] largeA[i] = i;
+      strideA: [strideD] int,
+      strideAlignA: [strideAlignD] int,
+      strideRevA: [strideRevD] int;
+
+  largeA = [-17, -10, -4, -2, 0, 1, 2, 3, 5, 8,
+	    13, 21, 34, 55, 89, 4242, 424242, 42424242, 4242424242, 424242424242 ];
+  strideA = largeA;
+  strideAlignA = largeA;
+  strideRevA = largeA;
 
   // Pre-sorted arrays paired with comparators to test
   var tests = (
@@ -33,16 +51,21 @@ proc main() {
                 // Testing D.idxType / D.dims()
                 (largeA, defaultComparator),
                 (strideA, defaultComparator),
+                (strideAlignA, defaultComparator),
                 (strideRevA, defaultComparator),
 
                 // Testing comparators
-                ([-1, 2, 3, -4], absKey),
-                ([-1, 2, 3, -4], absComp),
-                ([-1, 2, 3, -4], absKeyComp),
-                ([ 3, 2, -1, -4], reverseComparator),
-                ([ -4, 3, 2, -1], revAbsKey),
-                ([ -4, 3, 2, -1], revAbsComp),
-                ([-4, -1, 2, 3], tupleKey)
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absKey),
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absKeyClass.borrow()),
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absComp),
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absCompClass.borrow()),
+                ([20, 18, 17, 15, 14, 12, 11, 9, 8, 6, 5, 3, 2, -1, -4, -7, -10, -13, -16, -19], reverseComparator),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsKey),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsKeyClass),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsComp),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsCompClass),
+                ([-19, -16, -13, -10, -7, -4, -1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18, 20], tupleKey),
+                ([-19, -16, -13, -10, -7, -4, -1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18, 20], tupleKeyClass.borrow())
               );
 
 
@@ -82,7 +105,7 @@ proc main() {
     for param i in 1..tests.size {
       ref (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      bubbleSort(arr, comparator=cmp);
+      BubbleSort.bubbleSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for bubbleSort() function.\n');
     }
@@ -90,7 +113,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      insertionSort(arr, comparator=cmp);
+      InsertionSort.insertionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for insertionSort() function.\n');
     }
@@ -98,7 +121,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      binaryInsertionSort(arr, comparator=cmp);
+      BinaryInsertionSort.binaryInsertionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for binaryInsertionSort() function.\n');
     }
@@ -106,7 +129,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      quickSort(arr, comparator=cmp);
+      QuickSort.quickSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for quickSort() function.\n');
     }
@@ -114,7 +137,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      heapSort(arr, comparator=cmp);
+      HeapSort.heapSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for heapSort() function.\n');
     }
@@ -122,7 +145,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      selectionSort(arr, comparator=cmp);
+      SelectionSort.selectionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for selectionSort() function.\n');
     }
@@ -130,7 +153,7 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
-      mergeSort(arr, comparator=cmp);
+      MergeSort.mergeSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for mergeSort() function.\n');
     }
@@ -197,6 +220,11 @@ record AbsKeyCmp {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmp'; }
 }
+class AbsKeyCmpClass {
+  proc key(a) { return abs(a); }
+  proc name() { return 'AbsKeyCmpClass'; }
+}
+
 
 
 /* Compare Sort by absolute value */
@@ -204,19 +232,20 @@ record AbsCompCmp {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }
-
-
-/* Key method should take priority over compare method */
-record AbsKeyCompCmp {
-  proc key(a) { return abs(a); }
-  proc compare(a, b) { return a - b; }
-  proc name() { return 'AbsKeyCompCmp'; }
+class AbsCompCmpClass {
+  proc compare(a, b) { return abs(a) - abs(b); }
+  proc name() { return 'AbsCompCmpClass'; }
 }
+
 
 
 /* Key method can return a non-numerical/string type, such as tuple */
 record TupleCmp {
   proc key(a) { return (a, a); }
   proc name() { return 'TupleCmp'; }
+}
+class TupleCmpClass {
+  proc key(a) { return (a, a); }
+  proc name() { return 'TupleCmpClass'; }
 }
 

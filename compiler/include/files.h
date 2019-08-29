@@ -54,6 +54,8 @@ void deleteTmpDir();
 const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
+const char* getDirectory(const char* filename);
+const char* stripdirectories(const char* filename);
 
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
 void closeCFile(fileinfo* fi, bool beautifyIt=true);
@@ -77,7 +79,7 @@ bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
 bool isObjFile(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
-void addSourceFile(const char* filename);
+void addSourceFile(const char* filename, const char* modFilename);
 const char* nthFilename(int i);
 void addLibPath(const char* filename);
 void addLibFile(const char* filename);

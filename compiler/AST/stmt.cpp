@@ -70,7 +70,6 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   useList       = NULL;
   userLabel     = NULL;
   byrefVars     = NULL;
-  forallIntents = NULL;
   blockInfo     = NULL;
 
   body.parent   = this;
@@ -89,18 +88,11 @@ BlockStmt::BlockStmt(BlockTag initBlockTag) :
   useList       = NULL;
   userLabel     = NULL;
   byrefVars     = NULL;
-  forallIntents = NULL;
   blockInfo     = NULL;
 
   body.parent   = this;
 
   gBlockStmts.add(this);
-}
-
-
-BlockStmt::~BlockStmt() {
-  if (forallIntents)
-    delete forallIntents;
 }
 
 void BlockStmt::verify() {
@@ -142,14 +134,6 @@ void BlockStmt::verify() {
     }
   }
 
-  if (forallIntents) {
-    forallIntents->verifyFI(this);
-  }
-
-  if (byrefVars && forallIntents) {
-    INT_FATAL(this,"BlockStmt: byrefVars and forallIntents are both non-NULL");
-  }
-
   verifyNotOnList(useList);
   verifyNotOnList(byrefVars);
   verifyNotOnList(blockInfo);
@@ -164,7 +148,6 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->blockInfo = COPY_INT(blockInfo);
   _this->useList   = COPY_INT(useList);
   _this->byrefVars = COPY_INT(byrefVars);
-  _this->forallIntents = COPY_INT(forallIntents);
 
   for_alist(expr, body) {
     Expr* copy = COPY_INT(expr);
@@ -210,32 +193,12 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   else
     handled = false;
 
-  if (!handled &&
-      forallIntents && forallIntents->replaceChildFI(oldAst, newAst))
-    handled = true; // OK
-
   if (!handled)
     INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 
   // TODO: Handle the above special cases uniformly by specializing the
   // traversal of the children by block statement type.  I think blockInfo is
   // being deprecated anyway....
-}
-
-void BlockStmt::removeForallIntents() {
-  forallIntents->removeFI(this);
-  forallIntents = NULL;
-}
-
-//
-// Return true when parentExpr is a BlockStmt, except for exprs
-// under BlockStmt::forallIntents.
-//
-bool isDirectlyUnderBlockStmt(const Expr* expr) {
-  if (BlockStmt* parent = toBlockStmt(expr->parentExpr))
-    return !astUnderFI(expr, parent->forallIntents);
-
-  return false;
 }
 
 CallExpr* BlockStmt::blockInfoGet() const {
@@ -488,8 +451,8 @@ BlockStmt::length() const {
 
 
 void
-BlockStmt::useListAdd(ModuleSymbol* mod) {
-  useListAdd(new UseStmt(mod));
+BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
+  useListAdd(new UseStmt(mod, privateUse));
 }
 
 void
@@ -563,10 +526,6 @@ BlockStmt::accept(AstVisitor* visitor) {
 
     if (byrefVars) {
       byrefVars->accept(visitor);
-    }
-
-    if (forallIntents) {
-      forallIntents->acceptFI(visitor);
     }
 
     visitor->exitBlockStmt(this);
@@ -774,11 +733,36 @@ Expr* CondStmt::getNextExpr(Expr* expr) {
   return retval;
 }
 
+// If 'expr' is the condExpr in a CondStmt, return that CondStmt.
+// Otherwise, return NULL.
+CondStmt* isConditionalInCondStmt(Expr* expr) {
+  if (CondStmt* parent = toCondStmt(expr->parentExpr))
+    if (expr == parent->condExpr)
+      return parent;
+  return NULL;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+const char* gotoTagToString(GotoTag gotoTag) {
+  switch (gotoTag) {
+    case GOTO_NORMAL:         return "normal";
+    case GOTO_BREAK:          return "break";
+    case GOTO_CONTINUE:       return "continue";
+    case GOTO_RETURN:         return "return";
+    case GOTO_GETITER_END:    return "getiter-end";
+    case GOTO_ITER_RESUME:    return "iter-resume";
+    case GOTO_ITER_END:       return "iter-end";
+    case GOTO_ERROR_HANDLING: return "error-handling";
+    case GOTO_BREAK_ERROR_HANDLING: return "break-error-handling";
+  }
+  INT_FATAL("invalid gotoTag %d", (int)gotoTag);
+  return NULL;
+}
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Stmt(E_GotoStmt),

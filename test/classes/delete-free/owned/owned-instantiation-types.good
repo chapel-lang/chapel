@@ -1,19 +1,19 @@
-blank_untyped MyClass
-blank_owned _owned(MyClass)
-blank_class MyClass
-const_untyped MyClass
-const_owned _owned(MyClass)
-const_class MyClass
-in_untyped _owned(MyClass)
-in_owned _owned(MyClass)
-in_class MyClass
-const_in_untyped _owned(MyClass)
-const_in_owned _owned(MyClass)
-const_in_class MyClass
-ref_untyped _owned(MyClass)
-ref_owned _owned(MyClass)
-const_ref_untyped _owned(MyClass)
-const_ref_owned _owned(MyClass)
+blank_untyped owned MyClass
+blank_owned owned MyClass
+blank_class owned MyClass
+const_untyped owned MyClass
+const_owned owned MyClass
+const_class owned MyClass
+in_untyped owned MyClass
+in_owned owned MyClass
+in_class owned MyClass
+const_in_untyped owned MyClass
+const_in_owned owned MyClass
+const_in_class owned MyClass
+ref_untyped owned MyClass
+ref_owned owned MyClass
+const_ref_untyped owned MyClass
+const_ref_owned owned MyClass
 
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             

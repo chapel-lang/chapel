@@ -69,12 +69,24 @@ uint64_t    hexStr2uint64(const char* str, bool userSupplied = false,
 
 // std::string utilities
        std::string erasePrefix(std::string s, int count);
-       std::string firstNonEmptyLine(std::string s);
-inline bool        isEmpty(std::string s);
+       std::string firstNonEmptyLine(const std::string& s);
+inline bool        isEmpty(const std::string& s);
 inline std::string ltrim(std::string s);
        std::string ltrimAllLines(std::string s);
-       int         minimumPrefix(std::string s);
+       int         minimumPrefix(const std::string& s);
 
-void readArgsFromString(std::string s, std::vector<std::string>& args);
+void splitString(const std::string& s, std::vector<std::string>& vec,
+                 const char* delimiters);
+void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec);
+
+void removeTrailingNewlines(std::string& str);
+
+bool startsWith(const char* str, const char* prefix);
+
+// Unicode-specific utilities
+static inline bool isInitialUTF8Byte(unsigned char c)
+{
+  return (c & 0xc0) != 0x80;
+}
 
 #endif

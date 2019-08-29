@@ -49,7 +49,7 @@ collection of files, one per locale, are created in a directory with the
 Example 1
 ---------
 
-Consider the chapel program ``prog1.chpl``: (The example programs in this
+Consider the chapel program ``chplvis1.chpl``: (The example programs in this
 primer are found in the directory ``examples/primers/chplvis`` in your
 distribution tree.)
 
@@ -324,7 +324,7 @@ Example 2
 ---------
 
 In many programs, one will want to look at a number of small parts of
-their program in addition to seeing the total statistics.  ``prog2.chpl``
+their program in addition to seeing the total statistics.  ``chplvis2.chpl``
 gives an example of using the :mod:`VisualDebug` functions
 :proc:`~VisualDebug.tagVdebug` and :proc:`~VisualDebug.pauseVdebug`.
 
@@ -399,8 +399,8 @@ tag.
 Example 3
 ---------
 
-The program prog3.chpl computes the solution of a Laplace equation using
-the Jacobi method. This version uses dmapped domains
+The program ``chplvis3.chpl`` computes the solution of a Laplace equation
+using the Jacobi method.  This version uses dmapped domains
 and VisualDebug.  Only parts of the code are shown to illustrate
 other ``chplvis`` features.  First, config variables are handy here so one
 can create different directories of chplvis data on different runs.
@@ -505,8 +505,8 @@ computing the *max* while not increasing the *computation* time by much.
 Example 4
 ---------
 
-To help show another feature of the "`Concurrency View`_", prog4.chpl was
-written to create a *begin* task on all locales and have those tasks
+To help show another feature of the "`Concurrency View`_", ``chplvis4.chpl``
+was written to create a *begin* task on all locales and have those tasks
 live across calls to the :mod:`VisualDebug` module.  The code is:
 
 .. literalinclude:: examples/primers/chplvis/chplvis4.chpl

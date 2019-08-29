@@ -12,7 +12,7 @@ proc main() {
   writeln(c1.type:string);
   writeln(c1);
 
-  var c2: borrowed GenericClass(int, 2, bool);
+  var c2: borrowed GenericClass(int, 2, bool)?;
   writeln(c2.type:string);
 
   var c3: borrowed GenericClass(real, 5, real) = new borrowed GenericClass(real, 5, 2.4, 8);

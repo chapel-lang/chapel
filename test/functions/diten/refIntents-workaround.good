@@ -24,7 +24,7 @@ End of swap(R)
 (a = 3, b = 4)(a = 1, b = 2)
 Classes
 {a = 1, b = 2}{a = 3, b = 4}
-End of swap(C)
+End of swap(borrowed C)
 {a = 3, b = 4}{a = 1, b = 2}
 Domains
 ({1..10}, {3..13})
@@ -52,5 +52,5 @@ End of swap(string)
 (differently sized string number two, string number one)
 sync ints
 (1, 2)
-End of swap(_syncvar(int(64)))
+End of swap(sync int(64))
 (2, 1)

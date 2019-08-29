@@ -136,7 +136,6 @@ static void adjustLayoutForGlobalToWide();
 static void setupModule();
 
 fileinfo    gAllExternCode;
-fileinfo    gChplCompilationConfig;
 
 // forward declare
 class CCodeGenConsumer;
@@ -462,11 +461,11 @@ static void handleMacroTokens(const MacroInfo* inMacro,
     return;
   }
 
-  for (MacroInfo::tokens_iterator cur = start;
-       cur != end;
-       ++cur) {
-    Token t = *cur;
-    if (debugPrint) {
+  if (debugPrint) {
+    for (MacroInfo::tokens_iterator cur = start;
+         cur != end;
+         ++cur) {
+      Token t = *cur;
       printf("Found token type %i\n", t.getKind());
     }
   }
@@ -512,11 +511,19 @@ static void handleMacroTokens(const MacroInfo* inMacro,
     removeMacroOuterParens(inMacro, start, end);
   }
 
-  // If the first symbol is now tok::minus, consume it and set negate
-  if (start->getKind() == tok::minus) {
-    ++start;
-    negate = true;
-    removeMacroOuterParens(inMacro, start, end);
+  while (start != end) {
+    if (start->getKind() == tok::minus) {
+      // If the first symbol is now tok::minus, consume it and set negate
+      ++start;
+      negate = !negate;
+      removeMacroOuterParens(inMacro, start, end);
+    } else if (start->getKind() == tok::plus) {
+      // If the first symbol is now tok::plus, consume it
+      ++start;
+      removeMacroOuterParens(inMacro, start, end);
+    } else {
+      break; // done processing unary + and -
+    }
   }
 
   if (isCast) {
@@ -1084,7 +1091,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   if (!llvmCodegen)
     clangArgs.push_back("-fsyntax-only");
 
-  if( printSystemCommands ) {
+  if( printSystemCommands && developer ) {
     for( size_t i = 0; i < clangArgs.size(); i++ ) {
       printf("%s ", clangArgs[i]);
     }
@@ -1123,7 +1130,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   INT_ASSERT(C->getJobs().size() == 1);
 
   clang::driver::Command& j = *C->getJobs().begin();
-  if( printSystemCommands ) {
+  if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
     for ( auto a : j.getArguments() ) {
       printf("%s ", a);
@@ -1194,10 +1201,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     // Then add any from --mllvm passed to Chapel
     if (llvmFlags != "") {
       //split llvmFlags by spaces
-      std::stringstream argsStream(llvmFlags);
-      std::string arg;
-      while(argsStream >> arg)
-        vec.push_back(arg);
+      splitStringWhitespace(llvmFlags, vec);
     }
 
     std::vector<const char*> Args;
@@ -1207,7 +1211,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     }
     Args.push_back(NULL);
 
-    if (printSystemCommands) {
+    if (printSystemCommands && developer) {
       printf("# parsing llvm command line options: ");
       for (auto arg : Args) {
         if (arg != NULL)
@@ -1266,7 +1270,7 @@ static void setupModule()
     featuresString = features.getString();
   }
 
-  if (printSystemCommands) {
+  if (printSystemCommands && developer) {
     printf("# target features %s\n", featuresString.c_str());
   }
 
@@ -1304,8 +1308,10 @@ static void setupModule()
   }
 
   llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
-  // TODO: we may need to use Reloc::PIC_ once we start
-  // interpreting, etc.
+  
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    relocModel = llvm::Reloc::Model::PIC_;
+  }
 
   // Choose the code model
 #if HAVE_LLVM_VER >= 60
@@ -1388,6 +1394,16 @@ void finishCodegenLLVM() {
 
   // Now finish any Clang code generation.
   finishClang(info->clangInfo);
+
+  // Now overwrite the value of llvm.ident to show Chapel
+  char version[128];
+  char chapel_string[256];
+  get_version(version);
+  snprintf(chapel_string, 256, "Chapel version %s", version);
+  info->module->getNamedMetadata("llvm.ident")->setOperand(0,
+    llvm::MDNode::get(info->module->getContext(),
+      llvm::MDString::get(info->module->getContext(), chapel_string))
+  );
 
   if(debug_info)debug_info->finalize();
 
@@ -1614,7 +1630,7 @@ void runClang(const char* just_parse_filename) {
   readArgsFromFile(sysroot_arguments, args);
 
   // read arguments that we captured at compile time
-  readArgsFromString(get_clang_sysroot_args(), args);
+  splitStringWhitespace(get_clang_sysroot_args(), args);
 
   std::string runtime_includes(CHPL_RUNTIME_LIB);
   runtime_includes += "/";
@@ -1636,6 +1652,8 @@ void runClang(const char* just_parse_filename) {
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
     gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash compile '";
+    gather_prgenv += CHPL_TARGET_PLATFORM;
+    gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM;
     gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM_SUBSTRATE;
@@ -1684,20 +1702,25 @@ void runClang(const char* just_parse_filename) {
 
   // Note that these CC arguments will be saved in info->clangCCArgs
   // and will be used when compiling C files as well.
+  bool saw_sysroot = false;
   for( size_t i = 0; i < args.size(); ++i ) {
     clangCCArgs.push_back(args[i]);
+    if (args[i] == "-isysroot")
+      saw_sysroot = true;
   }
 
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
+  if (saw_sysroot) {
+    // Work around a bug in some versions of Clang that forget to
+    // search /usr/local/include if there is a -isysroot argument.
+    clangCCArgs.push_back(std::string("-I/usr/local/include"));
+  }
 
   //split ccflags by spaces
-  std::stringstream ccArgsStream(ccflags);
-  std::string ccArg;
-  while(ccArgsStream >> ccArg)
-      clangCCArgs.push_back(ccArg);
+  splitStringWhitespace(ccflags, clangCCArgs);
 
   clangCCArgs.push_back("-pthread");
 
@@ -1740,7 +1763,11 @@ void runClang(const char* just_parse_filename) {
   }
 
   if( printSystemCommands ) {
-    printf("<internal clang> ");
+    if (just_parse_filename != NULL)
+      printf("<internal clang parsing %s> ", just_parse_filename);
+    else
+      printf("<internal clang code generation> ");
+
     for( size_t i = 0; i < clangCCArgs.size(); i++ ) {
       printf("%s ", clangCCArgs[i].c_str());
     }
@@ -2461,7 +2488,11 @@ void setupForGlobalToWide(void) {
 #if HAVE_LLVM_VER < 50
                           , NULL
 #endif
+#if HAVE_LLVM_VER < 90
                           );
+#else
+                          ).getCallee();
+#endif
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
 
   // Mark the function as external so that it will not be removed
@@ -2471,8 +2502,8 @@ void setupForGlobalToWide(void) {
      llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
   ginfo->irBuilder->SetInsertPoint(block);
 
-  llvm::Constant* fns[] = {info->getFn, info->putFn,
-                           info->getPutFn, info->memsetFn, NULL};
+  llvm::Value* fns[] = {info->getFn, info->putFn,
+                        info->getPutFn, info->memsetFn, NULL};
 
   llvm::Value* ret = llvm::Constant::getNullValue(retType);
   llvm::Function::arg_iterator args = fn->arg_begin();
@@ -2481,7 +2512,7 @@ void setupForGlobalToWide(void) {
   ++args;
 
   for( int i = 0; fns[i]; i++ ) {
-    llvm::Constant* f = fns[i];
+    llvm::Value* f = fns[i];
     llvm::Value* ptr = ginfo->irBuilder->CreatePointerCast(f, retType);
     llvm::Value* id = llvm::ConstantInt::get(argType, i);
     llvm::Value* eq = ginfo->irBuilder->CreateICmpEQ(arg, id);
@@ -2551,6 +2582,31 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
+static void makeLLVMStaticLibrary(std::string moduleFilename,
+                                  const char* tmpbinname,
+                                  std::vector<std::string> dotOFiles);
+static void makeLLVMDynamicLibrary(std::string useLinkCXX, std::string options,
+                            std::string moduleFilename, const char* tmpbinname,
+                            std::vector<std::string> dotOFiles,
+                            std::vector<std::string> clangLDArgs,
+                            bool sawSysroot);
+static std::string buildLLVMLinkCommand(std::string useLinkCXX,
+                                        std::string options,
+                                        std::string moduleFilename,
+                                        std::string maino,
+                                        const char* tmpbinname,
+                                        std::vector<std::string> dotOFiles,
+                                        std::vector<std::string> clangLDArgs,
+                                        bool sawSysroot);
+static void runLLVMLinking(std::string useLinkCXX, std::string options,
+                           std::string moduleFilename, std::string maino,
+                           const char* tmpbinname,
+                           std::vector<std::string> dotOFiles,
+                           std::vector<std::string> clangLDArgs,
+                           bool sawSysroot);
+static std::string getLibraryOutputPath();
+static void moveGeneratedLibraryFile(const char* tmpbinname);
+static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
 void makeBinaryLLVM(void) {
 
@@ -2749,6 +2805,12 @@ void makeBinaryLLVM(void) {
   }
 #endif
 
+  // Make sure that we are generating PIC when we need to be.
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    INT_ASSERT(info->targetMachine->getRelocationModel()
+        == llvm::Reloc::Model::PIC_);
+  }
+
   // Emit the .o file for linking with clang
   // Setup and run LLVM passes to emit a .o file to outputOfile
   {
@@ -2801,15 +2863,8 @@ void makeBinaryLLVM(void) {
     std::string gather_prgenv(CHPL_HOME);
     gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link '";
 
-    if (fLinkStyle == LS_DEFAULT &&
-        gather_prgenv.find("-Wl,-Bdynamic") == std::string::npos) {
-      // Cray PrgEnv defaults to static linking.  If we are asking for
-      // the default link type, and we don't find an explicit dynamic
-      // flag in the gathered PrgEnv arguments, then force static linking
-      // because LLVM's default (dynamic) is different from the PrgEnv
-      // default (static).
-      fLinkStyle = LS_STATIC;
-    }
+    gather_prgenv += CHPL_TARGET_PLATFORM;
+    gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM;
     gather_prgenv += "' '";
     gather_prgenv += CHPL_COMM_SUBSTRATE;
@@ -2819,6 +2874,22 @@ void makeBinaryLLVM(void) {
 
     std::vector<std::string> gatheredArgs;
     readArgsFromCommand(gather_prgenv, gatheredArgs);
+
+    if (fLinkStyle == LS_DEFAULT) {
+      // check for indication that the PrgEnv defaults to dynamic linking
+      bool defaultDynamic = false;
+      for(size_t i = 0; i < gatheredArgs.size(); i++)
+        if (gatheredArgs[i].find("-Wl,-Bdynamic") != std::string::npos)
+          defaultDynamic = true;
+
+      // Older Cray PrgEnv defaults to static linking.  If we are asking for
+      // the default link type, and we don't find an explicit dynamic
+      // flag in the gathered PrgEnv arguments, then force static linking
+      // because LLVM's default (dynamic) is different from the PrgEnv
+      // default (static).
+      if (defaultDynamic == false)
+        fLinkStyle = LS_STATIC;
+    }
 
     // Replace -lchpl_lib_token with the runtime arguments
     // but don't add a redundant -lhugetlbfs because that
@@ -2873,31 +2944,14 @@ void makeBinaryLLVM(void) {
     cargs += clangInfo->clangCCArgs[i];
   }
 
-  // Compile any C files.
-  {
-    // Start with configuration settings
-    const char* inputFilename = gChplCompilationConfig.pathname;
-    const char* objFilename = objectFileForCFile(inputFilename);
-
-    mysystem(astr(clangCC.c_str(),
-                  " -c -o ",
-                  objFilename,
-                  " ",
-                  inputFilename,
-                  cargs.c_str()),
-               "Compile C File");
-
-    dotOFiles.push_back(objFilename);
-  }
-
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
-      mysystem(astr(clangCC.c_str(),
-                    " -c -o ", objFilename,
-                    " ", inputFilename, cargs.c_str()),
-               "Compile C File");
+      std::string cmd = clangCC + " -c -o " + objFilename + " " +
+                        inputFilename + " " + cargs;
+
+      mysystem(cmd.c_str(), "Compile C File");
       dotOFiles.push_back(objFilename);
     } else if( isObjFile(inputFilename) ) {
       dotOFiles.push_back(inputFilename);
@@ -2921,9 +2975,12 @@ void makeBinaryLLVM(void) {
   readArgsFromFile(sysroot_arguments, sysroot_args);
 
   // add arguments from configured-clang-sysroot-arguments
+  bool sawSysroot = false;
   for (auto &s : sysroot_args) {
     options += " ";
     options += s;
+    if (s == "-isysroot")
+      sawSysroot = true;
   }
   // add arguments that we captured at compile time
   options += " ";
@@ -2963,24 +3020,194 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
+  if (fLibraryCompile) {
+    switch (fLinkStyle) {
+    // The default library link style for Chapel is _static_.
+    case LS_DEFAULT:
+    case LS_STATIC:
+      makeLLVMStaticLibrary(moduleFilename, tmpbinname, dotOFiles);
+      break;
+    case LS_DYNAMIC:
+      makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
+                             dotOFiles, clangLDArgs, sawSysroot);
+      break;
+    default:
+      INT_FATAL("Unsupported library link mode");
+      break;
+    }
+  } else {
+    // Runs the LLVM link command for executables.
+    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
+                   dotOFiles, clangLDArgs, sawSysroot);
+  }
+
+  // If we're not using a launcher, copy the program here
+  if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+
+    if (fLibraryCompile) {
+      moveGeneratedLibraryFile(tmpbinname);
+    } else {
+      moveResultFromTmp(executableFilename, tmpbinname);
+    }
+
+  } else {
+    // Now run the makefile to move from tmpbinname to the proper program
+    // name and to build a launcher (if necessary).
+    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+    const char* makecmd = astr(astr(CHPL_MAKE, " "),
+                               makeflags,
+                               getIntermediateDirName(), "/Makefile");
+
+    mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+  }
+}
+
+static void makeLLVMStaticLibrary(std::string moduleFilename,
+                                  const char* tmpbinname,
+                                  std::vector<std::string> dotOFiles) {
+  
+  INT_ASSERT(fLibraryCompile);
+  INT_ASSERT(fLinkStyle == LS_STATIC || fLinkStyle == LS_DEFAULT);
+
+  std::string commandBase = "ar -c -r -s"; // Stolen from Makefile.static
+  std::string command = commandBase + " " + tmpbinname + " " +  moduleFilename;
+  
+  for (size_t i = 0; i < dotOFiles.size(); i++) {
+    command += " ";
+    command += dotOFiles[i];
+  }
+
+  mysystem(command.c_str(), "Make Static Library - Linking");
+}
+
+static void makeLLVMDynamicLibrary(std::string useLinkCXX,
+                                   std::string options,
+                                   std::string moduleFilename,
+                                   const char* tmpbinname,
+                                   std::vector<std::string> dotOFiles,
+                                   std::vector<std::string> clangLDArgs,
+                                   bool sawSysroot) {
+
+  INT_ASSERT(fLibraryCompile && fLinkStyle == LS_DYNAMIC);
+
+  // This is a clang++ flag, make the linker shut up about a missing "main".
+  clangLDArgs.push_back("-shared");
+
+#if defined(__APPLE__) && defined(__MACH__)
+  {
+    // TODO:
+    // Right now, we check for __APPLE__ before adding Mac specific linker
+    // args. What we would like to do is additionally detect what linker we
+    // are using (not all linkers may support "-install_name", for example).
+    //
+    // Apple's default LD will attempt to load a dynamic library via the path
+    // of the temporary copy (which was removed) unless we tell it to use the
+    // final output path instead.
+    std::string installName = "-Wl,-install_name," + getLibraryOutputPath();
+    clangLDArgs.push_back(installName);
+  }
+#endif
+
+  // No main object file for this call, since we're building a library.
+  std::string command = buildLLVMLinkCommand(useLinkCXX, options,
+                                             moduleFilename, "", tmpbinname,
+                                             dotOFiles, clangLDArgs,
+                                             sawSysroot);
+
+  mysystem(command.c_str(), "Make Dynamic Library - Linking");
+}
+
+static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
+  std::error_code err;
+
+  // rm -f hello
+  if( printSystemCommands )
+    printf("rm -f %s\n", resultName);
+
+  err = llvm::sys::fs::remove(resultName);
+  if (err) {
+    USR_FATAL("removing file %s failed: %s\n",
+              resultName,
+              err.message().c_str());
+  }
+  // mv tmp/hello.tmp hello
+  if( printSystemCommands )
+    printf("mv %s %s\n", tmpbinname, resultName);
+
+  err = llvm::sys::fs::rename(tmpbinname, resultName);
+  if (err) {
+    // But that might fail if /tmp is on a different filesystem.
+
+    std::string mv("mv ");
+    mv += tmpbinname;
+    mv += " ";
+    mv += resultName;
+
+    mysystem(mv.c_str(), mv.c_str());
+
+    /* For future LLVM,
+       err = llvm::sys::fs::copy_file(tmpbinname, resultName);
+       if (err) {
+         USR_FATAL("copying file %s to %s failed: %s\n",
+                   tmpbinname,
+                   resultName,
+                   err.message().c_str());
+       }
+
+       // and then set permissions, like mv
+       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
+       if (maybePerms.getError()) {
+         USR_FATAL("reading permissions on %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }
+       err = llvm::sys::fs::setPermissions(resultName, *maybePerms);
+       if (err) {
+         USR_FATAL("setting permissions on %s failed: %s\n",
+                   resultName,
+                   err.message().c_str());
+       }
+
+       // and then remove the file, so it's like mv
+       err = llvm::sys::fs::remove(tmpbinname);
+       if (err) {
+         USR_FATAL("removing file %s failed: %s\n",
+                   tmpbinname,
+                   err.message().c_str());
+       }*/
+  }
+}
+
+static std::string buildLLVMLinkCommand(std::string useLinkCXX,
+                                        std::string options,
+                                        std::string moduleFilename,
+                                        std::string maino,
+                                        const char* tmpbinname,
+                                        std::vector<std::string> dotOFiles,
+                                        std::vector<std::string> clangLDArgs,
+                                        bool sawSysroot) {
   // Run the linker. We always use a C++ compiler because some third-party
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino;
+  
   // For dynamic linking, leave it alone.  For static, append -static .
   // See $CHPL_HOME/make/compiler/Makefile.clang (and keep this in sync
   // with it).
-  if (fLinkStyle == LS_STATIC)
+  if (fLinkStyle == LS_STATIC) {
     command += " -static";
+  }
+
   command += " -o ";
   command += tmpbinname;
-  for( size_t i = 0; i < dotOFiles.size(); i++ ) {
+
+  for (size_t i = 0; i < dotOFiles.size(); i++) {
     command += " ";
     command += dotOFiles[i];
   }
 
-  for(size_t i = 0; i < clangLDArgs.size(); ++i) {
+  for (size_t i = 0; i < clangLDArgs.size(); ++i) {
     command += " ";
     command += clangLDArgs[i];
   }
@@ -2992,95 +3219,64 @@ void makeBinaryLLVM(void) {
     command += " -L";
     command += dirName;
   }
+
+  if (sawSysroot) {
+    // Work around a bug in some versions of Clang that forget to
+    // search /usr/local/lib if there is a -isysroot argument.
+    command += " -L/usr/local/lib";
+  }
+
   for_vector(const char, libName, libFiles) {
     command += " -l";
     command += libName;
-  }
+  } 
+  
+  return command;
+}
 
-  if( printSystemCommands ) {
-    printf("%s\n", command.c_str());
-    fflush(stdout); fflush(stderr);
-  }
+static void runLLVMLinking(std::string useLinkCXX, std::string options,
+                           std::string moduleFilename, std::string maino,
+                           const char* tmpbinname,
+                           std::vector<std::string> dotOFiles,
+                           std::vector<std::string> clangLDArgs,
+                           bool sawSysroot) {
+  
+  // This code is general enough to use elsewhere, thus the move.
+  std::string command = buildLLVMLinkCommand(useLinkCXX,
+                                             options,
+                                             moduleFilename,
+                                             maino,
+                                             tmpbinname,
+                                             dotOFiles,
+                                             clangLDArgs,
+                                             sawSysroot);
+
   mysystem(command.c_str(), "Make Binary - Linking");
+}
 
-  // If we're not using a launcher, copy the program here
-  if (0 == strcmp(CHPL_LAUNCHER, "none")) {
-
-    std::error_code err;
-
-    // rm -f hello
-    if( printSystemCommands )
-      printf("rm -f %s\n", executableFilename);
-
-    err = llvm::sys::fs::remove(executableFilename);
-    if (err) {
-      USR_FATAL("removing file %s failed: %s\n",
-                executableFilename,
-                err.message().c_str());
-    }
-
-    // mv tmp/hello.tmp hello
-    if( printSystemCommands )
-      printf("mv %s %s\n", tmpbinname, executableFilename);
-
-    err = llvm::sys::fs::rename(tmpbinname, executableFilename);
-    if (err) {
-      // But that might fail if /tmp is on a different filesystem.
-
-      std::string mv("mv ");
-      mv += tmpbinname;
-      mv += " ";
-      mv += executableFilename;
-
-      mysystem(mv.c_str(), mv.c_str());
-
-      /* For future LLVM,
-      err = llvm::sys::fs::copy_file(tmpbinname, executableFilename);
-      if (err) {
-        USR_FATAL("copying file %s to %s failed: %s\n",
-                  tmpbinname,
-                  executableFilename,
-                  err.message().c_str());
-      }
-
-      // and then set permissions, like mv
-      auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
-      if (maybePerms.getError()) {
-        USR_FATAL("reading permissions on %s failed: %s\n",
-                  tmpbinname,
-                  err.message().c_str());
-      }
-      err = llvm::sys::fs::setPermissions(executableFilename, *maybePerms);
-      if (err) {
-        USR_FATAL("setting permissions on %s failed: %s\n",
-                  executableFilename,
-                  err.message().c_str());
-      }
-
-      // and then remove the file, so it's like mv
-      err = llvm::sys::fs::remove(tmpbinname);
-      if (err) {
-        USR_FATAL("removing file %s failed: %s\n",
-                  tmpbinname,
-                  err.message().c_str());
-      }*/
-    }
-
-  } else {
-    // Now run the makefile to move from tmpbinname to the proper program
-    // name and to build a launcher (if necessary).
-    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    const char* makecmd = astr(astr(CHPL_MAKE, " "),
-                               makeflags,
-                               getIntermediateDirName(), "/Makefile");
-
-    if( printSystemCommands ) {
-      printf("%s\n", makecmd);
-      fflush(stdout); fflush(stderr);
-    }
-
-    mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+static std::string getLibraryOutputPath() {
+  // Need to reuse some of the stuff in codegen_makefile.  It doesn't save the
+  // full filename that is used when in library mode, so we don't have an
+  // alternative to making a modified version of executableFilename again
+  std::string result;
+  const char* exeExt = getLibraryExtension();
+  const char* libraryPrefix = "";
+  int libLength = strlen("lib");
+  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  
+  if (!startsWithLib) {
+    libraryPrefix = "lib";
   }
+  
+  result += std::string(libDir) + "/" + libraryPrefix + executableFilename;
+  result += std::string(exeExt);
+
+  return result;
+}
+
+static void moveGeneratedLibraryFile(const char* tmpbinname) {
+  std::string outputPath = getLibraryOutputPath();
+  moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
 #endif

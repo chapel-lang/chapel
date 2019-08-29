@@ -1,2 +1,1 @@
-extern_subclasses.chpl:5: error: External types do not currently support inheritance
-extern_subclasses.chpl:13: error: External types do not currently support inheritance
+extern_subclasses.chpl:5: syntax error: near 'C2'

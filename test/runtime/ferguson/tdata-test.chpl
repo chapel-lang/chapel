@@ -6,10 +6,15 @@
 config const setSerial=false;
 
 record stuff {
-  var oldE: _remoteEndCountType;
+  var oldE: _remoteEndCountType?;
   var oldS: bool;
-  var e: _remoteEndCountType;
+  var e: _remoteEndCountType?;
   var s: bool;
+
+  proc deinit() {
+    if e then
+      _endCountFree(e!);
+  }
 }
 
 proc saveStuff() {
@@ -18,7 +23,7 @@ proc saveStuff() {
   ret.oldS = chpl_task_getSerial();
   ret.e = _endCountAlloc(false);
   ret.s = setSerial;
-  chpl_task_setDynamicEndCount(ret.e);
+  chpl_task_setDynamicEndCount(ret.e!);
   chpl_task_setSerial(ret.s);
   return ret;
 }

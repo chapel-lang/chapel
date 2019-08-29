@@ -13,7 +13,7 @@ class ChildClass: ParentClass {
   }
 }
 
-proc consumeParent(arg: owned ParentClass) {
+proc consumeParent(in arg: owned ParentClass) {
   writeln("in consumeParent");
 }
 

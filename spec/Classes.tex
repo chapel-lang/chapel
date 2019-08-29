@@ -96,12 +96,12 @@ instances, \chpl{=} and copy initialization can result in the transfer or
 sharing of ownership. See
 \\ %formatting
 \mbox{$$ $$ $$ $$ $$} %indent
-\url{https://chapel-lang.org/docs/builtins/internal/OwnedObject.html}
+\url{https://chapel-lang.org/docs/builtins/OwnedObject.html}
 \\
 and
 \\ %formatting
 \mbox{$$ $$ $$ $$ $$} %indent
-\url{https://chapel-lang.org/docs/builtins/internal/SharedObject.html}
+\url{https://chapel-lang.org/docs/builtins/SharedObject.html}
 \\
 
 When \chpl{borrowed} is used as a memory management strategy in a
@@ -220,14 +220,14 @@ The memory management strategies have the following meaning:
     See
     \\ %formatting
     \mbox{$$ $$ $$ $$ $$} %indent
-    \url{https://chapel-lang.org/docs/builtins/internal/OwnedObject.html}
+    \url{https://chapel-lang.org/docs/builtins/OwnedObject.html}
 
   \item \chpl{shared} will be deleted when all of the \chpl{shared}
     variables referring to the instance go out of scope.
     See
     \\ %formatting
     \mbox{$$ $$ $$ $$ $$} %indent
-    \url{https://chapel-lang.org/docs/builtins/internal/SharedObject.html}.
+    \url{https://chapel-lang.org/docs/builtins/SharedObject.html}.
 
   \item \chpl{borrowed} refers to a class instance that has a lifetime
     managed by another variable.
@@ -257,12 +257,14 @@ The default value of a class type is \chpl{nil}.
 \begin{chapelexample}{declaration.chpl}
 \begin{chapel}
 class C { }
-var c : C;      // c has the class type C, initialized with the value nil.
-c = new C();    // Now c refers to an object of type C.
-var c2 = c;     // The type of c2 is also C.
-                // c2 refers to the same object as c.
-class D : C {}  // Class D is derived from C.
-c = new D();    // Now c refers to an object of type D.
+var c : owned C?;    // c has class type owned C?, meaning
+                     // the instance can be nil and is deleted automatically.
+c = new C();         // Now c refers to an initialized instance of type C.
+var c2 = c.borrow(); // The type of c2 is borrowed C.
+                     // c2 refers to the same object as c.
+class D : C {}    // Class D is derived from C.
+c = new D();      // Now c refers to an object of type D.
+                  // Since c is owned, the previous is deleted.
 // the C and D instances allocated above will be reclaimed
 // at the end of this block.
 \end{chapel}
@@ -497,7 +499,7 @@ important consequences for class new expressions. In particular, suppose
 
 \begin{itemize}
 
-  \item \chpl{new C()} is the same as \chpl{new borrowed C()}
+  \item \chpl{new C()} is the same as \chpl{new owned C()}
 
   \item \chpl{new owned C()} allocates and initializes an instance that
     will be deleted at the end of the current block unless it is
@@ -1564,8 +1566,8 @@ class C { }
 \end{chapelpre}
 \begin{chapel}
 // assume that C is a class
-var a = new owned C();
-var b:owned C; // default initialized to store `nil`
+var a:owned C? = new owned C();
+var b:owned C?; // default initialized to store `nil`
 b = a; // transfers ownership from a to b
 writeln(a); // a is left storing `nil`
 \end{chapel}
@@ -1631,7 +1633,7 @@ class C {
 }
 \end{chapelpre}
 \begin{chapel}
-var c : unmanaged C = nil;
+var c : unmanaged C? = nil;
 delete c;              // Does nothing: c is nil.
 
 c = new unmanaged C(); // Creates a new object.
@@ -1684,7 +1686,7 @@ class C {
   proc deinit() { writeln("Bye, bye ", i); }
 }
 
-var c : unmanaged C = nil;
+var c : unmanaged C? = nil;
 delete c;              // Does nothing: c is nil.
 
 c = new unmanaged C(1); // Creates a new instance.

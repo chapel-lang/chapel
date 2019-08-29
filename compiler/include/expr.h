@@ -70,6 +70,16 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  // Insert multiple ASTs in the order of the arguments.
+  // Todo: replace with a single varargs version.
+  void            insertAfter(Expr* e1, Expr* e2);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                              Expr* e5);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                              Expr* e5, Expr* e6);
+
   void            insertBefore(AList exprs);
   void            insertAfter(AList exprs);
 
@@ -291,7 +301,11 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
-  if (fMinimalModules && type == dtString) return false;
+  if (fMinimalModules) {
+    if(type == dtBytes || type == dtString) {
+      return false;
+    }
+  }
   return isAlive(type->symbol->defPoint);
 }
 
@@ -338,6 +352,13 @@ static inline void verifyNotOnList(Expr* expr) {
     INT_FATAL(expr, "Expr is in a list incorrectly");
 }
 
+// Strip NamedExpr, if present.
+static inline Symbol* symbolForActual(Expr* actual) {
+  if (NamedExpr* ne = toNamedExpr(actual))
+    actual = ne->actual;
+  return toSymExpr(actual)->symbol();
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
@@ -359,9 +380,18 @@ Expr* getNextExpr(Expr* expr);
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
 
+// This mechanism allows storing optimization/analysis results
+// in case they need to be used by later passes.
+// The optimization/analysis result is stored in a PRIM_OPTIMIZATION_INFO
+// expression after insertAfter, or added to one if it already exists.
+void addOptimizationFlag(Expr* insertAfter, Flag flag);
+// Returns true if a nearby PRIM_OPTIMIZATION_INFO includes this flag
+bool hasOptimizationFlag(Expr* anchor, Flag flag);
+
+
 #ifdef HAVE_LLVM
-llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
-llvm::Value* createTempVarLLVM(llvm::Type* type);
+llvm::Value* createVarLLVM(llvm::Type* type, const char* name);
+llvm::Value* createVarLLVM(llvm::Type* type);
 #endif
 
 GenRet codegenValue(GenRet r);
@@ -373,5 +403,7 @@ GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);
 GenRet codegenNullPointer();
 GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
+
+void codegenCallPrintf(const char* arg);
 
 #endif

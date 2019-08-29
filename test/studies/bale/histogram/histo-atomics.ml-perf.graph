@@ -1,5 +1,5 @@
-perfkeys: MB/s per node:, MB/s per node:
-files: bale-hist-atomic.dat, bale-hist-buff-atomic.dat
-graphkeys: MB/s per node (naive), MB/s per node (buffered)
+perfkeys: MB/s per node:, MB/s per node:, MB/s per node:
+files: bale-hist-atomic.dat, bale-hist-unordered-atomic.dat, bale-hist-atomic-opt.dat
+graphkeys: MB/s per node (ordered), MB/s per node (unordered), MB/s per node (forall opt)
 graphtitle: Bale: Histogram Perf (MB/s per node)
 ylabel: Performance (MB/s per node)

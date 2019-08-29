@@ -19,9 +19,12 @@
 
 // DefaultAssociative.chpl
 //
+pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
   use DSIUtil;
+  private use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
+  private use ChapelBase, ChapelLocks, IO;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
 
@@ -62,18 +65,18 @@ module DefaultAssociative {
     // We explicitly use processor atomics here since this is not
     // by design a distributed data structure
     var numEntries: chpl__processorAtomicType(int);
-    var tableLock: chpl__processorAtomicType(bool); // do not access directly
+    var tableLock: if parSafe then chpl_LocalSpinlock else nothing;
     var tableSizeNum = 1;
     var tableSize : int;
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
   
     inline proc lockTable() {
-      while tableLock.testAndSet(memory_order_acquire) do chpl_task_yield();
+      if parSafe then tableLock.lock();
     }
   
     inline proc unlockTable() {
-      tableLock.clear(memory_order_release);
+      if parSafe then tableLock.unlock();
     }
   
     // TODO: An ugly [0..-1] domain appears several times in the code --
@@ -89,8 +92,6 @@ module DefaultAssociative {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
-      if chpl_warnUnstable && isEnumType(idxType) then
-        compilerWarning("As of Chapel 1.18, associative domains of enums are empty by default rather than full, and associative domains and arrays of enums no longer maintain order");
 
       this.idxType = idxType;
       this.parSafe = parSafe;
@@ -107,16 +108,81 @@ module DefaultAssociative {
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
-      var first = true;
-      f <~> new ioLiteral("{");
-      for idx in this {
-        if first then 
-          first = false; 
-        else 
-          f <~> new ioLiteral(", ");
-        f <~> idx;
+
+      var binary = f.binary();
+
+      if f.writing {
+        if binary {
+          var numIndices: int = dsiNumIndices;
+          f <~> numIndices;
+          for idx in this {
+            f <~> idx;
+          }
+        } else {
+          var first = true;
+          f <~> new ioLiteral("{");
+          for idx in this {
+            if first then 
+              first = false; 
+            else 
+              f <~> new ioLiteral(", ");
+            f <~> idx;
+          }
+          f <~> new ioLiteral("}");
+        }
+      } else {
+        // Clear the domain so it only contains indices read in.
+        dsiClear();
+
+        if binary {
+          var numIndices: int;
+          f <~> numIndices;
+          for i in 1..numIndices {
+            var idx: idxType;
+            f <~> idx;
+            dsiAdd(idx);
+          }
+        } else {
+          f <~> new ioLiteral("{");
+
+          var first = true;
+          var comma = new ioLiteral(",", true);
+          var end = new ioLiteral("}");
+
+          while true {
+            // Try reading an end curly
+            f <~> end;
+            if f.error() == EFORMAT {
+              // didn't find a curly, OK
+              f.clearError();
+            } else {
+              // Stop reading if we got to the end
+              // or if there was another error.
+              break;
+            }
+
+            // Try reading a comma
+            if !first {
+              f <~> comma;
+              if f.error() {
+                // break out of the loop if we didn't read
+                // a comma and were expecting one
+                break;
+              }
+            }
+            first = false;
+
+            // Read an index
+            var idx: idxType;
+            f <~> idx;
+            if f.error() {
+              // Stop reading if we got an error
+              break;
+            }
+            dsiAdd(idx);
+          }
+        }
       }
-      f <~> new ioLiteral("}");
     }
     proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
     proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
@@ -140,11 +206,11 @@ module DefaultAssociative {
       on this {
         postponeResize = false;
         if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
-          if parSafe then lockTable();
+          lockTable();
           if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
             _resize(grow=false);
           }
-          if parSafe then unlockTable();
+          unlockTable();
         }
       }
     }
@@ -269,12 +335,12 @@ module DefaultAssociative {
 
     override proc dsiClear() {
       on this {
-        if parSafe then lockTable();
+        lockTable();
         for slot in tableDom {
           table[slot].status = chpl__hash_status.empty;
         }
         numEntries.write(0);
-        if parSafe then unlockTable();
+        unlockTable();
       }
     }
   
@@ -306,9 +372,8 @@ module DefaultAssociative {
       const inSlot = slotNum;
       var retVal = 0;
       on this {
-        const shouldLock = needLock && parSafe;
-        if shouldLock then lockTable();
-        var findAgain = shouldLock;
+        if parSafe && needLock then lockTable();
+        var findAgain = parSafe && needLock;
         if ((numEntries.read()+1)*2 > tableSize) {
           _resize(grow=true);
           findAgain = true;
@@ -317,7 +382,7 @@ module DefaultAssociative {
           (slotNum, retVal) = _add(idx, -1);
         else
           (_, retVal) = _add(idx, inSlot);
-        if shouldLock then unlockTable();
+        if parSafe && needLock then unlockTable();
       }
       return (slotNum, retVal);
     }
@@ -355,7 +420,7 @@ module DefaultAssociative {
     proc dsiRemove(idx: idxType) {
       var retval = 1;
       on this {
-        if parSafe then lockTable();
+        lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, needLock=!parSafe);
         if (foundSlot) {
           for a in _arrs do
@@ -368,7 +433,7 @@ module DefaultAssociative {
         if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
           _resize(grow=false);
         }
-        if parSafe then unlockTable();
+        unlockTable();
       }
       return retval;
     }
@@ -402,7 +467,7 @@ module DefaultAssociative {
         var prime = chpl__primes(primeLoc);
 
         //Changing underlying structure, time for locking
-        if parSafe then lockTable();
+        lockTable();
         if entries > 0 {
           // Slow path: back up required
           _backupArrays();
@@ -435,11 +500,10 @@ module DefaultAssociative {
           tableDom = {0..tableSize-1};
         }
 
-        //Unlock the table
-        if parSafe then unlockTable();
+        unlockTable();
       } else if entries > numKeys {
-        warning("Requested capacity (" + numKeys + ") " +
-                "is less than current size (" + entries + ")");
+        warning("Requested capacity (", numKeys, ") ",
+                "is less than current size (", entries, ")");
       }
     }
   
@@ -584,7 +648,7 @@ module DefaultAssociative {
     override proc dsiGetBaseDom() return dom;
   
     override proc clearEntry(idx: idxType) {
-      const initval: eltType;
+      var initval: eltType;
       dsiAccess(idx) = initval;
     }
 
@@ -960,7 +1024,7 @@ module DefaultAssociative {
     for param i in 1..numFields(r.type) {
       if isParam(getField(r, i)) == false &&
          isType(getField(r, i)) == false &&
-         isVoidType(getField(r, i).type) == false {
+         isNothingType(getField(r, i).type) == false {
         const ref field = getField(r, i);
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then

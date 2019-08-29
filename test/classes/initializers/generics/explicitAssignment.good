@@ -1,2 +1,2 @@
 explicitAssignment.chpl:17: In function 'main':
-explicitAssignment.chpl:18: error: type mismatch in assignment from Foo(int(64)) to Foo(real(64))
+explicitAssignment.chpl:18: error: Cannot assign to borrowed Foo(real(64)) from borrowed Foo(int(64))

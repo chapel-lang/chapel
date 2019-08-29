@@ -1,1 +1,2 @@
-badTypeAsFnName.chpl:3: error: unresolved call 'real(64)(complex(128))'
+badTypeAsFnName.chpl:3: error: illegal type index expression 'real(64)(complex(128))'
+badTypeAsFnName.chpl:3: note: primitive type 'real(64)' cannot be used in an index expression

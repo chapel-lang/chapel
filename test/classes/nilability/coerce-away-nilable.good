@@ -1,0 +1,1 @@
+coerce-away-nilable.chpl:6: error: cannot initialize variable 'notNilable' of non-nilable type 'borrowed MyClass' from a nilable 'borrowed MyClass?'

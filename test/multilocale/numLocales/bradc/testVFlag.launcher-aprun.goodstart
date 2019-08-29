@@ -1,1 +1,1 @@
-aprun  -q -cc none -dN -n1 -N1 -j0 ./testVFlag_real -v -nl 1 EXECOPTS
+EVARS=vals aprun  -cc none -dN -n1 -N1 -j0 ./testVFlag_real -v -nl 1 EXECOPTS

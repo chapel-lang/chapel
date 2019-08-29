@@ -1,2 +1,0 @@
-$CHPL_HOME/modules/packages/BLAS.chpl:nnnn: warning: "isBLAS_MKL" flag is deprecated.
-$CHPL_HOME/modules/packages/BLAS.chpl:nnnn: warning: Use "blasImpl" instead: --set blasImpl=mkl

@@ -1,0 +1,4 @@
+promoted.chpl:19: error: unresolved call 'typeFun(range(int(64),bounded,false))'
+promoted.chpl:10: note: this candidate did not match: typeFun(arg: int)
+promoted.chpl:19: note: because call actual argument #1 with type range(int(64),bounded,false)
+promoted.chpl:10: note: is passed to formal 'arg: int(64)'

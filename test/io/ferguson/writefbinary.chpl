@@ -35,4 +35,16 @@ writef("D");
 writef("%>0S", test);
 writef("%>*S", 1, test);
 
+var testBytes = "test":bytes;
 
+writef("A");
+writef("%>4s", testBytes);
+writef("%>*s", 4, testBytes);
+writef("B");
+writef("%>1S %>2S %>4S %>8S %>vS", testBytes, testBytes, testBytes, testBytes,
+    testBytes);
+writef("C");
+writef("%|1S %|vS", testBytes, testBytes);
+writef("D");
+writef("%>0S", testBytes);
+writef("%>*S", 1, testBytes);

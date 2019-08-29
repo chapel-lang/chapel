@@ -52,18 +52,18 @@ def expand_hostnames(hostname):
 
 def get_exclusive_nodes():
     """
-    Get the nodes reserved exclusively on the chapel partition. Returns tuple
-    of (num_exclusive_nodes, exclusive_hostnames)
+    Get nodes requested for immediate exclusive access on the chapel partition.
+    Returns tuple of (num_exclusive_nodes, exclusive_hostnames)
     """
-    # Grab "OVER_SUBSCRIBE;NODES;NODELIST;REQ_NODES" info for all jobs. For
-    # each non-shared (OVER_SUBSCRIBE!=YES) job, track the allocated/requested
-    # nodes or the number of nodes requested if no specific nodes were
-    # allocated/requested. Also consider "draining" nodes as exclusively
-    # reserved since no other jobs will be able to run on them
+    # Grab "OVER_SUBSCRIBE;NODES;NODELIST;REQ_NODES;REASON" info for all jobs.
+    # For each non-shared (OVER_SUBSCRIBE!=YES) job that wants to run now
+    # (REASON!=BeginTime) track the allocated/requested nodes or the number of
+    # nodes requested if no specific nodes were requested. Consider "draining"
+    # nodes as exclusive since no other jobs will be able to run on them.
     squeue_cmd = ['squeue',
                   '--partition=chapel',
                   '--noheader',
-                  '--format="%h;%D;%N;%n"']
+                  '--format="%h;%D;%N;%n;%r"']
     squeue_out = run_command_wrapper(squeue_cmd)
 
     sinfo_cmd = ['sinfo',
@@ -77,8 +77,8 @@ def get_exclusive_nodes():
     num_exclusive_nodes = 0
     exclusive_hostnames = set()
     for line in squeue_out + sinfo_out:
-        oversub, num_nodes, nodelist, req_nodes = line.split(';')
-        if oversub.upper() != 'YES':
+        oversub, num_nodes, nodelist, req_nodes, reason = line.split(';')
+        if oversub.upper() != 'YES' and reason != 'BeginTime':
             nodes = nodelist or req_nodes
             if nodes:
                 exclusive_hostnames.update(expand_hostnames(nodes))
@@ -143,7 +143,7 @@ def run_paratest(args):
     nodepara = get_good_nodepara()
     num_free_nodes = get_num_non_exclusive_nodes()
     para_env = ['-env', 'CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes', '-env',
-                'QT_AFFINITY=no', '-env', 'QT_SPINCOUNT=300']
+                'CHPL_RT_OVERSUBSCRIBED=yes']
 
     salloc_cmd = ['salloc',
                   '--nodes={0}'.format(num_free_nodes),

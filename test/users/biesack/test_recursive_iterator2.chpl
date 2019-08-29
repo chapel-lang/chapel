@@ -1,7 +1,7 @@
-enum NodeType { value, branch, none };
+enum NodeType { value, branch, noNode };
 
 class Node {
-  proc nodeType() : NodeType { return NodeType.none; }
+  proc nodeType() : NodeType { return NodeType.noNode; }
 }
 
 class ValueNode : Node {
@@ -25,11 +25,11 @@ proc node(a, b:unmanaged Node) : unmanaged Branch {
 iter leaves(tree : unmanaged Node) : int {
   select tree.nodeType() {
     when NodeType.value do {
-      yield (tree:ValueNode).val;
+      yield (tree:unmanaged ValueNode).val;
     }
 
     when NodeType.branch do {
-      const node = tree:Branch;
+      const node = tree:unmanaged Branch;
 
       if (node.left != nil) {
         for leaf in leaves(node.left) do yield leaf;

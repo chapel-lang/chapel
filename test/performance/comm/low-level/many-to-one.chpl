@@ -6,10 +6,11 @@ use BlockDist;
 enum op_t {
   opNone,
   opGet,
+  opUnorderedGet,
   opPut,
   opFetchAMO,
   opAMO,
-  opBuffAMO,
+  opUnorderedAMO,
   opFastOn,
   opOn
 };
@@ -139,6 +140,13 @@ inline proc doOneOp(nops, ref x, ref xAtomic) {
     if nops == 0 then x = 0; // prevent compiler loop-hoisting GET
     infiniteSink(x);
   }
+  else if op == opUnorderedGet {
+    if nops == 0 then x = 0; // prevent compiler loop-hoisting GET
+    var xCopy: x.type;
+    use UnorderedCopy;
+    unorderedCopy(xCopy, x);
+    infiniteSink(xCopy);
+  }
   else if op == opPut {
     x = infiniteSource();
   }
@@ -148,9 +156,9 @@ inline proc doOneOp(nops, ref x, ref xAtomic) {
   else if op == opAMO {
     xAtomic.add(1);
   }
-  else if op == opBuffAMO {
-    use BufferedAtomics;
-    xAtomic.addBuff(1);
+  else if op == opUnorderedAMO {
+    use UnorderedAtomics;
+    xAtomic.unorderedAdd(1);
   }
   else if op == opFastOn {
     on Locales(1) do ;

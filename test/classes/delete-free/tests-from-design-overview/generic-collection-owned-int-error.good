@@ -1,3 +1,4 @@
 generic-collection-owned-int-error.chpl:11: In function 'test':
-generic-collection-owned-int-error.chpl:12: error: unresolved type specifier 'Collection(type int(64))'
-generic-collection-owned-int-error.chpl:3: note: candidates are: Collection(type element)
+generic-collection-owned-int-error.chpl:12: error: invalid type specifier 'Collection(type int(64))'
+generic-collection-owned-int-error.chpl:12: note: type specifier did not match: Collection(type element: _owned)
+generic-collection-owned-int-error.chpl:12: note: unable to instantiate field 'element : _owned' with type 'int(64)'

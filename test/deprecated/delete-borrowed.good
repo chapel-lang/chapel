@@ -1,1 +1,0 @@
-delete-borrowed.chpl:11: warning: 'delete' can only be applied to unmanaged classes

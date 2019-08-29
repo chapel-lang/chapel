@@ -1,1 +1,2 @@
 readme_example-error.chpl:5: error: unresolved call 'ADD(1, 2)'
+readme_example-error.chpl:5: note: because no functions named ADD found in scope

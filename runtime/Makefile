@@ -70,12 +70,15 @@ third-party-pkgs:
 ifneq (, $(THIRD_PARTY_PKGS))
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first
 ifneq (, $(filter $(THIRD_PARTY_PKGS),hwloc))
-	$(MAKE) -C $(THIRD_PARTY_DIR) hwloc
+	@echo "Making hwloc..."
+	@$(MAKE) -C $(THIRD_PARTY_DIR) hwloc
 endif
 ifneq (, $(filter $(THIRD_PARTY_PKGS),jemalloc))
-	$(MAKE) -C $(THIRD_PARTY_DIR) jemalloc
+	@echo "Making jemalloc..."
+	@$(MAKE) -C $(THIRD_PARTY_DIR) jemalloc
 endif
-	$(MAKE) -C $(THIRD_PARTY_DIR) $(THIRD_PARTY_PKGS)
+	@echo "Making third-party-packages..."
+	@$(MAKE) -C $(THIRD_PARTY_DIR) $(THIRD_PARTY_PKGS)
 endif
 
 .NOTPARALLEL:

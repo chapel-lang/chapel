@@ -262,7 +262,7 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 
 void AstDumpToNode::exitModSym(ModuleSymbol* node)
 {
-  if (node->modUseList.n > 0)
+  if (node->modUseList.size() > 0)
   {
     fputc('\n', mFP);
 
@@ -354,32 +354,6 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     mOffset = mOffset + 2;
     newline();
     node->byrefVars->accept(this);
-    mOffset = mOffset - 2;
-  }
-
-  if (ForallIntents* fi = node->forallIntents)
-  {
-    newline();
-
-    write(false, "ForallIntents:", false);
-
-    mOffset = mOffset + 2;
-
-    newline();
-
-    for (int i = 0; i < fi->numVars(); i++)
-    {
-      if (i > 0)
-        fprintf(mFP, ", ");
-
-      if (fi->isReduce(i))
-        fi->riSpecs[i]->accept(this);
-
-      write(true, forallIntentTagDescription(fi->fIntents[i]), true);
-
-      fi->fiVars[i]->accept(this);
-    }
-
     mOffset = mOffset - 2;
   }
 

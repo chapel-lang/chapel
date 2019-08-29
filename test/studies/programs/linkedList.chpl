@@ -17,7 +17,7 @@ config const listSize = 10;  // Used when populating the list
 //
 class List {
   type eltType;
-  var head: unmanaged Node(eltType);
+  var head: unmanaged Node(eltType)?;
 
   //
   // The Node class contains the list's values and references to the
@@ -27,7 +27,7 @@ class List {
   class Node {
     type eltType;
     var value: eltType;
-    var next: unmanaged Node(eltType);
+    var next: unmanaged Node(eltType)?;
   }
 
   //
@@ -106,14 +106,18 @@ class List {
       return;
 
     if head.value == value {
+      const match = head;
       head = head.next;
+      delete match;
       return;
     }
 
     var current = head;
     while current.next != nil {
       if current.next.value == value {
+        const match = current.next;
         current.next = current.next.next;
+        delete match;
         return;
       }
       current = current.next;
@@ -127,8 +131,9 @@ class List {
   iter these() {
     var current = head;
     while current != nil {
+      const next = current.next;
       yield current.value;
-      current = current.next;
+      current = next;
     }
   }
   //
@@ -142,7 +147,7 @@ class List {
         w.write(i);
         first = false;
       } else {
-        w.write(" " + i);
+        w.write(" ", i);
       }
   }
 }

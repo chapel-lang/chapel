@@ -97,22 +97,18 @@ void buildEnumFunctions(EnumType* et);
 FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
                          bool setter, bool typeMethod);
 
-// createTaskFunctions.cpp -> implementForallIntents.cpp
-extern Symbol* markPruned;
-extern Symbol* markUnspecified;
-void replaceVarUses(Expr* topAst, SymbolMap& vars);
-void pruneOuterVars(Symbol* parent, SymbolMap& uses);
-
 // deadCodeElimination.cpp
 void deadBlockElimination();
 
 // flattenFunctions.cpp
 void flattenNestedFunction(FnSymbol* nestedFunction);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+// When fastCCS=true, call sites are computed only for the functions that
+// are looked at. Such functions must not have dispatch parents/children.
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions,
+                            bool fastCCS = false);
 
-// implementForallIntents.cpp
-bool preserveShadowVar(Symbol* var);
-void adjustVoidShadowVariables();
+// foralls.cpp
+void checkTypeParamTaskIntent(SymExpr* outerSE);
 
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
@@ -128,7 +124,7 @@ void lowerForallStmtsInline();
 void handleChplPropagateErrorCall(CallExpr* call);
 void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
 void addDummyErrorArgumentToCall(CallExpr* call);
-bool isVirtualIterator(Symbol* iterator);
+bool isVirtualIterator(FnSymbol* iterFn);
 
 // normalize.cpp
 void normalize(FnSymbol* fn);

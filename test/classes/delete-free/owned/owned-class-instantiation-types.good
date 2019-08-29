@@ -1,6 +1,6 @@
-a GenericCollection(_owned(MyClass)) has field _owned(MyClass)
-b GenericCollection(_owned(MyClass)) has field _owned(MyClass)
-(borrowed) c GenericCollection(MyClass) has field MyClass
-a GenericCollection(_owned(MyClass)) has field _owned(MyClass)
-b GenericCollection(_owned(MyClass)) has field _owned(MyClass)
-(borrowed) c GenericCollection(MyClass) has field MyClass
+a borrowed GenericCollection(owned MyClass) has field owned MyClass
+b borrowed GenericCollection(owned MyClass) has field owned MyClass
+(borrowed) c borrowed GenericCollection(MyClass) has field borrowed MyClass
+a borrowed GenericCollection(owned MyClass?)? has field owned MyClass?
+b borrowed GenericCollection(owned MyClass?)? has field owned MyClass?
+(borrowed) c borrowed GenericCollection(borrowed MyClass?)? has field borrowed MyClass?

@@ -65,6 +65,8 @@ static bool     isSymbolThis(Expr* expr);
 
 static void     addSuperInit(FnSymbol* fn);
 
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
+
 /************************************* | **************************************
 *                                                                             *
 * Attempt to assign a type to the symbol for each field in some of the        *
@@ -199,9 +201,26 @@ void errorOnFieldsInArgList(FnSymbol* fn) {
 
     for_vector(SymExpr, se, symExprs) {
       if (se->symbol() == fn->_this) {
-        USR_FATAL_CONT(se,
-                       "invalid access of class member in "
-                       "initializer argument list");
+        bool error = true;
+        if (fn->isCopyInit()) {
+          if (CallExpr* call = toCallExpr(se->parentExpr)) {
+            AggregateType* at = toAggregateType(fn->_this->getValType());
+            if (call->isPrimitive(PRIM_TYPEOF)) {
+              error = false;
+            } else if (DefExpr* def = toLocalField(at, call)) {
+              Symbol* sym = def->sym;
+              if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+                  sym->hasFlag(FLAG_PARAM)) {
+                error = false;
+              }
+            }
+          }
+        }
+        if (error) {
+          USR_FATAL_CONT(se,
+                         "invalid access of class member in "
+                         "initializer argument list");
+        }
 
         break;
       }
@@ -226,8 +245,8 @@ static bool isReturnVoid(FnSymbol* fn) {
 
     collectMyCallExprs(fn->body, calls, fn);
 
-    for (size_t i = 0; i < calls.size() && retval == true; i++) {
-      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
+    for (size_t i = 0; i < calls.size() && retval; i++) {
+      if (calls[i]->isPrimitive(PRIM_RETURN)) {
         SymExpr* value = toSymExpr(calls[i]->get(1));
 
         if (value == NULL || value->symbol()->type != dtVoid) {
@@ -876,8 +895,6 @@ static bool isUnacceptableTry(Expr* stmt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
-
 static DefExpr* fieldByName(AggregateType* at, const char* name);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
@@ -964,7 +981,7 @@ static bool isAssignment(CallExpr* callExpr) {
 static bool isSimpleAssignment(CallExpr* callExpr) {
   bool retval = false;
 
-  if (callExpr->isNamedAstr(astrSequals) == true) {
+  if (callExpr->isNamedAstr(astrSassign) == true) {
     retval = true;
   }
 

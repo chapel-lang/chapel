@@ -1,0 +1,2 @@
+throw-new-borrowed.chpl:1: In function 'main':
+throw-new-borrowed.chpl:2: error: Cannot throw an instance of type 'borrowed Error' - please throw owned

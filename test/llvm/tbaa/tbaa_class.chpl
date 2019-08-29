@@ -3,7 +3,7 @@ class MyClass {
   var rval: real;
 };
 
-var myClass: MyClass;
+var myClass: borrowed MyClass = new MyClass();
 
 proc f(i: int, r: real) {
   // First make sure we are looking inside the class object.
@@ -20,7 +20,7 @@ proc f(i: int, r: real) {
   // CHECK-SAME: !tbaa ![[REALVIACLS:[0-9]+]]
 }
 
-myClass = new MyClass;
+myClass = new MyClass();
 f(42, 3.14);
 writeln(myClass);
 

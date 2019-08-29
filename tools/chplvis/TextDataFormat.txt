@@ -75,18 +75,18 @@ Lines in the file:
   Etask: tv nid tid
     Task has ended execution
 
-  nb_put: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
-  nb_get: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
-  put   : tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
-  get   : tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
-  st_put: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
-  st_get: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
+  nb_put: tv nid rid tid addr raddr elemsize length commID lnum fileno
+  nb_get: tv nid rid tid addr raddr elemsize length commID lnum fileno
+  put   : tv nid rid tid addr raddr elemsize length commID lnum fileno
+  get   : tv nid rid tid addr raddr elemsize length commID lnum fileno
+  st_put: tv nid rid tid addr raddr elemsize length commID lnum fileno
+  st_get: tv nid rid tid addr raddr elemsize length commID lnum fileno
     communication.  Puts: data flow nid->rid, gets: data flow rid -> nid
     nb is non-blocking, st is strided.
 
-  fork: tv nid rid subLoc fid argPtr argSize tid
-  fork_nb: tv nid rid subLoc fid argPtr argSize tid
-  f_fork:  tv nid rid subLoc fid argPtr argSize tid
+  fork: tv nid rid subLoc fid argPtr argSize tid lnum fileno
+  fork_nb: tv nid rid subLoc fid argPtr argSize tid lnum fileno
+  f_fork:  tv nid rid subLoc fid argPtr argSize tid lnum fileno
      fork a task on a remote locale.   nb is non-blocking, f_fork does
      not start a remote task.  Data is sent from nid to rid.
 

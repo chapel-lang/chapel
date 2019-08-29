@@ -74,6 +74,13 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
         }
       }
 
+      if (fMultiLocaleInterop) {
+        // If we've created a multilocale library, memory that is returned to
+        // the client code wasn't created by chpl_mem_alloc and friends, so
+        // shouldn't be freed using the normal strategies.  But, for
+        // convenience, allow the user to still call `chpl_free`.
+        fprintf(libhdrfile.fptr, "#define chpl_free(ptr) free(ptr)\n");
+      }
       // Maybe need something here to support LLVM extern blocks?
 
       // Print out the module initialization function headers and the exported
@@ -94,7 +101,13 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // Helper function to avoid unnecessary repetition when getting information
 // from compileline
 static std::string getCompilelineOption(std::string option) {
-  std::string fullCommand = "$CHPL_HOME/util/config/compileline --" + option;
+  std::string fullCommand = "";
+  for (std::map<std::string, const char*>::iterator env=envMap.begin();
+       env!=envMap.end(); ++env) {
+    fullCommand += std::string(env->first) + "=\"" + std::string(env->second) +
+      "\" ";
+  }
+  fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
   fullCommand += "> cmd.out.tmp";
   runCommand(fullCommand);
 
@@ -132,6 +145,7 @@ void codegen_library_makefile() {
     // "lib"
     name = executableFilename;
   }
+
   fileinfo makefile;
   openLibraryHelperFile(&makefile, "Makefile", name.c_str());
 
@@ -223,10 +237,32 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
           libname.c_str());
+
+  //
+  // Multi-locale libraries require some extra libraries to be linked in order
+  // to function correctly. For static libraries in particular, rather than
+  // try to link these dependencies at compile time, we shunt responsibility
+  // off to the user via use of `--library-makefile`.
+  //
+  if (fMultiLocaleInterop) {
+    std::string deps = getCompilelineOption("multilocale-lib-deps");
+    removeTrailingNewlines(deps);
+    fprintf(makefile.fptr, " %s", deps.c_str());
+  }
+
   if (requires != "") {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
-  fprintf(makefile.fptr, " %s\n", libraries.c_str());
+
+  if (!llvmCodegen) {
+    fprintf(makefile.fptr, " %s\n", libraries.c_str());
+  } else {
+    // LLVM requires a bit more work to make the GNU linker happy.
+    removeTrailingNewlines(libraries);
+
+    // Append the Chapel library as the last linker argument.
+    fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
+  }
 }
 
 const char* getLibraryExtension() {
@@ -289,6 +325,45 @@ static void setupPythonTypeMap() {
 
   // TODO: Handle bigint (which should naturally match to Python's int)
 
+}
+
+// If there is a known .pxd file translation for this type, use that.
+// Otherwise, use the normal cname
+std::string getPythonTypeName(Type* type, PythonFileType pxd) {
+  std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
+  if (pxd == C_PXD && tNames.first != "") {
+    return tNames.first;
+  } else if (pxd == PYTHON_PYX && tNames.second != "") {
+    return tNames.second;
+  } else if (pxd == C_PYX && (tNames.second != "" || tNames.first != "")) {
+    std::string res = tNames.second;
+    if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
+      res += "_t";
+    } else {
+      res = getPythonTypeName(type, C_PXD);
+    }
+    return res;
+  } else {
+    if (type->symbol->hasFlag(FLAG_REF)) {
+      Type* referenced = type->getValType();
+      std::string base = getPythonTypeName(referenced, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
+      std::string base = getPythonTypeName(pointedTo, pxd);
+      if (pxd == C_PYX) {
+        return "";
+      } else {
+        return base + " *";
+      }
+    } else {
+      return type->codegen().c;
+    }
+  }
 }
 
 static void setupFortranTypeMap() {
@@ -504,9 +579,26 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
 
   // Initialize the runtime.  chpl_setup should get called prior to using
   // any of the exported functions
-  fprintf(outfile, "def chpl_setup():\n");
-  fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
-  fprintf(outfile, "\tchpl_library_init(1, args)\n");
+  if (fMultiLocaleInterop) {
+    // Multilocale libraries need to take in the number of locales to use as
+    // an argument
+
+    // numLocales is a C default-sized int.
+    std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_32],
+                                                   C_PYX);
+    fprintf(outfile, "def chpl_setup(%s numLocales):\n",
+            numLocalesType.c_str());
+    fprintf(outfile,
+            "\tcdef char** args = ['%s', '-nl', str(numLocales).encode()]\n",
+            libmodeHeadername);
+    // TODO: is there a way to get the number of indices from args?
+    fprintf(outfile, "\tchpl_library_init(3, args)\n");
+
+  } else {
+    fprintf(outfile, "def chpl_setup():\n");
+    fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
+    fprintf(outfile, "\tchpl_library_init(1, args)\n");
+  }
 
   // Initialize the included modules (continuation of chpl_setup definition)
   for_vector(FnSymbol, fn, moduleInits) {
@@ -580,6 +672,14 @@ static void makePYFile() {
       fprintf(py.fptr, "\"%s\"", libName);
     }
     std::string libraries = getCompilelineOption("libraries");
+
+    // Erase trailing newline and append multilocale-only dependencies.
+    if (fMultiLocaleInterop) {
+      libraries.erase(libraries.length() - 1);
+      libraries += " ";
+      libraries += getCompilelineOption("multilocale-lib-deps");
+    }
+
     char copyOfLib[libraries.length() + 1];
     libraries.copy(copyOfLib, libraries.length(), 0);
     copyOfLib[libraries.length()] = '\0';
@@ -598,6 +698,8 @@ static void makePYFile() {
       }
       curSection = strtok(NULL, " \n");
     }
+
+    // Fetch addition
     fprintf(py.fptr, "]\n");
 
     // Cythonize me, Captain!
@@ -606,8 +708,9 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
-            libname.c_str());
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
+                     "[\"%s\"])))\n",
+                     libname.c_str(), libname.c_str());
 
     gGenInfo->cfile = save_cfile;
   }
@@ -665,6 +768,15 @@ void codegen_make_python_module() {
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
+  // Snag extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = "$CHPL_HOME/util/config/compileline";
+    cmd += " --multilocale-lib-deps";
+    libraries += " ";
+    libraries += runCommand(cmd);
+    libraries.erase(libraries.length() - 1);
+  }
+
   std::string name = "-l";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
@@ -686,6 +798,10 @@ void codegen_make_python_module() {
   fullCythonCall += " CFLAGS=\"" + cFlags + requireIncludes + " " + includes;
   fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
+
+  // Append library as last link argument to appease GNU linker.
+  fullCythonCall += " " + name;
+
   fullCythonCall +=  "\" " + cythonPortion;
 
   std::string chdirIn = "cd ";
@@ -699,5 +815,6 @@ void codegen_make_python_module() {
 // the generated main function
 static bool isFunctionToSkip(FnSymbol* fn) {
   return fn->getModule()->modTag == MOD_INTERNAL ||
-    fn->hasFlag(FLAG_GEN_MAIN_FUNC);
+         fn->getModule()->modTag == MOD_STANDARD ||
+         fn->hasFlag(FLAG_GEN_MAIN_FUNC);
 }

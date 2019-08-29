@@ -24,6 +24,8 @@ proc test() {
   var dom = new unmanaged MyStencilDom();
   dom.setup();
   writeln(dom);
+  delete dom.A[1]:unmanaged;
+  delete dom;
 }
 
 test();

@@ -85,7 +85,7 @@ static qsubVersion determineQsubVersion(void) {
 
   if (strstr(version, "NCCS")||strstr(version, "OLCF")) {
     return nccs;
-  } else if (strstr(version, "PBSPro")) {
+  } else if (strstr(version, "pbs_version") || strstr(version, "PBSPro")) {
     return pbspro;
   } else {
     memset(whichMoab, 0, buflen);
@@ -392,14 +392,13 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 static void chpl_launch_cleanup(void) {
   if (!debug) {
     if (unlink(expectFilename)) {
-      char msg[1024];
-      snprintf(msg, 1024, "Error removing temporary file '%s': %s",
+      char msg[FILENAME_MAX + 35];
+      snprintf(msg, FILENAME_MAX + 35, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
     }
   }
 }
-
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int retcode;
@@ -473,3 +472,4 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "  %s <HH:MM:SS>  : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
 }
+

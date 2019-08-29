@@ -66,8 +66,8 @@ extern void gasnete_eop_alloc(gasneti_threaddata_t * const thread)) {
       eop = first_eop;
       for (size_t i=0; i < GASNETE_EOP_CHUNKCNT; i++) {
         size_t eopidx = (((uintptr_t)eop) - ((uintptr_t)first_eop)) / eopsz;
-        gasneti_assert(eopidx == i); // verify linkage
-        gasneti_assert(eop == (gasnete_eop_t *)GASNETI_ALIGNUP(eop,GASNETI_CACHE_LINE_BYTES)); // verify cache alignment
+        gasneti_assert_uint(eopidx ,==, i); // verify linkage
+        gasneti_assert_ptr(eop ,==, (gasnete_eop_t *)GASNETI_ALIGNUP(eop,GASNETI_CACHE_LINE_BYTES)); // verify cache alignment
         eop = eop->next;
       }
       gasneti_assert(eop == NULL);
@@ -126,9 +126,9 @@ gasnete_iop_t *gasnete_iop_new(gasneti_threaddata_t * const thread) {
   if_pt (iop) {
     thread->iop_free = iop->next;
     gasneti_memcheck(iop);
-    gasneti_assert(iop->threadidx == thread->threadidx);
+    gasneti_assert_uint(iop->threadidx ,==, thread->threadidx);
     #if GASNET_DEBUG
-      gasneti_assert(OPTYPE(iop) == gasnete_event_type_free_iop);
+      gasneti_assert_uint(OPTYPE(iop) ,==, gasnete_event_type_free_iop);
       iop->event[0] = gasnete_event_type_iop;
     #endif
     /* If using trace or stats, want meaningful counts when tracing NBI access regions */
@@ -168,7 +168,7 @@ void gasnete_iop_prep_free(gasnete_iop_t *iop) {
   GASNETE_IOP_PREP_FREE_EXTRA(iop);
 #endif
 #if GASNET_DEBUG
-  gasneti_assert(iop->event[0] == gasnete_event_type_iop);
+  gasneti_assert_uint(iop->event[0] ,==, gasnete_event_type_iop);
   iop->event[0] = gasnete_event_type_pendingfree_iop;
 #endif
 }
@@ -185,7 +185,7 @@ void gasnete_iop_free(gasnete_iop_t *iop GASNETI_THREAD_FARG) {
   GASNETE_IOP_FREE_EXTRA(iop);
 #endif
 #if GASNET_DEBUG
-  gasneti_assert(iop->event[0] == gasnete_event_type_pendingfree_iop);
+  gasneti_assert_uint(iop->event[0] ,==, gasnete_event_type_pendingfree_iop);
   iop->event[0] = gasnete_event_type_free_iop;
 #endif
   gasneti_threaddata_t * const thread = gasnete_threadtable[iop->threadidx];
@@ -227,6 +227,11 @@ gasneti_iop_t *gasneti_iop_register(unsigned int noperations, int isget GASNETI_
   gasnete_iop_check(op);
   return (gasneti_iop_t *)op;
 }
+int gasneti_op_is_eop(void *_op) {
+  gasnete_op_t * op = _op;
+  return OPTYPE(op) == OPTYPE_EXPLICIT;
+}
+
 void gasneti_eop_markdone(gasneti_eop_t *eop) {
   gasnete_eop_t *op = (gasnete_eop_t *)eop;
   gasnete_eop_check(op);
@@ -314,7 +319,7 @@ extern int  gasnete_test(gex_Event_t event GASNETI_THREAD_FARG) {
 GASNETI_INLINE(gasnete_bulk_free_eops)
 void gasnete_bulk_free_eops(gasnete_eop_t *head, gasnete_eop_t **tail_p,
                        gasneti_threaddata_t * const thread GASNETI_THREAD_FARG) {
-  gasneti_assert(head->threadidx == thread->threadidx); // TODO: validate entire list?
+  gasneti_assert_uint(head->threadidx ,==, thread->threadidx); // TODO: validate entire list?
 #if GASNETI_MAX_THREADS > 1
   if_pf (thread != GASNETI_MYTHREAD) {
     gasneti_mutex_lock(&thread->foreign_lock);
@@ -331,7 +336,7 @@ void gasnete_bulk_free_eops(gasnete_eop_t *head, gasnete_eop_t **tail_p,
 GASNETI_INLINE(gasnete_bulk_free_iops)
 void gasnete_bulk_free_iops(gasnete_iop_t *head, gasnete_iop_t **tail_p,
                        gasneti_threaddata_t * const thread GASNETI_THREAD_FARG) {
-  gasneti_assert(head->threadidx == thread->threadidx); // TODO: validate entire list?
+  gasneti_assert_uint(head->threadidx ,==, thread->threadidx); // TODO: validate entire list?
 #if GASNETI_MAX_THREADS > 1
   if_pf (thread != GASNETI_MYTHREAD) {
     gasneti_mutex_lock(&thread->foreign_lock);
@@ -458,7 +463,7 @@ int gasnete_test_array(const int is_all, gex_Event_t *pevent, size_t numevents G
     if (roots_synced) {
       size_t to_test = to_retest;
       for (size_t i = 0; to_test; i++) {
-        gasneti_assert(i < numevents);
+        gasneti_assert_uint(i ,<, numevents);
         const gex_Event_t event = pevent[i];
         if (gasneti_event_idx(event)) {
           to_test -= 1;
@@ -566,9 +571,9 @@ extern int  gasnete_test_all (gex_Event_t *pevent, size_t numevents GASNETI_THRE
 extern int gasnete_test_syncnbi_mask(gex_EC_t mask, gex_Flags_t flags GASNETI_THREAD_FARG) {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *iop = mythread->current_iop;
-  gasneti_assert(iop->threadidx == mythread->threadidx);
+  gasneti_assert_uint(iop->threadidx ,==, mythread->threadidx);
   gasneti_assert(iop->next == NULL);
-  gasneti_assert(OPTYPE(iop) == OPTYPE_IMPLICIT);
+  gasneti_assert_uint(OPTYPE(iop) ,==, OPTYPE_IMPLICIT);
   #if GASNET_DEBUG
     if (iop->next != NULL)
       gasneti_fatalerror("VIOLATION: attempted to call gex_NBI_Test() inside an NBI access region");
@@ -706,7 +711,7 @@ extern gex_Event_t gasnete_Event_QueryLeaf(gex_Event_t root, gex_EC_t event_id) 
   gasnete_op_t *op = (gasnete_op_t*)root;
   _gasnete_get_leaf_check(op, event_id);
 
-  gasneti_assert(gasnete_eop_event_alc == gasnete_iop_event_alc); // TODO-EX: move elsewhere
+  gasneti_static_assert(gasnete_eop_event_alc == gasnete_iop_event_alc);
 
   switch (event_id) {
     // TODO_EX: did we really want to allow extraction of PUT and GET (root) events?

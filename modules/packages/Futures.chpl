@@ -104,8 +104,8 @@ The following example demonstrate bundling of futures.
 
 module Futures {
 
-  use Reflection;
-  use ExplicitRefCount;
+  private use Reflection;
+  private use ExplicitRefCount;
 
   pragma "no doc"
   class FutureClass: RefCountBase {
@@ -141,7 +141,7 @@ module Futures {
     type retType;
 
     pragma "no doc"
-    var classRef: unmanaged FutureClass(retType) = nil;
+    var classRef: unmanaged FutureClass(retType)? = nil;
 
     pragma "no doc"
     proc init(type retType) {
@@ -162,15 +162,15 @@ module Futures {
      */
     proc get(): retType {
       if !isValid() then halt("get() called on invalid future");
-      classRef.state.waitFor(true);
-      return classRef.value;
+      classRef!.state.waitFor(true);
+      return classRef!.value;
     }
 
     pragma "no doc"
     proc set(value: retType) {
       if !isValid() then halt("set() called on invalid future");
-      classRef.value = value;
-      var oldState = classRef.state.testAndSet();
+      classRef!.value = value;
+      var oldState = classRef!.state.testAndSet();
       if oldState then halt("set() called more than once on a future");
     }
 
@@ -181,7 +181,7 @@ module Futures {
      */
     proc isReady(): bool {
       if !isValid() then halt("isReady() called on invalid future");
-      return classRef.state.peek();
+      return classRef!.state.peek();
     }
 
     /*
@@ -189,7 +189,7 @@ module Futures {
       :ref:`see above <valid-futures>`.
      */
     inline proc isValid(): bool {
-      return ((classRef != nil) && classRef.valid);
+      return ((classRef != nil) && classRef!.valid);
     }
 
     /*
@@ -213,7 +213,7 @@ module Futures {
       if !canResolveMethod(taskFn, "retType") then
         compilerError("cannot determine return type of andThen() task function");
       var f: Future(taskFn.retType);
-      f.classRef.valid = true;
+      f.classRef!.valid = true;
       begin f.set(taskFn(this.get()));
       return f;
     }
@@ -222,19 +222,19 @@ module Futures {
     proc acquire(newRef: unmanaged FutureClass) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
-      classRef.incRefCount();
+      newRef.incRefCount();
     }
 
     pragma "no doc"
     proc acquire() {
       if classRef == nil then halt("acquire() called on nil future");
-      classRef.incRefCount();
+      classRef!.incRefCount();
     }
 
     pragma "no doc"
     proc release() {
       if classRef == nil then halt("release() called on nil future");
-      var rc = classRef.decRefCount();
+      var rc = classRef!.decRefCount();
       if rc == 1 {
         delete classRef;
         classRef = nil;
@@ -262,7 +262,7 @@ module Futures {
     if lhs.classRef == rhs.classRef then return;
     if lhs.classRef != nil then
       lhs.release();
-    lhs.acquire(rhs.classRef);
+    lhs.acquire(rhs.classRef!);
   }
 
   /*
@@ -278,7 +278,7 @@ module Futures {
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of andThen() task function");
     var f: Future(taskFn.retType);
-    f.classRef.valid = true;
+    f.classRef!.valid = true;
     begin f.set(taskFn());
     return f;
   }
@@ -297,7 +297,7 @@ module Futures {
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of async() task function");
     var f: Future(taskFn.retType);
-    f.classRef.valid = true;
+    f.classRef!.valid = true;
     begin f.set(taskFn((...args)));
     return f;
   }
@@ -323,7 +323,7 @@ module Futures {
   proc waitAll(futures...?N) {
     type retTypes = getRetTypes((...futures));
     var f: Future(retTypes);
-    f.classRef.valid = true;
+    f.classRef!.valid = true;
     begin {
       var result: retTypes;
       for param i in 1..N do

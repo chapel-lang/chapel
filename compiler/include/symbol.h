@@ -124,8 +124,7 @@ enum ForallIntentTag {
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
-ArgSymbol* tiMarkForIntent(IntentTag intent);
-ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
+ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
 
 // parser support
 enum ShadowVarPrefix {
@@ -261,6 +260,7 @@ private:
 
 
 bool isString(Symbol* symbol);
+bool isBytes(Symbol* symbol);
 bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
@@ -616,6 +616,9 @@ std::string unescapeString(const char* const str, BaseAST* astForError);
 
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+//
+// Creates a new bytes literal with the given value.
+VarSymbol *new_BytesSymbol(const char *s);
 
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
@@ -677,16 +680,19 @@ VarSymbol* newTempConst(QualifiedType qt);
 const char* intentDescrString(IntentTag intent);
 
 // cache some popular strings
-extern const char* astrSdot;
-extern const char* astrSequals;
-extern const char* astrSgt;
-extern const char* astrSgte;
-extern const char* astrSlt;
-extern const char* astrSlte;
-extern const char* astrSswap;
+extern const char* astrSassign; // =
+extern const char* astrSdot;    // .
+extern const char* astrSeq;     // ==
+extern const char* astrSne;     // !=
+extern const char* astrSgt;     // >
+extern const char* astrSgte;    // >=
+extern const char* astrSlt;     // <
+extern const char* astrSlte;    // <=
+extern const char* astrSswap;   // <=>
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
+extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
@@ -697,6 +703,8 @@ extern const char* astr_chpl_manager;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
+extern const char* astrPostfixBang;
+extern const char* astrBorrow;
 
 void initAstrConsts();
 
@@ -711,8 +719,6 @@ bool isOuterVarOfShadowVar(Expr* expr);
 Expr* getDefOfTemp(SymExpr* origSE);
 
 // Parser support.
-class ForallIntents;
-void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
 void addForallIntent(CallExpr* fi, ShadowVarSymbol* svar);
 void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar);
 
@@ -734,21 +740,27 @@ extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gVoid;
+extern Symbol *gNone;
 extern Symbol *gStringC;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
 extern Symbol *gTaskID;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
+extern VarSymbol *gNilChecking;
+extern VarSymbol *gLegacyClasses;
+extern VarSymbol *gOverloadSetsChecks;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
-extern VarSymbol* gWarnUnstable;
+extern VarSymbol *gWarnUnstable;
+extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
+extern VarSymbol *gInfinity;
+extern VarSymbol *gNan;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
@@ -798,5 +810,8 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
 
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
+
+const char* toString(ArgSymbol* arg);
+const char* toString(VarSymbol* var);
 
 #endif

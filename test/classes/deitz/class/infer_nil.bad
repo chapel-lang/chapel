@@ -1,1 +1,1 @@
-infer_nil.chpl:6: error: type mismatch in assignment from C to nil
+infer_nil.chpl:6: error: Cannot assign to nil from borrowed C

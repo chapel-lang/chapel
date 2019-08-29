@@ -56,6 +56,7 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
 #include "chpl-env.h"
 #include "chplexit.h"
@@ -622,6 +623,7 @@ static mem_region_t* gnr_mreg_map;
 // fault-in failures, and reporting out-of-memory in response.
 //
 static struct sigaction previous_SIGBUS_sigact;
+static atomic_bool SIGBUS_gate;
 
 struct mregs_supp {
   chpl_mem_descInt_t desc;
@@ -707,14 +709,31 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 #define CQ_CNT_DEC(cd)        \
         (void) atomic_fetch_sub_uint_least32_t(&(cd)->cq_cnt_curr, 1)
 
+// We create an array of comm domains and try to spread our threads to
+// different indices. For tasking layers with a fixed number of threads
+// this results in each thread acquiring an affinity for a comm domain,
+// eliminating contention across comm domains (assuming we can create as
+// many comm domains as there are threads.) We cacheline align/pad the
+// comm_dom_t struct to avoid false sharing between threads accessing
+// different comm domains (this is extremely important for performance)
+//
+// Because there are configurations where there aren't a fixed number of
+// threads and machines where there would be more threads than comm
+// domains we put `busy` on its own cacheline to avoid contention
+// between a thread operating on an acquired CD and another thread
+// that's trying to acquire it. We also try to limit cache thrashing on
+// `busy` by acquiring the lock with a test-and-test-and-set op, but the
+// effectiveness of that depends on which atomic layer is used (cstdlib
+// is the only one with cheap atomic reads.)
+
 typedef struct {
   atomic_bool        busy CACHE_LINE_ALIGN;
+  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
   gni_ep_handle_t*   remote_eps;
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
-  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -760,6 +779,9 @@ static __thread int cd_idx = -1;
 // for now follow gasnet-aries and use the higher default of 4K
 #define DEFAULT_RDMA_THRESHOLD 4096
 static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
+
+// Largest size to use unordered transactions for
+#define MAX_UNORDERED_TRANS_SZ 1024
 
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
@@ -1424,14 +1446,6 @@ static chpl_bool polling_task_blocking_cq;
 
 
 //
-// These tell the state of, or give direction to, the main process
-//
-static chpl_bool can_shutdown = false;
-static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-
-
-//
 // Specialized argument type and values for the may_remote_proxy
 // argument to do_remote_put() and ..._get().
 //
@@ -1506,13 +1520,12 @@ static void      amo_res_free(fork_amo_data_t*);
 static void      consume_all_outstanding_cq_events(int);
 static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                mem_region_t*, drpg_may_proxy_t);
+static void      do_remote_put_buff(void*, c_nodeid_t, void*, size_t,
+                                    drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  mem_region_t**, drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
-static void      remote_get_buff_init(void);
-static void      remote_get_buff_flush(void);
-static void      remote_get_buff_task_flush(void);
 static void      do_remote_get_buff(void*, c_nodeid_t, void*, size_t,
                                     drpg_may_proxy_t);
 static void      do_remote_get_V(int, void**, c_nodeid_t*, mem_region_t**,
@@ -1525,9 +1538,6 @@ static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*, mem_region_t*);
 static void      do_nic_amo_nf(void*, c_nodeid_t, void*, size_t,
                                gni_fma_cmd_type_t, mem_region_t*);
-static void      nic_amo_buff_init(void);
-static void      nic_amo_nf_buff_flush(void);
-static void      nic_amo_nf_buff_task_flush(void);
 static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
@@ -1785,40 +1795,130 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 
 
-// Simple wrapper for spinlock with more relaxed orderings and proper yielding
-// for locks. Should only be used when contention is expected to be very low.
-typedef atomic_bool spinlock;
-static inline void spinlock_init(spinlock* s) {
-  atomic_init_bool(s, false);
+//
+// Common code for task local buffering
+//
+
+static inline
+chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
+  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
+  if (task_prvData != NULL) return &task_prvData->comm_data;
+  return NULL;
 }
-static inline void spinlock_lock(spinlock* s) {
-  while (atomic_exchange_explicit_bool(s, true, memory_order_acquire)) {
-    local_yield();
+
+enum BuffType {
+  amo_nf_buff = 1 << 0,
+  get_buff    = 1 << 1,
+  put_buff    = 1 << 2
+};
+
+// Per task information about non-fetching AMO buffers
+typedef struct {
+  int                vi;
+  uint64_t           opnd1_v[MAX_CHAINED_AMO_LEN];
+  c_nodeid_t         locale_v[MAX_CHAINED_AMO_LEN];
+  void*              object_v[MAX_CHAINED_AMO_LEN];
+  size_t             size_v[MAX_CHAINED_AMO_LEN];
+  gni_fma_cmd_type_t cmd_v[MAX_CHAINED_AMO_LEN];
+  mem_region_t*      remote_mr_v[MAX_CHAINED_AMO_LEN];
+} amo_nf_buff_task_info_t;
+
+// Per task information about GET buffers
+typedef struct {
+  int           vi;
+  void*         tgt_addr_v[MAX_CHAINED_GET_LEN];
+  c_nodeid_t    locale_v[MAX_CHAINED_GET_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_GET_LEN];
+  void*         src_addr_v[MAX_CHAINED_GET_LEN];
+  size_t        size_v[MAX_CHAINED_GET_LEN];
+  mem_region_t* local_mr_v[MAX_CHAINED_GET_LEN];
+} get_buff_task_info_t;
+
+// Per task information about PUT buffers
+typedef struct {
+  int           vi;
+  void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
+  c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
+  void*         src_addr_v[MAX_CHAINED_PUT_LEN];
+  uint64_t      src_v[MAX_CHAINED_PUT_LEN];
+  size_t        size_v[MAX_CHAINED_PUT_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
+} put_buff_task_info_t;
+
+// Acquire a task local buffer, initializing if needed
+static inline
+void* task_local_buff_acquire(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return NULL;
+
+#define DEFINE_INIT(TYPE, TLS_NAME)                                           \
+  if (t == TLS_NAME) {                                                        \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info == NULL) {                                                       \
+      prvData->TLS_NAME = chpl_mem_alloc(sizeof(TYPE),                        \
+                                         CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
+      info = prvData->TLS_NAME;                                               \
+      info->vi = 0;                                                           \
+    }                                                                         \
+    return info;                                                              \
   }
-}
-static inline void spinlock_unlock(spinlock* s) {
-  atomic_store_explicit_bool(s, false, memory_order_release);
-}
-static inline void spinlock_destroy(spinlock* s) {
-  atomic_destroy_bool(s);
+
+  DEFINE_INIT(amo_nf_buff_task_info_t, amo_nf_buff);
+  DEFINE_INIT(get_buff_task_info_t, get_buff);
+  DEFINE_INIT(put_buff_task_info_t, put_buff);
+
+#undef DEFINE_INIT
+  return NULL;
 }
 
+static void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info);
+static void get_buff_task_info_flush(get_buff_task_info_t* info);
+static void put_buff_task_info_flush(put_buff_task_info_t* info);
 
-// Simple wrapper for a pthread reader/writer lock with proper yielding for
-// locks. Use the non-blocking calls and yield instead of blocking the thread.
-typedef pthread_rwlock_t rwlock;
-static inline void rwlock_init(rwlock* l) {
-  pthread_rwlock_init(l, NULL);
+// Flush one or more task local buffers
+static inline
+void task_local_buff_flush(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                              \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+    }                                                                         \
+  }
+
+  DEFINE_FLUSH(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
+  DEFINE_FLUSH(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+  DEFINE_FLUSH(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
+
+#undef DEFINE_FLUSH
 }
-static inline void rwlock_writer_lock(rwlock* l) {
-  while (pthread_rwlock_trywrlock(l) == EBUSY) { local_yield(); }
+
+// Flush and destroy one or more task local buffers
+static inline
+void task_local_buff_end(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                                \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+      chpl_mem_free(info, 0, 0);                                              \
+      prvData->TLS_NAME = NULL;                                               \
+    }                                                                         \
+  }
+
+  DEFINE_END(amo_nf_buff_task_info_t, amo_nf_buff, amo_nf_buff_task_info_flush);
+  DEFINE_END(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+  DEFINE_END(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
+
+#undef END
 }
-static inline void rwlock_reader_lock(rwlock* l) {
-  while (pthread_rwlock_tryrdlock(l) == EBUSY) { local_yield(); }
-}
-static inline void rwlock_unlock(rwlock* l) {
-  pthread_rwlock_unlock(l);
-}
+
 
 
 //
@@ -1931,9 +2031,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 
 void chpl_comm_post_mem_init(void)
 {
-  //
-  // Empty.
-  //
+  chpl_comm_init_prv_bcast_tab();
 }
 
 
@@ -1945,15 +2043,8 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
   return 0;
 }
 
-
-int chpl_comm_numPollingTasks(void)
-{
-  return 1;
-}
-
 void chpl_comm_task_end(void) {
-  remote_get_buff_task_flush();
-  nic_amo_nf_buff_task_flush();
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
 
 void chpl_comm_post_task_init(void)
@@ -2082,15 +2173,13 @@ void chpl_comm_post_task_init(void)
   nb_desc_init();
   rf_done_init();
   amo_res_init();
-  nic_amo_buff_init();
-  remote_get_buff_init();
 
   //
   // Create all the communication domains, including their GNI NIC
   // handles, endpoints, and completion queues.
   //
   comm_doms =
-    (comm_dom_t*) chpl_mem_memalign(sizeof(comm_dom_t),
+    (comm_dom_t*) chpl_mem_memalign(CACHE_LINE_SIZE,
                                     comm_dom_cnt * sizeof(comm_dom_t),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
 
@@ -2626,7 +2715,7 @@ void register_memory(void)
       gnr_mreg_map[node] = gdp->gnr_mreg;
       mem_regions_all_entries[node]->mreg_cnt = gdp->mreg_cnt;
       memcpy(&mem_regions_all_entries[node]->mregs, &gdp->mregs,
-             mem_regions_size);
+             gdata_mregs_size);
       mem_regions_all_my_entry_map[node] =
           (mem_region_table_t*)
           ((char*) gdp->mem_regions_all + chpl_nodeID * mem_regions_size);
@@ -3182,6 +3271,7 @@ void set_hugepage_info(void)
 
     if ((ev = getenv("HUGETLB_NO_RESERVE")) != NULL
         && strcasecmp(ev, "yes") == 0) {
+      atomic_init_bool(&SIGBUS_gate, false);
       install_SIGBUS_handler();
     }
   }
@@ -3195,6 +3285,10 @@ void set_hugepage_info(void)
 }
 
 
+//
+// This may be called from the SIGBUS handler itself (see below), so
+// its error handling has to be primitive (no *printf() calls, e.g.).
+//
 static
 void install_SIGBUS_handler(void)
 {
@@ -3202,11 +3296,17 @@ void install_SIGBUS_handler(void)
 
   act.sa_flags = SA_RESTART | SA_SIGINFO;
   if (sigemptyset(&act.sa_mask) != 0) {
-    CHPL_INTERNAL_ERROR("sigemptyset() failed");
+    static const char* msg = "internal error: sigemptyset() failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
   act.sa_sigaction = SIGBUS_handler;
   if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
-    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
+    static const char* msg = "internal error: sigaction(SIGBUS) failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
 }
 
@@ -3244,15 +3344,100 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
       ;
 
     if (mr_i >= 0) {
-      char buf[1024];
-      chpl_error_vs(buf, sizeof(buf),
-                    mr_mregs_supplement[mr_i].ln, mr_mregs_supplement[mr_i].fn,
-                    "Out of memory allocating \"%s\"",
-                    chpl_mem_descString(mr_mregs_supplement[mr_i].desc));
-      write(fileno(stderr), buf, strlen(buf));
-      exit_without_cleanup = true;
-      chpl_atomic_thread_fence(memory_order_release);
-      chpl_exit_any(1);
+      //
+      // This does indeed appear to be due to faulting in pages as a
+      // side effect of initialization.
+      //
+
+      //
+      // Only say this once per node.
+      //
+      while (atomic_exchange_explicit_bool(&SIGBUS_gate, true,
+                                           memory_order_acquire)) {
+        sleep(1); // listed as safe in a handler (sched_yield() isn't)
+      }
+
+      //
+      // Produce the best message we can, under the circumstances.
+      //
+      static char buf[1000];
+      int bufi;
+
+      static const char* msg1 = "error: Out of memory allocating \"";
+      int msg1Len = strlen(msg1);
+      const char* mds = chpl_mem_descString(mr_mregs_supplement[mr_i].desc);
+      int mdsLen = strlen(mds);
+      static const char* msg2 = "\"";
+      int msg2Len = strlen(msg2);
+
+      bufi = sizeof(buf);
+      buf[--bufi] = '\n';
+
+      if (msg1Len + mdsLen + msg2Len > bufi) {
+        static const char* msg = "error: Out of memory allocating from heap";
+        int msgLen = strlen(msg);
+        memcpy(&buf[bufi -= msgLen], msg, msgLen);
+      } else {
+        //
+        // We build the message backwards, because that makes building
+        // the string for the line number much simpler.
+        //
+        memcpy(&buf[bufi -= msg2Len], msg2, msg2Len);
+        memcpy(&buf[bufi -= mdsLen], mds, mdsLen);
+        memcpy(&buf[bufi -= msg1Len], msg1, msg1Len);
+
+        //
+        // Only try to provide a line number if there is one and it
+        // will fit in the buffer.
+        //
+        chpl_bool didLine = false;
+        if (bufi > 22 // type safety: enough for uint64 (ln is only int32)
+            && mr_mregs_supplement[mr_i].ln > 0) {
+          int ln = mr_mregs_supplement[mr_i].ln;
+          buf[--bufi] = ' ';
+          buf[--bufi] = ':';
+          for ( ; ln > 0; ln /= 10) {
+            buf[--bufi] = "0123456789"[ln % 10];
+          }
+          didLine = true;
+        }
+
+        //
+        // Only try to provide a source file if we can give at least some
+        // of it, and without using snprintf() in chpl_lookupFilename()).
+        //
+        if (bufi > 10
+            && mr_mregs_supplement[mr_i].fn >= 0
+            && mr_mregs_supplement[mr_i].fn < chpl_filenameTableSize) {
+          if (!didLine)
+            buf[--bufi] = ' ';
+          buf[--bufi] = ':';
+
+          //
+          // Stop copying fname either when we're done or need to leave
+          // room for "..." in place of chars that won't fit.
+          //
+          const char* fn = chpl_lookupFilename(mr_mregs_supplement[mr_i].fn);
+          int fnLen = strlen(fn);
+          int fni;
+          for (fni = fnLen; fni > 0 && (fni <= 3 || bufi > 3); ) {
+            buf[--bufi] = fn[--fni];
+          }
+
+          if (fni != 0) {
+            buf[--bufi] = '.';
+            buf[--bufi] = '.';
+            buf[--bufi] = '.';
+          }
+        }
+      }
+
+      write(2, &buf[bufi], sizeof(buf) - bufi);
+
+      //
+      // It's not safe to do anything else but quit now.
+      //
+      _exit(1);
     }
   }
 
@@ -3264,7 +3449,12 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   // handler again.
   //
   if (sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL) != 0) {
-    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) to reinstall old handler failed");
+    static const char* msg
+                       = "internal error: "
+                         "sigaction(SIGBUS) to reinstall old handler failed\n";
+    int msgLen = strlen(msg);
+    write(2, msg, msgLen);
+    _exit(1);
   }
 
   {
@@ -3275,7 +3465,10 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
         || pthread_sigmask(SIG_UNBLOCK, &sigbus_set, NULL) != 0
         || raise(SIGBUS) != 0
         || pthread_sigmask(SIG_BLOCK, &sigbus_set, NULL) != 0) {
-      CHPL_INTERNAL_ERROR("cannot re-raise SIGBUS");
+      static const char* msg = "internal error: cannot re-raise SIGBUS\n";
+      int msgLen = strlen(msg);
+      write(2, msg, msgLen);
+      _exit(1);
     }
   }
 
@@ -3678,22 +3871,26 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
 }
 
 
-void chpl_comm_broadcast_global_vars(int numGlobals)
-{
-  int i;
-
-  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_global_vars(%d)",
-           numGlobals);
-
-  if (chpl_nodeID != 0) {
-    for (i = 0; i < numGlobals; i++)
-      do_remote_get(chpl_globals_registry[i], 0, chpl_globals_registry[i],
-                    sizeof(wide_ptr_t), may_proxy_true);
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
+  //
+  // Gather the global variables' wide pointers on node 0 into a
+  // buffer, and broadcast the address of that buffer to the other
+  // nodes.
+  //
+  wide_ptr_t* buf;
+  if (chpl_nodeID == 0) {
+    buf = (wide_ptr_t*) chpl_mem_allocMany(chpl_numGlobalsOnHeap, sizeof(*buf),
+                                           CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      buf[i] = *chpl_globals_registry[i];
+    }
   }
+  PMI_Bcast(&buf, sizeof(buf));
+  return buf;
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
+void chpl_comm_broadcast_private(int id, size_t size)
 {
   int i;
 
@@ -3707,8 +3904,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_private_broadcast_table[id], i,
-                    chpl_private_broadcast_table[id], size,
+      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
+                    chpl_rt_priv_bcast_tab[id], size,
                     NULL, may_proxy_true);
     }
   }
@@ -3812,18 +4009,11 @@ void chpl_comm_pre_task_exit(int all)
 
   if (all) {
     if (chpl_nodeID == 0) {
-      int i;
-      for (i = 0; i < chpl_numNodes; i++) {
-        if (i != chpl_nodeID) {
-          fork_shutdown(i);
-        }
+      for (int i = 1; i < chpl_numNodes; i++) {
+        fork_shutdown(i);
       }
     } else {
-      pthread_mutex_lock(&shutdown_mutex);
-      while (!can_shutdown) {
-        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
-      }
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_wait_for_shutdown();
     }
 
     chpl_comm_barrier("chpl_comm_pre_task_exit");
@@ -4086,10 +4276,7 @@ void rf_handler(gni_cq_entry_t* ev)
 
     {
       release_req_buf(req_li, req_cdi, req_rbi);
-      pthread_mutex_lock(&shutdown_mutex);
-      can_shutdown = true;
-      pthread_cond_signal(&shutdown_cond);
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_signal_shutdown();
     }
     break;
 
@@ -5075,8 +5262,7 @@ void consume_all_outstanding_cq_events(int cdi)
 
 
 void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t typeIndex,
-                   int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5095,7 +5281,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -5557,9 +5743,46 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
 }
 
 
+void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
+                                c_nodeid_t src_locale, void* src_addr,
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn)
+{
+  assert(dst_addr != NULL);
+  assert(src_addr != NULL);
+
+  if (size == 0)
+    return;
+
+  if (dst_locale == chpl_nodeID && src_locale == chpl_nodeID) {
+    memmove(dst_addr, src_addr, size);
+    return;
+  }
+
+  if (dst_locale == chpl_nodeID) {
+    chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, commID, ln, fn);
+  } else if (src_locale == chpl_nodeID) {
+    chpl_comm_put_unordered(src_addr, dst_locale, dst_addr, size, commID, ln, fn);
+  } else {
+    // TODO use unordered ops in this case? Would have to ensure we always
+    // flush GET buffer before the PUT buffer
+    if (size <= MAX_UNORDERED_TRANS_SZ) {
+      char buf[MAX_UNORDERED_TRANS_SZ];
+      chpl_comm_get(buf, src_locale, src_addr, size, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, commID, ln, fn);
+    } else {
+      // Note, we do not expect this case to trigger, but if it does we may
+      // want to do on-stmt to src locale and then transfer
+      char* buf = chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+      chpl_comm_get(buf, src_locale, src_addr, size, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, commID, ln, fn);
+      chpl_mem_free(buf, 0, 0);
+    }
+  }
+}
+
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t typeIndex, int32_t commID,
-                             int ln, int32_t fn)
+                             size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_unordered(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5578,7 +5801,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -5588,18 +5811,44 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
-void chpl_comm_get_unordered_fence(void) {
-  remote_get_buff_flush();
+void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn)
+
+{
+  DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_unordered(%p, %d, %p, %zd)",
+           addr, (int) locale, raddr, size);
+
+  assert(addr != NULL);
+  assert(raddr != NULL);
+  if (size == 0)
+    return;
+
+  if (locale == chpl_nodeID) {
+    memmove(raddr, addr, size);
+    return;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn);
+  chpl_comm_diags_incr(put);
+
+  do_remote_put_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
-void chpl_comm_get_unordered_task_fence(void) {
-  remote_get_buff_task_flush();
+void chpl_comm_getput_unordered_task_fence(void) {
+  task_local_buff_flush(get_buff | put_buff);
 }
 
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t typeIndex,
-                   int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5618,7 +5867,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -5628,6 +5877,58 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
 }
 
+/*
+ *** START OF BUFFERED PUT OPERATIONS ***
+ *
+ * Support for buffered PUT operations. We internally buffer PUT operations and
+ * then initiate them with chained transactions for increased transaction rate.
+ */
+
+// Flush buffered PUTs for the specified task info and reset the counter.
+static inline
+void put_buff_task_info_flush(put_buff_task_info_t* info) {
+  if (info->vi > 0) {
+    do_remote_put_V(info->vi, info->src_addr_v, info->locale_v,
+                    info->tgt_addr_v, info->size_v,
+                    info->remote_mr_v, may_proxy_true);
+    info->vi = 0;
+  }
+}
+
+static inline
+void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
+                        size_t size, drpg_may_proxy_t may_proxy)
+{
+  mem_region_t*         remote_mr;
+  put_buff_task_info_t* info;
+
+  DBG_P_LP(DBGF_GETPUT, "DoRemBuffPut %p -> %d:%p (%#zx), proxy %c",
+           src_addr, (int) locale, tgt_addr, size, may_proxy ? 'y' : 'n');
+
+  remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+  info = task_local_buff_acquire(put_buff);
+
+  if (remote_mr == NULL || info == NULL || size > 8) {
+    do_remote_put(src_addr, locale, tgt_addr, size, remote_mr, may_proxy);
+    return;
+  }
+
+  int vi = info->vi;
+  memcpy(&info->src_v[vi], src_addr, size);
+  info->src_addr_v[vi] = &info->src_v[vi];
+  info->locale_v[vi] = locale;
+  info->tgt_addr_v[vi] = tgt_addr;
+  info->size_v[vi] = size;
+  info->remote_mr_v[vi] = remote_mr;
+  info->vi++;
+
+  // flush if buffers are full
+  if (info->vi == MAX_CHAINED_PUT_LEN) {
+    put_buff_task_info_flush(info);
+  }
+}
+/*** END OF BUFFERED PUT OPERATIONS ***/
+
 
 /*
  *** START OF BUFFERED GET OPERATIONS ***
@@ -5636,37 +5937,9 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
  * then initiate them with chained transactions for increased transaction rate.
  */
 
-// Per thread information about GET buffers
-typedef struct get_buff_thread_info_t {
-  int                            vi;
-  spinlock                       lock;
-  chpl_bool                      inited;
-  void*                          tgt_addr_v[MAX_CHAINED_GET_LEN];
-  c_nodeid_t                     locale_v[MAX_CHAINED_GET_LEN];
-  mem_region_t*                  remote_mr_v[MAX_CHAINED_GET_LEN];
-  void*                          src_addr_v[MAX_CHAINED_GET_LEN];
-  size_t                         size_v[MAX_CHAINED_GET_LEN];
-  mem_region_t*                  local_mr_v[MAX_CHAINED_GET_LEN];
-  struct get_buff_thread_info_t* next;
-} get_buff_thread_info_t;
-
-// Contains linked list of all thread private GET buffer infos (so we can flush
-// all of them) and a lock to protect access to the list
-typedef struct {
-  get_buff_thread_info_t* list;
-  rwlock                  lock;
-  pthread_key_t           destructor_key;
-} get_buff_global_info_t;
-
-static __thread get_buff_thread_info_t get_buff_thread_info;
-
-static get_buff_global_info_t get_buff_global_info;
-
-// Flush buffered GET operations for the specified thread and reset the
-// counter. Should be called with info lock acquired
-static
-inline
-void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
+// Flush buffered GETs for the specified task info and reset the counter.
+static inline
+void get_buff_task_info_flush(get_buff_task_info_t* info) {
   if (info->vi > 0) {
     do_remote_get_V(info->vi, info->tgt_addr_v, info->locale_v,
                     info->remote_mr_v, info->src_addr_v, info->size_v,
@@ -5675,101 +5948,13 @@ void get_buff_thread_info_flush(get_buff_thread_info_t* info) {
   }
 }
 
-static
-void get_buff_thread_info_init(get_buff_thread_info_t* info) {
-  rwlock_writer_lock(&get_buff_global_info.lock);
-  // need to recheck now that we have to lock
-  if (!info->inited) {
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
-    // add thread to linked list
-    info->next = get_buff_global_info.list;
-    get_buff_global_info.list = info;
-
-    // dummy key binding needed so key destructor is called
-    pthread_setspecific(get_buff_global_info.destructor_key, info);
-
-    info->inited = true;
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-}
-
-static
-void get_buff_thread_info_destroy(void* p) {
-  get_buff_thread_info_t* info = &get_buff_thread_info;
-
-  // remove the thread from the linked list
-  rwlock_writer_lock(&get_buff_global_info.lock);
-  get_buff_thread_info_t* global_info = get_buff_global_info.list;
-  if (info == global_info) {
-    get_buff_global_info.list = info->next;
-  } else {
-    while (global_info != NULL) {
-      if (info == global_info->next) {
-        global_info->next = info->next;
-        break;
-      }
-      global_info = global_info->next;
-    }
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  get_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-}
-
-static
-void remote_get_buff_init(void) {
-  get_buff_global_info.list = NULL;
-  rwlock_init(&get_buff_global_info.lock);
-  pthread_key_create(&get_buff_global_info.destructor_key, get_buff_thread_info_destroy);
-}
-
-// Flush buffered GET operations for all threads
-static
-inline
-void remote_get_buff_flush(void) {
-  get_buff_thread_info_t* info;
-
-  rwlock_reader_lock(&get_buff_global_info.lock);
-  info = get_buff_global_info.list;
-  while (info != NULL) {
-    spinlock_lock(&info->lock);
-    get_buff_thread_info_flush(info);
-    spinlock_unlock(&info->lock);
-    info = info->next;
-  }
-  rwlock_unlock(&get_buff_global_info.lock);
-}
-
-static
-inline
-void remote_get_buff_task_flush(void) {
-  if (chpl_task_canMigrateThreads()) {
-    remote_get_buff_flush();
-  } else {
-    get_buff_thread_info_t* info = &get_buff_thread_info;
-    // Safe to check inited/vi outside the lock because no other thread can be
-    // modifying them, but concurrent flushing from other threads is possible.
-    if (info->inited && info->vi > 0) {
-      spinlock_lock(&info->lock);
-      get_buff_thread_info_flush(info);
-      spinlock_unlock(&info->lock);
-    }
-  }
-}
-
-static
-inline
+static inline
 void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
                         size_t size, drpg_may_proxy_t may_proxy)
 {
   mem_region_t*         local_mr;
   mem_region_t*         remote_mr;
+  get_buff_task_info_t* info;
 
   DBG_P_LP(DBGF_GETPUT, "DoRemBuffGet %p <- %d:%p (%#zx), proxy %c",
            tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
@@ -5783,23 +5968,15 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   //
   remote_mr = mreg_for_remote_addr(src_addr, locale);
   local_mr = mreg_for_local_addr(tgt_addr);
-  if (local_mr == NULL || remote_mr == NULL ||
+  info = task_local_buff_acquire(get_buff);
+  if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
       !IS_ALIGNED_32(size)) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
-
-  get_buff_thread_info_t* info = &get_buff_thread_info;
-
-  if (!info->inited) {
-    get_buff_thread_info_init(info);
-  }
-
-  // grab lock for this thread
-  spinlock_lock(&info->lock);
-
+ 
   int vi = info->vi;
   info->tgt_addr_v[vi] = tgt_addr;
   info->locale_v[vi] = locale;
@@ -5811,11 +5988,8 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   // flush if buffers are full
   if (info->vi == MAX_CHAINED_GET_LEN) {
-    get_buff_thread_info_flush(info);
+    get_buff_task_info_flush(info);
   }
-
-  // release lock for this thread
-  spinlock_unlock(&info->lock);
 }
 /*** END OF BUFFERED GET OPERATIONS ***/
 
@@ -6084,7 +6258,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t dstlocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(put_strd_cnt);
   put_strd_common(dstaddr_arg, dststrides,
@@ -6092,7 +6266,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   strd_maxHandles, local_yield,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 
@@ -6100,7 +6274,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t srclocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(get_strd_cnt);
   get_strd_common(dstaddr_arg, dststrides,
@@ -6108,7 +6282,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   strd_maxHandles, local_yield,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 
@@ -6117,15 +6291,13 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 //
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
   mem_region_t*          local_mr;
   mem_region_t*          remote_mr;
   nb_desc_idx_t          nbdi;
   nb_desc_t*             nbdp;
   gni_post_descriptor_t* post_desc;
-  chpl_bool              do_rdma = false;
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6147,7 +6319,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+       .iu.comm={addr, raddr, size, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -6158,7 +6330,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   // For now, if the local address isn't in a memory region known to the
   // NIC, or if they give us an unaligned address or length, or if the
   // remote address isn't in NIC-registered memory, or if the size is
-  // larger than the maximum transaction size, do a blocking GET.
+  // larger than the rdma_threshold, do a blocking GET.
   // Eventually it might be worthwhile to do a nonblocking solution if
   // we can.
   //
@@ -6167,7 +6339,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
       || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
       || !IS_ALIGNED_32(size)
       || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
-      || size > MAX_RDMA_TRANS_SZ) {
+      || size >= rdma_threshold) {
     PERFSTATS_INC(get_nb_b_cnt);
     do_remote_get(addr, locale, raddr, size, may_proxy_true);
     return NULL;
@@ -6205,13 +6377,6 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   post_desc->remote_mem_hndl = remote_mr->mdh;
   post_desc->length          = size;
 
-  //
-  // If the GET size merits RDMA do an RDMA get instead of FMA
-  //
-  if (size >= rdma_threshold) {
-    do_rdma = true;
-    post_desc->type = GNI_POST_RDMA_GET;
-  }
 
   //
   // Initiate the transaction.  Don't wait for it to complete.
@@ -6219,11 +6384,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   PERFSTATS_INC(get_nb_cnt);
   PERFSTATS_ADD(get_byte_cnt, size);
 
-  if (do_rdma) {
-    nbdp->cdi = post_rdma(locale, post_desc);
-  } else {
-    nbdp->cdi = post_fma(locale, post_desc);
-  }
+  nbdp->cdi = post_fma(locale, post_desc);
 
   return nb_desc_idx_2_handle(nbdi);
 }
@@ -6231,8 +6392,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6242,7 +6402,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
   // it do a real nonblocking implementation, but right now we don't
   // have time.
   //
-  chpl_comm_put(addr, locale, raddr, size, typeIndex, commID, ln, fn);
+  chpl_comm_put(addr, locale, raddr, size, commID, ln, fn);
   return NULL;
 
 #if 0
@@ -6254,7 +6414,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+       .iu.comm={addr, raddr, size, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 #endif
@@ -6457,6 +6617,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
         void chpl_comm_atomic_write_##_f(void* val,                     \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6469,6 +6630,8 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo write", loc, ln, fn);        \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6519,6 +6682,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
         void chpl_comm_atomic_read_##_f(void* res,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6532,6 +6696,8 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo read", loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6572,6 +6738,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                         int32_t loc,                    \
                                         void* obj,                      \
                                         void* res,                      \
+                                        memory_order order,             \
                                         int ln, int32_t fn)             \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6585,6 +6752,8 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo xchg", loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6632,6 +6801,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                                            int32_t loc,                 \
                                            void* obj,                   \
                                            chpl_bool32* res,            \
+                                           memory_order order,          \
                                            int ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6648,6 +6818,8 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo cmpxchg", loc, ln, fn);      \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6687,6 +6859,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
         void chpl_comm_atomic_##_o##_##_f(void* opnd,                   \
                                           int32_t loc,                  \
                                           void* obj,                    \
+                                          memory_order order,           \
                                           int ln, int32_t fn)           \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6701,6 +6874,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo " #_o, loc, ln, fn);         \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6732,6 +6907,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo unord_" #_o, loc, ln, fn);   \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6750,6 +6927,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                                                 int32_t loc,            \
                                                 void* obj,              \
                                                 void* res,              \
+                                                memory_order order,     \
                                                 int ln, int32_t fn)     \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6765,6 +6943,8 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo fetch_" #_o, loc, ln, fn);   \
+          chpl_comm_diags_incr(amo);                                    \
           if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             if (loc == chpl_nodeID)                                     \
@@ -6819,6 +6999,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         void chpl_comm_atomic_add_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6832,6 +7013,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo add", loc, ln, fn);          \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -6863,6 +7046,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo unord_add", loc, ln, fn);    \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -6882,6 +7067,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
+                                             memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6895,6 +7081,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
             return;                                                     \
           }                                                             \
                                                                         \
+          chpl_comm_diags_verbose_amo("amo fetch_add", loc, ln, fn);    \
+          chpl_comm_diags_incr(amo);                                    \
           if (sizeof(_t) == sizeof(int_least32_t)                       \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
@@ -6926,6 +7114,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
         void chpl_comm_atomic_sub_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
+                                       memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -6935,7 +7124,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          chpl_comm_atomic_add_##_f(&nopnd, loc, obj, ln, fn);          \
+          chpl_comm_atomic_add_##_f(&nopnd, loc, obj, order, ln, fn);   \
         }                                                               \
                                                                         \
          /*==============================*/                             \
@@ -6959,6 +7148,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
+                                             memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -6968,7 +7158,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
                    "(%p, %d, %p, %p)",                                  \
                    opnd, (int) loc, obj, res);                          \
                                                                         \
-          chpl_comm_atomic_fetch_add_##_f(&nopnd, loc, obj, res,        \
+          chpl_comm_atomic_fetch_add_##_f(&nopnd, loc, obj, res, order, \
                                           ln, fn);                      \
         }
 
@@ -6985,12 +7175,8 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
-void chpl_comm_atomic_unordered_fence(void) {
-  nic_amo_nf_buff_flush();
-}
-
 void chpl_comm_atomic_unordered_task_fence(void) {
-  nic_amo_nf_buff_task_flush();
+  task_local_buff_flush(amo_nf_buff);
 }
 
 static
@@ -7045,37 +7231,9 @@ void check_nic_amo(size_t size, void* object, mem_region_t* remote_mr) {
  * increased transaction rate.
  */
 
-// Per thread information about non-fetching AMO buffers
-typedef struct amo_nf_buff_thread_info_t {
-  int                               vi;
-  spinlock                          lock;
-  chpl_bool                         inited;
-  uint64_t                          opnd1_v[MAX_CHAINED_AMO_LEN];
-  c_nodeid_t                        locale_v[MAX_CHAINED_AMO_LEN];
-  void*                             object_v[MAX_CHAINED_AMO_LEN];
-  size_t                            size_v[MAX_CHAINED_AMO_LEN];
-  gni_fma_cmd_type_t                cmd_v[MAX_CHAINED_AMO_LEN];
-  mem_region_t*                     remote_mr_v[MAX_CHAINED_AMO_LEN];
-  struct amo_nf_buff_thread_info_t* next;
-} amo_nf_buff_thread_info_t;
-
-// Contains linked list of all thread private AMO buffer infos (so we can flush
-// all of them) and a lock to protect access to the list
-typedef struct {
-  amo_nf_buff_thread_info_t* list;
-  rwlock                     lock;
-  pthread_key_t              destructor_key;
-} amo_nf_buff_global_info_t;
-
-static __thread amo_nf_buff_thread_info_t amo_nf_buff_thread_info;
-
-static amo_nf_buff_global_info_t amo_nf_buff_global_info;
-
-// Flush buffered atomic operations for the specified thread and reset the
-// counter. Should be called with info lock acquired
-static
-inline
-void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
+// Flush buffered AMOs for the specified task info and reset the counter.
+static inline
+void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
   if (info->vi > 0) {
     do_nic_amo_nf_V(info->vi, info->opnd1_v, info->locale_v, info->object_v,
                     info->size_v, info->cmd_v, info->remote_mr_v);
@@ -7083,115 +7241,18 @@ void amo_nf_buff_thread_info_flush(amo_nf_buff_thread_info_t* info) {
   }
 }
 
-static
-void amo_nf_buff_thread_info_init(amo_nf_buff_thread_info_t* info) {
-  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-  // need to recheck now that we have to lock
-  if (!info->inited) {
-
-    spinlock_init(&info->lock);
-    info->vi = 0;
-
-    // add thread to linked list
-    info->next = amo_nf_buff_global_info.list;
-    amo_nf_buff_global_info.list = info;
-
-    // dummy key binding needed so key destructor is called
-    pthread_setspecific(amo_nf_buff_global_info.destructor_key, info);
-
-    info->inited = true;
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-}
-
-static
-void amo_nf_buff_thread_info_destroy(void* p) {
-  amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-
-  // remove the thread from the linked list
-  rwlock_writer_lock(&amo_nf_buff_global_info.lock);
-  amo_nf_buff_thread_info_t* global_info = amo_nf_buff_global_info.list;
-  if (info == global_info) {
-    amo_nf_buff_global_info.list = info->next;
-  } else {
-    while (global_info != NULL) {
-      if (info == global_info->next) {
-        global_info->next = info->next;
-        break;
-      }
-      global_info = global_info->next;
-    }
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-
-  // flush any pending ops
-  spinlock_lock(&info->lock);
-  amo_nf_buff_thread_info_flush(info);
-  spinlock_unlock(&info->lock);
-  spinlock_destroy(&info->lock);
-}
-
-static
-void nic_amo_buff_init(void) {
-  amo_nf_buff_global_info.list = NULL;
-  rwlock_init(&amo_nf_buff_global_info.lock);
-  pthread_key_create(&amo_nf_buff_global_info.destructor_key, amo_nf_buff_thread_info_destroy);
-}
-
-// Flush buffered atomic operations for all threads
-static
-inline
-void nic_amo_nf_buff_flush(void) {
-  amo_nf_buff_thread_info_t* info;
-
-  rwlock_reader_lock(&amo_nf_buff_global_info.lock);
-  info = amo_nf_buff_global_info.list;
-  while (info != NULL) {
-    spinlock_lock(&info->lock);
-    amo_nf_buff_thread_info_flush(info);
-    spinlock_unlock(&info->lock);
-    info = info->next;
-  }
-  rwlock_unlock(&amo_nf_buff_global_info.lock);
-}
-
-// Flush buffered atomic operations for this task
-static
-inline
-void nic_amo_nf_buff_task_flush(void) {
-  if (chpl_task_canMigrateThreads()) {
-    nic_amo_nf_buff_flush();
-  } else {
-    amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-    // Safe to check inited/vi outside the lock because no other thread can be
-    // modifying them, but concurrent flushing from other threads is possible.
-    if (info->inited && info->vi > 0) {
-      spinlock_lock(&info->lock);
-      amo_nf_buff_thread_info_flush(info);
-      spinlock_unlock(&info->lock);
-    }
-  }
-}
-
-// Append to thread local buffers of operations and flush if full
-static
-inline
+// Append to task local buffers of operations and flush if full
+static inline
 void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
                         void* object, size_t size,
                         gni_fma_cmd_type_t cmd,
                         mem_region_t* remote_mr)
 {
-  amo_nf_buff_thread_info_t* info = &amo_nf_buff_thread_info;
-
-  if (!info->inited) {
-    amo_nf_buff_thread_info_init(info);
+  amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff);
+  if (info == NULL) {
+    do_nic_amo_nf(opnd1, locale, object, size, cmd, remote_mr);
+    return;
   }
-
-  check_nic_amo(size, object, remote_mr);
-  PERFSTATS_INC(amo_cnt);
-
-  // grab lock for this thread
-  spinlock_lock(&info->lock);
 
   int vi = info->vi;
   // append arguments to buffers
@@ -7206,11 +7267,9 @@ void do_nic_amo_nf_buff(void* opnd1, c_nodeid_t locale,
 
   // flush if buffers are full
   if (info->vi == MAX_CHAINED_AMO_LEN) {
-    amo_nf_buff_thread_info_flush(info);
+    amo_nf_buff_task_info_flush(info);
   }
 
-  // release lock for this thread
-  spinlock_unlock(&info->lock);
 }
 /*** END OF NON-FETCHING BUFFERED ATOMIC OPERATIONS ***/
 
@@ -7371,7 +7430,8 @@ void amo_add_real64_cpu_cmpxchg(void* result, void* object, void* operand)
 
 void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t* arg, size_t arg_size)
+                          chpl_comm_on_bundle_t* arg, size_t arg_size,
+                          int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
@@ -7383,11 +7443,11 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("", locale);
+  chpl_comm_diags_verbose_executeOn("", locale, ln, fn);
   chpl_comm_diags_incr(execute_on);
 
   PERFSTATS_INC(fork_call_cnt);
@@ -7397,7 +7457,8 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t* arg, size_t arg_size)
+                             chpl_comm_on_bundle_t* arg, size_t arg_size,
+                             int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
@@ -7409,11 +7470,11 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("non-blocking", locale);
+  chpl_comm_diags_verbose_executeOn("non-blocking", locale, ln, fn);
   chpl_comm_diags_incr(execute_on_nb);
 
   PERFSTATS_INC(fork_call_nb_cnt);
@@ -7423,7 +7484,8 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
 
 void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t* arg, size_t arg_size)
+                               chpl_comm_on_bundle_t* arg, size_t arg_size,
+                               int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
@@ -7435,11 +7497,11 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size}};
+         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_executeOn("fast", locale);
+  chpl_comm_diags_verbose_executeOn("fast", locale, ln, fn);
   chpl_comm_diags_incr(execute_on_fast);
 
   //
@@ -8117,6 +8179,16 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   atomic_bool post_done;
   uint64_t iters = 0;
 
+  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
+  // the lifetime of short-lived tasks.
+  if (do_yield) {
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (prvData != NULL && prvData->num_fma < 100) {
+      prvData->num_fma++;
+      do_yield = false;
+    }
+  }
+
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
 
@@ -8301,11 +8373,6 @@ void local_yield(void)
 }
 
 
-void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
-{
-}
-
-
 void chpl_comm_statsStartHere(void)
 {
 #define _PSZM(psv) PERFSTATS_STZ(psv);
@@ -8329,7 +8396,7 @@ void chpl_comm_statsReport(chpl_bool sum_over_locales)
     sum = chpl_comm_pstats;
     for (int li = 0; li < chpl_numNodes; li++) {
       if (li != chpl_nodeID) {
-        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
+        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), CHPL_COMM_UNKNOWN_ID, 0, -1);
 #define _PSV_SUM(psv) _PSV_ADD_FUNC(&sum.psv, _PSV_LD_FUNC(&ps.psv));
         PERFSTATS_DO_ALL(_PSV_SUM);
 #undef _PSV_SUM
@@ -8339,6 +8406,8 @@ void chpl_comm_statsReport(chpl_bool sum_over_locales)
   }
   else
     _psv_print(chpl_nodeID, &chpl_comm_pstats);
+#else
+  chpl_warning("ugni was not built with support for perfstats reporting", 0, 0);
 #endif
 }
 
@@ -8370,6 +8439,7 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
   else
     printf("comm perfstats on locale %d (%.*s)\n", li,
            (int) buf_cnt - 2, buf);
+  fflush(stdout);
 
 #undef _PSV_PRINT
 }

@@ -9,7 +9,7 @@ class Foo {
   }
 }
 
-var foo: borrowed Foo(string);
+var foo: borrowed Foo(string)?;
 foo = new borrowed Foo("blah");
 writeln(foo.type: string);
 writeln(foo);

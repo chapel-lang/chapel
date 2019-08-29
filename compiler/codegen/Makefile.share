@@ -27,6 +27,7 @@ CODEGEN_SRCS =                                          \
                WhileDoStmt.cpp                          \
                alist.cpp                                \
                library.cpp                              \
+               mli.cpp                                  \
                stmt.cpp                                 \
                symbol.cpp                               \
                type.cpp

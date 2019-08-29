@@ -1,1 +1,1 @@
--M SSCA2_Modules SSCA2_Modules/SSCA2_kernels.chpl SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl -sBUILD_TORUS_VERSIONS=false -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=true --no-warnings -sDELETE_KERNEL4_DS=false
+-M SSCA2_Modules SSCA2_Modules/SSCA2_kernels.chpl SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl -sBUILD_TORUS_VERSIONS=false -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=true -sDELETE_KERNEL4_DS=false

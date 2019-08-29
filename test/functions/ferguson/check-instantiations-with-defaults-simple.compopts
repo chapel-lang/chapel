@@ -1,0 +1,6 @@
+-scase=1 # check-instantiations-with-defaults-simple.1.good
+-scase=2 # check-instantiations-with-defaults-simple.2.good
+-scase=3 # check-instantiations-with-defaults-simple.3.good
+-scase=4 # check-instantiations-with-defaults-simple.4.good
+-scase=5 # check-instantiations-with-defaults-simple.5.good
+-scase=6 # check-instantiations-with-defaults-simple.6.good

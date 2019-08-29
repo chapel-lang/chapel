@@ -7,8 +7,8 @@
 
 var table : [1..128] uint(8);
 
-const newLine     = ascii("\n");
-const greaterThan = ascii(">");
+const newLine     = "\n".toByte();
+const greaterThan = ">".toByte();
 
 proc main(args: [] string) {
   var inFile = openfd(0);
@@ -16,7 +16,7 @@ proc main(args: [] string) {
   var data : [1..fileLen] uint(8);
   var r = inFile.reader(locking=false);
 
-  const pairs = [c in "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n"] ascii(c);
+  const pairs = [c in "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".bytes()] c;
 
   // initialize complement table
   for i in 1..pairs.size by 2 {

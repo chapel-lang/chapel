@@ -1,9 +1,0 @@
-
-[brick]
-name = "twoZero"
-version = "0.1.0"
-chplVersion = "2.0"
-author = "foo"
-source = "foo"
-
-[dependencies]

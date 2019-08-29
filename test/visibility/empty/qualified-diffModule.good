@@ -1,2 +1,3 @@
 qualified-diffModule.chpl:11: In function 'main':
 qualified-diffModule.chpl:13: error: unresolved call 'Foo.secondary()'
+qualified-diffModule.chpl:13: note: because no functions named secondary found in scope

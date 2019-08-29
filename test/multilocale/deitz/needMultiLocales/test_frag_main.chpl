@@ -30,18 +30,18 @@ proc fragmentedMain() {
 
 class node {
   var data: int;
-  var next: unmanaged node;
+  var next: unmanaged node?;
 }
 
 class list {
-  var head, tail: unmanaged node;
+  var head, tail: unmanaged node?;
   var lock$: sync bool;
   var signal$: sync bool;
 }
 
 use PrivateDist;
 
-var buffer: [PrivateSpace] [0..numLocales-1] unmanaged list;
+var buffer: [PrivateSpace] [0..numLocales-1] unmanaged list?;
 forall p in PrivateSpace do
   forall l in LocaleSpace do
     buffer[p][l] = new unmanaged list();

@@ -21,6 +21,8 @@ use BlockDist;
 use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
+use ChapelLocks;
+use ChapelDebugPrint;
 
 //
 // These flags are used to output debug information and run extra
@@ -126,7 +128,7 @@ class AccumStencilArr: BaseRectangularArr {
   var dom: unmanaged AccumStencilDom(rank, idxType, stridable, ignoreFluff);
   var locArr: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable);
   pragma "local field"
-  var myLocArr: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -146,7 +148,7 @@ class LocAccumStencilArr {
   type idxType;
   param stridable: bool;
   const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
@@ -267,7 +269,7 @@ proc AccumStencil.dsiClone() {
                    dataParMinGranularity, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
 }
 
-proc AccumStencil.dsiDestroyDist() {
+override proc AccumStencil.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
@@ -285,7 +287,7 @@ proc AccumStencil.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
+override proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
                                   param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("AccumStencil domain index type does not match distribution's");
@@ -488,7 +490,7 @@ proc LocAccumStencil.init(param rank: int,
   }
 }
 
-proc AccumStencilDom.dsiMyDist() return dist;
+override proc AccumStencilDom.dsiMyDist() return dist;
 
 proc AccumStencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -728,7 +730,7 @@ proc AccumStencilDom.setup() {
   }
 }
 
-proc AccumStencilDom.dsiDestroyDom() {
+override proc AccumStencilDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
     on locDoms(localeIdx) do
       delete locDoms(localeIdx);
@@ -752,11 +754,11 @@ proc AccumStencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
     if doRADOpt then
-      writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD.RAD);
+      writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD!.RAD);
   }
 }
 
-proc AccumStencilArr.dsiGetBaseDom() return dom;
+override proc AccumStencilArr.dsiGetBaseDom() return dom;
 
 //
 // NOTE: Each locale's myElems array must be initialized prior to setting up
@@ -774,7 +776,7 @@ proc AccumStencilArr.setupRADOpt() {
         myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
-            myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+            myLocArr.locRAD!.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
           }
         }
       }
@@ -796,7 +798,7 @@ proc AccumStencilArr.setup() {
   if doRADOpt && disableAccumStencilLazyRAD then setupRADOpt();
 }
 
-proc AccumStencilArr.dsiDestroyArr() {
+override proc AccumStencilArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       if !ignoreFluff then
@@ -813,7 +815,7 @@ proc AccumStencilArr.fluff ref {
 
 
 inline proc AccumStencilArr.dsiLocalAccess(i: rank*idxType) ref {
-  return myLocArr.this(i);
+  return myLocArr!.this(i);
 }
 
 //
@@ -829,13 +831,14 @@ proc AccumStencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
   var i = idx;
   local {
     if myLocArr != nil {
+      const locArr = myLocArr!;
       if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
-        if myLocArr.locDom.contains(i) then return myLocArr.this(i);
+        if locArr.locDom.contains(i) then return locArr.this(i);
       } else {
         // A read: return from fluff if possible
         // If there is no fluff, then myFluff == myBlock
-        if myLocArr.locDom.myFluff.contains(i) then return myLocArr.this(i);
+        if locArr.locDom.myFluff.contains(i) then return locArr.this(i);
       }
     }
   }
@@ -847,6 +850,7 @@ proc AccumStencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {
     if myLocArr {
+      const mArr = myLocArr!;
       if boundsChecking {
         if !dom.wholeFluff.contains(i) {
           halt("array index out of bounds: ", i);
@@ -854,25 +858,25 @@ proc AccumStencilArr.nonLocalAccess(i: rank*idxType) ref {
       }
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableAccumStencilLazyRAD {
-        if myLocArr.locRAD == nil {
-          myLocArr.lockLocRAD();
-          if myLocArr.locRAD == nil {
+        if mArr.locRAD == nil {
+          mArr.lockLocRAD();
+          if mArr.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
-            myLocArr.locRAD = tempLocRAD;
+            mArr.locRAD = tempLocRAD;
           }
-          myLocArr.unlockLocRAD();
+          mArr.unlockLocRAD();
         }
-        if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr.locRAD.lockRAD(rlocIdx);
-          if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
-            myLocArr.locRAD.RAD(rlocIdx) =
-              locArr(rlocIdx).myElems._value.dsiGetRAD();
+        var mRAD = mArr.locRAD!;
+        if mRAD.RAD(rlocIdx).blk == SENTINEL {
+          mRAD.lockRAD(rlocIdx);
+          if mRAD.RAD(rlocIdx).blk == SENTINEL {
+            mRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
           }
-          myLocArr.locRAD.unlockRAD(rlocIdx);
+          mRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD!;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedData != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(i);
@@ -978,7 +982,7 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
     // that we can use the local block below
     //
     if arrSection.locale.id != here.id then
-      arrSection = myLocArr;
+      arrSection = myLocArr!;
 
     //
     // Slicing arrSection.myElems will require reference counts to be updated.
@@ -1230,8 +1234,8 @@ proc AccumStencilArr.dsiNoFluffView() {
   var tempDist = new unmanaged AccumStencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
-  pragma "no auto destroy" var newDist = _newDistribution(tempDist);
-  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable, dom.whole.dims()));
+  pragma "no auto destroy" var newDist = new _distribution(tempDist);
+  pragma "no auto destroy" var tempDom = new _domain(newDist, rank, idxType, dom.stridable, dom.whole.dims());
   newDist._value.add_dom(tempDom._value);
 
   var newDom = tempDom._value;
@@ -1398,7 +1402,7 @@ proc AccumStencilArr.dsiUpdateFluff() {
   }
 }
 
-proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, BoundedRangeType.bounded, stridable)) {
+override proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, BoundedRangeType.bounded, stridable)) {
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
@@ -1413,7 +1417,7 @@ proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, BoundedRangeType
 }
 
 // Call this *after* the domain has been reallocated
-proc AccumStencilArr.dsiPostReallocate() {
+override proc AccumStencilArr.dsiPostReallocate() {
   if doRADOpt then setupRADOpt();
 }
 
@@ -1552,7 +1556,7 @@ proc AccumStencilArr.dsiLocalSubdomain(loc: locale) {
   if loc != here then
     unimplementedFeatureHalt("AccumStencil", "remote subdomain queries");
 
-  return myLocArr.locDom.myBlock;
+  return myLocArr!.locDom.myBlock;
 }
 proc AccumStencilDom.dsiLocalSubdomain(loc: locale) {
   if loc != here then

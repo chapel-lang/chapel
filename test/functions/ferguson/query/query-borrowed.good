@@ -1,10 +1,10 @@
-g OtherClass(int(64))
+g borrowed OtherClass(int(64))
 h int(64)
-i MyClass(OtherClass(int(64)))
-j MyClass(OtherClass(int(64)))
-k MyClass(OtherClass(int(64)))
-ll borrowed MyClass MyClass(OtherClass(int(64)))
-ll generic Concrete
+i borrowed MyClass(OtherClass(int(64)))
+j borrowed MyClass(OtherClass(int(64)))
+k borrowed MyClass(OtherClass(int(64)))
+ll borrowed MyClass borrowed MyClass(OtherClass(int(64)))
+ll generic borrowed Concrete
 m borrowed MyClass
 m object
 n borrowed MyClass

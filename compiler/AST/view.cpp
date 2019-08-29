@@ -27,6 +27,7 @@
 #include "AstDumpToNode.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -34,7 +35,6 @@
 #include "iterator.h"
 #include "log.h"
 #include "LoopExpr.h"
-#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -207,6 +207,10 @@ list_line(Expr* expr, BaseAST* parentAst) {
     if (cond->condExpr == expr)
       return false;
   }
+  if (GotoStmt* gts = toGotoStmt(parentAst)) {
+    if (gts->label == expr)
+      return false;
+  }
   if (Expr* pExpr = toExpr(parentAst))
     if (pExpr->isStmt() && !isUseStmt(pExpr))
       return true;
@@ -231,14 +235,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     if (const char* expl = forall_explanation_start(ast, parentAst))
       printf("%s", expl);
     if (GotoStmt* e = toGotoStmt(ast)) {
-      printf("goto ");
-      if (SymExpr* label = toSymExpr(e->label)) {
-        if (label->symbol() != gNil) {
-          list_ast(e->label, ast, indent+1);
-        }
-      } else {
-        list_ast(e->label, ast, indent+1);
-      }
+      printf("goto %s ", gotoTagToString(e->gotoTag));
     } else if (BlockStmt* block = toBlockStmt(ast)) {
       block_explain = block_explanation(ast, parentAst);
       const char* block_kind = ast->astTagAsString();
@@ -471,10 +468,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
         if (expr == fn->where)
           printf(" where");
 
-    if (GotoStmt *gs= toGotoStmt(ast)) {
-      printf( " ");
-      view_ast(gs->label, number, mark, indent+1);
-    }
+    if (GotoStmt *gs= toGotoStmt(ast))
+      printf(" %s", gotoTagToString(gs->gotoTag));
 
     if (CallExpr* call = toCallExpr(expr))
       if (call->primitive)
@@ -940,11 +935,16 @@ void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
       countNonNull++;
       if (!strcmp(fn->name, name)) {
         count++;
-        printf("  %d  %s\n", fn->id, debugLoc(fn));
+        printf("  %d  %c%c  %s\n", fn->id,
+               // "g"eneric, "r"esolved, "G"eneric+resolved, " " - neither
+               fn->isResolved() ? (fn->hasFlag(FLAG_GENERIC) ? 'G' : 'r') :
+                                  (fn->hasFlag(FLAG_GENERIC) ? 'g' : ' ') ,
+               fn->inTree() ? ' ' : '-',
+               debugLoc(fn));
       }
     }
   }
-  printf("  %d function(s) of %d\n", count, countNonNull);
+  printf("  = %d function(s) of %d\n", count, countNonNull);
 }
 
 //
@@ -1064,7 +1064,7 @@ static void whocalls(int id, Symbol* sym) {
     }
   }
 
-  printf("  %d of %d calls", callMatch, callAll);
+  printf("  = %d of %d calls", callMatch, callAll);
   if (callNonTreeMatch) printf(", also %d not in tree", callNonTreeMatch);
   printf(".  %d of %d for-loops", forMatch+fItMatch, forAll+fItAll);
   int forNontree = forNonTreeMatch + fItNonTreeMatch;

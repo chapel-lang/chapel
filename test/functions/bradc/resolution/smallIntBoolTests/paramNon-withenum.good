@@ -1,17 +1,7 @@
 paramNon-withenum.chpl:64: error: unresolved call 'plus(mybool, 4)'
-paramNon-withenum.chpl:17: note: candidates are: plus(x: uint(64), param y: int(64))
-paramNon-withenum.chpl:22: note:                 plus(param x: int(64), y: uint(64))
-paramNon-withenum.chpl:27: note:                 plus(x: int(64), param y: int(64))
-paramNon-withenum.chpl:32: note:                 plus(param x: int(64), y: int(64))
+paramNon-withenum.chpl:17: note: this candidate did not match: plus(x: uint(64), param y: int(64))
+paramNon-withenum.chpl:64: note: because call actual argument #1 with type mybool
+paramNon-withenum.chpl:17: note: is passed to formal 'x: uint(64)'
+paramNon-withenum.chpl:27: note: candidates are: plus(x: int(64), param y: int(64))
 paramNon-withenum.chpl:39: note:                 plus(x: uint(64), y: int(64))
-paramNon-withenum.chpl:44: note:                 plus(x: int(64), y: uint(64))
-paramNon-withenum.chpl:1: note:                 plus(x: int(8), y: int(8))
-paramNon-withenum.chpl:1: note:                 plus(x: int(16), y: int(16))
-paramNon-withenum.chpl:1: note:                 plus(x: int(32), y: int(32))
-paramNon-withenum.chpl:1: note:                 plus(x: int(64), y: int(64))
-paramNon-withenum.chpl:6: note:                 plus(x: uint(8), y: uint(8))
-paramNon-withenum.chpl:6: note:                 plus(x: uint(16), y: uint(16))
-paramNon-withenum.chpl:6: note:                 plus(x: uint(32), y: uint(32))
-paramNon-withenum.chpl:6: note:                 plus(x: uint(64), y: uint(64))
-paramNon-withenum.chpl:11: note:                 plus(x: real(32), y: real(32))
-paramNon-withenum.chpl:11: note:                 plus(x: real(64), y: real(64))
+note: and 13 other candidates, use --print-all-candidates to see them

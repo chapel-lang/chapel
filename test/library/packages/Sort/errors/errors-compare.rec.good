@@ -1,0 +1,2 @@
+errors-compare.chpl:9: In function 'main':
+errors-compare.chpl:17: error: The compare method in rec must return a numeric type when used with int(64) elements

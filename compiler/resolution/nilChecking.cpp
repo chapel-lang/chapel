@@ -22,12 +22,12 @@
 #include "AstVisitorTraverse.h"
 #include "bb.h"
 #include "bitVec.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "loopDetails.h"
-#include "UnmanagedClassType.h"
 #include "stlUtil.h"
 #include "symbol.h"
 #include "view.h"
@@ -68,9 +68,11 @@ typedef enum {
 
 struct AliasLocation {
   AliasType type;
-  // MUST_ALIAS_ALLOCATED -> CallExpr
+  // MUST_ALIAS_ALLOCATED -> CallExpr for the allocation
+  //                         or condExpr of CondStmt establishing non-nil-ness
   // MUST_ALIAS_REFVAR -> ArgSymbol or VarSymbol being referred to
-  // MUST_ALIAS_NIL -> a reason it is nil
+  // MUST_ALIAS_NIL -> a reason it is nil ex. assignment from nil
+  //                   or condExpr of CondStmt establishing nil-ness
   BaseAST* location;
   AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
 };
@@ -207,7 +209,7 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
       // Note that .borrow is available on borrows and unmanaged.
       retval = false;
 
-    } else if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
+    } else if (AggregateType* ct = toAggregateType(fn->_this->getValType())) {
       if (fn->numFormals()             >  0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClassLike(ct)) {
@@ -413,7 +415,7 @@ static void checkCall(
     rhsExpr = call->get(2);
     moveLike = true;
     userCall = toCallExpr(rhsExpr);
-  } else if (call->isNamedAstr(astrSequals)) {
+  } else if (call->isNamedAstr(astrSassign)) {
     initSe = toSymExpr(call->get(1));
     lhsSym = initSe->symbol();
     rhsExpr = call->get(2);
@@ -609,6 +611,81 @@ static void checkCall(
   }
 }
 
+// Is 'firstExpr' the first expr of a conditional branch?
+// If so, set 'parentCond' and 'inThenBranch'.
+static bool atStartOfCondBranch(Expr* firstExpr, BasicBlock* predBB,
+                                CondStmt*& parentCond, bool& inThenBranch) {
+  Expr* curr = firstExpr;
+  do {
+    if (curr->prev != NULL) return false; // not the first expr
+    Expr* parent = curr->parentExpr;
+
+    if (CondStmt* pc = toCondStmt(parent)) {
+      if (curr == pc->thenStmt)
+        { parentCond = pc; inThenBranch = true; return true; }
+      if (curr == pc->elseStmt)
+        { parentCond = pc; inThenBranch = false; return true; }
+      return false;
+    }
+
+    curr = parent;
+  } while (curr != NULL);
+
+  return false;
+}
+
+// If 'expr' is a SymExpr, return the CallExpr that is 'move'-ed into it.
+static Expr* getSingleDefExpr(Expr* expr) {
+  if (SymExpr* SE = toSymExpr(expr))
+   if (SymExpr* seDef = SE->symbol()->getSingleDef())
+    if (CallExpr* move = toCallExpr(seDef->parentExpr))
+     if (move->isPrimitive(PRIM_MOVE))
+      return move->get(2);
+  return NULL;
+}
+
+//
+// If we see this pattern:
+//
+//   move( shouldHandleError, check error( error ) )
+//   if shouldHandleError
+//     { we are here ... }
+//
+// then update 'error' to be "allocated", as it is surely non-nil.
+//
+static void adjustMapForCatchBlock(CondStmt* cond, bool inThenBranch,
+                                   AliasMap& OUT) {
+  // We could heuristically check if cond->condExpr's symbol
+  // is named "shouldHandleError".
+  if (CallExpr* CE = toCallExpr(getSingleDefExpr(cond->condExpr))) {
+    if (CE->isPrimitive(PRIM_CHECK_ERROR)) {
+      if (SymExpr* errorSE = toSymExpr(CE->get(1))) {
+        // Found the pattern.
+        Symbol* errorSym = errorSE->symbol();
+        // In this pattern, errorSym->name is "error".
+        AliasLocation errorAL;
+        errorAL.type = inThenBranch ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_NIL;
+        errorAL.location = cond->condExpr;
+        update(OUT, errorSym, errorAL);
+      }
+    }
+  }
+}
+
+// Update 'OUT' based on being inside a conditional,
+// if 'bb' is the starting BasicBlock of the then- or else- branch.
+static void adjustMapForConditional(BasicBlock* bb, AliasMap& OUT) {
+  if (bb->ins.size() != 1 || bb->exprs.size() == 0)
+    return; // quick check says we are not at start of a cond branch
+
+  CondStmt* parentCond = NULL;
+  bool    inThenBranch = true;
+  if (!atStartOfCondBranch(bb->exprs[0], bb->ins[0], parentCond, inThenBranch))
+    return; // not at start of a cond branch for sure
+
+  adjustMapForCatchBlock(parentCond, inThenBranch, OUT);
+}
+
 static void checkBasicBlock(
     FnSymbol* fn,
     BasicBlock* bb,
@@ -618,6 +695,7 @@ static void checkBasicBlock(
     bool raiseErrors) {
 
   OUT = IN;
+  adjustMapForConditional(bb, OUT);
 
   for_vector(Expr, expr, bb->exprs) {
 

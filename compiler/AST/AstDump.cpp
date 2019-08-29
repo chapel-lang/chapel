@@ -89,6 +89,11 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
 
   if (mFP != 0) {
     fprintf(mFP, "AST dump for %s after pass %s.\n", module->name, passName);
+    fprintf(mFP, "Module use list: ");
+    for_vector(ModuleSymbol, usedMod, module->modUseList) {
+      fprintf(mFP, "%s ", usedMod->name);
+    }
+    fprintf(mFP, "\n");
   }
 
   return (mFP != 0) ? true : false;
@@ -417,18 +422,6 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
   newline();
   write(false, "}", true);
   printBlockID(node);
-}
-
-void AstDump::visitForallIntents(ForallIntents* clause) {
-  newline();
-  write("with (");
-  for (int i = 0; i < clause->numVars(); i++) {
-    if (i > 0) write(false, ",", true);
-    if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
-    write(forallIntentTagDescription(clause->fIntents[i]));
-    clause->fiVars[i]->accept(this);
-  }
-  write(false, ")", true);
 }
 
 
@@ -874,7 +867,7 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
   }
 
   if (sym->hasFlag(FLAG_GENERIC))
-    write(false, "?", false);
+    write(false, "(?)", false);
 
   if (def)
     if (ArgSymbol* arg = toArgSymbol(sym))

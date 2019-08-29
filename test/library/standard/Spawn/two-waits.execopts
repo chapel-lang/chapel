@@ -1,0 +1,6 @@
+--poll=false --pipes=true --buffer=true
+--poll=false --pipes=false --buffer=true
+--poll=false --pipes=false --buffer=false
+--poll=true --pipes=true --buffer=true
+--poll=true --pipes=false --buffer=true
+--poll=true --pipes=false --buffer=false

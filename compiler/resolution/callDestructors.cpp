@@ -22,11 +22,11 @@
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
 #include "errorHandling.h"
+#include "DecoratedClassType.h"
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "lateConstCheck.h"
 #include "lifetime.h"
-#include "UnmanagedClassType.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -688,9 +688,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
       //   copyExpr->replace(new CallExpr(unaliasFn, refVar));
       VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
       CallExpr*  unaliasCall = new CallExpr(unaliasFn, tmpVar);
+      Expr* anchor = copyExpr->getStmtExpr();
 
-      callExpr->insertBefore(new DefExpr(unaliasTemp));
-      callExpr->insertAfter(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
+      // The call needs to be inserted before it is needed but
+      // after any error handling conditional that might be after callExpr.
+      anchor->insertBefore(new DefExpr(unaliasTemp));
+      anchor->insertBefore(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
 
       copyExpr->replace(new SymExpr(unaliasTemp));
     } else {
@@ -1219,6 +1222,8 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 void callDestructors() {
 
   adjustCoforallIndexVariables();
+
+  createIteratorBreakBlocks();
 
   fixupDestructors();
 

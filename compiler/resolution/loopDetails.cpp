@@ -89,11 +89,15 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
       if (ret) return ret;
     }
     if (CondStmt* cond = toCondStmt(e)) {
-      // Look in the else block to find the non-fast-follower
-      // in case it is decided at run-time whether fast
-      // followers can be used.
-      ret = findFollowerForLoop(cond->elseStmt);
-      if (ret) return ret;
+      // Ignore error handling blocks
+      CallExpr* call = toCallExpr(cond->condExpr);
+      if (call == NULL || !call->isPrimitive(PRIM_CHECK_ERROR)) {
+        // Look in the else block to find the non-fast-follower
+        // in case it is decided at run-time whether fast
+        // followers can be used.
+        ret = findFollowerForLoop(cond->elseStmt);
+        if (ret) return ret;
+      }
     }
     e = e->next;
   }
@@ -107,7 +111,7 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
 static Symbol* findPrecedingChplIter(Expr* ref)
 {
   Symbol* chpl_iter = NULL;
-  Expr* e = ref;
+  Expr* e = ref->prev;
   while (e) {
     if (DefExpr* d = toDefExpr(e)) {
       Symbol* var = d->sym;
@@ -115,6 +119,10 @@ static Symbol* findPrecedingChplIter(Expr* ref)
         chpl_iter = var;
         break;
       }
+    } else if (isForallStmt(e)) {
+      // This ForallStmt has its own set of variables.
+      // Don't look at those.
+      break;
     }
     e = e->prev;
   }

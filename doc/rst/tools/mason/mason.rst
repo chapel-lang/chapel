@@ -476,11 +476,21 @@ to install and use any package in the `Spack registry <https://spack.readthedocs
 This interface is analogous to the previous example except when a package is missing, user's can download that package
 through the Spack integration. The following is a workflow of finding, installing, and adding a Spack dependency to a Mason Package.
 
-First, the Spack backend must be installed::
+**Setting up Spack backend**
+
+First, the Spack backend must be installed. Users can have mason install Spack
+or point mason to an existing spack installation.
+
+This command will install Spack into ``$MASON_HOME`` and set it up so that it
+can be used by Mason::
 
   mason external --setup
 
-This command will install Spack and set it up so that it can be used easily through Mason.
+Alternatively, users can set ``$SPACK_ROOT`` to their own spack installation::
+
+  export SPACK_ROOT=/path/to/spack
+
+**Searching Spack packages**
 
 Let's use ``openSSL`` as an example since we used it in the system example. ``mason external search openSSL``
 will search for the package and produce the following output::
@@ -535,6 +545,7 @@ To find out more about a package, use ``mason external info <package>`` as follo
    None
 
 
+**Installing Spack packages**
 
 The correct package has been found, but not yet installed. Let's fix that.
 We know that we want the preferred version which is ``1.0.2k``.
@@ -642,6 +653,8 @@ As shown, Mason not only goes and gets the package specified, but also all of th
 of the package specified. Packages are installed into unique directories such that it is impossible for package namespaces to collide.
 Each dependency is downloaded distinctly for a package so no previous installs will be broken by installing new packages.
 This way, multiple versions and builds of a package can be installed on a system and used without breaking anything.
+
+**Specifying Spack packages in the manifest file**
 
 Now that the correct package is installed, add it to the ``Mason.toml`` as follows::
 

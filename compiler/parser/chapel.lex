@@ -64,7 +64,8 @@
 static int  processIdentifier(yyscan_t scanner);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
-static int  processMultilineStringLiteral(yyscan_t scanner, const char* q);
+static int  processMultilineStringLiteral(yyscan_t scanner, const char* q,
+                                          int type);
 
 static int  processExtern(yyscan_t scanner);
 static int  processExternCode(yyscan_t scanner);
@@ -125,6 +126,7 @@ bool             return processToken(yyscanner, TBOOL);
 borrowed         return processToken(yyscanner, TBORROWED);
 break            return processToken(yyscanner, TBREAK);
 by               return processToken(yyscanner, TBY);
+bytes            return processToken(yyscanner, TBYTES);
 catch            return processToken(yyscanner, TCATCH);
 class            return processToken(yyscanner, TCLASS);
 cobegin          return processToken(yyscanner, TCOBEGIN);
@@ -165,6 +167,8 @@ module           return processToken(yyscanner, TMODULE);
 new              return processToken(yyscanner, TNEW);
 nil              return processToken(yyscanner, TNIL);
 noinit           return processToken(yyscanner, TNOINIT);
+none             return processToken(yyscanner, TNONE);
+nothing          return processToken(yyscanner, TNOTHING);
 on               return processToken(yyscanner, TON);
 only             return processToken(yyscanner, TONLY);
 otherwise        return processToken(yyscanner, TOTHERWISE);
@@ -206,6 +210,7 @@ union            return processToken(yyscanner, TUNION);
 unmanaged        return processToken(yyscanner, TUNMANAGED);
 use              return processToken(yyscanner, TUSE);
 var              return processToken(yyscanner, TVAR);
+void             return processToken(yyscanner, TVOID);
 when             return processToken(yyscanner, TWHEN);
 where            return processToken(yyscanner, TWHERE);
 while            return processToken(yyscanner, TWHILE);
@@ -231,6 +236,8 @@ zip              return processToken(yyscanner, TZIP);
 ">>="            return processToken(yyscanner, TASSIGNSR);
 "reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
+"init="          return processToken(yyscanner, TINITEQUALS);
+
 "=>"             return processToken(yyscanner, TALIAS);
 
 "<=>"            return processToken(yyscanner, TSWAP);
@@ -241,7 +248,7 @@ zip              return processToken(yyscanner, TZIP);
 
 "&&"             return processToken(yyscanner, TAND);
 "||"             return processToken(yyscanner, TOR);
-"!"              return processToken(yyscanner, TNOT);
+"!"              return processToken(yyscanner, TBANG);
 
 "&"              return processToken(yyscanner, TBAND);
 "|"              return processToken(yyscanner, TBOR);
@@ -289,10 +296,14 @@ zip              return processToken(yyscanner, TZIP);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
 {ident}          return processIdentifier(yyscanner);
-"\"\"\""         return processMultilineStringLiteral(yyscanner, "\"");
-"'''"            return processMultilineStringLiteral(yyscanner, "'");
+"\"\"\""         return processMultilineStringLiteral(yyscanner, "\"", STRINGLITERAL);
+"'''"            return processMultilineStringLiteral(yyscanner, "'", STRINGLITERAL);
+"b\"\"\""        return processMultilineStringLiteral(yyscanner, "\"", BYTESLITERAL);
+"b'''"           return processMultilineStringLiteral(yyscanner, "'", BYTESLITERAL);
 "\""             return processStringLiteral(yyscanner, "\"", STRINGLITERAL);
 "\'"             return processStringLiteral(yyscanner, "\'", STRINGLITERAL);
+"b\""            return processStringLiteral(yyscanner, "\"", BYTESLITERAL);
+"b\'"            return processStringLiteral(yyscanner, "\'", BYTESLITERAL);
 "c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
 "c\'"            return processStringLiteral(yyscanner, "\'", CSTRINGLITERAL);
 "//"             return processSingleLineComment(yyscanner);
@@ -438,7 +449,8 @@ static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   return type;
 }
 
-static int processMultilineStringLiteral(yyscan_t scanner, const char* q) {
+static int processMultilineStringLiteral(yyscan_t scanner, const char* q,
+                                         int type) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE* yyLval = yyget_lval(scanner);
   yyLval->pch = eatMultilineStringLiteral(scanner, q);
@@ -450,7 +462,7 @@ static int processMultilineStringLiteral(yyscan_t scanner, const char* q) {
     captureString.append(yyLval->pch);
     captureString.append(yyText);
   }
-  return STRINGLITERAL;
+  return type;
 }
 
 static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {

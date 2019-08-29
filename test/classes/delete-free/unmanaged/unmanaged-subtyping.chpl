@@ -4,10 +4,10 @@ class MyDomain : Domain {
   var x;
 }
 class Array {
-  proc foo(arg:unmanaged Domain) {
+  proc foo(arg: unmanaged Domain) {
     writeln("In parent foo");
   }
-  proc bar(arg:borrowed Domain) {
+  proc bar(arg: borrowed Domain) {
     writeln("In parent bar");
   }
 }
@@ -15,7 +15,7 @@ class MyArray : Array {
   var x;
 }
 
-proc baz(arg:borrowed Domain) {
+proc baz(arg: borrowed Domain) {
   writeln("In bar arg:Domain");
 }
 
@@ -25,5 +25,7 @@ proc test() {
   arr.foo(dom);
   arr.bar(dom);
   baz(dom);
+  delete dom;
+  delete arr;
 }
 test();

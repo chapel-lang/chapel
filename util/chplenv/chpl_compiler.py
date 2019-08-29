@@ -9,6 +9,22 @@ import chpl_platform, overrides
 from utils import error, memoize
 
 
+#
+# If we can't find a file $CHPL_HOME/make/Makefile.<compiler_val>,
+# that suggests that this is a compiler that we're not familiar with.
+# In practice, this will cause our Makefiles to use defaults like CC
+# and CXX to compile things, for better or worse.
+#
+@memoize
+def validate(compiler_val):
+    import chpl_home_utils
+    chpl_home = chpl_home_utils.get_chpl_home()
+    comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
+    if not os.path.isfile(comp_makefile):
+        sys.stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler_val))
+
+
+
 @memoize
 def get(flag='host', llvm_mode='default'):
 
@@ -39,13 +55,14 @@ def get(flag='host', llvm_mode='default'):
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if compiler_val:
+        validate(compiler_val)
         return compiler_val
 
     platform_val = chpl_platform.get(flag)
     # The cray platforms are a special case in that we want to "cross-compile"
     # by default. (the compiler is different between host and target, but the
     # platform is the same)
-    if platform_val.startswith('cray-x'):
+    if platform_val.startswith('cray-x') or platform_val == 'cray-shasta':
         if flag == 'host':
             compiler_val = 'gnu'
         else:
@@ -74,6 +91,8 @@ def get(flag='host', llvm_mode='default'):
                 compiler_val = 'gnu'
         else:
             compiler_val = 'gnu'
+
+    validate(compiler_val)
     return compiler_val
 
 

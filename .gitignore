@@ -189,14 +189,10 @@ tags
 /test/extern/bradc/externSystem.appendme
 /test/extern/deitz/myfile.dat
 
+/test/interop/fortran/genFortranInterface/lib
+
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
-/test/io/ferguson/asserteof.test.nums
-/test/io/ferguson/ctests/test.bin
-/test/io/ferguson/error.data
-/test/io/ferguson/binary-output.bin
-/test/io/ferguson/test.txt
-/test/io/ferguson/test_file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
 
@@ -206,6 +202,10 @@ tags
 
 /test/library/packages/HDF5/ex_lite1.h5
 /test/library/packages/HDF5/ex_lite3.h5
+/test/library/packages/ZMQ/getLastEndpointHelper
+/test/library/standard/FileSystem/chmod/dir
+/test/library/standard/FileSystem/chmod/file
+/test/library/standard/FileSystem/chmod/chmod_noprivilege.good
 /test/library/standard/FileSystem/copyFile/*.out
 /test/library/standard/FileSystem/fsouza/chdir/destination
 /test/library/standard/FileSystem/fsouza/chown/file.txt
@@ -213,8 +213,6 @@ tags
 /test/library/standard/FileSystem/fsouza/isdir/my_file
 /test/library/standard/FileSystem/fsouza/isfile/my_dir
 /test/library/standard/FileSystem/fsouza/isfile/my_file
-/test/library/standard/FileSystem/lydia/chmod/dir
-/test/library/standard/FileSystem/lydia/chmod/file
 /test/library/standard/FileSystem/lydia/copy/bar.txt
 /test/library/standard/FileSystem/lydia/copyFile/bar.txt
 /test/library/standard/FileSystem/lydia/copyTree/complexDest
@@ -252,6 +250,11 @@ tags
 /test/library/standard/Path/saru/getParentName/parentName.good
 /test/library/standard/Path/saru/getParentName/parentNameErr.good
 /test/library/standard/Path/lydia/realpath/blahblahblah.txt
+/test/library/standard/Path/dlongnecke/normPath/normPath.good
+/test/library/standard/Path/dlongnecke/absPath/absPath.good
+/test/library/standard/Path/dlongnecke/absPath/fileAbsPath.good
+/test/library/standard/Path/relPath/relPath.good
+/test/library/standard/Path/relPath/fileRelPath.good
 /test/library/standard/Spawn/stdout-stderr_real
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good
@@ -302,6 +305,7 @@ tags
 /test/release/examples/primers/reductions
 /test/release/examples/primers/slices
 /test/release/examples/primers/sparse
+/test/release/examples/primers/specialMethods
 /test/release/examples/primers/syncsingle
 /test/release/examples/primers/taskParallel
 /test/release/examples/primers/timers
@@ -313,6 +317,8 @@ tags
 /test/release/examples/primers/chplvis/E2
 /test/release/examples/primers/chplvis/E3
 /test/release/examples/primers/chplvis/E4
+
+/test/release/examples/primers/tempfile.txt
 
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
@@ -410,6 +416,8 @@ tags
 /test/users/franzf/v2/chpl/chapel.hash
 
 /test/variables/bradc/docs/pragmaMultipleVars.doc.txt
+
+/test/visibility/only/test.dat
 
 /test/users/thom/returnGenericLineno/strassen
 

@@ -1,4 +1,5 @@
 
+private use List;
 use MasonUtils;
 use MasonUpdate;
 
@@ -7,7 +8,10 @@ use FileSystem;
 config const toml = "";
 
 proc main() {
-  const args = ["foo", "update", "--no-update"];
+  var args = new list(string);
+  args.append("foo");
+  args.append("update");
+  args.append("--no-update");
 
   UpdateLock(args, toml);
 

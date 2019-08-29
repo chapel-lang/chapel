@@ -24,12 +24,7 @@ module StringCasts {
   // T.parse(string), but we dont support methods on types yet. Ideally they
   // would use a tagged union return val as well.
 
-  //
-  // Type -- Foo.type:string
-  //
-  proc _cast(type t:string, type x)  param : string {
-    return __primitive("typeToString", x);
-  }
+  // SomeType:string or Foo.type:string is handled directly by compiler.
 
   //
   // Bool
@@ -45,7 +40,7 @@ module StringCasts {
 
   proc _cast(type t:chpl_anybool, x: string) throws {
     var str = x.strip();
-    if str.isEmptyString() {
+    if str.isEmpty() {
       throw new owned IllegalArgumentError("bad cast from empty string to bool");
     } else if (str == "true") {
       return true;
@@ -62,7 +57,9 @@ module StringCasts {
   //
   proc _cast(type t:string, x: integral) {
     //TODO: switch to using qio's writef somehow
+    pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
+    pragma "fn synchronization free"
     extern proc strlen(const str: c_string) : size_t;
 
     var isErr: bool;
@@ -85,20 +82,28 @@ module StringCasts {
 
   inline proc _cast(type t:integral, x: string) throws {
     //TODO: switch to using qio's readf somehow
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_int8_t  (x:c_string, ref err: bool) : int(8);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_int16_t (x:c_string, ref err: bool) : int(16);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_int32_t (x:c_string, ref err: bool) : int(32);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_int64_t (x:c_string, ref err: bool) : int(64);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_uint8_t (x:c_string, ref err: bool) : uint(8);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_uint16_t(x:c_string, ref err: bool) : uint(16);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_uint32_t(x:c_string, ref err: bool) : uint(32);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_uint64_t(x:c_string, ref err: bool) : uint(64);
 
@@ -124,7 +129,7 @@ module StringCasts {
         localX = localX[1] + localX[2..].replace("_", "");
     }
 
-    if localX.isEmptyString() then
+    if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
 
     if isIntType(t) {
@@ -155,7 +160,9 @@ module StringCasts {
   // real & imag
   //
   inline proc _real_cast_helper(x: real(64), param isImag: bool) : string {
+    pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
+    pragma "fn synchronization free"
     extern proc strlen(const str: c_string) : size_t;
 
     var csc = real_to_c_string(x:real(64), isImag);
@@ -181,18 +188,36 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
+  inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
+    var len = s.length;
+
+    if s.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
+
+    if len >= 2 && s[2..].find("_") != 0 {
+      // Don't remove a leading underscore in the string number,
+      // but remove the rest.
+      if len > 2 && s[1] == "_" {
+        s = s[1] + s[2..].replace("_", "");
+      } else {
+        s = s.replace("_", "");
+      }
+    }
+  }
+
   inline proc _cast(type t:chpl_anyreal, x: string) throws {
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real64(x: c_string, ref err: bool) : real(64);
 
     var retVal: t;
     var isErr: bool;
-    const localX = x.localize();
+    var localX = x.localize();
 
-    if localX.isEmptyString() then
-      throw new owned IllegalArgumentError("bad cast from empty string to real(" + numBits(t) + ")");
+    _cleanupStringForRealCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -201,23 +226,24 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t):string + ")");
 
     return retVal;
   }
 
   inline proc _cast(type t:chpl_anyimag, x: string) throws {
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag64(x: c_string, ref err: bool) : imag(64);
 
     var retVal: t;
     var isErr: bool;
-    const localX = x.localize();
+    var localX = x.localize();
 
-    if localX.isEmptyString() then
-      throw new owned IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
+    _cleanupStringForRealCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
@@ -226,7 +252,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -259,8 +285,10 @@ module StringCasts {
 
 
   inline proc _cast(type t:chpl_anycomplex, x: string) throws {
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);
+    pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex128(x:c_string, ref err: bool) : complex(128);
 
@@ -268,8 +296,8 @@ module StringCasts {
     var isErr: bool;
     const localX = x.localize();
 
-    if localX.isEmptyString() then
-      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t):string + ")");
 
     select numBits(t) {
       when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
@@ -278,7 +306,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t):string + ")");
 
     return retVal;
   }

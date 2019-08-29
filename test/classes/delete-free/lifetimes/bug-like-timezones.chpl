@@ -7,14 +7,14 @@ class MyClass {
   var x:int;
 }
 
-private const nilTZ = new shared MyClass;
+private const nilTZ : shared MyClass?;
 
 record R {
-  var tz:shared MyClass;
+  var tz:shared MyClass?;
   proc init() {
     this.tz = nilTZ;
   }
-  proc init(tz:shared MyClass) {
+  proc init(in tz:shared MyClass?) {
     this.tz = tz;
   }
 }
@@ -23,11 +23,11 @@ proc makeNilR() {
   return new R(nilTZ);
 }
 
-proc R.replace(tzinfo:shared MyClass = this.tz) {
+proc R.replace(in tzinfo:shared MyClass? = this.tz) {
   return new R(tzinfo);
 }
 
-proc type R.now(tz:shared MyClass = nilTZ) {
+proc type R.now(in tz:shared MyClass? = nilTZ) {
   if tz.borrow() == nil {
     return new R();
   } else {

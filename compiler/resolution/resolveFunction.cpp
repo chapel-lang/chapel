@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -31,7 +32,6 @@
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
-#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "postFold.h"
@@ -57,8 +57,6 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
 static bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType);
-
-static void resolveTypeConstructor(FnSymbol* fn);
 
 
 /************************************* | **************************************
@@ -130,7 +128,8 @@ static void resolveFormals(FnSymbol* fn) {
     }
 
     if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
-      if (formal->type                             != dtString ||
+      if ((formal->type                             != dtString &&
+           formal->type                             != dtBytes) ||
           formal->hasFlag(FLAG_INSTANTIATED_PARAM) == false) {
         updateIfRefFormal(fn, formal);
       }
@@ -280,8 +279,8 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 
   // Adjust compiler-generated record copy-init to take in RHS by ref
   // if it contains a record field marked with FLAG_COPY_MUTATES.
-  } else if (fn->hasFlag(FLAG_DEFAULT_COPY_INIT) &&
-             formal == fn->getFormal(3) &&
+  } else if (fn->hasFlag(FLAG_COPY_INIT) &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED) &&
              recordContainingCopyMutatesField(formal->getValType())) {
     retval = true;
     *needRefIntent = true;
@@ -343,7 +342,7 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          formal->hasFlag(FLAG_TYPE_VARIABLE)   == false        &&
          isAtomicType(formal->type)            == true         &&
 
-         fn->name                              != astrSequals  &&
+         fn->name                              != astrSassign  &&
 
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
@@ -380,7 +379,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   VarSymbol* var = toVarSymbol(se->symbol());
-  if (!var->isParameter()) {
+  if (!var || !var->isParameter()) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   if (var->type == dtString || var->type == dtStringC) {
@@ -485,38 +484,33 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
         markIterator(fn);
       }
 
+      if (needsCapture(fn))
+        convertFieldsOfRecordThis(fn);
+
       insertFormalTemps(fn);
 
       resolveBlockStmt(fn->body);
 
-      if (tryFailure == false) {
-        insertUnrefForArrayOrTupleReturn(fn);
+      insertUnrefForArrayOrTupleReturn(fn);
 
-        Type* yieldedType = NULL;
-        resolveReturnTypeAndYieldedType(fn, &yieldedType);
+      Type* yieldedType = NULL;
+      resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
-        insertAndResolveCasts(fn);
+      insertAndResolveCasts(fn);
 
-        if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
-          protoIteratorClass(fn, yieldedType);
+      if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+        protoIteratorClass(fn, yieldedType);
+      }
 
-        } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-          resolveTypeConstructor(fn);
+      if (fn->isMethod() == true && fn->_this != NULL) {
+        ensureInMethodList(fn);
+      }
 
-        }
-
-        if (fn->isMethod() == true && fn->_this != NULL) {
-          ensureInMethodList(fn);
-        }
-
-        if (forCall != NULL) {
-          resolveAlsoParallelIterators(fn, forCall);
-        }
-
-      } else {
-        fn->removeFlag(FLAG_RESOLVED);
+      if (forCall != NULL) {
+        resolveAlsoParallelIterators(fn, forCall);
       }
     }
+    popInstantiationLimit(fn);
   }
 }
 
@@ -561,13 +555,10 @@ static void markIterator(FnSymbol* fn) {
   }
 
   //
-  // Mark leader and standalone parallel iterators for inlining.
-  // Also stash a pristine copy of the iterator (required by forall intents)
+  // Mark parallel iterators for inlining.
   //
-  if (isLeaderIterator(fn)     == true ||
-      isStandaloneIterator(fn) == true) {
+  if (isParallelIterator(fn)) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
-    stashPristineCopyOfLeaderIter(fn, true);
   }
 }
 
@@ -607,6 +598,21 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
 
   return retval;
+}
+
+// leader or standalone
+bool isParallelIterator(FnSymbol* fn) {
+  if (!fn->isIterator())
+    return false;
+
+  for_formals(formal, fn) {
+    if (formal->type == gLeaderTag->type          &&
+        (paramMap.get(formal) == gLeaderTag    ||
+         paramMap.get(formal) == gStandaloneTag )  )
+      return true;
+  }
+
+  return false;
 }
 
 /************************************* | **************************************
@@ -718,8 +724,7 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
 //
 static
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
-      fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
+  if (fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
       fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
@@ -759,7 +764,7 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
-static AggregateType* makeIteratorClass (FnSymbol* fn);
+static AggregateType* makeIteratorClass(FnSymbol* fn, Type* yieldedType);
 
 static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType);
 
@@ -786,7 +791,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
 
   SET_LINENO(fn);
 
-  AggregateType* iClass  = makeIteratorClass(fn);
+  AggregateType* iClass  = makeIteratorClass(fn, yieldedType);
   AggregateType* iRecord = makeIteratorRecord(fn, yieldedType);
   FnSymbol*      getIter = makeGetIterator(iClass, iRecord);
   IteratorInfo*  ii      = makeIteratorInfo(iClass, iRecord, getIter,
@@ -815,7 +820,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   resolveFunction(getIter);
 }
 
-static AggregateType* makeIteratorClass(FnSymbol* fn) {
+static AggregateType* makeIteratorClass(FnSymbol* fn, Type* yieldedType) {
   AggregateType* retval    = new AggregateType(AGGREGATE_CLASS);
   const char*    className = iteratorClassName(fn);
   TypeSymbol*    sym       = new TypeSymbol(astr("_ic_", className), retval);
@@ -824,6 +829,10 @@ static AggregateType* makeIteratorClass(FnSymbol* fn) {
   sym->addFlag(FLAG_POD);
 
   retval->addRootType();
+
+  VarSymbol* moreField = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
+  retval->fields.insertAtTail(new DefExpr(moreField));
+  // Creating "value" field here is trickier, see the PR message for #12963.
 
   return retval;
 }
@@ -947,69 +956,11 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      resolveDefaultTypeConstructor(AggregateType* at);
-
-static void resolveTypeConstructor(FnSymbol* fn) {
-  AggregateType* at = toAggregateType(fn->retType);
-
-  if (at->scalarPromotionType == NULL &&
-      at->symbol->hasFlag(FLAG_REF) == false) {
-    resolvePromotionType(at);
-  }
-
-  if (developer == false) {
-    fixTypeNames(at);
-  }
-
-  forv_Vec(AggregateType, pt, at->dispatchParents) {
-    if (pt != dtObject) {
-      resolveDefaultTypeConstructor(pt);
-    }
-  }
-
-  for_fields(field, at) {
-    if (AggregateType* fct = toAggregateType(field->type)) {
-      resolveDefaultTypeConstructor(fct);
-    }
-  }
-
-
-  if (at->hasDestructor() == false) {
-    if (at->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(at) == false) {
-      BlockStmt* block = new BlockStmt();
-      VarSymbol* tmp   = newTemp(at);
-      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
-
-      // In case resolveCall drops other stuff into the tree ahead
-      // of the call, we wrap everything in a block for safe removal.
-      block->insertAtHead(call);
-
-      fn->insertAtHead(block);
-      fn->insertAtHead(new DefExpr(tmp));
-
-      resolveCallAndCallee(call);
-
-      at->setDestructor(call->resolvedFunction());
-
-      block->remove();
-
-      tmp->defPoint->remove();
-    }
-  }
-}
-
 void fixTypeNames(AggregateType* at) {
-  const char* typeName = toString(at);
+  const char* typeName = toString(at, false);
 
   if (at->symbol->name != typeName)
     at->symbol->name = typeName;
-}
-
-static void resolveDefaultTypeConstructor(AggregateType* at) {
-  if (at->typeConstructor != NULL) {
-    resolveSignatureAndFunction(at->typeConstructor);
-  }
 }
 
 /************************************* | **************************************
@@ -1076,10 +1027,10 @@ void resolveIfExprType(CondStmt* stmt) {
     } else {
       bool promote = false;
 
-      if (canDispatch(elseType, elseSym, thenType, fn, &promote) &&
+      if (canDispatch(elseType, elseSym, thenType, NULL, fn, &promote) &&
           promote == false) {
         retType = thenType;
-      } else if (canDispatch(thenType, thenSym, elseType, fn, &promote) &&
+      } else if (canDispatch(thenType, thenSym, elseType, NULL, fn, &promote) &&
                  promote == false) {
         retType = elseType;
       }
@@ -1135,7 +1086,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
-  if (isIterator == true) {
+  if (isIterator) {
     // For iterators, the return symbol / return type is void
     // or the iterator record. Here we want to compute the yielded
     // type.
@@ -1185,6 +1136,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
             if (canDispatch(retTypes.v[j],
                             retSymbols.v[j],
                             retTypes.v[i],
+                            NULL,
                             fn,
                             &requireScalarPromotion) == false) {
               best = false;
@@ -1205,7 +1157,17 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
-        retType = dtVoid;
+        if (isIterator) {
+          // This feels like it should be:
+          // retType = dtVoid;
+          //
+          // but that leads to compiler generated assignments of 'void' to
+          // variables, which isn't allowed.  If we fib and claim that it
+          // returns 'nothing', those assignments get removed and all is well.
+          retType = dtNothing;
+        } else {
+          retType = dtVoid;
+        }
       }
     }
 
@@ -1335,9 +1297,10 @@ void insertFormalTemps(FnSymbol* fn) {
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
 
-      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-      }
+      if (formal->hasFlag(FLAG_NO_AUTO_DESTROY))
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
 
       formals2vars.put(formal, tmp);
     }
@@ -1783,6 +1746,11 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 // In the future, it would be nice if this could no-init
                 // a LHS array and then move records into it from the RHS.
+
+                // Tell compiler it shouldn't raise errors connected
+                // to default-initializing to since it is actually
+                // set below.
+                to->addFlag(FLAG_INITIALIZED_LATER);
 
                 CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                               to, fromType);

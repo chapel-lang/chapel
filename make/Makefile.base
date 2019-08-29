@@ -170,7 +170,6 @@ else
 endif
 
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
-include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
@@ -208,6 +207,7 @@ printplatform:
 # use: make print-X to print the value of the variable X
 #
 print-%: ; @echo "$*" is "$($*)"
+printQ-%: ; @echo "$($*)"
 
 
 # OBJ_SUBDIR is used in compiler/

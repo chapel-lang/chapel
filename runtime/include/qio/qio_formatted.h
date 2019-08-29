@@ -425,7 +425,7 @@ qioerr qio_channel_print_imag(const int threadsafe, qio_channel_t* restrict ch, 
 qioerr qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch, void* restrict re_out, void* restrict im_out, size_t len);
 qioerr qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* im_ptr, size_t len);
 
-// These methods read or write UTF-8 characters (code points).
+// These methods read or write UTF-8 characters (codepoints).
 
 #include "utf8-decoder.h"
 
@@ -732,6 +732,8 @@ qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict c
 
 qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
 
+qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
+
 // reads match exactly - skipping whitespace before it if skipwsbefore is set.
 // returns 0 if it matched, or EFORMAT if it did not.
 qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore);
@@ -756,6 +758,10 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
 // like qio_quote_string, but only get length information.
 qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti);
 
+qioerr qio_quote_bytes_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti);
+
+// Prints a bytes according to the style.
+qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
 // Prints a string according to the style.
 qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
 
@@ -787,6 +793,7 @@ enum {
   QIO_CONV_ARG_TYPE_BINARY_COMPLEX,
   QIO_CONV_ARG_TYPE_CHAR,
   QIO_CONV_ARG_TYPE_STRING,
+  QIO_CONV_ARG_TYPE_BINARY_STRING,
   QIO_CONV_ARG_TYPE_REPR,
   QIO_CONV_ARG_TYPE_REGEXP, // argument contains a regexp
   QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL, // literal regexp in string

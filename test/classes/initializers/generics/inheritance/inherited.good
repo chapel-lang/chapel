@@ -1,12 +1,12 @@
-c11.type Child1(int(64),10)
-c12.type Child1(real(64),10)
+c11.type borrowed Child1(int(64),10)?
+c12.type borrowed Child1(real(64),10)?
 
 Are the types the same? false
 
 {}
 
-c21.type Child2(real(64),20,int(64))
-c22.type Child2(real(64),20,int(64))
+c21.type borrowed Child2(real(64),20,int(64))?
+c22.type borrowed Child2(real(64),20,int(64))?
 
 Are the types the same? true
 

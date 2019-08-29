@@ -1,2 +1,2 @@
 buffer2.chpl:1: In function 'main':
-buffer2.chpl:5: error: type mismatch in assignment from int(64) to uint(8)
+buffer2.chpl:5: error: Cannot assign to uint(8) from int(64)

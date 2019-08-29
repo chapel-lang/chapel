@@ -1,2 +1,4 @@
 coerce_inout.chpl:10: error: unresolved call 'foo(int(64))'
-coerce_inout.chpl:1: note: candidates are: foo(inout x: string)
+coerce_inout.chpl:1: note: this candidate did not match: foo(inout x: string)
+coerce_inout.chpl:10: note: because call actual argument #1 with type int(64)
+coerce_inout.chpl:1: note: is passed to formal 'inout x: string'

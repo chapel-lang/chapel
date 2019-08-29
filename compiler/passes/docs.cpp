@@ -165,8 +165,7 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
 // or module copy of a class method.  These functions are only printed in
 // developer mode.  Is not applicable to printing class functions.
 bool devOnlyFunction(FnSymbol *fn) {
-  return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-          || fn->isPrimaryMethod());
+  return (fn->hasFlag(FLAG_MODULE_INIT) || fn->isPrimaryMethod());
 }
 
 // Returns true if the provide module is one of the internal or standard 

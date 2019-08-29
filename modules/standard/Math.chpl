@@ -83,11 +83,6 @@ module Math {
   // Helper constants and functions (not included in chpldocs).
   //
   pragma "fn synchronization free"
-  private extern proc chpl_macro_INFINITY():real(32);
-  pragma "fn synchronization free"
-  private extern proc chpl_macro_NAN():real(32);
-
-  pragma "fn synchronization free"
   private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
   pragma "fn synchronization free"
   private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
@@ -103,13 +98,24 @@ module Math {
   pragma "fn synchronization free"
   private extern proc fabs(x: real(64)): real(64);
 
-  private proc _logBasePow2Help(in val, baseLog2) {
-    var result = -1;
-    while (val != 0) {
-      val >>= baseLog2;
-      result += 1;
+  private inline proc _logBasePow2Help(in val, baseLog2) {
+    // These are used here to avoid including BitOps by default.
+    extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+    extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
+
+    var lg2 = 0;
+
+    if numBits(val.type) <= 32 {
+      var tmp:uint(32) = val:uint(32);
+      lg2 = 32 - 1 - chpl_bitops_clz_32(tmp):int;
+    } else if numBits(val.type) == 64 {
+      var tmp:uint(64) = val:uint(64);
+      lg2 = 64 - 1 - chpl_bitops_clz_64(tmp):int;
+    } else {
+      compilerError("Integer width not handled in logBasePow2");
     }
-    return result;
+
+    return lg2 / baseLog2;
   }
 
   //
@@ -689,7 +695,7 @@ module Math {
 
 
   /* Returns a value for which :proc:`isinf` will return `true`. */
-  inline proc INFINITY: real(64) return chpl_macro_INFINITY();
+  inline proc INFINITY param : real(64) return chpl_INFINITY;
 
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
@@ -820,7 +826,7 @@ module Math {
 
      :rtype: `int`
   */
-  inline proc logBasePow2(in val: int(?w), baseLog2) {
+  inline proc logBasePow2(val: int(?w), baseLog2) {
     if (val < 1) {
       halt("Can't take the log() of a non-positive integer");
     }
@@ -834,7 +840,7 @@ module Math {
 
      :rtype: `int`
   */
-  inline proc logBasePow2(in val: uint(?w), baseLog2) {
+  inline proc logBasePow2(val: uint(?w), baseLog2) {
     return _logBasePow2Help(val, baseLog2);
   }
 
@@ -857,23 +863,25 @@ module Math {
   }
 
 
-  /* Returns the base 2 logarithm of the argument `x`.
+  /* Returns the base 2 logarithm of the argument `x`,
+     rounded down.
 
-     :rtype: `int(64)`
+     :rtype: `int`
 
      It is an error if `x` is less than or equal to zero.
   */
-  proc log2(in val: int(?w)) {
+  inline proc log2(val: int(?w)) {
     return logBasePow2(val, 1);
   }
 
-  /* Returns the base 2 logarithm of the argument `x`.
+  /* Returns the base 2 logarithm of the argument `x`,
+     rounded down.
 
-     :rtype: `int(64)`
+     :rtype: `int`
 
      It is an error if `x` is less than or equal to zero.
   */
-  proc log2(in val: uint(?w)) {
+  inline proc log2(val: uint(?w)) {
     return logBasePow2(val, 1);
   }
 
@@ -934,7 +942,7 @@ module Math {
 
 
   /* Returns a value for which :proc:`isnan` will return `true`. */
-  inline proc NAN : real(64) return chpl_macro_NAN();
+  inline proc NAN param : real(64) return chpl_NAN;
 
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -1294,6 +1302,22 @@ module Math {
     pragma "fn synchronization free"
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
+  }
+
+  /* Returns true if the sign of `x` is negative, else returns false. It detects
+     the sign bit of zeroes, infinities, and NANs */
+  inline proc signbit(x : real(32)): bool {
+    pragma "fn synchronization free"
+    extern proc chpl_macro_float_signbit(x: real(32)): c_int;
+    return chpl_macro_float_signbit(x): bool;
+  }
+
+  /* Returns true if the sign of `x` is negative, else returns false. It detects
+     the sign bit of zeroes, infinities, and NANs */
+  inline proc signbit(x : real(64)): bool {
+    pragma "fn synchronization free"
+    extern proc chpl_macro_double_signbit(x: real(64)): c_int;
+    return chpl_macro_double_signbit(x): bool;
   }
 
 } // end of module Math

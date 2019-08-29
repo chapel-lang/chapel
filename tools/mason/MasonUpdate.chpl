@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
+private use List;
 use TOML;
 use FileSystem;
 use MasonUtils;
 use MasonEnv;
-use MasonSystem; 
+use MasonSystem;
 use MasonExternal;
 
 
@@ -40,11 +41,20 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
        (ex. 1.13.0, 2.1.0 --> incompatible)
 */
 
-private var failedChapelVersion : [1..0] string;
+private var failedChapelVersion: list(string);
+
+//
+// Temporary passthrough transforming array to list to appease the compiler.
+//
+proc UpdateLock(args: [?d] string, tf="Mason.toml", lf="Mason.lock") {
+  var listArgs: list(string);
+  for x in args do listArgs.append(x);
+  return UpdateLock(listArgs, tf, lf);
+}
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
+proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
 
   try! {
 
@@ -52,7 +62,7 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
-    
+
 
     updateRegistry(tf, args);
     const openFile = openreader(tomlPath);
@@ -124,10 +134,9 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(tf: string, args : [] string) {
-  if args.find("--no-update")[1] {
+proc updateRegistry(tf: string, args: list(string)) {
+  if args.count("--no-update") != 0 then
     return;
-  }
 
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
@@ -150,12 +159,21 @@ proc updateRegistry(tf: string, args : [] string) {
   }
 }
 
-private const maxVersion = new VersionInfo(max(int), max(int), max(int));
-
-proc parseChplVersion(brick:borrowed Toml) {
+proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
   use Regexp;
 
-  if brick.pathExists("chplVersion") == false {
+  if brick == nil {
+    stderr.writeln("Error: Unable to parse manifest file");
+    exit(1);
+  }
+
+  // Assert some expected fields are not nil
+  if brick['name'] == nil || brick['version'] == nil{
+    stderr.writeln("Error: Unable to parse manifest file");
+    exit(1);
+  }
+
+  if brick['chplVersion'] == nil {
     const name = brick["name"].s + "-" + brick["version"].s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
@@ -182,7 +200,7 @@ proc parseChplVersion(brick:borrowed Toml) {
       throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
     }
 
-    proc parseString(ver:string) throws {
+    proc parseString(ver:string): VersionInfo throws {
       var ret : VersionInfo;
 
       // Finds 'x.x' or 'x.x.x' where x is a positive number
@@ -202,7 +220,7 @@ proc parseChplVersion(brick:borrowed Toml) {
     low = parseString(versions[1]);
 
     if (versions.size == 1) {
-      hi = maxVersion;
+      hi = new VersionInfo(max(int), max(int), max(int));
     } else {
       hi = parseString(versions[2]);
     }
@@ -235,7 +253,7 @@ proc verifyChapelVersion(brick:borrowed Toml) {
 proc prettyVersionRange(low, hi) {
   if low == hi then
     return low.str();
-  else if hi == maxVersion then
+  else if hi.containsMax() then
     return low.str() + " or later";
   else
     return low.str() + ".." + hi.str();
@@ -248,7 +266,7 @@ proc chplVersionError(brick:borrowed Toml) {
     const hi   = info(3);
     const name = brick["name"].s + "-" + brick["version"].s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
-    failedChapelVersion.push_back(msg);
+    failedChapelVersion.append(msg);
   }
 }
 
@@ -259,9 +277,9 @@ proc chplVersionError(brick:borrowed Toml) {
 private proc createDepTree(root: unmanaged Toml) {
   var dp: domain(string);
   var dps: [dp] unmanaged Toml;
-  var depTree: unmanaged Toml = dps;
+  var depTree = new unmanaged Toml(dps);
   if root.pathExists("brick") {
-    depTree["root"] = new unmanaged Toml(root["brick"]);
+    depTree.set("root", new unmanaged Toml(root["brick"]));
   }
   else {
     stderr.writeln("Could not find brick; Mason cannot update");
@@ -288,7 +306,7 @@ private proc createDepTree(root: unmanaged Toml) {
 
     // Lock in the current Chapel version
     const curVer = getChapelVersionStr();
-    brick["chplVersion"] = curVer + ".." + curVer;
+    brick.set("chplVersion", curVer + ".." + curVer);
 
     if brick.pathExists("dependencies") {
       for item in brick["dependencies"].arr {
@@ -301,21 +319,21 @@ private proc createDepTree(root: unmanaged Toml) {
   // Check for pkg-config dependencies
   if root.pathExists("system") {
     const exDeps = getPCDeps(root["system"]);
-    depTree["system"] = exDeps;
+    depTree.set("system", exDeps);
   }
 
   // Check for non-Chapel dependencies
   if root.pathExists("external") {
     const externals = getExternalPackages(root["external"]);
-    depTree["external"] = externals;
+    depTree.set("external", externals);
   }
   return depTree;
 }
 
-private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, name: string) : unmanaged Toml {
-  var depList: [1..0] unmanaged Toml;
-  while deps.domain.size > 0 {
-    var dep = deps[deps.domain.first];
+private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
+  var depList: list(unmanaged Toml);
+  while deps.size > 0 {
+    var dep = deps[1];
 
     var brick       = dep["brick"];
     var package     = brick["name"].s;
@@ -329,17 +347,17 @@ private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, 
       chplVersion = verToUse["chplVersion"].s;
     }
 
-    depList.push_back(new unmanaged Toml(package));
+    depList.append(new unmanaged Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
       var depTbl: [dt] unmanaged Toml;
-      depTree[package] = depTbl;
+      depTree.set(package, depTbl);
     }
-    depTree[package]["name"] = package;
-    depTree[package]["version"] = version;
-    depTree[package]["chplVersion"] = chplVersion;
-    depTree[package]["source"] = source;
+    depTree[package].set("name", package);
+    depTree[package].set("version", version);
+    depTree[package].set("chplVersion", chplVersion);
+    depTree[package].set("source", source);
 
     if dep.pathExists("dependencies") {
       var subDeps = getDependencies(dep);
@@ -347,10 +365,11 @@ private proc createDepTrees(depTree: unmanaged Toml, deps: [?d] unmanaged Toml, 
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    deps.remove(deps.domain.first);
+    try! deps.pop(1);
   }
-  if depList.domain.size > 0 then
-    depTree[name]["dependencies"] = depList;
+  // Use toArray here to avoid making Toml aware of `list`, for now.
+  if depList.size > 0 then
+    depTree[name].set("dependencies", depList.toArray());
   return depTree;
 }
 
@@ -413,13 +432,13 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getManifests(deps: [?dom] (string, unmanaged Toml)) {
-  var manifests: [1..0] unmanaged Toml;
+private proc getManifests(deps: list((string, unmanaged Toml?))) {
+  var manifests: list(unmanaged Toml);
   for dep in deps {
     var name = dep(1);
-    var version: string = dep(2).s;
+    var version: string = dep(2)!.s;
     var toAdd = retrieveDep(name, version);
-    manifests.push_back(toAdd);
+    manifests.append(toAdd);
   }
   return manifests;
 }
@@ -445,11 +464,11 @@ private proc retrieveDep(name: string, version: string) {
    dependencies are returned as a (string, Toml) */
 private proc getDependencies(tomlTbl: unmanaged Toml) {
   var depsD: domain(1);
-  var deps: [depsD] (string, unmanaged Toml);
+  var deps: list((string, unmanaged Toml?));
   for k in tomlTbl.D {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]) {
-        deps.push_back((a, d));
+        deps.append((a, d));
       }
     }
   }

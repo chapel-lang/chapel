@@ -26,12 +26,12 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to the \n (end of description)
-      input.advancePastByte(ascii("\n"));
+      input.advancePastByte("\n".toByte());
       seqOffset = input.offset();
 
       try {
         // Scan forward until we get to the > (end of sequence)
-        input.advancePastByte(ascii(">"));
+        input.advancePastByte(">".toByte());
         nextDescOffset = input.offset();
       } catch e:EOFError {
         eof = true;
@@ -65,7 +65,7 @@ proc main(args: [] string) {
 proc process(data, in start, in end) {
 
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == ascii("\n");
+    do { cursor += dir; } while data[cursor] == "\n".toByte();
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];
@@ -78,10 +78,10 @@ proc process(data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.length by 2 {
-    table[ascii(pairs[i])] = ascii(pairs[i+1]);
-    if pairs[i] != "\n" then
-      table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
+  for i in 1..pairs.numBytes by 2 {
+    table[pairs.byte(i)] = pairs.byte(i+1);
+    if pairs.byte(i) != "\n".toByte() then
+      table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);
   }
 
   return table;

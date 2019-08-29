@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling returnArrayGenericDecl2.chpl
+$3 --llvm --library --static returnArrayGenericDecl2.chpl

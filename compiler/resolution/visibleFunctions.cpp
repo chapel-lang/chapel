@@ -270,33 +270,38 @@ static void getVisibleFunctions(const char*           name,
 
         INT_ASSERT(use);
 
-        bool isMethodCall = false;
-        if (call->numActuals() >= 2 &&
-            call->get(1)->typeInfo() == dtMethodToken)
-          isMethodCall = true;
+        // Only traverse private use statements if we are in the scope that
+        // defines them
+        if (use->isVisible(call)) {
 
-        if (use->skipSymbolSearch(name, isMethodCall) == false) {
-          SymExpr* se = toSymExpr(use->src);
+          bool isMethodCall = false;
+          if (call->numActuals() >= 2 &&
+              call->get(1)->typeInfo() == dtMethodToken)
+            isMethodCall = true;
 
-          INT_ASSERT(se);
+          if (use->skipSymbolSearch(name, isMethodCall) == false) {
+            SymExpr* se = toSymExpr(use->src);
 
-          if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-            // The use statement could be of an enum instead of a module,
-            // but only modules can define functions.
+            INT_ASSERT(se);
 
-            if (mod->isVisible(call) == true) {
-              if (use->isARename(name) == true) {
-                getVisibleFunctions(use->getRename(name),
-                                    call,
-                                    mod->block,
-                                    visited,
-                                    visibleFns);
-              } else {
-                getVisibleFunctions(name,
-                                    call,
-                                    mod->block,
-                                    visited,
-                                    visibleFns);
+            if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+              // The use statement could be of an enum instead of a module,
+              // but only modules can define functions.
+
+              if (mod->isVisible(call) == true) {
+                if (use->isARename(name) == true) {
+                  getVisibleFunctions(use->getRename(name),
+                                      call,
+                                      mod->block,
+                                      visited,
+                                      visibleFns);
+                } else {
+                  getVisibleFunctions(name,
+                                      call,
+                                      mod->block,
+                                      visited,
+                                      visibleFns);
+                }
               }
             }
           }
@@ -318,17 +323,19 @@ static void getVisibleFunctions(const char*           name,
   }
 }
 
-static bool isTryTokenCond(Expr* expr);
-
-static Expr* getTryTokenParent(Expr* expr);
-
 /*
    This function returns a BlockStmt to use as the instantiationPoint
    for expr (to be used when instantiating a type or a function).
  */
 BlockStmt* getInstantiationPoint(Expr* expr) {
 
-  Expr* cur = getTryTokenParent(expr);
+  if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
+    if (BlockStmt* block = ts->instantiationPoint) {
+      return block;
+    }
+  }
+
+  Expr* cur = expr;
   while (cur != NULL) {
     if (BlockStmt* block = toBlockStmt(cur->parentExpr)) {
       if (block->blockTag == BLOCK_SCOPELESS) {
@@ -339,9 +346,14 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
     } else if (cur->parentExpr) {
       // continue
     } else if (Symbol* s = cur->parentSymbol) {
-      if (FnSymbol* fn = toFnSymbol(s))
+      if (FnSymbol* fn = toFnSymbol(s)) {
         if (BlockStmt* instantiationPt = fn->instantiationPoint())
           return instantiationPt;
+      } else if (TypeSymbol* ts = toTypeSymbol(s)) {
+        if (BlockStmt* block = ts->instantiationPoint) {
+          return block;
+        }
+      }
       // otherwise continue
     }
 
@@ -398,41 +410,6 @@ BlockStmt* getVisibilityScope(Expr* expr) {
     INT_FATAL(expr, "Expression has no visibility block.");
 
   return NULL;
-}
-
-//
-// return true if expr is a CondStmt with chpl__tryToken as its condition
-//
-static bool isTryTokenCond(Expr* expr) {
-  CondStmt* cond = toCondStmt(expr);
-
-  if (!cond) return false;
-
-  SymExpr* sym = toSymExpr(cond->condExpr);
-
-  if (!sym) return false;
-
-  return sym->symbol() == gTryToken;
-}
-
-//
-// If the expr is in a CondStmt with chpl__tryToken (including in
-// nested blocks), then return the CondStmt. Otherwise, just return expr.
-//
-// Why is this relevant for visibility?  If a function has an
-// instantiationPoint that is a block that is removed, then bad things
-// happen (in particular functions that should be visible are no longer
-// visible). And the chpl__tryToken handling can remove all nested blocks
-// inside the clause not selected.
-//
-// test/functions/iterators/angeles/dynamic.chpl might be a relevant example.
-//
-static Expr* getTryTokenParent(Expr* expr) {
-  for (Expr* cur = expr; cur != NULL; cur = cur->parentExpr) {
-    if (isTryTokenCond(cur))
-      return cur;
-  }
-  return expr;
 }
 
 

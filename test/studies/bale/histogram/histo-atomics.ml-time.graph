@@ -1,5 +1,5 @@
-perfkeys: Time:, Time:
-files: bale-hist-atomic.dat, bale-hist-buff-atomic.dat
-graphkeys: runtime (naive), runtime (buffered)
+perfkeys: Time:, Time:, Time:
+files: bale-hist-atomic.dat, bale-hist-unordered-atomic.dat, bale-hist-atomic-opt.dat
+graphkeys: runtime (ordered), runtime (unordered), runtime (forall opt)
 graphtitle: Bale: Histogram Time (sec)
 ylabel: Time (seconds)

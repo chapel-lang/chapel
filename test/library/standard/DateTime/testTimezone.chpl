@@ -132,7 +132,7 @@ proc test_replace() {
 
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
-  var base2 = base.replace(tzinfo=new shared(TZInfo));
+  var base2 = base.replace(tzinfo=nil);
   assert(base2.tzinfo.borrow() == nil);
   assert(base2.tzname() == "");
 
@@ -146,7 +146,7 @@ proc test_mixed_compare() {
   var t1 = new time(1, 2, 3);
   var t2 = new time(1, 2, 3);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=new shared(TZInfo));
+  t2 = t2.replace(tzinfo=nil);
   assert(t1 == t2);
   t2 = t2.replace(tzinfo=new shared FixedOffset(0, ""));
 

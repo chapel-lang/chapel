@@ -40,15 +40,17 @@
 typedef const char* c_string;
 
 #include "chpltypes.h"
+#include "error.h"
 #include <string.h>
 
 static inline
 int8_t ascii(c_string s) {
+  chpl_warning("calling ascii() on a c_string is deprecated", 0, 0);
   return (int8_t) *s;
 }
 
 static inline
-int64_t string_length(c_string x) {
+int64_t string_length_bytes(c_string x) {
   if (x == NULL)
     return 0;
   return strlen(x);

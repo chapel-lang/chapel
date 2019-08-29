@@ -39,12 +39,12 @@ void AstVisitorTraverse::exitAggrType(AggregateType* node)
 
 }
 
-bool AstVisitorTraverse::enterUnmanagedClassType(UnmanagedClassType* node)
+bool AstVisitorTraverse::enterDecoratedClassType(DecoratedClassType* node)
 {
   return true;
 }
 
-void AstVisitorTraverse::exitUnmanagedClassType(UnmanagedClassType* node)
+void AstVisitorTraverse::exitDecoratedClassType(DecoratedClassType* node)
 {
 
 }
@@ -199,11 +199,6 @@ bool AstVisitorTraverse::enterBlockStmt(BlockStmt* node)
 }
 
 void AstVisitorTraverse::exitBlockStmt(BlockStmt* node)
-{
-
-}
-
-void AstVisitorTraverse::visitForallIntents(ForallIntents* clause)
 {
 
 }

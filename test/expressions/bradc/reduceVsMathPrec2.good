@@ -1,1 +1,1 @@
-reduceVsMathPrec2.chpl:12: error: type mismatch in assignment from array to int(64)
+reduceVsMathPrec2.chpl:12: error: Cannot assign to int(64) from array

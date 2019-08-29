@@ -2,7 +2,7 @@
 
 int64_t type = 42;
 
-typedef struct _S {
+typedef struct _testStruct {
   int okname;
   int type;
 } S;

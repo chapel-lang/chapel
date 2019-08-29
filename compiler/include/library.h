@@ -21,6 +21,7 @@
 #define LIBRARY_H
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <utility>
@@ -49,6 +50,7 @@ extern std::map<TypeSymbol*, std::string> fortranKindNames;
 extern std::map<TypeSymbol*, std::string> fortranTypeNames;
 
 extern std::map<ArgSymbol*, std::string> exportedDefaultValues;
+extern std::set<FnSymbol*> exportedStrRets;
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_fortran(std::vector<FnSymbol*> functions);
@@ -62,5 +64,7 @@ void openLibraryHelperFile(fileinfo* fi,
                            const char* ext = NULL);
 void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 const char* getLibraryExtension();
+
+std::string getPythonTypeName(Type* type, PythonFileType pxd);
 
 #endif //LIBRARY_H

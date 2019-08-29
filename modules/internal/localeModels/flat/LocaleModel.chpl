@@ -118,14 +118,6 @@ module LocaleModel {
       return this;
     }
 
-
-    override proc writeThis(f) {
-      // Most classes will define it like this:
-      //      f <~> name;
-      // but here it is defined thus for backward compatibility.
-      f <~> new ioLiteral("LOCALE") <~> _node_id;
-    }
-
     proc getChildSpace() return chpl_emptyLocaleSpace;
 
     override proc getChildCount() return 0;
@@ -135,10 +127,11 @@ module LocaleModel {
         yield idx;
     }
 
+    pragma "unsafe"
     override proc getChild(idx:int) : locale {
-      if boundsChecking then
-        halt("requesting a child from a LocaleModel locale");
-      return nil;
+      halt("requesting a child from a flat LocaleModel locale");
+      var tmp:locale; // nil
+      return tmp;
     }
 
     iter getChildren() : locale  {

@@ -19,20 +19,16 @@
 
 module ChapelDistribution {
 
-  use List;
-
-  extern proc chpl_task_yield();
+  private use ChapelArray, ChapelLocks, ChapelRange;
+  use LinkedLists;
 
   //
   // Abstract distribution class
   //
   pragma "base dist"
   class BaseDist {
-    // The common case seems to be local access to this class, so we
-    // will use explicit processor atomics, even when network
-    // atomics are available
-    var _doms: list(unmanaged BaseDom); // domains declared over this distribution
-    var _domsLock: chpl__processorAtomicType(bool); // lock for concurrent access
+    var _doms: LinkedList(unmanaged BaseDom); // domains declared over this distribution
+    var _domsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
@@ -41,18 +37,18 @@ module ChapelDistribution {
 
     // Returns a distribution that should be freed or nil.
     pragma "dont disable remote value forwarding"
-    proc remove(): unmanaged BaseDist {
+    proc remove(): unmanaged BaseDist? {
       var free_dist = false;
       if dsiTrackDomains() {
         on this {
           var dom_count = -1;
           local {
-            _lock_doms();
+            _domsLock.lock();
             // Set a flag to indicate it should be freed when _doms
             // becomes empty
             _free_when_no_doms = true;
             dom_count = _doms.size;
-            _unlock_doms();
+            _domsLock.unlock();
           }
           if dom_count == 0 then
             free_dist = true;
@@ -74,7 +70,7 @@ module ChapelDistribution {
       on this {
         var cnt = -1;
         local {
-          _lock_doms();
+          _domsLock.lock();
           _doms.remove(x);
           cnt = _doms.size;
 
@@ -82,7 +78,7 @@ module ChapelDistribution {
           if !_free_when_no_doms then
             cnt += 1;
 
-          _unlock_doms();
+          _domsLock.unlock();
         }
         count = cnt;
       }
@@ -103,22 +99,10 @@ module ChapelDistribution {
     //
     inline proc add_dom(x:unmanaged BaseDom) {
       on this {
-        _lock_doms();
+        _domsLock.lock();
         _doms.append(x);
-        _unlock_doms();
+        _domsLock.unlock();
       }
-    }
-
-    inline proc _lock_doms() {
-      // WARNING: If you are calling this function directly from
-      // a remote locale, you should consider wrapping the call in
-      // an on clause to avoid excessive remote forks due to the
-      // testAndSet()
-      while (_domsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
-    }
-
-    inline proc _unlock_doms() {
-      _domsLock.clear(memory_order_release);
     }
 
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
@@ -171,14 +155,11 @@ module ChapelDistribution {
   //
   pragma "base domain"
   class BaseDom {
-    // The common case seems to be local access to this class, so we
-    // will use explicit processor atomics, even when network
-    // atomics are available
-    var _arrs: list(unmanaged BaseArr);  // arrays declared over this domain
+    var _arrs: LinkedList(unmanaged BaseArr); // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
-    var _arrsLock: chpl__processorAtomicType(bool); // lock for concurrent access
+    var _arrsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
@@ -188,22 +169,24 @@ module ChapelDistribution {
     proc deinit() {
     }
 
+    pragma "unsafe"
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      return nil;
+      var ret: unmanaged BaseDist; // nil
+      return ret;
     }
 
     // Returns (dom, dist).
     // if this domain should be deleted, dom=this; otherwise it is nil.
     // dist is nil or a distribution that should be removed.
     pragma "dont disable remote value forwarding"
-    proc remove() : (unmanaged BaseDom, unmanaged BaseDist) {
+    proc remove() : (unmanaged BaseDom?, unmanaged BaseDist?) {
 
       // TODO -- remove dsiLinksDistribution
       assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
 
-      var ret_dom:unmanaged BaseDom = nil;
-      var ret_dist:unmanaged BaseDist = nil;
+      var ret_dom:unmanaged BaseDom? = nil;
+      var ret_dist:unmanaged BaseDist? = nil;
       var dist = dsiMyDist();
       var free_dom = false;
       var remove_dist = false;
@@ -212,11 +195,11 @@ module ChapelDistribution {
         // Count the number of arrays using this domain
         // and mark this domain to free itself when that number reaches 0.
         local {
-          _lock_arrs();
+          _arrsLock.lock();
           arr_count = _arrs.size;
           arr_count += _arrs_containing_dom;
           _free_when_no_arrs = true;
-          _unlock_arrs();
+          _arrsLock.unlock();
         }
 
         if arr_count == 0 {
@@ -237,65 +220,67 @@ module ChapelDistribution {
     }
 
     // returns true if the domain should be removed
-    inline proc remove_arr(x:unmanaged BaseArr): bool {
+    // 'rmFromList' indicates whether this is an array that we've been
+    // storing in the _arrs linked list or not (just counting it).
+    // Currently, only slices using existing domains avoid the list.
+    inline proc remove_arr(x:unmanaged BaseArr, param rmFromList=true): bool {
       var count = -1;
       on this {
         var cnt = -1;
         local {
-          _lock_arrs();
-          _arrs.remove(x);
+          _arrsLock.lock();
+          if rmFromList then
+            _arrs.remove(x);
+          else
+            _arrs_containing_dom -=1;
           cnt = _arrs.size;
           cnt += _arrs_containing_dom;
           // add one for the main domain record
           if !_free_when_no_arrs then
             cnt += 1;
-          _unlock_arrs();
+          _arrsLock.unlock();
         }
         count = cnt;
       }
       return (count==0);
     }
 
-    inline proc add_arr(x:unmanaged BaseArr, param locking=true) {
+    // addToList indicates whether this array should be added to the
+    // '_arrs' linked list, or just counted.  At present, slice views
+    // are not added to the linked list because they don't need to be
+    // resized when their domain is re-assigned).
+    inline proc add_arr(x:unmanaged BaseArr, param locking=true,
+                        param addToList = true) {
       on this {
         if locking then
-          _lock_arrs();
-        _arrs.append(x);
+          _arrsLock.lock();
+        if addToList then
+          _arrs.append(x);
+        else
+          _arrs_containing_dom += 1;
         if locking then
-          _unlock_arrs();
+          _arrsLock.unlock();
       }
     }
 
     inline proc remove_containing_arr(x:unmanaged BaseArr): int {
       var count = -1;
       on this {
-        _lock_arrs();
+        _arrsLock.lock();
         _arrs_containing_dom -= 1;
         count = _arrs.size;
         count += _arrs_containing_dom;
-        _unlock_arrs();
+        _arrsLock.unlock();
       }
       return count;
     }
 
     inline proc add_containing_arr(x:unmanaged BaseArr) {
       on this {
-        _lock_arrs();
+        _arrsLock.lock();
         _arrs_containing_dom += 1;
-        _unlock_arrs();
+        _arrsLock.unlock();
       }
-    }
-
-    inline proc _lock_arrs() {
-      // WARNING: If you are calling this function directly from
-      // a remote locale, you should consider wrapping the call in
-      // an on clause to avoid excessive remote forks due to the
-      // testAndSet()
-      while (_arrsLock.testAndSet(memory_order_acquire)) do chpl_task_yield();
-    }
-
-    inline proc _unlock_arrs() {
-      _arrsLock.clear(memory_order_release);
     }
 
     // used for associative domains/arrays
@@ -390,26 +375,26 @@ module ChapelDistribution {
 
   class BaseSparseDomImpl : BaseSparseDom {
 
-    var nnzDom = {1..nnz};
+    var nnzDom = {1..0};
 
     proc deinit() {
       // this is a bug workaround
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true){
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale?){
 
       if !dataSorted && preserveInds {
         var _inds = inds;
-        return bulkAdd_help(_inds, dataSorted, isUnique);
+        return bulkAdd_help(_inds, dataSorted, isUnique, addOn);
       }
       else {
-        return bulkAdd_help(inds, dataSorted, isUnique);
+        return bulkAdd_help(inds, dataSorted, isUnique, addOn);
       }
     }
 
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false){
+        dataSorted=false, isUnique=false, addOn=nil:locale?){
       halt("Helper function called on the BaseSparseDomImpl");
 
       return -1;
@@ -447,6 +432,7 @@ module ChapelDistribution {
     // calculate new nnz and update it, (2) call this method, (3) add
     // indices
     inline proc _bulkGrow() {
+      const nnz  = getNNZ();
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
 
@@ -548,6 +534,40 @@ module ChapelDistribution {
 
   }
 
+  record SparseIndexBuffer {
+    param rank: int;
+    var obj: BaseSparseDom;
+
+    type idxType = if rank==1 then int else rank*int;
+    var bufDom = domain(1);
+    var buf: [bufDom] idxType;
+    var cur = 0;
+
+    proc init(size, param rank: int, obj) {
+      this.rank = rank;
+      this.obj = obj;
+      bufDom = {0..#size};
+    }
+
+    proc deinit() {
+      commit();
+    }
+
+    proc add(idx: idxType) {
+      buf[cur] = idx;
+      cur += 1;
+
+      if cur == buf.size then
+        commit();
+    }
+
+    proc commit() {
+      if cur >= 1 then
+        obj.dsiBulkAdd(buf[..cur-1]);
+      cur = 0;
+    }
+  }
+
   class BaseSparseDom : BaseDom {
     // rank and idxType will be moved to BaseDom
     param rank: int;
@@ -558,7 +578,11 @@ module ChapelDistribution {
     // inheritance of generic var fields.
     // var dist;
 
-    var nnz = 0; //: int;
+    /*var nnz = 0; //: int;*/
+
+    proc getNNZ(): int {
+      halt("nnz queried on base class");
+    }
 
     proc deinit() {
       // this is a bug workaround
@@ -569,9 +593,11 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true){
+        dataSorted=false, isUnique=false, preserveInds=true,
+        addOn=nil:locale?): int {
 
       halt("Bulk addition is not supported by this sparse domain");
+      return 0;
     }
 
     proc boundsCheck(ind: index(rank, idxType)):void {
@@ -584,8 +610,8 @@ module ChapelDistribution {
     //basic DSI functions
     proc dsiDim(d: int) { return parentDom.dim(d); }
     proc dsiDims() { return parentDom.dims(); }
-    proc dsiNumIndices { return nnz; }
-    proc dsiSize { return nnz; }
+    proc dsiNumIndices { return getNNZ(); }
+    proc dsiSize { return getNNZ(); }
     proc dsiLow { return parentDom.low; }
     proc dsiHigh { return parentDom.high; }
     proc dsiStride { return parentDom.stride; }
@@ -602,6 +628,10 @@ module ChapelDistribution {
     }
     proc dsiAlignedLow { return parentDom.alignedLow; }
     proc dsiAlignedHigh { return parentDom.alignedHigh; }
+
+    proc dsiMakeIndexBuffer(size) {
+      return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
+    }
 
   } // end BaseSparseDom
 
@@ -638,11 +668,12 @@ module ChapelDistribution {
   //
   pragma "base array"
   class BaseArr {
-    // The common case seems to be local access to this class, so we
-    // will use explicit processor atomics, even when network
-    // atomics are available
     var pid:int = nullPid; // privatized ID, if privatization is supported
     var _decEltRefCounts : bool = false;
+
+    proc chpl__rvfMe() param {
+      return false;
+    }
 
     proc isSliceArrayView() param {
       return false;
@@ -661,24 +692,30 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
+    pragma "unsafe"
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      return nil;
+      var ret: unmanaged BaseDom; // nil
+      return ret;
     }
 
+    // takes 'rmFromList' which indicates whether the array should
+    // be removed from the domain's list or just decremented from
+    // its count of other arrays.
+    //
     // returns (arr, dom)
     // arr is this if it should be deleted, or nil.
     // dom is a domain that should be removed, or nil.
     pragma "dont disable remote value forwarding"
-    proc remove() {
+    proc remove(param rmFromList: bool) {
       var ret_arr = this; // this array is always deleted
-      var ret_dom:unmanaged BaseDom = nil;
+      var ret_dom:unmanaged BaseDom? = nil;
       var rm_dom = false;
 
       var dom = dsiGetBaseDom();
       // Remove the array from the domain
       // and find out if the domain should be removed.
-      rm_dom = dom.remove_arr(_to_unmanaged(this));
+      rm_dom = dom.remove_arr(_to_unmanaged(this), rmFromList);
 
       if rm_dom then
         ret_dom = dom;
@@ -968,13 +1005,6 @@ module ChapelDistribution {
     delete arr;
   }
 
-  // These are used in ChapelLocale.chpl. They are here to
-  // prevent an order-of-resolution issue.
-  pragma "no doc"
-  const chpl_emptyLocaleSpace: domain(1) = {1..0};
-  pragma "no doc"
-  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
-
   // domain assignment helpers
 
   // Implement simple reallocate/set indices/post reallocate
@@ -992,10 +1022,12 @@ module ChapelDistribution {
 
     for e in lhs._arrs do {
       on e {
-        var eCast = e:arrType;
-        if eCast == nil then
+        var eCastQ = e:arrType?;
+        if eCastQ == nil then
           halt("internal error: ", t:string,
                " contains an bad array type ", arrType:string);
+
+        var eCast = eCastQ!;
 
         var inds = rhs.getIndices();
         var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
@@ -1012,7 +1044,8 @@ module ChapelDistribution {
     }
     lhs.dsiSetIndices(rhs.getIndices());
     for e in lhs._arrs do {
-      var eCast = e:arrType;
+      var eCastQ = e:arrType?;
+      var eCast = eCastQ!;
       on e do eCast.dsiPostReallocate();
     }
 

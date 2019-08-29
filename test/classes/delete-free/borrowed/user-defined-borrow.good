@@ -1,1 +1,1 @@
-string You just borrowed 1
+error: Classes cannot define a method named "borrow"

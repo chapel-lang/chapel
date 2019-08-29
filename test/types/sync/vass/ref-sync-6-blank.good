@@ -1,2 +1,4 @@
-ref-sync-6-blank.chpl:5: error: unresolved call 'MYPROC(_singlevar(int(64)))'
-ref-sync-6-blank.chpl:7: note: candidates are: MYPROC(FORMAL: syncint)
+ref-sync-6-blank.chpl:5: error: unresolved call 'MYPROC(single int(64))'
+ref-sync-6-blank.chpl:7: note: this candidate did not match: MYPROC(FORMAL: syncint)
+ref-sync-6-blank.chpl:5: note: because call actual argument #1 with type single int(64)
+ref-sync-6-blank.chpl:7: note: is passed to formal 'FORMAL: sync int(64)'

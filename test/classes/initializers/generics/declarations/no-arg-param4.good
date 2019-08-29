@@ -1,5 +1,5 @@
 true
 true
-Foo(4)
-Foo(4)
-Foo(4)
+borrowed Foo(4)?
+borrowed Foo(4)?
+borrowed Foo(4)

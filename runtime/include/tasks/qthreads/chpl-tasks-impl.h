@@ -231,6 +231,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
     }
 }
 
+#define CHPL_TASK_IMPL_RESET_SPAWN_ORDER() qthread_chpl_reset_spawn_order()
 
 #define CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS() \
     chpl_task_impl_getFixedNumThreads()

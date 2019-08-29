@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling returnBadArray2.chpl
+$3 --llvm --library --static returnBadArray2.chpl

@@ -1,1 +1,1 @@
-syncAsClass2.chpl:5: error: type mismatch in assignment from sync int(64) to object
+syncAsClass3.chpl:5: error: Cannot assign to object from sync int(64)

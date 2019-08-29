@@ -101,7 +101,7 @@ module ChapelLocale {
     proc init() { }
 
     pragma "no doc"
-    proc init(parent: locale) {
+    proc init(parent: locale?) {
       this.parent = parent;
     }
 
@@ -112,7 +112,7 @@ module ChapelLocale {
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
     pragma "no doc"
-    const parent : locale;
+    const parent : locale?;
 
     pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
     pragma "no doc" var nPUsLogAll: int;     // HW threads, all
@@ -214,22 +214,22 @@ module ChapelLocale {
 
     pragma "no doc"
     inline proc runningTaskCntSet(val : int) {
-      runningTaskCounter.write(val, memory_order_relaxed);
+      runningTaskCounter.write(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntAdd(val : int) {
-      runningTaskCounter.add(val, memory_order_relaxed);
+      runningTaskCounter.add(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntSub(val : int) {
-      runningTaskCounter.sub(val, memory_order_relaxed);
+      runningTaskCounter.sub(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCnt() {
-      var rtc = runningTaskCounter.read(memory_order_relaxed);
+      var rtc = runningTaskCounter.read(memoryOrder.relaxed);
       return if (rtc <= 0) then 1 else rtc;
     }
     //------------------------------------------------------------------------}
@@ -378,7 +378,7 @@ module ChapelLocale {
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
   pragma "no doc"
-  pragma "locale private" var rootLocale : locale = nil;
+  pragma "locale private" var rootLocale : unmanaged locale? = nil;
   pragma "no doc"
   pragma "locale private" var rootLocaleInitialized = false;
 
@@ -397,13 +397,13 @@ module ChapelLocale {
   // module.
   //
   pragma "no doc"
-  var origRootLocale : locale = nil;
+  var origRootLocale : unmanaged locale? = nil;
 
   pragma "no doc"
   class AbstractRootLocale : locale {
     proc init() { }
 
-    proc init(parent_loc : locale) {
+    proc init(parent_loc : locale?) {
       super.init(parent_loc);
     }
 
@@ -433,7 +433,7 @@ module ChapelLocale {
     iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
-      for locIdx in (origRootLocale:borrowed RootLocale).getDefaultLocaleSpace() {
+      for locIdx in (origRootLocale:borrowed RootLocale?)!.getDefaultLocaleSpace() {
         yield locIdx;
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
@@ -494,7 +494,7 @@ module ChapelLocale {
           // have some risk of getting part of a wide pointer).
           // Without this fence, there is a race condition on
           // a weakly-ordered architecture.
-          atomic_fence();
+          atomicFence();
           var count = 0;
           for f in flags do
             if f then count += 1;
@@ -505,7 +505,7 @@ module ChapelLocale {
         }
         // Let the others go
         for f in flags do
-          f.s.testAndSet();
+          f!.s.testAndSet();
       } else {
         var f = new unmanaged localesSignal();
         // expose my flag to locale 0
@@ -532,7 +532,7 @@ module ChapelLocale {
       halt("Cannot run a program compiled with --local in more than 1 locale");
 
     origRootLocale = new unmanaged RootLocale();
-    (origRootLocale:borrowed RootLocale).setup();
+    (origRootLocale:borrowed RootLocale?)!.setup();
   }
 
   // This function sets up a private copy of rootLocale by replicating
@@ -552,7 +552,7 @@ module ChapelLocale {
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
-      const ref origLocales = (origRootLocale:borrowed RootLocale).getDefaultLocaleArray();
+      const ref origLocales = (origRootLocale:borrowed RootLocale?)!.getDefaultLocaleArray();
       var origRL = origLocales._value.theData;
       var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
       // We must directly implement a bulk copy here, as the mechanisms
@@ -570,7 +570,7 @@ module ChapelLocale {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      const ref tmp = (rootLocale:borrowed RootLocale).getDefaultLocaleArray();
+      const ref tmp = (rootLocale:borrowed RootLocale?)!.getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
     rootLocaleInitialized = true;
@@ -585,6 +585,7 @@ module ChapelLocale {
   pragma "no doc"
   const dummyLocale = new unmanaged DummyLocale();
 
+  pragma "fn synchronization free"
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
@@ -619,7 +620,7 @@ module ChapelLocale {
   pragma "fn returns infinite lifetime"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale then
-      return (rootLocale:borrowed AbstractRootLocale).localeIDtoLocale(id);
+      return (rootLocale:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
     else
       // For code prior to rootLocale initialization
       return dummyLocale;
@@ -667,7 +668,8 @@ module ChapelLocale {
     on this do queuedTasks = chpl_task_getNumQueuedTasks();
     return queuedTasks;
   }
-  
+
+  pragma "fn synchronization free"
   pragma "no doc"
   proc locale.runningTasks() {
     return this.runningTaskCnt();
@@ -725,6 +727,6 @@ module ChapelLocale {
   //
   pragma "no doc"
   proc deinit() {
-    delete _to_unmanaged(origRootLocale);
+    delete origRootLocale;
   }
 }

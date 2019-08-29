@@ -154,7 +154,7 @@ public:
 
   CallExpr*                  singleInvocation()                          const;
 
-  bool                       tagIfGeneric();
+  bool                       tagIfGeneric(SymbolMap* map = NULL);
 
   bool                       isNormalized()                              const;
   void                       setNormalized(bool value);
@@ -174,6 +174,7 @@ public:
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
   bool                       isDefaultInit()                             const;
+  bool                       isCopyInit()                                const;
 
   AggregateType*             getReceiver()                               const;
 
@@ -191,10 +192,12 @@ public:
 
   bool                       retExprDefinesNonVoid()                     const;
 
+  const char*                substitutionsToString(const char* sep)      const;
+
 private:
   virtual std::string        docsDirective();
 
-  int                        hasGenericFormals()                         const;
+  int                        hasGenericFormals(SymbolMap* map)           const;
 
   bool                       mIsNormalized;
   bool                       _throwsError;

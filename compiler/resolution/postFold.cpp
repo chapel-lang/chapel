@@ -21,8 +21,8 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "DecoratedClassType.h"
 #include "expr.h"
-#include "UnmanagedClassType.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -109,6 +109,11 @@ Expr* postFold(Expr* expr) {
 
     } else if (call->isPrimitive() == true) {
       retval = postFoldPrimop(call);
+    } else if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+        retval = se->copy();
+        call->replace(retval);
+      }
     }
 
   } else if (SymExpr* sym = toSymExpr(expr)) {
@@ -128,7 +133,7 @@ static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
   Expr*     retval = call;
 
-  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM) == true) {
+  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
     if (ret != NULL && ret->immediate != NULL) {
@@ -142,8 +147,7 @@ static Expr* postFoldNormal(CallExpr* call) {
       call->replace(retval);
 
     } else if (ret == gVoid) {
-      retval = new SymExpr(gVoid);
-
+      retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
   }
@@ -160,10 +164,15 @@ static Expr* postFoldNormal(CallExpr* call) {
       retval = new SymExpr(ret->type->symbol);
 
       call->replace(retval);
+
+      // Put the call back in the AST for better errors
+      if (fatalErrorsEncountered()) {
+        retval->getStmtExpr()->insertBefore(call);
+      }
     }
   }
 
-  if (call->isNamedAstr(astrSequals) == true) {
+  if (call->isNamedAstr(astrSassign) == true) {
     if (SymExpr* lhs = toSymExpr(call->get(1))) {
       if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) == true ||
           lhs->symbol()->isParameter()             == true) {
@@ -174,6 +183,20 @@ static Expr* postFoldNormal(CallExpr* call) {
     }
   }
 
+  if (fn->hasFlag(FLAG_GET_LINE_NUMBER)) {
+    retval = new SymExpr(new_IntSymbol(call->linenum()));
+    call->replace(retval);
+  } else if (fn->hasFlag(FLAG_GET_FILE_NAME)) {
+    retval = new SymExpr(new_StringSymbol(call->fname()));
+    call->replace(retval);
+  } else if (fn->hasFlag(FLAG_GET_FUNCTION_NAME)) {
+    retval = new SymExpr(new_StringSymbol(call->getFunction()->name));
+    call->replace(retval);
+  } else if (fn->hasFlag(FLAG_GET_MODULE_NAME)) {
+    retval = new SymExpr(new_StringSymbol(call->getModule()->name));
+    call->replace(retval);
+  }
+
   return retval;
 }
 
@@ -182,8 +205,6 @@ static Expr* postFoldNormal(CallExpr* call) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool  isSubTypeOrInstantiation(Type* sub, Type* super);
 
 static void  insertValueTemp(Expr* insertPoint, Expr* actual);
 
@@ -225,7 +246,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     SymExpr*       base      = toSymExpr (call->get(1));
     const char*    fieldName = get_string(call->get(2));
 
-    Type*          t         = canonicalClassType(base->getValType());
+    Type*          t         = canonicalDecoratedClassType(base->getValType());
     AggregateType* at        = toAggregateType(t);
     VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
@@ -248,7 +269,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
     SymExpr*       base      = toSymExpr (call->get(1));
     const char*    fieldName = get_string(call->get(2));
 
-    AggregateType* at        = toAggregateType(base->getValType());
+    Type*          t         = base->getValType();
+    AggregateType* at        = toAggregateType(t);
+    if (DecoratedClassType* dt = toDecoratedClassType(t))
+      at = dt->getCanonicalClass();
+
     VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
     if (field->isParameter() == true || field->isType() == true) {
@@ -263,7 +288,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
              call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES) ||
-             call->isPrimitive(PRIM_IS_PROPER_SUBTYPE)) {
+             call->isPrimitive(PRIM_IS_PROPER_SUBTYPE) ||
+             call->isPrimitive(PRIM_IS_COERCIBLE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
 
@@ -282,25 +308,33 @@ static Expr* postFoldPrimop(CallExpr* call) {
     Type* st = subExpr->getValType();
     Type* pt = parentExpr->getValType();
 
-    if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
+    if (st->symbol->hasFlag(FLAG_DISTRIBUTION) &&
+        isDistClass(canonicalClassType(pt))) {
       AggregateType* ag = toAggregateType(st);
 
-      st = canonicalClassType(ag->getField("_instance")->type);
+      st = canonicalDecoratedClassType(ag->getField("_instance")->type);
     } else {
       // Try to work around some resolution order issues
       st = resolveTypeAlias(subExpr);
       pt = resolveTypeAlias(parentExpr);
     }
 
+    if (classesWithSameKind(st, pt)) {
+      st = canonicalClassType(st);
+      pt = canonicalClassType(pt);
+    }
+
     if (st                                != dtUnknown &&
         pt                                != dtUnknown &&
 
         st                                != dtAny     &&
-        pt                                != dtAny     &&
+        pt                                != dtAny) {
 
-        st->symbol->hasFlag(FLAG_GENERIC) == false) {
-
-      bool result = isSubTypeOrInstantiation(st, pt);
+      bool result = false;
+      if (call->isPrimitive(PRIM_IS_COERCIBLE))
+        result = isCoercibleOrInstantiation(st, pt, call);
+      else
+        result = isSubtypeOrInstantiation(st, pt, call);
 
       if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
         result = result && (st != pt);
@@ -316,13 +350,13 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     } else {
       USR_FATAL(call,
-                "Unable to perform subtype query: %s:%s",
+                "Unable to perform subtype query: %s <= %s",
                 st->symbol->name,
                 pt->symbol->name);
     }
 
   } else if (call->isPrimitive(PRIM_CAST) == true) {
-    Type* t= call->get(1)->typeInfo();
+    Type* t = call->get(1)->typeInfo();
 
     if (t == dtUnknown) {
       INT_FATAL(call, "Unable to resolve type");
@@ -365,21 +399,61 @@ static Expr* postFoldPrimop(CallExpr* call) {
       call->replace(retval);
     }
 
-  } else if (call->isPrimitive("string_length") == true) {
+  } else if (call->isPrimitive("string_length_bytes") == true) {
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
 
     if (se->symbol()->isParameter() == true) {
-      const char* str    = get_string(se);
-      int         length = unescapeString(str, se).length();
+      const char* str     = get_string(se);
+      const size_t nbytes = unescapeString(str, se).length();
 
-      retval = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
+      retval = new SymExpr(new_IntSymbol(nbytes, INT_SIZE_DEFAULT));
 
       call->replace(retval);
     }
 
+  } else if (call->isPrimitive("string_length_codepoints") == true) {
+    SymExpr* se = toSymExpr(call->get(1));
+
+    INT_ASSERT(se && se->symbol()->isParameter());
+
+    const char* str         = get_string(se);
+    const std::string unesc = unescapeString(str, se);
+    const size_t nbytes     = unesc.length();
+
+    // Don't bother looking at the first byte.
+    // Count it as an initial UTF-8 byte.
+    size_t ncodepoints  = (nbytes > 0);
+    for (size_t i = 1; i < nbytes; ++i)
+      if (isInitialUTF8Byte(unesc[i]))
+        ++ncodepoints;
+
+    retval = new SymExpr(new_IntSymbol(ncodepoints, INT_SIZE_DEFAULT));
+
+    call->replace(retval);
+
   } else if (call->isPrimitive("ascii") == true) {
+    // This primitive is used from two places in the module code.
+    //
+    // One place is in CString, which calls it with exactly one
+    // argument.  That argument may or may not be a param.  If it is
+    // not, the code here will do nothing with it, and it will become
+    // a call to the runtime routine ascii().
+    //
+    // The above usage is deprecated, but the deprecation is handled
+    // elsewhere.
+    //
+    // The other place is in String, which calls it with either one or
+    // two arguments, which are always params.
+    //
+    // All tests for user errors involving out-of-bounds accesses are
+    // done in the module code so that the line number of the error
+    // message will be more useful.  Therefore, bounds checks are not
+    // done here.
+    //
+    // After the deprecated cases are removed, this code should assert
+    // that the first argument is a param instead of just testing.
     SymExpr* se = toSymExpr(call->get(1));
 
     INT_ASSERT(se);
@@ -387,8 +461,20 @@ static Expr* postFoldPrimop(CallExpr* call) {
     if (se->symbol()->isParameter() == true) {
       const char*       str       = get_string(se);
       const std::string unescaped = unescapeString(str, se);
+      size_t            idx       = 0;
 
-      retval = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
+      if (call->numActuals() > 1) {
+        SymExpr* ie = toSymExpr(call->get(2));
+        int64_t val = 0;
+
+        INT_ASSERT(ie && ie->symbol()->isParameter());
+        bool found_int = get_int(ie, &val);
+        INT_ASSERT(found_int);
+
+        idx = static_cast<size_t>(val) - 1;
+      }
+
+      retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
 
       call->replace(retval);
     }
@@ -477,7 +563,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false);
+      processStringInRequireStmt(str, false, call->astloc.filename);
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");
@@ -499,20 +585,39 @@ static Expr* postFoldPrimop(CallExpr* call) {
 }
 
 // This function implements PRIM_IS_SUBTYPE
-static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
+bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))
-    super = getInstantiationType(sub, super);
+    super = getInstantiationType(sub, NULL, super, NULL, ctx);
+
+  bool promotes = false;
+  bool dispatch = false;
+
+  if (sub && super) {
+    dispatch = sub == super ||
+               canCoerceAsSubtype(sub, NULL, super, NULL, NULL, &promotes);
+  }
+
+  return dispatch && !promotes;
+}
+
+// This function implements PRIM_IS_COERCIBLE
+bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx) {
+
+  // Consider instantiation
+  if (super->symbol->hasFlag(FLAG_GENERIC))
+    super = getInstantiationType(sub, NULL, super, NULL, ctx);
 
   bool promotes = false;
   bool dispatch = false;
 
   if (sub && super)
-    dispatch = canDispatch(sub, NULL, super, NULL, &promotes);
+    dispatch = canDispatch(sub, NULL, super, NULL, NULL, &promotes);
 
   return dispatch && !promotes;
 }
+
 
 static void insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
@@ -556,7 +661,7 @@ static Expr* postFoldMove(CallExpr* call) {
     } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
       FnSymbol* fn = rhs->resolvedFunction();
 
-      if (fn != NULL && fn->name == astrSequals && fn->retType == dtVoid) {
+      if (fn != NULL && fn->name == astrSassign && fn->retType == dtVoid) {
         call->replace(rhs->remove());
 
         retval = rhs;
@@ -705,8 +810,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
-        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
-        fn->name != astrSequals                                        &&
+        fn->name != astrSassign                                        &&
         fn->name != astr_defaultOf) {
       retval = true;
     }
@@ -750,7 +854,7 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
       //
       // The substitution usually happens before resolution, so for
       // assignment, we key off of the name :-(
-      if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSequals)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSassign)) {
         if (sym->symbol()->hasFlag(FLAG_RVV)) {
           call->convertToNoop();
         }

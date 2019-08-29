@@ -24,6 +24,7 @@ extern bool printSystemCommands;
 
 int mysystem(const char* command, 
              const char* description, 
-             bool        ignorestatus = false);
+             bool        ignorestatus = false,
+             bool        quiet = false);
 
 #endif

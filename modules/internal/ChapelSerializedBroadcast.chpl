@@ -30,18 +30,35 @@ module ChapelSerializedBroadcast {
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
-    const data = localeZeroGlobal.chpl__serialize();
-    const root = here.id;
-    coforall loc in Locales do on loc {
-      if here.id != root {
-        pragma "no copy"
-        pragma "no auto destroy"
-        var temp = T.chpl__deserialize(data);
+    //
+    // BLC: The following conditional is necessary due to the use of
+    // .type on localeZeroGlobal during deserialization because if it
+    // is an array view, this query currently returns the type that
+    // we'd get when doing `var B = localeZeroGlobal;` (i.e., an
+    // entire array).  The result is that we serialize a slice but
+    // then try to deserialize an array, yet those two routines may
+    // not know how to deal with one another.  Thanks to bharsh for
+    // helping to diagnose.  Potential fixes: Fix .type for slices to
+    // return the actual type; have the compiler pass in the type
+    // being serialized rather than querying it from localeZeroGlobal
+    // since it knows the precise type.
+    //
+    if isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal) {
+      halt("internal error: can't broadcast module-scope arrays yet");
+    } else {
+      const data = localeZeroGlobal.chpl__serialize();
+      const root = here.id;
+      coforall loc in Locales do on loc {
+        if here.id != root {
+          pragma "no copy"
+          pragma "no auto destroy"
+          var temp = localeZeroGlobal.type.chpl__deserialize(data);
 
-        const destVoidPtr = chpl_get_global_serialize_table(id);
-        const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
+          const destVoidPtr = chpl_get_global_serialize_table(id);
+          const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
 
-        __primitive("=", dest.deref(), temp);
+          __primitive("=", dest.deref(), temp);
+        }
       }
     }
   }

@@ -50,6 +50,7 @@ proc masonHelp() {
   writeln('    system      Integrate with system packages found via pkg-config');
   writeln('    test        Compile and run tests found in /test');
   writeln('    external    Integrate external dependencies into mason packages');
+  writeln('    publish     Publish package to mason-registry');
 }
 
 proc masonList() {
@@ -69,6 +70,7 @@ proc masonList() {
   writeln('      help               ');
   writeln('      version            ');
   writeln('      system             ');
+  writeln('      publish            ');
 }
 
 
@@ -128,7 +130,6 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
-
 }
 
 proc masonSearchHelp() {
@@ -149,6 +150,7 @@ proc masonSearchHelp() {
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
+  writeln("    --show                      Display the manifest of a package");
   writeln();
   writeln(desc);
 }
@@ -163,7 +165,7 @@ proc masonModifyHelp() {
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln("        --external              Add/Remove dependency from external dependencies");
-  writeln("        --system                Add/Remove dependency from system dependencies");  
+  writeln("        --system                Add/Remove dependency from system dependencies");
   writeln();
   writeln("Not listing an option will add/remove the dependency from the Mason [dependencies] table");
   writeln("Versions are necessary for adding dependencies, but not for removing dependencies");
@@ -191,7 +193,7 @@ proc masonExternalHelp() {
   writeln('    mason external [options] [<args>...]');
   writeln('    mason external [options]');
   writeln();
-  writeln("Options:");  
+  writeln("Options:");
   writeln("    search                      Search for a specific external package");
   writeln("    compiler                    List and search for compilers on system");
   writeln("    install                     Install an external package");
@@ -215,7 +217,7 @@ proc masonExternalFindHelp() {
   writeln("    <package>: a Spack spec expression indicating the package to find");
   writeln();
   writeln("Options:");
-  writeln("    -h, --help                  Display this message"); 
+  writeln("    -h, --help                  Display this message");
   writeln();
   writeln("Display Options:");
   writeln("    -s, --short                 Show only specs (default)");
@@ -306,8 +308,7 @@ proc masonInstallHelp() {
   writeln("External Mason packages can be installed as follows:");
   writeln("    mason external install <full Spack spec expression>");
   writeln();
-  }
-
+}
 
 proc masonUninstallHelp() {
   writeln("Uninstall external packages on your system");
@@ -342,7 +343,6 @@ proc masonCompilerHelp() {
   writeln();
  }
 
-
 proc masonTestHelp() {
   writeln("Run test files located within target/debug/test");
   writeln();
@@ -359,7 +359,6 @@ proc masonTestHelp() {
   writeln("Tests pass if they exit with status code 0");
 }
 
-
 proc masonSystemHelp() {
   writeln("Integrate a Mason package with system packages found via pkg-config");
   writeln();
@@ -369,7 +368,7 @@ proc masonSystemHelp() {
   writeln();
   writeln("Options:");
   writeln("    pc                          Print a system package's .pc file");
-  writeln("    search                      Search all packages available on the system");  
+  writeln("    search                      Search all packages available on the system");
   writeln("    -h, --help                  Display this message");
   writeln();
   writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
@@ -390,7 +389,6 @@ proc masonSystemSearchHelp() {
   writeln();
 }
 
-
 proc masonSystemPcHelp() {
   writeln("Print a package's .pc file (pkg-config file)");
   writeln();
@@ -402,4 +400,45 @@ proc masonSystemPcHelp() {
   writeln();
 }
 
+proc masonCleanHelp() {
+  writeln("Cleans the target directory of the mason directory");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason clean [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+}
 
+
+proc masonPublishHelp(){
+  writeln("Publish a package to the mason-registry repository");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason publish [options] <registry>");
+  writeln();
+  writeln("Options:");
+  writeln('    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry');
+  writeln("    -h, --help                   Display this message");
+  writeln('    --dry-run                    Check to see if package is ready to be published');
+  writeln('    --no-update                  Prevents registrys from being updated when a package is published.');
+  writeln();
+  writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');
+}
+
+
+proc masonDocHelp() {
+  writeln("Generate documentation for a mason package using chpldoc");
+  writeln();
+  writeln('Usage:');
+  writeln('    mason doc [options]');
+  writeln();
+  writeln('Options:');
+  writeln("    -h, --help                  Display this message");
+  writeln();
+  writeln("Will generate documentation when ran inside a mason package.");
+  writeln("Requires that chpldoc is set up in order to work.");
+  writeln("For instructions on setting up chpldoc, please view its documentation.");
+  writeln();
+}

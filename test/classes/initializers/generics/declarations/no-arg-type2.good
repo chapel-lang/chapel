@@ -1,1 +1,1 @@
-Foo(real(64))
+borrowed Foo(real(64))?

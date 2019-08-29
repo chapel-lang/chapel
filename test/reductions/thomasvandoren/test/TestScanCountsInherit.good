@@ -1,2 +1,2 @@
-TestScanCountsInherit.chpl:8: warning: scan has been serialized (see issue #5760)
+TestScanCountsInherit.chpl:8: warning: scan has been serialized (see issue #12482)
 octant rankings: 1 1 2 1 1 1 2 1 3 2

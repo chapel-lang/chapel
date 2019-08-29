@@ -112,6 +112,7 @@ module ChapelUtil {
 
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
+    pragma "fn synchronization free"
     extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
     // This is odd.  Why are the strings inside the array getting destroyed?
     pragma "no auto destroy"
@@ -123,6 +124,22 @@ module ChapelUtil {
     }
 
     return array;
+  }
+
+  proc chpl_get_mli_connection(arg: chpl_main_argument) {
+    var local_arg = arg;
+    pragma "fn synchronization free"
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
+    var flag: c_string = chpl_get_argument_i(local_arg,
+                                             (local_arg.argc-2): int(32));
+    if (flag != "--chpl-mli-socket-loc") {
+      halt("chpl_get_mli_connection called with unexpected arguments, missing "
+           + "'--chpl-mli-socket-loc <connection>', instead got " +
+           flag: string);
+    }
+    var result: c_string = chpl_get_argument_i(local_arg,
+                                               (local_arg.argc-1): int(32));
+    return result;
   }
 
   //
@@ -149,7 +166,7 @@ module ChapelUtil {
       printf(c"Deinitializing Modules:\n");
     var prev = chpl_moduleDeinitFuns;
     while prev {
-      const curr = prev;
+      const curr = prev!;
       if printModuleDeinitOrder then
         printf(c"  %s\n", curr.moduleName);
       chpl_execute_module_deinit(curr.deinitFun);

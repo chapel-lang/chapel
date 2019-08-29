@@ -42,10 +42,13 @@ This directory's contents are as follows:
 
   README            : this file
 
-  Other files with the same base filename as the Chapel test program but
+  test3DLulesh.chpl : a helper file for automated testing of a 3D run of
+                      LULESH
+
+  Other files with the same base filename as the `.chpl` files above, but
   different filename extensions, are for use by the automated test system.
   For example, file lulesh.execopts supports automated testing of
-  lulesh.chpl. Files with all-uppercase filenames like PRECOMP
+  lulesh.chpl.  Files with all-uppercase filenames like PRECOMP
   (but not "README") are similar, except they are applied to all chpl
   tests in the directory. $CHPL_HOME/examples/README.testing contains
   more information.

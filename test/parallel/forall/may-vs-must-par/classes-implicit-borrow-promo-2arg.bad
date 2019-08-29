@@ -1,0 +1,8 @@
+classes-implicit-borrow-promo-2arg.chpl:10: error: argument 1 for tuple construction is const but tuple construction takes ownership
+classes-implicit-borrow-promo-2arg.chpl:10: error: argument 2 for tuple construction is const but tuple construction takes ownership
+classes-implicit-borrow-promo-2arg.chpl:4: error: argument 1 for tuple construction is const but tuple construction takes ownership
+classes-implicit-borrow-promo-2arg.chpl:4: error: argument 2 for tuple construction is const but tuple construction takes ownership
+classes-implicit-borrow-promo-2arg.chpl:4: error: argument 1 for tuple construction is const but tuple construction takes ownership
+classes-implicit-borrow-promo-2arg.chpl:4: error: argument 2 for tuple construction is const but tuple construction takes ownership
+classes-implicit-borrow-promo-2arg.chpl:4: error: argument 1 for tuple construction is const but tuple construction takes ownership
+classes-implicit-borrow-promo-2arg.chpl:4: error: argument 2 for tuple construction is const but tuple construction takes ownership

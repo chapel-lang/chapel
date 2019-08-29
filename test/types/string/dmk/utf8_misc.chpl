@@ -1,9 +1,17 @@
-var mystring1: string = "événement";
-var ulen1 = mystring1.ulength;
+var mystring1: string = "hello";
+var blen1 = mystring1.numBytes;
 
-writeln("Byte length = ", mystring1.length);
-writeln("Codepoint length = ", ulen1);
+writeln("Byte length = ", mystring1.numBytes);
 
-for i in 1..ulen1 {
-  writeln("Codepoint index ", i, " = '", mystring1[i: codePointIndex], "'");
+for i in 1..blen1 {
+  writeln("Byte index ", i, " = '", mystring1[i: byteIndex], "'");
+}
+
+var mystring2: string = "événement";
+var cplen2 = mystring2.numCodepoints;
+
+writeln("Codepoint length = ", cplen2);
+
+for i in 1..cplen2 {
+  writeln("Codepoint index ", i, " = '", mystring2[i: codepointIndex], "'");
 }

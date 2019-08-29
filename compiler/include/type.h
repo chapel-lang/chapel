@@ -70,11 +70,6 @@ public:
   virtual void           codegenDef();
   virtual void           codegenPrototype();
 
-  // only used for heterogeneous compilations in which we need to define
-  // what our data structures are for the point of conversions
-  virtual int            codegenStructure(FILE*       outfile,
-                                          const char* baseoffset);
-
   virtual Symbol*        getField(const char* name, bool fatal = true)   const;
 
   const char*            name()                                          const;
@@ -94,6 +89,8 @@ public:
   // pointer to references for non-reference types
   AggregateType*         refType;
 
+  // Methods on this type. Note that this can contain NULLs
+  // if a method was added and then removed.
   Vec<FnSymbol*>         methods;
 
   Symbol*                defaultValue;
@@ -121,7 +118,9 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
-const char* toString(Type* type);
+// If decorateAllClasses is true, an un-decorated default class type
+// 'C' will show as 'borrowed C'
+const char* toString(Type* type, bool decorateAllClasses=true);
 
 /************************************* | **************************************
 *                                                                             *
@@ -322,7 +321,6 @@ class EnumType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenDef();
-  int codegenStructure(FILE* outfile, const char* baseoffset);
 
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
@@ -357,7 +355,6 @@ class PrimitiveType : public Type {
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
-  int codegenStructure(FILE* outfile, const char* baseoffset);
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -392,9 +389,17 @@ TYPE_EXTERN Type*             dtNumeric;
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
 TYPE_EXTERN PrimitiveType*    dtVoid;
-TYPE_EXTERN PrimitiveType*    dtValue;
+TYPE_EXTERN PrimitiveType*    dtNothing;
+TYPE_EXTERN PrimitiveType*    dtAnyRecord;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
+TYPE_EXTERN PrimitiveType*    dtBorrowedNonNilable;
+TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
+TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
+TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementAnyNilable;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementNonNilable;
+TYPE_EXTERN PrimitiveType*    dtAnyManagementNilable;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtDummyRef;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
@@ -428,7 +433,7 @@ void     initPrimitiveTypes();
 void     initChplProgram(DefExpr* objectDef);
 void     initCompilerGlobals();
 
-bool is_void_type(Type*);
+bool is_nothing_type(Type*);
 bool is_bool_type(Type*);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
@@ -441,11 +446,15 @@ bool isLegalParamType(Type*);
 int  get_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
-bool isClass(Type* t);
+bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
-bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
+bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
+bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
+bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
+bool isUserRecord(Type* t); // is it a record from the user viewpoint?
 bool isUnion(Type* t);
 
 bool isReferenceType(const Type* t);
@@ -457,6 +466,7 @@ bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
 bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
+AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
@@ -468,6 +478,7 @@ bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
 bool isString(Type* type);
+bool isBytes(Type* type);
 bool isUserDefinedRecord(Type* type);
 
 bool isPrimitiveScalar(Type* type);
@@ -489,11 +500,6 @@ bool isRecordWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
 
-void registerTypeToStructurallyCodegen(TypeSymbol* type);
-GenRet genTypeStructureIndex(TypeSymbol* typesym);
-void codegenTypeStructures(FILE* hdrfile);
-void codegenTypeStructureInclude(FILE* outfile);
-
 Type* getNamedType(std::string name);
 
 bool needsCapture(Type* t);
@@ -501,10 +507,12 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 
 bool isPOD(Type* t);
 
+bool isNumericParamDefaultType(Type* type);
+
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
 
-
+Immediate getDefaultImmediate(Type* t);
 
 
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]

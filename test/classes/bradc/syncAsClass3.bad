@@ -1,0 +1,1 @@
+syncAsClass3.chpl:5: error: Cannot assign to borrowed object? from sync int(64)

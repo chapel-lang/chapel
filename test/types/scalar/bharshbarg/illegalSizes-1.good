@@ -1,2 +1,3 @@
 illegalSizes-1.chpl:1: error: illegal size 13 for bool
-illegalSizes-1.chpl:1: error: unresolved call 'bool(13)'
+illegalSizes-1.chpl:1: error: illegal type index expression 'bool(13)'
+illegalSizes-1.chpl:1: note: primitive type 'bool' cannot be used in an index expression

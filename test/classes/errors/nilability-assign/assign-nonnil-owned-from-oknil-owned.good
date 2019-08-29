@@ -1,0 +1,1 @@
+assign-nonnil-owned-from-oknil-owned.chpl:8: error: Cannot assign to owned MyClass from owned MyClass?

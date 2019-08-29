@@ -11,7 +11,7 @@ proc setA(arg: borrowed MyClass) {
   A[1] = arg;
 }
 
-var global: borrowed MyClass;
+var global: borrowed MyClass?;
 
 var globalA: [1..1] borrowed MyClass;
 

@@ -90,6 +90,7 @@ const char* CHPL_REGEXP = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
+const char* CHPL_LIB_PIC = NULL;
 
 const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
@@ -97,7 +98,6 @@ const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
-static char moduleSearchPath[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
 // TODO: Should --library automatically generate all supported
@@ -108,6 +108,8 @@ bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryPython = false;
+bool fMultiLocaleInterop = false;
+bool fMultiLocaleLibraryDebug = false;
 
 bool no_codegen = false;
 int  debugParserLevel = 0;
@@ -142,6 +144,8 @@ bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+bool fLegacyClasses = false;
+bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
 bool fNoInferLocalFields = false;
 bool fReplaceArrayAccessesWithRefTemps = false;
@@ -158,8 +162,6 @@ bool fLLVMWideOpt = false;
 
 bool fWarnConstLoops = true;
 bool fWarnUnstable = false;
-bool fDefaultUnmanaged = false;
-bool fLegacyNew = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -176,6 +178,7 @@ bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
 bool fIncrementalCompilation = false;
+bool fNoOptimizeForallUnordered = false;
 
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
@@ -189,7 +192,6 @@ bool fIgnoreLocalClasses = false;
 bool fLifetimeChecking = true;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
-bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
@@ -201,6 +203,7 @@ char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fParseOnly = false;
 bool fPrintCallGraph = false;
+bool fPrintAllCandidates = false;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
@@ -210,10 +213,12 @@ bool fPrintDispatch = false;
 bool fPrintUnusedFns = false;
 bool fPrintUnusedInternalFns = false;
 bool fReportAliases = false;
+bool fReportBlocking = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
 bool fReportOptimizedOn = false;
+bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
 bool fReportDeadBlocks = false;
@@ -536,7 +541,11 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     llvmPrintIrStageNum = llvmStageNum::BASIC;
 
-  addNameToPrintLlvmIr(arg);
+  std::vector<std::string> fNames;
+  splitString(std::string(arg), fNames, ",");
+  for (std::size_t i = 0; i < fNames.size(); ++i) {
+    addNameToPrintLlvmIr(fNames[i].c_str());
+  }
 }
 
 static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
@@ -716,6 +725,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fIgnoreLocalClasses = false;
   fNoOptimizeOnClauses = false;
   //fReplaceArrayAccessesWithRefTemps = true; // don't tie this to --fast yet
+  fNoOptimizeForallUnordered = false;
   optimizeCCode = true;
   specializeCCode = true;
   turnOffChecks(desc, unused);
@@ -766,6 +776,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoInferLocalFields = true;         // --no-infer-local-fields
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
   fDenormalize = false;               // --no-denormalize
+  fNoOptimizeForallUnordered = true;  // --no-optimize-forall-unordered-ops
 }
 
 static void setCacheEnable(const ArgumentDescription* desc, const char* unused) {
@@ -867,7 +878,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", NULL, NULL, ModuleSymbol::mainModuleNameSet },
- {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
+ {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "[Don't] print code size of main modules", "N", &printTokens, "CHPL_PRINT_TOKENS", NULL},
  {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},
  {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
@@ -894,6 +905,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators-yield-limit", ' ', "<limit>", "Limit number of yields permitted in inlined iterators", "I", &inline_iter_yield_limit, "CHPL_INLINE_ITER_YIELD_LIMIT", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, NULL, NULL},
+ {"optimize-forall-unordered-ops", ' ', NULL, "Enable [disable] optimization of foralls to unordered operations", "n", &fNoOptimizeForallUnordered, "CHPL_DISABLE_OPTIMIZE_FORALL_UNORDERED_OPS", NULL},
  {"optimize-range-iteration", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
@@ -959,6 +971,7 @@ static ArgumentDescription arg_desc[] = {
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
+ {"print-all-candidates", ' ', NULL, "[Don't] print all candidates for a resolution failure", "N", &fPrintAllCandidates, "CHPL_PRINT_ALL_CANDIDATES", NULL},
  {"print-callgraph", ' ', NULL, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
  {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"print-unused-functions", ' ', NULL, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, NULL, NULL},
@@ -980,8 +993,9 @@ static ArgumentDescription arg_desc[] = {
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
  {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
  {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "_CHPL_REGEXP", setEnv},
- {"target-cpu", ' ', "<architecture>", "Target architecture to optimize for", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
+ {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
+ {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
  {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
  {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
  {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setEnv},
@@ -1022,6 +1036,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
+ {"report-blocking", ' ', NULL, "Report blocking functions in user code", "N", &fReportBlocking, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
@@ -1029,10 +1044,9 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlined-iterators", ' ', NULL, "Print stats on inlined iterators", "F", &fReportInlinedIterators, NULL, NULL},
  {"report-vectorized-loops", ' ', NULL, "Show which loops have vectorization hints", "F", &fReportVectorizedLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
+ {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
- {"default-unmanaged", ' ', NULL, "Enable [disable] class type defaulting to unmanaged", "N", &fDefaultUnmanaged, "CHPL_DEFAULT_UNMANAGED", NULL},
- {"legacy-new", ' ', NULL, "Enable [disable] 'new SomeClass' legacy behavior", "N", &fLegacyNew, "CHPL_LEGACY_NEW", NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  DRIVER_ARG_BREAKFLAGS_COMMON,
@@ -1045,8 +1059,9 @@ static ArgumentDescription arg_desc[] = {
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
+ {"legacy-classes", ' ', NULL, "Class variables match 1.19 - borrowed by default, can store nil", "N", &fLegacyClasses, NULL, NULL},
+ {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
- {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -1059,11 +1074,14 @@ static ArgumentDescription arg_desc[] = {
  {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
+ {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
+ {"prepend-internal-module-dir", ' ', "<directory>", "Prepend directory to internal module search path", "P", NULL, NULL, addInternalModulePath},
+ {"prepend-standard-module-dir", ' ', "<directory>", "Prepend directory to standard module search path", "P", NULL, NULL, addStandardModulePath},
  {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"print-unused-internal-functions", ' ', NULL, "[Don't] print names and locations of unused internal functions", "N", &fPrintUnusedInternalFns, NULL, NULL},
@@ -1269,6 +1287,7 @@ static void setChapelEnvs() {
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
+  CHPL_LIB_PIC         = envMap["CHPL_LIB_PIC"];
 
   CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
@@ -1307,14 +1326,6 @@ static void setupChplGlobals(const char* argv0) {
   setChapelEnvs();
 }
 
-static void postStackCheck() {
-  if (!fNoStackChecks && fUserSetStackChecks) {
-    if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
-      USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
-    }
-  }
-}
-
 static void postTaskTracking() {
   if (fEnableTaskTracking) {
     if (strcmp(CHPL_TASKS, "fifo") != 0) {
@@ -1324,10 +1335,19 @@ static void postTaskTracking() {
 }
 
 static void postStaticLink() {
-  if (fLinkStyle == LS_STATIC) {
-    if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
+  if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+    if (fLinkStyle == LS_STATIC) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-      fLinkStyle = LS_DEFAULT;
+      fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
+    }
+
+    //
+    // The default link style translates to static (at least for now), so we
+    // need to account for that when building a multi-locale library or else
+    // we'll get the same errors we do for static linking on `darwin`.
+    //
+    if (fMultiLocaleInterop && fLinkStyle == LS_DEFAULT) {
+      fLinkStyle = LS_DYNAMIC;
     }
   }
 }
@@ -1355,6 +1375,27 @@ static void postVectorize() {
     fYesVectorize = false;
     fNoVectorize = true;
   }
+}
+
+static void setMultiLocaleInterop() {
+  // We must be compiling a multi-locale library to be eligible for MLI.
+  if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
+    return;
+  }
+
+  if (strcmp(CHPL_COMM, "gasnet") != 0) {
+    USR_FATAL("Multi-locale libraries are only supported on gasnet");
+  }
+
+  if (llvmCodegen) {
+    USR_FATAL("Multi-locale libraries do not support --llvm");
+  }
+
+  if (fLibraryFortran) {
+    USR_FATAL("Multi-locale libraries do not support --library-fortran");
+  }
+
+  fMultiLocaleInterop = true;
 }
 
 static void setMaxCIndentLen() {
@@ -1391,6 +1432,24 @@ static void checkIncrementalAndOptimized() {
               " using -O optimizations directly.");
 }
 
+static void checkMLDebugAndLibmode(void) {
+
+  if (!fMultiLocaleLibraryDebug) { return; }
+
+  fLibraryCompile = true;
+
+  if (!strcmp(CHPL_COMM, "none")) {
+    fMultiLocaleLibraryDebug = false;
+
+    const char* warning =
+        "Compiling a single locale library because CHPL_COMM is none.";
+
+    USR_WARN(warning);
+  }
+
+  return;
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1402,9 +1461,11 @@ static void postprocess_args() {
 
   postTaskTracking();
 
-  postStackCheck();
+  setMultiLocaleInterop();
 
   postStaticLink();
+
+  checkMLDebugAndLibmode();
 
   setPrintCppLineno();
 

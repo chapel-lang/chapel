@@ -138,10 +138,15 @@ class CandidateDomain {
     D = initD;
     flags = initFlags;
     min_width = initMin_width;
+
+    proc calculate_signatures(param d) {
+      if d == rank then return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,);
+      else              return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,
+                                 ( ...calculate_signatures( d + 1 ) )      );
+    }
+    signatures = calculate_signatures(1);
+
     this.complete();
-    //---- Calculate signatures ----
-    for d in 1..rank do
-      signatures(d) = new unmanaged ArrayWrapper( {D.dim(d)} );
       
     for idx in D 
     {

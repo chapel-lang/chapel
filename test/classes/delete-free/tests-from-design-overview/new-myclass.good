@@ -1,26 +1,15 @@
-new-myclass.chpl:12: In function 'test1':
-new-myclass.chpl:13: warning: result of new MyClass is now managed by default
-new-myclass.chpl:13: note: 'new unmanaged MyClass' gives old behavior
-new-myclass.chpl:13: note: 'new borrowed MyClass' is the new default
-new-myclass.chpl:13: note: 'new owned MyClass', 'new shared MyClass' also available
-new-myclass.chpl:13: note: get more help with --warn-unstable
-new-myclass.chpl:14: warning: result of new MyClass is now managed by default
-new-myclass.chpl:14: note: 'new unmanaged MyClass' gives old behavior
-new-myclass.chpl:14: note: 'new borrowed MyClass' is the new default
-new-myclass.chpl:14: note: 'new owned MyClass', 'new shared MyClass' also available
-new-myclass.chpl:14: note: get more help with --warn-unstable
 in MyClass.init 1
 in MyClass.init 2
 in MyClass.init 3
 in MyClass.init 4
 in MyClass.init 5
 in MyClass.init 6
-MyClass
-MyClass
-MyClass
-MyClass
-MyClass
-MyClass
+owned MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
 in MyClass.deinit 6
 in MyClass.deinit 5
 in MyClass.deinit 4

@@ -91,9 +91,9 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_LLVM', COMPILER, 'llvm'),
+    ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
-    ChapelEnv('CHPL_LIB_PIC', RUNTIME, 'lib_pic'),
+    ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
@@ -104,7 +104,6 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
-    ChapelEnv('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
@@ -201,10 +200,6 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_3p_libunwind_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(chpl_unwind.get()))
-
-    ENV_VALS['  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH'] = chpl_3p_massivethreads_configs.get_uniq_cfg_path()
-    if chpl_tasks.get() == 'massivethreads':
-        link_args_3p.extend(chpl_3p_massivethreads_configs.get_link_args())
 
     ENV_VALS['  CHPL_QTHREAD_UNIQ_CFG_PATH'] = chpl_3p_qthreads_configs.get_uniq_cfg_path()
     if chpl_tasks.get() == 'qthreads':

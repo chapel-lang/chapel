@@ -58,9 +58,9 @@ class SystemError : Error {
   override proc message() {
     var strerror_err: err_t = ENOERR;
     var errstr              = sys_strerror_syserr_str(err, strerror_err);
-    var err_msg             = new string(errstr, isowned=true, needToCopy=false);
+    var err_msg             = createStringWithOwnedBuffer(errstr);
 
-    if !details.isEmptyString() then
+    if !details.isEmpty() then
       err_msg += " (" + details + ")";
 
     return err_msg;
@@ -73,6 +73,8 @@ class SystemError : Error {
     :arg err: the syserr to generate from
     :arg details: extra information to include with the error
   */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   proc type fromSyserr(err: syserr, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new owned BlockingIOError(details, err);
@@ -122,6 +124,8 @@ class SystemError : Error {
     :arg err: the number to generate from
     :arg details: extra information to include with the error
   */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   proc type fromSyserr(err: int, details: string = "") {
     return fromSyserr(err:syserr, details);
   }
@@ -380,9 +384,9 @@ private proc quote_string(s:string, len:ssize_t) {
   // This doesn't handle the case where ret==NULL as did the previous
   // version in QIO, but I'm not sure how that was used.
 
-  if err then return new string(qio_strdup("<error>"), isowned=true, needToCopy=false);
+  if err then return createStringWithOwnedBuffer(qio_strdup("<error>"));
 
-  return new string(ret, isowned=true, needToCopy=false);
+  return createStringWithOwnedBuffer(ret);
 }
 
 /* Create and throw a :class:`SystemError` if an error occurred, formatting a
@@ -391,33 +395,39 @@ private proc quote_string(s:string, len:ssize_t) {
 
    :arg error: the error code
    :arg msg: extra information to include in the thrown error
-   :arg path: a path to include in the thrown error
-   :arg offset: an offset to include in the thrown error
+   :arg path: optionally, a path to include in the thrown error
+   :arg offset: optionally, an offset to include in the thrown error
 
    :throws SystemError: A subtype is thrown when the error argument indicates an
                         error occurred
  */
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.length:ssize_t);
+    const quotedpath = quote_string(path, path.numBytes:ssize_t);
     var   details    = msg + " with path " + quotedpath +
                        " offset " + offset:string;
     throw SystemError.fromSyserr(error, details);
   }
 }
 
-// documented in the offset version
+pragma "no doc" // documented in the offset version
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.length:ssize_t);
+    const quotedpath = quote_string(path, path.numBytes:ssize_t);
     var   details    = msg + " with path " + quotedpath;
     throw SystemError.fromSyserr(error, details);
   }
 }
 
-// documented in the offset version
+pragma "no doc" // documented in the offset version
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string) throws
 {
   if error then throw SystemError.fromSyserr(error, msg);
@@ -433,9 +443,11 @@ proc ioerror(error:syserr, msg:string) throws
 
    :throws IOError: always throws an IOError
  */
+pragma "insert line file info"
+pragma "always propagate line file info"
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
-  const quotedpath = quote_string(path, path.length:ssize_t);
+  const quotedpath = quote_string(path, path.numBytes:ssize_t);
   const details    = errstr + " " + msg + " with path " + quotedpath +
                      " offset " + offset:string;
   throw SystemError.fromSyserr(EIO:syserr, details);
@@ -450,7 +462,7 @@ proc errorToString(error:syserr):string
 {
   var strerror_err:err_t = ENOERR;
   const errstr = sys_strerror_syserr_str(error, strerror_err);
-  return new string(errstr, isowned=true, needToCopy=false);
+  return createStringWithOwnedBuffer(errstr);
 }
 
 }

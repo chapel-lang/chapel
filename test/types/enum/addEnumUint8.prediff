@@ -1,6 +1,6 @@
 #!/bin/bash
 
 output=$2
-cat $output | sed '/^\$CHPL_HOME\/modules\// d' > $output.tmp
+cat $output | sed -e '/^\$CHPL_HOME\/modules\//d' -e '1,/unresolved call/!d' > $output.tmp
 echo "(prediff deleted module lines)" >> $output.tmp
 mv $output.tmp $output

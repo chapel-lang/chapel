@@ -1,0 +1,5 @@
+perfkeys: Performance (GUPS) =, Performance (GUPS) =, Performance (GUPS) =, Performance (GUPS) =
+files: ra.atomic-n33.dat, ra.unordered-atomic-n33.dat, ra.ordered-atomic-n33.dat, ra.atomic-oversub4-n33.dat
+graphkeys: ra-atomics GUPS, ra-unordered-atomics GUPS, ra-ordered-atomics GUPS, ra-oversubscribed-atomics (4x tasks) GUPS
+graphtitle: HPCC: RA-atomics Variations Perf (GUPS) - n=2^33
+ylabel: Performance (GUPS)

@@ -285,11 +285,16 @@ module MPI {
       coforall loc in Locales do on loc {
           // This must be done on all locales!
           var pmiGniCookie = C_Env.getenv("PMI_GNI_COOKIE") : string;
-          if !pmiGniCookie.isEmptyString() {
+          if !pmiGniCookie.isEmpty() {
             // This may be a colon separated string.
             var cookieJar = pmiGniCookie.split(":");
             const lastcookie = cookieJar.domain.last;
-            cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
+            try {
+              cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
+            } catch e {
+              writeln("Unable to parse PMI_GNI_COOKIE");
+              C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+            }
             const newVal = ":".join(cookieJar);
             C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
           }
@@ -436,7 +441,6 @@ module MPI {
 
   {
     pragma "no doc"
-    pragma "no prototype"
     extern proc sizeof(type t): size_t;
     assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
   }

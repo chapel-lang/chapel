@@ -1,1 +1,1 @@
-override-missing2.chpl:7: warning: Child.f override keyword required for method matching signature of superclass method
+override-missing2.chpl:7: error: Child.f override keyword required for method matching signature of superclass method

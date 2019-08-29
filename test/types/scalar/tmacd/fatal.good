@@ -1,1 +1,2 @@
-fatal.chpl:5: error: unresolved call 'int(64)(real(64))'
+fatal.chpl:5: error: illegal type index expression 'int(64)(real(64))'
+fatal.chpl:5: note: primitive type 'int(64)' cannot be used in an index expression

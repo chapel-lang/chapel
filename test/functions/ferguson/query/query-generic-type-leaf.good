@@ -1,3 +1,4 @@
 query-generic-type-leaf.chpl:34: error: unresolved call 'f(Wrapper(OtherGenericClass(int(64))))'
-query-generic-type-leaf.chpl:15: note: candidates are: f(x: Wrapper(GenericClass))
-query-generic-type-leaf.chpl:12: note:                 Wrapper.f
+query-generic-type-leaf.chpl:15: note: this candidate did not match: f(x: Wrapper(GenericClass))
+query-generic-type-leaf.chpl:15: note: because an argument was incompatible
+query-generic-type-leaf.chpl:12: note: candidates are: Wrapper.f

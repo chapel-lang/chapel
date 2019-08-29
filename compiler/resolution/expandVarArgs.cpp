@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 typedef std::vector<ArgSymbol*> Formals;
 
@@ -328,6 +329,8 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
     DefExpr*   newArgDef = varArg->defPoint->copy();
     ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
 
+    // Please update FnSymbol::substitutionsToString if this changes
+    newFormal->addFlag(FLAG_EXPANDED_VARARGS);
     newFormal->variableExpr = NULL;
     newFormal->name         = astr("_e", istr(i + 1), "_", varArg->name);
     newFormal->cname        = astr("_e", istr(i + 1), "_", varArg->cname);
@@ -498,7 +501,7 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
   CallExpr* retval = NULL;
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-    retval = new CallExpr("_type_construct__tuple");
+    retval = new CallExpr(dtTuple->symbol);
 
     retval->insertAtTail(new_IntSymbol(n));
   } else {
@@ -550,7 +553,7 @@ static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
   CallExpr* retval = NULL;
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-    retval = new CallExpr("_type_construct__tuple");
+    retval = new CallExpr(dtTuple->symbol);
   } else {
     retval = new CallExpr(tupleInitName);
   }

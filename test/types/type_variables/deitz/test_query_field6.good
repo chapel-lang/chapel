@@ -1,2 +1,3 @@
 test_query_field6.chpl:11: error: unresolved call 'foo(1.0, 2, 3)'
-test_query_field6.chpl:1: note: candidates are: foo(x: ?t ...?k)
+test_query_field6.chpl:1: note: this candidate did not match: foo(x: ?t ...?k)
+test_query_field6.chpl:1: note: because an argument was incompatible

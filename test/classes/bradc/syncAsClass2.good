@@ -1,1 +1,1 @@
-syncAsClass2.chpl:5: error: type mismatch in assignment from _syncvar(int(64)) to object
+syncAsClass2.chpl:5: error: Cannot assign to borrowed object? from sync int(64)

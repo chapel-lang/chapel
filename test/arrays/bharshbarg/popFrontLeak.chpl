@@ -3,13 +3,13 @@ class C {
 }
 
 record R {
-  var c : unmanaged C;
+  var c : unmanaged C?;
   proc init() { }
   proc init(x:int) {
     c = new unmanaged C(x);
   }
-  proc init(other:R) {
-    this.c = new unmanaged C(other.c.x);
+  proc init=(other:R) {
+    this.c = new unmanaged C(other.c!.x);
   }
   proc deinit() {
     if c != nil then delete c;
@@ -18,7 +18,7 @@ record R {
 
 proc =(ref LHS : R, rhs : R) {
   if LHS.c then delete LHS.c;
-  LHS.c = new unmanaged C(rhs.c.x);
+  LHS.c = new unmanaged C(rhs.c!.x);
 }
 
 proc main() {

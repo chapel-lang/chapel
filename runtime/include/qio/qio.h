@@ -61,16 +61,8 @@ typedef uint32_t qio_hint_t;
 #define FTYPE_NONE 0
 #endif
 
-#ifndef FTYPE_HDFS
-#define FTYPE_HDFS 1
-#endif
-
 #ifndef FTYPE_LUSTRE
 #define FTYPE_LUSTRE LUSTRE_SUPER_MAGIC
-#endif
-
-#ifndef FTYPE_CURL
-#define FTYPE_CURL 3
 #endif
 
 // The qio lock must be re-entrant in order to handle
@@ -82,113 +74,8 @@ typedef uint32_t qio_hint_t;
 // write(a,b,c) might call
 //    a.writeThis() which calls
 //        write(16) for example
-
-// ---- Typedefs for plugin API -----
-
-typedef qioerr (*qio_readv_fptr)(void*, // plugin file pointer
-                const struct iovec*,    // Data to write into
-                int,                    // number of elements in iovec
-                ssize_t*,               // Amount that was written into iovec
-                void*);                 // plugin filesystem pointer
-
-typedef qioerr (*qio_writev_fptr) (void*, // plugin fp
-                const struct iovec*,      // data to write from
-                int,                      // Number of elements in iovec
-                ssize_t*,                 // Amount written on return
-                void*);                   // plugin filesystem pointer
-
-typedef qioerr (*qio_preadv_fptr) (void*, // plugin fp
-                const struct iovec*,      // Data to write into
-                int,                      // number of elements in iovec
-                off_t,                    // Offset to read from
-                ssize_t*,                 // Amount that was written into iovec
-                void*);                   // plugin filesystem pointer
-
-typedef qioerr (*qio_pwritev_fptr) (void*,//plugin fp
-                const struct iovec*,      // data to write from
-                int,                      // Number of elements in iovec 
-                off_t,                    // offset to write 
-                ssize_t*,                 // Amount written on return
-                void*);                   // plugin filesystem pointer
-
-typedef qioerr (*qio_seek_fptr)(void*,  // plugin fp
-                                off_t,  // offset to seek from
-                                int,    // Amount to seek
-                                off_t*, // Offset on return from seek
-                                void*); // plugin filesystem pointer
-
-typedef qioerr (*qio_filelength_fptr)(void*,     // file information 
-                                      int64_t*,  // length on return
-                                      void*);    // plugin filesystem pointer
-
-typedef qioerr (*qio_getpath_fptr)(void*,        // file information
-                                   const char**, // string/path on return
-                                   void*);       // plugin filesystem pointer
-
-typedef qioerr (*qio_open_fptr)(void**,      // file information on return
-                                const char*, // pathname to file
-                                int*,        // flags. User can change these if they wish
-                                mode_t,      // mode
-                                qio_hint_t,  // Hints for opening the file
-                                void*);      // plugin filesystem pointer
-
-typedef qioerr (*qio_close_fptr)(void*, // file information
-                                 void*); // fs info
-
-typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
-
-typedef int (*qio_get_fs_type_fptr)(void*, void*); // file information, fs info
-
-typedef qioerr (*qio_getcwd_fptr)(void*,  // file information (maybe NULL)
-                                          // (useful in proxying situations,
-                                          // such as with a local channel for
-                                          // a remote file)
-                                  const char**,  // path on return
-                                  void*); // plugin filesystem pointer
-
-typedef qioerr (*qio_get_chunk_fptr)(void*, // file info
-                                     int64_t*, // length
-                                     void*); // fs info
-
-typedef qioerr (*qio_get_locales_for_region_fptr) (void*,       // file info
-                                                   off_t,       // start
-                                                   off_t,       // end
-                                                   const char***, // locale names out
-                                                   int*,        // number of locales that we got total
-                                                   void*);      // fs info
-
-// The ordering of these fields is important due to struct initialization
-typedef struct qio_file_functions_s {
-  qio_writev_fptr  writev; 
-  qio_readv_fptr   readv;
-
-  qio_pwritev_fptr pwritev;
-  qio_preadv_fptr  preadv;
-
-  qio_close_fptr   close;
-  qio_open_fptr    open;
-
-  // seek is currently only used in initialization
-  qio_seek_fptr   seek;
-
-  qio_filelength_fptr filelength;
-  qio_getpath_fptr getpath;
-
-  qio_fsync_fptr fsync;
-  qio_getcwd_fptr getcwd;
-  qio_get_fs_type_fptr get_fs_type;
-
-  // multilocale API
-  qio_get_chunk_fptr get_chunk;
-  qio_get_locales_for_region_fptr get_locales_for_region;
-
-  // We used to store void* fs here, but it moved to the
-  // qio file structure and an argument to qio file functions
-  // so that qio_file_functions_t can be const.
-} qio_file_functions_t;
-
-typedef qio_file_functions_t* qio_file_functions_ptr_t;
-// -- end --
+// UPDATE 3 -- I don't believe this is necessary anymore
+//             because of the way writeThis now works
 
 #ifdef __cplusplus
 } // end extern "C"
@@ -489,8 +376,7 @@ typedef struct qio_file_s {
                   // so access to this must be protected
                   // by the file's lock.
 
-  void* fs_info; // Holds the filesystem information (as a user defined struct)
-  const qio_file_functions_t* fsfns; // Holds the functions for the filesystem
+  //void* fs_info; // Holds the filesystem information (as a user defined struct)
   void* file_info; // Holds the file information (as a user defined struct)
 
   qio_fdflag_t fdflags;
@@ -557,26 +443,17 @@ qioerr qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, const qio_style_
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style);
 
-qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
-                        int flags, mode_t mode, qio_hint_t iohints, 
-                        const qio_style_t* style,
-                        void* fs_info,
-                        const qio_file_functions_t* s);
-
-qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, 
-                        qio_hint_t iohints, int flags, const qio_style_t* style, 
-                        void* fs_info,
-                        const qio_file_functions_t* fns);
+qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, 
+                            int fdflags, const qio_style_t* style);
 
 qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
                                const char* access, qio_hint_t iohints, 
                                const qio_style_t* style,
-                               void* fs_info,
-                               const qio_file_functions_t* s);
+                               void* fs_info);
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
-qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int* num_locs_out);
+qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int64_t* num_locs_out);
 
 // This can be called to run close and to check the return value.
 // That's important because some implementations (such as NFS)
@@ -631,6 +508,17 @@ static inline
 void qio_file_get_style(qio_file_t* f, qio_style_t* style)
 {
   *style = f->style;
+}
+
+static inline
+bool qio_file_isopen(qio_file_t* f) 
+{
+  return !(f->closed);
+}
+
+static inline
+void* qio_file_get_plugin(qio_file_t* f) {
+  return f->file_info;
 }
 
 // Return the current length of a file.
@@ -748,6 +636,7 @@ typedef struct qio_channel_s {
   qioerr error;
 
   qio_file_t* file;
+  void* chan_info; // plugin
   qio_lock_t lock;
 
   // less frequently used.
@@ -794,6 +683,7 @@ typedef struct qio_channel_s {
   /* Each buffer is divided into these sections:
    * _________________________________________________________________
    * |write-behind | user writeable/readable | read-ahead/buffer space|
+   * |             | aka available           | aka allocated          |
    *             mark_stack[0]              av_end
    *             "av_start"
    *                  mark_stack[mark_next-1] 
@@ -874,6 +764,10 @@ qioerr qio_channel_error(qio_channel_t* ch) {
   return ch->error;
 }
 
+static inline
+void* qio_channel_get_plugin(qio_channel_t* ch) {
+  return ch->chan_info;
+}
 
 qioerr _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
@@ -1225,6 +1119,43 @@ qioerr qio_channel_require_write(const int threadsafe, qio_channel_t* ch, int64_
   return err;
 }
 
+// returns the number of bytes allocated - that is, the number
+// of bytes from av_end to the end of the buffer.
+int64_t qio_channel_nbytes_allocated_unlocked(qio_channel_t* ch);
+// returns the number of bytes "available", that is, number of bytes
+// from right_mark_start (aka current offset) to av_end.
+int64_t qio_channel_nbytes_available_unlocked(qio_channel_t* ch);
+// returns the number of bytes ready for write-behind, that is,
+// the number of bytes from the start of the buffer to the av_start 
+int64_t qio_channel_nbytes_write_behind_unlocked(qio_channel_t* ch);
+
+// Returns a pointer,length for the next contiguous sequence in the
+// allocated region, as well as the offset to start a read at.
+// Ensures that amt_requested buffer space is available, first.
+// (useful for QIO plugins when handling a 'read' I/O operation)
+// TODO: rename to get-read-ahead-ptr-unlocked
+qioerr qio_channel_get_allocated_ptr_unlocked(qio_channel_t* ch, int64_t amt_requested, void** ptr_out, ssize_t* len_out, int64_t* offset_out);
+// Move the end of the available region forward len bytes
+void qio_channel_advance_available_end_unlocked(qio_channel_t* ch, ssize_t len);
+
+// Copies the len bytes starting at ptr to the channel
+// allocating buffer space if necessary in the channel.
+// (useful for QIO plugins when handling a 'read' I/O operation)
+qioerr qio_channel_copy_to_available_unlocked(qio_channel_t* ch, void* ptr, ssize_t len);
+
+// Returns a pointer,length for the next contiguous sequence in the
+// write-behind region, as well as the offset to start a write at.
+// (useful for QIO plugins when handling a 'write' I/O operation)
+qioerr qio_channel_get_write_behind_ptr_unlocked(qio_channel_t* ch, void** ptr_out, ssize_t* len_out, int64_t* offset_out);
+
+// Move the write-behind region forward len bytes
+void qio_channel_advance_write_behind_unlocked(qio_channel_t* ch, ssize_t len);
+
+// Copies from the buffer start len bytes into ptr
+// (useful for QIO plugins when handling a 'write' I/O operation)
+// TODO: rename to e.g. write_behind_to_pointer
+qioerr qio_channel_copy_from_buffered_unlocked(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* n_written_out);
+
 void _qio_buffered_setup_cached(qio_channel_t* ch);
 void _qio_buffered_advance_cached(qio_channel_t* ch);
 
@@ -1282,6 +1213,11 @@ qioerr qio_channel_isbuffered(const int threadsafe, qio_channel_t* ch, char* isb
   return 0;
 }
 
+
+static inline
+bool qio_channel_writable(qio_channel_t* ch) {
+  return (ch->flags & QIO_FDFLAG_WRITEABLE) > 0;
+}
 
 qioerr qio_channel_offset(const int threadsafe, qio_channel_t* ch, int64_t* offset_out);
 
@@ -1452,6 +1388,7 @@ qioerr qio_channel_revert(const int threadsafe, qio_channel_t* ch)
   return 0;
 }
 
+qioerr qio_channel_seek(qio_channel_t* ch, int64_t start, int64_t end);
 
 void qio_channel_commit_unlocked(qio_channel_t* ch);
 

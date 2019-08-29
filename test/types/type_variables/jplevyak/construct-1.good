@@ -1,2 +1,4 @@
-construct-1.chpl:6: error: unresolved type specifier 'R(t=type real(64), x=3)'
-construct-1.chpl:1: note: candidates are: R(type t)
+construct-1.chpl:6: error: invalid type specifier 'R(t=type real(64), x=3)'
+construct-1.chpl:6: note: type specifier did not match: R(type t)
+construct-1.chpl:6: note: type was specified with 2 arguments
+construct-1.chpl:1: note: but type 'R' only has 1 generic field

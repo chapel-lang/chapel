@@ -12,7 +12,7 @@ proc examples() {
 
   writeln("declaring owned2 storing nil");
   // it's OK to have owned initially empty. It will point to 'nil'.
-  var owned2: owned C;
+  var owned2: owned C?;
   writeln("owned2 = ", owned2.borrow());
 
   // Assignment is supported, but it empties the RHS

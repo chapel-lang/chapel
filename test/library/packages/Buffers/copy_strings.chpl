@@ -5,8 +5,8 @@ config const msg2 = "I'm sorry.";
 config const msg3 = "I'm afraid I can't do that.";
 
 var buf: buffer;
-buf.append(new bytes(3*numBytes(int) + msg1.length +
-                     msg2.length + msg3.length));
+buf.append(new byteBuffer(3*numBytes(int) + msg1.numBytes +
+                          msg2.numBytes + msg3.numBytes));
 
 {
   var cur = buf.start();

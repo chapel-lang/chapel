@@ -1,0 +1,2 @@
+zippered-for-errors.chpl:6: error: A zippered for-loop over parallel iterator(s) is currently not implemented
+zippered-for-errors.chpl:9: error: A zippered for-loop over parallel iterator(s) is currently not implemented

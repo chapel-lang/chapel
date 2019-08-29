@@ -46,12 +46,12 @@
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -65,14 +65,17 @@
 #include <map>
 #include <utility>
 
-static void addDefaultsAndReorder(FnSymbol *fn,
-                                CallExpr* call,
-                                CallInfo* info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal,
-                                bool resolveNewCode);
-static void addDefaultsAndReorder(FnSymbol *fn,
-                                CallInfo& info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal);
+static void addDefaultTokensAndReorder(FnSymbol *fn,
+                                       CallInfo& info,
+                                       std::vector<ArgSymbol*>& actualIdxToFml);
+static void addDefaultTokensAndReorder(FnSymbol *fn,
+                                       CallExpr* call,
+                                       std::vector<ArgSymbol*>& actualIdxToFml);
+static void replaceDefaultTokensWithDefaults(FnSymbol *fn,
+                                             CallExpr* call,
+                                             bool resolveNewCode);
+static void replaceDefaultTokensWithDefaults(FnSymbol *fn,
+                                             CallInfo& info);
 
 
 
@@ -154,6 +157,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 bool                     fastFollowerChecks) {
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
+  bool      anyDefault = false;
 
   if (isPromotionRequired(retval, info, actualIdxToFormal) == true) {
     // Note: promotionWrap will handle default args in the inner call
@@ -162,11 +166,11 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
     retval = promotionWrap(retval, info, actualIdxToFormal, fastFollowerChecks);
   }
 
-  // If we don't have the right number of arguments, adjust the
-  // call site to handle default arguments.
   if (numActuals < retval->numFormals()) {
-    // note: this handle default args and reordering
-    addDefaultsAndReorder(retval, info, actualIdxToFormal);
+    // If we don't have the right number of arguments, add placeholders
+    // for defaulted arguments.
+    addDefaultTokensAndReorder(retval, info, actualIdxToFormal);
+    anyDefault = true;
   } else {
     // handle reordering only
     if (actualIdxToFormal.size() > 1) {
@@ -178,6 +182,15 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   // in the event of promotion, coercion might be necessary
   // for non-promoted arguments.
   if (info.actuals.n > 0) {
+    coerceActuals(retval, info);
+  }
+
+  // Fix any gUnknown arguments added by the above defaults and
+  // replace them with the real defaults.
+  if (anyDefault) {
+    replaceDefaultTokensWithDefaults(retval, info);
+    // And then handle coercions again, in case the default expression
+    // needs a coercion to the actual type.
     coerceActuals(retval, info);
   }
 
@@ -200,7 +213,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
 static bool      defaultedFormalUsesDefaultForType(ArgSymbol* formal);
 
-static bool      formalDefaultIsCall(ArgSymbol* formal);
+static bool      formalDefaultIsVariable(ArgSymbol* formal);
 
 static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
                                                     BlockStmt* wrapFn,
@@ -218,48 +231,30 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
                                      BlockStmt* body,
                                      SymbolMap& copyMap);
 
-// info is used to handle out-of-order named arguments
-// if there aren't any out-of-order arguments (as with promotion)
-// it can be NULL.
-static void addDefaultsAndReorder(FnSymbol *fn,
+static
+void addDefaultTokensAndReorder(FnSymbol *fn,
                                 CallExpr* call,
-                                CallInfo* info,
-                                std::vector<ArgSymbol*>& actualFormals,
-                                bool resolveNewCode) {
-
+                                std::vector<ArgSymbol*>& actualFormals) {
   int numFormals = fn->numFormals();
   std::vector<Symbol*> newActuals(numFormals);
-  std::vector<int8_t> newActualDefaulted(numFormals);
 
   // Gather the actuals into newActuals with NULLs where
   // we need to fill in a default. This also happens
   // to address the need to reorder the actuals.
   int i = 0;
   for_formals(formal, fn) {
-    bool actualProvidedForFormal = false;
     Symbol* actualSym = NULL;
-    if (info) {
-      int j = 0;
-      for_vector(ArgSymbol, arg, actualFormals) {
-        if (arg == formal) {
-          actualSym = info->actuals.v[j];
-        }
-        j++;
+    int j = 0;
+    for_actuals(actual, call) {
+      if (actualFormals[j] == formal) {
+        SymExpr* se = toSymExpr(actual);
+        INT_ASSERT(se);
+        actualSym = se->symbol();
       }
-    } else {
-      int j = 0;
-      for_actuals(actual, call) {
-        if (actualFormals[j] == formal) {
-          actualProvidedForFormal = true;
-          if (SymExpr* se = toSymExpr(actual))
-            actualSym = se->symbol();
-        }
-        j++;
-      }
+      j++;
     }
 
     newActuals[i] = actualSym;
-    newActualDefaulted[i] = !actualProvidedForFormal;
 
     i++;
   }
@@ -268,6 +263,109 @@ static void addDefaultsAndReorder(FnSymbol *fn,
   // (we'll add them back again in a moment)
   for_actuals(actual, call) {
     actual->remove();
+  }
+
+  // Add the actuals back in the call along with gUnknown for
+  // defaulted arguments (we'll fix that in replaceDefaultTokensWithDefaults)
+  for_vector_allowing_0s(Symbol, actual, newActuals) {
+    if (actual != NULL) {
+      call->insertAtTail(actual);
+    } else {
+      call->insertAtTail(new SymExpr(gUnknown));
+    }
+  }
+}
+
+// info is used to handle out-of-order named arguments
+// if there aren't any out-of-order arguments (as with promotion)
+// it can be NULL.
+static
+void addDefaultTokensAndReorder(FnSymbol *fn,
+                                CallInfo& info,
+                                std::vector<ArgSymbol*>& actualFormals) {
+
+  int numFormals = fn->numFormals();
+  std::vector<Symbol*> newActuals(numFormals);
+
+  // Gather the actuals into newActuals with NULLs where
+  // we need to fill in a default. This also happens
+  // to address the need to reorder the actuals.
+  int i = 0;
+  for_formals(formal, fn) {
+    Symbol* actualSym = NULL;
+    int j = 0;
+    for_vector(ArgSymbol, arg, actualFormals) {
+      if (arg == formal) {
+        actualSym = info.actuals.v[j];
+      }
+      j++;
+    }
+
+    newActuals[i] = actualSym;
+
+    i++;
+  }
+
+  // Remove the actuals from the call
+  for_actuals(actual, info.call) {
+    actual->remove();
+  }
+
+  // Add the actuals back in the call along with gUnknown for
+  // defaulted arguments (we'll fix that in replaceDefaultTokensWithDefaults)
+  for_vector_allowing_0s(Symbol, actual, newActuals) {
+    if (actual != NULL) {
+      info.call->insertAtTail(actual);
+    } else {
+      info.call->insertAtTail(new SymExpr(gUnknown));
+    }
+  }
+
+  // Update the CallInfo actuals and actualNames fields
+  info.actuals.clear();
+  info.actualNames.clear();
+  for_actuals(actual, info.call) {
+    SymExpr* se = toSymExpr(actual);
+    INT_ASSERT(se);
+    info.actuals.add(se->symbol());
+    info.actualNames.add(NULL);
+  }
+
+  // update actualFormals[] in case it is used again
+  // Since we addressed reordering above, this is always just
+  // the formals in order.
+  actualFormals.resize(fn->numFormals());
+  i = 0;
+  for_formals(formal, fn) {
+    actualFormals[i] = formal;
+    i++;
+  }
+}
+
+static
+void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
+                                        CallExpr* call,
+                                        CallInfo* info,
+                                        bool resolveNewCode) {
+
+  int numFormals = fn->numFormals();
+  std::vector<Symbol*> newActuals(numFormals);
+  std::vector<int8_t> newActualDefaulted(numFormals);
+
+  // Gather the call information into newActuals, newActualDefaulted
+  int i = 0;
+  for_actuals(actual, call) {
+    SymExpr* se = toSymExpr(actual);
+    if (se && se->symbol() == gUnknown) {
+      // it's a defaulted argument, gUnknown is the placeholder
+      newActuals[i] = NULL;
+      newActualDefaulted[i] = true;
+    } else {
+      // it's not a defaulted argument
+      newActuals[i] = se->symbol();
+      newActualDefaulted[i] = false;
+    }
+    i++;
   }
 
   // Create a copyMap to handle cases like
@@ -338,7 +436,7 @@ static void addDefaultsAndReorder(FnSymbol *fn,
 
         bool promotes = false;
         bool dispatches = canDispatch(actualValType, actual,
-                                      formalValType, fn,
+                                      formalValType, formal, fn,
                                       &promotes, NULL, formalIsParam);
 
         if (actualIsTypeAlias != formalIsTypeAlias ||
@@ -351,44 +449,39 @@ static void addDefaultsAndReorder(FnSymbol *fn,
     }
   }
 
-  // Add the actuals back to the call.
-  for_vector(Symbol, actual, newActuals) {
-    call->insertAtTail(actual);
+  // Replace any gUnknowns in the call with the new actual
+  i = 0;
+  for_actuals(actual, call) {
+    if (newActuals[i] != NULL) {
+      SymExpr* se = toSymExpr(actual);
+      if (se && se->symbol() != newActuals[i]) {
+        se->setSymbol(newActuals[i]);
+        if (info)
+          info->actuals.v[i] = newActuals[i];
+      }
+    }
+    i++;
   }
 
   // Adjust AST location to be call site
-  reset_ast_loc(body, call);
+  if (fn->getModule()->modTag != MOD_USER)
+    reset_ast_loc(body, call);
 
   // Flatten body
   body->flattenAndRemove();
 }
 
-static void addDefaultsAndReorder(FnSymbol *fn,
-                                CallInfo& info,
-                                std::vector<ArgSymbol*>& actualFormals) {
+static
+void replaceDefaultTokensWithDefaults(FnSymbol *fn,
+                                      CallExpr* call,
+                                      bool resolveNewCode) {
+  doReplaceDefaultTokensWithDefaults(fn, call, NULL, resolveNewCode);
+}
 
-  // Handle both reordering and default arguments
-  addDefaultsAndReorder(fn, info.call, &info, actualFormals, true);
-
-  // Update the CallInfo actuals and actualNames fields
-  info.actuals.clear();
-  info.actualNames.clear();
-  for_actuals(actual, info.call) {
-    SymExpr* se = toSymExpr(actual);
-    INT_ASSERT(se);
-    info.actuals.add(se->symbol());
-    info.actualNames.add(NULL);
-  }
-
-  // update actualFormals[] for use in reorderActuals
-  // Since we addressed reordering above, this is always just
-  // the formals in order.
-  actualFormals.resize(fn->numFormals());
-  int i = 0;
-  for_formals(formal, fn) {
-    actualFormals[i] = formal;
-    i++;
-  }
+static
+void replaceDefaultTokensWithDefaults(FnSymbol *fn,
+                                      CallInfo& info) {
+  doReplaceDefaultTokensWithDefaults(fn, info.call, &info, true);
 }
 
 static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
@@ -431,6 +524,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   }
 
+  wrapper->addFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_MAYBE_PARAM);
   wrapper->addFlag(FLAG_MAYBE_TYPE);
@@ -450,7 +544,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // Set up the arguments
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      fn->isInitializer() == false) {
+      fn->isInitializer() == false &&
+      fn->isCopyInit() == false) {
     // Set up mt and this arguments
     Symbol* thisArg = fn->_this;
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
@@ -554,8 +649,11 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // argument expression so that we can query its type while setting
   // up the return intent for the function. (The return value variable
   // gets special treatment and would be harder to use in this way).
-  VarSymbol* temp   = newTemp("temp");
+  //
+  // Use the name of the formal for better error messages.
+  VarSymbol* temp   = newTemp(formal->name);
 
+  temp->addFlag(FLAG_USER_VARIABLE_NAME);
   // Suppress lvalue errors, which are easily encountered with default
   // wrappers for initializers.
   temp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
@@ -604,10 +702,12 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     defaultedFormalApplyDefaultForType(formal, block, temp);
 
   } else {
-    // If the default expression is a call, don't use PRIM_ADDR_OF on it.
+    // If the default expression is a call or dtNil,
+    // don't use PRIM_ADDR_OF on it.
     // Instead, we'll set temp to a ref or not based on FLAG_MAYBE_REF.
     bool addAddrOf = false;
-    if ((formalIntent & INTENT_FLAG_REF) != 0 && !formalDefaultIsCall(formal))
+    if ((formalIntent & INTENT_FLAG_REF) != 0 &&
+        formalDefaultIsVariable(formal))
       addAddrOf = true;
 
     defaultedFormalApplyDefaultValue(fn, formal, addAddrOf, block, temp);
@@ -700,11 +800,13 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   // Add a call to the defaulted formals fn passing in the
   // appropriate actual values.
   CallExpr* newCall = new CallExpr(entry->defaultExprFn);
+  bool throws = newCall->resolvedFunction()->throwsError();
 
   // Add method token, this if needed
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      fn->isInitializer() == false) {
+      fn->isInitializer() == false &&
+      fn->isCopyInit() == false) {
     // Set up mt and _this arguments
     newCall->insertAtTail(gMethodToken);
     Symbol* usedFormal = fn->_this;
@@ -712,6 +814,14 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
     INT_ASSERT(mapTo); // Should have another actual!
     newCall->insertAtTail(new SymExpr(mapTo));
   }
+
+  // If the new call throws and it was in a 'try'/'try!' before
+  // we moved it, put it into a new 'try'/'try!'
+  if (throws && call->tryTag == TRY_TAG_IN_TRYBANG)
+    newCall = new CallExpr(PRIM_TRYBANG_EXPR, newCall);
+
+  if (throws && call->tryTag == TRY_TAG_IN_TRY)
+    newCall = new CallExpr(PRIM_TRY_EXPR, newCall);
 
   size_t nUsedFormals = entry->usedFormals.size();
   for (size_t i = 0; i < nUsedFormals; i++) {
@@ -739,16 +849,30 @@ static bool defaultedFormalUsesDefaultForType(ArgSymbol* formal) {
   return retval;
 }
 
-static bool formalDefaultIsCall(ArgSymbol* formal) {
-  bool retval = true;
+static bool formalDefaultIsVariable(ArgSymbol* formal) {
+  Expr* e = formal->defaultExpr->body.tail;
+  INT_ASSERT(e != NULL);
 
-  if (formal->defaultExpr->body.length == 1) {
-    if (isSymExpr(formal->defaultExpr->body.tail)) {
-      retval = false;
-    }
+  SymExpr* se = toSymExpr(e);
+  if (se) {
+    Symbol* s = se->symbol();
+    // Is it nil or other special internal types?
+    if (s->type == dtNil || s->type == dtNothing || s->type == dtVoid)
+      return false; // treat these as non-variables (no ref, please)
+    // Is it an immediate?
+    if (s->isImmediate() || s->isParameter())
+      return false; // treat these as non-variables (no ref, please)
+    // Is it another argument?
+    if (isArgSymbol(se->symbol()))
+      return true; // other arguments are referenced
+    // Is it an outer variable?
+    if (s->defPoint->parentSymbol != formal)
+      return true; // outer variables are referenced
   }
 
-  return retval;
+  // Otherwise, it is a call of some sort, possibly including
+  // a VarSymbol storing the result of a call (as is the case with new).
+  return false;
 }
 
 static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
@@ -895,7 +1019,7 @@ static void reorderActuals(FnSymbol*                fn,
     std::vector<const char*> ciActualNames(numArgs);
     int                      index = 0;
 
-    // remove all actuals in an order
+    // remove all actuals
     for_actuals(actual, info.call) {
       savedActuals[index++] = actual->remove();
     }
@@ -1029,39 +1153,41 @@ static bool needToAddCoercion(Type*      actualType,
                               ArgSymbol* formal,
                               FnSymbol*  fn) {
   Type* formalType = formal->type;
-  bool  retval     = false;
 
-  if (actualType == formalType) {
-    retval = false;
+  if (actualType == formalType)
+    return false;
 
   // If we have an actual of ref(formalType) and
   // a REF or CONST REF argument intent, no coercion is necessary.
-  } else if (actualType == formalType->getRefType() &&
-             (getIntent(formal) & INTENT_FLAG_REF) != 0) {
-    retval = false;
+  if (actualType == formalType->getRefType() &&
+      (getIntent(formal) & INTENT_FLAG_REF) != 0)
+    return false;
 
   // New in-intents don't require coercion from ref to value
   // since it'll be handled by the initCopy call.
-  } else if (actualType == formalType->getRefType() &&
-             shouldAddFormalTempAtCallSite(formal, fn)) {
-    retval = false;
+  if (actualType == formalType->getRefType() &&
+      shouldAddFormalTempAtCallSite(formal, fn))
+    return false;
 
   // If actual and formal are type symbols, no coercion is necessary
-  } else if (actualSym->hasFlag(FLAG_TYPE_VARIABLE) &&
-             formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-    retval = false;
+  if (actualSym->hasFlag(FLAG_TYPE_VARIABLE) &&
+      formal->hasFlag(FLAG_TYPE_VARIABLE))
+    return false;
 
-  } else if (canCoerce(actualType, actualSym, formalType, fn) == true) {
-    retval =  true;
+  // Avoid adding coercions from nil because these generate
+  // errors for some C compilers.
+  if (actualType == dtNil && isClassLikeOrPtr(formalType))
+    return false;
 
-  } else if (isDispatchParent(actualType, formalType->getValType()) == true) {
-    retval =  true;
+  // One day, we shouldn't need coercion if canCoerceAsSubtype
+  // returns true. That would cover the above case. However,
+  // the emitted C code doesn't encode the class hierarchy in
+  // the type system. (But we could do this for LLVM, say).
 
-  } else {
-    retval = false;
-  }
+  if (canCoerce(actualType, actualSym, formalType, formal, fn))
+    return true;
 
-  return retval;
+  return false;
 }
 
 static IntentTag getIntent(ArgSymbol* formal) {
@@ -1107,6 +1233,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
+    USR_FATAL_CONT(formal->getFunction(),
+                   "to function '%s' defined here",
+                   formal->getFunction()->name);
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
@@ -1122,21 +1251,29 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);
+      USR_FATAL_CONT(formal->getFunction(),
+                     "to function '%s' defined here",
+                     formal->getFunction()->name);
     }
   }
 }
 
 static bool isUnmanagedClass(Type* t) {
-  if (isUnmanagedClassType(t))
-    return true;
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
 
   return false;
 }
 static bool isBorrowClass(Type* t) {
-  if (isUnmanagedClassType(t))
-    return false;
-  else if (isClass(t))
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    if (dt->isUnmanaged())
+      return false;
+    else
+      return true;
+  } else if (isClass(t)) {
     return true;
+  }
 
   return false;
 }
@@ -1311,8 +1448,6 @@ static void addArgCoercion(FnSymbol*  fn,
     resolveCallAndCallee(castCall, true);
 
     if (FnSymbol* castTarget = castCall->resolvedFunction()) {
-      // Perhaps equivalently, we could check "if (tryToken)",
-      // except tryToken is not visible in this file.
       if (!castTarget->hasFlag(FLAG_RESOLVED)) {
         // This happens e.g. when castTarget itself has an error.
         // Todo: in this case, we should report the error at the point
@@ -1454,6 +1589,19 @@ static bool mustUseRuntimeTypeDefault(ArgSymbol* formal) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Do not create copies for the bogus actuals added for PRIM_TO_FOLLOWER.
+static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
+                                        Symbol* actualSym) {
+  bool result = isArgSymbol(actualSym) &&
+                (call->parentSymbol != actualSym->defPoint->parentSymbol);
+
+  if (result                                   &&
+      propagateNotPOD(actualSym->getValType()) &&
+      ! isLeaderIterator(calleeFn)             )
+    USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
+
+  return result;
+}
 
 static void handleInIntents(FnSymbol* fn,
                             CallInfo& info) {
@@ -1476,7 +1624,7 @@ static void handleInIntents(FnSymbol* fn,
   Expr* nextActual = NULL;
 
   for_formals(formal, fn) {
-
+    SET_LINENO(currActual);
     nextActual = currActual->next;
 
     Symbol* actualSym  = info.actuals.v[j];
@@ -1485,6 +1633,7 @@ static void handleInIntents(FnSymbol* fn,
     // does not need to be copied.
     if (formalRequiresTemp(formal, fn) &&
         shouldAddFormalTempAtCallSite(formal, fn) &&
+        ! checkAnotherFunctionsFormal(fn, info.call, actualSym) &&
         actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) == false) {
 
       Expr* useExpr = currActual;
@@ -1549,11 +1698,15 @@ namespace {
     FnSymbol* fn;
     FnSymbol* wrapperFn;
     bool      zippered;
+    bool      hasLeaderFollowers;
+    bool      resultIsUsed;
+
     // The following vectors are indexed by the i'th formal to fn (0-based).
 
     // The TypeSymbol representing the type that is promoted (e.g. array)
     // or NULL if that argument isn't promoted.
     std::vector<TypeSymbol*> promotedType;
+
     std::vector<uint8_t> defaulted;
 
     // for the i'th formal to fn, fnFormals is NULL
@@ -1614,7 +1767,8 @@ static Expr*      getIndices(PromotionInfo& promotion);
 
 static Expr*      getIterator(PromotionInfo& promotion);
 
-static bool       haveLeader(CallExpr* call, PromotionInfo& promotion);
+static bool       haveLeaderAndFollowers(PromotionInfo& promotion,
+                                         CallExpr* call);
 
 static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion);
 
@@ -1626,6 +1780,17 @@ static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
 
 static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion);
 
+
+static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
+  int i = 0;
+  for_actuals(actual, call)
+    if (promotion.promotedType[i++] != NULL)
+      return symbolForActual(actual);
+
+  INT_ASSERT(false); // did not find any promoted things
+  return NULL;
+}
+
 // insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
 static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   CallExpr* move = toCallExpr(call->parentExpr);
@@ -1635,38 +1800,27 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   INT_ASSERT(move->isPrimitive(PRIM_MOVE));
   Symbol* irTemp = toSymExpr(move->get(1))->symbol();
 
-  // Which of call's arguments determines the shape?
-  Symbol* shapeSource = NULL;
-  int i = 0;
-  for_actuals(actual, call) {
-    if (promotion.promotedType[i++] != NULL) {
-      SymExpr* se = NULL;
-      if (NamedExpr* ne = toNamedExpr(actual)) {
-        se = toSymExpr(ne->actual);
-      } else {
-        se = toSymExpr(actual);
-      }
-      shapeSource = se->symbol();
-      break;
-    }
-  }
+  // The first promoted argument argument determines the shape.
+  Symbol* shapeSource = leadingArg(promotion, call);
 
-  Symbol* fromForExpr =
-    checkIteratorFromForExpr(move, shapeSource) ? gTrue : gFalse;
+  Symbol* fromForExpr = (! promotion.hasLeaderFollowers             ||
+                         checkIteratorFromForExpr(move, shapeSource) )
+                        ? gTrue : gFalse;
 
   move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
                                  irTemp, shapeSource, fromForExpr));
 }
 
+
 bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
                          std::vector<ArgSymbol*>& actualFormals) {
   bool retval = false;
 
-  if (fn->name != astrSequals && fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == false) {
+  if (fn->name != astrSassign) {
     int numActuals = actualFormals.size();
     for (int j = 0; j < numActuals; j++) {
       Symbol* actual     = info.actuals.v[j];
-      Symbol* formal     = actualFormals[j];
+      ArgSymbol* formal  = actualFormals[j];
       Type*   actualType = actual->type;
       bool    promotes   = false;
 
@@ -1678,7 +1832,8 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
         INT_ASSERT(actualType);
       }
 
-      if (canDispatch(actualType, actual, formal->type, fn, &promotes)) {
+      if (canDispatch(actualType, actual,
+                      formal->type, formal, fn, &promotes)) {
         if (promotes == true) {
           retval = true;
           break;
@@ -1734,13 +1889,15 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
   fn(fn),
   // these are established later along with wrapperFormals
   wrapperFn(NULL),
-  zippered(false)
+  zippered(false),
+  hasLeaderFollowers(false),
+  resultIsUsed(info.call != info.call->getStmtExpr())
 {
   int numActuals = actualFormals.size();
 
   for (int j = 0; j < numActuals; j++) {
     Symbol* actual     = info.actuals.v[j];
-    Symbol* formal     = actualFormals[j];
+    ArgSymbol* formal  = actualFormals[j];
     Type*   actualType = actual->type;
     bool    promotes   = false;
 
@@ -1750,7 +1907,7 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
       actualType = actualType->refType;
     }
 
-    if (canDispatch(actualType, actual, formal->type, fn, &promotes)) {
+    if (canDispatch(actualType, actual, formal->type, formal, fn, &promotes)) {
       if (promotes == true) {
         this->subs.put(formal, actualType->symbol);
       }
@@ -1793,27 +1950,14 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
                                        CallInfo&  info,
                                        bool       fastFollowerChecks) {
 
-  BlockStmt* loop       = NULL;
   initPromotionWrapper(promotion, instantiationPt);
   FnSymbol*  retval     = promotion.wrapperFn;
   FnSymbol*  fn         = promotion.fn;
 
-  if (fn->retType == dtVoid || fn->getReturnSymbol() == gVoid) {
-    Expr*      indices  = getIndices (promotion);
-    Expr*      iterator = getIterator(promotion);
-    CallExpr*  wrapCall = createPromotedCallForWrapper(promotion);
-    BlockStmt* block    = new BlockStmt(wrapCall);
-    bool       zippered = promotion.zippered;
-
-    loop = buildForallLoopStmt(indices, iterator, NULL, block, zippered);
-
-    // Save the wrapCall to adjust it later
-    promotion.wrapCalls.push_back(wrapCall);
-  } else {
-    loop = buildPromotionLoop(promotion, instantiationPt, info, fastFollowerChecks);
-  }
-
-  retval->insertAtTail(new BlockStmt(loop));
+  BlockStmt* loop = buildPromotionLoop(promotion, instantiationPt, info,
+                                       fastFollowerChecks);
+  retval->insertAtTail(loop);
+  loop->flattenAndRemove();
 
   fn->defPoint->insertBefore(new DefExpr(retval));
 
@@ -1824,6 +1968,23 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   fixDefaultArgumentsInWrapCall(promotion);
 
   return retval;
+}
+
+static void insertAndSaveWrapCall(PromotionInfo& promotion, BlockStmt* block,
+                                  VarSymbol* temp, CallExpr* wrapCall)
+{
+  if (promotion.resultIsUsed) {
+    block->insertAtTail(new DefExpr(temp));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapCall));
+    block->insertAtTail(new CallExpr(PRIM_YIELD, temp));
+
+  } else {
+    // No need to yield. NB wrapCall's type may be 'void'.
+    block->insertAtTail(wrapCall);
+  }
+
+  // Save the wrapCall to adjust it later
+  promotion.wrapCalls.push_back(wrapCall);
 }
 
 // The info needed to call buildFastFollowerChecksIfNeeded() later.
@@ -1847,8 +2008,10 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
- if (haveLeader(info.call, promotion))
+ if (haveLeaderAndFollowers(promotion, info.call))
  {
+  promotion.hasLeaderFollowers = true;
+
   buildLeaderIterator(wrapFn, instantiationPt, iterator, zippered);
 
   buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall);
@@ -1867,12 +2030,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   }
  }
 
-  yieldBlock->insertAtTail(new DefExpr(yieldTmp));
-
-  yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall));
-  yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-  // Save the wrapCall to adjust it later
-  promotion.wrapCalls.push_back(wrapCall);
+  insertAndSaveWrapCall(promotion, yieldBlock, yieldTmp, wrapCall);
 
   return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
 }
@@ -1914,7 +2072,7 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
                                            false, //only leader - not zippered
                                            true); // do not mess with iterator
                                                   // and no shadow vars please
-  
+
   BlockStmt* loop = buildChapelStmt(fs);
 
   liFn->addFlag(FLAG_INLINE_ITERATOR);
@@ -2048,21 +2206,13 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
-  block->insertAtTail(new DefExpr(yieldTmp));
-
   CallExpr* wrapCallCopy = wrapCall->copy(&followerMap);
-  promotion.wrapCalls.push_back(wrapCallCopy);
 
-  // Save the wrapCall to adjust it later
-  block->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCallCopy));
-
-  block->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+  insertAndSaveWrapCall(promotion, block, yieldTmp, wrapCallCopy);
 
   return ForLoop::buildForLoop(indices->copy(&followerMap),
                                new SymExpr(followerIterator),
-                               block,
-                               false,
-                               isCallExpr(iterator) ? true : false);
+                               block, false, promotion.zippered);
 }
 
 // The returned string is canonical ie from astr().
@@ -2178,51 +2328,101 @@ static Expr* getIterator(PromotionInfo& promotion) {
   return retval;
 }
 
-static Expr* getLeaderArg(CallExpr* call, PromotionInfo& promotion) {
-  for (int i = 0; i < (int)(promotion.promotedType.size()); i++)
-    if (promotion.promotedType[i] != NULL)
-      return call->get(i+1);
-
-  INT_ASSERT(false); // did not find any promoted things
-  return NULL;
-}
-
-static Expr* stripNamedExpr(Expr* expr) {
-  if (NamedExpr* named = toNamedExpr(expr)) return named->actual;
-  else                                      return expr;
-}
 
 static std::set<Symbol*> haveLeaderSymbolStack;
 
-static bool haveLeader(CallExpr* call, PromotionInfo& promotion) {
-  Expr*   leadingArg  = stripNamedExpr(getLeaderArg(call, promotion));
-  Symbol* leadingSym  = toSymExpr(leadingArg)->symbol();
-  Type*   leadingType = leadingSym->type;
+static FnSymbol* leaderForSymbol(Expr* anchor, Symbol* leadingSym) {
+  Type* leadingType = leadingSym->getValType();
 
   if (leadingType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // This is an iterator or a forwarder. Check its IteratorGroup.
     FnSymbol* serialIter = getTheIteratorFn(leadingType);
-    return serialIter->iteratorGroup->leader != NULL;
+    return serialIter->iteratorGroup->leader;
 
   } else {
     if (haveLeaderSymbolStack.count(leadingSym) > 0)
-      return false; // We are recursing. Skip it, then.
+      return NULL; // We are recursing. Report no leader, then.
 
     haveLeaderSymbolStack.insert(leadingSym);
     // Not an iterator. To iterate over it, need to invoke these().
     CallExpr* callLeader = new CallExpr("these", gMethodToken,
       leadingSym, new NamedExpr(astrTag, new SymExpr(gLeaderTag)));
     BlockStmt* container = new BlockStmt(callLeader);
-    call->getStmtExpr()->insertAfter(container);
+    anchor->insertAfter(container);
     FnSymbol* leaderFn = tryResolveCall(callLeader);
     container->remove();
     haveLeaderSymbolStack.erase(leadingSym);
-    return leaderFn != NULL;
+    return leaderFn;
   }
 }
 
+//
+// We should create the leader and follower flavors of the serial iterator
+// for a promotion - only when those flavors are available from the arguments
+// of the promoted call, as follows:
+//
+// * The leading argument, i.e. the first of the promoted arguments,
+//   must provide a leader iterator. If it provides a leader iterator
+//   and does NOT provide a follower iterator, it is a user error.
+//
+// * All promoted arguments must provide follower iterators.
+//
+// If these conditions are not satisfied, we cannot execute the promoted
+// expression in parallel. If we generate the L/F iterators in this case,
+// the compiler will find and invoke them. However, their bodies will fail
+// to resolve, causing compilation error inappropriately. If we do not
+// generate L/F, the compiler will be forced to use the serial iterator,
+// which is the correct semantics.
+//
+// One example is:  test/studies/sudoku/deitz/sudoku3.chpl
+// whose simple version is the promotion of '&' in: (A!=k) & linearize(A!=k)
+// Here, the first arg of & has parallel iterators, the second doesn't.
+//
+// Taking the standalone iterator into account - when there is only a single
+// promoted argument - is future work - GitHub Issue #12323.
+//
+static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call) {
+  // This is analogous to optionalFollowersAreMissing() in foralls.cpp,
+  // with an additional check for the first leader and the first follower.
+  Expr* anchor = call->getStmtExpr();
+  FnSymbol* leader = NULL;  // non-null for promoted args after the first
+  VarSymbol* followme = NULL;
+  int i = 0;
+
+  for_actuals(actualExpr, call) {
+    if (promotion.promotedType[i++] != NULL) {
+      Symbol* actual = symbolForActual(actualExpr);
+
+      if (leader == NULL) {
+        // The first argument. Needs both L+F.
+        leader = leaderForSymbol(anchor, actual);
+        if (leader == NULL) return false; // no leader
+
+        // We are going to resolve follower calls to determine whether the
+        // followers are available. So we need to know the type of followThis,
+        // which is the leader's yield type. For that, resolve the leader.
+        resolveFunction(leader);
+
+        QualifiedType yType = fsIterYieldType(call, leader);
+        followme = new VarSymbol("followme", yType);
+
+        if (! fsGotFollower(anchor, followme, actual)) {
+          USR_FATAL_CONT(call, "a follower iterator is required for %d-th argument of the promoted expression", i);
+          USR_PRINT(call, "because it is the first promoted argument and has a leader iterator");
+          USR_PRINT(leader, "the leader iterator is here");
+        }
+      } else {
+        // A subsequent argument. Needs a follower.
+        if (! fsGotFollower(anchor, followme, actual))
+          return false;
+      }
+    }
+  }
+  return true; // all needed iterators are present
+}
+
 // Returns a CallExpr which contains the call to the original function
-// as the last statement. Assumes that addDefaultsAndReorder will
+// as the last statement. Assumes that addDefaultTokensAndReorder etc will
 // eventually be called for this call. It will have the wrong
 // formal-actual alignment until that happens.
 static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion) {
@@ -2339,11 +2539,13 @@ static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion) {
 
     // Update the calls
     for_vector(CallExpr, wrapCall, promotion.wrapCalls) {
-      addDefaultsAndReorder(promotion.fn, wrapCall, NULL,
-                            actualIdxToFormal,
-                            false /* don't resolve it yet
-                                     since other parts of the promotion
-                                     wrapper aren't resolved */);
+
+      addDefaultTokensAndReorder(promotion.fn, wrapCall, actualIdxToFormal);
+
+      // don't resolve it yet since other parts of the promotion
+      // wrapper aren't resolved
+      replaceDefaultTokensWithDefaults(promotion.fn, wrapCall,
+                                       /* resolve it? */ false);
     }
   }
 }

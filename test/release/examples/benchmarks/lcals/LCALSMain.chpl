@@ -181,7 +181,9 @@ proc main {
     }
   }
 
-  checkChecksums(run_variants, run_loop, run_loop_length);
+  if verify_checksums || verify_checksums_abbreviated {
+    checkChecksums(run_variants, run_loop, run_loop_length);
+  }
 
   writeln("\n freeLoopSuiteRunInfo...");
   writeln("\n DONE!!! ");
@@ -697,20 +699,17 @@ proc getVariantNames(lvids: [] bool) {
 
 proc computeReferenceLoopTimes() {
   var suite_info = getLoopSuiteRunInfo();
-  var ref_loop_stat = suite_info.ref_loop_stat.borrow();
-
-  var lstat0: LoopStat;
+  var ref_loop_stat: LoopStat = suite_info.ref_loop_stat.borrow()!;
 
   writeln("\n computeReferenceLoopTimes...");
 
-  lstat0 = ref_loop_stat;
+  var lstat0 = ref_loop_stat;
 
   for ilen in suite_info.loop_length_dom {
     runReferenceLoop0(lstat0, ilen);
   }
 
-  var lstat1: LoopStat;
-  lstat1 = ref_loop_stat;
+  var lstat1 = ref_loop_stat;
 
   for ilen in suite_info.loop_length_dom {
     runReferenceLoop1(lstat1, ilen);
@@ -1118,6 +1117,12 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
           otherwise {
             halt("Unknown loop id: ", iloop);
           }
+        }
+
+        if verify_checksums_abbreviated {
+          loop_stat.samples_per_pass[LoopLength.LONG]   = 3;
+          loop_stat.samples_per_pass[LoopLength.MEDIUM] = 3;
+          loop_stat.samples_per_pass[LoopLength.SHORT]  = 3;
         }
       }
 

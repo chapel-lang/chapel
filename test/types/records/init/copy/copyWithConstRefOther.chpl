@@ -5,7 +5,7 @@ record R {
     this.x = x;
   }
 
-  proc init(const ref r: R) {
+  proc init=(const ref r: R) {
     this.x = r.x;
   }
 }

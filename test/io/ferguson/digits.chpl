@@ -4,7 +4,7 @@ config const test = 2;
 if test == 1 {
   var got:string;
   // Seems to be an infinite loop
-  // Should read 1 Unicode code point
+  // Should read 1 Unicode codepoint
   while readf("%.1s", got) {
     if got.isDigit() {
       var i = got:int;

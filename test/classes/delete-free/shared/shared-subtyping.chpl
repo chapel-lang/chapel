@@ -23,7 +23,7 @@ proc test() {
   {
     var arr = new shared MyArray(1);
     var dom = new shared MyDomain(1);
-    arr.foo(dom); // empties dom
+    arr.foo(dom);
   }
   {
     var arr = new shared MyArray(1);

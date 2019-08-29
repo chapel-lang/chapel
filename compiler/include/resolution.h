@@ -37,15 +37,11 @@ struct Serializers {
 };
 
 
-extern bool                             beforeLoweringForallStmts;
-
 extern int                              explainCallLine;
 
 extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
-
-extern bool                             tryFailure;
 
 extern Vec<BlockStmt*>                  standardModuleSet;
 
@@ -57,8 +53,6 @@ extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
 extern std::map<Type*,     Serializers> serializeMap;
-
-extern std::map<CallExpr*, CallExpr*>   eflopiMap;
 
 
 
@@ -108,9 +102,34 @@ bool explainCallMatch(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 
+bool allowImplicitNilabilityRemoval(Type* actualType,
+                                    Symbol* actualSym,
+                                    Type* formalType,
+                                    Symbol* formalSym);
+
+bool canCoerceDecorators(ClassTypeDecorator actual,
+                         ClassTypeDecorator formal,
+                         bool allowNonSubtypes,
+                         bool implicitBang);
+bool canInstantiateDecorators(ClassTypeDecorator actual,
+                              ClassTypeDecorator formal);
+bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
+                                      ClassTypeDecorator formal,
+                                      bool allowNonSubtypes,
+                                      bool implicitBang);
+
+bool canCoerceAsSubtype(Type*     actualType,
+                        Symbol*   actualSym,
+                        Type*     formalType,
+                        ArgSymbol* formalSym,
+                        FnSymbol* fn,
+                        bool*     promotes = NULL,
+                        bool*     paramNarrows = NULL);
+
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
+               ArgSymbol* formalSym,
                FnSymbol* fn,
                bool*     promotes = NULL,
                bool*     paramNarrows = NULL);
@@ -118,6 +137,7 @@ bool canCoerce(Type*     actualType,
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
+                 ArgSymbol* formalSym = NULL,
                  FnSymbol* fn          = NULL,
                  bool*     promotes    = NULL,
                  bool*     paramNarrows= NULL,
@@ -131,20 +151,21 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);
 
+// task intents
+extern Symbol* markPruned;
+bool isReduceOp(Type* type);
+void convertFieldsOfRecordThis(FnSymbol* fn);
+
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
-void implementForallIntents1(DefExpr* defChplIter);
-void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
+void  resolveForallStmts2();
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
+void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
+                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
 void setupAndResolveShadowVars(ForallStmt* fs);
-void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignoreIsResolved);
-
-// reduce intents
-void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
-void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
-bool isReduceOp(Type* type);
-
-void lowerPrimReduce(CallExpr* call, Expr*& retval);
+bool preserveShadowVar(Symbol* var);
+void adjustVoidShadowVariables();
+Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
@@ -155,6 +176,7 @@ void      instantiateBody(FnSymbol* fn);
 // generics support
 TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS);
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
+void popInstantiationLimit(FnSymbol* fn);
 void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);
 
 FnSymbol* determineRootFunc(FnSymbol* fn);
@@ -163,13 +185,6 @@ void determineAllSubs(FnSymbol*  fn,
                       FnSymbol*  root,
                       SymbolMap& subs,
                       SymbolMap& allSubs);
-
-FnSymbol* instantiateFunction(FnSymbol*  fn,
-                              FnSymbol*  root,
-                              SymbolMap& allSubs,
-                              CallExpr*  call,
-                              SymbolMap& subs,
-                              SymbolMap& map);
 
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
@@ -224,16 +239,22 @@ void printResolutionErrorUnresolved(CallInfo&                  info,
 
 void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
+void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 
 void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+
+void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
 void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
+
+bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
@@ -261,6 +282,14 @@ static inline bool isUnresolvedOrGenericReturnType(Type* retType) {
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 
+void expandInitFieldPrims();
+
+void removeCopyFns(Type* t);
+
+bool isUnusedClass(Type* t);
+
+void pruneResolvedTree();
+
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
 
 void resolvePromotionType(AggregateType* at);
@@ -269,7 +298,11 @@ void resolveDestructor(AggregateType* at);
 
 void fixTypeNames(AggregateType* at);
 
-Type* getInstantiationType(Type* actualType, Type* formalType);
+Type* getInstantiationType(Type* actualType, Symbol* actualSym,
+                           Type* formalType, Symbol* formalSym,
+                           Expr* ctx,
+                           bool allowCoercion=true,
+                           bool implicitBang=false);
 
 void resolveIfExprType(CondStmt* stmt);
 
@@ -277,8 +310,13 @@ void trimVisibleCandidates(CallInfo& call,
                            Vec<FnSymbol*>& mostApplicable,
                            Vec<FnSymbol*>& visibleFns);
 
-bool isNumericParamDefaultType(Type* type);
-
 void resolveGenericActuals(CallExpr* call);
+
+Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
+                                  ClassTypeDecorator useDec,
+                                  AggregateType* manager,
+                                  Expr* ctx);
+
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 
 #endif

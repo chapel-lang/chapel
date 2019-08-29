@@ -92,8 +92,8 @@ class EAMPot {
 
 class ForceEAM : Force {
 
-  var eamPot : unmanaged EAMPot;
-  var phiIO, rhoIO, fIO : unmanaged InterpolationObject;
+  var eamPot : unmanaged EAMPot?;
+  var phiIO, rhoIO, fIO : unmanaged InterpolationObject?;
 
   proc init() {}
 
@@ -114,7 +114,7 @@ class ForceEAM : Force {
     this.eamPot = nil;
   }
 
-  proc epilogue() : void {
+  override proc epilogue() : void {
 if useChplVis then tagVdebug("setupEAMForce");
     this.eamPot = new unmanaged EAMPot();
     const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
@@ -346,7 +346,7 @@ if useChplVis then pauseVdebug();
     fij += (dfEmbed*dRho/r)*dr;
   }
 
-  proc compute() : void {
+  override proc compute() : void {
     tArray[timerEnum.FORCE1].start();
 if useChplVis then tagVdebug("computeEAMForce");
     const ref eamDom = this.eamPot.eamDom;
@@ -416,7 +416,7 @@ if useChplVis then tagVdebug("computeEAMForce");
 if useChplVis then pauseVdebug();
   }
 
-  proc computeLocal() : void {
+  override proc computeLocal() : void {
     tArray[timerEnum.FORCE1].start();
 if useChplVis then tagVdebug("computeEAMForce");
     const ref eamDom = this.eamPot.eamDom;
@@ -490,7 +490,7 @@ local {
 if useChplVis then pauseVdebug();
   }
 
-  proc print() : void {
+  override proc print() : void {
     writeln("Potential Data:");
     writeln("   Potential type   : ", potName);
     writeln("   Species name     : ", name);
@@ -501,7 +501,7 @@ if useChplVis then pauseVdebug();
     writeln("   Cutoff           : ", cutoff, " Angstroms");
   }
 
-  proc replicate() : unmanaged ForceEAM {
+  override proc replicate() : unmanaged ForceEAM? {
     var temp = new unmanaged ForceEAM();
     temp.cutoff = this.cutoff;
     temp.mass = this.mass;

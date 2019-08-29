@@ -1,0 +1,188 @@
+
+casts to generic Child
+co:Child
+owned Child {p = 1, c = 2}
+coq:Child
+owned Child {p = 1, c = 2}
+cs:Child
+shared Child {p = 1, c = 2}
+csq:Child
+shared Child {p = 1, c = 2}
+noq:Child
+NilClassError: cannot convert nil class to non nilable type
+nsq:Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to generic Child?
+co:Child?
+owned Child? {p = 1, c = 2}
+coq:Child?
+owned Child? {p = 1, c = 2}
+cs:Child?
+shared Child? {p = 1, c = 2}
+csq:Child?
+shared Child? {p = 1, c = 2}
+noq:Child?
+owned Child? nil
+nsq:Child?
+shared Child? nil
+
+casts to borrowed Child
+co:borrowed Child
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+coq:borrowed Child
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+cs:borrowed Child
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+csq:borrowed Child
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+noq:borrowed Child
+NilClassError: cannot convert nil class to non nilable type
+NilClassError: cannot convert nil class to non nilable type
+nsq:borrowed Child
+NilClassError: cannot convert nil class to non nilable type
+NilClassError: cannot convert nil class to non nilable type
+
+casts to borrowed Child?
+co:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+coq:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+cs:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+csq:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+noq:borrowed Child?
+borrowed Child? nil
+borrowed Child? nil
+nsq:borrowed Child?
+borrowed Child? nil
+borrowed Child? nil
+
+casts to owned Child
+co:owned Child
+owned Child {p = 1, c = 2}
+coq:owned Child
+owned Child {p = 1, c = 2}
+noq:owned Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to owned Child?
+co:owned Child?
+owned Child? {p = 1, c = 2}
+coq:owned Child?
+owned Child? {p = 1, c = 2}
+noq:owned Child?
+owned Child? nil
+
+casts to shared Child
+cs:shared Child
+shared Child {p = 1, c = 2}
+csq:shared Child
+shared Child {p = 1, c = 2}
+nsq:shared Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to shared Child?
+cs:shared Child?
+shared Child? {p = 1, c = 2}
+csq:shared Child?
+shared Child? {p = 1, c = 2}
+nsq:shared Child?
+shared Child? nil
+
+casts to generic Parent
+co:Parent
+owned Parent {p = 1, c = 2}
+coq:Parent
+owned Parent {p = 1, c = 2}
+cs:Parent
+shared Parent {p = 1, c = 2}
+csq:Parent
+shared Parent {p = 1, c = 2}
+noq:Parent
+NilClassError: cannot convert nil class to non nilable type
+nsq:Parent
+NilClassError: cannot convert nil class to non nilable type
+
+casts to generic Parent?
+co:Parent?
+owned Parent? {p = 1, c = 2}
+coq:Parent?
+owned Parent? {p = 1, c = 2}
+cs:Parent?
+shared Parent? {p = 1, c = 2}
+csq:Parent?
+shared Parent? {p = 1, c = 2}
+noq:Parent?
+owned Parent? nil
+nsq:Parent?
+shared Parent? nil
+
+casts to borrowed Parent
+co:borrowed Parent
+borrowed Parent {p = 1, c = 2}
+coq:borrowed Parent
+borrowed Parent {p = 1, c = 2}
+cs:borrowed Parent
+borrowed Parent {p = 1, c = 2}
+csq:borrowed Parent
+borrowed Parent {p = 1, c = 2}
+noq:borrowed Parent
+NilClassError: cannot convert nil class to non nilable type
+nsq:borrowed Parent
+NilClassError: cannot convert nil class to non nilable type
+
+casts to borrowed Parent?
+co:borrowed Parent?
+borrowed Parent? {p = 1, c = 2}
+coq:borrowed Parent?
+borrowed Parent? {p = 1, c = 2}
+cs:borrowed Parent?
+borrowed Parent? {p = 1, c = 2}
+csq:borrowed Parent?
+borrowed Parent? {p = 1, c = 2}
+noq:borrowed Parent?
+borrowed Parent? nil
+nsq:borrowed Parent?
+borrowed Parent? nil
+
+casts to owned Parent
+co:owned Parent
+owned Parent {p = 1, c = 2}
+coq:owned Parent
+owned Parent {p = 1, c = 2}
+noq:owned Parent
+NilClassError: cannot convert nil class to non nilable type
+
+casts to owned Parent?
+co:owned Parent?
+owned Parent? {p = 1, c = 2}
+coq:owned Parent?
+owned Parent? {p = 1, c = 2}
+noq:owned Parent?
+owned Parent? nil
+
+casts to shared Parent
+cs:shared Parent
+shared Parent {p = 1, c = 2}
+csq:shared Parent
+shared Parent {p = 1, c = 2}
+nsq:shared Parent
+NilClassError: cannot convert nil class to non nilable type
+
+casts to shared Parent?
+cs:shared Parent?
+shared Parent? {p = 1, c = 2}
+csq:shared Parent?
+shared Parent? {p = 1, c = 2}
+nsq:shared Parent?
+shared Parent? nil

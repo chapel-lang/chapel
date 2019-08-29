@@ -23,6 +23,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "iterator.h"
+#include "resolution.h"
 #include "stringutil.h"
 
 CallInfo::CallInfo() {
@@ -37,7 +38,11 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
   call = callExpr;
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    name = se->symbol()->name;
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      name = se->typeInfo()->symbol->name;
+    } else {
+      name = se->symbol()->name;
+    }
 
   } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr)) {
     name = use->unresolved;
@@ -85,7 +90,13 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
       // The _this actual to an initializer may be generic
-      if (strcmp(name, "init") == 0 && i == 2) {
+      bool isInit = strcmp(name, "init") == 0 ||
+                    strcmp(name, astrInitEquals) == 0;
+      if (isInit && i == 2) {
+        actuals.add(sym);
+
+      } else if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        // type formals can be generic
         actuals.add(sym);
 
       } else {
@@ -121,9 +132,12 @@ void CallInfo::haltNotWellFormed() const {
                 sym->name);
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      INT_FATAL(call,
+      USR_FATAL_CONT(call,
                 "the type of the actual argument '%s' is generic",
                 sym->name);
+      USR_PRINT("generic actual arguments are not currently supported");
+      printUndecoratedClassTypeNote(call, t);
+      USR_STOP();
     }
   }
 }
@@ -149,18 +163,16 @@ const char* CallInfo::toString() {
   if (method == true) {
     if (actuals.v[1] &&
         actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      retval = astr(retval, "type ", ::toString(actuals.v[1]->type), ".");
+      retval = astr(retval, "type ",
+                    ::toString(actuals.v[1]->type, false), ".");
 
     } else {
-      retval = astr(retval,          ::toString(actuals.v[1]->type), ".");
+      retval = astr(retval,
+                    ::toString(actuals.v[1]->type, false), ".");
     }
   }
 
-  if (developer                                   == false &&
-      strncmp("_type_construct_", name, 16) == 0) {
-    retval = astr(retval, name+16);
-
-  } else if (_this == false) {
+  if (_this == false) {
     retval = astr(retval, name);
   }
 

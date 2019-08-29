@@ -72,25 +72,32 @@ notcompiler: FORCE
 	@$(MAKE) modules
 
 compiler: FORCE
-	cd compiler && $(MAKE)
+	@echo "Making the compiler..."
+	@cd compiler && $(MAKE)
 
 parser: FORCE
-	cd compiler && $(MAKE) parser
+	@echo "Making the parser..."
+	@cd compiler && $(MAKE) parser
 
 modules: FORCE
-	cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
+	@echo "Making the modules..."
+	@cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
 	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	echo "Making the modules for LLVM..."; \
 	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
 
 runtime: FORCE
-	cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
+	@echo "Making the runtime..."
+	@cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
 	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	echo "Making the runtime for LLVM..."; \
 	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
 
 third-party: FORCE
-	cd third-party && $(MAKE)
+	@echo "Making the third-party libraries..."
+	@cd third-party && $(MAKE)
 
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
@@ -111,12 +118,12 @@ third-party-try-gmp: FORCE
 	fi
 
 third-party-test-venv: FORCE
-	-@if [ -z "$$CHPL_DONT_BUILD_TEST_VENV" ]; then \
+	@if [ -z "$$CHPL_DONT_BUILD_TEST_VENV" ]; then \
 	cd third-party && $(MAKE) test-venv; \
 	fi
 
 third-party-chpldoc-venv: FORCE
-	-@if [ -z "$$CHPL_DONT_BUILD_CHPLDOC_VENV" ]; then \
+	@if [ -z "$$CHPL_DONT_BUILD_CHPLDOC_VENV" ]; then \
 	cd third-party && $(MAKE) chpldoc-venv; \
 	fi
 
@@ -179,6 +186,7 @@ clobber: FORCE
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
 	cd tools/c2chapel && $(MAKE) clobber
+	cd tools/mason && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib

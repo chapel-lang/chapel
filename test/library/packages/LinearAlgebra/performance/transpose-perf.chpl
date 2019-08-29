@@ -8,6 +8,7 @@ Transpose performance testing
 */
 
 use LinearAlgebra;
+use BLAS;
 use Time;
 
 config const m=1000,
@@ -18,7 +19,7 @@ config const m=1000,
 
 config type eltType = real;
 
-const bytes = numBytes(eltType);
+const nBytes = numBytes(eltType);
 
 proc main() {
   var D = {0..#m, 0..#m*2};
@@ -34,7 +35,7 @@ proc main() {
     writeln('==========================');
     writeln('iters : ', iters);
     writeln('m     : ', m);
-    writeln('MB    : ', (bytes*m*m) / 10**6);
+    writeln('MB    : ', (nBytes*m*m) / 10**6);
     writeln();
   }
 

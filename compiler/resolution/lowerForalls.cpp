@@ -22,11 +22,12 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
-#include "implementForallIntents.h"
+#include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
+#include <set>
 
 /*
 
@@ -301,11 +302,6 @@ This is because unused functions are pruned at the end of resolution.
 
 Further key todos:
 
-* Not all forall-like things in Chapel code get transformed
-into ForallStmt nodes. Some forall intents are implemented
-in implementForallIntents1(), implementForallIntents2().
-Todo: switch those to this "modern" implementation.
-
 * When a global is passed by [const] ref intent,
 replace references to the corresponding shadow variable
 in loop body with the global itself.
@@ -313,6 +309,7 @@ Note: be aware that, in the loop body, the compiler adds derefs
 from such a shadow variable - because it is a "ref".
 
 */
+
 
 ///////////                                                      ///////////
 /////////// Lower ForallStmts by inlining the parallel iterator. ///////////
@@ -331,10 +328,11 @@ class ExpandVisitor : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
   SymbolMap& svar2clonevar;
+  std::vector<Expr*> delayedRemoval;
 
   ExpandVisitor(ForallStmt* fs, SymbolMap& map);
-
   ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map);
+  ~ExpandVisitor();
 
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
@@ -380,15 +378,22 @@ public:
 // constructor for the outer level
 ExpandVisitor::ExpandVisitor(ForallStmt* fs, SymbolMap& map) :
   forall(fs),
-  svar2clonevar(map)
+  svar2clonevar(map),
+  delayedRemoval()
 {
 }
 
 // constructor for a nested situation
 ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map) :
   forall(parentEV->forall),
-  svar2clonevar(map)
+  svar2clonevar(map),
+  delayedRemoval()
 {
+}
+
+ExpandVisitor::~ExpandVisitor() {
+  for_vector(Expr, expr, delayedRemoval)
+    expr->remove();
 }
 
 
@@ -470,7 +475,7 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
 {
-  if (currVar->type == dtVoid) {
+  if (currVar->type == dtNothing) {
     INT_ASSERT(currVar->firstSymExpr() == NULL);
     return;
   }
@@ -498,6 +503,67 @@ static void addCloneOfDeinitBlock(Expr* aFini, SymbolMap& map, ShadowVarSymbol* 
 }
 
 
+/////////// checkForallsInInitDeinitBlocks ///////////
+
+/*
+Consider the following situation:
+
+* We are lowering a ForallStmt 'fs1' by inlining its iterator,
+  which invokes a task function. While inlining the task function...
+
+* For each of fs1's ShadowVarSymbol, we add its init block
+  to the start of (a clone of) the task function, and its deinit block
+  to the end of that clone. Because a ShadowVarSymbol's init and deinit
+  blocks exist exactly to contain the task-startup and task-shutdown actions.
+
+* If one of these de/init blocks contains its own ForallStmt 'fs2', then
+  we create a copy of it. That copy gets copies of fs1's ShadowVarSymbols.
+
+* Later, it will come time to lower that copy by inlining its iterator.
+  If that iterator calls task function(s), they will get copies of fs1's
+  ShadowVarSymbols' de/init blocks. Which will create yet another ForallStmt.
+
+* This process will continue ad infinitum.
+
+The below check issues an error if there is a danger of that happening.
+
+We could mitigate the impact by inlining the potentially-offending ForallStmts
+first. For that, such a ForallStmt should either not invoke task functions, or
+not contain other ForallStmts in its ShadowVarSymbols' de/init blocks, if any.
+Leaving this a future work for now.
+*/
+
+static std::set<ForallStmt*> forallsAlreadyChecked;
+
+static void checkForallsInShadowVarBlock(ShadowVarSymbol* svar,
+                                         BlockStmt* block, bool& gotError) {
+  std::vector<ForallStmt*> fss;
+  collectForallStmts(block, fss);
+
+  if (! fss.empty()) {
+    gotError = true;
+    USR_FATAL_CONT(svar,
+      "A forall statement with a shadow or task-private var '%s'"
+      " containing, in turn, another forall statement is not implemented",
+      svar->name);
+  }
+}
+
+static void checkForallsInInitDeinitBlocks(ForallStmt* forall) {
+  if (forallsAlreadyChecked.count(forall)) return;
+  forallsAlreadyChecked.insert(forall);
+  bool gotError = false;
+
+  for_shadow_vars(svar, temp, forall) {
+    checkForallsInShadowVarBlock(svar, svar->initBlock(), gotError);
+    checkForallsInShadowVarBlock(svar, svar->deinitBlock(), gotError);
+  }
+
+  // Allow other USR_FATAL_CONTs if this ForallStmt is clear.
+  if (gotError) USR_STOP();
+}
+
+
 /////////// expandYield ///////////
 
 // Replace 'yield' with a clone of the forall loop body.
@@ -520,6 +586,8 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
   yieldCall->insertBefore(new CallExpr(PRIM_MOVE, cloneIdxVar, yieldExpr));
 
   BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
+  addIteratorBreakBlocksInline(EV->forall->loopBody(), NULL,
+                               bodyClone, yieldCall, &EV->delayedRemoval);
   yieldCall->replace(bodyClone);
 
   // Note that we are not descending into 'bodyClone'.  The only thing
@@ -747,6 +815,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   // We need it so that we can place the def of 'fcopy' anywhere
   // while preserving correct scoping of its SymExprs.
   INT_ASSERT(isGlobal(taskFn));
+
+  checkForallsInInitDeinitBlocks(EV->forall);
 
   FnSymbol* cloneTaskFn = taskFn->copy();
 
@@ -1033,9 +1103,6 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
 //
 // If 'fs' has only ref intents, or none at all,
 // revert to old iterator-record-based implementation.
-// If so, do what the original buildStandaloneForallLoopStmt()
-// did during parsing, with modifications.
-//
 // Remove 'fs' and replace it with a ForLoop.
 //
 static void handleRecursiveIter(ForallStmt* fs,
@@ -1141,6 +1208,17 @@ static void cleanupRetArg(Symbol* retArg, Symbol* currSym) {
   INT_ASSERT(retArg->firstSymExpr() == NULL);
 }
 
+// Remove the autoDestroy of 'currSym', if present.
+static void removeAutoDestroyCallIfPresent(Symbol* currSym) {
+  for_SymbolSymExprs(curSE, currSym)
+    if (CallExpr* curCall = toCallExpr(curSE->parentExpr))
+      if (FnSymbol* curCallFn = curCall->resolvedFunction())
+        if (curCallFn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+          curCall->remove();
+          break;
+        }
+}
+
 /*
 Handle the case where 'currSym' in stripReturnScaffolding()
 is defined by calling a retArg-ified function, for example:
@@ -1226,6 +1304,9 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
 
           if (SymExpr* srcSE = toSymExpr(defSrc)) {
             defMove->remove();
+            // The autoCopy may be deleted in callDestructors, with autoDestroy
+            // still around. Ex. test/functions/promotion/forallPromotes.chpl
+            removeAutoDestroyCallIfPresent(currSym);
             INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
             currSym = srcSE->symbol();
             continue;
@@ -1235,12 +1316,8 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
               // This should be unnecessary once we get rid of _toLeader fns.
               defMove->remove();
               currSym = toSymExpr(srcCall->get(1))->symbol();
-              // Remove the corresponding autoDestroy.
-              for_SymbolSymExprs(curSE, currSym)
-                if (CallExpr* curCall = toCallExpr(curSE->parentExpr))
-                  if (FnSymbol* curCallFn = curCall->resolvedFunction())
-                    if (curCallFn->hasFlag(FLAG_AUTO_DESTROY_FN))
-                      {  curCall->remove();  break;  }
+              removeAutoDestroyCallIfPresent(currSym);
+              INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
               continue;
             }
             // Found it. Place it where our ForallStmt will go.
@@ -1343,7 +1420,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
   FnSymbol* parIterFn = parIterCall->resolvedFunction();
 
-  if (isVirtualIterator(parIterFn->retType->symbol)) {
+  if (isVirtualIterator(parIterFn)) {
     USR_FATAL_CONT(fs, "virtual parallel iterators are not yet supported (see issue #6998)");
     return;
   }

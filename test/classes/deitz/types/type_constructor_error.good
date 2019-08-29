@@ -1,2 +1,4 @@
-type_constructor_error.chpl:6: error: unresolved type specifier 'C(type int(64), 1)'
-type_constructor_error.chpl:1: note: candidates are: C(type t)
+type_constructor_error.chpl:6: error: invalid type specifier 'C(type int(64), 1)'
+type_constructor_error.chpl:6: note: type specifier did not match: C(type t)
+type_constructor_error.chpl:6: note: type was specified with 2 arguments
+type_constructor_error.chpl:1: note: but type 'C' only has 1 generic field

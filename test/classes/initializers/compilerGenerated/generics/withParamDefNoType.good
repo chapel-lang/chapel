@@ -1,2 +1,2 @@
-Foo(4)
-Foo(2)
+borrowed Foo(4)
+borrowed Foo(2)

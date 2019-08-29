@@ -100,7 +100,7 @@ module ChapelTuple {
   pragma "no doc"
   proc *(param p: uint, type t) type {
     if p > max(int) then
-      compilerError("Tuples of size >" + max(int) + " are not currently supported");
+      compilerError("Tuples of size >" + max(int):string + " are not currently supported");
     param pAsInt = p: int;
     return pAsInt*t;
   }
@@ -289,60 +289,23 @@ module ChapelTuple {
   //
   // tuple methods
   //
-  pragma "no doc"
-  proc _tuple.readWriteThis(f) {
-    var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
-    var start:ioLiteral;
-    var comma:ioLiteral;
-    var end:ioLiteral;
-    var binary = f.binary();
-
-    if st == QIO_TUPLE_FORMAT_SPACE {
-      start = new ioLiteral("");
-      comma = new ioLiteral(" ");
-      end = new ioLiteral("");
-    } else if st == QIO_TUPLE_FORMAT_JSON {
-      start = new ioLiteral("[");
-      comma = new ioLiteral(", ");
-      end = new ioLiteral("]");
-    } else {
-      start = new ioLiteral("(");
-      comma = new ioLiteral(", ");
-      end = new ioLiteral(")");
-    }
-
-    if !binary {
-      f <~> start;
-    }
-    if size != 0 {
-      f <~> this(1);
-      for param i in 2..size {
-        if !binary {
-          f <~> comma;
-        }
-        f <~> this(i);
-      }
-    }
-    if !binary {
-      f <~> end;
-    }
-  }
 
   //
   // tuple casts to complex(64) and complex(128)
   //
+  // TODO: These could instead use 'noinit' and manually assign the fields.
+  //
+  // Note: statically inlining the _chpl_complex runtime functions is necessary
+  // for good performance
+  //
   inline proc _cast(type t, x: (?,?)) where t == complex(64) {
-    var c: complex(64);
-    c.re = x(1):real(32);
-    c.im = x(2):real(32);
-    return c;
+    extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
+    return _chpl_complex64(x(1):real(32),x(2):real(32));
   }
 
   inline proc _cast(type t, x: (?,?)) where t == complex(128) {
-    var c: complex(128);
-    c.re = x(1):real(64);
-    c.im = x(2):real(64);
-    return c;
+    extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
+    return _chpl_complex128(x(1):real(64),x(2):real(64));
   }
 
   //

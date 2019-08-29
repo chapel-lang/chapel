@@ -170,6 +170,12 @@ proc AtomicT.max(other: int) {
     curMax = this.read();
 }
 
+proc RAtomicT.max(other: int) {
+  var curMax = this.read();
+  while curMax < other && !this.compareExchange(curMax, other) do
+    curMax = this.read();
+}
+
 
 /*
 ** Print out search parameters
@@ -262,11 +268,10 @@ proc create_tree(ref q: DeQueue(unmanaged TreeNode)) {
 
 proc main() {
   var t_create: Timer;
-  var root: unmanaged TreeNode;
   var queue: DeQueue(unmanaged TreeNode);
  
   // Create the root and push it into a queue
-  root = new unmanaged TreeNode(0);
+  var root = new unmanaged TreeNode(0);
   rng_init(root.hash[1], SEED:sha_int);
   global_count.add(1);
   queue.pushTop(root);

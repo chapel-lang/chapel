@@ -2,7 +2,7 @@ compile-time-messages.chpl:3: warning: TEST_CLASS(param)
 compile-time-messages.chpl:3: warning: true
 compile-time-messages.chpl:3: warning: true
 compile-time-messages.chpl:3: warning: CLASS_PARAM(true)
-compile-time-messages.chpl:3: warning: CLASS_PARAM(true)
+compile-time-messages.chpl:3: warning: borrowed CLASS_PARAM(true)
 compile-time-messages.chpl:3: warning: true
 compile-time-messages.chpl:3: warning: complex(128)
 compile-time-messages.chpl:3: warning: true
@@ -11,7 +11,7 @@ compile-time-messages.chpl:4: warning: TEST_CLASS(param)
 compile-time-messages.chpl:4: warning: 555
 compile-time-messages.chpl:4: warning: 555
 compile-time-messages.chpl:4: warning: CLASS_PARAM(555)
-compile-time-messages.chpl:4: warning: CLASS_PARAM(555)
+compile-time-messages.chpl:4: warning: borrowed CLASS_PARAM(555)
 compile-time-messages.chpl:4: warning: 555
 compile-time-messages.chpl:4: warning: complex(128)
 compile-time-messages.chpl:4: warning: 555
@@ -20,12 +20,12 @@ compile-time-messages.chpl:5: warning: TEST_CLASS(type)
 compile-time-messages.chpl:5: warning: int(64)
 compile-time-messages.chpl:5: warning: int(64)
 compile-time-messages.chpl:5: warning: CLASS_TYPE(int(64))
-compile-time-messages.chpl:5: warning: CLASS_TYPE(int(64))
+compile-time-messages.chpl:5: warning: borrowed CLASS_TYPE(int(64))
 compile-time-messages.chpl:5: warning: int(64)
 compile-time-messages.chpl:5: warning: 666
 compile-time-messages.chpl:5: warning: int(64)
 compile-time-messages.chpl:5: warning: 666
-compile-time-messages.chpl:5: warning: CLASS_TYPE(int(64))
+compile-time-messages.chpl:5: warning: borrowed CLASS_TYPE(int(64))
 compile-time-messages.chpl:5: warning: int(64)
 compile-time-messages.chpl:5: warning: 666
 compile-time-messages.chpl:5: warning: int(64)
@@ -34,12 +34,12 @@ compile-time-messages.chpl:6: warning: TEST_CLASS(type)
 compile-time-messages.chpl:6: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:6: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:6: warning: CLASS_TYPE([domain(1,int(64),false)] string)
-compile-time-messages.chpl:6: warning: CLASS_TYPE([domain(1,int(64),false)] string)
+compile-time-messages.chpl:6: warning: borrowed CLASS_TYPE([domain(1,int(64),false)] string)
 compile-time-messages.chpl:6: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:6: warning: 666
 compile-time-messages.chpl:6: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:6: warning: 666
-compile-time-messages.chpl:6: warning: CLASS_TYPE([domain(1,int(64),false)] string)
+compile-time-messages.chpl:6: warning: borrowed CLASS_TYPE([domain(1,int(64),false)] string)
 compile-time-messages.chpl:6: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:6: warning: 666
 compile-time-messages.chpl:6: warning: [domain(1,int(64),false)] string
@@ -64,12 +64,12 @@ compile-time-messages.chpl:9: warning: TEST_RECORD(type)
 compile-time-messages.chpl:9: warning: int(64)
 compile-time-messages.chpl:9: warning: int(64)
 compile-time-messages.chpl:9: warning: RECORD_TYPE(int(64))
-compile-time-messages.chpl:9: warning: RECORD_TYPE(int(64))
+compile-time-messages.chpl:9: warning: borrowed RECORD_TYPE(int(64))
 compile-time-messages.chpl:9: warning: int(64)
 compile-time-messages.chpl:9: warning: 666
 compile-time-messages.chpl:9: warning: int(64)
 compile-time-messages.chpl:9: warning: 666
-compile-time-messages.chpl:9: warning: RECORD_TYPE(int(64))
+compile-time-messages.chpl:9: warning: borrowed RECORD_TYPE(int(64))
 compile-time-messages.chpl:9: warning: int(64)
 compile-time-messages.chpl:9: warning: 666
 compile-time-messages.chpl:9: warning: int(64)
@@ -78,12 +78,12 @@ compile-time-messages.chpl:10: warning: TEST_RECORD(type)
 compile-time-messages.chpl:10: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:10: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:10: warning: RECORD_TYPE([domain(1,int(64),false)] string)
-compile-time-messages.chpl:10: warning: RECORD_TYPE([domain(1,int(64),false)] string)
+compile-time-messages.chpl:10: warning: borrowed RECORD_TYPE([domain(1,int(64),false)] string)
 compile-time-messages.chpl:10: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:10: warning: 666
 compile-time-messages.chpl:10: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:10: warning: 666
-compile-time-messages.chpl:10: warning: RECORD_TYPE([domain(1,int(64),false)] string)
+compile-time-messages.chpl:10: warning: borrowed RECORD_TYPE([domain(1,int(64),false)] string)
 compile-time-messages.chpl:10: warning: [domain(1,int(64),false)] string
 compile-time-messages.chpl:10: warning: 666
 compile-time-messages.chpl:10: warning: [domain(1,int(64),false)] string

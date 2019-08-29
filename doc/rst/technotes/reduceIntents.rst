@@ -131,15 +131,16 @@ or coforall loop. Here is an example of such a class:
     // with a lock on 'this'.
     // 'other' will not be accessed concurrently.
     /* combine the accumulations in 'this' and 'other' */
-    proc combine(other)   { value = value + other.value; }
+    proc combine(other: borrowed PlusReduceOp)   { value = value + other.value; }
 
     /* Convert the accumulation into the value of the reduction
        that is reported to the user. This is trivial in our case. */
     proc generate()       return value;
 
     /* produce a new instance of this class */
-    proc clone()          return new PlusReduceOp(eltType=eltType);
+    proc clone()          return new unmanaged PlusReduceOp(eltType=eltType);
   }
+
 
   // Use the above class.
   var A = [1000, 200, 30, 4];

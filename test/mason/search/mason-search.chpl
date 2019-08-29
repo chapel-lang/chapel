@@ -1,4 +1,5 @@
 
+private use List;
 use MasonSearch;
 
 use FileSystem;
@@ -6,8 +7,13 @@ use FileSystem;
 config const pattern = "";
 
 proc main() {
-  var args: [0..2] string = ["foo", "search", "--no-update"];
-  if pattern != "" then args.push_back(pattern);
+  var args: list(string);
+  args.append("foo");
+  args.append("search");
+  args.append("--no-update");
+  for arg in pattern.split() {
+    if arg != "" then args.append(arg);
+  }
 
 
   masonSearch(args);

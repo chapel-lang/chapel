@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from test import py3_compat
 
 # need to be able to find the util and chplenv dir even when start_test
 # doesn't live in $CHPL_HOME/util (such as for the release tarball)
@@ -282,11 +283,11 @@ def test_directory(test, test_type):
         # run tests in directory
         # don't run if only doing performance graphs
         if not test_type == "graph":
-            # check for .chpl or .test.c files, and for NOTEST
+            # check for .chpl, .test.c, or .ml-test.c files, and for NOTEST
             are_tests = False
             for f in files:
                 if not test_type == "performance":
-                    if f.endswith(".chpl") or f.endswith(".test.c"):
+                    if f.endswith((".chpl", ".test.c", ".ml-test.c")) :
                         are_tests = True
                         break
                 else:
@@ -457,8 +458,9 @@ def run_sub_test(test=False):
 def generate_graphs(test=False):
     if test:
         basedir = os.path.dirname(test)
-        graph_files = [(test.replace(".chpl", "").replace(".test.c", "")
-                + ".graph")]
+        remove_dot = test.replace(".chpl", "").replace(".test.c", "")
+        remove_dot = remove_dot.replace(".ml-test.c", "")
+        graph_files = [(remove_dot + ".graph")]
         # exit if it isn't actually a file
         if not os.path.isfile(graph_files[0]):
             return
@@ -615,7 +617,7 @@ def check_environment_with_args():
     global logs_dir
     logs_dir = os.path.join(test_dir, "Logs")
     if not os.path.isdir(logs_dir):
-        os.makedirs(logs_dir)
+        py3_compat.makedirs(logs_dir, exist_ok=True)
     if not os.access(logs_dir, os.W_OK):
         print("Cannot write to Logs directory {0}".format(logs_dir))
         sys.exit(-1)
@@ -686,24 +688,10 @@ def set_up_environment():
     atexit.register(cleanup)
 
     # performance (linking flags to each other)
-    if args.performance or args.performance_description:
+    if args.performance or args.performance_description or args.perflabel != "perf":
         args.performance = True
         args.gen_graphs = True
         args.compopts = "--fast " + args.compopts
-        # Force static linking except where that won't work:
-        # - MacOS (darwin) targets
-        # - Cray systems when memkind will be linked in
-        # - any locale model other than 'flat' (because we'll need
-        #   libnuma which is only available as a .so)
-        # - massivethreads (because it depends on various .sos)
-        darwin = tgt_platform == 'darwin'
-        prgenv = compiler_utils.target_compiler_is_prgenv()
-        cray_memkind = prgenv and 'CRAY_MEMKIND' in os.environ
-        not_flat = chpl_locale_model.get() != 'flat'
-        massivethreads = chpl_tasks.get() == 'massivethreads'
-
-        if not(darwin or cray_memkind or not_flat or massivethreads):
-            args.compopts = "--static " + args.compopts
 
     if args.performance_configs:
         args.gen_graph_opts += " --configs " + args.performance_configs
@@ -955,7 +943,7 @@ def set_up_performance_testing_B():
             dat_dir = comp_perf_dir
 
         if not os.path.isdir(dat_dir):
-            os.makedirs(dat_dir)
+            py3_compat.makedirs(dat_dir, exist_ok=True)
 
         sha_pef_keys_name = os.path.join(chpl_test_tmp_dir, "sha.perf_keys")
         with open(sha_pef_keys_name, "w") as shaPerfKeys:
@@ -1110,7 +1098,7 @@ def auto_generate_tests():
                 dat_dir = os.path.join(perf_dir, args.performance_description)
                 with cd(test_dir):
                     if not os.path.isdir(dat_dir):
-                        os.makedirs(dat_dir)
+                        py3_compat.makedirs(dat_dir, exist_ok=True)
 
                     logger.write("[Computing stats for spec examples]")
                     temp_perf_path = os.path.join(home,
@@ -1279,7 +1267,7 @@ def parser_setup():
     # main args
     p = parser.add_argument("tests", nargs="*", help="test files or directories")
     if argcomplete:
-        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c"])
+        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c", ".ml-test.c"])
 
     # executing options
     parser.add_argument("-execopts", "--execopts", action="append", 

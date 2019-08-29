@@ -20,6 +20,7 @@
 #ifndef _AGGREGATE_TYPE_H_
 #define _AGGREGATE_TYPE_H_
 
+#include "DecoratedClasses.h"
 #include "type.h"
 
 /************************************* | **************************************
@@ -34,6 +35,11 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
+enum AggregateResolved {
+  UNRESOLVED,
+  RESOLVING,
+  RESOLVED
+};
 
 class AggregateType : public Type {
 public:
@@ -94,6 +100,7 @@ public:
 
   bool                        hasInitializers()                          const;
   bool                        hasPostInitializer()                       const;
+  bool                        hasUserDefinedInitEquals()                 const;
 
   bool                        mayHaveInstances()                         const;
 
@@ -103,20 +110,15 @@ public:
 
   GenRet                      codegenClassStructType();
 
-  int                         codegenStructure(FILE*       outfile,
-                                               const char* baseoffset);
-
-  int                         codegenFieldStructure(FILE*       outfile,
-                                                    bool        nested,
-                                                    const char* baseOffset);
-
   bool                        setFirstGenericField();
 
-  AggregateType*              getInstantiation(Symbol* sym, int index);
+  AggregateType*              getInstantiation(Symbol* sym, int index, Expr* insnPoint = NULL);
 
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
-  AggregateType*              generateType(SymbolMap& subs);
+  AggregateType*              generateType(CallExpr* call, const char* callString);
+  AggregateType*              generateType(SymbolMap& subs, CallExpr* call, const char* callString, Expr* insnPoint = NULL);
+  void                        resolveConcreteType();
 
   bool                        isInstantiatedFrom(const AggregateType* base)
                                                                          const;
@@ -134,7 +136,7 @@ public:
   int                         getMemberGEP(const char* name,
                                            bool& isCArrayField);
 
-  FnSymbol*                   buildTypeConstructor();
+  void                        processGenericFields();
 
   void                        addRootType();
 
@@ -148,14 +150,12 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
-  UnmanagedClassType*         getUnmanagedClass();
-
-  void                        generateUnmanagedClassTypes();
+  Type*                       getDecoratedClass(ClassTypeDecorator d);
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)
   bool                        fieldIsGeneric(Symbol* field,
-                                             bool &hasDefault)           const;
+                                             bool &hasDefault);
 
 
   Type*                       cArrayElementType()                        const;
@@ -170,9 +170,7 @@ public:
   // These fields support differentiating between unmanaged class
   // pointers and borrows. At the present time, borrows are represented
   // by plain AggregateType and unmanaged class pointers use this special type.
-  UnmanagedClassType*         unmanagedClass;
-
-  FnSymbol*                   typeConstructor;
+  DecoratedClassType*         decoratedClasses[NUM_PACKED_DECORATED_TYPES];
 
   bool                        builtDefaultInit;
 
@@ -202,6 +200,16 @@ public:
   Vec<AggregateType*>         dispatchParents;    // dispatch hierarchy
   Vec<AggregateType*>         dispatchChildren;   // dispatch hierarchy
 
+  // Used to prevent recursive or repeated resolution of this type.
+  AggregateResolved           resolveStatus;
+
+  // String representation of the 'type constructor' for use in error messages
+  const char*                 typeSignature;
+  // Indicates whether we have already tried to look for generic fields.
+  bool                        foundGenericFields;
+  // A list of the generic fields in this type.
+  std::vector<Symbol*>        genericFields;
+
 private:
 
   // Only used for LLVM.
@@ -222,36 +230,22 @@ private:
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
 
-  AggregateType*              instantiationWithParent(AggregateType* parent);
+  AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
 
   Symbol*                     substitutionForField(Symbol*    field,
                                                    SymbolMap& subs)      const;
 
-  AggregateType*              getCurInstantiation(Symbol* sym);
+  AggregateType*              getCurInstantiation(Symbol* sym, Type* symType);
 
-  AggregateType*              getNewInstantiation(Symbol* sym);
+  AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
-  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
-
   bool                        isFieldInThisClass(const char* name)       const;
-
-  void                        typeConstrSetFields(FnSymbol* fn,
-                                                  CallExpr* superCall)   const;
 
   bool                        setNextGenericField();
 
-  void                        typeConstrSetField(FnSymbol*  fn,
-                                                 VarSymbol* field,
-                                                 Expr*      expr)        const;
-
-  ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
-                                               VarSymbol* field)  const;
-
 private:
-
-  void                        moveTypeConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
@@ -281,6 +275,7 @@ private:
 
 extern AggregateType* dtObject;
 
+extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
 

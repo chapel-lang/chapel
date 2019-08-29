@@ -1,0 +1,7 @@
+Value =  base bytes 3 Type = bytes
+Value = 3 base bytes  Type = bytes
+Value =  base bytes Foo Type = bytes
+Value = Bar base bytes  Type = bytes
+Value =  base bytes true Type = bytes
+Value = false base bytes  Type = bytes
+Value =  base bytes  base bytes  base bytes  base bytes  Type = bytes

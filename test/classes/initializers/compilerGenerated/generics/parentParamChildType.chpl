@@ -13,7 +13,7 @@ class Parent {
 }
 
 class Child : Parent {
-  var y : unmanaged Dummy(stridable);
+  var y : unmanaged Dummy(stridable)?;
 }
 
 var c = new unmanaged Child(false, 5);
@@ -32,10 +32,10 @@ class A {
 }
 
 class Z : A {
-  var x : unmanaged Dummy(stridable);
+  var x : unmanaged Dummy(stridable)?;
 }
 
-var z = new unmanaged Z(1, int, false);
+var z = new owned Z(1, int, false);
 writeln("z = ", z);
 
 //

@@ -257,32 +257,42 @@ bool symExprIsSet(SymExpr* se)
   if (se->symbol()->qualType().isConst())
     return false;
 
-  bool ret = false;
   int defOrUse = isDefAndOrUse(se);
   if (defOrUse & 1) { // def
-    ret |= symExprIsSetByDef(se);
+    if (symExprIsSetByDef(se))
+      return true;
   }
   if (defOrUse & 2) { // use
-    ret |= symExprIsSetByUse(se);
+    if (symExprIsSetByUse(se))
+      return true;
   }
 
-  return ret;
+  return false;
 }
 
 static
 bool callSetsSymbol(Symbol* sym, CallExpr* call)
 {
-  bool ret = false;
   for_alist(expr, call->argList) {
     if (SymExpr* se = toSymExpr(expr)) {
       if (se->symbol() == sym) {
         if (symExprIsSet(se)) {
-          ret = true;
+          return true;
         }
       }
     }
   }
-  return ret;
+  return false;
+}
+
+// If 'expr' is the outer var of a shadow var SV and
+// SV has the ref intent, return SV.
+static ShadowVarSymbol* refShadowVarForOuterVarExpr(Expr* expr) {
+  if (isOuterVarOfShadowVar(expr))
+    if (ShadowVarSymbol* svar = toShadowVarSymbol(expr->parentSymbol))
+      if (svar->intent == TFI_REF)
+        return svar;
+  return NULL;
 }
 
 // Would choosing the refCall or valueCall change our determination
@@ -685,23 +695,22 @@ void cullOverReferences() {
       continue;
     }
 
+    AggregateType* argAt = toAggregateType(arg->getValType());
+    if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
+        containsReferenceFields(argAt)) {
+      AggregateType* tupleType  = toAggregateType(arg->type);
+      int            fieldIndex = 1;
 
-    if (arg->intent == INTENT_REF_MAYBE_CONST) {
-      if (arg->type->symbol->hasFlag(FLAG_TUPLE)) {
-        AggregateType* tupleType  = toAggregateType(arg->type);
-        int            fieldIndex = 1;
-
-        for_fields(field, tupleType) {
-          if (field->isRef() ||
-              field->type->symbol->hasFlag(FLAG_TUPLE)) {
-            collectedSymbols.push_back(makeNode(arg,fieldIndex));
-          }
-
-          fieldIndex++;
+      for_fields(field, tupleType) {
+        if (field->isRef() ||
+            field->type->symbol->hasFlag(FLAG_TUPLE)) {
+          collectedSymbols.push_back(makeNode(arg,fieldIndex));
         }
-      } else {
-        collectedSymbols.push_back(makeNode(arg,0));
+
+        fieldIndex++;
       }
+    } else if (arg->intent == INTENT_REF_MAYBE_CONST) {
+      collectedSymbols.push_back(makeNode(arg,0));
     }
   }
 
@@ -755,24 +764,42 @@ void cullOverReferences() {
 
     DEBUG_SYMBOL(sym);
 
+    AggregateType* symAt = toAggregateType(sym->getValType());
+    bool symHasRefFields = symAt && containsReferenceFields(symAt);
+
     // If we already determined that a symbol is const, no need to
     // do additional work here.
-    if (sym->qualType().isConst())
+    if (sym->qualType().isConst() && !symHasRefFields)
       continue;
 
     // If it's a tuple, create the field qualifiers if needed
-    if (sym->type->symbol->hasFlag(FLAG_TUPLE))
+    if (symHasRefFields) {
       createFieldQualifiersIfNeeded(sym);
+
+      // If it has ref fields, and all of them are const, do no more here
+      bool allConst = (sym->fieldQualifiers[0] != QUAL_REF);
+      int i = 1;
+      for_fields(field, symAt) {
+        if (field->isRef()) {
+          if (sym->fieldQualifiers[i] == QUAL_REF)
+            allConst = false;
+        }
+        i++;
+      }
+      if (allConst)
+        continue;
+    }
 
     bool setter = false;
     bool revisit = false;
 
     for_SymbolSymExprs(se, sym) {
 
-      // Check several cases that might require other other
-      // information to resolve. These can be added to the revisitGraph.
+      // Check several cases that might require other information
+      // to resolve. These can be added to the revisitGraph.
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
 
+        // Case: loop.
         bool foundLoop = false;
         bool isForall = false;
         IteratorDetails leaderDetails;
@@ -831,7 +858,7 @@ void cullOverReferences() {
                 /*
                 printf("print working on node %i %i\n",
                        node.variable->id, node.fieldIndex);
-                
+
                 printf("for iterator %i\n", iterator->id);
                 */
 
@@ -915,6 +942,7 @@ void cullOverReferences() {
                   continue; // continue outer loop
         }
 
+        // Case: 'call' invokes build_tuple().
         if (FnSymbol* calledFn = call->resolvedFunction()) {
           if (calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
             if (CallExpr* move = toCallExpr(call->parentExpr)) {
@@ -965,6 +993,7 @@ void cullOverReferences() {
           }
         }
 
+        // Case: ContextCallExpr.
         // check for the case that sym is passed a ContextCall
         // and the determination depends on which branch is chosen.
         if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
@@ -991,10 +1020,11 @@ void cullOverReferences() {
 
             addDependency(revisitGraph, srcNode, node);
 
-            continue; // move on to the next iteration
+            continue; // move on to the next SymExpr
           }
         }
 
+        // Case: tuple cast fn or accessor-like fn or const?-ref formal.
         if (FnSymbol* calledFn = call->resolvedFunction()) {
           ArgSymbol* formal = actual_to_formal(se);
 
@@ -1015,7 +1045,7 @@ void cullOverReferences() {
 
               addDependency(revisitGraph, srcNode, node);
 
-              continue; // move on to the next iteration
+              continue; // move on to the next SymExpr
             }
           }
 
@@ -1042,7 +1072,7 @@ void cullOverReferences() {
 
                 addDependency(revisitGraph, srcNode, node);
 
-                continue; // move on to the next iteration
+                continue; // move on to the next SymExpr
               }
             }
           }
@@ -1064,13 +1094,13 @@ void cullOverReferences() {
 
             addDependency(revisitGraph, srcNode, node);
 
-            continue; // move on to the next iteration
+            continue; // move on to the next SymExpr
           }
 
         }
 
-        // Check for the case of extracting a reference field from
-        // a tuple into another Symbol
+        // Case: extracting a reference field.
+        // from a tuple into another Symbol
         if (call->isPrimitive(PRIM_GET_MEMBER_VALUE))
           if (CallExpr* parentCall = toCallExpr(call->parentExpr))
             if (parentCall->isPrimitive(PRIM_MOVE)) {
@@ -1115,18 +1145,64 @@ void cullOverReferences() {
               }
             }
 
+        // Case: creating a temporary from one tuple to another tuple.
+        if (call->isPrimitive(PRIM_SET_MEMBER)) {
+          SymExpr* base       = toSymExpr(call->get(1));
+          Symbol*  baseSymbol = base->symbol();
+
+          SymExpr* rhs        = toSymExpr(call->get(3));
+          Symbol*  rhsSymbol  = rhs->symbol();
+
+          if (rhsSymbol == sym) {
+            SymExpr*       fieldSe    = toSymExpr(call->get(2));
+            Symbol*        field      = fieldSe->symbol();
+            AggregateType* tupleType  = toAggregateType(base->getValType());
+            int            fieldIndex = 1;
+
+            for_fields(curField, tupleType) {
+              if (curField == field) {
+                break;
+              }
+
+              fieldIndex++;
+            }
+
+            INT_ASSERT(fieldIndex <= tupleType->numFields());
+
+            // ignore if the field set isn't
+            // the current field.
+            if (node.fieldIndex == 0 || node.fieldIndex == fieldIndex) {
+              // add a dependency in the graph. Knowing if the
+              // tuple field is set will tell us if the
+              // RHS is set.
+              GraphNode srcNode = makeNode(baseSymbol, fieldIndex);
+
+              collectedSymbols.push_back(srcNode);
+
+              revisit = true;
+
+              addDependency(revisitGraph,
+                            srcNode,
+                            makeNode(rhsSymbol, 0));
+
+              continue;
+            }
+          }
+        }
+
         // Check for the case of extracting a star tuple field?
 
-        // Check for the case that sym is moved to a compiler-introduced
-        // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
+        // Case: sym is moved to a compiler temp, ex.
+        //   PRIM_MOVE tmp, PRIM_ADDR_OF sym
+        CallExpr* call2 = call;
         if (call->isPrimitive(PRIM_ADDR_OF) ||
             call->isPrimitive(PRIM_SET_REFERENCE) ||
             call->isPrimitive(PRIM_GET_MEMBER) ||
             call->isPrimitive(PRIM_GET_SVEC_MEMBER))
-            call = toCallExpr(call->parentExpr);
+          call2 = toCallExpr(call->parentExpr);
 
-        if (call->isPrimitive(PRIM_MOVE)) {
-          SymExpr* lhs       = toSymExpr(call->get(1));
+        if (call2->isPrimitive(PRIM_MOVE)) {
+          SymExpr* lhs       = toSymExpr(call2->get(1));
           Symbol*  lhsSymbol = lhs->symbol();
 
           if (lhsSymbol != sym &&
@@ -1139,9 +1215,18 @@ void cullOverReferences() {
 
             addDependency(revisitGraph, srcNode, node);
 
-            continue; // move on to the next iteration
+            continue; // move on to the next SymExpr
           }
         }
+      }  // if (CallExpr* call = toCallExpr(se->parentExpr))
+
+      // Case: sym is the outer variable in a forall intent.
+      if (ShadowVarSymbol* svar = refShadowVarForOuterVarExpr(se)) {
+        GraphNode srcNode = makeNode(svar, node.fieldIndex);
+        collectedSymbols.push_back(srcNode);
+        addDependency(revisitGraph, srcNode, node);
+        revisit = true;
+        continue; // move on to the next SymExpr
       }
 
       // Determine if se represents a "setting" or a "getting" mention of sym
@@ -1157,12 +1242,12 @@ void cullOverReferences() {
           }
         }
       }
-    }
+    }  // for_SymbolSymExprs(se, sym)
 
     if (revisit) {
       if (setter) {
         // We decided to revisit this Symbol, but separate uses
-        // determined it to be const. So don't revisit it.
+        // determined it to be not const. So don't revisit it.
         revisit = false;
       } else {
         // We might still decide to use setter.
@@ -1183,7 +1268,7 @@ void cullOverReferences() {
         markConst(node);
       }
     }
-  }
+  }  // for(size_t i = 0; i < collectedSymbols.size(); i++)
 
   // Handle the graph of revisits
   // Note this could be a cyclic graph when there are recursive
@@ -1329,7 +1414,7 @@ void lowerContextCallPreferRefConstRef(ContextCallExpr* cc)
     which = USE_CONST_REF;
   } else {
     which = USE_VALUE;
-    INT_ASSERT("lowering context call with only 1 option");
+    INT_FATAL("lowering context call with only 1 option");
   }
 
   lowerContextCall(cc, which);
@@ -1351,7 +1436,7 @@ void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
     which = USE_VALUE;
   } else {
     which = USE_REF;
-    INT_ASSERT("lowering context call with only 1 option");
+    INT_FATAL("lowering context call with only 1 option");
   }
 
   lowerContextCall(cc, which);
@@ -1406,7 +1491,7 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     INT_ASSERT(constRefCall != NULL);
   if (which == USE_VALUE)
     INT_ASSERT(valueCall != NULL);
-  
+
   CallExpr* someCall = refCall;
   if (someCall == NULL) someCall = constRefCall;
   if (someCall == NULL) someCall = valueCall;

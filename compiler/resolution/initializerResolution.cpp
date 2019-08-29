@@ -22,6 +22,7 @@
 #include "AggregateType.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
@@ -33,7 +34,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "UnmanagedClassType.h"
 #include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
@@ -113,6 +113,8 @@ static std::map<FnSymbol*,FnSymbol*> newWrapperMap;
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion
 static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
+  SET_LINENO(initFn);
+
   AggregateType* type = toAggregateType(initFn->_this->getValType());
   if (newWrapperMap.find(initFn) != newWrapperMap.end()) {
     return newWrapperMap[initFn];
@@ -173,7 +175,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   VarSymbol* result = newTemp();
   Expr* resultExpr = NULL;
   if (isClass(type)) {
-    UnmanagedClassType* uct = type->getUnmanagedClass();
+    Type* uct = type->getDecoratedClass(CLASS_TYPE_UNMANAGED_NONNIL);
     resultExpr = new CallExpr(PRIM_CAST, uct->symbol, initTemp);
   } else {
     resultExpr = new SymExpr(initTemp);
@@ -335,15 +337,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 
     } else if (isManagedPtrType(manager) == false) {
       Expr* new_temp_rhs = newCall;
-
-      // Needed for: test/compflags/ferguson/default-unmanaged.chpl
-      if (isClass(at) && manager == NULL && fLegacyNew == true && fDefaultUnmanaged == false) {
-        VarSymbol* borrowTemp = newTemp("borrowTemp");
-        block->insertAtTail(new DefExpr(borrowTemp));
-        block->insertAtTail(new CallExpr(PRIM_MOVE, borrowTemp, new CallExpr(PRIM_TO_BORROWED_CLASS, new_temp_rhs)));
-        normalize(block);
-        new_temp_rhs = new SymExpr(borrowTemp);
-      }
 
       CallExpr* newMove = new CallExpr(PRIM_MOVE, new_temp, new_temp_rhs);
       block->insertAtTail(newMove);
@@ -525,7 +518,7 @@ static void doGatherInitCandidates(CallInfo&                  info,
       // function should be a no-parens function or a type constructor.
       // (a type constructor call without parens uses default arguments)
       if (info.call->methodTag) {
-        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
+        if (visibleFn->hasFlag(FLAG_NO_PARENS)) {
           // OK
 
         } else {
@@ -581,7 +574,7 @@ static void filterInitCandidate(CallInfo&                  info,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool resolveInitializerBody(FnSymbol* fn);
+static void resolveInitializerBody(FnSymbol* fn);
 
 static void resolveInitializerMatch(FnSymbol* fn) {
   if (fn->isResolved() == false) {
@@ -596,32 +589,23 @@ static void resolveInitializerMatch(FnSymbol* fn) {
     insertFormalTemps(fn);
     at->setFirstGenericField();
     resolveInitializerBody(fn);
+
+    popInstantiationLimit(fn);
   }
 }
 
-static bool resolveInitializerBody(FnSymbol* fn) {
-  bool retval = false;
-
+static void resolveInitializerBody(FnSymbol* fn) {
   fn->addFlag(FLAG_RESOLVED);
 
   resolveBlockStmt(fn->body);
 
-  if (tryFailure == false) {
-    resolveReturnType(fn);
+  resolveReturnType(fn);
 
-    toAggregateType(fn->_this->type)->initializerResolved = true;
+  toAggregateType(fn->_this->type)->initializerResolved = true;
 
-    insertAndResolveCasts(fn);
+  insertAndResolveCasts(fn);
 
-    ensureInMethodList(fn);
-
-    retval = true;
-
-  } else {
-    fn->removeFlag(FLAG_RESOLVED);
-  }
-
-  return retval;
+  ensureInMethodList(fn);
 }
 
 /************************************* | **************************************

@@ -68,6 +68,38 @@ classifyPrimitive(CallExpr *call) {
   INT_ASSERT(call->primitive);
   // Check primitives for suitability for executeOnFast and for communication
   switch (call->primitive->tag) {
+
+
+  case NUM_KNOWN_PRIMS:
+  // This snippet creates a single case statement for all the primitives
+  // that should not exist at code-generation time. That way, most of them
+  // can simply cause an assertion.
+  //
+  // case PRIM_NEW:
+  // ...
+  #define PRIMITIVE_G(NAME)
+  #define PRIMITIVE_R(NAME) case NAME:
+  #include "primitive_list.h"
+  #undef PRIMITIVE_R
+  #undef PRIMITIVE_G
+    switch (call->primitive->tag) {
+      case PRIM_GET_USER_LINE:
+      case PRIM_GET_USER_FILE:
+      case PRIM_BLOCK_LOCAL:
+        return FAST_AND_LOCAL;
+
+      // By themselves, loops are considered "fast".
+      case PRIM_BLOCK_WHILEDO_LOOP:
+      case PRIM_BLOCK_DOWHILE_LOOP:
+      case PRIM_BLOCK_FOR_LOOP:
+      case PRIM_BLOCK_C_FOR_LOOP:
+        return FAST_AND_LOCAL;
+
+      default:
+        INT_FATAL("primitive should have been removed from the tree by now.");
+    }
+    break;
+
   case PRIM_UNKNOWN:
     // TODO: Return FAST_AND_LOCAL for PRIM_UNKNOWNs that are side-effect free
     return NOT_FAST_NOT_LOCAL;
@@ -111,12 +143,9 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_SET_REFERENCE:
   case PRIM_LOCAL_CHECK:
 
-  case PRIM_INIT_FIELDS:
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:
   case PRIM_CAST:
-
-  case PRIM_BLOCK_LOCAL:
 
   case PRIM_ON_LOCALE_NUM:
   case PRIM_GET_SERIAL:
@@ -129,8 +158,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_SIZEOF_BUNDLE:
   case PRIM_SIZEOF_DDATA_ELEMENT:
 
-  case PRIM_GET_USER_LINE:
-  case PRIM_GET_USER_FILE:
   case PRIM_LOOKUP_FILENAME:
 
   case PRIM_STACK_ALLOCATE_CLASS:
@@ -140,10 +167,12 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_INVARIANT_START:
   case PRIM_NO_ALIAS_SET:
   case PRIM_COPIES_NO_ALIAS_SET:
+  case PRIM_OPTIMIZATION_INFO:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
   case PRIM_ASSIGN:
+  case PRIM_UNORDERED_ASSIGN:
   case PRIM_ADD_ASSIGN:
   case PRIM_SUBTRACT_ASSIGN:
   case PRIM_MULT_ASSIGN:
@@ -240,7 +269,6 @@ classifyPrimitive(CallExpr *call) {
     return FAST_NOT_LOCAL;
 
   case PRIM_CHPL_COMM_GET:
-  case PRIM_CHPL_COMM_GET_UNORDERED:
   case PRIM_CHPL_COMM_PUT:
   case PRIM_CHPL_COMM_ARRAY_GET:
   case PRIM_CHPL_COMM_ARRAY_PUT:
@@ -252,97 +280,6 @@ classifyPrimitive(CallExpr *call) {
     // Shouldn't this be return FAST_NOT_LOCAL ?
     return NOT_FAST_NOT_LOCAL;
 
-  case PRIM_REDUCE:
-  case PRIM_REDUCE_ASSIGN:
-  case PRIM_NEW:
-
-  case PRIM_DEFAULT_INIT_VAR:
-  case PRIM_INIT_FIELD:
-  case PRIM_INIT_VAR:
-  case PRIM_TYPE_INIT:
-
-  case PRIM_LOGICAL_FOLDER:
-  case PRIM_LIFETIME_OF:
-  case PRIM_TYPEOF:
-  case PRIM_STATIC_TYPEOF:
-  case PRIM_SCALAR_PROMOTION_TYPE:
-  case PRIM_STATIC_FIELD_TYPE:
-  case PRIM_TYPE_TO_STRING:
-  case PRIM_IS_CLASS_TYPE:
-  case PRIM_IS_RECORD_TYPE:
-  case PRIM_IS_UNION_TYPE:
-  case PRIM_IS_ATOMIC_TYPE:
-  case PRIM_IS_EXTERN_TYPE:
-  case PRIM_IS_TUPLE_TYPE:
-  case PRIM_IS_STAR_TUPLE_TYPE:
-  case PRIM_IS_SUBTYPE:
-  case PRIM_IS_SUBTYPE_ALLOW_VALUES:
-  case PRIM_IS_PROPER_SUBTYPE:
-  case PRIM_IS_WIDE_PTR:
-  case PRIM_TUPLE_EXPAND:
-  case PRIM_QUERY:
-  case PRIM_QUERY_PARAM_FIELD:
-  case PRIM_QUERY_TYPE_FIELD:
-  case PRIM_ERROR:
-  case PRIM_WARNING:
-
-  case PRIM_BLOCK_PARAM_LOOP:
-  case PRIM_BLOCK_BEGIN:
-  case PRIM_BLOCK_COBEGIN:
-  case PRIM_BLOCK_COFORALL:
-  case PRIM_BLOCK_ON:
-  case PRIM_BLOCK_BEGIN_ON:
-  case PRIM_BLOCK_COBEGIN_ON:
-  case PRIM_BLOCK_COFORALL_ON:
-  case PRIM_BLOCK_UNLOCAL:
-
-  case PRIM_ACTUALS_LIST:
-  case PRIM_YIELD:
-
-  case PRIM_USED_MODULES_LIST:
-
-  case PRIM_WHEN:
-  case PRIM_CAPTURE_FN_FOR_C:
-  case PRIM_CAPTURE_FN_FOR_CHPL:
-  case PRIM_CREATE_FN_TYPE:
-
-  case PRIM_NUM_FIELDS:
-  case PRIM_IS_POD:
-  case PRIM_FIELD_NUM_TO_NAME:
-  case PRIM_FIELD_NAME_TO_NUM:
-  case PRIM_FIELD_BY_NUM:
-
-  case PRIM_TO_STANDALONE:
-  case PRIM_IS_REF_ITER_TYPE:
-  case PRIM_COERCE:
-  case PRIM_CALL_RESOLVES:
-  case PRIM_METHOD_CALL_RESOLVES:
-  case PRIM_GET_COMPILER_VAR:
-  case PRIM_ZIP:
-  case PRIM_REQUIRE:
-  case NUM_KNOWN_PRIMS:
-  case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
-  case PRIM_ITERATOR_RECORD_SET_SHAPE:
-  case PRIM_THROW:
-  case PRIM_TRY_EXPR:
-  case PRIM_TRYBANG_EXPR:
-  case PRIM_CURRENT_ERROR:
-  case PRIM_CHECK_ERROR:
-  case PRIM_TO_UNMANAGED_CLASS:
-  case PRIM_TO_BORROWED_CLASS:
-  case PRIM_NEEDS_AUTO_DESTROY:
-  case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
-  case PRIM_GET_RUNTIME_TYPE_FIELD:
-    INT_FATAL("This primitive should have been removed from the tree by now.");
-    break;
-
-    // By themselves, loops are considered "fast".
-  case PRIM_BLOCK_WHILEDO_LOOP:
-  case PRIM_BLOCK_DOWHILE_LOOP:
-  case PRIM_BLOCK_FOR_LOOP:
-  case PRIM_BLOCK_C_FOR_LOOP:
-    return FAST_AND_LOCAL;
-
     // These don't block in the Chapel sense, but they may require a system
     // call so we don't consider them fast-eligible.
     // However, they are communication free.
@@ -350,8 +287,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 
-  case PRIM_GET_END_COUNT:
-  case PRIM_SET_END_COUNT:
   case PRIM_GET_DYNAMIC_END_COUNT:
   case PRIM_SET_DYNAMIC_END_COUNT:
     return FAST_AND_LOCAL;
@@ -359,12 +294,8 @@ classifyPrimitive(CallExpr *call) {
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
     // here until they are proven fast.
-  case PRIM_HAS_LEADER:
-  case PRIM_TO_LEADER:
-  case PRIM_TO_FOLLOWER:
-  case PRIM_CALL_DESTRUCTOR:
-  case PRIM_HEAP_REGISTER_GLOBAL_VAR:
-  case PRIM_HEAP_BROADCAST_GLOBAL_VARS:
+  case PRIM_REGISTER_GLOBAL_VAR:
+  case PRIM_BROADCAST_GLOBAL_VARS:
   case PRIM_PRIVATE_BROADCAST:
   case PRIM_RT_ERROR:
   case PRIM_RT_WARNING:

@@ -1,0 +1,1 @@
+GetByIndex_NoArgs.chpl:18: error: illegal call of 'get test by index'. Expected an argument of type 'int'

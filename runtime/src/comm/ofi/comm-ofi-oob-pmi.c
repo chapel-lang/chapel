@@ -32,12 +32,26 @@
 #include "error.h"
 
 #include <assert.h>
-#include <pmi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 
 #include "comm-ofi-internal.h"
+
+
+#define PMI_SUCCESS 0
+#define PMI2_ID_NULL -1
+
+typedef int PMI_BOOL;
+#define PMI_TRUE     1
+#define PMI_FALSE    0
+
+extern int PMI2_Initialized(void);
+extern int PMI2_Init(int* spawned, int* size, int* rank, int* appnum);
+extern int PMI2_Finalize(void);
+extern int PMI_Barrier(void);
+extern int PMI_Allgather(void*, void*, int);
+extern int PMI_Bcast(void*, int);
 
 
 #define PMI_CHK(expr) CHK_EQ_TYPED(expr, PMI_SUCCESS, int, "d")
@@ -72,7 +86,7 @@ void chpl_comm_ofi_oob_barrier(void) {
 }
 
 
-void chpl_comm_ofi_oob_allgather(void* mine, void* all, size_t size) {
+void chpl_comm_ofi_oob_allgather(const void* mine, void* all, size_t size) {
   DBG_PRINTF(DBG_OOB, "OOB allGather: %zd", size);
 
   //
@@ -106,4 +120,10 @@ void chpl_comm_ofi_oob_allgather(void* mine, void* all, size_t size) {
 
   sys_free(g_all);
   sys_free(g_mine);
+}
+
+
+void chpl_comm_ofi_oob_bcast(void* buf, size_t size) {
+  DBG_PRINTF(DBG_OOB, "OOB bcast: %zd", size);
+  PMI_CHK(PMI_Bcast(buf, size));
 }

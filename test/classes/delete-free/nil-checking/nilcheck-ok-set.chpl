@@ -6,7 +6,7 @@ class MyClass {
 }
 
 proc okSetInInner() {
-  var x: owned MyClass;
+  var x: owned MyClass?;
   proc inner() {
     x = new owned MyClass(1);
   }
@@ -16,7 +16,7 @@ proc okSetInInner() {
 okSetInInner();
 
 proc okSetInTask() {
-  var x: owned MyClass;
+  var x: owned MyClass?;
   var s$: sync int;
 
   begin with (ref x) {
@@ -30,7 +30,7 @@ proc okSetInTask() {
 }
 okSetInTask();
 
-var global: unmanaged MyClass;
+var global: unmanaged MyClass?;
 proc setGlobal() {
   global = new unmanaged MyClass(1);
 }
@@ -43,7 +43,7 @@ proc okSetGlobalInFn() {
 okSetGlobalInFn();
 
 proc okDeleteNil() {
-  var x: unmanaged MyClass;
+  var x: unmanaged MyClass?;
   delete x;
 }
 okDeleteNil();

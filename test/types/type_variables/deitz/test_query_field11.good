@@ -1,4 +1,5 @@
 test_query_field11.chpl:13: error: unresolved call 'foo(range(int(64),boundedLow,false), range(int(64),boundedLow,true))'
-test_query_field11.chpl:1: note: candidates are: foo(x: range(int, BoundedRangeType.boundedLow, ?stridable) ...?k)
-test_query_field11.chpl:5: note:                 foo(x: range(int, BoundedRangeType.boundedHigh, ?stridable) ...?k)
+test_query_field11.chpl:1: note: this candidate did not match: foo(x: range(int, BoundedRangeType.boundedLow, ?stridable) ...?k)
+test_query_field11.chpl:1: note: because an argument was incompatible
+test_query_field11.chpl:5: note: candidates are: foo(x: range(int, BoundedRangeType.boundedHigh, ?stridable) ...?k)
 test_query_field11.chpl:9: note:                 foo(x: range(int, ?bounded, ?stridable) ...?k)

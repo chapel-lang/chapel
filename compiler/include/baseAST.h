@@ -49,7 +49,7 @@
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
-  macro(UnmanagedClassType) sep                    \
+  macro(DecoratedClassType) sep                    \
                                                    \
   macro(ModuleSymbol) sep                          \
   macro(VarSymbol)    sep                          \
@@ -193,7 +193,7 @@ enum AstTag {
   E_PrimitiveType,
   E_EnumType,
   E_AggregateType,
-  E_UnmanagedClassType
+  E_DecoratedClassType
 };
 
 static inline bool isExpr(AstTag tag)
@@ -203,7 +203,7 @@ static inline bool isSymbol(AstTag tag)
 { return tag >= E_ModuleSymbol   && tag <= E_LabelSymbol; }
 
 static inline bool isType(AstTag tag)
-{ return tag >= E_PrimitiveType  && tag <= E_UnmanagedClassType; }
+{ return tag >= E_PrimitiveType  && tag <= E_DecoratedClassType; }
 
 
 //
@@ -389,7 +389,7 @@ def_is_ast(LabelSymbol)
 def_is_ast(PrimitiveType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
-def_is_ast(UnmanagedClassType)
+def_is_ast(DecoratedClassType)
 #undef def_is_ast
 
 bool isLoopStmt(const BaseAST* a);
@@ -440,7 +440,7 @@ def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
-def_to_ast(UnmanagedClassType)
+def_to_ast(DecoratedClassType)
 def_to_ast(Type)
 
 def_to_ast(LoopStmt);
@@ -495,7 +495,7 @@ def_less_ast(Symbol)
 def_less_ast(PrimitiveType)
 def_less_ast(EnumType)
 def_less_ast(AggregateType)
-def_less_ast(UnmanagedClassType)
+def_less_ast(DecoratedClassType)
 def_less_ast(Type)
 
 def_less_ast(LoopStmt);
@@ -630,13 +630,6 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
       AST_CALL_CHILD(stmt, BlockStmt,    blockInfoGet(), call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    useList,        call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    byrefVars,      call, __VA_ARGS__);   \
-      if (ForallIntents* bi = stmt->forallIntents) {                           \
-        AST_CALL_STDVEC(bi->fiVars,  Expr, call, __VA_ARGS__);                 \
-        AST_CALL_STDVEC(bi->riSpecs, Expr, call, __VA_ARGS__);                 \
-        AST_CALL_CHILD(bi, ForallIntents, iterRec,  call, __VA_ARGS__);        \
-        AST_CALL_CHILD(bi, ForallIntents, leadIdx,  call, __VA_ARGS__);        \
-        AST_CALL_CHILD(bi, ForallIntents, leadIdxCopy,  call, __VA_ARGS__);    \
-      }                                                                        \
     }                                                                          \
     break;                                                                     \
   }                                                                            \
@@ -705,7 +698,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
     AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);  \
     break;                                                              \
-  case E_UnmanagedClassType:                                              \
+  case E_DecoratedClassType:                                              \
     break;                                                              \
   default:                                                              \
     break;                                                              \

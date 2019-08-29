@@ -1,0 +1,1 @@
+-Llib/ -lboolArgAndReturn `$CHPL_HOME/util/config/compileline --libraries` `$CHPL_HOME/util/config/compileline --multilocale-lib-deps` -lboolArgAndReturn

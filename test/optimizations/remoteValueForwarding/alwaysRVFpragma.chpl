@@ -1,16 +1,12 @@
-class C {
-  var loc: locale = here;
-}
-
 pragma "always RVF"
 record R {
   var x: int;
-  var y = new shared C();;
+  var loc = here.id;
 }
 
 record S {
   var x: int;
-  var y = new shared C();
+  var loc = here.id;
 }
 
 proc main() {
@@ -24,21 +20,21 @@ proc main() {
   writeln();
 
   on Locales[numLocales-1] {
-    writeln("From locale ", here);
+    writeln("From locale ", here.id);
     writeln("------");
     writeln(myR);
-    writeln(myR.locale);
-    writeln(myR.x.locale);
+    writeln(myR.locale.id);
+    writeln(myR.x.locale.id);
     writeln(myS);
-    writeln(myS.locale);
-    writeln(myS.x.locale);
+    writeln(myS.locale.id);
+    writeln(myS.x.locale.id);
     writeln();
     writeln("Writing");
     writeln("-------");
     myR.x = 43;
-    myR.y = new shared C();
+    myR.loc = here.id;
     myS.x = 24;
-    myS.y = new shared C();
+    myS.loc = here.id;
     writeln(myR);
     writeln(myS);
     writeln();

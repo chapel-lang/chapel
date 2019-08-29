@@ -3,7 +3,7 @@ class MyClass {
   var x:int;
 
   override proc borrow() {
-    return "You just borrowed " + x;
+    return "You just borrowed " + x:string;
   }
 }
 

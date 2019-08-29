@@ -1,7 +1,7 @@
-var x:void;
+var x:nothing;
 
 class y {
-  var z: void;
+  var z: nothing;
 }
 
 config param enabled = false;
@@ -10,7 +10,7 @@ proc vartype() type {
   if enabled then
     return int;
   else
-    return void;
+    return nothing;
 }
 
 class c {

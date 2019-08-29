@@ -1,2 +1,3 @@
 accessOfOutsideFunctionNoBleed.chpl:16: In function 'main':
 accessOfOutsideFunctionNoBleed.chpl:18: error: unresolved call 'a(0)'
+accessOfOutsideFunctionNoBleed.chpl:18: note: because no functions named a found in scope

@@ -92,9 +92,9 @@ if [ "${COMPILER}" != "gnu" ] ; then
     ### TEMPORARY
     # Restore the following line when we can.
     # module load gcc/${CHPL_GCC_TARGET_VERSION}
-    # For now, we need to force it to gcc 6.3.0 so its libraries will
+    # For now, we need to force it to gcc 7.3.0 so its libraries will
     # link with earlier versions of the Intel compiler.
-    module load gcc/6.3.0
+    module load gcc/7.3.0
 fi
 
 # quiet libu warning about cpuid detection failure
@@ -126,13 +126,14 @@ case $COMPILER in
         ;;
 esac
 
-if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
-    libsci_module=$(module list -t 2>&1 | grep libsci)
-    if [ -n "${libsci_module}" ] ; then
-        log_info "Unloading cray-libsci module: ${libsci_module}"
-        module unload $libsci_module
-    fi
-fi
+log_info "Unloading cray-libsci module"
+module unload cray-libsci
+
+log_info "Unloading cray-mpich module"
+module unload cray-mpich
+
+log_info "Unloading atp module"
+module unload atp
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 
@@ -165,8 +166,13 @@ if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
 fi
 
 if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
-    log_info "Loading fftw module."
-    module load fftw
+    # We want cray-fftw with PrgEnv compilers.  But that in turns loads
+    # cray-mpich and our PGI target compiler is so old that bringing in
+    # cray-mpich has become impossible, so skip cray-fftw with PGI.
+    if [ "${COMPILER}" != "pgi" ] ; then
+      log_info "Loading cray-fftw module."
+      module load cray-fftw
+    fi
 fi
 
 log_info "Current loaded modules:"

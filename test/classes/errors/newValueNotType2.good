@@ -1,0 +1,6 @@
+newValueNotType2.chpl:7: error: cannot use decorator borrowed on a value
+newValueNotType2.chpl:7: error: duplicate decorators - borrowed owned C
+newValueNotType2.chpl:7: error: invalid use of 'new'
+newValueNotType2.chpl:10: error: cannot use decorator unmanaged on a value
+newValueNotType2.chpl:10: error: duplicate decorators - unmanaged owned C
+newValueNotType2.chpl:10: error: invalid use of 'new'

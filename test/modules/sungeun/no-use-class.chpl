@@ -4,7 +4,7 @@ module X {
 
 module Y {
   proc main() {
-    var c: X.C;
+    var c: borrowed X.C?;
     writeln(c);
 
     Z.f();

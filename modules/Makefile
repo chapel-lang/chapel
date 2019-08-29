@@ -76,13 +76,16 @@ MODULES_TO_DOCUMENT = \
 	standard/GMP.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/LinkedLists.chpl \
 	standard/List.chpl \
+	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
 	standard/Regexp.chpl \
+	standard/Set.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
@@ -93,24 +96,25 @@ MODULES_TO_DOCUMENT = \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
+	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
-	packages/BufferedAtomics.chpl \
-	packages/BufferedGets.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
+	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
-	packages/FFTW_MT.chpl \
 	packages/FunctionalOperations.chpl \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
-	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
+	packages/LockFreeQueue.chpl \
+	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/Norm.chpl \
+	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
@@ -122,7 +126,11 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
-	packages/TOML.chpl
+	packages/TOML.chpl \
+	packages/UnitTest.chpl \
+	packages/UnorderedAtomics.chpl \
+	packages/UnorderedCopy.chpl \
+	packages/URL.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -148,6 +156,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelLocale.chpl            \
 	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
+	internal/Bytes.chpl                   \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \

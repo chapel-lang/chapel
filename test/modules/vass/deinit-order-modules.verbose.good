@@ -27,11 +27,10 @@ UM4explicitDeinit.deinit user
 uv4ae.deinit UC
   MemTracking
   LocaleTree
-  IO
-  ChapelDistribution
   LocalesArray
   LocaleModel
   DefaultRectangular
+  IO
   ChapelArray
   Sort
   ChapelLocale

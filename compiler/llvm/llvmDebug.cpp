@@ -130,9 +130,6 @@ llvm::DIType* debug_data::construct_type(Type *type)
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
-  if (strstr(defFile, "/modules/")!=NULL || strcmp(defFile, "<internal>")==0) {
-    return NULL;
-  }
   int defLine = type->symbol->linenum();
 
   if(!ty) {
@@ -369,8 +366,10 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
       if(!fty){
         fty = getTypeLLVM(fts->cname);
-        if(!fty)
-          printf("Error: %s has no llvm type\n",fts->name);
+        if(!fty) {
+          // FIXME: Types should have an LLVM type
+          return NULL;
+        }
       }
       bool unused;
       llvm::DIType* mty = this->dibuilder.createMemberType(
@@ -434,6 +433,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
   }
 
   else if(ty->isArrayTy() && type->astTag == E_AggregateType) {
+    if (type->symbol->hasFlag(FLAG_C_ARRAY)) return NULL;
     AggregateType *this_class = (AggregateType *)type;
     // Subscripts are "ranges" for each dimension of the array
     llvm::SmallVector<llvm::Metadata *, 4> Subscripts;
@@ -442,6 +442,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     Subscripts.push_back(this->dibuilder.getOrCreateSubrange(0, Asize));
     Symbol *eleSym = toDefExpr(this_class->fields.head)->sym;
     Type *eleType = eleSym->type;
+    if (get_type(eleType) == NULL) return NULL;
     N = this->dibuilder.createArrayType(
       Asize,
       8*layout.getABITypeAlignment(ty),
@@ -647,18 +648,14 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
   const char *name = varSym->name;
   const char *file_name = varSym->astloc.filename;
   int line_number = varSym->astloc.lineno;
-  FnSymbol *funcSym = NULL;
-  if(isFnSymbol(varSym->defPoint->parentSymbol))
-    funcSym = (FnSymbol*)varSym->defPoint->parentSymbol;//TODO:if parent is a block
-  else
-    printf("Couldn't find the function parent of variable: %s!\n",name);
+  FnSymbol *funcSym = varSym->defPoint->getFunction();
 
   llvm::DISubprogram* scope = get_function(funcSym);
   llvm::DIFile* file = get_file(file_name);
   llvm::DIType* varSym_type = get_type(varSym->type);
 
-  if(varSym_type){
-    return this->dibuilder.createAutoVariable(
+  if(varSym_type) {
+    llvm::DILocalVariable* localVariable = this->dibuilder.createAutoVariable(
       scope, /* Scope */
       name, /*Name*/
       file, /*File*/
@@ -666,6 +663,12 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
       varSym_type, /*Type*/
       true/*AlwaysPreserve, won't be removed when optimized*/
       ); //omit the  Flags and ArgNo
+
+    this->dibuilder.insertDeclare(varSym->codegen().val, localVariable,
+      this->dibuilder.createExpression(), llvm::DebugLoc::get(line_number, 0, scope),
+      gGenInfo->irBuilder->GetInsertBlock());
+
+    return localVariable;
   }
   else {
     //Empty dbg node if the symbol type is unresolved

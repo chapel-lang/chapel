@@ -1,4 +1,4 @@
-_owned(Foo(true))
-_owned(Foo(false))
-Foo(true)
-Foo(false)
+owned Foo(true)
+owned Foo(false)
+borrowed Foo(true)?
+borrowed Foo(false)?

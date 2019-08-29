@@ -65,14 +65,30 @@ endif
 endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
 CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-aries-alps
+CRAY_CROSS_CONFIGURE=y
 else
 CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-gemini-alps
+CRAY_CROSS_CONFIGURE=y
 endif
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 
 CHPL_GASNET_CFG_SCRIPT=configure
+endif
+
+# The cross-configure scripts used on Crays ignore our CC and always use CC=cc
+# (the PrgEnv wrappers.) Use PrgEnv-gnu to produce something that is ABI and
+# compiler option compatible with clang-included.
+ifeq ($(CRAY_CROSS_CONFIGURE), y)
+ifeq ($(CHPL_MAKE_COMPILER), clang-included)
+ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_ORIG_TARGET_COMPILER)))
+ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_ORIG_TARGET_COMPILER))
+ifneq ($(ORIG_PRGENV), gnu)
+ENSURE_GASNET_COMPATIBLE_COMPILER=. $$MODULESHOME/init/sh; module unload PrgEnv-$(ORIG_PRGENV); module load PrgEnv-gnu;
+endif
+endif
+endif
 endif
 
 # Build amudprun for the host platform and replace the default one that was
@@ -117,14 +133,14 @@ gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
 	cd $(GASNET_SUBDIR) && ./Bootstrap -T
 	$(XTRA_CONFIG_COMMAND)
-	cd $(GASNET_BUILD_DIR) && $(CHPL_GASNET_ENV_VARS) $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync $(CHPL_GASNET_CFG_OPTIONS)
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(CHPL_GASNET_ENV_VARS) $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync $(CHPL_GASNET_CFG_OPTIONS)
 
 gasnet-build: FORCE
-	cd $(GASNET_BUILD_DIR) && $(MAKE) all
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) all
 	$(XTRA_POST_BUILD_COMMAND)
 
 gasnet-install: FORCE
-	cd $(GASNET_BUILD_DIR) && $(MAKE) install
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) install
 	$(XTRA_POST_INSTALL_COMMAND)
 
 #

@@ -36,10 +36,6 @@ void chpl_warning_explicit(const char *message, int32_t lineno,
                            const char *filename);
 void chpl_error_preformatted(const char* message);
 void chpl_error(const char* message, int32_t lineno, int32_t filenameIdx);
-void chpl_error_vs(char *restrict str, size_t size,
-                   int32_t lineno, int32_t filenameIdx,
-                   const char *restrict format, ...)
-       __attribute__((format(printf, 5, 6)));
 void chpl_error_explicit(const char *message, int32_t lineno,
                          const char *filename);
 void chpl_internal_error(const char* message);
@@ -67,27 +63,6 @@ void chpl_internal_error_v(const char *restrict format, ...)
     fprintf(stderr, "error: %s\n", message);                                   \
     exit(1);                                                                   \
   } while (0)
-
-static inline
-void chpl_error_vs(char *restrict, size_t, int32_t, int32_t,
-                   const char *restrict, ...)
-    __attribute__((format(printf, 5, 6)));
-
-static inline
-void chpl_error_vs(char *restrict str, size_t size,
-                   int32_t lineno, int32_t filenameIdx,
-                   const char *restrict format, ...) {
-  fflush(stdout);
-  fprintf(stderr, "%" PRId32 ":%" PRId32 ": error: ", filenameIdx, lineno);
-
-  va_list ap;
-  va_start(ap, format);
-  vfprintf(stderr, format, ap);
-  va_end(ap);
-
-  fprintf(stderr, "\n");
-  exit(1);
-}
 
 #define chpl_error_explicit(message, lineno, filename)                         \
   do {                                                                         \

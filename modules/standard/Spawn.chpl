@@ -178,7 +178,7 @@ module Spawn {
     param locking:bool;
 
     pragma "no doc"
-    var home:locale;
+    var home:locale = here;
 
     /* The Process ID number of the spawned process */
     var pid:int(64);
@@ -655,12 +655,12 @@ module Spawn {
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
   {
-    if command.isEmptyString() then
+    if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
+    
+    var args = if shellarg == "" then [executable, command]
+        else [executable, shellarg, command];
 
-    var args = [command];
-    if shellarg != "" then args.push_front(shellarg);
-    args.push_front(executable);
     return spawn(args, env, executable,
                  stdin=stdin, stdout=stdout, stderr=stderr,
                  kind=kind, locking=locking);
@@ -738,6 +738,9 @@ module Spawn {
     if !running {
       if this.spawn_error then
         try ioerror(this.spawn_error, "in subprocess.wait");
+
+      // Otherwise, do nothing, since the child process already ended.
+      return;
     }
 
     var stdin_err:syserr  = ENOERR;
@@ -831,6 +834,14 @@ module Spawn {
    */
   proc subprocess.communicate() throws {
     try _throw_on_launch_error();
+
+    if !running {
+      if this.spawn_error then
+        try ioerror(this.spawn_error, "in subprocess.communicate");
+
+      // Otherwise, do nothing, since the child process already ended.
+      return;
+    }
 
     var err:syserr = ENOERR;
     on home {
@@ -1022,7 +1033,7 @@ module Spawn {
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }
-    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal);
+    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal:string);
   }
 
   // documented in the throws version

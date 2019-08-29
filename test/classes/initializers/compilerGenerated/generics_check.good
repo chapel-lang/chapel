@@ -1,5 +1,5 @@
-GenericClass(bool,5,real(64))
+borrowed GenericClass(bool,5,real(64))
 {v = 3.0, nongeneric = 2}
-GenericClass(int(64),2,bool)
-GenericClass(real(64),5,real(64))
+borrowed GenericClass(int(64),2,bool)?
+borrowed GenericClass(real(64),5,real(64))
 {v = 2.4, nongeneric = 8}

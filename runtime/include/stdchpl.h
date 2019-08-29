@@ -42,6 +42,7 @@
 #include "chpl-atomics.h"
 #include "chpl-bitops.h"
 #include "chpl-comm.h"
+#include "chpl-comm-diags.h"
 #include "chpldirent.h"
 #include "chplexit.h"
 #include "chpl-external-array.h"

@@ -1,2 +1,4 @@
 defaultForInheritedInit.chpl:17: error: unresolved call 'D.init(3, "hi", 4.6)'
-defaultForInheritedInit.chpl:14: note: candidates are: D.init()
+defaultForInheritedInit.chpl:14: note: this candidate did not match: D.init()
+defaultForInheritedInit.chpl:17: note: because call includes 3 arguments
+defaultForInheritedInit.chpl:14: note: but function can only accept 0 arguments

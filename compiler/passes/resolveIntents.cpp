@@ -33,7 +33,7 @@ static IntentTag constIntentForType(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       isClass(t) ||
-      isUnmanagedClassType(t) ||
+      isDecoratedClassType(t) ||
       isUnion(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
@@ -42,9 +42,9 @@ static IntentTag constIntentForType(Type* t) {
       t == dtStringC ||
       t == dtCVoidPtr ||
       t == dtCFnPtr ||
+      t == dtNothing ||
       t == dtVoid ||
       t->symbol->hasFlag(FLAG_RANGE) ||
-      isManagedPtrType(t) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
     return INTENT_CONST_IN;
@@ -52,6 +52,7 @@ static IntentTag constIntentForType(Type* t) {
   } else if (isSyncType(t)          ||
              isSingleType(t)        ||
              isRecordWrappedType(t) ||  // domain, array, or distribution
+             isManagedPtrType(t) ||
              isAtomicType(t) ||
              isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
@@ -95,8 +96,9 @@ IntentTag blankIntentForType(Type* t) {
     retval = INTENT_REF_MAYBE_CONST;
 
   } else if (isManagedPtrType(t)) {
+    // TODO: INTENT_REF_MAYBE_CONST could
     // allow blank intent owned to be transferred out of
-    retval = INTENT_IN;
+    retval = INTENT_CONST_REF;
 
   } else if (is_bool_type(t)                         ||
              is_int_type(t)                          ||
@@ -109,15 +111,16 @@ IntentTag blankIntentForType(Type* t) {
              t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||
              isClass(t)                              ||
-             isUnmanagedClassType(t)                 ||
+             isDecoratedClassType(t)                 ||
              isRecord(t)                             ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
              t == dtTaskID                           ||
              t == dtFile                             ||
              t == dtNil                              ||
-             t == dtOpaque                           ||
              t == dtVoid                             ||
+             t == dtOpaque                           ||
+             t == dtNothing                          ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||
              t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
@@ -231,12 +234,6 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     // to correctly mark const / not const / maybe const.
     return INTENT_REF;
 
-  else if (isManagedPtrType(arg->type) &&
-           (arg->intent == INTENT_BLANK || arg->intent == INTENT_CONST) &&
-           arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY))
-
-    return INTENT_CONST_REF;
-
   else
     return concreteIntent(arg->intent, arg->type);
 
@@ -246,7 +243,7 @@ void resolveArgIntent(ArgSymbol* arg) {
   if (!resolved) {
     if (arg->type == dtMethodToken ||
         arg->type == dtTypeDefaultToken ||
-        arg->type == dtVoid ||
+        arg->type == dtNothing ||
         arg->type == dtUnknown ||
         arg->hasFlag(FLAG_TYPE_VARIABLE) ||
         arg->hasFlag(FLAG_PARAM)) {
@@ -285,14 +282,9 @@ void resolveArgIntent(ArgSymbol* arg) {
             (formalRequiresTemp(arg, fn) &&
              shouldAddFormalTempAtCallSite(arg, fn)))
           intent = INTENT_REF;
-        else
-          intent = constIntentForType(arg->type);
-      } else {
-        // In this case, C can copy for 'in' e.g. for ints
-        // There, we leave the intent alone rather than making it 'const in',
-        // since an 'in' formal can still be modified in the body of the
-        // function.
       }
+      // Otherwise, leave the intent INTENT_IN so that the formal can
+      // be modified in the body of the function.
     }
   }
 

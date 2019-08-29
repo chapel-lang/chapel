@@ -1,0 +1,4 @@
+test_opaque_remove.chpl:1: In function 'main':
+test_opaque_remove.chpl:2: warning: Opaque domains are deprecated - please switch to another domain type
+2
+0

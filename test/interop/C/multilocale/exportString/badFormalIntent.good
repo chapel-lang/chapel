@@ -1,0 +1,6 @@
+badFormalIntent.chpl:3: error: Formal 's' of type 'string' in exported routine 'badFormalIntentNone(s: string)' may not be passed by const ref in multilocale libraries
+badFormalIntent.chpl:5: error: Formal 's' of type 'string' in exported routine 'badFormalIntentConst(const s: string)' may not have the 'const' intent in multilocale libraries
+badFormalIntent.chpl:7: error: Formal 's' of type 'string' in exported routine 'badFormalIntentOut(out s: string)' may not have the 'out' intent in multilocale libraries
+badFormalIntent.chpl:9: error: Formal 's' of type 'string' in exported routine 'badFormalIntentInOut(inout s: string)' may not have the 'inout' intent in multilocale libraries
+badFormalIntent.chpl:11: error: Formal 's' of type 'string' in exported routine 'badFormalIntentRef(ref s: string)' may not have the 'ref' intent in multilocale libraries
+badFormalIntent.chpl:13: error: Formal 's' of type 'string' in exported routine 'badFormalIntentConstRef(const ref s: string)' may not have the 'const ref' intent in multilocale libraries

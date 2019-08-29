@@ -1,2 +1,4 @@
-out-superclass.chpl:13: error: unresolved call 'procOutD(unmanaged C)'
-out-superclass.chpl:6: note: candidates are: procOutD(out arg: unmanaged D)
+out-superclass.chpl:14: error: unresolved call 'procOutD(borrowed C?)'
+out-superclass.chpl:6: note: this candidate did not match: procOutD(out arg: borrowed D?)
+out-superclass.chpl:14: note: because call actual argument #1 with type borrowed C?
+out-superclass.chpl:6: note: is passed to formal 'out arg: borrowed D?'

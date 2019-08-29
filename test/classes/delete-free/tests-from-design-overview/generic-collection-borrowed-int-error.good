@@ -1,3 +1,4 @@
 generic-collection-borrowed-int-error.chpl:11: In function 'test':
-generic-collection-borrowed-int-error.chpl:14: error: unresolved type specifier 'Collection(type int(64))'
-generic-collection-borrowed-int-error.chpl:3: note: candidates are: Collection(type element)
+generic-collection-borrowed-int-error.chpl:14: error: invalid type specifier 'Collection(type int(64))'
+generic-collection-borrowed-int-error.chpl:14: note: type specifier did not match: Collection(type element: borrowed)
+generic-collection-borrowed-int-error.chpl:14: note: unable to instantiate field 'element : borrowed' with type 'int(64)'

@@ -8,10 +8,10 @@ use Sort;
 
 // Used to encode a string into a uint
 var tonum : [0..127] int;
-tonum[ascii("A")] = 0;
-tonum[ascii("C")] = 1;
-tonum[ascii("T")] = 2;
-tonum[ascii("G")] = 3;
+tonum["A".toByte()] = 0;
+tonum["C".toByte()] = 1;
+tonum["T".toByte()] = 2;
+tonum["G".toByte()] = 3;
 
 // Used to decode a uint back into a string
 var tochar : [0..3] string;
@@ -24,7 +24,7 @@ inline proc hash(data : string) {
   var e : uint = 0;
   for d in data {
     e <<= 2;
-    e |= tonum[ascii(d)];
+    e |= tonum[d.toByte()];
   }
   return e;
 }
@@ -61,7 +61,7 @@ proc calculate(data : string, size : int) {
       // Assigning to an index in an associative array will create an
       // index/element pair if one does not already exist.
       //
-      privArr[hash(data[i..#size])] += 1;
+      privArr[hash(data[i:byteIndex..#size])] += 1;
     }
 
     lock$;                                  // read to acquire lock
@@ -85,8 +85,8 @@ proc write_frequencies(data : string, size : int) {
   for (s, e, f) in zip(sorted, freqs.domain, freqs) do
     s = (f, e);
 
-  // QuickSort will sort starting at the tuple's first element.
-  quickSort(sorted, comparator=reverseComparator);
+  // sort will sort starting at the tuple's first element.
+  sort(sorted, comparator=reverseComparator);
 
   const sum = data.length - size;
   for (f, e) in sorted do
@@ -94,9 +94,9 @@ proc write_frequencies(data : string, size : int) {
 }
 
 proc write_count(data : string, pattern : string) {
-  const size = pattern.length;
+  const size = pattern.numBytes;
   var freqs = calculate(data, size);
-  const d = hash(pattern[1..size]);
+  const d = hash(pattern[1:byteIndex..#size]);
   writeln(freqs[d], "\t", decode(d, size));
 }
 

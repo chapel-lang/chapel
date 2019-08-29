@@ -153,7 +153,7 @@ class SetChplEnvTests(unittest.TestCase):
         actual_chpl_home = get_var('CHPL_HOME')
         self.assertEqual(os.stat(self.chpl_home), os.stat(actual_chpl_home))
 
-        if 'quickstart' in setchplenv_script:
+        if 'quickstart' in os.path.relpath(setchplenv_script, self.util_dir):
             self.assertEqual('none', get_var('CHPL_COMM'))
             self.assertEqual('fifo', get_var('CHPL_TASKS'))
             self.assertEqual('none', get_var('CHPL_GMP'))

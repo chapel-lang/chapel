@@ -48,13 +48,17 @@ ifeq ($(CHPL_MAKE_COMPILER), clang-included)
 
     # only run gather-cray-prgenv-argumenst.bash once, as an optimization
     ifndef CHPL_UGNI_PRGENV_CFLAGS
-      export CHPL_UGNI_PRGENV_CFLAGS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash compile "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")
+      export CHPL_UGNI_PRGENV_CFLAGS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash compile "$(CHPL_MAKE_TARGET_PLATFORM)" "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")
     endif
   endif
 endif
 
 # Get system headers...
 comm_ugni_CFLAGS = $(CHPL_UGNI_PRGENV_CFLAGS)
+
+ifneq ($(UGNI_PERFSTATS),)
+comm_ugni_CFLAGS += -DPERFSTATS_COMM_UGNI
+endif
 
 # Building with IPA enabled results in execution time bugs. See JIRA issue 185
 # for more details: https://chapel.atlassian.net/browse/CHAPEL-185

@@ -21,7 +21,7 @@
 #define _AST_VISITOR_H_
 
 class AggregateType;
-class UnmanagedClassType;
+class DecoratedClassType;
 class EnumType;
 class PrimitiveType;
 
@@ -44,7 +44,6 @@ class LoopExpr;
 
 class UseStmt;
 class BlockStmt;
-class ForallIntents;
 class ForallStmt;
 class WhileDoStmt;
 class DoWhileStmt;
@@ -80,8 +79,8 @@ public:
   virtual bool   enterAggrType       (AggregateType*     node) = 0;
   virtual void   exitAggrType        (AggregateType*     node) = 0;
 
-  virtual bool   enterUnmanagedClassType(UnmanagedClassType*     node) = 0;
-  virtual void   exitUnmanagedClassType (UnmanagedClassType*     node) = 0;
+  virtual bool   enterDecoratedClassType(DecoratedClassType*     node) = 0;
+  virtual void   exitDecoratedClassType (DecoratedClassType*     node) = 0;
 
   virtual bool   enterEnumType       (EnumType*          node) = 0;
   virtual void   exitEnumType        (EnumType*          node) = 0;
@@ -142,7 +141,6 @@ public:
   virtual bool   enterBlockStmt      (BlockStmt*         node) = 0;
   virtual void   exitBlockStmt       (BlockStmt*         node) = 0;
 
-  virtual void   visitForallIntents  (ForallIntents*   clause) = 0;
   virtual bool   enterForallStmt     (ForallStmt*        node) = 0;
   virtual void   exitForallStmt      (ForallStmt*        node) = 0;
 

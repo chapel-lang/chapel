@@ -2,11 +2,11 @@ class C {
   var x = 10;
 }
 
-var globc: unmanaged C = new unmanaged C();
+var globc: unmanaged C? = new unmanaged C();
 
 class D {
   var y = 20;
-  var locc: unmanaged C;
+  var locc: unmanaged C?;
 
   proc doit {
     locc = globc;

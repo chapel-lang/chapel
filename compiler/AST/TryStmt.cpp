@@ -23,11 +23,13 @@
 #include "CatchStmt.h"
 
 BlockStmt* TryStmt::build(bool tryBang, Expr* expr) {
-  BlockStmt* body = new BlockStmt(expr);
-  return buildChplStmt(new TryStmt(tryBang, body, NULL));
-}
-
-BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body) {
+  BlockStmt* body = new BlockStmt();
+  if (BlockStmt* block = toBlockStmt(expr)) {
+    // Flatten any scopeless blocks
+    body->appendChapelStmt(block);
+  } else {
+    body->insertAtTail(expr);
+  }
   return buildChplStmt(new TryStmt(tryBang, body, NULL));
 }
 

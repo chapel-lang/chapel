@@ -1,0 +1,2 @@
+throw-shared.chpl:1: In function 'foo':
+throw-shared.chpl:3: error: Cannot throw an instance of type 'shared IllegalArgumentError' - please throw owned

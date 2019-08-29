@@ -1,1 +1,1 @@
-c.type = Child(int(64),2*int(64))
+c.type = borrowed Child(int(64),2*int(64))?

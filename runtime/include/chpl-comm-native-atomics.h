@@ -16,6 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "chpltypes.h"
+#include "chpl-atomics.h"
 
 #ifndef _chpl_comm_native_atomics_h_
 #define _chpl_comm_native_atomics_h_
@@ -40,7 +42,7 @@
 #define DECL_CHPL_COMM_ATOMIC_WRITE(type)                               \
   void chpl_comm_atomic_write_ ## type                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
-          int ln, int32_t fn);
+          memory_order order, int ln, int32_t fn);
 
 DECL_CHPL_COMM_ATOMIC_WRITE(int32)
 DECL_CHPL_COMM_ATOMIC_WRITE(int64)
@@ -59,7 +61,7 @@ DECL_CHPL_COMM_ATOMIC_WRITE(real64)
 #define DECL_CHPL_COMM_ATOMIC_READ(type)                                \
   void chpl_comm_atomic_read_ ## type                                   \
          (void* result, c_nodeid_t node, void* object,                  \
-          int ln, int32_t fn);
+          memory_order order, int ln, int32_t fn);
 
 DECL_CHPL_COMM_ATOMIC_READ(int32)
 DECL_CHPL_COMM_ATOMIC_READ(int64)
@@ -77,7 +79,7 @@ DECL_CHPL_COMM_ATOMIC_READ(real64)
 #define DECL_CHPL_COMM_ATOMIC_XCHG(type)                                \
   void chpl_comm_atomic_xchg_ ## type                                   \
          (void* desired, c_nodeid_t node, void* object, void* result,   \
-          int ln, int32_t fn);
+          memory_order order, int ln, int32_t fn);
 
 DECL_CHPL_COMM_ATOMIC_XCHG(int32)
 DECL_CHPL_COMM_ATOMIC_XCHG(int64)
@@ -96,8 +98,7 @@ DECL_CHPL_COMM_ATOMIC_XCHG(real64)
 #define DECL_CHPL_COMM_ATOMIC_CMPXCHG(type)                             \
   void chpl_comm_atomic_cmpxchg_ ## type                                \
          (void* expected, void* desired, c_nodeid_t node, void* object, \
-          chpl_bool32* result,                                          \
-          int ln, int32_t fn);
+          chpl_bool32* result, memory_order order, int ln, int32_t fn);
 
 DECL_CHPL_COMM_ATOMIC_CMPXCHG(int32)
 DECL_CHPL_COMM_ATOMIC_CMPXCHG(int64)
@@ -119,7 +120,7 @@ DECL_CHPL_COMM_ATOMIC_CMPXCHG(real64)
 #define DECL_CHPL_COMM_ATOMIC_NONFETCH_BINARY(op, type)                 \
   void chpl_comm_atomic_ ## op ## _ ## type                             \
          (void* operand, c_nodeid_t node, void* object,                 \
-          int ln, int32_t fn);
+          memory_order order, int ln, int32_t fn);
 #define DECL_CHPL_COMM_ATOMIC_NONFETCH_UNORDERED_BINARY(op, type)       \
   void chpl_comm_atomic_ ## op ## _unordered_ ## type                   \
          (void* operand, c_nodeid_t node, void* object,                 \
@@ -127,7 +128,7 @@ DECL_CHPL_COMM_ATOMIC_CMPXCHG(real64)
 #define DECL_CHPL_COMM_ATOMIC_FETCH_BINARY(op, type)                    \
   void chpl_comm_atomic_fetch_ ## op ## _ ## type                       \
          (void* operand, c_nodeid_t node, void* object, void* result,   \
-          int ln, int32_t fn);
+          memory_order order, int ln, int32_t fn);
 #define DECL_CHPL_COMM_ATOMIC_BINARY(op, type)                          \
   DECL_CHPL_COMM_ATOMIC_NONFETCH_BINARY(op, type)                       \
   DECL_CHPL_COMM_ATOMIC_NONFETCH_UNORDERED_BINARY(op, type)             \
@@ -162,7 +163,6 @@ DECL_CHPL_COMM_ATOMIC_BINARY(sub, uint64)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real32)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real64)
 
-void chpl_comm_atomic_unordered_fence(void);
 void chpl_comm_atomic_unordered_task_fence(void);
 
 #endif // _chpl_comm_native_atomics_h_

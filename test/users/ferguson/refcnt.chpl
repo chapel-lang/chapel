@@ -10,19 +10,19 @@ class RefCount {
 }
 
 record R {
-  var refcnt = new unmanaged RefCount();
+  var refcnt:unmanaged RefCount? = new unmanaged RefCount();
   proc retain() {
-    refcnt.count += 1;
+    refcnt!.count += 1;
   }
   proc release() {
-    refcnt.count -= 1;
-    if refcnt.count == 0 {
+    refcnt!.count -= 1;
+    if refcnt!.count == 0 {
       delete refcnt;
       refcnt = nil;
     }
   }
   proc deinit() {
-    writeln("In ~R() ", refcnt.count);
+    writeln("In ~R() ", refcnt!.count);
     this.release();
   }
 
@@ -31,8 +31,8 @@ record R {
 proc R.init() {
 }
 
-proc R.init(x: R) {
-  writeln("In R.init(R) ", x.refcnt);
+proc R.init=(x: R) {
+  writeln("In R.init=(R) ", x.refcnt);
   this.refcnt = x.refcnt;
   this.complete();
   this.retain();

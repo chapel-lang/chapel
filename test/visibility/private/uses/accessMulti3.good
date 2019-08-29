@@ -1,0 +1,2 @@
+accessMulti3.chpl:3: error: unresolved call 'f()'
+accessMulti3.chpl:3: note: because no functions named f found in scope

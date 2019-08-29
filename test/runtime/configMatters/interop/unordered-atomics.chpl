@@ -6,14 +6,15 @@ extern proc pthread_create(thread:c_ptr(pthread_t),
                            start_routine:c_fn_ptr, arg:c_void_ptr): c_int;
 extern proc pthread_join(thread:pthread_t, retval:c_ptr(c_void_ptr)): c_int;
 
-use BufferedAtomics;
+use UnorderedAtomics;
 
 config const numThreadsPerLocale = here.maxTaskPar;
 config const numTrials = 10;
 
 var a: atomic int;
 proc addIt(p: c_void_ptr): c_void_ptr {
-  a.addBuff(1);
+  a.unorderedAdd(1);
+  unorderedAtomicTaskFence();
   return c_nil;
 }
 
@@ -31,6 +32,5 @@ proc threadsAddIt(nthreads) {
 coforall loc in Locales do on loc do
   for 1..numTrials do
     threadsAddIt(numThreadsPerLocale);
-flushAtomicBuff();
 
 assert(a.read() == numLocales * numTrials * numThreadsPerLocale);

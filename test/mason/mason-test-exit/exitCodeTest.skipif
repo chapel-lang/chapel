@@ -1,0 +1,16 @@
+#!/bin/bash
+
+command -v mason > /dev/null
+status=$?
+
+if [ $status -eq  0 ];  then
+    echo "False"
+    exit 0
+else
+    echo "True"
+    exit 0
+fi
+
+
+
+

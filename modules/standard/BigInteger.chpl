@@ -202,6 +202,10 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    proc init=(const ref num: bigint) {
+      this.init(num);
+    }
+
     proc init(num: int) {
       this.complete();
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
@@ -214,6 +218,10 @@ module BigInteger {
       mpz_init_set_ui(this.mpz, num.safeCast(c_ulong));
 
       this.localeId = chpl_nodeID;
+    }
+
+    proc init=(num : integral) {
+      this.init(num);
     }
 
     proc init(str: string, base: int = 0) {
@@ -381,12 +389,12 @@ module BigInteger {
       if _local {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-        ret = new string(tmpvar, isowned = true, needToCopy = false);
+        ret = createStringWithOwnedBuffer(tmpvar);
 
       } else if this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-        ret = new string(tmpvar, isowned = true, needToCopy = false);
+        ret = createStringWithOwnedBuffer(tmpvar);
 
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
@@ -394,7 +402,7 @@ module BigInteger {
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-          ret = new string(tmpvar, isowned = true, needToCopy = false);
+          ret = createStringWithOwnedBuffer(tmpvar);
         }
       }
 

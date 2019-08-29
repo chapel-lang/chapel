@@ -1,1 +1,4 @@
-ref-subclass.chpl:14: error: value from coercion passed to ref formal 'arg'
+ref-subclass.chpl:14: error: unresolved call 'procRefC(borrowed D?)'
+ref-subclass.chpl:6: note: this candidate did not match: procRefC(ref arg: borrowed C?)
+ref-subclass.chpl:14: note: because call actual argument #1 with type borrowed D?
+ref-subclass.chpl:6: note: is passed to formal 'ref arg: borrowed C?'

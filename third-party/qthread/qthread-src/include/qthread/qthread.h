@@ -288,6 +288,8 @@ enum _qthread_features {
 #define QTHREAD_SPAWN_LOCAL_PRIORITY (1 << SPAWN_LOCAL_PRIORITY)
 #define QTHREAD_SPAWN_NETWORK (1 << SPAWN_NETWORK)
 
+void qthread_chpl_reset_spawn_order(void);
+
 int qthread_spawn(qthread_f             f,
                   const void           *arg,
                   size_t                arg_size,
@@ -608,8 +610,8 @@ static QINLINE float qthread_fincr(float *operand,
         float    f;
         uint32_t i;
     } retval;
-    register float    incremented_value;
-    register uint32_t scratch_int;
+    float    incremented_value;
+    uint32_t scratch_int;
     uint32_t          conversion_memory = conversion_memory;
     __asm__ __volatile__ ("A_%=:\n\t"
                           "lwarx  %0,0,%4\n\t"
@@ -702,7 +704,7 @@ static QINLINE float qthread_fincr(float *operand,
         float    f;
         uint32_t i;
     } oldval, newval, retval;
-    register uint32_t scratch_int = scratch_int;
+    uint32_t scratch_int = scratch_int;
 
     retval.f = *(volatile float *)operand;
     do {
@@ -760,8 +762,8 @@ static QINLINE double qthread_dincr(double *operand,
 # error Qthreads requires either mutex increments, inline assembly, or compiler CAS builtins
 #else  // if defined(QTHREAD_MUTEX_INCREMENT) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32)
 # if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64)
-    register uint64_t scratch_int;
-    register double   incremented_value;
+    uint64_t scratch_int;
+    double   incremented_value;
     union {
         uint64_t i;
         double   d;
@@ -801,8 +803,8 @@ static QINLINE double qthread_dincr(double *operand,
     do {
         /* this allows the compiler to be as flexible as possible with register
          * assignments */
-        register uint64_t tmp1;
-        register uint64_t tmp2;
+        uint64_t tmp1;
+        uint64_t tmp2;
 
         oldval.d  = newval.d;
         newval.d += incr;
@@ -913,7 +915,7 @@ static QINLINE double qthread_dincr(double *operand,
             uint32_t h;
         } s;
     } oldval, newval;
-    register char test;
+    char test;
 
     do {
 #  ifdef __PIC__
@@ -970,7 +972,7 @@ static QINLINE double qthread_dincr(double *operand,
             uint32_t t, b;
         } s;
     } oldval, newval, retval;
-    register uint32_t tmp = tmp;
+    uint32_t tmp = tmp;
 
     retval.f = *(volatile double *)operand;
     do {
@@ -1032,7 +1034,7 @@ static QINLINE uint32_t qthread_incr32(uint32_t *operand,
 # if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) || \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64)
     uint32_t              retval;
-    register unsigned int incrd = incrd;        /* no initializing */
+    unsigned int incrd = incrd;        /* no initializing */
     __asm__ __volatile__ ("A_%=:\tlwarx  %0,0,%2\n\t"
                           "add    %1,%0,%3\n\t"
                           "stwcx. %1,0,%2\n\t"
@@ -1046,7 +1048,7 @@ static QINLINE uint32_t qthread_incr32(uint32_t *operand,
 
 # elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_32) || \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)
-    register uint32_t oldval, newval;
+    uint32_t oldval, newval;
 
     /* newval = *operand; */
     do {
@@ -1138,7 +1140,7 @@ static QINLINE uint64_t qthread_incr64(uint64_t *operand,
 #else  // if defined(QTHREAD_MUTEX_INCREMENT) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_32)
 # if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64)
     uint64_t          retval;
-    register uint64_t incrd = incrd;    /* no initializing */
+    uint64_t incrd = incrd;    /* no initializing */
 
     asm volatile ("A_%=:\tldarx  %0,0,%2\n\t"
                   "add    %1,%0,%3\n\t"
@@ -1157,8 +1159,8 @@ static QINLINE uint64_t qthread_incr64(uint64_t *operand,
     do {
         /* this allows the compiler to be as flexible as possible with register
          * assignments */
-        register uint64_t tmp1 = tmp1;
-        register uint64_t tmp2 = tmp2;
+        uint64_t tmp1 = tmp1;
+        uint64_t tmp2 = tmp2;
 
         oldval  = newval;
         newval += incr;
@@ -1178,7 +1180,7 @@ static QINLINE uint64_t qthread_incr64(uint64_t *operand,
     return oldval;
 
 # elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)
-    register uint64_t oldval, newval;
+    uint64_t oldval, newval;
 
 #  ifdef QTHREAD_ATOMIC_CAS
     newval = *operand;
@@ -1245,7 +1247,7 @@ static QINLINE uint64_t qthread_incr64(uint64_t *operand,
             uint32_t h;
         } s;
     } oldval, newval;
-    register char test;
+    char test;
 
     do {
 #  ifndef QTHREAD_PIC_PREFIX
@@ -1355,7 +1357,7 @@ static QINLINE uint32_t qthread_cas32(uint32_t *operand,
 # else
 #  if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) || \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64)
-    register uint32_t result;
+    uint32_t result;
     __asm__ __volatile__ ("A_%=:\n\t"
                           "lwarx  %0,0,%3\n\t"
                           "cmpw   %0,%1\n\t"
@@ -1371,7 +1373,7 @@ static QINLINE uint32_t qthread_cas32(uint32_t *operand,
 
 #  elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_32) || \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)
-    register uint32_t newv = newval;
+    uint32_t newv = newval;
     __asm__ __volatile__
     ("membar #StoreStore|#LoadStore|#StoreLoad|#LoadLoad\n\t"
      "cas [%1], %2, %0"
@@ -1381,7 +1383,7 @@ static QINLINE uint32_t qthread_cas32(uint32_t *operand,
     return newv;
 
 #  elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64)
-    register uint32_t retval;
+    uint32_t retval;
     __asm__ __volatile__ ("mov ar.ccv=%0;;" : : "rO" (oldval));
     __asm__ __volatile__ ("cmpxchg4.acq %0=[%1],%2,ar.ccv"
                           : "=r" (retval)
@@ -1419,7 +1421,7 @@ static QINLINE uint64_t qthread_cas64(uint64_t *operand,
 
 # else
 #  if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64)
-    register uint64_t result;
+    uint64_t result;
     __asm__ __volatile__ ("A_%=:\n\t"
                           "ldarx  %0,0,%3\n\t"
                           "cmpw   %0,%1\n\t"
@@ -1434,8 +1436,8 @@ static QINLINE uint64_t qthread_cas64(uint64_t *operand,
     return result;
 
 #  elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_32)
-    register uint64_t tmp1 = tmp1;
-    register uint64_t tmp2 = tmp2;
+    uint64_t tmp1 = tmp1;
+    uint64_t tmp2 = tmp2;
     uint64_t          newv = newval;
     __asm__ __volatile__
     ("ldx %0, %1\n\t"
@@ -1451,7 +1453,7 @@ static QINLINE uint64_t qthread_cas64(uint64_t *operand,
     return newv;
 
 #  elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)
-    register uint64_t newv = newval;
+    uint64_t newv = newval;
     __asm__ __volatile__
     ("membar #StoreStore|#LoadStore|#StoreLoad|#LoadLoad\n\t"
      "casx [%1], %2, %0"
@@ -1461,7 +1463,7 @@ static QINLINE uint64_t qthread_cas64(uint64_t *operand,
     return newv;
 
 #  elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64)
-    register uint32_t retval;
+    uint32_t retval;
     __asm__ __volatile__ ("mov ar.ccv=%0;;" : : "rO" (oldval));
     __asm__ __volatile__ ("cmpxchg8.acq %0=[%1],%2,ar.ccv"
                           : "=r" (retval)

@@ -1,4 +1,4 @@
-  Fetch: n.ns.  Build: nm n.ns.  Total: nm n.ns.
+  Fetch: <time>.  Build: <time>.  Total: <time>.
 Installing Spack backend ...
 Updating mason-registry
 Compiling [debug] target: masonLA

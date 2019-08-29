@@ -15,5 +15,5 @@ proc p(type t, x, type q, y) {
   writeln(y.type.myRtype:string);
 }
 
-var x: C(complex), y: R(imag);
+var x: borrowed C(complex)?, y: borrowed R(imag)?;
 p(C(imag), x, R(complex), y);

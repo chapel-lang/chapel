@@ -1,22 +1,14 @@
 boolInt.chpl:35: error: unresolved call 'foo(mybool, int(8))'
-boolInt.chpl:11: note: candidates are: foo(x: int(64), y: uint(64))
-boolInt.chpl:15: note:                 foo(x: uint(64), y: int(64))
+boolInt.chpl:11: note: this candidate did not match: foo(x: int(64), y: uint(64))
+boolInt.chpl:35: note: because call actual argument #1 with type mybool
+boolInt.chpl:11: note: is passed to formal 'x: int(64)'
+boolInt.chpl:15: note: candidates are: foo(x: uint(64), y: int(64))
 boolInt.chpl:3: note:                 foo(x: int(8), y: int(8))
-boolInt.chpl:3: note:                 foo(x: int(16), y: int(16))
-boolInt.chpl:3: note:                 foo(x: int(32), y: int(32))
-boolInt.chpl:3: note:                 foo(x: int(64), y: int(64))
-boolInt.chpl:7: note:                 foo(x: uint(8), y: uint(8))
-boolInt.chpl:7: note:                 foo(x: uint(16), y: uint(16))
-boolInt.chpl:7: note:                 foo(x: uint(32), y: uint(32))
-boolInt.chpl:7: note:                 foo(x: uint(64), y: uint(64))
+note: and 7 other candidates, use --print-all-candidates to see them
 boolInt.chpl:36: error: unresolved call 'foo(mybool, uint(8))'
-boolInt.chpl:11: note: candidates are: foo(x: int(64), y: uint(64))
-boolInt.chpl:15: note:                 foo(x: uint(64), y: int(64))
+boolInt.chpl:11: note: this candidate did not match: foo(x: int(64), y: uint(64))
+boolInt.chpl:36: note: because call actual argument #1 with type mybool
+boolInt.chpl:11: note: is passed to formal 'x: int(64)'
+boolInt.chpl:15: note: candidates are: foo(x: uint(64), y: int(64))
 boolInt.chpl:3: note:                 foo(x: int(8), y: int(8))
-boolInt.chpl:3: note:                 foo(x: int(16), y: int(16))
-boolInt.chpl:3: note:                 foo(x: int(32), y: int(32))
-boolInt.chpl:3: note:                 foo(x: int(64), y: int(64))
-boolInt.chpl:7: note:                 foo(x: uint(8), y: uint(8))
-boolInt.chpl:7: note:                 foo(x: uint(16), y: uint(16))
-boolInt.chpl:7: note:                 foo(x: uint(32), y: uint(32))
-boolInt.chpl:7: note:                 foo(x: uint(64), y: uint(64))
+note: and 7 other candidates, use --print-all-candidates to see them

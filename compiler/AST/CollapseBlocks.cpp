@@ -135,12 +135,6 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
   return false;
 }
 
-void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
-  // Need to define this so CollapseBlocks is not abstract.
-  // However, it should not be invoked.
-  INT_ASSERT(false);
-}
-
 bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
   return enterBlockStmt(node->loopBody());
 }
@@ -214,12 +208,12 @@ void CollapseBlocks::exitAggrType(AggregateType* node)
 
 }
 
-bool CollapseBlocks::enterUnmanagedClassType(UnmanagedClassType* node)
+bool CollapseBlocks::enterDecoratedClassType(DecoratedClassType* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitUnmanagedClassType(UnmanagedClassType* node)
+void CollapseBlocks::exitDecoratedClassType(DecoratedClassType* node)
 {
 
 }

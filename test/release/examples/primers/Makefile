@@ -16,13 +16,16 @@ TARGETS = \
 	fileIO \
 	genericClasses \
 	iterators \
+	learnChapelInYMinutes \
 	locales \
 	modules \
+	nothingVariables \
 	opaque-domains \
 	parIters \
 	procedures \
 	randomNumbers \
 	ranges \
+	records \
 	reductions \
 	replicated \
 	slices \
@@ -31,9 +34,9 @@ TARGETS = \
 	syncsingle \
 	taskParallel \
 	timers \
+	tuples \
 	varargs \
 	variables \
-	voidVariables \
 
 #
 # Only make FFTW if FFTW_DIR is set or we can find the fftw library

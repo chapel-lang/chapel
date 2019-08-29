@@ -18,7 +18,7 @@ Language Basics
    Tuples <tuples>
    Variadic Arguments (var args) <varargs>
    Modules <modules>
-   Void Variables <voidVariables>
+   Nothing Variables <nothingVariables>
    Error Handling <errorHandling>
 
 Iterators

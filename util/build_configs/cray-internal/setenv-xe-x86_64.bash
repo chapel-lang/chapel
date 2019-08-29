@@ -125,7 +125,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers=cray,intel,gnu
+        compilers=gnu,cray,intel
         comms=gasnet,none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
         substrates=gemini,mpi,none
@@ -264,7 +264,7 @@ else
     fi
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
-    gen_version_gcc=6.1.0
+    gen_version_gcc=7.3.0
     gen_version_intel=16.0.3.210
     gen_version_cce=8.6.3
 

@@ -20,11 +20,11 @@
 -st=imag(32)
 -st=imag(64)
 -st=imag
--st=complex(64)   # checkParamTypes-error.good
--st=complex(128)  # checkParamTypes-error.good
--st=complex       # checkParamTypes-error.good
+-st=complex(64)
+-st=complex(128)
+-st=complex
 -st=R             # checkParamTypes-error.good
--st=C             # checkParamTypes-error.good
+-st='borrowed C'  # checkParamTypes-error.good
 -st=U             # checkParamTypes-error.good
 -st=range         # checkParamTypes-error.good
 -st=domain(1)     # checkParamTypes-error.good

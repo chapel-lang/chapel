@@ -26,9 +26,6 @@
  * limitations under the License.
  */
 
-// For SVID definitions (setenv)
-#define _SVID_SOURCE
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -391,8 +388,8 @@ static void chpl_qt_setenv(const char* var, const char* val,
             printf("QTHREADS: Overriding the value of %s and %s "
                    "with %s\n", qt_env, qthread_env, val);
         }
-        (void) setenv(qt_env, val, 1);
-        (void) setenv(qthread_env, val, 1);
+        chpl_env_set(qt_env, val, 1);
+        chpl_env_set(qthread_env, val, 1);
     } else if (verbosity >= 2) {
         char* set_env = NULL;
         char* set_val = NULL;
@@ -648,8 +645,16 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
-  if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
+  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+    chpl_qt_setenv("SPINCOUNT", "300", 0);
+  } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
     chpl_qt_setenv("SPINCOUNT", "3000000", 0);
+  }
+}
+
+static void setupAffinity(void) {
+  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+    chpl_qt_setenv("AFFINITY", "no", 0);
   }
 }
 
@@ -669,6 +674,7 @@ void chpl_task_init(void)
     setupTasklocalStorage();
     setupWorkStealing();
     setupSpinWaiting();
+    setupAffinity();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
@@ -776,7 +782,6 @@ typedef struct {
 static void *comm_task_wrapper(void *arg)
 {
     comm_task_wrapper_info_t *rarg = arg;
-    chpl_moveToLastCPU();
     (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;
 }
@@ -818,8 +823,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     // safe for it to be static because we will be called at most once
     // on each node.
     //
-    static
-        comm_task_wrapper_info_t wrapper_info;
+    static comm_task_wrapper_info_t wrapper_info;
     wrapper_info.fn = fn;
     wrapper_info.arg = arg;
     return pthread_create(&chpl_qthread_comm_pthread,

@@ -6,7 +6,7 @@ var globc: unmanaged C = new unmanaged C();
 
 class D {
   var y = 20;
-  var locc: unmanaged C;
+  var locc: unmanaged C?;
 
   proc doit {
     locc = globc;

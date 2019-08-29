@@ -140,7 +140,7 @@ proc Board.show(msg...): void {
   }
   var notFilledMsg = "";
   if lastfilled < boardSize then notFilledMsg =
-    " row(s) "+ (lastfilled + 1) + " to " + boardSize + " are not filled";
+    " row(s) "+ (lastfilled + 1):string + " to " + boardSize:string + " are not filled";
   if show1line then {
     writeln(
 	    taskNum, ": ",

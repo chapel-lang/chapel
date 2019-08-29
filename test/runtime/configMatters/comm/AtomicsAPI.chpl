@@ -1,10 +1,8 @@
 // Functions to test the atomics API
 
 // TODO Add functions to test non sequentially consistent memory orders:
-// - peak()
-// - poke()
 // - fences
-// - memory_orders passed to functions
+// - non seqCst memory_orders passed to atomic methods
 
 proc writea( op: string, a)    { writeln("  ",op,"    a=",a); }
 proc writeai(op: string, a, i) { writeln("  ",op,"    a=",a,", i=",i); }
@@ -16,6 +14,10 @@ proc testAtomicBool(a, ref i, ref b) {
 
   writeln("Testing 'atomic bool':");
                                                     writea ("init    ", a);
+                var initval : a.type = true;        writeai("init=   ", a, initval);
+                var initval2 : a.type = initval;    writeai("init=(v)", a, initval2);
+                var initval3 = initval;             writeai("init=(v)", a, initval3);
+                assert(initval3.type == atomic bool);
                 i = a.read();                       writeai("read    ", a, i);
                     a.write(t);                     writea ("write   ", a);
                 i = a.exchange(f);                  writeai("xchg    ", a, i);
@@ -31,12 +33,42 @@ proc testAtomicBool(a, ref i, ref b) {
   writeln();
 }
 
+proc testOrderAtomicBool(a, ref i, ref b, param order: memoryOrder) {
+  param t = true, f = false;
+
+  writeln("Testing 'atomic bool' with order '", order, "':");
+                                                           writea ("init    ", a);
+                var initval : a.type = true;               writeai("init=   ", a, initval);
+                var initval2 : a.type = initval;           writeai("init=(v)", a, initval2);
+                var initval3 = initval;                    writeai("init=(v)", a, initval3);
+                assert(initval3.type == atomic bool);
+                i = a.read(order);                         writeai("read    ", a, i);
+                    a.write(t, order);                     writea ("write   ", a);
+                i = a.exchange(f, order);                  writeai("xchg    ", a, i);
+                b = a.compareExchange(t, t, order);        writeab("cmpxchg ", a, b);
+                b = a.compareExchange(f, t, order);        writeab("cmpxchg ", a, b);
+                b = a.compareExchangeWeak(f, f, order);    writeab("cmpxchgW", a, b);
+                b = a.compareExchangeWeak(t, f, order);    writeab("cmpxchgW", a, b);
+                b = a.compareExchangeStrong(t, t, order);  writeab("cmpxchgS", a, b);
+                b = a.compareExchangeStrong(f, t, order);  writeab("cmpxchgS", a, b);
+                i = a.testAndSet(order);                   writeai("test&Set", a, i);
+                    a.clear(order);                        writea ("clear   ", a);
+  asyncSet(a);      a.waitFor(true, order);                writea ("waitFor ", a);
+  writeln();
+}
+
 proc asyncAdd(a) { begin { a.add(1); } }
 proc testAtomicT(a, ref i, ref b, type basetype) {
   param isInt = isIntegral(basetype);
 
-  writeln("Testing 'atomic " + basetype:string + "':");
+  writeln("Testing 'atomic ", basetype:string, "':");
                                                     writea ("init    ", a);
+                if isArray(a) == false {
+                  var initval : a.type = 1;         writeai("init=   ", a, initval);
+                  var initval2 : a.type = initval;  writeai("init=(v)", a, initval2);
+                  var initval3 = initval;           writeai("init=(v)", a, initval3);
+                  assert(initval3.type == atomic basetype);
+                }
                 i = a.read();                       writeai("read    ", a, i);
                     a.write(1);                     writea ("write   ", a);
                 i = a.exchange(2);                  writeai("xchg    ", a, i);
@@ -60,17 +92,51 @@ proc testAtomicT(a, ref i, ref b, type basetype) {
   writeln();
 }
 
-proc testBuffAtomicT(a, ref i, ref b, type basetype) {
-  use BufferedAtomics;
-  inline proc flush() { flushAtomicBuff(); }
+proc testOrderAtomicT(a, ref i, ref b, type basetype, param order: memoryOrder) {
   param isInt = isIntegral(basetype);
 
-  writeln("Testing 'atomic " + basetype:string + "':");
+  writeln("Testing 'atomic ", basetype:string, "' with order '", order, "':");
+                                                           writea ("init    ", a);
+                if isArray(a) == false {
+                  var initval : a.type = 1;                writeai("init=   ", a, initval);
+                  var initval2 : a.type = initval;         writeai("init=(v)", a, initval2);
+                  var initval3 = initval;                  writeai("init=(v)", a, initval3);
+                  assert(initval3.type == atomic basetype);
+                }
+                i = a.read(order);                         writeai("read    ", a, i);
+                    a.write(1, order);                     writea ("write   ", a);
+                i = a.exchange(2, order);                  writeai("xchg    ", a, i);
+                b = a.compareExchange(1, 3, order);        writeab("cmpxchg ", a, b);
+                b = a.compareExchange(2, 3, order);        writeab("cmpxchg ", a, b);
+                b = a.compareExchangeWeak(2, 4, order);    writeab("cmpxchgW", a, b);
+                b = a.compareExchangeWeak(3, 4, order);    writeab("cmpxchgW", a, b);
+                b = a.compareExchangeStrong(3, 5, order);  writeab("cmpxchgS", a, b);
+                b = a.compareExchangeStrong(4, 5, order);  writeab("cmpxchgS", a, b);
+                i = a.fetchAdd(1, order);                  writeai("fetchAdd", a, i);
+                    a.add(1, order);                       writea ("add     ", a);
+                i = a.fetchSub(1, order);                  writeai("fetchSub", a, i);
+                    a.sub(1, order);                       writea ("sub     ", a);
+  if isInt {    i = a.fetchOr(8, order);                   writeai("fetchOr ", a, i);   }
+  if isInt {        a.or(10, order);                       writea ("or      ", a);      }
+  if isInt {    i = a.fetchAnd(7, order);                  writeai("fetchAnd", a, i);   }
+  if isInt {        a.and(5, order);                       writea ("and     ", a);      }
+  if isInt {    i = a.fetchXor(5, order);                  writeai("fetchXor", a, i);   }
+  if isInt {        a.xor(5, order);                       writea ("xor     ", a);      }
+  asyncAdd(a);      a.waitFor(6, order);                   writea ("waitFor ", a);
+  writeln();
+}
+
+proc testUnorderedAtomicT(a, ref i, ref b, type basetype) {
+  use UnorderedAtomics;
+  inline proc fence() { unorderedAtomicTaskFence(); }
+  param isInt = isIntegral(basetype);
+
+  writeln("Testing 'atomic ", basetype:string, "':");
                                                     writea ("init    ", a);
-                    a.addBuff(8); flush();          writea ("add     ", a);
-                    a.subBuff(1); flush();          writea ("sub     ", a);
-  if isInt {        a.orBuff(10); flush();          writea ("or      ", a);      }
-  if isInt {        a.andBuff(5); flush();          writea ("and     ", a);      }
-  if isInt {        a.xorBuff(5); flush();          writea ("xor     ", a);      }
+                    a.unorderedAdd(8); fence();     writea ("add     ", a);
+                    a.unorderedSub(1); fence();     writea ("sub     ", a);
+  if isInt {        a.unorderedOr(10); fence();     writea ("or      ", a); }
+  if isInt {        a.unorderedAnd(5); fence();     writea ("and     ", a); }
+  if isInt {        a.unorderedXor(5); fence();     writea ("xor     ", a); }
   writeln();
 }

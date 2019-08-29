@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
+#include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -29,7 +30,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
-#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <stack>
@@ -385,8 +385,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
     Type* thrownType = thrownError->typeInfo();
-    if (UnmanagedClassType* ut = toUnmanagedClassType(thrownType))
-      thrownType = ut->getCanonicalClass();
+    if (DecoratedClassType* dt = toDecoratedClassType(thrownType))
+      thrownType = dt->getCanonicalClass();
 
     // normalizeThrows should give us this invariant earlier
     INT_ASSERT(thrownType == dtError);
@@ -631,15 +631,18 @@ static bool catchesNotExhaustive(TryStmt* tryStmt) {
 static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth) {
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     bool inCompilerGeneratedFn = false;
+    bool inDefaultActualFn = false;
     if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
       // Don't check wrapper functions in strict mode, unless they are task
       // functions and we know the caller of the task function is not declared
       // as throws.
       inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn) &&
         !(isTaskFun(parentFn) && taskFunctionDepth > 0);
+      inDefaultActualFn = parentFn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
     }
     bool callsUncheckedThrowsFn = isUncheckedThrowsFunction(calledFn);
-    bool strictError = !(inCompilerGeneratedFn || callsUncheckedThrowsFn);
+    bool strictError = !((inCompilerGeneratedFn && !inDefaultActualFn) ||
+                         callsUncheckedThrowsFn);
 
     return strictError;
   }

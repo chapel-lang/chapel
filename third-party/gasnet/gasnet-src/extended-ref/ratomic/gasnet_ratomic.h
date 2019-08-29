@@ -181,11 +181,12 @@ typedef union gasnete_ratomic_fn_tbl_u *gasnete_ratomic_fn_tbl_t;
 
 
 // Unions for type-punning
-union gasnete_ratomic_union32 {
+#define GASNETI_RATOMIC_UNION(bits) union gasnete_ratomic_##bits##_u
+GASNETI_RATOMIC_UNION(32) {
     uint32_t _gex_ui;
     float    _gex_fp;
 };
-union gasnete_ratomic_union64 {
+GASNETI_RATOMIC_UNION(64) {
     uint64_t _gex_ui;
     double   _gex_fp;
 };
@@ -241,7 +242,7 @@ union gasnete_ratomic_union64 {
 #define _GASNETE_RATOMIC_CAS30(output, tgt, type, bits, op1, operator, fences) do { /* FP DTs */ \
         type const _op1 = (op1);                                                     \
         gasneti_atomic##bits##_t *_tgt = (gasneti_atomic##bits##_t*)(tgt);           \
-        union gasnete_ratomic_union##bits _newval, _oldval;                          \
+        GASNETI_RATOMIC_UNION(bits) _newval, _oldval;                                \
         do {                                                                         \
             _oldval._gex_ui = gasneti_atomic##bits##_read(_tgt, 0);                  \
             _newval._gex_fp = operator(_oldval._gex_fp, _op1);                       \
@@ -321,26 +322,26 @@ union gasnete_ratomic_union64 {
 // Big SWitch cases for floating-point types (isint == 0)
 #define _GASNETE_RATOMIC_FN_SW0(dtcode,type,bits) \
       case GEX_OP_SET: {                                                         \
-        union gasnete_ratomic_union##bits _ratmp; _ratmp._gex_fp = _operand1;    \
+        GASNETI_RATOMIC_UNION(bits) _ratmp; _ratmp._gex_fp = _operand1;          \
         gasneti_atomic##bits##_set(_ratgt, _ratmp._gex_ui, _fences);             \
         _result = 0; /* Sigh. Just to silence warnings */                        \
         break;                                                                   \
       }                                                                          \
       case GEX_OP_GET: {                                                         \
-        union gasnete_ratomic_union##bits _ratmp;                                \
+        GASNETI_RATOMIC_UNION(bits) _ratmp;                                      \
         _ratmp._gex_ui = gasneti_atomic##bits##_read(_ratgt, _fences);           \
         _result = _ratmp._gex_fp;                                                \
         break;                                                                   \
       }                                                                          \
       case GEX_OP_SWAP: {                                                        \
-        union gasnete_ratomic_union##bits _ratmp; _ratmp._gex_fp = _operand1;    \
+        GASNETI_RATOMIC_UNION(bits) _ratmp; _ratmp._gex_fp = _operand1;          \
         _ratmp._gex_ui = gasneti_atomic##bits##_swap(_ratgt, _ratmp._gex_ui, _fences); \
         _result = _ratmp._gex_fp;                                                \
         break;                                                                   \
       }                                                                          \
       case GEX_OP_CAS: case GEX_OP_FCAS: {                                       \
-        union gasnete_ratomic_union##bits _raold; _raold._gex_fp = _operand1;    \
-        union gasnete_ratomic_union##bits _ranew; _ranew._gex_fp = _operand2;    \
+        GASNETI_RATOMIC_UNION(bits) _raold; _raold._gex_fp = _operand1;          \
+        GASNETI_RATOMIC_UNION(bits) _ranew; _ranew._gex_fp = _operand2;          \
         do {                                                                     \
           if (gasneti_atomic##bits##_compare_and_swap(_ratgt, _raold._gex_ui, _ranew._gex_ui, _fences)) { \
             break;                                                               \

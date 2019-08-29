@@ -1,47 +1,47 @@
 blank owned
  coforall
-  MyClass
-  MyClass
-  MyClass
-  MyClass
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
  cobegin
-  MyClass
-  MyClass
+  borrowed MyClass
+  borrowed MyClass
 blank shared
  coforall
-  MyClass
-  MyClass
-  MyClass
-  MyClass
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
  cobegin
-  MyClass
-  MyClass
+  borrowed MyClass
+  borrowed MyClass
 const ref owned
  coforall
-  _owned(MyClass)
-  _owned(MyClass)
-  _owned(MyClass)
-  _owned(MyClass)
+  owned MyClass
+  owned MyClass
+  owned MyClass
+  owned MyClass
 ref owned
  coforall
-  _owned(MyClass)
-  _owned(MyClass)
-  _owned(MyClass)
-  _owned(MyClass)
+  owned MyClass
+  owned MyClass
+  owned MyClass
+  owned MyClass
 blank begin
-  MyClass
-  MyClass
+  borrowed MyClass
+  borrowed MyClass
 const ref begin
-  _owned(MyClass)
-  _shared(MyClass)
+  owned MyClass
+  shared MyClass
 ref begin
-  _owned(MyClass)
-  _shared(MyClass)
+  owned MyClass
+  shared MyClass
 in begin
-  _owned(MyClass)
-  _shared(MyClass)
+  owned MyClass?
+  shared MyClass
 nil
 const in begin
-  _owned(MyClass)
-  _shared(MyClass)
+  owned MyClass?
+  shared MyClass
 nil

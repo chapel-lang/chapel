@@ -1,11 +1,11 @@
-use List;
+use LinkedLists;
 
 config var phrase : string = "shuffle me please";
 const n = (phrase.length);
 
 var encoded = phrase[1..n by 2] + phrase[2..n by 2];
 
-var decoder : list(int);
+var decoder : LinkedList(int);
 
 for i in 1..n/2 {
   var l = makeList(i, n/2 + n % 2 + i);

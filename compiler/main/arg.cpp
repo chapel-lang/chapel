@@ -680,7 +680,9 @@ static void process_arg(const ArgumentState*       state,
           break;
 
         case 'P':
-          strncpy((char*) desc->location, arg, FILENAME_MAX);
+          if (desc->location != NULL) {
+            strncpy((char*) desc->location, arg, FILENAME_MAX);
+          }
           break;
 
         case 'S':
@@ -730,8 +732,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
     const char* devFlags = "Developer Flags";
     if (desc[i].description &&
         // Does the description start with devFlags?
-        strlen(desc[i].description) > strlen(devFlags) &&
-        0 == memcmp(desc[i].description, devFlags, strlen(devFlags))) {
+        startsWith(desc[i].description, devFlags)) {
       firstDeveloperOnly = i;
       break;
     }
@@ -769,8 +770,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
         break;
 
       if (desc[i].name[0] != '\0' &&
-          strlen(usearg) > strlen(desc[i].name) &&
-          0 == memcmp(usearg, desc[i].name, strlen(desc[i].name))) {
+          startsWith(usearg, desc[i].name)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
         helped = true;
       }
@@ -785,8 +785,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
         break;
 
       if (desc[i].name[0] != '\0' &&
-          strlen(usearg) < strlen(desc[i].name) &&
-          0 == memcmp(usearg, desc[i].name, strlen(usearg))) {
+          startsWith(desc[i].name, usearg)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       }
     }

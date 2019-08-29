@@ -6,6 +6,9 @@
    which index values are opaque/anonymous. They are designed to
    support unstructured arrays like graphs. They are a special case of
    :ref:`associative domains and arrays <primers-associative>`.
+
+   Note: Opaque domains and arrays are deprecated as of Chapel 1.20
+   and are expected to be removed in future versions of Chapel.
 */
 
 //
@@ -250,7 +253,7 @@ proc createRandomGraph() {
   //
   for i in 1..numVertices {
     const newVertex = Vertices.create();
-    Label(newVertex) = "v" + i;
+    Label(newVertex) = "v" + i:string;
     VertexWeight(newVertex) = myRandNums.getNext();
   }
 

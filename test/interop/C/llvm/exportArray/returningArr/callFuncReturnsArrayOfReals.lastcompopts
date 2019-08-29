@@ -1,0 +1,1 @@
+-Llib/ -lreturnArrayOfReals `$CHPL_HOME/util/config/compileline --libraries` -lreturnArrayOfReals

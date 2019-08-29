@@ -20,11 +20,13 @@
 #include "lifetime.h"
 
 #include "AstVisitorTraverse.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "loopDetails.h"
-#include "UnmanagedClassType.h"
+#include "optimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "symbol.h"
@@ -95,6 +97,17 @@ static const bool debugOutputOnError = false;
        won't be invalid if the borrow is from something
        being destroyed in the same block.
  */
+
+namespace {
+  struct LifetimeState;
+}
+
+// Used to communicate lifetime queries between this and
+// the unordered forall optimization
+class LifetimeInformation {
+  public:
+    LifetimeState* lifetimes;
+};
 
 
 namespace {
@@ -329,11 +342,7 @@ static void checkFunction(FnSymbol* fn) {
   if (fCompileTimeNilChecking) {
     // Determine cases where the compiler can prove
     // a reference-type variable is 'nil'
-    // TODO: enable this for internal modules as well.
-    // It was initially enabled only for user code
-    // as a convenience during development.
-    if (fn->getModule()->modTag == MOD_USER)
-      findNilDereferences(fn);
+    findNilDereferences(fn);
 
     // TODO:
     // Determine cases where the compiler can prove
@@ -356,10 +365,7 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   fn->accept(&gather);
 
   if (debugging) {
-    for (LocalFunctionsSet::iterator it = state.inFns.begin();
-         it != state.inFns.end();
-         ++it) {
-      FnSymbol* inFn = *it;
+    for_set(FnSymbol, inFn, state.inFns) {
       printf("Visiting function %s id %i\n", inFn->name, inFn->id);
       nprint_view(inFn);
     }
@@ -394,6 +400,14 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   emit.lifetimes = &state;
   fn->accept(&emit);
   emit.emitErrors();
+
+  // Give forall unordered ops optimization a chance to check
+  // lifetimes of certain variables.
+  LifetimeInformation info;
+  info.lifetimes = &state;
+  for_set(FnSymbol, inFn, state.inFns) {
+    checkLifetimesForForallUnorderedOps(inFn, &info);
+  }
 }
 
 
@@ -410,7 +424,8 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   }
 
   if (fn->isMethod() && fn->_this != NULL && !anyReturnScope &&
-      fn->name != astrInit && !fn->lifetimeConstraints) {
+      fn->name != astrInit && fn->name != astrInitEquals &&
+      !fn->lifetimeConstraints) {
     // Methods default to 'this' return scope
     // ('init' functions aren't really methods for this purpose)
     fn->_this->addFlag(FLAG_RETURN_SCOPE);
@@ -554,6 +569,9 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       if (invalid)
         USR_FATAL(expr, "Conflicting inequality in lifetime clause");
       return res;
+    } else if (call->isPrimitive(PRIM_RETURN)) {
+      // No impact on isLifetimeShorter but could impact inference
+      return CONSTRAINT_UNKNOWN;
     } else {
       Symbol* lhs = NULL;
       Symbol* rhs = NULL;
@@ -562,37 +580,35 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 
       lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
       rhs = getSymbolFromLifetimeClause(call->get(2), lhsRet);
-
       if (rhsRet)
         USR_FATAL(call, "Cannot read lifetime of return in clause");
-
       if (lhsRet) {
         // return lifetime = rhs
         // No impact on isLifetimeShorter but could impact inference
         return CONSTRAINT_UNKNOWN;
-      } else {
-        INT_ASSERT(lhs && rhs);
+      }
 
-        if ((a == lhs && b == rhs) ||
-            (b == lhs && a == rhs)) {
+      INT_ASSERT(lhs && rhs);
 
-          bool invert = false;
-          if (a == rhs && b == lhs)
-            invert = true;
+      if ((a == lhs && b == rhs) ||
+          (b == lhs && a == rhs)) {
 
-          if (call->isNamed("=="))
-            return CONSTRAINT_EQUAL;
-          else if (call->isNamed("<"))
-            return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
-          else if (call->isNamed("<=") || call->isNamed("="))
-            return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
-          else if (call->isNamed(">"))
-            return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
-          else if (call->isNamed(">="))
-            return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
-          else
-            INT_FATAL("Unhandled case");
-        }
+        bool invert = false;
+        if (a == rhs && b == lhs)
+          invert = true;
+
+        if (call->isNamed("=="))
+          return CONSTRAINT_EQUAL;
+        else if (call->isNamed("<"))
+          return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
+        else if (call->isNamed("<=") || call->isNamed("="))
+          return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
+        else if (call->isNamed(">"))
+          return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
+        else if (call->isNamed(">="))
+          return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
+        else
+          INT_FATAL("Unhandled case");
       }
     }
   }
@@ -1006,7 +1022,8 @@ static bool formalArgumentDoesNotImpactReturnLifetime(ArgSymbol* formal)
 
   // record initializer's this argument doesn't impact return lifetime
   if (formal->hasFlag(FLAG_ARG_THIS) &&
-      formal->getFunction()->name == astrInit)
+      (formal->getFunction()->name == astrInit ||
+      formal->getFunction()->name == astrInitEquals))
     return true;
 
   // arguments marked with FLAG_SCOPE don't determine the lifetime
@@ -1043,7 +1060,8 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
   bool returnsBorrow = false;
   Type* returnType = calledFn->retType;
-  if (calledFn->isMethod() && calledFn->name == astrInit) {
+  if (calledFn->isMethod() &&
+      (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
     returnType = calledFn->getFormal(1)->getValType();
   } else if(calledFn->hasFlag(FLAG_FN_RETARG)) {
     ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
@@ -1136,7 +1154,7 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
       // Use the referent part of the actual's lifetime
       argLifetime.referent = temp.referent;
     }
-    if (returnsRef && isClassLike(actualSym->getValType())) {
+    if (returnsRef && isClassLikeOrPtr(actualSym->getValType())) {
       // returning a ref to a class field should make the
       // lifetime of the ref == the lifetime of the borrow
       argLifetime.referent = temp.borrowed;
@@ -1394,7 +1412,8 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   }
 
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (calledFn->isMethod() && calledFn->name == astrInit) {
+    if (calledFn->isMethod() &&
+        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       Symbol* sym = se->symbol();
@@ -1634,7 +1653,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
                                                            usedAsRef,
                                                            usedAsBorrow);
 
-      if (lhs->isRef() && rhsExpr->isRef()) {
+      if (lhs->isRef() && rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE)) {
         // When setting the reference, set its intrinsic lifetime.
         if (!lp.referent.unknown || !lp.borrowed.unknown) {
           if (lhs->id == debugLifetimesForId)
@@ -1645,7 +1664,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
         }
       }
 
-      if (!(lhs->isRef() && rhsExpr->isRef()))
+      if (!(lhs->isRef() && rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE)))
         // lhs can't have ref lifetime if it isn't a ref
         lp.referent = unknownLifetime();
 
@@ -1659,7 +1678,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
       // Additionally, if LHS is a reference to a known aggregate,
       // update that thing's borrow lifetime.
-      if (lhs->isRef() && usedAsBorrow) {
+      if (lhs->isRef() && usedAsBorrow && call->isPrimitive(PRIM_MOVE)) {
         LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
         if (!intrinsic.referent.unknown && intrinsic.referent.fromSymbolScope) {
           LifetimePair p = lp;
@@ -2301,6 +2320,23 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
   }
 }
 
+bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block) {
+  LifetimeState* lifetimes = info->lifetimes;
+  INT_ASSERT(lifetimes);
+  LifetimePair lp = lifetimes->inferredLifetimeForSymbol(sym);
+  bool referentOutlivesBlock = false;
+  if (lp.referent.unknown == false) {
+    if (lp.referent.infinite || lp.referent.returnScope) {
+      referentOutlivesBlock = true;
+    } else if (lp.referent.fromSymbolScope != NULL) {
+      BlockStmt* referentDefBlock = getDefBlock(lp.referent.fromSymbolScope);
+      if (isBlockWithinBlock(referentDefBlock, block) == false)
+        referentOutlivesBlock = true;
+    }
+  }
+  return referentOutlivesBlock;
+}
+
 // variables with a type with `infinite borrow lifetime` should have
 // infinite intrinsic borrow lifetime.
 static bool typeHasInfiniteBorrowLifetime(Type* type) {
@@ -2322,13 +2358,14 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
 
   // Locale type has infinite lifetime
   // (since locales exist for the entire program run)
-  if (isSubClass(type, dtLocale))
-    return true;
+  if (Type* ct = canonicalDecoratedClassType(type))
+    if (isSubClass(ct, dtLocale))
+      return true;
 
-  if (isUnmanagedClassType(type)) {
-    // unmanaged class instances have infinite lifetime
-    return true;
-  }
+  if (DecoratedClassType* dt = toDecoratedClassType(type))
+    if (dt->isUnmanaged())
+      // unmanaged class instances have infinite lifetime
+      return true;
 
   return false;
 }
@@ -2439,7 +2476,7 @@ static bool isOrRefersBorrowedClass(Type* type) {
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   type = type->getValType();
 
-  if (!(isRecord(type) || isClassLike(type)))
+  if (!(isRecord(type) || isClassLikeOrPtr(type)))
     return false;
 
   bool isRecordContainingFieldsSubjectToAnalysis = false;
@@ -2456,7 +2493,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //  - a pointer type
   //  - a record containing refs/class pointers
   //    (or an iterator record)
-  if (!(isClassLike(type) ||
+  if (!(isClassLikeOrPtr(type) ||
         isRecordContainingFieldsSubjectToAnalysis))
     return false;
 
@@ -2518,7 +2555,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
   //
   // (we assume that a user supplied = function for a class with owned
   //  pointers handles lifetimes in a reasonable manner)
-  if (calledFn && calledFn->name == astrSequals /* "=" */ ) {
+  if (calledFn && calledFn->name == astrSassign) {
     if (isClassLikeOrNil(call->get(1)->getValType()) &&
         isClassLikeOrNil(call->get(2)->getValType()))
       // Only consider same-type class assignment overloads
@@ -2624,7 +2661,7 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
   if (c != CONSTRAINT_UNKNOWN)
     return false;
   // TODO - make this exception more reasonable
-  if (fn->name == astrSequals)
+  if (fn->name == astrSassign)
     return false;
   if (fn->name == astrSswap)
     return false;

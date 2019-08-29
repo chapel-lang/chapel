@@ -26,7 +26,6 @@
 #include "chplsys.h"
 #include "chpltypes.h"
 #include "chpl-comm-impl.h"
-#include "chpl-comm-heap-macros.h"
 #include "chpl-tasks.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
@@ -43,10 +42,6 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // (hopefully) unique to the running image, and never changed again.
 extern int32_t chpl_numNodes; // number of nodes
 
-extern int chpl_verbose_comm;     // set via startVerboseComm
-extern int chpl_comm_diagnostics; // set via startCommDiagnostics
-extern int chpl_verbose_mem;      // set via startVerboseMem
-
 size_t chpl_comm_getenvMaxHeapSize(void);
 
 
@@ -55,24 +50,19 @@ size_t chpl_comm_getenvMaxHeapSize(void);
 //
 extern void chpl__heapAllocateGlobals(void);
 
-extern const int chpl_numGlobalsOnHeap;
-
 //
 // chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
-// storing ptr_wide_ptr_t, that is, pointers to wide pointers. All
-// registered globals are wide pointers.  Locales other than 0 need to
-// set their registered globals to the wide pointers received from
-// Locale 0, which is why these have type ptr_wide_ptr_t.  This is
-// done in chpl_comm_broadcast_global_vars() below.
+// storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
+// It is filled in and used by chpl_comm_register_global_var() and
+// chpl_comm_broadcast_global_vars(), respectively, declared below.
 //
+extern const int chpl_numGlobalsOnHeap;
 extern ptr_wide_ptr_t chpl_globals_registry[];
 
 extern void* const chpl_private_broadcast_table[];
+extern int const chpl_private_broadcast_table_len;
 
 extern void* const chpl_global_serialize_table[];
-
-extern const int chpl_heterogeneous;
-
 
 //
 // Comm layer-specific interface
@@ -128,15 +118,15 @@ void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn);
+                                       size_t size, int32_t commID,
+                                       int ln, int32_t fn);
 
 // Do a PUT in a nonblocking fashion, returning a handle which can be used to
 // wait for the PUT to complete. The source buffer must not be modified before
 // the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn);
+                                       size_t size, int32_t commID,
+                                       int ln, int32_t fn);
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
@@ -303,17 +293,27 @@ chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
 }
 
 //
-// This routine is used by the Chapel runtime to broadcast the
+// These routines are used by the Chapel runtime to broadcast the
 // locations of module-level ("global") variables to all locales
 // so that all locales can put/get the value of a global variable
 // directly, knowing where it lives remotely.
 //
-// Logically, this routine implements a collective broadcast of
-// the chpl_globals_registry[] array which is an array of 'numGlobals'
-// wide_ptr_t values.  Note that in a one-sided implementation, the
-// implementation should not assume that chpl_globals_registry[] lives
-// at the same address on every compute node.
-// 
+// The named symbol for a global var is a wide pointer referring to
+// that global's heap-allocated space on node 0.  At program start,
+// all of these wide pointers must be communicated from node 0 to
+// all the other nodes.  To achieve this, the compiler-emitted code
+// first calls chpl_comm_register_global_var() on every node for
+// each global (passing a global var index which starts at 0 and
+// increments each time, and the address of the global's named
+// symbol), then finally calls chpl_comm_broadcast_global_vars().
+// The implementation of these two could either broadcast the wide
+// pointer values one by one in the 'register' calls and then do
+// nothing in the 'broadcast' call, or batch up the wide pointers
+// in the 'register' calls and actually do a broadcast in the
+// 'broadcast' call.  Currently we do the latter in order to
+// reduce startup overhead.
+//
+void chpl_comm_register_global_var(int i, wide_ptr_t* ptr_to_wide_ptr);
 void chpl_comm_broadcast_global_vars(int numGlobals);
 
 //
@@ -339,13 +339,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 // values, and during execution to do things like enabling and disabling
 // memory tracking/reporting and comm diagnostics.
 //
-// The third argument, 'tid' (type ID) is intended for use when
-// targeting heterogeneous architectures where byte swapping may be
-// required rather than just copying the 'size' bytes.  It is not
-// currently in use on any platforms, but is being retained in the
-// event that we wish to re-enable this capability in the future.
-// 
-void chpl_comm_broadcast_private(int id, size_t size, int32_t tid);
+void chpl_comm_broadcast_private(int id, size_t size);
 
 //
 // Barrier for synchronization between all top-level locales; currently
@@ -391,9 +385,8 @@ void chpl_comm_exit(int all, int status);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
-                    int32_t commID, int ln, int32_t fn);
+void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
+                   size_t size, int32_t commID, int ln, int32_t fn);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -402,9 +395,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
-                    int32_t commID, int ln, int32_t fn);
+void chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
+                    size_t size, int32_t commID, int ln, int32_t fn);
 
 //
 // put the number of elements pointed out by count array, with strides pointed
@@ -418,29 +410,18 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
-void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
-                     void* srcaddr, size_t* srcstrides, size_t* count,
-                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int32_t commID, int ln, int32_t fn);
+void chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
+                        void* srcaddr, size_t* srcstrides, size_t* count,
+                        int32_t stridelevels, size_t elemSize, int32_t commID,
+                        int ln, int32_t fn);
 
 //
 // same as chpl_comm_puts(), but do get instead
 //
-void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
-                     void* srcaddr, size_t* srcstrides, size_t* count,
-                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int32_t commID, int ln, int32_t fn);
-
-//
-// Get a local copy of a wide string.
-//
-// The local copy is also a wide string pointer, but its addr field points to 
-// a locally-allocated char[] and the locale field is set to "here".
-// The local char[] buffer is leaked. :(
-//
-void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
-                                   size_t size, int32_t typeIndex,
-                                   int ln, int32_t fn);
+void chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
+                        void* srcaddr, size_t* srcstrides, size_t* count,
+                        int32_t stridelevels, size_t elemSize, int32_t commID,
+                        int ln, int32_t fn);
 
 //
 // Runs a function f on a remote locale, passing it
@@ -454,7 +435,8 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size);
+                          chpl_comm_on_bundle_t *arg, size_t arg_size,
+                          int ln, int32_t fn);
 
 //
 // non-blocking execute_on
@@ -462,77 +444,28 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size);
+                             chpl_comm_on_bundle_t *arg, size_t arg_size,
+                             int ln, int32_t fn);
 
 //
 // fast execute_on (i.e., run in handler)
 // arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid,
-                         chpl_comm_on_bundle_t *arg, size_t arg_size);
-
-
-//
-// This call specifies the number of polling tasks that the
-// communication layer will need (see just below for a definition).
-// The value it returns is passed to chpl_task_init(), in order to
-// forewarn the tasking layer whether the comm layer will need a
-// polling task.  In the current implementation, it should only
-// return 0 or 1.
-//
-int chpl_comm_numPollingTasks(void);
-
-// Some communication layers need to be periodically invoked
-// in order to make progress. This call gives the comm layer
-// an opportunity to move puts,gets, etc along while the
-// current thread is idle (e.g. when we are waiting on
-// an atomic variable for other tasks to finish).
-void chpl_comm_make_progress(void);
+                               chpl_fn_int_t fid,
+                               chpl_comm_on_bundle_t *arg, size_t arg_size,
+                               int ln, int32_t fn);
 
 // This is a hook that's called when a task is ending. It allows for things
 // like say flushing task private buffers.
 void chpl_comm_task_end(void);
 
-//
-// Comm diagnostics stuff
-//
-
-#define CHPL_COMM_DIAGS_VARS_ALL(MACRO) \
-  MACRO(get) \
-  MACRO(get_nb) \
-  MACRO(put) \
-  MACRO(put_nb) \
-  MACRO(test_nb) \
-  MACRO(wait_nb) \
-  MACRO(try_nb) \
-  MACRO(execute_on) \
-  MACRO(execute_on_fast) \
-  MACRO(execute_on_nb)
-
-typedef struct _chpl_commDiagnostics {
-#define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
-  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL)
-#undef _COMM_DIAGS_DECL
-} chpl_commDiagnostics;
-
-void chpl_startVerboseComm(void);
-void chpl_stopVerboseComm(void);
-void chpl_startVerboseCommHere(void);
-void chpl_stopVerboseCommHere(void);
-
-void chpl_startCommDiagnostics(void); // this one implemented by comm layers
-void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
-void chpl_stopCommDiagnostics(void);
-void chpl_gen_stopCommDiagnostics(void);
-void chpl_startCommDiagnosticsHere(void);
-void chpl_gen_startCommDiagnosticsHere(void);
-void chpl_stopCommDiagnosticsHere(void);
-void chpl_gen_stopCommDiagnosticsHere(void);
-void chpl_resetCommDiagnosticsHere(void);
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
-
 void* chpl_get_global_serialize_table(int64_t idx);
+
+// Used to park and wake up the main process
+void chpl_signal_shutdown(void);
+void chpl_wait_for_shutdown(void);
+
 
 #else // LAUNCHER
 

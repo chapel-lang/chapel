@@ -56,7 +56,7 @@ class USTimeZone: TZInfo {
 
     // Can't compare naive to aware objects, so strip the timezone from
     // dt first.
-    if start <= dt.replace(tzinfo=new shared(nil: unmanaged TZInfo)) && dt.replace(tzinfo=new shared(nil:unmanaged TZInfo)) < end {
+    if start <= dt.replace(tzinfo=nil) && dt.replace(tzinfo=nil) < end {
       return HOUR;
     } else {
       return ZERO;
@@ -257,7 +257,7 @@ proc test_tricky() {
   // local clock jumps from 1 to 3).  The point here is to make sure we
   // get the 3 spelling.
   var expected = dston.replace(hour=3, tzinfo=dston.tzinfo);
-  var got = fourback.astimezone(Eastern).replace(tzinfo=new shared(TZInfo));
+  var got = fourback.astimezone(Eastern).replace(tzinfo=nil);
   assert(expected == got);
 
   // Similar, but map to 6:00 UTC == 1:00 EST == 2:00 DST.  In that
@@ -267,7 +267,7 @@ proc test_tricky() {
   // and adding -4-0 == -4 gives the 2:00 spelling.  We want the 1:00 EST
   // spelling.
   expected = dston.replace(hour=1, tzinfo=dston.tzinfo);
-  got = sixutc.astimezone(Eastern).replace(tzinfo=new shared(TZInfo));
+  got = sixutc.astimezone(Eastern).replace(tzinfo=nil);
   assert(expected == got);
 
   // Now on the day DST ends, we want "repeat an hour" behavior.
@@ -291,7 +291,7 @@ proc test_tricky() {
           expected = expectedbase.replace(minute=minute, tzinfo=expectedbase.tzinfo);
           asutc = asutcbase.replace(minute=minute, tzinfo=asutcbase.tzinfo);
           var astz = asutc.astimezone(tz);
-          assert(astz.replace(tzinfo=new shared(TZInfo)) == expected);
+          assert(astz.replace(tzinfo=nil) == expected);
         }
         asutcbase += HOUR;
       }

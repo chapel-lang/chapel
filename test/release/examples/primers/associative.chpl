@@ -36,7 +36,7 @@
   // A domain whose indices are classes of type 'X'. The indices are hashed by
   // identity.
   //
-  var D : domain(X);
+  var D : domain(borrowed X);
   
   record Y {
     var y : real;

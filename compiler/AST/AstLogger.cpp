@@ -36,11 +36,11 @@ bool AstLogger::enterAggrType(AggregateType* node) {
 void AstLogger::exitAggrType(AggregateType* node) {
 }
 
-bool AstLogger::enterUnmanagedClassType(UnmanagedClassType* node) {
+bool AstLogger::enterDecoratedClassType(DecoratedClassType* node) {
   return true;
 }
 
-void AstLogger::exitUnmanagedClassType(UnmanagedClassType* node) {
+void AstLogger::exitDecoratedClassType(DecoratedClassType* node) {
 }
 
 
@@ -140,9 +140,6 @@ bool AstLogger::enterBlockStmt(BlockStmt* node) {
 }
 
 void AstLogger::exitBlockStmt(BlockStmt* node) {
-}
-
-void AstLogger::visitForallIntents(ForallIntents* clause) {
 }
 
 bool AstLogger::enterForallStmt(ForallStmt* node) {

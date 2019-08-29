@@ -14,15 +14,15 @@ writeln("allTrue:");
 writeln(allTrue);
 
 writeln();
-writeln("noTrue.and(): " + noTrue.and());
+writeln("noTrue.and(): ", noTrue.and());
 writeln();
-writeln("oneTrue.and(): " + oneTrue.and());
+writeln("oneTrue.and(): ", oneTrue.and());
 writeln();
-writeln("allTrue.and(): " + allTrue.and());
+writeln("allTrue.and(): ", allTrue.and());
 
 writeln();
-writeln("noTrue.or(): " + noTrue.or());
+writeln("noTrue.or(): ", noTrue.or());
 writeln();
-writeln("oneTrue.or(): " + oneTrue.or());
+writeln("oneTrue.or(): ", oneTrue.or());
 writeln();
-writeln("allTrue.or(): " + allTrue.or());
+writeln("allTrue.or(): ", allTrue.or());

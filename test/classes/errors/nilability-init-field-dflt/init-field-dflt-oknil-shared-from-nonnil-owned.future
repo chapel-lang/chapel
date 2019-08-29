@@ -1,0 +1,10 @@
+bug: can't assign to nilable shared from non-nilable owned
+#13714
+
+Not only that, but the reported error is unclear.
+
+Tests affected by this issue:
+
+    init-field-arg-oknil-shared-from-nonnil-owned
+    init-field-dflt-oknil-shared-from-nonnil-owned
+    init-var-oknil-shared-from-nonnil-owned

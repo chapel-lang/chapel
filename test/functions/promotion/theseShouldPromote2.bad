@@ -1,1 +1,1 @@
-theseShouldPromote2.chpl:26: error: unresolved call '_toLeader(C)'
+theseShouldPromote2.chpl:24: error: unresolved call 'foo(borrowed C)'

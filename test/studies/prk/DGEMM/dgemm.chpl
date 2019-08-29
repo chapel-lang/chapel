@@ -48,7 +48,7 @@ if !correctness {
   writeln("Chapel Dense matrix-matrix multiplication");
   writeln("Max parallelism      =   ", nTasksPerLocale);
   writeln("Matrix order         =   ", order);
-  writeln("Blocking factor      =   ", if blockSize>0 then blockSize+""
+  writeln("Blocking factor      =   ", if blockSize>0 then blockSize:string
       else "N/A");
   writeln("Number of iterations =   ", iterations);
   writeln();

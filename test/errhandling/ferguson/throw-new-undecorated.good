@@ -1,0 +1,3 @@
+uncaught Error: 
+  throw-new-undecorated.chpl:2: thrown here
+  throw-new-undecorated.chpl:1: uncaught here

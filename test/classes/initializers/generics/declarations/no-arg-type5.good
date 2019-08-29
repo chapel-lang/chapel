@@ -1,5 +1,5 @@
 true
 true
-unmanaged Foo(int(64))
-unmanaged Foo(int(64))
+unmanaged Foo(int(64))?
+unmanaged Foo(int(64))?
 unmanaged Foo(int(64))

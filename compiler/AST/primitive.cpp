@@ -19,9 +19,9 @@
 
 #include "primitive.h"
 
+#include "DecoratedClassType.h"
 #include "expr.h"
 #include "iterator.h"
-#include "UnmanagedClassType.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
@@ -185,7 +185,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   // The first argument is the variable or the type whose field is queried.
   Type* type = call->get(1)->getValType();
   INT_ASSERT(! type->symbol->hasFlag(FLAG_TUPLE)); // not implemented
-  AggregateType* at = toAggregateType(canonicalClassType(type));
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
   INT_ASSERT(at); // caller's responsibility
   // The second argument is the name of the field.
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -347,7 +347,7 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static QualifiedType
 returnInfoGetMemberRef(CallExpr* call) {
-  Type* t = canonicalClassType(call->get(1)->getValType());
+  Type* t = canonicalDecoratedClassType(call->get(1)->getValType());
   AggregateType* ct = toAggregateType(t);
   INT_ASSERT(ct);
   SymExpr* se = toSymExpr(call->get(2));
@@ -377,8 +377,10 @@ returnInfoGetMemberRef(CallExpr* call) {
       }
     }
     INT_ASSERT(field);
+    makeRefType(field->type);
     retType = field->type->refType ? field->type->refType : field->type;
   } else {
+    makeRefType(var->type);
     retType = var->type->refType ? var->type->refType : var->type;
   }
   Qualifier q = QUAL_REF;
@@ -411,7 +413,8 @@ static QualifiedType
 returnInfoError(CallExpr* call) {
   AggregateType* at = toAggregateType(dtError);
   INT_ASSERT(isClass(at));
-  UnmanagedClassType* unmanaged = at->getUnmanagedClass();
+  Type* unmanaged =
+    at->getDecoratedClass(CLASS_TYPE_UNMANAGED); // TODO: nilable
   INT_ASSERT(unmanaged);
   return QualifiedType(unmanaged, QUAL_VAL);
 }
@@ -432,7 +435,10 @@ returnInfoCoerce(CallExpr* call) {
   if (t->symbol->hasFlag(FLAG_GENERIC)) {
     // Try to figure out what instantiation type we would use
     // and return that type.
-    t = getInstantiationType(call->get(1)->getValType(), t);
+    SymExpr* actualOne = toSymExpr(call->get(1));
+    SymExpr* actualTwo = toSymExpr(call->get(2));
+    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+                             t, actualTwo->symbol(), call);
   }
 
   return QualifiedType(t, QUAL_VAL);
@@ -447,13 +453,23 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
 static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
-  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    t = mt->getCanonicalClass();
+
+  // todo: switch to using combineDecorators()
+  ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NONNIL;
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
+
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (UnmanagedClassType* unmanaged = at->getUnmanagedClass())
-        t = unmanaged;
+      t = at->getDecoratedClass(decorator);
     }
   }
   return QualifiedType(t, QUAL_VAL);
@@ -463,10 +479,61 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    t = mt->getCanonicalClass();
+  // todo: switch to using combineDecorators()
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    if (dt->isNilable())
+      decorator = CLASS_TYPE_BORROWED_NILABLE;
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
   }
-  // Canonical class type is borrow type
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NILABLE;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = addNilableToDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
+  }
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToNonNilable(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+    t = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    decorator = removeNilableFromDecorator(decorator);
+  } else if (isManagedPtrType(t)) {
+    t = getManagedPtrBorrowType(t);
+  }
+
+  if (AggregateType* at = toAggregateType(t))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
   return QualifiedType(t, QUAL_VAL);
 }
 
@@ -564,6 +631,9 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
+  // dst, aggregate name, field name, type to default-init, value to init from
+  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
+
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
@@ -614,6 +684,9 @@ initPrimitive() {
 
   // dst, src. PRIM_ASSIGN with reference dst sets *dst
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
+  // like PRIM_ASSIGN but the operation can be put off until end of
+  // the enclosing task or forall.
+  prim_def(PRIM_UNORDERED_ASSIGN, "unordered=", returnInfoVoid, true, true);
   prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
   prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
   prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);
@@ -710,6 +783,7 @@ initPrimitive() {
   prim_def(PRIM_IS_SUBTYPE_ALLOW_VALUES, "is_subtype_allow_values", returnInfoBool);
   // same as above but excludes same type
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
+  prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false);
@@ -746,7 +820,6 @@ initPrimitive() {
 
   // Direct calls to the Chapel comm layer
   prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
-  prim_def(PRIM_CHPL_COMM_GET_UNORDERED, "chpl_comm_get_unordered", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_ARRAY_GET, "chpl_comm_array_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_ARRAY_PUT, "chpl_comm_array_put", returnInfoVoid, true, true);
@@ -765,6 +838,10 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
+  // PRIM_ARRAY_SET / PRIM_ARRAY_SET_FIRST have these arguments
+  //   base pointer
+  //   index
+  //   value
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
@@ -835,8 +912,8 @@ initPrimitive() {
   // specify a particular localeID for an on clause.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
-  prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
-  prim_def(PRIM_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
+  prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
+  prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
   // ('_private_broadcast' sym)
   // Later, a structure index is inserted ahead
   // of the symbol, so it ends up as
@@ -852,7 +929,8 @@ initPrimitive() {
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoStringC, true, true);
-  prim_def("string_length", returnInfoDefaultInt);
+  prim_def("string_length_bytes", returnInfoDefaultInt);
+  prim_def("string_length_codepoints", returnInfoDefaultInt);
   prim_def("ascii", returnInfoUInt8);
   prim_def("string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
@@ -891,12 +969,16 @@ initPrimitive() {
 
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_ITERATOR_RECORD_SET_SHAPE, "iterator record set shape", returnInfoVoid);
+  prim_def(PRIM_IS_GENERIC_TYPE, "is generic type", returnInfoBool);
   prim_def(PRIM_IS_CLASS_TYPE, "is class type", returnInfoBool);
+  prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
+  prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_TYPE, "is extern type", returnInfoBool);
+  prim_def(PRIM_IS_ABS_ENUM_TYPE, "is abstract enum type", returnInfoBool);
 
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
@@ -929,8 +1011,16 @@ initPrimitive() {
   // used before error handling is lowered to represent the current error
   prim_def(PRIM_CURRENT_ERROR, "current error", returnInfoError, false, false);
 
+  prim_def(PRIM_TO_UNMANAGED_CLASS_CHECKED, "to unmanaged class from unknown", returnInfoToUnmanaged, false, false);
+  prim_def(PRIM_TO_BORROWED_CLASS_CHECKED, "to borrowed class from unknown", returnInfoToBorrowed, false, false);
+
+  // These return the (non-nil) class variant
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
+  // borrowed class type currently == canonical class type
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
+  // Returns the nilable class type
+  prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
+  prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
@@ -957,6 +1047,15 @@ initPrimitive() {
   // 1st argument is symbol to set alias set
   // 2nd argument is symbol to base it on
   prim_def(PRIM_COPIES_NO_ALIAS_SET, "copies no alias set", returnInfoUnknown, false, false);
+
+  // Argument is a symbol and we attach flags to that symbol to
+  // indicate optimization information.
+  // That symbol includes OPT_INFO_... flags.
+  prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
+
+  prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
+  prim_def(PRIM_GET_TEST_BY_NAME, "get test by name", returnInfoVoid);
+  prim_def(PRIM_GET_TEST_BY_INDEX, "get test by index", returnInfoVoid);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

@@ -49,9 +49,6 @@ static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
 static void check_afterLowerIterators();
 static void checkIsIterator(); // Ensure each iterator is flagged so.
-static void checkAggregateTypes(); // Checks that class and record types have
-                                   // default initializers and default type
-                                   // constructors.
 static void check_afterInlineFunctions();
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
@@ -445,7 +442,6 @@ static void check_afterScopeResolve()
 {
   if (fVerify)
   {
-    checkAggregateTypes();
   }
 }
 
@@ -582,19 +578,6 @@ static void checkIsIterator() {
 
 
 //
-// Checks that class and record types have a default initializer and a default
-// type constructor.
-//
-static void checkAggregateTypes() {
-  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    if (at->typeConstructor == NULL) {
-      INT_FATAL(at, "aggregate type has no type constructor");
-    }
-  }
-}
-
-
-//
 // Checks that certain primitives are removed after function resolution
 //
 static void
@@ -623,6 +606,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
         case PRIM_COERCE:
+        case PRIM_GATHER_TESTS:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
           break;
@@ -639,7 +623,7 @@ static void checkNoRecordDeletes() {
   forv_Vec(CallExpr, call, gCallExprs)
     if (FnSymbol* fn = call->resolvedFunction())
       if(fn->hasFlag(FLAG_DESTRUCTOR))
-        if (!isClass(call->get(1)->typeInfo()->getValType()))
+        if (!isClassLike(call->get(1)->typeInfo()->getValType()))
           INT_FATAL(call, "delete not on a class");
 }
 
@@ -747,7 +731,7 @@ checkFormalActualBaseTypesMatch()
             // Exact match, so OK.
             continue;
 
-          if (isClassLike(formal->type))
+          if (isClassLikeOrPtr(formal->type))
             // dtNil can be converted to any class type, so OK.
             continue;
 
@@ -804,7 +788,7 @@ checkFormalActualTypesMatch()
             // Exact match, so OK.
             continue;
 
-          if (isClass(formal->type))
+          if (isClassLikeOrPtr(formal->type))
             // dtNil can be converted to any class type, so OK.
             continue;
 

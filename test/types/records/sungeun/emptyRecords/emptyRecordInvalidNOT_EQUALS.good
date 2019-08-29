@@ -1,2 +1,1 @@
 emptyRecordInvalidNOT_EQUALS.chpl:5: error: unresolved call '!=(blah_t, 1)'
-emptyRecordInvalidNOT_EQUALS.chpl:1: note: candidates are: !=(_arg1: blah_t, _arg2: blah_t)

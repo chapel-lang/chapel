@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sort $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2

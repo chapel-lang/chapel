@@ -24,7 +24,9 @@ module ChapelTaskDataHelp {
   use ChapelStandard;
 
   extern type chpl_task_ChapelData_t;
+  pragma "fn synchronization free"
   extern proc chpl_task_getChapelData(): c_ptr(chpl_task_ChapelData_t);
+  pragma "fn synchronization free"
   extern proc chpl_task_getBundleChapelData(args: chpl_task_bundle_p):c_ptr(chpl_task_ChapelData_t);
 
   // This function is called to set up the Chapel-managed portion
@@ -36,14 +38,16 @@ module ChapelTaskDataHelp {
   }
 
   // Propagate an error from a task to its caller / sync point.
-  proc chpl_save_task_error(e: _EndCountBase, err: unmanaged Error) {
+  pragma "task complete impl fn"
+  proc chpl_save_task_error(e: _EndCountBase, err: unmanaged Error?) {
     if err != nil {
-      e.errors.append(err);
+      e.errors.append(err!);
     }
   }
-  proc chpl_save_task_error_owned(e: _EndCountBase, in err: owned Error) {
+  pragma "task complete impl fn"
+  proc chpl_save_task_error_owned(e: _EndCountBase, in err: owned Error?) {
     if err != nil {
-      e.errors.append(err.release());
+      e.errors.append(err.release()!);
     }
   }
 }

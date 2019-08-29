@@ -1,1 +1,1 @@
-imag_coerce2.chpl:1: error: type mismatch in assignment from int(64) to imag(64)
+imag_coerce2.chpl:1: error: Cannot assign to imag(64) from int(64)

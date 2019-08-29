@@ -1,0 +1,3 @@
+warning: Ambiguous module source file -- using std/Assert.chpl over $CHPL_HOME/modules/standard/Assert.chpl
+In my personal copy of Assert
+In overrideAssert

@@ -84,10 +84,10 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the other's color and
      use this color and its own to compute the color both will have after the
      meeting has ended, setting both of their colors to this value. */
-  proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
+  proc start(population : [] owned Chameneos?, meetingPlace: MeetingPlace) {
     var stateTemp, peer_idx, xchg: int;
 
-    stateTemp = meetingPlace.state.read(memory_order_acquire);
+    stateTemp = meetingPlace.state.read(memoryOrder.acquire);
 
     while (true) {
       peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
@@ -98,41 +98,41 @@ class Chameneos {
       } else {
         break;
       }
-      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memory_order_acq_rel)) {
+      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memoryOrder.acqRel)) {
         if (peer_idx) {
           runMeeting(population, peer_idx);
         } else {
           // Attend meeting
 
           // Gives slightly better performance than waitFor, but is not "nicer"
-          while (!meetingCompleted.read(memory_order_acquire)) {
+          while (!meetingCompleted.read(memoryOrder.acquire)) {
             chpl_task_yield();
           }
 
-          meetingCompleted.write(false, memory_order_release);
-          stateTemp = meetingPlace.state.read(memory_order_acquire);
+          meetingCompleted.write(false, memoryOrder.release);
+          stateTemp = meetingPlace.state.read(memoryOrder.acquire);
         }
       } else {
-        stateTemp = meetingPlace.state.read(memory_order_acquire);
+        stateTemp = meetingPlace.state.read(memoryOrder.acquire);
       }
     }
   }
 
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
-  proc runMeeting (population : [] owned Chameneos, peer_idx) {
-    var peer : Chameneos;
+  proc runMeeting (const ref population : [] owned Chameneos?, peer_idx) {
+    var peer : borrowed Chameneos?;
     var is_same : int;
     var newColor : Color;
     if (id == peer_idx) {
       is_same = 1;
     }
-    peer = population[peer_idx:int(32)];
+    peer = population[peer_idx:int(32)]!;
     newColor = getComplement(color, peer.color);
     peer.color = newColor;
     peer.meetings += 1;
     peer.meetingsWithSelf += is_same;
-    peer.meetingCompleted.write(true, memory_order_release);
+    peer.meetingCompleted.write(true, memoryOrder.release);
     
     color = newColor;
     meetings += 1;
@@ -160,7 +160,7 @@ proc populate (size : int) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int) = {1..size};
-  var population : [D] owned Chameneos;
+  var population : [D] owned Chameneos?;
 
   if (size == 10) {
     for i in D {
@@ -179,7 +179,7 @@ proc populate (size : int) {
    met another Chameneos, spells out the number of times it met with itself,
    then spells out the total number of times all the Chameneos met
    another Chameneos. */
-proc run(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
+proc run(const ref population : [] owned Chameneos?, meetingPlace : MeetingPlace) {
   for i in population {
     write(" ", i.color);
   }
@@ -192,12 +192,12 @@ proc run(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
   meetingPlace.reset();
 }
 
-proc printInfo(population : [] owned Chameneos) {
+proc printInfo(const ref population : [] owned Chameneos?) {
   for i in population {
     write(i.meetings);
     spellInt(i.meetingsWithSelf);
   }
-  const totalMeetings = + reduce population.meetings;
+  const totalMeetings = + reduce (population!.meetings);
   spellInt(totalMeetings);
   writeln();
 }

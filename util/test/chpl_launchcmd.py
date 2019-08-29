@@ -19,13 +19,12 @@ The high level overview of what this does:
    file designated by the script.
  * Polls qstat/squeue with the given job id every second until the status is
    complete.
- * Prints the contents of the temp file with stdout/stderr from the job to
-   stdout.
+ * Prints the contents of the temp files with stdout/stderr from the job to
+   stdout/stderr.
  * Cleans up the temp file and exits.
-
 """
 
-from __future__ import print_function, unicode_literals, with_statement
+from __future__ import unicode_literals, with_statement
 
 import argparse
 import contextlib
@@ -33,6 +32,7 @@ import datetime
 import logging
 import os
 import os.path
+import py3_compat
 import re
 import select
 import shlex
@@ -56,7 +56,9 @@ __all__ = ('main')
 def main():
     """Run the program!"""
     job = AbstractJob.init_from_environment()
-    print(job.run(), end='')
+    (stdout, stderr) = job.run()
+    sys.stdout.write(stdout)
+    sys.stderr.write(stderr)
 
 
 class AbstractJob(object):
@@ -87,7 +89,7 @@ class AbstractJob(object):
     processing_elems_per_node_resource = None
 
     # redirect_output decides whether we redirect output directly to the output
-    # file or whether we let the launcher and queueing system do it.
+    # files or whether we let the launcher and queueing system do it.
     redirect_output = None
 
     def __init__(self, test_command, reservation_args):
@@ -113,12 +115,18 @@ class AbstractJob(object):
                               ['test_command', 'num_locales', 'walltime', 'hostlist']))
         return '{0}({1})'.format(cls_name, attrs)
 
-    def full_test_command(self, output_file):
+    def full_test_command(self, output_file, error_file):
         """Returns instance's test_command prefixed with command to change to
         testing_dir. This is required to support both PBSPro and moab flavors
         of PBS. Whereas moab provides a -d argument when calling qsub, both
-        support the $PBS_O_WORKDIR argument. This also adds stdout/stderr
-        redirection directly to the output file to avoid using a spool file.
+        support the $PBS_O_WORKDIR argument. Optionally, this can redirect
+        stdout/stderr directly to the output files to avoid using a spool file.
+
+        :type output_file: str
+        :arg output_file: stdout output file location
+
+        :type error_file: str
+        :arg error_file: stderr output file location
 
         :rtype: list
         :returns: command to run in qsub with changedir call and redirection
@@ -137,7 +145,7 @@ class AbstractJob(object):
 
         full_test_command.extend(self.test_command)
         if self.redirect_output:
-            full_test_command.extend(['&>{0}'.format(output_file)])
+            full_test_command.extend(['>{0} 2>{1}'.format(output_file, error_file)])
         return full_test_command
 
     @property
@@ -155,7 +163,7 @@ class AbstractJob(object):
             if n_cpus is not None:
                 return n_cpus
             logging.debug('Checking for number of cpus to reserve.')
-            cnselect_proc = subprocess.Popen(
+            cnselect_proc = py3_compat.Popen(
                 ['cnselect', '-Lnumcores'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
@@ -208,39 +216,45 @@ class AbstractJob(object):
         """
         return chpl_cpu.get('target').cpu == 'mic-knl'
 
-    def _qsub_command_base(self, output_file):
+    def _qsub_command_base(self, output_file, error_file):
         """Returns base qsub command, without any resource listing.
 
         :type output_file: str
-        :arg output_file: combined stdout/stderr output file location
+        :arg output_file: stdout output file location
+
+        :type error_file: str
+        :arg error_file: stderr output file location
 
         :rtype: list
         :returns: qsub command as list of strings
         """
         submit_command =  [self.submit_bin, '-V', '-N', self.job_name]
         if not self.redirect_output:
-            submit_command.extend(['-j', 'oe', '-o', output_file])
+            submit_command.extend(['-o', output_file, '-e', error_file])
         else:
-            # even when redirecting output, PBS errors are sent to the e/o
-            # streams, so make sure we can find errors if they occur
-            submit_command.extend(['-j', 'oe', '-o', '{0}.more'.format(output_file)])
+            # even when redirecting output, PBS errors are sent to the error
+            # stream, so make sure we can find errors if they occur
+            submit_command.extend(['-j', 'oe', '-o', '{0}.more'.format(error_file)])
         if self.walltime is not None:
             submit_command.append('-l')
             submit_command.append('walltime={0}'.format(self.walltime))
 
         return submit_command
 
-    def _qsub_command(self, output_file):
+    def _qsub_command(self, output_file, error_file):
         """Returns qsub command list. This implementation is the default that works for
         standard mpp* options. Subclasses can implement versions that meet their needs.
 
         :type output_file: str
-        :arg output_file: combined stdout/stderr output file location
+        :arg output_file: stdout output file location
+
+        :type error_file: str
+        :arg error_file: stderr output file location
 
         :rtype: list
         :returns: qsub command as list of strings
         """
-        submit_command = self._qsub_command_base(output_file)
+        submit_command = self._qsub_command_base(output_file, error_file)
 
         if self.num_locales >= 0:
             submit_command.append('-l')
@@ -276,10 +290,11 @@ class AbstractJob(object):
         """
         with _temp_dir() as working_dir:
             output_file = os.path.join(working_dir, 'test_output.log')
+            error_file = os.path.join(working_dir, 'test_error_output.log')
             input_file = os.path.join(working_dir, 'test_input')
             testing_dir = os.getcwd()
 
-            job_id = self.submit_job(testing_dir, output_file, input_file)
+            job_id = self.submit_job(testing_dir, output_file, error_file, input_file)
             logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
 
             # TODO: The while condition here should look for jobs that become held,
@@ -328,12 +343,16 @@ class AbstractJob(object):
 
             exec_start_time = time.time()
             alreadyRunning = False
+            sleep_time = 1
             status = job_status(job_id, output_file)
             while status != 'C':
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
+                    sleep_time = 1
                     exec_start_time = time.time()
-                time.sleep(.5)
+                time.sleep(sleep_time)
+                if sleep_time < 60:
+                    sleep_time *= 1.5
                 status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time
@@ -366,27 +385,34 @@ class AbstractJob(object):
             with open(output_file, 'r') as fp:
                 output = fp.read()
 
+            logging.debug('Reading error file.')
+            with open(error_file, 'r') as fp:
+                error = fp.read()
+
             try:
-                with open('{0}.more'.format(output_file), 'r') as fp:
-                    output += fp.read()
+                with open('{0}.more'.format(error_file), 'r') as fp:
+                    error += fp.read()
             except:
                 pass
 
             logging.info('The test finished with output of length {0}.'.format(len(output)))
 
-        return output
+        return (output, error)
 
-    def submit_job(self, testing_dir, output_file, input_file):
-        """Submit a new job using ``testing_dir`` as the working dir and
-        ``output_file`` as the location for the output. Returns the job id on
-        success. AbstractJob does not implement this method. It is the
-        responsibility of the sub class.
+    def submit_job(self, testing_dir, output_file, error_file, input_file):
+        """Submit a new job using ``testing_dir`` as the working dir,
+        ``output_file`` as the location for stdout, and ``error_file`` as the
+        location for stderr. Returns the job id on success. AbstractJob does
+        not implement this method. It is the responsibility of the sub class.
 
         :type testing_dir: str
         :arg testing_dir: working directory for running test
 
         :type output_file: str
-        :arg output_file: output log filename
+        :arg output_file: stdout log filename
+
+        :type error_file: str
+        :arg error_file: stderr log filename
 
         :rtype: str
         :returns: job id
@@ -417,7 +443,7 @@ class AbstractJob(object):
         srun_version = ''
 
         def get_output(cmd):
-            proc = subprocess.Popen(
+            proc = py3_compat.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT
@@ -453,7 +479,7 @@ class AbstractJob(object):
         else:  # not (qsub_callable or srun_callable)
             raise RuntimeError('Could not find PBS or SLURM on system.')
 
-    def _launch_qsub(self, testing_dir, output_file):
+    def _launch_qsub(self, testing_dir, output_file, error_file):
         """Launch job using qsub and return job id. Raises RuntimeError if
         self.submit_bin is anything but qsub.
 
@@ -461,7 +487,10 @@ class AbstractJob(object):
         :arg testing_dir: working directory for running test
 
         :type output_file: str
-        :arg output_file: output log filename
+        :arg output_file: stdout log filename
+
+        :type error_file: str
+        :arg error_file: stderr log filename
 
         :rtype: str
         :returns: job id
@@ -476,8 +505,8 @@ class AbstractJob(object):
                 self.walltime, output_file))
 
         logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
-        submit_proc = subprocess.Popen(
-            self._qsub_command(output_file),
+        submit_proc = py3_compat.Popen(
+            self._qsub_command(output_file, error_file),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -485,7 +514,7 @@ class AbstractJob(object):
             env=os.environ.copy()
         )
 
-        test_command_str = ' '.join(self.full_test_command(output_file))
+        test_command_str = ' '.join(self.full_test_command(output_file, error_file))
         logging.debug('Communicating with {0} subprocess. Sending test command on stdin: {1}'.format(
             self.submit_bin, test_command_str))
         stdout, stderr = submit_proc.communicate(input=test_command_str)
@@ -666,7 +695,7 @@ class AbstractJob(object):
         logging.debug('qstat command to run: {0}'.format(qstat_command))
 
         logging.debug('Opening qstat subprocess.')
-        qstat_proc = subprocess.Popen(
+        qstat_proc = py3_compat.Popen(
             qstat_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -742,19 +771,22 @@ class MoabJob(AbstractJob):
             logging.error('XML output: {0}'.format(output))
             raise
 
-    def submit_job(self, testing_dir, output_file, input_file):
+    def submit_job(self, testing_dir, output_file, error_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
         :arg testing_dir: working directory for running test
 
         :type output_file: str
-        :arg output_file: output log filename
+        :arg output_file: stdout log filename
+
+        :type error_file: str
+        :arg error_file: stderr log filename
 
         :rtype: str
         :returns: job id
         """
-        return self._launch_qsub(testing_dir, output_file)
+        return self._launch_qsub(testing_dir, output_file, error_file)
 
 
 class PbsProJob(AbstractJob):
@@ -829,17 +861,20 @@ class PbsProJob(AbstractJob):
             raise ValueError('Could not find {0} pattern in header line: {1}'.format(
                 pattern.pattern, header_line))
 
-    def _qsub_command(self, output_file):
+    def _qsub_command(self, output_file, error_file):
         """Returns qsub command list using select/place syntax for resource
         lists (as opposed to the deprecated and often disabled mpp* options).
 
         :type output_file: str
-        :arg output_file: combined stdout/stderr output file location
+        :arg output_file: stdout output file location
+
+        :type error_file: str
+        :arg error_file: stderr output file location
 
         :rtype: list
         :returns: qsub command as list of strings
         """
-        submit_command = self._qsub_command_base(output_file)
+        submit_command = self._qsub_command_base(output_file, error_file)
         select_stmt = None
 
         # Always use place=scatter to get 1 PE per node (mostly). Equivalent
@@ -872,19 +907,22 @@ class PbsProJob(AbstractJob):
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
 
-    def submit_job(self, testing_dir, output_file, input_file):
+    def submit_job(self, testing_dir, output_file, error_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
         :arg testing_dir: working directory for running test
 
         :type output_file: str
-        :arg output_file: output log filename
+        :arg output_file: stdout log filename
+
+        :type error_file: str
+        :arg error_file: stderr log filename
 
         :rtype: str
         :returns: job id
         """
-        return self._launch_qsub(testing_dir, output_file)
+        return self._launch_qsub(testing_dir, output_file, error_file)
 
 
 class MppPbsProJob(PbsProJob):
@@ -898,8 +936,8 @@ class MppPbsProJob(PbsProJob):
     processing_elems_per_node_resource = 'mppnppn'
     redirect_output = False
 
-    def _qsub_command(self, output_file):
-        return AbstractJob._qsub_command(self, output_file)
+    def _qsub_command(self, output_file, error_file):
+        return AbstractJob._qsub_command(self, output_file, error_file)
 
 class SlurmJob(AbstractJob):
     """SLURM implementation of abstract job runner."""
@@ -930,7 +968,7 @@ class SlurmJob(AbstractJob):
         logging.debug('squeue command to run: {0}'.format(squeue_command))
 
         logging.debug('Opening squeue subprocess.')
-        squeue_proc = subprocess.Popen(
+        squeue_proc = py3_compat.Popen(
             squeue_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -969,7 +1007,7 @@ class SlurmJob(AbstractJob):
         else:
             raise ValueError('Could not parse output from squeue: {0}'.format(stdout))
 
-    def submit_job(self, testing_dir, output_file, input_file):
+    def submit_job(self, testing_dir, output_file, error_file, input_file):
         """Launch job using executable. Set CHPL_LAUNCHER_USE_SBATCH=true in
         environment to avoid using expect script. The executable will create a
         sbatch script and submit it. Parse and return the job id after job is
@@ -979,7 +1017,10 @@ class SlurmJob(AbstractJob):
         :arg testing_dir: working directory for running test
 
         :type output_file: str
-        :arg output_file: output log filename
+        :arg output_file: stdout log filename
+
+        :type error_file: str
+        :arg error_file: stderr log filename
 
         :rtype: str
         :returns: job id
@@ -987,6 +1028,7 @@ class SlurmJob(AbstractJob):
         env = os.environ.copy()
         env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
         env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
+        env['CHPL_LAUNCHER_SLURM_ERROR_FILENAME'] = error_file
 
         if select.select([sys.stdin,],[],[],0.0)[0]: 
             with open(input_file, 'w') as fp:
@@ -1013,7 +1055,7 @@ class SlurmJob(AbstractJob):
         logging.debug('Command to submit job: {0}'.format(cmd))
 
         logging.debug('Opening job subprocess')
-        submit_proc = subprocess.Popen(
+        submit_proc = py3_compat.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

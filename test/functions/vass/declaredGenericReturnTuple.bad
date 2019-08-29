@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: error: Cannot default-initialize a variable with generic type
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: note: 'elt_x1' has generic type 'VectorListElement'

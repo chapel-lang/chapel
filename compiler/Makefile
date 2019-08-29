@@ -103,6 +103,8 @@ EXECS = $(CHPL) $(CHPLDOC)
 PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
 TARGETS = $(CHPL) $(CHPL_OLD)
 
+LIBS = -lm
+
 # Set up variables representing paths that will be installed
 # and how to fix them (for CLANG_SETTINGS).
 # So far, this only needs to fix CHPL_THIRD_PARTY/CHPL_HOME.
@@ -190,7 +192,8 @@ $(CHPL_OLD_BIN_DIR):
 #	done
 
 llvm: FORCE
-	$(MAKE) -C $(THIRD_PARTY_DIR) llvm
+	@echo "Making LLVM..."
+	@$(MAKE) -C $(THIRD_PARTY_DIR) llvm
 
 #
 # include standard footer for compiler

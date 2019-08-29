@@ -24,7 +24,7 @@ var cls = new borrowed C(3, "hi", 17.23);
 const epsilon = 1e-8; // for comparing reals.
 
 myproc(R, rec);
-myproc(C, cls);
+myproc(borrowed C, cls);
 
 
 

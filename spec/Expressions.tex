@@ -342,11 +342,11 @@ unary \verb@-@ & & negation \\
 \hline
 \verb@||@ & left & short-circuiting logical or \\
 \hline
-\verb@in@ & left & forall expression \\
-\hline
 \verb@by@ & \multirow{3}{*}{left} & range/domain stride application \\
 \verb@#@ & & range count application \\
 \verb@align@ & & range alignment \\
+\hline
+\verb@in@ & left & forall expression \\
 \hline
 \verb@if then else@ & \multirow{5}{*}{left} & conditional expression \\
 \verb@forall do@ & & forall expression \\
@@ -1157,9 +1157,6 @@ proc <(a: uint(64), b: int(64)): bool
 
 proc <(a: real(32), b: real(32)): bool
 proc <(a: real(64), b: real(64)): bool
-
-proc <(a: imag(32), b: imag(32)): bool
-proc <(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
@@ -1185,9 +1182,6 @@ proc >(a: uint(64), b: int(64)): bool
 
 proc >(a: real(32), b: real(32)): bool
 proc >(a: real(64), b: real(64)): bool
-
-proc >(a: imag(32), b: imag(32)): bool
-proc >(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
@@ -1213,9 +1207,6 @@ proc <=(a: uint(64), b: int(64)): bool
 
 proc <=(a: real(32), b: real(32)): bool
 proc <=(a: real(64), b: real(64)): bool
-
-proc <=(a: imag(32), b: imag(32)): bool
-proc <=(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
@@ -1241,9 +1232,6 @@ proc >=(a: uint(64), b: int(64)): bool
 
 proc >=(a: real(32), b: real(32)): bool
 proc >=(a: real(64), b: real(64)): bool
-
-proc >=(a: imag(32), b: imag(32)): bool
-proc >=(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a >= b} is true if \chpl{a} is greater than or
 equal to \chpl{b}; otherwise the result is false.
@@ -1361,30 +1349,29 @@ overloading~(\rsec{Function_Overloading}).
 \index{operators!concatenation!string}
 \index{operators!+ (string)@\chpl{+} (string)}
 
-The string concatenation operator \chpl{+} is predefined over numeric, boolean,
-and enumerated types with strings. It casts its operands to string type and
-concatenates them together.
+The string concatenation operator \chpl{+} is predefined for string
+arguments and returns a new string that is the concatenation of its
+arguments:
+
+\begin{chapel}
+proc +(s0: string, s1: string): string
+\end{chapel}
 
 \begin{chapelexample}{string-concat.chpl}
-The code
-\begin{chapelnoprint}
-var i:int = 3;
-writeln(
-\end{chapelnoprint}
+The code:
 \begin{chapel}
-"result: "+i
+var x: string = "hi";
+var y: string = " there";
+var z = x + y;
 \end{chapel}
 \begin{chapelnoprint}
-);
+writeln(z);
 \end{chapelnoprint}
 \begin{chapeloutput}
-result: 3
+hi there
 \end{chapeloutput}
-where \chpl{i} is an integer appends the string representation of \chpl{i} to the
-string literal \chpl{"result: "}.  If \chpl{i} is \chpl{3}, then the resulting string
-would be \chpl{"result: 3"}.
-\begin{chapelnoprint}
-\end{chapelnoprint}
+will cause \chpl{z} to be a new string containing the value \chpl{"hi
+there"}.
 \end{chapelexample}
 
 \subsection{The By Operator}

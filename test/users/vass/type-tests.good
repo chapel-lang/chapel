@@ -17,7 +17,7 @@ type-tests.chpl:14: warning: imag is a class:  false
 type-tests.chpl:14: warning: imag is a record: false
 type-tests.chpl:14: warning: imag is a union:  false
 type-tests.chpl:15: warning: string is a class:  false
-type-tests.chpl:15: warning: string is a record: true
+type-tests.chpl:15: warning: string is a record: false
 type-tests.chpl:15: warning: string is a union:  false
 type-tests.chpl:16: warning: class is a class:  true
 type-tests.chpl:16: warning: class is a record: false
@@ -71,4 +71,7 @@ type-tests.chpl:29: warning: single is a class:  false
 type-tests.chpl:29: warning: single is a record: false
 type-tests.chpl:29: warning: single is a union:  false
 type-tests.chpl:29: warning: single is a single
-type-tests.chpl:30: error: done
+type-tests.chpl:30: warning: owned class is a class:  true
+type-tests.chpl:30: warning: owned class is a record: false
+type-tests.chpl:30: warning: owned class is a union:  false
+type-tests.chpl:31: error: done

@@ -9,13 +9,13 @@ record Count {
 }
 
 record Wrapper {
-  var ptr: unmanaged object;
+  var ptr: unmanaged object?;
   proc init() { ptr = new unmanaged object(); }
-  proc init(arg) { ptr = nil; } // do not allocate a new object
+  proc init=(arg: Wrapper) { ptr = nil; } // do not allocate a new object
   proc deinit() { delete ptr; }
 }
 
-var Global = new Wrapper(0);
+var Global = new Wrapper();
 
 config const numMessages = 12;
 config const dptpl = 3;

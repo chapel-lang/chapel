@@ -12,14 +12,14 @@ config const LOOKUP_SCALE: real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newLine: int(8) = ascii("\n");
+param newLine: int(8) = "\n".toByte();
 
 param
-  A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
-  a = ascii("a"), c = ascii("c"), g = ascii("g"), t = ascii("t"),
-  B = ascii("B"), D = ascii("D"), H = ascii("H"), K = ascii("K"),
-  M = ascii("M"), N = ascii("N"), R = ascii("R"), S = ascii("S"),
-  V = ascii("V"), W = ascii("W"), Y = ascii("Y");
+  A = "A".toByte(), C = "C".toByte(), G = "G".toByte(), T = "T".toByte(),
+  a = "a".toByte(), c = "c".toByte(), g = "g".toByte(), t = "t".toByte(),
+  B = "B".toByte(), D = "D".toByte(), H = "H".toByte(), K = "K".toByte(),
+  M = "M".toByte(), N = "N".toByte(), R = "R".toByte(), S = "S".toByte(),
+  V = "V".toByte(), W = "W".toByte(), Y = "Y".toByte();
 
 // Sequence to be repeated
 const ALU: [0..286] int = [
@@ -102,16 +102,16 @@ proc makeLookup(a) {
 // Add a line of random sequence
 var random = new unmanaged Random();
 var line_buff: [0..LINE_LENGTH] int(8);
-proc addLine(bytes: int) {
-  for (i, r) in random.get(bytes) {
+proc addLine(nBytes: int) {
+  for (i, r) in random.get(nBytes) {
     var ai = r: int;
     while (lookup[ai].p < r) do
       ai = ai + 1;
 
     line_buff[i] = lookup[ai].c: int(8);
   }
-  line_buff[bytes] = 10;
-  stdout.write(line_buff[0..bytes]);
+  line_buff[nBytes] = 10;
+  stdout.write(line_buff[0..nBytes]);
 }
 
 // Output a random sequence of length n using distribution a
@@ -120,9 +120,9 @@ proc randomMake(desc: string, a: [], n: int) {
   makeLookup(a);
   stdout.writef("%s", desc);
   while (len > 0) {
-    var bytes: int = min(LINE_LENGTH, len);
-    addLine(bytes);
-    len = len - bytes;
+    var nBytes: int = min(LINE_LENGTH, len);
+    addLine(nBytes);
+    len = len - nBytes;
   }
 }
 

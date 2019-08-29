@@ -36,6 +36,7 @@ void clearGenericWellKnownFunctions();
 extern AggregateType* dtArray;
 extern AggregateType* dtBaseArr;
 extern AggregateType* dtBaseDom;
+extern AggregateType* dtCFI_cdesc_t;
 extern AggregateType* dtDist;
 extern AggregateType* dtError;
 extern AggregateType* dtExternalArray;
@@ -44,8 +45,10 @@ extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
 extern AggregateType* dtOpaqueArray;
 extern AggregateType* dtOwned;
+extern AggregateType* dtShared;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
+extern AggregateType* dtRef;
 
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;
@@ -65,5 +68,7 @@ extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
+extern FnSymbol *gAtomicFenceFn;
+extern FnSymbol *gChplAfterForallFence;
 
 #endif

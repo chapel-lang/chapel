@@ -9,6 +9,7 @@
 import sys, os, os.path
 from optparse import OptionParser
 from pprint import pprint
+import py3_compat
 
 parser = OptionParser()
 parser.add_option('-t', '--tempDatDir', dest='tempDatDir',
@@ -175,7 +176,7 @@ def main():
 def writeToDatFile (datFile, perfKeys, perfValues):
     basedir = os.path.dirname(datFile)
     if not os.path.isdir(basedir):
-        os.makedirs(basedir)
+        py3_compat.makedirs(basedir, exist_ok=True)
     try:
         if os.path.exists(datFile) :
             outfile = open(datFile, 'a+')

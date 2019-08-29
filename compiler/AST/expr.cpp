@@ -190,7 +190,7 @@ bool Expr::isStmtExpr() const {
     retval = (parent->indexGet() != this && parent->iteratorGet() != this) ? true : false;
 
   } else {
-    retval = isDirectlyUnderBlockStmt(this);
+    retval = isBlockStmt(parentExpr);
   }
 
   return retval;
@@ -214,7 +214,7 @@ Expr* Expr::getStmtExpr() {
       if (parent->indexGet() != this && parent->iteratorGet() != this)
         return expr;
 
-    } else if (isDirectlyUnderBlockStmt(expr)) {
+    } else if (isBlockStmt(expr->parentExpr)) {
       return expr;
     }
   }
@@ -443,6 +443,38 @@ void Expr::insertAfter(Expr* new_ast) {
   if (parentSymbol)
     sibling_insert_help(this, new_ast);
   list->length++;
+}
+
+void Expr::insertAfter(Expr* e1, Expr* e2) {
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3) {
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4) {
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4, Expr* e5) {
+  insertAfter(e5);
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                       Expr* e5, Expr* e6) {
+  insertAfter(e6);
+  insertAfter(e5);
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
 }
 
 
@@ -1345,4 +1377,55 @@ new_Expr(const char* format, va_list vl) {
 
   INT_ASSERT(stack.size() == 1);
   return stack.top();
+}
+
+
+static CallExpr* findOptimizationInfo(Expr* anchor) {
+  if (anchor && anchor->prev)
+    if (CallExpr* call = toCallExpr(anchor->prev))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+  if (anchor)
+    if (CallExpr* call = toCallExpr(anchor))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+  if (anchor && anchor->next)
+    if (CallExpr* call = toCallExpr(anchor->next))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+  if (anchor && anchor->next && anchor->next->next)
+    if (CallExpr* call = toCallExpr(anchor->next->next))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
+        return call;
+
+  return NULL;
+}
+
+void addOptimizationFlag(Expr* insertAfter, Flag flag) {
+  Symbol* optInfoSym = NULL;
+  CallExpr* optInfo = findOptimizationInfo(insertAfter);
+  if (optInfo) {
+    optInfoSym = toSymExpr(optInfo->get(1))->symbol();
+  } else {
+    SET_LINENO(insertAfter);
+    optInfoSym = newTemp("optinfo", dtInt[INT_SIZE_DEFAULT]);
+    optInfoSym->addFlag(FLAG_NO_CODEGEN);
+    DefExpr* def = new DefExpr(optInfoSym);
+    insertAfter->insertAfter(def);
+    def->insertAfter(new CallExpr(PRIM_OPTIMIZATION_INFO, optInfoSym));
+  }
+
+  optInfoSym->addFlag(flag);
+}
+
+// Returns true if the PRIM_OPTIMIZATION_INFO includes this flag
+bool hasOptimizationFlag(Expr* anchor, Flag flag) {
+  Symbol* optInfoSym = NULL;
+  CallExpr* optInfo = findOptimizationInfo(anchor);
+  if (optInfo) {
+    optInfoSym = toSymExpr(optInfo->get(1))->symbol();
+    return optInfoSym->hasFlag(flag);
+  }
+
+  return false;
 }

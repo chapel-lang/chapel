@@ -1,2 +1,3 @@
 query-generic-type-leaf-q.chpl:35: error: unresolved call 'g(Wrapper(OtherGenericClass(int(64))))'
-query-generic-type-leaf-q.chpl:18: note: candidates are: g(x: Wrapper(GenericClass(?)))
+query-generic-type-leaf-q.chpl:18: note: this candidate did not match: g(x: Wrapper(GenericClass(?)))
+query-generic-type-leaf-q.chpl:18: note: because an argument was incompatible

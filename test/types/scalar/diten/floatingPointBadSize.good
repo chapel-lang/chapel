@@ -1,2 +1,3 @@
 floatingPointBadSize.chpl:1: error: illegal size 27 for real
-floatingPointBadSize.chpl:1: error: unresolved call 'real(64)(27)'
+floatingPointBadSize.chpl:1: error: illegal type index expression 'real(64)(27)'
+floatingPointBadSize.chpl:1: note: primitive type 'real(64)' cannot be used in an index expression

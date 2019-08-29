@@ -1,1 +1,1 @@
-GenericClass(int(64)) nil
+borrowed GenericClass(int(64))? nil

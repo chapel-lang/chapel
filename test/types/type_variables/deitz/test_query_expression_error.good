@@ -1,3 +1,4 @@
-test_query_expression_error.chpl:20: error: unresolved call 'f(C(9,3))'
-test_query_expression_error.chpl:10: note: candidates are: f(c: borrowed C(1+1, ?p))
-test_query_expression_error.chpl:14: note:                 f(c: borrowed C(1+2+3, ?p))
+test_query_expression_error.chpl:20: error: unresolved call 'f(borrowed C(9,3))'
+test_query_expression_error.chpl:10: note: this candidate did not match: f(c: borrowed C(1+1, ?p))
+test_query_expression_error.chpl:10: note: because an argument was incompatible
+test_query_expression_error.chpl:14: note: candidates are: f(c: borrowed C(1+2+3, ?p))

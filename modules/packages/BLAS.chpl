@@ -175,7 +175,7 @@ in memory.
 module BLAS {
 
   /* Available BLAS implementations for ``blasImpl`` */
-  enum BlasImpl {blas, mkl, none};
+  enum BlasImpl {blas, mkl, off};
   use BlasImpl;
 
   /* Specifies which header filename to include, based on the BLAS
@@ -186,7 +186,7 @@ module BLAS {
 
       - ``blas`` includes ``cblas.h`` (default)
       - ``mkl`` includes ``mkl_cblas.h``
-      - ``none`` includes nothing
+      - ``off`` includes nothing
 
   */
   config param blasImpl = BlasImpl.blas;
@@ -201,18 +201,10 @@ module BLAS {
    */
   config param blasHeader = '';
 
-  /* *Deprecated.* Use ``--set blasImpl=mkl`` instead */
-  config param isBLAS_MKL = false;
-
-  if isBLAS_MKL {
-    compilerWarning('"isBLAS_MKL" flag is deprecated.');
-    compilerWarning('Use "blasImpl" instead: --set blasImpl=mkl');
-  }
-
   pragma "no doc"
   param header = if blasHeader == '' then
-                   if blasImpl == BlasImpl.none then ''
-                   else if blasImpl == BlasImpl.mkl || isBLAS_MKL then 'mkl_cblas.h'
+                   if blasImpl == BlasImpl.off then ''
+                   else if blasImpl == BlasImpl.mkl then 'mkl_cblas.h'
                    else 'cblas.h'
                  else blasHeader;
 
@@ -663,6 +655,8 @@ module BLAS {
       B := alpha * B * op(A)
 
     where ``A`` is a triangular matrix.
+    
+    :throws IllegalArgumentError: When `B` is a non-square array.
   */
   proc trmm(A : [?Adom] ?eltType,  B : [?Bdom] eltType,
     alpha,
@@ -721,6 +715,8 @@ module BLAS {
       X * op(A) = alpha * B
 
     where ``A`` is a triangular matrix.
+    
+    :throws IllegalArgumentError: When `B` is a non-square array.
   */
   proc trsm(A : [?Adom],  B : [?Bdom],
     alpha,
@@ -1014,7 +1010,8 @@ module BLAS {
     Wrapper for the `HEMV`_ routines::
 
       y := alpha*A*x + beta*y
-
+      
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
@@ -1049,7 +1046,8 @@ module BLAS {
     Wrapper for the `HER`_ routines::
 
       A := alpha*x*conjg(x') + A
-
+      
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
@@ -1084,7 +1082,8 @@ module BLAS {
     Wrapper for `HER2`_ routines::
 
       A := alpha *x*conjg(y') + conjg(alpha)*y *conjg(x') + A
-
+      
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc her2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType,
@@ -1361,7 +1360,8 @@ module BLAS {
     Wrapper for the `SYMV`_ routines::
 
       y := alpha*A*x + beta*y
-
+      
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha, beta,
@@ -1396,7 +1396,8 @@ module BLAS {
     Wrapper for `SYR`_ routines::
 
       A := alpha*x*x' + A
-
+      
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc syr(A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
@@ -1433,6 +1434,7 @@ module BLAS {
 
       A := alpha*x*y'+ alpha*y*x' + A
 
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc syr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha,
@@ -1653,6 +1655,7 @@ module BLAS {
 
       x := op(A)*x
 
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc trmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
             trans : Op = Op.N,
@@ -1698,6 +1701,7 @@ module BLAS {
 
       A*op(x) = b
 
+    :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc trsv(A: [?Adom] ?eltType, B: [?vDom] eltType,
             trans : Op = Op.N,
@@ -1827,7 +1831,8 @@ module BLAS {
                                  |0   1|
 
 
-
+      :throws IllegalArgumentError: When `P` does not consist of exactly five
+        elements.
   */
   proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) throws {
     require header;
@@ -1930,6 +1935,8 @@ module BLAS {
       - ``X``: Vector with updated elements
       - ``Y``: Vector with updated elements
 
+      :throws IllegalArgumentError: When `P` does not consist of exactly five
+        elements.
   */
   proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1) throws
     where D.rank == 1
@@ -2676,4 +2683,3 @@ module BLAS {
 
 
 }
-

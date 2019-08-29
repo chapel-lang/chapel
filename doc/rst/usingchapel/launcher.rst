@@ -51,17 +51,21 @@ amudprun             GASNet launcher for programs running over UDP
 aprun                Cray application launcher using aprun                
 gasnetrun_ibv        GASNet launcher for programs running over Infiniband 
 gasnetrun_mpi        GASNet launcher for programs using the MPI conduit   
+mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray X* systems
 pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
+slurm-gasnetrun_mpi  GASNet launcher using SLURM over MPI
 slurm-srun           native SLURM launcher                                
 smp                  GASNet launcher for programs running over shared-memory
 none                 do not use a launcher                                
 ===================  ====================================================
 
 A specific launcher can be explicitly requested by setting the
-``CHPL_LAUNCHER`` environment variable. If left unset, a default is picked as
-follows:
+``CHPL_LAUNCHER`` environment variable. For the specific case of the
+``mpirun4ofi`` launcher, please see :ref:`readme-libfabric`.
+
+If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 
 
 * if ``CHPL_PLATFORM`` is cray-xc, cray-xe, or cray-xk:
@@ -103,6 +107,33 @@ forwarded to worker processes. However, this strategy is not always
 reliable. The remote system may override some environment variables, and
 some launchers might not correctly forward all environment variables.
 
+.. _chpl-rt-masterip:
+
+CHPL_RT_MASTERIP
+****************
+
+This environment variable is used to specify the IP address which should be used
+to connect.  By default, the node creating the connection will pass the result
+of ``gethostname()`` on to the nodes that need to connect to it, which will
+resolve that to an IP address using ``gethostbynname()``.
+
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
+``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
+http://gasnet.lbl.gov/dist/udp-conduit/README ).
+
+.. _chpl-rt-workerip:
+
+CHPL_RT_WORKERIP
+****************
+
+This environment variable is used to specify the IP address which should be used
+to communicate between worker nodes.  By default, worker nodes will communicate
+among themselves using the same interface used to connect to the master node
+(see :ref:`chpl-rt-masterip`, above).
+
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
+``GASNET_WORKERIP`` (see http://gasnet.lbl.gov/dist/udp-conduit/README ).
+
 .. _using-slurm:
 
 Using Slurm
@@ -117,8 +148,8 @@ To use native Slurm, set:
 On Cray systems, this will happen automatically if srun is found in your
 path, but not when both srun and aprun are found in your path. Native
 Slurm is the best option where it works, but at the time of this writing,
-there are problems with it when combined with UDP or InfiniBand conduits.
-So, for these configurations please see:
+there are problems with it when combined with ``CHPL_COMM=gasnet`` and the
+UDP or InfiniBand conduits. So, for these configurations please see:
 
   * :ref:`readme-infiniband` for information about using Slurm with
     InfiniBand.

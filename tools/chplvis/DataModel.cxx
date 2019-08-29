@@ -44,7 +44,7 @@
 #define MAX_LINE_LEN 1024
 
 #define EXPECTED_VMAJOR 1
-#define EXPECTED_VMINOR 3
+#define EXPECTED_VMINOR 4
 
 void DataModel::newList()
 {
@@ -884,7 +884,6 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
     long locAddr;  // local address
     long remAddr;  // remote address
     int eSize;     // element size
-    int typeIx;    // type Index
     int dlen;      // data length
 
     // fork & task
@@ -1064,10 +1063,10 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
       case 'g':  // regular get
       case 'p':  // regular put
         // All comm data:
-        // s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len commID lineno fileToOpen
-        if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d %d",
-                    &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
-                    &commID, &nlineno, &nfileno) != 11) {
+        // s.u nodeID otherNode loc-addr rem-addr elemSize len commID lineno fileToOpen
+        if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d",
+                    &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, &dlen,
+                    &commID, &nlineno, &nfileno) != 10) {
           fprintf (stderr, "Bad comm line: %s\n  '%s'\n", fileToOpen, line);
           nErrs++;
         } else {
@@ -1091,7 +1090,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
 
       case 'f':  // All the forks:
         // s.u nodeID otherNode subloc fid arg arg_size
-        if ((cvt = sscanf (&linedata[nextCh], "%d %d %*d %d 0x%*x %d %d",
+        if ((cvt = sscanf (&linedata[nextCh], "%d %d %*d %d 0x%*x %d %d %*d %*d",
                            &nid, &rnid, &fid, &dlen, &vdbTid)) != 5) {
           fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, fileToOpen);
           nErrs++;

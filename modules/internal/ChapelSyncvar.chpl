@@ -39,10 +39,10 @@ proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   use AlignedTSupport;
-  use MemConsistency;
+  private use MemConsistency;
   use SyncVarRuntimeSupport;
 
   /************************************ | *************************************
@@ -66,7 +66,7 @@ module ChapelSyncvar {
   //
 
   private proc isSupported(type t) param
-    return isVoidType(t)          ||
+    return isNothingType(t)       ||
            isBoolType(t)          ||
            isIntegralType(t)      ||
            isRealType(t)          ||
@@ -78,7 +78,13 @@ module ChapelSyncvar {
 
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
-      compilerError("sync/single types cannot be of type '", t : string, "'");
+      compilerError("sync/single types cannot contain type '", t : string, "'");
+
+    if !chpl_legacyClasses && isNonNilableClass(t) then
+      compilerError("sync/single types cannot contain non-nilable classes");
+
+    if isGenericType(t) then
+      compilerError("sync/single types cannot contain generic types");
   }
 
   pragma "no doc"
@@ -87,9 +93,9 @@ module ChapelSyncvar {
   // use native sync vars if they're enabled and supported for the valType
   private proc getSyncClassType(type valType) type {
     if useNativeSyncVar && supportsNativeSyncVar(valType) {
-      return _qthreads_synccls(valType);
+      return unmanaged _qthreads_synccls(valType);
     } else {
-      return _synccls(valType);
+      return unmanaged _synccls(valType);
     }
   }
 
@@ -108,13 +114,14 @@ module ChapelSyncvar {
   record _syncvar {
     type valType;                              // The compiler knows this name
 
-    var  wrapped : getSyncClassType(valType) = nil;
+    var  wrapped : getSyncClassType(valType);
     var  isOwned : bool                      = true;
 
+    pragma "dont disable remote value forwarding"
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      this.wrapped = new unmanaged (getSyncClassType(valType))();
+      this.wrapped = new (getSyncClassType(valType))();
     }
 
     //
@@ -128,15 +135,24 @@ module ChapelSyncvar {
     //
     // ``a`` needs to be a ``valType``, not a sync.
     //
+    pragma "dont disable remote value forwarding"
     proc init(const other : _syncvar) {
       this.valType = other.valType;
       this.wrapped = other.wrapped;
       this.isOwned = false;
     }
 
+    pragma "dont disable remote value forwarding"
+    proc init=(const other : this.valType) {
+      this.init(other.type);
+      // TODO: initialize the sync class impl with 'other'
+      this.writeEF(other);
+    }
+
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       if isOwned == true then
-        delete _to_unmanaged(wrapped);
+        delete wrapped;
     }
 
     // Do not allow implicit reads of sync vars.
@@ -312,7 +328,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _syncvar(?)) {
     if x.isOwned == true then
-      delete _to_unmanaged(x.wrapped);
+      delete x.wrapped;
   }
 
   pragma "no doc"
@@ -355,12 +371,14 @@ module ChapelSyncvar {
     var  value   : valType;
     var  syncAux : chpl_sync_aux_t;      // Locking, signaling, ...
 
+    pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
       this.complete();
       chpl_sync_initAux(syncAux);
     }
 
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       chpl_sync_destroyAux(syncAux);
     }
@@ -494,12 +512,14 @@ module ChapelSyncvar {
 
     var  alignedValue : aligned_t;
 
+    pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
       this.complete();
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       // There's no explicit destroy function, but qthreads reclaims memory
       // for full variables that have no pending operations
@@ -621,7 +641,7 @@ module ChapelSyncvar {
   record _singlevar {
     type valType;                              // The compiler knows this name
 
-    var  wrapped : _singlecls(valType) = nil;
+    var  wrapped : unmanaged _singlecls(valType);
     var  isOwned : bool                = true;
 
     proc init(type valType) {
@@ -641,15 +661,23 @@ module ChapelSyncvar {
     //
     // ``a`` needs to be a ``valType``, not a single.
     //
+    pragma "dont disable remote value forwarding"
     proc init(const other : _singlevar) {
       this.valType = other.valType;
       wrapped = other.wrapped;
       isOwned = false;
     }
 
+    pragma "dont disable remote value forwarding"
+    proc init=(const other : this.type.valType) {
+      this.init(other.type);
+      this.writeEF(other);
+    }
+
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       if isOwned == true then
-        delete _to_unmanaged(wrapped);
+        delete wrapped;
     }
 
     // Do not allow implicit reads of single vars.
@@ -743,7 +771,7 @@ module ChapelSyncvar {
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _singlevar(?)) {
     if x.isOwned == true then
-      delete _to_unmanaged(x.wrapped);
+      delete x.wrapped;
   }
 
   pragma "no doc"

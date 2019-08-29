@@ -1,5 +1,5 @@
-perfkeys: raw_omp_pressure_calc_long, raw_omp_energy_calc_long, raw_omp_vol3d_calc_long, raw_omp_del_dot_vec_2d_long, raw_omp_couple_long, raw_omp_fir_long, raw_omp_init3_long, raw_omp_muladdsub_long, raw_omp_if_quad_long, raw_omp_trap_int_long, raw_omp_pic_2d_long
-graphkeys: pressure_calc, energy_calc, vol3d_calc, del_dot_vec_2d, couple, fir, init3, muladdsub, if_quad, trap_int, pic_2d
+perfkeys: raw_omp_pressure_calc_long, raw_omp_energy_calc_long, raw_omp_vol3d_calc_long, raw_omp_del_dot_vec_2d_long, raw_omp_couple_long, raw_omp_fir_long, raw_omp_init3_long, raw_omp_muladdsub_long, raw_omp_trap_int_long, raw_omp_pic_2d_long
+graphkeys: pressure_calc, energy_calc, vol3d_calc, del_dot_vec_2d, couple, fir, init3, muladdsub, trap_int, pic_2d
 repeat-files: LCALSMain.dat
 graphtitle: LCALS (raw_omp, long)
 ylabel: Time (seconds)

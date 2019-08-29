@@ -40,3 +40,27 @@ record compareargs { }
 proc compareargs.compare(a) {
   return a;
 }
+
+// Bad keyPart args -- need 2 args
+record keyPartArgs { }
+proc keyAndCompare.keyPart(a) {
+  return a;
+}
+
+// Both key and compare
+record keyAndCompare { }
+proc keyAndCompare.key(a) {
+  return a;
+}
+proc keyAndCompare.compare(a, b) {
+  return 0;
+}
+
+// Both key and keyPart
+record keyAndKeyPart { }
+proc keyAndKeyPart.key(a) {
+  return a;
+}
+proc keyAndKeyPart.keyPart(a, i) {
+  return (0, 0);
+}

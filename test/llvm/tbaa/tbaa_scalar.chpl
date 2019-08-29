@@ -9,7 +9,7 @@ var ivar: int;
 var rvar: real;
 
 proc f() {
-  var cvar: unmanaged MyClass;
+  var cvar: unmanaged MyClass = new unmanaged MyClass();
 
   ivar = 42;
   // Look for an access of the int var, and remember its TBAA access tag.
@@ -21,14 +21,17 @@ proc f() {
   // CHECK: store double 3.14
   // CHECK-SAME: !tbaa ![[REALACC:[0-9]+]]
 
-  cvar = new unmanaged MyClass;
+  delete cvar;
+  cvar = new unmanaged MyClass();
   return cvar;
   // Look for an access of the class pointer, and remember its TBAA access tag.
   // CHECK: store %chpl_MyClass_chpl{{[0-9]*}}_object*
   // CHECK-SAME: !tbaa ![[CLSPTRACC:[0-9]+]]
 }
 
+var got = f();
 writeln(f(), ", ", ivar, ", ", rvar);
+delete got;
 
 // Look for the tree of TBAA type descriptors that we will need to
 // validate the TBAA access tags we remember from above.

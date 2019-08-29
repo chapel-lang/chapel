@@ -6,7 +6,7 @@ class C {
   }
 }
 
-var arr: [1..3] sync unmanaged C;
+var arr: [1..3] sync unmanaged C?;
 
 writeln("made it past declaration of arr");
   

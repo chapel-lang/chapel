@@ -69,7 +69,7 @@ proc test() {
   }
 
   {
-    var outerOwnedMyClass = new owned MyClass(1);
+    var outerOwnedMyClass: owned MyClass? = new owned MyClass(1);
     var outerSharedMyClass = new shared MyClass(2);
 
     writeln("in begin");
@@ -83,7 +83,7 @@ proc test() {
   }
   
   {
-    var outerOwnedMyClass = new owned MyClass(1);
+    var outerOwnedMyClass: owned MyClass? = new owned MyClass(1);
     var outerSharedMyClass = new shared MyClass(2);
 
     writeln("const in begin");

@@ -68,7 +68,7 @@ declares a custom mapper:
     proc this(ind:string, targetLocs: [?D] locale) : D.idxType {
       const numlocs = targetLocs.domain.size;
       // use the first digit of the string to choose the destination locale
-      var byte: int = ascii(ind);
+      var byte: int = ind.byte(1);
       return byte % numlocs;
     }
   }
@@ -212,7 +212,7 @@ class Hashed : BaseDist {
 
 
   // debugging print
-  proc dsiDisplayRepresentation() {
+  override proc dsiDisplayRepresentation() {
     writeln("targetLocDom = ", targetLocDom);
     writeln("targetLocales = ", for tl in targetLocales do tl.id);
     //for tli in targetLocDom do
@@ -839,7 +839,7 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  proc dsiDisplayRepresentation() {
+  override proc dsiDisplayRepresentation() {
 
     writeln("dsiDisplayRepresentation TODO");
   }
