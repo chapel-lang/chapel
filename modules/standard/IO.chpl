@@ -2329,8 +2329,11 @@ inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
-proc channel.seek(start:int, end:int = max(int)) throws
-where this.locking == false {
+proc channel.seek(start:int, end:int = max(int)) throws {
+
+  if this.locking then
+    compilerError("Cannot seek on a locking channel");
+
   const err = qio_channel_seek(_channel_internal, start, end);
 
   if err then
