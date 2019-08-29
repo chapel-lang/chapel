@@ -422,7 +422,7 @@ proc masonPublishHelp(){
   writeln('    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry');
   writeln("    -h, --help                   Display this message");
   writeln('    --dry-run                    Check to see if package is ready to be published');
-  writeln('    --no-update                  Prevents registrys from being updated when a package is published.');
+  writeln('    --no-update                  Prevents registries from being updated when a package is published.');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
   writeln();
   writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');

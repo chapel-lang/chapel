@@ -538,7 +538,7 @@ private proc registryPathCheck(path : string, username : string, trueIfLocal : b
       const hasBricks = exists(path + '/Bricks/');
       if !isLocalGit {
         writeln('   Registry with path ' + path + ' is not a git repository. (FAILED)');
-        writeln("   Local registrys must be git repositorys in order to publish");
+        writeln("   Local registries must be git repositorys in order to publish");
         return false;
       }
       else if !hasBricks {
