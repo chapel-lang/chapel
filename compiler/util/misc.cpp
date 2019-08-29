@@ -441,6 +441,7 @@ static void printErrorFooter(bool guess) {
     // and exit if it's fatal (isn't it always?)
     //
     if (err_fatal && !(err_user && ignore_user_errors)) {
+      printInstantiationNoteForLastError();
       clean_exit(1);
     }
   }
@@ -542,6 +543,7 @@ void handleError(const char* fmt, ...) {
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
     } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
+      printInstantiationNoteForLastError();
       clean_exit(1);
     }
   }
@@ -618,6 +620,7 @@ static void vhandleError(FILE*          file,
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
     } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
+      printInstantiationNoteForLastError();
       clean_exit(1);
     }
   }
