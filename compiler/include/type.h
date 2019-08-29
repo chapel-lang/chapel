@@ -507,6 +507,8 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 
 bool isPOD(Type* t);
 
+bool isNumericParamDefaultType(Type* type);
+
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
 
