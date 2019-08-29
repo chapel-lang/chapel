@@ -94,6 +94,8 @@ proc masonBuild(args) throws {
   if example {
     // compopts become test names. Build never runs examples
     compopts.append("--no-run");
+    if update then compopts.append('--update');
+    if hasOptions(args, '--no-update') then compopts.append('--no-update');
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
