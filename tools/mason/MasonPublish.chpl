@@ -52,7 +52,7 @@ proc masonPublish(ref args: list(string)) throws {
     var registryPath = '';
     var username = getUsername();
     var isLocal = false;
-
+    var travis = hasOptions(args, '--travis');
     const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
     if args.size > 5 {
       throw new owned MasonError(badSyntaxMessage);
@@ -74,7 +74,7 @@ proc masonPublish(ref args: list(string)) throws {
     }
 
     if checkFlag {
-      check(username, registryPath, isLocal);
+      check(username, registryPath, isLocal, travis);
     }
 
     updateRegistry('Mason.toml', args);
@@ -411,7 +411,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
 /* check is a function to run a quick list of checks of the package, the registry path, and other issues that may
    prevent a package from being published to a registry.
  */
-proc check(username : string, path : string, trueIfLocal) throws {
+proc check(username : string, path : string, trueIfLocal : bool, travis : bool) throws {
   const spacer = '------------------------------------------------------';
   const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
   const projectCheckHome = here.cwd();
@@ -463,13 +463,22 @@ proc check(username : string, path : string, trueIfLocal) throws {
     writeln('    example = false');
     writeln('If these are different than what is required to build your package you can disregard this check');
     attemptToBuild();
+    writeln(spacer);
   }
-  writeln(spacer);
   writeln();
-  writeln();
- 
+  if travis {
+    if package && moduleCheck(projectCheckHome) {
+      attemptToBuild();
+      exit(0);
+    }
+    else {
+      writeln('New package does not have the proper structure.');
+      exit(1);
+    }
+  }
   exit(0);
 }
+
 
 /* Attempts to build the package/
  */
