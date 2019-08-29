@@ -1,8 +1,10 @@
 use Memory;
 
+const targetLocale = Locales[numLocales-1];
+
 var chplStr = "A Chapel string";
 startVerboseMem();
-{
+on targetLocale {
   // there should be 2 allocations, 2 frees
   writelnNoMem("Initialize from string");
   var sNew = createStringWithNewBuffer(chplStr);

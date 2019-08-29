@@ -1,8 +1,10 @@
 use Memory;
 
+const targetLocale = Locales[numLocales-1];
+
 var myBytes = b"A Chapel bytes";
 startVerboseMem();
-{
+on targetLocale {
   // there should be 2 allocations, 2 frees
   writelnNoMem("Initialize from bytes");
   var sNew = createBytesWithNewBuffer(myBytes);
