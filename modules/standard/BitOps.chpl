@@ -21,7 +21,7 @@
   Bitwise operations implemented using C intrinsics when possible.
  */
 module BitOps {
-  private use BitOps_internal only;
+  private use BitOps_internal /* only */;
 
   /*
     Count leading zeros in `x`.

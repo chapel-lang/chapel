@@ -75,6 +75,7 @@ module Random {
   use RandomSupport;
   use NPBRandom;
   use PCGRandom;
+  private use HaltWrappers /* only */;
 
 
   /* Select between different supported RNG algorithms.
@@ -301,8 +302,8 @@ module Random {
   /* _choice branch for distribution defined by probabilities array */
   proc _choiceProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
   {
-    use Search only;
-    use Sort only;
+    use Search /* only */;
+    use Sort /* only */;
 
     // If stride, offset, or size don't match, we're in trouble
     if arr.domain != prob.domain then

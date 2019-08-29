@@ -29,6 +29,7 @@
 
 module Time {
   private use SysBasic;
+  private use HaltWrappers /* only */;
 
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform
