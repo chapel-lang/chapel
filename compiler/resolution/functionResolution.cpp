@@ -1520,7 +1520,7 @@ bool doCanDispatch(Type*     actualType,
 
   // MPF 2019-09 - for some reason resolving generic initializers
   // needs this adjustment, which started in PR #5424.
-  if (fn && fn->isInitializer() &&
+  if (fn && (fn->isInitializer() || fn->isCopyInit()) &&
       formalSym == fn->_this &&
       isGenericInstantiation(formalType, actualType))
     return true;
@@ -6064,7 +6064,7 @@ static void resolveInitVar(CallExpr* call) {
       if (foundOldStyleInit == false) {
         call->setUnresolvedFunction(astrInitEquals);
 
-        resolveCall(call);
+        resolveExpr(call);
 
         dst->type = call->resolvedFunction()->_this->getValType();
       } else {
