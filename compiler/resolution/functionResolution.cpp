@@ -768,6 +768,8 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     }
   } else {
     // Check for e.g. R(int) -> R (classes are handled above)
+    // TODO: Is it correct to return true if the types match? That case isn't
+    // really an instantiation.
     if (isAggregateType(actualType)) {
       if (instantiatedFieldsMatch(actualType, formalType)) {
         return true;
