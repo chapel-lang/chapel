@@ -75,15 +75,7 @@ module NetworkAtomics {
       return ret:bool;
     }
 
-    inline proc compareExchange(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      return this.compareExchangeStrong(expected, desired, order);
-    }
-
-    inline proc compareExchangeWeak(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      return this.compareExchangeStrong(expected, desired, order);
-    }
-
-    inline proc compareExchangeStrong(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc compareAndSwap(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", int(64))
         proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), obj:c_void_ptr, ref result:bool(32), order:memory_order): void;
 
@@ -116,6 +108,21 @@ module NetworkAtomics {
     }
 
     // Deprecated //
+
+    inline proc compareExchange(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      compilerWarning("compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap");
+      return this.compareAndSwap(expected, desired, order);
+    }
+
+    inline proc compareExchangeWeak(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      compilerWarning("compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap");
+      return this.compareAndSwap(expected, desired, order);
+    }
+
+    inline proc compareExchangeStrong(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      compilerWarning("compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap");
+      return this.compareAndSwap(expected, desired, order);
+    }
 
     inline proc const read(order:memory_order): bool {
       compilerWarning("memory_order is deprecated, use memoryOrder");
@@ -249,15 +256,7 @@ module NetworkAtomics {
       return ret;
     }
 
-    inline proc compareExchange(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      return this.compareExchangeStrong(expected, desired, order);
-    }
-
-    inline proc compareExchangeWeak(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      return this.compareExchangeStrong(expected, desired, order);
-    }
-
-    inline proc compareExchangeStrong(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc compareAndSwap(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", T)
         proc atomic_cmpxchg(ref expected:T, ref desired:T, l:int(32), obj:c_void_ptr, ref result:bool(32), order:memory_order): void;
 
@@ -378,6 +377,21 @@ module NetworkAtomics {
     }
 
     // Deprecated //
+
+    inline proc compareExchange(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      compilerWarning("compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap");
+      return this.compareAndSwap(expected, desired, order);
+    }
+
+    inline proc compareExchangeWeak(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      compilerWarning("compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap");
+      return this.compareAndSwap(expected, desired, order);
+    }
+
+    inline proc compareExchangeStrong(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      compilerWarning("compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap");
+      return this.compareAndSwap(expected, desired, order);
+    }
 
     inline proc const read(order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
