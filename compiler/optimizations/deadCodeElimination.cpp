@@ -317,9 +317,6 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
   return retval;
 }
 
-//
-// Noakes 2017/03/04, updated 2019/05, updated 2019/08
-//
 // The current pattern to initialize a string literal,
 // a VarSymbol _str_literal_NNN, is approximately
 //
