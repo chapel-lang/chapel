@@ -471,7 +471,7 @@
 %type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pexpr> query_expr opt_query_expr
+%type <pexpr> query_expr
 
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
@@ -1386,22 +1386,16 @@ function_body_stmt:
 query_expr:
   TQUESTION ident_def
     { $$ = new DefExpr(new VarSymbol($2)); }
-| TQUESTION
-    { $$ = new SymExpr(gUninstantiated); }
-;
-
-opt_query_expr:
-    { $$ = new SymExpr(gUninstantiated); }
-| query_expr
 ;
 
 var_arg_expr:
-  TDOTDOTDOT expr            { $$ = $2; }
-| TDOTDOTDOT opt_query_expr  { if (DefExpr* def = toDefExpr($2)) {
-                                 def->sym->addFlag(FLAG_PARAM);
-                               }
-                               $$ = $2;
-                             }
+  TDOTDOTDOT             { $$ = new SymExpr(gUninstantiated); }
+| TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { if (DefExpr* def = toDefExpr($2)) {
+                             def->sym->addFlag(FLAG_PARAM);
+                           }
+                           $$ = $2;
+                         }
 ;
 
 opt_lifetime_where:
@@ -1717,6 +1711,8 @@ type_level_expr:
     { $$ = $1; }
 | sub_type_level_expr TQUESTION %prec TQUESTION
     { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
+| TQUESTION
+    { $$ = new SymExpr(gUninstantiated); }
 ;
 
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
