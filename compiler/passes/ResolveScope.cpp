@@ -448,12 +448,12 @@ bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
 *                                                                             *
 ************************************** | *************************************/
 
-Symbol* ResolveScope::lookup(Expr* expr) const {
+Symbol* ResolveScope::lookup(Expr* expr, bool isUse) const {
   Symbol* retval = NULL;
 
   // A lexical lookup from the current scope
   if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(expr)) {
-    retval = lookup(uSym);
+    retval = lookup(uSym, isUse);
 
   // A dotted reference (<object>.<field>) to a field in an object
   } else if (CallExpr* call = toCallExpr(expr)) {
@@ -477,20 +477,20 @@ Symbol* ResolveScope::lookup(Expr* expr) const {
 *                                                                             *
 ************************************** | *************************************/
 
-Symbol* ResolveScope::lookup(UnresolvedSymExpr* usymExpr) const {
+Symbol* ResolveScope::lookup(UnresolvedSymExpr* usymExpr, bool isUse) const {
   const ResolveScope* ptr    = NULL;
   Symbol*             retval = NULL;
 
   for (ptr = this; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
-    retval = ptr->lookupWithUses(usymExpr);
+    retval = ptr->lookupWithUses(usymExpr, isUse);
   }
 
   return retval;
 }
 
-Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
+Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) const {
   const char* name   = usymExpr->unresolved;
-  Symbol*     retval = lookupNameLocally(name);
+  Symbol*     retval = lookupNameLocally(name, isUse);
   ModuleSymbol* thisMod = usymExpr->getModule();
   //  printf("Giving it a second shot\n");
   if (retval == NULL && strcmp(name, thisMod->name) == 0) {
@@ -518,7 +518,7 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
           }
 
           if (ResolveScope* next = getScopeFor(scopeToUse)) {
-            if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
+            if (Symbol* sym = next->lookupNameLocally(nameToUse, isUse)) {
               if (isRepeat(sym, symbols) == false) {
                 if (FnSymbol* fn = toFnSymbol(sym)) {
                   if (fn->isMethod() == false) {
@@ -647,15 +647,15 @@ Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
 ************************************** | *************************************/
 
 // 2017/06/02 Used by scopeResolve.
-Symbol* ResolveScope::lookupNameLocally(const char* name) const {
+Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
   Bindings::const_iterator it     = mBindings.find(name);
   Symbol*                  retval = NULL;
   extern ResolveScope* rootScope;
 
   if (it != mBindings.end()) {
     Symbol* sym = it->second;
-    // don't consider top-level modules to be visible
-    if (toModuleSymbol(sym) == NULL || this != rootScope) {
+    // don't consider top-level modules to be visible unless this is a use
+    if (toModuleSymbol(sym) == NULL || this != rootScope || isUse) {
       retval = it->second;
     } else {
       //      printf("Skipped over %s\n", sym->name);

@@ -26,7 +26,7 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
-module LocaleModel {
+module LocaleModelMod {
 
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;

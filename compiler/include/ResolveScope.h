@@ -72,9 +72,9 @@ public:
 
   bool                  extend(const UseStmt* stmt);
 
-  Symbol*               lookup(Expr*       expr)                         const;
+  Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
-  Symbol*               lookupNameLocally(const char* name)              const;
+  Symbol*               lookupNameLocally(const char* name, bool isUse=false) const;
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -103,9 +103,9 @@ private:
   bool                  isSymbolAndMethod(Symbol* sym0,
                                           Symbol* sym1);
 
-  Symbol*               lookup(UnresolvedSymExpr* usymExpr)              const;
+  Symbol*               lookup(UnresolvedSymExpr* usymExpr, bool isUse=false) const;
 
-  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr)      const;
+  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse=false)      const;
 
   bool                  isRepeat(Symbol* toAdd, const SymList& symbols)  const;
 

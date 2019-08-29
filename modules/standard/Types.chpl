@@ -25,6 +25,7 @@ Functions related to predefined types.
 
 */
 module Types {
+  private use HaltWrappers /*only */;
 
 pragma "no doc" // joint documentation with the next one
 proc isType(type t) param return true;

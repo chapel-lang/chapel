@@ -119,7 +119,10 @@ static void handleReceiverFormals() {
           AggregateType::setCreationStyle(ts, fn);
 
         } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
+          if (toModuleSymbol(lookup(sym->unresolved, sym)) != NULL) {
+            printf("Got a module symbol\n");
+          }
+          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {

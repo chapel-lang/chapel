@@ -42,7 +42,7 @@ module ChapelStandard {
   use ChapelReduce;
   use ChapelSyncvar;
   use ChapelTaskDataHelp;
-  use LocaleModel;
+  use LocaleModelMod;
   use ChapelLocale;
   use DefaultRectangular; // This might be able to go just after Atomics
   use LocalesArray;

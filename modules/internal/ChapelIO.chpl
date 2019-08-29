@@ -198,7 +198,7 @@ appropriately before the elements can be read.
  */
 module ChapelIO {
   use ChapelBase; // for uint().
-  use LocaleModel only ;
+  use LocaleModelMod only ;
   use ChapelLocale;
   use SysBasic;
 

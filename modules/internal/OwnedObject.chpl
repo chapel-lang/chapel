@@ -389,6 +389,7 @@ module OwnedObject {
     where chpl_legacyClasses ||
           ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
+    use HaltWrappers /*only */;
     // Work around issues in associative arrays of owned
     // TODO: remove this workaround
     if lhs.chpl_p == nil && rhs.chpl_p == nil then
@@ -564,6 +565,7 @@ module OwnedObject {
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(const ref x:_owned) {
+    use HaltWrappers /*only */;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.

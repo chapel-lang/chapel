@@ -176,7 +176,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = scope->lookup(src)) {
+    } else if (Symbol* sym = scope->lookup(src, true)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -211,6 +211,8 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
 
     } else {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(src)) {
+      // have a 'use' of a module make that module symbol available in this scope
+      /*
         for_alist(stmt, theProgram->block->body) {
           if (DefExpr* def = toDefExpr(stmt)) {
             if (ModuleSymbol* modSym = toModuleSymbol(def->sym)) {
@@ -226,12 +228,10 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
               }
             }
           }
-          /*
           scope->enclosingModule()->moduleUseAdd(modSym);
           updateEnclosingBlock(scope, sym);
           validateList();
-          */
-        }
+      */
         USR_FATAL(this, "Cannot find module or enum '%s'", use->unresolved);
       } else {
         USR_FATAL(this, "Cannot find module or enum");
