@@ -461,6 +461,19 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
   if MASON_REGISTRY.size == 1 {
     writeln('    In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
   }
+  
+  writeln(spacer);
+  writeln(spacer);
+  if package {
+    writeln('Attempting to build package using following options:');
+    writeln('    show = false');
+    writeln('    release = false');
+    writeln('    force = true');
+    writeln('    opt = false');
+    writeln('    example = false');
+    writeln('If these are different than what is required to build your package you can disregard this check');
+    attemptToBuild();
+  }
   writeln(spacer);
   writeln(spacer);
 
@@ -481,21 +494,10 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
       writeln('(FAILED) Your package has no remote origin and cannot be published');
     }
   }
-  
+
   writeln(spacer);
   writeln(spacer);
-  if package {
-    writeln('Attempting to build package using following options:');
-    writeln('    show = false');
-    writeln('    release = false');
-    writeln('    force = true');
-    writeln('    opt = false');
-    writeln('    example = false');
-    writeln('If these are different than what is required to build your package you can disregard this check');
-    attemptToBuild();
-    writeln(spacer);
-  }
-  writeln();
+
   if travis {
     if package && moduleCheck(projectCheckHome) {
       attemptToBuild();
@@ -513,8 +515,14 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
 /* Attempts to build the package/
  */
 private proc attemptToBuild() throws {
-  const buildArgs = ['mason', 'build', '--force'];
-  masonBuild(buildArgs);
+  var sub = spawn(['mason','build','--force'], stdout=PIPE);
+  sub.wait();
+  if sub.exit_status == 1 {
+  writeln('(FAILED) Please make sure your package builds');
+  }
+  else {
+    writeln('(PASSED) Package builds successfully.');
+  }
 }
 
 /* registryPathCheck accepts the path, username, and trueIfLocal in order to check whether the registry that someone
