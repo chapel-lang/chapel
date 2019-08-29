@@ -111,6 +111,7 @@ module List {
     list inherits the parallel safety mode of that list by default.
   */
   record list {
+    private use ChapelLocks only ;
 
     /* The type of the elements contained in this list. */
     type eltType;
