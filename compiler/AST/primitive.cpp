@@ -1018,6 +1018,8 @@ initPrimitive() {
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
   // borrowed class type currently == canonical class type
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
+  // return the undecorated class type
+  prim_def(PRIM_TO_UNDECORATED_CLASS, "to undecorated class", returnInfoToUndecorated, false, false);
   // Returns the nilable class type
   prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);

@@ -695,6 +695,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_UNMANAGED_CLASS_CHECKED:
   case PRIM_TO_BORROWED_CLASS:
   case PRIM_TO_BORROWED_CLASS_CHECKED:
+  case PRIM_TO_UNDECORATED_CLASS:
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
