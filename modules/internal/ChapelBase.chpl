@@ -1144,15 +1144,15 @@ module ChapelBase {
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
     if isAtomic(e.taskCnt) {
-      e.i.add(1, memory_order_release);
-      e.taskCnt.add(1, memory_order_release);
+      e.i.add(1, memoryOrder.release);
+      e.taskCnt.add(1, memoryOrder.release);
     } else {
       // note that this on statement does not have the usual
       // remote memory fence because of pragma "no remote memory fence"
       // above. So we do an acquire fence before it.
-      chpl_rmem_consist_fence(memory_order_release);
+      chpl_rmem_consist_fence(memoryOrder.release);
       on e {
-        e.i.add(1, memory_order_release);
+        e.i.add(1, memoryOrder.release);
         e.taskCnt += 1;
       }
     }
@@ -1165,7 +1165,7 @@ module ChapelBase {
   pragma "no remote memory fence"
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
-    e.i.add(numTasks:int, memory_order_release);
+    e.i.add(numTasks:int, memoryOrder.release);
 
     if countRunningTasks {
       here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
@@ -1192,7 +1192,7 @@ module ChapelBase {
     chpl_save_task_error(e, err);
     chpl_comm_task_end();
     // inform anybody waiting that we're done
-    e.i.sub(1, memory_order_release);
+    e.i.sub(1, memoryOrder.release);
   }
 
   // This function is called once by the initiating task.  As above, no
@@ -1211,7 +1211,7 @@ module ChapelBase {
     chpl_taskListExecute(e.taskList);
 
     // Wait for all tasks to finish
-    e.i.waitFor(0, memory_order_acquire);
+    e.i.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
@@ -1236,7 +1236,7 @@ module ChapelBase {
     chpl_taskListExecute(e.taskList);
 
     // Wait for all tasks to finish
-    e.i.waitFor(0, memory_order_acquire);
+    e.i.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       here.runningTaskCntSub(numTasks:int-1);

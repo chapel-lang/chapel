@@ -1764,21 +1764,6 @@ static numeric_type_t classifyNumericType(Type* t)
 }
 
 
-// Returns 'true' for types that are the type of numeric literals.
-// e.g. 1 is an 'int', so this function returns 'true' for 'int'.
-// e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
-bool isNumericParamDefaultType(Type* t)
-{
-  if (t == dtInt[INT_SIZE_DEFAULT] ||
-      t == dtReal[FLOAT_SIZE_DEFAULT] ||
-      t == dtImag[FLOAT_SIZE_DEFAULT] ||
-      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
-      t == dtBools[BOOL_SIZE_DEFAULT])
-    return true;
-
-  return false;
-}
-
 // Returns 'true' if we should prefer passing actual to f1Type
 // over f2Type.
 // This method implements rules such as that a bool would prefer to
@@ -6844,9 +6829,14 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             manager = dtUnmanaged;
           else
             manager = dtOwned;
+        } else if (isClass(type) && !fLegacyClasses) {
+          manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           manager = dtOwned;
         }
+      } else {
+        // Manager is specified, so check for duplicate management decorators
+        checkDuplicateDecorators(manager, type, newExpr);
       }
 
       // if manager is set, and we're not calling the manager's init function,
@@ -6857,15 +6847,13 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         AggregateType* at = toAggregateType(type);
 
         // fail if it's a record
-        if (isRecord(at) && !isManagedPtrType(at)) {
-          const char* name = manager->symbol->name;
-          // skip leading underscore
-          if (name[0] == '_')
-            name = &name[1];
-
+        if (isRecord(at) && !isManagedPtrType(at))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
-                         name, at->symbol->name);
-        }
+                                  toString(manager), toString(type));
+        else if (!isClassLikeOrManaged(type))
+          USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
+                                   toString(manager), toString(type));
+
 
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
@@ -6949,7 +6937,8 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
                      parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
             // OK e.g. new Owned(new MyClass())
             isUndecorated = false;
-          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+                     parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
             // OK e.g. new raw MyClass() / new owned MyClass()
             isUndecorated = false;
           } else {
@@ -9601,7 +9590,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // extern types (but not memory_order)
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
-             !type->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE)) {
+             !type->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
 
     // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);
@@ -9789,6 +9778,18 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
     }
   }
 
+}
+
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
+  if (fLegacyClasses == false) {
+    if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
+      ClassTypeDecorator d = classTypeDecorator(decorated);
+
+      if (!isDecoratorUnknownManagement(d))
+        USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
+                             toString(decorator), toString(decorated));
+    }
+  }
 }
 
 /************************************* | **************************************

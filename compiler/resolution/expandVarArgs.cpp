@@ -335,6 +335,8 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
     DefExpr*   newArgDef = varArg->defPoint->copy();
     ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
 
+    // Please update FnSymbol::substitutionsToString if this changes
+    newFormal->addFlag(FLAG_EXPANDED_VARARGS);
     newFormal->variableExpr = NULL;
     newFormal->name         = astr("_e", istr(i + 1), "_", varArg->name);
     newFormal->cname        = astr("_e", istr(i + 1), "_", varArg->cname);

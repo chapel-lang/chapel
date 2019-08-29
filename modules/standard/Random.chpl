@@ -653,6 +653,7 @@ module Random {
 
     use RandomSupport;
     use PCGRandomLib;
+    private use ChapelLocks;
 
     // How many generators do we need for this type?
     private
@@ -2260,6 +2261,7 @@ module Random {
   module NPBRandom {
 
     use RandomSupport;
+    private use ChapelLocks;
 
     /*
       Models a stream of pseudorandom numbers.  See the module-level

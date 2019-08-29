@@ -727,8 +727,10 @@ static bool isStableClassType(Type* t) {
 static bool callSpecifiesClassKind(CallExpr* call) {
   return (call->isNamed("_to_borrowed") ||
           call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
           call->isNamed("_to_unmanaged") ||
           call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
           call->isNamed("_owned") ||
           call->isNamed("_shared") ||
           call->isNamed("Owned") ||
@@ -1387,6 +1389,14 @@ static void resolveModuleCall(CallExpr* call) {
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
+        // Adjust class types to undecorated
+        if (sym && isClass(sym->type) && !fLegacyClasses) {
+          // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+          ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+          Type* t = getDecoratedClass(sym->type, d);
+          sym = t->symbol;
+        }
+
         // Failing that, try looking in an extern block.
 #ifdef HAVE_LLVM
         if (sym == NULL && gExternBlockStmts.size() > 0) {
@@ -1442,7 +1452,7 @@ static void resolveModuleCall(CallExpr* call) {
 // for new SomeModule.SomeType.
 static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
   if (TypeSymbol* ts = toTypeSymbol(sym)) {
-    if (isAggregateType(ts->type)) {
+    if (isAggregateType(canonicalClassType(ts->type))) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
           if (grandParentCall->isPrimitive(PRIM_NEW)) {
@@ -2237,7 +2247,9 @@ static void resolveUnmanagedBorrows() {
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+        call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
         call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
 
@@ -2258,9 +2270,11 @@ static void resolveUnmanagedBorrows() {
                            ts->name, ts->name);
           } else {
             const char* type = NULL;
-            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+                call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
               type = "unmanaged";
-            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS))
+            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
               type = "borrowed";
             else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS))
               type = "?";
@@ -2274,11 +2288,13 @@ static void resolveUnmanagedBorrows() {
           }
 
           // Compute the decorated class type
-          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
             int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
             int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;

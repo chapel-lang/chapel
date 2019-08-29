@@ -5,3 +5,4 @@ Application4.chpl:1: note: ... defined in this closer module
 Application4.chpl:15: note: the best-matching candidate is here
 Application4.chpl:12: note: ... in this farther-away module
 Application4.chpl:8: note: use --no-overload-sets-checks to disable overload sets errors
+Application4.chpl:19: Function 'run' instantiated as: run(x: string)

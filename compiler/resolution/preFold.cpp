@@ -715,11 +715,32 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
 
   case PRIM_TO_UNMANAGED_CLASS:
+  case PRIM_TO_UNMANAGED_CLASS_CHECKED:
   case PRIM_TO_BORROWED_CLASS:
+  case PRIM_TO_BORROWED_CLASS_CHECKED:
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
     Expr* e = call->get(1);
+
+    if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+      Type* msgType = NULL;
+      if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
+        msgType = dtUnmanaged;
+      else
+        msgType = dtBorrowed;
+
+      Type* t = e->typeInfo();
+      if (!isClassLikeOrManaged(t))
+        USR_FATAL_CONT(call, "cannot make %s into a %s class",
+                             toString(t), toString(msgType));
+      if (!isTypeExpr(e))
+        USR_FATAL_CONT(call, "cannot use decorator %s on a value",
+                             toString(msgType));
+
+      checkDuplicateDecorators(msgType, t, call);
+    }
 
     if (isTypeExpr(e)) {
       retval = new SymExpr(totype->symbol);
@@ -2093,12 +2114,17 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   wrapper->addFlag(FLAG_INLINE);
 
+  Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
+
+  CallExpr* n = new CallExpr(PRIM_NEW,
+                             new NamedExpr(astr_chpl_manager,
+                                           new SymExpr(dtUnmanaged->symbol)),
+                             new SymExpr(undecorated->symbol));
+
   wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
                                      new CallExpr(PRIM_CAST,
                                                   parent->symbol,
-                                                  new CallExpr(PRIM_NEW,
-                                                               new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
-                                                               new SymExpr(ct->symbol)))));
+                                                  n)));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 

@@ -1,2 +1,0 @@
-check-instantiations-with-defaults.chpl:9: In function 'f':
-check-instantiations-with-defaults.chpl:10: warning: int(64) int(64)

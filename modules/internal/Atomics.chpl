@@ -23,15 +23,15 @@
    Note that when compiling with --cache-remote, the compiler
    will add fences to methods in atomic types with order arguments e.g.::
 
-     proc sub (... order:memory_order = memory_order_seq_cst):void {
-       on this do atomic_fetch_sub_explicit_...(_v, value, order);
+     proc sub (... param order:memoryOrder = memoryOrder.seqCst):void {
+       on this do atomic_fetch_sub_explicit_...(_v, value, c_memory_order(order));
      }
 
    becomes::
 
-     proc sub (... order:memory_order = memory_order_seq_cst):void {
+     proc sub (... param order:memoryOrder = memoryOrder.seqCst):void {
        chpl_rmem_consist_maybe_release(order);
-       on this do atomic_fetch_sub_explicit_...(_v, value, order);
+       on this do atomic_fetch_sub_explicit_...(_v, value, c_memory_order(order));
        chpl_rmem_consist_maybe_acquire(order);
      }
 
@@ -46,7 +46,7 @@
 
    waitFor methods also do not need the fences written here -
    because they will be added if the cache is enabled - but they
-   do need a thread fence after the loop of memory_order_relaxed
+   do need a thread fence after the loop of memoryOrder.relaxed
    transactions in order to correctly run in a comm=none compilation
    where the 'on' statement is omitted.
 */
@@ -70,14 +70,14 @@
    signed and unsigned integers, as well as all supported sizes of reals.
 
    Most atomic methods accept an optional argument named ``order`` of type
-   ``memory_order``. The ``order`` argument is used to specify the ordering
+   ``memoryOrder``. The ``order`` argument is used to specify the ordering
    constraints of atomic operations. The supported values are:
 
-     * memory_order_relaxed
-     * memory_order_acquire
-     * memory_order_release
-     * memory_order_acq_rel
-     * memory_order_seq_cst
+     * memoryOrder.relaxed
+     * memoryOrder.acquire
+     * memoryOrder.release
+     * memoryOrder.acqRel
+     * memoryOrder.seqCst
 */
 pragma "atomic module"
 module Atomics {
@@ -90,15 +90,18 @@ module Atomics {
   pragma "no doc"
   extern proc chpl_atomic_signal_fence(order:memory_order);
 
-  // these can be called just the way they are:
-  //extern proc chpl_atomic_thread_fence(order:memory_order);
-  //extern proc chpl_atomic_signal_fence(order:memory_order);
-  // but they only handle the local portion of a fence.
-  // To include PUTs or GETs in the fence, use atomic_fence instead:
+  // non user-facing fence that is called by the compiler
   pragma "no doc"
   proc atomic_fence(order:memory_order = memory_order_seq_cst) {
     chpl_atomic_thread_fence(order);
-    chpl_rmem_consist_fence(order);
+    if CHPL_CACHE_REMOTE then
+      chpl_rmem_consist_fence(order);
+  }
+
+  /* An atomic fence that establishes an ordering of non-atomic and relaxed
+     atomic operations. */
+  inline proc atomicFence(param order: memoryOrder = memoryOrder.seqCst) {
+    atomic_fence(c_memory_order(order));
   }
 
   private proc isSupported(type T) param {
@@ -216,39 +219,39 @@ module Atomics {
     /*
        :returns: The stored value.
     */
-    inline proc const read(order:memory_order = memory_order_seq_cst): bool {
+    inline proc const read(param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("load", bool)
         proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_load(_v, order);
+      on this do ret = atomic_load(_v, c_memory_order(order));
       return ret;
     }
 
     /*
        Stores `value` as the new value.
     */
-    inline proc write(value:bool, order:memory_order = memory_order_seq_cst): void {
+    inline proc write(value:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       extern externFunc("store", bool)
         proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): void;
 
-      on this do atomic_store(_v, value, order);
+      on this do atomic_store(_v, value, c_memory_order(order));
     }
 
     /*
        Stores `value` as the new value and returns the original value.
     */
-    inline proc exchange(value:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc exchange(value:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("exchange", bool)
         proc atomic_exchange(ref obj:externT(bool), value:bool, order:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_exchange(_v, value, order);
+      on this do ret = atomic_exchange(_v, value, c_memory_order(order));
       return ret;
     }
 
     /* Equivalent to :proc:`compareExchangeStrong` */
-    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchange(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
@@ -257,12 +260,12 @@ module Atomics {
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
     */
-    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeWeak(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("compare_exchange_weak", bool)
         proc atomic_compare_exchange_weak(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_compare_exchange_weak(_v, expected, desired, order);
+      on this do ret = atomic_compare_exchange_weak(_v, expected, desired, c_memory_order(order));
       return ret;
     }
 
@@ -270,26 +273,26 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
-    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeStrong(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, order);
+      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, c_memory_order(order));
       return ret;
     }
 
     /*
        Stores `true` as the new value and returns the old value.
     */
-    inline proc testAndSet(order:memory_order = memory_order_seq_cst): bool {
+    inline proc testAndSet(param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.exchange(true, order);
     }
 
     /*
        Stores `false` as the new value.
     */
-    inline proc clear(order:memory_order = memory_order_seq_cst): void {
+    inline proc clear(param order: memoryOrder = memoryOrder.seqCst): void {
       this.write(false, order);
     }
 
@@ -299,9 +302,95 @@ module Atomics {
        Waits until the stored value is equal to `value`. The implementation may
        yield the running task while waiting.
     */
-    inline proc const waitFor(value:bool, order:memory_order = memory_order_seq_cst): void {
+    inline proc const waitFor(value:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
-        while (this.read(order=memory_order_relaxed) != value) {
+        while (this.read(order=memoryOrder.relaxed) != value) {
+          chpl_task_yield();
+        }
+        chpl_atomic_thread_fence(c_memory_order(order));
+      }
+    }
+
+    pragma "no doc"
+    proc const writeThis(x) {
+      x <~> read();
+    }
+
+    // Deprecated //
+
+    pragma "no doc"
+    inline proc const read(order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("load", bool)
+        proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
+
+      var ret:bool;
+      on this do ret = atomic_load(_v, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc write(value:bool, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("store", bool)
+        proc atomic_store(ref obj:externT(bool), value:bool, order:memory_order): void;
+
+      on this do atomic_store(_v, value, order);
+    }
+
+    pragma "no doc"
+    inline proc exchange(value:bool, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("exchange", bool)
+        proc atomic_exchange(ref obj:externT(bool), value:bool, order:memory_order): bool;
+
+      var ret:bool;
+      on this do ret = atomic_exchange(_v, value, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("compare_exchange_weak", bool)
+        proc atomic_compare_exchange_weak(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
+
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_weak(_v, expected, desired, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("compare_exchange_strong", bool)
+        proc atomic_compare_exchange_strong(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
+
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc testAndSet(order:memory_order): bool {
+      return this.exchange(true, order);
+    }
+
+    pragma "no doc"
+    inline proc clear(order:memory_order): void {
+      this.write(false, order);
+    }
+
+    pragma "no doc"
+    inline proc const waitFor(value:bool, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      on this {
+        while (this.read(order=memoryOrder.relaxed) != value) {
           chpl_task_yield();
         }
         chpl_atomic_thread_fence(order);
@@ -309,22 +398,27 @@ module Atomics {
     }
 
     /*
-       :returns: Stored value using memory_order_relaxed.
+       Non-atomically reads the stored value.
+
+       .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
+
     */
+    pragma "last resort"
     inline proc const peek(): bool {
-      return this.read(order=memory_order_relaxed);
+      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
+      return this.read(order=memoryOrder.relaxed);
     }
 
     /*
-       Stores `value` as the new value using memory_order_relaxed.
-    */
-    inline proc poke(value:bool): void {
-      this.write(value, order=memory_order_relaxed);
-    }
+       Non-atomically writes `value`.
 
-    pragma "no doc"
-    proc const writeThis(x) {
-      x <~> read();
+       .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
+
+    */
+    pragma "last resort"
+    inline proc poke(value:bool): void {
+      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
+      this.write(value, order=memoryOrder.relaxed);
     }
   }
 
@@ -380,39 +474,39 @@ module Atomics {
     /*
        :returns: The stored value.
     */
-    inline proc const read(order:memory_order = memory_order_seq_cst): T {
+    inline proc const read(param order: memoryOrder = memoryOrder.seqCst): T {
       extern externFunc("load", T)
         proc atomic_load(const ref obj:externT(T), order:memory_order): T;
 
       var ret:T;
-      on this do ret = atomic_load(_v, order);
+      on this do ret = atomic_load(_v, c_memory_order(order));
       return ret;
     }
 
     /*
        Stores `value` as the new value.
     */
-    inline proc write(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc write(value:T, param order: memoryOrder = memoryOrder.seqCst): void {
       extern externFunc("store", T)
         proc atomic_store(ref obj:externT(T), value:T, order:memory_order): void;
 
-      on this do atomic_store(_v, value, order);
+      on this do atomic_store(_v, value, c_memory_order(order));
     }
 
     /*
        Stores `value` as the new value and returns the original value.
     */
-    inline proc exchange(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc exchange(value:T, param order: memoryOrder = memoryOrder.seqCst): T {
       extern externFunc("exchange", T)
         proc atomic_exchange(ref obj:externT(T), value:T, order:memory_order): T;
 
       var ret:T;
-      on this do ret = atomic_exchange(_v, value, order);
+      on this do ret = atomic_exchange(_v, value, c_memory_order(order));
       return ret;
     }
 
     /* Equivalent to :proc:`compareExchangeStrong` */
-    inline proc compareExchange(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchange(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
@@ -421,12 +515,12 @@ module Atomics {
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
     */
-    inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeWeak(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("compare_exchange_weak", T)
         proc atomic_compare_exchange_weak(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_compare_exchange_weak(_v, expected, desired, order);
+      on this do ret = atomic_compare_exchange_weak(_v, expected, desired, c_memory_order(order));
       return ret;
     }
 
@@ -434,12 +528,12 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
-    inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order = memory_order_seq_cst): bool {
+    inline proc compareExchangeStrong(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("compare_exchange_strong", T)
         proc atomic_compare_exchange_strong(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, order);
+      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, c_memory_order(order));
       return ret;
     }
 
@@ -449,12 +543,12 @@ module Atomics {
        Adds `value` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc fetchAdd(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchAdd(value:T, param order: memoryOrder = memoryOrder.seqCst): T {
       extern externFunc("fetch_add", T)
         proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
       var ret:T;
-      on this do ret = atomic_fetch_add(_v, value, order);
+      on this do ret = atomic_fetch_add(_v, value, c_memory_order(order));
       return ret;
     }
 
@@ -462,11 +556,11 @@ module Atomics {
        Adds `value` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc add(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc add(value:T, param order: memoryOrder = memoryOrder.seqCst): void {
       extern externFunc("fetch_add", T)
         proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
 
-      on this do atomic_fetch_add(_v, value, order);
+      on this do atomic_fetch_add(_v, value, c_memory_order(order));
     }
 
     /*
@@ -475,12 +569,12 @@ module Atomics {
        Subtracts `value` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc fetchSub(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchSub(value:T, param order: memoryOrder = memoryOrder.seqCst): T {
       extern externFunc("fetch_sub", T)
         proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
       var ret:T;
-      on this do ret = atomic_fetch_sub(_v, value, order);
+      on this do ret = atomic_fetch_sub(_v, value, c_memory_order(order));
       return ret;
     }
 
@@ -488,11 +582,11 @@ module Atomics {
        Subtracts `value` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc sub(value:T, order:memory_order = memory_order_seq_cst): void {
+    inline proc sub(value:T, param order: memoryOrder = memoryOrder.seqCst): void {
       extern externFunc("fetch_sub", T)
         proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
 
-      on this do atomic_fetch_sub(_v, value, order);
+      on this do atomic_fetch_sub(_v, value, c_memory_order(order));
     }
 
     /*
@@ -503,7 +597,215 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc fetchOr(value:T, order:memory_order = memory_order_seq_cst): T {
+    inline proc fetchOr(value:T, param order: memoryOrder = memoryOrder.seqCst): T {
+      if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
+      extern externFunc("fetch_or", T)
+        proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      var ret:T;
+      on this do ret = atomic_fetch_or(_v, value, c_memory_order(order));
+      return ret;
+    }
+
+    /*
+       Applies the ``|`` operator to `value` and the original value, then stores
+       the result.
+
+       Only defined for integer atomic types.
+    */
+    inline proc or(value:T, param order: memoryOrder = memoryOrder.seqCst): void {
+      if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
+      extern externFunc("fetch_or", T)
+        proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      on this do atomic_fetch_or(_v, value, c_memory_order(order));
+    }
+
+    /*
+       :returns: The original value.
+
+       Applies the ``&`` operator to `value` and the original value, then stores
+       the result.
+
+       Only defined for integer atomic types.
+    */
+    inline proc fetchAnd(value:T, param order: memoryOrder = memoryOrder.seqCst): T {
+      if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
+      extern externFunc("fetch_and", T)
+        proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      var ret:T;
+      on this do ret = atomic_fetch_and(_v, value, c_memory_order(order));
+      return ret;
+    }
+
+    /*
+       Applies the ``&`` operator to `value` and the original value, then stores
+       the result.
+
+       Only defined for integer atomic types.
+    */
+    inline proc and(value:T, param order: memoryOrder = memoryOrder.seqCst): void {
+      if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
+      extern externFunc("fetch_and", T)
+        proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      on this do atomic_fetch_and(_v, value, c_memory_order(order));
+    }
+
+    /*
+       :returns: The original value.
+
+       Applies the ``^`` operator to `value` and the original value, then stores
+       the result.
+
+       Only defined for integer atomic types.
+    */
+    inline proc fetchXor(value:T, param order: memoryOrder = memoryOrder.seqCst): T {
+      if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
+      extern externFunc("fetch_xor", T)
+        proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      var ret:T;
+      on this do ret = atomic_fetch_xor(_v, value, c_memory_order(order));
+      return ret;
+    }
+
+    /*
+       Applies the ``^`` operator to `value` and the original value, then stores
+       the result.
+
+       Only defined for integer atomic types.
+    */
+    inline proc xor(value:T, param order: memoryOrder = memoryOrder.seqCst): void {
+      if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
+      extern externFunc("fetch_xor", T)
+        proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      on this do atomic_fetch_xor(_v, value, c_memory_order(order));
+    }
+
+    /*
+       Waits until the stored value is equal to `value`. The implementation may
+       yield the running task while waiting.
+    */
+    inline proc const waitFor(value:T, param order: memoryOrder = memoryOrder.seqCst): void {
+      on this {
+        while (this.read(order=memoryOrder.relaxed) != value) {
+          chpl_task_yield();
+        }
+        chpl_atomic_thread_fence(c_memory_order(order));
+      }
+    }
+
+    pragma "no doc"
+    proc const writeThis(x) {
+      x <~> read();
+    }
+
+    // Deprecated //
+
+    pragma "no doc"
+    inline proc const read(order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("load", T)
+        proc atomic_load(const ref obj:externT(T), order:memory_order): T;
+
+      var ret:T;
+      on this do ret = atomic_load(_v, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc write(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("store", T)
+        proc atomic_store(ref obj:externT(T), value:T, order:memory_order): void;
+
+      on this do atomic_store(_v, value, order);
+    }
+
+    pragma "no doc"
+    inline proc exchange(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("exchange", T)
+        proc atomic_exchange(ref obj:externT(T), value:T, order:memory_order): T;
+
+      var ret:T;
+      on this do ret = atomic_exchange(_v, value, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc compareExchange(expected:T, desired:T, order:memory_order): bool {
+      return this.compareExchangeStrong(expected, desired, order);
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("compare_exchange_weak", T)
+        proc atomic_compare_exchange_weak(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
+
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_weak(_v, expected, desired, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order): bool {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("compare_exchange_strong", T)
+        proc atomic_compare_exchange_strong(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
+
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc fetchAdd(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("fetch_add", T)
+        proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      var ret:T;
+      on this do ret = atomic_fetch_add(_v, value, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc add(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("fetch_add", T)
+        proc atomic_fetch_add(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      on this do atomic_fetch_add(_v, value, order);
+    }
+
+    pragma "no doc"
+    inline proc fetchSub(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("fetch_sub", T)
+        proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      var ret:T;
+      on this do ret = atomic_fetch_sub(_v, value, order);
+      return ret;
+    }
+
+    pragma "no doc"
+    inline proc sub(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
+      extern externFunc("fetch_sub", T)
+        proc atomic_fetch_sub(ref obj:externT(T), operand:T, order:memory_order): T;
+
+      on this do atomic_fetch_sub(_v, value, order);
+    }
+
+    pragma "no doc"
+    inline proc fetchOr(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -513,13 +815,9 @@ module Atomics {
       return ret;
     }
 
-    /*
-       Applies the ``|`` operator to `value` and the original value, then stores
-       the result.
-
-       Only defined for integer atomic types.
-    */
-    inline proc or(value:T, order:memory_order = memory_order_seq_cst): void {
+    pragma "no doc"
+    inline proc or(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
       extern externFunc("fetch_or", T)
         proc atomic_fetch_or(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -527,15 +825,9 @@ module Atomics {
       on this do atomic_fetch_or(_v, value, order);
     }
 
-    /*
-       :returns: The original value.
-
-       Applies the ``&`` operator to `value` and the original value, then stores
-       the result.
-
-       Only defined for integer atomic types.
-    */
-    inline proc fetchAnd(value:T, order:memory_order = memory_order_seq_cst): T {
+    pragma "no doc"
+    inline proc fetchAnd(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -545,13 +837,9 @@ module Atomics {
       return ret;
     }
 
-    /*
-       Applies the ``&`` operator to `value` and the original value, then stores
-       the result.
-
-       Only defined for integer atomic types.
-    */
-    inline proc and(value:T, order:memory_order = memory_order_seq_cst): void {
+    pragma "no doc"
+    inline proc and(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
       extern externFunc("fetch_and", T)
         proc atomic_fetch_and(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -559,15 +847,9 @@ module Atomics {
       on this do atomic_fetch_and(_v, value, order);
     }
 
-    /*
-       :returns: The original value.
-
-       Applies the ``^`` operator to `value` and the original value, then stores
-       the result.
-
-       Only defined for integer atomic types.
-    */
-    inline proc fetchXor(value:T, order:memory_order = memory_order_seq_cst): T {
+    pragma "no doc"
+    inline proc fetchXor(value:T, order:memory_order): T {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -577,13 +859,9 @@ module Atomics {
       return ret;
     }
 
-    /*
-       Applies the ``^`` operator to `value` and the original value, then stores
-       the result.
-
-       Only defined for integer atomic types.
-    */
-    inline proc xor(value:T, order:memory_order = memory_order_seq_cst): void {
+    pragma "no doc"
+    inline proc xor(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
       extern externFunc("fetch_xor", T)
         proc atomic_fetch_xor(ref obj:externT(T), operand:T, order:memory_order): T;
@@ -591,13 +869,11 @@ module Atomics {
       on this do atomic_fetch_xor(_v, value, order);
     }
 
-    /*
-       Waits until the stored value is equal to `value`. The implementation may
-       yield the running task while waiting.
-    */
-    inline proc const waitFor(value:T, order:memory_order = memory_order_seq_cst): void {
+    pragma "no doc"
+    inline proc const waitFor(value:T, order:memory_order): void {
+      compilerWarning("memory_order is deprecated, use memoryOrder");
       on this {
-        while (this.read(order=memory_order_relaxed) != value) {
+        while (this.read(order=memoryOrder.relaxed) != value) {
           chpl_task_yield();
         }
         chpl_atomic_thread_fence(order);
@@ -605,22 +881,27 @@ module Atomics {
     }
 
     /*
-       :returns: Stored value using memory_order_relaxed.
+       Non-atomically reads the stored value.
+
+       .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
+
     */
+    pragma "last resort"
     inline proc const peek(): T {
-      return this.read(order=memory_order_relaxed);
+      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
+      return this.read(order=memoryOrder.relaxed);
     }
 
     /*
-       Stores `value` as the new value using memory_order_relaxed.
-    */
-    inline proc poke(value:T): void {
-      this.write(value, order=memory_order_relaxed);
-    }
+       Non-atomically writes `value`.
 
-    pragma "no doc"
-    proc const writeThis(x) {
-      x <~> read();
+       .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
+
+    */
+    pragma "last resort"
+    inline proc poke(value:T): void {
+      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
+      this.write(value, order=memoryOrder.relaxed);
     }
   }
 

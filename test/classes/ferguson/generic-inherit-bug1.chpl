@@ -27,7 +27,7 @@ module Structure {
 
 
   class ListerGrandParent {
-    var lst: unmanaged LinkedList(unmanaged GrandParent);
+    var lst: LinkedList(unmanaged GrandParent);
   }
 
   class ListerParent : ListerGrandParent {
@@ -40,10 +40,10 @@ module Structure {
     }
   }
 
-  proc test(lhs:?t) where isSubtype(unmanaged t, unmanaged ListerParent) {
+  proc test(lhs:?t) where isSubtype(t, ListerParent) {
     type subType = lhs.getListedType();
     for e in lhs.lst {
-      var eCast = e:unmanaged subType?;
+      var eCast = e: subType?;
       if eCast == nil then
         halt("X");
 

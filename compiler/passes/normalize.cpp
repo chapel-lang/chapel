@@ -1008,8 +1008,10 @@ static void processManagedNew(CallExpr* newCall) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS);
-            bool isborrowed = callManager->isPrimitive(PRIM_TO_BORROWED_CLASS);
+            bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS)
+              || callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED);
+            bool isborrowed = callManager->isPrimitive(PRIM_TO_BORROWED_CLASS)
+              || callManager->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED);
             bool isowned = false;
             bool isshared = false;
             if (SymExpr* se = toSymExpr(callManager->baseExpr)) {
@@ -1048,7 +1050,9 @@ static void processManagedNew(CallExpr* newCall) {
                    (callManager->isNamed("_owned") ||
                     callManager->isNamed("_shared") ||
                     callManager->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS))) {
+                    callManager->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
+                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))) {
           SymExpr* se = toSymExpr(callManager->get(1));
           if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
             argListError = true;
@@ -3318,10 +3322,12 @@ static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
     INT_ASSERT(!call->isPrimitive(PRIM_MULT));
     return dtTuple->symbol;
   } else if (call->isNamed("_to_unmanaged") ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
     return dtUnmanaged->symbol;
   } else if (call->isNamed("_to_borrowed") ||
-             call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
     return dtBorrowed->symbol;
   }
   return NULL;
@@ -3433,10 +3439,13 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
   } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
 
 
-    bool borrowed = call->isPrimitive(PRIM_TO_BORROWED_CLASS);
+    bool borrowed = call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                    call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED);
     Type* parentType = borrowed?dtBorrowed:dtUnmanaged;
 
     // Check that whatever it has right borrow / unmanaged nature

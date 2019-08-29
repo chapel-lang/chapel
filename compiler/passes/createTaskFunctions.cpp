@@ -338,13 +338,10 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   headAnchor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
   headAnchor->insertBefore(new DefExpr(globalOp));
 
-  AggregateType* reduceAt = toAggregateType(reduceType->type);
-  if (DecoratedClassType* dt = toDecoratedClassType(reduceType->type))
-    reduceAt = dt->getCanonicalClass();
-  INT_ASSERT(reduceAt);
+  Type* newT = getDecoratedClass(reduceType->type, CLASS_TYPE_GENERIC_NONNIL);
 
   CallExpr* newOp = new CallExpr(PRIM_NEW,
-                                 reduceAt->symbol,
+                                 newT->symbol,
                                  new NamedExpr("eltType", new SymExpr(eltType)),
                                  new NamedExpr(astr_chpl_manager,
                                              new SymExpr(dtUnmanaged->symbol)));
@@ -681,7 +678,7 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
   int numFormals = fnSymbol->numFormals();
   if( numFormals >= 1 ) {
     ArgSymbol* lastFormal = fnSymbol->getFormal(numFormals);
-    int has_order_type = lastFormal->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE);
+    int has_order_type = lastFormal->typeInfo()->symbol->hasEitherFlag(FLAG_MEMORY_ORDER_TYPE, FLAG_C_MEMORY_ORDER_TYPE);
     int has_order_name = (0 == strcmp(lastFormal->name, "order"));
     if( has_order_name && ! has_order_type ) {
       INT_FATAL(lastFormal, "atomic method has order without type");

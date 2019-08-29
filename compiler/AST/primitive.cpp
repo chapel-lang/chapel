@@ -1013,6 +1013,9 @@ initPrimitive() {
   // used before error handling is lowered to represent the current error
   prim_def(PRIM_CURRENT_ERROR, "current error", returnInfoError, false, false);
 
+  prim_def(PRIM_TO_UNMANAGED_CLASS_CHECKED, "to unmanaged class from unknown", returnInfoToUnmanaged, false, false);
+  prim_def(PRIM_TO_BORROWED_CLASS_CHECKED, "to borrowed class from unknown", returnInfoToBorrowed, false, false);
+
   // These return the (non-nil) class variant
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
   // borrowed class type currently == canonical class type

@@ -34,7 +34,8 @@
 
 
 use Time,       // to get timing routines for benchmarking
-    BlockDist;  // for block-distributed arrays
+    BlockDist,  // for block-distributed arrays
+    PeekPoke;   // for atomic peek/poke
 
 use luleshInit;   // initialization code for data set
 

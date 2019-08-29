@@ -167,6 +167,11 @@ static Expr* postFoldNormal(CallExpr* call) {
       retval = new SymExpr(ret->type->symbol);
 
       call->replace(retval);
+
+      // Put the call back in the AST for better errors
+      if (fatalErrorsEncountered()) {
+        retval->getStmtExpr()->insertBefore(call);
+      }
     }
   }
 

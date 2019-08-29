@@ -1748,7 +1748,7 @@ sub_type_level_expr:
 | TUNMANAGED
     { $$ = new SymExpr(dtUnmanaged->symbol); }
 | TUNMANAGED expr
-    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
+    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS_CHECKED, $2); }
 | TSHARED
     { $$ = new UnresolvedSymExpr("_shared"); }
 | TSHARED expr
@@ -1756,7 +1756,7 @@ sub_type_level_expr:
 | TBORROWED
     { $$ = new SymExpr(dtBorrowed->symbol); }
 | TBORROWED expr
-    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
+    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS_CHECKED, $2); }
 
 | TCLASS
     { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
