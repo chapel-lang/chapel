@@ -515,16 +515,16 @@ returnInfoToNilable(CallExpr* call) {
       AggregateType* manager = getManagedPtrManagerType(t);
       AggregateType* at = toAggregateType(canonicalClassType(t));
       if (at == NULL) {
-	// e.g. _to_nonnil(owned)
-	t = getDecoratedClass(manager, decorator);
+        // e.g. _to_nonnil(owned)
+        t = getDecoratedClass(manager, decorator);
       } else {
-	// e.g. _to_nonnil(owned C)
-	t = computeDecoratedManagedType(at, decorator, manager, call);
+        // e.g. _to_nonnil(owned C)
+        t = computeDecoratedManagedType(at, decorator, manager, call);
       }
     } else {
       if (AggregateType* at = toAggregateType(canonicalClassType(t)))
-	if (isClass(at))
-	  t = at->getDecoratedClass(decorator);
+        if (isClass(at))
+          t = at->getDecoratedClass(decorator);
     }
   }
 
@@ -543,16 +543,16 @@ returnInfoToNonNilable(CallExpr* call) {
       AggregateType* manager = getManagedPtrManagerType(t);
       AggregateType* at = toAggregateType(canonicalClassType(t));
       if (at == NULL) {
-	// e.g. _to_nonnil(owned)
-	t = getDecoratedClass(manager, decorator);
+        // e.g. _to_nonnil(owned)
+        t = getDecoratedClass(manager, decorator);
       } else {
-	// e.g. _to_nonnil(owned C)
-	t = computeDecoratedManagedType(at, decorator, manager, call);
+        // e.g. _to_nonnil(owned C)
+        t = computeDecoratedManagedType(at, decorator, manager, call);
       }
     } else {
       if (AggregateType* at = toAggregateType(canonicalClassType(t)))
-	if (isClass(at))
-	  t = at->getDecoratedClass(decorator);
+        if (isClass(at))
+          t = at->getDecoratedClass(decorator);
     }
   }
 
