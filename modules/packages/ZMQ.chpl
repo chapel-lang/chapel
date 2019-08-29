@@ -88,6 +88,7 @@ compatible pairs of socket types
 * :const:`PUB`  and :const:`SUB`
 * :const:`REQ`  and :const:`REP`
 * :const:`PUSH` and :const:`PULL`
+* :const: 'PAIR'
 
 .. code-block:: chapel
 
@@ -351,6 +352,11 @@ module ZMQ {
     The puller socket type for a pipeline messaging pattern.
    */
   const PULL = ZMQ_PULL;
+
+  /* 
+    The exclusive pair pattern socket type.
+  */
+  const PAIR = ZMQ_PAIR;
 
   // -- Socket Options
   private extern const ZMQ_AFFINITY: c_int;
