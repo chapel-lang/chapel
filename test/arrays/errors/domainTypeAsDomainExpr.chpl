@@ -3,7 +3,7 @@ class Child : Base {
   var s: string;
 }
 
-proc fn(vec: [domain(1,int(64),false)] _owned(Child)) {
+proc fn(vec: [domain(1,int(64),false)] owned Child) {
   return vec;
 }
 

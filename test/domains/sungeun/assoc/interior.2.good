@@ -1,0 +1,3 @@
+interior.chpl:4: In function 'my_interior':
+interior.chpl:5: error: interior not supported on associative domains
+interior.chpl:11: Function 'my_interior' instantiated as: my_interior(D: DefaultAssociativeDom(int(64),false), off: int(64))

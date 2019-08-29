@@ -1,2 +1,3 @@
 errorDepth.chpl:10: In function 'bar':
 errorDepth.chpl:10: error: error 1
+errorDepth.chpl:11: Function 'bar' instantiated as: bar(param d = 1)
