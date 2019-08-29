@@ -539,7 +539,7 @@ module String {
 
     proc init=(cs: c_string) {
       this.complete();
-      initWithNewBuffer(this, cs);
+      initWithNewBuffer(this, cs:bufferType, length=cs.length, size=cs.length+1);
     }
 
     /*

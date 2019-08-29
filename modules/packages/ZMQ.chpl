@@ -1042,7 +1042,7 @@ module ZMQ {
         // Construct the string on the current locale, copying the data buffer
         // from the message object; then, release the message object
         var len = zmq_msg_size(msg):int;
-        var str = createStringWithNewBuffer(buff=zmq_msg_data(msg):c_ptr(uint(8)),
+        var str = createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
                                             length=len, size=len+1);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
