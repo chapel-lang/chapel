@@ -554,6 +554,10 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 
 bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   bool retval = false;
+  bool debug = false;
+  if (strcmp(name, "M") == 0) {
+    //    debug = true;
+  }
 
   if (isPlainUse() == true) {
     retval = false;
@@ -567,26 +571,48 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
     }
 
   } else {
+    //    if (debug) {
+      //      printf("In only case\n");
     if (matchedNameOrConstructor(name) == true) {
       retval = false;
+      //      printf("Matched name or constructor\n");
 
     } else if (isAllowedMethodName(name, methodCall) == true) {
       // Only allow the symbol if the call is a method call.  Functions with
       // the same name should not be allowed unqualified when they are omitted
       // from the explicit only list, except for "init", "_new", etc.
       retval = false;
+      //      printf("isAllowedMethodName\n");
 
     } else {
-      retval =  true;
+      retval = true;
+      //      printf("in else case\n");
+      if (SymExpr* se = toSymExpr(src)) {
+        //        printf("it's a symexpr\n");
+        if (strcmp(name, se->symbol()->name) == 0) {
+          //          printf("it's a symexpr\n");
+          retval = false;
+        }
+      } else {
+        // TODO: Need to handle matches against more general expressions here?
+        // or not?
+      }
     }
+  }
+
+  if (debug) {
+    printf("skipSymbolSearch(%s) returning %d\n", name, retval);
   }
 
   return retval;
 }
 
 bool UseStmt::matchedNameOrConstructor(const char* name) const {
+  //  printf("Looking for %s\n", name);
   for_vector(const char, toCheck, named) {
+    //    printf("Checking against %s\n", toCheck);
     if (strcmp(name, toCheck) == 0) {
+      //      printf("A: Returning true\n");
       return true;
     }
   }
@@ -595,6 +621,7 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
       it != renamed.end();
       ++it) {
     if (strcmp(name, it->first) == 0) {
+      printf("B: Returning true\n");
       return true;
     }
   }
