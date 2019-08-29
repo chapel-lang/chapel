@@ -381,7 +381,7 @@ module DistributedDeque {
           on queueSize {
             var readSize = queueSize!.read();
             // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-            while readSize < 0 && !queueSize!.compareExchangeWeak(readSize, 0) {
+            while readSize < 0 && !queueSize!.compareAndSwap(readSize, 0) {
               chpl_task_yield();
               readSize = queueSize!.read();
             }
@@ -426,7 +426,7 @@ module DistributedDeque {
             on queueSize {
               var readSize = queueSize!.read();
               // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-              while readSize > this.cap && !queueSize!.compareExchangeWeak(readSize, this.cap) {
+              while readSize > this.cap && !queueSize!.compareAndSwap(readSize, this.cap) {
                 chpl_task_yield();
                 readSize = queueSize!.read();
               }

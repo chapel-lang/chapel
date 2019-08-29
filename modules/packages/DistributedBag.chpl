@@ -700,7 +700,7 @@ module DistributedBag {
     }
 
     inline proc acquireWithStatus(newStatus) {
-      return status.compareExchangeStrong(STATUS_UNLOCKED, newStatus);
+      return status.compareAndSwap(STATUS_UNLOCKED, newStatus);
     }
 
     // Set status with a test-and-test-and-set loop...
