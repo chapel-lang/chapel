@@ -5,3 +5,4 @@ $CHPL_HOME/modules/internal/String.chpl:413: note: because where clause evaluate
 match-param.chpl:1: note: candidates are: ==(_arg1: R, _arg2: R)
 $CHPL_HOME/modules/internal/ChapelBase.chpl:124: note:                 ==(a: _nilType, b: _nilType)
 note: and 123 other candidates, use --print-all-candidates to see them
+match-param.chpl:1: Function 'foo' instantiated as: foo(x: R(int(64),100))
