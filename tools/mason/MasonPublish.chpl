@@ -415,10 +415,14 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
   const spacer = '------------------------------------------------------';
   const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
   const projectCheckHome = here.cwd();
+  var packageTest = true;
+  var moduleTest = true;
+  var remoteTest = true;
   writeln('Mason Project Check:');
   if !package {
     writeln('    Could not find your configuration file (Mason.toml) (FAILED)');
     writeln('    Ensure your project is a mason package');
+    packageTest = false;
     }
   else {
     writeln('    Package is a Mason package and has a Mason.toml (PASSED)');
@@ -430,7 +434,10 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
     if moduleCheck(projectCheckHome) {
       writeln('    Your package has only one main module, can be published to a registry. (PASSED)');
     }
-    else writeln('    Packages with more than one modules cannot be published. (FAILED)');
+    else {
+      writeln('    Packages with more than one modules cannot be published. (FAILED)');
+      moduleTest = false; 
+    }
     writeln(spacer);
   }
 
@@ -442,17 +449,40 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
     }
     else {
       writeln('    Package has no remote origin and cannot be publish to a registry with path:' + path + ' (FAILED)');
+      remoteTest = false;
     }
     writeln(spacer);
   }
   writeln('Checking Registry with ' + path + ' path.');
-  registryPathCheck(path, username, trueIfLocal);
+  var registryTest = registryPathCheck(path, username, trueIfLocal);
   writeln(spacer);
   writeln('The current mason environment is:');
   returnMasonEnv();
   if MASON_REGISTRY.size == 1 {
     writeln('    In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
   }
+  writeln(spacer);
+  writeln(spacer);
+
+  if packageTest && remoteTest && moduleTest && registryTest {
+    writeln('(PASSED) Your package is ready to publish');
+  }
+  else {
+    if !packageTest {
+      writeln('(FAILED) Your package does not have to proper package structure');
+    }
+    if !moduleTest {
+      writeln('(FAILED) Your package has more than one main module');
+    }
+    if !registryTest {
+      writeln('(FAILED) Your proposed registry is not a valid registry or path to a regustry');
+    }
+    if !remoteTest {
+      writeln('(FAILED) Your package has no remote origin and cannot be published');
+    }
+  }
+  
+  writeln(spacer);
   writeln(spacer);
   if package {
     writeln('Attempting to build package using following options:');
@@ -495,9 +525,11 @@ private proc registryPathCheck(path : string, username : string, trueIfLocal : b
     var forkCheck = usernameCheck(username);
     if forkCheck == 0 {
       writeln('    The mason-registry is forked under username: ' + username + ' (PASSED)');
+      return true;
     }
     else {
       writeln('    You must have a fork of the mason-registry to publish a package (FAILED)');
+      return false;
     }
   }
   else {
@@ -507,14 +539,20 @@ private proc registryPathCheck(path : string, username : string, trueIfLocal : b
       if !isLocalGit {
         writeln('   Registry with path ' + path + ' is not a git repository. (FAILED)');
         writeln("   Local registrys must be git repositorys in order to publish");
+        return false;
       }
       else if !hasBricks {
         writeln('   The registry with path ' + path + ' does not have proper registry structure (FAILED)');
         writeln("   A registry must have a /Bricks/ directory to be a valid registry");
+        return false;
       }
       else {
         writeln('   The local registry with path ' + path + ' is a valid registry to be publish too (PASSED)');
+        return true;
       }
+    }
+    else {
+      return true;
     }
   }
 }
