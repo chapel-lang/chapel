@@ -202,7 +202,7 @@ proc mini_lock() {
 
   forall r in 1..M {
     // Acquire the lock
-    while myLock.compareExchange(0, 1) {
+    while myLock.compareAndSwap(0, 1) {
       //chpl_task_yield();
     }
     // do something meaningful
@@ -214,7 +214,7 @@ proc mini_lock() {
 mini_lock();
 
 proc doCmpXchng(ref myLock: atomic int) {
-  return myLock.compareExchange(0, 1);
+  return myLock.compareAndSwap(0, 1);
 }
 
 
@@ -245,7 +245,7 @@ proc mini_lock3() {
     // Acquire the lock
     var x = 1;
     while x < 10000 {
-      while myLock.compareExchange(0, 1) {
+      while myLock.compareAndSwap(0, 1) {
         //chpl_task_yield();
       }
       x += 1;
@@ -260,7 +260,7 @@ mini_lock3();
 
 
 proc lockRecursive(ref myLock: atomic int) {
-  if myLock.compareExchange(0, 1) then
+  if myLock.compareAndSwap(0, 1) then
     return;
 
   lockRecursive(myLock);

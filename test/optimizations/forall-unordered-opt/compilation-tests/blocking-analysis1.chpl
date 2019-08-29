@@ -14,15 +14,10 @@ proc blocking_loop_int_read() {
 }
 blocking_loop_int_read();
 
-proc blocking_loop_int_compare_exchange() {
-  while globalAtomicInt.compareExchange(0, 1) == false { }
+proc blocking_loop_int_compare_and_swap() {
+  while globalAtomicInt.compareAndSwap(0, 1) == false { }
 }
-blocking_loop_int_compare_exchange();
-
-proc blocking_loop_int_compare_exchange_weak() {
-  while globalAtomicInt.compareExchangeWeak(0, 1) == false { }
-}
-blocking_loop_int_compare_exchange_weak();
+blocking_loop_int_compare_and_swap();
 
 proc blocking_loop_int_waitfor() {
   globalAtomicInt.waitFor(false);
@@ -34,15 +29,10 @@ proc blocking_loop_bool_read() {
 }
 blocking_loop_bool_read();
 
-proc blocking_loop_bool_compare_exchange() {
-  while globalAtomicBool.compareExchange(false, true) == false { }
+proc blocking_loop_bool_compare_and_swap() {
+  while globalAtomicBool.compareAndSwap(false, true) == false { }
 }
-blocking_loop_bool_compare_exchange();
-
-proc blocking_loop_bool_compare_exchange_weak() {
-  while globalAtomicBool.compareExchangeWeak(false, true) == false { }
-}
-blocking_loop_bool_compare_exchange_weak();
+blocking_loop_bool_compare_and_swap();
 
 proc blocking_loop_bool_test_and_set() {
   while globalAtomicBool.testAndSet() == true { }

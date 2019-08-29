@@ -33,17 +33,12 @@ x.write(n);
 if x.read() != n then
   halt("Error: x (", x.read(), ") != n (", n, ")");
 
-// All atomic types support atomic ``exchange()``,
-// ``compareExchangeStrong()``, ``compareExchangeWeak()``, and
-// ``compareExchange()`` (same as ``compareExchangeStrong()``).
+// All atomic types support atomic ``exchange()``, and ``compareAndSwap()``
 //
 // The ``exchange()`` method atomically swaps the old value with the given
-// argument and returns the old value.  The ``compareExchange()``,
-// ``compareExchangeStrong()`` and ``compareExchangeWeak()`` methods only
+// argument and returns the old value.  The ``compareAndSwap()`` method only
 // perform the swap if the current value is equal to the first argument,
-// returning ``true`` if the exchange was performed  See the :ref:`Chapel
-// Language Specification <chapel-spec>` for the difference between the weak and
-// strong varieties.
+// returning ``true`` if the exchange was performed.
 //
 // In the following example, ``n`` parallel tasks are created via a
 // ``coforall`` statement.  Each task tries to set the current value of ``x``
@@ -51,7 +46,7 @@ if x.read() != n then
 //
 var numFound: atomic int;
 coforall id in R {
-  numFound.add(x.compareExchangeWeak(n, id-1));
+  numFound.add(x.compareAndSwap(n, id-1));
 }
 if numFound.read() != 1 then
   halt("Error: numFound != 1 (", numFound.read(), ")");
