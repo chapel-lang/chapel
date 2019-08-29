@@ -1987,12 +1987,20 @@ fun_expr:
   ident_expr         { $$ = $1; }
 | lhs_expr_not_ident { $$ = $1; }
 | expr TBANG         { $$ = new CallExpr("postfix!", $1); }
+| sub_type_level_expr TQUESTION {$$ = new CallExpr(PRIM_TO_NILABLE_CLASS, $1);}
+/*| expr TQUESTION     { $$ = new CallExpr(PRIM_TO_NILABLE_CLASS, $1); }*/
 /*
-  lhs_expr %prec TNOELSE
+  ident_expr %prec TNOELSE
     { $$ = $1; }
-| lhs_expr TBANG %prec TBANG
+| lhs_expr_not_ident %prec TNOELSE
+    { $$ = $1; }
+| ident_expr TBANG %prec TBANG
     { $$ = new CallExpr("postfix!", $1); }
-| lhs_expr TQUESTION %prec TQUESTION
+| lhs_expr_not_ident TBANG %prec TBANG
+    { $$ = new CallExpr("postfix!", $1); }
+| ident_expr TQUESTION %prec TQUESTION
+    { $$ = new CallExpr("postfix?", $1); }
+| lhs_expr_not_ident TQUESTION %prec TQUESTION
     { $$ = new CallExpr("postfix?", $1); }*/
 | lambda_decl_expr   { $$ = $1; }
 ;
