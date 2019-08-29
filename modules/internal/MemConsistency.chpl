@@ -75,7 +75,7 @@ module MemConsistency {
   enum memoryOrder {seqCst, acqRel, release, acquire, relaxed}
 
   inline proc c_memory_order(param order: memoryOrder) {
-    use HaltWrappers /*only */;
+    use HaltWrappers only;
     select order {
       when memoryOrder.relaxed do return memory_order_relaxed;
       when memoryOrder.acquire do return memory_order_acquire;

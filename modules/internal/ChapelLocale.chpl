@@ -67,7 +67,7 @@
 module ChapelLocale {
 
   use LocaleModelMod;
-  private use HaltWrappers /*only */;
+  private use HaltWrappers only;
 
   //
   // Node and sublocale types and special sublocale values.

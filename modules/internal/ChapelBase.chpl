@@ -650,7 +650,7 @@ module ChapelBase {
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
-    use HaltWrappers /*only */;
+    use HaltWrappers only;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
