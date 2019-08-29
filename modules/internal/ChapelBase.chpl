@@ -2282,6 +2282,7 @@ module ChapelBase {
     var ret = __primitive("to borrowed class", arg);
     return ret;
   }
+  // changing nilability
   proc _to_nonnil(type t) type {
     type rt = __primitive("to non nilable class", t);
     return rt;

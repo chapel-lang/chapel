@@ -2521,6 +2521,7 @@ static void adjustClassCastCall(CallExpr* call)
 {
   SymExpr* targetTypeSe = toSymExpr(call->get(1));
   SymExpr* valueSe = toSymExpr(call->get(2));
+  bool valueIsType = isTypeExpr(valueSe);
   Type* targetType = targetTypeSe->symbol()->getValType();
   Type* valueType = valueSe->symbol()->getValType();
 
@@ -2529,6 +2530,7 @@ static void adjustClassCastCall(CallExpr* call)
   //  * unmanaged SomeClass
   //  * borrowed SomeClass
   //  * unmanaged
+  //  * owned
   // This section just handles merging the decortators.
   // Casts from owned etc. to owned are still also handled in module code.
   // Down-casting is handled in the module code as well.
@@ -2541,7 +2543,12 @@ static void adjustClassCastCall(CallExpr* call)
 
     AggregateType* at = NULL;
 
-    if (isBuiltinGenericClassType(targetType))
+    // Compute the class type to work with.
+    // If the target isn't specifying the class type, get that from the value.
+    // e.g. C: borrowed ; C: owned
+    if (isBuiltinGenericClassType(canonicalTarget) ||
+        (isManagedPtrType(canonicalTarget) &&
+         canonicalTarget == getManagedPtrManagerType(canonicalTarget)))
       at = toAggregateType(canonicalValue);
     else
       at = toAggregateType(canonicalTarget);
@@ -2549,26 +2556,38 @@ static void adjustClassCastCall(CallExpr* call)
     // Compute the decorator combining generic properties
     ClassTypeDecorator d = combineDecorators(targetD, valueD);
 
-    // Now compute the target type
+    // Compute the type based upon the decorators
     Type* t = NULL;
-    if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
-      // Don't change it, expecting an error
-      t = targetType;
-    } else if (isDecoratorManaged(d)) {
-      AggregateType* manager = getManagedPtrManagerType(valueType);
-      if (isManagedPtrType(targetType) &&
-          manager != getManagedPtrManagerType(targetType)) {
-        // Don't change it, expecting an error
-        t = targetType;
-      } else {
-        t = computeDecoratedManagedType(at, d, manager, call);
-      }
+    if (isDecoratorManaged(d)) {
+      AggregateType* manager = NULL;
+      if (isDecoratorUnknownManagement(targetD))
+        manager = getManagedPtrManagerType(valueType);
+      else
+        manager = getManagedPtrManagerType(targetType);
+      t = computeDecoratedManagedType(at, d, manager, call);
     } else {
       t = at->getDecoratedClass(d);
     }
 
+    // But don't change the target type in some cases that should be errors.
+    // These could raise errors here but presently just leave it for
+    // a resolution failure
+    if (!valueIsType) {
+      if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
+        // Don't change it, expecting an error
+        t = NULL;
+      } else if (isDecoratorManaged(d)) {
+        AggregateType* manager = getManagedPtrManagerType(valueType);
+        if (isManagedPtrType(targetType) &&
+            manager != getManagedPtrManagerType(targetType)) {
+          // Don't change it, expecting an error
+          t = NULL;
+        }
+      }
+    }
+
     // Replace the target type with the instantiated one if it differs
-    if (targetType != t) {
+    if (t && targetType != t) {
       targetTypeSe->setSymbol(t->symbol);
     }
 
@@ -2578,7 +2597,7 @@ static void adjustClassCastCall(CallExpr* call)
     //  need another method to call here to get the possibly nil ptr).
     if (isDecoratorManaged(valueD) &&
         !isDecoratorManaged(d) &&
-        !isTypeExpr(valueSe)) {
+        !valueIsType) {
       if (isDecoratorUnknownManagement(d))
         INT_FATAL(call, "actual value has unknown type");
       // Convert it to borrow before trying to resolve the cast again
@@ -2658,7 +2677,8 @@ static bool resolveBuiltinCastCall(CallExpr* call)
         }
 
         return true;
-      } else if (dispatches && isBuiltinGenericClassType(initialTargetType)) {
+      } else if (isBuiltinGenericClassType(initialTargetType) ||
+                 isManagedPtrType(initialTargetType)) {
         // Handle e.g. owned MyClass:borrowed
         call->primitive = primitives[PRIM_NOOP];
         call->baseExpr->remove();
