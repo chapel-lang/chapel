@@ -844,6 +844,10 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
+      } else if (def->sym->type == dtUninstantiated &&
+                 isVarSymbol(def->sym) &&
+                 !def->parentSymbol->hasFlag(FLAG_REF)) {
+        def->remove();
       }
   }
 
