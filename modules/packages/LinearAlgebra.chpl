@@ -444,16 +444,19 @@ proc eye(Dom: domain(2), type eltType=real) {
 proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
               where isDenseMatrix(X) {
   var start, end = 0;
+  var (low_i, low_j) = D.low;
+  var (high_i, high_j) = D.high;
   if (k >= 0) { // upper or main diagonal
-    start = 1;
-    end = D.shape(1) - k;
+    start = low_i;
+    end = high_i - k;
   }
   else { // lower diagonal
-    start = 1 - k;
-    end = D.shape(1);
+    start = low_i - k;
+    end = high_i;
   }
   forall row in {start..end} {
-    X(row, row+k) = val;
+    var row_num = row - low_i;
+    X(row, low_j + row_num + k) = val;
   }
 }
 
@@ -2402,17 +2405,20 @@ module Sparse {
         halt("setDiag only supports square matrices");
 
       var start, end = 0;
+      var (low_i, low_j) = D.low;
+      var (high_i, high_j) = D.high;
       if (k >= 0) { // upper or main diagonal
-        start = 1;
-        end = D.shape(1) - k;
+        start = low_i;
+        end = high_i - k;
       }
       else { // lower diagonal
-        start = 1 - k;
-        end = D.shape(1);
+        start = low_i - k;
+        end = high_i;
       }
       var indices : [start..end] (D.idxType, D.idxType);
       forall ind in {start..end} {
-        indices[ind] = (ind, ind+k);
+        var row_num = ind - low_i;
+        indices[ind] = (ind, low_j + row_num + k);
       }
       D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
       forall ind in indices {
