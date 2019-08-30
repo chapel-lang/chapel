@@ -818,3 +818,7 @@ static bool isFunctionToSkip(FnSymbol* fn) {
          fn->getModule()->modTag == MOD_STANDARD ||
          fn->hasFlag(FLAG_GEN_MAIN_FUNC);
 }
+
+bool willBePythonized(FnSymbol* fn) {
+  return !isFunctionToSkip(fn) && fLibraryPython && fn->hasFlag(FLAG_EXPORT);
+}

@@ -131,7 +131,8 @@ static void attemptFixups(FnSymbol* fn) {
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
 
-    if (needsFixup(as->type) && validateFormalIntent(fn, as)) {
+    bool validated = validateFormalIntent(fn, as);
+    if (needsFixup(as->type) && validated) {
       if (wrapper == NULL) { wrapper = createWrapper(fn); }
       VarSymbol* tmp = fixupFormal(wrapper, i);
       INT_ASSERT(tmp != NULL);
@@ -181,12 +182,12 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   // TODO: If we ever add more types to these fixup routines, we really ought
   // to put these conditions in tables.
   //
-  if (t == dtString) {
+  if (t == dtString || t == dtStringC) {
     IntentTag tag = as->intent;
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
 
-    if (multiloc || fLibraryPython) {
+    if (multiloc || willBePythonized(fn)) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_IN &&
           tag != INTENT_CONST_IN) {
@@ -207,7 +208,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
         }
         return false;
       }
-    } else {
+    } else if (t == dtString) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_CONST &&
           tag != INTENT_CONST_REF &&
