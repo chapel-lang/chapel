@@ -1,0 +1,2 @@
+test_module_use4a.chpl:12: error: 'use' of non-module/enum symbol M1
+test_module_use4a.chpl:2: error: Definition of symbol M1

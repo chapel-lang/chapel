@@ -8,7 +8,7 @@ module M2 {
 }
 
 module M3 {
-  use M2 only ;
+  use M2;
   use M1;
   proc main {
     writeln("hello world");

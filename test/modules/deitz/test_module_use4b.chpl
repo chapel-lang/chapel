@@ -4,11 +4,11 @@ module M1 {
 }
 
 module M2 {
-  use M1;
+  //  use M1;
 }
 
 module M3 {
-  use M2 only ;
+  use M2;
   use M1;
   proc main {
     writeln("hello world");
