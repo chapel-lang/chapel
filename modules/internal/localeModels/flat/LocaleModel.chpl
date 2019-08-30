@@ -26,7 +26,7 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
-module LocaleModelMod {
+module LocaleModel {
 
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
@@ -151,13 +151,6 @@ module LocaleModelMod {
       helpSetupLocaleFlat(this, local_name);
     }
     //------------------------------------------------------------------------}
-
-    override proc writeThis(f) {
-      // Most classes will define it like this:
-      //      f <~> name;
-      // but here it is defined thus for backward compatibility.
-      f <~> new ioLiteral("LOCALE") <~> chpl_id();
-    }
 
   }
 

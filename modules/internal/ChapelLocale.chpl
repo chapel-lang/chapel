@@ -66,7 +66,7 @@
  */
 module ChapelLocale {
 
-  use LocaleModelMod;
+  use LocaleModel;
   private use HaltWrappers only;
 
   //

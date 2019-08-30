@@ -198,7 +198,6 @@ appropriately before the elements can be read.
  */
 module ChapelIO {
   use ChapelBase; // for uint().
-  use LocaleModelMod only ;
   use ChapelLocale;
   use SysBasic;
 
@@ -830,6 +829,13 @@ module ChapelIO {
         }
       }
     }
+  }
+
+  override proc LocaleModel.writeThis(f) {
+    // Most classes will define it like this:
+    //      f <~> name;
+    // but here it is defined thus for backward compatibility.
+    f <~> new ioLiteral("LOCALE") <~> chpl_id();
   }
 
   //
