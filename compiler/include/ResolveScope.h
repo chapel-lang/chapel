@@ -105,11 +105,11 @@ private:
 
   Symbol*               lookup(UnresolvedSymExpr* usymExpr, bool isUse=false) const;
 
-  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse=false)      const;
+  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse=false) const;
 
   bool                  isRepeat(Symbol* toAdd, const SymList& symbols)  const;
 
-  Symbol*               getFieldFromPath(CallExpr* dottedExpr)           const;
+  Symbol*               getFieldFromPath(CallExpr* dottedExpr, bool isUse=false) const;
 
   Symbol*               getField(const char* fieldName)                  const;
 

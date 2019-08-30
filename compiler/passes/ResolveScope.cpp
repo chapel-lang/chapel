@@ -458,7 +458,7 @@ Symbol* ResolveScope::lookup(Expr* expr, bool isUse) const {
   // A dotted reference (<object>.<field>) to a field in an object
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamedAstr(astrSdot) == true) {
-      retval = getFieldFromPath(call);
+      retval = getFieldFromPath(call, isUse);
 
     } else {
       INT_FATAL(expr, "Not a dotted expr");
@@ -573,11 +573,11 @@ bool ResolveScope::isRepeat(Symbol* toAdd, const SymList& symbols) const {
 *                                                                             *
 ************************************** | *************************************/
 
-Symbol* ResolveScope::getFieldFromPath(CallExpr* dottedExpr) const {
+Symbol* ResolveScope::getFieldFromPath(CallExpr* dottedExpr, bool isUse) const {
   Expr*   lhsExpr = dottedExpr->get(1);
   Symbol* retval  = NULL;
 
-  if (Symbol* symbol = lookup(lhsExpr)) {
+  if (Symbol* symbol = lookup(lhsExpr, isUse)) {
     if (ModuleSymbol* module = toModuleSymbol(symbol)) {
       if (SymExpr* rhs = toSymExpr(dottedExpr->get(2))) {
         const char* rhsName = NULL;
