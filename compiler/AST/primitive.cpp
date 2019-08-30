@@ -454,20 +454,13 @@ static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  // todo: switch to using combineDecorators()
   ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
   if (isNilableClassType(t))
     decorator = CLASS_TYPE_UNMANAGED_NILABLE;
   else if (isNonNilableClassType(t))
     decorator = CLASS_TYPE_UNMANAGED_NONNIL;
 
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-  } else if (isManagedPtrType(t)) {
-    t = getManagedPtrBorrowType(t);
-  }
-
-  if (AggregateType* at = toAggregateType(t)) {
+  if (AggregateType* at = toAggregateType(canonicalClassType(t))) {
     if (isClass(at)) {
       t = at->getDecoratedClass(decorator);
     }
@@ -479,18 +472,13 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  // todo: switch to using combineDecorators()
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_BORROWED_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_BORROWED_NONNIL;
 
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-    if (dt->isNilable())
-      decorator = CLASS_TYPE_BORROWED_NILABLE;
-  } else if (isManagedPtrType(t)) {
-    t = getManagedPtrBorrowType(t);
-  }
-
-  if (AggregateType* at = toAggregateType(t))
+  if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
       t = at->getDecoratedClass(decorator);
 
@@ -498,21 +486,47 @@ returnInfoToBorrowed(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoToUndecorated(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_GENERIC;
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_GENERIC_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_GENERIC_NONNIL;
+
+  if (AggregateType* at = toAggregateType(canonicalClassType(t)))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+
+static QualifiedType
 returnInfoToNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NILABLE;
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-    decorator = dt->getDecorator();
+  if (isClassLikeOrManaged(t)) {
+    ClassTypeDecorator decorator = classTypeDecorator(t);
     decorator = addNilableToDecorator(decorator);
-  } else if (isManagedPtrType(t)) {
-    t = getManagedPtrBorrowType(t);
-  }
 
-  if (AggregateType* at = toAggregateType(t))
-    if (isClass(at))
-      t = at->getDecoratedClass(decorator);
+    if (isManagedPtrType(t)) {
+      AggregateType* manager = getManagedPtrManagerType(t);
+      AggregateType* at = toAggregateType(canonicalClassType(t));
+      if (at == NULL) {
+        // e.g. _to_nonnil(owned)
+        t = getDecoratedClass(manager, decorator);
+      } else {
+        // e.g. _to_nonnil(owned C)
+        t = computeDecoratedManagedType(at, decorator, manager, call);
+      }
+    } else {
+      if (AggregateType* at = toAggregateType(canonicalClassType(t)))
+        if (isClass(at))
+          t = at->getDecoratedClass(decorator);
+    }
+  }
 
   return QualifiedType(t, QUAL_VAL);
 }
@@ -521,18 +535,26 @@ static QualifiedType
 returnInfoToNonNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-    decorator = dt->getDecorator();
-    decorator = removeNilableFromDecorator(decorator);
-  } else if (isManagedPtrType(t)) {
-    t = getManagedPtrBorrowType(t);
-  }
+  if (isClassLikeOrManaged(t)) {
+    ClassTypeDecorator decorator = classTypeDecorator(t);
+    decorator = addNonNilToDecorator(decorator);
 
-  if (AggregateType* at = toAggregateType(t))
-    if (isClass(at))
-      t = at->getDecoratedClass(decorator);
+    if (isManagedPtrType(t)) {
+      AggregateType* manager = getManagedPtrManagerType(t);
+      AggregateType* at = toAggregateType(canonicalClassType(t));
+      if (at == NULL) {
+        // e.g. _to_nonnil(owned)
+        t = getDecoratedClass(manager, decorator);
+      } else {
+        // e.g. _to_nonnil(owned C)
+        t = computeDecoratedManagedType(at, decorator, manager, call);
+      }
+    } else {
+      if (AggregateType* at = toAggregateType(canonicalClassType(t)))
+        if (isClass(at))
+          t = at->getDecoratedClass(decorator);
+    }
+  }
 
   return QualifiedType(t, QUAL_VAL);
 }
@@ -1020,6 +1042,8 @@ initPrimitive() {
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
   // borrowed class type currently == canonical class type
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
+  // return the undecorated class type
+  prim_def(PRIM_TO_UNDECORATED_CLASS, "to undecorated class", returnInfoToUndecorated, false, false);
   // Returns the nilable class type
   prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
