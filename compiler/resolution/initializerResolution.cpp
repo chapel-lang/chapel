@@ -484,6 +484,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
         }
         if (candidates.n == 0) {
           printResolutionErrorUnresolved(info, mostApplicable);
+          USR_STOP();
         } else {
           printResolutionErrorAmbiguous (info, candidates);
         }

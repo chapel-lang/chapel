@@ -234,6 +234,8 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
+
+// This one does not call USR_STOP
 void printResolutionErrorUnresolved(CallInfo&                  info,
                                     Vec<FnSymbol*>&            visibleFns);
 
@@ -318,5 +320,12 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
                                   Expr* ctx);
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
+
+// These enable resolution for functions that don't really match
+// according to the language definition in order to get more errors
+// reported at once. E.g. C? can pass to C.
+void startGenerousResolutionForErrors();
+bool inGenerousResolutionForErrors();
+void stopGenerousResolutionForErrors();
 
 #endif
