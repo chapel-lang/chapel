@@ -284,6 +284,25 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   return call;
 }
 
+// Creates a new temp and stores the DefExpr for it at the end
+// of block, or, if in a module init fn, in global scope.
+static
+VarSymbol* resolveNewInitializerMakeTemp(const char* name, BlockStmt* block) {
+  VarSymbol* tmp = newTemp(name);
+  tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  BlockStmt* inBlock = toBlockStmt(block->parentExpr);
+  FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
+  if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
+    // make it a global variable
+    inFn->defPoint->insertAfter(new DefExpr(tmp));
+  } else {
+    block->insertAtTail(new DefExpr(tmp));
+  }
+
+  return tmp;
+}
+
 void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   // Get root instantiation so we can easily check against e.g. dtOwned
   bool nilable = isNilableClassType(manager);
@@ -353,20 +372,9 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 
       if (nilable) {
         // new unmanaged T(...)?
-        VarSymbol* tmpM = newTemp("new_temp_n");
-        tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-        BlockStmt* inBlock = toBlockStmt(block->parentExpr);
-        FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
-        if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
-          // make it a global variable
-          inFn->defPoint->insertAfter(new DefExpr(tmpM));
-        } else {
-          block->insertAtTail(new DefExpr(tmpM));
-        }
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_n", block);
 
         block->insertAtTail(new CallExpr(PRIM_MOVE, tmpM, new_temp_rhs));
-
         new_temp_rhs = createCast(tmpM, dtAnyManagementNilable->symbol);
       }
 
@@ -382,23 +390,10 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 
       if (getBorrow) {
         // (new owned T(...)).borrow()
-        VarSymbol* tmpM = newTemp("new_temp_m");
-        VarSymbol* tmpR = newTemp("new_temp_r");
-        tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-        BlockStmt* inBlock = toBlockStmt(block->parentExpr);
-        FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
-        if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
-          // make it a global variable
-          inFn->defPoint->insertAfter(new DefExpr(tmpM));
-          inFn->defPoint->insertAfter(new DefExpr(tmpR));
-        } else {
-          block->insertAtTail(new DefExpr(tmpM));
-          block->insertAtTail(new DefExpr(tmpR));
-        }
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_m", block);
+        VarSymbol* tmpR = resolveNewInitializerMakeTemp("new_temp_r", block);
 
         block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
-
         block->insertAtTail(new CallExpr(PRIM_MOVE,
                                          tmpR,
                                          new CallExpr("borrow",
@@ -408,21 +403,10 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       }
 
       if (nilable) {
-        // new owned T(...)?
-        VarSymbol* tmpM = newTemp("new_temp_n");
-        tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-        BlockStmt* inBlock = toBlockStmt(block->parentExpr);
-        FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
-        if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
-          // make it a global variable
-          inFn->defPoint->insertAfter(new DefExpr(tmpM));
-        } else {
-          block->insertAtTail(new DefExpr(tmpM));
-        }
+        // new owned T(...)? or new borrowed T()?
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_n", block);
 
         block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
-
         new_temp_rhs = createCast(tmpM, dtAnyManagementNilable->symbol);
       }
 
