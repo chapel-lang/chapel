@@ -284,11 +284,34 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   return call;
 }
 
+// Creates a new temp and stores the DefExpr for it at the end
+// of block, or, if in a module init fn, in global scope.
+static
+VarSymbol* resolveNewInitializerMakeTemp(const char* name, BlockStmt* block) {
+  VarSymbol* tmp = newTemp(name);
+  tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  BlockStmt* inBlock = toBlockStmt(block->parentExpr);
+  FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
+  if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
+    // make it a global variable
+    inFn->defPoint->insertAfter(new DefExpr(tmp));
+  } else {
+    block->insertAtTail(new DefExpr(tmp));
+  }
+
+  return tmp;
+}
+
 void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   // Get root instantiation so we can easily check against e.g. dtOwned
-  if (AggregateType* mat = toAggregateType(manager)) {
-    manager = mat->getRootInstantiation();
-  }
+  bool nilable = isNilableClassType(manager);
+  if (isManagedPtrType(manager))
+    manager = getManagedPtrManagerType(manager);
+  else if (manager == dtBorrowedNilable)
+    manager = dtBorrowed;
+  else if (manager == dtUnmanagedNilable)
+    manager = dtUnmanaged;
 
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
   AggregateType* at = resolveNewFindType(newExpr);
@@ -343,6 +366,14 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     } else if (isManagedPtrType(manager) == false) {
       Expr* new_temp_rhs = newCall;
 
+      if (nilable) {
+        // new unmanaged T(...)?
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_n", block);
+
+        block->insertAtTail(new CallExpr(PRIM_MOVE, tmpM, new_temp_rhs));
+        new_temp_rhs = createCast(tmpM, dtAnyManagementNilable->symbol);
+      }
+
       CallExpr* newMove = new CallExpr(PRIM_MOVE, new_temp, new_temp_rhs);
       block->insertAtTail(newMove);
       newExpr->replace(new SymExpr(new_temp));
@@ -351,25 +382,28 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       CallExpr* newMove = new CallExpr(PRIM_MOVE, new_temp, newCall);
       block->insertAtTail(newMove);
 
-      CallExpr* new_temp_rhs = new CallExpr(PRIM_NEW, manager->symbol, new_temp);
+      Expr* new_temp_rhs = new CallExpr(PRIM_NEW, manager->symbol, new_temp);
 
       if (getBorrow) {
         // (new owned T(...)).borrow()
-        VarSymbol* tmpM = newTemp("new_temp_m");
-        tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-        BlockStmt* inBlock = toBlockStmt(block->parentExpr);
-        FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
-        if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
-          // make it a global variable
-          inFn->defPoint->insertAfter(new DefExpr(tmpM));
-        } else {
-          block->insertAtTail(new DefExpr(tmpM));
-        }
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_m", block);
+        VarSymbol* tmpR = resolveNewInitializerMakeTemp("new_temp_r", block);
 
         block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
+        block->insertAtTail(new CallExpr(PRIM_MOVE,
+                                         tmpR,
+                                         new CallExpr("borrow",
+                                                      gMethodToken,
+                                                      tmpM)));
+        new_temp_rhs = new SymExpr(tmpR);
+      }
 
-        new_temp_rhs = new CallExpr("borrow", gMethodToken, tmpM);
+      if (nilable) {
+        // new owned T(...)? or new borrowed T()?
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_n", block);
+
+        block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
+        new_temp_rhs = createCast(tmpM, dtAnyManagementNilable->symbol);
       }
 
       newExpr->replace(new_temp_rhs);
@@ -390,13 +424,12 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       Expr* tail = block->body.tail;
       if (tail->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         VarSymbol* ir_temp = newTemp("ir_temp");
-        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp, new CallExpr("chpl__initCopy", tail->copy())); 
+        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp, new CallExpr("chpl__initCopy", tail->copy()));
         tail->insertBefore(tempMove);
         normalize(tempMove);
         tail->replace(new SymExpr(ir_temp));
       }
     }
-
   } else {
     block->insertAtTail(initTemp->defPoint->remove());
     block->insertAtTail(initCall->remove());

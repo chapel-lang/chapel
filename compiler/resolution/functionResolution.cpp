@@ -6012,7 +6012,7 @@ static void resolveInitVar(CallExpr* call) {
     // the variable we are initializing.
     src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
-    // Don't need to copy string/bytes literals when initializing 
+    // Don't need to copy string/bytes literals when initializing
     bool moveStringLiteral = src->hasFlag(FLAG_CHAPEL_STRING_LITERAL) &&
                              targetType->getValType() == dtString;
     bool moveBytesLiteral  = src->hasFlag(FLAG_CHAPEL_BYTES_LITERAL) &&
@@ -6814,26 +6814,38 @@ static void resolveNew(CallExpr* newExpr) {
   }
 }
 
+static void checkManagerType(Type* t) {
+  // Verify that the manager matches expectations
+  //  - borrowed or borrowedNilable
+  //  - unmanaged or unmanagedNilable
+  //  - owned or DecoratedClassType(owned,?)  (or other management type)
+  if (t == dtBorrowed || t == dtBorrowedNilable ||
+      t == dtUnmanaged || t == dtUnmanagedNilable) {
+    return; // OK
+  }
+
+  if (isManagedPtrType(t)) {
+    ClassTypeDecorator d = classTypeDecorator(t);
+    INT_ASSERT(d == CLASS_TYPE_MANAGED || d == CLASS_TYPE_MANAGED_NILABLE);
+    // check that it's not an instantiation
+    INT_ASSERT(getDecoratedClass(t, d) == t);
+  }
+}
+
 static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
 
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
       if (ne->name == astr_chpl_manager) {
-        manager = canonicalDecoratedClassType(ne->actual->typeInfo());
+        Type* t = ne->actual->typeInfo();
+        checkManagerType(t);
+        manager = t;
         expr->remove();
         break;
       }
     }
   }
 
-  // adjust for the cases like 'new C()?'
-  if (manager == NULL) {
-    if (SymExpr* arg1 = toSymExpr(newExpr->get(1)))
-      if (DecoratedClassType* dt1 = toDecoratedClassType(arg1->symbol()->type))
-        if (dt1->getDecorator() == CLASS_TYPE_GENERIC_NILABLE)
-          newExpr->insertAtHead(dtOwned->symbol);
-  }
-  
   // adjust the type to initialize for managed new cases
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
@@ -6843,12 +6855,22 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // or for t is unmanaged(MyClass)
       if (manager == NULL) {
         if (isManagedPtrType(type)) {
-          manager = type;
+          manager = getManagedPtrManagerType(type);
+          if (isNilableClassType(type))
+            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
+
         } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
-          if (dt->isUnmanaged())
-            manager = dtUnmanaged;
-          else
-            manager = dtOwned;
+          if (dt->isUnmanaged()) {
+            if (isNilableClassType(dt))
+              manager = dtUnmanagedNilable;
+            else
+              manager = dtUnmanaged;
+          } else {
+            if (isNilableClassType(dt))
+              manager = getDecoratedClass(dtOwned, CLASS_TYPE_MANAGED_NILABLE);
+            else
+              manager = dtOwned;
+          }
         } else if (isClass(type) && !fLegacyClasses) {
           manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
@@ -6865,6 +6887,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // only the canonical class types.
       if (manager) {
         AggregateType* at = toAggregateType(type);
+
+        checkManagerType(manager);
 
         // fail if it's a record
         if (isRecord(at) && !isManagedPtrType(at))
@@ -6894,7 +6918,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         }
 
         if (manager) {
-
           if (at != type)
             // Set the type to initialize
             typeExpr->setSymbol(at->symbol);

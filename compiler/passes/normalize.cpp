@@ -1002,10 +1002,30 @@ static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
   bool argListError = false;
 
+  bool nilable = false;
+
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
+      if (callManager->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+        if (CallExpr* sub = toCallExpr(callManager->get(1))) {
+          nilable = true;
+          sub->remove();
+          CallExpr* c = new CallExpr(dtOwned->symbol, sub);
+          callManager->replace(c);
+          callManager = c;
+        }
+      }
+
       if (callManager->numActuals() == 1) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
+          if (callClass->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+            if (CallExpr* sub = toCallExpr(callClass->get(1))) {
+              nilable = true;
+              sub->remove();
+              callClass->replace(sub);
+              callClass = sub;
+            }
+          }
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
             bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS)
@@ -1026,6 +1046,11 @@ static void processManagedNew(CallExpr* newCall) {
               }
             }
 
+            if (SymExpr* baseSe = toSymExpr(callClass->baseExpr))
+              if (TypeSymbol* ts = toTypeSymbol(baseSe->symbol()))
+                if (isNilableClassType(ts->type))
+                  nilable = true;
+
             if (isunmanaged || isborrowed || isowned || isshared) {
               callClass->remove();
               callManager->remove();
@@ -1039,6 +1064,21 @@ static void processManagedNew(CallExpr* newCall) {
                 manager = new SymExpr(dtBorrowed->symbol);
               } else {
                 manager = callManager->baseExpr->copy();
+              }
+              // Adjust the manager type for nilable
+              if (nilable) {
+                if (SymExpr* managerSe = toSymExpr(manager)) {
+                  if (TypeSymbol* ts = toTypeSymbol(managerSe->symbol())) {
+                    Type* t = ts->type;
+                    if (isManagedPtrType(t))
+                      t = getDecoratedClass(t, CLASS_TYPE_MANAGED_NILABLE);
+                    else if (t == dtBorrowed)
+                      t = dtBorrowedNilable;
+                    else if (t == dtUnmanaged)
+                      t = dtUnmanagedNilable;
+                    manager = new SymExpr(t->symbol);
+                  }
+                }
               }
 
               callClass->insertAtTail(new NamedExpr(astr_chpl_manager, manager));
