@@ -31,7 +31,6 @@ module LocaleModel {
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
 
-  
   //
   // The task layer calls these to convert between full sublocales and
   // execution sublocales.  Full sublocales may contain more information
@@ -151,7 +150,6 @@ module LocaleModel {
       helpSetupLocaleFlat(this, local_name);
     }
     //------------------------------------------------------------------------}
-
   }
 
   //

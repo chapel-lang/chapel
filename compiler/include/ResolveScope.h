@@ -74,7 +74,8 @@ public:
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
-  Symbol*               lookupNameLocally(const char* name, bool isUse=false) const;
+  Symbol*               lookupNameLocally(const char* name,
+                                          bool isUse=false)              const;
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -103,13 +104,16 @@ private:
   bool                  isSymbolAndMethod(Symbol* sym0,
                                           Symbol* sym1);
 
-  Symbol*               lookup(UnresolvedSymExpr* usymExpr, bool isUse=false) const;
+  Symbol*               lookup(UnresolvedSymExpr* usymExpr,
+                               bool isUse=false)                         const;
 
-  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse=false) const;
+  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr,
+                                       bool isUse=false)                 const;
 
   bool                  isRepeat(Symbol* toAdd, const SymList& symbols)  const;
 
-  Symbol*               getFieldFromPath(CallExpr* dottedExpr, bool isUse=false) const;
+  Symbol*               getFieldFromPath(CallExpr* dottedExpr,
+                                         bool isUse=false)               const;
 
   Symbol*               getField(const char* fieldName)                  const;
 
@@ -136,5 +140,7 @@ private:
   Bindings              mBindings;
   UseList               mUseList;
 };
+
+extern ResolveScope* rootScope;
 
 #endif

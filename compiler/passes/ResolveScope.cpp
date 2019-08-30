@@ -48,6 +48,8 @@
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 
+ResolveScope* rootScope;
+
 static std::map<BaseAST*, ResolveScope*> sScopeMap;
 
 ResolveScope* ResolveScope::getRootModule() {
@@ -165,7 +167,6 @@ ResolveScope::ResolveScope(BaseAST*            ast,
 ************************************** | *************************************/
 
 void ResolveScope::addBuiltIns() {
-  //  extend(dtObject->symbol);
   extend(dtNothing->symbol);
   extend(dtVoid->symbol);
   extend(dtStringC->symbol);
@@ -403,7 +404,6 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
     }
 
   } else {
-    //    printf("eee: %s\n", name);
     mBindings[name] = newSym;
     retval          = true;
   }
@@ -495,13 +495,10 @@ Symbol* ResolveScope::lookup(UnresolvedSymExpr* usymExpr, bool isUse) const {
 Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) const {
   const char* name   = usymExpr->unresolved;
   Symbol*     retval = lookupNameLocally(name, isUse);
+  // resolve references to ourself  TODO: is this still necessary?
   ModuleSymbol* thisMod = usymExpr->getModule();
-  //  printf("Giving it a second shot\n");
   if (retval == NULL && strcmp(name, thisMod->name) == 0) {
     retval = thisMod;
-  } else {
-    //    printf("But didn't hit\n");
-
   }
 
   if (retval == NULL && mUseList.size() > 0) {
@@ -533,8 +530,6 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
                   symbols.push_back(sym);
                 }
               }
-            } else {
-              //              printf("bbb\n");
             }
           }
         }
@@ -654,15 +649,13 @@ Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
 Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
   Bindings::const_iterator it     = mBindings.find(name);
   Symbol*                  retval = NULL;
-  extern ResolveScope* rootScope;
 
   if (it != mBindings.end()) {
     Symbol* sym = it->second;
+
     // don't consider top-level modules to be visible unless this is a use
     if (toModuleSymbol(sym) == NULL || this != rootScope || isUse) {
-      retval = it->second;
-    } else {
-      //      printf("Skipped over %s\n", sym->name);
+      retval = sym;
     }
   }
 
@@ -719,8 +712,6 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     symbols.push_back(sym);
 
   } else {
-    //    printf("ccc\n");
-
     if (mUseList.size() > 0) {
       std::vector<const UseStmt*> useList = mUseList;
 
@@ -744,8 +735,6 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
             if (ResolveScope* next = getScopeFor(scopeToUse)) {
               if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
                 symbols.push_back(sym);
-              } else {
-                //                printf("ddd\n");
               }
             }
           }

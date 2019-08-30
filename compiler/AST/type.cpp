@@ -839,7 +839,6 @@ void initChplProgram(DefExpr* objectDef) {
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  // rootModule->block->insertAtHead(objectDef);
   theProgram->block->insertAtHead(objectDef);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));

@@ -61,7 +61,8 @@ public:
   UseStmt*        applyOuterUse(const UseStmt* outer);
 
   bool            skipSymbolSearch(const char* name, bool methodCall,
-                                   ModuleSymbol** lastResortModuleMatch = NULL) const;
+                                   ModuleSymbol** lastResortModuleMatch = NULL)
+                                                                         const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
 

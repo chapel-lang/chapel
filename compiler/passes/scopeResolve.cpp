@@ -119,9 +119,6 @@ static void handleReceiverFormals() {
           AggregateType::setCreationStyle(ts, fn);
 
         } else {
-          if (toModuleSymbol(lookup(sym->unresolved, sym)) != NULL) {
-            printf("Got a module symbol\n");
-          }
           USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
@@ -197,25 +194,13 @@ static void processGenericFields() {
 // Eventually it should be possible to use the general implementation
 // to handle chpl__Program with little or no special casing.
 
-ResolveScope* rootScope;
 static void addToSymbolTable() {
   rootScope = ResolveScope::getRootModule();
 
-  //  rootScope->describe();
-  
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      //      ModuleSymbol* mod = toModuleSymbol(def->sym);
-      // only put things in the root scope if they are not user modules
-      // or not modules at all
-      // TODO: Should eventually extend this to avoid putting any modules
-      // in the root scope, but only focusing on user code for now
-      //      if (mod == NULL /* || mod->modTag != MOD_USER */) {
-        //        printf("Extending to include %s\n", def->sym->name);
-      rootScope->extend(def->sym, toModuleSymbol(def->sym));
-        //      } else {
-        //      }
+      rootScope->extend(def->sym, /* isTopLevel= */ true); // TODO: test this
     }
   }
 
@@ -277,16 +262,8 @@ static void scopeResolve(const AList&        alist,
 
 static void scopeResolve(ModuleSymbol*       module,
                          const ResolveScope* parent) {
-  if (module->modTag == MOD_USER &&
-      module->defPoint->getModule() == theProgram) {
-    ResolveScope* scope = new ResolveScope(module, parent);
-    //    scope->extend(module);
-    scopeResolve(module->block->body, scope);
-  } else {
-    ResolveScope* scope = new ResolveScope(module, parent);
-    //    scope->extend(module);
-    scopeResolve(module->block->body, scope);
-  }
+  ResolveScope* scope = new ResolveScope(module, parent);
+  scopeResolve(module->block->body, scope);
 }
 
 static void scopeResolve(BlockStmt*          block,
@@ -1411,10 +1388,6 @@ static void resolveModuleCall(CallExpr* call) {
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
-        if (sym == NULL) {
-          //          printf("fff: %s\n", mbrName);
-        }
-        
         // Adjust class types to undecorated
         if (sym && isClass(sym->type) && !fLegacyClasses) {
           // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
@@ -1681,11 +1654,6 @@ static void lookup(const char*           name,
                    Vec<BaseAST*>&        visited,
 
                    std::vector<Symbol*>& symbols) {
-  bool debug = false;
-  if (strcmp("MC", name) == 0) {
-    //    debug = true;
-    //    printf("Looking up %s\n", name);
-  }
 
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
@@ -1707,19 +1675,14 @@ static void lookup(const char*           name,
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
       if (outerScope != NULL) {
-        if (debug)
-          printf("doing an outerscope lookup\n");
-        //        if (scope->getModule()->modTag != MOD_USER ||
-        //            outerScope->getModule() != theProgram) {
-          lookup(name, context, outerScope, visited, symbols);
-          // As a last ditch effort, see if this module's name happens to match
-          if (symbols.size() == 0) {
-            ModuleSymbol* thisMod = scope->getModule();
-            if (strcmp(name, thisMod->name) == 0) {
-              symbols.push_back(thisMod);
-              //              printf("Got a hit on %s\n", thisMod->name);
-            }
+        lookup(name, context, outerScope, visited, symbols);
+        // As a last ditch effort, see if this module's name happens to match
+        if (symbols.size() == 0) {
+          ModuleSymbol* thisMod = scope->getModule();
+          if (strcmp(name, thisMod->name) == 0) {
+            symbols.push_back(thisMod);
           }
+        }
       }
 
     } else {
@@ -1731,8 +1694,6 @@ static void lookup(const char*           name,
         // within the aggregate type
         if (AggregateType* ct =
             toAggregateType(canonicalClassType(fn->_this->type))) {
-          if (debug)
-            printf("doing an aggregate type lookup\n");
           lookup(name, context, ct->symbol, visited, symbols);
         }
       }
@@ -1741,8 +1702,6 @@ static void lookup(const char*           name,
       if (symbols.size() == 0) {
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
-        if (debug)
-          printf("doing a last lookup\n");
         lookup(name, context, getScope(scope), visited, symbols);
       }
     }
@@ -1847,8 +1806,8 @@ static bool lookupThisScopeAndUses(const char*           name,
                 }
               }
             } else {
+              // if the module symbol itself matched, push it
               if (modSymMatches != NULL) {
-                //                printf("Got a module symbol match: %s\n", modSymMatches->name);
                 symbols.push_back(modSymMatches);
               }
             }
@@ -1880,7 +1839,9 @@ static bool lookupThisScopeAndUses(const char*           name,
             }
           }
         } else {
-          //          printf("Checking out module names themselves for %s...\n", name);
+          // we haven't found a match yet, so as a last resort, let's
+          // check the names of the modules in the 'use' statements
+          // themselves...
           forv_Vec(UseStmt, use, *moduleUses) {
             if (use != NULL) {
               if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
@@ -1925,17 +1886,6 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
       } else {
         retval = sym;
       }
-    } else {
-      // TODO: Move this logic into lookupNameLocally() itself (?) or
-      // otherwise refactor so that all callsites will use it (?)
-
-      /*
-      ModuleSymbol* thisMod = ast->getModule();
-      if (strcmp(name, thisMod->name) == 0) {
-        retval = thisMod;
-        //        printf("Got a hit on %s\n", thisMod->name);
-      }
-      */
     }
   }
 

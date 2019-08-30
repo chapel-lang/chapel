@@ -176,7 +176,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = scope->lookup(src, true)) {
+    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -211,27 +211,6 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
 
     } else {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(src)) {
-      // have a 'use' of a module make that module symbol available in this scope
-      /*
-        for_alist(stmt, theProgram->block->body) {
-          if (DefExpr* def = toDefExpr(stmt)) {
-            if (ModuleSymbol* modSym = toModuleSymbol(def->sym)) {
-              if (strcmp(modSym->name, use->unresolved) == 0) {
-                //                printf("patching in %s\n", modSym->name);
-                SET_LINENO(this);
-                scope->extend(modSym);
-                //                scope->describe();
-                scope->enclosingModule()->moduleUseAdd(modSym);
-                updateEnclosingBlock(scope, modSym);
-                validateList();
-                return;
-              }
-            }
-          }
-          scope->enclosingModule()->moduleUseAdd(modSym);
-          updateEnclosingBlock(scope, sym);
-          validateList();
-      */
         USR_FATAL(this, "Cannot find module or enum '%s'", use->unresolved);
       } else {
         USR_FATAL(this, "Cannot find module or enum");
@@ -576,13 +555,8 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 bool UseStmt::skipSymbolSearch(const char* name, bool methodCall,
                               ModuleSymbol** lastResortModuleMatch) const {
   bool retval = false;
-  bool debug = false;
   if (lastResortModuleMatch != NULL) {
     *lastResortModuleMatch = NULL;
-  }
-
-  if (strcmp(name, "M") == 0) {
-    //    debug = true;
   }
 
   if (isPlainUse() == true) {
@@ -590,7 +564,7 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall,
 
   } else if (except == true) {
     if (matchedNameOrConstructor(name) == true) {
-      retval = true;
+      retval =  true;
       // TODO: Seems like there should be a dual for the last resort
       // case below for 'only' clauses here... or not?
     } else {
@@ -598,30 +572,22 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall,
     }
 
   } else {
-    //    if (debug) {
-      //      printf("In only case\n");
     if (matchedNameOrConstructor(name) == true) {
       retval = false;
-      //      printf("Matched name or constructor\n");
 
     } else if (isAllowedMethodName(name, methodCall) == true) {
       // Only allow the symbol if the call is a method call.  Functions with
       // the same name should not be allowed unqualified when they are omitted
       // from the explicit only list, except for "init", "_new", etc.
       retval = false;
-      //      printf("isAllowedMethodName\n");
 
     } else {
+      retval =  true;
       // Last resort: Check to see if it matches the module's name itself
-      retval = true;
       if (lastResortModuleMatch != NULL) {
-        //      printf("in else case\n");
         if (SymExpr* se = toSymExpr(src)) {
-        //        printf("it's a symexpr\n");
           if (strcmp(name, se->symbol()->name) == 0) {
-          //          printf("it's a symexpr\n");
             *lastResortModuleMatch = toModuleSymbol(se->symbol());
-            retval = true;
           }
         } else {
           // TODO: Need to handle matches against more general expressions here?
@@ -631,19 +597,12 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall,
     }
   }
 
-  if (debug) {
-    printf("skipSymbolSearch(%s) returning %d\n", name, retval);
-  }
-
   return retval;
 }
 
 bool UseStmt::matchedNameOrConstructor(const char* name) const {
-  //  printf("Looking for %s\n", name);
   for_vector(const char, toCheck, named) {
-    //    printf("Checking against %s\n", toCheck);
     if (strcmp(name, toCheck) == 0) {
-      //      printf("A: Returning true\n");
       return true;
     }
   }
@@ -652,7 +611,6 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
       it != renamed.end();
       ++it) {
     if (strcmp(name, it->first) == 0) {
-      //      printf("B: Returning true\n");
       return true;
     }
   }
