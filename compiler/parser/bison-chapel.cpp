@@ -9048,7 +9048,7 @@ yyreduce:
   case 428:
 /* Line 1792 of yacc.c  */
 #line 1716 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr( PRIM_TO_NILABLE_CLASS, (yyvsp[(1) - (2)].pexpr)); }
+    { (yyval.pexpr) = new CallExpr( PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[(1) - (2)].pexpr)); }
     break;
 
   case 429:
@@ -9507,7 +9507,7 @@ yyreduce:
   case 526:
 /* Line 1792 of yacc.c  */
 #line 1973 "chapel.ypp"
-    {(yyval.pexpr) = new CallExpr(PRIM_TO_NILABLE_CLASS, (yyvsp[(1) - (2)].pexpr));}
+    {(yyval.pexpr) = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[(1) - (2)].pexpr));}
     break;
 
   case 527:

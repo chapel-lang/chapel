@@ -1207,7 +1207,8 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       mText += "borrowed ";
       appendExpr(expr->get(1), printingType);
     }
-    else if (expr->isPrimitive(PRIM_TO_NILABLE_CLASS))
+    else if (expr->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+             expr->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
     {
       mText += "nilable ";
       appendExpr(expr->get(1), printingType);

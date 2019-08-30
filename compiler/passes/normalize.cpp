@@ -1006,7 +1006,8 @@ static void processManagedNew(CallExpr* newCall) {
 
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
-      if (callManager->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+      if (callManager->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+          callManager->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
         if (CallExpr* sub = toCallExpr(callManager->get(1))) {
           nilable = true;
           sub->remove();
@@ -1018,7 +1019,8 @@ static void processManagedNew(CallExpr* newCall) {
 
       if (callManager->numActuals() == 1) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
-          if (callClass->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+          if (callClass->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+              callClass->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
             if (CallExpr* sub = toCallExpr(callClass->get(1))) {
               nilable = true;
               sub->remove();
