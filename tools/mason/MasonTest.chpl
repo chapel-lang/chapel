@@ -68,7 +68,7 @@ proc masonTest(args) throws {
       else if arg == '--keep-binary' {
         keepExec = true;
       }
-      else if arg == '--subdir' {
+      else if arg == '--recursive' {
         subdir = true;
       }
       else {
@@ -206,6 +206,7 @@ private proc runTestBinary(projectHome: string, testName: string, ref result, sh
             testNames, dictDomain, dict, failedTestNames, erroredTestNames,
             skippedTestNames);
   if exitCode != 0 {
+    const newCommand = " ".join(command,"-nl","1");
     const testResult = runWithStatus(command, show);
     return testResult;
   }
@@ -450,7 +451,8 @@ proc testFile(file, ref result, ref testResults, show: bool) throws {
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
               skippedTestNames);
     if exitCode != 0 {
-      const testResult = runWithStatus("./"+executable, show);
+      const command = " ".join("./"+executable,"-nl","1");
+      const testResult = runWithStatus(command, show);
       if testResult != 0 {
         testResults[fileName] = "Failed";
       }

@@ -344,17 +344,19 @@ proc masonCompilerHelp() {
  }
 
 proc masonTestHelp() {
-  writeln("Run test files located within target/debug/test");
+  writeln("mason test works inside and outside of mason packages.");
+  writeln("Inside a mason package run test files located within target/debug/test");
+  writeln("Outside of a mason package runs all the files in the provided path or the current directory.");
   writeln();
   writeln("Usage:");
-  writeln("    mason test [options]");
+  writeln("    mason test [options] <path>");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
   writeln("        --keep-binary           Doesn't delete the binaries after running");
-  writeln("        --subdir                Descend recursively into subdirectories of given Directories");
+  writeln("        --recursive             Descend recursively into subdirectories of given Directories");
   writeln("        --parallel              Run tests in parallel(sequential by default)");
   writeln();
   writeln("Test configuration is up to the user");
