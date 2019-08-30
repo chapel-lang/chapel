@@ -1,20 +1,22 @@
 module M {
-  class C { }
+  class C {
+    var x: int;
+  }
 
-  proc C.foo() { }
-  proc C.bar() { }
-
-  proc baz(arg:C) { }
+  proc C.foo() {
+    writeln("foo(", this, ")");
+  }
+  proc C.bar() {
+    writeln("bar(", this, ")");
+  }
+  proc baz(arg:C) {
+    writeln("baz(", arg, ")");
+  }
 
   proc main() {
-    var a: borrowed C?;
-
-    var b: borrowed C?;
-
+    var a: borrowed C? = (new owned C()).borrow();
     a.foo();
-
-    b.bar();
-
-    baz(b);
+    a.bar();
+    baz(a);
   }
 }

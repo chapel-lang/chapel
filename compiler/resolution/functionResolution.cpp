@@ -3179,14 +3179,17 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     if (info.call->partialTag == false) {
       if (checkOnly == false) {
         if (candidates.n == 0) {
+          bool existingErrors = fatalErrorsEncountered();
           printResolutionErrorUnresolved(info, mostApplicable);
 
           if (generousNilabilityForErrors == 0) {
             gdbShouldBreakHere();
-
             generousNilabilityForErrors++;
             FnSymbol* retry = resolveNormalCall(info, /*checkOnly*/ true);
             generousNilabilityForErrors--;
+
+            if (fIgnoreNilabilityErrors && existingErrors == false && retry)
+              clearFatalErrors();
 
             if (retry != NULL)
               return retry;
