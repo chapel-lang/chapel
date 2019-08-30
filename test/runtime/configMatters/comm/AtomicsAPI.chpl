@@ -37,23 +37,23 @@ proc testOrderAtomicBool(a, ref i, ref b, param order: memoryOrder) {
   param t = true, f = false;
 
   writeln("Testing 'atomic bool' with order '", order, "':");
-                                                    writea ("init    ", a);
-                var initval : a.type = true;        writeai("init=   ", a, initval);
-                var initval2 : a.type = initval;    writeai("init=(v)", a, initval2);
-                var initval3 = initval;             writeai("init=(v)", a, initval3);
+                                                           writea ("init    ", a);
+                var initval : a.type = true;               writeai("init=   ", a, initval);
+                var initval2 : a.type = initval;           writeai("init=(v)", a, initval2);
+                var initval3 = initval;                    writeai("init=(v)", a, initval3);
                 assert(initval3.type == atomic bool);
-                i = a.read();                       writeai("read    ", a, i);
-                    a.write(t);                     writea ("write   ", a);
-                i = a.exchange(f);                  writeai("xchg    ", a, i);
-                b = a.compareExchange(t, t);        writeab("cmpxchg ", a, b);
-                b = a.compareExchange(f, t);        writeab("cmpxchg ", a, b);
-                b = a.compareExchangeWeak(f, f);    writeab("cmpxchgW", a, b);
-                b = a.compareExchangeWeak(t, f);    writeab("cmpxchgW", a, b);
-                b = a.compareExchangeStrong(t, t);  writeab("cmpxchgS", a, b);
-                b = a.compareExchangeStrong(f, t);  writeab("cmpxchgS", a, b);
-                i = a.testAndSet();                 writeai("test&Set", a, i);
-                    a.clear();                      writea ("clear   ", a);
-  asyncSet(a);      a.waitFor(true);                writea ("waitFor ", a);
+                i = a.read(order);                         writeai("read    ", a, i);
+                    a.write(t, order);                     writea ("write   ", a);
+                i = a.exchange(f, order);                  writeai("xchg    ", a, i);
+                b = a.compareExchange(t, t, order);        writeab("cmpxchg ", a, b);
+                b = a.compareExchange(f, t, order);        writeab("cmpxchg ", a, b);
+                b = a.compareExchangeWeak(f, f, order);    writeab("cmpxchgW", a, b);
+                b = a.compareExchangeWeak(t, f, order);    writeab("cmpxchgW", a, b);
+                b = a.compareExchangeStrong(t, t, order);  writeab("cmpxchgS", a, b);
+                b = a.compareExchangeStrong(f, t, order);  writeab("cmpxchgS", a, b);
+                i = a.testAndSet(order);                   writeai("test&Set", a, i);
+                    a.clear(order);                        writea ("clear   ", a);
+  asyncSet(a);      a.waitFor(true, order);                writea ("waitFor ", a);
   writeln();
 }
 
@@ -96,14 +96,14 @@ proc testOrderAtomicT(a, ref i, ref b, type basetype, param order: memoryOrder) 
   param isInt = isIntegral(basetype);
 
   writeln("Testing 'atomic ", basetype:string, "' with order '", order, "':");
-                                                    writea ("init    ", a);
+                                                           writea ("init    ", a);
                 if isArray(a) == false {
-                  var initval : a.type = 1;         writeai("init=   ", a, initval);
-                  var initval2 : a.type = initval;  writeai("init=(v)", a, initval2);
-                  var initval3 = initval;           writeai("init=(v)", a, initval3);
+                  var initval : a.type = 1;                writeai("init=   ", a, initval);
+                  var initval2 : a.type = initval;         writeai("init=(v)", a, initval2);
+                  var initval3 = initval;                  writeai("init=(v)", a, initval3);
                   assert(initval3.type == atomic basetype);
                 }
-                i = a.read(order);                       writeai("read    ", a, i);
+                i = a.read(order);                         writeai("read    ", a, i);
                     a.write(1, order);                     writea ("write   ", a);
                 i = a.exchange(2, order);                  writeai("xchg    ", a, i);
                 b = a.compareExchange(1, 3, order);        writeab("cmpxchg ", a, b);

@@ -4,13 +4,25 @@ const RNG = 1..4;
 
 var s$: sync int;
 
+class CT {
+  var fieldd: int;
+}
+
 record QQ {
   var data: [RNG] int;
+  var number: int;
+  var pointer = new owned CT();
+
+  proc init(tag:int) {
+    number = tag;
+    pointer = new owned CT(-tag);
+  }
 }
 
 proc QQ.w1(factor: int) {
   coforall i in RNG {
     data[i] = i * factor;
+    writeln(number, pointer.fieldd);
   }
 }
 
@@ -31,31 +43,35 @@ proc QQ.r1(factor: int) {
   }
 }
 
-var rec1 = new QQ();
+var rec1 = new QQ(1);
 rec1.w1(10);
 rec1.r1(10);
 writeln();
 
-var rec2 = new QQ();
+var rec2 = new QQ(2);
 rec2.w3();
 rec2.r1(100);
+writeln();
 
 proc QQ.bgn() {
   begin {
     data[2] = 234;
+    writeln(number, pointer.fieldd);
     s$ = 1;
   }
 }
 
-var rec3 = new QQ();
+var rec3 = new QQ(3);
 rec3.bgn();
 s$;
 writeln(rec3);
+writeln();
 
 proc QQ.cob() {
   cobegin {
     data[1] = 123;
     data[3] = 321;
+    writeln(number, pointer.fieldd);
   }
 }
 
