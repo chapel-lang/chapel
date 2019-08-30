@@ -306,13 +306,9 @@ VarSymbol* resolveNewInitializerMakeTemp(const char* name, BlockStmt* block) {
 void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   // Get root instantiation so we can easily check against e.g. dtOwned
   bool nilable = isNilableClassType(manager);
-  if (DecoratedClassType* dt = toDecoratedClassType(manager)) {
-    manager = dt->getCanonicalClass();
-  }
-  if (AggregateType* mat = toAggregateType(manager)) {
-    manager = mat->getRootInstantiation();
-  }
-  if (manager == dtBorrowedNilable)
+  if (isManagedPtrType(manager))
+    manager = getManagedPtrManagerType(manager);
+  else if (manager == dtBorrowedNilable)
     manager = dtBorrowed;
   else if (manager == dtUnmanagedNilable)
     manager = dtUnmanaged;
