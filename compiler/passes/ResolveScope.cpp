@@ -366,9 +366,14 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   const char* name   = newSym->name;
   bool        retval = false;
 
-  // If this is a top level module, we look up the symbol's name as
+  // If this is a top-level module, we look up the symbol's name as
   // though we were resolving a 'use' in order to take module symbols
   // (not visible through normal lexical scoping) into consideration.
+  // Without this, we no longer get duplicate symbol definition
+  // warnings when two top-level modules share the same name and a
+  // subsequent lookup of that module name picks the first module it
+  // finds (since we don't have a concept of overloading for modules
+  // or most symbol types other than functions.
   //
   if (Symbol* oldSym = lookupNameLocally(name, isTopLevel)) {
     FnSymbol* oldFn = toFnSymbol(oldSym);
