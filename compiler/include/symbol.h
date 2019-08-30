@@ -524,10 +524,6 @@ class TypeSymbol : public Symbol {
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
-  void renameInstantiatedSingle(Symbol* sym);
-  void renameInstantiatedFromSuper(TypeSymbol* superSym);
-
   GenRet codegen();
   void codegenDef();
   void codegenPrototype();
@@ -543,10 +539,6 @@ class TypeSymbol : public Symbol {
 
   BlockStmt* instantiationPoint;
 
- private:
-  void renameInstantiatedStart();
-  void renameInstantiatedIndividual(Symbol* sym);
-  void renameInstantiatedEnd();
 };
 
 /************************************* | **************************************
@@ -761,6 +753,7 @@ extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
+extern VarSymbol *gUninstantiated;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

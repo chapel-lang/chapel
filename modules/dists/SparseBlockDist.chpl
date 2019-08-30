@@ -340,7 +340,7 @@ class LocSparseBlockDom {
   param stridable: bool;
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = if _to_borrowed(sparseLayoutType) == DefaultDist then defaultDist
+  var sparseDist = if _to_borrowed(sparseLayoutType) == borrowed DefaultDist then defaultDist
                    else new dmap(new sparseLayoutType()); //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 

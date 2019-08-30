@@ -711,6 +711,8 @@ static void addVirtualMethodTableEntry(Type*     type,
   Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
   bool            found = false;
 
+  if (type->symbol->hasFlag(FLAG_GENERIC)) return;
+
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();
 

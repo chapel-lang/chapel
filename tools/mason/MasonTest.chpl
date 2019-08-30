@@ -42,6 +42,7 @@ proc masonTest(args) throws {
   var run = true;
   var parallel = false;
   var update = true;
+  if MASON_OFFLINE then update = false;
   var compopts: list(string);
   
   if args.size > 2 {
@@ -70,6 +71,9 @@ proc masonTest(args) throws {
       }
       else if arg == '--recursive' {
         subdir = true;
+      }
+      else if arg == '--update' {
+        update = true;
       }
       else {
         compopts.append(arg);
