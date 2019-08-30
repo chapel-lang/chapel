@@ -1682,7 +1682,7 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols) {
   bool debug = false;
-  if (strcmp("c_void_ptr", name) == 0) {
+  if (strcmp("choose", name) == 0) {
     //    debug = true;
     //    printf("Looking up %s\n", name);
   }
@@ -1712,7 +1712,14 @@ static void lookup(const char*           name,
         //        if (scope->getModule()->modTag != MOD_USER ||
         //            outerScope->getModule() != theProgram) {
           lookup(name, context, outerScope, visited, symbols);
-          //        }
+          // As a last ditch effort, see if this module's name happens to match
+          if (symbols.size() == 0) {
+            ModuleSymbol* thisMod = scope->getModule();
+            if (strcmp(name, thisMod->name) == 0) {
+              symbols.push_back(thisMod);
+              //              printf("Got a hit on %s\n", thisMod->name);
+            }
+          }
       }
 
     } else {
@@ -1866,6 +1873,17 @@ static bool lookupThisScopeAndUses(const char*           name,
                        name);
             }
           }
+        } else {
+          //          printf("Checking out module names themselves for %s...\n", name);
+          forv_Vec(UseStmt, use, *moduleUses) {
+            if (use != NULL) {
+              if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
+                if (isRepeat(modSym, symbols) == false) {
+                  symbols.push_back(modSym);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -1904,11 +1922,14 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
     } else {
       // TODO: Move this logic into lookupNameLocally() itself (?) or
       // otherwise refactor so that all callsites will use it (?)
+
+      /*
       ModuleSymbol* thisMod = ast->getModule();
       if (strcmp(name, thisMod->name) == 0) {
         retval = thisMod;
         //        printf("Got a hit on %s\n", thisMod->name);
       }
+      */
     }
   }
 

@@ -529,6 +529,20 @@ void UseStmt::trackMethods() {
   }
 }
 
+ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (strcmp(name, se->symbol()->name) == 0) {
+        return modSym;
+      }
+    }
+  } else {
+    // TODO: Need to handle matches against more general expressions here
+    // e.g. 'use M.N.O' should make 'O' available, I think
+  }
+  return NULL;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
