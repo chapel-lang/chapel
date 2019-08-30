@@ -5,7 +5,7 @@ module MC {
 }
 
 module M1 {
-  use MC;
+  use MC only;
   class C: MC {
     var y: int;
   }
