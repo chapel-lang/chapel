@@ -817,7 +817,7 @@ Create a local registry:
    # Create the local registry
    mkdir /path/to/local/registry
    cd /path/to/local/registry
-   touch /Bricks/DummyPackage/0.1.0.toml
+   # Create /Bricks/DummyPackage/0.1.0.toml
    touch README.md
 
    # Initialize and check everything in to the git repository
