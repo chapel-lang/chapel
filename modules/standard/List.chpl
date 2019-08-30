@@ -53,8 +53,6 @@
 */
 module List {
 
-  private use Reflection;
-
   pragma "no doc"
   private const _initialCapacity = 8;
 
