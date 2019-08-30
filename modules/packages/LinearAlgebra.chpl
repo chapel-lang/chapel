@@ -187,7 +187,6 @@ module LinearAlgebra {
 
 use Norm; // TODO -- merge Norm into LinearAlgebra
 use BLAS only;
-use LAPACK only;
 use LAPACK only lapack_memory_order, isLAPACKType;
 
 /* Determines if using native Chapel implementations */
