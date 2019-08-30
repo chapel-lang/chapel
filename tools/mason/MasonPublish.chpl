@@ -463,7 +463,6 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
   }
   
   writeln(spacer);
-  writeln(spacer);
   if package {
     writeln('Attempting to build package using following options:');
     writeln('   show = false');
@@ -475,6 +474,11 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
     attemptToBuild();
   }
   writeln(spacer);
+  writeln();
+  writeln();
+  writeln();
+  writeln();
+  writeln();
   writeln('RESULTS');
   writeln(spacer);
 
@@ -489,14 +493,13 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
       writeln('(FAILED) Your package has more than one main module');
     }
     if !registryTest {
-      writeln('(FAILED) Your proposed registry is not a valid registry or path to a regustry');
+      writeln('(FAILED) Your proposed registry is not a valid registry or path to a registry');
     }
     if !remoteTest {
       writeln('(FAILED) Your package has no remote origin and cannot be published');
     }
   }
 
-  writeln(spacer);
   writeln(spacer);
 
   if travis {
