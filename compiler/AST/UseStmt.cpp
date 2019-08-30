@@ -652,7 +652,7 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
       it != renamed.end();
       ++it) {
     if (strcmp(name, it->first) == 0) {
-      printf("B: Returning true\n");
+      //      printf("B: Returning true\n");
       return true;
     }
   }
