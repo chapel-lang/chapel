@@ -14,7 +14,8 @@ for i in 1..testIters {
 for i in 1..testIters do
   lst.append(i);
 
-idx = lst.indexOf(testIters, testIters + 1, testIters * 2);
+// Value of `end` <= 0 defaults to searching entire list.
+idx = lst.indexOf(testIters, testIters + 1, 0);
 
 assert(idx > 0);
 

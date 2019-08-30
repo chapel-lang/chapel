@@ -1126,7 +1126,7 @@ module List {
     /*
       Return a one-based index into this list of the first item whose value
       is equal to `x`. If no such element can be found this method returns
-      the value -1.
+      the value `-1`.
 
       .. warning::
 
@@ -1141,24 +1141,27 @@ module List {
       :arg start: The start index to start searching from.
       :type start: `int`
 
-      :arg end: The end index to stop searching at.
+      :arg end: The end index to stop searching at. A value less than or equal
+                to `0` will search the entire list.
       :type end: `int`
 
       :return: The index of the element to search for, or `-1` on error.
       :rtype: `int`
     */
-    proc indexOf(x: eltType, start: int=1, end: int=size): int {
+    proc indexOf(x: eltType, start: int=1, end: int=0): int {
       if boundsChecking {
         const msg = " index for \"list.indexOf\" out of bounds: ";
+
+        if end > 0 && !_withinBounds(end) then
+          halt("End" + msg + end:string);
+
         if !_withinBounds(start) then
           halt("Start" + msg + start:string);
-        if !_withinBounds(end) then
-          halt("End" + msg + end:string);
       }
 
       param error = -1;
 
-      if end < start then
+      if end > 0 && end < start then
         return error;
 
       var result = error;
@@ -1166,7 +1169,9 @@ module List {
       on this {
         _enter();
 
-        for i in start..end do
+        const stop = if end <= 0 then _size else end;
+
+        for i in start..stop do
           if x == _getRef(i) {
             result = i;
             break;
@@ -1387,7 +1392,7 @@ module List {
 
       :return: A new DefaultRectangular array.
     */
-    proc toArray(): [] eltType {
+    proc const toArray(): [] eltType {
       var result: [1.._size] eltType;
 
       on this {
