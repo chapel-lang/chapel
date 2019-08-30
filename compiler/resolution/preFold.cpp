@@ -747,7 +747,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
       // error if it's not a type
       if (isTypeExpr(e) == false)
-        USR_FATAL_CONT(call, "cannot apply postfix-? to a value");
+        USR_FATAL_CONT(call, "cannot apply postfix ? operator to a value - "
+                             "please use value:class? instead");
     }
 
     if (isTypeExpr(e)) {
