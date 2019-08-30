@@ -739,6 +739,10 @@ Search the registry with ``mason search <query>``, which will list all packages
 (and their latest version) that contain ``<query>`` in their names (case-insensitive).
 If no query is provided, all packages in the registry will be listed.
 
+Searching with the ``--show`` flag will output the toml file of a package if the search
+returns a single package. If the package has multiple versions it will return the most
+recent.
+
 .. note::
 
     Packages will be listed regardless of their ``chplVersion`` compatibility.
@@ -750,9 +754,19 @@ Submit a Package
 The mason registry will hold the manifest files for packages submitted by developers.
 To contribute a package to the mason-registry a chapel developer will need to host their
 package and submit a pull request to the mason-registry with the toml file pointing
-to their package. For a more detailed description follow the steps below.
+to their package. For a more detailed description follow the steps below. Publishing
+can be done with ``mason publish`` or manually.
 
-Steps:
+``mason publish`` Steps:
+      1) Write a library or binary package in chapel using mason
+      2) Host the package in a git repository. (e.g. GitHub)
+      3) Fork the mason-registry on GitHub
+      4) Ensure your package has a remote origin.
+      5) Run ``mason publish`` in your package
+      6) Go to the link provided to open a pull request to the mason registry.
+      7) Wait for mason-registry gatekeepers to approve PR.
+
+Manual Steps:
       1) Write a library or binary package in chapel using mason
       2) Host that package in a git repository. (e.g. GitHub)
       3) Create a tag of your package that corresponds to the version number prefixed with a 'v'. (e.g. v0.1.0)
@@ -766,59 +780,49 @@ Once your package is uploaded, maintain the integrity of your package, and pleas
 chapel team if your package should be taken down.
 
 
+
+If you have a personal remote registry, ``mason publish <path-to-registry>``  also accepts
+a remote path to a git repository. This will create a branch to your registry that adds
+your package, and you can approve the PR to merge your new package into your registry.
+Must ensure your package has a remote origin in order to publish remotely.
+
+Publishing to a personal remote registry
+
+.. code-block:: sh
+   cd PackageA
+   mason publish <remote-path-to-registry>
+
+To assess the ability of your package to be published to the mason-registry or
+a personal registry, run ``mason publish --dry-run <path-to-registry>`` for a
+series of quick checks or ``mason publish --check <path-to-registry`` for a more
+in depth check of the packages ability to be published.
+
 Local Registries
 ================
 
 It is sometimes desirable to use a local registry, for example with libraries
 you don't intend to distribute. The following steps create a local registry
-starting with Bricks for ``PackageA`` and ``PackageB`` which were created with
-``mason new PackageA`` and ``mason new PackageB``, and are located at
-``/path/to/my/packages/Package[AB]``. It is expected that mason will be
-extended to simplify and handle more of this process.
+starting with Bricks for ``PackageA`` which was created with ``mason new PackageA``
+Once you have successfully created a local registry, ``mason publish <path-to-local registry``
+can be used to publish automatically.
 
 First create, commit, and tag the packages that will be in the registry:
 
-.. code-block:: sh
 
-   # Create PackageA
-   cd /path/to/my/packages
-   mason new PackageA
-   cd PackageA
-   git add Mason.toml src/PackageA.chpl
-   git commit
-   git tag -a v0.1.0 -m "Tag version 0.1.0"
-
-   # Create PackageB
-   cd ..
-   mason new PackageB
-   cd PackageB
-   git add Mason.toml src/PackageB.chpl
-   git commit
-   git tag -a v0.1.0 -m "Tag version 0.1.0"
-
-Next, create a local registry:
+Create a local registry:
 
 .. code-block:: sh
 
    # Create the local registry
    mkdir /path/to/local/registry
    cd /path/to/local/registry
-   mkdir -p Bricks/PackageA Bricks/PackageB
-
-   # Add bricks for PackageA and PackageB
-   cp /path/to/my/packages/PackageA/Mason.toml Bricks/PackageA/0.1.0.toml
-   cp /path/to/my/packages/PackageB/Mason.toml Bricks/PackageB/0.1.0.toml
-
-   # Edit Bricks/PackageA/0.1.0.toml to add:
-   source = "/path/to/my/packages/PackageA"
-
-   # Edit Bricks/PackageB/0.1.0.toml to add:
-   source = "/path/to/my/packages/PackageB"
+   mkdir /Bricks/
+   touch README.md
 
    # Initialize and check everything in to the git repository
    git init
-   git add Bricks/PackageA/0.1.0.toml Bricks/PackageB/0.1.0.toml
-   git commit
+   git add README.md
+   git commit -m 'First Commit'
 
 Now ``MASON_REGISTRY`` can be set to point at both the local registry and the
 default registry.
@@ -827,16 +831,27 @@ default registry.
 
    export MASON_REGISTRY="local-registry|/path/to/local/registry,mason-registry|https://github.com/chapel-lang/mason-registry"
 
-The ``MyPackage`` package is now free to include ``PackageA`` and ``PackageB``
-as dependencies by adding the following lines to the ``[dependencies]`` section
-of its .toml file.
 
-.. code-block:: text
+Adding a local package to the local registry
 
-   PackageA = "0.1.0"
-   PackageB = "0.1.0"
+.. code-block:: sh
 
+   mason new PackageA
+   cd PackageA
+   git init
+   git add .
+   git commit -m "First Commit"
+   mason publish <path-to-local-registry>
 
+The ``MyPackage`` package is now free to include ``PackageA`` as dependency by adding
+the it as a dependency with ``mason add package@version``
+
+.. code-block:: sh
+
+   cd MYPackage
+   mason add PackageA@0.1.0
+      
+    
 The Manifest File
 =================
 
@@ -883,6 +898,10 @@ Mason can be configured by setting the following environment variables:
   ``mason-registry|https://github.com/chapel-lang/mason-registry``. If the
   ``name|`` part of a pair is omitted it is inferred to be the word following
   the final slash in ``location`` with any ``.git`` suffix removed.
+- ``MASON_OFFLINE`` : A boolean value that disables commands that require
+  online access when set to ``true``. Defaults to ``false``. Some commands
+  can be override ``MASON_OFFLINE=true`` with the inclusion of an ``--update``
+  flag. This defaults the ``--no-update`` flag to be on with all commands. 
 
 The ``mason env`` command will print the inferred or set values of these
 environment variables. If a variable was set by the user, an asterisk will be
@@ -893,6 +912,7 @@ printed at the end of the line. For example, if ``$MASON_HOME`` was set:
    > mason env
    MASON_HOME: /path/to/something *
    MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+   MASON_OFFLINE: false
 
 .. warning::
 
