@@ -1112,6 +1112,20 @@ module Bytes {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
 
+  // Cast from c_string to bytes
+  pragma "no doc"
+  proc _cast(type t, cs: c_string) where t == bytes {
+    var ret: bytes;
+    ret.len = cs.length;
+    ret._size = ret.len+1;
+    ret.buff = if ret.len > 0
+      then __primitive("string_copy", cs): bufferType
+      else nil;
+    ret.isowned = true;
+
+    return ret;
+  }
+
   /*
      Appends the bytes `rhs` to the bytes `lhs`.
   */
@@ -1183,6 +1197,25 @@ module Bytes {
   pragma "no doc"
   inline proc !=(a: string, b: bytes) : bool {
     return !doEq(a,b);
+  }
+
+  pragma "no doc"
+  inline proc <(a: bytes, b: bytes) : bool {
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) < 0;
+  }
+
+  pragma "no doc"
+  inline proc >(a: bytes, b: bytes) : bool {
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) > 0;
+  }
+
+  pragma "no doc"
+  inline proc <=(a: bytes, b: bytes) : bool {
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) <= 0;
+  }
+  pragma "no doc"
+  inline proc >=(a: bytes, b: bytes) : bool {
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
   }
 
   // character-wise operation helpers
