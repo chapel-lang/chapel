@@ -789,6 +789,7 @@ Must ensure your package has a remote origin in order to publish remotely.
 Publishing to a personal remote registry
 
 .. code-block:: sh
+   
    cd PackageA
    mason publish <remote-path-to-registry>
 
