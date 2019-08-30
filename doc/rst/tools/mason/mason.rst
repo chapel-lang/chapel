@@ -796,15 +796,15 @@ Publishing to a personal remote registry
 To assess the ability of your package to be published to the mason-registry or
 a personal registry, run ``mason publish --dry-run <path-to-registry>`` for a
 series of quick checks or ``mason publish --check <path-to-registry`` for a more
-in depth check of the packages ability to be published.
+in depth check that will build your packages and run the full test suite. 
 
 Local Registries
 ================
 
 It is sometimes desirable to use a local registry, for example with libraries
 you don't intend to distribute. The following steps create a local registry
-starting with Bricks for ``PackageA`` which was created with ``mason new PackageA``
-Once you have successfully created a local registry, ``mason publish <path-to-local registry``
+starting with Bricks for ``PackageA`` which was created with ``mason new PackageA``.
+Once you have successfully created a local registry, ``mason publish <path-to-local-registry>``
 can be used to publish automatically.
 
 First create, commit, and tag the packages that will be in the registry:
@@ -817,12 +817,12 @@ Create a local registry:
    # Create the local registry
    mkdir /path/to/local/registry
    cd /path/to/local/registry
-   mkdir /Bricks/
+   mkdir /Bricks/DummyPackage/0.1.0.toml
    touch README.md
 
    # Initialize and check everything in to the git repository
    git init
-   git add README.md
+   git add README.md /Bricks/DummyPackage/0.1.0.toml
    git commit -m 'First Commit'
 
 Now ``MASON_REGISTRY`` can be set to point at both the local registry and the
@@ -839,7 +839,6 @@ Adding a local package to the local registry
 
    mason new PackageA
    cd PackageA
-   git init
    git add .
    git commit -m "First Commit"
    mason publish <path-to-local-registry>
@@ -849,7 +848,7 @@ the it as a dependency with ``mason add package@version``
 
 .. code-block:: sh
 
-   cd MYPackage
+   cd MyPackage
    mason add PackageA@0.1.0
       
     
@@ -899,10 +898,10 @@ Mason can be configured by setting the following environment variables:
   ``mason-registry|https://github.com/chapel-lang/mason-registry``. If the
   ``name|`` part of a pair is omitted it is inferred to be the word following
   the final slash in ``location`` with any ``.git`` suffix removed.
-- ``MASON_OFFLINE`` : A boolean value that disables commands that require
-  online access when set to ``true``. Defaults to ``false``. Some commands
-  can be override ``MASON_OFFLINE=true`` with the inclusion of an ``--update``
-  flag. This defaults the ``--no-update`` flag to be on with all commands. 
+- ``MASON_OFFLINE`` : A boolean value that prevents mason from making calls that
+  require internet access when set to ``true``. Defaults to ``false``. Mason command
+  that support a ``--[no-]update`` flag can override the ``MASON_OFFLINE`` setting
+  when ``--update`` is explicitly passed. 
 
 The ``mason env`` command will print the inferred or set values of these
 environment variables. If a variable was set by the user, an asterisk will be
