@@ -110,7 +110,7 @@ module LocaleModel {
 
     var numSublocales: int; // should never be modified after first assignment
     var childSpace: domain(1);
-    var childLocales: [childSpace] NumaDomain;
+    var childLocales: [childSpace] unmanaged NumaDomain;
 
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
@@ -203,7 +203,7 @@ module LocaleModel {
 
     proc deinit() {
       for loc in childLocales do
-        delete _to_unmanaged(loc);
+        delete loc;
     }
  }
 

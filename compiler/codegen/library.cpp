@@ -74,6 +74,13 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
         }
       }
 
+      if (fMultiLocaleInterop) {
+        // If we've created a multilocale library, memory that is returned to
+        // the client code wasn't created by chpl_mem_alloc and friends, so
+        // shouldn't be freed using the normal strategies.  But, for
+        // convenience, allow the user to still call `chpl_free`.
+        fprintf(libhdrfile.fptr, "#define chpl_free(ptr) free(ptr)\n");
+      }
       // Maybe need something here to support LLVM extern blocks?
 
       // Print out the module initialization function headers and the exported

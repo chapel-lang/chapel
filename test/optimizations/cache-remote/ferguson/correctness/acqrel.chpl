@@ -18,23 +18,23 @@ proc doit(a:locale, b:locale, c:locale)
     sync {
       begin with (ref x) on b {
         for i in 0..max by 2 {
-          stopgo.waitFor(i, memory_order_acquire);
+          stopgo.waitFor(i, memoryOrder.acquire);
           var myx = x;
           if myx != i then printf("ON B GOT %i EXPECTED %i\n", myx:c_int, i:c_int);
           assert( myx == i );
           x = i + 1;
-          stopgo.write(i+1, memory_order_release);
+          stopgo.write(i+1, memoryOrder.release);
         }
       }
 
       begin with (ref x) on c {
         for i in 1..max by 2 {
-          stopgo.waitFor(i, memory_order_acquire);
+          stopgo.waitFor(i, memoryOrder.acquire);
           var myx = x;
           if myx != i then printf("ON C GOT %i EXPECTED %i\n", myx:c_int, i:c_int);
           assert( myx == i );
           x = i + 1;
-          stopgo.write(i+1, memory_order_release);
+          stopgo.write(i+1, memoryOrder.release);
         }
       }
     }

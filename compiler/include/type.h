@@ -394,6 +394,7 @@ TYPE_EXTERN PrimitiveType*    dtAnyRecord;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
 TYPE_EXTERN PrimitiveType*    dtBorrowedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
+TYPE_EXTERN PrimitiveType*    dtUninstantiated;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
@@ -454,6 +455,7 @@ bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
+bool isUserRecord(Type* t); // is it a record from the user viewpoint?
 bool isUnion(Type* t);
 
 bool isReferenceType(const Type* t);
@@ -477,6 +479,7 @@ bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
 bool isString(Type* type);
+bool isBytes(Type* type);
 bool isUserDefinedRecord(Type* type);
 
 bool isPrimitiveScalar(Type* type);
@@ -504,6 +507,8 @@ bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 
 bool isPOD(Type* t);
+
+bool isNumericParamDefaultType(Type* type);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);

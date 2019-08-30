@@ -25,24 +25,21 @@
 
 /************************************* | **************************************
 
-  A type for class types with explicit memory management strategy.
-  Implements the variety of ways a class type can be decorated:
+  The representation of Chapel class types specifying the following properties:
    * nilable/non-nilable
-   * borrowed/unmanaged
+   * borrowed/unmanaged/managed (i.e. shared or owned)
+   * fully generic w.r.t. either or both of the above
 
-  owned/shared/etc are represented as instantiations of those types,
-  but owned? owned! is represented with this type.
-
-  Each DecoratedClassType refers to an AggregateType for the actual class
-  or, for owned? shared!, it refers to the generic _owned / _shared record.
+  See the comment for getDecoratedClass() for specifics.
 
   The AggregateType for each class to stores the dispatch parents and other
   important fields, and since each can have multiple DecoratedClassType
   variants, the DecoratedClassType is not an AggregateType but rather a Type
   that points to the canonical class type (i.e. the AggregateType).
 
-  Currently, borrowed MyClass!, MyClass!, MyClass are all represented
-  directly with the AggregateType for MyClass.
+  The canonical class type for MyClass is the non-nilable borrowed MyClass
+  variant. It is represented directly with the AggregateType for MyClass,
+  without a DecoratedClassType wrapper.
 
 ************************************** | *************************************/
 

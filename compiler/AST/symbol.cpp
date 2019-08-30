@@ -74,6 +74,7 @@ VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
+VarSymbol *gUninstantiated = NULL;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -467,6 +468,10 @@ bool Symbol::isImmediate() const {
 
 bool isString(Symbol* symbol) {
   return isString(symbol->type);
+}
+
+bool isBytes(Symbol* symbol) {
+  return isBytes(symbol->type);
 }
 
 bool isUserDefinedRecord(Symbol* symbol) {
@@ -1238,130 +1243,6 @@ void TypeSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-void TypeSymbol::renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn) {
-  renameInstantiatedStart();
-
-  bool notFirst = false;
-  for_formals(formal, fn) {
-    if (Symbol* value = subs.get(formal)) {
-      if (!notFirst) {
-        if (TypeSymbol* ts = toTypeSymbol(value)) {
-          if (this->hasFlag(FLAG_TUPLE)) {
-            if (this->hasFlag(FLAG_STAR_TUPLE)) {
-              this->name = astr(istr(fn->numFormals()-1), "*", ts->name);
-              this->cname = astr(this->cname, "star_", ts->cname);
-              return;
-            } else {
-              this->name = astr("(");
-            }
-          }
-        }
-        notFirst = true;
-      } else {
-        this->name = astr(this->name, ",");
-        this->cname = astr(this->cname, "_");
-      }
-      renameInstantiatedIndividual(value);
-    }
-  }
-
-  renameInstantiatedEnd();
-}
-
-void TypeSymbol::renameInstantiatedSingle(Symbol* sym) {
-  renameInstantiatedStart();
-  if (this->hasFlag(FLAG_TUPLE)) {
-    USR_FATAL(sym, "initializers don't handle tuples yet, sorry!");
-  } else {
-    renameInstantiatedIndividual(sym);
-  }
-  renameInstantiatedEnd();
-}
-
-void TypeSymbol::renameInstantiatedFromSuper(TypeSymbol* superSym) {
-  renameInstantiatedStart();
-  const char* afterParentName = std::find(superSym->name,
-                                          superSym->name+strlen(superSym->name),
-                                          '(');
-  const char* afterParentCname = std::find(superSym->cname,
-                                           superSym->cname+strlen(superSym->cname),
-                                           '_');
-  this->name  = astr(this->name , afterParentName+1);
-  this->cname = astr(this->cname, afterParentCname+1);
-  // Don't call renameInstantiatedEnd() because the parent name already has the
-  // end parenthesis.
-}
-
-void TypeSymbol::renameInstantiatedStart() {
-  if (this->name[strlen(this->name)-1] == ')') {
-    // avoid "strange" instantiated type names based on partial instantiation
-    //  instead of C(int,real)(imag) this results in C(int,real,imag)
-    char* buf = (char*)malloc(strlen(this->name) + 1);
-    memcpy(buf, this->name, strlen(this->name));
-    buf[strlen(this->name)-1] = '\0';
-    this->name = astr(buf, ",");
-    free(buf);
-  } else {
-    this->name = astr(this->name, "(");
-  }
-  this->cname = astr(this->cname, "_");
-}
-
-void TypeSymbol::renameInstantiatedIndividual(Symbol* sym) {
-  if (TypeSymbol* ts = toTypeSymbol(sym)) {
-    if (!this->hasFlag(FLAG_STAR_TUPLE)) {
-      this->name = astr(this->name, ts->name);
-      this->cname = astr(this->cname, ts->cname);
-    }
-  } else {
-    VarSymbol* var = toVarSymbol(sym);
-    if (var && var->immediate) {
-      // Add cast suffix if it's a non-default-sized immediate
-      const char* castSuffix = "";
-      const char* castSuffixC = "";
-      Type* immType = var->type;
-      if (is_int_type(immType) || is_uint_type(immType) ||
-          is_bool_type(immType) ||
-          is_real_type(immType) || is_imag_type(immType) ||
-          is_complex_type(immType)) {
-        if (!isNumericParamDefaultType(immType)) {
-          castSuffix = astr(":", toString(immType));
-          char width_buf[16];
-          snprintf(width_buf, sizeof(width_buf), "%i", get_width(immType));
-          castSuffixC = astr(width_buf);
-        }
-      }
-
-      // Compute a string representation of the immediate
-      Immediate* immediate = var->immediate;
-      if (var->type == dtString || var->type == dtStringC)
-        renameInstantiatedTypeString(this, var);
-      else if (immediate->const_kind == NUM_KIND_BOOL) {
-        // Handle boolean types specially.
-        const char* name4bool = immediate->bool_value() ? "true" : "false";
-        const char* cname4bool = immediate->bool_value() ? "T" : "F";
-        this->name = astr(this->name, name4bool, castSuffix);
-        this->cname = astr(this->cname, cname4bool, castSuffixC);
-      } else {
-        const size_t bufSize = 128;
-        char imm[bufSize];
-        snprint_imm(imm, bufSize, *var->immediate);
-        this->name = astr(this->name, imm, castSuffix);
-        this->cname = astr(this->cname, imm, castSuffixC);
-      }
-
-    } else {
-      // Not an immediate
-      this->name = astr(this->name, sym->cname);
-      this->cname = astr(this->cname, sym->cname);
-    }
-  }
-}
-
-void TypeSymbol::renameInstantiatedEnd() {
-  this->name = astr(this->name, ")");
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1598,12 +1479,9 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  CallExpr *initCall = new CallExpr(PRIM_NEW,
-      new SymExpr(dtString->symbol),
-      cstrTemp,
-      new_IntSymbol(strLength));
-  initCall->insertAtTail(gFalse); // owned = false
-  initCall->insertAtTail(gFalse); // needToCopy = false
+  CallExpr *initCall = new CallExpr(astr("createStringWithBorrowedBuffer"),
+                                    cstrTemp,
+                                    new_IntSymbol(strLength));
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 
@@ -1616,6 +1494,63 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   insertPt->insertBefore(new DefExpr(cstrTemp));
   insertPt->insertBefore(cstrMove);
+  insertPt->insertBefore(moveCall);
+
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  stringLiteralsHash.put(s->immediate, s);
+  return s;
+}
+
+VarSymbol *new_BytesSymbol(const char *str) {
+  Immediate imm;
+  imm.const_kind = CONST_KIND_STRING;
+  imm.string_kind = STRING_KIND_BYTES;
+  imm.v_string = astr(str);
+  VarSymbol *s = stringLiteralsHash.get(&imm);
+  if (s) {
+    return s;
+  }
+
+  if (resolved) {
+    INT_FATAL("new_BytesSymbol called after function resolution.");
+  }
+
+  // Bytes (as record) literals are inserted from the very beginning on the
+  // parser all the way through resolution (postFold). Since resolution happens
+  // after normalization we need to insert everything in normalized form. We
+  // also need to disable parts of normalize from running on literals inserted
+  // at parse time.
+  VarSymbol* bytesTemp = newTemp("call_tmp");
+  CallExpr *bytesMove = new CallExpr(PRIM_MOVE, bytesTemp, new_CStringSymbol(str));
+
+  int bytesLength = unescapeString(str, bytesMove).length();
+  s = new VarSymbol(astr("_bytes_literal_", istr(literal_id++)), dtBytes);
+  s->addFlag(FLAG_NO_AUTO_DESTROY);
+  s->addFlag(FLAG_CONST);
+  s->addFlag(FLAG_LOCALE_PRIVATE);
+  s->addFlag(FLAG_CHAPEL_BYTES_LITERAL);
+
+  DefExpr* bytesLitDef = new DefExpr(s);
+  // DefExpr(s) always goes into the module scope to make it a global
+  stringLiteralModule->block->insertAtTail(bytesLitDef);
+
+  CallExpr *initCall = new CallExpr(astr("createBytesWithBorrowedBuffer"),
+                                    bytesTemp,
+                                    new_IntSymbol(bytesLength));
+
+
+  CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
+
+  if (initStringLiterals == NULL) {
+    createInitStringLiterals();
+    initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
+  }
+
+  Expr* insertPt = initStringLiteralsEpilogue->defPoint;
+
+  insertPt->insertBefore(new DefExpr(bytesTemp));
+  insertPt->insertBefore(bytesMove);
   insertPt->insertBefore(moveCall);
 
   s->immediate = new Immediate;
@@ -1853,6 +1788,8 @@ immediate_type(Immediate *imm) {
         return dtString;
       } else if (imm->string_kind == STRING_KIND_C_STRING) {
         return dtStringC;
+      } else if (imm->string_kind == STRING_KIND_BYTES) {
+        return dtBytes;
       } else {
         INT_FATAL("unhandled string immediate type");
         break;

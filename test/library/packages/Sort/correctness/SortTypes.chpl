@@ -120,9 +120,6 @@ proc generate(type t, i:int) {
   } else if isRealType(t) {
     var ii:t = i:t;
     return (sqrt(i) + ii*ii + sin(ii)):t;
-  } else if isImagType(t) {
-    var ii:t = i:t;
-    return (sqrt(i) + ii*ii + sin(ii)):t;
   }
 }
 

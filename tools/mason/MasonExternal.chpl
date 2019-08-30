@@ -41,6 +41,8 @@ proc masonExternal(args: [] string) {
     else if args[2] == "--setup" {
       if isDir(SPACK_ROOT) then
         throw new owned MasonError("Spack backend is already installed");
+      else if MASON_OFFLINE then
+        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
       else {
         setupSpack();
         exit(0);
@@ -370,6 +372,16 @@ proc getSpkgDependencies(spec: string) throws {
 
 /* Install an external package */
 proc installSpkg(args: [?d] string) throws {
+  if hasOptions(args, '-h', '--help') {
+    masonInstallHelp();
+    exit(1);
+  }
+
+  if MASON_OFFLINE && args.count('--update') == 0 {
+    writeln('Cannot install Spack packages when MASON_OFFLINE=true');
+    return;
+  }
+
   if args.size < 4 {
     masonInstallHelp();
     exit(1);

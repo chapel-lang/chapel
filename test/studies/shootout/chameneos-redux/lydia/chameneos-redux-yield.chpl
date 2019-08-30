@@ -87,7 +87,7 @@ class Chameneos {
   proc start(population : [] owned Chameneos?, meetingPlace: MeetingPlace) {
     var stateTemp, peer_idx, xchg: int;
 
-    stateTemp = meetingPlace.state.read(memory_order_acquire);
+    stateTemp = meetingPlace.state.read(memoryOrder.acquire);
 
     while (true) {
       peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
@@ -98,22 +98,22 @@ class Chameneos {
       } else {
         break;
       }
-      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memory_order_acq_rel)) {
+      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memoryOrder.acqRel)) {
         if (peer_idx) {
           runMeeting(population, peer_idx);
         } else {
           // Attend meeting
 
           // Gives slightly better performance than waitFor, but is not "nicer"
-          while (!meetingCompleted.read(memory_order_acquire)) {
+          while (!meetingCompleted.read(memoryOrder.acquire)) {
             chpl_task_yield();
           }
 
-          meetingCompleted.write(false, memory_order_release);
-          stateTemp = meetingPlace.state.read(memory_order_acquire);
+          meetingCompleted.write(false, memoryOrder.release);
+          stateTemp = meetingPlace.state.read(memoryOrder.acquire);
         }
       } else {
-        stateTemp = meetingPlace.state.read(memory_order_acquire);
+        stateTemp = meetingPlace.state.read(memoryOrder.acquire);
       }
     }
   }
@@ -132,7 +132,7 @@ class Chameneos {
     peer.color = newColor;
     peer.meetings += 1;
     peer.meetingsWithSelf += is_same;
-    peer.meetingCompleted.write(true, memory_order_release);
+    peer.meetingCompleted.write(true, memoryOrder.release);
     
     color = newColor;
     meetings += 1;

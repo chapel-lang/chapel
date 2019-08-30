@@ -1,0 +1,7 @@
+string-bytes-inits.chpl:1: warning: string.init is deprecated - please use createStringWith* instead
+string-bytes-inits.chpl:2: warning: string.init is deprecated - please use createStringWith* instead
+string-bytes-inits.chpl:3: warning: string.init is deprecated - please use createStringWith* instead
+string-bytes-inits.chpl:5: warning: bytes.init is deprecated - please use createBytesWith* instead
+string-bytes-inits.chpl:6: warning: bytes.init is deprecated - please use createBytesWith* instead
+string-bytes-inits.chpl:7: warning: bytes.init is deprecated - please use createBytesWith* instead
+Called 2

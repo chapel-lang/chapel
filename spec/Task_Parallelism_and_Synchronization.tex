@@ -508,29 +508,22 @@ supported types are listed for each method.
 
 \index{atomic types!memory order}
 Most of the predefined atomic methods accept an optional argument
-named \chpl{order} of type memory\_order. The \chpl{order} argument is
+named \chpl{order} of type memoryOrder. The \chpl{order} argument is
 used to specify the ordering constraints of atomic operations. The
-supported memory\_order values are:
+supported memoryOrder values are:
 \begin{itemize}
-\item{memory\_order\_relaxed}
-\item{memory\_order\_acquire}
-\item{memory\_order\_release}
-\item{memory\_order\_acq\_rel}
-\item{memory\_order\_seq\_cst}
+\item{memoryOrder.relaxed}
+\item{memoryOrder.acquire}
+\item{memoryOrder.release}
+\item{memoryOrder.acqRel}
+\item{memoryOrder.seqCst}
 \end{itemize}
 
-\begin{openissue}
-  The memory\_order values were taken directly from the C11
-  specification.  We expect to review and better define the supported
-  values with work on Chapel's memory consistency model
-  (see~\ref{Memory_Consistency_Model}).
-\end{openissue}
-
-Unless specified, the default for the memory\_order parameter is
-memory\_order\_seq\_cst.
+Unless specified, the default for the memoryOrder parameter is
+memoryOrder.seqCst.
 
 \begin{note}
-Not all architectures or implementations may support all memory\_order
+Not all architectures or implementations may support all memoryOrder
 values.  In these cases, the implementation should default to a more
 conservative ordering than specified.
 \end{note}
@@ -538,46 +531,25 @@ conservative ordering than specified.
 \index{read (atomic var)@\chpl{read} (atomic var)}
 \index{predefined functions!read (atomic var)@\chpl{read} (atomic var)}
 \begin{protohead}
-proc (atomic t).read(memory_order order): t
+proc (atomic T).read(order:memoryOrder = memoryOrder.seqCst): T
 \end{protohead}
 \begin{protobody}
 Reads and returns the stored value. Defined for all atomic types.
 \end{protobody}
 
-\pagebreak
-\index{peek (atomic var)@\chpl{peek} (atomic var)}
-\index{predefined functions!peek (atomic var)@\chpl{peek} (atomic var)}
-\begin{protohead}
-proc (atomic t).peek(): t
-\end{protohead}
-\begin{protobody}
-Reads and returns the stored value using memory\_order\_relaxed.
-Defined for all atomic types.
-\end{protobody}
-
 \index{write (atomic var)@\chpl{write} (atomic var)}
 \index{predefined functions!write (atomic var)@\chpl{write} (atomic var)}
 \begin{protohead}
-proc (atomic t).write(v: t, memory_order order)
+proc (atomic T).write(v: T, order:memoryOrder = memoryOrder.seqCst)
 \end{protohead}
 \begin{protobody}
 Stores \chpl{v} as the new value. Defined for all atomic types.
 \end{protobody}
 
-\index{poke (atomic var)@\chpl{poke} (atomic var)}
-\index{predefined functions!poke (atomic var)@\chpl{poke} (atomic var)}
-\begin{protohead}
-proc (atomic t).poke(v: t)
-\end{protohead}
-\begin{protobody}
-Stores \chpl{v} as the new value using memory\_order\_relaxed.
-Defined for all atomic types.
-\end{protobody}
-
 \index{exchange (atomic var)@\chpl{exchange} (atomic var)}
 \index{predefined functions!exchange (atomic var)@\chpl{exchange} (atomic var)}
 \begin{protohead}
-proc (atomic t).exchange(v: t, memory_order order): t
+proc (atomic T).exchange(v: T, order:memoryOrder = memoryOrder.seqCst): T
 \end{protohead}
 \begin{protobody}
 Stores \chpl{v} as the new value and returns the original
@@ -591,9 +563,9 @@ value. Defined for all atomic types.
 \index{compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
 \index{predefined functions!compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
 \begin{protohead}
-proc (atomic t).compareExchangeWeak(e: t, v: t, memory_order order): bool
-proc (atomic t).compareExchangeStrong(e: t, v: t, memory_order order): bool
-proc (atomic t).compareExchange(e: t, v: t, memory_order order): bool
+proc (atomic T).compareExchangeWeak(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
+proc (atomic T).compareExchangeStrong(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
+proc (atomic T).compareExchange(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
 \end{protohead}
 \begin{protobody}
 Stores \chpl{v} as the new value, if and only if the original value is
@@ -616,11 +588,11 @@ atomically. \chpl{compareExchange} is equivalent to
 \index{xor (atomic var)@\chpl{xor} (atomic var)}
 \index{predefined functions!xor (atomic var)@\chpl{xor} (atomic var)}
 \begin{protohead}
-proc (atomic t).add(v: t, memory_order order)
-proc (atomic t).sub(v: t, memory_order order)
-proc (atomic t).or(v: t, memory_order order)
-proc (atomic t).and(v: t, memory_order order)
-proc (atomic t).xor(v: t, memory_order order)
+proc (atomic T).add(v: T, order:memoryOrder = memoryOrder.seqCst)
+proc (atomic T).sub(v: T, order:memoryOrder = memoryOrder.seqCst)
+proc (atomic T).or(v: T, order:memoryOrder = memoryOrder.seqCst)
+proc (atomic T).and(v: T, order:memoryOrder = memoryOrder.seqCst)
+proc (atomic T).xor(v: T, order:memoryOrder = memoryOrder.seqCst)
 \end{protohead}
 \begin{protobody}
 Applies the appropriate operator (\verb@+@, \verb@-@, \verb@|@,
@@ -646,11 +618,11 @@ call the above methods automatically for atomic variables.
 \index{fetchXor (atomic var)@\chpl{fetchXor} (atomic var)}
 \index{predefined functions!fetchXor (atomic var)@\chpl{fetchXor} (atomic var)}
 \begin{protohead}
-proc (atomic t).fetchAdd(v: t, memory_order order): t
-proc (atomic t).fetchSub(v: t, memory_order order): t
-proc (atomic t).fetchOr(v: t, memory_order order): t
-proc (atomic t).fetchAnd(v: t, memory_order order): t
-proc (atomic t).fetchXor(v: t, memory_order order): t
+proc (atomic T).fetchAdd(v: T, order:memoryOrder = memoryOrder.seqCst): T
+proc (atomic T).fetchSub(v: T, order:memoryOrder = memoryOrder.seqCst): T
+proc (atomic T).fetchOr(v: T, order:memoryOrder = memoryOrder.seqCst): T
+proc (atomic T).fetchAnd(v: T, order:memoryOrder = memoryOrder.seqCst): T
+proc (atomic T).fetchXor(v: T, order:memoryOrder = memoryOrder.seqCst): T
 \end{protohead}
 \begin{protobody}
 Applies the appropriate operator (\verb@+@, \verb@-@, \verb@|@,
@@ -666,7 +638,7 @@ for the \chpl{bool} atomic type.
 \index{predefined functions!testAndSet (atomic bool)@\chpl{testAndSet}
 (atomic bool)}
 \begin{protohead}
-proc (atomic bool).testAndSet(memory_order order): bool
+proc (atomic bool).testAndSet(order:memoryOrder = memoryOrder.seqCst): bool
 \end{protohead}
 \begin{protobody}
 Stores \chpl{true} as the new value and returns the old
@@ -677,7 +649,7 @@ the \chpl{bool} atomic type.
 \index{clear (atomic bool)@\chpl{clear} (atomic bool)}
 \index{predefined functions!clear (atomic bool)@\chpl{clear} (atomic bool)}
 \begin{protohead}
-proc (atomic bool).clear(memory_order order)
+proc (atomic bool).clear(order:memoryOrder = memoryOrder.seqCst)
 \end{protohead}
 \begin{protobody}
 Stores \chpl{false} as the new value. Equivalent
@@ -687,7 +659,7 @@ to \chpl{write(false)}. Only defined for the \chpl{bool} atomic type.
 \index{waitFor (atomic var)@\chpl{waitFor} (atomic var)}
 \index{predefined functions!waitFor (atomic var)@\chpl{waitFor} (atomic var)}
 \begin{protohead}
-proc (atomic t).waitFor(v: t)
+proc (atomic T).waitFor(v: T)
 \end{protohead}
 \begin{protobody}
 Waits until the stored value is equal to \chpl{v}. The implementation

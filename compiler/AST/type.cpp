@@ -173,14 +173,20 @@ const char* toString(Type* type, bool decorateAllClasses) {
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
         }
-        if (startsWith(vt->symbol->name, "_owned("))
-          retval = astr("owned ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_owned"))
-          retval = astr("owned");
-        else if (startsWith(vt->symbol->name, "_shared("))
-          retval = astr("shared ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_shared"))
-          retval = astr("shared");
+        if (startsWith(vt->symbol->name, "_owned")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("owned");
+          } else {
+            retval = astr("owned ", borrowName);
+          }
+        }
+        else if (startsWith(vt->symbol->name, "_shared")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("shared");
+          } else {
+            retval = astr("shared ", borrowName);
+          }
+        }
 
       } else if (isClassLike(at)) {
         if (isClass(at)) {
@@ -778,6 +784,11 @@ void initPrimitiveTypes() {
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
 
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
+
+  dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");
+
+  CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
+  gUninstantiated->addFlag(FLAG_PARAM);
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
@@ -972,6 +983,7 @@ bool isLegalParamType(Type* t) {
           is_complex_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
+          isBytes(t) ||
           t == dtStringC ||
           t == dtUnknown);
 }
@@ -1089,6 +1101,29 @@ bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();
   return false;
+}
+
+bool isUserRecord(Type* t) {
+  if (!isRecord(t))
+    return false;
+
+  // Check for lots of exceptions - types that are implemented
+  // as records but that isn't the user view.
+  if (t == dtString ||
+      t == dtBytes ||
+      t->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DOMAIN) ||
+      t->symbol->hasFlag(FLAG_ARRAY) ||
+      t->symbol->hasFlag(FLAG_RANGE) ||
+      t->symbol->hasFlag(FLAG_TUPLE) ||
+      t->symbol->hasFlag(FLAG_SYNC) ||
+      t->symbol->hasFlag(FLAG_SINGLE) ||
+      t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
+      t->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    return false;
+
+  return true;
 }
 
 bool isUnion(Type* t) {
@@ -1301,6 +1336,10 @@ bool isArrayClass(Type* type) {
 
 bool isString(Type* type) {
   return type == dtString;
+}
+
+bool isBytes(Type* type) {
+  return type == dtBytes;
 }
 
 //
@@ -1670,4 +1709,19 @@ Immediate getDefaultImmediate(Type* t) {
 
   Immediate ret = *defaultVar->immediate;
   return ret;
+}
+
+// Returns 'true' for types that are the type of numeric literals.
+// e.g. 1 is an 'int', so this function returns 'true' for 'int'.
+// e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
+bool isNumericParamDefaultType(Type* t)
+{
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
+      t == dtBools[BOOL_SIZE_DEFAULT])
+    return true;
+
+  return false;
 }

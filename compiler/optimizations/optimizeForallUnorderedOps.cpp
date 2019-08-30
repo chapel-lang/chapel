@@ -679,7 +679,7 @@ static void transformAtomicStmt(Expr* stmt) {
     // Remove a memory_order argument if present
     ArgSymbol* orderFormal = NULL;
     for_formals(formal, newFn) {
-      if (formal->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE))
+      if (formal->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
         orderFormal = formal;
     }
     INT_ASSERT(orderFormal);
@@ -696,7 +696,7 @@ static void transformAtomicStmt(Expr* stmt) {
   // The loop below finds the last argument that is a memory_order.
   Expr* orderActual = NULL;
   for_actuals(actual, call) {
-    if (actual->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE))
+    if (actual->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
       orderActual = actual;
   }
   INT_ASSERT(orderActual);

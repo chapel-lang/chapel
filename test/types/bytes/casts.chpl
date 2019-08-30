@@ -5,8 +5,8 @@
   print(t:bytes);
   print(f:bytes);
 
-  var tb = new bytes("true");
-  var fb = new bytes("false");
+  var tb = b"true";
+  var fb = b"false";
 
   var a = 10;
 
@@ -25,10 +25,10 @@
   print(i32:bytes);
   print(i64:bytes);
 
-  var b8 = new bytes("8");
-  var b16 = new bytes("16");
-  var b32 = new bytes("32");
-  var b64 = new bytes("64");
+  var b8 = b"8";
+  var b16 = b"16";
+  var b32 = b"32";
+  var b64 = b"64";
 
   print(b8:int(8));
   print(b16:int(16));
@@ -43,8 +43,8 @@
   print(r:bytes);
   print(i:bytes);
 
-  var rb = new bytes("3.14");
-  var ib = new bytes("3i");
+  var rb = b"3.14";
+  var ib = b"3i";
 
   print(r:real);
   print(i:imag);
@@ -56,7 +56,7 @@
 
   print(c:bytes);
 
-  var cb = "3+2i";
+  var cb = b"3+2i";
 
   print(cb:complex);
 

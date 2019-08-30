@@ -33,8 +33,6 @@ module ByteBufferHelpers {
   //
   // Externs and constants used to implement strings
   //
-  private        param chpl_string_min_alloc_size: int = 16;
-
   pragma "fn synchronization free"
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
 
@@ -60,7 +58,7 @@ module ByteBufferHelpers {
 
   proc bufferAlloc(requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize),
-                          chpl_string_min_alloc_size);
+                          chpl_stringMinAllocSize);
     var buf = chpl_here_alloc(allocSize,
                               offset_STR_COPY_DATA): bufferType;
     return (buf, allocSize);
@@ -74,7 +72,7 @@ module ByteBufferHelpers {
 
   proc bufferRealloc(buf, requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
-                          chpl_string_min_alloc_size);
+                          chpl_stringMinAllocSize);
     var newBuff = chpl_here_realloc(buf, allocSize,
                                 offset_STR_COPY_DATA): bufferType;
     return (newBuff, allocSize);

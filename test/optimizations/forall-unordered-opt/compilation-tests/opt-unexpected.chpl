@@ -289,7 +289,7 @@ proc mini_lock5() {
     // This code is wrong and racy, but the analysis
     // should nonetheless detect it as "blocking"
     while myLock == 1 {
-      atomic_fence();
+      atomicFence();
       if myLock == 0 {
         myLock = 1;
         break;
@@ -454,7 +454,7 @@ proc tls_signalling() {
         tls.signal.add(1);
 
       tls.deferredSignal = 1;
-      tls.happensBeforeSignal.add(1, order=memory_order_relaxed);
+      tls.happensBeforeSignal.add(1, order=memoryOrder.relaxed);
     }
 
     // Complete all of the deferred signals

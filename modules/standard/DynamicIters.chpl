@@ -28,6 +28,8 @@
 */
 module DynamicIters {
 
+  private use ChapelLocks;
+
 /*
    Toggle debugging output.
 */

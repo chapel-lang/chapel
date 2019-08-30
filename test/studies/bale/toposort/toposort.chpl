@@ -130,16 +130,19 @@ class Vector {
 class ParallelWorkQueue {
   type eltType;
   type lockType;
-  var lock : unmanaged lockType;
+  var lock : lockType;
   var queue : unmanaged Vector(eltType);
 
   var terminated : atomic bool;
   const terminatedRetries : int;
 
   proc init( type eltType, type lockType = unmanaged SyncLock, retries : int = 5 ){
+    if isClassType(lockType) && !isUnmanagedClassType(lockType) then
+      compilerError("Expected unmanaged lockType");
+
     this.eltType = eltType;
     this.lockType = lockType;
-    this.lock = new unmanaged lockType();
+    this.lock = new lockType();
     this.queue = new unmanaged Vector( eltType );
     this.complete();
 
@@ -254,7 +257,7 @@ class LocalDistributedWorkQueue {
   const localeDomain : domain(1);
   const localeArray : [localeDomain] locale;
 
-  var lock : unmanaged lockType;
+  var lock : lockType;
   var queue : unmanaged Vector(eltType);
   var terminated : atomic bool;
   const terminatedRetries : int;
@@ -262,11 +265,14 @@ class LocalDistributedWorkQueue {
   var pid = -1;
 
   proc init( type eltType, type lockType, localeArray : [?localeDomain] locale, retries : int = 5 ){
+    if isClassType(lockType) && !isUnmanagedClassType(lockType) then
+      compilerError("Expected unmanaged lockType");
+
     this.eltType = eltType;
     this.lockType = lockType;
     this.localeDomain = {0..#localeDomain.size};
     this.localeArray = reshape( localeArray, {0..#localeDomain.size} );
-    this.lock = new unmanaged lockType();
+    this.lock = new lockType();
     this.queue = new unmanaged Vector(eltType);
     this.terminatedRetries = retries;
 
@@ -281,7 +287,7 @@ class LocalDistributedWorkQueue {
     this.lockType = lockType;
     this.localeDomain = that.localeDomain;
     this.localeArray = that.localeArray;
-    this.lock = new unmanaged lockType();
+    this.lock = new lockType();
     this.queue = new unmanaged Vector( that.queue );
     this.terminatedRetries = that.terminatedRetries;
     this.pid = pid;

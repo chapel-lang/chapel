@@ -409,24 +409,10 @@ proc file.getParentName(): string throws {
   try check();
 
   try {
-    return dirname(new string(this.realPath()));
+    return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
   }
-}
-
-pragma "no doc"
-proc file.getParentName(out error:syserr): string {
-  compilerWarning("This version of file.getParentName() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.getParentName();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "unknown";
 }
 
 /* Determines whether the path specified is an absolute path.
@@ -593,7 +579,7 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(name.localize().c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return new string(res, needToCopy=false);
+  return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -631,7 +617,7 @@ proc file.realPath(): string throws {
   var res: c_string;
   var err = chpl_fs_realpath_file(_file_internal, res);
   if err then try ioerror(err, "in file.realPath");
-  return new string(res, needToCopy=false);
+  return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"

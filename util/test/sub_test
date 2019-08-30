@@ -557,7 +557,7 @@ def translateOutput(output):
               ('Fatal MPP reservation error on create',
                'Jira 329 -- Fatal MPP reservation error for'),
               ('Text file busy',
-               'Jira 333 -- Text file busy for'))
+               'private issue #474 -- Text file busy for'))
 
     known_error = ''
     was_timeout = False

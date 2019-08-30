@@ -266,9 +266,9 @@ module ChapelArray {
     }
 
     proc _freePrivatizedClassHelp(pid, original) {
-      var prv = chpl_getPrivatizedCopy(object, pid);
+      var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
       if prv != original then
-        delete _to_unmanaged(prv);
+        delete prv;
 
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
@@ -892,8 +892,8 @@ module ChapelArray {
   record dmap { }
 
   pragma "unsafe"
-  proc chpl__buildDistType(type t) type where isSubtype(borrowed t, BaseDist) {
-    var x: unmanaged t;
+  proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
+    var x: _to_unmanaged(t);
     var y = new _distribution(x);
     return y.type;
   }

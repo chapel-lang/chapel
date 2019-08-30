@@ -86,7 +86,7 @@ class PotentialEAM : BasePotential {
     delete rhoIO;
     delete fIO;
   }
-  proc print() {
+  override proc print() {
     writeln("  Potential type  : EAM");
     writeln("  Species name    : ", name);
     writeln("  Atomic number   : ", atomicNo);
@@ -272,7 +272,7 @@ proc PotentialEAM.computeElectronCloud() {
   }
 }
 
-proc PotentialEAM.force() {
+override proc PotentialEAM.force() {
   reset();
 
   const pairWiseEnergy = computePairWise();

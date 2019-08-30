@@ -1,2 +1,2 @@
--sparSafe=true
--sparSafe=false
+-sparSafe=true  # exterior.1.good
+-sparSafe=false # exterior.2.good

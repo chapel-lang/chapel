@@ -189,6 +189,17 @@ proc getFieldIndex(type t, param s:string) param : int
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
+/* Returns `true` if the given class or record's field named `s`
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg s: the name of a field
+   :returns: `true` if the field is instantiated
+*/
+proc isFieldBound(type t, param s : string) param : bool {
+  return __primitive("is bound", t, s);
+}
+
 /* Returns true if a function named `fname` taking no arguments
    could be called in the current scope.
    */

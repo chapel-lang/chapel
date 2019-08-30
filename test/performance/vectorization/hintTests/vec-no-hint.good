@@ -1,6 +1,6 @@
 vec-no-hint.chpl:27: note: Vectorization hazard -- other
-vec-no-hint.chpl:55: note: Vectorization hazard -- calls synchronizing function add_default_order
-vec-no-hint.chpl:62: note: fn doIncrement hazard -- calls synchronizing function add_default_order
+vec-no-hint.chpl:55: note: Vectorization hazard -- calls synchronizing function add
+vec-no-hint.chpl:62: note: fn doIncrement hazard -- calls synchronizing function add
 vec-no-hint.chpl:71: note: Vectorization hazard -- calls synchronizing function doIncrement
 vec-no-hint.chpl:45: note: Vectorization disabled -- address taken
 vec-no-hint.chpl:45: note: Vectorization disabled -- address taken

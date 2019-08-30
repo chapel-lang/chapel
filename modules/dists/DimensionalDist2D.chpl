@@ -328,7 +328,7 @@ class DimensionalDom : BaseRectangularDom {
   // local domain descriptors, not reprivatized
   // INIT TODO: Used to use 'locDdescType' instead of 'locDescTypeHelper'. Can
   // we clean this up?
-  var localDdescs: [dist.targetIds] unmanaged locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
+  var localDdescs: [dist.targetIds] locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
 }
 
 class LocDimensionalDom {

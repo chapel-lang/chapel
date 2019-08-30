@@ -250,6 +250,9 @@ module OwnedObject {
       then
         compilerError("cannot create a non-nilable owned variable from a nilable class instance");
 
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
+
       // Use 'this.type.chpl_t' in case RHS is a subtype
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.release();
@@ -318,7 +321,11 @@ module OwnedObject {
 
        Here `t` refers to the object type managed by this :record:`owned`.
      */
-    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
+      if !isCoercible(newPtr.type, chpl_t) then
+        compilerError("cannot retain '" + newPtr.type:string + "' " +
+                      "(expected '" + _to_unmanaged(chpl_t):string + "')");
+
       var oldPtr = chpl_p;
       chpl_p = newPtr;
       if oldPtr then
@@ -381,12 +388,10 @@ module OwnedObject {
   */
   proc =(ref lhs:_owned,
          pragma "leaves arg nil"
-         ref rhs: _owned) {
-
-    if !chpl_legacyClasses && isNonNilableClass(lhs)
-                              && isNilableClass(rhs) then
-      compilerError("cannot assign to a non-nilable owned from a nilable owned");
-
+         ref rhs: _owned)
+    where chpl_legacyClasses ||
+          ! (isNonNilableClass(lhs) && isNilableClass(rhs))
+  {
     // Work around issues in associative arrays of owned
     // TODO: remove this workaround
     if lhs.chpl_p == nil && rhs.chpl_p == nil then
@@ -408,10 +413,9 @@ module OwnedObject {
   }
 
   pragma "no doc"
-  proc =(ref lhs:_owned, rhs:_nilType) {
-    if _to_nilable(lhs.chpl_t) != lhs.chpl_t && !chpl_legacyClasses {
-      compilerError("Assigning non-nilable owned to nil");
-    }
+  proc =(ref lhs:_owned, rhs:_nilType)
+    where chpl_legacyClasses || ! isNonNilableClass(lhs)
+  {
     lhs.clear();
   }
   /*
