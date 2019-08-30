@@ -145,7 +145,7 @@ static CapturedValueMap            capturedValues;
 static std::set<FnSymbol*> oldStyleInitCopyFns;
 
 // Enable coercions from nilable -> non-nilable to have easier errors
-static int generousNilabilityForErrors;
+static int generousResolutionForErrors;
 
 //#
 //# Static Function Declarations
@@ -1289,7 +1289,7 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
 
   // If we are trying again for better nilability errors,
   // implicit nilability removal is OK.
-  if (generousNilabilityForErrors > 0)
+  if (inGenerousResolutionForErrors())
     return true;
 
   // Currently only applies to this arguments (method receivers)
@@ -3182,11 +3182,10 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
           bool existingErrors = fatalErrorsEncountered();
           printResolutionErrorUnresolved(info, mostApplicable);
 
-          if (generousNilabilityForErrors == 0) {
-            gdbShouldBreakHere();
-            generousNilabilityForErrors++;
+          if (!inGenerousResolutionForErrors()) {
+            startGenerousResolutionForErrors();
             FnSymbol* retry = resolveNormalCall(info, /*checkOnly*/ true);
-            generousNilabilityForErrors--;
+            stopGenerousResolutionForErrors();
 
             if (fIgnoreNilabilityErrors && existingErrors == false && retry)
               clearFatalErrors();
@@ -9861,6 +9860,18 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
+void startGenerousResolutionForErrors() {
+  generousResolutionForErrors++;
+}
+
+bool inGenerousResolutionForErrors() {
+  return generousResolutionForErrors > 0;
+}
+
+void stopGenerousResolutionForErrors() {
+  generousResolutionForErrors--;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -9917,6 +9928,7 @@ void expandInitFieldPrims()
     }
   }
 }
+
 
 /************************************* | **************************************
 *                                                                             *
