@@ -248,6 +248,7 @@ proc getPCDeps(exDeps: unmanaged Toml) {
     try! {
       if pkgConfigExists() {
         const pkgInfo = getPkgInfo(name, vers.s);
+        exDom += name;
         exDepTree[name] = pkgInfo;
       }
     }
