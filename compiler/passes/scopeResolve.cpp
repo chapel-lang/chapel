@@ -2251,6 +2251,7 @@ static void resolveUnmanagedBorrows() {
         call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+        call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
 
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2264,7 +2265,8 @@ static void resolveUnmanagedBorrows() {
               USR_WARN(call, "Please use %s class? instead of %s?",
                               ts->name, ts->name);
           } else if (isManagedPtrType(ts->type) &&
-                     call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+                     (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                      call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
             decorator = CLASS_TYPE_MANAGED;
             USR_WARN(call, "Please use %s class? instead of %s?",
                            ts->name, ts->name);
@@ -2276,7 +2278,8 @@ static void resolveUnmanagedBorrows() {
             else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
                      call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
               type = "borrowed";
-            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS))
+            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
               type = "?";
             else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
               type = "nonnil";
@@ -2298,7 +2301,8 @@ static void resolveUnmanagedBorrows() {
             int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
             decorator = addNilableToDecorator(decorator);
           } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
             decorator = addNonNilToDecorator(decorator);

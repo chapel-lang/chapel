@@ -720,6 +720,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_BORROWED_CLASS_CHECKED:
   case PRIM_TO_UNDECORATED_CLASS:
   case PRIM_TO_NILABLE_CLASS:
+  case PRIM_TO_NILABLE_CLASS_CHECKED:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
     Expr* e = call->get(1);
@@ -741,6 +742,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                              toString(msgType));
 
       checkDuplicateDecorators(msgType, t, call);
+    }
+
+    if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+      // error if it's not a type
+      if (isTypeExpr(e) == false)
+        USR_FATAL_CONT(call, "cannot apply postfix-? to a value");
     }
 
     if (isTypeExpr(e)) {
