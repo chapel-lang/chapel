@@ -6855,7 +6855,10 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // or for t is unmanaged(MyClass)
       if (manager == NULL) {
         if (isManagedPtrType(type)) {
-          manager = type;
+          manager = getManagedPtrManagerType(type);
+          if (isNilableClassType(type))
+            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
+
         } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
           if (dt->isUnmanaged()) {
             if (isNilableClassType(dt))
