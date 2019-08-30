@@ -54,14 +54,14 @@ module Bytes {
   private use BytesStringCommon;
 
   /*
-     ``DecodePolicy`` specifies what happens when there is malformed characters
+     ``decodePolicy`` specifies what happens when there is malformed characters
      when decoding the :record:`bytes` object into a UTF-8 `string`.
        
-       - **Strict**: default policy; raise error
-       - **Replace**: replace with UTF-8 replacement character
-       - **Ignore**: silently drop data
+       - **strict**: default policy; raise error
+       - **replace**: replace with UTF-8 replacement character
+       - **ignore**: silently drop data
   */
-  enum DecodePolicy { Strict, Replace, Ignore }
+  enum decodePolicy { strict, replace, ignore }
 
   /*
    A `DecodeError` is thrown if the `decode` method is called on a non-UTF-8
@@ -730,17 +730,17 @@ module Bytes {
       Returns a UTF-8 string from the given :record:`bytes` object. If the data
       is malformed for UTF-8, `errors` argument determines the action.
       
-      :arg errors: `DecodePolicy.Strict` raises an error, `DecodePolicy.Replace`
+      :arg errors: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
-                   character, `DecodePolicy.Ignore` drops the data silently.
+                   character, `decodePolicy.ignore` drops the data silently.
       
-      :throws: `DecodeError` if `DecodePolicy.Strict` is passed to the `errors`
+      :throws: `DecodeError` if `decodePolicy.strict` is passed to the `errors`
                argument and the `bytes` object contains non-UTF-8 characters.
 
       :returns: A UTF-8 string.
     */
     // NOTE: In the future this could support more encodings.
-    proc decode(errors=DecodePolicy.Strict): string throws {
+    proc decode(errors=decodePolicy.strict): string throws {
       pragma "fn synchronization free"
       extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
                                       buf:c_string, buflen:ssize_t):syserr;
@@ -767,10 +767,10 @@ module Bytes {
         qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
 
         if cp == 0xfffd {  //decoder returns the replacament character
-          if errors == DecodePolicy.Strict {
+          if errors == decodePolicy.strict {
             throw new owned DecodeError();
           }
-          else if errors == DecodePolicy.Ignore {
+          else if errors == decodePolicy.ignore {
             thisIdx += nbytes; //skip over the malformed bytes
             continue;
           }
