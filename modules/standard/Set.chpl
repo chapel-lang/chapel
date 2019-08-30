@@ -42,6 +42,7 @@ module Set {
   // "iterable" argument has a method named "these".
   //
   private use Reflection;
+  private use ChapelLocks only ;
 
   pragma "no doc"
   private param _sanityChecks = true;

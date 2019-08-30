@@ -33,6 +33,8 @@
  */
 
 module DateTime {
+  private use HaltWrappers only ;
+
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
   /* The maximum year allowed in `date` objects */

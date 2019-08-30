@@ -1,0 +1,9 @@
+bug: module name ties with other module's symbol rather than beating it
+
+This program demonstrates a bug that I just introduced in which N's
+M.x ought to beat module M's x, but doesn't.  I think that I broke
+this when I introduced lastResortModuleMatch to
+UseStmt::skipSymbolSearch() since it resolves to the module name
+sooner than anticipated.  It'd be worth understanding again why I
+thought this was necessary rather than having the module be more of a
+last resort if none of the use's symbol lists do the job.

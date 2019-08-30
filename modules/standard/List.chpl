@@ -52,6 +52,8 @@
   into a list is O(1).
 */
 module List {
+  private use Sort;
+  private use ChapelLocks only ;
 
   pragma "no doc"
   private const _initialCapacity = 8;

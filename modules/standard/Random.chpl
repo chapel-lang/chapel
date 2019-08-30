@@ -75,6 +75,7 @@ module Random {
   use RandomSupport;
   use NPBRandom;
   use PCGRandom;
+  private use HaltWrappers only;
 
 
   /* Select between different supported RNG algorithms.
