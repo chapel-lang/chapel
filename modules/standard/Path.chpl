@@ -71,11 +71,12 @@ private use Sys;
 /* Represents generally the current directory. This starts as the directory
    where the program is being executed from.
 */
-const curDir = ".";
+const curDir = b".";
+const curDirStr = ".";
 /* Represents generally the parent directory. */
-const parentDir = "..";
+const parentDir = b"..";
 /* Denotes the separator between a directory and its child. */
-const pathSep = "/";
+const pathSep = b"/";
 
 /*
   Creates a normalized absolutized version of a path. On most platforms, when
@@ -102,11 +103,15 @@ const pathSep = "/";
 
   :throws SystemError: Upon failure to get the current working directory.
 */
-proc absPath(name: string): string throws {
+proc absPath(name: string): bytes throws {
+  return absPath(name: bytes);
+}
+
+proc absPath(name: bytes): bytes throws {
   use FileSystem;
 
   if !isAbsPath(name) then
-    return normPath(joinPath(try here.cwd(), name));
+    return normPath(joinPath(try here.cwd():bytes, name));
   return normPath(name);
 }
 
@@ -133,7 +138,7 @@ proc absPath(name: string): string throws {
 
   :throws SystemError: Upon failure to get the current working directory.
 */
-proc file.absPath(): string throws {
+proc file.absPath(): bytes throws {
   // If we don't use the namespace we get a funky compiler type error.
   return try Path.absPath(this.path);
 }
@@ -151,7 +156,10 @@ proc file.absPath(): string throws {
               a valid file name, as the file itself will not be affected.
    :type name: `string`
 */
-proc basename(name: string): string {
+proc basename(name: string): bytes {
+  return basename(name: bytes);
+}
+proc basename(name: bytes): bytes {
    return splitPath(name)[2];
 }
 
@@ -167,7 +175,12 @@ proc basename(name: string): string {
 // NOTE: Add in intent here to temporarily fix compiler memory leak related
 // to use of varargs.
 proc commonPath(in paths: string ...?n): string {
-  var result: string = "";    // result string
+  type castType = n*bytes;
+  return commonPath((...(paths:castType)));
+}
+
+proc commonPath(in paths: bytes ...?n): bytes {
+  var result: bytes = b"";    // result bytes
   var inputLength = n;   // size of input array
   var firstPath = paths(1);
   var flag: int = 0;
@@ -182,7 +195,7 @@ proc commonPath(in paths: string ...?n): string {
     return firstPath;
   }
 
-  var prefixList = new list(string);
+  var prefixList = new list(bytes);
   for x in firstPath.split(pathSep, -1, false) do
     prefixList.append(x);
 
@@ -234,8 +247,8 @@ proc commonPath(in paths: string ...?n): string {
    :rtype: `string`
 */
 
-proc commonPath(paths: []): string {
-  var result: string = "";    // result string
+proc commonPath(paths: []): bytes {
+  var result: bytes = b"";    // result bytes
   var inputLength = paths.size;   // size of input array
   if inputLength == 0 then {     // if input is empty, return empty string.
     return result;
@@ -243,8 +256,8 @@ proc commonPath(paths: []): string {
 
   var start: int = paths.domain.first;
   var end: int = paths.domain.last;
-  var firstPath = paths[start];
-  var delimiter: string;
+  var firstPath = paths[start]:bytes;
+  var delimiter: bytes;
   var flag: int = 0;
 
   // if input is just one string, return that string as longest common prefix
@@ -256,13 +269,13 @@ proc commonPath(paths: []): string {
 
   // finding delimiter to split the paths.
 
-  if firstPath.find("\\") == 0 then {
-    delimiter = "/";
+  if firstPath.find(b"\\") == 0 then {
+    delimiter = b"/";
   } else {
-    delimiter = "\\";
+    delimiter = b"\\";
   }
 
-  var prefixList = new list(string);
+  var prefixList = new list(bytes);
   for x in firstPath.split(delimiter, -1, false) do
     prefixList.append(x);
   // array of resultant prefix string
@@ -272,9 +285,9 @@ proc commonPath(paths: []): string {
 
   for i in (start+1)..end do {
 
-    var tempList = new list(string);
-    for x in paths[i].split(delimiter, -1, false) do
-      tempList.append(x);
+    var tempList = new list(bytes);
+    for x in (paths[i]:bytes).split(delimiter, -1, false) do
+      tempList.append(x:bytes);
     // temporary array storing the current path under consideration
 
     var minimum = min(prefixList.size, tempList.size);
@@ -318,6 +331,9 @@ proc commonPath(paths: []): string {
    :type name: `string`
 */
 proc dirname(name: string): string {
+  return dirname(name: bytes);
+}
+proc dirname(name: bytes): bytes {
   return splitPath(name)[1];
 }
 
@@ -333,51 +349,55 @@ proc dirname(name: string): string {
             their values.
    :rtype: `string`
 */
- proc expandVars(path: string): string {
-   var path_p: string = path;
-   var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
-   var res: string = "";
-   var ind: byteIndex = 1;
+ proc expandVars(path: string): bytes {
+   return expandVars(path: bytes);
+ }
+
+ proc expandVars(path: bytes): bytes {
+   var path_p: bytes = path;
+   var varChars: bytes = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
+   var res: bytes = b"";
+   var ind = 1;
    var pathlen: int = path_p.numBytes;
    while (ind <= pathlen) {
-     var c: string = path_p(ind);
-     if (c == "$" && ind + 1 <= pathlen) {
-       if (path_p(ind+1) == "$") {
+     var c: bytes = path_p(ind);
+     if (c == b"$" && ind + 1 <= pathlen) {
+       if (path_p(ind+1) == b"$") {
          res = res + c;
          ind += 1;
-       } else if (path_p(ind+1) == "{") {
+       } else if (path_p(ind+1) == b"{") {
          path_p = path_p((ind+2)..);
          pathlen = path_p.numBytes;
-         ind = path_p.find("}");
+         ind = path_p.find(b"}");
          if (ind == 0) {
-           res += "${" +path_p;
+           res += b"${" +path_p;
            ind = pathlen;
          } else {
-           var env_var: string = path_p(..(ind-1));
-           var value: string;
+           var env_var: bytes = path_p(..(ind-1));
+           var value: bytes;
            var value_c: c_string;
            var h: int = sys_getenv(env_var.c_str(), value_c);
            if (h != 1) {
-             value = "${" + env_var + "}";
+             value = b"${" + env_var + b"}";
            } else {
-             value = value_c: string;
+             value = value_c: bytes;
            }
            res += value;
          }
        } else {
-         var env_var: string = "";
+         var env_var: bytes = b"";
          ind += 1;
          while (ind <= path_p.numBytes && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
-         var value: string;
+         var value: bytes;
          var value_c: c_string;
          var h: int = sys_getenv(env_var.c_str(), value_c);
          if (h != 1) {
-           value = "$" + env_var;
+           value = b"$" + env_var;
          } else {
-           value = value_c: string;
+           value = value_c: bytes;
          }
          res += value;
          if (ind <= path_p.numBytes) {
@@ -405,13 +425,13 @@ proc dirname(name: string): string {
   :return: The parent directory of the file.
   :rtype: `string`
 */
-proc file.getParentName(): string throws {
+proc file.getParentName(): bytes throws {
   try check();
 
   try {
-    return dirname(createStringWithNewBuffer(this.realPath()));
+    return dirname(createBytesWithNewBuffer(this.realPath()));
   } catch {
-    return "unknown";
+    return b"unknown";
   }
 }
 
@@ -430,11 +450,15 @@ proc file.getParentName(): string throws {
 */
 
 proc isAbsPath(name: string): bool {
+  return isAbsPath(name: bytes);
+}
+
+proc isAbsPath(name: bytes): bool {
   if name.isEmpty() {
     return false;
   }
-  var str: string = name[1];
-  if (str == '/') {
+  var str: bytes  = name[1];
+  if (str == b'/') {
     return true;
   } else {
     return false;
@@ -443,12 +467,16 @@ proc isAbsPath(name: string): bool {
 
 /* Build up path components as described in joinPath(). */
 private proc joinPathComponent(comp: string, ref result: string) {
-  if comp.startsWith('/') || result == "" then
+  return joinPathComponent(comp: bytes, result: bytes);
+}
+
+private proc joinPathComponent(comp: bytes, ref result: bytes) {
+  if comp.startsWith(b'/') || result == b"" then
     result = comp;
-  else if result.endsWith('/') then
+  else if result.endsWith(b'/') then
     result += comp;
   else
-    result += '/' + comp;
+    result += b'/' + comp;
 }
 
 /* Join and return one or more paths, putting precedent on the last absolute
@@ -473,7 +501,12 @@ private proc joinPathComponent(comp: string, ref result: string) {
 // NOTE: Add in intent here to temporarily fix compiler memory leak related
 // to use of varargs.
 proc joinPath(in paths: string ...?n): string {
-  var result: string;
+  type castType = n*bytes;
+  return joinPath((...(paths:castType)));
+}
+
+proc joinPath(in paths: bytes ...?n): bytes {
+  var result: bytes;
 
   for path in paths do
     joinPathComponent(path, result);
@@ -482,11 +515,11 @@ proc joinPath(in paths: string ...?n): string {
 }
 
 /* This overload is private for now, needed for relPath. */
-private proc joinPath(paths: [] string): string {
+private proc joinPath(paths: [] bytes): bytes {
   if paths.isEmpty() then
-    return "";
+    return b"";
 
-  var result: string;
+  var result: bytes;
 
   for path in paths do
     joinPathComponent(path, result);
@@ -496,6 +529,10 @@ private proc joinPath(paths: [] string): string {
 
 // Normalize leading slash count to a value between 0 and 2.
 private proc normalizeLeadingSlashCount(name: string): int {
+  return normalizeLeadingSlashCount(name: bytes);
+}
+
+private proc normalizeLeadingSlashCount(name: bytes): int {
   var result = if name.startsWith(pathSep) then 1 else 0;
 
   // Two leading slashes has a special meaning in POSIX.
@@ -526,21 +563,25 @@ private proc normalizeLeadingSlashCount(name: string): int {
   :return: The collapsed version of `name`.
   :rtype: `string`
 */
-proc normPath(name: string): string {
+proc normPath(name: string): bytes {
+  return normPath(name: bytes);
+}
+
+proc normPath(name: bytes): bytes {
   
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
-  if name == "" then
+  if name == b"" then
     return curDir;
 
   const leadingSlashes = normalizeLeadingSlashCount(name);
 
   var comps = name.split(pathSep);
-  var outComps = new list(string);
+  var outComps = new list(bytes);
 
   for comp in comps {
-    if comp == "" || comp == curDir then
+    if comp == b"" || comp == curDir then
       continue;
 
     // Second case exists because we cannot go up past the top level.
@@ -554,7 +595,7 @@ proc normPath(name: string): string {
 
   var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
 
-  if result == "" then
+  if result == b"" then
     return curDir;
 
   return result;
@@ -573,17 +614,26 @@ proc normPath(name: string): string {
    :return: A canonical version of the argument.
    :rtype: `string`
 */
-proc realPath(name: string): string throws {
+proc realPath(name: string): bytes throws {
+  return realPath(name: bytes);
+}
+
+proc realPath(name: bytes): bytes throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
   var err = chpl_fs_realpath(name.localize().c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithOwnedBuffer(res);
+  return createBytesWithOwnedBuffer(res);
 }
 
 pragma "no doc"
 proc realPath(out error: syserr, name: string): string {
+  return realPath(error: syserr, name: bytes);
+}
+
+pragma "no doc"
+proc realPath(out error: syserr, name: bytes): bytes {
   compilerWarning("This version of realPath() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -593,7 +643,7 @@ proc realPath(out error: syserr, name: string): string {
   } catch {
     error = EINVAL;
   }
-  return "";
+  return b"";
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record
@@ -608,7 +658,7 @@ proc realPath(out error: syserr, name: string): string {
             occur.
    :rtype: `string`
 */
-proc file.realPath(): string throws {
+proc file.realPath(): bytes throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
   if (is_c_nil(_file_internal)) then
@@ -617,11 +667,11 @@ proc file.realPath(): string throws {
   var res: c_string;
   var err = chpl_fs_realpath_file(_file_internal, res);
   if err then try ioerror(err, "in file.realPath");
-  return createStringWithOwnedBuffer(res);
+  return createBytesWithOwnedBuffer(res);
 }
 
 pragma "no doc"
-proc file.realPath(out error: syserr): string {
+proc file.realPath(out error: syserr): bytes {
   compilerWarning("This version of realPath() is deprecated; " +
                   "please switch to a throwing version");
   try {
@@ -631,12 +681,12 @@ proc file.realPath(out error: syserr): string {
   } catch {
     error = EINVAL;
   }
-  return "";
+  return b"";
 }
 
 /* Compute the common prefix length between two lists of path components. */
 private
-proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
+proc commonPrefixLength(const a1: [] bytes, const a2: [] bytes): int {
   const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
   var result = 0;
 
@@ -672,8 +722,12 @@ proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
 
   :throws SystemError: Upon failure to get the current working directory.
 */
-proc relPath(name: string, start:string=curDir): string throws {
-  const realstart = if start == "" then curDir else start;
+proc relPath(name: string, start:string=curDirStr): string throws {
+  return relPath(name: bytes, start:bytes);
+}
+
+proc relPath(name: bytes, start:bytes=curDir): bytes throws {
+  const realstart = if start == b"" then curDir else start;
 
   // NOTE: Reliance on locale.cwd() can't be avoided.
   const startComps = absPath(realstart).split(pathSep, -1, true);
@@ -682,7 +736,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   const prefixLen = commonPrefixLength(startComps, nameComps);
 
   // Append up-levels until we reach the point where the paths diverge.
-  var outComps = new list(string);
+  var outComps = new list(bytes);
   for i in 1..(startComps.size - prefixLen) do
     outComps.append(parentDir);
 
@@ -719,7 +773,12 @@ proc relPath(name: string, start:string=curDir): string throws {
 
   :throws SystemError: Upon failure to get the current working directory.
 */
-proc file.relPath(start:string=curDir): string throws {
+proc file.relPath(start:string): bytes throws {
+  use Path only;
+  // Have to prefix module name to avoid muddying name resolution.
+  return Path.relPath(start:bytes);
+}
+proc file.relPath(start:bytes=curDir): bytes throws {
   use Path only;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
@@ -753,12 +812,16 @@ proc file.relPath(start:string=curDir): string throws {
    :arg name: Path to be split.
    :type name: `string`
 */
- proc splitPath(name: string): (string, string) {
-   var rLoc, lLoc, prev: byteIndex = name.rfind(pathSep);
+ proc splitPath(name: string): (bytes, bytes) {
+   return splitPath(name: bytes);
+ }
+
+ proc splitPath(name: bytes): (bytes, bytes) {
+   var rLoc, lLoc, prev = name.rfind(pathSep);
    if (prev != 0) {
      do {
        prev = lLoc;
-       lLoc = name.rfind(pathSep, 1:byteIndex..prev-1);
+       lLoc = name.rfind(pathSep, 1..prev-1);
      } while (lLoc + 1 == prev && lLoc > 1);
 
      if (prev == 1) {
@@ -779,7 +842,7 @@ proc file.relPath(start:string=curDir): string throws {
        return (name[..rLoc-1], name[rLoc+1..]);
      }
    } else {
-     return ("", name);
+     return (b"", name);
    }
  }
 }

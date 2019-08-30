@@ -1551,8 +1551,8 @@ to get the path to a file.
 
 :throws SystemError: Thrown if the path could not be retrieved.
  */
-proc file.path : string throws {
-  var ret: string;
+proc file.path : bytes throws {
+  var ret: bytes;
   var err:syserr = ENOERR;
   on this.home {
     try this.checkAssumingLocal();
@@ -1564,7 +1564,7 @@ proc file.path : string throws {
     }
     chpl_free_c_string(tmp);
     if !err {
-      ret = createStringWithOwnedBuffer(tmp2);
+      ret = createBytesWithOwnedBuffer(tmp2);
     }
   }
   if err then try ioerror(err, "in file.path");
@@ -1577,11 +1577,11 @@ Get the path to an open file, or return "unknown" if there was
 a problem getting the path to the open file.
 
 */
-proc file.tryGetPath() : string {
+proc file.tryGetPath() : bytes {
   try {
     return this.path;
   } catch {
-    return "unknown";
+    return b"unknown";
   }
 }
 
@@ -1645,6 +1645,11 @@ to create a channel to actually perform I/O operations
 :throws SystemError: Thrown if the file could not be opened.
 */
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle()): file throws {
+  return open(path:bytes, mode, hints, style);
+}
+
+proc open(path:bytes, mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle()): file throws {
 
   var local_style = style;
@@ -2514,6 +2519,15 @@ proc openreader(path:string,
                 hints:iohints = IOHINT_NONE,
                 style:iostyle = defaultIOStyle())
     : channel(false, kind, locking) throws {
+  return openreader(path:bytes, kind, locking, start, end, hints, style);
+}
+
+proc openreader(path:bytes,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints = IOHINT_NONE,
+                style:iostyle = defaultIOStyle())
+    : channel(false, kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
   return try fl.reader(kind, locking, start, end, hints, style);
@@ -2547,6 +2561,15 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :throws SystemError: Thrown if a writing channel could not be returned.
 */
 proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints = IOHINT_NONE,
+                style:iostyle = defaultIOStyle())
+    : channel(true, kind, locking) throws {
+  return openwriter(path:bytes, kind, locking, start, end, hints, style);
+}
+
+proc openwriter(path:bytes,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE,

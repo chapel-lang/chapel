@@ -405,8 +405,16 @@ pragma "insert line file info"
 pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
+  ioerror(error:syserr, msg, path:bytes, offset:int(64));
+}
+
+pragma "insert line file info"
+pragma "always propagate line file info"
+proc ioerror(error:syserr, msg:string, path:bytes, offset:int(64)) throws
+{
   if error {
-    const quotedpath = quote_string(path, path.numBytes:ssize_t);
+    // TODO there should be a quote_bytes. Call to decode below is not right
+    const quotedpath = quote_string(path.decode(), path.numBytes:ssize_t);
     var   details    = msg + " with path " + quotedpath +
                        " offset " + offset:string;
     throw SystemError.fromSyserr(error, details);
@@ -418,8 +426,17 @@ pragma "insert line file info"
 pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
+  ioerror(error, msg, path:bytes);
+}
+
+pragma "no doc" // documented in the offset version
+pragma "insert line file info"
+pragma "always propagate line file info"
+proc ioerror(error:syserr, msg:string, path:bytes) throws
+{
   if error {
-    const quotedpath = quote_string(path, path.numBytes:ssize_t);
+    // TODO there should be a quote_bytes. Call to decode below is not right
+    const quotedpath = quote_string(path.decode(), path.numBytes:ssize_t);
     var   details    = msg + " with path " + quotedpath;
     throw SystemError.fromSyserr(error, details);
   }

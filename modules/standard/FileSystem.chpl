@@ -152,6 +152,11 @@ extern const S_ISGID: int;
 */
 extern const S_ISVTX: int;
 
+
+private proc dec(b: bytes): string {
+  return try! b.decode(DecodePolicy.Ignore);
+}
+
 /* Change the current working directory of the locale in question to the
    specified path `name`.
 
@@ -166,6 +171,10 @@ extern const S_ISVTX: int;
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc locale.chdir(name: string) throws {
+  chdir(name: bytes);
+}
+
+proc locale.chdir(name: bytes) throws {
   extern proc chpl_fs_chdir(name: c_string):syserr;
 
   var err: syserr = ENOERR;
@@ -207,6 +216,10 @@ proc locale.chdir(out error: syserr, name: string) {
                             permission to change the permissions
 */
 proc chmod(name: string, mode: int) throws {
+  chmod(name: bytes, mode);
+}
+
+proc chmod(name: bytes, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 
   var err = chpl_fs_chmod(name.localize().c_str(), mode);
@@ -242,6 +255,10 @@ proc chmod(out error: syserr, name: string, mode: int) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc chown(name: string, uid: int, gid: int) throws {
+  return chown(name: bytes, uid, gid);
+}
+
+proc chown(name: bytes, uid: int, gid: int) throws {
   extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 
   var err = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
@@ -289,11 +306,15 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
    :throws SystemError: thrown to describe another error if it occurs.
 */
 proc copy(src: string, dest: string, metadata: bool = false) throws {
+  return copy(src: bytes, dest: bytes, metadata);
+}
+
+proc copy(src: bytes, dest: bytes, metadata: bool = false) throws {
   var destFile = dest;
   try {
     if (isDir(destFile)) {
       // destFile = joinPath(destFile, basename(src));
-      ioerror(EISDIR:syserr, "in copy(" + src + ", " + dest + ")");
+      ioerror(EISDIR:syserr, "in copy(" + dec(src) + ", " + dec(dest) + ")");
 
       // Supporting a destination directory requires getting the basename from
       // the src (because we're using the same name) and joining it with the
@@ -313,7 +334,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     // Copies the access time, and time of last modification.
     // Does not copy uid, gid, or mode
     var err = chpl_fs_copy_metadata(src.localize().c_str(), dest.localize().c_str());
-    if err then try ioerror(err, "in copy(" + src + ", " + dest + ")");
+    if err then try ioerror(err, "in copy(" + dec(src) + ", " + dec(dest) + ")");
 
     // Get uid and gid from src
     var uid = try getUID(src);
@@ -354,6 +375,10 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
                         or to describe another error if it occurs.
 */
 proc copyFile(src: string, dest: string) throws {
+  copyFile(src: bytes, dest: bytes);
+}
+
+proc copyFile(src: bytes, dest: bytes) throws {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
@@ -362,18 +387,18 @@ proc copyFile(src: string, dest: string) throws {
 
   if !(try exists(src)) then
     // Source didn't exist, we can't copy it.
-    try ioerror(ENOENT:syserr, "in copyFile(" + src + ", " + dest + ")");
+    try ioerror(ENOENT:syserr, "in copyFile(" + dec(src) + ", " + dec(dest) + ")");
 
   try {
     if (isDir(src) || isDir(dest)) {
       // If the source is a directory, the user has made a mistake, so return
       // an error.  The same is true if the destination is a directory.
-      ioerror(EISDIR:syserr, "in copyFile(" + src + ", " + dest + ")");
+      ioerror(EISDIR:syserr, "in copyFile(" + dec(src) + ", " + dec(dest) + ")");
     }
 
     if (sameFile(src, dest)) {
       // Check if the files are the same, error if yes
-      try ioerror(EINVAL:syserr, "in copyFile(" + src + ", " + dest + ")");
+      try ioerror(EINVAL:syserr, "in copyFile(" + dec(src) + ", " + dec(dest) + ")");
     }
   } catch e: FileNotFoundError {
     // We don't care if dest did not exist before, we'll create or overwrite
@@ -410,6 +435,8 @@ proc copyFile(src: string, dest: string) throws {
   }
 
   // read in, write out.
+  // TODO Engin: we currently don't have readbytes in IO. buf shouldn't be a
+  // string
   var buf: string;
   var numRead: int = 0;
   // If increasing the read size, make sure there's a test in
@@ -464,6 +491,10 @@ proc copyFile(out error: syserr, src: string, dest: string) {
                             permission to change the permissions
 */
 proc copyMode(src: string, dest: string) throws {
+  return copyMode(src: bytes, dest: bytes);
+}
+
+proc copyMode(src: bytes, dest: bytes) throws {
   try {
     // Gets the mode from the source file.
     var srcMode = getMode(src);
@@ -471,12 +502,17 @@ proc copyMode(src: string, dest: string) throws {
     chmod(dest, srcMode);
   } catch e: SystemError {
     // Hide implementation details.
-    try ioerror(e.err, "in copyMode " + src, dest);
+    try ioerror(e.err, "in copyMode " + dec(src), dest);
   }
 }
 
 pragma "no doc"
 proc copyMode(out error: syserr, src: string, dest: string) {
+  return copyMode(error: syserr, src: bytes, dest: bytes);
+}
+
+pragma "no doc"
+proc copyMode(out error: syserr, src: bytes, dest: bytes) {
   var err: syserr = ENOERR;
   try {
     copyMode(src, dest);
@@ -510,28 +546,36 @@ proc copyMode(out error: syserr, src: string, dest: string) {
    :throws SystemError: thrown to describe another error if it occurs.
 */
 proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
+  return copyTree(src: bytes, dest: bytes, copySymbolically);
+}
+
+proc copyTree(src: bytes, dest: bytes, copySymbolically: bool=false) throws {
   var expectedErrorCases = try exists(dest);
   if (expectedErrorCases) then
     // dest exists.  That's not ideal.
-    try ioerror(EEXIST:syserr, "in copyTree(" + src + ", " + dest + ")");
+    try ioerror(EEXIST:syserr, "in copyTree(" + dec(src) + ", " + dec(dest) + ")");
 
   expectedErrorCases = !(try isDir(src));
   if (expectedErrorCases) then
-    try ioerror(ENOTDIR:syserr, "in copyTree(" + src + ", " + dest + ")");
+    try ioerror(ENOTDIR:syserr, "in copyTree(" + dec(src) + ", " + dec(dest) + ")");
 
   var srcPath = try realPath(src);
   try copyTreeHelper(srcPath, dest, copySymbolically);
 }
 
 private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false) throws {
+  copyTreeHelper(src: bytes, dest: bytes, copySymbolically);
+}
+
+private proc copyTreeHelper(src: bytes, dest: bytes, copySymbolically: bool=false) throws {
   // Create dest
   var oldMode = try getMode(src);
   try mkdir(dest, mode=oldMode, parents=true);
 
   for filename in listdir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
-    var fileDestName = dest + "/" + filename;
-    var fileSrcName = src + "/" + filename;
+    var fileDestName = dest + b"/" + filename;
+    var fileSrcName = src + b"/" + filename;
     if (try isLink(fileSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(fileSrcName);
@@ -544,8 +588,8 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   }
 
   for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
-    var dirDestName = dest+"/"+dirname;
-    var dirSrcName = src+"/"+dirname;
+    var dirDestName = dest+b"/"+dirname;
+    var dirSrcName = src+b"/"+dirname;
     if (try isLink(dirSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(dirSrcName);
@@ -584,16 +628,16 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc locale.cwd(): string throws {
+proc locale.cwd(): bytes throws {
   extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
 
-  var ret:string;
+  var ret:bytes;
   var err: syserr = ENOERR;
   on this {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = createStringWithOwnedBuffer(tmp);
+    ret = createBytesWithOwnedBuffer(tmp);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
@@ -627,6 +671,10 @@ proc locale.cwd(out error: syserr): string {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc exists(name: string): bool throws {
+  return exists(name: bytes);
+}
+
+proc exists(name: bytes): bool throws {
   extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
 
   if (name.isEmpty()) {
@@ -676,30 +724,43 @@ proc exists(out error: syserr, name: string): bool {
 */
 
 iter findfiles(startdir: string = ".", recursive: bool = false,
-               hidden: bool = false): string {
+               hidden: bool = false): bytes {
+  for f in findfiles(startdir: bytes, recursive, hidden) do yield f;
+}
+
+iter findfiles(startdir: bytes= b".", recursive: bool = false,
+               hidden: bool = false): bytes {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
-        yield subdir+"/"+file;
+        yield subdir+b"/"+file;
   else
     for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
-      yield startdir+"/"+file;
+      yield startdir+b"/"+file;
 }
 
 pragma "no doc"
 iter findfiles(startdir: string = ".", recursive: bool = false,
-               hidden: bool = false, param tag: iterKind): string
+               hidden: bool = false, param tag: iterKind): bytes
        where tag == iterKind.standalone {
+  for f in findfiles(startdir: bytes, recursive,
+                     hidden, tag=iterKind.standalone) do yield f;
+}
+
+iter findfiles(startdir: bytes = b".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): bytes
+       where tag == iterKind.standalone {
+
   if (recursive) then
     // Why "with (ref hidden)"?  A: the compiler currently allows only
     // [const] ref intents in forall loops over recursive parallel iterators
     // such as walkdirs().
     forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
-        yield subdir+"/"+file;
+        yield subdir+b"/"+file;
   else
     for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
-      yield startdir+"/"+file;
+      yield startdir+b"/"+file;
 }
 
 /* Obtains and returns the group id associated with the file or directory
@@ -714,6 +775,10 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getGID(name: string): int throws {
+  return getGID(name: bytes);
+}
+
+proc getGID(name: bytes): int throws {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
@@ -750,6 +815,10 @@ proc getGID(out error: syserr, name: string): int {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getMode(name: string): int throws {
+  return getMode(name: bytes);
+}
+
+proc getMode(name: bytes): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
@@ -783,6 +852,10 @@ proc getMode(out error: syserr, name: string): int {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getFileSize(name: string): int throws {
+  return getFileSize(name: bytes);
+}
+
+proc getFileSize(name: bytes): int throws {
   extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
 
   var result: int;
@@ -817,6 +890,10 @@ proc getFileSize(out error: syserr, name: string): int {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getUID(name: string): int throws {
+  return getUID(name: bytes);
+}
+
+proc getUID(name: bytes): int throws {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
@@ -851,7 +928,7 @@ private module GlobWrappers {
   private extern const GLOB_NOSPACE: c_int;
 
   // glob wrapper that takes care of casting and error checking
-  inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
+  inline proc glob_w(pattern: bytes, ref ret_glob:glob_t): void {
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -874,9 +951,9 @@ private module GlobWrappers {
   }
 
   // glob_index wrapper that takes care of casting
-  inline proc glob_index_w(glb: glob_t, idx: int): string {
+  inline proc glob_index_w(glb: glob_t, idx: int): bytes {
     extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
-    return chpl_glob_index(glb, idx.safeCast(size_t)): string;
+    return chpl_glob_index(glb, idx.safeCast(size_t)): bytes;
   }
 
   // globfree wrapper that exists only for symmetry in the routine names
@@ -895,7 +972,7 @@ private module GlobWrappers {
 
    :yield: The matching filenames as strings
 */
-iter glob(pattern: string = "*"): string {
+iter glob(pattern: bytes = b"*"): bytes {
   use GlobWrappers;
   var glb : glob_t;
 
@@ -910,7 +987,7 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
-iter glob(pattern: string = "*", param tag: iterKind): string
+iter glob(pattern: bytes = b"*", param tag: iterKind): bytes
        where tag == iterKind.standalone {
   use GlobWrappers;
   var glb : glob_t;
@@ -934,7 +1011,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 // the state at the end of the call).
 //
 pragma "no doc"
-iter glob(pattern: string = "*", param tag: iterKind)
+iter glob(pattern: bytes = b"*", param tag: iterKind)
        where tag == iterKind.leader {
   use GlobWrappers;
   var glb : glob_t;
@@ -951,7 +1028,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
-iter glob(pattern: string = "*", followThis, param tag: iterKind): string
+iter glob(pattern: bytes = b"*", followThis, param tag: iterKind): bytes
        where tag == iterKind.follower {
   use GlobWrappers;
   var glb : glob_t;
@@ -984,6 +1061,10 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
                         to a valid file or directory.
 */
 proc isDir(name:string):bool throws {
+  return isDir(name:bytes);
+}
+
+proc isDir(name:bytes):bool throws {
   extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
@@ -1023,6 +1104,10 @@ proc isDir(out error:syserr, name:string):bool {
                         to a valid file or directory.
 */
 proc isFile(name:string):bool throws {
+  return isFile(name:bytes);
+}
+
+proc isFile(name:bytes):bool throws {
   extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
@@ -1063,6 +1148,10 @@ proc isFile(out error:syserr, name:string):bool {
                         to a valid file or directory.
 */
 proc isLink(name: string): bool throws {
+  return isLink(name: bytes);
+}
+
+proc isLink(name: bytes): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 
   if (name.isEmpty()) {
@@ -1106,6 +1195,9 @@ proc isLink(out error:syserr, name: string): bool {
                         to a valid file or directory.
 */
 proc isMount(name: string): bool throws {
+  return isMount(name: bytes);
+}
+proc isMount(name: bytes): bool throws {
 
   extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
 
@@ -1161,7 +1253,13 @@ proc isMount(out error:syserr, name: string): bool {
    :yield: The names of the specified directory's contents, as strings
 */
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
-              files: bool = true, listlinks: bool = true): string {
+              files: bool = true, listlinks: bool = true): bytes {
+  for d in  listdir(path: bytes, hidden, dirs, files, listlinks) do
+    yield d;
+}
+
+iter listdir(path: bytes = b".", hidden: bool = false, dirs: bool = true,
+              files: bool = true, listlinks: bool = true): bytes {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -1181,10 +1279,10 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name():string;
-      if (hidden || filename[1] != '.') {
-        if (filename != "." && filename != "..") {
-          const fullpath = path + "/" + filename;
+      const filename = ent.d_name():bytes;
+      if (hidden || filename[1] != b'.') {
+        if (filename != b"." && filename != b"..") {
+          const fullpath = path + b"/" + filename;
 
           // TODO: revisit error handling for this method
           try {
@@ -1244,10 +1342,15 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
+  mkdir(name: bytes, mode, parents);
+}
+
+proc mkdir(name: bytes, mode: int = 0o777, parents: bool=false) throws {
   extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
 
   if name.isEmpty() then
-    try ioerror(ENOENT:syserr, "mkdir called with illegal path: '" + name + "'");
+    try ioerror(ENOENT:syserr, "mkdir called with illegal path: '"
+                + dec(name) + "'");
 
   var err = chpl_fs_mkdir(name.localize().c_str(), mode, parents);
   if err then try ioerror(err, "in mkdir", name);
@@ -1288,6 +1391,10 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
    :throws SystemError: thrown to describe another error if it occurs.
 */
 proc moveDir(src: string, dest: string) throws {
+  return moveDir(src: bytes, dest: bytes);
+}
+
+proc moveDir(src: bytes, dest: bytes) throws {
   var destExists = try exists(dest);
   if (destExists) {
     // dest already existed
@@ -1346,6 +1453,10 @@ proc moveDir(out error: syserr, src: string, dest: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc rename(oldname: string, newname: string) throws {
+  return rename(oldname: bytes, newname: bytes);
+}
+
+proc rename(oldname: bytes, newname: bytes) throws {
   extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
 
   var err = chpl_fs_rename(oldname.localize().c_str(), newname.localize().c_str());
@@ -1374,6 +1485,10 @@ proc rename(out error: syserr, oldname, newname: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc remove(name: string) throws {
+  return remove(name: bytes);
+}
+
+proc remove(name: bytes) throws {
   extern proc chpl_fs_remove(name: c_string):syserr;
 
   var err = chpl_fs_remove(name.localize().c_str());
@@ -1402,28 +1517,34 @@ proc remove(out error: syserr, name: string) {
    :throws SystemError: thrown to describe another error if it occurs.
 */
 proc rmTree(root: string) throws {
+  rmTree(root: bytes);
+}
+
+proc rmTree(root: bytes) throws {
   // root doesn't exist.  We can't remove something that isn't there
   var rootExists = try exists(root);
-  if !rootExists then try ioerror(ENOENT:syserr, "in rmTree(" + root + ")");
+  if !rootExists then try ioerror(ENOENT:syserr,
+                                  "in rmTree(" + dec(root) + ")");
 
   // We need it to be a directory!
   var rootIsDir = try isDir(root);
-  if !rootIsDir then try ioerror(ENOTDIR:syserr, "in rmTree(" + root + ")");
+  if !rootIsDir then try ioerror(ENOTDIR:syserr,
+                                 "in rmTree(" + dec(root) + ")");
 
   var rootPath = try realPath(root);
   try rmTreeHelper(rootPath);
 }
 
-private proc rmTreeHelper(root: string) throws {
+private proc rmTreeHelper(root: bytes) throws {
   // Go through all the files in this current directory and remove them
   for filename in listdir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
-    var name = root + "/" + filename;
+    var name = root + b"/" + filename;
     try remove(name);
   }
   // Then traverse all the directories within this current directory and have
   // them handle cleaning up their contents and themselves
   for dirname in listdir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
-    var fullpath = root + "/" + dirname;
+    var fullpath = root + b"/" + dirname;
     var dirIsLink = try isLink(fullpath);
     if (dirIsLink) {
       try remove(fullpath);
@@ -1465,11 +1586,15 @@ proc rmTree(out error: syserr, root: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc sameFile(file1: string, file2: string): bool throws {
+  return sameFile(file1: bytes, file2: bytes);
+}
+
+proc sameFile(file1: bytes, file2: bytes): bool throws {
   extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
 
   var ret:c_int;
   var err = chpl_fs_samefile_string(ret, file1.localize().c_str(), file2.localize().c_str());
-  if err then try ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
+  if err then try ioerror(err, "in sameFile(" + dec(file1) + ", " + dec(file2) + ")");
   return ret != 0;
 }
 
@@ -1545,10 +1670,14 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc symlink(oldName: string, newName: string) throws {
+  return symlink(oldName: bytes, newName: bytes);
+}
+
+proc symlink(oldName: bytes, newName: bytes) throws {
   extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
 
   var err = chpl_fs_symlink(oldName.localize().c_str(), newName.localize().c_str());
-  if err then try ioerror(err, "in symlink " + oldName, newName);
+  if err then try ioerror(err, "in symlink " + dec(oldName), newName);
 }
 
 pragma "no doc"
@@ -1624,7 +1753,14 @@ proc locale.umask(mask: int): int {
 */
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
-              sort: bool = false): string {
+              sort: bool = false): bytes {
+  for d in walkdirs(path: bytes, topdown, depth, hidden,
+                    followlinks, sort) do yield d;
+}
+
+iter walkdirs(path: bytes = b".", topdown: bool = true, depth: int = max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false): bytes {
 
   if (topdown) then
     yield path;
@@ -1637,7 +1773,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     }
 
     for subdir in subdirs {
-      const fullpath = path + "/" + subdir;
+      const fullpath = path + b"/" + subdir;
       for subdir in walkdirs(fullpath, topdown, depth-1, hidden,
                              followlinks, sort) do
         yield subdir;
@@ -1657,6 +1793,15 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
+         for d in walkdirs(path: bytes, topdown, depth,
+              hidden, followlinks, sort, tag=iterKind.standalone) do yield d;
+}
+
+pragma "no doc"
+iter walkdirs(path: bytes = ".", topdown: bool = true, depth: int =max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false, param tag: iterKind): bytes
+       where tag == iterKind.standalone {
 
   if (sort) then
     warning("sorting has no effect for parallel invocations of walkdirs()");
@@ -1667,7 +1812,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
     forall subdir in subdirs {
-      const fullpath = path + "/" + subdir;
+      const fullpath = path + b"/" + subdir;
       //
       // Call standalone walkdirs() iterator recursively; set sort=false since it is
       // not useful and we've already printed the warning
