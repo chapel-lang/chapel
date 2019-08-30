@@ -11,5 +11,3 @@ module N {
     M.foo();
   }
 }
-
-  
