@@ -255,7 +255,7 @@ proc chmod(out error: syserr, name: string, mode: int) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc chown(name: string, uid: int, gid: int) throws {
-  return chown(name: bytes, uid, gid);
+  chown(name: bytes, uid, gid);
 }
 
 proc chown(name: bytes, uid: int, gid: int) throws {
@@ -306,7 +306,7 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
    :throws SystemError: thrown to describe another error if it occurs.
 */
 proc copy(src: string, dest: string, metadata: bool = false) throws {
-  return copy(src: bytes, dest: bytes, metadata);
+  copy(src: bytes, dest: bytes, metadata);
 }
 
 proc copy(src: bytes, dest: bytes, metadata: bool = false) throws {
@@ -491,7 +491,7 @@ proc copyFile(out error: syserr, src: string, dest: string) {
                             permission to change the permissions
 */
 proc copyMode(src: string, dest: string) throws {
-  return copyMode(src: bytes, dest: bytes);
+  copyMode(src: bytes, dest: bytes);
 }
 
 proc copyMode(src: bytes, dest: bytes) throws {
@@ -546,7 +546,7 @@ proc copyMode(out error: syserr, src: bytes, dest: bytes) {
    :throws SystemError: thrown to describe another error if it occurs.
 */
 proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
-  return copyTree(src: bytes, dest: bytes, copySymbolically);
+  copyTree(src: bytes, dest: bytes, copySymbolically);
 }
 
 proc copyTree(src: bytes, dest: bytes, copySymbolically: bool=false) throws {
@@ -1391,7 +1391,7 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
    :throws SystemError: thrown to describe another error if it occurs.
 */
 proc moveDir(src: string, dest: string) throws {
-  return moveDir(src: bytes, dest: bytes);
+  moveDir(src: bytes, dest: bytes);
 }
 
 proc moveDir(src: bytes, dest: bytes) throws {
@@ -1402,24 +1402,27 @@ proc moveDir(src: bytes, dest: bytes) throws {
       // dest is a file, we can't move src within it!
       // Note: Python gives EEXIST in this case, but I think ENOTDIR is
       // clearer.
-      try ioerror(ENOTDIR:syserr, "in moveDir(" + src + ", " + dest + ")");
+      try ioerror(ENOTDIR:syserr, "in moveDir(" + dec(src) + ", " + dec(dest) + ")");
     } else if (try isDir(dest)) {
       if (try sameFile(src, dest)) {
         // Python's behavior when calling move over the same directory for
         // source and destination is to fail with a helpful error message.
         // Since this error code shouldn't occur otherwise, it signals to
         // the wrapper function what has happened.
-        throw new owned IllegalArgumentError("src", "Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+        throw new owned IllegalArgumentError("src", "Cannot move a directory \'" 
+            + dec(src) + "\' into itself \'" + dec(dest) + "\'.");
       } else {
         // dest is a directory, we'll copy src inside it
         // NOT YET SUPPORTED.  Requires basename and joinPath
-        try ioerror(EISDIR:syserr, "unsupported operation in moveDir(" + src + ", " + dest + ")");
+        try ioerror(EISDIR:syserr, "unsupported operation in moveDir("
+            + dec(src) + ", " + dec(dest) + ")");
       }
     } else {
       // What we've been provided is both not a file and not a directory.  Given
       // the expected behavior of isFile and isDir when it comes to symlinks,
       // I'm not sure how this case would arise.
-      try ioerror(ENOTDIR:syserr, "unsupported operation in moveDir(" + src + ", " + dest + ")");
+      try ioerror(ENOTDIR:syserr, "unsupported operation in moveDir("
+          + dec(src) + ", " + dec(dest) + ")");
     }
   } else {
     try copyTree(src, dest, true);
@@ -1453,7 +1456,7 @@ proc moveDir(out error: syserr, src: string, dest: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc rename(oldname: string, newname: string) throws {
-  return rename(oldname: bytes, newname: bytes);
+  rename(oldname: bytes, newname: bytes);
 }
 
 proc rename(oldname: bytes, newname: bytes) throws {
@@ -1485,7 +1488,7 @@ proc rename(out error: syserr, oldname, newname: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc remove(name: string) throws {
-  return remove(name: bytes);
+  remove(name: bytes);
 }
 
 proc remove(name: bytes) throws {
@@ -1585,7 +1588,8 @@ proc rmTree(out error: syserr, root: string) {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc sameFile(file1: string, file2: string): bool throws {
+//ENGIN: Instead of adding bunch of overloads, I made this generic.
+proc sameFile(file1, file2): bool throws {
   return sameFile(file1: bytes, file2: bytes);
 }
 
@@ -1641,8 +1645,8 @@ proc sameFile(file1: file, file2: file): bool throws {
 
   var ret:c_int;
   var err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
-  if err then try ioerror(err, "in sameFile " + file1.tryGetPath(),
-                          file2.tryGetPath());
+  if err then try ioerror(err, "in sameFile " + dec(file1.tryGetPath()),
+                          dec(file2.tryGetPath()));
   return ret != 0;
 }
 
@@ -1669,8 +1673,9 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc symlink(oldName: string, newName: string) throws {
-  return symlink(oldName: bytes, newName: bytes);
+// ENGIN: Instead of adding bunch of overloads, I made this generic.
+proc symlink(oldName, newName) throws {
+  symlink(oldName: bytes, newName: bytes);
 }
 
 proc symlink(oldName: bytes, newName: bytes) throws {
@@ -1751,7 +1756,7 @@ proc locale.umask(mask: int): int {
 
    :yield: The directory names encountered, relative to `path`, as strings
 */
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+iter walkdirs(path: string, topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false): bytes {
   for d in walkdirs(path: bytes, topdown, depth, hidden,
@@ -1791,7 +1796,7 @@ iter walkdirs(path: bytes = b".", topdown: bool = true, depth: int = max(int),
 pragma "no doc"
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
-              sort: bool = false, param tag: iterKind): string
+              sort: bool = false, param tag: iterKind): bytes
        where tag == iterKind.standalone {
          for d in walkdirs(path: bytes, topdown, depth,
               hidden, followlinks, sort, tag=iterKind.standalone) do yield d;

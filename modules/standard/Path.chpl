@@ -204,7 +204,7 @@ proc commonPath(in paths: bytes ...?n): bytes {
 
   for i in 2..n do {
 
-    var tempList = new list(string);
+    var tempList = new list(bytes);
     for x in paths(i).split(pathSep, -1, false) do
       tempList.append(x);
 
@@ -330,7 +330,7 @@ proc commonPath(paths: []): bytes {
               a valid file name, as the file itself will not be affected.
    :type name: `string`
 */
-proc dirname(name: string): string {
+proc dirname(name: string): bytes {
   return dirname(name: bytes);
 }
 proc dirname(name: bytes): bytes {
@@ -500,7 +500,7 @@ private proc joinPathComponent(comp: bytes, ref result: bytes) {
 */
 // NOTE: Add in intent here to temporarily fix compiler memory leak related
 // to use of varargs.
-proc joinPath(in paths: string ...?n): string {
+proc joinPath(in paths: string ...?n): bytes {
   type castType = n*bytes;
   return joinPath((...(paths:castType)));
 }
