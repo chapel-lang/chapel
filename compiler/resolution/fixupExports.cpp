@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 #include <map>
 #include <vector>
@@ -182,7 +183,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   // TODO: If we ever add more types to these fixup routines, we really ought
   // to put these conditions in tables.
   //
-  if (t == dtString || t == dtStringC) {
+  if (t == dtString || t == dtStringC || t == dtExternalArray) {
     IntentTag tag = as->intent;
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
@@ -192,18 +193,19 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
       if (tag != INTENT_IN &&
           tag != INTENT_CONST_IN) {
         const char* libdesc = multiloc ? "multilocale" : "python";
+        const char* typeName = (t == dtExternalArray) ? "array" : t->name();
         SET_LINENO(fn);
         if (tag == INTENT_BLANK) {
           USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not be passed by const ref in "
                          "%s libraries",
-                         as->name, t->name(), fn->userString, libdesc);
+                         as->name, typeName, fn->name, libdesc);
 
         } else {
           USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not have the %s in "
                          "%s libraries",
-                         as->name, t->name(), fn->userString,
+                         as->name, typeName, fn->name,
                          intentDescrString(tag), libdesc);
         }
         return false;
