@@ -1682,7 +1682,7 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols) {
   bool debug = false;
-  if (strcmp("choose", name) == 0) {
+  if (strcmp("MC", name) == 0) {
     //    debug = true;
     //    printf("Looking up %s\n", name);
   }
@@ -1830,7 +1830,8 @@ static bool lookupThisScopeAndUses(const char*           name,
 
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use != NULL) {
-            if (use->skipSymbolSearch(name, false) == false) {
+            ModuleSymbol* modSymMatches = NULL;
+            if (use->skipSymbolSearch(name, false, &modSymMatches) == false) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
@@ -1844,6 +1845,11 @@ static bool lookupThisScopeAndUses(const char*           name,
                 } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
                 }
+              }
+            } else {
+              if (modSymMatches != NULL) {
+                //                printf("Got a module symbol match: %s\n", modSymMatches->name);
+                symbols.push_back(modSymMatches);
               }
             }
 

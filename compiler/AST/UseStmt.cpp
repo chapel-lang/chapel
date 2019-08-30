@@ -562,13 +562,25 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 *                                                                             *
 * Determine whether the use permits us to search for a symbol with the given  *
 * name.  Returns true ("should skip") if the name is related to our 'except'  *
-* list, or not present when we've been given an 'only' list.                  *
+* list, or not present when we've been given an 'only' list.  In the event    *
+* that:                                                                       *
+*   - the 'only' clause does _not_ list the name                              *
+*   - the module symbol in the 'use' statement _does_ match the name          *
+*   - a non-NULL pointer is passed in for 'lastResortModuleMatch'             *
+* we store the module symbol in 'lastResortModuleMatch' and return 'true'     *
+* This indicates that while the module's contents won't resolve the name, the *
+* module itself can                                                           *
 *                                                                             *
 ************************************** | *************************************/
 
-bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
+bool UseStmt::skipSymbolSearch(const char* name, bool methodCall,
+                              ModuleSymbol** lastResortModuleMatch) const {
   bool retval = false;
   bool debug = false;
+  if (lastResortModuleMatch != NULL) {
+    *lastResortModuleMatch = NULL;
+  }
+
   if (strcmp(name, "M") == 0) {
     //    debug = true;
   }
@@ -578,8 +590,9 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
 
   } else if (except == true) {
     if (matchedNameOrConstructor(name) == true) {
-      retval =  true;
-
+      retval = true;
+      // TODO: Seems like there should be a dual for the last resort
+      // case below for 'only' clauses here... or not?
     } else {
       retval = false;
     }
@@ -599,17 +612,21 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
       //      printf("isAllowedMethodName\n");
 
     } else {
+      // Last resort: Check to see if it matches the module's name itself
       retval = true;
-      //      printf("in else case\n");
-      if (SymExpr* se = toSymExpr(src)) {
+      if (lastResortModuleMatch != NULL) {
+        //      printf("in else case\n");
+        if (SymExpr* se = toSymExpr(src)) {
         //        printf("it's a symexpr\n");
-        if (strcmp(name, se->symbol()->name) == 0) {
+          if (strcmp(name, se->symbol()->name) == 0) {
           //          printf("it's a symexpr\n");
-          retval = false;
+            *lastResortModuleMatch = toModuleSymbol(se->symbol());
+            retval = true;
+          }
+        } else {
+          // TODO: Need to handle matches against more general expressions here?
+          // or not?
         }
-      } else {
-        // TODO: Need to handle matches against more general expressions here?
-        // or not?
       }
     }
   }
