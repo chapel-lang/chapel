@@ -1200,8 +1200,8 @@ module List {
 
         var count = 0;
 
-        for i in 1.._size do
-          if x == _getRef(i) then
+        for item in this do
+          if x == item then
             count += 1;
 
         result = count;
@@ -1224,14 +1224,32 @@ module List {
       :arg comparator: A comparator used to sort this list.
     */
     proc sort(comparator=Sort.defaultComparator) {
-      //
-      // TODO: This is not ideal, but the Sort API needs to be adjusted before
-      // we can sort over lists directly.
-      //
-      var array = toArray();
-      clear();
-      Sort.sort(array, comparator);
-      extend(array);
+      on this {
+        _enter();
+
+        //
+        // TODO: This is not ideal, but the Sort API needs to be adjusted
+        // before we can sort over lists directly.
+        //
+        if _size > 1 {
+
+          // Copy current list contents into an array.
+          var arr: [1.._size] eltType;
+          for i in 1.._size do
+            arr[i] = this[i];
+
+          Sort.sort(arr, comparator);
+
+          // This is equivalent to the clear routine.
+          _fireAllDestructors();
+          _freeAllArrays();
+          _firstTimeInitializeArrays();
+          _extendGeneric(arr);
+        }
+        
+        _leave();
+      }
+      return;
     }
 
     /*
@@ -1247,7 +1265,7 @@ module List {
 
       :return: An element from this list.
     */
-    proc const this(i: int) ref {
+    proc this(i: int) ref {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         halt(msg);
