@@ -54,8 +54,8 @@ proc masonPublish(ref args: list(string)) throws {
     var username = getUsername();
     var isLocal = false;
     var travis = hasOptions(args, '--travis');
-	  var update = hasOptions(args, '--update');
-	  var noUpdate = hasOptions(args, '--no-update');
+    var update = hasOptions(args, '--update');
+    var noUpdate = hasOptions(args, '--no-update');
 
     const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
     if args.size > 5 {
