@@ -892,8 +892,8 @@ module ChapelArray {
   record dmap { }
 
   pragma "unsafe"
-  proc chpl__buildDistType(type t) type where isSubtype(borrowed t, BaseDist) {
-    var x: unmanaged t;
+  proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
+    var x: _to_unmanaged(t);
     var y = new _distribution(x);
     return y.type;
   }

@@ -5,7 +5,7 @@ proc main() {
   writeln(s);
   cobegin with (ref b, ref s) {
     on Locales(1) {
-      while (s != "done") { b += 1; atomic_fence(); }
+      while (s != "done") { b += 1; atomicFence(); }
       s = "another string";
     }
     on Locales(0) {

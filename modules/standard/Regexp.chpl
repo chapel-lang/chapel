@@ -948,7 +948,7 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.numBytes, text.localize().c_str(), text.numBytes, pos:int, endpos:int, global, replaced, replaced_len);
     }
-    const ret = new string(replaced, needToCopy=false);
+    const ret = createStringWithOwnedBuffer(replaced);
     return (ret, nreplaced);
   }
 
@@ -975,7 +975,7 @@ record regexp {
     on this.home {
       var patternTemp:c_string;
       qio_regexp_get_pattern(this._regexp, patternTemp);
-      pattern = new string(patternTemp);
+      pattern = createStringWithNewBuffer(patternTemp);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -1040,7 +1040,7 @@ inline proc _cast(type t, x: regexp) where t == string {
   on x.home {
     var cs: c_string;
     qio_regexp_get_pattern(x._regexp, cs);
-    pattern = new string(cs, needToCopy=false);
+    pattern = createStringWithOwnedBuffer(cs);
   }
   return pattern;
 }

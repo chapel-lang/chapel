@@ -250,6 +250,9 @@ module OwnedObject {
       then
         compilerError("cannot create a non-nilable owned variable from a nilable class instance");
 
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
+
       // Use 'this.type.chpl_t' in case RHS is a subtype
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.release();
@@ -318,7 +321,11 @@ module OwnedObject {
 
        Here `t` refers to the object type managed by this :record:`owned`.
      */
-    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
+      if !isCoercible(newPtr.type, chpl_t) then
+        compilerError("cannot retain '" + newPtr.type:string + "' " +
+                      "(expected '" + _to_unmanaged(chpl_t):string + "')");
+
       var oldPtr = chpl_p;
       chpl_p = newPtr;
       if oldPtr then

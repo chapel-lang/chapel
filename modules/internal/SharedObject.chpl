@@ -293,6 +293,9 @@ module SharedObject {
       then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
+
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
@@ -336,7 +339,11 @@ module SharedObject {
        If this record was the last :record:`shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
+      if !isCoercible(newPtr.type, chpl_t) then
+        compilerError("cannot retain '" + newPtr.type:string + "' " +
+                      "(expected '" + _to_unmanaged(chpl_t):string + "')");
+
       clear();
       this.chpl_p = newPtr;
       if newPtr != nil {

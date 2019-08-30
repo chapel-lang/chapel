@@ -310,13 +310,13 @@ void trimVisibleCandidates(CallInfo& call,
                            Vec<FnSymbol*>& mostApplicable,
                            Vec<FnSymbol*>& visibleFns);
 
-bool isNumericParamDefaultType(Type* type);
-
 void resolveGenericActuals(CallExpr* call);
 
 Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
                                   ClassTypeDecorator useDec,
                                   AggregateType* manager,
                                   Expr* ctx);
+
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 
 #endif

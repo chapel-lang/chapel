@@ -173,14 +173,20 @@ const char* toString(Type* type, bool decorateAllClasses) {
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
         }
-        if (startsWith(vt->symbol->name, "_owned("))
-          retval = astr("owned ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_owned"))
-          retval = astr("owned");
-        else if (startsWith(vt->symbol->name, "_shared("))
-          retval = astr("shared ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_shared"))
-          retval = astr("shared");
+        if (startsWith(vt->symbol->name, "_owned")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("owned");
+          } else {
+            retval = astr("owned ", borrowName);
+          }
+        }
+        else if (startsWith(vt->symbol->name, "_shared")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("shared");
+          } else {
+            retval = astr("shared ", borrowName);
+          }
+        }
 
       } else if (isClassLike(at)) {
         if (isClass(at)) {
@@ -778,6 +784,11 @@ void initPrimitiveTypes() {
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
 
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
+
+  dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");
+
+  CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
+  gUninstantiated->addFlag(FLAG_PARAM);
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
@@ -1698,4 +1709,19 @@ Immediate getDefaultImmediate(Type* t) {
 
   Immediate ret = *defaultVar->immediate;
   return ret;
+}
+
+// Returns 'true' for types that are the type of numeric literals.
+// e.g. 1 is an 'int', so this function returns 'true' for 'int'.
+// e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
+bool isNumericParamDefaultType(Type* t)
+{
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
+      t == dtBools[BOOL_SIZE_DEFAULT])
+    return true;
+
+  return false;
 }

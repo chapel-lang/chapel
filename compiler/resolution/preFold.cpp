@@ -43,6 +43,7 @@
 
 #include <inttypes.h>
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
@@ -605,6 +606,28 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_BOUND: {
+    AggregateType* at = NULL;
+    Type* thisType = call->get(1)->getValType();
+    if (AggregateType* type = toAggregateType(thisType)) {
+      at = type;
+    } else if (DecoratedClassType* dc = toDecoratedClassType(thisType)) {
+      at = dc->getCanonicalClass();
+    }
+
+    Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
+    Symbol* field = at->getField(imm->v_string);
+    if (at->symbol->hasFlag(FLAG_GENERIC) &&
+        std::find(at->genericFields.begin(), at->genericFields.end(), field) != at->genericFields.end()) {
+      retval = new SymExpr(gFalse);
+    } else {
+      retval = new SymExpr(gTrue);
+    }
+
+    call->replace(retval);
+    break;
+  }
+
   case PRIM_IS_EXTERN_TYPE: {
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_EXTERN)) {
       retval = new SymExpr(gTrue);
@@ -692,11 +715,41 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
 
   case PRIM_TO_UNMANAGED_CLASS:
+  case PRIM_TO_UNMANAGED_CLASS_CHECKED:
   case PRIM_TO_BORROWED_CLASS:
+  case PRIM_TO_BORROWED_CLASS_CHECKED:
+  case PRIM_TO_UNDECORATED_CLASS:
   case PRIM_TO_NILABLE_CLASS:
+  case PRIM_TO_NILABLE_CLASS_CHECKED:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
     Expr* e = call->get(1);
+
+    if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+      Type* msgType = NULL;
+      if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
+        msgType = dtUnmanaged;
+      else
+        msgType = dtBorrowed;
+
+      Type* t = e->typeInfo();
+      if (!isClassLikeOrManaged(t))
+        USR_FATAL_CONT(call, "cannot make %s into a %s class",
+                             toString(t), toString(msgType));
+      if (!isTypeExpr(e))
+        USR_FATAL_CONT(call, "cannot use decorator %s on a value",
+                             toString(msgType));
+
+      checkDuplicateDecorators(msgType, t, call);
+    }
+
+    if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+      // error if it's not a type
+      if (isTypeExpr(e) == false)
+        USR_FATAL_CONT(call, "cannot apply postfix ? operator to a value - "
+                             "please use value:class? instead");
+    }
 
     if (isTypeExpr(e)) {
       retval = new SymExpr(totype->symbol);
@@ -1605,6 +1658,41 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
     }
 
+  // BHARSH TODO: Move the dtUninstantiated stuff over to resolveTypeComparisonCall
+  } else if (call->isNamed("==")) {
+    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
+      Type* lt = call->get(1)->getValType();
+      Type* rt = call->get(2)->getValType();
+
+      if (lt                                != dtUnknown &&
+          rt                                != dtUnknown &&
+          lt->symbol->hasFlag(FLAG_GENERIC) == false     &&
+          rt->symbol->hasFlag(FLAG_GENERIC) == false) {
+        retval = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+        call->replace(retval);
+      }
+    } else if (call->get(2)->getValType() == dtUninstantiated) {
+      retval = (call->get(1)->getValType() == dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(retval);
+    }
+
+
+  } else if (call->isNamed("!=")) {
+    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
+      Type* lt = call->get(1)->getValType();
+      Type* rt = call->get(2)->getValType();
+
+      if (lt                                != dtUnknown &&
+          rt                                != dtUnknown) {
+        retval = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+        call->replace(retval);
+      }
+    } else if (call->get(2)->getValType() == dtUninstantiated) {
+      retval = (call->get(1)->getValType() != dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(retval);
+    }
+
+
   } else if (call->isNamed("chpl__staticFastFollowCheck")  ||
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {
     if (! call->isResolved())
@@ -2035,12 +2123,17 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   wrapper->addFlag(FLAG_INLINE);
 
+  Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
+
+  CallExpr* n = new CallExpr(PRIM_NEW,
+                             new NamedExpr(astr_chpl_manager,
+                                           new SymExpr(dtUnmanaged->symbol)),
+                             new SymExpr(undecorated->symbol));
+
   wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
                                      new CallExpr(PRIM_CAST,
                                                   parent->symbol,
-                                                  new CallExpr(PRIM_NEW,
-                                                               new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
-                                                               new SymExpr(ct->symbol)))));
+                                                  n)));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 

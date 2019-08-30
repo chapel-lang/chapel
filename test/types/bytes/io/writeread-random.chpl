@@ -10,8 +10,8 @@ for i in 0..#nBytes {
 }
 buf[nBytes] = 0;
 
-const randomBytes = new bytes(buf, length=nBytes, size=nBytes+1,
-                              isowned=true, needToCopy=false);
+const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
+                                                    size=nBytes+1);
 
 if randomBytes.length != nBytes {
   halt("Error creating bytes object with correct length");

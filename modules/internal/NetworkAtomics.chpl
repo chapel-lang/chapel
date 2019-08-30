@@ -32,12 +32,10 @@ module NetworkAtomics {
   record RAtomicBool {
     var _v: int(64);
 
-    pragma "no doc"
     proc init=(other:RAtomicBool) {
       this._v = other.read():int(64);
     }
 
-    pragma "no doc"
     proc init=(other:bool) {
       this._v = other:int(64);
     }
@@ -119,7 +117,6 @@ module NetworkAtomics {
 
     // Deprecated //
 
-    pragma "no doc"
     inline proc const read(order:memory_order): bool {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("read", int(64))
@@ -130,7 +127,6 @@ module NetworkAtomics {
       return ret:bool;
     }
 
-    pragma "no doc"
     inline proc write(value:bool, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("write", int(64))
@@ -140,7 +136,6 @@ module NetworkAtomics {
       atomic_write(v, _localeid(), _addr(), order);
     }
 
-    pragma "no doc"
     inline proc exchange(value:bool, order:memory_order): bool {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("xchg", int(64))
@@ -152,17 +147,14 @@ module NetworkAtomics {
       return ret:bool;
     }
 
-    pragma "no doc"
     inline proc compareExchange(expected:bool, desired:bool, order:memory_order): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
-    pragma "no doc"
     inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
-    pragma "no doc"
     inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order): bool {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("cmpxchg", int(64))
@@ -175,17 +167,14 @@ module NetworkAtomics {
       return ret:bool;
     }
 
-    pragma "no doc"
     inline proc testAndSet(order:memory_order): bool {
       return this.exchange(true, order);
     }
 
-    pragma "no doc"
     inline proc clear(order:memory_order): void {
       this.write(false, order);
     }
 
-    pragma "no doc"
     inline proc const waitFor(value:bool, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       on this {
@@ -215,13 +204,11 @@ module NetworkAtomics {
     type T;
     var _v: T;
 
-    pragma "no doc"
     proc init=(other:this.type) {
       this.T = other.T;
       this._v = other.read();
     }
 
-    pragma "no doc"
     proc init=(other:this.type.T) {
       this.T = other.type;
       this._v = other;
@@ -392,7 +379,6 @@ module NetworkAtomics {
 
     // Deprecated //
 
-    pragma "no doc"
     inline proc const read(order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("read", T)
@@ -403,7 +389,6 @@ module NetworkAtomics {
       return ret;
     }
 
-    pragma "no doc"
     inline proc write(value:T, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("write", T)
@@ -413,7 +398,6 @@ module NetworkAtomics {
       atomic_write(v, _localeid(), _addr(), order);
     }
 
-    pragma "no doc"
     inline proc exchange(value:T, order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("xchg", T)
@@ -425,17 +409,14 @@ module NetworkAtomics {
       return ret;
     }
 
-    pragma "no doc"
     inline proc compareExchange(expected:T, desired:T, order:memory_order): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
-    pragma "no doc"
     inline proc compareExchangeWeak(expected:T, desired:T, order:memory_order): bool {
       return this.compareExchangeStrong(expected, desired, order);
     }
 
-    pragma "no doc"
     inline proc compareExchangeStrong(expected:T, desired:T, order:memory_order): bool {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("cmpxchg", T)
@@ -448,7 +429,6 @@ module NetworkAtomics {
       return ret:bool;
     }
 
-    pragma "no doc"
     inline proc fetchAdd(value:T, order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("fetch_add", T)
@@ -460,7 +440,6 @@ module NetworkAtomics {
       return ret;
     }
 
-    pragma "no doc"
     inline proc add(value:T, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("add", T)
@@ -470,7 +449,6 @@ module NetworkAtomics {
       atomic_add(v, _localeid(), _addr(), order);
     }
 
-    pragma "no doc"
     inline proc fetchSub(value:T, order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("fetch_sub", T)
@@ -482,7 +460,6 @@ module NetworkAtomics {
       return ret;
     }
 
-    pragma "no doc"
     inline proc sub(value:T, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       pragma "insert line file info" extern externFunc("sub", T)
@@ -492,7 +469,6 @@ module NetworkAtomics {
       atomic_sub(v, _localeid(), _addr(), order);
     }
 
-    pragma "no doc"
     inline proc fetchOr(value:T, order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchOr is only defined for integer atomic types");
@@ -505,7 +481,6 @@ module NetworkAtomics {
       return ret;
     }
 
-    pragma "no doc"
     inline proc or(value:T, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
@@ -516,7 +491,6 @@ module NetworkAtomics {
       atomic_or(v, _localeid(), _addr(), order);
     }
 
-    pragma "no doc"
     inline proc fetchAnd(value:T, order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchAnd is only defined for integer atomic types");
@@ -529,7 +503,6 @@ module NetworkAtomics {
       return ret;
     }
 
-    pragma "no doc"
     inline proc and(value:T, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
@@ -540,7 +513,6 @@ module NetworkAtomics {
       atomic_and(v, _localeid(), _addr(), order);
     }
 
-    pragma "no doc"
     inline proc fetchXor(value:T, order:memory_order): T {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("fetchXor is only defined for integer atomic types");
@@ -553,7 +525,6 @@ module NetworkAtomics {
       return ret;
     }
 
-    pragma "no doc"
     inline proc xor(value:T, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
@@ -564,7 +535,6 @@ module NetworkAtomics {
       atomic_xor(v, _localeid(), _addr(), order);
     }
 
-    pragma "no doc"
     inline proc const waitFor(value:T, order:memory_order): void {
       compilerWarning("memory_order is deprecated, use memoryOrder");
       on this {

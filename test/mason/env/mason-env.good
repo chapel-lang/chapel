@@ -1,11 +1,18 @@
 MASON_HOME: $PWD *
 MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_OFFLINE: false
 ----------
 MASON_HOME: $PWD *
 MASON_REGISTRY: foobar|foobar *
+MASON_OFFLINE: false
 ----------
 MASON_HOME: $PWD *
 MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_OFFLINE: true *
+---------
+MASON_HOME: $PWD *
+MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_OFFLINE: false
 MASON_CACHED_REGISTRY: $PWD/mason-registry
 ----------
 Print environment variables recognized by mason
