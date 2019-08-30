@@ -144,6 +144,8 @@ static CapturedValueMap            capturedValues;
 // Used to ensure we only issue the warning once per instantiation
 static std::set<FnSymbol*> oldStyleInitCopyFns;
 
+// Enable coercions from nilable -> non-nilable to have easier errors
+static int generousNilabilityForErrors;
 
 //#
 //# Static Function Declarations
@@ -1284,6 +1286,11 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
                                     Symbol* actualSym,
                                     Type* formalType,
                                     Symbol* formalSym) {
+
+  // If we are trying again for better nilability errors,
+  // implicit nilability removal is OK.
+  if (generousNilabilityForErrors > 0)
+    return true;
 
   // Currently only applies to this arguments (method receivers)
   if (formalSym && actualSym && actualSym->defPoint &&
@@ -3162,6 +3169,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     }
   }
 
+
   if (! overloadSetsOK(info.call, checkOnly, candidates,
                        bestRef, bestCref, bestVal)) {
     return NULL; // overloadSetsOK() found an error
@@ -3170,10 +3178,27 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
       if (checkOnly == false) {
-        if (candidates.n == 0)
+        if (candidates.n == 0) {
           printResolutionErrorUnresolved(info, mostApplicable);
-        else
+
+          if (generousNilabilityForErrors == 0) {
+            gdbShouldBreakHere();
+
+            generousNilabilityForErrors++;
+            FnSymbol* retry = resolveNormalCall(info, /*checkOnly*/ true);
+            generousNilabilityForErrors--;
+
+            if (retry != NULL)
+              return retry;
+          }
+
+          // TODO: we could try e.g. removing the bad call
+          // and checking other funtions instead of giving up here.
+          USR_STOP();
+
+        } else {
           printResolutionErrorAmbiguous (info, candidates);
+        }
       }
     }
 
@@ -3605,8 +3630,6 @@ void printResolutionErrorUnresolved(CallInfo&       info,
     if (developer == true) {
       USR_PRINT(call, "unresolved call had id %i", call->id);
     }
-
-    USR_STOP();
   }
 }
 
