@@ -361,11 +361,15 @@ ModuleSymbol* ResolveScope::enclosingModule() const {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolveScope::extend(Symbol* newSym) {
+bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   const char* name   = newSym->name;
   bool        retval = false;
 
-  if (Symbol* oldSym = lookupNameLocally(name)) {
+  // If this is a top level module, we look up the symbol's name as
+  // though we were resolving a 'use' in order to take module symbols
+  // (not visible through normal lexical scoping) into consideration.
+  //
+  if (Symbol* oldSym = lookupNameLocally(name, isTopLevel)) {
     FnSymbol* oldFn = toFnSymbol(oldSym);
     FnSymbol* newFn = toFnSymbol(newSym);
 

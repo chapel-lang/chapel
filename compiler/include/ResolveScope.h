@@ -68,7 +68,7 @@ public:
 
   ModuleSymbol*         enclosingModule()                                const;
 
-  bool                  extend(Symbol*        sym);
+  bool                  extend(Symbol*        sym, bool isTopLevel=false);
 
   bool                  extend(const UseStmt* stmt);
 

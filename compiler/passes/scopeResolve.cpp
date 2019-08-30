@@ -213,7 +213,7 @@ static void addToSymbolTable() {
       // in the root scope, but only focusing on user code for now
       //      if (mod == NULL /* || mod->modTag != MOD_USER */) {
         //        printf("Extending to include %s\n", def->sym->name);
-        rootScope->extend(def->sym);
+      rootScope->extend(def->sym, toModuleSymbol(def->sym));
         //      } else {
         //      }
     }
