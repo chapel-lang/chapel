@@ -458,7 +458,9 @@
 %type <pvecOfDefs> enum_ls
 
 %type <pcallexpr> zippered_iterator
-%type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
+%type <pexpr> fun_expr call_expr dot_expr
+%type <pexpr> lhs_expr
+%type <pexpr> unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> bool_literal literal_expr
 %type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
@@ -471,7 +473,7 @@
 %type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pexpr> query_expr opt_query_expr
+%type <pexpr> query_expr
 
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
@@ -765,12 +767,6 @@ reserved_type_ident_use:
 | TDOMAIN    { $$ = "_domain"; }
 | TINDEX     { $$ = "_index"; }
 ;
-
-
-/*opt_string:
-                { $$ = NULL; }
-| STRINGLITERAL { $$ = $1; }
-;*/
 
 do_stmt:
   TDO stmt    { $$ = $2; }
@@ -1386,22 +1382,16 @@ function_body_stmt:
 query_expr:
   TQUESTION ident_def
     { $$ = new DefExpr(new VarSymbol($2)); }
-| TQUESTION
-    { $$ = new SymExpr(gUninstantiated); }
-;
-
-opt_query_expr:
-    { $$ = new SymExpr(gUninstantiated); }
-| query_expr
 ;
 
 var_arg_expr:
-  TDOTDOTDOT expr            { $$ = $2; }
-| TDOTDOTDOT opt_query_expr  { if (DefExpr* def = toDefExpr($2)) {
-                                 def->sym->addFlag(FLAG_PARAM);
-                               }
-                               $$ = $2;
-                             }
+  TDOTDOTDOT             { $$ = new SymExpr(gUninstantiated); }
+| TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { if (DefExpr* def = toDefExpr($2)) {
+                             def->sym->addFlag(FLAG_PARAM);
+                           }
+                           $$ = $2;
+                         }
 ;
 
 opt_lifetime_where:
@@ -1417,21 +1407,28 @@ opt_lifetime_where:
 ;
 
 lifetime_components_expr:
-  lifetime_expr                    { $$ = $1; }
-| lifetime_components_expr TCOMMA lifetime_expr { $$ = new CallExpr(",", $1, $3); }
+  lifetime_expr
+  { $$ = $1; }
+| lifetime_components_expr TCOMMA lifetime_expr
+  { $$ = new CallExpr(",", $1, $3); }
+;
 
 lifetime_expr:
-  lifetime_ident TASSIGN lifetime_ident { $$ = new CallExpr("=", $1, $3); }
-| lifetime_ident TLESS lifetime_ident { $$ = new CallExpr("<", $1, $3); }
-| lifetime_ident TLESSEQUAL lifetime_ident { $$ = new CallExpr("<=", $1, $3); }
-| lifetime_ident TEQUAL lifetime_ident { $$ = new CallExpr("==", $1, $3); }
-| lifetime_ident TGREATER lifetime_ident { $$ = new CallExpr(">", $1, $3); }
-| lifetime_ident TGREATEREQUAL lifetime_ident { $$ = new CallExpr(">=", $1, $3); }
+  lifetime_ident TASSIGN      lifetime_ident {$$ = new CallExpr("=", $1, $3);}
+| lifetime_ident TLESS        lifetime_ident {$$ = new CallExpr("<", $1, $3);}
+| lifetime_ident TLESSEQUAL   lifetime_ident {$$ = new CallExpr("<=", $1, $3);}
+| lifetime_ident TEQUAL       lifetime_ident {$$ = new CallExpr("==", $1, $3);}
+| lifetime_ident TGREATER     lifetime_ident {$$ = new CallExpr(">", $1, $3);}
+| lifetime_ident TGREATEREQUAL lifetime_ident {$$ = new CallExpr(">=", $1, $3);}
 | TRETURN lifetime_ident { $$ = new CallExpr(PRIM_RETURN, $2); }
+;
 
 lifetime_ident:
-  TIDENT  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr($1)); }
-| TTHIS   { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
+  TIDENT
+  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr($1)); }
+| TTHIS
+  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
+;
 
 type_alias_decl_stmt:
   TTYPE type_alias_decl_stmt_inner TSEMI
@@ -1716,7 +1713,9 @@ type_level_expr:
   sub_type_level_expr %prec TNOELSE
     { $$ = $1; }
 | sub_type_level_expr TQUESTION %prec TQUESTION
-    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
+    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS_CHECKED, $1); }
+| TQUESTION
+    { $$ = new SymExpr(gUninstantiated); }
 ;
 
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
@@ -1764,7 +1763,6 @@ sub_type_level_expr:
     { $$ = new SymExpr(dtAnyRecord->symbol); }
 | TENUM
     { $$ = new SymExpr(dtAnyEnumerated->symbol); }
-
 ;
 
 for_expr:
@@ -1947,11 +1945,13 @@ expr:
 opt_expr:
                   { $$ = NULL; }
 | expr            { $$ = $1; }
+;
 
 opt_try_expr:
   TTRY expr       { $$ = tryExpr($2); }
 | TTRYBANG expr   { $$ = tryBangExpr($2); }
 | expr            { $$ = $1; }
+;
 
 lhs_expr:
   ident_expr
@@ -1970,6 +1970,7 @@ lhs_expr:
 fun_expr:
   lhs_expr           { $$ = $1; }
 | expr TBANG         { $$ = new CallExpr("postfix!", $1); }
+| sub_type_level_expr TQUESTION {$$ = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, $1);}
 | lambda_decl_expr   { $$ = $1; }
 ;
 
@@ -2041,9 +2042,7 @@ binary_op_expr:
 | expr TSHIFTRIGHT expr    { $$ = new CallExpr(">>", $1, $3); }
 | expr TMOD expr           { $$ = new CallExpr("%", $1, $3); }
 | expr TEQUAL expr         { $$ = new CallExpr("==", $1, $3); }
-| expr TEQUAL TQUESTION    { $$ = new CallExpr("==", $1, gUninstantiated); }
 | expr TNOTEQUAL expr      { $$ = new CallExpr("!=", $1, $3); }
-| expr TNOTEQUAL TQUESTION { $$ = new CallExpr("!=", $1, gUninstantiated); }
 | expr TLESSEQUAL expr     { $$ = new CallExpr("<=", $1, $3); }
 | expr TGREATEREQUAL expr  { $$ = new CallExpr(">=", $1, $3); }
 | expr TLESS expr          { $$ = new CallExpr("<", $1, $3); }
