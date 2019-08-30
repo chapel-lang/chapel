@@ -66,10 +66,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       else
         return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
-      if (developer)
-        return astr("anymanaged ", className, "!");
-      else
-        return astr(className);
+      return astr(className);
     case CLASS_TYPE_GENERIC_NILABLE:
       if (developer)
         return astr("anymanaged ", className, "?");
