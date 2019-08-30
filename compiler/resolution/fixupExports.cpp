@@ -218,7 +218,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
         SET_LINENO(fn);
         USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
                        "\'%s\' may not have the %s",
-                       as->name, t->name(), fn->userString,
+                       as->name, t->name(), fn->name,
                        intentDescrString(tag));
         return false;
       }

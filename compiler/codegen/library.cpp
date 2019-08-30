@@ -820,5 +820,5 @@ static bool isFunctionToSkip(FnSymbol* fn) {
 }
 
 bool willBePythonized(FnSymbol* fn) {
-  return !isFunctionToSkip(fn) && fLibraryPython && fn->hasFlag(FLAG_EXPORT);
+  return !isFunctionToSkip(fn) && fLibraryPython;
 }
