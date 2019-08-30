@@ -1,0 +1,3 @@
+semantic: What should happen when a module is 'use'd twice and then referenced?
+
+Perhaps it should be illegal to 'use' a module twice at the same scope?

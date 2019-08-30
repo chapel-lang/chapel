@@ -1,2 +1,0 @@
-fillRandom.chpl:3: error: illegal use of module 'fillRandom'
-fillRandom.chpl:4: error: illegal use of module 'fillRandom'
