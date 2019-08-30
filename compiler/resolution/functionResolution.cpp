@@ -6814,28 +6814,37 @@ static void resolveNew(CallExpr* newExpr) {
   }
 }
 
+static void checkManagerType(Type* t) {
+  // Verify that the manager matches expectations
+  //  - borrowed or borrowedNilable
+  //  - unmanaged or unmanagedNilable
+  //  - owned or DecoratedClassType(owned,?)  (or other management type)
+  if (t == dtBorrowed || t == dtBorrowedNilable ||
+      t == dtUnmanaged || t == dtUnmanagedNilable) {
+    return; // OK
+  }
+
+  if (isManagedPtrType(t)) {
+    ClassTypeDecorator d = classTypeDecorator(t);
+    INT_ASSERT(d == CLASS_TYPE_MANAGED || d == CLASS_TYPE_MANAGED_NILABLE);
+    // check that it's not an instantiation
+    INT_ASSERT(getDecoratedClass(t, d) == t);
+  }
+}
+
 static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
 
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
       if (ne->name == astr_chpl_manager) {
         Type* t = ne->actual->typeInfo();
-        ClassTypeDecorator d = classTypeDecorator(t);
-        manager = canonicalDecoratedClassType(t);
-        manager = getDecoratedClass(manager, d);
+        checkManagerType(t);
+        manager = t;
         expr->remove();
         break;
       }
     }
   }
-
-  // adjust for the cases like 'new C()?'
-  /*if (manager == NULL) {
-    if (SymExpr* arg1 = toSymExpr(newExpr->get(1)))
-      if (DecoratedClassType* dt1 = toDecoratedClassType(arg1->symbol()->type))
-        if (dt1->getDecorator() == CLASS_TYPE_GENERIC_NILABLE)
-          newExpr->insertAtHead(dtOwned->symbol);
-  }*/
 
   // adjust the type to initialize for managed new cases
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
@@ -6876,6 +6885,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (manager) {
         AggregateType* at = toAggregateType(type);
 
+        checkManagerType(manager);
+
         // fail if it's a record
         if (isRecord(at) && !isManagedPtrType(at))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
@@ -6904,7 +6915,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         }
 
         if (manager) {
-
           if (at != type)
             // Set the type to initialize
             typeExpr->setSymbol(at->symbol);
