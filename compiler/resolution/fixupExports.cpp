@@ -184,23 +184,26 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   if (t == dtString) {
     IntentTag tag = as->intent;
 
-    if (fMultiLocaleInterop || strcmp(CHPL_COMM, "none")) {
+    bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
+
+    if (multiloc || fLibraryPython) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_IN &&
           tag != INTENT_CONST_IN) {
+        const char* libdesc = multiloc ? "multilocale" : "python";
         SET_LINENO(fn);
         if (tag == INTENT_BLANK) {
           USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not be passed by const ref in "
-                         "multilocale libraries",
-                         as->name, t->name(), fn->userString);
+                         "%s libraries",
+                         as->name, t->name(), fn->userString, libdesc);
 
         } else {
           USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not have the %s in "
-                         "multilocale libraries",
+                         "%s libraries",
                          as->name, t->name(), fn->userString,
-                         intentDescrString(tag));
+                         intentDescrString(tag), libdesc);
         }
         return false;
       }
