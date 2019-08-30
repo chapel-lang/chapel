@@ -37,3 +37,21 @@ assert( (owned C(int))? == owned C(int)? );
 assert( (shared C(int))? == shared C(int)?);
 assert( (borrowed C(int))? == borrowed C(int)?);
 assert( (unmanaged C(int))? == unmanaged C(int)?);
+
+type A = C?; // nilable C, not knowing further instantiation information
+type B = A(int); // could consider this as literally ``C?(int)`` via aliasing
+var c0 = new A(int);
+writeln("c0 ", c0.type:string, " ", c0);
+
+proc factory1(type t) {
+  return new t(int, 1);
+}
+proc factory2(type t) {
+  return new t(1);
+}
+var d0 = factory1(C?);
+writeln("d0 ", d0.type:string, " ", d0);
+var d1 = factory2(C(int)?);
+writeln("d1 ", d1.type:string, " ", d1);
+var d2 = factory2(C?(int));
+writeln("d2 ", d2.type:string, " ", d2);
