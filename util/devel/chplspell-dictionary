@@ -2761,6 +2761,7 @@ urse
 
 FILEID: 4f065520-1d85-11e6-a3a6-10ddb1d4c3d5
 fivec
+fnse
 inov
 inptemp
 intented
@@ -3195,6 +3196,7 @@ takz
 
 FILEID: 3d6b3228-2405-11e6-a3a6-10ddb1d4c3d5
 realignaligned
+setstart
 
 FILEID: 74ec0768-2405-11e6-a3a6-10ddb1d4c3d5
 atim
@@ -3823,6 +3825,7 @@ FILEID: 7db5465c-ad3f-11e6-91b8-10ddb1d4c3d5
 isget
 negbv
 srcwide
+xfloat
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
 astrs
@@ -4373,6 +4376,7 @@ hbwmalloc
 kindstr
 lmemkind
 memkind
+nloc
 
 FILEID: edb63ad0-0c15-11e7-980e-10ddb1d4c3d5
 gotit
@@ -4401,22 +4405,31 @@ gemm
 gemv
 gesdd
 gesvd
+getrf
+getri
 igma
 indptr
+ipiv
+itern
 lapacke
 lblas
+ldom
 libgfortran
 llapack
 llapacke
 lrefblas
 matmat
+maxiter
 nzcur
 nznew
+pdet
 pinv
 potrf
 smmp
 superdiagonal
 superdiagonals
+swaprow
+udom
 unconverged
 vlcplx
 vrcplx
@@ -4882,6 +4895,7 @@ FILEID: d774177c-244d-11e9-b712-843835579daa
 urse
 
 FILEID: fb18cb3c-244d-11e9-b712-843835579daa
+errr
 mymethod
 
 FILEID: af0a00d4-244e-11e9-b712-843835579daa
@@ -4962,6 +4976,80 @@ toupper
 FILEID: 61f7efb8-bd82-11e9-8464-10ddb1d4c3d5
 nonblk
 txns
+
+FILEID: 558c0f58-cac9-11e9-8464-10ddb1d4c3d5
+checkequal
+checkgreater
+checkless
+tmplarge
+
+FILEID: 95e5e682-cac9-11e9-8464-10ddb1d4c3d5
+chgl
+
+FILEID: a29eae9a-cac9-11e9-8464-10ddb1d4c3d5
+maged
+
+FILEID: a6c246da-cac9-11e9-8464-10ddb1d4c3d5
+cmpvp
+dstvp
+felixcloutier
+retvalp
+retvalvp
+setz
+srcvp
+valvp
+widepointers
+wideptr
+withvp
+
+FILEID: b35c0a0c-cac9-11e9-8464-10ddb1d4c3d5
+idxt
+
+FILEID: b6f2f694-cac9-11e9-8464-10ddb1d4c3d5
+nsize
+umsg
+
+FILEID: 1157b502-caca-11e9-8464-10ddb1d4c3d5
+spack
+
+FILEID: 1ec7ca88-caca-11e9-8464-10ddb1d4c3d5
+fieldtag
+mtim
+semver
+spack
+
+FILEID: 2c87d6d6-caca-11e9-8464-10ddb1d4c3d5
+exdeps
+exdom
+pkgdeps
+pkgdom
+tdom
+
+FILEID: 33179874-caca-11e9-8464-10ddb1d4c3d5
+uargs
+
+FILEID: 40a2e84a-caca-11e9-8464-10ddb1d4c3d5
+fieldtag
+spack
+spkg
+spkgs
+
+FILEID: 52708a00-caca-11e9-8464-10ddb1d4c3d5
+uargs
+
+FILEID: 5e3f02e4-caca-11e9-8464-10ddb1d4c3d5
+modversion
+pcfiledir
+
+FILEID: 733f59d2-caca-11e9-8464-10ddb1d4c3d5
+ivrs
+semver
+
+FILEID: 75b00dec-caca-11e9-8464-10ddb1d4c3d5
+iwriter
+
+FILEID: 78ea7772-caca-11e9-8464-10ddb1d4c3d5
+spack
 
 NATURAL:
 aarch
@@ -5219,6 +5307,7 @@ ccwarnings
 cdef
 cdesc
 cdiv
+celsius
 certinfo
 cfgfile
 cflags
@@ -5315,6 +5404,7 @@ compileline
 compopts
 composability
 compsci
+concretize
 condstmt
 condwait
 confchpldoc
@@ -5378,6 +5468,7 @@ cythonize
 damian
 dana
 daniel
+danny
 darpa
 darrell
 darren
@@ -5614,6 +5705,7 @@ endbit
 endblock
 endcounts
 endfast
+endid
 enetdown
 enetreset
 enetunreach
@@ -5715,6 +5807,7 @@ exprs
 exps
 externs
 facebook
+fahrenheit
 failonerror
 fallthrough
 fallthru
@@ -5739,6 +5832,7 @@ fibonacci
 fieldname
 fieldno
 fieldnum
+fieldtag
 fieldwise
 figueroa
 filearg
@@ -5923,6 +6017,7 @@ heiner
 hemmaplardh
 hemmy
 hemstad
+hendler
 hendrix
 hermitian
 hessenberg
@@ -6153,6 +6248,7 @@ julialang
 july
 jumptable
 june
+junit
 jupiter
 kannada
 karin
@@ -6235,6 +6331,7 @@ leaderfollower
 ledrug
 leftjustify
 legendre
+lena
 lennard
 lentz
 lepcha
@@ -6302,6 +6399,7 @@ localportrange
 localtemp
 localtime
 locid
+lockfile
 lockless
 locready
 locs
@@ -6740,6 +6838,7 @@ parsable
 partee
 passlist
 passname
+passthrough
 passwordless
 pasv
 patchlevel
@@ -6980,6 +7079,7 @@ resizes
 resolveable
 resolveiteration
 resready
+restage
 restructuredtext
 retaintree
 rethrown
@@ -6998,6 +7098,7 @@ rint
 rlimit
 roald
 robert
+rochester
 roland
 roldan
 rollup
@@ -7106,6 +7207,7 @@ shannon
 shapeful
 shasta
 shavian
+shavit
 shellarg
 shellsort
 shenker
@@ -7227,6 +7329,7 @@ stallman
 stanford
 startbit
 startdir
+startid
 stdchpl
 stderr
 stdin
@@ -7293,6 +7396,7 @@ subregions
 subscripting
 subsequence
 substrings
+subtable
 subtest
 subtime
 subtree
@@ -7393,6 +7497,7 @@ tilera
 timecondition
 timedeltas
 timedexec
+timespec
 timesteps
 timetuple
 timetz
@@ -7435,6 +7540,7 @@ tradeoff
 tradeoffs
 transfertext
 travis
+treiber
 tridiagonal
 trigraphs
 trybang
@@ -7493,6 +7599,7 @@ unicast
 unindexed
 uninserted
 uninstall
+uninstalled
 uninstantiated
 uniprocessor
 uniquified
@@ -7513,6 +7620,7 @@ unparenthesized
 unpatented
 unpivoted
 unregisterable
+unregistering
 unrelatedly
 unresolveds
 unresolvedsymexpr
@@ -7667,6 +7775,7 @@ yates
 yearstr
 yeoh
 yerawar
+yerushalmi
 ylabel
 ytype
 yyyy

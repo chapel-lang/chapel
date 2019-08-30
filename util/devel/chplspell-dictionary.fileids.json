@@ -448,6 +448,9 @@
   "4d6baa58-bd82-11e9-8464-10ddb1d4c3d5": [
     "modules/internal/Bytes.chpl"
   ],
+  "b35c0a0c-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/internal/BytesStringCommon.chpl"
+  ],
   "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ChapelArray.chpl"
   ],
@@ -490,6 +493,9 @@
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
   ],
+  "a6c246da-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/AtomicObjects.chpl"
+  ],
   "71a525f2-43ff-11e6-907f-843835579daa": [
     "modules/packages/BLAS.chpl"
   ],
@@ -514,6 +520,9 @@
   "e9a3e440-9db7-11e7-a204-10ddb1d4c3d5": [
     "modules/packages/DistributedIters.chpl"
   ],
+  "95e5e682-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/EpochManager.chpl"
+  ],
   "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/FFTW.chpl"
   ],
@@ -532,6 +541,9 @@
   "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/LinearAlgebraJama.chpl"
   ],
+  "a29eae9a-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/LockFreeQueue.chpl"
+  ],
   "69fe0f48-1f2a-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MPI.chpl"
   ],
@@ -543,6 +555,9 @@
   ],
   "3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5": [
     "modules/packages/TOML.chpl"
+  ],
+  "558c0f58-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/UnitTest.chpl"
   ],
   "ac12c756-4d89-11e6-907f-843835579daa": [
     "modules/packages/VisualDebug.chpl",
@@ -572,6 +587,9 @@
   ],
   "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/IO.chpl"
+  ],
+  "b6f2f694-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/standard/List.chpl"
   ],
   "5c43053e-9317-11e9-a422-10ddb1d4c3d5": [
     "modules/standard/Lists.chpl"
@@ -898,5 +916,35 @@
   ],
   "a717e780-d45d-11e6-b38c-acbc32c4f96b": [
     "test/release/examples/users-guide/base/typeAliases.chpl"
+  ],
+  "33179874-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonExample.chpl"
+  ],
+  "40a2e84a-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonExternal.chpl"
+  ],
+  "1157b502-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonHelp.chpl"
+  ],
+  "2c87d6d6-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonModify.chpl"
+  ],
+  "75b00dec-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonNew.chpl"
+  ],
+  "5e3f02e4-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonSystem.chpl"
+  ],
+  "52708a00-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonTest.chpl"
+  ],
+  "733f59d2-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonUpdate.chpl"
+  ],
+  "1ec7ca88-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonUtils.chpl"
+  ],
+  "78ea7772-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/SpecParser.chpl"
   ]
 }
