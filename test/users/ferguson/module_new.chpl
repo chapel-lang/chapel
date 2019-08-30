@@ -5,7 +5,7 @@ module M {
 }
 
 module Y {
-  use M;
+  use M only;
   proc main() {
     var y = new unmanaged M.X(1);
 

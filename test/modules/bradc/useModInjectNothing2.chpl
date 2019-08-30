@@ -4,7 +4,7 @@ module M1 {
 }
 
 module M2 {
-  use M1;
+  use M1 only;
   proc main() {
     writeln("M1.x is: ", M1.x);
   }
