@@ -468,7 +468,8 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.numBytes, opts, ret._regexp);
   if !qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
-    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
+    var err_msg = createStringWithNewBuffer(err_str) + 
+                  " when compiling regexp '" + pattern + "'";
     throw new owned BadRegexpError(err_msg);
   }
   return ret;
