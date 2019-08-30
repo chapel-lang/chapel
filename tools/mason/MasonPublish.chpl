@@ -64,7 +64,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     if args.size > 2 {
       var potentialPath = args.pop();
-      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') && (potentialPath != '--update') && (potenialPath != '--travis') {
+      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') && (potentialPath != '--update') && (potentialPath != '--travis') {
         registryPath = potentialPath;
       }
       args.append(potentialPath);
