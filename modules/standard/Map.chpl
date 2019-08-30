@@ -191,6 +191,16 @@ module Map {
       return result;
     }
 
+    pragma "no doc"
+    proc const this(k: keyType) const {
+      _enter();
+      if !keys.contains(k) then
+        halt("map index out of bounds");
+      const result = vals[k];
+      _leave();
+      return result;
+    }
+
     /*
       Iterates over the keys of this map.
 

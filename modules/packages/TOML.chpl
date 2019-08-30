@@ -35,6 +35,7 @@ module TOML {
 
 
 private use List;
+private use Map;
 use TomlParser;
 private use TomlReader;
 
@@ -574,8 +575,7 @@ used to recursively hold tables and respective values
       dt: datetime,
       dom: domain(1),
       arr: [dom] unmanaged Toml,
-      D: domain(string),
-      A: [D] unmanaged Toml,
+      A: map(false, string, unmanaged Toml),
       tag: fieldtag;
 
     // Empty
@@ -591,8 +591,8 @@ used to recursively hold tables and respective values
 
     // Toml
     proc init(A: [?D] unmanaged Toml) where isAssociativeDom(D) {
-      this.D = D;
-      this.A = A;
+      this.complete();
+      for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
@@ -659,8 +659,7 @@ used to recursively hold tables and respective values
       this.ti = root.ti;
       this.dt = root.dt;
       this.s = root.s;
-      this.D = root.D;
-      for idx in root.D do this.A[idx] = new unmanaged Toml(root.A[idx]);
+      for idx in root.A do this.A[idx] = new unmanaged Toml(root.A[idx]);
       this.tag = root.tag;
     }
 
@@ -674,7 +673,7 @@ used to recursively hold tables and respective values
       }
       else {
         var next = '.'.join(indx[top+1..]);
-        if !this.A.domain.contains(indx[top]) {
+        if !this.A.contains(indx[top]) {
           throw new owned TomlError("No index found for " + tbl);
         }
         return this.A[indx[top]][next];
@@ -688,7 +687,7 @@ used to recursively hold tables and respective values
         var path = tblpath.split('.');
         var top = path.domain.first;
         if path.size < 2 {
-          if this.A.domain.contains(tblpath) == false {
+          if this.A.contains(tblpath) == false {
             return false;
           }
           else {
@@ -697,7 +696,7 @@ used to recursively hold tables and respective values
         }
         else {
           var next = '.'.join(path[top+1..]);
-          if this.A.domain.contains(path[top]) {
+          if this.A.contains(path[top]) {
             return this.A[path[top]].pathExists(next);
           }
           else {
@@ -789,8 +788,7 @@ used to recursively hold tables and respective values
         t = new unmanaged Toml(A);
       } else {
         t.tag = fieldToml;
-        t.D = D;
-        t.A = A;
+        for i in D do t.A[i] = A[i];
       }
     }
     proc set(tbl: string, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom) {
@@ -863,7 +861,7 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Flatten tables into flat associative array for writing */
     proc flatten(flat: [?d] unmanaged Toml, rootKey = '') : flat.type {
-      for (k, v) in zip(this.D, this.A) {
+      for (k, v) in this.A.items() {
         if v.tag == fieldToml {
           var fullKey = k;
           if rootKey != '' then fullKey = '.'.join(rootKey, k);
@@ -890,7 +888,7 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValues(f: channel, v: borrowed Toml) throws {
-      for (key, value) in zip(v.D, v.A) {
+      for (key, value) in v.A.items() {
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -1080,7 +1078,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     proc deinit() {
-      for a in A do delete a;
+      for a in A.values() do delete a;
       for a in arr do delete a;
     }
   }

@@ -190,7 +190,7 @@ private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toRm) {
       var old = toml["dependencies"][toRm];
-      toml["dependencies"].D.remove(toRm);
+      toml["dependencies"].remove(toRm);
       delete old;
     }
     else {

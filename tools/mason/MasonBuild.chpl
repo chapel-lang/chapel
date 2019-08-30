@@ -235,7 +235,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
-  for (name, package) in zip(lockFile.D, lockFile.A) {
+  for (name, package) in lockFile.A.items() {
     if package.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
