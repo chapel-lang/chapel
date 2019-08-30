@@ -41,7 +41,7 @@ checkNo(one64 != one64);
 checkNo(one32 != one64);
 checkNo(one64 != one32);
 
-if !isComplexType(t32) {
+if !isComplexType(t32) && !isImagType(t32) {
   // <
   checkYes(one32 < two32);
   checkYes(one64 < two64);

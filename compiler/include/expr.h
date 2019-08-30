@@ -301,7 +301,11 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
-  if (fMinimalModules && type == dtString) return false;
+  if (fMinimalModules) {
+    if(type == dtBytes || type == dtString) {
+      return false;
+    }
+  }
   return isAlive(type->symbol->defPoint);
 }
 
@@ -386,8 +390,8 @@ bool hasOptimizationFlag(Expr* anchor, Flag flag);
 
 
 #ifdef HAVE_LLVM
-llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
-llvm::Value* createTempVarLLVM(llvm::Type* type);
+llvm::Value* createVarLLVM(llvm::Type* type, const char* name);
+llvm::Value* createVarLLVM(llvm::Type* type);
 #endif
 
 GenRet codegenValue(GenRet r);

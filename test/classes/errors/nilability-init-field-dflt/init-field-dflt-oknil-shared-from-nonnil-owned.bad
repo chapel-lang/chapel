@@ -1,0 +1,1 @@
+init-field-dflt-oknil-shared-from-nonnil-owned.chpl:8: error: cannot assign expression of type borrowed MyClass to field 'chpl_t' of type borrowed MyClass?

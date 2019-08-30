@@ -18,7 +18,7 @@
  */
 
 module MemConsistency {
-  pragma "memory order type"
+  pragma "c memory order type"
   extern type memory_order;
 
   // When I finish removing PRIM_INIT before initialization to a known
@@ -28,7 +28,6 @@ module MemConsistency {
   //inline proc _defaultOf(type t:memory_order): memory_order
   //  return memory_order_seq_cst;
 
-  pragma "no instantiation limit"
   pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t:memory_order) {
@@ -72,18 +71,42 @@ module MemConsistency {
   extern const memory_order_acq_rel:memory_order;
   extern const memory_order_seq_cst:memory_order;
 
+  pragma "memory order type"
+  enum memoryOrder {seqCst, acqRel, release, acquire, relaxed}
+
+  inline proc c_memory_order(param order: memoryOrder) {
+    select order {
+      when memoryOrder.relaxed do return memory_order_relaxed;
+      when memoryOrder.acquire do return memory_order_acquire;
+      when memoryOrder.release do return memory_order_release;
+      when memoryOrder.acqRel  do return memory_order_acq_rel;
+      when memoryOrder.seqCst  do return memory_order_seq_cst;
+      otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid memoryOrder");
+    }
+  }
+
   // These functions are memory consistency fences (ie acquire or
   // release fences) for the remote data cache.
+
   pragma "insert line file info"
   extern proc chpl_rmem_consist_release();
   pragma "insert line file info"
   extern proc chpl_rmem_consist_acquire();
   pragma "insert line file info"
   extern proc chpl_rmem_consist_maybe_release(order:memory_order);
+  proc chpl_rmem_consist_maybe_release(param order:memoryOrder) {
+    chpl_rmem_consist_maybe_release(c_memory_order(order));
+  }
   pragma "insert line file info"
   extern proc chpl_rmem_consist_maybe_acquire(order:memory_order);
+  proc chpl_rmem_consist_maybe_acquire(param order:memoryOrder) {
+    chpl_rmem_consist_maybe_acquire(c_memory_order(order));
+  }
   pragma "insert line file info"
   extern proc chpl_rmem_consist_fence(order:memory_order);
+  proc chpl_rmem_consist_fence(param order:memoryOrder) {
+    chpl_rmem_consist_fence(c_memory_order(order));
+  }
 
   // Local memory consistency is handled in Atomics.chpl
   // and can be done from C.

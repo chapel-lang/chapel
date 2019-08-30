@@ -1,0 +1,7 @@
+#!/bin/sh
+sed -e "s/.*allocate.*string copy.*/***ALLOCATE***/" \
+    -e "s/.*free.*/***FREE***/"\
+    -e "/.*allocate.*/d"\
+    $1.exec.out.tmp > $1.prediff.tmp
+mv $1.prediff.tmp $1.exec.out.tmp
+

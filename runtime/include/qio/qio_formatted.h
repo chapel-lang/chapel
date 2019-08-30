@@ -732,6 +732,8 @@ qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict c
 
 qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
 
+qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
+
 // reads match exactly - skipping whitespace before it if skipwsbefore is set.
 // returns 0 if it matched, or EFORMAT if it did not.
 qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore);
@@ -755,6 +757,8 @@ typedef struct qio_truncate_info_ {
 qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti);
 // like qio_quote_string, but only get length information.
 qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti);
+
+qioerr qio_quote_bytes_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti);
 
 // Prints a bytes according to the style.
 qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);

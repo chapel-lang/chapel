@@ -178,7 +178,7 @@ void ResolveScope::addBuiltIns() {
   extend(gNoInit);
 
   extend(dtUnknown->symbol);
-  extend(dtValue->symbol);
+  extend(dtAnyRecord->symbol);
 
   extend(gUnknown);
   extend(gNone);
@@ -244,7 +244,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtUnmanaged->symbol);
   extend(dtUnmanagedNonNilable->symbol);
   extend(dtUnmanagedNilable->symbol);
-  extend(dtAnyManagement->symbol);
+  extend(dtAnyManagementAnyNilable->symbol);
   extend(dtAnyManagementNonNilable->symbol);
   extend(dtAnyManagementNilable->symbol);
 
@@ -260,7 +260,7 @@ void ResolveScope::addBuiltIns() {
   extend(gBoundsChecking);
   extend(gCastChecking);
   extend(gNilChecking);
-  extend(gLegacyNilClasses);
+  extend(gLegacyClasses);
   extend(gOverloadSetsChecks);
   extend(gDivZeroChecking);
   extend(gPrivatization);

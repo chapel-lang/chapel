@@ -213,6 +213,11 @@ static void insertNamedInstantiationInfo(CallExpr* newExpr,
     }
 
     for_fields(field, at) {
+      if (at->symbol->hasFlag(FLAG_GENERIC)) {
+        if (field->type == dtUnknown || field->type->symbol->hasFlag(FLAG_GENERIC)) {
+          continue;
+        }
+      }
       if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
         initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(field->type->symbol)));
       } else if (field->hasFlag(FLAG_PARAM)) {
@@ -589,6 +594,8 @@ static void resolveInitializerMatch(FnSymbol* fn) {
     insertFormalTemps(fn);
     at->setFirstGenericField();
     resolveInitializerBody(fn);
+
+    popInstantiationLimit(fn);
   }
 }
 

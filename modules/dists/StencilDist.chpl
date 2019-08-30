@@ -32,10 +32,12 @@
 // mapped to by the distribution.
 //
 
-use BlockDist;
-use DSIUtil;
-use ChapelUtil;
-use CommDiagnostics;
+private use BlockDist;
+private use DSIUtil;
+private use ChapelUtil;
+private use CommDiagnostics;
+private use ChapelLocks;
+private use ChapelDebugPrint;
 
 
 //

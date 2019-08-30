@@ -3,7 +3,7 @@
 export proc take(x: real) {
   var xFloor = floor(x);
   var xCeiling = ceil(x);
-  writeln("Was given x in range of: " + xFloor + " and " + xCeiling);
+  writeln("Was given x in range of: ", xFloor, " and ", xCeiling);
 }
 
 export proc give(): real {

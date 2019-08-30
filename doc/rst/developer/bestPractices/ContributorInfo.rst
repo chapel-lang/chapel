@@ -416,7 +416,31 @@ Committing staged changes:
 
     # similar to: svn commit [-m <message>]
 
-Bring in changes from the main Chapel project:
+There are two different strategies available to bringing changes from Chapel
+master into your development branch:
+
+Rebase (replay your changes on top of the master branch):
+
+.. code-block:: bash
+
+    git fetch upstream
+    git rebase upstream/master
+
+    # If branch has already been pushed, you will need to force push to update:
+    git push -f -u origin <branch_name>
+
+
+If there are conflicts, you will be asked to resolve them. Once the affected
+files have been fixed, stage them with ``git add``, and then call ``git
+rebase --continue`` to finish the rebase process.
+
+If there are other development branches working off of your development branch
+(something not common in Chapel development), then you should not use this
+strategy. Instead, merge the Chapel master branch into your branch as shown
+below, which does not require a force push to rewrite git history.
+
+
+Merge (merge master into your branch):
 
 .. code-block:: bash
 
@@ -424,7 +448,7 @@ Bring in changes from the main Chapel project:
     git merge upstream/master
 
     # or:
-    git pull upstream <branch_name>
+    git pull upstream master
 
     # with feature branch checked out:
     git merge [--no-ff] upstream/master
@@ -435,6 +459,17 @@ commit`` to finish the merge process.
 
 If you want to understand the changes that occurred upstream, see
 `Read commit messages for changes from the main Chapel project`_ below.
+
+Using ``git merge upstream/master`` or ``git pull upstream master`` is not
+recommended when working in development branches that have no other references
+to them (which is typical in Chapel development), because
+it pollutes the git history with non-meaningful merge commits. These show up in
+the git history as:
+
+.. code-block:: bash
+
+    Merge branch 'master' of github.com:chapel-lang/chapel into dev-branch
+
 
 .. _How to modify git history:
 
@@ -472,7 +507,8 @@ perform a pull next time you checkout your local master):
     git rebase upstream/master
 
 Pushing such changes to your repository (again, **this may cause problems** if
-other repositories have pulled the changes):
+other repositories have pulled the changes -- however this is uncommon in the
+Chapel development workflow):
 
 .. code-block:: bash
 
@@ -604,7 +640,7 @@ feature branch with new changes from the main Chapel project)
 
     # or:
     git fetch origin
-    git merge origin/master # replace master with whatever branch you're on
+    git merge origin/master
 
     # similar to: svn update
 
@@ -630,18 +666,18 @@ commands:
 
 .. code-block:: bash
 
-   # This will save your old master state to a different branch name, removing
-   # the name "master" from the list of branches you can access on your fork
-   git branch -m <name for old, messed up master>
+    # This will save your old master state to a different branch name, removing
+    # the name "master" from the list of branches you can access on your fork
+    git branch -m <name for old, messed up master>
 
-   # You will get a message indicating you are in a "detached HEAD state".  This
-   # is expected (and desired).  Now the repository you are in is in line with
-   # your fork's master branch.
-   git checkout origin/master
+    # You will get a message indicating you are in a "detached HEAD state".  This
+    # is expected (and desired).  Now the repository you are in is in line with
+    # your fork's master branch.
+    git checkout origin/master
 
-   # This will save the state of the repository right now to a new branch, named
-   # master.
-   git checkout -b master
+    # This will save the state of the repository right now to a new branch, named
+    # master.
+    git checkout -b master
 
 At this point, a `git push origin master` should work as expected.  Remember, do
 not try this with a master branch that has been corrupted on your remote fork.
@@ -817,18 +853,16 @@ Testing your patch
 Work-in-progress pull request
 +++++++++++++++++++++++++++++
 
-This is a special kind of pull request that is not yet intended to be merged.
-Such PRs are created to take advantage of what the Github PR interface provides,
-such as public comment history and quick links between the WIP PR and other
-related issues and pull requests.  They allow the developer to get early
-feedback on a change.
+A work-in-progress (WIP) PR is a special kind of pull request that is not yet
+intended to be merged.  Such PRs are created to take advantage of what the
+Github PR interface provides, such as public comment history and quick links
+between the WIP PR and other related issues and pull requests.  They allow the
+developer to get early feedback on a change.
 
-The status of the WIP PR should be clearly stated, including what steps need to
-be taken before the PR is ready for final review.
-
-It is generally advisable to "close" such PRs until they are ready for
-final review and testing, as their development can span a large period of time
-and would thus add clutter to the list of open PRs.
+The status of a WIP PR can be stated by using the GitHub "draft PR" feature.
+The PR description should include what steps need to be taken before the PR is
+ready for final review. If a WIP PR was not opened as draft PR, it can be
+marked with the ``stat: work in progress`` label by a core contributor.
 
 It is perfectly acceptable to abandon such PRs (especially in favor of a cleaned
 up version of the code) when the git history becomes too large, so long as a
@@ -836,6 +870,7 @@ link to the original PR is provided when the change is eventually merged, to
 preserve the discussion.
 
 .. _Pull request guidance:
+
 
 Pull request guidance
 +++++++++++++++++++++
@@ -854,29 +889,74 @@ Pull request guidance
     of the code.
 
   * Ideally, the size of the PR should be proportional to the expected value to
-    the developer and user community. For example, a new module introduced as a
-    1000-line PR is acceptable, while a set of new tests introduced as a
-    1000-line PR is not.
+    the developer and user community.
+
+.. _Pull request description:
+
+Pull request description
+++++++++++++++++++++++++
+
+* Generally, try to come up with a single-line headline of 75 characters at
+  most to describe the change.  Think of this as a statement of what the PR
+  accomplishes, ideally with a user perspective (as opposed to the "what I did
+  to the code" perspective).
+
+* Depending on the magnitude of the change, write a short paragraph to longer
+  set of paragraphs describing the change (again, focusing on the user
+  experience, at least in the initial paragraphs... why would a Chapel user
+  care that you merged this?  Or if it's not user-facing, why would a developer
+  care).
+
+* If it's truly complex such that you think the code changes themselves warrant
+  describing in the PR (because they're complex or clever, say), additional
+  paragraphs talking about the code changes / approach taken can be nice (but
+  aren't strictly required).
+
+* Depending on the complexity of the PR, it can be reassuring to reviewers to
+  denote how you have tested the PR either in the PR description or an initial
+  comment.
+
+It's not uncommon for the contents of the PR description to evolve over the
+lifetime of the PR and its review.  Initially it should help the person doing
+the code review understand what's being done (and potentially why).  Then, when
+the code review is done, make sure the text is still accurate.
 
 .. _Final merge message:
 
 Final merge message
 +++++++++++++++++++
 
-- start with a single topic line with at most 75 characters
-- then have a blank line
-- then have a more detailed explanation including motivation for the
-  change and how it changes the previous behavior
-- use present tense (e.g. "Fix file iterator bug")
-- manually wrap long lines in the explanation to 75 or 80 characters
+When merging, copy and paste the PR description into the GitHub merge dialogue
+box. Ensure that the title of the PR is at the top.
 
-It is good practice for the pull request title to match the topic line, and the
-detailed explanation to match the pull request description.
+It is good practice to @-mention the reviewer(s) at the end of the PR.
+This is typically formatted in brackets:
+
+.. code-block:: bash
+
+    [Reviewed by @reviewer1 and @reviewer2]
 
 .. _Git history is clear:
 
 Git history is clear
 ++++++++++++++++++++
+
+In general, having logical commits with meaningful commit messages is helpful
+for maintaining a clean git history. This is particularly important for
+critical or complex code changes. Depending on how critical or complex your
+changes are, it may be a good idea to do an interactive rebase to squash any
+non-meaningful commits:
+
+.. code-block:: bash
+
+    git fetch upstream
+    git rebase -i upstream/master
+
+Note that this can be particularly cumbersome when there has been significant
+conflicting changes made on upstream master, so is not a hard requirement.
+
+An alternative approach is to use the "squash and merge" option on the github
+merge button which will reduce all commits to a single commit.
 
 It's not generally possible to completely remove a commit from git by the time
 it makes it in to the master branch. So be very careful not to commit anything

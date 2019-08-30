@@ -19,7 +19,7 @@ class Node {
   var name: string;
   var pos: unmanaged position = new unmanaged position(-1,-1);
   var color : colors = colors.WHITE;
-  var pred : unmanaged Node = nil;
+  var pred : unmanaged Node? = nil;
   var disc,fini : int = -1;
 
   proc writeThis(w){
@@ -400,7 +400,7 @@ class Graph {
 	 * From the non-treeEdges, we must find one with minimum slack
 	 */
 	var delta = 256;
-	var minEdge: unmanaged Edge = nil;
+	var minEdge: unmanaged Edge? = nil;
 	for e in incident_non_tree_edge() do {
 	    if(slack(e.id) < delta){
 	      delta = slack(e.id);

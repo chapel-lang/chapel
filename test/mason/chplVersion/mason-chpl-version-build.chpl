@@ -1,4 +1,5 @@
 
+private use List;
 use MasonBuild;
 
 proc main() {
@@ -30,6 +31,7 @@ proc main() {
 
   lock.close();
 
-  var compopts = ["",];
+  var compopts: list(string);
+  compopts.append("");
   buildProgram(false, false, false, compopts, "Mason.toml", "Mason.lock");
 }

@@ -89,7 +89,7 @@ class Chameneos {
   proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
     var stateTemp, peer_idx, xchg : int;
 
-    stateTemp = meetingPlace.state.read(memory_order_acquire);
+    stateTemp = meetingPlace.state.read(memoryOrder.acquire);
 
     while (true) {
       peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
@@ -100,7 +100,7 @@ class Chameneos {
       } else {
         break;
       }
-      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memory_order_acq_rel)) {
+      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memoryOrder.acqRel)) {
         if (peer_idx) {
           runMeeting(population, peer_idx);
         } else {
@@ -108,11 +108,11 @@ class Chameneos {
 
           waitUntilCompleted();
 
-          meetingCompleted.write(false, memory_order_release);
-          stateTemp = meetingPlace.state.read(memory_order_acquire);
+          meetingCompleted.write(false, memoryOrder.release);
+          stateTemp = meetingPlace.state.read(memoryOrder.acquire);
         }
       } else {
-        stateTemp = meetingPlace.state.read(memory_order_acquire);
+        stateTemp = meetingPlace.state.read(memoryOrder.acquire);
       }
     }
   }
@@ -120,7 +120,7 @@ class Chameneos {
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
   proc runMeeting (population : [] owned Chameneos, peer_idx) {
-    var peer : Chameneos;
+    var peer : borrowed Chameneos?;
     var newColor : Color;
     var is_same : int;
     if (id == peer_idx) {
@@ -131,7 +131,7 @@ class Chameneos {
     peer.color = newColor;
     peer.meetings += 1;
     peer.meetingsWithSelf += is_same;
-    peer.meetingCompleted.write(true, memory_order_release);
+    peer.meetingCompleted.write(true, memoryOrder.release);
     
     color = newColor;
     meetings += 1;
@@ -140,11 +140,11 @@ class Chameneos {
 
   // Implements a spin then yield in the hopes of speeding things up
   inline proc waitUntilCompleted() {
-    var completed = meetingCompleted.read(memory_order_acquire);
+    var completed = meetingCompleted.read(memoryOrder.acquire);
     while (!completed) {
       // read the value a few times before yielding
       for i in 1..numSpins /* play around with this number */ {
-        completed = meetingCompleted.read(memory_order_acquire);
+        completed = meetingCompleted.read(memoryOrder.acquire);
         if completed then break;
       }
       if !completed {
@@ -154,7 +154,7 @@ class Chameneos {
         // done
         break;
       }
-      completed = meetingCompleted.read(memory_order_acquire);
+      completed = meetingCompleted.read(memoryOrder.acquire);
     }
   }
 }

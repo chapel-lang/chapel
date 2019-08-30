@@ -78,14 +78,14 @@ MODULES_TO_DOCUMENT = \
 	standard/IO.chpl \
 	standard/LinkedLists.chpl \
 	standard/List.chpl \
-	standard/Lists.chpl \
+	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
 	standard/Regexp.chpl \
-	standard/Sets.chpl \
+	standard/Set.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
@@ -96,10 +96,12 @@ MODULES_TO_DOCUMENT = \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
+	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
+	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \
 	packages/Futures.chpl \
@@ -107,9 +109,12 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
+	packages/LockFreeQueue.chpl \
+	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/Norm.chpl \
+	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
@@ -122,6 +127,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/TOML.chpl \
+	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
 	packages/URL.chpl

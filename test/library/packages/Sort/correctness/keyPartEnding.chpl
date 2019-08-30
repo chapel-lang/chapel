@@ -1,4 +1,5 @@
 use Sort;
+use List;
 
 record TwoRepeated {
   var first:int;
@@ -14,7 +15,7 @@ record TwoRepeated {
 }
 
 proc stringToTwoRepeated(arg:string) {
-  var A:[1..0] (int, int);
+  var A = new list((int, int));
   var cur:int = 0;
   var n:int = 0;
   for ch in arg {
@@ -22,7 +23,7 @@ proc stringToTwoRepeated(arg:string) {
     if c == cur {
       n += 1;
     } else if n != 0 {
-      A.push_back( (cur, n) );
+      A.append( (cur, n) );
       cur = c;
       n = 1;
     } else {
@@ -31,7 +32,7 @@ proc stringToTwoRepeated(arg:string) {
     }
   }
   if n != 0 then
-    A.push_back( (cur,n ) );
+    A.append( (cur,n ) );
 
   assert(A.size == 1 || A.size == 2);
   if A.size == 1 {

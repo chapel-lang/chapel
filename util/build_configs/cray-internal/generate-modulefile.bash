@@ -164,9 +164,6 @@ if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
     # Some libraries are not yet available in static form.
     setenv CRAYPE_LINK_TYPE dynamic
 
-    # The PrgEnv stuff isn't picking up the right PMI library yet.
-    prepend-path LD_LIBRARY_PATH /usr/lib64
-
     # Work around libfabric module not setting everything we need yet:
     # set LIBFABRIC_DIR to the parent of libfabric's PATH entry.
     if { ! [info exists env(LOADEDMODULES)] ||

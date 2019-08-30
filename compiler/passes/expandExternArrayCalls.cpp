@@ -100,6 +100,7 @@ void expandExternArrayCalls() {
       fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
       fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
       fcopy->removeFlag(FLAG_EXTERN);
+      fcopy->removeFlag(FLAG_NO_FN_BODY);
       fcopy->addFlag(FLAG_INLINE);
 
       fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);

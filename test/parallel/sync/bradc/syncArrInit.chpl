@@ -6,7 +6,7 @@ class C {
   }
 }
 
-var arr: [1..3] sync borrowed C;
+var arr: [1..3] sync borrowed C?;
 
 writeln("made it past declaration of arr");
   

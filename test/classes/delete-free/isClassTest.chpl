@@ -14,6 +14,8 @@ proc testit(type t) {
   writeln(isClassValue(c));
 
   writeln();
+  if (t == unmanaged C) then
+    delete c;
 }
 
 {

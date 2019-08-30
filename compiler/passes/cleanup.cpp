@@ -41,7 +41,8 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
 static void destructureTupleAssignment(CallExpr* call);
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper);
+static void replaceIsSubtypeWithPrimitive(CallExpr* call,
+                                          bool proper, bool coerce);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
@@ -95,9 +96,11 @@ static void cleanup(ModuleSymbol* module) {
       if (call->isNamed("_build_tuple"))
         destructureTupleAssignment(call);
       else if (call->isNamed("isSubtype"))
-        replaceIsSubtypeWithPrimitive(call, false);
+        replaceIsSubtypeWithPrimitive(call, false, false);
       else if (call->isNamed("isProperSubtype"))
-        replaceIsSubtypeWithPrimitive(call, true);
+        replaceIsSubtypeWithPrimitive(call, true, false);
+      else if (call->isNamed("isCoercible"))
+        replaceIsSubtypeWithPrimitive(call, false, true);
 
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -197,13 +200,17 @@ static void destructureTupleAssignment(CallExpr* call) {
 }
 
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper) {
+static void replaceIsSubtypeWithPrimitive(CallExpr* call,
+                                          bool proper, bool coerce) {
   Expr* sub = call->get(1);
   Expr* sup = call->get(2);
   sub->remove();
   sup->remove();
 
   PrimitiveTag prim = proper ? PRIM_IS_PROPER_SUBTYPE : PRIM_IS_SUBTYPE;
+  if (coerce)
+    prim = PRIM_IS_COERCIBLE;
+
   call->replace(new CallExpr(prim, sup, sub));
 }
 

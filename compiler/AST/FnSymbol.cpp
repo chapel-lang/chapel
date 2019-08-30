@@ -787,9 +787,11 @@ int FnSymbol::hasGenericFormals(SymbolMap* map) const {
         }
       }
 
+    }
+
     // init= on generic types need to be considered generic so that 'this.type'
     // stuff will resolve.
-    } else if (isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
+    if (map == NULL && formal == _this && isCopyInit() && _this->type->symbol->hasFlag(FLAG_GENERIC)) {
       isGeneric = true;
     }
 
@@ -1094,6 +1096,86 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
+const char* FnSymbol::substitutionsToString(const char* sep) const {
+  if (sep == NULL || sep[0] == '\0')
+    sep = " ";
+
+  const char* ret = astr("");
+
+  FnSymbol* genericFn = this->instantiatedFrom;
+
+  if (genericFn != NULL) {
+    for_formals(genericArg, genericFn) {
+      Symbol* sym = const_cast<FnSymbol*>(this)->substitutions.get(genericArg);
+      if (sym != NULL) {
+        Type* t = sym->getValType();
+
+        // add a separator if this isn't the first one
+        if (ret[0] != '\0')
+          ret = astr(ret, sep);
+
+        // Get the concrete formal, too
+        ArgSymbol* concreteArg = NULL;
+        for_formals(arg, this) {
+          if (arg->name == genericArg->name)
+            concreteArg = arg;
+        }
+
+        bool isParam = genericArg->intent == INTENT_PARAM ||
+                       genericArg->originalIntent == INTENT_PARAM;
+        bool isType = genericArg->intent == INTENT_TYPE ||
+                      genericArg->originalIntent == INTENT_TYPE ||
+                      genericArg->hasFlag(FLAG_TYPE_VARIABLE);
+
+        const char* name = genericArg->name;
+        if (genericArg->hasFlag(FLAG_EXPANDED_VARARGS) &&
+            name[0] == '_' && name[1] == 'e') {
+          // change _e##_name into name(##)
+          std::string num = name;
+          num.erase(0, 2); // remove _e
+          std::string n = num; // ##_name
+          num.resize(num.find('_')); // ##
+          n.erase(0, n.find('_')+1); // name
+          name = astr(n.c_str(), "(", num.c_str(), ")");
+        }
+
+        if (isParam) {
+          ret = astr(ret, "param ", name);
+          if (isNumericParamDefaultType(t) == false)
+            ret = astr(ret, ": ", toString(t));
+          Immediate* imm = getSymbolImmediate(sym);
+          if (imm == NULL && concreteArg != NULL) {
+            // Also look in the defaultExpr. See e.g. recursive-leader-errr.chpl
+            // and the iterKind enum.
+            // Not sure why this pattern doesn't set the immediate.
+            if (SymExpr* se = toSymExpr(concreteArg->defaultExpr->body.tail)) {
+              Symbol* sym = se->symbol();
+              imm = getSymbolImmediate(sym);
+              if (imm == NULL) {
+                if (isEnumSymbol(sym)) {
+                  ret = astr(ret, " = ", toString(t), ".", sym->name);
+                }
+              }
+            }
+          }
+          if (imm) {
+            const size_t bufSize = 128;
+            char buf[bufSize];
+            snprint_imm(buf, bufSize, *imm);
+            ret = astr(ret, " = ", buf);
+          }
+        } else if (isType) {
+          ret = astr(ret, "type ", name, " = ", toString(t));
+        } else {
+          ret = astr(ret, name, ": ", toString(t));
+        }
+      }
+    }
+  }
+
+  return ret;
+}
+
 const char* toString(FnSymbol* fn) {
   const char* retval = NULL;
 
@@ -1117,8 +1199,7 @@ const char* toString(FnSymbol* fn) {
         fn = fn->instantiatedFrom;
       }
 
-      if (fn->isMethod()) {
-        INT_ASSERT(fn->_this);
+      if (fn->isMethod() && fn->_this != NULL) {
         retval = astr(toString(fn->_this->type, false), ".", fn->name);
 
       } else if (fn->hasFlag(FLAG_MODULE_INIT) == true) {

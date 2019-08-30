@@ -89,10 +89,10 @@ proc makeLookup(a :[?D]) {
 }
 
 // Add a line of random sequence
-proc addLine(bytes: int) {
+proc addLine(nBytes: int) {
   // TODO: fixed length string would be ideal
   var line: string;
-  for i in 0..bytes-1 {
+  for i in 0..nBytes-1 {
     var r  = random.next();
     var ai = r : int;
     while (lookup[ai].p < r) {
@@ -111,9 +111,9 @@ proc randomMake(desc : string, a :[?D], n : int) {
   makeLookup(a);
   stdout.write(desc);
   while (len > 0) {
-    var bytes : int = min(LINE_LENGTH, len);
-    addLine(bytes);
-    len = len - bytes;
+    var nBytes : int = min(LINE_LENGTH, len);
+    addLine(nBytes);
+    len = len - nBytes;
   }
 }
 

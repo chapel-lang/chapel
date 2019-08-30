@@ -10,15 +10,17 @@ class EmptyStringError : Error {
 
 proc mytest_throws(f: string) throws {
   var a = 42;
-  // CHECK: %[[REG1:[0-9]+]] = bitcast i64* %a_chpl to i8*
+  // CHECK: %a_chpl = alloca i64
+  // CHECK-NEXT: %[[REG1:[0-9]+]] = bitcast i64* %a_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG1]])
-  // CHECK: %{{[0-9]+}} = bitcast i64* %a_chpl to i8*
   refidentity(a);
   var b = a + 42;
-  // CHECK: %[[REG2:[0-9]+]] = bitcast i64* %b_chpl to i8*
+  // CHECK: %b_chpl = alloca i64
+  // CHECK-NEXT: %[[REG2:[0-9]+]] = bitcast i64* %b_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG2]])
-  // CHECK: %{{[0-9]+}} = bitcast i64* %b_chpl to i8*
   refidentity(b);
+  // CHECK: %{{[0-9]+}} = bitcast i64* %a_chpl to i8*
+  // CHECK: %{{[0-9]+}} = bitcast i64* %b_chpl to i8*
   if f.isEmpty() then
     throw new owned EmptyStringError();
   if b != 42 * 2 {

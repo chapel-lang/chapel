@@ -90,6 +90,17 @@ static void removeUnusedFunctions() {
           clearDefaultInitFns(fn);
 
           fn->defPoint->remove();
+        } else if (fn->isResolved() && fn->retTag == RET_TYPE) {
+          // BHARSH TODO: This is a way to work around the cleanup logic that
+          // removes generic types from the tree. If the function was left
+          // alive and returned a generic type the compiler would encounter
+          // memory corruption issues. Ideally type functions could remain
+          // in the AST and prevent the types they use from being removed.
+          Type* type = fn->retType;
+          if (type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
+              type->symbol->hasFlag(FLAG_EXTERN) == false) {
+            fn->defPoint->remove();
+          }
         }
       }
     }
@@ -833,6 +844,10 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
+      } else if (def->sym->type == dtUninstantiated &&
+                 isVarSymbol(def->sym) &&
+                 !def->parentSymbol->hasFlag(FLAG_REF)) {
+        def->remove();
       }
   }
 

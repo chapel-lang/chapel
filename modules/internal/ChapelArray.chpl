@@ -167,6 +167,9 @@ module ChapelArray {
   use ArrayViewRankChange;
   use ArrayViewReindex;
 
+  pragma "no doc"
+  config param showArrayAsVecWarnings = false;
+
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
   pragma "no doc"
@@ -263,9 +266,9 @@ module ChapelArray {
     }
 
     proc _freePrivatizedClassHelp(pid, original) {
-      var prv = chpl_getPrivatizedCopy(object, pid);
+      var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
       if prv != original then
-        delete _to_unmanaged(prv);
+        delete prv;
 
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
@@ -392,8 +395,10 @@ module ChapelArray {
   // opaque domains is _OpaqueIndex, not opaque.  This function is
   // essentially a wrapper around the function that actually builds up
   // the runtime type.
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type
+  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type {
+      compilerWarning("Opaque domains are deprecated - please switch to another domain type");
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
+  }
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
@@ -887,8 +892,8 @@ module ChapelArray {
   record dmap { }
 
   pragma "unsafe"
-  proc chpl__buildDistType(type t) type where isSubtype(borrowed t, BaseDist) {
-    var x: unmanaged t;
+  proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
+    var x: _to_unmanaged(t);
     var y = new _distribution(x);
     return y.type;
   }
@@ -3058,6 +3063,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_back(in val: this.eltType) lifetime this < val {
+      if showArrayAsVecWarnings then
+        compilerWarning("push_back is deprecated - please use list.append");
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 
@@ -3080,6 +3087,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_back(vals:_array) lifetime this < vals {
+      if showArrayAsVecWarnings then
+        compilerWarning("push_back is deprecated - please use list.extend");
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 
@@ -3103,6 +3112,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc pop_back() {
+      if showArrayAsVecWarnings then
+        compilerWarning("pop_back is deprecated - please use list.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("pop_back() is only supported on dense 1D arrays");
 
@@ -3156,6 +3167,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_front(in val: this.eltType) lifetime this < val {
+      if showArrayAsVecWarnings then
+        compilerWarning("push_front is deprecated - please use list.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("push_front");
@@ -3173,6 +3186,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc push_front(vals:_array) lifetime this < vals {
+      if showArrayAsVecWarnings then
+        compilerWarning("push_front is deprecated - please use list.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
 
@@ -3197,6 +3212,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc pop_front() {
+      if showArrayAsVecWarnings then
+        compilerWarning("pop_front is deprecated - please use list.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("pop_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("pop_front");
@@ -3237,6 +3254,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc insert(pos: this.idxType, in val: this.eltType) {
+      if showArrayAsVecWarnings then
+        compilerWarning("insert is deprecated - please use list.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
@@ -3273,6 +3292,8 @@ module ChapelArray {
 
     */
     proc insert(pos: this.idxType, vals: []) {
+      if showArrayAsVecWarnings then
+        compilerWarning("insert is deprecated - please use list.insert");
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
@@ -3302,6 +3323,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType) {
+      if showArrayAsVecWarnings then
+        compilerWarning("remove is deprecated - please use list.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove");
@@ -3336,6 +3359,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType, count: this.idxType) {
+      if showArrayAsVecWarnings then
+        compilerWarning("remove is deprecated - please use list.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove count");
@@ -3374,6 +3399,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc remove(pos: range(this.idxType, stridable=false)) {
+      if showArrayAsVecWarnings then
+        compilerWarning("remove has been deprecated - please use list.pop");
       if (!chpl__isDense1DArray()) then
         compilerError("remove() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("remove range");
@@ -3399,6 +3426,8 @@ module ChapelArray {
        non-stridable and not shared with other arrays.
      */
     proc clear() {
+      if showArrayAsVecWarnings then
+        compilerWarning("clear is deprecated - please use list.clear");
       if (!chpl__isDense1DArray()) then
         compilerError("clear() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("clear");
@@ -3582,15 +3611,18 @@ module ChapelArray {
   // promotion for associative array addition doesn't really make sense. instead,
   // we really just want a union
   proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     return a | b;
   }
 
   proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("+=");
     a |= b;
   }
 
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain | b.domain;
     var ret : [newDom] a.eltType;
     serial !newDom._value.parSafe {
@@ -3601,6 +3633,7 @@ module ChapelArray {
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("|=");
     serial !a.domain._value.parSafe {
       forall i in b.domain do a.domain.add(i);
@@ -3609,6 +3642,7 @@ module ChapelArray {
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain & b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3618,6 +3652,7 @@ module ChapelArray {
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("&=");
     serial !a.domain._value.parSafe {
       forall k in a.domain {
@@ -3627,6 +3662,7 @@ module ChapelArray {
   }
 
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain - b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3637,6 +3673,7 @@ module ChapelArray {
   }
 
   proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("-=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
@@ -3645,6 +3682,7 @@ module ChapelArray {
 
 
   proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain ^ b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3659,6 +3697,7 @@ module ChapelArray {
   }
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("^=");
     serial !a.domain._value.parSafe {
       forall k in b.domain {

@@ -13,7 +13,8 @@ int main(int argc, char* argv[]) {
   const char* c = "The last of the strings";
   const char* d = takeAndReturn(c);
   take(d);
-
+  chpl_free((char*)b);
+  chpl_free((char*)d);
   // Shutdown the Chapel runtime and standard modules
   chpl_library_finalize();
 

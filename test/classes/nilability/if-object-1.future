@@ -3,7 +3,7 @@ bug: nil checker misses an invalid program
 
 This is a stepping stone towards #11918:
 the compiler does not realize that 'obj' is nil with 
---no-legacy-nilable-classes
+--no-legacy-classes
 
 Once it does, it should report an error on Line 10,
 however not on lines 13 and 16. The latter two are requested in

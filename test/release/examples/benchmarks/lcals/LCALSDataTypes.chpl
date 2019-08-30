@@ -1,18 +1,28 @@
 module LCALSDataTypes {
   use LCALSParams;
   use LCALSEnums;
+  use List;
 
+  //
+  // This is a vector wrapper that uses 0-based indexing.
+  //
   class vector {
     type eltType;
-    var A: [0..-1] eltType;
+    var A: list(eltType);
+
+    //
+    // Previously, this vector used an array with a domain that started at 0,
+    // but list indexes starting at 1. So we should add 1 to the index to
+    // prevent a logical error.
+    //
     proc this(i: int) ref {
-      return A[i];
+      return A[i + 1];
     }
     proc push_back(e: eltType) {
-      A.push_back(e);
+      A.append(e);
     }
     proc numElements {
-      return A.numElements;
+      return A.size;
     }
     iter these() {
       for a in A do yield a;
@@ -35,7 +45,7 @@ module LCALSDataTypes {
     var num_suite_passes: int;
     var loop_samp_frac: real;
 
-    var ref_loop_stat: owned LoopStat;
+    var ref_loop_stat: owned LoopStat?;
 
     var loop_weights: [weight_group_dom] real;
 

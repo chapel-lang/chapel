@@ -291,7 +291,8 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
   } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
     if (actual->type->symbol->hasFlag(FLAG_GENERIC)   == true &&
         formal->hasFlag(FLAG_ARG_THIS)                == true &&
-        formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true) {
+        formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
+        actual->getValType() == formal->getValType()) {
       // If the "this" arg is generic, we're resolving an initializer, and
       // the actual being passed is also still generic, don't count this as
       // a substitution.  Otherwise, we'll end up in an infinite loop if
@@ -406,7 +407,7 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
 
       AggregateType* at = toAggregateType(canonicalActual);
 
-      if (canInstantiateOrCoerceDecorators(actualD, formalD, false)) {
+      if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
         if (canonicalActual == canonicalFormal ||
             isDispatchParent(canonicalActual, canonicalFormal) ||
             (at && at->instantiatedFrom &&
@@ -497,6 +498,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
     if (canInstantiateDecorators(actualDec, formalDec) ||
         (allowCoercion && canInstantiateOrCoerceDecorators(actualDec,
                                                            formalDec,
+                                                           true,
                                                            implicitBang))) {
       // Can the canonical formal type instantiate with the canonical actual?
 

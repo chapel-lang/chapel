@@ -1,0 +1,1 @@
+assign-nonnil-owned-from-oknil-nil.chpl:8: error: type mismatch in assignment from nil to owned MyClass

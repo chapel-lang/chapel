@@ -27,11 +27,11 @@ module ExternalString {
   type chpl__exportTypeCharPtr = c_ptr(c_char);
 
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
-    const bytes = s.numBytes;
+    const nBytes = s.numBytes;
     const src = s.c_str():c_void_ptr;
-    var result = c_malloc(c_char, bytes + 1):c_ptr(c_char);
-    c_memcpy(result, src, bytes);
-    result[bytes] = 0;
+    var result = c_malloc(c_char, nBytes + 1):c_ptr(c_char);
+    c_memcpy(result, src, nBytes);
+    result[nBytes] = 0;
     return result;
   }
 
@@ -69,14 +69,14 @@ module ExternalString {
   // this way are read only, _or_ perform a full copy for formals as well.
   //
   proc chpl__exportConstCharPtrToString(c: c_string): string {
-    return new string(cs=c, isowned=false, needToCopy=false);
+    return createStringWithBorrowedBuffer(c);
   }
 
   //
   // Ditto the above.
   //
   proc chpl__exportCharPtrToString(c: c_ptr(c_char)): string {
-    return new string(cs=c:c_string, isowned=false, needToCopy=false);
+    return createStringWithBorrowedBuffer(c);
   }
 
 } // End module "ExternalString".

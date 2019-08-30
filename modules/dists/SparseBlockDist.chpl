@@ -31,9 +31,9 @@
 // mapped to by the distribution.
 //
 
-use DSIUtil;
-use ChapelUtil;
-use BlockDist;
+private use DSIUtil;
+private use ChapelUtil;
+private use BlockDist;
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
@@ -341,7 +341,7 @@ class LocSparseBlockDom {
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
   var sparseDist = if _to_borrowed(sparseLayoutType) == DefaultDist then defaultDist
-                   else new dmap(new unmanaged sparseLayoutType()); //unresolved call workaround
+                   else new dmap(new sparseLayoutType()); //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 
   proc dsiAdd(ind: rank*idxType) {

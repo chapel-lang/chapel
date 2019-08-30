@@ -25,19 +25,19 @@ The deprecation message uses the following format:
 
 For example:
 
-..code-block:: chapel
-    /*
-        Foo module short description.
+..code-block:: rst
 
-        .. warning::
+    Foo module short description.
 
-            This module has been deprecated - please use :mod:`bar` instead.
+    .. warning::
 
-        Foo module long description.
-    */
+        This module has been deprecated - please use :mod:`bar` instead.
+
+    Foo module long description.
 
 
 3. Add a deprecation test to ``test/deprecation/`` to:
+
   - confirm the deprecation warning works as intended
   - remind us to to remove the deprecated feature in the following release
 

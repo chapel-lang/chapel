@@ -1,0 +1,3 @@
+no-tpv.chpl:3: error: task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks
+no-tpv.chpl:9: error: task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks
+no-tpv.chpl:16: error: task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks

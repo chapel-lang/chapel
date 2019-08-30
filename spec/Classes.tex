@@ -1566,8 +1566,8 @@ class C { }
 \end{chapelpre}
 \begin{chapel}
 // assume that C is a class
-var a = new owned C();
-var b:owned C; // default initialized to store `nil`
+var a:owned C? = new owned C();
+var b:owned C?; // default initialized to store `nil`
 b = a; // transfers ownership from a to b
 writeln(a); // a is left storing `nil`
 \end{chapel}
@@ -1633,7 +1633,7 @@ class C {
 }
 \end{chapelpre}
 \begin{chapel}
-var c : unmanaged C = nil;
+var c : unmanaged C? = nil;
 delete c;              // Does nothing: c is nil.
 
 c = new unmanaged C(); // Creates a new object.
@@ -1686,7 +1686,7 @@ class C {
   proc deinit() { writeln("Bye, bye ", i); }
 }
 
-var c : unmanaged C = nil;
+var c : unmanaged C? = nil;
 delete c;              // Does nothing: c is nil.
 
 c = new unmanaged C(1); // Creates a new instance.

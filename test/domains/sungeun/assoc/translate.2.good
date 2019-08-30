@@ -1,0 +1,3 @@
+translate.chpl:7: In function 'my_translate':
+translate.chpl:8: error: translate not supported on associative domains
+translate.chpl:14: Function 'my_translate' instantiated as: my_translate(D: DefaultAssociativeDom(int(64),false), off: int(64))

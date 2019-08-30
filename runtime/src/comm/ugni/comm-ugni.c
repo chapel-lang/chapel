@@ -6298,7 +6298,6 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   nb_desc_idx_t          nbdi;
   nb_desc_t*             nbdp;
   gni_post_descriptor_t* post_desc;
-  chpl_bool              do_rdma = false;
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6331,7 +6330,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   // For now, if the local address isn't in a memory region known to the
   // NIC, or if they give us an unaligned address or length, or if the
   // remote address isn't in NIC-registered memory, or if the size is
-  // larger than the maximum transaction size, do a blocking GET.
+  // larger than the rdma_threshold, do a blocking GET.
   // Eventually it might be worthwhile to do a nonblocking solution if
   // we can.
   //
@@ -6340,7 +6339,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
       || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
       || !IS_ALIGNED_32(size)
       || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
-      || size > MAX_RDMA_TRANS_SZ) {
+      || size >= rdma_threshold) {
     PERFSTATS_INC(get_nb_b_cnt);
     do_remote_get(addr, locale, raddr, size, may_proxy_true);
     return NULL;
@@ -6378,13 +6377,6 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   post_desc->remote_mem_hndl = remote_mr->mdh;
   post_desc->length          = size;
 
-  //
-  // If the GET size merits RDMA do an RDMA get instead of FMA
-  //
-  if (size >= rdma_threshold) {
-    do_rdma = true;
-    post_desc->type = GNI_POST_RDMA_GET;
-  }
 
   //
   // Initiate the transaction.  Don't wait for it to complete.
@@ -6392,11 +6384,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
   PERFSTATS_INC(get_nb_cnt);
   PERFSTATS_ADD(get_byte_cnt, size);
 
-  if (do_rdma) {
-    nbdp->cdi = post_rdma(locale, post_desc);
-  } else {
-    nbdp->cdi = post_fma(locale, post_desc);
-  }
+  nbdp->cdi = post_fma(locale, post_desc);
 
   return nb_desc_idx_2_handle(nbdi);
 }

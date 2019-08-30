@@ -24,7 +24,7 @@ demonstrate Chapel feature areas in detail.
      locales.chpl                : Chapel Locale types
      modules.chpl                : Chapel modules and use statements
      nothingVariables.chpl       : Using nothing for variable and field types
-     opaque-domains.chpl         : Opaque domains and arrays
+     opaque-domains.chpl         : Opaque domains and arrays (deprecated)
      parIters.chpl               : Introduction to parallel iterators
      procedures.chpl             : Procedure examples
      randomNumbers.chpl          : Usage of the standard module Random

@@ -135,6 +135,14 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<UseStmt*>    sModReqdByInt;
 
+void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
+  sIntModPath.add(astr(newpath));
+}
+
+void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
+  sStdModPath.add(astr(newpath));
+}
+
 void setupModulePaths() {
   const char* modulesRoot = NULL;
 

@@ -51,7 +51,7 @@ proc function3() {
   }
 
   class D {
-    var c:unmanaged C;
+    var c:unmanaged C?;
   }
 
   var c:unmanaged C = new unmanaged C();

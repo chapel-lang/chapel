@@ -10,6 +10,12 @@ graphkeys: native, BLAS
 graphtitle: Transpose 1000x1000
 ylabel: Time
 
+perfkeys: LinearAlgebra.lu: 
+files: lu-m1000.dat
+graphkeys: native
+graphtitle: LU factorization - 1000x1000
+ylabel: Time
+
 perfkeys: time (s) : , time (s) : , time (s) : , time (s) : 
 files: csrmatmat-1e-9-big.dat, csrmatmat-1e-7-big.dat, spa-1e-9-big.dat, spa-1e-7-big.dat
 graphkeys: SMMP (sparsity=1e-7%), SMMP (sparsity=1e-5%), SPA (sparsity=1e-7%), SPA (sparsity=1e-5%)
@@ -34,3 +40,8 @@ graphkeys: sparsity=0.01%, sparsity=0.1%, sparsity=1%, sparsity=10%
 graphtitle: LinearAlgebra.Sparse.dot() - squaring NxN matrices - small (N = 10e3)
 ylabel: Time
 
+perfkeys: LinearAlgebra.jacobi:, LinearAlgebra.Sparse.jacobi:
+files: jacobi-n512.dat, jacobi-n512.dat
+graphkeys: Dense, Sparse
+graphtitle: Jacobi method - solving 512 unknowns - dense and sparse
+ylabel: Time

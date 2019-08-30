@@ -1,0 +1,2 @@
+opaqueDomainMember.chpl:1: warning: Opaque domains are deprecated - please switch to another domain type
+{{}, {}}

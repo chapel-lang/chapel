@@ -21,7 +21,7 @@
 // Block dimension specifier - for use with DimensionalDist2D.
 //
 
-use DimensionalDist2D;
+private use DimensionalDist2D;
 
 
 /*

@@ -1157,9 +1157,6 @@ proc <(a: uint(64), b: int(64)): bool
 
 proc <(a: real(32), b: real(32)): bool
 proc <(a: real(64), b: real(64)): bool
-
-proc <(a: imag(32), b: imag(32)): bool
-proc <(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
@@ -1185,9 +1182,6 @@ proc >(a: uint(64), b: int(64)): bool
 
 proc >(a: real(32), b: real(32)): bool
 proc >(a: real(64), b: real(64)): bool
-
-proc >(a: imag(32), b: imag(32)): bool
-proc >(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
@@ -1213,9 +1207,6 @@ proc <=(a: uint(64), b: int(64)): bool
 
 proc <=(a: real(32), b: real(32)): bool
 proc <=(a: real(64), b: real(64)): bool
-
-proc <=(a: imag(32), b: imag(32)): bool
-proc <=(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
@@ -1241,9 +1232,6 @@ proc >=(a: uint(64), b: int(64)): bool
 
 proc >=(a: real(32), b: real(32)): bool
 proc >=(a: real(64), b: real(64)): bool
-
-proc >=(a: imag(32), b: imag(32)): bool
-proc >=(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a >= b} is true if \chpl{a} is greater than or
 equal to \chpl{b}; otherwise the result is false.
