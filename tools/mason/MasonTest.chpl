@@ -216,7 +216,7 @@ private proc runTestBinary(projectHome: string, testName: string, ref result, sh
             skippedTestNames);
   if exitCode != 0 {
     const newCommand = " ".join(command,"-nl","1");
-    const testResult = runWithStatus(command, show);
+    const testResult = runWithStatus(newCommand, show);
     return testResult;
   }
   return exitCode;
