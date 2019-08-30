@@ -795,6 +795,10 @@ module List {
         _leave();
       }
 
+      // Destroy our copy if it was never used.
+      if !result then
+        _destroy(x);
+
       return result;  
     }
 
