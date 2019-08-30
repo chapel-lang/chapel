@@ -1283,7 +1283,7 @@ module ChapelBase {
     if isAtomicType(t) then
       compilerError("config variables of atomic type are not supported");
 
-    var str = x:string;
+    var str = createStringWithNewBuffer(x);
     if t == string {
       return str;
     } else {
@@ -2252,7 +2252,8 @@ module ChapelBase {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
+    proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",
+                                  createStringWithBorrowedBuffer(moduleName));}
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
 

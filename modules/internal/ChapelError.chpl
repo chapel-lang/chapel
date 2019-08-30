@@ -350,7 +350,7 @@ module ChapelError {
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
     var nameC: c_string = __primitive("class name by id", cid);
-    var nameS = nameC:string;
+    var nameS = createStringWithNewBuffer(nameC);
     return nameS;
   }
   pragma "no doc"
@@ -436,12 +436,12 @@ module ChapelError {
 
     const myFileC:c_string = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
-    const myFileS = myFileC:string;
+    const myFileS = createStringWithBorrowedBuffer(myFileC);
     const myLine = __primitive("_get_user_line");
 
     const thrownFileC:c_string = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
-    const thrownFileS = thrownFileC:string;
+    const thrownFileS = createStringWithBorrowedBuffer(thrownFileC);
     const thrownLine = err.thrownLine;
 
     var s = "uncaught " + chpl_describe_error(err) +

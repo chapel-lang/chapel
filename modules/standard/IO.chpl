@@ -3395,7 +3395,12 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
 
   for param i in 1..tup.size {
     if i != 1 then str += ", ";
-    str += tup[i]:string;
+    if tup[i].type == c_string {
+      str += createStringWithBorrowedBuffer(tup[i]);
+    }
+    else {
+      str += tup[i]:string;
+    }
   }
 
  str += ")";
@@ -3422,9 +3427,10 @@ proc stringify(const args ...?k):string {
     var str = "";
 
     for param i in 1..k {
-      if args[i].type == string ||
-         args[i].type == c_string {
-        str += args[i]:string;
+      if args[i].type == string {
+        str += args[i];
+      } else if args[i].type == c_string {
+        str += createStringWithBorrowedBuffer(args[i]);
       } else if isRangeType(args[i].type) ||
                 isPrimitiveType(args[i].type) {
         str += args[i]:string;
