@@ -32,10 +32,12 @@ use Sys;
 
 var subdir = false;
 var keepExec = false;
-config const setComm: string = "";
+var setComm: string;
 var comm: string;
 
-/* Runs the .chpl files found within the /tests directory */
+/* Runs the .chpl files found within the /tests directory of Mason packages
+   or files which in the path provided.
+*/
 proc masonTest(args) throws {
 
   var show = false;
@@ -74,6 +76,9 @@ proc masonTest(args) throws {
       }
       else if arg == '--update' {
         update = true;
+      }
+      else if arg.startsWith('--setComm=') {
+        setComm = arg['--setComm='.size+1..];
       }
       else {
         compopts.append(arg);

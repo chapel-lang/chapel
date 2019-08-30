@@ -345,8 +345,8 @@ proc masonCompilerHelp() {
 
 proc masonTestHelp() {
   writeln("mason test works inside and outside of mason packages.");
-  writeln("Inside a mason package run test files located within target/debug/test");
-  writeln("Outside of a mason package runs all the files in the provided path or the current directory.");
+  writeln("Inside a mason package: run test files found in test/");
+  writeln("Outside of a mason package: run test files found in the provided path (defaults to '.').");
   writeln();
   writeln("Usage:");
   writeln("    mason test [options] <path>");
@@ -356,9 +356,10 @@ proc masonTestHelp() {
   writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
   writeln("        --keep-binary           Doesn't delete the binaries after running");
-  writeln("        --recursive             Descend recursively into subdirectories of given Directories");
+  writeln("        --recursive             Descend recursively into subdirectories of given directories");
   writeln("        --parallel              Run tests in parallel(sequential by default)");
   writeln("        --[no]-update           [Do not] update the mason-registry when testing");
+  writeln("        --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");
