@@ -134,7 +134,6 @@ proc absPath(name: string): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.absPath(): string throws {
-  use Path only;
   // If we don't use the namespace we get a funky compiler type error.
   return try Path.absPath(this.path);
 }
