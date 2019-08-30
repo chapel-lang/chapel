@@ -135,8 +135,18 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args: list(string)) {
+  var skipOffline = false;
+  if args.count('update') == 1 {
+    skipOffline = true;
+  }
+
   if args.count("--no-update") != 0 then
     return;
+
+  if MASON_OFFLINE && (args.count('--update') == 0) && !skipOffline {
+    writeln('Skipping update due to MASON_OFFLINE=true');
+    return;
+  }
 
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
