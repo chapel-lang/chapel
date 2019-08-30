@@ -21,6 +21,8 @@
 
 /* A helper file of utilities for Mason */
 private use List;
+private use Map;
+
 use Spawn;
 use FileSystem;
 use TOML;
@@ -472,7 +474,7 @@ proc isIdentifier(name:string) {
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
-  for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
+  for (k,v) in tomlTbl.A.items() {
     if v.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);

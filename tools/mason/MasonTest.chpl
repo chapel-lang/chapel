@@ -19,6 +19,7 @@
 
 
 private use List;
+private use Map;
 use TOML;
 use Spawn;
 use MasonUtils;
@@ -108,7 +109,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     if numTests > 0 {
 
       var resultDomain: domain(string);
-      var testResults: [resultDomain] string;
+      var testResults = new map(string, string);
 
       for test in testNames {
 
@@ -142,11 +143,10 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
       }
       if run && !parallel {
         var testBinResults = runTestBinaries(projectHome, testNames, numTests, show);
-        resultDomain = testBinResults.domain;
         testResults = testBinResults;
       }
       if run {
-        const numPassed = testResults.count("Passed");
+        const numPassed = testResults.valuesToArray().count("Passed");
         printTestResults(testResults, numTests, numPassed, show);
       }
     }
@@ -172,8 +172,7 @@ private proc runTestBinary(projectHome: string, testName: string, show: bool) {
 private proc runTestBinaries(projectHome: string, testNames: list(string),
                              numTests: int, show: bool) {
 
-  var resultDomain: domain(string);
-  var testResults: [resultDomain] string;
+  var testResults = new map(string, string);
 
   for test in testNames {
     const testName = basename(stripExt(test, ".chpl"));
@@ -189,12 +188,12 @@ private proc runTestBinaries(projectHome: string, testNames: list(string),
 }
 
 
-private proc printTestResults(testResults: [?d] string, numTests: int,
+private proc printTestResults(testResults: map(false, ?keyType, string), numTests: int,
                               numPassed: int, show: bool) {
 
   if show then writeln("\n--------------------\n");
   writeln("--- Results ---");
-  for test in testResults.domain {
+  for test in testResults {
     writeln(" ".join("Test:",test, testResults[test]));
   }
   writeln("\n--- Summary:  ",numTests, " tests run ---");

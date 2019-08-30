@@ -811,8 +811,7 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in TOML format */
     proc writeTOML(f) {
       try! {
-        var flatDom: domain(string);
-        var flat: [flatDom] unmanaged Toml;
+        var flat = new map(string, unmanaged Toml);
         this.flatten(flat);       // Flattens containing Toml
         printValues(f, this);     // Prints key values in containing Toml
         printTables(flat, f);       // Prints tables in containing Toml
@@ -825,8 +824,7 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in JSON format */
     proc writeJSON(f) {
       try! {
-        var flatDom: domain(string);
-        var flat: [flatDom] unmanaged Toml;
+        var flat: map(string, unmanaged Toml);
         this.flatten(flat);           // Flattens containing Toml
 
         var indent=0;
@@ -837,11 +835,11 @@ used to recursively hold tables and respective values
         // Prints key values in containing Toml
         printValuesJSON(f, this, indent=indent);
 
-        if flatDom.contains('root') {
+        if flat.contains('root') {
           printValuesJSON(f, flat['root'], indent=indent);
-          flatDom.remove('root');
+          flat.remove('root');
         }
-        for k in flatDom.sorted() {
+        for k in flat.keysToArray().sorted() {
           f.writef('%s"%s": {\n', ' '*indent, k);
           indent += tabSpace;
           printValuesJSON(f, flat[k], indent=indent);
@@ -860,7 +858,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Flatten tables into flat associative array for writing */
-    proc flatten(flat: [?d] unmanaged Toml, rootKey = '') : flat.type {
+    proc flatten(ref flat: map(false, string, unmanaged Toml), rootKey = '') : flat.type {
       for (k, v) in this.A.items() {
         if v.tag == fieldToml {
           var fullKey = k;
@@ -873,13 +871,13 @@ used to recursively hold tables and respective values
     }
 
     pragma "no doc"
-    proc printTables(flat: [?d] unmanaged Toml, f:channel) {
-      if d.contains('root') {
+    proc printTables(ref flat: map(false, string, unmanaged Toml), f:channel) {
+      if flat.contains('root') {
         f.writeln('[root]');
         printValues(f, flat['root']);
-        d.remove('root');
+        flat.remove('root');
       }
-      for k in d.sorted() {
+      for k in flat.keysToArray().sorted() {
         f.writeln('[', k, ']');
         printValues(f, flat[k]);
       }

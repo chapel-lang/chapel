@@ -20,6 +20,7 @@
 config const spackVersion = "releases/v0.11.2";
 
 private use List;
+private use Map;
 use MasonUtils;
 use FileSystem;
 use MasonHelp;
@@ -239,7 +240,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
   var exDom: domain(string);
   var exDepTree: [exDom] unmanaged Toml;
 
-  for (name, spec) in zip(exDeps.D, exDeps.A) {
+  for (name, spec) in exDeps.A.items() {
     try! {
       select spec.tag {
           when fieldtag.fieldToml do continue;

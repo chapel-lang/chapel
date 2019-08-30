@@ -19,6 +19,8 @@
 
 
 private use List;
+private use Map;
+
 use TOML;
 use Spawn;
 use FileSystem;
@@ -301,7 +303,7 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   
   if lock.pathExists('external') {
     const exDeps = lock['external'];
-    for (name, depInfo) in zip(exDeps.D, exDeps.A) {
+    for (name, depInfo) in exDeps.A.items() {
       for (k,v) in allFields(depInfo) {
         select k {
             when "libs" do compopts.append("-L" + v.s); 
@@ -314,7 +316,7 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   }
   if lock.pathExists('system') {
     const pkgDeps = lock['system'];
-    for (name, depInfo) in zip(pkgDeps.D, pkgDeps.A) {
+    for (name, depInfo) in pkgDeps.A.items() {
       compopts.append(depInfo["libs"].s);
       compopts.append("-I" + depInfo["include"].s);
     }

@@ -19,6 +19,7 @@
 
 
 private use List;
+private use Map;
 use TOML;
 use Spawn;
 use MasonUtils;
@@ -113,8 +114,7 @@ private proc getBuildInfo(projectHome: string) {
 // returns assoc array of <example_name> -> <(compopts, execopts)>
 private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
 
-  var exampleDomain: domain(string);
-  var exampleOptions: [exampleDomain] (string, string);
+  var exampleOptions = new map(string, (string, string));
   for example in exampleNames {
     const exampleName = basename(stripExt(example, ".chpl"));
     exampleOptions[exampleName] = ("", "");

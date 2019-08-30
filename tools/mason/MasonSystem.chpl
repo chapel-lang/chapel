@@ -19,6 +19,7 @@
 
 
 private use List;
+private use Map;
 use Path;
 use MasonUtils;
 use MasonHelp;
@@ -243,7 +244,7 @@ proc getPCDeps(exDeps: unmanaged Toml) {
   var exDom: domain(string);
   var exDepTree: [exDom] unmanaged Toml;
 
-  for (name, vers) in zip(exDeps.D, exDeps.A) {
+  for (name, vers) in exDeps.A.items() {
     try! {
       if pkgConfigExists() {
         const pkgInfo = getPkgInfo(name, vers.s);
