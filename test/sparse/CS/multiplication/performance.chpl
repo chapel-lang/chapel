@@ -45,7 +45,7 @@ proc main() {
   t.start();
   var result = multiply(A, B);
   t.stop();
-  if !correctness.correctness {
+  if !correctness {
     write('CSR . CSC - optimized: ');
     writeln(t.elapsed());
   }

@@ -5,5 +5,5 @@
 use scanCountsInherit;
 
 var particles = [6, 7, 6, 3, 8, 2, 8, 4, 8, 3],
-  octantRankings = scanCountsInherit.scanCountsInherit scan particles;
+  octantRankings = scanCountsInherit scan particles;
 writeln("octant rankings: ", octantRankings);
