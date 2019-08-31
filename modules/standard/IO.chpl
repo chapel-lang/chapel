@@ -1644,13 +1644,18 @@ to create a channel to actually perform I/O operations
 
 :throws SystemError: Thrown if the file could not be opened.
 */
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle()): file throws {
-  return open(path:bytes, mode, hints, style);
+inline proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+                 style:iostyle = defaultIOStyle()): file throws {
+  return openImpl(path, mode, hints, style);
 }
 
-proc open(path:bytes, mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle()): file throws {
+inline proc open(path:bytes, mode:iomode, hints:iohints=IOHINT_NONE,
+                 style:iostyle = defaultIOStyle()): file throws {
+  return openImpl(path, mode, hints, style);
+}
+
+private proc openImpl(path:?t, mode:iomode, hints:iohints=IOHINT_NONE,
+                      style:iostyle = defaultIOStyle()): file throws {
 
   var local_style = style;
   var error: syserr = ENOERR;
@@ -2513,20 +2518,29 @@ This function is equivalent to calling :proc:`open` and then
 // since we only will have one reference, will be right after we close this
 // channel presumably).
 // TODO: include optional iostyle argument for consistency
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
-                style:iostyle = defaultIOStyle())
+inline proc openreader(path:string,
+                       param kind=iokind.dynamic, param locking=true,
+                       start:int(64) = 0, end:int(64) = max(int(64)),
+                       hints:iohints = IOHINT_NONE,
+                       style:iostyle = defaultIOStyle())
     : channel(false, kind, locking) throws {
-  return openreader(path:bytes, kind, locking, start, end, hints, style);
+  return openreaderImpl(path, kind, locking, start, end, hints, style);
 }
 
-proc openreader(path:bytes,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
-                style:iostyle = defaultIOStyle())
+inline proc openreader(path:bytes,
+                       param kind=iokind.dynamic, param locking=true,
+                       start:int(64) = 0, end:int(64) = max(int(64)),
+                       hints:iohints = IOHINT_NONE,
+                       style:iostyle = defaultIOStyle())
+    : channel(false, kind, locking) throws {
+  return openreaderImpl(path, kind, locking, start, end, hints, style);
+}
+
+private proc openreaderImpl(path:?t,
+                            param kind=iokind.dynamic, param locking=true,
+                            start:int(64) = 0, end:int(64) = max(int(64)),
+                            hints:iohints = IOHINT_NONE,
+                            style:iostyle = defaultIOStyle())
     : channel(false, kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
@@ -2560,20 +2574,29 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 
 :throws SystemError: Thrown if a writing channel could not be returned.
 */
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
-                style:iostyle = defaultIOStyle())
-    : channel(true, kind, locking) throws {
-  return openwriter(path:bytes, kind, locking, start, end, hints, style);
+inline proc openwriter(path:string,
+                       param kind=iokind.dynamic, param locking=true,
+                       start:int(64) = 0, end:int(64) = max(int(64)),
+                       hints:iohints = IOHINT_NONE,
+                       style:iostyle = defaultIOStyle())
+    : channel(false, kind, locking) throws {
+  return openreaderImpl(path, kind, locking, start, end, hints, style);
 }
 
-proc openwriter(path:bytes,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
-                style:iostyle = defaultIOStyle())
+inline proc openwriter(path:bytes,
+                       param kind=iokind.dynamic, param locking=true,
+                       start:int(64) = 0, end:int(64) = max(int(64)),
+                       hints:iohints = IOHINT_NONE,
+                       style:iostyle = defaultIOStyle())
+    : channel(false, kind, locking) throws {
+  return openreaderImpl(path, kind, locking, start, end, hints, style);
+}
+
+private proc openwriterImpl(path:?t,
+                            param kind=iokind.dynamic, param locking=true,
+                            start:int(64) = 0, end:int(64) = max(int(64)),
+                            hints:iohints = IOHINT_NONE,
+                            style:iostyle = defaultIOStyle())
     : channel(true, kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
