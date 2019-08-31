@@ -580,7 +580,4 @@ module OwnedObject {
     }
     return _to_nonnil(x.chpl_p);
   }
-  inline proc postfix!(type t:_owned) type {
-    return _to_borrowed(_to_nonnil(t.chpl_t));
-  }
 }

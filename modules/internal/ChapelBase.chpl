@@ -660,11 +660,11 @@ module ChapelBase {
     }
   }
 
-  inline proc postfix!(type t:unmanaged) type {
+  inline proc postfix!(type t: class) type {
     return _to_borrowed(_to_nonnil(t));
   }
-  inline proc postfix!(type t:borrowed) type {
-    return _to_nonnil(t);
+  inline proc postfix!(type t: class?) type {
+    return _to_borrowed(_to_nonnil(t));
   }
 
   inline proc postfix!(x:unmanaged class) {

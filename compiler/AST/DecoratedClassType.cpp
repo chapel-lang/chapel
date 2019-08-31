@@ -25,6 +25,13 @@
 #include "expr.h"
 #include "iterator.h"
 
+static const char* nameForUser(const char* className) {
+  if (!strcmp(className, "_owned") || !strcmp(className, "_shared"))
+    return className+1;
+
+  return className;
+}
+
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
     case CLASS_TYPE_BORROWED:
@@ -51,14 +58,17 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       if (developer)
         return astr("managed anynil ", className);
       else
-        return astr(className);
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NONNIL:
-      return astr(className);
+      if (developer)
+        return astr("managed ", className);
+      else
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NILABLE:
       if (developer)
         return astr("managed ", className, "?");
       else
-        return astr(className, "?");
+        return astr(nameForUser(className), "?");
 
     case CLASS_TYPE_GENERIC:
       if (developer)
@@ -66,7 +76,10 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       else
         return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
-      return astr(className);
+      if (developer)
+        return astr("anymanaged ", className);
+      else
+        return astr(className);
     case CLASS_TYPE_GENERIC_NILABLE:
       if (developer)
         return astr("anymanaged ", className, "?");

@@ -3169,7 +3169,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     }
   }
 
-
   if (! overloadSetsOK(info.call, checkOnly, candidates,
                        bestRef, bestCref, bestVal)) {
     return NULL; // overloadSetsOK() found an error
