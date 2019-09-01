@@ -97,6 +97,12 @@ private inline proc createWithOwnedBuffer(type t, s) {
   else compilerError("Unrecognized type for createWithOwnedBuffer");
 }
 
+private proc dec(b: ?t): string {
+  if t==bytes then
+    return try! b.decode(decodePolicy.ignore);
+  else
+    return b;
+}
 /*
   Creates a normalized absolutized version of a path. On most platforms, when
   given a non-absolute path this function is equivalent to the following code:
@@ -122,19 +128,19 @@ private inline proc createWithOwnedBuffer(type t, s) {
 
   :throws SystemError: Upon failure to get the current working directory.
 */
-inline proc absPath(name: string): string throws {
-  return absPathImpl(name);
-}
-
-inline proc absPath(name: bytes): bytes throws {
-  return absPathImpl(name);
-}
-
-private proc absPathImpl(name: bytes): bytes throws {
+proc absPath(name: string): string throws {
   use FileSystem;
 
   if !isAbsPath(name) then
-    return normPath(joinPath(try here.cwd():bytes, name));
+    return normPath(joinPath(try dec(here.cwd()), name));
+  return normPath(name);
+}
+
+proc absPath(name: bytes): bytes throws {
+  use FileSystem;
+
+  if !isAbsPath(name) then
+    return normPath(joinPath(try here.cwd(), name:bytes));
   return normPath(name);
 }
 
@@ -332,7 +338,7 @@ inline proc commonPath(paths: [] bytes): bytes {
   return commonPathImpl(paths);
 }
 
-proc commonPathImpl(paths: [] ?t): t {
+private proc commonPathImpl(paths: [] ?t): t {
   var result = _conv(t,"");
   var inputLength = paths.size;   // size of input array
   if inputLength == 0 then {     // if input is empty, return empty string.
@@ -566,11 +572,11 @@ private proc isAbsPathImpl(name: ?t): bool {
 
 /* Build up path components as described in joinPath(). */
 private inline proc joinPathComponent(comp: string, ref result: string) {
-  return joinPathComponent(comp, result);
+  joinPathComponentImpl(comp, result);
 }
 
 private inline proc joinPathComponent(comp: bytes, ref result: bytes) {
-  return joinPathComponent(comp, result);
+  joinPathComponentImpl(comp, result);
 }
 
 private proc joinPathComponentImpl(comp: ?t, ref result: t) {
@@ -632,7 +638,7 @@ private inline proc joinPath(paths: [] bytes): bytes {
   return joinPathImpl(paths);
 }
 
-private proc joinPath(paths: [] ?t): t {
+private proc joinPathImpl(paths: [] ?t): t {
   if paths.isEmpty() then
     return _conv(t,"");
 
@@ -693,21 +699,21 @@ inline proc normPath(name: bytes): bytes {
   return normPathImpl(name);
 }
 
-proc normPathImpl(name: ?t): t {
+private proc normPathImpl(name: ?t): t {
   
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
   if name == _conv(t,"") then
-    return curDir;
+    return _conv(t,curDir);
 
   const leadingSlashes = normalizeLeadingSlashCount(name);
 
-  var comps = name.split(pathSep);
+  var comps = name.split(_conv(t,pathSep));
   var outComps = new list(t);
 
   for comp in comps {
-    if comp == _conv(t,"") || comp == curDir then
+    if comp == _conv(t,"") || comp == _conv(t,curDir) then
       continue;
 
     // Second case exists because we cannot go up past the top level.
@@ -719,10 +725,11 @@ proc normPathImpl(name: ?t): t {
       try! outComps.pop();
   }
 
-  var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
+  var result = _conv(t,pathSep) * leadingSlashes +
+               _conv(t,pathSep).join(outComps.these());
 
   if result == _conv(t,"") then
-    return curDir;
+    return _conv(t,curDir);
 
   return result;
 }
@@ -750,7 +757,7 @@ proc realPath(name: bytes): bytes throws {
   var res: c_string;
   var err = chpl_fs_realpath(name.localize().c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createBytesWithOwnedBuffer(t, res);
+  return createBytesWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -871,9 +878,9 @@ private proc relPathImpl(name: ?t, start: t): t throws {
   const prefixLen = commonPrefixLength(startComps, nameComps);
 
   // Append up-levels until we reach the point where the paths diverge.
-  var outComps = new list(bytes);
+  var outComps = new list(t);
   for i in 1..(startComps.size - prefixLen) do
-    outComps.append(parentDir);
+    outComps.append(_conv(t,parentDir));
 
   // Append the portion of name following the common prefix.
   if !nameComps.isEmpty() then
@@ -881,7 +888,7 @@ private proc relPathImpl(name: ?t, start: t): t throws {
       outComps.append(x);
 
   if outComps.isEmpty() then
-    return curDir;
+    return _conv(t,curDir);
 
   return joinPath(outComps.toArray());
 }
@@ -913,7 +920,7 @@ proc file.relPath(start:string): bytes throws {
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(start:bytes);
 }
-proc file.relPath(start:bytes=curDir): bytes throws {
+proc file.relPath(start:bytes=_conv(bytes,curDir)): bytes throws {
   use Path only;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);

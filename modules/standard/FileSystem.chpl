@@ -155,7 +155,7 @@ extern const S_ISVTX: int;
 
 private proc dec(b: ?t): string {
   if t==bytes then
-    return try! b.decode(DecodePolicy.Ignore);
+    return try! b.decode(decodePolicy.ignore);
   else
     return b;
 }
