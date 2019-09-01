@@ -825,7 +825,7 @@ proc matPow(A: [], b) where isNumeric(b) {
   if !isSquare(A) then
     halt("Array not square");
 
-  if (b < 0) {
+  if (b < 0 && usingLapack) {
     var A_inv = inv(A);
     return _expBySquaring(A_inv, -b).value;
   }
