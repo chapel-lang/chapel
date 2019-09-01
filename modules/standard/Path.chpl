@@ -77,7 +77,7 @@ const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
 
-private inline proc _conv(type t, param s) {
+private inline proc _conv(type t, s) {
   if t == string then return s;
   else if t == bytes then return s:bytes;
   else compilerError("Unrecognized type for conversion");
@@ -130,7 +130,7 @@ inline proc absPath(name: bytes): bytes throws {
   return absPath(name);
 }
 
-proc absPath(name: bytes): bytes throws {
+private proc absPathImpl(name: bytes): bytes throws {
   use FileSystem;
 
   if !isAbsPath(name) then
@@ -197,16 +197,10 @@ proc basename(name: bytes): bytes {
 */
 // NOTE: Add in intent here to temporarily fix compiler memory leak related
 // to use of varargs.
-inline proc commonPath(in paths: string ...?n): string {
-  return commonPathImpl((...paths));
-}
-
-inline proc commonPath(in paths: bytes ...?n): bytes {
-  return commonPathImpl((...paths));
-}
-
-private proc commonPathImpl(in paths: ?t ...?n): t {
-  var result = if t==bytes then b"" else "";    // result bytes
+// Engin: These two don't have the common *Impl version to workaround a compiler
+// bug where you query bith the number of arguments and types in a var arg proc
+proc commonPath(in paths: string ...?n): string {
+  var result = "";    // result string
   var inputLength = n;   // size of input array
   var firstPath = paths(1);
   var flag: int = 0;
@@ -230,7 +224,7 @@ private proc commonPathImpl(in paths: ?t ...?n): t {
 
   for i in 2..n do {
 
-    var tempList = new list(bytes);
+    var tempList = new list(string);
     for x in paths(i).split(pathSep, -1, false) do
       tempList.append(x);
 
@@ -261,6 +255,67 @@ private proc commonPathImpl(in paths: ?t ...?n): t {
 
   result = pathSep.join(prefixList.these());
   return result;
+}
+
+proc commonPath(in paths: bytes ...?n): bytes {
+  var result = b"";
+  var inputLength = n;   // size of input array
+  var firstPath = paths(1);
+  var flag: int = 0;
+
+  // if input is empty, return empty string.
+  // if input is just one string, return that string as longest common prefix
+  // path.
+
+  if inputLength == 0 then {
+    return result;
+  } else if inputLength == 1 then{
+    return firstPath;
+  }
+
+  var prefixList = new list(bytes);
+  for x in firstPath.split(pathSep:bytes, -1, false) do
+    prefixList.append(x);
+
+  var pos = prefixList.size;   // rightmost index of common prefix
+  var minPathLength = prefixList.size;
+
+  for i in 2..n do {
+
+    var tempList = new list(bytes);
+    for x in paths(i).split(pathSep:bytes, -1, false) do
+      tempList.append(x);
+
+    var minimum = min(prefixList.size, tempList.size);
+
+    if minimum < minPathLength then {
+      minPathLength = minimum;
+    }
+
+    for itr in 1..minimum do {
+      if (tempList[itr]!=prefixList[itr] && itr<=pos) {
+        pos = itr;
+        flag=1;   // indicating that pos was changed
+        break;
+      }
+    }
+  }
+
+  if (flag == 1) {
+    for i in pos..prefixList.size by -1 do
+      try! prefixList.pop(i);
+  } else {
+    for i in (minPathLength + 1)..prefixList.size by -1 do
+      try! prefixList.pop(i);
+    // in case all paths are subsets of the longest path thus pos was never
+    // updated
+  }
+
+  result = pathSep.join(prefixList.these());
+  return result;
+}
+
+private proc commonPathImpl(in paths: ?t ...?n): t {
 }
 
 /* Determines and returns the longest common path prefix of
@@ -404,7 +459,7 @@ private proc dirnameImpl(name: ?t): t {
    var ind = 1;
    var pathlen: int = path_p.numBytes;
    while (ind <= pathlen) {
-     var c: bytes = path_p(ind);
+     var c = path_p(ind);
      if (c == _conv(t,"$") && ind + 1 <= pathlen) {
        if (path_p(ind+1) == _conv(t,"$")) {
          res = res + c;
@@ -500,7 +555,7 @@ inline proc isAbsPath(name: bytes): bool {
   return isAbsPathImpl(name);
 }
 
-proc isAbsPath(name: ?t): bool {
+private proc isAbsPathImpl(name: ?t): bool {
   if name.isEmpty() {
     return false;
   }
@@ -551,16 +606,19 @@ private proc joinPathComponent(comp: ?t, ref result: t) {
 */
 // NOTE: Add in intent here to temporarily fix compiler memory leak related
 // to use of varargs.
-inline proc joinPath(in paths: string ...?n): string {
-  return joinPathImpl((...paths));
+// Engin: These two don't have the *Impl version to avoid a compiler bug where
+// you query both the number of arguments and type of them in a vararg function
+proc joinPath(in paths: string ...?n): string {
+  var result: string;
+
+  for path in paths do
+    joinPathComponent(path, result);
+
+  return result;
 }
 
-inline proc joinPath(in paths: bytes ...?n): bytes {
-  return joinPathImpl((...paths));
-}
-
-private proc joinPathImpl(in paths: ?t ...?n): t {
-  var result: t;
+proc joinPath(in paths: bytes ...?n): bytes {
+  var result: bytes;
 
   for path in paths do
     joinPathComponent(path, result);
@@ -648,7 +706,7 @@ proc normPathImpl(name: ?t): t {
   const leadingSlashes = normalizeLeadingSlashCount(name);
 
   var comps = name.split(pathSep);
-  var outComps = new list(bytes);
+  var outComps = new list(t);
 
   for comp in comps {
     if comp == _conv(t,"") || comp == curDir then
@@ -809,7 +867,7 @@ inline proc relPath(name: bytes, start:bytes=_conv(bytes,curDir)): bytes throws 
   return relPathImpl(name, start);
 }
 
-private proc relPath(name: ?t, start: t): t throws {
+private proc relPathImpl(name: ?t, start: t): t throws {
   const realstart = if start == _conv(t,b"") then _conv(t,curDir) else start;
 
   // NOTE: Reliance on locale.cwd() can't be avoided.
@@ -904,7 +962,7 @@ proc file.relPath(start:bytes=curDir): bytes throws {
  }
 
  private proc splitPathImpl(name: ?t): (t, t) {
-   var rLoc, lLoc, prev = name.rfind(pathSep);
+   var rLoc, lLoc, prev = name.rfind(_conv(t,pathSep));
    if (prev != 0) {
      do {
        prev = lLoc;

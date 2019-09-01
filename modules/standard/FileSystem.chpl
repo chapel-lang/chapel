@@ -280,7 +280,7 @@ inline proc chown(name: bytes, uid: int, gid: int) throws {
   chownImpl(name, uid, gid);
 }
 
-private proc chown(name: ?t, uid: int, gid: int) throws {
+private proc chownImpl(name: ?t, uid: int, gid: int) throws {
   extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 
   var err = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
@@ -616,7 +616,8 @@ private inline proc copyTreeHelper(src: bytes, dest: bytes,
   copyTreeHelperImpl(src, dest, copySymbolically);
 }
 
-private proc copyTreeHelper(src: ?t, dest: t, copySymbolically: bool=false) throws {
+private proc copyTreeHelperImpl(src: ?t, dest: t,
+                                copySymbolically: bool=false) throws {
   // Create dest
   var oldMode = try getMode(src);
   try mkdir(dest, mode=oldMode, parents=true);
@@ -1220,7 +1221,7 @@ inline proc isFile(name:bytes):bool throws {
   return isFileImpl(name);
 }
 
-private proc isFile(name:?t):bool throws {
+private proc isFileImpl(name:?t):bool throws {
   extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
@@ -1407,7 +1408,7 @@ iter listdirImpl(path: ?t, hidden: bool = false, dirs: bool = true,
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name():bytes;
+      const filename = ent.d_name():t;
       if (hidden || filename[1] != _conv(t,".")) {
         if (filename != _conv(t,".") && filename != _conv(t,"..")) {
           const fullpath = path + _conv(t,"/") + filename;
@@ -1671,7 +1672,7 @@ inline proc rmTree(root: bytes) throws {
   rmTreeImpl(root);
 }
 
-private proc rmTree(root: ?t) throws {
+private proc rmTreeImpl(root: ?t) throws {
   // root doesn't exist.  We can't remove something that isn't there
   var rootExists = try exists(root);
   if !rootExists then try ioerror(ENOENT:syserr,
@@ -1924,9 +1925,9 @@ iter walkdirs(path: bytes, topdown: bool = true, depth: int = max(int),
     yield d;
 }
 
-iter walkdirs(path: ?t, topdown: bool = true, depth: int = max(int),
-              hidden: bool = false, followlinks: bool = false,
-              sort: bool = false): t {
+iter walkdirsImpl(path: ?t, topdown: bool = true, depth: int = max(int),
+                  hidden: bool = false, followlinks: bool = false,
+                  sort: bool = false): t {
   if (topdown) then
     yield path;
 
