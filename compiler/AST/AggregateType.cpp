@@ -1283,7 +1283,7 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
     retval->dispatchParents.add(parent);
     parent->dispatchChildren.add_exclusive(retval);
 
-    if (retval->setFirstGenericField() == false) {
+    if (retval->genericFields.size() == 0) {
       retval->symbol->removeFlag(FLAG_GENERIC);
     }
 
@@ -1750,7 +1750,7 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 
   newInstance->renameInstantiation();
 
-  if (newInstance->setFirstGenericField() == false) {
+  if (newInstance->genericFields.size() == 0) {
     newInstance->symbol->removeFlag(FLAG_GENERIC);
   }
 
