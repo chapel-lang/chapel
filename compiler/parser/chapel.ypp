@@ -375,12 +375,13 @@
 %left TSHIFTLEFT TSHIFTRIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
-%right TBNOT TBANG
+%right TBNOT TLNOT
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
-%left TBORROWED TOWNED TUNMANAGED TSHARED
-%right TQUESTION
+%right TBORROWED TOWNED TUNMANAGED TSHARED
+%left TBANG
+%left TQUESTION
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
@@ -2064,7 +2065,7 @@ unary_op_expr:
 | TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
 | TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
 | TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
-| TBANG expr                      { $$ = new CallExpr("!", $2); }
+| TBANG expr %prec TLNOT          { $$ = new CallExpr("!", $2); }
 | expr TBANG                      { $$ = new CallExpr("postfix!", $1); }
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;
