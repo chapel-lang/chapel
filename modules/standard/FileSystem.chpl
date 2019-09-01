@@ -678,16 +678,16 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc locale.cwd(): string throws {
+proc locale.cwd(): bytes throws {
   extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
 
-  var ret:string;
+  var ret:bytes;
   var err: syserr = ENOERR;
   on this {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = createStringWithOwnedBuffer(tmp);
+    ret = createBytesWithOwnedBuffer(tmp);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
@@ -779,13 +779,7 @@ proc exists(out error: syserr, name: string): bool {
 
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): bytes {
-  if (recursive) then
-    for subdir in walkdirs(startdir, hidden=hidden) do
-      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
-        yield subdir+"/"+file;
-  else
-    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
-      yield startdir+"/"+file;
+  for f in findfiles(startdir:bytes, recursive, hidden) do yield f;
 }
 
 iter findfiles(startdir: bytes, recursive: bool = false,
@@ -800,19 +794,10 @@ iter findfiles(startdir: bytes, recursive: bool = false,
 }
 
 pragma "no doc"
-iter findfiles(startdir: string = ".", recursive: bool = false,
+iter findfiles(startdir: string, recursive: bool = false,
                hidden: bool = false, param tag: iterKind): bytes
        where tag == iterKind.standalone {
-  if (recursive) then
-    // Why "with (ref hidden)"?  A: the compiler currently allows only
-    // [const] ref intents in forall loops over recursive parallel iterators
-    // such as walkdirs().
-    forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
-      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
-        yield subdir+"/"+file;
-  else
-    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
-      yield startdir+"/"+file;
+  for f in findfiles(startdir:bytes, recursive, hidden, tag=tag) do yield f;
 }
 
 iter findfiles(startdir: bytes = b".", recursive: bool = false,
@@ -1376,7 +1361,7 @@ proc isMount(out error:syserr, name: string): bool {
    :yield: The names of the specified directory's contents, as strings
 */
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
-              files: bool = true, listlinks: bool = true): bytes {
+              files: bool = true, listlinks: bool = true): string {
   for d in  listdirImpl(path, hidden, dirs, files, listlinks) do
     yield d;
 }
@@ -1388,7 +1373,7 @@ iter listdir(path: bytes, hidden: bool = false, dirs: bool = true,
 }
 
 iter listdirImpl(path: ?t, hidden: bool = false, dirs: bool = true,
-              files: bool = true, listlinks: bool = true): bytes {
+              files: bool = true, listlinks: bool = true): t {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -1913,21 +1898,14 @@ proc locale.umask(mask: int): int {
 */
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
-              sort: bool = false): string {
-  for d in walkdirsImpl(path, topdown, depth, hidden, followlinks, sort) do
+              sort: bool = false): bytes {
+  for d in walkdirs(path:bytes, topdown, depth, hidden, followlinks, sort) do
     yield d;
 }
 
 iter walkdirs(path: bytes, topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false): bytes {
-  for d in walkdirsImpl(path, topdown, depth, hidden, followlinks, sort) do
-    yield d;
-}
-
-iter walkdirsImpl(path: ?t, topdown: bool = true, depth: int = max(int),
-                  hidden: bool = false, followlinks: bool = false,
-                  sort: bool = false): t {
   if (topdown) then
     yield path;
 
@@ -1955,29 +1933,19 @@ iter walkdirsImpl(path: ?t, topdown: bool = true, depth: int = max(int),
 // Here's a parallel version
 //
 pragma "no doc"
-inline iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
-              hidden: bool = false, followlinks: bool = false,
-              sort: bool = false, param tag: iterKind): string
-       where tag == iterKind.standalone {
-         for d in walkdirsImpl(path, topdown, depth,
-              hidden, followlinks, sort, tag=iterKind.standalone) do yield d;
-}
-
-pragma "no doc"
-inline iter walkdirs(path: bytes, topdown: bool = true, depth: int =max(int),
+inline iter walkdirs(path: string, topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): bytes
        where tag == iterKind.standalone {
-         for d in walkdirsImpl(path, topdown, depth,
+         for d in walkdirs(path:bytes, topdown, depth,
               hidden, followlinks, sort, tag=iterKind.standalone) do yield d;
 }
 
 pragma "no doc"
-iter walkdirsImpl(path: ?t, topdown: bool = true, depth: int =max(int),
+inline iter walkdirs(path: bytes = b".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
-              sort: bool = false, param tag: iterKind): t
+              sort: bool = false, param tag: iterKind): bytes
        where tag == iterKind.standalone {
-
   if (sort) then
     warning("sorting has no effect for parallel invocations of walkdirs()");
 
@@ -1987,7 +1955,7 @@ iter walkdirsImpl(path: ?t, topdown: bool = true, depth: int =max(int),
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
     forall subdir in subdirs {
-      const fullpath = path + _conv(t,"/") + subdir;
+      const fullpath = path + b"/" + subdir;
       //
       // Call standalone walkdirs() iterator recursively; set sort=false since it is
       // not useful and we've already printed the warning

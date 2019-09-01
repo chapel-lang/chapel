@@ -1,6 +1,6 @@
 use Path;
 
-var originalPath = "resultSameAsFilePath.chpl";
+var originalPath = b"resultSameAsFilePath.chpl";
 // Well, I know this file exists, better not rename it.
 var firstRun = realPath(originalPath);
 // firstRun will be an exact path
@@ -13,5 +13,5 @@ var secondTimeThrough = f.realPath();
 if (firstRun == secondTimeThrough) {
   writeln("Yay, realPath works on a path that has already been fixed!");
 } else {
-  writeln("Expected " + firstRun + " but was " + secondTimeThrough);
+  writeln("Expected ", firstRun, " but was ", secondTimeThrough);
  }

@@ -62,6 +62,8 @@ var total_tweets_processed : atomic int;
 var total_lines_processed : atomic int;
 var max_user_id : atomic int;
 
+// TODO Engin: This test should use mostly bytes. And we need to get rid of
+// decode business
 proc main(args:[] string) {
   var files = args[1..];
   var todo:LinkedList(string);
@@ -70,7 +72,7 @@ proc main(args:[] string) {
     if isDir(arg) {
       // Go through files in directories.
       for f in findfiles(arg, true) {
-        todo.append(f);
+        todo.append(f.decode());
       }
     } else {
       todo.append(arg);

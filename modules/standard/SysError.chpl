@@ -414,7 +414,8 @@ proc ioerror(error:syserr, msg:string, path:bytes, offset:int(64)) throws
 {
   if error {
     // TODO there should be a quote_bytes. Call to decode below is not right
-    const quotedpath = quote_string(path.decode(), path.numBytes:ssize_t);
+    const quotedpath = quote_string(path.decode(decodePolicy.ignore),
+                                    path.numBytes:ssize_t);
     var   details    = msg + " with path " + quotedpath +
                        " offset " + offset:string;
     throw SystemError.fromSyserr(error, details);

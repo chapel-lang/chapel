@@ -389,8 +389,7 @@ module IO {
       binary union data written in one Chapel program with another. This problem
       will also apply to class tag numbers once we start encoding types.
     - The Chapel compiler does not currently allow RAII/reference counting
-      to work correctly in all cases (bug report 'records containing pointers'
-      and test files in test/users/ferguson/{byvalue.chpl,refcnt.chpl};
+      to work correctly in all cases (bug report 'records containing pointers' and test files in test/users/ferguson/{byvalue.chpl,refcnt.chpl};
       as a result, current code might need to close channels and files
       explicitly and/or sharing of channels and files between variables might
       not work correctly.
@@ -567,6 +566,11 @@ enum iostringformat {
   toeof = 5,
 }
 
+private inline proc _conv(type t, s) {
+  if t == string then return s;
+  else if t == bytes then return s:bytes;
+  else compilerError("Unrecognized type for conversion");
+}
 
 /*
 
@@ -1662,7 +1666,7 @@ private proc openImpl(path:?t, mode:iomode, hints:iohints=IOHINT_NONE,
   var ret: file;
   ret.home = here;
 
-  if (path == "") then
+  if (path == _conv(t,"")) then
     try ioerror(ENOENT:syserr, "in open: path is the empty string");
 
   error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
@@ -2574,31 +2578,22 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 
 :throws SystemError: Thrown if a writing channel could not be returned.
 */
-inline proc openwriter(path:string,
+proc openwriter(path:string,
                        param kind=iokind.dynamic, param locking=true,
                        start:int(64) = 0, end:int(64) = max(int(64)),
                        hints:iohints = IOHINT_NONE,
                        style:iostyle = defaultIOStyle())
-    : channel(false, kind, locking) throws {
-  return openreaderImpl(path, kind, locking, start, end, hints, style);
-}
-
-inline proc openwriter(path:bytes,
-                       param kind=iokind.dynamic, param locking=true,
-                       start:int(64) = 0, end:int(64) = max(int(64)),
-                       hints:iohints = IOHINT_NONE,
-                       style:iostyle = defaultIOStyle())
-    : channel(false, kind, locking) throws {
-  return openreaderImpl(path, kind, locking, start, end, hints, style);
-}
-
-private proc openwriterImpl(path:?t,
-                            param kind=iokind.dynamic, param locking=true,
-                            start:int(64) = 0, end:int(64) = max(int(64)),
-                            hints:iohints = IOHINT_NONE,
-                            style:iostyle = defaultIOStyle())
     : channel(true, kind, locking) throws {
+  var fl:file = try open(path, iomode.cw);
+  return try fl.writer(kind, locking, start, end, hints, style);
+}
 
+proc openwriter(path:bytes,
+                       param kind=iokind.dynamic, param locking=true,
+                       start:int(64) = 0, end:int(64) = max(int(64)),
+                       hints:iohints = IOHINT_NONE,
+                       style:iostyle = defaultIOStyle())
+    : channel(true, kind, locking) throws {
   var fl:file = try open(path, iomode.cw);
   return try fl.writer(kind, locking, start, end, hints, style);
 }

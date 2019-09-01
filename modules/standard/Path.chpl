@@ -84,8 +84,8 @@ private inline proc _conv(type t, s) {
 }
 
 private inline proc _iconv(type t, val) {
-  if t == string then return val:byteIndex;
-  else if t == bytes then return val:int;
+  if t == string then return val:int;
+  else if t == bytes then return val;
   else compilerError("Unrecognized type for index conversion");
 }
 
@@ -123,11 +123,11 @@ private inline proc createWithOwnedBuffer(type t, s) {
   :throws SystemError: Upon failure to get the current working directory.
 */
 inline proc absPath(name: string): string throws {
-  return absPath(name);
+  return absPathImpl(name);
 }
 
 inline proc absPath(name: bytes): bytes throws {
-  return absPath(name);
+  return absPathImpl(name);
 }
 
 private proc absPathImpl(name: bytes): bytes throws {
@@ -215,7 +215,7 @@ proc commonPath(in paths: string ...?n): string {
     return firstPath;
   }
 
-  var prefixList = new list(bytes);
+  var prefixList = new list(string);
   for x in firstPath.split(pathSep, -1, false) do
     prefixList.append(x);
 
@@ -315,9 +315,6 @@ proc commonPath(in paths: bytes ...?n): bytes {
   return result;
 }
 
-private proc commonPathImpl(in paths: ?t ...?n): t {
-}
-
 /* Determines and returns the longest common path prefix of
    all the string pathnames provided.
 
@@ -344,8 +341,8 @@ proc commonPathImpl(paths: [] ?t): t {
 
   var start: int = paths.domain.first;
   var end: int = paths.domain.last;
-  var firstPath = paths[start]:bytes;
-  var delimiter: bytes;
+  var firstPath = paths[start]:t;
+  var delimiter: t;
   var flag: int = 0;
 
   // if input is just one string, return that string as longest common prefix
@@ -356,8 +353,8 @@ proc commonPathImpl(paths: [] ?t): t {
   }
 
   // finding delimiter to split the paths.
-  const backslash = if t==bytes then b"\\" else "\\";
-  const slash = if t==bytes then b"/" else "/";
+  const backslash = _conv(t,"\\");
+  const slash = _conv(t,"/");
 
   if firstPath.find(backslash) == 0 then {
     delimiter = slash;
@@ -365,7 +362,7 @@ proc commonPathImpl(paths: [] ?t): t {
     delimiter = backslash;
   }
 
-  var prefixList = new list(bytes);
+  var prefixList = new list(t);
   for x in firstPath.split(delimiter, -1, false) do
     prefixList.append(x);
   // array of resultant prefix string
@@ -375,9 +372,9 @@ proc commonPathImpl(paths: [] ?t): t {
 
   for i in (start+1)..end do {
 
-    var tempList = new list(bytes);
-    for x in (paths[i]:bytes).split(delimiter, -1, false) do
-      tempList.append(x:bytes);
+    var tempList = new list(t);
+    for x in (paths[i]).split(delimiter, -1, false) do
+      tempList.append(x);
     // temporary array storing the current path under consideration
 
     var minimum = min(prefixList.size, tempList.size);
@@ -467,36 +464,36 @@ private proc dirnameImpl(name: ?t): t {
        } else if (path_p(ind+1) == _conv(t,"{")) {
          path_p = path_p((ind+2)..);
          pathlen = path_p.numBytes;
-         ind = path_p.find(_conv(t,"}"));
+         ind = _iconv(t,path_p.find(_conv(t,"}")));
          if (ind == 0) {
            res += _conv(t,"${") +path_p;
-           ind = pathlen;
+           ind = _iconv(t,pathlen);
          } else {
-           var env_var: bytes = path_p(..(ind-1));
-           var value: bytes;
+           var env_var = path_p(..(ind-1));
+           var value: t;
            var value_c: c_string;
            var h: int = sys_getenv(env_var.c_str(), value_c);
            if (h != 1) {
-             value = _conv(t,"${") + env_var + _conv(t,"}");
+             value = _conv(t,"${") + _conv(t,env_var) + _conv(t,"}");
            } else {
-             value = value_c: bytes;
+             value = value_c: t;
            }
            res += value;
          }
        } else {
-         var env_var: bytes = b"";
+         var env_var = _conv(t,"");
          ind += 1;
          while (ind <= path_p.numBytes && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
-         var value: bytes;
+         var value: t;
          var value_c: c_string;
          var h: int = sys_getenv(env_var.c_str(), value_c);
          if (h != 1) {
            value = _conv(t,"$") + env_var;
          } else {
-           value = value_c: bytes;
+           value = value_c: t;
          }
          res += value;
          if (ind <= path_p.numBytes) {
@@ -576,7 +573,7 @@ private inline proc joinPathComponent(comp: bytes, ref result: bytes) {
   return joinPathComponent(comp, result);
 }
 
-private proc joinPathComponent(comp: ?t, ref result: t) {
+private proc joinPathComponentImpl(comp: ?t, ref result: t) {
   if comp.startsWith(_conv(t,"/")) || result == _conv(t, "") then
     result = comp;
   else if result.endsWith(_conv(t,"/")) then
@@ -637,7 +634,7 @@ private inline proc joinPath(paths: [] bytes): bytes {
 
 private proc joinPath(paths: [] ?t): t {
   if paths.isEmpty() then
-    return b"";
+    return _conv(t,"");
 
   var result: t;
 
@@ -657,10 +654,11 @@ private inline proc normalizeLeadingSlashCount(name: bytes): int {
 }
 
 private proc normalizeLeadingSlashCountImpl(name: ?t): int {
-  var result = if name.startsWith(pathSep) then 1 else 0;
+  var result = if name.startsWith(_conv(t,pathSep)) then 1 else 0;
 
   // Two leading slashes has a special meaning in POSIX.
-  if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
+  if name.startsWith(_conv(t,pathSep) * 2) &&
+     !name.startsWith(_conv(t,pathSep) * 3) then
     result = 2;
 
   return result;
@@ -742,21 +740,17 @@ proc normPathImpl(name: ?t): t {
    :return: A canonical version of the argument.
    :rtype: `string`
 */
-inline proc realPath(name: string): string throws {
-  return realPathImpl(name);
+inline proc realPath(name: string):  bytes throws {
+  return realPath(name:bytes);
 }
 
-inline proc realPath(name: bytes): bytes throws {
-  return realPathImpl(name);
-}
-
-private proc realPathImpl(name: ?t): t throws {
+proc realPath(name: bytes): bytes throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
   var err = chpl_fs_realpath(name.localize().c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createWithOwnedBuffer(t, res);
+  return createBytesWithOwnedBuffer(t, res);
 }
 
 pragma "no doc"
@@ -823,7 +817,7 @@ proc commonPrefixLength(const a1: [] bytes, const a2: [] bytes): int {
 }
 
 private
-proc commonPrefixLength(const a1: [] ?t, const a2: [] t): int {
+proc commonPrefixLengthImpl(const a1: [] ?t, const a2: [] t): int {
   const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
   var result = 0;
 
@@ -966,7 +960,7 @@ proc file.relPath(start:bytes=curDir): bytes throws {
    if (prev != 0) {
      do {
        prev = lLoc;
-       lLoc = name.rfind(pathSep, _iconv(t,1).._iconv(t,prev-1));
+       lLoc = name.rfind(_conv(t,pathSep), _iconv(t,1).._iconv(t,prev-1));
      } while (lLoc + 1 == prev && lLoc > 1);
 
      if (prev == 1) {
