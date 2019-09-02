@@ -51,14 +51,14 @@ proc main() {
   check(makeBorrowed2(unmanaged MyClass?) == borrowed MyClass?);
   check(makeBorrowed2(owned MyClass?) == borrowed MyClass?);
 
-  check(makeBorrowedBang1(MyClass) == borrowed MyClass);
   if DuplicateManagement {
+    check(makeBorrowedBang1(MyClass) == borrowed MyClass);
     check(makeBorrowedBang1(borrowed MyClass) == borrowed MyClass);
     check(makeBorrowedBang1(unmanaged MyClass) == borrowed MyClass);
     check(makeBorrowedBang1(owned MyClass) == borrowed MyClass);
   }
-  check(makeBorrowedBang1(MyClass?) == borrowed MyClass);
   if DuplicateManagement {
+    check(makeBorrowedBang1(MyClass?) == borrowed MyClass);
     check(makeBorrowedBang1(borrowed MyClass?) == borrowed MyClass);
     check(makeBorrowedBang1(unmanaged MyClass?) == borrowed MyClass);
     check(makeBorrowedBang1(owned MyClass?) == borrowed MyClass);
