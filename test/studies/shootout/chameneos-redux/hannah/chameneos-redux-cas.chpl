@@ -106,7 +106,7 @@ class Chameneos {
         break;
       }
 
-      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg)) {
+      if (meetingPlace.state.compareAndSwap(stateTemp, xchg)) {
         if (peer_idx) {
           if (id == peer_idx) {
             is_same = 1;

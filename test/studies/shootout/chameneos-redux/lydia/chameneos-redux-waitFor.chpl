@@ -96,7 +96,7 @@ class Chameneos {
       } else {
         break;
       }
-      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memoryOrder.acqRel)) {
+      if (meetingPlace.state.compareAndSwap(stateTemp, xchg, memoryOrder.acqRel)) {
         if (peer_idx) {
           runMeeting(population, peer_idx);
         } else {
