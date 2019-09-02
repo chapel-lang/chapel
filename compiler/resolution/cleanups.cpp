@@ -561,8 +561,9 @@ static void removeTypedefParts() {
       if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
         if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
           ClassTypeDecorator d = dt->getDecorator();
-          if (isDecoratorUnknownNilability(d) ||
-              isDecoratorUnknownManagement(d)) {
+          if ((isDecoratorUnknownNilability(d) ||
+              isDecoratorUnknownManagement(d)) &&
+              dt->getCanonicalClass()->inTree()) {
             // After resolution, can't consider it generic anymore...
             // The generic-ness will be moot though because later
             // it will all be replaced with the AggregateType.
