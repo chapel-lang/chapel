@@ -222,7 +222,7 @@ module SharedObject {
      */
     proc init(pragma "nil from arg" in take:owned) {
       var p = take.release();
-      this.chpl_t = _to_borrowed(p.type);
+      this.chpl_t = if this.type.chpl_t == ? then _to_borrowed(p.type) else this.type.chpl_t;
 
       if !isClass(p) then
         compilerError("shared only works with classes");
