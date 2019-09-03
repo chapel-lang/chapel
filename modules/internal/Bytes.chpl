@@ -75,14 +75,6 @@ module Bytes {
 
   type idxType = int; 
 
-
-  private proc deprWarning() {
-    if showStringBytesInitDeprWarnings {
-      compilerWarning("bytes.init is deprecated - "+
-                      "please use createBytesWith* instead");
-    }
-  }
-
   record _bytes {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
