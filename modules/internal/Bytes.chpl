@@ -75,6 +75,166 @@ module Bytes {
 
   type idxType = int; 
 
+  //
+  // createBytes* functions
+  //
+
+  /*
+    Creates a new bytes which borrows the internal buffer of another bytes. If
+    the buffer is freed before the bytes returned from this function, accessing
+    it is undefined behavior.
+
+    :arg s: Object to borrow the buffer from
+    :type s: `bytes`
+
+    :returns: A new `bytes`
+  */
+  inline proc createBytesWithBorrowedBuffer(s: bytes) {
+    var ret: bytes;
+    initWithBorrowedBuffer(ret, s);
+    return ret;
+  }
+
+  /*
+    Creates a new bytes which borrows the internal buffer of a `c_string`. If
+    the buffer is freed before the bytes returned from this function, accessing
+    it is undefined behavior.
+
+    :arg s: Object to borrow the buffer from
+    :type s: c_string
+
+    :arg length: Length of the `c_string` in bytes, excluding the terminating
+                 null byte.
+    :type length: int
+
+    :returns: A new `bytes`
+  */
+  inline proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+    return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  /*
+     Creates a new bytes which borrows the memory allocated for a
+     `c_ptr(uint(8))`. If the buffer is freed before the bytes returned from
+     this function, accessing it is undefined behavior.
+
+     :arg s: Object to borrow the buffer from
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+
+     :arg length: Length of the bytes stored in `s`, excluding the terminating
+                  null byte.
+     :type length: int
+
+     :arg size: Size of memory allocated for `s` in bytes
+     :type length: int
+
+     :returns: A new `bytes`
+  */
+  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  pragma "no doc"
+  inline proc createBytesWithOwnedBuffer(s: bytes) {
+    // should we allow stealing ownership?
+    compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
+  }
+
+  /*
+    Creates a new bytes which takes ownership of the internal buffer of a
+    `c_string`.
+
+    :arg s: Object to take ownership of the buffer from
+    :type s: `c_string`
+
+    :arg length: Length of the bytes stored in `s`, excluding the terminating
+                 null byte.
+    :type length: int
+
+    :returns: A new `bytes`
+  */
+  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
+    return createBytesWithOwnedBuffer(s: bufferType, length=length,
+                                                      size=length+1);
+  }
+
+  /*
+     Creates a new bytes which takes ownership of the memory allocated for a
+     `c_ptr(uint(8))`.
+
+     :arg s: Object to take ownership of the buffer from
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+
+     :arg length: Length of the bytes stored in `s`, excluding the terminating
+                  null byte.
+     :type length: int
+
+     :arg size: Size of memory allocated for `s` in bytes
+     :type length: int
+
+     :returns: A new `bytes`
+  */
+  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithOwnedBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  /*
+    Creates a new bytes by creating a copy of the buffer of another bytes.
+
+    :arg s: Object to copy the buffer from
+    :type s: `bytes`
+
+    :returns: A new `bytes`
+  */
+  inline proc createBytesWithNewBuffer(s: bytes) {
+    var ret: bytes;
+    initWithNewBuffer(ret, s);
+    return ret;
+  }
+
+  /*
+    Creates a new bytes by creating a copy of the buffer of a `c_string`.
+
+    :arg s: Object to copy the buffer from
+    :type s: c_string
+
+    :arg length: Length of the `c_string` in bytes, excluding the terminating
+                 null byte.
+    :type length: int
+
+    :returns: A new `bytes`
+  */
+  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
+    return createBytesWithNewBuffer(s: bufferType, length=length,
+                                                    size=length+1);
+  }
+
+  /*
+     Creates a new bytes by creating a copy of a buffer.
+
+     :arg s: The buffer to copy
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+
+     :arg length: Length of the bytes stored in `s`, excluding the terminating
+                  null byte.
+     :type length: int
+
+     :arg size: Size of memory allocated for `s` in bytes
+     :type length: int
+
+     :returns: A new `bytes`
+  */
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+    var ret: bytes;
+    initWithNewBuffer(ret, s, length, size);
+    return ret;
+  }
+
   record _bytes {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
@@ -970,166 +1130,6 @@ module Bytes {
     }
 
   } // end of record bytes
-
-  //
-  // createBytes* functions
-  //
-
-  /*
-    Creates a new bytes which borrows the internal buffer of another bytes. If
-    the buffer is freed before the bytes returned from this function, accessing
-    it is undefined behavior.
-
-    :arg s: Object to borrow the buffer from
-    :type s: `bytes`
-
-    :returns: A new `bytes`
-  */
-  inline proc createBytesWithBorrowedBuffer(s: bytes) {
-    var ret: bytes;
-    initWithBorrowedBuffer(ret, s);
-    return ret;
-  }
-
-  /*
-    Creates a new bytes which borrows the internal buffer of a `c_string`. If
-    the buffer is freed before the bytes returned from this function, accessing
-    it is undefined behavior.
-
-    :arg s: Object to borrow the buffer from
-    :type s: c_string
-
-    :arg length: Length of the `c_string` in bytes, excluding the terminating
-                 null byte.
-    :type length: int
-
-    :returns: A new `bytes`
-  */
-  inline proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
-    return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
-                                                            size=length+1);
-  }
-
-  /*
-     Creates a new bytes which borrows the memory allocated for a
-     `c_ptr(uint(8))`. If the buffer is freed before the bytes returned from
-     this function, accessing it is undefined behavior.
-
-     :arg s: Object to borrow the buffer from
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
-
-     :arg length: Length of the bytes stored in `s`, excluding the terminating
-                  null byte.
-     :type length: int
-
-     :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
-
-     :returns: A new `bytes`
-  */
-  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
-    var ret: bytes;
-    initWithBorrowedBuffer(ret, s, length,size);
-    return ret;
-  }
-
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bytes) {
-    // should we allow stealing ownership?
-    compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
-  }
-
-  /*
-    Creates a new bytes which takes ownership of the internal buffer of a
-    `c_string`.
-
-    :arg s: Object to take ownership of the buffer from
-    :type s: `c_string`
-
-    :arg length: Length of the bytes stored in `s`, excluding the terminating
-                 null byte.
-    :type length: int
-
-    :returns: A new `bytes`
-  */
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
-    return createBytesWithOwnedBuffer(s: bufferType, length=length,
-                                                      size=length+1);
-  }
-
-  /*
-     Creates a new bytes which takes ownership of the memory allocated for a
-     `c_ptr(uint(8))`.
-
-     :arg s: Object to take ownership of the buffer from
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
-
-     :arg length: Length of the bytes stored in `s`, excluding the terminating
-                  null byte.
-     :type length: int
-
-     :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
-
-     :returns: A new `bytes`
-  */
-  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
-    var ret: bytes;
-    initWithOwnedBuffer(ret, s, length, size);
-    return ret;
-  }
-
-  /*
-    Creates a new bytes by creating a copy of the buffer of another bytes.
-
-    :arg s: Object to copy the buffer from
-    :type s: `bytes`
-
-    :returns: A new `bytes`
-  */
-  inline proc createBytesWithNewBuffer(s: bytes) {
-    var ret: bytes;
-    initWithNewBuffer(ret, s);
-    return ret;
-  }
-
-  /*
-    Creates a new bytes by creating a copy of the buffer of a `c_string`.
-
-    :arg s: Object to copy the buffer from
-    :type s: c_string
-
-    :arg length: Length of the `c_string` in bytes, excluding the terminating
-                 null byte.
-    :type length: int
-
-    :returns: A new `bytes`
-  */
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
-    return createBytesWithNewBuffer(s: bufferType, length=length,
-                                                    size=length+1);
-  }
-
-  /*
-     Creates a new bytes by creating a copy of a buffer.
-
-     :arg s: The buffer to copy
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
-
-     :arg length: Length of the bytes stored in `s`, excluding the terminating
-                  null byte.
-     :type length: int
-
-     :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
-
-     :returns: A new `bytes`
-  */
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
-    var ret: bytes;
-    initWithNewBuffer(ret, s, length, size);
-    return ret;
-  }
 
   inline proc _cast(type t: bytes, x: string) {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
