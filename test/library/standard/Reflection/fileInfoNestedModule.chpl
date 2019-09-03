@@ -15,4 +15,5 @@ module Outer {
               Reflection.moduleName, ".", Reflection.functionName);
     }
   }
+  use Reflection only ;
 }

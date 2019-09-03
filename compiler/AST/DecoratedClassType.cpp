@@ -25,6 +25,13 @@
 #include "expr.h"
 #include "iterator.h"
 
+static const char* nameForUser(const char* className) {
+  if (!strcmp(className, "_owned") || !strcmp(className, "_shared"))
+    return className+1;
+
+  return className;
+}
+
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
     case CLASS_TYPE_BORROWED:
@@ -33,10 +40,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       else
         return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NONNIL:
-      if (developer)
-        return astr("borrowed ", className, "!");
-      else
-        return astr("borrowed ", className);
+      return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
 
@@ -46,10 +50,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       else
         return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NONNIL:
-      if (developer)
-        return astr("unmanaged ", className, "!");
-      else
-        return astr("unmanaged ", className);
+      return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
 
@@ -57,17 +58,17 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       if (developer)
         return astr("managed anynil ", className);
       else
-        return astr(className);
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NONNIL:
       if (developer)
-        return astr("managed ", className, "!");
+        return astr("managed ", className);
       else
-        return astr(className);
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NILABLE:
       if (developer)
         return astr("managed ", className, "?");
       else
-        return astr(className, "?");
+        return astr(nameForUser(className), "?");
 
     case CLASS_TYPE_GENERIC:
       if (developer)
@@ -76,7 +77,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
       if (developer)
-        return astr("anymanaged ", className, "!");
+        return astr("anymanaged ", className);
       else
         return astr(className);
     case CLASS_TYPE_GENERIC_NILABLE:

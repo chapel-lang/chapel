@@ -409,7 +409,7 @@ proc file.getParentName(): string throws {
   try check();
 
   try {
-    return dirname(new string(this.realPath()));
+    return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
   }
@@ -579,7 +579,7 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(name.localize().c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return new string(res, needToCopy=false);
+  return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -617,7 +617,7 @@ proc file.realPath(): string throws {
   var res: c_string;
   var err = chpl_fs_realpath_file(_file_internal, res);
   if err then try ioerror(err, "in file.realPath");
-  return new string(res, needToCopy=false);
+  return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -720,6 +720,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
+  use Path only;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
 }

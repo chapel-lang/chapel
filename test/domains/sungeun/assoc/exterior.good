@@ -1,2 +1,0 @@
-exterior.chpl:4: In function 'my_exterior':
-exterior.chpl:5: error: exterior not supported on associative domains

@@ -448,6 +448,13 @@ module String {
     return x != 0;
   // End index arithmetic support
 
+  private proc deprWarning() {
+    if showStringBytesInitDeprWarnings {
+      compilerWarning("string.init is deprecated - "+
+                      "please use createStringWith* instead");
+    }
+  }
+
   //
   // String Implementation
   //
@@ -484,6 +491,7 @@ module String {
       of a shallow copy.
      */
     proc init(s: string, isowned: bool = true) {
+      deprWarning();
       const sRemote = _local == false && s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
@@ -511,7 +519,8 @@ module String {
     }
 
     proc init=(s: string) {
-      this.init(s);
+      this.complete();
+      initWithNewBuffer(this, s);
     }
 
     /*
@@ -524,6 +533,7 @@ module String {
      */
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
+      deprWarning();
       this.isowned = isowned;
       this.complete();
       const cs_len = length;
@@ -531,7 +541,8 @@ module String {
     }
 
     proc init=(cs: c_string) {
-      this.init(cs);
+      this.complete();
+      initWithNewBuffer(this, cs:bufferType, length=cs.length, size=cs.length+1);
     }
 
     /*
@@ -547,6 +558,7 @@ module String {
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: bufferType, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
+      deprWarning();
       this.isowned = isowned;
       this.complete();
       this.reinitString(buff, length, size, needToCopy);
@@ -578,15 +590,15 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return new string(chpl__getInPlaceBufferData(data.shortData), data.len,
-                            data.size, isowned=true, needToCopy=true);
+          return createStringWithNewBuffer(
+                  chpl__getInPlaceBufferData(data.shortData), data.len,
+                  data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return new string(localBuff, data.len, data.size,
-                            isowned=true, needToCopy=false);
+          return createStringWithOwnedBuffer(localBuff, data.len, data.size);
         }
       } else {
-        return new string(data.buff, data.len, data.size, isowned = false, needToCopy=false);
+        return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
       }
     }
 
@@ -680,7 +692,7 @@ module String {
     */
     inline proc localize() : string {
       if _local || this.locale_id == chpl_nodeID {
-        return new string(this, isowned=false);
+        return createStringWithBorrowedBuffer(this);
       } else {
         const x:string = this; // assignment makes it local
         return x;
@@ -1788,6 +1800,59 @@ module String {
 
   } // end record string
 
+  //
+  // createString* functions
+  //
+
+  inline proc createStringWithBorrowedBuffer(s: string) {
+    var ret: string;
+    initWithBorrowedBuffer(ret, s);
+    return ret;
+  }
+
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  inline proc createStringWithOwnedBuffer(s: string) {
+    // should we allow stealing ownership?
+    compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
+  }
+
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
+    return createStringWithOwnedBuffer(s: bufferType, length=length,
+                                                      size=length+1);
+  }
+
+  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    initWithOwnedBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  inline proc createStringWithNewBuffer(s: string) {
+    var ret: string;
+    initWithNewBuffer(ret, s);
+    return ret;
+  }
+
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
+    return createStringWithNewBuffer(s: bufferType, length=length,
+                                                    size=length+1);
+  }
+
+  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    initWithNewBuffer(ret, s, length, size);
+    return ret;
+  }
 
   //
   // Assignment functions
@@ -2150,7 +2215,7 @@ module String {
     var buffer = bufferAllocExact(2);
     buffer[0] = i;
     buffer[1] = 0;
-    var s = new string(buffer, 1, 2, isowned=true, needToCopy=false);
+    var s = createStringWithOwnedBuffer(buffer, 1, 2);
     return s;
   }
 
@@ -2163,7 +2228,7 @@ module String {
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
-    var s = new string(buffer, mblength, mbsize, isowned=true, needToCopy=false);
+    var s = createStringWithOwnedBuffer(buffer, mblength, mbsize);
     return s;
   }
 

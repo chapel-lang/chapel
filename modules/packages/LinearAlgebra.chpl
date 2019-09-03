@@ -187,7 +187,6 @@ module LinearAlgebra {
 
 use Norm; // TODO -- merge Norm into LinearAlgebra
 use BLAS only;
-use LAPACK only;
 use LAPACK only lapack_memory_order, isLAPACKType;
 
 /* Determines if using native Chapel implementations */
@@ -577,6 +576,7 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDense
 
 */
 proc _array.dot(A: []) where isDenseArr(this) && isDenseArr(A) {
+  use LinearAlgebra only;
   return LinearAlgebra.dot(this, A);
 }
 
@@ -1953,11 +1953,13 @@ module Sparse {
 
   /* Compute the dot-product */
   proc _array.dot(A: []) where isCSArr(A) || isCSArr(this) {
+    use LinearAlgebra only;
     return LinearAlgebra.Sparse.dot(this, A);
   }
 
   /* Compute the dot-product */
   proc _array.dot(a) where isNumeric(a) && isCSArr(this) {
+    use LinearAlgebra only;
     return LinearAlgebra.dot(this, a);
   }
 

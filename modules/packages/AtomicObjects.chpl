@@ -526,7 +526,7 @@ prototype module AtomicObjects {
     }
 
     proc compareExchange(expectedObj : objType?, newObj : objType?) : bool {
-      return atomicVariable.compareExchange(toPointer(expectedObj), toPointer(newObj));
+      return atomicVariable.compareAndSwap(toPointer(expectedObj), toPointer(newObj));
     }
 
     proc compareExchangeABA(expectedObj : ABA(objType?), newObj : objType?) : bool {

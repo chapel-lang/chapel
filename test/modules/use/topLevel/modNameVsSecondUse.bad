@@ -1,0 +1,2 @@
+modNameVsSecondUse.chpl:1: error: symbol M is multiply defined
+modNameVsSecondUse.chpl:9: note: also defined here

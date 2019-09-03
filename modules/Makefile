@@ -127,6 +127,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/TOML.chpl \
+	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
 	packages/URL.chpl

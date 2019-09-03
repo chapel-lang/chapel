@@ -145,9 +145,11 @@ checkNamedArguments(CallExpr* call) {
 
 static const char* getClassKindSpecifier(CallExpr* call) {
   if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+      call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
       call->isNamed("_to_unmanaged"))
     return "unmanaged";
   if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+      call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
       call->isNamed("_to_borrowed"))
     return "borrowed";
   if (call->isNamed("_owned"))
@@ -382,7 +384,7 @@ checkFunction(FnSymbol* fn) {
 
   if (numVoidReturns != 0 && numNonVoidReturns != 0)
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
-  if (!isIterator &&
+  if (!isIterator && !fn->hasFlag(FLAG_NO_FN_BODY) &&
       fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
     USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");

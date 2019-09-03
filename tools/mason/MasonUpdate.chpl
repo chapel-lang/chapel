@@ -137,8 +137,18 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args: list(string)) {
+  var skipOffline = false;
+  if args.count('update') == 1 {
+    skipOffline = true;
+  }
+
   if args.count("--no-update") != 0 then
     return;
+
+  if MASON_OFFLINE && (args.count('--update') == 0) && !skipOffline {
+    writeln('Skipping update due to MASON_OFFLINE=true');
+    return;
+  }
 
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
@@ -367,7 +377,7 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    try! deps.pop(1);
+    deps.pop(1);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then

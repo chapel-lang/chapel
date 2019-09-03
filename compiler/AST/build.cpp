@@ -1747,12 +1747,6 @@ buildFunctionDecl(FnSymbol*   fn,
 {
   fn->retTag = optRetTag;
 
-  if (optRetTag == RET_REF)
-  {
-    if (fn->hasFlag(FLAG_EXTERN))
-      USR_FATAL_CONT(fn, "Extern functions cannot be setters.");
-  }
-
   if (optRetType)
     fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
 

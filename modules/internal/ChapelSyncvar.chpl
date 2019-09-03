@@ -114,14 +114,14 @@ module ChapelSyncvar {
   record _syncvar {
     type valType;                              // The compiler knows this name
 
-    var  wrapped : unmanaged getSyncClassType(valType);
+    var  wrapped : getSyncClassType(valType);
     var  isOwned : bool                      = true;
 
     pragma "dont disable remote value forwarding"
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      this.wrapped = new unmanaged (getSyncClassType(valType))();
+      this.wrapped = new (getSyncClassType(valType))();
     }
 
     //

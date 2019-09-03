@@ -60,13 +60,17 @@ public:
 
   UseStmt*        applyOuterUse(const UseStmt* outer);
 
-  bool            skipSymbolSearch(const char* name, bool methodCall)    const;
+  bool            skipSymbolSearch(const char* name, bool methodCall,
+                                   ModuleSymbol** lastResortModuleMatch = NULL)
+                                                                         const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
 
   bool            isVisible(BaseAST* scope)                              const;
 
   BaseAST*        getSearchScope()                                       const;
+
+  ModuleSymbol*   checkIfModuleNameMatches(const char* name);
 
   void            writeListPredicate(FILE* mFP)                          const;
 

@@ -78,6 +78,7 @@ _chpl ()
 --ignore-errors \
 --ignore-errors-for-pass \
 --ignore-local-classes \
+--ignore-nilability-errors \
 --ignore-user-errors \
 --incremental \
 --infer-const-refs \
@@ -160,6 +161,7 @@ _chpl ()
 --no-ignore-errors \
 --no-ignore-errors-for-pass \
 --no-ignore-local-classes \
+--no-ignore-nilability-errors \
 --no-ignore-user-errors \
 --no-incremental \
 --no-infer-const-refs \

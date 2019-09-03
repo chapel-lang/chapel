@@ -38,6 +38,7 @@ proc masonBuild(args) throws {
   var compopts: list(string);
   var opt = false;
   var example = false;
+  var update = false;
 
   if args.size > 2 {
 
@@ -80,6 +81,9 @@ proc masonBuild(args) throws {
       else if arg == '--example' {
         example = true;
       }
+      else if arg == '--update' {
+        update = true;
+      }
       // passed to UpdateLock
       else if arg == '--no-update' {
         continue;
@@ -92,6 +96,8 @@ proc masonBuild(args) throws {
   if example {
     // compopts become test names. Build never runs examples
     compopts.append("--no-run");
+    if update then compopts.append('--update');
+    if hasOptions(args, '--no-update') then compopts.append('--no-update');
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");

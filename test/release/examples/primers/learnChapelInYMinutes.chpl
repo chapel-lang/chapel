@@ -1103,7 +1103,7 @@ proc main() {
   writeln("uranium was ", was, " but is now ", replaceWith);
 
   var isEqualTo = 235;
-  if uranium.compareExchange(isEqualTo, replaceWith) {
+  if uranium.compareAndSwap(isEqualTo, replaceWith) {
     writeln("uranium was equal to ", isEqualTo,
              " so replaced value with ", replaceWith);
   } else {

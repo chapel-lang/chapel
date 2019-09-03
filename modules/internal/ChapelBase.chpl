@@ -650,6 +650,7 @@ module ChapelBase {
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
+    use HaltWrappers only;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -659,11 +660,11 @@ module ChapelBase {
     }
   }
 
-  inline proc postfix!(type t:unmanaged) type {
+  inline proc postfix!(type t: class) type {
     return _to_borrowed(_to_nonnil(t));
   }
-  inline proc postfix!(type t:borrowed) type {
-    return _to_nonnil(t);
+  inline proc postfix!(type t: class?) type {
+    return _to_borrowed(_to_nonnil(t));
   }
 
   inline proc postfix!(x:unmanaged class) {
@@ -2282,6 +2283,7 @@ module ChapelBase {
     var ret = __primitive("to borrowed class", arg);
     return ret;
   }
+  // changing nilability
   proc _to_nonnil(type t) type {
     type rt = __primitive("to non nilable class", t);
     return rt;

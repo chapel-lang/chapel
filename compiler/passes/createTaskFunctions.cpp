@@ -338,13 +338,10 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   headAnchor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
   headAnchor->insertBefore(new DefExpr(globalOp));
 
-  AggregateType* reduceAt = toAggregateType(reduceType->type);
-  if (DecoratedClassType* dt = toDecoratedClassType(reduceType->type))
-    reduceAt = dt->getCanonicalClass();
-  INT_ASSERT(reduceAt);
+  Type* newT = getDecoratedClass(reduceType->type, CLASS_TYPE_GENERIC_NONNIL);
 
   CallExpr* newOp = new CallExpr(PRIM_NEW,
-                                 reduceAt->symbol,
+                                 newT->symbol,
                                  new NamedExpr("eltType", new SymExpr(eltType)),
                                  new NamedExpr(astr_chpl_manager,
                                              new SymExpr(dtUnmanaged->symbol)));

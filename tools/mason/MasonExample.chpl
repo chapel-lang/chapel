@@ -28,6 +28,7 @@ use MasonUpdate;
 use MasonBuild;
 use Path;
 use FileSystem;
+use MasonEnv;
 
 /* Runs the .chpl files found within the /example directory */
 proc masonExample(args) {
@@ -37,8 +38,9 @@ proc masonExample(args) {
   var build = true;
   var release = false;
   var force = false;
-  var examples: list(string);
-
+  var noUpdate = false;
+  var update = false;
+  var examples: list(string); 
   for arg in args {
     if arg == '--show' {
       show = true;
@@ -55,6 +57,12 @@ proc masonExample(args) {
     else if arg == '--force' {
       force = true;
     }
+    else if arg == '--no-update' {
+      noUpdate = true;
+    }
+    else if arg == '--update' {
+      update = true;
+    }
     else if arg == '--example' {
       continue;
     }
@@ -66,7 +74,12 @@ proc masonExample(args) {
     }
   }
   var uargs: list(string);
-  if !build then uargs.append("--no-update");  
+  if (!build || noUpdate) then uargs.append("--no-update");
+  else {
+    if MASON_OFFLINE && update {
+      uargs.append('--update');
+    }
+  }
   UpdateLock(uargs);
   runExamples(show, run, build, release, force, examples);
 }

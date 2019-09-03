@@ -222,7 +222,7 @@ module SharedObject {
      */
     proc init(pragma "nil from arg" in take:owned) {
       var p = take.release();
-      this.chpl_t = _to_borrowed(p.type);
+      this.chpl_t = if this.type.chpl_t == ? then _to_borrowed(p.type) else this.type.chpl_t;
 
       if !isClass(p) then
         compilerError("shared only works with classes");
@@ -293,6 +293,9 @@ module SharedObject {
       then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
+
       this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
@@ -336,7 +339,11 @@ module SharedObject {
        If this record was the last :record:`shared` managing a
        non-nil instance, that instance will be deleted.
      */
-    proc ref retain(pragma "nil from arg" newPtr:unmanaged chpl_t) {
+    proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
+      if !isCoercible(newPtr.type, chpl_t) then
+        compilerError("cannot retain '" + newPtr.type:string + "' " +
+                      "(expected '" + _to_unmanaged(chpl_t):string + "')");
+
       clear();
       this.chpl_p = newPtr;
       if newPtr != nil {
@@ -547,6 +554,7 @@ module SharedObject {
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(x:_shared) {
+    use HaltWrappers only;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -557,8 +565,5 @@ module SharedObject {
       }
     }
     return _to_nonnil(x.chpl_p);
-  }
-  inline proc postfix!(type t:_shared) type {
-    return _to_borrowed(_to_nonnil(t.chpl_t));
   }
 }
