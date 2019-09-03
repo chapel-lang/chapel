@@ -72,7 +72,6 @@ private:
   fileinfo fiServerBundle;
   GenInfo* info;
 
-  bool shouldEmit(ModuleSymbol* md);
   bool shouldEmit(FnSymbol* fn);
   void setOutput(fileinfo* fi);
   void setOutputAndWrite(fileinfo* fi, const std::string& gen);
@@ -177,17 +176,12 @@ MLIContext::~MLIContext() {
   return;
 }
 
-bool MLIContext::shouldEmit(ModuleSymbol* md) {
-  return (md->modTag != MOD_INTERNAL &&
-          md->modTag != MOD_STANDARD);
-}
-
 bool MLIContext::shouldEmit(FnSymbol* fn) {
-  return (fn->hasFlag(FLAG_EXPORT) && not fn->hasFlag(FLAG_GEN_MAIN_FUNC));
+  return (fn->hasFlag(FLAG_EXPORT) && not isInternalExport(fn));
 }
 
 void MLIContext::emit(ModuleSymbol* md) {
-  if (not this->shouldEmit(md)) { return; }
+  //if (not this->shouldEmit(md)) { return; }
 
   const std::vector<FnSymbol*> fns = md->getTopLevelFunctions(true);
 

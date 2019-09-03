@@ -65,7 +65,7 @@ void openLibraryHelperFile(fileinfo* fi,
 void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 const char* getLibraryExtension();
 
-bool willBePythonized(FnSymbol* fn);
+bool isInternalExport(FnSymbol* fn);
 
 std::string getPythonTypeName(Type* type, PythonFileType pxd);
 
