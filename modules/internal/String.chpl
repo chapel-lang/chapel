@@ -1046,7 +1046,7 @@ module String {
                 the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
-    proc this(r: range(?)) : string {
+    inline proc this(r: range(?)) : string {
       return getSlice(this, r);
     }
 
@@ -1240,7 +1240,7 @@ module String {
      */
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
-    proc replace(needle: string, replacement: string, count: int = -1) : string {
+    inline proc replace(needle: string, replacement: string, count: int = -1) : string {
       return doReplace(this, needle, replacement, count);
     }
 

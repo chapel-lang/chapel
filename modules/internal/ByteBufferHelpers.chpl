@@ -56,7 +56,7 @@ module ByteBufferHelpers {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
   }
 
-  proc bufferAlloc(requestedSize) {
+  inline proc bufferAlloc(requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize),
                           chpl_stringMinAllocSize);
     var buf = chpl_here_alloc(allocSize,
@@ -86,7 +86,7 @@ module ByteBufferHelpers {
       return dest;
   }
 
-  proc bufferCopyLocal(src_addr: bufferType, len: int) {
+  inline proc bufferCopyLocal(src_addr: bufferType, len: int) {
       const (dst, allocSize) = bufferAlloc(len+1);
       bufferMemcpyLocal(dst=dst, src=src_addr, len=len);
       return (dst, allocSize);
@@ -96,7 +96,7 @@ module ByteBufferHelpers {
     chpl_here_free(buf);
   }
 
-  proc bufferCopy(buf: bufferType, off: int, len: int, loc: locIdType) {
+  inline proc bufferCopy(buf: bufferType, off: int, len: int, loc: locIdType) {
     if !_local && loc != chpl_nodeID {
       var newBuf = bufferCopyRemote(loc, buf+off, len);
       return (newBuf, len);
@@ -117,7 +117,7 @@ module ByteBufferHelpers {
 
   }
 
-  proc bufferMemcpyLocal(dst, src, len, dst_off=0, src_off=0) {
+  inline proc bufferMemcpyLocal(dst, src, len, dst_off=0, src_off=0) {
     c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len);
   }
 

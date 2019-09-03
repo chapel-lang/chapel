@@ -201,8 +201,6 @@ module BytesStringCommon {
       found += 1;
       result = result[..idx-1] + localReplacement +
                result[(idx + localNeedle.numBytes)..];
-      var tmp_res = result[..idx-1] + localReplacement +
-                    result[(idx + localNeedle.numBytes)..];
 
       startIdx = idx + localReplacement.numBytes;
     }
