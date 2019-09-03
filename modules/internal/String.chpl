@@ -1084,7 +1084,7 @@ module String {
       :returns: * `true`  -- when the string begins with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc startsWith(needles: string ...) : bool {
+    inline proc startsWith(needles: string ...) : bool {
       return startsEndsWith(this, needles, fromLeft=true);
     }
 
@@ -1094,7 +1094,7 @@ module String {
       :returns: * `true`  -- when the string ends with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc endsWith(needles: string ...) : bool {
+    inline proc endsWith(needles: string ...) : bool {
       return startsEndsWith(this, needles, fromLeft=false);
     }
 
@@ -1200,7 +1200,7 @@ module String {
                 string, or 0 if the `needle` is not in the string.
      */
     // TODO: better name than region?
-    proc find(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+    inline proc find(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
       return _search_helper(needle, region, count=false): byteIndex;
     }
 
@@ -1374,17 +1374,17 @@ module String {
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
-    proc join(const ref S: [] string) : string {
+    inline proc join(const ref S: [] string) : string {
       return _join(S);
     }
 
     pragma "no doc"
-    proc join(ir: _iteratorRecord): string {
+    inline proc join(ir: _iteratorRecord): string {
       return doJoinIterator(this, ir);
     }
 
     pragma "no doc"
-    proc _join(const ref S) : string where isTuple(S) || isArray(S) {
+    inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
       return doJoin(this, S);
     }
 
@@ -1446,7 +1446,7 @@ module String {
       before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
       the tuple will contain the whole string, and then two empty strings.
     */
-    proc const partition(sep: string) : 3*string {
+    inline proc const partition(sep: string) : 3*string {
       return doPartition(this, sep);
     }
 

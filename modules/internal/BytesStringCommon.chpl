@@ -510,7 +510,7 @@ module BytesStringCommon {
     return ret;
   }
 
-  proc doEq(a: ?t1, b: ?t2) {
+  inline proc doEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
 
