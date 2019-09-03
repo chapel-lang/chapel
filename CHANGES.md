@@ -1,6 +1,113 @@
 Release Changes List
 ====================
 
+version 1.20.0
+==============
+
+Twenty-third public release of Chapel, March 21, 2019
+First release candidate for Chapel 2.0 (RC1)
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Packaging / Configuration Changes
+---------------------------------
+
+Syntactic/Naming Changes
+------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+
+Deprecated and Removed Features
+-------------------------------
+
+Standard Modules / Library
+--------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+New Tools / Tool Changes
+------------------------
+
+Interoperability Improvements
+-----------------------------
+
+Performance Optimizations/Improvements
+--------------------------------------
+
+Cray-specific Performance Optimizations/Improvements
+----------------------------------------------------
+
+Memory Improvements
+-------------------
+
+Documentation
+-------------
+
+Example Codes
+-------------
+
+Portability
+-----------
+
+Cray-specific Changes and Bug Fixes
+-----------------------------------
+
+Compiler Improvements
+---------------------
+
+Compiler Flags
+--------------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Execution-time Checks
+---------------------
+
+Bug Fixes
+---------
+
+Third-Party Software Changes
+----------------------------
+
+Launchers
+---------
+
+Testing System
+--------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+
+
 version 1.19.0
 ==============
 
