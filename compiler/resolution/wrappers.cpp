@@ -1254,6 +1254,14 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
       USR_FATAL_CONT(formal->getFunction(),
                      "to function '%s' defined here",
                      formal->getFunction()->name);
+
+      // Add a note about the change to owned/shared intent
+      if (isManagedPtrType(formal->getValType()) &&
+          formal->originalIntent == INTENT_BLANK) {
+        USR_PRINT(formal,
+                  "default intent for %s has changed from `in` to `const ref`",
+                  toString(formal->getValType()));
+      }
     }
   }
 }
