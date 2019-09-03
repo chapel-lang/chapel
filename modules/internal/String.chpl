@@ -649,6 +649,12 @@ module String {
       string may appear in ``s``. It is the responsibility of the user to
       ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
+     
+      .. warning::
+
+          String initializers are deprecated. Use `createString*` functions,
+          instead.
+        
      */
     proc init(s: string, isowned: bool = true) {
       deprWarning();
@@ -690,6 +696,12 @@ module String {
       record, otherwise it will be used directly. It is the responsibility of
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
+     
+      .. warning::
+
+          String initializers are deprecated. Use `createString*` functions,
+          instead.
+        
      */
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
@@ -714,6 +726,12 @@ module String {
       the `c_string` will be copied into the record, otherwise it will be used
       directly. It is the responsibility of the user to ensure that the
       underlying buffer is not freed if the `c_string` is not copied in.
+     
+      .. warning::
+
+          String initializers are deprecated. Use `createString*` functions,
+          instead.
+        
      */
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: bufferType, length: int, size: int,
