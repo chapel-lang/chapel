@@ -34,6 +34,7 @@
 #include "wellknown.h"
 
 #include <cstdlib>
+#include <algorithm>
 
 BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
