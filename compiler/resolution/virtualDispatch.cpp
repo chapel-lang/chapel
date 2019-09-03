@@ -313,7 +313,8 @@ static bool checkOverrides(FnSymbol* fn) {
           //     (which we manage and want to keep clean)
           (parentMod && parentMod->modTag != MOD_USER)) &&
           // No override checking for type methods.
-         fn->thisTag != INTENT_TYPE;
+         fn->thisTag != INTENT_TYPE &&
+         !fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION) ;
 }
 
 static bool ignoreOverrides(FnSymbol* fn) {
