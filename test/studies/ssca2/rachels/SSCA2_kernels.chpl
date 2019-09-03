@@ -137,7 +137,7 @@ module SSCA2_kernels
 	    forall w in G.Neighbors (v) do {
 
 
-              if min_distance(w).compareExchangeStrong(-1, path_length) then {
+              if min_distance(w).compareAndSwap(-1, path_length) then {
                 Next_Level.add (w);
                 Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
 	      }
@@ -379,7 +379,7 @@ module SSCA2_kernels
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
   
-                  if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
+                  if  BCaux[v].min_distance.compareAndSwap(-1, current_distance_c) {
                     var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
                     Active_Level[aloc].next!.Members.add (v);
                     if VALIDATE_BC then

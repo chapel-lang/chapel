@@ -625,7 +625,7 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {
-            USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
+            USR_FATAL_CONT(se, "modules (like '%s' here) cannot be called like procedures", sym->name);
           }
 
         } else if (isLcnSymbol(sym) == true) {

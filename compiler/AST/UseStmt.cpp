@@ -176,7 +176,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = scope->lookup(src)) {
+    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -508,6 +508,20 @@ void UseStmt::trackMethods() {
   }
 }
 
+ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (strcmp(name, se->symbol()->name) == 0) {
+        return modSym;
+      }
+    }
+  } else {
+    // TODO: Need to handle matches against more general expressions here
+    // e.g. 'use M.N.O' should make 'O' available, I think
+  }
+  return NULL;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -527,12 +541,23 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 *                                                                             *
 * Determine whether the use permits us to search for a symbol with the given  *
 * name.  Returns true ("should skip") if the name is related to our 'except'  *
-* list, or not present when we've been given an 'only' list.                  *
+* list, or not present when we've been given an 'only' list.  In the event    *
+* that:                                                                       *
+*   - the 'only' clause does _not_ list the name                              *
+*   - the module symbol in the 'use' statement _does_ match the name          *
+*   - a non-NULL pointer is passed in for 'lastResortModuleMatch'             *
+* we store the module symbol in 'lastResortModuleMatch' and return 'true'     *
+* This indicates that while the module's contents won't resolve the name, the *
+* module itself can                                                           *
 *                                                                             *
 ************************************** | *************************************/
 
-bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
+bool UseStmt::skipSymbolSearch(const char* name, bool methodCall,
+                              ModuleSymbol** lastResortModuleMatch) const {
   bool retval = false;
+  if (lastResortModuleMatch != NULL) {
+    *lastResortModuleMatch = NULL;
+  }
 
   if (isPlainUse() == true) {
     retval = false;
@@ -540,7 +565,8 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   } else if (except == true) {
     if (matchedNameOrConstructor(name) == true) {
       retval =  true;
-
+      // TODO: Seems like there should be a dual for the last resort
+      // case below for 'only' clauses here... or not?
     } else {
       retval = false;
     }
@@ -557,6 +583,17 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
 
     } else {
       retval =  true;
+      // Last resort: Check to see if it matches the module's name itself
+      if (lastResortModuleMatch != NULL) {
+        if (SymExpr* se = toSymExpr(src)) {
+          if (strcmp(name, se->symbol()->name) == 0) {
+            *lastResortModuleMatch = toModuleSymbol(se->symbol());
+          }
+        } else {
+          // TODO: Need to handle matches against more general expressions here?
+          // or not?
+        }
+      }
     }
   }
 

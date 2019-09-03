@@ -27,6 +27,7 @@
   mode of its originating map.
 */
 module Map {
+  private use ChapelLocks only ;
 
   // Lock code lifted from modules/standard/Lists.chpl.
   // Maybe they should be combined into a Locks module.

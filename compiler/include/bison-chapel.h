@@ -366,7 +366,8 @@ extern int yydebug;
      TRSBR = 421,
      TNOELSE = 422,
      TUMINUS = 423,
-     TUPLUS = 424
+     TUPLUS = 424,
+     TLNOT = 425
    };
 #endif
 
@@ -426,6 +427,6 @@ void yypstate_delete ();
 
 
 /* Line 2058 of yacc.c  */
-#line 430 "../include/bison-chapel.h"
+#line 431 "../include/bison-chapel.h"
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

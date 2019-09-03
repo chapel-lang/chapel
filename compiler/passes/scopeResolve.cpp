@@ -119,7 +119,7 @@ static void handleReceiverFormals() {
           AggregateType::setCreationStyle(ts, fn);
 
         } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
+          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -195,12 +195,12 @@ static void processGenericFields() {
 // to handle chpl__Program with little or no special casing.
 
 static void addToSymbolTable() {
-  ResolveScope* rootScope = ResolveScope::getRootModule();
+  rootScope = ResolveScope::getRootModule();
 
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      rootScope->extend(def->sym);
+      rootScope->extend(def->sym, /* isTopLevel= */ true); // TODO: test this
     }
   }
 
@@ -263,7 +263,6 @@ static void scopeResolve(const AList&        alist,
 static void scopeResolve(ModuleSymbol*       module,
                          const ResolveScope* parent) {
   ResolveScope* scope = new ResolveScope(module, parent);
-
   scopeResolve(module->block->body, scope);
 }
 
@@ -1675,8 +1674,16 @@ static void lookup(const char*           name,
 
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
-      if (outerScope != NULL)
+      if (outerScope != NULL) {
         lookup(name, context, outerScope, visited, symbols);
+        // As a last ditch effort, see if this module's name happens to match
+        if (symbols.size() == 0) {
+          ModuleSymbol* thisMod = scope->getModule();
+          if (strcmp(name, thisMod->name) == 0) {
+            symbols.push_back(thisMod);
+          }
+        }
+      }
 
     } else {
       // Otherwise, look in the next scope up.
@@ -1782,7 +1789,8 @@ static bool lookupThisScopeAndUses(const char*           name,
 
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use != NULL) {
-            if (use->skipSymbolSearch(name, false) == false) {
+            ModuleSymbol* modSymMatches = NULL;
+            if (use->skipSymbolSearch(name, false, &modSymMatches) == false) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
@@ -1796,6 +1804,11 @@ static bool lookupThisScopeAndUses(const char*           name,
                 } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
                 }
+              }
+            } else {
+              // if the module symbol itself matched, push it
+              if (modSymMatches != NULL) {
+                symbols.push_back(modSymMatches);
               }
             }
 
@@ -1823,6 +1836,19 @@ static bool lookupThisScopeAndUses(const char*           name,
               USR_WARN(sym,
                        "Module level symbol is hiding function argument '%s'",
                        name);
+            }
+          }
+        } else {
+          // we haven't found a match yet, so as a last resort, let's
+          // check the names of the modules in the 'use' statements
+          // themselves...
+          forv_Vec(UseStmt, use, *moduleUses) {
+            if (use != NULL) {
+              if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
+                if (isRepeat(modSym, symbols) == false) {
+                  symbols.push_back(modSym);
+                }
+              }
             }
           }
         }

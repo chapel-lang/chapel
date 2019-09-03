@@ -3,6 +3,7 @@ module M {
 }
 
 module M2 {
+  use M only;
   var c: M.color;
 
   writeln(c:string);

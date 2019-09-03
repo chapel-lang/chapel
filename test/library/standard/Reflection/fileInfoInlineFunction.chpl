@@ -8,3 +8,5 @@ proc main {
           Reflection.moduleName, ".", Reflection.functionName);
   foo();
 }
+
+use Reflection only ;
