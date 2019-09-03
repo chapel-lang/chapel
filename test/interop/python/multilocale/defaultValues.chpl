@@ -1,4 +1,4 @@
-export proc cstringDefault(x: c_string = "blah") {
+export proc cstringDefault(in x: c_string = "blah") {
   writeln(x: string);
 }
 
