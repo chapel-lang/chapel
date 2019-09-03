@@ -135,6 +135,8 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<UseStmt*>    sModReqdByInt;
 
+static Vec<const char*> sParsedFilesSet;
+
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
 }
@@ -505,11 +507,41 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
 static bool containsOnlyModules(BlockStmt* block, const char* path);
 static void addModuleToDoneList(ModuleSymbol* module);
 
+//
+// This is a poor person's check to see whether we've already parsed
+// this file before to avoid re-parsing the same thing twice.  It'd be
+// nice to upgrade to the C++17 filesystem library to do this, but we
+// haven't done portability testing of those features and it's close
+// to the release as I add this.  Instead, check to see whether the
+// path to the file matches one we've parsed before, adding special
+// handling to paths with the form './abc.chpl'.  This will catch
+// common cases for how we build up filenames using search paths,
+// though other cases will definitely slip past.
+//
+static bool haveAlreadyParsed(const char* path) {
+  std::vector<std::string>::iterator vIt =
+    std::find(gFilenameLookup.begin(), gFilenameLookup.end(), path);
+  if (vIt != gFilenameLookup.end()) {
+    return true;
+  } else {
+    // if path = "./abc..." try "abc..."
+    if (path[0] == '.' && path[1] == '/') {
+      return haveAlreadyParsed(&(path[2]));
+    }
+  }
+  return false;
+}
+
+
 static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
 
+  // Avoid parsing the same file twice
+  if (haveAlreadyParsed(path)) {
+    return NULL;
+  }
 
   if (FILE* fp = openInputFile(path)) {
     gFilenameLookup.push_back(path);
