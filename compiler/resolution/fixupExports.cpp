@@ -192,21 +192,30 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_IN &&
           tag != INTENT_CONST_IN) {
-        const char* libdesc = multiloc ? "multilocale" : "python";
+        std::string libdesc;
+        if (multiloc) {
+          if (fLibraryPython) {
+            libdesc = "multilocale python";
+          } else {
+            libdesc = "multilocale";
+          }
+        } else {
+          libdesc = "python";
+        }
         const char* typeName = (t == dtExternalArray) ? "array" : t->name();
         SET_LINENO(fn);
         if (tag == INTENT_BLANK) {
           USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not be passed by const ref in "
                          "%s libraries",
-                         as->name, typeName, fn->name, libdesc);
+                         as->name, typeName, fn->name, libdesc.c_str());
 
         } else {
           USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not have the %s in "
                          "%s libraries",
                          as->name, typeName, fn->name,
-                         intentDescrString(tag), libdesc);
+                         intentDescrString(tag), libdesc.c_str());
         }
         return false;
       }
