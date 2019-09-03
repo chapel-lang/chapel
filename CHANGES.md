@@ -4,7 +4,7 @@ Release Changes List
 version 1.20.0
 ==============
 
-Twenty-third public release of Chapel, March 21, 2019
+Twenty-third public release of Chapel, September 19, 2019
 First release candidate for Chapel 2.0 (RC1)
 
 Highlights (see subsequent sections for further details)
