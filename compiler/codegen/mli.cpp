@@ -181,8 +181,6 @@ bool MLIContext::shouldEmit(FnSymbol* fn) {
 }
 
 void MLIContext::emit(ModuleSymbol* md) {
-  //if (not this->shouldEmit(md)) { return; }
-
   const std::vector<FnSymbol*> fns = md->getTopLevelFunctions(true);
 
   for_vector(FnSymbol, fn, fns) {
