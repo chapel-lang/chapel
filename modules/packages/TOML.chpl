@@ -824,7 +824,7 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in JSON format */
     proc writeJSON(f) {
       try! {
-        var flat: map(string, unmanaged Toml);
+        var flat = new map(string, unmanaged Toml);
         this.flatten(flat);           // Flattens containing Toml
 
         var indent=0;

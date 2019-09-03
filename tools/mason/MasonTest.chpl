@@ -376,8 +376,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       }
       
       var result =  new TestResult();
-      var resultDomain: domain(string);
-      var testResults: [resultDomain] string;
+      var testResults = new map(string, string);
 
       for tests in files {
         try {
@@ -405,8 +404,8 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
         exit(0);
       }
       else {
-        const numPassed = testResults.count("Passed");
-        const numFailed = testResults.count("Failed");
+        const numPassed = testResults.valuesToArray().count("Passed");
+        const numFailed = testResults.valuesToArray().count("Failed");
         printTestResults(testResults, numPassed + numFailed, numPassed, show);
       }
     }
