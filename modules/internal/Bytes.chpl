@@ -351,7 +351,7 @@ module Bytes {
       :returns: a new bytes that is a slice within ``1..bytes.length``. If
                 the length of `r` is zero, an empty bytes is returned.
      */
-    proc this(r: range(?)) : bytes {
+    inline proc this(r: range(?)) : bytes {
       return getSlice(this, r);
     }
 
@@ -394,7 +394,7 @@ module Bytes {
       :returns: * `true`  -- when the object begins with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc startsWith(needles: bytes ...) : bool {
+    inline proc startsWith(needles: bytes ...) : bool {
       return startsEndsWith(this, needles, fromLeft=true);
     }
 
@@ -404,7 +404,7 @@ module Bytes {
       :returns: * `true`  -- when the object ends with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc endsWith(needles: bytes ...) : bool {
+    inline proc endsWith(needles: bytes ...) : bool {
       return startsEndsWith(this, needles, fromLeft=false);
     }
 
@@ -417,7 +417,7 @@ module Bytes {
       :returns: the index of the first occurrence of `needle` within a
                 the object, or 0 if the `needle` is not in the object.
      */
-    proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
+    inline proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
       return _search_helper(needle, region, count=false): idxType;
     }
 
@@ -430,7 +430,7 @@ module Bytes {
       :returns: the index of the first occurrence from the right of `needle`
                 within the object, or 0 if the `needle` is not in the object.
      */
-    proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
+    inline proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
       return _search_helper(needle, region, count=false,
                             fromLeft=false): idxType;
     }
@@ -443,7 +443,7 @@ module Bytes {
 
       :returns: the number of times `needle` occurs in the object
      */
-    proc count(needle: bytes, region: range(?) = 1..) : int {
+    inline proc count(needle: bytes, region: range(?) = 1..) : int {
       return _search_helper(needle, region, count=true);
     }
 
@@ -632,14 +632,14 @@ module Bytes {
       the :record:`bytes` objects passed in with the contents of the method
       receiver inserted between them.
     */
-    proc join(const ref S: bytes ...) : bytes {
+    inline proc join(const ref S: bytes ...) : bytes {
       return _join(S);
     }
 
     /*
       Same as the varargs version, but with a homogeneous tuple of bytes.
     */
-    proc join(const ref S) : bytes where isTuple(S) {
+    inline proc join(const ref S) : bytes where isTuple(S) {
       if !isHomogeneousTuple(S) || !isBytes(S[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
       return _join(S);
@@ -648,17 +648,17 @@ module Bytes {
     /*
       Same as the varargs version, but with all the bytes in an array.
      */
-    proc join(const ref S: [] bytes) : bytes {
+    inline proc join(const ref S: [] bytes) : bytes {
       return _join(S);
     }
 
     pragma "no doc"
-    proc join(ir: _iteratorRecord): bytes {
+    inline proc join(ir: _iteratorRecord): bytes {
       return doJoinIterator(this, ir);
     }
 
     pragma "no doc"
-    proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
+    inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
       return doJoin(this, S);
     }
 
@@ -722,7 +722,7 @@ module Bytes {
       before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
       the tuple will contain the whole bytes, and then two empty bytes.
     */
-    proc const partition(sep: bytes) : 3*bytes {
+    inline proc const partition(sep: bytes) : 3*bytes {
       return doPartition(this, sep);
     }
 
