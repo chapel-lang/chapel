@@ -2179,17 +2179,12 @@ module Sparse {
 
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
-    use List;
-    var indices: list(2*D.idxType);
-    for i in D.dim(1) {
-      for j in D.dimIter(2, i) {
-        indices.append((j, i));
-      }
-    }
-
     const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
-    Dom += indices.toArray();
+
+    var idxBuffer = Dom.makeIndexBuffer(size=D.numIndices);
+    for (i,j) in D do idxBuffer.add((j,i));
+    idxBuffer.commit();
     return Dom;
   }
 
