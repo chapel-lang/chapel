@@ -940,7 +940,7 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
-      for (key, value, i) in zip(v.D, v.A, 1..v.D.size) {
+      for ((key, value), i) in zip(v.A.items(), 1..v.A.size) {
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -991,7 +991,7 @@ used to recursively hold tables and respective values
             throw new owned TomlError("Not yet supported");
           }
         }
-        if i != v.D.size {
+        if i != v.A.size {
           f.writef(',');
         }
         f.writef('\n');
