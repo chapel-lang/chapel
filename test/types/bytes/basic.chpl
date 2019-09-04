@@ -144,7 +144,7 @@ writeln("Test join -- homogeneous tuple of bytes");
 writeln(baseBytes.join((b"dir1", b"dir2", b"file")));
 
 writeln("Test join -- array of bytes");
-writeln(baseBytes.join(b"dir1", b"dir2", b"file"));
+writeln(baseBytes.join([b"dir1", b"dir2", b"file"]));
 
 writeln("Test strip");
 var bytesToStrip = b" \n  a \t text\n";
