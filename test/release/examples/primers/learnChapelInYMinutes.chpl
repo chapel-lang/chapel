@@ -441,9 +441,9 @@ for value in realArray {
 writeln(rSum, "\n", realArray);
 
 // Associative arrays (dictionaries) can be created using associative domains.
-var dictDomain: domain(string) = { "one", "two" };
-var dict: [dictDomain] int = ["one" => 1, "two" => 2];
-dict["three"] = 3; // Adds 'three' to 'dictDomain' implicitly
+var dictDomain: domain(string) = { "one", "two", "three"};
+var dict: [dictDomain] int = ["one" => 1, "two" => 2, "three" => 3];
+
 for key in dictDomain.sorted() do
   writeln(dict[key]);
 

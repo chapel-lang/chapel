@@ -19,6 +19,7 @@
 
 
 private use List;
+private use Map;
 use TOML;
 use Spawn;
 use MasonUtils;
@@ -134,8 +135,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     // Check for tests to run
     if numTests > 0 {
 
-      var resultDomain: domain(string);
-      var testResults: [resultDomain] string;
+      var testResults = new map(string, string);
       var result =  new TestResult();
 
       for test in testNames {
@@ -170,7 +170,6 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
       }
       if run && !parallel {
         var testBinResults = runTestBinaries(projectHome, testNames, numTests, result, show);
-        resultDomain = testBinResults.domain;
         testResults = testBinResults;
       }
       if run {
@@ -179,9 +178,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
           writeln(result.separator2);
           result.printResult();
           exit(0);
-        }
-        else {
-          const numPassed = testResults.count("Passed");
+        } else {
+          const numPassed = testResults.valuesToArray().count("Passed");
           printTestResults(testResults, numTests, numPassed, show);
         }
       }
@@ -222,8 +220,7 @@ private proc runTestBinary(projectHome: string, testName: string, ref result, sh
 private proc runTestBinaries(projectHome: string, testNames: list(string),
                              numTests: int, ref result, show: bool) {
 
-  var resultDomain: domain(string);
-  var testResults: [resultDomain] string;
+  var testResults = new map(string, string);
 
   for test in testNames {
     const testName = basename(stripExt(test, ".chpl"));
@@ -239,12 +236,12 @@ private proc runTestBinaries(projectHome: string, testNames: list(string),
 }
 
 
-private proc printTestResults(testResults: [?d] string, numTests: int,
+private proc printTestResults(testResults: map(false, ?keyType, string), numTests: int,
                               numPassed: int, show: bool) {
 
   if show then writeln("\n--------------------\n");
   writeln("--- Results ---");
-  for test in testResults.domain {
+  for test in testResults {
     writeln(" ".join("Test:",test, testResults[test]));
   }
   writeln("\n--- Summary:  ",numTests, " tests run ---");
@@ -379,8 +376,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       }
       
       var result =  new TestResult();
-      var resultDomain: domain(string);
-      var testResults: [resultDomain] string;
+      var testResults = new map(string, string);
 
       for tests in files {
         try {
@@ -408,8 +404,8 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
         exit(0);
       }
       else {
-        const numPassed = testResults.count("Passed");
-        const numFailed = testResults.count("Failed");
+        const numPassed = testResults.valuesToArray().count("Passed");
+        const numFailed = testResults.valuesToArray().count("Failed");
         printTestResults(testResults, numPassed + numFailed, numPassed, show);
       }
     }

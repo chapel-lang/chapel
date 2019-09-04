@@ -18,6 +18,8 @@
  */
 
 private use List;
+private use Map;
+
 use TOML;
 use FileSystem;
 use MasonUtils;
@@ -311,7 +313,7 @@ private proc createDepTree(root: unmanaged Toml) {
   // dependency tree because IVRS may not execute in the desired order. For
   // example, we might encounter foo-0.3.0 before foo-0.2.0.
   //
-  for brick in depTree.A {
+  for brick in depTree.A.values() {
     chplVersionError(brick);
 
     // Lock in the current Chapel version
@@ -475,7 +477,7 @@ private proc retrieveDep(name: string, version: string) {
 private proc getDependencies(tomlTbl: unmanaged Toml) {
   var depsD: domain(1);
   var deps: list((string, unmanaged Toml?));
-  for k in tomlTbl.D {
+  for k in tomlTbl.A {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]) {
         deps.append((a, d));

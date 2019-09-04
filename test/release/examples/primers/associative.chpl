@@ -234,6 +234,8 @@ writeln();
 // The new element is initialized to the default value of its type.
 //
 Names += "John";
+Names += "Gary";
+
 if Scores["John"] != 0 then
   halt("Scores[\"John\"] should have been initialized to 0.");
 
@@ -242,15 +244,8 @@ if Scores["John"] != 0 then
 // the array.
 //
 Scores["John"] = 76;
-
-//
-// We can also implicitly add indices to an associative array if it is the 
-// only array defined over its domain.
-//
-// Here, the string "Gary" is added as an index, and the corresponding 
-// array element is initialized to 10.
-//
 Scores["Gary"] = 10;
+
 write("Our updated 'Scores' array after adding some more names: ");
 prettyPrint(Scores);
 writeln();
