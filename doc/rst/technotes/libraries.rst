@@ -174,7 +174,7 @@ Here is an example program which uses the ``foo`` library:
    }
 
 If your exported functions rely upon any global variables defined in your module
-(or modules it relies upon), then you must additionally call the generated
+(or the modules it relies upon), then you must additionally call the generated
 module initialization function.  This function will be named
 ``chpl__init_<moduleName>``, and you can find its declaration in your generated
 ``.h`` file.
