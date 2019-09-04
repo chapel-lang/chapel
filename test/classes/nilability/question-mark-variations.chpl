@@ -55,3 +55,5 @@ var d1 = factory2(C(int)?);
 writeln("d1 ", d1.type:string, " ", d1);
 var d2 = factory2(C?(int));
 writeln("d2 ", d2.type:string, " ", d2);
+
+delete a4, b4;
