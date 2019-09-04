@@ -1348,6 +1348,12 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 }
 
 bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
+
+  // Don't add copies at call site if function body will be removed anyway.
+  // TODO: handle RET_TYPE but not for runtime types
+  if (fn && fn->retTag == RET_PARAM)
+    return false;
+
   if (isRecord(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
