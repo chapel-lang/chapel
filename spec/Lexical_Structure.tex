@@ -21,8 +21,8 @@ another comment delimited by {\tt /*} and {\tt */}
 
 Comments, including the characters that delimit them, do not affect
 the behavior of the program (except in delimiting tokens).  If the
-delimiters that start the comments appear within a string literal,
-they do not start a comment but rather are part of the string literal.
+delimiters that start the comments appear within a bytes or string literal,
+they do not start a comment but rather are part of the bytes or string literal.
 
 \begin{example}
 The following program makes use of both forms of comment:
@@ -132,6 +132,7 @@ bool
 borrowed
 break
 by
+bytes
 catch
 class
 cobegin
@@ -141,8 +142,8 @@ config
 const
 continue
 defer
-delete
 \end{chapel} & \begin{chapel}
+delete
 dmapped
 do
 domain
@@ -456,6 +457,34 @@ A string literal can be either interpreted or uninterpreted.
 string-literal:
   interpreted-string-literal
   uninterpreted-string-literal
+\end{syntax}
+
+\pagebreak
+Interpreted bytes literals are designated by the following syntax:
+\begin{syntax}
+interpreted-bytes-literal:
+  b" double-quote-delimited-characters[OPT] "
+  b' single-quote-delimited-characters[OPT] '
+\end{syntax}
+
+Uninterpreted bytes literals are designated by the following syntax:
+\begin{syntax}
+uninterpreted-bytes-literal:
+  b""" uninterpreted-double-quote-delimited-characters """
+  b''' uninterpreted-single-quote-delimited-characters '''
+\end{syntax}
+
+Uninterpreted bytes literals do not interpret their contents, so for
+example \chpl{b"""$\backslash$n"""} is not a newline, but rather two
+characters `$\backslash$' and `n'.  Uninterpreted bytes literals may
+span multiple lines and the literal newline characters will be
+included in the bytes.
+
+A bytes literal can be either interpreted or uninterpreted.
+\begin{syntax}
+bytes-literal:
+  interpreted-bytes-literal
+  uninterpreted-bytes-literal
 \end{syntax}
 
 \subsection{Operators and Punctuation}

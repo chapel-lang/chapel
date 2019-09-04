@@ -216,8 +216,8 @@ Such conversion does not change the value of the expression.
 \index{conversions!numeric}
 \index{conversions!explicit!numeric}
 
-Explicit conversions are allowed from any numeric type, boolean, or
-string to any other numeric type, boolean, or string.  
+Explicit conversions are allowed from any numeric type or boolean to bytes or
+string, and vice-versa.
 
 % A valid \chpl{bool} value behaves like a single unsigned bit.  
 When a \chpl{bool} is converted to a \chpl{bool}, \chpl{int}
@@ -311,7 +311,7 @@ part of the resulting complex value.
 \index{conversions!explicit!enumeration}
 
 Explicit conversions are allowed from any enumerated type to any
-\chpl{string} and vice-versa, and include \chpl{param} conversions.
+\chpl{bytes} or \chpl{string} and vice-versa, and include \chpl{param} conversions.
 For enumerated types that are either concrete or semi-concrete
 (\rsec{Enumerated_Types}), conversions are supported between the
 enum's constants and any numeric type or \chpl{bool},
@@ -332,8 +332,8 @@ When the target type is \chpl{bool}, the value is first converted to its
 underlying integer type.  If the result is zero, the value of the \chpl{bool}
 is \chpl{false}; otherwise, it is \chpl{true}.
 
-When the target type is \chpl{string}, the value becomes the name of the
-enumerator.  % in the execution character set.
+When the target type is \chpl{bytes} or \chpl{string}, the value becomes the
+name of the enumerator.  % in the execution character set.
 
 When the source type is \chpl{bool}, enumerators corresponding to the values 0
 and 1 in the underlying integer type are selected, corresponding to input values
@@ -352,8 +352,9 @@ target type's underlying integer type.
 The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type is not
 permitted.
 
-When the source type is string, the enumerator whose name matches value of the input
-string is selected.  If no such enumerator exists, a runtime error occurs.
+When the source type is \chpl{bytes} or \chpl{string}, the enumerator whose name
+matches value of the input is selected.  If no such enumerator exists, a runtime
+error occurs.
 
 \subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
