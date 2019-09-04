@@ -1789,8 +1789,7 @@ static bool lookupThisScopeAndUses(const char*           name,
 
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use != NULL) {
-            ModuleSymbol* modSymMatches = NULL;
-            if (use->skipSymbolSearch(name, false, &modSymMatches) == false) {
+            if (use->skipSymbolSearch(name, false) == false) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
@@ -1804,11 +1803,6 @@ static bool lookupThisScopeAndUses(const char*           name,
                 } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
                 }
-              }
-            } else {
-              // if the module symbol itself matched, push it
-              if (modSymMatches != NULL) {
-                symbols.push_back(modSymMatches);
               }
             }
 
