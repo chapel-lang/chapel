@@ -48,7 +48,7 @@ proc masonTest(args) throws {
   var compopts: list(string);
   
   if args.size > 2 {
-    for arg in args[2..] {
+    for arg in args[2..args.size] {
       if arg == '-h' || arg == '--help' {
         masonTestHelp();
         exit(0);
