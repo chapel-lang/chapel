@@ -883,9 +883,12 @@ static const char* searchThePath(const char*      modName,
 
       // 4/28/17 internal/ has an ambiguous duplicate for NetworkAtomicTypes
       } else if (isInternal == false) {
-        USR_WARN("Ambiguous module source file -- using %s over %s",
-                 cleanFilename(retval),
-                 cleanFilename(path));
+        // only generate these warnings if the two paths aren't the same
+        if (strcmp(chplRealPath(retval), chplRealPath(path)) != 0) {
+          USR_WARN("Ambiguous module source file -- using %s over %s",
+                   cleanFilename(retval),
+                   cleanFilename(path));
+        }
       }
     }
   }
