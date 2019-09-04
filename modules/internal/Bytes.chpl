@@ -18,28 +18,70 @@
  */
 
 /*
-The following document shows functions and methods used to
-manipulate and process Chapel bytes objects. The :record:`bytes` object is
-similar to astringbut allows arbitrary data to be stored in it. Methods onbytes`
-that interpret the data as characters assume that the bytes are ASCII characters
+The following document shows functions and methods used to manipulate and
+process Chapel bytes objects. The :record:`bytes` object is similar to a string
+but allows arbitrary data to be stored in it. Methods on bytes that interpret
+the data as characters assume that the bytes are ASCII characters.
 
-Casts from bytes to a Numeric Type
------------------------------------
+Creating :record:`bytes` Objects
+--------------------------------
 
-This module supports casts from :record:`bytes` to numeric types. Such casts
-will interpret the bytes as ASCII characters and convert it to the numeric type
-and throw an error if the bytes is invalid. For example:
+- A :record:`bytes` can be created using the literals similar to strings:
 
 .. code-block:: chapel
 
-  var b = bytes("a");
+   var b = b"my bytes";
+
+- If you need to create :record:`bytes` using a specific buffer (i.e. data in
+  another :record:`bytes`, a :record:`c_string` or a C pointer) you can use
+  :proc:`createBytesWith*Buffer` factory functions as shown below.
+
+:record:`bytes` and :record:`string`
+------------------------------------
+
+As :record:`bytes` can store arbitrary data, any :record:`string` can be cast to
+:record:`bytes`.  However, a :record:`bytes` can contain non-UTF8 bytes and
+needs to be decoded to be converted to string.
+
+.. code-block:: chapel
+
+   var s = "my string";
+   var b = s:bytes;  // this is legal
+
+   /*
+    The reverse is not. The following is a compiler error:
+
+    var s2 = b:string;
+   */
+
+   var s2 = b.decode(); // you need to decode a bytes to convert it to a string
+
+See the documentation for the :proc:`decode()` method for details.
+
+Similarly, a :record:`bytes` can be initialized using a string:
+
+.. code-block:: chapel
+
+   var s = "my string";
+   var b: bytes = s;
+
+Casts from :record:`bytes` to a Numeric Type
+--------------------------------------------
+
+This module supports casts from :record:`bytes` to numeric types. Such casts
+will interpret the :record:`bytes` as ASCII characters and convert it to the
+numeric type and throw an error if the :record:`bytes` is invalid. For example:
+
+.. code-block:: chapel
+
+  var b = b"a";
   var number = b:int;
 
 throws an error when it is executed, but
 
 .. code-block:: chapel
 
-  var b = bytes("1");
+  var b = b"1";
   var number = b:int;
 
 stores the value ``1`` in ``number``.
@@ -68,11 +110,14 @@ module Bytes {
    string.
    */
   class DecodeError: Error {
+    
+    pragma "no doc"
     override proc message() {
       return "Invalid UTF-8 character encountered.";
     }
   }
 
+  pragma "no doc"
   type idxType = int; 
 
   //
@@ -80,14 +125,14 @@ module Bytes {
   //
 
   /*
-    Creates a new bytes which borrows the internal buffer of another bytes. If
-    the buffer is freed before the bytes returned from this function, accessing
-    it is undefined behavior.
+    Creates a new :record:`bytes` which borrows the internal buffer of another
+    :record:`bytes`. If the buffer is freed before the :record:`bytes` returned
+    from this function, accessing it is undefined behavior.
 
     :arg s: Object to borrow the buffer from
-    :type s: `bytes`
+    :type s: :record:`bytes`
 
-    :returns: A new `bytes`
+    :returns: A new :record:`bytes`
   */
   inline proc createBytesWithBorrowedBuffer(s: bytes) {
     var ret: bytes;
@@ -96,18 +141,18 @@ module Bytes {
   }
 
   /*
-    Creates a new bytes which borrows the internal buffer of a `c_string`. If
-    the buffer is freed before the bytes returned from this function, accessing
-    it is undefined behavior.
+    Creates a new :record:`bytes` which borrows the internal buffer of a
+    `c_string`. If the buffer is freed before the :record:`bytes` returned from
+    this function, accessing it is undefined behavior.
 
     :arg s: Object to borrow the buffer from
-    :type s: c_string
+    :type s: :type:`c_string`
 
-    :arg length: Length of the `c_string` in bytes, excluding the terminating
+    :arg length: Length of `s`'s buffer, excluding the terminating
                  null byte.
-    :type length: int
+    :type length: :type:`int`
 
-    :returns: A new `bytes`
+    :returns: A new :record:`bytes`
   */
   inline proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
     return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
@@ -115,21 +160,20 @@ module Bytes {
   }
 
   /*
-     Creates a new bytes which borrows the memory allocated for a
-     `c_ptr(uint(8))`. If the buffer is freed before the bytes returned from
-     this function, accessing it is undefined behavior.
+     Creates a new :record:`bytes` which borrows the memory allocated for a
+     `c_ptr(uint(8))`. If the buffer is freed before the :record:`bytes`
+     returned from this function, accessing it is undefined behavior.
 
      :arg s: Object to borrow the buffer from
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
 
-     :arg length: Length of the bytes stored in `s`, excluding the terminating
-                  null byte.
-     :type length: int
+     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :type length: :type:`int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: :type:`int`
 
-     :returns: A new `bytes`
+     :returns: A new :record:`bytes`
   */
   inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
     var ret: bytes;
@@ -144,17 +188,16 @@ module Bytes {
   }
 
   /*
-    Creates a new bytes which takes ownership of the internal buffer of a
-    `c_string`.The buffer will be freed when the bytes is deinitialized.
+    Creates a new :record:`bytes` which takes ownership of the internal buffer of a
+    `c_string`.The buffer will be freed when the :record:`bytes` is deinitialized.
 
     :arg s: Object to take ownership of the buffer from
-    :type s: `c_string`
+    :type s: :type:`c_string`
 
-    :arg length: Length of the bytes stored in `s`, excluding the terminating
-                 null byte.
-    :type length: int
+    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :type length: :type:`int`
 
-    :returns: A new `bytes`
+    :returns: A new :record:`bytes`
   */
   inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
     return createBytesWithOwnedBuffer(s: bufferType, length=length,
@@ -162,20 +205,20 @@ module Bytes {
   }
 
   /*
-     Creates a new bytes which takes ownership of the memory allocated for a
-     `c_ptr(uint(8))`. The buffer will be freed when the bytes is deinitialized.
+     Creates a new :record:`bytes` which takes ownership of the memory allocated
+     for a `c_ptr(uint(8))`. The buffer will be freed when the :record:`bytes`
+     is deinitialized.
 
      :arg s: Object to take ownership of the buffer from
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
 
-     :arg length: Length of the bytes stored in `s`, excluding the terminating
-                  null byte.
-     :type length: int
+     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :type length: :type:`int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: :type:`int`
 
-     :returns: A new `bytes`
+     :returns: A new :record:`bytes`
   */
   inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
     var ret: bytes;
@@ -184,12 +227,13 @@ module Bytes {
   }
 
   /*
-    Creates a new bytes by creating a copy of the buffer of another bytes.
+    Creates a new :record:`bytes` by creating a copy of the buffer of another
+    :record:`bytes`.
 
     :arg s: Object to copy the buffer from
-    :type s: `bytes`
+    :type s: :record:`bytes`
 
-    :returns: A new `bytes`
+    :returns: A new :record:`bytes`
   */
   inline proc createBytesWithNewBuffer(s: bytes) {
     var ret: bytes;
@@ -198,16 +242,16 @@ module Bytes {
   }
 
   /*
-    Creates a new bytes by creating a copy of the buffer of a `c_string`.
+    Creates a new :record:`bytes` by creating a copy of the buffer of a
+    `c_string`.
 
     :arg s: Object to copy the buffer from
-    :type s: c_string
+    :type s: :type:`c_string`
 
-    :arg length: Length of the `c_string` in bytes, excluding the terminating
-                 null byte.
-    :type length: int
+    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :type length: :type:`int`
 
-    :returns: A new `bytes`
+    :returns: A new :record:`bytes`
   */
   inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
     return createBytesWithNewBuffer(s: bufferType, length=length,
@@ -215,19 +259,18 @@ module Bytes {
   }
 
   /*
-     Creates a new bytes by creating a copy of a buffer.
+     Creates a new :record:`bytes` by creating a copy of a buffer.
 
      :arg s: The buffer to copy
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
 
-     :arg length: Length of the bytes stored in `s`, excluding the terminating
-                  null byte.
-     :type length: int
+     :arg length: Length of buffer `s`, excluding the terminating null byte.
+     :type length: :type:`int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: :type:`int`
 
-     :returns: A new `bytes`
+     :returns: A new :record:`bytes`
   */
   inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
     var ret: bytes;
@@ -347,7 +390,7 @@ module Bytes {
     inline proc size return len;
 
     /*
-      :returns: The number of bytes in the bytes.
+      :returns: The number of bytes in the object.
       */
     inline proc numBytes return len;
 
@@ -369,16 +412,20 @@ module Bytes {
 
 
     /*
-      Get a `c_string` from a :record:`bytes`.
+      Gets a `c_string` from a :record:`bytes`. The returned `c_string` shares
+      the buffer with the :record:`bytes`.
+
+      :returns: A `c_string`
      */
     inline proc c_str(): c_string {
       return getCStr(this);
     }
 
     /*
-      Gets a byte from the object
+      Gets a byte from the :record:`bytes`
 
       :arg i: The index
+      :type i: :type:`int`
 
       :returns: 1-length :record:`bytes` object
      */
@@ -391,6 +438,11 @@ module Bytes {
     }
 
     /*
+      Gets a byte from the :record:`bytes`
+
+      :arg i: The index
+      :type i: :type:`int`
+
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): byteType {
@@ -400,7 +452,7 @@ module Bytes {
     }
 
     /*
-      Iterates over the bytes
+      Iterates over the :record:`bytes`
 
       :yields: 1-length :record:`bytes` objects
      */
@@ -411,7 +463,9 @@ module Bytes {
     }
 
     /*
-      Iterates over the bytes byte by byte.
+      Iterates over the :record:`bytes` byte by byte.
+
+      :yields: uint(8)
     */
     iter chpl_bytes(): byteType {
       for i in 1..this.len do
@@ -423,10 +477,12 @@ module Bytes {
       ``1..bytes.length`` when compiled with `--checks`. `--fast` disables this
       check.
 
-      :arg r: range of the indices the new bytes should be made from
+      :arg r: the indices the new :record:`bytes` should be made from
+      :type r: :type:`range`
 
-      :returns: a new bytes that is a slice within ``1..bytes.length``. If
-                the length of `r` is zero, an empty bytes is returned.
+      :returns: a new :record:`bytes` that is a slice within
+                ``1..bytes.length``. If the length of `r` is zero, an empty
+                :record:`bytes` is returned.
      */
     inline proc this(r: range(?)) : bytes {
       return getSlice(this, r);
@@ -458,6 +514,8 @@ module Bytes {
     }
 
     /*
+      Checks if the object is empty.
+
       :returns: * `true`  -- when the object is empty
                 * `false` -- otherwise
      */
@@ -466,43 +524,58 @@ module Bytes {
     }
 
     /*
-      :arg needles: A varargs list of :record:`bytes` objects to match against.
+      Checks if the :record:`bytes` starts with any of the given arguments.
 
-      :returns: * `true`  -- when the object begins with one or more of the `needles`
-                * `false` -- otherwise
+      :arg needles: Object(s) to match against.
+      :type needles: :record:`bytes`
+
+      :returns: * `true`--when the object begins with one or more of the `needles`
+                * `false`--otherwise
      */
     inline proc startsWith(needles: bytes ...) : bool {
       return startsEndsWith(this, needles, fromLeft=true);
     }
 
     /*
-      :arg needles: A varargs list of :record:`bytes` objects to match against.
+      Checks if the :record:`bytes` ends with any of the given arguments.
 
-      :returns: * `true`  -- when the object ends with one or more of the `needles`
-                * `false` -- otherwise
+      :arg needles: Object(s) to match against.
+
+      :returns: * `true`--when the object ends with one or more of the `needles`
+                * `false`--otherwise
      */
     inline proc endsWith(needles: bytes ...) : bool {
       return startsEndsWith(this, needles, fromLeft=false);
     }
 
     /*
-      :arg needle: the :record:`bytes` object to search for
-      :arg region: an optional range defining the indices to search within,
+      Finds the argument in the :record:`bytes`
+
+      :arg needle: Object to search for
+      :type needle: :record:`bytes`
+
+      :arg region: an optional argument defining the indices to search within,
                    default is the whole object. Halts if the range is not
                    within ``1..bytes.length``
+      :type region: :type:`range`
 
-      :returns: the index of the first occurrence of `needle` within a
-                the object, or 0 if the `needle` is not in the object.
+      :returns: the index of the first occurrence from the left of `needle`
+                within a the object, or 0 if the `needle` is not in the object.
      */
     inline proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
       return _search_helper(needle, region, count=false): idxType;
     }
 
     /*
+      Finds the argument in the :record:`bytes`
+
       :arg needle: the :record:`bytes` to search for
+      :type needle: :record:`bytes`
+
       :arg region: an optional range defining the indices to search within,
                    default is the whole object. Halts if the range is not
                    within ``1..bytes.length``
+      :type region: :type:`range`
 
       :returns: the index of the first occurrence from the right of `needle`
                 within the object, or 0 if the `needle` is not in the object.
@@ -513,10 +586,15 @@ module Bytes {
     }
 
     /*
-      :arg needle: the :record:`bytes` to search for
+      Counts the number of occurances of the argument in the :record:`bytes`
+
+      :arg needle: Object to search for
+      :type needle: :record:`bytes`
+
       :arg region: an optional range defining the substring to search within,
                    default is the whole object. Halts if the range is not
                    within ``1..bytes.length``
+      :type region: :type:`range`
 
       :returns: the number of times `needle` occurs in the object
      */
@@ -595,10 +673,17 @@ module Bytes {
     }
 
     /*
-      :arg needle: the :record:`bytes` to search for
-      :arg replacement: the :record:`bytes` to replace `needle` with
-      :arg count: an optional integer specifying the number of replacements to
+      Replaces occurances of a :record:`bytes` with another.
+
+      :arg needle: Object to search for
+      :type needle: :record:`bytes`
+
+      :arg replacement: Object to replace `needle` with
+      :type replacement: :record:`bytes`
+
+      :arg count: an optional argument specifying the number of replacements to
                   make, values less than zero will replace all occurrences
+      :type count: :type:`int`
 
       :returns: a copy of the object where `replacement` replaces `needle` up
                 to `count` times
@@ -614,14 +699,17 @@ module Bytes {
       occurrence, up to `maxsplit` times.
 
       :arg sep: The delimiter used to break the object into chunks.
+      :type  sep: :record:`bytes`
+
       :arg maxsplit: The number of times to split the object, negative values
                      indicate no limit.
-      :arg ignoreEmpty: * When `true`  -- Empty :record:`bytes` will not be
-                                          yielded, and will not count towards
-                                          `maxsplit`
-                        * When `false` -- Empty :record:`bytes` will be yielded
-                                          when `sep` occurs multiple times in a
-                                          row.
+      :type maxsplit: :type:`int`
+
+      :arg ignoreEmpty: * `true`-- Empty :record:`bytes` will not be yielded,
+                        * `false`-- Empty :record:`bytes` will be yielded
+      :type ignoreEmpty: :type:`bool`
+
+      :yields: :record:`bytes` objects
      */
     iter split(sep: bytes, maxsplit: int = -1,
                ignoreEmpty: bool = false): bytes {
@@ -631,8 +719,11 @@ module Bytes {
     /*
       Works as above, but uses runs of whitespace as the delimiter.
 
-      :arg maxsplit: The number of times to split the bytes, negative values
-                     indicate no limit.
+      :arg maxsplit: The maximum number of times to split the :record:`bytes`,
+                     negative values indicate no limit.
+      :type maxsplit: :type:`int`
+
+      :yields: :record:`bytes` objects
      */
     iter split(maxsplit: int = -1) : bytes {
       if !this.isEmpty() {
@@ -705,16 +796,38 @@ module Bytes {
     }
 
     /*
-      Returns a new :record:`bytes` object, which is the concatenation of all of
+      Returns a new :record:`bytes`, which is the concatenation of all of
       the :record:`bytes` objects passed in with the contents of the method
       receiver inserted between them.
+
+      .. code-block:: chapel
+
+          var x = b"|".join(b"a",b"10",b"d");
+          writeln(x); // prints: "a|10|d"
+
+      :arg S: Object(s) to be joined
+      :type S: :record:`bytes`
+
+      :returns: A :record:`bytes`
     */
     inline proc join(const ref S: bytes ...) : bytes {
       return _join(S);
     }
 
     /*
-      Same as the varargs version, but with a homogeneous tuple of bytes.
+      Returns a new :record:`bytes`, which is the concatenation of all of
+      the :record:`bytes` objects passed in with the contents of the method
+      receiver inserted between them.
+
+      .. code-block:: chapel
+
+          var x = b"|".join((b"a",b"10",b"d"));
+          writeln(x); // prints: "a|10|d"
+
+      :arg S: Object(s) to be joined
+      :type S: tuple or array of :record:`bytes`
+
+      :returns: A :record:`bytes`
     */
     inline proc join(const ref S) : bytes where isTuple(S) {
       if !isHomogeneousTuple(S) || !isBytes(S[1]) then
@@ -722,9 +835,7 @@ module Bytes {
       return _join(S);
     }
 
-    /*
-      Same as the varargs version, but with all the bytes in an array.
-     */
+    pragma "no doc"
     inline proc join(const ref S: [] bytes) : bytes {
       return _join(S);
     }
@@ -740,12 +851,18 @@ module Bytes {
     }
 
     /*
-      :arg chars: A :record:`bytes` containing each character to remove.
-                  Defaults to `" \\t\\r\\n"`.
+      Strips given set of leading and/or trailing characters.
+
+      :arg chars: Characters to remove.  Defaults to `b" \\t\\r\\n"`.
+      :type chars: :record:`bytes`
+
       :arg leading: Indicates if leading occurrences should be removed.
                     Defaults to `true`.
+      :type leading: :type:`bool`
+
       :arg trailing: Indicates if trailing occurrences should be removed.
                      Defaults to `true`.
+      :type trailing: :type:`bool`
 
       :returns: A new :record:`bytes` with `leading` and/or `trailing`
                 occurrences of characters in `chars` removed as appropriate.
@@ -795,9 +912,15 @@ module Bytes {
     }
 
     /*
-      Splits the object on `sep` into a `3*bytes` consisting of the section
-      before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
-      the tuple will contain the whole bytes, and then two empty bytes.
+      Splits the :record:`bytes` on a given separator
+
+      :arg sep: The seperator
+      :type sep: :record:`bytes`
+
+      :returns: a :record:`3*bytes` consisting of the section before `sep`,
+                `sep`, and the section after `sep`. If `sep` is not found, the
+                tuple will contain the whole :record:`bytes`, and then two empty
+                :record:`bytes`.
     */
     inline proc const partition(sep: bytes) : 3*bytes {
       return doPartition(this, sep);
@@ -810,9 +933,11 @@ module Bytes {
       :arg errors: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
                    character, `decodePolicy.ignore` drops the data silently.
+      :type errors: decodePolicy
       
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `errors`
-               argument and the `bytes` object contains non-UTF-8 characters.
+               argument and the :record:`bytes` object contains non-UTF-8
+               characters.
 
       :returns: A UTF-8 string.
     */
@@ -867,13 +992,11 @@ module Bytes {
 
     /*
      Checks if all the characters in the object are uppercase (A-Z) in ASCII.
+     Ignores uncased (not a letter) and extended ASCII characters (decimal value
+     larger than 127)
 
-      :returns: * `true`  -- if the object contains at least one uppercase
-                             character and no lowercase characters, ignoring
-                             uncased (not a letter) and extended ASCII
-                             characters (decimal value is larger than 127)
-                            
-                * `false` -- otherwise
+      :returns: * `true`--there is at least one uppercase and no lowercase characters
+                * `false`--otherwise
      */
     proc isUpper() : bool {
       if this.isEmpty() then return false;
@@ -893,13 +1016,11 @@ module Bytes {
 
     /*
      Checks if all the characters in the object are lowercase (a-z) in ASCII.
+     Ignores uncased (not a letter) and extended ASCII characters (decimal value
+     larger than 127)
 
-      :returns: * `true`  -- if the object contains at least one lowercase
-                             character and no upper characters, ignoring
-                             uncased (not a letter) and extended ASCII
-                             characters (decimal value is larger than 127)
-                            
-                * `false` -- otherwise
+      :returns: * `true`--there is at least one lowercase and no uppercase characters
+                * `false`--otherwise
      */
     proc isLower() : bool {
       if this.isEmpty() then return false;
@@ -1074,6 +1195,9 @@ module Bytes {
     }
 
     /*
+      Creates a new :record:`bytes` with all applicable characters converted to
+      lowercase.
+
       :returns: A new :record:`bytes` with all uppercase characters (A-Z)
                 replaced with their lowercase counterpart in ASCII. Other
                 characters remain untouched.
@@ -1088,9 +1212,12 @@ module Bytes {
     }
 
     /*
-      :returns: A new bytes with all lowercase characters (a-z) replaced with
-                their uppercase counterpart in ASCII. Other characters remain
-                untouched.
+      Creates a new :record:`bytes` with all applicable characters converted to
+      uppercase.
+
+      :returns: A new :record:`bytes` with all lowercase characters (a-z)
+                replaced with their uppercase counterpart in ASCII. Other
+                characters remain untouched.
     */
     proc toUpper() : bytes {
       var result: bytes = this;
@@ -1102,9 +1229,12 @@ module Bytes {
     }
 
     /*
-      :returns: A new bytes with all cased characters(a-zA-Z) following an
-                uncased character converted to uppercase, and all cased
-                characters following another cased character converted to
+      Creates a new :record:`bytes` with all applicable characters converted to
+      title capitalization.
+
+      :returns: A new :record:`bytes` with all cased characters(a-zA-Z)
+                following an uncased character converted to uppercase, and all
+                cased characters following another cased character converted to
                 lowercase.
      */
     proc toTitle() : bytes {
@@ -1131,19 +1261,20 @@ module Bytes {
 
   } // end of record bytes
 
+  pragma "no doc"
   inline proc _cast(type t: bytes, x: string) {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
 
   /*
-     Appends the bytes `rhs` to the bytes `lhs`.
+     Appends the :record:`bytes` `rhs` to the :record:`bytes` `lhs`.
   */
   proc +=(ref lhs: bytes, const ref rhs: bytes) : void {
     doAppend(lhs, rhs);
   }
 
   /*
-     Copies the bytes `rhs` into the bytes `lhs`.
+     Copies the :record:`bytes` `rhs` into the :record:`bytes` `lhs`.
   */
   proc =(ref lhs: bytes, rhs: bytes) {
     doAssign(lhs, rhs);
