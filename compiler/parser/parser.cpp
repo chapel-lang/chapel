@@ -508,28 +508,29 @@ static bool containsOnlyModules(BlockStmt* block, const char* path);
 static void addModuleToDoneList(ModuleSymbol* module);
 
 //
-// This is a poor person's check to see whether we've already parsed
-// this file before to avoid re-parsing the same thing twice.  It'd be
-// nice to upgrade to the C++17 filesystem library to do this, but we
-// haven't done portability testing of those features and it's close
-// to the release as I add this.  Instead, check to see whether the
-// path to the file matches one we've parsed before, adding special
-// handling to paths with the form './abc.chpl'.  This will catch
-// common cases for how we build up filenames using search paths,
-// though other cases will definitely slip past.
+// This is a check to see whether we've already parsed this file
+// before to avoid re-parsing the same thing twice and defining its
+// modules twice.
 //
 static bool haveAlreadyParsed(const char* path) {
-  std::vector<std::string>::iterator vIt =
-    std::find(gFilenameLookup.begin(), gFilenameLookup.end(), path);
-  if (vIt != gFilenameLookup.end()) {
+  static std::set<std::string> parsedPaths;
+
+  // normalize the path if possible via realpath() and use 'path' otherwise
+  const char* normpath = chplRealPath(path);
+  if (normpath == NULL) {
+    normpath = path;
+  }
+
+  // check whether we've seen this path before
+  if (parsedPaths.count(normpath) > 0) {
+    // if so, indicate it
     return true;
   } else {
-    // if path = "./abc..." try "abc..."
-    if (path[0] == '.' && path[1] == '/') {
-      return haveAlreadyParsed(&(path[2]));
-    }
+    // otherwise, add it to our set and list of paths
+    parsedPaths.insert(normpath);
+    gFilenameLookup.push_back(path);
+    return false;
   }
-  return false;
 }
 
 
@@ -544,7 +545,6 @@ static ModuleSymbol* parseFile(const char* path,
   }
 
   if (FILE* fp = openInputFile(path)) {
-    gFilenameLookup.push_back(path);
 
     // State for the lexer
     int           lexerStatus  = 100;
