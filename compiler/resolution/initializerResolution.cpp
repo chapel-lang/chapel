@@ -39,7 +39,7 @@
 #include "wellknown.h"
 #include "wrappers.h"
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL);
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL, bool forNewExpr = false);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -276,7 +276,7 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   // Find the correct 'init' function without wrapping/promoting
   AggregateType* alias = at == rootType ? NULL : at;
-  resolveInitCall(call, alias);
+  resolveInitCall(call, alias, true);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
@@ -453,7 +453,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool forNewExpr) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
@@ -482,11 +482,25 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
         if (newExprAlias != NULL) {
           USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
         }
-        if (candidates.n == 0) {
-          printResolutionErrorUnresolved(info, mostApplicable);
-          USR_STOP();
+        if (forNewExpr == true) {
+          bool existingErrors = fatalErrorsEncountered();
+          if (!inGenerousResolutionForErrors()) {
+            startGenerousResolutionForErrors();
+            resolveInitCall(call, newExprAlias, /*forNewExpr*/ false);
+            FnSymbol* retry = call->resolvedFunction();
+            stopGenerousResolutionForErrors();
+
+            if (fIgnoreNilabilityErrors && existingErrors == false && retry)
+              clearFatalErrors();
+          }
         } else {
-          printResolutionErrorAmbiguous (info, candidates);
+          if (candidates.n == 0) {
+            printResolutionErrorUnresolved(info, mostApplicable);
+
+            USR_STOP();
+          } else {
+            printResolutionErrorAmbiguous (info, candidates);
+          }
         }
       }
 
