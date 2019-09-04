@@ -700,9 +700,10 @@ CHPL_LIB_PIC
 
 Character Set
 -------------
-   We have the most experience running Chapel with the Unicode
-   character set and the traditional C collating sequence using the
-   following settings.
+   Chapel works with the Unicode character set and the traditional C collating
+   sequence. Users are responsible for making sure that they are running Chapel
+   in a suitable environment. For example, for `en_US` locale, the following
+   environment variables should be set:
 
    .. code-block:: sh
 
