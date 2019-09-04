@@ -177,7 +177,7 @@ MLIContext::~MLIContext() {
 }
 
 bool MLIContext::shouldEmit(FnSymbol* fn) {
-  return (fn->hasFlag(FLAG_EXPORT) && not isInternalExport(fn));
+  return (fn->hasFlag(FLAG_EXPORT) && isUserRoutine(fn));
 }
 
 void MLIContext::emit(ModuleSymbol* md) {

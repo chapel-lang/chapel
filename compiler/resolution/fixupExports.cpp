@@ -188,7 +188,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
 
-    if ((multiloc || fLibraryPython) && !isInternalExport(fn)) {
+    if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_IN &&
           tag != INTENT_CONST_IN) {
