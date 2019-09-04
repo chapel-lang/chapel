@@ -135,8 +135,6 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<UseStmt*>    sModReqdByInt;
 
-static Vec<const char*> sParsedFilesSet;
-
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
 }
@@ -509,8 +507,8 @@ static void addModuleToDoneList(ModuleSymbol* module);
 
 //
 // This is a check to see whether we've already parsed this file
-// before to avoid re-parsing the same thing twice and defining its
-// modules twice.
+// before to avoid re-parsing the same thing twice which can result in
+// defining its modules twice.
 //
 static bool haveAlreadyParsed(const char* path) {
   static std::set<std::string> parsedPaths;
@@ -539,7 +537,7 @@ static ModuleSymbol* parseFile(const char* path,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
 
-  // Avoid parsing the same file twice
+  // Make sure we haven't already parsed this file
   if (haveAlreadyParsed(path)) {
     return NULL;
   }
