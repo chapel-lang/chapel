@@ -1,0 +1,1 @@
+array-as-map-add-index.chpl:4: warning: growing associative domains by assigning to an array is deprecated
