@@ -480,6 +480,17 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
     if (best == NULL) {
       if (call->partialTag == false) {
         if (forNewExpr == true) {
+          // This exists to enable multiple fatal error messages when an
+          // initializer fails to resolve due to nilability errors. If the
+          // compiler is able to resolve the initializer call while being
+          // more flexible with nilability rules, compilation can continue.
+          //
+          // TODO: We do not issue an error here because the compiler will
+          // later attempt to resolve the initializer call once again, in
+          // which case it would issue the same error. Instead, issue no errors
+          // in this conditional and let another part of resolution handle that.
+          // In the future, the compiler should not be attempting to resolve
+          // an already-resolved call.
           bool existingErrors = fatalErrorsEncountered();
           if (newExprAlias != NULL) {
             USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
