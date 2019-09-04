@@ -856,9 +856,6 @@ extern_export_decl_stmt:
     }
   ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      const char* comment = context->latestComment;
-      context->latestComment = NULL;
-
       $$ = buildChapelStmt(buildClassDefExpr($5,
                                              $2,
                                              AGGREGATE_RECORD,
