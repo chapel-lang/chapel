@@ -155,6 +155,10 @@ export proc allThreeCommentless2(val: int): int {
   return 11;
 }
 
+/* Commenting withExternCNameComment */
+export "test_name" proc withExternCNameComment() {
+}
+
 export "test_name" proc withExternCName() {
 }
 
@@ -165,3 +169,15 @@ proc getName() param {
 
 export "test"+getName() proc withParamExternCName() {
 }
+
+export record externRecordNoComment { }
+
+/* Commenting externRecordComment */
+export record externRecordComment { }
+
+export "c_name1" record externRecordRenamedNoComment { }
+
+/* Commenting externRecordRenamedComment */
+export "c_name2" record externRecordRenamedComment { }
+
+proc end() { }

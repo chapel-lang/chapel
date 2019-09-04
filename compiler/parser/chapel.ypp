@@ -805,43 +805,55 @@ forwarding_stmt:
 extern_export_decl_stmt:
   TEXTERN TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
+      const char* comment = context->latestComment;
+      context->latestComment = NULL;
+
       $$ = buildChapelStmt(buildClassDefExpr($3,
                                              NULL,
                                              AGGREGATE_RECORD,
                                              $4,
                                              $6,
                                              FLAG_EXTERN,
-                                             @2.comment));
+                                             comment));
     }
 | TEXTERN STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
+      const char* comment = context->latestComment;
+      context->latestComment = NULL;
+
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
                                              AGGREGATE_RECORD,
                                              $5,
                                              $7,
                                              FLAG_EXTERN,
-                                             @3.comment));
+                                             comment));
     }
 | TEXPORT TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
+      const char* comment = context->latestComment;
+      context->latestComment = NULL;
+
       $$ = buildChapelStmt(buildClassDefExpr($3,
                                              NULL,
                                              AGGREGATE_RECORD,
                                              $4,
                                              $6,
                                              FLAG_EXPORT,
-                                             @2.comment));
+                                             comment));
     }
 | TEXPORT STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
+      const char* comment = context->latestComment;
+      context->latestComment = NULL;
+
       $$ = buildChapelStmt(buildClassDefExpr($4,
                                              $2,
                                              AGGREGATE_RECORD,
                                              $5,
                                              $7,
                                              FLAG_EXPORT,
-                                             @3.comment));
+                                             comment));
     }
 
 | TEXTERN opt_expr fn_decl_stmt
@@ -855,15 +867,19 @@ extern_export_decl_stmt:
 
 | TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      $3->insert(FLAG_EXTERN);
-      $$ = buildVarDecls($4, context->latestComment, $3, $2);
+      const char* comment = context->latestComment;
       context->latestComment = NULL;
+
+      $3->insert(FLAG_EXTERN);
+      $$ = buildVarDecls($4, comment, $3, $2);
     }
 | TEXPORT opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      $3->insert(FLAG_EXPORT);
-      $$ = buildVarDecls($4, context->latestComment, $3, $2);
+      const char* comment = context->latestComment;
       context->latestComment = NULL;
+
+      $3->insert(FLAG_EXPORT);
+      $$ = buildVarDecls($4, comment, $3, $2);
     }
 ;
 
@@ -1162,29 +1178,24 @@ lambda_decl_expr:
 linkage_spec:
                 {
                   $$ = new FnSymbol("");
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
                 }
 | TINLINE       {
                   $$ = new FnSymbol("");
                   $$->addFlag(FLAG_INLINE);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
                 }
 | TOVERRIDE     {
                   $$ = new FnSymbol("");
                   $$->addFlag(FLAG_OVERRIDE);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
                 }
 ;
 
 fn_decl_stmt:
   linkage_spec proc_or_iter
     {
+      // Capture the latest comment
+      @2.comment = context->latestComment;
+      context->latestComment = NULL;
+
       // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
       captureString.clear();
@@ -1216,7 +1227,7 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @1.comment);
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @2.comment);
       context->latestComment = NULL;
     }
 ;

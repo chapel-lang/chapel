@@ -45,6 +45,9 @@ extern proc hasReturnTypeAndArg(val: int): int;
 
 extern proc hasReturnTypeAndArgCommentless(val: int): int;
 
+/* Commenting withExternCNameComment */
+extern "test_name" proc withExternCNameComment();
+
 extern "test_name" proc withExternCName();
 
 /* test param method for withParamExternCName */
@@ -53,3 +56,15 @@ proc getName() param {
 }
 
 extern "test"+getName() proc withParamExternCName();
+
+extern record externRecordNoComment { }
+
+/* Commenting externRecordComment */
+extern record externRecordComment { }
+
+extern "c_name1" record externRecordRenamedNoComment { }
+
+/* Commenting externRecordRenamedComment */
+extern "c_name2" record externRecordRenamedComment { }
+
+proc end() { }
