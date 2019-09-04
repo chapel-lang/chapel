@@ -479,11 +479,11 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
     if (best == NULL) {
       if (call->partialTag == false) {
-        if (newExprAlias != NULL) {
-          USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
-        }
         if (forNewExpr == true) {
           bool existingErrors = fatalErrorsEncountered();
+          if (newExprAlias != NULL) {
+            USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
+          }
           if (!inGenerousResolutionForErrors()) {
             startGenerousResolutionForErrors();
             resolveInitCall(call, newExprAlias, /*forNewExpr*/ false);
