@@ -554,8 +554,6 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   } else if (except == true) {
     if (matchedNameOrConstructor(name) == true) {
       retval =  true;
-      // TODO: Seems like there should be a dual for the last resort
-      // case below for 'only' clauses here... or not?
     } else {
       retval = false;
     }
