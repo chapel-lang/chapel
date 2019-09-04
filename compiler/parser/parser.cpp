@@ -526,7 +526,6 @@ static bool haveAlreadyParsed(const char* path) {
   } else {
     // otherwise, add it to our set and list of paths
     parsedPaths.insert(normpath);
-    gFilenameLookup.push_back(path);
     return false;
   }
 }
@@ -543,6 +542,7 @@ static ModuleSymbol* parseFile(const char* path,
   }
 
   if (FILE* fp = openInputFile(path)) {
+    gFilenameLookup.push_back(path);
 
     // State for the lexer
     int           lexerStatus  = 100;
