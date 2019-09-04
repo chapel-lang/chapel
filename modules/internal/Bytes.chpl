@@ -462,9 +462,9 @@ module Bytes {
     }
 
     /*
-      Slices the :record:`bytes`. Halts if r is not completely inside the range
-      ``1..bytes.length`` when compiled with `--checks`. `--fast` disables this
-      check.
+      Slices the :record:`bytes`. Halts if r is non-empty and not completely
+      inside the range ``1..bytes.length`` when compiled with `--checks`.
+      `--fast` disables this check.
 
       :arg r: The range of indices the new :record:`bytes` should be made from
 
