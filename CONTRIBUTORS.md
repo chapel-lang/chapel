@@ -18,7 +18,7 @@ Contributors to the current release
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
-* Jenna Hoole, [Cray Inc.]
+* Jenna Hoole Starkey, [Cray Inc.]
 * David Iten, [Cray Inc.]
 * Louis Jenkins, [Pacific Northwest National Laboratory], [GSoC 2019] mentor (former individual contributor, [GSoC 2017] student from [Bloomsburg University])
 * Engin Kayraklioglu, [Cray Inc.] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
@@ -33,6 +33,7 @@ Contributors to the current release
 * Greg Titus, [Cray Inc.]
 * David Tjong, individual contributor
 * Anubhav Ujjawal, individual contributor
+* Karlon West, [Cray Inc.]
 * Alvis Wong, [GSoC 2019] student from [University of Waterloo]
 
 
