@@ -59,34 +59,27 @@ module testmodule {
   // accepts non-nilable unmanaged any-class
   proc acceptsUnmanagedNonNilable( in arg: unmanaged class ) {
     writeln(arg.type:string, " ", arg);
-    delete arg;
   }
 
   // accepts nilable unmanaged any-class
   proc acceptsUnmanagedNilable( in arg: unmanaged class? ) {
     writeln(arg.type:string, " ", arg);
-    if arg != nil then delete arg;
   }
 
   // accepts any-nilable unmanaged any-class
   proc acceptsUnmanagedAny( in arg: unmanaged ) {
     writeln(arg.type:string, " ", arg);
-    delete arg;
   }
 
 
   // accepts any-management non-nilable any-class
   proc acceptsClassAnyManagementNonNilable( in arg: class ) {
     writeln(arg.type:string, " ", arg);
-    if isUnmanagedClassValue(arg) then
-      delete arg;
   }
 
   // accepts any-management nilable any-class
   proc acceptsClassAnyManagementNilable( in arg: class? ) {
     writeln(arg.type:string, " ", arg);
-    if (isUnmanagedClassValue(arg) && arg != nil) then
-      delete arg;
   }
 
   proc main() {
