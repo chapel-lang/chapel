@@ -7,13 +7,14 @@ Chapel release:
 Contributors to the current release
 -----------------------------------
 * Ben Albrecht, [Cray Inc.]
+* Himanshu Bhadani, individual contributor
 * Akshansh Bhanjana, individual contributor
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
 * Sanket Chaudhari, individual contributor
 * Anway De, individual contributor
-* Garvit Dewan, [GSoC 2019] student from [Indian Institute of Technology, Roorkee]
-* Krishna Kumar Dey, [GSoC 2019] student from [Indian Institute of Information Technology, SriCity] (former individual contributor)
+* Garvit Dewan, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
+* Krishna Kumar Dey, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City] (former individual contributor)
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
@@ -194,9 +195,9 @@ implementation.
 [GSoC 2018]: https://summerofcode.withgoogle.com/organizations/4743716460298240/
 [GSoC 2019]: https://summerofcode.withgoogle.com/organizations/4892546359099392/
 [Haverford College]: https://www.haverford.edu/
-[Indian Institute of Information Technology, SriCity]: http://www.iiits.ac.in/
+[Indian Institute of Information Technology, Sri City]: http://www.iiits.ac.in/
 [Indian Institute of Technology, Hyderabad]: https://www.iith.ac.in/
-[Indian Institute of Technology, Roorkee]: https://www.iitr.ac.in/
+[Indian Institute of Technology Roorkee]: https://www.iitr.ac.in/
 [Indiana University]: http://www.cs.indiana.edu/
 [Indraprastha Institute of Information Technology, Delhi]: https://iiitd.ac.in/
 [International Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
