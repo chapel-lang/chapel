@@ -170,14 +170,20 @@ proc getName() param {
 export "test"+getName() proc withParamExternCName() {
 }
 
-export record externRecordNoComment { }
+export record exportRecordNoComment { }
 
-/* Commenting externRecordComment */
-export record externRecordComment { }
+/* Commenting exportRecordComment */
+export record exportRecordComment {
+  /* Commenting a field */
+  var field:int;
+}
 
-export "c_name1" record externRecordRenamedNoComment { }
+export "c_name1" record exportRecordRenamedNoComment { }
 
-/* Commenting externRecordRenamedComment */
-export "c_name2" record externRecordRenamedComment { }
+/* Commenting exportRecordRenamedComment */
+export "c_name2" record exportRecordRenamedComment {
+  /* Commenting a field */
+  var field:int;
+}
 
 proc end() { }

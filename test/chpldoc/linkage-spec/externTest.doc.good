@@ -67,12 +67,20 @@ externTest.doc
    Commenting externRecordComment 
 
 
+   .. attribute:: var field: int
+
+      Commenting a field 
+
 .. record:: externRecordRenamedNoComment
 
 .. record:: externRecordRenamedComment
 
    Commenting externRecordRenamedComment 
 
+
+   .. attribute:: var field: int
+
+      Commenting a field 
 
 .. function:: proc end()
 

@@ -803,57 +803,69 @@ forwarding_stmt:
 ;
 
 extern_export_decl_stmt:
-  TEXTERN TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+  TEXTERN TRECORD
     {
-      const char* comment = context->latestComment;
+      @2.comment = context->latestComment;
       context->latestComment = NULL;
-
-      $$ = buildChapelStmt(buildClassDefExpr($3,
-                                             NULL,
-                                             AGGREGATE_RECORD,
-                                             $4,
-                                             $6,
-                                             FLAG_EXTERN,
-                                             comment));
     }
-| TEXTERN STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      const char* comment = context->latestComment;
-      context->latestComment = NULL;
-
       $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             $2,
+                                             NULL,
                                              AGGREGATE_RECORD,
                                              $5,
                                              $7,
                                              FLAG_EXTERN,
-                                             comment));
+                                             @2.comment));
     }
-| TEXPORT TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+| TEXTERN STRINGLITERAL TRECORD
     {
-      const char* comment = context->latestComment;
+      @3.comment = context->latestComment;
       context->latestComment = NULL;
-
-      $$ = buildChapelStmt(buildClassDefExpr($3,
-                                             NULL,
-                                             AGGREGATE_RECORD,
-                                             $4,
-                                             $6,
-                                             FLAG_EXPORT,
-                                             comment));
     }
-| TEXPORT STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      const char* comment = context->latestComment;
-      context->latestComment = NULL;
 
-      $$ = buildChapelStmt(buildClassDefExpr($4,
+      $$ = buildChapelStmt(buildClassDefExpr($5,
                                              $2,
+                                             AGGREGATE_RECORD,
+                                             $6,
+                                             $8,
+                                             FLAG_EXTERN,
+                                             @3.comment));
+    }
+| TEXPORT TRECORD
+    {
+      @2.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4,
+                                             NULL,
                                              AGGREGATE_RECORD,
                                              $5,
                                              $7,
                                              FLAG_EXPORT,
-                                             comment));
+                                             @2.comment));
+    }
+| TEXPORT STRINGLITERAL TRECORD
+    {
+      @3.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      const char* comment = context->latestComment;
+      context->latestComment = NULL;
+
+      $$ = buildChapelStmt(buildClassDefExpr($5,
+                                             $2,
+                                             AGGREGATE_RECORD,
+                                             $6,
+                                             $8,
+                                             FLAG_EXPORT,
+                                             @3.comment));
     }
 
 | TEXTERN opt_expr fn_decl_stmt

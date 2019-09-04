@@ -84,19 +84,27 @@ exportTest.doc
 
 .. function:: export proc withParamExternCName()
 
-.. record:: externRecordNoComment
+.. record:: exportRecordNoComment
 
-.. record:: externRecordComment
+.. record:: exportRecordComment
 
-   Commenting externRecordComment 
+   Commenting exportRecordComment 
 
 
-.. record:: externRecordRenamedNoComment
+   .. attribute:: var field: int
 
-.. record:: externRecordRenamedComment
+      Commenting a field 
 
-   Commenting externRecordRenamedComment 
+.. record:: exportRecordRenamedNoComment
 
+.. record:: exportRecordRenamedComment
+
+   Commenting exportRecordRenamedComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
 
 .. function:: proc end()
 

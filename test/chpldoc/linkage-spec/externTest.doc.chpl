@@ -60,11 +60,17 @@ extern "test"+getName() proc withParamExternCName();
 extern record externRecordNoComment { }
 
 /* Commenting externRecordComment */
-extern record externRecordComment { }
+extern record externRecordComment {
+  /* Commenting a field */
+  var field:int;
+}
 
 extern "c_name1" record externRecordRenamedNoComment { }
 
 /* Commenting externRecordRenamedComment */
-extern "c_name2" record externRecordRenamedComment { }
+extern "c_name2" record externRecordRenamedComment {
+  /* Commenting a field */
+  var field:int;
+}
 
 proc end() { }
