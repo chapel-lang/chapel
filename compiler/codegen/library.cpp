@@ -39,8 +39,6 @@ std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 std::map<TypeSymbol*, std::string> fortranKindNames;
 std::map<TypeSymbol*, std::string> fortranTypeNames;
 
-static bool isFunctionToSkip(FnSymbol* fn);
-
 //
 // Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
@@ -87,7 +85,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       // functions
       for_vector(FnSymbol, fn, functions) {
         if (fn->hasFlag(FLAG_EXPORT) &&
-            !isFunctionToSkip(fn)) {
+            isUserRoutine(fn)) {
           fn->codegenPrototype();
         }
       }
@@ -447,7 +445,7 @@ void makeFortranModule(std::vector<FnSymbol*> functions) {
     indent += 2;
     // generate chpl_library_init and chpl_library_finalize here?
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         fn->codegenFortran(indent);
       }
     }
@@ -481,7 +479,7 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
     fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         fn->codegenPython(C_PXD);
       }
     }
@@ -524,7 +522,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     bool first = true;
     // Make import statement at top of .pyx file for exported functions
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         if (fn->hasFlag(FLAG_EXPORT)) {
           if (first) {
             first = false;
@@ -813,8 +811,8 @@ void codegen_make_python_module() {
 
 // Skip this function if it is defined in an internal module, or if it is
 // the generated main function
-static bool isFunctionToSkip(FnSymbol* fn) {
-  return fn->getModule()->modTag == MOD_INTERNAL ||
-         fn->getModule()->modTag == MOD_STANDARD ||
-         fn->hasFlag(FLAG_GEN_MAIN_FUNC);
+bool isUserRoutine(FnSymbol* fn) {
+  return !(fn->getModule()->modTag == MOD_INTERNAL ||
+           fn->getModule()->modTag == MOD_STANDARD ||
+           fn->hasFlag(FLAG_GEN_MAIN_FUNC));
 }
