@@ -12,30 +12,55 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* added a warning for unfamiliar CHPL_*_COMPILER settings
+* cleaned up the output of `make` when building Chapel
 
 Syntactic/Naming Changes
 ------------------------
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* started processing `require` statements relative to the source file directory
+  (see TODO blc)
+* made slice expressions be governed by their slicing domain
+  (i.e., the domain of `B` in `ref B = A[D];` is `D`)
+* disabled support for assigning from ranges to multidimensional arrays
+  (see TODO blc)
+* made `proc foo(x: bool(?)` generic across all bool types including `bool`
+  (see TODO blc)
+* made `#0` preserve the given indices of a range or domain
+  (e.g., `5..#0` now returns `5..4` rather than `1..0`)
+* top-level modules must now be `use`d in order to be referenced
+  (see TODO blc)
 
 New Features
 ------------
+* added support for slicing dense arrays using sparse domains
+* added support for passing the `string` type to extern procedures
+* improved how first-class functions print themselves out
+* added support for `yield`ing within `on`-clauses for inlined serial iterators
+  (see TODO blc)
 
 Feature Improvements
 --------------------
 
 Deprecated and Removed Features
 -------------------------------
+* deprecated support for applying `+` to string/value pairs
+  (e.g., `"hello " + 1` is no longer supported by default)
+* deprecated support for opaque domains and arrays
 
 Standard Modules / Library
 --------------------------
+* extended unorderedCopy() to support any `bool` width
 
 Package Modules
 ---------------
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* optimized the implementation of ownership queries for `Cyclic` domains/arrays
+* optimized communication out of `forall` loops over `Cyclic` domains/arrays
 
 New Tools / Tool Changes
 ------------------------
@@ -45,6 +70,10 @@ Interoperability Improvements
 
 Performance Optimizations/Improvements
 --------------------------------------
+* enabled the parallel implementation of scans by default (when available)
+* optimized op= overloads for array/scalar pairs
+* created a prototype optimization for slicing arrays by domains
+  (compile with `-schpl_serializeSlices` to enable)
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -54,30 +83,41 @@ Memory Improvements
 
 Documentation
 -------------
+* improved the `--help` description of the `--fast` flag
 
 Example Codes
 -------------
 
 Portability
 -----------
+* fixed a code portability issue in the `pbs-aprun` launcher
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
 
 Compiler Improvements
 ---------------------
+* improved `chpl`'s accuracy in detecting infinitely recursive instantiations
+* made the compiler not parse the same file multiple times
 
 Compiler Flags
 --------------
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error for domain expressions that are types rather than values
+* added an error message for ranges over an enum type with a single value
+* improved checks that procedures return along all paths for `try/catch/throw`
 
 Execution-time Checks
 ---------------------
 
 Bug Fixes
 ---------
+* fixed a bug in which scans of array slices were not working
+* fixed a bug in which the count operator (`#`) was not creating an array alias
+* fixed a bug in which missing line numbers in the IR caused an internal error
+* fixed a bug in which parsing files multiple times caused duplicate modules
 
 Third-Party Software Changes
 ----------------------------
@@ -90,15 +130,25 @@ Testing System
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* added 'override' keywords to dsiDisplayRepresentation overrides
+* made arrays "always RVF"
+* simplified the standalone parallel iterator for default rectangular arrays
+* removed stale modules: `ChapelDynDispHack`, `Chapel[Tasks|Tasks]Internal`
+* refactored `ChapelStandard` to focus on modules implementing the language
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added flags to prepend directories to the internal / standard module paths
+  (see `--prepend-internal-module-dir` and `--prepend-standard-module-dir`)
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* refactored compiler to re-use stripdirectories() function
+* started respecting "always rvf" pragmas at module scope
+* improved an internal error message about actual / formal mismatches
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
