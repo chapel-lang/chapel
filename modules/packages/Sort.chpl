@@ -251,6 +251,7 @@ comparator to the initializer of the module-defined
  */
 module Sort {
 
+  private use List;
   private use Reflection;
 
 /* Module-defined comparators */
@@ -267,7 +268,6 @@ const defaultComparator: DefaultComparator;
    argument of a sort function to reverse the sort order.
  */
 const reverseComparator: ReverseComparator(DefaultComparator);
-
 
 /* Private methods */
 
@@ -1855,8 +1855,9 @@ module TwoArrayPartitioning {
     var outputInA:[0..#maxBuckets] bool;
 
     // start, end, isInA
-    var bigTasks:[0..-1] TwoArraySortTask;
-    var smallTasks:[0..-1] TwoArraySortTask;
+    // were [0..-1]
+    var bigTasks: list(TwoArraySortTask);
+    var smallTasks: list(TwoArraySortTask);
 
     var baseCaseSize:int = 16;
     var sequentialSizePerTask:int = 4096;
@@ -1881,7 +1882,8 @@ module TwoArrayPartitioning {
   }
 
   record TasksForLocale {
-    var localTasks:[0..-1] TwoArraySortTask;
+    // was [0..-1]
+    var localTasks: list(TwoArraySortTask);
   }
 
   record TwoArrayDistributedBucketizerSharedState {
@@ -1906,8 +1908,9 @@ module TwoArrayPartitioning {
     var globalCounts:[0..#countsSize] int;
     var globalEnds:[0..#countsSize] int;
 
-    var distTasks:[0..-1] TwoArraySortTask;
-    var localTasks:[0..#numLocales] TasksForLocale;
+    // was [0..-1]
+    var distTasks: list(TwoArraySortTask);
+    var localTasks: [0..#numLocales] TasksForLocale;
 
     proc postinit() {
       // Copy some vars to the compat
@@ -2122,14 +2125,13 @@ module TwoArrayPartitioning {
     const maxSequentialSize = max(n / state.nTasks,
                                   state.nTasks*state.sequentialSizePerTask);
 
-    state.bigTasks.push_back(new TwoArraySortTask(start_n, n, startbit, inA=true, doSort=true));
-    assert(state.bigTasks.numElements == 1);
-    assert(state.smallTasks.numElements == 0);
+    state.bigTasks.append(new TwoArraySortTask(start_n, n, startbit, inA=true, doSort=true));
+    assert(state.bigTasks.size == 1);
+    assert(state.smallTasks.size == 0);
 
     while !state.bigTasks.isEmpty() {
-      const task = state.bigTasks.back();
+      const task = state.bigTasks.pop();
       const taskEnd = task.start + task.size - 1;
-      state.bigTasks.pop_back();
 
       assert(task.doSort);
 
@@ -2182,7 +2184,7 @@ module TwoArrayPartitioning {
         } else if !nowInA && !sortit {
           // Enqueue a small task to do the copy.
           // TODO: handle large copies in big tasks, or enqueue several tasks here
-          state.smallTasks.push_back(
+          state.smallTasks.append(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
 
         } else if binStartBit > state.endbit ||
@@ -2193,7 +2195,7 @@ module TwoArrayPartitioning {
           }
 
           // Enqueue a small task to sort and possibly copy.
-          state.smallTasks.push_back(
+          state.smallTasks.append(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
 
         } else {
@@ -2202,7 +2204,7 @@ module TwoArrayPartitioning {
           }
 
           // Enqueue a big task
-          state.bigTasks.push_back(
+          state.bigTasks.append(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
         }
       }
@@ -2377,14 +2379,13 @@ module TwoArrayPartitioning {
     }
 
     const n = (end_n - start_n + 1);
-    state.distTasks.push_back(new TwoArraySortTask(start_n, n, startbit, true, true));
-    assert(state.distTasks.numElements == 1);
+    state.distTasks.append(new TwoArraySortTask(start_n, n, startbit, true, true));
+    assert(state.distTasks.size == 1);
 
     while !state.distTasks.isEmpty() {
-      const task = state.distTasks.back();
+      const task = state.distTasks.pop();
       const taskStart = task.start;
       const taskEnd = task.start + task.size - 1;
-      state.distTasks.pop_back();
 
       assert(task.doSort);
       assert(task.inA);
@@ -2530,10 +2531,10 @@ module TwoArrayPartitioning {
           }
 
           if isOnOneLocale {
-            state.localTasks[theLocaleId].localTasks.push_back(
+            state.localTasks[theLocaleId].localTasks.append(
                 new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
           } else {
-            state.distTasks.push_back(
+            state.distTasks.append(
                 new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
           }
         }

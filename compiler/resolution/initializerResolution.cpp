@@ -39,7 +39,7 @@
 #include "wellknown.h"
 #include "wrappers.h"
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL);
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL, bool forNewExpr = false);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -276,7 +276,7 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   // Find the correct 'init' function without wrapping/promoting
   AggregateType* alias = at == rootType ? NULL : at;
-  resolveInitCall(call, alias);
+  resolveInitCall(call, alias, true);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
@@ -453,7 +453,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool forNewExpr) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
@@ -479,14 +479,39 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
 
     if (best == NULL) {
       if (call->partialTag == false) {
-        if (newExprAlias != NULL) {
-          USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
-        }
-        if (candidates.n == 0) {
-          printResolutionErrorUnresolved(info, mostApplicable);
-          USR_STOP();
+        if (forNewExpr == true) {
+          // This exists to enable multiple fatal error messages when an
+          // initializer fails to resolve due to nilability errors. If the
+          // compiler is able to resolve the initializer call while being
+          // more flexible with nilability rules, compilation can continue.
+          //
+          // TODO: We do not issue an error here because the compiler will
+          // later attempt to resolve the initializer call once again, in
+          // which case it would issue the same error. Instead, issue no errors
+          // in this conditional and let another part of resolution handle that.
+          // In the future, the compiler should not be attempting to resolve
+          // an already-resolved call.
+          bool existingErrors = fatalErrorsEncountered();
+          if (newExprAlias != NULL) {
+            USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
+          }
+          if (!inGenerousResolutionForErrors()) {
+            startGenerousResolutionForErrors();
+            resolveInitCall(call, newExprAlias, /*forNewExpr*/ false);
+            FnSymbol* retry = call->resolvedFunction();
+            stopGenerousResolutionForErrors();
+
+            if (fIgnoreNilabilityErrors && existingErrors == false && retry)
+              clearFatalErrors();
+          }
         } else {
-          printResolutionErrorAmbiguous (info, candidates);
+          if (candidates.n == 0) {
+            printResolutionErrorUnresolved(info, mostApplicable);
+
+            USR_STOP();
+          } else {
+            printResolutionErrorAmbiguous (info, candidates);
+          }
         }
       }
 

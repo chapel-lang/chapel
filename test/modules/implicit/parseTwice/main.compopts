@@ -1,0 +1,7 @@
+                      # main.good
+SomeLibrary.chpl
+./SomeLibrary.chpl
+././SomeLibrary.chpl
+SomeLibrary.chpl SomeLibrary.chpl
+SomeLibrary.chpl ./SomeLibrary.chpl
+./SomeLibrary.chpl ../parseTwice/SomeLibrary.chpl

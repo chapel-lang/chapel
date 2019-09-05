@@ -1,17 +1,17 @@
 proc main {
   proc foo() {
     proc bar() {
-      writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-              Reflection.moduleName, ".", Reflection.functionName);
+      writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+              Reflection.getModuleName(), ".", Reflection.getRoutineName());
     }
 
-    writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-            Reflection.moduleName, ".", Reflection.functionName);
+    writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+            Reflection.getModuleName(), ".", Reflection.getRoutineName());
     bar();
   }
 
-  writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-          Reflection.moduleName, ".", Reflection.functionName);
+  writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+          Reflection.getModuleName(), ".", Reflection.getRoutineName());
   foo();
 }
 

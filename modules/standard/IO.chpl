@@ -2331,6 +2331,27 @@ inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
+/*
+   Reset a channel to point to a new part of a file.
+   This function allows one to jump to a different part of a
+   file without creating a new channel. It can only be called
+   on a channel with ``locking==false``.
+
+   Besides setting a new start position, this function allows
+   one to specify a new end position. Specifying the end position
+   is usually not necessary for correct behavior but it might be
+   an important performance optimization since the channel will not
+   try to read data outside of the start..end region.
+
+   This function will, in most cases, discard the channel's buffer.
+   When writing, the data will be saved to the file before discarding.
+
+   :arg start: the new start offset, measured in bytes and counting from 0
+   :arg end: optionally, a new end offset, measured in bytes and counting from 0
+   :throws: SystemError: if seeking failed. Possible reasons include
+                         that the file is not seekable, or that the
+                         channel is marked.
+ */
 proc channel.seek(start:int, end:int = max(int)) throws {
 
   if this.locking then

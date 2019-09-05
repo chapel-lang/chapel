@@ -500,11 +500,6 @@ Symbol* ResolveScope::lookup(UnresolvedSymExpr* usymExpr, bool isUse) const {
 Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) const {
   const char* name   = usymExpr->unresolved;
   Symbol*     retval = lookupNameLocally(name, isUse);
-  // resolve references to ourself  TODO: is this still necessary?
-  ModuleSymbol* thisMod = usymExpr->getModule();
-  if (retval == NULL && strcmp(name, thisMod->name) == 0) {
-    retval = thisMod;
-  }
 
   if (retval == NULL && mUseList.size() > 0) {
     UseList useList = mUseList;

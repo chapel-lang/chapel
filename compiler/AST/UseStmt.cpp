@@ -516,8 +516,10 @@ ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
       }
     }
   } else {
-    // TODO: Need to handle matches against more general expressions here
-    // e.g. 'use M.N.O' should make 'O' available, I think
+    // It seems as though we'd need to handle matches against more general
+    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
+    // an example that requires this.  I suppose it could be because we
+    // resolve such cases element-by-element rather than wholesale...
   }
   return NULL;
 }
@@ -554,6 +556,7 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   } else if (except == true) {
     if (matchedNameOrConstructor(name) == true) {
       retval =  true;
+
     } else {
       retval = false;
     }
