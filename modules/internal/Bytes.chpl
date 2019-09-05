@@ -679,7 +679,6 @@ module Bytes {
       occurrence, up to `maxsplit` times.
 
       :arg sep: The delimiter used to break the :record:`bytes` into chunks.
-      :type  sep: :record:`bytes`
 
       :arg maxsplit: The number of times to split the :record:`bytes`, negative values indicate no limit.
 
@@ -830,15 +829,12 @@ module Bytes {
       Strips given set of leading and/or trailing characters.
 
       :arg chars: Characters to remove.  Defaults to `b" \\t\\r\\n"`.
-      :type chars: :record:`bytes`
 
       :arg leading: Indicates if leading occurrences should be removed.
                     Defaults to `true`.
-      :type leading: :type:`bool`
 
       :arg trailing: Indicates if trailing occurrences should be removed.
                      Defaults to `true`.
-      :type trailing: :type:`bool`
 
       :returns: A new :record:`bytes` with `leading` and/or `trailing`
                 occurrences of characters in `chars` removed as appropriate.
