@@ -551,6 +551,88 @@ include the chapel runtime and standard modules for use in a non-Chapel program
 and when the library is linked to a Chapel program this leads to multiple
 definitions of these functions.
 
+Using Your Library in Multilocale Settings
+==========================================
+
+Chapel supports ``--library`` when ``CHPL_COMM = gasnet``.
+
+<TODO> Flesh out <TODO>
+
+We intend to support other settings in the future, see :ref:`Other Settings` in
+the :ref:`Multilocale Caveats` section for more information.
+
+Initializing Your Multilocale Library
+-------------------------------------
+
+From the user's perspective, a strategy similar to that of single locale
+libraries is used when initializing a multilocale library.  However, like
+transitioning between a single locale executable and a multilocale one, users
+must now specify the number of locales required for the multilocale library.
+
+In C
+~~~~
+
+Users must still call ``chpl_library_init`` before utilizing the exported
+Chapel functions.  However, the ``char* argv[]`` must now include two additional
+entries: the numlocales flag and its intended value.
+
+This can be accomplished either by explicitly adding the arguments in the C
+client program itself, or by pass them as arguments to the executable.
+
+The following example programs use the ``foo`` library.  This first example
+demonstrates explicitly adding the arguments in the program:
+
+.. code-block:: C
+
+   #include "foo.h"
+
+   int main(int argc, char* argv[]) {
+     int argChapelC = 3;
+     char* argChapelV[3] = {argv[0], "-nl", "2"};
+     // Initialize the Chapel runtime and standard modules
+     chpl_library_init(argChapelC, argChapelV);
+
+     baz(7); // Call into a library function
+
+     chpl_library_finalize();
+
+     return 0;
+   }
+
+Alternatively, the original single locale client can be used with the additional
+two arguments to the executable:
+
+.. code-block:: bash
+
+   ./use_foo -nl 2
+
+Users do not need to call the generated module initialization function for
+multilocale libraries. <TODO> CHECK THIS WITH A COMMITTED TEST <TODO>
+
+In Python
+~~~~~~~~~
+
+
+
+
+Portability
+-----------
+
+By default, the generated client library will expect the generated server to
+communicate with it using the hostname of where the client program is running,
+as obtained by ``gethostname()``.  This default can be overridden by setting
+the environment variable :ref:`CHPL_RT_MASTERIP`.
+
+
+Debugging Issues with Multilocale Libraries
+-------------------------------------------
+
+The ``chpl`` compiler provides a developer flag, ``--library-ml-debug``, which
+can be used to generate communication and underlying library implementation
+debugging output.  It is useful for tracking down connection issues between the
+generated executable and the generated library and unlikely to be helpful when
+tracking down issues with an exported function's body.
+
 Caveats
 =======
 
@@ -591,3 +673,22 @@ supported.  We hope to extend this support in the future.
 
 C interoperability does not support default values for function arguments.  We
 do not anticipate supporting argument default values in C.
+
+Multilocale Caveats
+-------------------
+
+Other Settings
+~~~~~~~~~~~~~~
+
+We intend to expand support for ``--library`` to include:
+
+- ``CHPL_COMM = ugni``
+- ``--no-local``
+- ``CHPL_COMM = none`` when ``CHPL_LAUNCHER != none``
+
+These settings would behave similarly to the current behavior with ``CHPL_COMM =
+gasnet``, when relevant - for instance, it is expected that all of these
+settings would result in an executable that communicates with the user's program
+via the generated library.
+
+Other situations may also become supported in the future.
