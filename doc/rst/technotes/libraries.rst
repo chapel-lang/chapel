@@ -562,12 +562,30 @@ definitions of these functions.
 Using Your Library in Multilocale Settings
 ==========================================
 
-Chapel supports ``--library`` when ``CHPL_COMM = gasnet``.
+Prerequisites
+-------------
 
-<TODO> Flesh out <TODO>
+Chapel supports ``--library`` when ``CHPL_COMM = gasnet``.  We intend to support
+other settings in the future, see :ref:`Other Settings` in the :ref:`Multilocale
+Caveats` section for more information.
 
-We intend to support other settings in the future, see :ref:`Other Settings` in
-the :ref:`Multilocale Caveats` section for more information.
+To compile a multilocale library, `ZeroMQ <http://zeromq.org/>`_ must be
+installed.
+
+If ZeroMQ is not installed in a way that enables your C compiler to find it
+easily, the environment variable ``CHPL_ZMQ_HOME`` can be set.  This environment
+variable should be set to a directory containing both an ``include`` directory
+which contains ``zmq.h`` and a ``lib`` directory which contains ``libzmq.*``.
+For example, for a directory structure:
+
+.local
+|-> include
+  |-> zmq.h
+|-> lib
+  |-> libzmq.a
+  |-> libzmq.so
+
+``CHPL_ZMQ_HOME`` would be set to ``/absolute/path/to/.local/``.
 
 Initializing Your Multilocale Library
 -------------------------------------
@@ -663,6 +681,20 @@ By default, the generated client library will expect the generated server to
 communicate with it using the hostname of where the client program is running,
 as obtained by ``gethostname()``.  This default can be overridden by setting
 the environment variable :ref:`CHPL_RT_MASTERIP`.
+
+What is this _server_real program?
+----------------------------------
+
+When you compile a Chapel library for use with multiple locales, you should
+typically see both a library (see :ref:`Location of the Generated Library` for
+where this will be placed and how to control that location) and a binary (which
+is currently generated in the same directory as the "main" source file), in
+addition to other support files such as the generated header, makefile, etc.
+The library will appear like a normal single locale library in terms of the
+interface it provides to client programs - however, under the covers it will
+launch the binary and then communicate with it.  The binary will be what
+executes the exported functions and will communicate the result back to the
+library, to return to the client program.
 
 
 Debugging Issues with Multilocale Libraries
