@@ -40,7 +40,99 @@ In summary:
 nilability changes
 ******************
 
-Description forthcoming.
+Previous to 1.20, variables of class type could always store ``nil``.  In
+1.20, only nilable class types can store ``nil``. Non-nilable class types
+and nilable class types are different types. A class type expression
+such as ``borrowed C`` indicates a non-nilable class type.
+
+As an aid in migrating code to this change, the flag ``--legacy-classes``
+will disable this new behavior.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  var a: borrowed C = (new owned C()).borrow();
+
+In 1.20, variables of type ``borrowed C`` could store ``nil``:
+
+.. code-block:: chapel
+
+  var b: borrowed C = nil;
+  var c: borrowed C;
+  a = nil;
+
+The 1.20 compiler will report errors for all 3 of these lines. To resolve
+the errors, it is necessary to use a nilable class type. Nilable class
+types are written with ``?`` at the end of the type. In this example:
+
+.. code-block:: chapel
+
+  var a: borrowed C? = (new owned C()).borrow();
+  var b: borrowed C? = nil;
+  var c: borrowed C?;
+  a = nil;
+
+Implicit conversions are allowed from non-nilable class types to nilable
+class types.
+
+When converting variables to nilable types to migrate code, there will be
+situations in which it is known by the developer that a variable cannot
+be ``nil`` at a particular point in the code. For example:
+
+.. code-block:: chapel
+
+  proc f(arg: borrowed C) { }
+  proc C.method() { }
+
+  config const choice = true;
+  var a: owned C?;
+  if choice then
+    a = new owned C(1);
+  else
+    a = new owned C(2);
+
+  f(a);
+  a.method();
+
+Errors on the last two lines can be resolved by writing
+
+.. code-block:: chapel
+
+  f(a!);
+  a!.method();
+
+where here the ``!`` asserts that the value is not ``nil``.
+
+Note that in ``prototype`` and implicit file-level modules, the compiler
+will automatically add ``!`` on method calls with nilable receivers
+(i.e. in the ``a.method()`` case above).
+
+In the above case, a cleaner way to write the conditional would be to
+create a function that always returns a value or throws if there is a
+problem. For example:
+
+.. code-block:: chapel
+
+  proc makeC() throws {
+    var a: owned C?;
+    if choice then
+      a = new owned C(1);
+    else
+      a = new owned C(2);
+    return a:owned C; // this cast throws if a stores nil
+  }
+
+  proc main() throws {
+    var a:owned C = makeC();
+    f(a);
+    a.method();
+  }
+
 
 .. _readme-evolution.nilability-and-casts:
 
@@ -157,10 +249,16 @@ to prevent compilation of existing code like the following:
 
   var x:C;
 
-The 1.20 compiler will find two problems with this statement:
+Knowing that ``C`` now cannot store ``nil``, one might try to update this
+program to:
 
- * ``x`` cannot be default initialized since it cannot store ``nil``
- * ``x`` cannot be default initialized since it is generic
+.. code-block:: chapel
+
+  var x:C?;
+
+However this does not work either. ``C?`` indicates a nilable class type
+with generic management, and a variable with generic type cannot be
+default-initialized.
 
 To update such a variable declaration to 1.20, it is necessary to include
 a memory management decorator as well as ``?``. For example:
