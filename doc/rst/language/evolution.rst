@@ -54,12 +54,11 @@ certain patterns involving casts will need to change to work with 1.20.
 class downcasts
 ^^^^^^^^^^^^^^^
 
-In a class downcast, a class is casted to a subtype. A class downcast
-will not always succeed. If the dynamic type of the variable does not
-match the requested subtype, the downcast fails. In 1.19, a failed
-downcast would result in ``nil``. In 1.20, a failed downcast will result
-in ``nil`` only if the target type is nilable and will throw an error
-otherwise.
+In a class downcast, a class is casted to a subtype. If the dynamic type
+of the variable does not match the requested subtype, the downcast fails.
+In 1.19, a failed downcast would result in ``nil``. In 1.20, a failed
+downcast will result in ``nil`` only if the target type is nilable and
+will throw an error otherwise.
 
 For example:
 
@@ -115,7 +114,8 @@ As with other values of type ``unmanaged C?``, from there it can:
 
  * be borrowed, e.g. ``c.borrow()``
  * have ``!`` applied to convert to a non-nilable value or halt, e.g. ``c!``
- * be cast to a nilable type, throwing if it is ``nil``, e.g. ``c:borrowed C``
+ * be cast to a non-nilable type, throwing if it is ``nil``, e.g.
+   ``c:borrowed C``
 
 .. _readme-evolution.undecorated-classes-generic-management:
 
@@ -163,12 +163,13 @@ The 1.20 compiler will find two problems with this statement:
  * ``x`` cannot be default initialized since it is generic
 
 To update such a variable declaration to 1.20, it is necessary to include
-a memory management decorator. For example:
+a memory management decorator as well as ``?``. For example:
 
 .. code-block:: chapel
 
   var x:borrowed C?;
 
+The resulting variable will initially store ``nil``.
 
 .. _readme-evolution.new-default-intent-for-owned-and-shared:
 
