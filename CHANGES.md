@@ -42,24 +42,43 @@ New Features
   (see TODO blc)
 * added support for partial instantiation of generic types
   (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
+* added support for `private` and `public` `use` statements
+  (see <TODO> doc link)
 
 Feature Improvements
 --------------------
 
-Deprecated and Removed Features
--------------------------------
+Deprecated / Removed Language Features
+--------------------------------------
 * deprecated support for applying `+` to string/value pairs
   (e.g., `"hello " + 1` is no longer supported by default)
 * deprecated support for opaque domains and arrays
 * deprecated support for `init`-based copy-initializers; use `init=` instead
   (see https://chapel-lang.org/docs/1.20/technotes/initequals.html)
 
+Deprecated / Removed Library Features
+-------------------------------------
+* deprecated `ZMQ.Socket.setsockopt()` in favor of specific setters and getters
+  (e.g., deprecated constant `LINGER` in favor of `Socket.[set|get]Linger()`;
+   see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.setsockopt)
+
 Standard Modules / Library
 --------------------------
 * extended unorderedCopy() to support any `bool` width
+* reduced the degree to which standard modules leak symbols into user code
 
 Package Modules
 ---------------
+* added new `UnitTest` module
+  (see https://chapel-lang.org/docs/master/modules/packages/UnitTest.html)
+* added new `Error` subclass `ZMQError` for `ZMQ`-specific errors
+  (see https://chapel-lang.org/docs/master/modules/packages/ZMQ.html#ZMQ.ZMQError)
+* added support for several setter and getter routines on ZMQ sockets
+  (e.g., added `Socket.getLastEndpoint()`, `Socket.getLinger()`, etc.;
+   see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.getLastEndpoint)
+* added support for the `PAIR` socket type to the `ZMQ` module
+  (see https://chapel-lang.org/docs/master/modules/packages/ZMQ.html#ZMQ.PAIR)
+* reduced the degree to which package modules leak symbols into user code
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -68,9 +87,14 @@ Standard Domain Maps (Layouts and Distributions)
 
 New Tools / Tool Changes
 ------------------------
+* pinned the version of `Pygments` relied upon by `chpldoc`
 
 Interoperability Improvements
 -----------------------------
+* added support for overriding environment variables to `--library-makefile`
+* allowed included `.c` files to `#include "chplrt.h"`
+* added support for interoperability with `CHPL_COMM=gasnet`
+  (see <TODO> doc link)
 
 Performance Optimizations/Improvements
 --------------------------------------
@@ -79,7 +103,6 @@ Performance Optimizations/Improvements
 * created a prototype optimization for slicing arrays by domains
   (compile with `-schpl_serializeSlices` to enable)
 * enabled bulk transfer optimization for Block-distributed arrays by default
-
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -90,6 +113,8 @@ Memory Improvements
 Documentation
 -------------
 * improved the `--help` description of the `--fast` flag
+* updated `chpldoc` documentation to use `--output-dir` instead of `--docs-dir`
+  (see https://chapel-lang.org/docs/master/tools/chpldoc/chpldoc.html#documenting-modules)
 
 Example Codes
 -------------
@@ -97,6 +122,9 @@ Example Codes
 Portability
 -----------
 * fixed a code portability issue in the `pbs-aprun` launcher
+* added new environment variables `CHPL_RT_MASTERIP` and `CHPL_RT_WORKERIP`
+  (see https://chapel-lang.org/docs/master/usingchapel/launcher.html#chpl-rt-masterip
+   and https://chapel-lang.org/docs/master/usingchapel/launcher.html#chpl-rt-workerip)
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
@@ -114,7 +142,9 @@ Error Messages / Semantic Checks
 * added an error for domain expressions that are types rather than values
 * added an error message for ranges over an enum type with a single value
 * improved checks that procedures return along all paths for `try/catch/throw`
-  
+* added non-`[const] in` intents error messages in certain interop situations
+  (see <TODO> doc link?)
+
 Execution-time Checks
 ---------------------
 
@@ -124,6 +154,8 @@ Bug Fixes
 * fixed a bug in which the count operator (`#`) was not creating an array alias
 * fixed a bug in which missing line numbers in the IR caused an internal error
 * fixed a bug in which parsing files multiple times caused duplicate modules
+* fixed a bug with `use ZMQ` in `--library` compilation
+* fixed a bug in which internal/standard module symbols shadowed user symbols
 
 Third-Party Software Changes
 ----------------------------
@@ -133,6 +165,8 @@ Launchers
 
 Testing System
 --------------
+* added support for running multilocale C tests via `start_test`
+  (see <TODO> doc link)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -141,6 +175,9 @@ Developer-oriented changes: Module changes
 * simplified the standalone parallel iterator for default rectangular arrays
 * removed stale modules: `ChapelDynDispHack`, `Chapel[Tasks|Tasks]Internal`
 * refactored `ChapelStandard` to focus on modules implementing the language
+* made many modules use `private use` to avoid leaking names
+* moved definition of `chpl_emptyLocale[s|Space]` to remaining `LocaleModel`s
+* moved definitions of some `read/writeThis` functions to `ChapelIO`
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -155,6 +192,8 @@ Developer-oriented changes: Compiler improvements/changes
 * refactored compiler to re-use stripdirectories() function
 * started respecting "always rvf" pragmas at module scope
 * improved an internal error message about actual / formal mismatches
+* added new primitives in support of `UnitTest module
+  (see `PRIM_GATHER_TESTS`, `PRIM_GET_TEST_BY_NAME`, `PRIM_GET_TEST_BY_INDEX`)
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
