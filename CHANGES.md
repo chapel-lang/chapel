@@ -9,6 +9,10 @@ First release candidate for Chapel 2.0 (RC1)
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* improved the performance of parallel-safe data structures
+* enabled the unordered compiler optimization by default
+* improved the performance and usability of unordered operations
+* improved affinity and performance of parallel loops
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -17,6 +21,8 @@ Packaging / Configuration Changes
 
 Syntactic/Naming Changes
 ------------------------
+* changed atomic memory orders to a `memoryOrder` enum
+  (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#atomics)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -44,6 +50,8 @@ New Features
   (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
 * added support for `private` and `public` `use` statements
   (see <TODO> doc link)
+* added an atomic fence
+  (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.atomicFence)
 
 Feature Improvements
 --------------------
@@ -55,6 +63,10 @@ Deprecated / Removed Language Features
 * deprecated support for opaque domains and arrays
 * deprecated support for `init`-based copy-initializers; use `init=` instead
   (see https://chapel-lang.org/docs/1.20/technotes/initequals.html)
+* deprecated atomic `compareExchange` in favor of `compareAndSwap`
+  (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.compareAndSwap)
+* made atomic `peek`/`poke` no longer available by default
+  (see https://chapel-lang.org/docs/1.20/modules/packages/PeekPoke.html)
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -64,7 +76,6 @@ Deprecated / Removed Library Features
 
 Standard Modules / Library
 --------------------------
-* extended unorderedCopy() to support any `bool` width
 * reduced the degree to which standard modules leak symbols into user code
 
 Package Modules
@@ -79,6 +90,12 @@ Package Modules
 * added support for the `PAIR` socket type to the `ZMQ` module
   (see https://chapel-lang.org/docs/master/modules/packages/ZMQ.html#ZMQ.PAIR)
 * reduced the degree to which package modules leak symbols into user code
+* extended `unorderedCopy()` to support `bool` values
+  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopy)
+* added support for `param`/`const` source arguments to `unorderedCopy()`
+* added per-task fences for unordered operations
+  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopyTaskFence
+   and https://chapel-lang.org/docs/1.20/modules/packages/UnorderedAtomics.html#UnorderedAtomics.unorderedAtomicTaskFence)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -92,7 +109,7 @@ New Tools / Tool Changes
 Interoperability Improvements
 -----------------------------
 * added support for overriding environment variables to `--library-makefile`
-* allowed included `.c` files to `#include "chplrt.h"`
+* `.c` files on the `chpl` command line can now `#include "chplrt.h"`
 * added support for interoperability with `CHPL_COMM=gasnet`
   (see <TODO> doc link)
 
@@ -102,13 +119,22 @@ Performance Optimizations/Improvements
 * optimized op= overloads for array/scalar pairs
 * created a prototype optimization for slicing arrays by domains
   (compile with `-schpl_serializeSlices` to enable)
-* enabled bulk transfer optimization for Block-distributed arrays by default
+* enabled optimized bulk transfers for Block-distributed arrays by default
+* optimized iteration over Stencil-distributed arrays
+* improved task affinity for parallel loops
+* improved unordered compiler optimization and enabled it by default
+  (see `--optimize-forall-unordered-ops` in `man chpl`)
+* improved the speed of parallel safe `RandomStream`
+* reduced contention from polling threads for CHPL_COMM=gasnet
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
+* optimized `unorderedCopy` when `dst` is remote
+* improved the performance of all unordered operations
 
 Memory Improvements
 -------------------
+* minimized memory pressure from short-lived tasks
 
 Documentation
 -------------
@@ -118,6 +144,7 @@ Documentation
 
 Example Codes
 -------------
+* disabled some numerically unstable kernels in LCALS
 
 Portability
 -----------
@@ -125,9 +152,12 @@ Portability
 * added new environment variables `CHPL_RT_MASTERIP` and `CHPL_RT_WORKERIP`
   (see https://chapel-lang.org/docs/master/usingchapel/launcher.html#chpl-rt-masterip
    and https://chapel-lang.org/docs/master/usingchapel/launcher.html#chpl-rt-workerip)
+* fixed cross-compilation support for GMP build
+* fixed support for `--llvm` with GASNet on Crays
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
+* fixed a hang for strided communication
 
 Compiler Improvements
 ---------------------
@@ -159,9 +189,14 @@ Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* upgraded GASNet-EX to version 2019.6.0
+* upgraded hwloc to version 1.11.13
+* retired massivethreads tasking
 
 Launchers
 ---------
+* improved CPU binding for gasnetrun* launchers
+* added a slurm-gasnetrun_mpi launcher
 
 Testing System
 --------------
@@ -178,6 +213,8 @@ Developer-oriented changes: Module changes
 * made many modules use `private use` to avoid leaking names
 * moved definition of `chpl_emptyLocale[s|Space]` to remaining `LocaleModel`s
 * moved definitions of some `read/writeThis` functions to `ChapelIO`
+* added an optimized spinlock wrapper to replace manual test-and-set loops
+* eliminated a self-assignment in `chpl__mod`
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -194,13 +231,18 @@ Developer-oriented changes: Compiler improvements/changes
 * improved an internal error message about actual / formal mismatches
 * added new primitives in support of `UnitTest module
   (see `PRIM_GATHER_TESTS`, `PRIM_GET_TEST_BY_NAME`, `PRIM_GET_TEST_BY_INDEX`)
+* stopped heap-promoting local variables
+* removed vestiges of `--heterogeneous` support
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* fixed the qthreads build when CHPL_HOME doesn't match CHPL_MAKE_HOME
 
 Developer-oriented changes: Testing System
 ------------------------------------------
-
+* improved performance graph screenshot quality and resolution
+* added Python 3 support for `chpl_launchcmd`
+* lowered polling frequency for `chpl_launchcmd`
 
 
 version 1.19.0
