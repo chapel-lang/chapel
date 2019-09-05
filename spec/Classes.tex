@@ -168,6 +168,13 @@ refers to.
   probably be needed.
 \end{future}
 
+\subsection{Nilable Classes}
+\label{Nilable_Classes}
+
+This section is forthcoming.
+
+\label{Methods_On_Nilable_In_Prototype_Modules}
+
 \subsection{Class Types}
 \label{Class_Types}
 \index{classes!types}
@@ -200,16 +207,8 @@ A basic class type, including a generic class type that is not
 fully specified, may appear in the inheritance lists
 of other class declarations.
 
-If no memory management strategy is indicated, \chpl{borrowed} will be
-used.
-
-\begin{rationale}
-  \chpl{borrowed} is the default memory management strategy for a class
-  type because there are likely to be more variables referring to a class
-  instance than managing its memory. A further advantage of this default
-  is that \chpl{borrowed}, along with \chpl{unmanaged}, has minimal
-  performance overhead.
-\end{rationale}
+If no memory management strategy is indicated, the class will be
+considered to have generic management.
 
 The memory management strategies have the following meaning:
 
@@ -236,6 +235,41 @@ The memory management strategies have the following meaning:
     it explicitly to reclaim its memory.
 
 \end{itemize}
+
+It is an error to apply more than one memory management strategy to a
+class type. However, in some cases, generic code needs to compute a
+variant of the class type using a different memory management strategy.
+Casts from the class type to a different memory management strategy
+are available for this purpose (see~\rsec{Explicit_Class_Conversions}).
+
+\begin{chapelexample}{duplicate-management.chpl}
+\begin{chapel}
+class C { }
+var x: borrowed unmanaged C;
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+duplicate-management.chpl:2: error: Type expression uses multiple class kinds: borrowed unmanaged
+\end{chapeloutput}
+\end{chapelexample}
+
+\begin{chapelexample}{changing-management.chpl}
+\begin{chapel}
+class C { }
+type borrowedC = borrowed C;
+type ownedC = (borrowedC:owned);
+\end{chapel}
+\begin{chapelpost}
+writeln(borrowedC:string);
+writeln(ownedC:string);
+\end{chapelpost}
+\begin{chapeloutput}
+borrowed C
+owned C
+\end{chapeloutput}
+\end{chapelexample}
+
 
 
 \subsection{Class Values}

@@ -475,12 +475,44 @@ discussion.  Comments or questions are appreciated.
 \label{Generic_Types}
 \index{generics!types}
 \index{types!generic}
+
+Generic types comprise built-in generic types, generic classes, and
+generic records.
+
+\subsubsection{Built-in Generic Types}
+There are currently 3 built-in generic types:
+\begin{itemize}
+  \item \chpl{enum} means any enum type
+  \item \chpl{record} means any record type
+  \item \chpl{class} means any class type.
+\end{itemize}
+
+Note that the \chpl{class} type can combine with \chpl{?}
+(see~\rsec{Nilable_Classes}) and with the management decorators
+(see~\rsec{Class_Types}) to specify a particular variety of class without
+specifying its type:
+
+\begin{itemize}
+  \item \chpl{class} means any class using any memory management strategy
+  \item \chpl{class?} means any class using any memory management
+    strategy but allows the \chpl{nil} value
+  \item \chpl{owned class} and \chpl{owned class?} indicate the
+    non-nilable and nilable owned variants
+  \item \chpl{shared class} and \chpl{shared class?} indicate the
+    non-nilable and nilable shared variants
+  \item \chpl{borrowed class} and \chpl{borrowed class?} indicate the
+    non-nilable and nilable borrowed variants
+  \item \chpl{unmanaged class} and \chpl{unmanaged class?} indicate the
+    non-nilable and nilable unmanaged variants
+\end{itemize}
+
+
+\subsubsection{Generic Classes and Records}
 \index{generics!classes}
 \index{classes!generic}
 \index{generics!records}
 \index{records!generic}
 
-Generic types are generic classes and generic records.
 A class or record is generic if it contains one or more
 \index{generics!fields}
 \index{fields!generic}

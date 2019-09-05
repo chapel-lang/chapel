@@ -364,10 +364,58 @@ An expression of static class type \chpl{C} can be explicitly
 converted to a class type \chpl{D} provided that \chpl{C} is derived
 from \chpl{D} or \chpl{D} is derived from \chpl{C}.
 
-When at run time the source expression refers to an instance of
-\chpl{D} or it subclass, its value is not changed.
-Otherwise, or when the source expression is \chpl{nil},
-the result of the conversion is \chpl{nil}.
+When at run time the source expression refers to an instance of \chpl{D}
+or it subclass, its value is not changed.  Otherwise, the cast fails and
+the result depends on whether or not the destination type is nilable. If
+the cast fails and the destination type is not nilable, the cast
+expression will throw a \chpl{classCastError}. If the cast fails and the
+destination type is nilable, as with \chpl{D?}, then the result will be
+\chpl{nil}.
+
+In some cases a new variant of a class type needs to be computed that has
+different nilability or memory management strategy. Supposing that
+\chpl{T} represents a class type, then these casts compute a new type:
+
+\begin{itemize}
+\item
+\chpl{T:owned} - new management is \chpl{owned}, nilability from \chpl{T}
+
+\item
+\chpl{T:shared} - new management \chpl{shared}, nilability from \chpl{T}
+
+\item
+\chpl{T:borrowed} - new management \chpl{borrowed}, nilability from \chpl{T}
+
+\item
+\chpl{T:unmanaged} - new management \chpl{borrowed}, nilability from \chpl{T}
+
+\item
+\chpl{T:class} - non-nilable type with management from \chpl{T}
+
+\item
+\chpl{T:class?} - nilable type with management from \chpl{T}
+
+\item
+\chpl{T:owned class} - non-nilable type with \chpl{owned} management
+\item
+\chpl{T:owned class?} - nilable type with \chpl{owned} management
+
+\item
+\chpl{T:shared class} - non-nilable type with \chpl{shared} management
+\item
+\chpl{T:shared class?} - nilable type with \chpl{shared} management
+
+\item
+\chpl{T:borrowed class} - non-nilable type with \chpl{borrowed} management
+\item
+\chpl{T:borrowed class?} - nilable type with \chpl{borrowed} management
+
+\item
+\chpl{T:unmanaged class} - non-nilable type with \chpl{unmanaged} management
+\item
+\chpl{T:unmanaged class?} - nilable type with \chpl{unmanaged} management
+
+\end{itemize}
 
 \subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
