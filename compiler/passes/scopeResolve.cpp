@@ -200,7 +200,7 @@ static void addToSymbolTable() {
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      rootScope->extend(def->sym, /* isTopLevel= */ true); // TODO: test this
+      rootScope->extend(def->sym, /* isTopLevel= */ true);
     }
   }
 
@@ -263,6 +263,7 @@ static void scopeResolve(const AList&        alist,
 static void scopeResolve(ModuleSymbol*       module,
                          const ResolveScope* parent) {
   ResolveScope* scope = new ResolveScope(module, parent);
+
   scopeResolve(module->block->body, scope);
 }
 
@@ -1676,7 +1677,9 @@ static void lookup(const char*           name,
       BaseAST* outerScope = getScope(scope);
       if (outerScope != NULL) {
         lookup(name, context, outerScope, visited, symbols);
-        // As a last ditch effort, see if this module's name happens to match
+        // As a last ditch effort, see if this module's name happens to match.
+        // This handles the case when we refer to the name of the module in
+        // which we are declared (e.g., `module M { ...M.xyz... }`
         if (symbols.size() == 0) {
           ModuleSymbol* thisMod = scope->getModule();
           if (strcmp(name, thisMod->name) == 0) {
@@ -1835,7 +1838,9 @@ static bool lookupThisScopeAndUses(const char*           name,
         } else {
           // we haven't found a match yet, so as a last resort, let's
           // check the names of the modules in the 'use' statements
-          // themselves...
+          // themselves...  This effectively places the module names at
+          // a scope just a bit further out than the one holding the
+          // symbols that they define.
           forv_Vec(UseStmt, use, *moduleUses) {
             if (use != NULL) {
               if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
