@@ -19,12 +19,12 @@
 
 /*
 The following document shows functions and methods used to manipulate and
-process Chapel bytes objects. The :record:`bytes` object is similar to a string
-but allows arbitrary data to be stored in it. Methods on bytes that interpret
-the data as characters assume that the bytes are ASCII characters.
+process Chapel bytes variables. :record:`bytes` is similar to a string but
+allows arbitrary data to be stored in it. Methods on bytes that interpret the
+data as characters assume that the bytes are ASCII characters.
 
-Creating :record:`bytes` Objects
---------------------------------
+Creating :record:`bytes`
+------------------------
 
 - A :record:`bytes` can be created using the literals similar to strings:
 
@@ -33,15 +33,16 @@ Creating :record:`bytes` Objects
    var b = b"my bytes";
 
 - If you need to create :record:`bytes` using a specific buffer (i.e. data in
-  another :record:`bytes`, a :record:`c_string` or a C pointer) you can use
-  :proc:`createBytesWith*Buffer` factory functions as shown below.
+  another :record:`bytes`, a :record:`c_string` or a C pointer) you can use the
+  factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
 
 :record:`bytes` and :record:`string`
 ------------------------------------
 
 As :record:`bytes` can store arbitrary data, any :record:`string` can be cast to
-:record:`bytes`.  However, a :record:`bytes` can contain non-UTF8 bytes and
-needs to be decoded to be converted to string.
+:record:`bytes`. In that event, the bytes will store UTF-8 encoded character
+data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs to be
+decoded to be converted to string.
 
 .. code-block:: chapel
 
@@ -70,7 +71,8 @@ Casts from :record:`bytes` to a Numeric Type
 
 This module supports casts from :record:`bytes` to numeric types. Such casts
 will interpret the :record:`bytes` as ASCII characters and convert it to the
-numeric type and throw an error if the :record:`bytes` is invalid. For example:
+numeric type and throw an error if the :record:`bytes` does not match the
+expected format of a number. For example:
 
 .. code-block:: chapel
 
@@ -97,7 +99,7 @@ module Bytes {
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding the :record:`bytes` object into a UTF-8 `string`.
+     when decoding a :record:`bytes` into a UTF-8 :record:`string`.
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
@@ -129,8 +131,7 @@ module Bytes {
     :record:`bytes`. If the buffer is freed before the :record:`bytes` returned
     from this function, accessing it is undefined behavior.
 
-    :arg s: Object to borrow the buffer from
-    :type s: :record:`bytes`
+    :arg s: The :record:`bytes` to borrow the buffer from
 
     :returns: A new :record:`bytes`
   */
@@ -145,8 +146,7 @@ module Bytes {
     `c_string`. If the buffer is freed before the :record:`bytes` returned from
     this function, accessing it is undefined behavior.
 
-    :arg s: Object to borrow the buffer from
-    :type s: :type:`c_string`
+    :arg s: :type:`c_string` to borrow the buffer from
 
     :arg length: Length of `s`'s buffer, excluding the terminating
                  null byte.
@@ -164,14 +164,12 @@ module Bytes {
      `c_ptr(uint(8))`. If the buffer is freed before the :record:`bytes`
      returned from this function, accessing it is undefined behavior.
 
-     :arg s: Object to borrow the buffer from
+     :arg s: Buffer to borrow
      :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
-     :type length: :type:`int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: :type:`int`
 
      :returns: A new :record:`bytes`
   */
@@ -191,8 +189,7 @@ module Bytes {
     Creates a new :record:`bytes` which takes ownership of the internal buffer of a
     `c_string`.The buffer will be freed when the :record:`bytes` is deinitialized.
 
-    :arg s: Object to take ownership of the buffer from
-    :type s: :type:`c_string`
+    :arg s: The :type:`c_string` to take ownership of the buffer from
 
     :arg length: Length of `s`'s buffer, excluding the terminating null byte.
     :type length: :type:`int`
@@ -209,14 +206,12 @@ module Bytes {
      for a `c_ptr(uint(8))`. The buffer will be freed when the :record:`bytes`
      is deinitialized.
 
-     :arg s: Object to take ownership of the buffer from
+     :arg s: The buffer to take ownership of
      :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
-     :type length: :type:`int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: :type:`int`
 
      :returns: A new :record:`bytes`
   */
@@ -230,8 +225,7 @@ module Bytes {
     Creates a new :record:`bytes` by creating a copy of the buffer of another
     :record:`bytes`.
 
-    :arg s: Object to copy the buffer from
-    :type s: :record:`bytes`
+    :arg s: The :record:`bytes` to copy the buffer from
 
     :returns: A new :record:`bytes`
   */
@@ -245,8 +239,7 @@ module Bytes {
     Creates a new :record:`bytes` by creating a copy of the buffer of a
     `c_string`.
 
-    :arg s: Object to copy the buffer from
-    :type s: :type:`c_string`
+    :arg s: The :type:`c_string` to copy the buffer from
 
     :arg length: Length of `s`'s buffer, excluding the terminating null byte.
     :type length: :type:`int`
@@ -265,10 +258,8 @@ module Bytes {
      :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
 
      :arg length: Length of buffer `s`, excluding the terminating null byte.
-     :type length: :type:`int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: :type:`int`
 
      :returns: A new :record:`bytes`
   */
@@ -380,17 +371,17 @@ module Bytes {
     }
 
     /*
-      :returns: The number of bytes in the object.
+      :returns: The number of bytes in the :record:`bytes`.
     */
     inline proc length return len;
 
     /*
-      :returns: The number of bytes in the object.
+      :returns: The number of bytes in the :record:`bytes`.
       */
     inline proc size return len;
 
     /*
-      :returns: The number of bytes in the object.
+      :returns: The number of bytes in the :record:`bytes`.
       */
     inline proc numBytes return len;
 
@@ -425,9 +416,8 @@ module Bytes {
       Gets a byte from the :record:`bytes`
 
       :arg i: The index
-      :type i: :type:`int`
 
-      :returns: 1-length :record:`bytes` object
+      :returns: A 1-length :record:`bytes` 
      */
     proc this(i: int): bytes {
       if boundsChecking && (i <= 0 || i > this.len)
@@ -441,7 +431,6 @@ module Bytes {
       Gets a byte from the :record:`bytes`
 
       :arg i: The index
-      :type i: :type:`int`
 
       :returns: The value of the `i` th byte as an integer.
     */
@@ -454,7 +443,7 @@ module Bytes {
     /*
       Iterates over the :record:`bytes`
 
-      :yields: 1-length :record:`bytes` objects
+      :yields: 1-length :record:`bytes`
      */
     iter these(): bytes {
       if this.isEmpty() then return;
@@ -473,12 +462,11 @@ module Bytes {
     }
 
     /*
-      Slices the object. Halts if r is not completely inside the range
+      Slices the :record:`bytes`. Halts if r is not completely inside the range
       ``1..bytes.length`` when compiled with `--checks`. `--fast` disables this
       check.
 
-      :arg r: the indices the new :record:`bytes` should be made from
-      :type r: :type:`range`
+      :arg r: The range of indices the new :record:`bytes` should be made from
 
       :returns: a new :record:`bytes` that is a slice within
                 ``1..bytes.length``. If the length of `r` is zero, an empty
@@ -514,9 +502,9 @@ module Bytes {
     }
 
     /*
-      Checks if the object is empty.
+      Checks if the :record:`bytes` is empty.
 
-      :returns: * `true`  -- when the object is empty
+      :returns: * `true`  -- when empty
                 * `false` -- otherwise
      */
     inline proc isEmpty() : bool {
@@ -526,10 +514,9 @@ module Bytes {
     /*
       Checks if the :record:`bytes` starts with any of the given arguments.
 
-      :arg needles: Object(s) to match against.
-      :type needles: :record:`bytes`
+      :arg needles: :record:`bytes` (s) to match against.
 
-      :returns: * `true`--when the object begins with one or more of the `needles`
+      :returns: * `true`--when the :record:`bytes` begins with one or more of the `needles`
                 * `false`--otherwise
      */
     inline proc startsWith(needles: bytes ...) : bool {
@@ -539,9 +526,9 @@ module Bytes {
     /*
       Checks if the :record:`bytes` ends with any of the given arguments.
 
-      :arg needles: Object(s) to match against.
+      :arg needles: :record:`bytes` (s) to match against.
 
-      :returns: * `true`--when the object ends with one or more of the `needles`
+      :returns: * `true`--when the :record:`bytes` ends with one or more of the `needles`
                 * `false`--otherwise
      */
     inline proc endsWith(needles: bytes ...) : bool {
@@ -551,16 +538,15 @@ module Bytes {
     /*
       Finds the argument in the :record:`bytes`
 
-      :arg needle: Object to search for
-      :type needle: :record:`bytes`
+      :arg needle: :record:`bytes` to search for
 
-      :arg region: an optional argument defining the indices to search within,
-                   default is the whole object. Halts if the range is not
+      :arg region: an optional range defining the indices to search
+                   within, default is the whole. Halts if the range is not
                    within ``1..bytes.length``
-      :type region: :type:`range`
 
       :returns: the index of the first occurrence from the left of `needle`
-                within a the object, or 0 if the `needle` is not in the object.
+                within the :record:`bytes`, or 0 if the `needle` is not in the
+                :record:`bytes`.
      */
     inline proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
       return _search_helper(needle, region, count=false): idxType;
@@ -569,16 +555,15 @@ module Bytes {
     /*
       Finds the argument in the :record:`bytes`
 
-      :arg needle: the :record:`bytes` to search for
-      :type needle: :record:`bytes`
+      :arg needle: The :record:`bytes` to search for
 
       :arg region: an optional range defining the indices to search within,
-                   default is the whole object. Halts if the range is not
+                   default is the whole. Halts if the range is not
                    within ``1..bytes.length``
-      :type region: :type:`range`
 
       :returns: the index of the first occurrence from the right of `needle`
-                within the object, or 0 if the `needle` is not in the object.
+                within the :record:`bytes`, or 0 if the `needle` is not in the
+                :record:`bytes`.
      */
     inline proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
       return _search_helper(needle, region, count=false,
@@ -586,17 +571,15 @@ module Bytes {
     }
 
     /*
-      Counts the number of occurances of the argument in the :record:`bytes`
+      Counts the number of occurences of the argument in the :record:`bytes`
 
-      :arg needle: Object to search for
-      :type needle: :record:`bytes`
+      :arg needle: The :record:`bytes` to search for
 
       :arg region: an optional range defining the substring to search within,
-                   default is the whole object. Halts if the range is not
+                   default is the whole. Halts if the range is not
                    within ``1..bytes.length``
-      :type region: :type:`range`
 
-      :returns: the number of times `needle` occurs in the object
+      :returns: the number of times `needle` occurs in the :record:`bytes`
      */
     inline proc count(needle: bytes, region: range(?) = 1..) : int {
       return _search_helper(needle, region, count=true);
@@ -673,20 +656,17 @@ module Bytes {
     }
 
     /*
-      Replaces occurances of a :record:`bytes` with another.
+      Replaces occurences of a :record:`bytes` with another.
 
-      :arg needle: Object to search for
-      :type needle: :record:`bytes`
+      :arg needle: The :record:`bytes` to search for
 
-      :arg replacement: Object to replace `needle` with
-      :type replacement: :record:`bytes`
+      :arg replacement: The :record:`bytes` to replace `needle` with
 
       :arg count: an optional argument specifying the number of replacements to
                   make, values less than zero will replace all occurrences
-      :type count: :type:`int`
 
-      :returns: a copy of the object where `replacement` replaces `needle` up
-                to `count` times
+      :returns: a copy of the :record:`bytes` where `replacement` replaces
+                `needle` up to `count` times
      */
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
@@ -698,18 +678,15 @@ module Bytes {
       Splits the :record:`bytes` on `sep` yielding the subbytes between each
       occurrence, up to `maxsplit` times.
 
-      :arg sep: The delimiter used to break the object into chunks.
+      :arg sep: The delimiter used to break the :record:`bytes` into chunks.
       :type  sep: :record:`bytes`
 
-      :arg maxsplit: The number of times to split the object, negative values
-                     indicate no limit.
-      :type maxsplit: :type:`int`
+      :arg maxsplit: The number of times to split the :record:`bytes`, negative values indicate no limit.
 
       :arg ignoreEmpty: * `true`-- Empty :record:`bytes` will not be yielded,
                         * `false`-- Empty :record:`bytes` will be yielded
-      :type ignoreEmpty: :type:`bool`
 
-      :yields: :record:`bytes` objects
+      :yields: :record:`bytes` 
      */
     iter split(sep: bytes, maxsplit: int = -1,
                ignoreEmpty: bool = false): bytes {
@@ -721,9 +698,8 @@ module Bytes {
 
       :arg maxsplit: The maximum number of times to split the :record:`bytes`,
                      negative values indicate no limit.
-      :type maxsplit: :type:`int`
 
-      :yields: :record:`bytes` objects
+      :yields: :record:`bytes` 
      */
     iter split(maxsplit: int = -1) : bytes {
       if !this.isEmpty() {
@@ -797,7 +773,7 @@ module Bytes {
 
     /*
       Returns a new :record:`bytes`, which is the concatenation of all of
-      the :record:`bytes` objects passed in with the contents of the method
+      the :record:`bytes` passed in with the contents of the method
       receiver inserted between them.
 
       .. code-block:: chapel
@@ -805,8 +781,7 @@ module Bytes {
           var x = b"|".join(b"a",b"10",b"d");
           writeln(x); // prints: "a|10|d"
 
-      :arg S: Object(s) to be joined
-      :type S: :record:`bytes`
+      :arg S: :record:`bytes` values to be joined
 
       :returns: A :record:`bytes`
     */
@@ -816,15 +791,16 @@ module Bytes {
 
     /*
       Returns a new :record:`bytes`, which is the concatenation of all of
-      the :record:`bytes` objects passed in with the contents of the method
+      the :record:`bytes` passed in with the contents of the method
       receiver inserted between them.
 
       .. code-block:: chapel
 
-          var x = b"|".join((b"a",b"10",b"d"));
+          var tup = (b"a",b"10",b"d");
+          var x = b"|".join(tup);
           writeln(x); // prints: "a|10|d"
 
-      :arg S: Object(s) to be joined
+      :arg S: :record:`bytes` values to be joined
       :type S: tuple or array of :record:`bytes`
 
       :returns: A :record:`bytes`
@@ -915,7 +891,6 @@ module Bytes {
       Splits the :record:`bytes` on a given separator
 
       :arg sep: The seperator
-      :type sep: :record:`bytes`
 
       :returns: a :record:`3*bytes` consisting of the section before `sep`,
                 `sep`, and the section after `sep`. If `sep` is not found, the
@@ -927,17 +902,15 @@ module Bytes {
     }
 
     /*
-      Returns a UTF-8 string from the given :record:`bytes` object. If the data
-      is malformed for UTF-8, `errors` argument determines the action.
+      Returns a UTF-8 string from the given :record:`bytes`. If the data is
+      malformed for UTF-8, `errors` argument determines the action.
       
       :arg errors: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
                    character, `decodePolicy.ignore` drops the data silently.
-      :type errors: decodePolicy
       
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `errors`
-               argument and the :record:`bytes` object contains non-UTF-8
-               characters.
+               argument and the :record:`bytes` contains non-UTF-8 characters.
 
       :returns: A UTF-8 string.
     */
@@ -991,9 +964,9 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are uppercase (A-Z) in ASCII.
-     Ignores uncased (not a letter) and extended ASCII characters (decimal value
-     larger than 127)
+     Checks if all the characters in the :record:`bytes` are uppercase (A-Z) in
+     ASCII.  Ignores uncased (not a letter) and extended ASCII characters
+     (decimal value larger than 127)
 
       :returns: * `true`--there is at least one uppercase and no lowercase characters
                 * `false`--otherwise
@@ -1015,9 +988,9 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are lowercase (a-z) in ASCII.
-     Ignores uncased (not a letter) and extended ASCII characters (decimal value
-     larger than 127)
+     Checks if all the characters in the :record:`bytes` are lowercase (a-z) in
+     ASCII.  Ignores uncased (not a letter) and extended ASCII characters
+     (decimal value larger than 127)
 
       :returns: * `true`--there is at least one lowercase and no uppercase characters
                 * `false`--otherwise
@@ -1040,8 +1013,8 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are whitespace (' ', '\t',
-     '\n', '\v', '\f', '\r') in ASCII.
+     Checks if all the characters in the :record:`bytes` are whitespace (' ',
+     '\\t', '\\n', '\\v', '\\f', '\\r') in ASCII.
 
       :returns: * `true`  -- when all the characters are whitespace.
                 * `false` -- otherwise
@@ -1063,8 +1036,8 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are alphabetic (a-zA-Z) in
-     ASCII.
+     Checks if all the characters in the :record:`bytes` are alphabetic (a-zA-Z)
+     in ASCII.
 
       :returns: * `true`  -- when the characters are alphabetic.
                 * `false` -- otherwise
@@ -1086,7 +1059,8 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are digits (0-9) in ASCII.
+     Checks if all the characters in the :record:`bytes` are digits (0-9) in
+     ASCII.
 
       :returns: * `true`  -- when the characters are digits.
                 * `false` -- otherwise
@@ -1108,8 +1082,8 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are alphanumeric (a-zA-Z0-9) in
-     ASCII.
+     Checks if all the characters in the :record:`bytes` are alphanumeric
+     (a-zA-Z0-9) in ASCII.
 
       :returns: * `true`  -- when the characters are alphanumeric.
                 * `false` -- otherwise
@@ -1132,7 +1106,7 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the object are printable in ASCII.
+     Checks if all the characters in the :record:`bytes` are printable in ASCII.
 
       :returns: * `true`  -- when the characters are printable.
                 * `false` -- otherwise
