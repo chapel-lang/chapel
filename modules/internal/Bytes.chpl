@@ -605,7 +605,7 @@ module Bytes {
      */
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
-    proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
+    inline proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
       return doReplace(this, needle, replacement, count);
     }
 

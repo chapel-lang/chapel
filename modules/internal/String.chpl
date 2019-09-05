@@ -1391,7 +1391,7 @@ module String {
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
      */
-    proc rfind(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+    inline proc rfind(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
       return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
     }
 
@@ -1403,7 +1403,7 @@ module String {
 
       :returns: the number of times `needle` occurs in the string
      */
-    proc count(needle: string, region: range(?) = 1..) : int {
+    inline proc count(needle: string, region: range(?) = 1..) : int {
       return _search_helper(needle, region, count=true);
     }
 
@@ -1526,7 +1526,7 @@ module String {
           writeln(x); // prints: "a|10|d"
      */
 
-    proc join(const ref S: string ...) : string {
+    inline proc join(const ref S: string ...) : string {
       return _join(S);
     }
 
@@ -1538,7 +1538,7 @@ module String {
           var x = "|".join("a","10","d");
           writeln(x); // prints: "a|10|d"
      */
-    proc join(const ref S) : string where isTuple(S) {
+    inline proc join(const ref S) : string where isTuple(S) {
       if !isHomogeneousTuple(S) || !isString(S[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
       return _join(S);
