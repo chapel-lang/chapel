@@ -682,7 +682,7 @@ Portability
 By default, the generated client library will expect the generated server to
 communicate with it using the hostname of where the client program is running,
 as obtained by ``gethostname()``.  This default can be overridden by setting
-the environment variable :ref:`CHPL_RT_MASTERIP`.
+the environment variable :ref:`chpl-rt-masterip`.
 
 What is this _server_real program?
 ----------------------------------
@@ -748,8 +748,12 @@ supported.  We hope to extend this support in the future.
 C interoperability does not support default values for function arguments.  We
 do not anticipate supporting argument default values in C.
 
+.. _Multilocale Caveats:
+
 Multilocale Caveats
 -------------------
+
+.. _Other Settings:
 
 Other Settings
 ~~~~~~~~~~~~~~
