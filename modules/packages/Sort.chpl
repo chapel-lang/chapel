@@ -2531,8 +2531,7 @@ module TwoArrayPartitioning {
           }
 
           if isOnOneLocale {
-            // Lists are one-based for now...
-            state.localTasks[theLocaleId + 1].localTasks.append(
+            state.localTasks[theLocaleId].localTasks.append(
                 new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
           } else {
             state.distTasks.append(
@@ -2546,7 +2545,7 @@ module TwoArrayPartitioning {
     coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
       on loc do {
         // Copy the tasks to do from locale 0
-        var myTasks = state.localTasks[tid + 1].localTasks;
+        var myTasks = state.localTasks[tid].localTasks;
         var baseCaseSize = state.baseCaseSize;
         ref compat = state.perLocale[tid].compat;
 
