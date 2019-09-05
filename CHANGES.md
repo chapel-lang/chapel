@@ -40,6 +40,8 @@ New Features
 * improved how first-class functions print themselves out
 * added support for `yield`ing within `on`-clauses for inlined serial iterators
   (see TODO blc)
+* added support for partial instantiation of generic types
+  (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
 
 Feature Improvements
 --------------------
@@ -49,6 +51,8 @@ Deprecated and Removed Features
 * deprecated support for applying `+` to string/value pairs
   (e.g., `"hello " + 1` is no longer supported by default)
 * deprecated support for opaque domains and arrays
+* deprecated support for `init`-based copy-initializers; use `init=` instead
+  (see https://chapel-lang.org/docs/1.20/technotes/initequals.html)
 
 Standard Modules / Library
 --------------------------
@@ -74,6 +78,8 @@ Performance Optimizations/Improvements
 * optimized op= overloads for array/scalar pairs
 * created a prototype optimization for slicing arrays by domains
   (compile with `-schpl_serializeSlices` to enable)
+* enabled bulk transfer optimization for Block-distributed arrays by default
+
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -108,7 +114,7 @@ Error Messages / Semantic Checks
 * added an error for domain expressions that are types rather than values
 * added an error message for ranges over an enum type with a single value
 * improved checks that procedures return along all paths for `try/catch/throw`
-
+  
 Execution-time Checks
 ---------------------
 
