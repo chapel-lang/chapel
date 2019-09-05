@@ -26,6 +26,8 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          Sort
+          List
+           ChapelLocks
           MSBRadixSort
            RadixSortHelp
            ShellSort
