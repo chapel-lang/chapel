@@ -134,13 +134,13 @@ prototype module LockFreeQueue {
         var curr_tail = _tail.read();
         var next = curr_tail.next.read();
         if (next == nil) {
-          if (curr_tail.next.compareExchange(next, n)) {
-            _tail.compareExchange(curr_tail, n);
+          if (curr_tail.next.compareAndSwap(next, n)) {
+            _tail.compareAndSwap(curr_tail, n);
             break;
           }
         }
         else {
-          _tail.compareExchange(curr_tail, next);
+          _tail.compareAndSwap(curr_tail, next);
         }
         chpl_task_yield();
       }
@@ -160,11 +160,11 @@ prototype module LockFreeQueue {
             var retval : objType?;
             return (false, retval);
           }
-          _tail.compareExchange(curr_tail, next_node);
+          _tail.compareAndSwap(curr_tail, next_node);
         }
         else {
           var ret_val = next_node.val;
-          if (_head.compareExchange(curr_head, next_node)) {
+          if (_head.compareAndSwap(curr_head, next_node)) {
             tok.deferDelete(curr_head);
             tok.unpin();
             return (true, ret_val);
