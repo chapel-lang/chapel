@@ -47,32 +47,200 @@ Description forthcoming.
 nilability and casts
 ********************
 
-Description forthcoming, including casts from c_void_ptr/c_ptr; including
-class downcasts.
+Because casts to class types should necessarily return something of the
+requested type, and because many class types now cannot store ``nil``,
+certain patterns involving casts will need to change to work with 1.20.
+
+class downcasts
+^^^^^^^^^^^^^^^
+
+In a class downcast, a class is casted to a subtype. A class downcast
+will not always succeed. If the dynamic type of the variable does not
+match the requested subtype, the downcast fails. In 1.19, a failed
+downcast would result in ``nil``. In 1.20, a failed downcast will result
+in ``nil`` only if the target type is nilable and will throw an error
+otherwise.
+
+For example:
+
+.. code-block:: chapel
+
+  class Parent { }
+  class Child : Parent { }
+
+  var p:borrowed Parent = (new owned Parent()).borrow();
+  var c:borrowed Parent = (new owned Child()).borrow();
+
+  writeln(c:Child?); // downcast succeeds
+  writeln(c:Child);  // downcast succeeds
+
+  writeln(p:Child?); // this downcast fails and results in `nil`
+  writeln(p:Child); // this downcast fails and will throw a ClassCastError
+
+casting C pointers to classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Casts from ``c_void_ptr`` to class types were previously allowed. However,
+since ``c_void_ptr`` can store ``NULL``, this case needs adjustment
+following the nilability changes. Additionally, since ``c_void_ptr``
+refers to a C pointer, and C pointers are manually managed (i.e. you call
+``free`` on them at the appropriate time), it makes the most sense
+for casts from ``c_void_ptr`` to end up with an unmanaged type.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  var myC = new owned C();
+  var ptr:c_void_ptr = myC.borrow(); // store the instance in a C ptr
+
+Now we can cast from ``ptr`` to the class type:
+
+.. code-block:: chapel
+
+  var c = ptr:C; // cast from a C pointer to the borrowed type
+
+This example would work in 1.19. In 1.20, it needs to be updated to
+cast to ``unmanaged C?``:
+
+.. code-block:: chapel
+
+  var c = ptr:unmanaged C?;
+
+As with other values of type ``unmanaged C?``, from there it can:
+
+ * be borrowed, e.g. ``c.borrow()``
+ * have ``!`` applied to convert to a non-nilable value or halt, e.g. ``c!``
+ * be cast to a nilable type, throwing if it is ``nil``, e.g. ``c:borrowed C``
 
 .. _readme-evolution.undecorated-classes-generic-management:
 
 undecorated classes have generic management
 ********************************************
 
-Description forthcoming.
+Undecorated classes now have generic management. As an aid in migrating
+code to this change, the flag ``--legacy-classes`` will disable this
+new behavior.
+
+Supposing that we have a ``class C`` declaration as in the following:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+Code using ``C`` might refer to the type ``C`` on its own or it might use
+a decorator to specify memory management strategy, as in ``borrowed C``.
+
+The type expression ``C`` was the same as ``borrowed C`` in 1.18 and
+1.19 but now means generic management. For example, in the following code:
+
+.. code-block:: chapel
+
+  var myC:C = new owned C();
+
+``myC`` previously had type ``borrowed C``, and was initialized using
+including an implicit conversion from ``owned C`` to ``borrowed C``. In 1.20,
+``myC`` has type ``owned C``. Since the variable's type expression is
+generic management, it takes its management from the initializing
+expression.
+
+This change combines with the nilability changes described above
+to prevent compilation of existing code like the following:
+
+.. code-block:: chapel
+
+  var x:C;
+
+The 1.20 compiler will find two problems with this statement:
+
+ * ``x`` cannot be default initialized since it cannot store ``nil``
+ * ``x`` cannot be default initialized since it is generic
+
+To update such a variable declaration to 1.20, it is necessary to include
+a memory management decorator. For example:
+
+.. code-block:: chapel
+
+  var x:borrowed C?;
+
 
 .. _readme-evolution.new-default-intent-for-owned-and-shared:
 
 new default intent for owned and shared
 ***************************************
 
-Description forthcoming, including removal of
-untyped-formal-instantiates-as-borrows rule.
+The default intent for `owned` and `shared` arguments is now
+`const ref` where it was previously `in`. Cases where such arguments
+will be interpreted differently can be reported with the ``--warn-unstable``
+compilation flag.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  var global: owned C?;
+  proc f(arg: owned C) {
+    global = arg;
+  }
+
+  f(new owned C(1));
+
+This program used to compile and run, performing ownership transfer
+once when passing the result of ``new`` to ``f`` and a second time
+in the assignment statement ``global = arg``.
+
+This program does not work in 1.20. The compiler will issue an error for
+the statement ``global = arg`` because the ownership transfer requires
+modifying ``arg`` but it is not modifyable because it was passed with
+``const ref`` intent.
+
+To continue working, this program needs to be updated to add the `in`
+intent to ``f``, as in ``proc f(in arg: owned C)``.
+
+Note that for totally generic arguments, the 1.18 and 1.19 compiler
+would instantiate the argument with the borrow type when passed
+``owned`` or ``shared`` classes. For example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  proc f(arg) { }
+
+  var myC = new owned C(1);
+
+  f(myC);       // does this call transfer ownership out of myC?
+  writeln(myC); // prints `nil` if ownership transfer occurred
+
+This example functions the same in 1.18 and 1.20, but for different
+reasons. In 1.18, ``f`` is instantiated as accepting an argument of type
+``borrowed C``. In the call ``f(myC)``, the compiler applies a coercion
+from ``owned C`` to ``borrowed C``, so ownership transfer does not occur.
+In 1.20, ``f`` is instantiated as accepting an argument of type ``owned C``
+but this type uses the default intent (``const ref``). As a result,
+ownership transfer does not occur.
 
 .. _readme-evolution.new-C-is-owned:
 
 new C is owned
 **************
 
-Description forthcoming.
-
-
+Supposing that `C` is a class type, `new C()` was equivalent to
+`new borrowed C()` before this release - meaning that it resulted in
+something of type `borrowed C`. However, it is now equivalent to `new
+owned C()` which produces something of type `owned C`.
 
 
 version 1.18, September 2018
