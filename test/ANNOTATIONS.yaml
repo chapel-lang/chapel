@@ -559,6 +559,8 @@ compSampler-timecomp: &timecomp-base
     - Improve the speed of codegenPrimitive (#10321)
   10/19/18:
     - Fix compiler performance issues in nilChecking (#11396)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
 
 
 cg:
@@ -832,6 +834,8 @@ knucleotide:
     - Remove locking from associative array accesses (#6244)
   11/21/17:
     - Clear associative array elements when created by dsiAdd (#7828)
+  09/05/19:
+    - Deprecate adding to associative domain by assigning to array (#13945)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -1358,6 +1362,8 @@ revcomp:
     - Improve string comparisons (#11479)
   02/05/19:
     - Make stdout, stderr ordering predictable in test output (#12236)
+  08/30/19:
+    - Add channel seek and default to pread (#13862)
 
 sad:
   05/03/16:
@@ -1378,6 +1384,8 @@ search:
     - Update tuples to use special function instead of constructors (#9317)
   12/14/18:
     - Tuple iteration yields (const) refs (#11866)
+  09/04/19:
+    - Inline small wrappers in string and bytes implementations (#13971)
 
 spectralnorm:
   01/21/15:
