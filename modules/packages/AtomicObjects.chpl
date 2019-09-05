@@ -77,7 +77,7 @@
   To make this more concrete, think of *A* and *B* both as a node in a linked list; 
   *T1* reads *A*, *T2* allocates a new node *B* and writes it to *L* and deletes *A*, 
   and *T3* allocates a new node which just so happens to be the same piece of memory that 
-  *A* had before and writes it to *L*. Atomic operations such the ``compareExchange`` 
+  *A* had before and writes it to *L*. Atomic operations such the ``compareAndSwap`` 
   will succeed despite the fact that the nodes are not the same as it will perform 
   the operation based on the virtual address.
 
@@ -97,7 +97,7 @@
     var a = atomicVar.readABA();
     var b = atomicVar.writeABA(obj2);
     atomicVar.writeABA(obj1);
-    assert(atomicVar.compareExchange(obj1, obj2) == false, "This should always fail!");
+    assert(atomicVar.compareAndSwap(obj1, obj2) == false, "This should always fail!");
 
   .. note::
 
@@ -525,11 +525,11 @@ prototype module AtomicObjects {
       return fromPointer(atomicVariable.read());
     }
 
-    proc compareExchange(expectedObj : objType?, newObj : objType?) : bool {
+    proc compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
       return atomicVariable.compareAndSwap(toPointer(expectedObj), toPointer(newObj));
     }
 
-    proc compareExchangeABA(expectedObj : ABA(objType?), newObj : objType?) : bool {
+    proc compareAndSwapABA(expectedObj : ABA(objType?), newObj : objType?) : bool {
       doABACheck();
       var ret : bool;
       on this {
@@ -542,8 +542,8 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc compareExchangeABA(expectedObj : ABA(objType?), newObj : ABA(objType?)) : bool {
-      compareExchangeABA(expectedObj, newObj.getObject());
+    proc compareAndSwapABA(expectedObj : ABA(objType?), newObj : ABA(objType?)) : bool {
+      compareAndSwapABA(expectedObj, newObj.getObject());
     }
 
     proc write(newObj:objType?) {
