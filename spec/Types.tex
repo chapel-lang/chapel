@@ -49,10 +49,12 @@ These statements are defined in Sections \rsec{Enumerated_Types},
 \label{Primitive_Types}
 \index{types!primitive}
 
-The primitive types are: \chpl{void}, \chpl{nothing}, \chpl{bool},
+The concrete primitive types are: \chpl{void}, \chpl{nothing}, \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
-and \chpl{string}.  They are defined
-in this section.
+and \chpl{string}.  They are defined in this section.
+
+In addition, there are several generic primitive types that are described
+in~\rsec{Built_in_Generic_types}.
 
 The primitive types are summarized by the following syntax:
 \begin{syntax}
@@ -66,6 +68,13 @@ primitive-type:
   `imag' primitive-type-parameter-part[OPT]
   `complex' primitive-type-parameter-part[OPT]
   `string'
+  `enum'
+  `record'
+  `class'
+  `owned'
+  `shared'
+  `unmanaged'
+  `borrowed'
 
 primitive-type-parameter-part:
   ( integer-parameter-expression )
