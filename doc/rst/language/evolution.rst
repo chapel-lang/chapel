@@ -58,7 +58,7 @@ Consider the following example:
 
   var a: borrowed C = (new owned C()).borrow();
 
-In 1.20, variables of type ``borrowed C`` could store ``nil``:
+In 1.19, variables of type ``borrowed C`` could store ``nil``:
 
 .. code-block:: chapel
 
@@ -106,7 +106,8 @@ Errors on the last two lines can be resolved by writing
   f(a!);
   a!.method();
 
-where here the ``!`` asserts that the value is not ``nil``.
+where here the ``!`` asserts that the value is not ``nil`` and it can
+halt if the value is ``nil``.
 
 Note that in ``prototype`` and implicit file-level modules, the compiler
 will automatically add ``!`` on method calls with nilable receivers
