@@ -1910,8 +1910,7 @@ module TwoArrayPartitioning {
 
     // was [0..-1]
     var distTasks: list(TwoArraySortTask);
-    // was [0..#numLocales]
-    var localTasks: list(TasksForLocale);
+    var localTasks: [0..#numLocales] TasksForLocale;
 
     proc postinit() {
       // Copy some vars to the compat
