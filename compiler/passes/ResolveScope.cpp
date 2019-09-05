@@ -501,11 +501,13 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
   const char* name   = usymExpr->unresolved;
   Symbol*     retval = lookupNameLocally(name, isUse);
   // resolve references to ourself  TODO: is this still necessary?
+  /*
   ModuleSymbol* thisMod = usymExpr->getModule();
   if (retval == NULL && strcmp(name, thisMod->name) == 0) {
     retval = thisMod;
     printf("Got here\n");
   }
+  */
 
   if (retval == NULL && mUseList.size() > 0) {
     UseList useList = mUseList;
