@@ -389,6 +389,14 @@ c_ptr Arguments
 Python code can pass ``numpy`` arrays or ``ctypes`` pointers to ``c_ptr``
 arguments.
 
+Intents
+-------
+
+Libraries compiled for Python do not support the default intent for ``string``,
+``c_string`` or 1D arrays, as copies are currently performed (which would
+violate ``const ref``).  Instead, only the ``in`` and ``const in`` intents are
+supported for these types.
+
 
 Debugging Issues with --library-python
 --------------------------------------
@@ -572,7 +580,7 @@ must now specify the number of locales required for the multilocale library.
 In C
 ~~~~
 
-Users must still call ``chpl_library_init`` before utilizing the exported
+Users must still call ``chpl_library_init()`` before utilizing the exported
 Chapel functions.  However, the ``char* argv[]`` must now include two additional
 entries: the numlocales flag and its intended value.
 
@@ -612,7 +620,23 @@ multilocale libraries. <TODO> CHECK THIS WITH A COMMITTED TEST <TODO>
 In Python
 ~~~~~~~~~
 
+Users must still call ``chpl_setup()`` before utilizing the exported Chapel
+functions.  However, it requires a ``numLocales`` argument when the library
+has been compiled for multilocale settings.
 
+Supported Types
+---------------
+
+Multilocale libraries support the same argument and return types as single
+locale libraries, with the notable except of ``complex`` numbers, arrays, and
+pointer types.
+
+Intents
+~~~~~~~
+
+Multilocale libraries do not support the default intent for ``string`` and
+``c_string``, as the default intent is ``const ref``.  Only the ``in`` and
+``const in`` intents are supported.
 
 
 Portability
