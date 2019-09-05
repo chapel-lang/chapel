@@ -13,6 +13,68 @@ useful when migrating programs to the current version of the language.
 The purpose of this flag is to identify  portions of a program that use a
 language feature that has changed meaning.
 
+version 1.20, September 2019
+----------------------------
+
+Version 1.20 made language changes that address problems with classes.
+
+In summary:
+
+ * variables of class type can no longer store `nil` by default but can
+   opt-in to possibly being `nil` with `?`.
+   See :ref:`readme-evolution.nilability-changes`
+ * certain casts have changed behavior to support nilability changes
+   See :ref:`readme-evolution.nilability-and-casts`
+ * un-decorated class types such as `MyClass` (as opposed to `borrowed
+   MyClass`) now have generic management
+   See :ref:`readme-evolution.undecorated-classes-generic-management`
+ * arguments with `owned` or `shared` declared type now use `const ref`
+   default intent rather than `in` intent.
+   See :ref:`readme-evolution.new-default-intent-for-owned-and-shared`
+ * ``new C`` now creates an `owned C` rather than a `borrowed C`
+   See :ref:`readme-evolution.new-C-is-owned`
+
+
+.. _readme-evolution.nilability-changes:
+
+nilability changes
+******************
+
+Description forthcoming.
+
+.. _readme-evolution.nilability-and-casts:
+
+nilability and casts
+********************
+
+Description forthcoming, including casts from c_void_ptr/c_ptr; including
+class downcasts.
+
+.. _readme-evolution.undecorated-classes-generic-management:
+
+undecorated classes have generic management
+********************************************
+
+Description forthcoming.
+
+.. _readme-evolution.new-default-intent-for-owned-and-shared:
+
+new default intent for owned and shared
+***************************************
+
+Description forthcoming, including removal of
+untyped-formal-instantiates-as-borrows rule.
+
+.. _readme-evolution.new-C-is-owned:
+
+new C is owned
+**************
+
+Description forthcoming.
+
+
+
+
 version 1.18, September 2018
 ----------------------------
 
