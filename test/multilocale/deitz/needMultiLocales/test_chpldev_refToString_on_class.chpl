@@ -2,13 +2,14 @@ class C {
   var x: int;
 }
 
-var c: unmanaged C;
+var c: unmanaged C?;
 
 on Locales(1) {
   c = new unmanaged C();
 }
 
-writeln(chpldev_refToString(c));
-writeln(chpldev_refToString(c.x));
+var cc = c:unmanaged C;
+writeln(chpldev_refToString(cc));
+writeln(chpldev_refToString(cc.x));
 
 delete c;

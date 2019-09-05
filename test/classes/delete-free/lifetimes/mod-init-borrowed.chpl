@@ -1,6 +1,9 @@
 pragma "safe"
 module M0 {
   proc main() {
+    use M1 only;
+    use M2 only;
+
     var a   = new borrowed A(10);
 
     writeln();

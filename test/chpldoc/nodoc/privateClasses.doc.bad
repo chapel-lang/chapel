@@ -1,5 +1,1 @@
-privateClasses.doc.chpl:1: syntax error: near 'class'
-privateClasses.doc.chpl:4: syntax error: near '}'
-privateClasses.doc.chpl:10: syntax error: near '}'
-privateClasses.doc.chpl:22: syntax error: near '}'
 cat: docs/source/modules/privateClasses.rst: No such file or directory

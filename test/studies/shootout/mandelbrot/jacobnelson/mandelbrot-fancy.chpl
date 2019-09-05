@@ -24,14 +24,14 @@ proc main()
                                     boundingBox={sizeRange, byteRange}));
 
   var ByteDom: domain(2, int(64)) dmapped ByteDist = {sizeRange, byteRange};
-  var bytes : [ByteDom] uint(8);
+  var ByteArr : [ByteDom] uint(8);
 
 
   const limit : real = 2.0;
   const maxIter : int = 50;
 
 
-  forall (byte,(y,bytex)) in zip(bytes,bytes.domain) do
+  forall (byte,(y,bytex)) in zip(ByteArr,ByteArr.domain) do
     {
       var byte_acc : uint(8) = 0;
 
@@ -69,9 +69,9 @@ proc main()
   writeln("P4");
   writeln(size," ",size);
 
-  for (x,y) in bytes.domain do
+  for (x,y) in ByteArr.domain do
     {
-      putchar(bytes(x,y));
+      putchar(ByteArr(x,y));
     }
 
 }

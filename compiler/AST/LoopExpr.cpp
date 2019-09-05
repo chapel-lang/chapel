@@ -494,7 +494,8 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 static bool isGlobalVar(Symbol* sym) {
   Symbol* parent = sym->defPoint->parentSymbol;
 
-  if (sym->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+  if (sym->hasFlag(FLAG_CHAPEL_STRING_LITERAL) ||
+      sym->hasFlag(FLAG_CHAPEL_BYTES_LITERAL)) {
     return true;
   }
 

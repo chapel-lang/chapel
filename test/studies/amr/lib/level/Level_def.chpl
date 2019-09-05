@@ -414,7 +414,7 @@ iter Level.ordered_grids {
   var grid_list = grids;
   
   while grid_list.numIndices > 0 {
-    var lowest_grid: unmanaged Grid;
+    var lowest_grid: unmanaged Grid?;
     var i_lowest = possible_ghost_cells.high;
 
     for grid in grid_list {
@@ -430,8 +430,8 @@ iter Level.ordered_grids {
       }
     }
     
-    yield lowest_grid;
-    grid_list.remove(lowest_grid);
+    yield lowest_grid!;
+    grid_list.remove(lowest_grid!);
   }
 }
 // /|"""""""""""""""""""""""""""""""""""""/|

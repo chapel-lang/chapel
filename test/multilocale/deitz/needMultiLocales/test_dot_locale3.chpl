@@ -1,9 +1,9 @@
 class C {
   var data: int;
-  var next: unmanaged C;
+  var next: unmanaged C?;
 }
 
-var c1, c2: unmanaged C;
+var c1, c2: unmanaged C?;
 
 on Locales(1) {
   c1 = new unmanaged C();

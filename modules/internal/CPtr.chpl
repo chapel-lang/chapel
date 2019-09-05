@@ -27,6 +27,7 @@
 module CPtr {
   use ChapelStandard;
   private use SysBasic, SysError;
+  private use HaltWrappers only;
 
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
@@ -275,17 +276,17 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_void_ptr) {
-    return new string(__primitive("ref to string", x), needToCopy=false);
+    return createStringWithOwnedBuffer(__primitive("ref to string", x));
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_ptr) {
-    return new string(__primitive("ref to string", x), needToCopy=false);
+    return createStringWithOwnedBuffer(__primitive("ref to string", x));
   }
   pragma "last resort"
   pragma "no doc"
-  inline proc _cast(type t:_anyManagement, x:c_void_ptr) {
+  inline proc _cast(type t:_anyManagementAnyNilable, x:c_void_ptr) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
-      if !chpl_legacyNilClasses {
+      if !chpl_legacyClasses {
         compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
         compilerWarning("cast to "+ _to_nilable(t):string +" instead");
       }
@@ -297,11 +298,11 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc _cast(type t:unmanaged?, x:c_void_ptr) {
+  inline proc _cast(type t:unmanaged class?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:borrowed?, x:c_void_ptr) {
+  inline proc _cast(type t:borrowed class?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
 
@@ -463,7 +464,6 @@ module CPtr {
   proc c_fn_ptr.this(args...) {
     compilerError("Can't call a C function pointer within Chapel");
   }
-
 
   // Offset the CHPL_RT_MD constant in order to preserve the value through
   // calls to chpl_here_alloc. See comments on offset_STR_* in String.chpl

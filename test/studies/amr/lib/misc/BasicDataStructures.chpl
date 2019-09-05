@@ -46,14 +46,14 @@ class List
 {
   
   type data_type;
-  var head: unmanaged Node(data_type);
+  var head: unmanaged Node(data_type)?;
   
   
   class Node 
   {
     type data_type;
     var data: data_type;
-    var next: unmanaged Node(data_type);
+    var next: unmanaged Node(data_type)?;
   }
   
   
@@ -77,7 +77,7 @@ class List
   
   proc clear ()
   {
-    var next_node: unmanaged Node(data_type);
+    var next_node: unmanaged Node(data_type)?;
     
     while head {
       next_node = head.next;
@@ -109,13 +109,13 @@ class Stack
 {
 
   type data_type;
-  var top:  unmanaged Node(data_type);
+  var top:  unmanaged Node(data_type)?;
 
   
   class Node {
     type data_type;
     var data: data_type;
-    var next: unmanaged Node(data_type);
+    var next: unmanaged Node(data_type)?;
   }
 
 
@@ -135,8 +135,8 @@ class Stack
   {
     if isEmpty() then halt("Attempting to pop off an empty stack.");
     
-    var data_out = top.data;
-    var new_top  = top.next;
+    var data_out = top!.data;
+    var new_top  = top!.next;
     delete top;
     top = new_top;
 
@@ -166,14 +166,14 @@ class Queue
 {
   
   type data_type;
-  var head: unmanaged Node(data_type);
-  var tail: unmanaged Node(data_type);
+  var head: unmanaged Node(data_type)?;
+  var tail: unmanaged Node(data_type)?;
 
   class Node {
     type data_type;
     var data: data_type;
-    var prev: unmanaged Node(data_type);
-    var next: unmanaged Node(data_type);
+    var prev: unmanaged Node(data_type)?;
+    var next: unmanaged Node(data_type)?;
   }
 
 

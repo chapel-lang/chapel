@@ -34,6 +34,8 @@ pragma "error mode fatal"
 module TOML {
 
 
+private use List;
+private use Map;
 use TomlParser;
 private use TomlReader;
 
@@ -308,8 +310,7 @@ module TomlParser {
         // Array
         if val == '['  {
           skipNext(source);
-          var Dom: domain(1);
-          var array: [Dom] unmanaged Toml;
+          var array: list(unmanaged Toml);
           while top(source) != ']' {
             if comma.match(top(source)) {
               skipNext(source);
@@ -319,7 +320,7 @@ module TomlParser {
             }
             else {
               var toParse = parseValue();
-              array.push_back(toParse);
+              array.append(toParse);
             }
           }
           skipNext(source);
@@ -574,8 +575,7 @@ used to recursively hold tables and respective values
       dt: datetime,
       dom: domain(1),
       arr: [dom] unmanaged Toml,
-      D: domain(string),
-      A: [D] unmanaged Toml,
+      A: map(false, string, unmanaged Toml),
       tag: fieldtag;
 
     // Empty
@@ -591,8 +591,8 @@ used to recursively hold tables and respective values
 
     // Toml
     proc init(A: [?D] unmanaged Toml) where isAssociativeDom(D) {
-      this.D = D;
-      this.A = A;
+      this.complete();
+      for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
@@ -639,6 +639,13 @@ used to recursively hold tables and respective values
       this.tag = fieldArr;
     }
 
+    // List
+    proc init(lst: list(unmanaged Toml)) {
+      // Cheat by translating directly into an array for now.
+      this.init(lst.toArray());
+    }
+
+
     // Clone
     proc init(root: unmanaged Toml) {
       // INIT TODO: Can this be written in phase one?
@@ -652,8 +659,7 @@ used to recursively hold tables and respective values
       this.ti = root.ti;
       this.dt = root.dt;
       this.s = root.s;
-      this.D = root.D;
-      for idx in root.D do this.A[idx] = new unmanaged Toml(root.A[idx]);
+      for idx in root.A do this.A[idx] = new unmanaged Toml(root.A[idx]);
       this.tag = root.tag;
     }
 
@@ -667,7 +673,7 @@ used to recursively hold tables and respective values
       }
       else {
         var next = '.'.join(indx[top+1..]);
-        if !this.A.domain.contains(indx[top]) {
+        if !this.A.contains(indx[top]) {
           throw new owned TomlError("No index found for " + tbl);
         }
         return this.A[indx[top]][next];
@@ -681,7 +687,7 @@ used to recursively hold tables and respective values
         var path = tblpath.split('.');
         var top = path.domain.first;
         if path.size < 2 {
-          if this.A.domain.contains(tblpath) == false {
+          if this.A.contains(tblpath) == false {
             return false;
           }
           else {
@@ -690,7 +696,7 @@ used to recursively hold tables and respective values
         }
         else {
           var next = '.'.join(path[top+1..]);
-          if this.A.domain.contains(path[top]) {
+          if this.A.contains(path[top]) {
             return this.A[path[top]].pathExists(next);
           }
           else {
@@ -782,8 +788,7 @@ used to recursively hold tables and respective values
         t = new unmanaged Toml(A);
       } else {
         t.tag = fieldToml;
-        t.D = D;
-        t.A = A;
+        for i in D do t.A[i] = A[i];
       }
     }
     proc set(tbl: string, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom) {
@@ -806,8 +811,7 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in TOML format */
     proc writeTOML(f) {
       try! {
-        var flatDom: domain(string);
-        var flat: [flatDom] unmanaged Toml;
+        var flat = new map(string, unmanaged Toml);
         this.flatten(flat);       // Flattens containing Toml
         printValues(f, this);     // Prints key values in containing Toml
         printTables(flat, f);       // Prints tables in containing Toml
@@ -820,8 +824,7 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in JSON format */
     proc writeJSON(f) {
       try! {
-        var flatDom: domain(string);
-        var flat: [flatDom] unmanaged Toml;
+        var flat = new map(string, unmanaged Toml);
         this.flatten(flat);           // Flattens containing Toml
 
         var indent=0;
@@ -832,11 +835,11 @@ used to recursively hold tables and respective values
         // Prints key values in containing Toml
         printValuesJSON(f, this, indent=indent);
 
-        if flatDom.contains('root') {
+        if flat.contains('root') {
           printValuesJSON(f, flat['root'], indent=indent);
-          flatDom.remove('root');
+          flat.remove('root');
         }
-        for k in flatDom.sorted() {
+        for k in flat.keysToArray().sorted() {
           f.writef('%s"%s": {\n', ' '*indent, k);
           indent += tabSpace;
           printValuesJSON(f, flat[k], indent=indent);
@@ -855,8 +858,8 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Flatten tables into flat associative array for writing */
-    proc flatten(flat: [?d] unmanaged Toml, rootKey = '') : flat.type {
-      for (k, v) in zip(this.D, this.A) {
+    proc flatten(ref flat: map(false, string, unmanaged Toml), rootKey = '') : flat.type {
+      for (k, v) in this.A.items() {
         if v.tag == fieldToml {
           var fullKey = k;
           if rootKey != '' then fullKey = '.'.join(rootKey, k);
@@ -868,13 +871,13 @@ used to recursively hold tables and respective values
     }
 
     pragma "no doc"
-    proc printTables(flat: [?d] unmanaged Toml, f:channel) {
-      if d.contains('root') {
+    proc printTables(ref flat: map(false, string, unmanaged Toml), f:channel) {
+      if flat.contains('root') {
         f.writeln('[root]');
         printValues(f, flat['root']);
-        d.remove('root');
+        flat.remove('root');
       }
-      for k in d.sorted() {
+      for k in flat.keysToArray().sorted() {
         f.writeln('[', k, ']');
         printValues(f, flat[k]);
       }
@@ -883,7 +886,7 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValues(f: channel, v: borrowed Toml) throws {
-      for (key, value) in zip(v.D, v.A) {
+      for (key, value) in v.A.items() {
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -937,7 +940,7 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
-      for (key, value, i) in zip(v.D, v.A, 1..v.D.size) {
+      for ((key, value), i) in zip(v.A.items(), 1..v.A.size) {
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -988,7 +991,7 @@ used to recursively hold tables and respective values
             throw new owned TomlError("Not yet supported");
           }
         }
-        if i != v.D.size {
+        if i != v.A.size {
           f.writef(',');
         }
         f.writef('\n');
@@ -1073,7 +1076,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     proc deinit() {
-      for a in A do delete a;
+      for a in A.values() do delete a;
       for a in arr do delete a;
     }
   }
@@ -1095,7 +1098,7 @@ module TomlReader {
     if !source.nextLine() {
       throw new owned TomlError("Reached end of file unexpectedly");
     }
-    return source.currentLine![source.currentLine!.D.first];
+    return source.currentLine![1];
   }
 
   /* Returns a boolean or whether or not another line can be read
@@ -1115,8 +1118,8 @@ module TomlReader {
   }
 
   proc skipLine(source) {
-    var emptyArray: [1..0] string;
-    var emptyCurrent = new unmanaged Tokens(emptyArray);
+    var emptyList: list(string);
+    var emptyCurrent = new unmanaged Tokens(emptyList);
     var ptrhold = source.currentLine;
     source.currentLine = emptyCurrent;
     var readNextLine = readLine(source);
@@ -1138,8 +1141,7 @@ module TomlReader {
   class Source {
 
     var tomlStr: string;
-    var tokenD = {1..0},
-      tokenlist: [tokenD] unmanaged Tokens;
+    var tokenlist: list(unmanaged Tokens);
     var currentLine: unmanaged Tokens?;
 
 
@@ -1154,7 +1156,7 @@ module TomlReader {
         splitLine(line);
       }
       if !this.isEmpty() {
-        currentLine = tokenlist[tokenD.first];
+        currentLine = tokenlist[1];
       }
     }
 
@@ -1163,7 +1165,7 @@ module TomlReader {
     }
 
     proc splitLine(line) {
-      var linetokens: [1..0] string;
+      var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
       const doubleQuotes = '(".*?")',           // ""
@@ -1192,31 +1194,31 @@ module TomlReader {
           }
 
           nonEmptyChar = true;
-          linetokens.push_back(strippedToken);
+          linetokens.append(strippedToken);
         }
       }
 
       // If no non-empty-chars => token is a blank line
       if(nonEmptyChar == false){
-        linetokens.push_back("\n");
+        linetokens.append("\n");
       }
 
       if !linetokens.isEmpty() {
         var tokens = new unmanaged Tokens(linetokens);
-        tokenlist.push_back(tokens);
+        tokenlist.append(tokens);
       }
     }
 
 
     proc nextLine() {
       if currentLine!.isEmpty() {
-        if tokenD.size == 1 {
+        if tokenlist.size == 1 {
           return false;
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.remove(tokenD.first);
-          currentLine = tokenlist[tokenD.first];
+          tokenlist.pop(1);
+          currentLine = tokenlist[1];
           delete ptrhold;
           return true;
         }
@@ -1258,29 +1260,23 @@ module TomlReader {
 
   /* Array wrapper */
   class Tokens {
-    var D: domain(1);
-    var A: [D] string;
+    var A: list(string);
 
-    proc init(A: [?D] string) {
-      this.D = D;
+    proc init(A: list(string)) {
       this.A = A;
     }
 
     proc skip() {
-      var idx = D.first;
-      var toke = A(idx);
-      A.remove(idx);
+      A.pop(1);
     }
 
     proc next() {
-      var idx =  D.first;
-      var toke = A(idx);
-      A.remove(idx);
+      var toke = A.pop(1);
       return toke;
     }
 
     proc addToke(toke: string) {
-      A.push_front(toke);
+      A.insert(1, toke);
     }
 
     proc isEmpty(): bool {
@@ -1298,7 +1294,8 @@ module TomlReader {
     }
 
     proc readWriteThis(f) {
-      f <~> this.A;
+      // TODO: The `list` type currently doesn't support readWriteThis!
+      f <~> this.A.toArray();
     }
   }
 }

@@ -397,7 +397,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
   if( outfile ) {
     // dtString immediates don't actually codegen as immediates, we just use
     // them for param string functionality.
-    if (immediate && ret.chplType != dtString) {
+    if (immediate && ret.chplType != dtString && ret.chplType != dtBytes) {
       ret.isLVPtr = GEN_VAL;
       if (immediate->const_kind == CONST_KIND_STRING) {
         ret.c += '"';
@@ -884,7 +884,7 @@ void VarSymbol::codegenDef() {
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
     llvm::Type *varType = type->codegen().type;
-    llvm::Value *varAlloca = createTempVarLLVM(varType, cname);
+    llvm::Value *varAlloca = createVarLLVM(varType, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {
@@ -1909,6 +1909,9 @@ void FnSymbol::codegenDef() {
 
   body->codegen();
   flushStatements();
+#ifdef HAVE_LLVM
+  info->currentStackVariables.clear();
+#endif
 
   if( outfile ) {
     fprintf(outfile, "}\n\n");

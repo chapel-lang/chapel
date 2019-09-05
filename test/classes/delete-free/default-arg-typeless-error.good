@@ -1,0 +1,4 @@
+default-arg-typeless-error.chpl:14: error: unresolved call 'bar(unmanaged C)'
+default-arg-typeless-error.chpl:5: note: this candidate did not match: bar(c = newC())
+default-arg-typeless-error.chpl:14: note: because call actual argument #1 with type unmanaged C
+default-arg-typeless-error.chpl:5: note: is passed to formal 'c: owned C'

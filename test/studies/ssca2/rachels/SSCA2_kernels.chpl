@@ -137,7 +137,7 @@ module SSCA2_kernels
 	    forall w in G.Neighbors (v) do {
 
 
-              if min_distance(w).compareExchangeStrong(-1, path_length) then {
+              if min_distance(w).compareAndSwap(-1, path_length) then {
                 Next_Level.add (w);
                 Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
 	      }
@@ -255,11 +255,15 @@ module SSCA2_kernels
           forall v in vertex_domain do
             tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
           for loc in Locales do on loc {
-            tpv.Active_Level[here.id] = new unmanaged Level_Set (Sparse_Vertex_List);
-            tpv.Active_Level[here.id].previous = nil;
-            tpv.Active_Level[here.id].next = new unmanaged Level_Set (Sparse_Vertex_List);;
-            tpv.Active_Level[here.id].next.previous = tpv.Active_Level[here.id];
-            tpv.Active_Level[here.id].next.next = nil;
+            var ls = new unmanaged Level_Set (Sparse_Vertex_List);
+
+            tpv.Active_Level[here.id] = ls;
+            ls.previous = nil;
+
+            var next = new unmanaged Level_Set (Sparse_Vertex_List);
+            ls.next = next;
+            next.previous = ls;
+            next.next = nil;
           }
       }
       var TPVM: unmanaged TPVManager(TPV.type) = new unmanaged TPVManager(TPV);
@@ -333,7 +337,7 @@ module SSCA2_kernels
 
         coforall loc in Locales with (ref remaining, ref barrier) do on loc {
           Active_Level[here.id].Members.clear();
-          Active_Level[here.id].next.Members.clear();
+          Active_Level[here.id].next!.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {
             // Establish the initial level sets for the breadth-first
             // traversal from s
@@ -375,9 +379,9 @@ module SSCA2_kernels
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
   
-                  if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
+                  if  BCaux[v].min_distance.compareAndSwap(-1, current_distance_c) {
                     var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
-                    Active_Level[aloc].next.Members.add (v);
+                    Active_Level[aloc].next!.Members.add (v);
                     if VALIDATE_BC then
                       Lcl_Sum_Min_Dist += current_distance_c;
                   }
@@ -407,12 +411,12 @@ module SSCA2_kernels
             // barrier.notify(); // This is expensive without network atomics
             //  for now, just do a normal barrier
 
-            if Active_Level[here.id].next.next == nil {
-              Active_Level[here.id].next.next = new unmanaged Level_Set (Sparse_Vertex_List);
-              Active_Level[here.id].next.next.previous = Active_Level[here.id].next;
-              Active_Level[here.id].next.next.next = nil;
+            if Active_Level[here.id].next!.next == nil {
+              Active_Level[here.id].next!.next = new unmanaged Level_Set (Sparse_Vertex_List);
+              Active_Level[here.id].next!.next!.previous = Active_Level[here.id].next;
+              Active_Level[here.id].next!.next!.next = nil;
             } else {
-              Active_Level[here.id].next.next.Members.clear();
+              Active_Level[here.id].next!.next!.Members.clear();
             }
             // barrier.wait(); // ditto
             barrier.barrier();
@@ -421,7 +425,7 @@ module SSCA2_kernels
             }
 
             barrier.barrier();
-            Active_Level[here.id] = Active_Level[here.id].next;
+            Active_Level[here.id] = Active_Level[here.id].next!;
             if Active_Level[here.id].Members.numIndices:bool then
               remaining = true;
 
@@ -464,10 +468,10 @@ module SSCA2_kernels
           }
 
           // back up to last level
-          var curr_Level =  Active_Level[here.id].previous;
+          var curr_Level =  Active_Level[here.id].previous!;
   
           for current_distance in 2 .. graph_diameter by -1 {
-            curr_Level = curr_Level.previous;
+            curr_Level = curr_Level.previous!;
 
             for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
                 f4(BCaux, Between_Cent$, u);
@@ -518,15 +522,15 @@ module SSCA2_kernels
           var tpv = TPV[t];
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
-            var level = al[here.id];
-            var prev = level.previous;
+            var level:unmanaged Level_Set? = al[here.id];
+            var prev = level!.previous;
             while prev != nil {
-              var p2 = prev.previous;
+              var p2 = prev!.previous;
               delete prev;
               prev = p2;
             }
             while level != nil {
-                var l2 = level.next;
+                var l2 = level!.next;
                 delete level;
                 level = l2;
             }
@@ -555,8 +559,8 @@ module SSCA2_kernels
   class Level_Set {
     type Sparse_Vertex_List;
     var Members  : Sparse_Vertex_List;
-    var previous : unmanaged Level_Set (Sparse_Vertex_List);
-    var next : unmanaged Level_Set (Sparse_Vertex_List);
+    var previous : unmanaged Level_Set (Sparse_Vertex_List)?;
+    var next : unmanaged Level_Set (Sparse_Vertex_List)?;
   }
 
   //

@@ -1,5 +1,5 @@
 
-type Q = [1..1] object;
+type Q = [1..1] borrowed object?;
 
 // this currently works
 var x0: Q;

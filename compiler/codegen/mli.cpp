@@ -72,7 +72,6 @@ private:
   fileinfo fiServerBundle;
   GenInfo* info;
 
-  bool shouldEmit(ModuleSymbol* md);
   bool shouldEmit(FnSymbol* fn);
   void setOutput(fileinfo* fi);
   void setOutputAndWrite(fileinfo* fi, const std::string& gen);
@@ -87,7 +86,7 @@ private:
   bool typeRequiresAllocation(Type* t);
 
   std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
-  std::string genMarshalBodyStringC(Type* t, bool out);
+  std::string genMarshalBodyString(Type* t, bool out);
   std::string genComment(const char* msg, const char* pfx="");
   std::string genNote(const char* msg);
   std::string genTodo(const char* msg);
@@ -177,18 +176,11 @@ MLIContext::~MLIContext() {
   return;
 }
 
-bool MLIContext::shouldEmit(ModuleSymbol* md) {
-  return (md->modTag != MOD_INTERNAL &&
-          md->modTag != MOD_STANDARD);
-}
-
 bool MLIContext::shouldEmit(FnSymbol* fn) {
-  return (fn->hasFlag(FLAG_EXPORT) && not fn->hasFlag(FLAG_GEN_MAIN_FUNC));
+  return (fn->hasFlag(FLAG_EXPORT) && isUserRoutine(fn));
 }
 
 void MLIContext::emit(ModuleSymbol* md) {
-  if (not this->shouldEmit(md)) { return; }
-
   const std::vector<FnSymbol*> fns = md->getTopLevelFunctions(true);
 
   for_vector(FnSymbol, fn, fns) {
@@ -331,7 +323,7 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
 // This will help us later down the line when we have to support other types
 // that push variable width buffers (arrays).
 //
-std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
+std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
   const char* target = out ? "obj" : "buffer";
   std::string gen;
 
@@ -366,8 +358,21 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
     // Null terminate the string we just received.
     gen += "((char*) buffer)[bytes] = '\\0';\n";
 
-    // Cast buffer to const char.
-    gen += "result = ((const char*) buffer);\n";
+    if (t == dtStringC) {
+      // Cast buffer to const char.
+      gen += "result = ((const char*) buffer);\n";
+    } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+               getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
+      // Cast buffer to int8*
+      Type* underlyingType = getDataClassType(t->symbol)->typeInfo();
+      const char* underlyingTypeName = underlyingType->symbol->cname;
+      gen += "result = ((";
+      gen += underlyingTypeName;
+      gen += "*) buffer);\n";
+    } else {
+      INT_FATAL("Unknown type passed to genMarshalBodyString, %s",
+                t->symbol->name);
+    }
   }
 
   return gen;
@@ -429,12 +434,17 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
 
   //
   // Handle translation of different type classes here. Note that right now
-  // the only things we can translate are primitive scalars.
+  // what we can translate is limited.
   //
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
   } else if (t == dtStringC) {
-    gen += this->genMarshalBodyStringC(t, out);
+    gen += this->genMarshalBodyString(t, out);
+  } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+             getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
+    // A different strategy will be needed if we ever intend to support
+    // c_ptr(int8)s that weren't originally Chapel strings.
+    gen += this->genMarshalBodyString(t, out);
   } else {
     USR_FATAL(t, "Multi-locale libraries do not support type: %s",
               t->name());
@@ -627,7 +637,9 @@ bool MLIContext::isSupportedType(Type* t) {
 
 void MLIContext::verifyPrototype(FnSymbol* fn) {
 
-  if (fn->retType != dtVoid && not isSupportedType(fn->retType)) {
+  if (fn->retType != dtVoid && not isSupportedType(fn->retType) &&
+      exportedStrRets.find(fn) == exportedStrRets.end()) {
+    // We only allow c_ptr(int8) if it was originally a Chapel string return
     Type* t = fn->retType;
     USR_FATAL(fn, "Multi-locale libraries do not support return type: %s",
               t->name());
@@ -918,7 +930,7 @@ std::string MLIContext::genSizeof(std::string& var) {
 }
 
 bool MLIContext::typeRequiresAllocation(Type* t) {
-  return (t == dtStringC);
+  return (t == dtStringC || t->symbol->hasFlag(FLAG_C_PTR_CLASS));
 }
 
 std::string MLIContext::genNewDecl(const char* t, const char* v) {

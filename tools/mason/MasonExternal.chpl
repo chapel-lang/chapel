@@ -19,6 +19,8 @@
 
 config const spackVersion = "releases/v0.11.2";
 
+private use List;
+private use Map;
 use MasonUtils;
 use FileSystem;
 use MasonHelp;
@@ -40,6 +42,8 @@ proc masonExternal(args: [] string) {
     else if args[2] == "--setup" {
       if isDir(SPACK_ROOT) then
         throw new owned MasonError("Spack backend is already installed");
+      else if MASON_OFFLINE then
+        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
       else {
         setupSpack();
         exit(0);
@@ -238,7 +242,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
   var exDom: domain(string);
   var exDepTree: [exDom] unmanaged Toml;
 
-  for (name, spec) in zip(exDeps.D, exDeps.A) {
+  for (name, spec) in exDeps.A.items() {
     try! {
       select spec.tag {
           when fieldtag.fieldToml do continue;
@@ -272,10 +276,10 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 
 
 /* Retrieves build information for MasonUpdate */
-proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throws {
+proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
 
   // put above try b/c compiler comlains about return value
-  var depList: [1..0] unmanaged Toml;
+  var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
   var spkgToml: [spkgDom] unmanaged Toml;
   var spkgInfo = new unmanaged Toml(spkgToml);
@@ -301,13 +305,13 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
       spkgInfo.set("libs", libs);
       spkgInfo.set("include", include);
 
-      while dependencies.domain.size > 0 {
-        var dep = dependencies[dependencies.domain.first];
+      while dependencies.size > 0 {
+        var dep = dependencies[1];
         var depSpec = dep.split("@", 1);
         var name = depSpec[1];
 
         // put dep into current packages dep list
-        depList.push_back(new unmanaged Toml(name));
+        depList.append(new unmanaged Toml(name));
 
         // get dependencies of dep
         var depsOfDep = getSpkgDependencies(dep);
@@ -317,10 +321,11 @@ proc getSpkgInfo(spec: string, dependencies: [?d] string) : unmanaged Toml throw
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        dependencies.remove(dependencies.domain.first);
+        dependencies.pop(1);
       }
-      if depList.domain.size > 0 {
-        spkgInfo.set("dependencies", depList);
+      if depList.size > 0 {
+        // Temporarily use toArray here to avoid supporting list.
+        spkgInfo.set("dependencies", depList.toArray());
       }
     }
     else {
@@ -348,7 +353,7 @@ proc getSpkgDependencies(spec: string) throws {
   const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
-  var dependencies: [1..0] string; // a list of pkg dependencies
+  var dependencies: list(string);
   for item in pkgInfo.split() {
 
     if item.rfind(spec) != 0 {
@@ -356,7 +361,7 @@ proc getSpkgDependencies(spec: string) throws {
     }
     else if found == true {
       const dep = item.strip("^");
-      dependencies.push_back(dep); // format: pkg@version%compiler
+      dependencies.append(dep);
     }
   }
   if !found {
@@ -368,6 +373,16 @@ proc getSpkgDependencies(spec: string) throws {
 
 /* Install an external package */
 proc installSpkg(args: [?d] string) throws {
+  if hasOptions(args, '-h', '--help') {
+    masonInstallHelp();
+    exit(1);
+  }
+
+  if MASON_OFFLINE && args.count('--update') == 0 {
+    writeln('Cannot install Spack packages when MASON_OFFLINE=true');
+    return;
+  }
+
   if args.size < 4 {
     masonInstallHelp();
     exit(1);

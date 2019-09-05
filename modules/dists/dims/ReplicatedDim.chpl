@@ -24,8 +24,8 @@
 // The required methods are marked with 'REQ' followed by a brief description.
 //
 
-use DimensionalDist2D;
-use RangeChunk only ;
+private use DimensionalDist2D;
+private use RangeChunk only ;
 
 /*
 This Replicated dimension specifier is for use with the

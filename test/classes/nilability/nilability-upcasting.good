@@ -31,10 +31,12 @@ casts to borrowed Child
 cb:borrowed Child
 borrowed Child {p = 1, c = 2}
 borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
 cbq:borrowed Child
 borrowed Child {p = 1, c = 2}
 borrowed Child {p = 1, c = 2}
 cu:borrowed Child
+borrowed Child {p = 1, c = 2}
 borrowed Child {p = 1, c = 2}
 borrowed Child {p = 1, c = 2}
 cuq:borrowed Child
@@ -54,16 +56,20 @@ borrowed Child? {p = 1, c = 2}
 cbq:borrowed Child?
 borrowed Child? {p = 1, c = 2}
 borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
 cu:borrowed Child?
 borrowed Child? {p = 1, c = 2}
 borrowed Child? {p = 1, c = 2}
 cuq:borrowed Child?
 borrowed Child? {p = 1, c = 2}
 borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
 nbq:borrowed Child?
 borrowed Child? nil
 borrowed Child? nil
+borrowed Child? nil
 nuq:borrowed Child?
+borrowed Child? nil
 borrowed Child? nil
 borrowed Child? nil
 
@@ -71,10 +77,12 @@ casts to unmanaged Child
 cb:unmanaged Child
 unmanaged Child {p = 1, c = 2}
 unmanaged Child {p = 1, c = 2}
+unmanaged Child {p = 1, c = 2}
 cbq:unmanaged Child
 unmanaged Child {p = 1, c = 2}
 unmanaged Child {p = 1, c = 2}
 cu:unmanaged Child
+unmanaged Child {p = 1, c = 2}
 unmanaged Child {p = 1, c = 2}
 unmanaged Child {p = 1, c = 2}
 cuq:unmanaged Child
@@ -94,16 +102,20 @@ unmanaged Child? {p = 1, c = 2}
 cbq:unmanaged Child?
 unmanaged Child? {p = 1, c = 2}
 unmanaged Child? {p = 1, c = 2}
+unmanaged Child? {p = 1, c = 2}
 cu:unmanaged Child?
 unmanaged Child? {p = 1, c = 2}
 unmanaged Child? {p = 1, c = 2}
 cuq:unmanaged Child?
 unmanaged Child? {p = 1, c = 2}
 unmanaged Child? {p = 1, c = 2}
+unmanaged Child? {p = 1, c = 2}
 nbq:unmanaged Child?
 unmanaged Child? nil
 unmanaged Child? nil
+unmanaged Child? nil
 nuq:unmanaged Child?
+unmanaged Child? nil
 unmanaged Child? nil
 unmanaged Child? nil
 

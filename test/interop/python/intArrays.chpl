@@ -1,4 +1,4 @@
-export proc takesArray(x: [] int) {
+export proc takesArray(in x: [] int) {
   writeln(x); // Note: this assumes x will have initial contents
 }
 

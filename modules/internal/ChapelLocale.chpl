@@ -67,6 +67,7 @@
 module ChapelLocale {
 
   use LocaleModel;
+  private use HaltWrappers only;
 
   //
   // Node and sublocale types and special sublocale values.
@@ -214,22 +215,22 @@ module ChapelLocale {
 
     pragma "no doc"
     inline proc runningTaskCntSet(val : int) {
-      runningTaskCounter.write(val, memory_order_relaxed);
+      runningTaskCounter.write(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntAdd(val : int) {
-      runningTaskCounter.add(val, memory_order_relaxed);
+      runningTaskCounter.add(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntSub(val : int) {
-      runningTaskCounter.sub(val, memory_order_relaxed);
+      runningTaskCounter.sub(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCnt() {
-      var rtc = runningTaskCounter.read(memory_order_relaxed);
+      var rtc = runningTaskCounter.read(memoryOrder.relaxed);
       return if (rtc <= 0) then 1 else rtc;
     }
     //------------------------------------------------------------------------}
@@ -378,7 +379,7 @@ module ChapelLocale {
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
   pragma "no doc"
-  pragma "locale private" var rootLocale : locale? = nil;
+  pragma "locale private" var rootLocale : unmanaged locale? = nil;
   pragma "no doc"
   pragma "locale private" var rootLocaleInitialized = false;
 
@@ -397,7 +398,7 @@ module ChapelLocale {
   // module.
   //
   pragma "no doc"
-  var origRootLocale : locale? = nil;
+  var origRootLocale : unmanaged locale? = nil;
 
   pragma "no doc"
   class AbstractRootLocale : locale {
@@ -494,7 +495,7 @@ module ChapelLocale {
           // have some risk of getting part of a wide pointer).
           // Without this fence, there is a race condition on
           // a weakly-ordered architecture.
-          atomic_fence();
+          atomicFence();
           var count = 0;
           for f in flags do
             if f then count += 1;
@@ -505,7 +506,7 @@ module ChapelLocale {
         }
         // Let the others go
         for f in flags do
-          f.s.testAndSet();
+          f!.s.testAndSet();
       } else {
         var f = new unmanaged localesSignal();
         // expose my flag to locale 0
@@ -727,6 +728,6 @@ module ChapelLocale {
   //
   pragma "no doc"
   proc deinit() {
-    delete _to_unmanaged(origRootLocale);
+    delete origRootLocale;
   }
 }

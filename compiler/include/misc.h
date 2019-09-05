@@ -104,6 +104,8 @@ void        clean_exit(int status) chpl_noreturn;
 void        printCallStack();
 void        printCallStackCalls();
 
+bool        fatalErrorsEncountered();
+void        clearFatalErrors();
 
 // must be exported to avoid dead-code elimination by C++ compiler
 void        gdbShouldBreakHere();

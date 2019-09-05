@@ -90,14 +90,6 @@ module CString {
     __primitive("=", a, b.c_str());
   }
 
-  pragma "fn synchronization free"
-  extern proc chpl_bool_to_c_string(x:bool) : c_string;
-
-  inline proc _cast(type t:c_string, x: chpl_anybool) {
-    compilerWarning("cast from bool to c_string is deprecated");
-    return chpl_bool_to_c_string(x:bool);
-  }
-
   //
   // casts from nil to c_string
   //
@@ -160,49 +152,6 @@ module CString {
   //
   inline proc _cast(type t:chpl_anycomplex, x:c_string) throws
     return try ((x:string).strip()): t;
-
-  pragma "fn synchronization free"
-  extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
-  //
-  // casts from real
-  //
-  inline proc _cast(type t:c_string, x:chpl_anyreal) {
-    compilerWarning("cast from real to c_string is deprecated");
-    return real_to_c_string(x:real(64), false);
-  }
-
-  //
-  // casts from imag
-  //
-  inline proc _cast(type t:c_string, x:chpl_anyimag) {
-    compilerWarning("cast from imag to c_string is deprecated");
-    // The Chapel version of the imag --> real cast smashes it flat rather than
-    // just stripping off the "i".  See ChapelBase:965.
-    var r = __primitive("cast", real(64), x);
-    return real_to_c_string(r, true);
-  }
-
-  //
-  // casts from integral
-  //
-  proc _cast(type t:c_string, x: integral) {
-    compilerWarning("cast from integral to c_string is deprecated");
-    pragma "fn synchronization free"
-    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
-
-    var isErr: bool;
-    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
-
-    // this should only happen if the runtime is broken
-    if isErr {
-      try! {
-        throw new owned IllegalArgumentError("Unexpected case in integral_to_c_string");
-      }
-    }
-
-    return csc;
-  }
-
 
   //
   // primitive c_string functions and methods

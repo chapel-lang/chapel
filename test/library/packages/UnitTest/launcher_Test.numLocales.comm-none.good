@@ -33,16 +33,6 @@ Not a MultiLocale Environment. $CHPL_COMM = none
 TestIncorrectNumLocales: Required Locales = 16 8
 
 ======================================================================
-SKIPPED test_locales.chpl: s14()
-----------------------------------------------------------------------
-s14() skipped as s10() gave an Error
-
-======================================================================
-SKIPPED test_locales.chpl: s11()
-----------------------------------------------------------------------
-s11() skipped as s14() skipped
-
-======================================================================
 SKIPPED test_locales.chpl: s6()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
@@ -59,6 +49,16 @@ SKIPPED test_locales.chpl: s9()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
 TestIncorrectNumLocales: Required Locales = 16 8
+
+======================================================================
+SKIPPED test_locales.chpl: s14()
+----------------------------------------------------------------------
+s14() skipped as s10() gave an Error
+
+======================================================================
+SKIPPED test_locales.chpl: s11()
+----------------------------------------------------------------------
+s11() skipped as s14() skipped
 
 ======================================================================
 SKIPPED test_locales.chpl: s12()

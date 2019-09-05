@@ -680,7 +680,9 @@ static void process_arg(const ArgumentState*       state,
           break;
 
         case 'P':
-          strncpy((char*) desc->location, arg, FILENAME_MAX);
+          if (desc->location != NULL) {
+            strncpy((char*) desc->location, arg, FILENAME_MAX);
+          }
           break;
 
         case 'S':

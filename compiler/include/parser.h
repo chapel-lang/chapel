@@ -39,6 +39,11 @@ extern BlockStmt*  yyblock;
 
 void               parse();
 
+void addInternalModulePath(const ArgumentDescription* desc,
+                           const char* newpath);
+void addStandardModulePath(const ArgumentDescription* desc,
+                           const char* newpath);
+
 void               setupModulePaths();
 
 void               addFlagModulePath(const char* newpath);

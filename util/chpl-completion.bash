@@ -78,6 +78,7 @@ _chpl ()
 --ignore-errors \
 --ignore-errors-for-pass \
 --ignore-local-classes \
+--ignore-nilability-errors \
 --ignore-user-errors \
 --incremental \
 --infer-const-refs \
@@ -89,7 +90,7 @@ _chpl ()
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
---legacy-nilable-classes \
+--legacy-classes \
 --lib-linkage \
 --lib-search-path \
 --library \
@@ -160,6 +161,7 @@ _chpl ()
 --no-ignore-errors \
 --no-ignore-errors-for-pass \
 --no-ignore-local-classes \
+--no-ignore-nilability-errors \
 --no-ignore-user-errors \
 --no-incremental \
 --no-infer-const-refs \
@@ -167,7 +169,7 @@ _chpl ()
 --no-inline \
 --no-inline-iterators \
 --no-interprocedural-alias-analysis \
---no-legacy-nilable-classes \
+--no-legacy-classes \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
@@ -239,6 +241,8 @@ _chpl ()
 --parse-only \
 --parser-debug \
 --permit-unhandled-module-errors \
+--prepend-internal-module-dir \
+--prepend-standard-module-dir \
 --preserve-inlined-line-numbers \
 --print-all-candidates \
 --print-callgraph \

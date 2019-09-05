@@ -1,1 +1,1 @@
-privateEnum.chpl:1: syntax error: near 'enum'
+privateEnum.chpl:1: error: Can't apply private to types yet

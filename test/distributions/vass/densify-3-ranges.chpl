@@ -35,7 +35,7 @@ for /*param*/ len in 1..5 {
   } // for sa
 } // for len
 
-proc runSuite(/*param*/ len:int, /*param*/ sa:int, /*param*/ ssign:int, w: range(?,?,?)) {
+proc runSuite(/*param*/ len:int, /*param*/ sa:int, /*param*/ ssign:int, w: range(?)) {
   proc verify(r) { verify(w, r); }
 
   //writeln("runSuite ", (len,sa,ssign, w));

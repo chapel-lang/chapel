@@ -268,7 +268,9 @@ else
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
-    gen_version_cce=8.7.7
+    # Also, the next time this gets updated, try removing the craype pin in
+    # load_prgenv_cray
+    gen_version_cce=8.7.8
 
     target_cpu_module=craype-arm-thunderx2
 
@@ -297,6 +299,8 @@ else
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
+        # Try removing this line the next time we update compiler versions
+        load_module_version craype 2.6.1.9
         load_module_version $target_compiler $target_version
 
         # pin to mpich/libsci versions compatible with the gen compiler

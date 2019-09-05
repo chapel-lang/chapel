@@ -64,6 +64,7 @@
 */
 module Path {
 
+private use List;
 use SysError;
 private use Sys;
 
@@ -166,7 +167,6 @@ proc basename(name: string): string {
 // NOTE: Add in intent here to temporarily fix compiler memory leak related
 // to use of varargs.
 proc commonPath(in paths: string ...?n): string {
-
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
   var firstPath = paths(1);
@@ -182,25 +182,27 @@ proc commonPath(in paths: string ...?n): string {
     return firstPath;
   }
 
-  var prefixArray = firstPath.split(pathSep, -1, false);
-  // array of resultant prefix string
+  var prefixList = new list(string);
+  for x in firstPath.split(pathSep, -1, false) do
+    prefixList.append(x);
 
-  var pos = prefixArray.size;   // rightmost index of common prefix
-  var minPathLength = prefixArray.size;
+  var pos = prefixList.size;   // rightmost index of common prefix
+  var minPathLength = prefixList.size;
 
   for i in 2..n do {
 
-    var tempArray = paths(i).split(pathSep, -1, false);
-    // temporary array storing the current path under consideration
+    var tempList = new list(string);
+    for x in paths(i).split(pathSep, -1, false) do
+      tempList.append(x);
 
-    var minimum = min(prefixArray.size, tempArray.size);
+    var minimum = min(prefixList.size, tempList.size);
 
     if minimum < minPathLength then {
       minPathLength = minimum;
     }
 
     for itr in 1..minimum do {
-      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+      if (tempList[itr]!=prefixList[itr] && itr<=pos) {
         pos = itr;
         flag=1;   // indicating that pos was changed
         break;
@@ -209,15 +211,16 @@ proc commonPath(in paths: string ...?n): string {
   }
 
   if (flag == 1) {
-    prefixArray.remove(pos..prefixArray.size);
+    for i in pos..prefixList.size by -1 do
+      try! prefixList.pop(i);
   } else {
-    prefixArray.remove(minPathLength+1..prefixArray.size);
+    for i in (minPathLength + 1)..prefixList.size by -1 do
+      try! prefixList.pop(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
 
-  result = pathSep.join(prefixArray);
-
+  result = pathSep.join(prefixList.these());
   return result;
 }
 
@@ -232,7 +235,6 @@ proc commonPath(in paths: string ...?n): string {
 */
 
 proc commonPath(paths: []): string {
-
   var result: string = "";    // result string
   var inputLength = paths.size;   // size of input array
   if inputLength == 0 then {     // if input is empty, return empty string.
@@ -260,25 +262,29 @@ proc commonPath(paths: []): string {
     delimiter = "\\";
   }
 
-  var prefixArray = firstPath.split(delimiter, -1, false);
+  var prefixList = new list(string);
+  for x in firstPath.split(delimiter, -1, false) do
+    prefixList.append(x);
   // array of resultant prefix string
 
-  var pos = prefixArray.size;   // rightmost index of common prefix
-  var minPathLength = prefixArray.size;
+  var pos = prefixList.size;   // rightmost index of common prefix
+  var minPathLength = prefixList.size;
 
   for i in (start+1)..end do {
 
-    var tempArray = paths[i].split(delimiter, -1, false);
+    var tempList = new list(string);
+    for x in paths[i].split(delimiter, -1, false) do
+      tempList.append(x);
     // temporary array storing the current path under consideration
 
-    var minimum = min(prefixArray.size, tempArray.size);
+    var minimum = min(prefixList.size, tempList.size);
 
     if minimum < minPathLength then {
       minPathLength = minimum;
     }
 
     for itr in 1..minimum do {
-      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+      if (tempList[itr]!=prefixList[itr] && itr<=pos) {
         pos = itr;
         flag = 1;   // indicating that pos was changed
         break;
@@ -287,15 +293,16 @@ proc commonPath(paths: []): string {
   }
 
   if (flag == 1) {
-    prefixArray.remove(pos..prefixArray.size);
+    for i in pos..prefixList.size by -1 do
+      try! prefixList.pop(i);
   } else {
-    prefixArray.remove(minPathLength+1..prefixArray.size);
+    for i in (minPathLength + 1)..prefixList.size by -1 do
+      try! prefixList.pop(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
 
-  result = delimiter.join(prefixArray);
-
+  result = delimiter.join(prefixList.these());
   return result;
 }
 
@@ -402,24 +409,10 @@ proc file.getParentName(): string throws {
   try check();
 
   try {
-    return dirname(new string(this.realPath()));
+    return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
   }
-}
-
-pragma "no doc"
-proc file.getParentName(out error:syserr): string {
-  compilerWarning("This version of file.getParentName() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.getParentName();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "unknown";
 }
 
 /* Determines whether the path specified is an absolute path.
@@ -534,7 +527,7 @@ private proc normalizeLeadingSlashCount(name: string): int {
   :rtype: `string`
 */
 proc normPath(name: string): string {
-
+  
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
@@ -544,7 +537,7 @@ proc normPath(name: string): string {
   const leadingSlashes = normalizeLeadingSlashCount(name);
 
   var comps = name.split(pathSep);
-  var outComps : [1..0] string;
+  var outComps = new list(string);
 
   for comp in comps {
     if comp == "" || comp == curDir then
@@ -553,13 +546,13 @@ proc normPath(name: string): string {
     // Second case exists because we cannot go up past the top level.
     // Third case continues a chain of leading up-levels.
     if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
-        (!outComps.isEmpty() && outComps.back() == parentDir) then
-      outComps.push_back(comp);
+        (!outComps.isEmpty() && outComps[outComps.size] == parentDir) then
+      outComps.append(comp);
     else if !outComps.isEmpty() then
-      outComps.pop_back();
+      try! outComps.pop();
   }
 
-  var result = pathSep * leadingSlashes + pathSep.join(outComps);
+  var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
 
   if result == "" then
     return curDir;
@@ -586,7 +579,7 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(name.localize().c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return new string(res, needToCopy=false);
+  return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -624,7 +617,7 @@ proc file.realPath(): string throws {
   var res: c_string;
   var err = chpl_fs_realpath_file(_file_internal, res);
   if err then try ioerror(err, "in file.realPath");
-  return new string(res, needToCopy=false);
+  return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -689,16 +682,19 @@ proc relPath(name: string, start:string=curDir): string throws {
   const prefixLen = commonPrefixLength(startComps, nameComps);
 
   // Append up-levels until we reach the point where the paths diverge.
-  var outComps : [1..(startComps.size - prefixLen)] string = parentDir;
+  var outComps = new list(string);
+  for i in 1..(startComps.size - prefixLen) do
+    outComps.append(parentDir);
 
   // Append the portion of name following the common prefix.
   if !nameComps.isEmpty() then
-    outComps.push_back(nameComps[(prefixLen + 1)..nameComps.size]);
+    for x in nameComps[(prefixLen + 1)..nameComps.size] do
+      outComps.append(x);
 
   if outComps.isEmpty() then
     return curDir;
 
-  return joinPath(outComps);
+  return joinPath(outComps.toArray());
 }
 
 /*
@@ -724,6 +720,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
+  use Path only;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
 }

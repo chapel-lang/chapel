@@ -152,7 +152,7 @@
  */
 module ChapelRange {
 
-  private use ChapelBase, SysBasic;
+  private use ChapelBase, SysBasic, HaltWrappers;
 
   use Math;
 
@@ -292,17 +292,20 @@ module ChapelRange {
 
   pragma "no doc"
   proc range.init=(other : range(?i,?b,?s)) {
-    type idxType = this.type.idxType;
-    if this.type.boundedType != b {
+    type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
+    param boundedType = if this.type.boundedType == ? then b else this.type.boundedType;
+    param stridable   = if this.type.stridable   == ? then s else this.type.stridable;
+
+    if boundedType != b {
       compilerError("range(boundedType=" + this.type.boundedType:string + ") cannot be initialized from range(boundedType=" + b:string + ")");
     }
 
-    if !this.type.stridable && s then
+    if !stridable && s then
       compilerError("cannot initialize a non-stridable range from a stridable range");
 
-    const str = if this.type.stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
+    const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
 
-    this.init(idxType, this.type.boundedType, this.type.stridable,
+    this.init(idxType, boundedType, stridable,
               chpl__intToIdx(idxType, other._low), chpl__intToIdx(idxType, other._high),
               str,
               chpl__intToIdx(idxType, chpl__idxToInt(other.alignment)),
@@ -1555,16 +1558,37 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     type resultType = r.intIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    if (count == 0) then
-      // Return a degenerate range.
-      return new range(idxType = r.idxType,
-                       boundedType = BoundedRangeType.bounded,
-                       stridable = r.stridable,
-                       _low = r.chpl_intToIdx(1),
-                       _high = r.chpl_intToIdx(0),
-                       _stride = r.stride,
-                       _alignment = r.chpl_intToIdx(0),
-                       _aligned = false);
+    proc absSameType(str) {
+      if (r.stride < 0) {
+        return (-r.stride):resultType;
+      } else {
+        return r.stride:resultType;
+      }
+    }
+
+    if (count == 0) {
+      if (r.hasLowBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = chpl__intToIdx(r.idxType, r._low),
+                         _high = chpl__intToIdx(r.idxType, r._low - absSameType(r.stride)),
+                         _stride = r.stride,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
+                         _aligned = r.aligned);
+      } else if (r.hasHighBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = chpl__intToIdx(r.idxType, r._high + absSameType(r.stride)),
+                         _high = chpl__intToIdx(r.idxType, r._high),
+                         _stride = r.stride,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
+                         _aligned = r.aligned);
+      } else {
+        halt("Internal error: Unexpected case in chpl_count_help");
+      }
+    }
 
     if boundsChecking && !r.hasFirst() && count > 0 then
       boundsCheckHalt("With a positive count, the range must have a first index.");
@@ -1861,7 +1885,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
-    const (start, end) = if count == 0 then (1:low.type, 0:low.type)
+    // The casts in the 'then' clause are seemingly unnecessary, but
+    // avoid C compile-time warnings when 'low' is min(int)
+    const (start, end) = if count == 0 then (low, (low:uint - 1):low.type)
                                        else (low, low + (count:low.type - 1));
 
     for i in chpl_direct_param_stride_range_iter(start, end, 1) do yield i;
@@ -2574,6 +2600,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   inline proc chpl__intToIdx(type idxType, param i: integral) param where isBoolType(idxType) {
     return i: bool;
+  }
+
+  inline proc chpl__intToIdx(type idxType, i: nothing) {
+    return none;
   }
 
   inline proc chpl__idxToInt(i: integral) {

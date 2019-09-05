@@ -176,7 +176,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = scope->lookup(src)) {
+    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -508,6 +508,20 @@ void UseStmt::trackMethods() {
   }
 }
 
+ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (strcmp(name, se->symbol()->name) == 0) {
+        return modSym;
+      }
+    }
+  } else {
+    // TODO: Need to handle matches against more general expressions here
+    // e.g. 'use M.N.O' should make 'O' available, I think
+  }
+  return NULL;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -540,7 +554,6 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   } else if (except == true) {
     if (matchedNameOrConstructor(name) == true) {
       retval =  true;
-
     } else {
       retval = false;
     }

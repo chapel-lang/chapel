@@ -44,6 +44,7 @@ static IntentTag constIntentForType(Type* t) {
       t == dtCFnPtr ||
       t == dtNothing ||
       t == dtVoid ||
+      t == dtUninstantiated ||
       t->symbol->hasFlag(FLAG_RANGE) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
@@ -121,6 +122,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtVoid                             ||
              t == dtOpaque                           ||
              t == dtNothing                          ||
+             t == dtUninstantiated                   ||
              t->symbol->hasFlag(FLAG_DOMAIN)         ||
              t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
@@ -282,14 +284,9 @@ void resolveArgIntent(ArgSymbol* arg) {
             (formalRequiresTemp(arg, fn) &&
              shouldAddFormalTempAtCallSite(arg, fn)))
           intent = INTENT_REF;
-        else
-          intent = constIntentForType(arg->type);
-      } else {
-        // In this case, C can copy for 'in' e.g. for ints
-        // There, we leave the intent alone rather than making it 'const in',
-        // since an 'in' formal can still be modified in the body of the
-        // function.
       }
+      // Otherwise, leave the intent INTENT_IN so that the formal can
+      // be modified in the body of the function.
     }
   }
 

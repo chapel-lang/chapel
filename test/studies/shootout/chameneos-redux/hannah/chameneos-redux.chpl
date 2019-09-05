@@ -25,7 +25,7 @@ config const verbose = false;
 
 class MeetingPlace {
   var spotsLeft$ : sync int;
-  var partner : unmanaged Chameneos;
+  var partner : unmanaged Chameneos?;
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
@@ -74,7 +74,7 @@ class Chameneos {
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st */
   proc meet(place : unmanaged MeetingPlace) {
-    var partner : unmanaged Chameneos;
+    var partner : unmanaged Chameneos?;
     var spotsLeft = place.spotsLeft$;
 
     if (spotsLeft == 0) {

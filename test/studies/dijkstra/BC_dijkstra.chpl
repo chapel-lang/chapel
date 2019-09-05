@@ -65,22 +65,22 @@ module BC_dijkstra {
           Records[neighbor].sigma = sigma;
           InsertNode(neighbor, heap, Records);
 
-          Records[neighbor].preEdge.edge = edgeIndex;
-          Records[neighbor].preEdge.next = nil;
+          Records[neighbor].preEdge!.edge = edgeIndex;
+          Records[neighbor].preEdge!.next = nil;
 
         // A shorter path from S to neighbor is found
         //     reset neighbor's distance and sigma and adjust record's
         //     position in heap node is the pre node of neighbor
         } else if (neighborDistance > newDistance) {
 
-          var ptr: unmanaged PreEdge = Records[neighbor].preEdge.next;
+          var ptr: unmanaged PreEdge? = Records[neighbor].preEdge!.next;
 
           Records[neighbor].distance = newDistance;
           Records[neighbor].sigma = sigma;
           HeapUp(Records[neighbor].inHeap, heap, Records);
 
-          Records[neighbor].preEdge.edge = edgeIndex;
-          Records[neighbor].preEdge.next = nil;
+          Records[neighbor].preEdge!.edge = edgeIndex;
+          Records[neighbor].preEdge!.next = nil;
 
         // Another shortest path from S to neighbor is found
         //     increment neighbor's sigma
@@ -91,8 +91,8 @@ module BC_dijkstra {
           Records[neighbor].sigma += sigma;
 
           ptr.edge = edgeIndex;
-          ptr.next = Records[neighbor].preEdge.next;
-          Records[neighbor].preEdge.next = ptr;
+          ptr.next = Records[neighbor].preEdge!.next;
+          Records[neighbor].preEdge!.next = ptr;
         }
       }
     }
@@ -105,11 +105,11 @@ module BC_dijkstra {
 //      Nodes[node].vb += Records[node].delta;
       Nodes[node].vb$ += Records[node].delta;
 
-      var ptr: unmanaged PreEdge = Records[node].preEdge;
+      var ptr: unmanaged PreEdge? = Records[node].preEdge;
 
       while (ptr != nil) {
-        var edge: int = ptr.edge;
-        ptr = ptr.next;
+        var edge: int = ptr!.edge;
+        ptr = ptr!.next;
 
         var predecessor: int = Edges[edge].n1;
         if (predecessor == node) then predecessor = Edges[edge].n2;

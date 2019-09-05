@@ -292,9 +292,7 @@ proc main {
   var t_create: Timer();
   var t_dfs   : Timer();
   var counted, created: int;
-  var root: unmanaged TreeNode;
-  
-  root = new unmanaged TreeNode(0);
+  var root = new unmanaged TreeNode(0);
   rng_init(root.hash[1], SEED:sha_int);
 
   uts_showSearchParams();

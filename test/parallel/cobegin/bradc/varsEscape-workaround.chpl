@@ -1,5 +1,5 @@
 class C {
-  var left, right: unmanaged C;
+  var left, right: unmanaged C?;
   
   proc countNodes(): int {
     var lnodes, rnodes: int;

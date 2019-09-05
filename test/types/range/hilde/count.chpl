@@ -63,6 +63,9 @@ writeln(0..maxU2 by maxS2 # 2);
 // writeln(0..maxU2 by maxS2 # -3);
 // writeln(0..maxU2 by maxS2 # 3);
 
+// NOTE: The following may not be safe because they rely on signed integer
+// wraparound which may not be dependable across compilers/platforms
+
 // See needRangeCountType.chpl:
 writeln(minS1..maxS1 # 0);
 // NRCT:writeln(minS1..maxS1 # minS2);

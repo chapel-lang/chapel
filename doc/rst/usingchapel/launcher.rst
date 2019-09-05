@@ -55,6 +55,7 @@ mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray X* s
 pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
+slurm-gasnetrun_mpi  GASNet launcher using SLURM over MPI
 slurm-srun           native SLURM launcher                                
 smp                  GASNet launcher for programs running over shared-memory
 none                 do not use a launcher                                

@@ -20,6 +20,9 @@
 
 
 /* A helper file of utilities for Mason */
+private use List;
+private use Map;
+
 use Spawn;
 use FileSystem;
 use TOML;
@@ -196,6 +199,21 @@ proc runSpackCommand(command) {
 }
 
 
+proc hasOptions(args: list(string), const opts: string ...) {
+  var ret = false;
+
+  for o in opts {
+    const found = args.count(o) != 0;
+    if found {
+      ret = true;
+      break;
+    }
+  }
+
+  return ret;
+}
+
+
 proc hasOptions(args : [] string, const opts : string ...) {
   var ret = false;
 
@@ -209,6 +227,7 @@ proc hasOptions(args : [] string, const opts : string ...) {
 
   return ret;
 }
+
 
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;
@@ -350,7 +369,7 @@ proc getChapelVersionStr() {
   return chplVersion;
 }
 
-proc gitC(newDir, command, quiet=false) {
+proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
 
   const oldDir = here.cwd();
@@ -455,7 +474,7 @@ proc isIdentifier(name:string) {
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
-  for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
+  for (k,v) in tomlTbl.A.items() {
     if v.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);

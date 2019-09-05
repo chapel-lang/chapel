@@ -13,13 +13,17 @@ module test {
 
     // Check some coercions
     var cu = c:unmanaged;
-    var cuq = c:unmanaged?;
+    var cuc = c:unmanaged class;
+    var cuq = c:unmanaged class?;
     var cb = c:borrowed;
-    var cbq = c:borrowed?;
+    var cbc = c:borrowed class;
+    var cbq = c:borrowed class?;
     writeln();
     writeln("cu:", cu.type:string);
+    writeln("cuc:", cuc.type:string);
     writeln("cuq:", cuq.type:string);
     writeln("cb:", cb.type:string);
+    writeln("cbc:", cbc.type:string);
     writeln("cbq:", cbq.type:string);
     writeln();
 
@@ -30,7 +34,7 @@ module test {
       writeln(x.type:string, " ", x);
       var y:borrowed Child? = cu;
       writeln(y.type:string, " ", y);
-      var z:borrowed? = cu;
+      var z:borrowed class? = cu;
       writeln(z.type:string, " ", z);
     }
     // unmanaged -> unmanaged?
@@ -40,7 +44,7 @@ module test {
       writeln(x.type:string, " ", x);
       var y:unmanaged Child? = cu;
       writeln(y.type:string, " ", y);
-      var z:unmanaged? = cu;
+      var z:unmanaged class? = cu;
       writeln(z.type:string, " ", z);
     }
     // unmanaged -> borrowed
@@ -52,6 +56,8 @@ module test {
       writeln(y.type:string, " ", y);
       var z:borrowed = cu;
       writeln(z.type:string, " ", z);
+      var zz:borrowed class = cu;
+      writeln(zz.type:string, " ", zz);
     }
     // method dispatch with unmanaged
     {
@@ -69,7 +75,7 @@ module test {
       writeln(x.type:string, " ", x);
       var y:borrowed Child? = cuq;
       writeln(y.type:string, " ", y);
-      var z:borrowed? = cuq;
+      var z:borrowed class? = cuq;
       writeln(z.type:string, " ", z);
     }
     // method dispatch with unmanaged ?
@@ -85,7 +91,7 @@ module test {
       writeln(x.type:string, " ", x);
       var y:borrowed Child? = cb;
       writeln(y.type:string, " ", y);
-      var z:borrowed? = cb;
+      var z:borrowed class? = cb;
       writeln(z.type:string, " ", z);
     }
     // method dispatch with borrowed

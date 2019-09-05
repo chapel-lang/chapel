@@ -1027,7 +1027,6 @@ void expandInstallationPaths(std::vector<std::string>& args) {
 }
 
 // would just use realpath, but it is not supported on all platforms.
-static
 char* chplRealPath(const char* path)
 {
   // We would really rather use

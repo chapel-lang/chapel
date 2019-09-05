@@ -29,11 +29,6 @@ borrowed MyClass false
 shared MyClass false
 unmanaged MyClass false
 
-owned MyClass! false
-borrowed MyClass! false
-shared MyClass! false
-unmanaged MyClass! false
-
 owned MyClass? true
 borrowed MyClass? true
 shared MyClass? true
@@ -61,11 +56,6 @@ owned MyClass true
 borrowed MyClass true
 shared MyClass true
 unmanaged MyClass true
-
-owned MyClass! true
-borrowed MyClass! true
-shared MyClass! true
-unmanaged MyClass! true
 
 owned MyClass? false
 borrowed MyClass? false

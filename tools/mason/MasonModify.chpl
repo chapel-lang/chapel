@@ -20,6 +20,7 @@
 use Regexp;
 use TOML;
 use MasonUtils;
+private use Map;
 
 /* Modify manifest file */
 proc masonModify(args) throws {
@@ -190,7 +191,7 @@ private proc masonRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("dependencies") {
     if toml.pathExists("dependencies." + toRm) {
       var old = toml["dependencies"][toRm];
-      toml["dependencies"].D.remove(toRm);
+      toml["dependencies"].A.remove(toRm);
       delete old;
     }
     else {
@@ -228,7 +229,7 @@ private proc masonSystemRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("system") {
     if toml.pathExists("system." + toRm) {
       var old = toml["system"][toRm];
-      toml["system"].D.remove(toRm);
+      toml["system"].A.remove(toRm);
       delete old;
     }
     else {
@@ -265,7 +266,7 @@ private proc masonExternalRemove(toml: unmanaged Toml, toRm: string) throws {
   if toml.pathExists("external") {
     if toml.pathExists("external." + toRm) {
       var old = toml["external"][toRm];
-      toml["external"].D.remove(toRm);
+      toml["external"].A.remove(toRm);
       delete old;
     }
     else {

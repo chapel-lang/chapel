@@ -1,3 +1,0 @@
-bug: can't assign to nilable shared from non-nilable owned
-
-Not only that, but the reported error is unclear.

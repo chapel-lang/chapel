@@ -25,7 +25,7 @@
 //   LocBlockCyclic    LocBlockCyclicDom  LocBlockCyclicArr
 //
 
-use DSIUtil;
+private use DSIUtil;
 
 //
 // TODO List
