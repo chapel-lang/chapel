@@ -1920,10 +1920,6 @@ module TwoArrayPartitioning {
         assert(p.compat.nTasks > 0);
         assert(p.compat.countsSize > 0);
       }
-
-    // localTasks was [0..#numLocales] TasksForLocale.
-     for i in 0..#numLocales do
-       localTasks.append(new TasksForLocale());
     }
   }
 
