@@ -612,7 +612,7 @@ two arguments to the executable:
 
 .. code-block:: bash
 
-   ./use_foo -nl 2
+   ./a.out -nl 2
 
 Users do not need to call the generated module initialization function for
 multilocale libraries. <TODO> CHECK THIS WITH A COMMITTED TEST <TODO>
@@ -638,6 +638,23 @@ Multilocale libraries do not support the default intent for ``string`` and
 ``c_string``, as the default intent is ``const ref``.  Only the ``in`` and
 ``const in`` intents are supported.
 
+Makefile-less Compilation
+-------------------------
+
+When compiling a C program using a multilocale Chapel library without a
+makefile, some additional steps are needed beyond those required for using a
+single locale Chapel library.
+
+A new ``compileline`` tool, ``compileline --multilocale-lib-deps`` is currently
+required after ``compileline --libraries``.  Additionally, the library being
+linked must be listed twice in the compilation command - once before
+``compileline --libraries`` and once at the end of the command.  The compilation
+command would then look like this (replacing ``myCProg.c`` with the name of your
+C program that will use the library):
+
+.. code-block:: sh
+
+   `$CHPL_HOME/util/config/compileline --compile` myCProg.c -Llib/ -lfoo `$CHPL_HOME/util/config/compileline --libraries` `$CHPL_HOME/util/config/compileline --multilocale-lib-deps` -lfoo
 
 Portability
 -----------
