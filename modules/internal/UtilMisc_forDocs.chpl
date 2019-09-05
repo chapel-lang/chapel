@@ -130,11 +130,11 @@ module UtilMisc_forDocs {
     __primitive("chpl_exit_any", status);
   }
 
-  /* Returns `true` if the type `from` is coercible to the type `super`,
+  /* Returns `true` if the type `from` is coercible to the type `to`,
      or if ``isSubtype(from, to)`` would return `true`.
    */
   proc isCoercible(type from, type to) param {
-    __primitive("is_coercible", from, to);
+    return __primitive("is_coercible", from, to);
   }
 
   /* Returns `true` if the type `sub` is a subtype of the type `super`.
@@ -148,7 +148,7 @@ module UtilMisc_forDocs {
      ``a <= b`` or ``b >= a``.
      */
   proc isSubtype(type sub, type super) param {
-    __primitive("is_subtype", super, sub);
+    return __primitive("is_subtype", super, sub);
   }
 
   /* Similar to :proc:`isSubtype` but returns `false` if
@@ -158,7 +158,7 @@ module UtilMisc_forDocs {
      as ``a < b`` or ``b > a``.
      */
   proc isProperSubtype(type sub, type super) param {
-    __primitive("is_proper_subtype", super, sub);
+    return __primitive("is_proper_subtype", super, sub);
   }
 
   /* :returns: isProperSubtype(a,b) */
