@@ -44,8 +44,8 @@ all: buildUserObj buildServer buildClient runTagsCommand FORCE
 
 buildUserObj:
 #
-# Invoke the launcher script, but don't actually link up the launcher binary.
-# Do this by setting CHPL_MAKE_IS_MLI=1.
+# Compile loose source files in CHPLUSEROBJ. Use the SERVER_CC for now, but
+# later we may need to roll these into both client and server.
 #
 	$(foreach srcFile, $(CHPLUSEROBJ), \
 		$(SERVER_CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
