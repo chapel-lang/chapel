@@ -21,6 +21,15 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
+#
+# Taken from $CHPL_HOME/third-party/gmp/Makefile
+#
+HOST_CC=$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) CHPL_MAKE_HOST_TARGET=--host make -f $(CHPL_MAKE_HOME)/make/Makefile.base printQ-CC)
+TARG_CC=$(CC)
+
+CLIENT_CC=$(HOST_CC)
+SERVER_CC=$(TARG_CC)
+
 ifdef CHPL_ZMQ_HOME
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
 CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
@@ -35,10 +44,11 @@ all: buildUserObj buildServer buildClient runTagsCommand FORCE
 
 buildUserObj:
 #
-# Compile loose C source files in CHPLUSEROBJ.
+# Invoke the launcher script, but don't actually link up the launcher binary.
+# Do this by setting CHPL_MAKE_IS_MLI=1.
 #
 	$(foreach srcFile, $(CHPLUSEROBJ), \
-		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+		$(SERVER_CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
 	;)
 
@@ -46,8 +56,7 @@ buildServer: $(TMPSERVERNAME)
 
 buildClient: $(TMPBINNAME)
 
-runTagsCommand:
-	$(TAGS_COMMAND)
+runTagsCommand: $(TAGS_COMMAND)
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
@@ -66,11 +75,13 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) \
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
 		GEN_CFLAGS="$(GEN_CFLAGS)" \
-		CHPL_MAKE_IS_MLI=1
+		CHPL_MAKE_IS_MLI=1 \
+		CLIENT_CC="$(CLIENT_CC)" \
+		SERVER_CC="$(SERVER_CC)"
 #
 # Compile the client bundle. Note the use of $(SHARED_LIB_CFLAGS) here.
 #
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+	$(CLIENT_CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 		$(SHARED_LIB_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
@@ -114,13 +125,12 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 #
 # Compile the server bundle.
 #
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+	$(SERVER_CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 		-c -o $(TMPSERVERNAME).o \
 		$(CHPLSERVERSRC) \
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
-
 #
 # Link the Chapel runtime and the ZMQ library together into a multi-locale
 # executable.
