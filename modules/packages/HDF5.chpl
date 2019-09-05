@@ -3438,7 +3438,7 @@ module HDF5 {
    */
   proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
                         filenameStart: string, type eltType, param rank,
-                        preprocessor: HDF5Preprocessor = nil) {
+                        preprocessor: borrowed HDF5Preprocessor? = nil) {
     use FileSystem;
 
     var filenames: [1..0] string;
@@ -3456,7 +3456,7 @@ module HDF5 {
   /* Read all HDF5 files named in the filenames array into arrays */
   proc readAllNamedHDF5Files(locs: [] locale, filenames: [] string,
                              dsetName: string, type eltType, param rank,
-                             preprocessor: HDF5Preprocessor = nil) {
+                             preprocessor: borrowed HDF5Preprocessor? = nil) {
     use BlockDist;
 
     const Space = filenames.domain;
@@ -3472,7 +3472,7 @@ module HDF5 {
       C_HDF5.H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
       if rank != dsetRank {
         halt("rank mismatch in file: " + name + " dataset: " + dsetName +
-             rank + " != " + dsetRank);
+             rank:string + " != " + dsetRank:string);
       }
       C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
                                                c_ptrTo(dims), nil, nil);
@@ -3484,7 +3484,7 @@ module HDF5 {
 
       const D = {(...rngTup)};
 
-      if preprocessor then preprocessor.preprocess(data);
+      if preprocessor then preprocessor!.preprocess(data);
       f = new ArrayWrapper(data.eltType, rank, D, reshape(data, D));
       C_HDF5.H5Fclose(file_id);
     }
@@ -3501,7 +3501,7 @@ module HDF5 {
   proc readNamedHDF5FilesInto1DArrayInt(filenames: [] string,
                                         fnCols: int, fnRows: int,
                                         dsetName: string,
-                                        preprocessor: HDF5Preprocessor = nil) {
+                                        preprocessor: borrowed HDF5Preprocessor? = nil) {
     use BlockDist;
 
     var filenames2D = reshape(filenames, {1..fnCols, 1..fnRows});
@@ -3642,7 +3642,7 @@ module HDF5 {
    */
   iter hdf5ReadChunks(filename: string, dset: string,
                       chunkShape: domain, type eltType,
-                      preprocessor: HDF5Preprocessor=nil)
+                      preprocessor: borrowed HDF5Preprocessor? = nil)
     where isRectangularDom(chunkShape) {
 
     param outRank = chunkShape.rank;
@@ -3696,7 +3696,7 @@ module HDF5 {
 
           C_HDF5.H5Sclose(memspace);
 
-          if preprocessor then preprocessor.preprocess(A);
+          if preprocessor then preprocessor!.preprocess(A);
           yield A;
         }
       } else {
@@ -3768,7 +3768,7 @@ module HDF5 {
 
         C_HDF5.H5Sclose(memspace);
 
-        if preprocessor then preprocessor.preprocess(A);
+        if preprocessor then preprocessor!.preprocess(A);
         yield A;
       }
     } else if outRank < dsetRank {
@@ -3898,6 +3898,7 @@ module HDF5 {
    */
   class HDF5Preprocessor {
     proc preprocess(A: []) {
+      use HaltWrappers only ;
       HaltWrappers.pureVirtualMethodHalt();
     }
   }
