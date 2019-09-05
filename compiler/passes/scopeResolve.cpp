@@ -200,7 +200,7 @@ static void addToSymbolTable() {
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      rootScope->extend(def->sym, /* isTopLevel= */ true); // TODO: test this
+      rootScope->extend(def->sym, /* isTopLevel= */ true);
     }
   }
 
@@ -263,6 +263,7 @@ static void scopeResolve(const AList&        alist,
 static void scopeResolve(ModuleSymbol*       module,
                          const ResolveScope* parent) {
   ResolveScope* scope = new ResolveScope(module, parent);
+
   scopeResolve(module->block->body, scope);
 }
 
