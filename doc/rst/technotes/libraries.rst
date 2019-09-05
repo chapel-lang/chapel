@@ -578,12 +578,14 @@ variable should be set to a directory containing both an ``include`` directory
 which contains ``zmq.h`` and a ``lib`` directory which contains ``libzmq.*``.
 For example, for a directory structure:
 
-.local
-|-> include
-  |-> zmq.h
-|-> lib
-  |-> libzmq.a
-  |-> libzmq.so
+.. code-block:: bash
+
+   |-- .local/
+   |    |-- include/
+   |    |    |-- zmq.h
+   |    |-- lib/
+   |    |    |-- libzmq.a
+   |    |    |-- libzmq.so
 
 ``CHPL_ZMQ_HOME`` would be set to ``/absolute/path/to/.local/``.
 
