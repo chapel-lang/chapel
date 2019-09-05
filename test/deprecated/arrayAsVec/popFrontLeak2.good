@@ -1,12 +1,6 @@
-init: 0
-copy: 0 --> 1
-default init
-Assignment from R({x = 1}), resulting in R({x = 2})
-deinit: 1
-copy: 2 --> 3
-deinit: 3
-deinit: 2
-deinit: 0
+popFrontLeak2.chpl:1: In function 'main':
+popFrontLeak2.chpl:8: warning: push_back is deprecated - please use list.append
+popFrontLeak2.chpl:9: warning: pop_front is deprecated - please use list.pop
 
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
