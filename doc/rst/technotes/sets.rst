@@ -1,3 +1,4 @@
+.. default-domain:: chpl
 .. _readme-sets:
 
 ==========================
