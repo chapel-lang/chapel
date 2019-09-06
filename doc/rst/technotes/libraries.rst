@@ -83,6 +83,8 @@ example, one can define a Chapel file ``foo.chpl`` like this:
 See :ref:`Exporting Symbols` for the current limitations on what can be
 exported.
 
+.. _Library Name:
+
 Library Name
 ============
 
@@ -639,7 +641,8 @@ In Python
 
 Users must still call ``chpl_setup()`` before utilizing the exported Chapel
 functions.  However, it requires a ``numLocales`` argument when the library
-has been compiled for multilocale settings.
+has been compiled for multilocale settings.  E.g. to run with ``4`` locales,
+write ``chpl_setup(4)``.
 
 Makefile-less Compilation
 -------------------------
@@ -669,6 +672,12 @@ typically see both a library (see :ref:`Location of the Generated Library` for
 where this will be placed and how to control that location) and a binary (which
 is currently generated in the same directory as the "main" source file), in
 addition to other support files such as the generated header, makefile, etc.
+
+The library will be named as specified in :ref:`Library Name`; the binary will
+use the same base name as the library (omitting the ``lib`` and ``.so`` or
+``.a`` portions), followed by ``_server_real``.  Thus for a library
+``libfoo.so``, the binary would be named ``foo_server_real``.
+
 The library will appear like a normal single locale library in terms of the
 interface it provides to client programs - however, under the covers it will
 launch the binary and then communicate with it.  The binary will be what
