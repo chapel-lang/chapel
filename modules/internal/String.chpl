@@ -1215,8 +1215,9 @@ module String {
     }
 
     /*
-      Slice a string. Halts if r is not completely inside the range
-      ``1..string.length``.
+      Slice a string. Halts if r is non-empty and not completely inside the
+      range ``1..string.length`` when compiled with `--checks`. `--fast`
+      disables this check.
 
       :arg r: range of the indices the new string should be made from
 
@@ -1839,12 +1840,10 @@ module String {
       :returns: A new string with all uppercase characters replaced with their
                 lowercase counterpart.
 
-      Note: At present, this performs a one-to-one character mapping,
-      which is all that the underlying C library supports.  In the future,
-      it may be desirable to explore supporting special-case one-to-many
-      Unicode mappings that may change the length of the string.
-      Since Unicode changes and we would rather not track all the changes
-      ourselves, this would involve adopting an external library.
+      .. note::
+        
+        The case change operation is not currently performed on characters whose
+        cases take different number of bytes to represent in Unicode mapping.
     */
     proc toLower() : string {
       var result: string = this;
@@ -1872,12 +1871,10 @@ module String {
       :returns: A new string with all lowercase characters replaced with their
                 uppercase counterpart.
 
-      Note: At present, this performs a one-to-one character mapping,
-      which is all that the underlying C library supports.  In the future,
-      it may be desirable to explore supporting special-case one-to-many
-      Unicode mappings that may change the length of the string.
-      Since Unicode changes and we would rather not track all the changes
-      ourselves, this would involve adopting an external library.
+      .. note::
+        
+        The case change operation is not currently performed on characters whose
+        cases take different number of bytes to represent in Unicode mapping.
     */
     proc toUpper() : string {
       var result: string = this;
@@ -1906,12 +1903,10 @@ module String {
                 character converted to uppercase, and all cased characters
                 following another cased character converted to lowercase.
 
-      Note: At present, this performs a one-to-one character mapping,
-      which is all that the underlying C library supports.  In the future,
-      it may be desirable to explore supporting special-case one-to-many
-      Unicode mappings that may change the length of the string.
-      Since Unicode changes and we would rather not track all the changes
-      ourselves, this would involve adopting an external library.
+      .. note::
+        
+        The case change operation is not currently performed on characters whose
+        cases take different number of bytes to represent in Unicode mapping.
      */
     proc toTitle() : string {
       var result: string = this;
@@ -2317,6 +2312,11 @@ module String {
   //
   /*
      :returns: The byte value of the first character in `a` as an integer.
+
+      .. warning::
+
+          This method is deprecated. Use `toByte` or `byte` methods,
+          instead.
   */
   inline proc ascii(a: string) : uint(8) {
     compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
@@ -2333,6 +2333,11 @@ module String {
 
   /*
      :returns: A string with the single character with the ASCII value `i`.
+
+      .. warning::
+
+          This method is deprecated. Use `codepointToString` method,
+          instead.
   */
   inline proc asciiToString(i: uint(8)) {
     compilerWarning("asciiToString is deprecated - please use codepointToString instead");
