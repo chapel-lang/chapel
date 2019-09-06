@@ -143,15 +143,19 @@ printSum(own); // same as printSum(own.borrow())
 // type, apply the ``?`` operator to another class type
 var x: borrowed C?; // default-initializes to ``nil``
 
-// An expression non-nilable class type can implicitly convert
-// to a the related nilable class type.
+// Non-nilable class types can be implicitly converted to the corresponding
+// nilable class type.
 x = b2; // converting from borrowed C to borrowed C?
 
-// The method printFields is available on ``borrowed C``.
+// The method printFields is available on ``borrowed C``,
+// but not on ``borrowed C?``
+//
 // As a result, the call ``x.printFields()`` needs adjustment.
 // The ``!`` operator is available to assert that an expression
-// is not ``nil`` and return it as a non-nilable type. Note that
-// when applied to an ``owned`` or ``shared` variable, ``!`` will
+// is not ``nil`` and return it as a non-nilable type. This operator
+// can halt if the value is actually ``nil``.
+//
+// Note that when applied to an ``owned`` or ``shared` variable, ``!`` will
 // result in a borrow from that variable.
 x!.printFields();
 
