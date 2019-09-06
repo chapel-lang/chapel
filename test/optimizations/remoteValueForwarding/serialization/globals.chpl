@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommDiagnostics, Map;
 
 config const n = 10;
 
@@ -27,8 +27,7 @@ record Foo {
   }
 }
 
-var commStatsDom : domain(string);
-var commStats : [commStatsDom] [LocaleSpace] commDiagnostics;
+var commStats = new map(string, [LocaleSpace] commDiagnostics);
 
 proc start() {
   startCommDiagnostics();
@@ -73,7 +72,7 @@ proc main() {
     stop("begin-on");
   }
 
-  for (msg, dat) in zip(commStatsDom, commStats) {
+  for (msg, dat) in commStats.items() {
     const sep = "===== " + msg + " =====";
     writeln(sep);
     for (loc, dat) in zip(Locales, dat) {
