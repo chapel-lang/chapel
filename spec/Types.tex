@@ -51,7 +51,7 @@ These statements are defined in Sections \rsec{Enumerated_Types},
 
 The concrete primitive types are: \chpl{void}, \chpl{nothing}, \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
-and \chpl{string}.  They are defined in this section.
+\chpl{string} and \chpl{bytes}.  They are defined in this section.
 
 In addition, there are several generic primitive types that are described
 in~\rsec{Built_in_Generic_types}.
@@ -68,6 +68,7 @@ primitive-type:
   `imag' primitive-type-parameter-part[OPT]
   `complex' primitive-type-parameter-part[OPT]
   `string'
+  `bytes'
   `enum'
   `record'
   `class'
@@ -245,19 +246,24 @@ and \chpl{2.72} respectively.
 \index{string@\chpl{string}}
 \index{types!string@\chpl{string}}
 
-Strings are a primitive type designated by the symbol \chpl{string}
-comprised of multibyte characters (normally UTF-8).  Their length is unbounded.
-
+Strings are a primitive type designated by the symbol \chpl{string} comprised of
+Unicode characters in UTF-8 encoding.  Their length is unbounded.
 
 \begin{openissue}
 There is an expectation of future support for fixed-length strings.
 \end{openissue}
 
-\begin{openissue}
-There is an expectation of future support for different character
-sets, possibly including internationalization.
-\end{openissue}
+\subsection{The Bytes Type}
+\label{The_Bytes_Type}
+\index{bytes@\chpl{bytes}}
+\index{types!bytes@\chpl{bytes}}
 
+Bytes is a primitive type designated by the symbol \chpl{bytes} comprised of
+arbitrary bytes. Bytes are immutable in-place and their length is unbounded.
+
+\begin{openissue}
+There is an expectation of future support for mutable bytes.
+\end{openissue}
 
 \section{Enumerated Types}
 \label{Enumerated_Types}
