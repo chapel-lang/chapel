@@ -34,6 +34,7 @@ module TestResult {
         errors: list(tupType),
         skipped: list(tupType);
     var testsRun = 0;
+    var testsPassed = 0;
     var shouldStop = false;
     var separator1 = "="* 70,
         separator2 = "-"* 70;
@@ -59,6 +60,7 @@ module TestResult {
     /*Called when a test has completed successfully*/
     proc addSuccess(testName: string, fileName: string) {
       this.testRan();
+      this.testsPassed += 1;
     }
 
     /*Called when a test is skipped.*/
