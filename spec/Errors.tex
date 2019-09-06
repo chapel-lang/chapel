@@ -273,9 +273,6 @@ proc expressionTry(): int throws {
 \end{chapeloutput}
 \end{chapelexample}
 
-For more information on enforcing clear control flow with the compiler,
-see \rsec{Errors_Strict_Mode} below.
-
 \subsection{Complete handling}
 \label{Complete_handling}
 
@@ -422,7 +419,8 @@ proc handleFromOn() {
 
 \chpl{TaskErrors} helps coordinate errors among groups of tasks by collecting
 them for centralized handling. It can be iterated on and filtered for
-different kinds of errors.
+different kinds of errors. See also
+\url{https://chapel-lang.org/docs/builtins/ChapelError.html}.
 
 The implementation of \chpl{TaskErrors} prevents nested \chpl{coforall}
 statements from producing nested \chpl{TaskErrors}. Instead, the nested
@@ -564,36 +562,29 @@ class DemoError : Error { }
 \subsection{Error Handling Modes}
 \label{Error_Handling_Modes}
 
-Chapel currently supports three error handling modes: fatal, relaxed, and
-strict. Developers can select each mode in the following ways:
+Chapel currently supports two error handling modes: fatal and
+production.  Developers can select each mode in the following ways:
 
 \begin{itemize}
 
-\item fatal mode
+\item prototype mode
 
 \begin{itemize}
 \item writing code in an implicit module
 \item writing code in a \chpl{prototype module}
-\item passing the \texttt{--permit-unhandled-module-errors} flag on the
-  \texttt{chpl} command line
 \end{itemize}
 
-\item relaxed mode
+\item production mode
 
 \begin{itemize}
 \item writing code inside of a \chpl{module} declaration
-\end{itemize}
-
-\item strict mode
-\begin{itemize}
-\item writing code inside of a module marked with a pragma
 \end{itemize}
 
 \end{itemize}
 
 It is fully permissible to write for a stricter error handling mode
 while using a looser one -- in particular, code that compiles in strict
-mode will also compile in relaxed or fatal mode.
+mode will also compile in production or fatal mode.
 
 \subsection{Fatal Mode for Implicit and Prototype Modules}
 \label{Errors_Fatal_Mode}
@@ -660,14 +651,14 @@ use PrototypeModule;
 \end{chapeloutput}
 \end{chapelexample}
 
-\subsection{Relaxed Mode for Explicit Modules}
-\label{Relaxed_Mode_for_Explicit_Modules}
+\subsection{Production Mode for Explicit Modules}
+\label{Production_Mode_for_Explicit_Modules}
 
 In non-prototype explicit modules, it is necessary to handle errors if the
 calling function does not throw. If the calling function does
 throw, then the error will be propagated out as with implicit modules.
 
-This is the relaxed error handling mode.
+This is the production error handling mode.
 
 \begin{chapelexample}{production-module.chpl}
 \begin{chapel}
@@ -693,66 +684,3 @@ use ProductionModule;
 \begin{chapeloutput}
 \end{chapeloutput}
 \end{chapelexample}
-
-
-\subsection{Strict Mode}
-\label{Errors_Strict_Mode}
-
-It is possible to request a more restricted error handling mode within a
-module scope using a pragma. With it, it is necessary to explicitly mark all
-throwing calls, whether or not the calling function throws. The intent of
-this restricted mode is to make the control flow clear.
-
-This is the strict error handling mode.
-
-The difference between relaxed and strict mode is that throwing calls
-in throwing functions need to be marked. This may be accomplished
-with the catch-less \chpl{try} block, the single statement \chpl{try}, or
-the assignment \chpl{try}.
-
-It is also possible to use \chpl{try!} in these forms.
-
-\begin{chapelexample}{strict-mode.chpl}
-\begin{chapel}
-pragma "error mode strict"
-module StrictModule {
-  proc throwsErrorsOn() throws {
-    try {
-      alwaysThrows();
-      writeln("never reached");
-    }
-  }
-
-  proc alsoThrowsErrorsOn() throws {
-    try alwaysThrows();
-  }
-
-  proc doesNotThrowErrorsOn() {
-    try! alwaysThrows();
-  }
-
-  proc assignmentTry() throws {
-    var x = try alwaysThrows();
-    writeln(x);
-  }
-}
-\end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
-\end{chapelexample}
-
-\section{Current Limitations}
-
-\begin{itemize}
-\item Error handling does not work yet with initializers.
-\item It is not yet decided whether or not it will be possible to
-  throw from a \chpl{deinit} function.
-\item Errors can't currently be thrown from iterators that are not inlined by
-      the compiler
-\begin{itemize}
-\item note that iterators with a single yield as well as leader and standalone
-    iterators are generally inlined by the compiler
-\end{itemize}
-\end{itemize}
