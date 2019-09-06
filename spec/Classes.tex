@@ -317,9 +317,9 @@ example:
 \begin{chapelexample}{nilable-classes-bang.chpl}
 \begin{chapel}
 class C {
-  proc C.method() { }
+  proc method() { }
 }
-var c: owned C? = makeMyClass();
+var c: owned C? = new C();
 
 // The following call is allowed only in prototype modules,
 // in which case it is equivalent to c!.method()
@@ -500,6 +500,8 @@ Child.typeMethod(); // prints 'Parent'
 (borrowed Child?).typeMethod(); // prints 'borrowed Parent?'
 \end{chapel}
 \begin{chapeloutput}
+Parent
+borrowed Parent?
 \end{chapeloutput}
 \end{chapelexample}
 
