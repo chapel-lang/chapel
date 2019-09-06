@@ -394,6 +394,7 @@ TYPE_EXTERN PrimitiveType*    dtAnyRecord;
 TYPE_EXTERN PrimitiveType*    dtBorrowed;
 TYPE_EXTERN PrimitiveType*    dtBorrowedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
+TYPE_EXTERN PrimitiveType*    dtUninstantiated;
 TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
 TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;

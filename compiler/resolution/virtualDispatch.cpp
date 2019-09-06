@@ -313,7 +313,8 @@ static bool checkOverrides(FnSymbol* fn) {
           //     (which we manage and want to keep clean)
           (parentMod && parentMod->modTag != MOD_USER)) &&
           // No override checking for type methods.
-         fn->thisTag != INTENT_TYPE;
+         fn->thisTag != INTENT_TYPE &&
+         !fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION) ;
 }
 
 static bool ignoreOverrides(FnSymbol* fn) {
@@ -710,6 +711,8 @@ static void addVirtualMethodTableEntry(Type*     type,
                                        bool      exclusive) {
   Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
   bool            found = false;
+
+  if (type->symbol->hasFlag(FLAG_GENERIC)) return;
 
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();

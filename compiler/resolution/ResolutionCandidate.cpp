@@ -89,6 +89,8 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
 
 bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
 
+  FnSymbol* oldFn = fn;
+
   fn = expandIfVarArgs(fn, info);
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -117,6 +119,11 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
     reason = RESOLUTION_CANDIDATE_OTHER;
     return false;
   }
+
+  // Return early if instantiating the function resulted in the same function.
+  // This avoids infinite recursion.
+  if (fn == oldFn)
+    return true;
 
   return isApplicable(info);
 }
@@ -291,7 +298,8 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
   } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
     if (actual->type->symbol->hasFlag(FLAG_GENERIC)   == true &&
         formal->hasFlag(FLAG_ARG_THIS)                == true &&
-        formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true) {
+        formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
+        actual->getValType() == formal->getValType()) {
       // If the "this" arg is generic, we're resolving an initializer, and
       // the actual being passed is also still generic, don't count this as
       // a substitution.  Otherwise, we'll end up in an infinite loop if

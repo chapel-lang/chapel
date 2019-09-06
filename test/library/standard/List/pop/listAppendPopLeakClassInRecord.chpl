@@ -51,6 +51,6 @@ proc main() {
     lines.append(r);
 
     // Second copy is here (not bound).
-    lines.pop(1);
+    const elem = lines.pop(1);
   }
 }

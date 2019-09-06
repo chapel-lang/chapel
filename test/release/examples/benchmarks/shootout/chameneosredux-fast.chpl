@@ -240,7 +240,7 @@ class MeetingPlace {
   //
   proc attemptToStore(prevState, numMeetings, chameneosID) {
     const newState = (numMeetings << bitsPerChameneosID) | chameneosID;
-    return state.compareExchangeStrong(prevState, newState);
+    return state.compareAndSwap(prevState, newState);
   }
 }
 

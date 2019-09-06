@@ -149,6 +149,9 @@ static Expr* postFoldNormal(CallExpr* call) {
     } else if (ret == gVoid) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
+    } else if (ret == gUninstantiated) {
+      retval = new SymExpr(gUninstantiated);
+      call->replace(retval);
     }
   }
 
@@ -165,8 +168,10 @@ static Expr* postFoldNormal(CallExpr* call) {
 
       call->replace(retval);
 
-      // Put the call back in the AST for better errors
-      if (fatalErrorsEncountered()) {
+      // Put the call back in the AST for better errors unless we're trying
+      // to ignore multiple error messages (in which case we hope for a
+      // successful compilation).
+      if (fatalErrorsEncountered() && !inGenerousResolutionForErrors() && !fIgnoreNilabilityErrors) {
         retval->getStmtExpr()->insertBefore(call);
       }
     }
@@ -696,7 +701,8 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
         rhsSym = paramMap.get(rhsSym);
       }
       if (rhsSym->isImmediate() == true ||
-          isEnumSymbol(rhsSym)  == true) {
+          isEnumSymbol(rhsSym)  == true ||
+          rhsSym == gUninstantiated) {
         paramMap.put(lhsSym, rhsSym);
 
         lhsSym->defPoint->remove();

@@ -173,14 +173,20 @@ const char* toString(Type* type, bool decorateAllClasses) {
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
         }
-        if (startsWith(vt->symbol->name, "_owned("))
-          retval = astr("owned ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_owned"))
-          retval = astr("owned");
-        else if (startsWith(vt->symbol->name, "_shared("))
-          retval = astr("shared ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_shared"))
-          retval = astr("shared");
+        if (startsWith(vt->symbol->name, "_owned")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("owned");
+          } else {
+            retval = astr("owned ", borrowName);
+          }
+        }
+        else if (startsWith(vt->symbol->name, "_shared")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("shared");
+          } else {
+            retval = astr("shared ", borrowName);
+          }
+        }
 
       } else if (isClassLike(at)) {
         if (isClass(at)) {
@@ -778,6 +784,11 @@ void initPrimitiveTypes() {
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
 
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
+
+  dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");
+
+  CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
+  gUninstantiated->addFlag(FLAG_PARAM);
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {

@@ -56,7 +56,7 @@ module ByteBufferHelpers {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
   }
 
-  proc bufferAlloc(requestedSize) {
+  inline proc bufferAlloc(requestedSize) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize),
                           chpl_stringMinAllocSize);
     var buf = chpl_here_alloc(allocSize,
@@ -86,17 +86,17 @@ module ByteBufferHelpers {
       return dest;
   }
 
-  proc bufferCopyLocal(src_addr: bufferType, len: int) {
+  inline proc bufferCopyLocal(src_addr: bufferType, len: int) {
       const (dst, allocSize) = bufferAlloc(len+1);
       bufferMemcpyLocal(dst=dst, src=src_addr, len=len);
       return (dst, allocSize);
   }
 
-  proc bufferFree(buf) {
+  inline proc bufferFree(buf) {
     chpl_here_free(buf);
   }
 
-  proc bufferCopy(buf: bufferType, off: int, len: int, loc: locIdType) {
+  inline proc bufferCopy(buf: bufferType, off: int, len: int, loc: locIdType) {
     if !_local && loc != chpl_nodeID {
       var newBuf = bufferCopyRemote(loc, buf+off, len);
       return (newBuf, len);
@@ -107,25 +107,24 @@ module ByteBufferHelpers {
   }
 
   //dst must be local
-  proc bufferMemcpy(dst, src_loc, src, len, dst_off=0, src_off=0) {
+  inline proc bufferMemcpy(dst, src_loc, src, len, dst_off=0, src_off=0) {
     if !_local && src_loc != chpl_nodeID {
       chpl_string_comm_get(dst+dst_off, src_loc, src+src_off, len);
     }
     else {
       c_memcpy(dst+dst_off, src+src_off, len);
     }
-
   }
 
-  proc bufferMemcpyLocal(dst, src, len, dst_off=0, src_off=0) {
+  inline proc bufferMemcpyLocal(dst, src, len, dst_off=0, src_off=0) {
     c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len);
   }
 
-  proc bufferMemmoveLocal(dst, src, len, dst_off=0, src_off=0) {
+  inline proc bufferMemmoveLocal(dst, src, len, dst_off=0, src_off=0) {
     c_memmove(dst+dst_off, src+src_off, len);
   }
 
-  proc bufferGetByte(buf, off, loc) {
+  inline proc bufferGetByte(buf, off, loc) {
     if !_local && loc != chpl_nodeID {
       const newBuf = bufferCopyRemote(src_loc_id=loc, src_addr=buf+off, len=1);
       return newBuf[0];
@@ -135,12 +134,12 @@ module ByteBufferHelpers {
     }
   }
 
-  proc bufferEquals(buf1, off1, loc1, buf2, off2, loc2, len) {
+  inline proc bufferEquals(buf1, off1, loc1, buf2, off2, loc2, len) {
     return _strcmp(buf1=buf1+off1,len1=len,loc1=loc1,
                    buf2=buf2+off2,len2=len,loc2=loc1) == 0;
   }
 
-  proc bufferEqualsLocal(buf1, off1, buf2, off2, len) {
+  inline proc bufferEqualsLocal(buf1, off1, buf2, off2, len) {
     return _strcmp_local(buf1=buf1+off1,len1=len,
                          buf2=buf2+off2,len2=len) == 0;
   }

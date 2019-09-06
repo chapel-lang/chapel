@@ -240,7 +240,7 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
   while true {
     var got = max_user_id.read();
     var id = if got > max_id then got else max_id;
-    var success = max_user_id.compareExchangeWeak(got, id);
+    var success = max_user_id.compareAndSwap(got, id);
     if success then break;
   }
 }

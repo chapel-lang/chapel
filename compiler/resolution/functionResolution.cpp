@@ -144,6 +144,8 @@ static CapturedValueMap            capturedValues;
 // Used to ensure we only issue the warning once per instantiation
 static std::set<FnSymbol*> oldStyleInitCopyFns;
 
+// Enable coercions from nilable -> non-nilable to have easier errors
+static int generousResolutionForErrors;
 
 //#
 //# Static Function Declarations
@@ -253,7 +255,7 @@ void resolveFnForCall(FnSymbol* fn, CallExpr* call) {
   callStack.add(call);
 
   // do real work
-  resolveFunction(fn);
+  resolveFunction(fn, call);
 
   callStack.pop();
 }
@@ -620,6 +622,55 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   return retval;
 }
 
+static bool instantiatedFieldsMatch(Type* actualType, Type* formalType) {
+
+  AggregateType* actual = toAggregateType(actualType);
+  AggregateType* formal = toAggregateType(formalType);
+  if (actual == NULL || formal == NULL) {
+    return false;
+  }
+  if (actual == formal) {
+    return true;
+  }
+
+  AggregateType* root = actual->getRootInstantiation();
+  if (root == formal->getRootInstantiation()) {
+    unsigned int formalIdx = 0;
+    std::vector<Symbol*>& fields = root->genericFields;
+    std::vector<Symbol*>& formalFields = formal->genericFields;
+    bool ret = true;
+    for (unsigned int i = 0; i < fields.size(); i++) {
+      if (formalIdx < formalFields.size() &&
+          fields[i]->name == formalFields[formalIdx]->name) {
+        formalIdx += 1;
+      } else {
+        const char* name = fields[i]->name;
+        Symbol* actualField = actual->getField(name);
+        Symbol* formalField = formal->getField(name);
+        if (actualField->type == formalField->type) {
+          if (formalField->hasFlag(FLAG_PARAM)) {
+            ret = (paramMap.get(actualField) == paramMap.get(formalField));
+          } else {
+            ret = true;
+          }
+        } else if (formalField->type->symbol->hasFlag(FLAG_GENERIC) &&
+                   isAggregateType(formalField->type) &&
+                   isAggregateType(actualField->type) &&
+                   instantiatedFieldsMatch(actualField->type, formalField->type)) {
+          ret = true;
+        } else {
+          ret = false;
+          break;
+        }
+      }
+    }
+
+    return ret;
+  }
+
+  return false;
+}
+
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation. The special exception is that
 // it returns true when actualType == formalType (to simplify
@@ -711,21 +762,19 @@ bool canInstantiate(Type* actualType, Type* formalType) {
       if (isBuiltinGenericClassType(formalC))
         return true;
 
-      if (AggregateType* atActual = toAggregateType(actualC)) {
-        if (AggregateType* atFrom = atActual->instantiatedFrom) {
-          if (canInstantiate(atFrom, formalC) == true) {
-            return true;
-          }
+      if (isAggregateType(actualC)) {
+        if (instantiatedFieldsMatch(actualType, formalType)) {
+          return true;
         }
       }
     }
   } else {
     // Check for e.g. R(int) -> R (classes are handled above)
-    if (AggregateType* atActual = toAggregateType(actualType)) {
-      if (AggregateType* atFrom = atActual->instantiatedFrom) {
-        if (canInstantiate(atFrom, formalType) == true) {
-          return true;
-        }
+    // TODO: Is it correct to return true if the types match? That case isn't
+    // really an instantiation.
+    if (isAggregateType(actualType)) {
+      if (instantiatedFieldsMatch(actualType, formalType)) {
+        return true;
       }
     }
   }
@@ -1238,6 +1287,11 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
                                     Type* formalType,
                                     Symbol* formalSym) {
 
+  // If we are trying again for better nilability errors,
+  // implicit nilability removal is OK.
+  if (inGenerousResolutionForErrors())
+    return true;
+
   // Currently only applies to this arguments (method receivers)
   if (formalSym && actualSym && actualSym->defPoint &&
       formalSym->hasFlag(FLAG_ARG_THIS)) {
@@ -1425,6 +1479,10 @@ bool canCoerce(Type*     actualType,
       // are the decorated class types the same?
       if (actualC == formalC)
         return true;
+      else if (formalC->symbol->hasFlag(FLAG_GENERIC) &&
+               instantiatedFieldsMatch(actualC, formalC)) {
+        return true;
+      }
 
       // are we passing a subclass?
       AggregateType* actualParent = actualC;
@@ -1469,7 +1527,7 @@ bool doCanDispatch(Type*     actualType,
 
   // MPF 2019-09 - for some reason resolving generic initializers
   // needs this adjustment, which started in PR #5424.
-  if (fn && fn->isInitializer() &&
+  if (fn && (fn->isInitializer() || fn->isCopyInit()) &&
       formalSym == fn->_this &&
       isGenericInstantiation(formalType, actualType))
     return true;
@@ -2521,6 +2579,7 @@ static void adjustClassCastCall(CallExpr* call)
 {
   SymExpr* targetTypeSe = toSymExpr(call->get(1));
   SymExpr* valueSe = toSymExpr(call->get(2));
+  bool valueIsType = isTypeExpr(valueSe);
   Type* targetType = targetTypeSe->symbol()->getValType();
   Type* valueType = valueSe->symbol()->getValType();
 
@@ -2529,6 +2588,7 @@ static void adjustClassCastCall(CallExpr* call)
   //  * unmanaged SomeClass
   //  * borrowed SomeClass
   //  * unmanaged
+  //  * owned
   // This section just handles merging the decortators.
   // Casts from owned etc. to owned are still also handled in module code.
   // Down-casting is handled in the module code as well.
@@ -2541,7 +2601,12 @@ static void adjustClassCastCall(CallExpr* call)
 
     AggregateType* at = NULL;
 
-    if (isBuiltinGenericClassType(targetType))
+    // Compute the class type to work with.
+    // If the target isn't specifying the class type, get that from the value.
+    // e.g. C: borrowed ; C: owned
+    if (isBuiltinGenericClassType(canonicalTarget) ||
+        (isManagedPtrType(canonicalTarget) &&
+         canonicalTarget == getManagedPtrManagerType(canonicalTarget)))
       at = toAggregateType(canonicalValue);
     else
       at = toAggregateType(canonicalTarget);
@@ -2549,26 +2614,38 @@ static void adjustClassCastCall(CallExpr* call)
     // Compute the decorator combining generic properties
     ClassTypeDecorator d = combineDecorators(targetD, valueD);
 
-    // Now compute the target type
+    // Compute the type based upon the decorators
     Type* t = NULL;
-    if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
-      // Don't change it, expecting an error
-      t = targetType;
-    } else if (isDecoratorManaged(d)) {
-      AggregateType* manager = getManagedPtrManagerType(valueType);
-      if (isManagedPtrType(targetType) &&
-          manager != getManagedPtrManagerType(targetType)) {
-        // Don't change it, expecting an error
-        t = targetType;
-      } else {
-        t = computeDecoratedManagedType(at, d, manager, call);
-      }
+    if (isDecoratorManaged(d)) {
+      AggregateType* manager = NULL;
+      if (isDecoratorUnknownManagement(targetD))
+        manager = getManagedPtrManagerType(valueType);
+      else
+        manager = getManagedPtrManagerType(targetType);
+      t = computeDecoratedManagedType(at, d, manager, call);
     } else {
       t = at->getDecoratedClass(d);
     }
 
+    // But don't change the target type in some cases that should be errors.
+    // These could raise errors here but presently just leave it for
+    // a resolution failure
+    if (!valueIsType) {
+      if (isDecoratorManaged(d) && !isDecoratorManaged(valueD)) {
+        // Don't change it, expecting an error
+        t = NULL;
+      } else if (isDecoratorManaged(d)) {
+        AggregateType* manager = getManagedPtrManagerType(valueType);
+        if (isManagedPtrType(targetType) &&
+            manager != getManagedPtrManagerType(targetType)) {
+          // Don't change it, expecting an error
+          t = NULL;
+        }
+      }
+    }
+
     // Replace the target type with the instantiated one if it differs
-    if (targetType != t) {
+    if (t && targetType != t) {
       targetTypeSe->setSymbol(t->symbol);
     }
 
@@ -2578,7 +2655,7 @@ static void adjustClassCastCall(CallExpr* call)
     //  need another method to call here to get the possibly nil ptr).
     if (isDecoratorManaged(valueD) &&
         !isDecoratorManaged(d) &&
-        !isTypeExpr(valueSe)) {
+        !valueIsType) {
       if (isDecoratorUnknownManagement(d))
         INT_FATAL(call, "actual value has unknown type");
       // Convert it to borrow before trying to resolve the cast again
@@ -2658,7 +2735,8 @@ static bool resolveBuiltinCastCall(CallExpr* call)
         }
 
         return true;
-      } else if (dispatches && isBuiltinGenericClassType(initialTargetType)) {
+      } else if (isBuiltinGenericClassType(initialTargetType) ||
+                 isManagedPtrType(initialTargetType)) {
         // Handle e.g. owned MyClass:borrowed
         call->primitive = primitives[PRIM_NOOP];
         call->baseExpr->remove();
@@ -2840,6 +2918,18 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     if (ret && dt) {
       ret = getDecoratedClass(ret, dt->getDecorator());
       INT_ASSERT(ret);
+    } else if (ret && isManagedPtrType(ts->typeInfo())) {
+      // For owned/shared types, resolve the canonical class type specifier and
+      // re-wrap the resulting type in owned or shared.
+      AggregateType* managed = toAggregateType(ts->typeInfo());
+      if (managed->instantiatedFrom) {
+        AggregateType* root = managed->getRootInstantiation();
+        CallExpr* again = new CallExpr(root->symbol, ret->symbol);
+        info.call->getStmtExpr()->insertBefore(again);
+        resolveCall(again);
+        ret = again->typeInfo();
+        again->remove();
+      }
     }
   }
 
@@ -3087,10 +3177,29 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
       if (checkOnly == false) {
-        if (candidates.n == 0)
+        if (candidates.n == 0) {
+          bool existingErrors = fatalErrorsEncountered();
           printResolutionErrorUnresolved(info, mostApplicable);
-        else
+
+          if (!inGenerousResolutionForErrors()) {
+            startGenerousResolutionForErrors();
+            FnSymbol* retry = resolveNormalCall(info, /*checkOnly*/ true);
+            stopGenerousResolutionForErrors();
+
+            if (fIgnoreNilabilityErrors && existingErrors == false && retry)
+              clearFatalErrors();
+
+            if (retry != NULL)
+              return retry;
+          }
+
+          // TODO: we could try e.g. removing the bad call
+          // and checking other funtions instead of giving up here.
+          USR_STOP();
+
+        } else {
           printResolutionErrorAmbiguous (info, candidates);
+        }
       }
     }
 
@@ -3522,8 +3631,6 @@ void printResolutionErrorUnresolved(CallInfo&       info,
     if (developer == true) {
       USR_PRINT(call, "unresolved call had id %i", call->id);
     }
-
-    USR_STOP();
   }
 }
 
@@ -5834,7 +5941,7 @@ static void resolveInitVar(CallExpr* call) {
       //   var x : MyGenericType = <expr>;
       // if the type of <expr> is not an instantiation of 'MyGenericType'.
       // Left as future work until 'init=' design finalized.
-      if (inst == NULL) {
+      if (inst == NULL && isRecord(targetType) == false) {
         USR_FATAL(call, "Could not coerce '%s' to '%s' in initialization",
                   srcType->symbol->name,
                   targetType->symbol->name);
@@ -5929,7 +6036,7 @@ static void resolveInitVar(CallExpr* call) {
     // the variable we are initializing.
     src->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
-    // Don't need to copy string/bytes literals when initializing 
+    // Don't need to copy string/bytes literals when initializing
     bool moveStringLiteral = src->hasFlag(FLAG_CHAPEL_STRING_LITERAL) &&
                              targetType->getValType() == dtString;
     bool moveBytesLiteral  = src->hasFlag(FLAG_CHAPEL_BYTES_LITERAL) &&
@@ -5986,7 +6093,9 @@ static void resolveInitVar(CallExpr* call) {
       if (foundOldStyleInit == false) {
         call->setUnresolvedFunction(astrInitEquals);
 
-        resolveCall(call);
+        resolveExpr(call);
+
+        dst->type = call->resolvedFunction()->_this->getValType();
       } else {
         FnSymbol* fn = call->resolvedFunction();
         if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
@@ -6729,26 +6838,38 @@ static void resolveNew(CallExpr* newExpr) {
   }
 }
 
+static void checkManagerType(Type* t) {
+  // Verify that the manager matches expectations
+  //  - borrowed or borrowedNilable
+  //  - unmanaged or unmanagedNilable
+  //  - owned or DecoratedClassType(owned,?)  (or other management type)
+  if (t == dtBorrowed || t == dtBorrowedNilable ||
+      t == dtUnmanaged || t == dtUnmanagedNilable) {
+    return; // OK
+  }
+
+  if (isManagedPtrType(t)) {
+    ClassTypeDecorator d = classTypeDecorator(t);
+    INT_ASSERT(d == CLASS_TYPE_MANAGED || d == CLASS_TYPE_MANAGED_NILABLE);
+    // check that it's not an instantiation
+    INT_ASSERT(getDecoratedClass(t, d) == t);
+  }
+}
+
 static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
 
   for_actuals(expr, newExpr) {
     if (NamedExpr* ne = toNamedExpr(expr)) {
       if (ne->name == astr_chpl_manager) {
-        manager = canonicalDecoratedClassType(ne->actual->typeInfo());
+        Type* t = ne->actual->typeInfo();
+        checkManagerType(t);
+        manager = t;
         expr->remove();
         break;
       }
     }
   }
 
-  // adjust for the cases like 'new C()?'
-  if (manager == NULL) {
-    if (SymExpr* arg1 = toSymExpr(newExpr->get(1)))
-      if (DecoratedClassType* dt1 = toDecoratedClassType(arg1->symbol()->type))
-        if (dt1->getDecorator() == CLASS_TYPE_GENERIC_NILABLE)
-          newExpr->insertAtHead(dtOwned->symbol);
-  }
-  
   // adjust the type to initialize for managed new cases
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
@@ -6758,12 +6879,22 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // or for t is unmanaged(MyClass)
       if (manager == NULL) {
         if (isManagedPtrType(type)) {
-          manager = type;
+          manager = getManagedPtrManagerType(type);
+          if (isNilableClassType(type))
+            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
+
         } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
-          if (dt->isUnmanaged())
-            manager = dtUnmanaged;
-          else
-            manager = dtOwned;
+          if (dt->isUnmanaged()) {
+            if (isNilableClassType(dt))
+              manager = dtUnmanagedNilable;
+            else
+              manager = dtUnmanaged;
+          } else {
+            if (isNilableClassType(dt))
+              manager = getDecoratedClass(dtOwned, CLASS_TYPE_MANAGED_NILABLE);
+            else
+              manager = dtOwned;
+          }
         } else if (isClass(type) && !fLegacyClasses) {
           manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
@@ -6780,6 +6911,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // only the canonical class types.
       if (manager) {
         AggregateType* at = toAggregateType(type);
+
+        checkManagerType(manager);
 
         // fail if it's a record
         if (isRecord(at) && !isManagedPtrType(at))
@@ -6809,7 +6942,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         }
 
         if (manager) {
-
           if (at != type)
             // Set the type to initialize
             typeExpr->setSymbol(at->symbol);
@@ -6973,11 +7105,11 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow);
+static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow, bool resolvePartials = false);
 static Type* resolveGenericActual(SymExpr* se, Type* type, bool decayToBorrow);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
-  return resolveGenericActual(se, false);
+  return resolveGenericActual(se, false, true);
 }
 
 void resolveGenericActuals(CallExpr* call) {
@@ -7002,7 +7134,7 @@ void resolveGenericActuals(CallExpr* call) {
   }
 }
 
-static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow) {
+static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow, bool resolvePartials) {
   Type* retval = se->typeInfo();
 
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -7010,7 +7142,6 @@ static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow) {
 
   } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
     if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      Type* origType = vs->typeInfo();
 
       // Fix for complicated extern vars like
       //   extern var x: c_ptr(c_int);
@@ -7021,7 +7152,10 @@ static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow) {
         vs->type = resolveTypeAlias(se);
       }
 
-      retval = resolveGenericActual(se, origType, decayToBorrow);
+      if (resolvePartials) {
+        Type* origType = vs->typeInfo();
+        retval = resolveGenericActual(se, origType);
+      }
     }
   }
 
@@ -7841,7 +7975,7 @@ static bool isObviousType(Type* type) {
 }
 
 static bool isObviousValue(Symbol* val) {
-  return val->isImmediate() || isEnumSymbol(val) || paramMap.get(val);
+  return val->isImmediate() || isEnumSymbol(val) || val == gUninstantiated || paramMap.get(val);
 }
 
 //
@@ -9662,6 +9796,14 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
 
+  if (isRecord(type) &&
+      type->symbol->hasFlag(FLAG_SYNC) == false &&
+      type->symbol->hasFlag(FLAG_SINGLE) == false &&
+      type->symbol->hasFlag(FLAG_TUPLE) == false &&
+      type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    return false;
+  }
+
   bool retval = true;
 
   // If it is generic then try to resolve the default type constructor
@@ -9725,6 +9867,18 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
+void startGenerousResolutionForErrors() {
+  generousResolutionForErrors++;
+}
+
+bool inGenerousResolutionForErrors() {
+  return generousResolutionForErrors > 0;
+}
+
+void stopGenerousResolutionForErrors() {
+  generousResolutionForErrors--;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -9781,6 +9935,7 @@ void expandInitFieldPrims()
     }
   }
 }
+
 
 /************************************* | **************************************
 *                                                                             *

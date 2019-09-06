@@ -155,15 +155,15 @@ proc findLatest(packageDir: string): VersionInfo {
 }
 
 proc consumeArgs(ref args : list(string)) {
-  try! args.pop(1);
+  args.pop(1);
   const sub = args[1];
   assert(sub == "search");
-  try! args.pop(1);
+  args.pop(1);
 
   const options = {"--no-update", "--debug", "--show"};
 
   while args.size > 0 && options.contains(args[1]) {
-    try! args.pop(1);
+    args.pop(1);
   }
 }
 

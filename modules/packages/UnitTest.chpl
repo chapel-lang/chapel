@@ -30,8 +30,7 @@ Class. We use :proc:`~UnitTest.main()` to run the tests.
 
 .. note::
 
-  Tests must be launched with a test launcher. Currently, this is a standalone application 
-  built separately. However, this functionality will eventually be integrated into mason.
+  It is intended to be used in concert with the `mason test <https://chapel-lang.org/docs/tools/mason/mason.html>`_ command, which automates execution of any test function.
 
 Assert Functions
 ----------------

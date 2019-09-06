@@ -18,6 +18,8 @@
  */
 
 private use List;
+private use Map;
+
 use TOML;
 use FileSystem;
 use MasonUtils;
@@ -135,8 +137,18 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args: list(string)) {
+  var skipOffline = false;
+  if args.count('update') == 1 {
+    skipOffline = true;
+  }
+
   if args.count("--no-update") != 0 then
     return;
+
+  if MASON_OFFLINE && (args.count('--update') == 0) && !skipOffline {
+    writeln('Skipping update due to MASON_OFFLINE=true');
+    return;
+  }
 
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
@@ -301,7 +313,7 @@ private proc createDepTree(root: unmanaged Toml) {
   // dependency tree because IVRS may not execute in the desired order. For
   // example, we might encounter foo-0.3.0 before foo-0.2.0.
   //
-  for brick in depTree.A {
+  for brick in depTree.A.values() {
     chplVersionError(brick);
 
     // Lock in the current Chapel version
@@ -365,7 +377,7 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    try! deps.pop(1);
+    deps.pop(1);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
@@ -465,7 +477,7 @@ private proc retrieveDep(name: string, version: string) {
 private proc getDependencies(tomlTbl: unmanaged Toml) {
   var depsD: domain(1);
   var deps: list((string, unmanaged Toml?));
-  for k in tomlTbl.D {
+  for k in tomlTbl.A {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]) {
         deps.append((a, d));

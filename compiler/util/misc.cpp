@@ -652,6 +652,11 @@ bool fatalErrorsEncountered() {
   return exit_eventually || exit_end_of_pass;
 }
 
+void clearFatalErrors() {
+  exit_eventually = false;
+  exit_end_of_pass = false;
+}
+
 static void handleInterrupt(int sig) {
   stopCatchingSignals();
   fprintf(stderr, "error: received interrupt\n");

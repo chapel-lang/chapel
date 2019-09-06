@@ -25,6 +25,8 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          Sort
+          List
+           ChapelLocks
           MSBRadixSort
            RadixSortHelp
            ShellSort
@@ -36,7 +38,6 @@ Initializing Modules:
           MergeSort
           SelectionSort
         ChapelDistribution
-         ChapelLocks
          LinkedLists
         SysError
         ChapelDebugPrint

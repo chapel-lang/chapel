@@ -119,7 +119,7 @@ static void handleReceiverFormals() {
           AggregateType::setCreationStyle(ts, fn);
 
         } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
+          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -195,12 +195,12 @@ static void processGenericFields() {
 // to handle chpl__Program with little or no special casing.
 
 static void addToSymbolTable() {
-  ResolveScope* rootScope = ResolveScope::getRootModule();
+  rootScope = ResolveScope::getRootModule();
 
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      rootScope->extend(def->sym);
+      rootScope->extend(def->sym, /* isTopLevel= */ true);
     }
   }
 
@@ -1675,8 +1675,18 @@ static void lookup(const char*           name,
 
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
-      if (outerScope != NULL)
+      if (outerScope != NULL) {
         lookup(name, context, outerScope, visited, symbols);
+        // As a last ditch effort, see if this module's name happens to match.
+        // This handles the case when we refer to the name of the module in
+        // which we are declared (e.g., `module M { ...M.xyz... }`
+        if (symbols.size() == 0) {
+          ModuleSymbol* thisMod = scope->getModule();
+          if (strcmp(name, thisMod->name) == 0) {
+            symbols.push_back(thisMod);
+          }
+        }
+      }
 
     } else {
       // Otherwise, look in the next scope up.
@@ -1823,6 +1833,21 @@ static bool lookupThisScopeAndUses(const char*           name,
               USR_WARN(sym,
                        "Module level symbol is hiding function argument '%s'",
                        name);
+            }
+          }
+        } else {
+          // we haven't found a match yet, so as a last resort, let's
+          // check the names of the modules in the 'use' statements
+          // themselves...  This effectively places the module names at
+          // a scope just a bit further out than the one holding the
+          // symbols that they define.
+          forv_Vec(UseStmt, use, *moduleUses) {
+            if (use != NULL) {
+              if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
+                if (isRepeat(modSym, symbols) == false) {
+                  symbols.push_back(modSym);
+                }
+              }
             }
           }
         }
@@ -2251,6 +2276,7 @@ static void resolveUnmanagedBorrows() {
         call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+        call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
 
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2264,7 +2290,8 @@ static void resolveUnmanagedBorrows() {
               USR_WARN(call, "Please use %s class? instead of %s?",
                               ts->name, ts->name);
           } else if (isManagedPtrType(ts->type) &&
-                     call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+                     (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                      call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
             decorator = CLASS_TYPE_MANAGED;
             USR_WARN(call, "Please use %s class? instead of %s?",
                            ts->name, ts->name);
@@ -2276,7 +2303,8 @@ static void resolveUnmanagedBorrows() {
             else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
                      call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
               type = "borrowed";
-            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS))
+            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
               type = "?";
             else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
               type = "nonnil";
@@ -2298,7 +2326,8 @@ static void resolveUnmanagedBorrows() {
             int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
             decorator = addNilableToDecorator(decorator);
           } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
             decorator = addNonNilToDecorator(decorator);

@@ -166,13 +166,13 @@ class TreeNode {
 /* Compute atomically:  this = max(this, other) */
 proc AtomicT.max(other: int) {
   var curMax = this.read();
-  while curMax < other && !this.compareExchange(curMax, other) do
+  while curMax < other && !this.compareAndSwap(curMax, other) do
     curMax = this.read();
 }
 
 proc RAtomicT.max(other: int) {
   var curMax = this.read();
-  while curMax < other && !this.compareExchange(curMax, other) do
+  while curMax < other && !this.compareAndSwap(curMax, other) do
     curMax = this.read();
 }
 
