@@ -1,3 +1,4 @@
+.. default-domain:: chpl
 .. _readme-sets:
 
 ==========================
@@ -99,6 +100,12 @@ The op= variant is::
 
 Associative Array Set Operations
 ================================
+
+.. warning::
+    Set operations on associative arrays have been deprecated for the 1.20
+    release and will be removed in future releases. The ``map`` type from
+    the :mod:`Map` module has been added to the standard library, and is
+    intended to provide suitable replacements for these deprecated operations.
 
 The Union, Difference, Intersection, and Symmetric Difference operators
 (and their op= variants) are available for associative arrays that don't share
