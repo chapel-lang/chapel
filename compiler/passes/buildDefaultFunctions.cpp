@@ -1091,55 +1091,110 @@ static void buildEnumCastFunction(EnumType* et) {
     fn->tagIfGeneric();
   }
 
-  // string to enumerated type cast function
-  fn = new FnSymbol(astr_cast);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
-  arg1->addFlag(FLAG_TYPE_VARIABLE);
-  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
+  {
+    // string to enumerated type cast function
+    fn = new FnSymbol(astr_cast);
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
+    arg1->addFlag(FLAG_TYPE_VARIABLE);
+    arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
+    fn->insertFormalAtTail(arg1);
+    fn->insertFormalAtTail(arg2);
 
-  CondStmt* cond = NULL;
-  for_enums(constant, et) {
-    cond = new CondStmt(
-             new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
-             new CallExpr(PRIM_RETURN, constant->sym),
-             cond);
-    cond = new CondStmt(
-             new CallExpr("==", arg2,
-                          new_StringSymbol(
-                            astr(et->symbol->name, ".", constant->sym->name))),
-             new CallExpr(PRIM_RETURN, constant->sym),
-             cond);
+    CondStmt* cond = NULL;
+    for_enums(constant, et) {
+      cond = new CondStmt(
+               new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
+               new CallExpr(PRIM_RETURN, constant->sym),
+               cond);
+      cond = new CondStmt(
+               new CallExpr("==", arg2,
+                            new_StringSymbol(
+                              astr(et->symbol->name, ".", constant->sym->name))),
+               new CallExpr(PRIM_RETURN, constant->sym),
+               cond);
+    }
+
+    fn->insertAtTail(cond);
+
+    fn->throwsErrorInit();
+    fn->insertAtTail(new TryStmt(
+                       false,
+                       new BlockStmt(
+                         new CallExpr("chpl_enum_cast_error",
+                                      arg2,
+                                      new_StringSymbol(et->symbol->name))),
+                       NULL));
+    fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+    fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+
+    fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                  toDefExpr(et->constants.first())->sym));
+
+    def = new DefExpr(fn);
+    //
+    // these cast functions need to go in the base module because they
+    // are automatically inserted to handle implicit coercions
+    //
+    baseModule->block->insertAtTail(def);
+    reset_ast_loc(def, et->symbol);
+    normalize(fn);
+    fn->tagIfGeneric();
   }
 
-  fn->insertAtTail(cond);
+  {
+    //
+    // bytes to enumerated type cast function
+    fn = new FnSymbol(astr_cast);
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
+    arg1->addFlag(FLAG_TYPE_VARIABLE);
+    arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtBytes);
+    fn->insertFormalAtTail(arg1);
+    fn->insertFormalAtTail(arg2);
 
-  fn->throwsErrorInit();
-  fn->insertAtTail(new TryStmt(
-                     false,
-                     new BlockStmt(
-                       new CallExpr("chpl_enum_cast_error",
-                                    arg2,
-                                    new_StringSymbol(et->symbol->name))),
-                     NULL));
-  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+    CondStmt* cond = NULL;
+    for_enums(constant, et) {
+      cond = new CondStmt(
+               new CallExpr("==", arg2, new_BytesSymbol(constant->sym->name)),
+               new CallExpr(PRIM_RETURN, constant->sym),
+               cond);
+      cond = new CondStmt(
+               new CallExpr("==", arg2,
+                            new_BytesSymbol(
+                              astr(et->symbol->name, ".", constant->sym->name))),
+               new CallExpr(PRIM_RETURN, constant->sym),
+               cond);
+    }
 
-  fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                toDefExpr(et->constants.first())->sym));
+    fn->insertAtTail(cond);
 
-  def = new DefExpr(fn);
-  //
-  // these cast functions need to go in the base module because they
-  // are automatically inserted to handle implicit coercions
-  //
-  baseModule->block->insertAtTail(def);
-  reset_ast_loc(def, et->symbol);
-  normalize(fn);
-  fn->tagIfGeneric();
+    fn->throwsErrorInit();
+    fn->insertAtTail(new TryStmt(
+                       false,
+                       new BlockStmt(
+                         new CallExpr("chpl_enum_cast_error",
+                                      arg2,
+                                      new_StringSymbol(et->symbol->name))),
+                       NULL));
+    fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+    fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+
+    fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                  toDefExpr(et->constants.first())->sym));
+
+    def = new DefExpr(fn);
+    //
+    // these cast functions need to go in the base module because they
+    // are automatically inserted to handle implicit coercions
+    //
+    baseModule->block->insertAtTail(def);
+    reset_ast_loc(def, et->symbol);
+    normalize(fn);
+    fn->tagIfGeneric();
+  }
 }
 
 
