@@ -154,7 +154,8 @@ test();
 
 The \chpl{.borrow()} method is available on all class types (including
 \chpl{unmanaged} and \chpl{borrowed}) in order to support generic
-programming.
+programming. For nilable class types, it returns a the borrowed nilable
+class type.
 
 Errors due to accessing an instance after the end of its lifetime are
 particularly difficult to debug. For this reason, the compiler includes a
@@ -167,13 +168,6 @@ refers to.
   Additional syntax to specify the lifetimes of function returns will
   probably be needed.
 \end{future}
-
-\subsection{Nilable Classes}
-\label{Nilable_Classes}
-
-This section is forthcoming.
-
-\label{Methods_On_Nilable_In_Prototype_Modules}
 
 \subsection{Class Types}
 \label{Class_Types}
@@ -209,6 +203,9 @@ of other class declarations.
 
 If no memory management strategy is indicated, the class will be
 considered to have generic management.
+
+Variables of class type cannot store \chpl{nil} unless the class
+type includes \chpl{?} (see~\rsec{Nilable_Classes} below).
 
 The memory management strategies have the following meaning:
 
@@ -271,6 +268,78 @@ owned C
 \end{chapelexample}
 
 
+\subsection{Nilable Classes}
+\label{Nilable_Classes}
+
+Variables of class type cannot store \chpl{nil} unless the class type is
+nilable. To declare a nilable class type, use the \chpl{?} operator to
+create a nilable type. For example, if \chpl{C} is a class type, then
+\chpl{C?} indicates nilable the class type with generic management. The
+\chpl{?} operator can be combined with memory management specifiers as
+well. For example, \chpl{borrowed C?} indicates a nilable class using the
+\chpl{borrowed} memory management strategy. Note that the \chpl{?}
+operator applies only to types.
+
+The postfix \chpl{!} operator applies to a type or a value. When applied
+to a \chpl{borrowed} or \chpl{unmanaged} type, it returns the non-nilable
+version of that type. When applied to an \chpl{owned} or \chpl{shared}
+type, it returns the non-nilable borrowed type. When applied to a value,
+it asserts that the value is not \chpl{nil} and returns that value as a
+non-nilable type.  If the value was in fact \chpl{nil}, it halts.  It
+returns the borrowed type for \chpl{owned} or \chpl{shared}.
+
+An alternative to \chpl{!} is to use a cast to a non-nilable type. Such a
+cast will throw \chpl{NilClassError} if the value was in fact \chpl{nil}.
+See~\rsec{Explicit_Class_Conversions}.
+
+Non-nilable class types are implicitly convertible to nilable class
+types. See~\rsec{Implicit_Class_Conversions}.
+
+Class methods generally expect a receiver of type \chpl{borrowed C}
+(see~\rsec{Class_Methods}).  Since such a class method call might involve
+dynamic dispatch, it is a program error to call a class method on a class
+receiver storing \chpl{nil}. The language helps to identify this error in
+two different ways, depending on whether or not the module is a
+\chpl{prototype} module (\rsec{Prototype_Modules}).
+
+The \chpl{borrow()} method is an exception. Suppose it is working with a
+class \chpl{C}. It will return \chpl{borrowed C} for any non-nilable
+\chpl{C} type (e.g. \chpl{owned C}). It will return \chpl{borrowed C?}
+for any nilable \chpl{C} type (e.g. \chpl{C?}).
+
+For modules that are not prototype modules, the compiler will not
+resolve calls to such class methods if the receiver has nilable type.
+If the programmer knows that the receiver cannot store \chpl{nil} at that
+moment, they can use \chpl{!} to assert that the reciever is not
+\chpl{nil} and to convert it to the non-nilable borrowed type. For
+example:
+
+\begin{chapelexample}{nilable-classes-bang.chpl}
+\begin{chapel}
+class C {
+  proc C.method() { }
+}
+var c: owned C? = makeMyClass();
+
+// The following call is allowed only in prototype modules,
+// in which case it is equivalent to c!.method()
+c.method();
+
+// This pattern is appropriate in libraries
+if c != nil {
+  c!.method(); // c! converts from 'owned C?' to 'borrowed C'
+}
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\label{Methods_On_Nilable_In_Prototype_Modules}
+
+Within a \chpl{prototype} module, the compiler will implicitly convert
+a nilable method receiver to the non-nilable type by adding a \chpl{!}
+call.
+
 
 \subsection{Class Values}
 \label{Class_Values}
@@ -286,15 +355,17 @@ an instance of either that class or a class inheriting, directly or
 indirectly, from that class.
 \chpl{nil} is a legal value of any class type.
 
-The default value of a class type is \chpl{nil}.
+The default value of a concrete nilable class type is \chpl{nil}. Generic
+class types and non-nilable class types do not have a default value.
 
 \begin{chapelexample}{declaration.chpl}
 \begin{chapel}
 class C { }
 var c : owned C?;    // c has class type owned C?, meaning
-                     // the instance can be nil and is deleted automatically.
+                     // the instance can be nil and is deleted automatically
+                     // when it is not.
 c = new C();         // Now c refers to an initialized instance of type C.
-var c2 = c.borrow(); // The type of c2 is borrowed C.
+var c2 = c.borrow(); // The type of c2 is borrowed C?.
                      // c2 refers to the same object as c.
 class D : C {}    // Class D is derived from C.
 c = new D();      // Now c refers to an object of type D.
@@ -307,12 +378,12 @@ c = new D();      // Now c refers to an object of type D.
 \end{chapelcompopts}
 \begin{chapeloutput}
 \end{chapeloutput}
-When the variable \chpl{c} is declared, it initially has the value
-of \chpl{nil}.  The next statement assigned to it an instance of the
-class \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps can
-be combined.  The type of \chpl{c2} is also \chpl{C}, determined implicitly from
-the the initialization expression.  Finally, an object of type \chpl{D} is created and
-assigned to \chpl{c}.
+When the variable \chpl{c} is declared, it initially has the value of
+\chpl{nil}.  The next statement assigned to it an instance of the class
+\chpl{C}.  The declaration of variable \chpl{c2} shows that these steps
+can be combined.  The type of \chpl{c2} is also \chpl{borrowed C?}, determined
+implicitly from the the initialization expression.  Finally, an object
+of type \chpl{owned D} is created and assigned to \chpl{c}.
 \end{chapelexample}
 
 \subsection{Class Fields}
@@ -359,7 +430,79 @@ with \chpl{ref} or \chpl{const ref} keywords, are an area of future work.
 \index{secondary methods}
 
 Methods on classes are referred to as to as \emph{class methods}.
-See the methods section~\rsec{Methods}.
+See the methods section~\rsec{Methods} for more information about methods.
+
+Within a class method, the type of \chpl{this} is generally the
+non-nilable \chpl{borrowed} variant of the class type. It is different
+for type methods (see below) and it might be a different type if the
+class method is declared as a secondary method with a type
+expression (see~\ref{Secondary_Methods_with_Type_Expressions}).
+
+For example:
+
+\begin{chapelexample}{class-method-this-type.chpl}
+\begin{chapel}
+class C {
+  proc primaryMethod() {
+    assert(this.type == borrowed C);
+  }
+}
+proc C.secondaryMethod() {
+  assert(this.type == borrowed C);
+}
+proc (owned C?).secondaryMethodWithTypeExpression() {
+  assert(this.type == owned C?);
+}
+
+var x:owned C? = new owned C();
+x!.primaryMethod();   // within the method, this: borrowed C
+x!.secondaryMethod(); // within the method, this: borrowed C
+x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+For type methods on a class, \chpl{this} will accept any management or
+nilability variant of the class type and it will refer to that type in
+the body of the method. For example:
+
+\begin{chapelexample}{class-type-method-this.chpl}
+\begin{chapel}
+class C {
+  proc type typeMethod() {
+    writeln(this:string); // print out the type of 'this'
+  }
+}
+(C).typeMethod(); // prints 'C'
+(owned C).typeMethod(); // prints 'owned C'
+(borrowed C?).typeMethod(); // prints 'borrowed C?'
+\end{chapel}
+\begin{chapeloutput}
+C
+owned C
+borrowed C?
+\end{chapeloutput}
+\end{chapelexample}
+
+When a type method is defined only in a parent class, the type will be
+the corresponding variant of the parent class. For example:
+
+\begin{chapelexample}{class-type-method-inherit.chpl}
+\begin{chapel}
+class Parent { }
+class Child : Parent { }
+proc type Parent.typeMethod() {
+  writeln(this:string); // print out the type 'this'
+}
+
+Child.typeMethod(); // prints 'Parent'
+(borrowed Child?).typeMethod(); // prints 'borrowed Parent?'
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
 
 \subsection{Nested Classes}
 \label{Nested_Classes}
@@ -1589,10 +1732,9 @@ receivers.
 
 Classes are assigned by reference.  After an assignment from one
 variable of a class type to another, both variables reference the same
-class instance.
-
-Assignment for an \chpl{owned} variable transfers ownership and leaves the
-source variable empty. For example:
+class instance. Assignments from an \chpl{owned} variable to another
+\chpl{owned} or \chpl{shared} variable are an exception. They transfer
+ownership, leaving the source variable empty i.e. storing \chpl{nil}.
 
 \begin{chapelexample}{owned-assignment.chpl}
 \begin{chapelpre}
@@ -1613,22 +1755,20 @@ nil
 In contrast, assignment for \chpl{shared} variables allows both
 variables to refer to the same class instance.
 
-\subsection{Implicit Class Conversions}
-\label{Implicit_Class_Conversions}
-\index{conversions!class}
-\index{conversions!implicit!class}
-\index{classes!implicit conversion}
+The following assignments between variables or expressions with different
+memory management strategies are disallowed:
 
-An implicit conversion from class type \chpl{D} to
-another class type \chpl{C} is allowed when \chpl{D} is a subclass
-of \chpl{C}.
-The value \chpl{nil} can be implicitly converted to any class type.
-These conversions do not change the value.
+\begin{itemize}
+\item to \chpl{owned} from \chpl{shared} or \chpl{borrowed},
+      as it would not ensure unique ownership of the instance
 
-Class types other than \chpl{borrowed C}, for example \chpl{owned C}, can
-be implicitly converted to \chpl{borrowed C}. Note that \chpl{C} is
-equivalent to \chpl{borrowed C}.  This coercion is equivalent to calling
-the \chpl{.borrow()} method.  See~\rsec{Class_Lifetime_and_Borrows}.
+\item to \chpl{shared} from \chpl{borrowed}, as the original owner
+      would be unaware of the shared ownership
+
+\item to \chpl{owned}, \chpl{shared}, or \chpl{borrowed} from \chpl{unmanaged},
+      as both the source and the destination would appear responsible
+      for deleting the instance
+\end{itemize}
 
 %TODO: Move memory management explanation up, closer to class initializers.
 % Perhaps make the memory management part of the introduction, and then let the

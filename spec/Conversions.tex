@@ -64,9 +64,9 @@ as defined in the referenced subsections:
 
 \begin{itemize}
 \item numeric and boolean types~(\rsec{Implicit_NumBool_Conversions}),
-\item class types~(\rsec{Implicit_Class_Conversions}),
-\item integral types in the special case when the expression's value
+\item numeric types in the special case when the expression's value
       is a compile-time constant~(\rsec{Implicit_Compile_Time_Constant_Conversions}), and
+\item class types~(\rsec{Implicit_Class_Conversions}),
 \item from an integral or class type to \chpl{bool}
       in certain cases~(\rsec{Implicit_Statement_Bool_Conversions}).
 \end{itemize}
@@ -178,12 +178,63 @@ explicitly-sized counterparts.
 \index{conversions!numeric!parameter}
 \index{conversions!implicit!parameter}
 
-The following implicit conversion of a parameter is allowed:
-\begin{itemize}
-\item A parameter of type \chpl{int(64)} can be implicitly converted
-to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, or any unsigned integral type if the
-value of the parameter is within the range of the target type.
-\end{itemize}
+A parameter of numeric type can be implicitly converted to any other
+numeric type if the value of the parameter can be represented exactly
+the target type. This rule does not allow conversions from \chpl{real} to
+\chpl{imag}, or from \chpl{complex} to a non-complex type. It does allow
+conversions from \chpl{real} or \chpl{imag} to \chpl{complex}.
+
+\subsection{Implicit Class Conversions}
+\label{Implicit_Class_Conversions}
+\index{conversions!implicit!class}
+\index{conversions!implicit!nilable}
+\index{conversions!implicit!borrow}
+\index{classes!implicit conversion}
+
+An expression of class type can be implicitly converted to the borrow type;
+to a nilable type; or to a parent class type. The value \chpl{nil} can be
+implicitly converted to any nilable class type.
+
+First, class types can be converted to the corresponding \chpl{borrowed}
+type. For example, \chpl{owned C} can be implicitly converted to
+\chpl{borrowed C}, and \chpl{shared C?} can be implicitly converted to
+\chpl{borrowed C?}. This coercion is equivalent to calling the
+\chpl{.borrow()} method.  See~\rsec{Class_Lifetime_and_Borrows}. For
+example:
+
+\begin{chapelexample}{implicit-conversion-to-borrow.chpl}
+\begin{chapel}
+class C { }
+var c:owned C = new owned C();
+
+proc f(arg: borrowed C) { }
+f(c); // equivalent to f(c.borrow())
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+Second, an expression of non-nilable class type can be implicitly
+converted to the nilable class type. Continuing the above
+example:
+
+\begin{chapelexample}{implicit-conversion-to-nilable.chpl}
+\begin{chapelpre}
+class C { }
+var c:owned C = new owned C();
+\end{chapelpre}
+\begin{chapel}
+var b:borrowed C = c.borrow();
+
+proc g(arg: borrowed C?) { }
+g(b); // equivalent to g(b:borrowed C?)
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+Third, an implicit conversion from class type \chpl{D} to another class
+type \chpl{C} is allowed when \chpl{D} is a subclass of \chpl{C}.
 
 \subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
@@ -219,7 +270,7 @@ Such conversion does not change the value of the expression.
 Explicit conversions are allowed from any numeric type or boolean to bytes or
 string, and vice-versa.
 
-% A valid \chpl{bool} value behaves like a single unsigned bit.  
+% A valid \chpl{bool} value behaves like a single unsigned bit.
 When a \chpl{bool} is converted to a \chpl{bool}, \chpl{int}
 or \chpl{uint} of equal or larger size, its value is zero-extended to fit the
 new representation.  When a \chpl{bool} is converted to a
@@ -234,7 +285,7 @@ When a \chpl{int}, \chpl{uint}, or \chpl{real} is converted to a \chpl{bool}, th
 
 % The source type determines whether a value is zero- or sign-extended.
 When an \chpl{int} is converted to a larger \chpl{int} or \chpl{uint}, its value is
-sign-extended to fit the new representation.  
+sign-extended to fit the new representation.
 When a \chpl{uint} is converted to a larger \chpl{int} or \chpl{uint}, its value
 is zero-extended.
 When an \chpl{int} or \chpl{uint} is converted to an \chpl{int} or \chpl{uint}
@@ -347,7 +398,7 @@ of \chpl{false} and \chpl{true}, respectively.
 % encouragement to always supply a default clause in your switch statements!
 
 When the source type is a real or integer type, the value is converted to the
-target type's underlying integer type.  
+target type's underlying integer type.
 
 The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type is not
 permitted.
@@ -360,6 +411,7 @@ matches value of the input is selected.  If no such enumerator exists, an
 \label{Explicit_Class_Conversions}
 \index{conversions!class}
 \index{conversions!explicit!class}
+\index{classes!explicit conversion}
 
 An expression of static class type \chpl{C} can be explicitly
 converted to a class type \chpl{D} provided that \chpl{C} is derived
@@ -372,6 +424,11 @@ the cast fails and the destination type is not nilable, the cast
 expression will throw a \chpl{classCastError}. If the cast fails and the
 destination type is nilable, as with \chpl{D?}, then the result will be
 \chpl{nil}.
+
+An expression of class type can also be converted to a different
+nilability with a cast. For conversions from a nilable class type to a
+non-nilable class type, the cast will throw a \chpl{NilClassError} if the
+value was actually \chpl{nil}.
 
 In some cases a new variant of a class type needs to be computed that has
 different nilability or memory management strategy. Supposing that
