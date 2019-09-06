@@ -285,9 +285,6 @@ example, not all \sntx{call-expression}s are lvalues.
 \index{expressions!precedence}
 \index{expressions!associativity}
 
-The following table summarizes operator and expression precedence and
-associativity.  Operators and expressions listed earlier have higher
-precedence than those listed later.
 \begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
@@ -299,6 +296,14 @@ precedence than those listed later.
 \hline
 \verb@new@ & right & initializer call \\
 \hline
+\verb@owned@ & right & apply management strategy to a class \\
+\verb@shared@ & right & \\
+\verb@borrowed@ & right & \\
+\verb@unmanaged@ & right & \\
+\hline
+\verb@?@ & left & compute a nilable class type \\
+postfix \verb@!@ & left & assert non-nilable and borrow \\
+\hline
 \verb@:@ & left & cast \\
 \hline
 \verb@**@ & right & exponentiation \\
@@ -307,7 +312,7 @@ precedence than those listed later.
 \verb@scan@ & & scan \\
 \verb@dmapped@ & & domain map application \\
 \hline
-\verb@!@ & \multirow{2}{*}{right} & logical negation \\
+prefix \verb@!@ & \multirow{2}{*}{right} & logical negation \\
 \verb@~@ & & bitwise negation \\
 \hline
 \verb@*@ & \multirow{3}{*}{left} & multiplication \\
@@ -359,6 +364,10 @@ unary \verb@-@ & & negation \\
 \hline
 \end{tabular}
 \end{center}
+
+The above table summarizes operator and expression precedence and
+associativity.  Operators and expressions listed earlier have higher
+precedence than those listed later.
 
 \begin{rationale}
 In general, our operator precedence is based on that of the C family
@@ -1336,6 +1345,19 @@ The result of \chpl{a == b} is true if the sequence of characters
 in \chpl{a} matches exactly the sequence of characters in \chpl{b};
 otherwise the result is false.  The result of \chpl{a \!= b} is
 equivalent to \chpl{\!(a == b)}.
+
+\section{Class Operators}
+\label{Class_Operators}
+
+The keywords \chpl{owned}, \chpl{shared}, \chpl{borrowed}, and
+\chpl{unmanaged} act as a prefix unary operator when specifying the management
+strategy for a class type. See~\rsec{Class_Types}.
+
+The unary postfix operator \chpl{?} results in the nilable variant of a
+class type. See~\rsec{Nilable_Classes}.
+
+The unary postfix operator \chpl{!} asserts that the receiver is not
+storing \chpl{nil} and borrows from it. See~\rsec{Nilable_Classes}.
 
 \section{Miscellaneous Operators}
 \label{Miscellaneous_Operators}
