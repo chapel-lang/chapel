@@ -165,12 +165,12 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const moveTo = "-o " + projectHome + "/target/test/" + testName;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand);
-
+        
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
         }
         else {
-          if show || !run then writeln("compiled ", test, " successfully");
+          if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
             runTestBinary(projectHome, testName, result, show);
           }
@@ -181,15 +181,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
       }
       timeElapsed.stop();
       if run {
-        result.printErrors();
-        writeln(result.separator2);
-        result.printResult(timeElapsed.elapsed());
-        if (result.testsRun - result.testsPassed) == 0 {
-          exit(0);
-        }
-        else {
-          exit(1);
-        }
+        printTestResults(result, timeElapsed);
       }
     }
     else {
@@ -215,7 +207,7 @@ private proc runTestBinary(projectHome: string, testName: string, ref result, sh
   var dict: [dictDomain] int;
   const exitCode = runAndLog(command, testName+".chpl", result, numLocales, testsPassed,
             testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-            skippedTestNames);
+            skippedTestNames, show);
   if exitCode != 0 {
     const newCommand = " ".join(command,"-nl","1");
     const testResult = runWithStatus(newCommand, show);
@@ -240,18 +232,12 @@ private proc runTestBinaries(projectHome: string, testNames: list(string),
 }
 
 
-private proc printTestResults(testResults: map(false, ?keyType, string), numTests: int,
-                              numPassed: int, show: bool) {
+private proc printTestResults(ref result, timeElapsed) {
 
-  if show then writeln("\n--------------------\n");
-  writeln("--- Results ---");
-  for test in testResults {
-    writeln(" ".join("Test:",test, testResults[test]));
-  }
-  writeln("\n--- Summary:  ",numTests, " tests run ---");
-  writeln("-----> ", numPassed, " Passed");
-  writeln("-----> ", (numTests - numPassed), " Failed");
-  if (numTests - numPassed) == 0 {
+  result.printErrors();
+  writeln(result.separator2);
+  result.printResult(timeElapsed.elapsed());
+  if (result.testsRun - result.testsPassed) == 0 {
     exit(0);
   }
   else {
@@ -380,15 +366,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
         }
       }
       timeElapsed.stop();
-      result.printErrors();
-      writeln(result.separator2);
-      result.printResult(timeElapsed.elapsed());
-      if (result.testsRun - result.testsPassed) == 0 {
-        exit(0);
-      }
-      else {
-        exit(1);
-      }
+      printTestResults(result, timeElapsed);
     }
     else {
       writeln("chpl not found.");
@@ -423,6 +401,7 @@ proc testFile(file, ref result, show: bool) throws {
     stderr.writeln("compilation failed for " + fileName);
   }
   else {
+    if show then writeln("\nCompiled '", fileName, "' successfully");
     var testNames: list(string),
         failedTestNames: list(string),
         erroredTestNames: list(string),
@@ -432,7 +411,7 @@ proc testFile(file, ref result, show: bool) throws {
     var dict: [dictDomain] int;
     const exitCode = runAndLog("./"+executable, fileName, result, numLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-              skippedTestNames);
+              skippedTestNames, show);
     if exitCode != 0 {
       const command = " ".join("./"+executable,"-nl","1");
       const testResult = runWithStatus(command, show);
@@ -467,7 +446,7 @@ pragma "no doc"
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
               ref testsPassed, ref testNames, ref dictDomain, ref dict, 
-              ref failedTestNames, ref erroredTestNames, ref skippedTestNames): int throws 
+              ref failedTestNames, ref erroredTestNames, ref skippedTestNames, show: bool): int throws 
 {
   var separator1 = result.separator1,
       separator2 = result.separator2;
@@ -512,7 +491,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
         try! testNames.remove(testName);
       addTestResult(result, dictDomain, dict, testNames, flavour, fileName, 
                 testName, testExecMsg, failedTestNames, erroredTestNames, 
-                skippedTestNames, testsPassed);
+                skippedTestNames, testsPassed, show);
       testExecMsg = "";
       sep1Found = false;
     }
@@ -544,6 +523,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
       if testNames.count(testName) != 0 then
         try! testNames.remove(testName);
       erroredTestNames.append(testName);
+      if show then writeln("Ran ",testName," ERROR");
       result.addError(testName, fileName, testErrMsg);
       haltOccured =  true;
     }
@@ -553,7 +533,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   if haltOccured then
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-              skippedTestNames);
+              skippedTestNames, show);
   if testNames.size != 0 {
     var maxCount = -1;
     for key in dictDomain.sorted() {
@@ -565,7 +545,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     dictDomain.remove(reqLocales);
     exitCode = runAndLog(executable, fileName, result, reqLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames, 
-              skippedTestNames);
+              skippedTestNames, show);
   }
   return exitCode;
 }
@@ -574,22 +554,27 @@ pragma "no doc"
 /*Docs: Todo*/
 proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, 
                   flavour, fileName, testName, errMsg, ref failedTestNames, 
-                  ref erroredTestNames, ref skippedTestNames, ref testsPassed) throws 
+                  ref erroredTestNames, ref skippedTestNames, ref testsPassed,
+                  show: bool) throws 
 {
   select flavour {
     when "OK" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addSuccess(testName, fileName);
       testsPassed.append(testName);
     }
     when "ERROR" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addError(testName, fileName, errMsg);
       erroredTestNames.append(testName);
     }
     when "FAIL" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addFailure(testName, fileName, errMsg);
       failedTestNames.append(testName);
     }
     when "SKIPPED" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addSkip(testName, fileName, errMsg);
       skippedTestNames.append(testName);
     }

@@ -119,24 +119,26 @@ module TestResult {
         writeln("Run ", run, " ", printTest(run)," in ",timeTaken," seconds");
         writeln();
         var infos: list((string));
+        if testsPassed != 0 then 
+          infos.append("passed = " + testsPassed: string);
         if !this.wasSuccessful() {
           write("FAILED");
           var failed = this.numFailedTests(),
             errored = this.numErroredTests();
           if failed then
-            infos.append("failures = " + failed:string);
+            infos.append("failures = " + failed: string);
           if errored then
-            infos.append("errors = " + errored:string);
+            infos.append("errors = " + errored: string);
         }
         else
           write("OK");
         if skipped then
-          infos.append("skipped = " + skipped:string);
+          infos.append("skipped = " + skipped: string);
         if infos.size {
-          write(" ");
+          write(" (");
           for info in infos do write(info, " ");
+          writeln(")");
         }
-        write("\n");
       }
       else {
         writeln("No Tests Found");
