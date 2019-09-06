@@ -246,17 +246,11 @@ and \chpl{2.72} respectively.
 \index{string@\chpl{string}}
 \index{types!string@\chpl{string}}
 
-Strings are a primitive type designated by the symbol \chpl{string}
-comprised of multibyte characters (normally UTF-8).  Their length is unbounded.
-
+Strings are a primitive type designated by the symbol \chpl{string} comprised of
+Unicode characters in UTF-8 encoding.  Their length is unbounded.
 
 \begin{openissue}
 There is an expectation of future support for fixed-length strings.
-\end{openissue}
-
-\begin{openissue}
-There is an expectation of future support for different character
-sets, possibly including internationalization.
 \end{openissue}
 
 \subsection{The Bytes Type}
@@ -265,11 +259,7 @@ sets, possibly including internationalization.
 \index{types!bytes@\chpl{bytes}}
 
 Bytes is a primitive type designated by the symbol \chpl{bytes} comprised of
-arbitrary bytes. Methods on bytes that interpret the data as characters assume
-that the bytes are ASCII characters.
-    
-Bytes are immutable in-place and their length is unbounded.
-
+arbitrary bytes. Bytes are immutable in-place and their length is unbounded.
 
 \begin{openissue}
 There is an expectation of future support for mutable bytes.

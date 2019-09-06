@@ -333,7 +333,7 @@ underlying integer type.  If the result is zero, the value of the \chpl{bool}
 is \chpl{false}; otherwise, it is \chpl{true}.
 
 When the target type is \chpl{bytes} or \chpl{string}, the value becomes the
-name of the enumerator.  % in the execution character set.
+name of the enumerator.
 
 When the source type is \chpl{bool}, enumerators corresponding to the values 0
 and 1 in the underlying integer type are selected, corresponding to input values
@@ -353,8 +353,8 @@ The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type i
 permitted.
 
 When the source type is \chpl{bytes} or \chpl{string}, the enumerator whose name
-matches value of the input is selected.  If no such enumerator exists, a runtime
-error occurs.
+matches value of the input is selected.  If no such enumerator exists, an
+\chpl{IllegalArgumentError} is thrown.
 
 \subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
@@ -443,6 +443,16 @@ to an unstridable range type, changing the stride to 1 in the process.
 
 An expression of stridable domain type can be explicitly converted
 to an unstridable domain type, changing all strides to 1 in the process.
+
+\subsection{Explicit String to Bytes Conversions}
+\label{Explicit_String_to_Bytes_Conversions}
+\index{conversions!string to bytes}
+\index{conversions!explicit!string to bytes}
+
+An expression of \chpl{string} type can be explicitly converted to a
+\chpl{bytes}. However, the reverse is not possible as a \chpl{bytes} can contain
+arbitrary bytes. Instead, \chpl{bytes.decode()} method should be used to produce
+a \chpl{string} from a \chpl{bytes}.
 
 \subsection{Explicit Type to String Conversions}
 \label{Explicit_Type_to_String_Conversions}
