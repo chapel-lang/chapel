@@ -88,7 +88,7 @@ compatible pairs of socket types
 * :const:`PUB`  and :const:`SUB`
 * :const:`REQ`  and :const:`REP`
 * :const:`PUSH` and :const:`PULL`
-* :const: 'PAIR'
+* :const:`PAIR`
 
 .. code-block:: chapel
 
