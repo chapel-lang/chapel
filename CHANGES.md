@@ -1,3 +1,7 @@
+TODO:
+* search on TODO
+* search on docs/master
+
 Release Changes List
 ====================
 
@@ -24,6 +28,7 @@ Packaging / Configuration Changes
 
 Syntactic/Naming Changes
 ------------------------
+* made 'bytes' a reserved keyword
 * changed atomic memory orders to a `memoryOrder` enum
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#atomics)
 
@@ -79,6 +84,10 @@ New Features
   (DOC TODO BHARSH - somewhere in partial instantiations technote)
 * added postfix `?` and `!` operators to support nilability changes
   (see https://chapel-lang.org/docs/master/language/evolution.html#nilability-changes)
+* added a built-in `bytes` type
+  (see https://chapel-lang.org/docs/master/builtins/Bytes.html)
+* added bytes literals b"" and b'' and multiline versions b""" """ and b''' '''
+* added factory functions for creating strings using existing buffers
 
 Feature Improvements
 --------------------
@@ -99,6 +108,10 @@ Deprecated / Removed Language Features
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.compareAndSwap)
 * made atomic `peek`/`poke` no longer available by default
   (see https://chapel-lang.org/docs/1.20/modules/packages/PeekPoke.html)
+* removed previously deprecated string features
+  (e.g., `string.ulength`, `string.uchars`, `string.codePointIndex`, ...)
+* deprecated string initializers in favor of new clearer factory functions
+* deprecated `string.ascii` and `asciiToString`
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -121,6 +134,17 @@ Standard Library Modules
 * added `isCoercible()` to the Types module
   (see https://chapel-lang.org/docs/master/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isCoercible)
 * Improved complex division to avoid underflow and overflow
+* added formatted I/O support for the bytes type
+* made string slicing more consistent with array slicing w.r.t. OOB errors
+* added `byteIndex` type for strings
+  (see https://chapel-lang.org/docs/master/builtins/String.html#String.byteIndex)
+* `string.find` now returns `byteIndex` values
+* string indexing and iteration now use codepoint units
+* added 'string.toByte()' and 'string.toCodepoint()'
+  (see https://chapel-lang.org/docs/master/builtins/String.html#String.string.toByte)
+* disabled `toLower()`/`toUpper()` when UTF-8 representations differ in length
+* `string.length` now returns the number of codepoints not the number of bytes
+  (see https://chapel-lang.org/docs/master/builtins/String.html#String.string.length)
 
 Package Modules
 ---------------
@@ -155,11 +179,32 @@ Package Modules
 * added `LockFreeQueue` and `LockFreeStack` data structures
   (see https://chapel-lang.org/docs/master/modules/packages/LockFreeQueue.html
    and https://chapel-lang.org/docs/master/modules/packages/LockFreeStack.html)
+* renamed 'Buffers.bytes' to 'Buffers.byteBuffer'
+  (see https://chapel-lang.org/docs/master/modules/packages/Buffers.html)
+* enabled distributed element-wise operations in the LinearAlgebra module
+* improved distributed dot product in the LinearAlgebra module
+* added several new features to the `LinearAlgebra` module:
+  - setting the matrix diagonal
+    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.setDiag)
+  - LU factorization
+    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.lu)
+  - computing determinants
+    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.det)
+  - linear system solver
+    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.solve)
+  - matrix inversion
+    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.inv)
+  - the Jacobi method
+    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.jacobi)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * optimized the implementation of ownership queries for `Cyclic` domains/arrays
 * optimized communication out of `forall` loops over `Cyclic` domains/arrays
+* added support for adding local indices to distributed sparse domains
+  (see https://chapel-lang.org/docs/master/builtins/ChapelArray.html#ChapelArray.bulkAdd)
+* added support for bulk addition of indices to distributed sparse domains
+  (see https://chapel-lang.org/docs/master/builtins/ChapelArray.html#ChapelArray.makeIndexBuffer)
 
 New Tools / Tool Changes
 ------------------------
@@ -207,6 +252,11 @@ Documentation
 * clarified that modules that are not referred to are not initialized
   (see 'Module Initialization' in the spec)
 * removed a reference to old assignment behavior from interoperability technote
+* added a warning to 'channel.readf' documentation
+  (see https://chapel-lang.org/docs/master/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
+* documented that environment must be set for Unicode with UTF8 encoding
+  (see https://chapel-lang.org/docs/master/usingchapel/chplenv.html#character-set)
+* added bytes to the language specification as a primitive type
 
 Example Codes
 -------------
@@ -248,6 +298,7 @@ Error Messages / Semantic Checks
 * function resolution errors now describe a reason for the failure
 * compilation errors in generic functions now describe the failing instantiation
 * added a useful error when creating arrays of a generic type
+* made defining a method named 'borrow' a compiler error
 
 Execution-time Checks
 ---------------------
@@ -277,6 +328,9 @@ Bug Fixes
 * fixed bug when opening a channel on a different locale from its file
 * fixed a bug in override checking
 * fixed a bug in the compiler's analysis of non-aliasing arrays
+* fixed a bug in index addition to distributed CSC domains
+* fixed a bug in tracking number of nonzeroes for distributed sparse domains
+* fixed a null termination issue with string.join
 
 Third-Party Software Changes
 ----------------------------
@@ -284,6 +338,7 @@ Third-Party Software Changes
 * upgraded hwloc to version 1.11.13
 * retired massivethreads tasking
 * removed bundled copy of libhdfs3 since this project is no longer maintained
+* updated the LLVM version 8.0
 
 Runtime Library Changes
 -----------------------
@@ -313,6 +368,9 @@ Developer-oriented changes: Module changes
 * eliminated a self-assignment in `chpl__mod`
 * `assert()` prints out line numbers from the call site even with `--devel`
 * added experimental distributed sort to the Sort module
+* created internal module 'ByteBufferHelpers' for bytes/string buffer management
+* created internal module 'BytesStringCommons' for common bytes/string helpers
+* made minimum string allocation controlled by 'param chpl_minStringAllocSize=0'
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -341,12 +399,16 @@ Developer-oriented changes: Compiler improvements/changes
 * `--print-commands` more reliably prints the commands spawned
 * the compiler now represents decorated class types with `DecoratedClassType`
 * the compiler now handles certain cast calls directly
+* added 'dtBytes'
+* added 'FLAG_CHAPEL_BYTES_LITERAL' AggregateType
+* fixed an override checking bug with --devel flag
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * fixed the qthreads build when CHPL_HOME doesn't match CHPL_MAKE_HOME
 * reading I/O channels now default to using `pread` instead of `mmap`
 * I/O plugins implementing Curl and HDFS are now implemented in Chapel
+* added support for bytes in QIO
 
 Developer-oriented changes: Testing System
 ------------------------------------------
@@ -3907,7 +3969,7 @@ Portability Improvements
 * removed symmetric address assumptions from error-handling code in the runtime
 * fixed a number of I/O portability errors on cygwin
 * fixed tcmalloc when compiled with clang 3.6 and used from C++
-* fixed I/O for 32-bit Ubuntu 14.04 
+* fixed I/O for 32-bit Ubuntu 14.04
 * added support for building GASNet with segment=fast on OS X
 * fixed hwloc's cairo detection for certain OS X installations
 * eliminated some Xcode-specific warnings
@@ -4637,7 +4699,7 @@ Example Codes
   (see examples/benchmarks/shootout/chameneosredux.chpl)
 * removed some CHPL_RT knob-fiddling from the thread-ring benchmark
 * fixed the portability of the pidigits benchmark to 32-bit systems
-  (see examples/benchmarks/shootout/pidigits.chpl)  
+  (see examples/benchmarks/shootout/pidigits.chpl)
 * updated the fileIO primer to utilize/demonstrate whole-array I/O
   (see examples/primers/fileIO.chpl)
 * improved the locking strategy used in verification for the HPCC RA benchmark
@@ -4966,7 +5028,7 @@ Documentation
 Example Codes
 -------------
 * added new Chapel ports of several Computer Language Benchmark Games (CLBG)
-  (see spectralnorm.chpl, mandelbrot.chpl, fannkuchredux.chpl, meteor.chpl, 
+  (see spectralnorm.chpl, mandelbrot.chpl, fannkuchredux.chpl, meteor.chpl,
    and pidigits.chpl in benchmarks/shootout/)
 * added an improved/simplified version of the CLBG chameneos-redux example
   (see benchmarks/shootout/chameneosredux.chpl)
@@ -5117,7 +5179,7 @@ Testing System
 
 Makefile Changes
 ----------------
-* made all builds update Makefile dependencies, not just developer builds 
+* made all builds update Makefile dependencies, not just developer builds
 * made Makefiles propagate CFLAGS/CXXFLAGS to third-party builds
 
 Internal/Developer-oriented
@@ -5543,11 +5605,11 @@ Portability of code base
 
 Launcher-specific Notes
 -----------------------
-- improved use of cnselect in launchers that use 'aprun' 
+- improved use of cnselect in launchers that use 'aprun'
 
 Compiler Flags
 --------------
-- added --no- variants of the following compiler flags: --count-tokens, --llvm, 
+- added --no- variants of the following compiler flags: --count-tokens, --llvm,
     --print-code-size, --print-commands, --print-passes, --print-search-dirs,
 - added --[no-]warn-tuple-iteration to warn against old-style zipper iteration
   (see man page for details)
@@ -8265,7 +8327,7 @@ High-Level Themes
 - support for additional serial features
 - improved single-threaded performance, memory utilization
 - improved multi-threaded correctness, features
-- target audience: HPLS evaluation team, HPCS mission partners, 
+- target audience: HPLS evaluation team, HPCS mission partners,
   select HPC users and centers
 
 Changes to Chapel Language
