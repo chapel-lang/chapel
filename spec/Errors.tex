@@ -169,6 +169,8 @@ It is also possible for \chpl{try} blocks to direct their errors to the
 
 \begin{chapelexample}{nested-try.chpl}
 \begin{chapel}
+class DemoError : Error { }
+
 proc nestedTry() {
   try {
     try {
@@ -183,6 +185,11 @@ proc nestedTry() {
 }
 \end{chapel}
 \begin{chapelpost}
+proc alwaysThrows():int throws {
+  throw new owned Error();
+  // never reached
+  return 1;
+}
 \end{chapelpost}
 \begin{chapeloutput}
 \end{chapeloutput}
@@ -307,6 +314,7 @@ proc warnsOnError(i: int): int {
 
 \begin{chapelexample}{halts-on-error.chpl}
 \begin{chapel}
+class DemoError : Error { }
 proc haltsOnError(i: int): int {
   try! {
     canThrow(i);
@@ -618,6 +626,12 @@ proc doesNotThrowErrorsOn() {
 }
 \end{chapel}
 \begin{chapelpost}
+proc canThrow(i: int): int throws {
+  if i < 0 then
+    throw new owned Error();
+
+  return i + 1;
+}
 \end{chapelpost}
 \begin{chapeloutput}
 \end{chapeloutput}
@@ -626,7 +640,7 @@ proc doesNotThrowErrorsOn() {
 Fatal error mode can also be activated for explicit modules using the
 \chpl{prototype module} declaration:
 
-\begin{chapelexample}{fatal-mode-prototype-module.chpl}
+\begin{chapelexample}{PrototypeModule.chpl}
 \begin{chapel}
 prototype module PrototypeModule {
 
@@ -641,9 +655,14 @@ prototype module PrototypeModule {
     // causes a halt if called
     alwaysThrows();
   }
-}
 
-use PrototypeModule;
+  proc canThrow(i: int): int throws {
+    if i < 0 then
+      throw new owned Error();
+
+    return i + 1;
+  }
+}
 \end{chapel}
 \begin{chapelpost}
 \end{chapelpost}
@@ -660,7 +679,7 @@ throw, then the error will be propagated out as with implicit modules.
 
 This is the production error handling mode.
 
-\begin{chapelexample}{production-module.chpl}
+\begin{chapelexample}{ProductionModule.chpl}
 \begin{chapel}
 module ProductionModule {
   // this line would cause a compilation error since the error is not handled
@@ -676,8 +695,6 @@ module ProductionModule {
   //   alwaysThrows();
   // }
 }
-
-use ProductionModule;
 \end{chapel}
 \begin{chapelpost}
 \end{chapelpost}
