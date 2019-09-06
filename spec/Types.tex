@@ -49,10 +49,12 @@ These statements are defined in Sections \rsec{Enumerated_Types},
 \label{Primitive_Types}
 \index{types!primitive}
 
-The primitive types are: \chpl{void}, \chpl{nothing}, \chpl{bool},
+The concrete primitive types are: \chpl{void}, \chpl{nothing}, \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
-and \chpl{string}.  They are defined
-in this section.
+and \chpl{string}.  They are defined in this section.
+
+In addition, there are several generic primitive types that are described
+in~\rsec{Built_in_Generic_types}.
 
 The primitive types are summarized by the following syntax:
 \begin{syntax}
@@ -66,6 +68,13 @@ primitive-type:
   `imag' primitive-type-parameter-part[OPT]
   `complex' primitive-type-parameter-part[OPT]
   `string'
+  `enum'
+  `record'
+  `class'
+  `owned'
+  `shared'
+  `unmanaged'
+  `borrowed'
 
 primitive-type-parameter-part:
   ( integer-parameter-expression )
@@ -385,9 +394,22 @@ in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
 
-A class type \chpl{C} has the variants \chpl{owned C}, \chpl{shared C},
-\chpl{borrowed C} (equivalent to \chpl{C}), and \chpl{unmanaged C}. These
-variants are discussed in~\rsec{Class_Types}.
+A class type \chpl{C} has several variants:
+\begin{itemize}
+  \item \chpl{C} and \chpl{C?}
+  \item \chpl{owned C} and \chpl{owned C?}
+  \item \chpl{shared C} and \chpl{shared C?}
+  \item \chpl{borrowed C} and \chpl{borrowed C?}
+  \item \chpl{unmanaged C} and \chpl{unmanaged C?}
+\end{itemize}
+
+The variants with a question mark, such as \chpl{owned C?}, can store
+\chpl{nil} (see~\rsec{Nilable_Classes}). Variants without a question mark
+cannot store \chpl{nil}. The keywords \chpl{owned}, \chpl{shared},
+\chpl{borrowed}, and \chpl{unmanaged} indicate the memory management
+startegy used for the class. When none is specified, as with \chpl{C} or
+\chpl{C?}, the class is considered to have generic memory management
+strategy. See~\rsec{Class_Types}.
 
 \subsection{Record Types}
 \label{Types_Record_Types}

@@ -22,11 +22,14 @@ in~\rsec{Program_Execution}.
 A module is declared with the following syntax:
 \begin{syntax}
 module-declaration-statement:
-  privacy-specifier[OPT] `module' module-identifier block-statement
+  privacy-specifier[OPT] prototype-specifier[OPT] `module' module-identifier block-statement
 
 privacy-specifier:
   `private'
   `public'
+
+prototype-specifier:
+  `prototype'
 
 module-identifier:
   identifier
@@ -41,6 +44,26 @@ defined by its \sntx{privacy-specifier}~(\rsec{Visibility_Of_A_Module}).
 Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
 nested module~(\rsec{Nested_Modules}).
+
+\section{Prototype Modules}
+\label{Prototype_Modules}
+\index{modules!prototype}
+
+Modules that are declared with the \chpl{prototype} keyword use relaxed
+rules for error handling and \chpl{nil} checking. These relaxed rules are
+appropriate for programs in the early stages of development but are not
+appropriate for libraries. In particular, within a \chpl{prototype} module:
+
+\begin{itemize}
+
+  \item errors that are not handled will terminate the program
+        (see~\rsec{Error_Handling})
+
+  \item methods on nilable class instances can be called - these will
+        implicitly convert to non-nilable class instances
+        (see~\rsec{Methods_On_Nilable_In_Prototype_Modules})
+
+\end{itemize}
 
 \section{Files and Implicit Modules}
 \label{Implicit_Modules}
@@ -84,7 +107,8 @@ declarations, the file itself is treated as the module declaration.
 In this case,
 \index{implicit modules}
 \index{modules!implicit}
-the module is implicit and takes its name from the base filename.  In
+the module is implicit. Implicit modules are always \chpl{prototype}
+modules. An implicit module takes its name from the base filename.  In
 particular, the module name is defined as the remaining string after
 removing the \chpl{.chpl} suffix and any path specification from the
 specified filename.  If the resulting name is not a legal Chapel
@@ -333,7 +357,8 @@ cannot be specified in a \sntx{limitation-clause} on their own.
 
 Module initialization occurs at program start-up.  All top-level
 statements in a module other than function and type declarations are
-executed during module initialization.
+executed during module initialization. Modules that are not referred to,
+including both top-level modules and submodules, will not be initialized.
 
 \begin{chapelexample}{init.chpl}
 In the code,
