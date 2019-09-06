@@ -357,8 +357,8 @@ cannot be specified in a \sntx{limitation-clause} on their own.
 
 Module initialization occurs at program start-up.  All top-level
 statements in a module other than function and type declarations are
-executed during module initialization. Top-level modules and submodules
-that are not referred to will not be initialized.
+executed during module initialization. Modules that are not referred to,
+including both top-level modules and submodules, will not be initialized.
 
 \begin{chapelexample}{init.chpl}
 In the code,

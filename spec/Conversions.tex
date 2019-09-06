@@ -374,7 +374,7 @@ destination type is nilable, as with \chpl{D?}, then the result will be
 
 In some cases a new variant of a class type needs to be computed that has
 different nilability or memory management strategy. Supposing that
-\chpl{T} represents a class type, then these casts compute a new type:
+\chpl{T} represents a class type, then these casts may compute a new type:
 
 \begin{itemize}
 \item
@@ -387,13 +387,13 @@ different nilability or memory management strategy. Supposing that
 \chpl{T:borrowed} - new management \chpl{borrowed}, nilability from \chpl{T}
 
 \item
-\chpl{T:unmanaged} - new management \chpl{borrowed}, nilability from \chpl{T}
+\chpl{T:unmanaged} - new management \chpl{unmanaged}, nilability from \chpl{T}
 
 \item
-\chpl{T:class} - non-nilable type with management from \chpl{T}
+\chpl{T:class} - non-nilable type with specific concrete or generic management from \chpl{T}
 
 \item
-\chpl{T:class?} - nilable type with management from \chpl{T}
+\chpl{T:class?} - nilable type with specific concrete or generic management from \chpl{T}
 
 \item
 \chpl{T:owned class} - non-nilable type with \chpl{owned} management

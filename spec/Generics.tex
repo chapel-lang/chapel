@@ -471,7 +471,7 @@ discussion.  Comments or questions are appreciated.
 Generic types comprise built-in generic types, generic classes, and
 generic records.
 
-\subsubsection{Built-in Generic Types}
+\subsection{Built-in Generic Types}
 \label{Built_in_Generic_types}
 \index{integral (generic type)@\chpl{integral} (generic type)}
 \index{numeric (generic type)@\chpl{numeric} (generic type)}
@@ -486,18 +486,17 @@ signed and unsigned integral types, all of the numeric types, and
 all enumerated types. The type \chpl{enumerated} is currently available
 as a synonym for \chpl{enum}.
 
-The type \chpl{record} can be instantiated with any record type, and
-the type \chpl{class} can be instantiated with any class type.
+The type \chpl{record} can be instantiated with any record type.
 
-The memory management strategies described in~\rsec{Class_Types}
-are also generic types that can be instantiated with any class using
-that memory management strategy. These include \chpl{owned} \chpl{shared}
-\chpl{borrowed} and \chpl{unmanaged}.
+The memory management strategies \chpl{owned}, \chpl{shared},
+\chpl{borrowed}, and \chpl{unmanaged} (see~\rsec{Class_Types})
+are also generic types that can be instantiated with any class
+using that memory management strategy. These types indiciate
+generic nilability.
 
-Note that the \chpl{class} type can combine with \chpl{?}
-(see~\rsec{Nilable_Classes}) and with the management decorators
-(see~\rsec{Class_Types}) to specify a particular variety of class without
-specifying its type:
+The types \chpl{class} and \chpl{class?}, on their own or
+in combination with memory management strategies, are also
+generic types. They can be instantiated as follows:
 
 \begin{itemize}
 \item
@@ -509,7 +508,8 @@ memory management strategy
 strategy but will use the nilable variant of that class in an
 instantiation. When used as an argument type, a value of non-nilable class
 type will be implicitly converted to the nilable type on the call. As a
-result, in practice, this type can accept any class type.
+result, a formal of type \chpl{class?} can accept an actual of any
+class type.
 
 \item
 \chpl{owned} can instantiate with any \chpl{owned} class - taking the
@@ -539,11 +539,15 @@ to the above but with \chpl{unmanaged} management strategy.
 \end{itemize}
 
 
-\subsubsection{Generic Classes and Records}
+\subsection{Generic Classes and Records}
 \index{generics!classes}
 \index{classes!generic}
 \index{generics!records}
 \index{records!generic}
+
+The remainder of this section \rsec{Generic_Types} specifies generic
+class and record types that are not built-in types
+(\rsec{Built_in_Generic_types}).
 
 A class or record is generic if it contains one or more
 \index{generics!fields}
