@@ -35,6 +35,6 @@ SKIPPED test_locales.chpl: s13()
 s13() skipped as s8() failed
 
 ----------------------------------------------------------------------
-Run 11 tests
+Run 11 tests in n seconds
 
-FAILED failures = 3 errors = 1 skipped = 3 
+FAILED (passed = 7 failures = 3 errors = 1 skipped = 3 )
