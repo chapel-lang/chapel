@@ -684,8 +684,8 @@ launch the binary and then communicate with it.  The binary will be what
 executes the exported functions and will communicate the result back to the
 library, to return to the client program.
 
-Portability
------------
+Hostnames and Connection Issues
+-------------------------------
 
 By default, the generated client library will expect the generated server to
 communicate with it using the hostname of where the client program is running,
