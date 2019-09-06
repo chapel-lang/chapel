@@ -31,6 +31,10 @@ endif
 if exists("c_no_cformat")
   syn region	cString		start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,@Spell
   syn region	cString		start=+L\='+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,@Spell
+  syn region	cString		start=+L\=b"+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,@Spell
+  syn region	cString		start=+L\=b'+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,@Spell
+  syn region	cString		start=+L\=c"+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,@Spell
+  syn region	cString		start=+L\=c'+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,@Spell
   " cCppString: same as cString, but ends at end of line
   syn region	cCppString	start=+L\="+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end='$' contains=cSpecial,@Spell
   syn region	cCppString	start=+L\='+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end='$' contains=cSpecial,@Spell
@@ -39,6 +43,10 @@ else
   syn match	cFormat		display "%%" contained
   syn region	cString		start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,cFormat,@Spell
   syn region	cString		start=+L\='+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,cFormat,@Spell
+  syn region	cString		start=+L\=b"+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,cFormat,@Spell
+  syn region	cString		start=+L\=b'+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,cFormat,@Spell
+  syn region	cString		start=+L\=c"+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,cFormat,@Spell
+  syn region	cString		start=+L\=c'+ skip=+\\\\\|\\'+ end=+'+ contains=cSpecial,cFormat,@Spell
   " cCppString: same as cString, but ends at end of line
   syn region	cCppString	start=+L\="+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end='$' contains=cSpecial,cFormat,@Spell
   syn region	cCppString	start=+L\='+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end='$' contains=cSpecial,cFormat,@Spell
@@ -255,20 +263,28 @@ syn keyword chplStatement	as module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
 syn keyword chplStorageClass    const config export extern var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool
-syn keyword chplType            file string opaque integral numeric enumerated
+syn keyword chplType            file bytes string opaque integral numeric enumerated
 syn keyword chplType            locale sync atomic single dmapped
 syn keyword chplType            owned shared borrowed unmanaged
+syn keyword chplType            nothing void
 syn keyword chplOperator	on reduce scan by align
 syn keyword chplStructure	class record union enum
 syn keyword chplStructure	proc iter cobegin begin local sync let select where
 syn keyword chplStructure	pragma inline with private public forwarding
-syn keyword chplStructure	prototype override
+syn keyword chplStructure	prototype override lifetime
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
-syn keyword chplConstant	nil
+syn keyword chplConstant	nil none
 syn keyword chplRepeat		while for do coforall forall in serial
 syn keyword chplLabel	        when otherwise label
 syn keyword chplErrorHandling   throw throws try catch
+
+" ? is an either ternary condition operator or postfix nilability operator
+" so just match it no matter what
+syn match   chplOperator display "?"  
+
+" if you match ! that follows a valid type name
+syn match   chplOperator display "[a-zA-Z0-9_]\zs!\ze[^=]"   
 
 " Folding
 syn region scopeFold start="{" end="}" fold transparent
