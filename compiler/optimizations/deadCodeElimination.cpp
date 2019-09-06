@@ -334,25 +334,25 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
 
   // Step backwards from 'defn'
   Expr* lastMove    = defn->getStmtExpr();
-  Expr* tmpMove    = lastMove->prev;
-  Expr* factoryCall    = tmpMove->prev;
-  Expr* defaultInit = factoryCall->prev;
-  Expr* defFactoryTemp = defaultInit->prev;
-  Expr* defTemp = defFactoryTemp->prev;
+  //Expr* tmpMove    = lastMove->prev;
+  Expr* factoryCall    = lastMove->prev;
+  //Expr* defaultInit = factoryCall->prev;
+  //Expr* defFactoryTemp = defaultInit->prev;
+  Expr* defTemp = factoryCall->prev;
 
   // Simple sanity checks
   INT_ASSERT(isDefExpr (defTemp));
-  INT_ASSERT(isDefExpr (defFactoryTemp));
-  INT_ASSERT(isCallExpr(defaultInit));
+  //INT_ASSERT(isDefExpr (defFactoryTemp));
+  //INT_ASSERT(isCallExpr(defaultInit));
   INT_ASSERT(isCallExpr(factoryCall));
-  INT_ASSERT(isCallExpr(tmpMove));
+  //INT_ASSERT(isCallExpr(tmpMove));
   INT_ASSERT(isCallExpr(lastMove));
 
   lastMove->remove();
-  tmpMove->remove();
+  //tmpMove->remove();
   factoryCall->remove();
-  defaultInit->remove();
-  defFactoryTemp->remove();
+  //defaultInit->remove();
+  //defFactoryTemp->remove();
   defTemp->remove();
 
   defExpr->remove();

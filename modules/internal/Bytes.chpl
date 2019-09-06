@@ -154,7 +154,7 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+  proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
     return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
@@ -1231,7 +1231,6 @@ module Bytes {
 
   } // end of record bytes
 
-  pragma "no doc"
   inline proc _cast(type t: bytes, x: string) {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
