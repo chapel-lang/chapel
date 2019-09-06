@@ -683,7 +683,7 @@ The syntax of the use statement is given by:
 
 \begin{syntax}
 use-statement:
-  `use' module-or-enum-name-list ;
+  privacy-specifier[OPT] `use' module-or-enum-name-list ;
 
 module-or-enum-name-list:
   module-or-enum-name limitation-clause[OPT]
@@ -772,11 +772,13 @@ symbols would be inserted into this enclosing scope with the same name, and
 that name is referenced by other statements in the same scope as the use.
 
 
-Use statements are transitive by default: if a module A uses a module
-B, and module B contains a use of a module or enumerated type C, then
-C's public symbols may also be visible within A.  The exception to
-this occurs when B has public symbols that shadow symbols with the
-same name in C.
+Use statements are transitive by default: if a module A uses a module B, and
+module B contains a use of a module or enumerated type C, then C's public
+symbols may also be visible within A.  The exception to this occurs when B has
+public symbols that shadow symbols with the same name in C, or when the use of C
+has been declared explicitly \chpl{private}.  If a use statement is declared to
+be \chpl{private}, then the symbols it makes visible will only be visible to the
+scope containing the use.
 
 This notion of transitivity extends to the case in which a scope
 imports symbols from multiple modules or constants from multiple
@@ -785,9 +787,6 @@ and modules B1, B2, B3 use modules C1, C2, C3 respectively, then all
 of the public symbols in B1, B2, B3 have the potential to shadow the
 public symbols of C1, C2, and C3.  However an error is signaled if
 C1, C2, C3 have public module level definitions of the same symbol.
-
-% We would like to provide a way to specify that a use should not be
-% transitive
 
 An optional \sntx{limitation-clause} may be provided to limit the symbols made
 available by the use statement.  If an \chpl{except} list is provided, then all
