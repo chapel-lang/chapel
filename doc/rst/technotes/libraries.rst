@@ -578,7 +578,7 @@ variable should be set to a directory containing both an ``include`` directory
 which contains ``zmq.h`` and a ``lib`` directory which contains ``libzmq.*``.
 For example, for a directory structure:
 
-.. code-block:: bash
+.. code-block:: text
 
    |-- .local/
    |    |-- include/
