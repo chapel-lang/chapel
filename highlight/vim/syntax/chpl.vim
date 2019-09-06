@@ -304,7 +304,6 @@ if version >= 508 || !exists("did_chpl_syntax_inits")
   endif
   HiLink chplCast		chplStatement
   HiLink chplErrorHandling	chplStatement
-  HiLink chplInitAssign 	chplOperator
   HiLink chplOperator		Operator
   HiLink chplStatement		Statement
   HiLink chplIntent		StorageClass
