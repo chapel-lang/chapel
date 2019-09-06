@@ -179,8 +179,8 @@ Standard Library Modules
 
 Package Modules
 ---------------
-* added new `UnitTest` module
-  (see https://chapel-lang.org/docs/master/modules/packages/UnitTest.html)
+* added new `UnitTest` module for writing unit tests in Chapel
+  (see https://chapel-lang.org/docs/1.20/modules/packages/UnitTest.html)
 * added new `Error` subclass `ZMQError` for `ZMQ`-specific errors
   (see https://chapel-lang.org/docs/master/modules/packages/ZMQ.html#ZMQ.ZMQError)
 * added support for several setter and getter routines on ZMQ sockets
@@ -214,6 +214,8 @@ Package Modules
   (see https://chapel-lang.org/docs/master/modules/packages/Buffers.html)
 * enabled distributed element-wise operations in the LinearAlgebra module
 * improved distributed dot product in the LinearAlgebra module
+* added sparse support for `LinearAlgebra.{isDiag, isSymmetric, isHermitian}`
+  (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra/Sparse.html#Sparse.isDiag)
 * added several new features to the `LinearAlgebra` module:
   - setting the matrix diagonal
     (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.setDiag)
@@ -228,6 +230,8 @@ Package Modules
   - the Jacobi method
     (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.jacobi)
 * dropped the LLVM back-end requirement for uses of the HDF5 module
+* retired deprecated usage of `LinearAlgebra.eigvals()`
+* added date and time support to the `TOML` module
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -241,6 +245,15 @@ Standard Domain Maps (Layouts and Distributions)
 New Tools / Tool Changes
 ------------------------
 * pinned the version of `Pygments` relied upon by `chpldoc`
+* added `UnitTest` support to `mason test`
+  (see TODO)
+* added `mason publish` subcommand to make publishing packages easier
+  (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#submit-a-package)
+* added `mason search --show` flag to display manifest file of package
+  (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#submit-a-package)
+* added `MASON_OFFLINE` to improve offline experience for mason users
+  (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#environment-variables)
+* added `mason publish --check` flag to test a package before publishing
 
 Interoperability Improvements
 -----------------------------
@@ -291,6 +304,10 @@ Documentation
 * documented that environment must be set for Unicode with UTF8 encoding
   (see https://chapel-lang.org/docs/master/usingchapel/chplenv.html#character-set)
 * added bytes to the language specification as a primitive type
+* updated reductions technote to use memory management annotations
+  (see https://chapel-lang.org/docs/1.20/technotes/reduceIntents.html)
+* updated `mason` documentation to reflect new mason features
+  (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html)
 
 Example Codes
 -------------
@@ -314,6 +331,7 @@ Cray-specific Changes and Bug Fixes
 -----------------------------------
 * fixed a hang for strided communication
 * Fixed a problem with --llvm compilation when using dynamic linking on a Cray
+* updated modulefile to work if there is an incompatible cray-mpich pre-loaded
 
 Compiler Improvements
 ---------------------
@@ -380,6 +398,14 @@ Bug Fixes
 * fixed bug when shrinking an array with pop_back()
 * enabled const checking on index variables of forall loops in some cases
 * defer actions in an iterator are now executed upon a `break` from its loop
+* fixed `mason test` bug where exit code would not reflect test results
+* fixed `mason` help flags such that being in a package is not required
+* fixed `mason search` to only show bricks that support current Chapel version
+* fixed `make mason` such that it will not hang if hugepages is unavailable
+* fixed `make mason` to detect changes in any mason source files
+* fixed `make clobber` such that it clobbers mason
+* added a thrown error for `FileSystem.mkdir('')` instead of seg-fault
+* fixed bug in `TOML` parser where empty lines were not counted in line number
 
 Third-Party Software Changes
 ----------------------------
@@ -468,6 +494,8 @@ Developer-oriented changes: Testing System
 * rewrote gen-chpl-bash-completion in Python
 * fixed a problem with `start_test` when using Python 3.7
 * resolved a race condition when `sub_test` creates directories
+* added paratest support for `<dir>.notest` to reflect `start_test` behavior
+* added a test suite for `sub_test` filters
 
 
 version 1.19.0
