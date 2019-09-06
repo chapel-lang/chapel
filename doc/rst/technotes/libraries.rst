@@ -629,8 +629,8 @@ Library In C`_ can be used with the additional two arguments to the executable:
 
    ./a.out -nl 2
 
-Users do not need to call the generated module initialization function for
-multilocale libraries. <TODO> CHECK THIS WITH A COMMITTED TEST <TODO>
+Users also still need to call the generated module initialization function for
+multilocale libraries, as mentioned in that section.
 
 In Python
 ~~~~~~~~~
