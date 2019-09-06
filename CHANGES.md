@@ -25,226 +25,218 @@ Highlights (see subsequent sections for further details)
 * improved the performance and usability of unordered operations
 * improved affinity and performance of parallel loops
 
-Packaging / Configuration Changes
----------------------------------
-* added a warning for unfamiliar CHPL_*_COMPILER settings
-* cleaned up the output of `make` when building Chapel
-
 Syntactic/Naming Changes
 ------------------------
-* made 'bytes' a reserved keyword
-* changed atomic memory orders to a `memoryOrder` enum
+* added new reserved keywords: `bytes`, `none`, `nothing`, `void`
+* added postfix `?` and `!` operators to support nilability changes
+  (see https://chapel-lang.org/docs/1.20/language/evolution.html#nilability-changes)
+* changed atomic memory orders to a new `memoryOrder` enum
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#atomics)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* added the type `nothing` with the single value `none`
-  (see 'The Nothing Type' section in the 'Types' chapter of the spec)
-* `void` is no longer allowed as the type of a variable
-  (see 'The Void Type' section in the 'Types' chapter of the spec)
-* started processing `require` statements relative to the source file directory
-  (see TODO blc)
-* made slice expressions be governed by their slicing domain
-  (i.e., the domain of `B` in `ref B = A[D];` is `D`)
-* disabled support for assigning from ranges to multidimensional arrays
-  (see TODO blc)
-* made `proc foo(x: bool(?)` generic across all bool types including `bool`
-  (see TODO blc)
-* made `#0` preserve the given indices of a range or domain
-  (e.g., `5..#0` now returns `5..4` rather than `1..0`)
 * top-level modules must now be `use`d in order to be referenced
   (see TODO blc)
-* for a class `C`, un-decorated `C` now means non-nil and generic management
-  (see https://chapel-lang.org/docs/master/language/evolution.html#undecorated-classes-have-generic-management)
 * class types must opt-in to being able to store `nil` with `?`
   (i.e., `var c: C = ...` cannot store `nil` but `var c: C? = ...` can;
-   see https://chapel-lang.org/docs/master/language/evolution.html#nilability-changes)
+   see https://chapel-lang.org/docs/1.20/language/evolution.html#nilability-changes)
+* for a class `C`, `new C(...)` is now equivalent to `new owned C(...)`
+  (see https://chapel-lang.org/docs/1.20/language/evolution.html#new-c-is-owned)
+* for a class `C`, un-decorated `C` now means non-nil and generic management
+  (see https://chapel-lang.org/docs/1.20/language/evolution.html#undecorated-classes-have-generic-management)
+* passing owned/shared objects to untyped formals no longer changes their types
+  (see https://chapel-lang.org/docs/1.20/language/evolution.html#new-default-intent-for-owned-and-shared)
+* arguments declared with owned/shared types now default to `const ref` intent
+  (see https://chapel-lang.org/docs/1.20/language/evolution.html#new-default-intent-for-owned-and-shared)
+* string indexing, iteration, and lengths now use codepoint units by default
+  (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.string.length)
+* `string.find` now returns `byteIndex` values
+* `void` is no longer allowed as the type of a variable (use `nothing` instead)
+  (see 'The Void Type' section in the 'Types' chapter of the spec)
+* made `#0` preserve the given indices of a range or domain
+  (e.g., `5..#0` now returns `5..4` rather than `1..0`)
+* disabled support for assigning from ranges to multidimensional arrays
+  (see TODO blc)
+* made slice expressions be governed by their slicing domain
+  (e.g., the domain of `B` in `ref B = A[D];` is `D`)
+* made `proc foo(x: bool(?)` generic across all bool types including `bool`
+  (see TODO blc)
+* `require` statements are now processed relative to the source file directory
+  (see TODO blc)
 * class downcasts now throw `ClassCastError` for incompatible runtime types
   (see 'Explicit Class Conversions' in the spec
-   and https://chapel-lang.org/docs/master/language/evolution.html#readme-evolution-nilability-and-casts)
+   and https://chapel-lang.org/docs/1.20/language/evolution.html#readme-evolution-nilability-and-casts)
 * casts from a C pointer type to a class type now require a nilable class
-  (see https://chapel-lang.org/docs/master/language/evolution.html#readme-evolution-nilability-and-casts)
-* arguments declared with owned/shared types now default to `const ref` intent
-  (see https://chapel-lang.org/docs/master/language/evolution.html#new-default-intent-for-owned-and-shared)
-* passing owned/shared to an untyped formal argument no longer changes its type
-  (see https://chapel-lang.org/docs/master/language/evolution.html#new-default-intent-for-owned-and-shared)
-* for a class C, `new C(...)` is now equivalent to `new owned C(...)`
-  (see https://chapel-lang.org/docs/master/language/evolution.html#new-c-is-owned)
+  (see https://chapel-lang.org/docs/1.20/language/evolution.html#readme-evolution-nilability-and-casts)
 * `isSubtype()` and comparison operators on types no longer consider coercions
-  (see https://chapel-lang.org/docs/master/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
+  (see https://chapel-lang.org/docs/1.20/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 
 New Features
 ------------
-* added support for slicing dense arrays using sparse domains
-* added support for passing the `string` type to extern procedures
-* improved how first-class functions print themselves out
-* added support for `yield`ing within `on`-clauses for inlined serial iterators
-  (see TODO blc)
-* added support for partial instantiation of generic types
-  (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
 * added support for `private` and `public` `use` statements
   (see <TODO> doc link)
+* added a built-in `bytes` type
+  (see https://chapel-lang.org/docs/1.20/builtins/Bytes.html)
+* added bytes literals `b""`, `b''`, `b""" """`, and `b''' '''`
+  (see TODO)
+* added support for partial instantiation of generic types
+  (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
+* generic types can now be passed as `type` arguments and returned
+  (DOC TODO BHARSH - somewhere in partial instantiations technote)
+* added factory functions for creating strings using existing buffers
+* added support for slicing dense arrays using sparse domains
+* added a `nothing` type with the single value `none`
+  (see 'The Nothing Type' section in the 'Types' chapter of the spec)
+* `class`, `record`, and `enum` are now available as generic types
+  (see 'Built-in Generic Types' in the spec)
+* added a `byteIndex` type for string indexing
+  (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.byteIndex)
+* added 'string.toByte()' and 'string.toCodepoint()'
+  (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.string.toByte)
 * added an atomic fence
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.atomicFence)
-* `class`/`record`/`enum` are now available as generic types
-  (see 'Built-in Generic Types' in the spec)
-* generic types can now be passed type type arguments and returned
-  (DOC TODO BHARSH - somewhere in partial instantiations technote)
-* added postfix `?` and `!` operators to support nilability changes
-  (see https://chapel-lang.org/docs/master/language/evolution.html#nilability-changes)
-* added a built-in `bytes` type
-  (see https://chapel-lang.org/docs/master/builtins/Bytes.html)
-* added bytes literals b"" and b'' and multiline versions b""" """ and b''' '''
-* added factory functions for creating strings using existing buffers
-* added support for overload-set checking
-  (see https://chapel-lang.org/docs/master/technotes/overloadSets.html)
 
 Feature Improvements
 --------------------
+* `isClass()` now returns `true` for `owned C` and `shared C`
+* `min` and `max` on real values now propagate NaN
+  (see https://chapel-lang.org/docs/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.min)
 * casts on a class type can compute a new type with specific management
   (see 'Explicit Class Conversions' in the spec)
-* `dmapped` and `new dmap` can now accept an `owned` distribution
-* `isClass` now returns `true` for `owned C` and `shared C`
-* `ref` return intent is now allowed for extern functions
-* `min`, `max` on reals now propagate NaN
-  (see https://chapel-lang.org/docs/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.min)
+* added support for `yield`ing within `on`-clauses for inlined serial iterators
+  (see TODO blc)
 * task/forall intents in methods on records now operate on fields of `this`
   (see 'Task Intents' and 'Forall Intents' in the spec)
-* enabled `var myField:T = expr;` when T has no default initializer
-* enabled in-intents of POD record types in follower iterators
+* improved complex division to avoid underflow and overflow
+* made string slicing more consistent with array slicing w.r.t. OOB errors
+* disabled `string.toLower()`/`toUpper()` for codepoints that change byte size
+* enabled `var myField:T = expr;` when `T` has no default initializer
+* `dmapped` and `new dmap` can now accept an `owned` distribution
+* the `ref` return intent is now supported for `extern` procedures
+* added support for passing the `string` type to `extern` procedures
+* improved how first-class functions print themselves out
+* enabled `in`-intents of POD record types in follower iterators
 
 Deprecated / Removed Language Features
 --------------------------------------
+* deprecated "array-as-vector" methods in favor of the new `list` type
+  (e.g., given `var A: [1..10] real;`, `A.push_back()` is no longer supported)
+* deprecated "associative array-as-set" operations in favor of the `map` type
 * deprecated support for applying `+` to string/value pairs
   (e.g., `"hello " + 1` is no longer supported by default)
-* deprecated support for opaque domains and arrays
+* deprecated inequality comparisons on `imag`
 * deprecated support for `init`-based copy-initializers; use `init=` instead
   (see https://chapel-lang.org/docs/1.20/technotes/initequals.html)
+* deprecated support for opaque domains and arrays
 * deprecated atomic `compareExchange` in favor of `compareAndSwap`
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.compareAndSwap)
 * made atomic `peek`/`poke` no longer available by default
   (see https://chapel-lang.org/docs/1.20/modules/packages/PeekPoke.html)
+* deprecated `string.ascii` and `asciiToString`
+* deprecated string initializers in favor of new clearer factory functions
+* replaced the undocumented `_void` value with `none`
 * removed previously deprecated string features
   (e.g., `string.ulength`, `string.uchars`, `string.codePointIndex`, ...)
-* deprecated string initializers in favor of new clearer factory functions
-* deprecated `string.ascii` and `asciiToString`
-* deprecated "array-as-vector" methods (e.g., `array.push_back()`)
-* deprecated inequality comparisons on `imag`
 * removed support for explicit task/forall intents on `this`
 * removed previously deprecated functions with `out error` argument from `IO`
 
 Deprecated / Removed Library Features
 -------------------------------------
+* repurposed previously deprecated `List` module for the new `list` type
+* deprecated algorithm-specific sorts like `bubbleSort()` from `Sort` module
 * deprecated `ZMQ.Socket.setsockopt()` in favor of specific setters and getters
   (e.g., deprecated constant `LINGER` in favor of `Socket.[set|get]Linger()`;
    see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.setsockopt)
-* deprecated bubbleSort() and other algorithm-specific sorts from `Sort` module
-* repurposed previously deprecated `List` module for the new `list` type
-* deprecated "associative array-as-set" operations in favor of the `map` type
+* retired deprecated usage of `LinearAlgebra.eigvals()`
 
 Standard Library Modules
 ------------------------
-* reduced the degree to which standard modules leak symbols into user code
-* added a seek method on channels to the `IO` module
-  (see https://chapel-lang.org/docs/master/modules/standard/IO.html#IO.channel.seek)
-* added `signbit` to the Math module
-  (see https://chapel-lang.org/docs/master/modules/standard/Math.html#Math.signbit)
-* added `isNilableClass()` and `isNonNilableClass()` to the Types module
-  (see https://chapel-lang.org/docs/master/modules/standard/Types.html#Types.isNilableClass)
-* added `isGeneric()` to the Types module
-  (see https://chapel-lang.org/docs/master/modules/standard/Types.html#Types.isGeneric)
-* added `isCoercible()` to the Types module
-  (see https://chapel-lang.org/docs/master/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isCoercible)
-* Improved complex division to avoid underflow and overflow
-* added formatted I/O support for the bytes type
-* made string slicing more consistent with array slicing w.r.t. OOB errors
-* added `byteIndex` type for strings
-  (see https://chapel-lang.org/docs/master/builtins/String.html#String.byteIndex)
-* `string.find` now returns `byteIndex` values
-* string indexing and iteration now use codepoint units
-* added 'string.toByte()' and 'string.toCodepoint()'
-  (see https://chapel-lang.org/docs/master/builtins/String.html#String.string.toByte)
-* disabled `toLower()`/`toUpper()` when UTF-8 representations differ in length
-* `string.length` now returns the number of codepoints not the number of bytes
-  (see https://chapel-lang.org/docs/master/builtins/String.html#String.string.length)
-* added a new `list` type
-  (see https://chapel-lang.org/docs/modules/standard/List.html)
-* added a new `set` type
-  (see https://chapel-lang.org/docs/master/modules/standard/Set.html)
-* channel.mark returns the marked offset and throws if there is an error
-  (see https://chapel-lang.org/docs/1.20/modules/standard/IO.html#IO.channel.mark)
+* added new `list`, `set`, and `map` collection types
+  (see https://chapel-lang.org/docs/modules/standard/List.html,
+   https://chapel-lang.org/docs/1.20/modules/standard/Set.html,
+   and https://chapel-lang.org/docs/1.20/modules/standard/Map.html)
 * added functions to get module/routine/file name and line number to Reflection
   (see https://chapel-lang.org/docs/1.20/modules/standard/Reflection.html#Reflection.getLineNumber)
-* made more module uses private throughout the standard library
+* added a seek method on channels to the `IO` module
+  (see https://chapel-lang.org/docs/1.20/modules/standard/IO.html#IO.channel.seek)
+* `channel.mark` now returns the marked offset and throws if there is an error
+  (see https://chapel-lang.org/docs/1.20/modules/standard/IO.html#IO.channel.mark)
+* added `signbit` to the `Math` module
+  (see https://chapel-lang.org/docs/1.20/modules/standard/Math.html#Math.signbit)
+* added `isNilableClass()` and `isNonNilableClass()` to the `Types` module
+  (see https://chapel-lang.org/docs/1.20/modules/standard/Types.html#Types.isNilableClass)
+* added `isGeneric()` to the `Types` module
+  (see https://chapel-lang.org/docs/1.20/modules/standard/Types.html#Types.isGeneric)
+* added `isCoercible()` to the `Types` module
+  (see https://chapel-lang.org/docs/1.20/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isCoercible)
+* reduced the degree to which standard modules leak symbols into user code
 
 Package Modules
 ---------------
 * added new `UnitTest` module for writing unit tests in Chapel
   (see https://chapel-lang.org/docs/1.20/modules/packages/UnitTest.html)
-* added new `Error` subclass `ZMQError` for `ZMQ`-specific errors
-  (see https://chapel-lang.org/docs/master/modules/packages/ZMQ.html#ZMQ.ZMQError)
-* added support for several setter and getter routines on ZMQ sockets
-  (e.g., added `Socket.getLastEndpoint()`, `Socket.getLinger()`, etc.;
-   see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.getLastEndpoint)
-* added support for the `PAIR` socket type to the `ZMQ` module
-  (see https://chapel-lang.org/docs/master/modules/packages/ZMQ.html#ZMQ.PAIR)
-* reduced the degree to which package modules leak symbols into user code
-* extended `unorderedCopy()` to support `bool` values
-  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopy)
-* added support for `param`/`const` source arguments to `unorderedCopy()`
-* added per-task fences for unordered operations
-  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopyTaskFence
-   and https://chapel-lang.org/docs/1.20/modules/packages/UnorderedAtomics.html#UnorderedAtomics.unorderedAtomicTaskFence)
-* Significantly improved the performance and testing of the `Curl` module
-  (see https://chapel-lang.org/docs/master/modules/packages/Curl.html)
-* Fixed the `HDFS` module and added regular testing for it
-  (see https://chapel-lang.org/docs/master/modules/packages/HDFS.html)
-* Added a `URL` module
-  (see https://chapel-lang.org/docs/master/modules/packages/URL.html)
-* `sort` in the Sort module now uses radix sort for floating point types
-  (see https://chapel-lang.org/docs/master/modules/packages/Sort.html#Sort.sort)
-* added an `EpochManager` package to support epoch-based memory reclamation
-  (see https://chapel-lang.org/docs/master/modules/packages/EpochManager.html)
+* Added a new `URL` package module
+  (see https://chapel-lang.org/docs/1.20/modules/packages/URL.html)
 * added `AtomicObjects` to support atomic operations on unmanaged classes
-  (see https://chapel-lang.org/docs/master/modules/packages/AtomicObjects.html)
+  (see https://chapel-lang.org/docs/1.20/modules/packages/AtomicObjects.html)
 * added `LockFreeQueue` and `LockFreeStack` data structures
-  (see https://chapel-lang.org/docs/master/modules/packages/LockFreeQueue.html
-   and https://chapel-lang.org/docs/master/modules/packages/LockFreeStack.html)
-* renamed 'Buffers.bytes' to 'Buffers.byteBuffer'
-  (see https://chapel-lang.org/docs/master/modules/packages/Buffers.html)
+  (see https://chapel-lang.org/docs/1.20/modules/packages/LockFreeQueue.html
+   and https://chapel-lang.org/docs/1.20/modules/packages/LockFreeStack.html)
+* added an `EpochManager` package to support epoch-based memory reclamation
+  (see https://chapel-lang.org/docs/1.20/modules/packages/EpochManager.html)
+* `sort` in the Sort module now uses radix sort for floating point types
+  (see https://chapel-lang.org/docs/1.20/modules/packages/Sort.html#Sort.sort)
+* dropped the LLVM back-end requirement for uses of the HDF5 module
 * enabled distributed element-wise operations in the LinearAlgebra module
 * improved distributed dot product in the LinearAlgebra module
 * added sparse support for `LinearAlgebra.{isDiag, isSymmetric, isHermitian}`
   (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra/Sparse.html#Sparse.isDiag)
-* added several new features to the `LinearAlgebra` module:
+* added several new operations to the `LinearAlgebra` module:
   - setting the matrix diagonal
-    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.setDiag)
+    (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.setDiag)
   - LU factorization
-    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.lu)
+    (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.lu)
   - computing determinants
-    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.det)
+    (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.det)
   - linear system solver
-    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.solve)
+    (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.solve)
   - matrix inversion
-    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.inv)
+    (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.inv)
   - the Jacobi method
-    (see https://chapel-lang.org/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.jacobi)
-* dropped the LLVM back-end requirement for uses of the HDF5 module
-* retired deprecated usage of `LinearAlgebra.eigvals()`
+    (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.jacobi)
 * added date and time support to the `TOML` module
+* added per-task fences for unordered operations
+  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopyTaskFence
+   and https://chapel-lang.org/docs/1.20/modules/packages/UnorderedAtomics.html#UnorderedAtomics.unorderedAtomicTaskFence)
+* added support for `param`/`const` source arguments to `unorderedCopy()`
+* extended `unorderedCopy()` to support `bool` values
+  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopy)
+* added support for several setter and getter routines on ZMQ sockets
+  (e.g., added `Socket.getLastEndpoint()`, `Socket.getLinger()`, etc.;
+   see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.getLastEndpoint)
+* added new `Error` subclass `ZMQError` for `ZMQ`-specific errors
+  (see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.ZMQError)
+* added support for the `PAIR` socket type to the `ZMQ` module
+  (see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.PAIR)
+* renamed 'Buffers.bytes' to 'Buffers.byteBuffer'
+  (see https://chapel-lang.org/docs/1.20/modules/packages/Buffers.html)
+* Significantly improved the performance and testing of the `Curl` module
+  (see https://chapel-lang.org/docs/1.20/modules/packages/Curl.html)
+* Fixed the `HDFS` module and added regular testing for it
+  (see https://chapel-lang.org/docs/1.20/modules/packages/HDFS.html)
+* reduced the degree to which package modules leak symbols into user code
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* added support for adding local indices to distributed sparse domains
+  (see https://chapel-lang.org/docs/1.20/builtins/ChapelArray.html#ChapelArray.bulkAdd)
+* added support for bulk addition of indices to distributed sparse domains
+  (see https://chapel-lang.org/docs/1.20/builtins/ChapelArray.html#ChapelArray.makeIndexBuffer)
 * optimized the implementation of ownership queries for `Cyclic` domains/arrays
 * optimized communication out of `forall` loops over `Cyclic` domains/arrays
-* added support for adding local indices to distributed sparse domains
-  (see https://chapel-lang.org/docs/master/builtins/ChapelArray.html#ChapelArray.bulkAdd)
-* added support for bulk addition of indices to distributed sparse domains
-  (see https://chapel-lang.org/docs/master/builtins/ChapelArray.html#ChapelArray.makeIndexBuffer)
 
 New Tools / Tool Changes
 ------------------------
-* pinned the version of `Pygments` relied upon by `chpldoc`
 * added `UnitTest` support to `mason test`
   (see TODO)
 * added `mason publish` subcommand to make publishing packages easier
@@ -253,38 +245,39 @@ New Tools / Tool Changes
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#submit-a-package)
 * added `MASON_OFFLINE` to improve offline experience for mason users
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#environment-variables)
-* added `mason publish --check` flag to test a package before publishing
+* pinned the version of `Pygments` relied upon by `chpldoc`
 
 Interoperability Improvements
 -----------------------------
 * added support for multi-locale Chapel libraries built with CHPL_COMM=gasnet
   (see <TODO> doc link)
+* the LLVM back-end now supports `--library-python` and `--library-makefile`
 * added support for exporting routines that accept/return strings
 * added support for overriding environment variables to `--library-makefile`
 * `.c` files on the `chpl` command line can now `#include "chplrt.h"`
 * `extern` blocks now support unary `+` in `#define` directives
   (e.g. `#define X (+1)`)
-* the LLVM back-end now supports `--library-python` and `--library-makefile`
+* added support for passing the `string` type to extern procedures
 
 Performance Optimizations/Improvements
 --------------------------------------
-* enabled the parallel implementation of scans by default (when available)
-* optimized op= overloads for array/scalar pairs
-* created a prototype optimization for slicing arrays by domains
-  (compile with `-schpl_serializeSlices` to enable)
 * enabled optimized bulk transfers for Block-distributed arrays by default
-* optimized iteration over Stencil-distributed arrays
-* improved task affinity for parallel loops
-* improved unordered compiler optimization and enabled it by default
+* improved the unordered compiler optimization and enabled it by default
   (see `--optimize-forall-unordered-ops` in `man chpl`)
-* improved the speed of parallel safe `RandomStream`
+* enabled the parallel implementation of scans by default (when available)
+* improved task affinity for parallel loops
+* optimized op= overloads for array/scalar pairs
+* improved the speed of parallel-safe `RandomStream` instances
+* improved the performance of `sort` and `isSorted` in the `Sort` module
 * reduced contention from polling threads for CHPL_COMM=gasnet
 * improved the implementation for `log2` and `logBasePow` for integral types
-* improved the performance of `sort` and `isSorted` in the Sort module
+* optimized iteration over `Stencil`-distributed arrays
+* created a prototype optimization for slicing arrays by domains
+  (compile with `-schpl_serializeSlices` to enable)
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
-* optimized `unorderedCopy` when `dst` is remote
+* optimized `unorderedCopy()` for remote destinations
 * improved the performance of all unordered operations
 
 Memory Improvements
@@ -293,50 +286,52 @@ Memory Improvements
 
 Documentation
 -------------
-* improved the `--help` description of the `--fast` flag
-* updated `chpldoc` documentation to use `--output-dir` instead of `--docs-dir`
-  (see https://chapel-lang.org/docs/master/tools/chpldoc/chpldoc.html#documenting-modules)
-* clarified that modules that are not referred to are not initialized
-  (see 'Module Initialization' in the spec)
-* removed a reference to old assignment behavior from interoperability technote
-* added a warning to 'channel.readf' documentation
-  (see https://chapel-lang.org/docs/master/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
-* documented that environment must be set for Unicode with UTF8 encoding
-  (see https://chapel-lang.org/docs/master/usingchapel/chplenv.html#character-set)
-* added bytes to the language specification as a primitive type
-* updated reductions technote to use memory management annotations
-  (see https://chapel-lang.org/docs/1.20/technotes/reduceIntents.html)
 * updated `mason` documentation to reflect new mason features
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html)
+* updated `chpldoc` documentation to use `--output-dir` instead of `--docs-dir`
+  (see https://chapel-lang.org/docs/1.20/tools/chpldoc/chpldoc.html#documenting-modules)
+* documented that environment must be set for Unicode with UTF8 encoding
+  (see https://chapel-lang.org/docs/1.20/usingchapel/chplenv.html#character-set)
+* added `bytes` to the language specification as a primitive type
+* clarified that modules that are not referred to are not initialized
+  (see 'Module Initialization' in the spec)
+* updated reductions technote to use memory management annotations
+  (see https://chapel-lang.org/docs/1.20/technotes/reduceIntents.html)
+* improved the `--help` description of the `--fast` flag
+* added a warning to 'channel.readf' documentation
+  (see https://chapel-lang.org/docs/1.20/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
+* removed a reference to old assignment behavior from interoperability technote
 
 Example Codes
 -------------
 * disabled some numerically unstable kernels in LCALS
-* replaced voidVariables primer with nothingVariables primer
+* replaced `voidVariables` primer with `nothingVariables` primer
   (see https://chapel-lang.org/docs/1.20/primers/nothingVariables.html)
-* improved the specialMethods primer to remove files it creates
+* improved the `specialMethods` primer to remove the files it creates
   (see https://chapel-lang.org/docs/1.20/primers/specialMethods.html)
 
 Portability
 -----------
-* fixed a code portability issue in the `pbs-aprun` launcher
-* added new environment variables `CHPL_RT_MASTERIP` and `CHPL_RT_WORKERIP`
-  (see https://chapel-lang.org/docs/master/usingchapel/launcher.html#chpl-rt-masterip
-   and https://chapel-lang.org/docs/master/usingchapel/launcher.html#chpl-rt-workerip)
-* fixed cross-compilation support for GMP build
+* fixed cross-compilation support for GMP builds
 * fixed support for `--llvm` with GASNet on Crays
 * resolved several warnings when building with GCC 9
+* added new environment variables `CHPL_RT_MASTERIP` and `CHPL_RT_WORKERIP`
+  (see https://chapel-lang.org/docs/1.20/usingchapel/launcher.html#chpl-rt-masterip
+   and https://chapel-lang.org/docs/1.20/usingchapel/launcher.html#chpl-rt-workerip)
+* fixed a code portability issue in the `pbs-aprun` launcher
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
-* fixed a hang for strided communication
-* Fixed a problem with --llvm compilation when using dynamic linking on a Cray
 * updated modulefile to work if there is an incompatible cray-mpich pre-loaded
+* Fixed a problem with --llvm compilation when using dynamic linking on a Cray
+* fixed a hang for strided communication
 
 Compiler Improvements
 ---------------------
-* improved `chpl`'s accuracy in detecting infinitely recursive instantiations
-* made the compiler not parse the same file multiple times
+* added support for overload-set checking
+  (see https://chapel-lang.org/docs/1.20/technotes/overloadSets.html)
+* stopped the compiler from parsing the same file multiple times
+* improved the accuracy of detecting infinitely recursive instantiations
 * sub-modules that are not referred to are removed early in compilation
 
 Compiler Flags
@@ -344,18 +339,18 @@ Compiler Flags
 
 Error Messages / Semantic Checks
 --------------------------------
-* added an error for domain expressions that are types rather than values
-* added an error message for ranges over an enum type with a single value
+* function resolution errors now describe a reason for the failure
+* compiler errors in generic functions now describe the failing instantiation
 * improved checks that procedures return along all paths for `try/catch/throw`
+* improved checking for multiple management decorators on a class
+* added an error message for incorrect tuple expansion usage
+* added a useful error when creating arrays of a generic type
+* added an error message for ranges over an enum type with a single value
+* made defining a method named 'borrow' a compiler error
+* added an error for domain expressions that are types rather than values
 * added non-`[const] in` intents error messages in certain interop situations
   (see <TODO> doc link?)
-* improved checking for multiple management decorators on a class
 * improved error message wording for type mismatches in assignment
-* function resolution errors now describe a reason for the failure
-* compilation errors in generic functions now describe the failing instantiation
-* added a useful error when creating arrays of a generic type
-* made defining a method named 'borrow' a compiler error
-* added an error message for incorrect tuple expansion usage
 * made a user-facing "the type of the actual argument is generic" error
 
 Execution-time Checks
@@ -363,61 +358,68 @@ Execution-time Checks
 
 Bug Fixes
 ---------
-* fixed a bug in which scans of array slices were not working
-* fixed a bug in which the count operator (`#`) was not creating an array alias
-* fixed a bug in which missing line numbers in the IR caused an internal error
-* fixed a bug in which parsing files multiple times caused duplicate modules
-* fixed a bug with `use ZMQ` in `--library` compilation
 * fixed a bug in which internal/standard module symbols shadowed user symbols
-* fixed a problem with the string-to-uint cast `"0xffffffffffffffff":uint`
+* fixed a bug in which the count operator (`#`) was not creating an array alias
+* fixed a bug in parallel scans of Block arrays for non-`+` operators
+* fixed a bug in which scans of array slices were not working
 * fixed several bugs with casting for managed class types
+* fixed problems when an `owned` argument is used in a later default expression
+* `isRecordType` now returns `false` for `owned` and `shared` classes
+* fixed a bug in which parsing files multiple times caused duplicate modules
+* fixed a bug in tracking number of nonzeroes for distributed sparse domains
+* fixed a bug in index addition to distributed CSC domains
+* fixed a bug in which missing line numbers in the IR caused an internal error
+* fixed a null-termination issue with `string.join`
+* fixed a problem with the string-to-uint cast `"0xffffffffffffffff":uint`
+* fixed a bug where `isRecord()` returned true for `string`
 * resolved problems when calling `sort` on arrays with aligned domains
+* fixed reading of associative domains
+* enabled const checking on index variables of forall loops in some cases
+* `defer` actions in an iterator are now executed upon a `break` from its loop
+* fixed a bug with `use ZMQ` in `--library` compilation
 * fixed problems capturing a throwing function as a first-class function
-* fixed casts from real to bool when using --llvm
+* fixed casts from `real` to `bool` when using --llvm
+* the `--dynamic` flag now creates a shared library under the LLVM back-end
+* object files generated by the LLVM back-end now respect `CHPL_LIB_PIC=pic`
 * fixed a compiler segfault with certain recursive class declarations
 * fixed incorrect instantiation for certain generic class methods
 * fixed problems with arguments using `new` as a default expression
+* fixed bug with error handling for default args giving an incorrect error
+* fixed bug with error handling for default args not issuing an error correctly
 * fixed a bug where range arguments with `in` intent were not modifiable
-* fixed problems when an owned argument is used in a later default expression
-* `isRecordType` now returns `false` for `owned` and `shared` classes
 * fixed errors in JSON I/O for block arrays
 * fixed precision loss when printing real numbers to JSON format
-* fixed reading of associative domains
 * fixed bug when opening a channel on a different locale from its file
 * fixed a bug in override checking
 * fixed a bug in the compiler's analysis of non-aliasing arrays
-* fixed a bug in index addition to distributed CSC domains
-* fixed a bug in tracking number of nonzeroes for distributed sparse domains
-* fixed a null termination issue with string.join
-* the `--dynamic` flag now creates a shared library under the LLVM back-end
-* object files generated by the LLVM back-end now respect `CHPL_LIB_PIC=pic`
-* fixed vim syntax highlighting bug involving domain literals
-* fixed bug where `isRecord()` returned true for `string`
-* fixed bug with error handling for default args giving incorrect compiler error
-* fixed bug with error handling for default args not issuing an error correctly
-* fixed bug when shrinking an array with pop_back()
-* enabled const checking on index variables of forall loops in some cases
-* defer actions in an iterator are now executed upon a `break` from its loop
+* fixed a `vim` syntax highlighting bug involving domain literals
+* fixed bug when shrinking an array with `pop_back()`
+* added a thrown error for `FileSystem.mkdir('')` instead of a seg-fault
+* fixed a bug in `TOML` where empty lines were not counted in the line number
 * fixed `mason test` bug where exit code would not reflect test results
 * fixed `mason` help flags such that being in a package is not required
 * fixed `mason search` to only show bricks that support current Chapel version
 * fixed `make mason` such that it will not hang if hugepages is unavailable
 * fixed `make mason` to detect changes in any mason source files
 * fixed `make clobber` such that it clobbers mason
-* added a thrown error for `FileSystem.mkdir('')` instead of seg-fault
-* fixed bug in `TOML` parser where empty lines were not counted in line number
+
+Packaging / Configuration Changes
+---------------------------------
+* added a warning for unfamiliar CHPL_*_COMPILER settings
+* cleaned up the output of `make` when building Chapel
 
 Third-Party Software Changes
 ----------------------------
 * upgraded GASNet-EX to version 2019.6.0
 * upgraded hwloc to version 1.11.13
-* retired massivethreads tasking
-* removed bundled copy of libhdfs3 since this project is no longer maintained
 * updated the LLVM version 8.0
+* removed bundled copy of libhdfs3 since this project is no longer maintained
+* retired massivethreads tasking
 
 Runtime Library Changes
 -----------------------
 * I/O buffers are no longer page aligned when the buffer size is very small
+* retired massivethreads tasking
 
 Launchers
 ---------
@@ -431,21 +433,21 @@ Testing System
 
 Developer-oriented changes: Module changes
 ------------------------------------------
-* added 'override' keywords to dsiDisplayRepresentation overrides
-* made arrays "always RVF"
-* simplified the standalone parallel iterator for default rectangular arrays
+* made many modules use `private use` to avoid leaking names
+* added an optimized spinlock wrapper to replace manual test-and-set loops
+* `assert()` prints out line numbers from the call site even with `--devel`
 * removed stale modules: `ChapelDynDispHack`, `Chapel[Tasks|Tasks]Internal`
 * refactored `ChapelStandard` to focus on modules implementing the language
-* made many modules use `private use` to avoid leaking names
+* made arrays "always RVF"
+* simplified the standalone parallel iterator for default rectangular arrays
+* added missing 'override' keywords to dsiDisplayRepresentation overrides
 * moved definition of `chpl_emptyLocale[s|Space]` to remaining `LocaleModel`s
 * moved definitions of some `read/writeThis` functions to `ChapelIO`
-* added an optimized spinlock wrapper to replace manual test-and-set loops
 * eliminated a self-assignment in `chpl__mod`
-* `assert()` prints out line numbers from the call site even with `--devel`
-* added experimental distributed sort to the Sort module
-* created internal module 'ByteBufferHelpers' for bytes/string buffer management
-* created internal module 'BytesStringCommons' for common bytes/string helpers
-* made minimum string allocation controlled by 'param chpl_minStringAllocSize=0'
+* added experimental distributed sort to the `Sort` module
+* new internal module 'ByteBufferHelpers' for bytes/string buffer management
+* new internal module 'BytesStringCommons' for common bytes/string helpers
+* added minimum string allocation size 'param chpl_minStringAllocSize=0'
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -459,13 +461,8 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
-* refactored compiler to re-use stripdirectories() function
 * started respecting "always rvf" pragmas at module scope
-* improved an internal error message about actual / formal mismatches
-* added new primitives in support of `UnitTest module
-  (see `PRIM_GATHER_TESTS`, `PRIM_GET_TEST_BY_NAME`, `PRIM_GET_TEST_BY_INDEX`)
 * stopped heap-promoting local variables
-* removed vestiges of `--heterogeneous` support
 * addressed several build problems when using newer LLVM versions
 * generated `llvm.ident` now includes Chapel compiler information
 * `--llvm` compilation avoids generating and compiling C code
@@ -473,9 +470,14 @@ Developer-oriented changes: Compiler improvements/changes
 * `--llvm-print-ir` can now accept multiple functions to print
 * generated more debug information under `--llvm -g`
 * `--print-commands` more reliably prints the commands spawned
+* added 'dtBytes' to represent the new `bytes` type
+* improved an internal error message about actual / formal mismatches
+* added new primitives in support of `UnitTest module
+  (see `PRIM_GATHER_TESTS`, `PRIM_GET_TEST_BY_NAME`, `PRIM_GET_TEST_BY_INDEX`)
+* removed vestiges of `--heterogeneous` support
+* refactored compiler to re-use stripdirectories() function
 * the compiler now represents decorated class types with `DecoratedClassType`
 * the compiler now handles certain cast calls directly
-* added 'dtBytes'
 * added 'FLAG_CHAPEL_BYTES_LITERAL' AggregateType
 * fixed an override checking bug with --devel flag
 
@@ -484,17 +486,17 @@ Developer-oriented changes: Runtime improvements
 * fixed the qthreads build when CHPL_HOME doesn't match CHPL_MAKE_HOME
 * reading I/O channels now default to using `pread` instead of `mmap`
 * I/O plugins implementing Curl and HDFS are now implemented in Chapel
-* added support for bytes in QIO
+* added support for `bytes` in QIO
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added paratest support for `<dir>.notest` to reflect `start_test` behavior
 * improved performance graph screenshot quality and resolution
 * added Python 3 support for `chpl_launchcmd`
 * lowered polling frequency for `chpl_launchcmd`
 * rewrote gen-chpl-bash-completion in Python
 * fixed a problem with `start_test` when using Python 3.7
 * resolved a race condition when `sub_test` creates directories
-* added paratest support for `<dir>.notest` to reflect `start_test` behavior
 * added a test suite for `sub_test` filters
 
 
