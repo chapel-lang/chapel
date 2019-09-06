@@ -21,6 +21,7 @@
 private use List;
 private use Map;
 use TOML;
+use Time;
 use Spawn;
 use MasonUtils;
 use MasonHelp;
@@ -49,9 +50,10 @@ proc masonTest(args) throws {
   var update = true;
   if MASON_OFFLINE then update = false;
   var compopts: list(string);
-  
-  if args.size > 2 {
-    for arg in args[2..args.size] {
+  var countArgs = 0;
+  for arg in args {
+    countArgs += 1;
+    if countArgs > 2 {
       if arg == '-h' || arg == '--help' {
         masonTestHelp();
         exit(0);
@@ -148,7 +150,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     if numTests > 0 {
 
       var result =  new TestResult();
-
+      var timeElapsed = new Timer();
+      timeElapsed.start();
       for test in testNames {
 
         const testPath = "".join(projectHome, '/test/', test);
@@ -176,10 +179,11 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
       if run && !parallel {
         runTestBinaries(projectHome, testNames, numTests, result, show);
       }
+      timeElapsed.stop();
       if run {
         result.printErrors();
         writeln(result.separator2);
-        result.printResult();
+        result.printResult(timeElapsed.elapsed());
         if (result.testsRun - result.testsPassed) == 0 {
           exit(0);
         }
@@ -354,7 +358,8 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       }
       
       var result =  new TestResult();
-
+      var timeElapsed = new Timer();
+      timeElapsed.start();
       for tests in files {
         try {
           testFile(tests, result, show);
@@ -374,10 +379,10 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
           writeln(e);
         }
       }
-      
+      timeElapsed.stop();
       result.printErrors();
       writeln(result.separator2);
-      result.printResult();
+      result.printResult(timeElapsed.elapsed());
       if (result.testsRun - result.testsPassed) == 0 {
         exit(0);
       }

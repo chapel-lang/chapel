@@ -112,11 +112,11 @@ module TestResult {
     }
 
     /* Function to print the result*/
-    proc printResult() {
+    proc printResult(timeTaken: real) {
       var skipped = this.numSkippedTests();
       var run = this.testsRun - skipped;
       if this.testsRun != 0 {
-        writeln("Run ", run, " ", printTest(run));
+        writeln("Run ", run, " ", printTest(run)," in ",timeTaken," seconds");
         writeln();
         var infos: list((string));
         if !this.wasSuccessful() {
