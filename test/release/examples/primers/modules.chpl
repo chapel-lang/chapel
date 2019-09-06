@@ -6,7 +6,7 @@
 
     * how to define a module
     * namespace control within a module
-    * access to a module's symbols
+    * access to another module's symbols
     * namespace control when using a module, including:
 
       * unlimited
@@ -155,7 +155,7 @@ module MainModule {
        Even if the ``use`` statement occurs after code which would directly
        refer to its symbols, these references are still valid.  This is
        similar to other Chapel forms of introducing symbols - for instance,
-       function declaration order does not prevent a function declared earlier 
+       function declaration order does not prevent a function declared earlier
        in a scope from calling one declared later.
 
        Thus, as in an earlier example, the following declaration of
@@ -174,8 +174,8 @@ module MainModule {
 
     /* The symbols provided by a ``use`` statement are only considered when
        the name in question cannot be resolved directly within the local
-       scope. Thus, because another ``bar`` is defined within this scope, the 
-       reference to ``bar`` within the ``writeln`` will refer to the local 
+       scope. Thus, because another ``bar`` is defined within this scope, the
+       reference to ``bar`` within the ``writeln`` will refer to the local
        variable ``bar`` rather than to ``modToUse.bar``.
     */
     {
@@ -241,7 +241,7 @@ module MainModule {
        ``use`` statements does not affect the precedence of symbols that share
        a name. This means that if two modules each define a symbol with the
        same name, and both modules are used at the same scope, attempts to
-       access a symbol by that name will result in a naming conflict.  
+       access a symbol by that name will result in a naming conflict.
 
        The commented-out line below would fail because both ``modToUse`` and
        ``Conflict`` define a symbol named ``bar``:
