@@ -164,9 +164,9 @@ receivers---these are known as \emph{type methods}.
 
 Note that within a method for a class \chpl{C}, the type of \chpl{this}
 is generally \chpl{borrowed C}. Within a type method on a class \chpl{C},
-\chpl{this} refers to a class type with management and nilability matching
-the type of the receiver. Please see~\rsec{Class_Methods} for more
-details.
+\chpl{this} refers to the class type \chpl{C} with management and
+nilability matching the type of the receiver. Please
+see~\rsec{Class_Methods} for more details.
 
 The optional \sntx{this-intent} is used to specify type methods, to
 constrain a receiver argument to be a \chpl{param}, or to specify how

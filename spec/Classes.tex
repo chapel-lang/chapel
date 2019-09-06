@@ -154,7 +154,8 @@ test();
 
 The \chpl{.borrow()} method is available on all class types (including
 \chpl{unmanaged} and \chpl{borrowed}) in order to support generic
-programming.
+programming. For nilable class types, it returns a the borrowed nilable
+class type.
 
 Errors due to accessing an instance after the end of its lifetime are
 particularly difficult to debug. For this reason, the compiler includes a
@@ -277,13 +278,15 @@ create a nilable type. For example, if \chpl{C} is a class type, then
 \chpl{?} operator can be combined with memory management specifiers as
 well. For example, \chpl{borrowed C?} indicates a nilable class using the
 \chpl{borrowed} memory management strategy. Note that the \chpl{?}
-operator only applies to types.
+operator applies only to types.
 
 The postfix \chpl{!} operator applies to a type or a value. When applied
-to a type, it returns the non-nilable borrowed type. When applied to a
-value, it asserts that the value is not \chpl{nil} and returns that value
-as a non-nilable borrowed type. If the value was in fact \chpl{nil}, it
-may halt.
+to a \chpl{borrowed} or \chpl{unmanaged} type, it returns the non-nilable
+version of that type. When applied to an \chpl{owned} or \chpl{shared}
+type, it returns the non-nilable borrowed type. When applied to a value,
+it asserts that the value is not \chpl{nil} and returns that value as a
+non-nilable type.  If the value was in fact \chpl{nil}, it halts.  It
+returns the borrowed type for \chpl{owned} or \chpl{shared}.
 
 An alternative to \chpl{!} is to use a cast to a non-nilable type. Such a
 cast will throw \chpl{NilClassError} if the value was in fact \chpl{nil}.
@@ -297,8 +300,12 @@ Class methods generally expect a receiver of type \chpl{borrowed C}
 dynamic dispatch, it is a program error to call a class method on a class
 receiver storing \chpl{nil}. The language helps to identify this error in
 two different ways, depending on whether or not the module is a
-\chpl{prototype} module (recall that implicit modules are
-\chpl{prototype} modules).
+\chpl{prototype} module (\rsec{Prototype_Modules}).
+
+The \chpl{borrow()} method is an exception. Suppose it is working with a
+class \chpl{C}. It will return \chpl{borrowed C} for any non-nilable
+\chpl{C} type (e.g. \chpl{owned C}). It will return \chpl{borrowed C?}
+for any nilable \chpl{C} type (e.g. \chpl{C?}).
 
 For modules that are not prototype modules, the compiler will not
 resolve calls to such class methods if the receiver has nilable type.
@@ -355,9 +362,10 @@ class types and non-nilable class types do not have a default value.
 \begin{chapel}
 class C { }
 var c : owned C?;    // c has class type owned C?, meaning
-                     // the instance can be nil and is deleted automatically.
+                     // the instance can be nil and is deleted automatically
+                     // when it is not.
 c = new C();         // Now c refers to an initialized instance of type C.
-var c2 = c.borrow(); // The type of c2 is borrowed C.
+var c2 = c.borrow(); // The type of c2 is borrowed C?.
                      // c2 refers to the same object as c.
 class D : C {}    // Class D is derived from C.
 c = new D();      // Now c refers to an object of type D.
@@ -373,9 +381,9 @@ c = new D();      // Now c refers to an object of type D.
 When the variable \chpl{c} is declared, it initially has the value of
 \chpl{nil}.  The next statement assigned to it an instance of the class
 \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps
-can be combined.  The type of \chpl{c2} is also \chpl{C}, determined
+can be combined.  The type of \chpl{c2} is also \chpl{borrowed C?}, determined
 implicitly from the the initialization expression.  Finally, an object
-of type \chpl{D} is created and assigned to \chpl{c}.
+of type \chpl{owned D} is created and assigned to \chpl{c}.
 \end{chapelexample}
 
 \subsection{Class Fields}
@@ -427,7 +435,7 @@ See the methods section~\rsec{Methods} for more information about methods.
 Within a class method, the type of \chpl{this} is generally the
 non-nilable \chpl{borrowed} variant of the class type. It is different
 for type methods (see below) and it might be a different type if the
-class method is declared with as a secondary method with a type
+class method is declared as a secondary method with a type
 expression (see~\ref{Secondary_Methods_with_Type_Expressions}).
 
 For example:
@@ -463,7 +471,7 @@ the body of the method. For example:
 \begin{chapel}
 class C {
   proc type typeMethod() {
-    writeln(this:string); // print out the type 'this'
+    writeln(this:string); // print out the type of 'this'
   }
 }
 (C).typeMethod(); // prints 'C'
@@ -1724,10 +1732,9 @@ receivers.
 
 Classes are assigned by reference.  After an assignment from one
 variable of a class type to another, both variables reference the same
-class instance.
-
-Assignment for an \chpl{owned} variable transfers ownership and leaves the
-source variable empty. For example:
+class instance. Assignments from an \chpl{owned} variable to another
+\chpl{owned} or \chpl{shared} variable are an exception. They transfer
+ownership, leaving the source variable empty i.e. storing \chpl{nil}.
 
 \begin{chapelexample}{owned-assignment.chpl}
 \begin{chapelpre}
@@ -1747,6 +1754,21 @@ nil
 
 In contrast, assignment for \chpl{shared} variables allows both
 variables to refer to the same class instance.
+
+The following assignments between variables or expressions with different
+memory management strategies are disallowed:
+
+\begin{itemize}
+\item to \chpl{owned} from \chpl{shared} or \chpl{borrowed},
+      as it would not ensure unique ownership of the instance
+
+\item to \chpl{shared} from \chpl{borrowed}, as the original owner
+      would be unaware of the shared ownership
+
+\item to \chpl{owned}, \chpl{shared}, or \chpl{borrowed} from \chpl{unmanaged},
+      as both the source and the destination would appear responsible
+      for deleting the instance
+\end{itemize}
 
 %TODO: Move memory management explanation up, closer to class initializers.
 % Perhaps make the memory management part of the introduction, and then let the

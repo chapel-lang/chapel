@@ -179,7 +179,7 @@ explicitly-sized counterparts.
 \index{conversions!implicit!parameter}
 
 A parameter of numeric type can be implicitly converted to any other
-numeric type if the value of the parameter can be stored without loss in
+numeric type if the value of the parameter can be represented exactly
 the target type. This rule does not allow conversions from \chpl{real} to
 \chpl{imag}, or from \chpl{complex} to a non-complex type. It does allow
 conversions from \chpl{real} or \chpl{imag} to \chpl{complex}.
@@ -191,14 +191,16 @@ conversions from \chpl{real} or \chpl{imag} to \chpl{complex}.
 \index{conversions!implicit!borrow}
 \index{classes!implicit conversion}
 
-An expression of class type can implicitly converted to the borrow type;
+An expression of class type can be implicitly converted to the borrow type;
 to a nilable type; or to a parent class type. The value \chpl{nil} can be
 implicitly converted to any nilable class type.
 
-First, class types other than \chpl{borrowed C}, for example \chpl{owned
-C}, can be implicitly converted to \chpl{borrowed C}. This coercion is
-equivalent to calling the \chpl{.borrow()} method.
-See~\rsec{Class_Lifetime_and_Borrows}. For example:
+First, class types can be converted to the corresponding \chpl{borrowed}
+type. For example, \chpl{owned C} can be implicitly converted to
+\chpl{borrowed C}, and \chpl{shared C?} can be implicitly converted to
+\chpl{borrowed C?}. This coercion is equivalent to calling the
+\chpl{.borrow()} method.  See~\rsec{Class_Lifetime_and_Borrows}. For
+example:
 
 \begin{chapelexample}{implicit-conversion-to-borrow.chpl}
 \begin{chapel}
@@ -213,7 +215,7 @@ f(c); // equivalent to f(c.borrow())
 \end{chapelexample}
 
 Second, an expression of non-nilable class type can be implicitly
-converted to the nilable class type. For example, continuing the above
+converted to the nilable class type. Continuing the above
 example:
 
 \begin{chapelexample}{implicit-conversion-to-nilable.chpl}
