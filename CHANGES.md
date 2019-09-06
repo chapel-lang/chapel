@@ -96,6 +96,8 @@ New Features
   (see https://chapel-lang.org/docs/master/builtins/Bytes.html)
 * added bytes literals b"" and b'' and multiline versions b""" """ and b''' '''
 * added factory functions for creating strings using existing buffers
+* added support for overload-set checking
+  (see https://chapel-lang.org/docs/master/technotes/overloadSets.html)
 
 Feature Improvements
 --------------------
@@ -104,6 +106,12 @@ Feature Improvements
 * `dmapped` and `new dmap` can now accept an `owned` distribution
 * `isClass` now returns `true` for `owned C` and `shared C`
 * `ref` return intent is now allowed for extern functions
+* `min`, `max` on reals now propagate NaN
+  (see https://chapel-lang.org/docs/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.min)
+* task/forall intents in methods on records now operate on fields of `this`
+  (see 'Task Intents' and 'Forall Intents' in the spec)
+* enabled `var myField:T = expr;` when T has no default initializer
+* enabled in-intents of POD record types in follower iterators
 
 Deprecated / Removed Language Features
 --------------------------------------
@@ -121,6 +129,9 @@ Deprecated / Removed Language Features
 * deprecated string initializers in favor of new clearer factory functions
 * deprecated `string.ascii` and `asciiToString`
 * deprecated "array-as-vector" methods (e.g., `array.push_back()`)
+* deprecated inequality comparisons on `imag`
+* removed support for explicit task/forall intents on `this`
+* removed previously deprecated functions with `out error` argument from `IO`
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -327,6 +338,7 @@ Error Messages / Semantic Checks
 * added a useful error when creating arrays of a generic type
 * made defining a method named 'borrow' a compiler error
 * added an error message for incorrect tuple expansion usage
+* made a user-facing "the type of the actual argument is generic" error
 
 Execution-time Checks
 ---------------------
@@ -366,6 +378,8 @@ Bug Fixes
 * fixed bug with error handling for default args giving incorrect compiler error
 * fixed bug with error handling for default args not issuing an error correctly
 * fixed bug when shrinking an array with pop_back()
+* enabled const checking on index variables of forall loops in some cases
+* defer actions in an iterator are now executed upon a `break` from its loop
 
 Third-Party Software Changes
 ----------------------------
