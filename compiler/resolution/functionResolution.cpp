@@ -4172,13 +4172,12 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     return NULL;
   }
 
-  // Do not forward initializers
-  if (call->isNamedAstr(astrInit) && call->numActuals() >= 1) {
-    if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (se->symbol() == gMethodToken) {
-        return NULL;
-      }
-    }
+  // Do not forward de/initializers.
+  // Todo: what else to add here? Note: we cannot be here for a non-method.
+  if (call->isNamedAstr(astrInit)       ||
+      call->isNamedAstr(astrInitEquals) ||
+      call->isNamedAstr(astrDeinit)     ) {
+    return NULL;
   }
 
   // Detect cycles
