@@ -16,14 +16,34 @@ First release candidate for Chapel 2.0 (RC1)
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * language:
-  - class types now indicate whether or not they can store `nil`
-  - undecorated class types now indicate generic management
-* added the `nothing` type and `none` value
-* added the map type and deprecated associative array-as-set operations
-* improved the performance of parallel-safe data structures
-* enabled the unordered compiler optimization by default
-* improved the performance and usability of unordered operations
-* improved affinity and performance of parallel loops
+  - finalized the conversion of the `string` type to UTF-8
+  - added a new `bytes` type and literals
+  - improved namespace management via `private use` and requiring module `use`
+  - class types now indicate whether they can store `nil` or not via `?`
+  - improved managed class types w.r.t. generic management and argument passing
+  - improved generic types w.r.t. partial instantiations and argument passing
+  - improved the interfaces for `atomic` types
+  - improved the definition of the `void` type by adding `nothing`/`none`
+  - deprecated "array-as-vector" and "associative array as map" features
+* libraries and domain maps:
+  - added new `list`, `set`, and `map` collection types
+  - significantly improved the `LinearAlgebra` and `Sort` packages
+  - added new `Reflection` routines to query source code information
+  - added a new `UnitTest` module with support via `mason test`
+  - new package modules: `URL`, `AtomicObjects`, and `EpochManager`
+  - added new `LockFreeStack` and `LockFreeQueue` data structures
+* performance improvements:
+  - improved the affinity and performance of parallel loops
+  - enabled optimized bulk transfers for Block-distributed arrays
+  - enabled the unordered compiler optimization by default
+  - improved the performance and usability of unordered operations
+  - enabled the parallel implementation of scans on local and Block arrays
+  - improved the performance of parallel-safe data structures
+* additional highlights:
+  - added support for creating multi-locale libraries callable from Python or C
+  - improved compiler error messages for failures in resolution and generics
+  - improved `mason` w.r.t. testing, publishing, searching, and working offline
+  - improved the robustness of the LLVM back-end
 
 Syntactic/Naming Changes
 ------------------------
