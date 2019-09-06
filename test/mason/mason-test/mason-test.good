@@ -8,4 +8,4 @@ shallnotpass returned exitCode = 255
 ----------------------------------------------------------------------
 Run 6 tests in n seconds
 
-FAILED failures = 1 
+FAILED (passed = 5 failures = 1 )

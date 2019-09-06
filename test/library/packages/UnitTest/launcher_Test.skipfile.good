@@ -7,4 +7,4 @@ TestSkipped: Skipping Test 3
 ----------------------------------------------------------------------
 Run 2 tests in n seconds
 
-OK skipped = 1 
+OK (passed = 2 skipped = 1 )

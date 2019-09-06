@@ -12,4 +12,4 @@ TestSkipped: Skipping Test 3
 ----------------------------------------------------------------------
 Run 3 tests in n seconds
 
-FAILED failures = 1 skipped = 1 
+FAILED (passed = 2 failures = 1 skipped = 1 )

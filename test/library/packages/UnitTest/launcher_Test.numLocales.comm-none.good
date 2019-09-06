@@ -73,4 +73,4 @@ s13() skipped as s8() failed
 ----------------------------------------------------------------------
 Run 4 tests in n seconds
 
-FAILED failures = 2 errors = 1 skipped = 10 
+FAILED (passed = 1 failures = 2 errors = 1 skipped = 10 )

@@ -12,4 +12,4 @@ AssertionError: assert failed - '2' != '3.0'
 ----------------------------------------------------------------------
 Run 3 tests in n seconds
 
-FAILED failures = 1 errors = 1 
+FAILED (passed = 1 failures = 1 errors = 1 )
