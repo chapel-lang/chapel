@@ -258,7 +258,8 @@ endif
 
 " Chapel extentions
 syn keyword chplStatement	break return continue compilerWarning delete
-syn keyword chplStatement	noinit new delete this these use except only require
+syn keyword chplStatement	new delete this these use except only require
+syn keyword chplStatement	noinit init
 syn keyword chplStatement	as module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
 syn keyword chplStorageClass    const config export extern var
@@ -286,6 +287,7 @@ syn match   chplOperator display "?"
 " if you match ! that follows a valid type name
 syn match   chplOperator display "[a-zA-Z0-9_]\zs!\ze[^=]"   
 
+
 " Folding
 syn region scopeFold start="{" end="}" fold transparent
 
@@ -302,6 +304,7 @@ if version >= 508 || !exists("did_chpl_syntax_inits")
   endif
   HiLink chplCast		chplStatement
   HiLink chplErrorHandling	chplStatement
+  HiLink chplInitAssign 	chplOperator
   HiLink chplOperator		Operator
   HiLink chplStatement		Statement
   HiLink chplIntent		StorageClass
