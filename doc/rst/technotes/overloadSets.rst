@@ -8,7 +8,7 @@ The Chapel compiler provides an initial implementation of the
 Overload Sets feature. It is discussed in `CHIP 20
 <https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/20.rst>`_
 as a solution to "hijacking" problems where program behavior can change
-unexpectedly when imported modules change.
+unexpectedly as libraries it uses change.
 
 An "overload set" is a group of functions with the same name declared
 in the same module. Overload sets checking is performed at each
@@ -17,8 +17,8 @@ while resolving this call are defined in the same module. See the
 "Function Resolution" section of the language spec for
 resolution-related terminology.
 
-Additionally, if the call resolves to "ref-pair" overloads,
-i.e. for ref, const-ref, and/or value return intent,
+Additionally, if the call resolves to return intent overloads,
+i.e. for ref, const-ref, and/or value return intents,
 these overloads must be defined in the same module.
 
 The current implementation does not report an error in the following cases:
@@ -46,8 +46,9 @@ to work around the overload set errors when they are undesirable.
 We are evaluating this feature and invite user feedback.
 Our open questions include:
 
-- Should an overload set contain only functions that are declared
-  in the same scope, or some other granularity than a module?
+- Should overload sets continue to consider only module scoping,
+  or should they be updated to differentiate, for example, between
+  scopes inside functions?
 
 - What should a "merge the overload sets" declaration look like?
 
