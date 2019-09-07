@@ -141,11 +141,28 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     }
     // Make target files if they dont exist from a build
     makeTargetFiles("debug", projectHome);
-
+    var numTests: int;
+    var customTest: bool;
+    var testNames: list(string);
     // get the test names from lockfile or from test directory
-    const testNames = getTests(lockFile.borrow(), projectHome);
-    var numTests = testNames.size;
-
+    if (files.size == 0 && dirs.size == 0) {
+      testNames = getTests(lockFile.borrow(), projectHome);
+      numTests = testNames.size;
+    }
+    else {
+      try! {
+        for dir in dirs {
+          for file in findfiles(startdir = dir, recursive = subdir) {
+            if file.endsWith(".chpl") {
+              files.append(file);
+            }
+          }
+        }
+      }
+      testNames = files;
+      numTests = files.size;
+      customTest = true;
+    }
     // Check for tests to run
     if numTests > 0 {
 
@@ -153,8 +170,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
       var timeElapsed = new Timer();
       timeElapsed.start();
       for test in testNames {
-
-        const testPath = "".join(projectHome, '/test/', test);
+        var testPath: string;
+        if customTest {
+          testPath = "".join(cwd,"/",test);
+        } 
+        else {
+          testPath = "".join(projectHome, '/test/', test);
+        }
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
