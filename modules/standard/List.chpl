@@ -974,10 +974,10 @@ module List {
 
       //
       // TODO: We would like to put this in an on statement, but we can't yet
-      // because there is no way to "default initialize a non-nillable class",
+      // because there is no way to "default initialize a non-nilable class",
       // even if the variable is pragma "no init". Either we need to support
       // returning from on statements, or make the "no init" pragma work with
-      // non-nillable classes.
+      // non-nilable classes.
       //
 
       if boundsChecking && _size <= 0 {
