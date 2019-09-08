@@ -5051,6 +5051,9 @@ iwriter
 FILEID: 78ea7772-caca-11e9-8464-10ddb1d4c3d5
 spack
 
+FILEID: 04f188f0-d205-11e9-a3be-843835579daa
+libdesc
+
 NATURAL:
 aarch
 abcd
@@ -7073,6 +7076,7 @@ replicand
 replicands
 reprivatization
 reprivatize
+repurposed
 reqs
 resized
 resizes

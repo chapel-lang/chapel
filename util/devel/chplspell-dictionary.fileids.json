@@ -232,6 +232,9 @@
   "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
     "compiler/resolution/expandVarArgs.cpp"
   ],
+  "04f188f0-d205-11e9-a3be-843835579daa": [
+    "compiler/resolution/fixupExports.cpp"
+  ],
   "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/functionResolution.cpp"
   ],
