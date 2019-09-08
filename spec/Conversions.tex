@@ -189,7 +189,7 @@ explicitly-sized counterparts.
 \index{conversions!implicit!parameter}
 
 A parameter of numeric type can be implicitly converted to any other
-numeric type if the value of the parameter can be represented exactly
+numeric type if the value of the parameter can be represented exactly by
 the target type. This rule does not allow conversions from \chpl{real} to
 \chpl{imag}, or from \chpl{complex} to a non-complex type. It does allow
 conversions from \chpl{real} or \chpl{imag} to \chpl{complex}.
@@ -405,7 +405,7 @@ part of the resulting complex value.
 \index{conversions!enumeration}
 \index{conversions!explicit!enumeration}
 
-Explicit conversions are allowed from any enumerated type to any
+Explicit conversions are allowed from any enumerated type to
 \chpl{bytes} or \chpl{string} and vice-versa, and include \chpl{param} conversions.
 For enumerated types that are either concrete or semi-concrete
 (\rsec{Enumerated_Types}), conversions are supported between the
