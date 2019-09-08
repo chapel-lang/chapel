@@ -301,7 +301,7 @@ in the assignment statement ``global = arg``.
 
 This program does not work in 1.20. The compiler will issue an error for
 the statement ``global = arg`` because the ownership transfer requires
-modifying ``arg`` but it is not modifyable because it was passed with
+modifying ``arg`` but it is not modifiable because it was passed with
 ``const ref`` intent.
 
 To continue working, this program needs to be updated to add the `in`
