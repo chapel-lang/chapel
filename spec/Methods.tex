@@ -47,6 +47,7 @@ simply be standalone functions rather than methods).  Note that
 secondary methods can be defined not only for classes, records, and
 unions, but also for any other type (e.g., integers, reals, strings).
 
+\label{Secondary_Methods_with_Type_Expressions}
 Secondary methods can be declared with a type expression instead of a
 type identifier. In particular, if the \sntx{type-binding} is a
 parenthesized expression, the compiler will evaluate that expression to
@@ -130,8 +131,6 @@ invoked.  The receiver's actual argument is specified by the
 \sntx{receiver-clause} of a method-call-expression as specified
 in \rsec{Method_Calls}.
 
-
-
 % TODO: specify how the receiver affects the choice of the method.
 
 \begin{chapelexample}{implicitThis.chpl}
@@ -162,6 +161,12 @@ argument is \chpl{c1}.  Within primary method \chpl{C.foo()}, the
 Methods whose receivers are objects are called \emph{instance
 methods}.  Methods may also be defined to have \chpl{type}
 receivers---these are known as \emph{type methods}.
+
+Note that within a method for a class \chpl{C}, the type of \chpl{this}
+is generally \chpl{borrowed C}. Within a type method on a class \chpl{C},
+\chpl{this} refers to the class type \chpl{C} with management and
+nilability matching the type of the receiver. Please
+see~\rsec{Class_Methods} for more details.
 
 The optional \sntx{this-intent} is used to specify type methods, to
 constrain a receiver argument to be a \chpl{param}, or to specify how

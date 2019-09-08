@@ -48,6 +48,7 @@ proc main(args: [] string) {
     // stumbling block: making this parallel probably causes failures
     // stumbling block: associative domains parSafe
     var hash = computeFileHash(path);
+    hashes += hash;
     hashesToPaths[hash] += path;
   }
 

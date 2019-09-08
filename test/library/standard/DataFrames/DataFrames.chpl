@@ -804,6 +804,7 @@ module DataFrames {
     proc insert(lab: string, s: borrowed Series) {
       var sCopy = s.copy().release();
       sCopy.reindex(idx);
+      labels += lab;
       columns[lab] = sCopy;
     }
 

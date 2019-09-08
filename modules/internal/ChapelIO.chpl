@@ -198,6 +198,7 @@ appropriately before the elements can be read.
  */
 module ChapelIO {
   use ChapelBase; // for uint().
+  use ChapelLocale;
   use SysBasic;
 
   // TODO -- this should probably be private

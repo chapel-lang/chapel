@@ -49,7 +49,7 @@ proc create_thing() {
     maybeThrows(3);
     // success!
     success = true;
-    return container?;
+    return container:class?;
   } catch {
     return nil;
   }

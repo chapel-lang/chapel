@@ -19,6 +19,8 @@
 
 
 private use List;
+private use Map;
+
 use TOML;
 use Spawn;
 use FileSystem;
@@ -36,6 +38,7 @@ proc masonBuild(args) throws {
   var compopts: list(string);
   var opt = false;
   var example = false;
+  var update = false;
 
   if args.size > 2 {
 
@@ -78,6 +81,9 @@ proc masonBuild(args) throws {
       else if arg == '--example' {
         example = true;
       }
+      else if arg == '--update' {
+        update = true;
+      }
       // passed to UpdateLock
       else if arg == '--no-update' {
         continue;
@@ -90,6 +96,8 @@ proc masonBuild(args) throws {
   if example {
     // compopts become test names. Build never runs examples
     compopts.append("--no-run");
+    if update then compopts.append('--update');
+    if hasOptions(args, '--no-update') then compopts.append('--no-update');
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
@@ -235,7 +243,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
-  for (name, package) in zip(lockFile.D, lockFile.A) {
+  for (name, package) in lockFile.A.items() {
     if package.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
@@ -301,7 +309,7 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   
   if lock.pathExists('external') {
     const exDeps = lock['external'];
-    for (name, depInfo) in zip(exDeps.D, exDeps.A) {
+    for (name, depInfo) in exDeps.A.items() {
       for (k,v) in allFields(depInfo) {
         select k {
             when "libs" do compopts.append("-L" + v.s); 
@@ -314,7 +322,7 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   }
   if lock.pathExists('system') {
     const pkgDeps = lock['system'];
-    for (name, depInfo) in zip(pkgDeps.D, pkgDeps.A) {
+    for (name, depInfo) in pkgDeps.A.items() {
       compopts.append(depInfo["libs"].s);
       compopts.append("-I" + depInfo["include"].s);
     }

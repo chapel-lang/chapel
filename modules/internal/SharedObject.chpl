@@ -222,7 +222,7 @@ module SharedObject {
      */
     proc init(pragma "nil from arg" in take:owned) {
       var p = take.release();
-      this.chpl_t = _to_borrowed(p.type);
+      this.chpl_t = if this.type.chpl_t == ? then _to_borrowed(p.type) else this.type.chpl_t;
 
       if !isClass(p) then
         compilerError("shared only works with classes");
@@ -554,6 +554,7 @@ module SharedObject {
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(x:_shared) {
+    use HaltWrappers only;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -564,8 +565,5 @@ module SharedObject {
       }
     }
     return _to_nonnil(x.chpl_p);
-  }
-  inline proc postfix!(type t:_shared) type {
-    return _to_borrowed(_to_nonnil(t.chpl_t));
   }
 }

@@ -89,6 +89,8 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
 
 bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
 
+  FnSymbol* oldFn = fn;
+
   fn = expandIfVarArgs(fn, info);
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -117,6 +119,11 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
     reason = RESOLUTION_CANDIDATE_OTHER;
     return false;
   }
+
+  // Return early if instantiating the function resulted in the same function.
+  // This avoids infinite recursion.
+  if (fn == oldFn)
+    return true;
 
   return isApplicable(info);
 }

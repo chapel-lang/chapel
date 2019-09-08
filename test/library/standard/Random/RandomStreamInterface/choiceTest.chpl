@@ -1,4 +1,4 @@
-use Random;
+use Random, Map;
 
 config const debug = false;
 
@@ -72,7 +72,7 @@ proc runTests(stream) {
 
 proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probType=none, trials=10000) throws {
   var countsDom: domain(arr.eltType);
-  var counts: [countsDom] int;
+  var counts = new map(arr.eltType, int);
 
   // Collect statistics
   if isNothingType(probType) {
@@ -104,7 +104,7 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
 
   if debug {
     writeln('Counts for array: ', arr);
-    for value in counts.domain {
+    for value in counts {
       writeln(value, ' : ', counts[value]/trials:real);
     }
   }
@@ -113,11 +113,13 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
   if isDomainType(sizeType) then m = size.size;
   else if isIntegralType(sizeType) then m = size;
 
-
-  var actualRatios = if isNothingType(sizeType) then counts / trials:real
-                     else counts / (trials*m): real;
-
-
+  var actualRatios = new map(int, real);
+  for (k,v) in actualRatios.items() {
+    if isNothingType(sizeType) then
+      actualRatios[k] = v / trials:real;
+    else
+      actualRatios[k] = v / (trials*m): real;
+  }
 
   var ones: [arr.domain] real = 1;
 
@@ -125,7 +127,7 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
 
   // Get expected ratios
   var uniqueValues: domain(arr.eltType);
-  var expectedRatios: [uniqueValues] real;
+  var expectedRatios = new map(arr.eltType, real);
 
   var total = (+ reduce probabilities):real;
 
@@ -136,8 +138,8 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
   // Confirm that resulting ratios are within 0.05 of expected ratios
   var success = true;
   if replace {
-    for value in actualRatios.domain {
-      if !isClose(actualRatios[value], expectedRatios[value]) {
+    for value in actualRatios {
+      if !isClose(actualRatios[value], expectedRatios[value:arr.eltType]) {
         success = false;
       }
     }
@@ -148,9 +150,9 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
       if !isNothingType(prob.type) then write('prob = ', prob, ', ');
       if !isNothingType(size.type) then writeln('size = ', size, ', ');
       writeln('replace = ', replace, ');');
-      for value in actualRatios.domain {
+      for value in actualRatios {
         writeln('value   expected   actual');
-        writeln(value, '       ', expectedRatios[value],'        ', actualRatios[value]);
+        writeln(value, '       ', expectedRatios[value:arr.eltType],'        ', actualRatios[value]);
       }
     }
   }

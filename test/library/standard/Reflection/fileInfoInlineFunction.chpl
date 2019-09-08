@@ -1,10 +1,12 @@
 inline proc foo() {
-  writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-          Reflection.moduleName, ".", Reflection.functionName);
+  writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+          Reflection.getModuleName(), ".", Reflection.getRoutineName());
 }
 
 proc main {
-  writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-          Reflection.moduleName, ".", Reflection.functionName);
+  writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+          Reflection.getModuleName(), ".", Reflection.getRoutineName());
   foo();
 }
+
+use Reflection only ;

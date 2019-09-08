@@ -151,6 +151,18 @@ static void resolveFormals(FnSymbol* fn) {
     if (formal->defaultExpr != NULL && fn->hasFlag(FLAG_EXPORT)) {
       storeDefaultValuesForPython(fn, formal);
     }
+
+    // Warn for default-intent owned/shared, since these used to
+    // mean the same as `in` intent but now mean the same as `const ref`.
+    if (fWarnUnstable &&
+        formal->getModule()->modTag == MOD_USER &&
+        isManagedPtrType(formal->getValType()) &&
+        formal->originalIntent == INTENT_BLANK) {
+      USR_WARN(formal,
+               "default intent for %s has changed from `in` to `const ref`",
+               toString(formal->getValType()));
+
+    }
   }
 }
 
@@ -1336,6 +1348,12 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 }
 
 bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
+
+  // Don't add copies at call site if function body will be removed anyway.
+  // TODO: handle RET_TYPE but not for runtime types
+  if (fn && fn->retTag == RET_PARAM)
+    return false;
+
   if (isRecord(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||

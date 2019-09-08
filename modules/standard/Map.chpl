@@ -27,6 +27,7 @@
   mode of its originating map.
 */
 module Map {
+  private use ChapelLocks only ;
 
   // Lock code lifted from modules/standard/Lists.chpl.
   // Maybe they should be combined into a Locks module.
@@ -187,6 +188,16 @@ module Map {
       if !keys.contains(k) then
         keys += k;
       ref result = vals[k];
+      _leave();
+      return result;
+    }
+
+    pragma "no doc"
+    proc const this(k: keyType) const {
+      _enter();
+      if !keys.contains(k) then
+        halt("map index ", k, " out of bounds");
+      const result = vals[k];
       _leave();
       return result;
     }

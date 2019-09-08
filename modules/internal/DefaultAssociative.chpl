@@ -677,6 +677,7 @@ module DefaultAssociative {
           return data(0);
         } else {
           // grow the table
+          warning("growing associative domains by assigning to an array is deprecated");
           const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
 
           // and return the element

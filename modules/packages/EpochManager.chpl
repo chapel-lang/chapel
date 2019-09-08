@@ -146,7 +146,7 @@ prototype module EpochManager {
         do {
           var oldHead = _head.readABA();
           _node.next = oldHead.getObject();
-        } while(!_head.compareExchangeABA(oldHead, _node));
+        } while(!_head.compareAndSwapABA(oldHead, _node));
       }
 
       iter these() : objType? {
@@ -219,7 +219,7 @@ prototype module EpochManager {
             return new unmanaged Node(objType?);
           }
           var newTop = n!.freeListNext;
-        } while (!_freeListHead.compareExchangeABA(oldTop, newTop));
+        } while (!_freeListHead.compareAndSwapABA(oldTop, newTop));
         n!.next.write(nil);
         n!.freeListNext = nil;
         return n!;
@@ -239,15 +239,15 @@ prototype module EpochManager {
           // Check if tail and next are consistent
           if (tail == curr_tail) {
             if (next_node == nil) {
-              if (curr_tail.next.compareExchangeABA(next, n)) {
+              if (curr_tail.next.compareAndSwapABA(next, n)) {
 
                 // Enqueue is done. Try to swing Tail to the inserted node
-                _tail.compareExchangeABA(curr_tail, n);
+                _tail.compareAndSwapABA(curr_tail, n);
                 break;
               }
             }
             else {
-              _tail.compareExchangeABA(curr_tail, next_node);
+              _tail.compareAndSwapABA(curr_tail, next_node);
             }
           }
         }
@@ -267,11 +267,11 @@ prototype module EpochManager {
             if (head_node == tail_node) {
               if (next_node == nil) then
                 return nil;
-              _tail.compareExchangeABA(curr_tail, next_node);
+              _tail.compareAndSwapABA(curr_tail, next_node);
             }
             else {
               var ret_val = next_node!.val;
-              if (_head.compareExchangeABA(curr_head, next_node)) {
+              if (_head.compareAndSwapABA(curr_head, next_node)) {
                 retireNode(head_node!);
                 return ret_val;
               }
@@ -288,7 +288,7 @@ prototype module EpochManager {
         do {
           var oldTop = _freeListHead.readABA();
           nextObj.freeListNext = oldTop.getObject();
-        } while (!_freeListHead.compareExchangeABA(oldTop, nextObj));
+        } while (!_freeListHead.compareAndSwapABA(oldTop, nextObj));
       }
 
       iter these() : objType {
@@ -365,7 +365,7 @@ prototype module EpochManager {
             return new unmanaged Node(obj);
           }
           var newTop = n.next;
-        } while (!_freeListHead.compareExchangeABA(oldTop, newTop));
+        } while (!_freeListHead.compareAndSwapABA(oldTop, newTop));
         n.val = obj;
         return n!;
       }
@@ -375,7 +375,7 @@ prototype module EpochManager {
         do {
           var oldTop = _freeListHead.readABA();
           nextObj.next = oldTop.getObject();
-        } while (!_freeListHead.compareExchangeABA(oldTop, nextObj));
+        } while (!_freeListHead.compareAndSwapABA(oldTop, nextObj));
       }
 
       proc pop() {

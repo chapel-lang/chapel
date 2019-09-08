@@ -5,7 +5,7 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
-use Sort;
+use Sort, Map;
 
 config param tableSize = 2**16,
              columns = 61;
@@ -53,7 +53,7 @@ proc main(args: [] string) {
 proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
-  var arr = for (s,f) in zip(freqs.domain, freqs) do (f,s);
+  var arr = for (s,f) in freqs.items() do (f,s);
 
   // sort by frequencies
 
@@ -73,20 +73,18 @@ proc writeCount(data, param str) {
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(int),
-      freqs: [freqDom] int;
+  var freqs = new map(int, int);
 
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
-  coforall tid in 1..numTasks {
-    var myDom: domain(int),
-        myArr: [myDom] int;
+  coforall tid in 1..numTasks with (ref freqs) {
+    var myArr = new map(int, int);
 
     for i in tid..(data.size-nclSize) by numTasks do
       myArr[hash(data, i, nclSize)] += 1;
 
     lock$;        // acquire lock
-    for (k,v) in zip(myDom, myArr) do
+    for (k,v) in myArr.items() do
       freqs[k] += v;
     lock$ = true; // release lock
   }

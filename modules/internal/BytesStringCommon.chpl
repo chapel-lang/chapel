@@ -201,8 +201,6 @@ module BytesStringCommon {
       found += 1;
       result = result[..idx-1] + localReplacement +
                result[(idx + localNeedle.numBytes)..];
-      var tmp_res = result[..idx-1] + localReplacement +
-                    result[(idx + localNeedle.numBytes)..];
 
       startIdx = idx + localReplacement.numBytes;
     }
@@ -512,7 +510,7 @@ module BytesStringCommon {
     return ret;
   }
 
-  proc doEq(a: ?t1, b: ?t2) {
+  inline proc doEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
 

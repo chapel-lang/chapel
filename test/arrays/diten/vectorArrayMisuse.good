@@ -1,1 +1,0 @@
-vectorArrayMisuse.chpl:6: error: halt reached - cannot call push_back on an array defined over a domain with multiple arrays

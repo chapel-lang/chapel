@@ -505,11 +505,41 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
 static bool containsOnlyModules(BlockStmt* block, const char* path);
 static void addModuleToDoneList(ModuleSymbol* module);
 
+//
+// This is a check to see whether we've already parsed this file
+// before to avoid re-parsing the same thing twice which can result in
+// defining its modules twice.
+//
+static bool haveAlreadyParsed(const char* path) {
+  static std::set<std::string> parsedPaths;
+
+  // normalize the path if possible via realpath() and use 'path' otherwise
+  const char* normpath = chplRealPath(path);
+  if (normpath == NULL) {
+    normpath = path;
+  }
+
+  // check whether we've seen this path before
+  if (parsedPaths.count(normpath) > 0) {
+    // if so, indicate it
+    return true;
+  } else {
+    // otherwise, add it to our set and list of paths
+    parsedPaths.insert(normpath);
+    return false;
+  }
+}
+
+
 static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
 
+  // Make sure we haven't already parsed this file
+  if (haveAlreadyParsed(path)) {
+    return NULL;
+  }
 
   if (FILE* fp = openInputFile(path)) {
     gFilenameLookup.push_back(path);
@@ -853,9 +883,12 @@ static const char* searchThePath(const char*      modName,
 
       // 4/28/17 internal/ has an ambiguous duplicate for NetworkAtomicTypes
       } else if (isInternal == false) {
-        USR_WARN("Ambiguous module source file -- using %s over %s",
-                 cleanFilename(retval),
-                 cleanFilename(path));
+        // only generate these warnings if the two paths aren't the same
+        if (strcmp(chplRealPath(retval), chplRealPath(path)) != 0) {
+          USR_WARN("Ambiguous module source file -- using %s over %s",
+                   cleanFilename(retval),
+                   cleanFilename(path));
+        }
       }
     }
   }

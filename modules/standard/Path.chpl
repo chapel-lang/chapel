@@ -720,6 +720,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
+  use Path only;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
 }

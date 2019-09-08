@@ -456,6 +456,166 @@ module String {
   }
 
   //
+  // createString* functions
+  //
+
+  /*
+    Creates a new string which borrows the internal buffer of another string. If
+    the buffer is freed before the string returned from this function, accessing
+    it is undefined behavior.
+
+    :arg s: Object to borrow the buffer from
+    :type s: `string`
+
+    :returns: A new `string`
+  */
+  inline proc createStringWithBorrowedBuffer(s: string) {
+    var ret: string;
+    initWithBorrowedBuffer(ret, s);
+    return ret;
+  }
+
+  /*
+    Creates a new string which borrows the internal buffer of a `c_string`. If
+    the buffer is freed before the string returned from this function, accessing
+    it is undefined behavior.
+
+    :arg s: Object to borrow the buffer from
+    :type s: c_string
+
+    :arg length: Length of the `c_string` in bytes, excluding the terminating
+                 null byte.
+    :type length: int
+
+    :returns: A new `string`
+  */
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  /*
+     Creates a new string which borrows the memory allocated for a
+     `c_ptr(uint(8))`. If the buffer is freed before the string returned from
+     this function, accessing it is undefined behavior.
+
+     :arg s: Object to borrow the buffer from
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+
+     :arg length: Length of the string stored in `s`, excluding the terminating
+                  null byte.
+     :type length: int
+
+     :arg size: Size of memory allocated for `s` in bytes
+     :type length: int
+
+     :returns: A new `string`
+  */
+  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  pragma "no doc"
+  inline proc createStringWithOwnedBuffer(s: string) {
+    // should we allow stealing ownership?
+    compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
+  }
+
+  /*
+    Creates a new string which takes ownership of the internal buffer of a
+    `c_string`. The buffer will be freed when the bytes is deinitialized.
+
+    :arg s: Object to take ownership of the buffer from
+    :type s: `c_string`
+
+    :arg length: Length of the string stored in `s`, excluding the terminating
+                 null byte.
+    :type length: int
+
+    :returns: A new `string`
+  */
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
+    return createStringWithOwnedBuffer(s: bufferType, length=length,
+                                                      size=length+1);
+  }
+
+  /*
+     Creates a new string which takes ownership of the memory allocated for a
+     `c_ptr(uint(8))`. The buffer will be freed when the bytes is deinitialized.
+
+     :arg s: Object to take ownership of the buffer from
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+
+     :arg length: Length of the string stored in `s`, excluding the terminating
+                  null byte.
+     :type length: int
+
+     :arg size: Size of memory allocated for `s` in bytes
+     :type length: int
+
+     :returns: A new `string`
+  */
+  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    initWithOwnedBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  /*
+    Creates a new string by creating a copy of the buffer of another string.
+
+    :arg s: Object to copy the buffer from
+    :type s: `string`
+
+    :returns: A new `string`
+  */
+  inline proc createStringWithNewBuffer(s: string) {
+    var ret: string;
+    initWithNewBuffer(ret, s);
+    return ret;
+  }
+
+  /*
+    Creates a new string by creating a copy of the buffer of a `c_string`.
+
+    :arg s: Object to copy the buffer from
+    :type s: c_string
+
+    :arg length: Length of the `c_string` in bytes, excluding the terminating
+                 null byte.
+    :type length: int
+
+    :returns: A new `string`
+  */
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
+    return createStringWithNewBuffer(s: bufferType, length=length,
+                                                    size=length+1);
+  }
+
+  /*
+     Creates a new string by creating a copy of a buffer.
+
+     :arg s: The buffer to copy
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+
+     :arg length: Length of the string stored in `s`, excluding the terminating
+                  null byte.
+     :type length: int
+
+     :arg size: Size of memory allocated for `s` in bytes
+     :type length: int
+
+     :returns: A new `string`
+  */
+  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+    var ret: string;
+    initWithNewBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  //
   // String Implementation
   //
   // TODO: We should be able to remove "ignore noinit", but doing so causes
@@ -489,6 +649,12 @@ module String {
       string may appear in ``s``. It is the responsibility of the user to
       ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
+     
+      .. warning::
+
+          String initializers are deprecated. Use `createString*` functions,
+          instead.
+        
      */
     proc init(s: string, isowned: bool = true) {
       deprWarning();
@@ -530,6 +696,12 @@ module String {
       record, otherwise it will be used directly. It is the responsibility of
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
+     
+      .. warning::
+
+          String initializers are deprecated. Use `createString*` functions,
+          instead.
+        
      */
     proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
@@ -554,6 +726,12 @@ module String {
       the `c_string` will be copied into the record, otherwise it will be used
       directly. It is the responsibility of the user to ensure that the
       underlying buffer is not freed if the `c_string` is not copied in.
+     
+      .. warning::
+
+          String initializers are deprecated. Use `createString*` functions,
+          instead.
+        
      */
     // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: bufferType, length: int, size: int,
@@ -1037,8 +1215,9 @@ module String {
     }
 
     /*
-      Slice a string. Halts if r is not completely inside the range
-      ``1..string.length``.
+      Slice a string. Halts if r is non-empty and not completely inside the
+      range ``1..string.length`` when compiled with `--checks`. `--fast`
+      disables this check.
 
       :arg r: range of the indices the new string should be made from
 
@@ -1046,7 +1225,7 @@ module String {
                 the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
-    proc this(r: range(?)) : string {
+    inline proc this(r: range(?)) : string {
       return getSlice(this, r);
     }
 
@@ -1084,7 +1263,7 @@ module String {
       :returns: * `true`  -- when the string begins with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc startsWith(needles: string ...) : bool {
+    inline proc startsWith(needles: string ...) : bool {
       return startsEndsWith(this, needles, fromLeft=true);
     }
 
@@ -1094,7 +1273,7 @@ module String {
       :returns: * `true`  -- when the string ends with one or more of the `needles`
                 * `false` -- otherwise
      */
-    proc endsWith(needles: string ...) : bool {
+    inline proc endsWith(needles: string ...) : bool {
       return startsEndsWith(this, needles, fromLeft=false);
     }
 
@@ -1200,7 +1379,7 @@ module String {
                 string, or 0 if the `needle` is not in the string.
      */
     // TODO: better name than region?
-    proc find(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+    inline proc find(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
       return _search_helper(needle, region, count=false): byteIndex;
     }
 
@@ -1213,7 +1392,7 @@ module String {
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
      */
-    proc rfind(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
+    inline proc rfind(needle: string, region: range(?) = 1:byteIndex..) : byteIndex {
       return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
     }
 
@@ -1225,7 +1404,7 @@ module String {
 
       :returns: the number of times `needle` occurs in the string
      */
-    proc count(needle: string, region: range(?) = 1..) : int {
+    inline proc count(needle: string, region: range(?) = 1..) : int {
       return _search_helper(needle, region, count=true);
     }
 
@@ -1240,7 +1419,7 @@ module String {
      */
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
-    proc replace(needle: string, replacement: string, count: int = -1) : string {
+    inline proc replace(needle: string, replacement: string, count: int = -1) : string {
       return doReplace(this, needle, replacement, count);
     }
 
@@ -1348,7 +1527,7 @@ module String {
           writeln(x); // prints: "a|10|d"
      */
 
-    proc join(const ref S: string ...) : string {
+    inline proc join(const ref S: string ...) : string {
       return _join(S);
     }
 
@@ -1360,7 +1539,7 @@ module String {
           var x = "|".join("a","10","d");
           writeln(x); // prints: "a|10|d"
      */
-    proc join(const ref S) : string where isTuple(S) {
+    inline proc join(const ref S) : string where isTuple(S) {
       if !isHomogeneousTuple(S) || !isString(S[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
       return _join(S);
@@ -1374,17 +1553,17 @@ module String {
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
-    proc join(const ref S: [] string) : string {
+    inline proc join(const ref S: [] string) : string {
       return _join(S);
     }
 
     pragma "no doc"
-    proc join(ir: _iteratorRecord): string {
+    inline proc join(ir: _iteratorRecord): string {
       return doJoinIterator(this, ir);
     }
 
     pragma "no doc"
-    proc _join(const ref S) : string where isTuple(S) || isArray(S) {
+    inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
       return doJoin(this, S);
     }
 
@@ -1446,7 +1625,7 @@ module String {
       before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
       the tuple will contain the whole string, and then two empty strings.
     */
-    proc const partition(sep: string) : 3*string {
+    inline proc const partition(sep: string) : 3*string {
       return doPartition(this, sep);
     }
 
@@ -1661,12 +1840,10 @@ module String {
       :returns: A new string with all uppercase characters replaced with their
                 lowercase counterpart.
 
-      Note: At present, this performs a one-to-one character mapping,
-      which is all that the underlying C library supports.  In the future,
-      it may be desirable to explore supporting special-case one-to-many
-      Unicode mappings that may change the length of the string.
-      Since Unicode changes and we would rather not track all the changes
-      ourselves, this would involve adopting an external library.
+      .. note::
+        
+        The case change operation is not currently performed on characters whose
+        cases take different number of bytes to represent in Unicode mapping.
     */
     proc toLower() : string {
       var result: string = this;
@@ -1694,12 +1871,10 @@ module String {
       :returns: A new string with all lowercase characters replaced with their
                 uppercase counterpart.
 
-      Note: At present, this performs a one-to-one character mapping,
-      which is all that the underlying C library supports.  In the future,
-      it may be desirable to explore supporting special-case one-to-many
-      Unicode mappings that may change the length of the string.
-      Since Unicode changes and we would rather not track all the changes
-      ourselves, this would involve adopting an external library.
+      .. note::
+        
+        The case change operation is not currently performed on characters whose
+        cases take different number of bytes to represent in Unicode mapping.
     */
     proc toUpper() : string {
       var result: string = this;
@@ -1728,12 +1903,10 @@ module String {
                 character converted to uppercase, and all cased characters
                 following another cased character converted to lowercase.
 
-      Note: At present, this performs a one-to-one character mapping,
-      which is all that the underlying C library supports.  In the future,
-      it may be desirable to explore supporting special-case one-to-many
-      Unicode mappings that may change the length of the string.
-      Since Unicode changes and we would rather not track all the changes
-      ourselves, this would involve adopting an external library.
+      .. note::
+        
+        The case change operation is not currently performed on characters whose
+        cases take different number of bytes to represent in Unicode mapping.
      */
     proc toTitle() : string {
       var result: string = this;
@@ -1799,60 +1972,6 @@ module String {
     }
 
   } // end record string
-
-  //
-  // createString* functions
-  //
-
-  inline proc createStringWithBorrowedBuffer(s: string) {
-    var ret: string;
-    initWithBorrowedBuffer(ret, s);
-    return ret;
-  }
-
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
-    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
-                                                            size=length+1);
-  }
-
-  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
-    var ret: string;
-    initWithBorrowedBuffer(ret, s, length,size);
-    return ret;
-  }
-
-  inline proc createStringWithOwnedBuffer(s: string) {
-    // should we allow stealing ownership?
-    compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
-  }
-
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
-    return createStringWithOwnedBuffer(s: bufferType, length=length,
-                                                      size=length+1);
-  }
-
-  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
-    var ret: string;
-    initWithOwnedBuffer(ret, s, length, size);
-    return ret;
-  }
-
-  inline proc createStringWithNewBuffer(s: string) {
-    var ret: string;
-    initWithNewBuffer(ret, s);
-    return ret;
-  }
-
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
-    return createStringWithNewBuffer(s: bufferType, length=length,
-                                                    size=length+1);
-  }
-
-  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
-    var ret: string;
-    initWithNewBuffer(ret, s, length, size);
-    return ret;
-  }
 
   //
   // Assignment functions
@@ -2193,6 +2312,11 @@ module String {
   //
   /*
      :returns: The byte value of the first character in `a` as an integer.
+
+      .. warning::
+
+          This method is deprecated. Use `toByte` or `byte` methods,
+          instead.
   */
   inline proc ascii(a: string) : uint(8) {
     compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
@@ -2209,6 +2333,11 @@ module String {
 
   /*
      :returns: A string with the single character with the ASCII value `i`.
+
+      .. warning::
+
+          This method is deprecated. Use `codepointToString` method,
+          instead.
   */
   inline proc asciiToString(i: uint(8)) {
     compilerWarning("asciiToString is deprecated - please use codepointToString instead");

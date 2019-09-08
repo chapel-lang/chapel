@@ -20,6 +20,7 @@
 config const spackVersion = "releases/v0.11.2";
 
 private use List;
+private use Map;
 use MasonUtils;
 use FileSystem;
 use MasonHelp;
@@ -41,6 +42,8 @@ proc masonExternal(args: [] string) {
     else if args[2] == "--setup" {
       if isDir(SPACK_ROOT) then
         throw new owned MasonError("Spack backend is already installed");
+      else if MASON_OFFLINE then
+        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
       else {
         setupSpack();
         exit(0);
@@ -239,7 +242,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
   var exDom: domain(string);
   var exDepTree: [exDom] unmanaged Toml;
 
-  for (name, spec) in zip(exDeps.D, exDeps.A) {
+  for (name, spec) in exDeps.A.items() {
     try! {
       select spec.tag {
           when fieldtag.fieldToml do continue;
@@ -259,6 +262,10 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
             
             var dependencies = getSpkgDependencies(fullSpec);
             const pkgInfo = getSpkgInfo(fullSpec, dependencies);
+
+            if !exDom.contains(name) then
+              exDom += name;
+
             exDepTree[name] = pkgInfo;
           }
         }
@@ -318,7 +325,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        try! dependencies.pop(1);
+        dependencies.pop(1);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.
@@ -370,6 +377,16 @@ proc getSpkgDependencies(spec: string) throws {
 
 /* Install an external package */
 proc installSpkg(args: [?d] string) throws {
+  if hasOptions(args, '-h', '--help') {
+    masonInstallHelp();
+    exit(1);
+  }
+
+  if MASON_OFFLINE && args.count('--update') == 0 {
+    writeln('Cannot install Spack packages when MASON_OFFLINE=true');
+    return;
+  }
+
   if args.size < 4 {
     masonInstallHelp();
     exit(1);

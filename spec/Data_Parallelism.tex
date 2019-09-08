@@ -261,24 +261,29 @@ writeln(result);
 
 If a variable is referenced within the lexical scope of a
 forall statement or expression and is declared outside
-that statement or expression, it is subject to \emph{forall intents},
+that forall construct, it is subject to \emph{forall intents},
 analogously to task intents (\rsec{Task_Intents})
 for task-parallel constructs. That is, the variable is considered
 to be passed as an actual argument to
 each task function created by the object or iterator leading
 the execution of the loop. If no tasks are created,
 it is considered to be an actual argument to the leader or standalone
-iterator itself. All references to the variable
-within the forall statement or expression implicitly refer
-to a \emph{shadow variable}, i.e.
+iterator itself. All references to the variable within the forall construct
+implicitly refer to a \emph{shadow variable}, i.e.
 the corresponding formal argument of the task function
 or the leader/standalone iterator.
+
+When the forall construct is inside a method on a record and accesses
+a field of \chpl{this}, the field is treated as a regular variable.
+That is, it is subject to forall intents and all references to this field
+within the forall construct implicitly refer to the corresponding
+shadow variable.
 
 Each formal argument of a task function or iterator has the default
 intent by default.  For variables of primitive, enum, and class
 types, this has the effect of capturing the value of the
 variable at task creation time.  Within the lexical scope of the
-forall statement or expression, the variable name references the
+forall construct, the variable name references the
 captured value instead of the original value.
 
 A formal can be given another intent explicitly by listing it

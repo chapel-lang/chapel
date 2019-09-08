@@ -132,7 +132,7 @@ prototype module LockFreeStack {
         n.next = oldTop;
         if shouldYield then chpl_task_yield();
         shouldYield = true;
-      } while (!_top.compareExchange(oldTop, n));
+      } while (!_top.compareAndSwap(oldTop, n));
       tok.unpin();
     }
 
@@ -150,7 +150,7 @@ prototype module LockFreeStack {
         var newTop = oldTop.next;
         if shouldYield then chpl_task_yield();
         shouldYield = true;
-      } while (!_top.compareExchange(oldTop, newTop));
+      } while (!_top.compareAndSwap(oldTop, newTop));
       var retval = oldTop.val;
       tok.deferDelete(oldTop);
       tok.unpin();
