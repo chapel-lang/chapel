@@ -3194,7 +3194,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
           }
 
           // TODO: we could try e.g. removing the bad call
-          // and checking other funtions instead of giving up here.
+          // and checking other functions instead of giving up here.
           USR_STOP();
 
         } else {
