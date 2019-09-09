@@ -541,13 +541,13 @@ and write its output to ``bar-10000.dat``.
 Comparing to a C version
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To compare a C version of a test to a Chapel version, the C version of
-the test must end with the suffix ``.test.c``.  Since ``.dat`` files must have
-unique names, the base name for the C test should vary from the Chapel
-equivalent.  For example, I might name the C version of the ``foo.chpl``
-performance test ``foo-c.test.c``.  Like any other test, the C test needs
-a ``.good`` file for correctness testing and a ``.perfkeys`` file for
-performance testing.
+To compare a C version of a test to a Chapel version, the C version of the test
+must end with the suffix ``.test.c`` for single locale tests and ``.ml-test.c``
+for multilocale tests.  Since ``.dat`` files must have unique names, the base
+name for the C test should vary from the Chapel equivalent.  For example, I
+might name the C version of the ``foo.chpl`` performance test ``foo-c.test.c``.
+Like any other test, the C test needs a ``.good`` file for correctness testing
+and a ``.perfkeys`` file for performance testing.
 
 C versions do not have to be performance tests, but this is their most common
 use case.
@@ -820,8 +820,10 @@ File                Contents of file
 **correctness**
 -------------------------------------------------------------------------------
 foo.chpl            Chapel test program to compile and run
-foo.test.c          C test program to compile and run. See `Comparing to a C
-                    version`_ for more information
+foo.test.c          Single locale C test program to compile and run. See
+                    `Comparing to a C version`_ for more information
+foo.ml-test.c       Multilocale C test program to compile and run.  See
+                    `Comparing to a C version`_ for more information
 foo.good            expected output of test program
 ..
 -------------------------------------------------------------------------------
@@ -836,8 +838,8 @@ EXECOPTS            directory-wide runtime flags
 foo.execenv         line separated list of environment variables settings.  See
                     `Environment Variables`_ for more information
 EXECENV             directory-wide environment variables
-foo.numlocales      number of locales to use in multi-locale run
-NUMLOCALES          directory-wide number of locales to use in multi-locale run
+foo.numlocales      number of locales to use in multilocale run
+NUMLOCALES          directory-wide number of locales to use in multilocale run
 ..
 -------------------------------------------------------------------------------
 **Helper files**
