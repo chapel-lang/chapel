@@ -568,7 +568,7 @@ Using Your Library in Multilocale Settings
 Prerequisites
 -------------
 
-Chapel also supports ``--library`` when ``CHPL_COMM = gasnet``.  We intend to
+Chapel also supports ``--library`` when ``CHPL_COMM != none``.  We intend to
 support other settings in the future, see :ref:`Other Settings` in the
 :ref:`Multilocale Caveats` section for more information.
 
@@ -782,7 +782,6 @@ Other Settings
 
 The following settings are not yet supported for ``--library`` compilation:
 
-- ``CHPL_COMM = ugni``
 - ``--no-local``
 - ``CHPL_COMM = none`` when ``CHPL_LAUNCHER != none``
 
