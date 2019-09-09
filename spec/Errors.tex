@@ -115,7 +115,7 @@ A \chpl{try} or \chpl{try!} block can have one or more \chpl{catch} clauses.
 A \chpl{catch} clause can specify the variable that refers to the caught
 error within the \chpl{catch} block. If the variable is given a type,
 for example \chpl{catch e:SomeError}, it is a \emph{type filter}.
-The corresponding the \chpl{catch} clause \emph{matches} the errors
+The corresponding \chpl{catch} clause \emph{matches} the errors
 that are of the class \chpl{SomeError} or its subclass. If no type
 filter is present on a catch clause, or if no variable is present at
 all, then it is a \emph{catchall} clause, which matches all errors.
@@ -183,7 +183,7 @@ proc catchingErrorsHalt() {
 \subsubsection{Nested try}
 \label{Nested_try}
 
-If an error is thrown within a \chpl{try!} block and none of its
+If an error is thrown within a \chpl{try} block and none of its
 \chpl{catch} clauses, if any, match that error, the error
 is directed to the enclosing \chpl{try} block, when present.
 
@@ -486,7 +486,7 @@ proc handleFromBegin() {
 \label{Errors_coforall_and_cobegin}
 
 Errors can be thrown from \chpl{coforall} and \chpl{cobegin}
-statements, handled as \chpl{TaskErrors}. The nested \chpl{coforall}
+statements and handled as \chpl{TaskErrors}. The nested \chpl{coforall}
 loops will emit a flattened \chpl{TaskErrors} error.
 
 \begin{chapelexample}{handle-from-coforall.chpl}
@@ -586,7 +586,7 @@ use SysError;
 
 class DemoError : Error { }
 
-class DemoSysError : SysError { }
+class DemoSysError : SystemError { }
 \end{chapel}
 \begin{chapelpost}
 \end{chapelpost}
