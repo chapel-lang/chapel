@@ -215,7 +215,7 @@ module CommDiagnostics
      */
     var try_nb: uint(64);
     /*
-      AMOs
+      atomic memory operations
      */
     var amo: uint(64);
     /*
