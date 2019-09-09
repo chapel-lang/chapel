@@ -322,7 +322,7 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
 //
 //   def  new_temp  : string; // defTemp
 //
-//   call createStringWithBorrowedBuffer(ret, c"literal", ...); // factoryCall
+//   call createStringWithBorrowedBuffer(new_temp,c"literal",...); //factoryCall
 //
 //   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
 //
