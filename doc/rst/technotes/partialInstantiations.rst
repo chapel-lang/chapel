@@ -41,15 +41,15 @@ accepts arguments for the remaining generic fields. For example:
 
   // B's type constructor accepts two arguments for fields 'Y' and 'p'
   type B = R(int); // instantiate field 'X'
-  writeln(B:string); // "R(int)"
+  writeln(B:string); // "R(int(64))"
 
   // C's type constructor accepts one argument for field 'Y'
   type C = B(p=5); // instantiate field 'p'
-  writeln(C:string); // "R(int, p=5)"
+  writeln(C:string); // "R(int(64),p=5)"
 
   // D is a fully instantiated type and has no type constructor
   type D = C(real); // instantiate field 'Y'
-  writeln(D:string); // "R(int, real, p=5)"
+  writeln(D:string); // "R(int(64),real(64),p=5)"
 
 A generic field might depend on a previously declared field to describe its
 type. In such cases the later generic field may not be instantiated before
