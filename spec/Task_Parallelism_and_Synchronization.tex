@@ -556,25 +556,15 @@ Stores \chpl{v} as the new value and returns the original
 value. Defined for all atomic types.
 \end{protobody}
 
-\index{compareExchangWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
-\index{predefined functions!compareExchangeWeak (atomic var)@\chpl{compareExchangeWeak} (atomic var)}
-\index{compareExchangStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)}
-\index{predefined functions!compareExchangeStrong (atomic var)@\chpl{compareExchangeStrong} (atomic var)}
-\index{compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
-\index{predefined functions!compareExchange (atomic var)@\chpl{compareExchange} (atomic var)}
+\index{compareAndSwap (atomic var)@\chpl{compareAndSwap} (atomic var)}
+\index{predefined functions!compareAndSwap (atomic var)@\chpl{compareAndSwap} (atomic var)}
 \begin{protohead}
-proc (atomic T).compareExchangeWeak(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
-proc (atomic T).compareExchangeStrong(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
-proc (atomic T).compareExchange(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
+proc (atomic T).compareAndSwap(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
 \end{protohead}
 \begin{protobody}
 Stores \chpl{v} as the new value, if and only if the original value is
 equal to \chpl{e}. Returns \chpl{true} if \chpl{v} was
-stored, \chpl{false} otherwise. The 'weak' variation may
-return \chpl{false} even if the original value was equal to \chpl{e},
-if, for example, the value could not be updated
-atomically. \chpl{compareExchange} is equivalent to
-\chpl{compareExchangeStrong}.  Defined for all atomic types.
+stored, \chpl{false} otherwise.  Defined for all atomic types.
 \end{protobody}
 
 \index{add (atomic var)@\chpl{add} (atomic var)}
