@@ -225,11 +225,11 @@ produces the output
 \label{Formal_Arguments_of_Generic_Type}
 \index{formal arguments!generic}
 
-If the type of a formal argument is a generic type, the type of the
-formal argument is taken to be the type of the actual argument passed
-to the function at the call site with the constraint that the type of
-the actual argument is an instantiation of the generic type. A copy
-of the function is instantiated for each unique actual type.
+If the type of a formal argument is a generic type, there must exist
+an instantiation of that type that the actual argument can be implicitly
+coerced to (\rsec{Implicit_Conversions}).
+A copy of the function is instantiated for each unique instantiation of
+the formal's type.
 \begin{example}
 The following code defines a function \chpl{writeTop} that takes an
 actual argument that is a generic stack
