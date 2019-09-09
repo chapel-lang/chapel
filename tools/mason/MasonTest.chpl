@@ -162,7 +162,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const masonCompopts = getMasonDependencies(sourceList, testName);
         const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
 
-        const moveTo = "-o " + projectHome + "/target/test/" + testName;
+        const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
+        const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand);
         
@@ -172,7 +173,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         else {
           if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
-            runTestBinary(projectHome, testName, result, show);
+            runTestBinary(projectHome, outputLoc, testName, result, show);
           }
         }
       }
@@ -196,8 +197,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 }
 
 
-private proc runTestBinary(projectHome: string, testName: string, ref result, show: bool) {
-  const command = "".join(projectHome,'/target/test/', testName);
+private proc runTestBinary(projectHome: string, outputLoc: string, testName: string, 
+                        ref result, show: bool) {
+  const command = outputLoc;
   var testNames: list(string),
       failedTestNames: list(string),
       erroredTestNames: list(string),
@@ -226,8 +228,9 @@ private proc runTestBinaries(projectHome: string, testNames: list(string),
                              numTests: int, ref result, show: bool) {
 
   for test in testNames {
+    const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
     const testName = basename(stripExt(test, ".chpl"));
-    runTestBinary(projectHome, testName, result, show);
+    runTestBinary(projectHome, outputLoc, testName, result, show);
   }
 }
 

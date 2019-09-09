@@ -6,6 +6,6 @@ FAIL shallnotpass.chpl: shallnotpass
 ----------------------------------------------------------------------
 shallnotpass returned exitCode = 255
 ----------------------------------------------------------------------
-Run 6 tests in n seconds
+Ran 6 tests in n seconds
 
 FAILED (passed = 5 failures = 1 )
