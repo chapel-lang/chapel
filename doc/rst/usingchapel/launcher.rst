@@ -33,7 +33,8 @@ The goals of the launcher binary are:
    I/O.
 
 Executing a Chapel program using the verbose (``-v``) flag will typically
-print out the command(s) used to launch the program.
+print out the command(s) used to launch the program, along with any
+environment variables the launcher set on its behalf.
 
 Executing using the help (``-h``/``--help``) flag will typically print out
 any launcher-specific options in addition to the normal help message for
