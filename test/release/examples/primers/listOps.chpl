@@ -11,7 +11,11 @@
 private use List;
 
 /*
-  Declare a list of ``int(64)`` and initialize it with the values ``1..8``.
+  We'll start by declaring a list of ``int(64)`` and initializing it with the
+  values contained in the range `1..8`.
+
+  After initialization, we can zip `lst1`  against the range to make sure
+  that the initializer did what it promised to do.
 */
 
 const r = 1..8;
@@ -22,11 +26,9 @@ assert(!lst1.isEmpty());
 for (x, y) in zip(r, lst1) do
   assert(x == y);
 
-writeln("List 1 contains: ", lst1);
+writeln("List 1 after init: ", lst1);
 
 /*
-  Great, looks like everything checks out.
-
   The most common operation performed on a list is ``list.append``. The
   following code appends some integers to the end of our list.
 */
@@ -34,19 +36,19 @@ writeln("List 1 contains: ", lst1);
 for i in r do
   lst1.append(i);
 
-writeln("List 1 contains: ", lst1);
+writeln("List 1 after appends: ", lst1);
 
 /*
-  If we set the ``list.parSafe`` value of our list to `true`, then we can
-  safely append elements to it in parallel. The ``parSafe`` value of a list
-  can only be set during initialization, so let's make a new list to test
+  If the ``list.parSafe`` value of a list is set to `true`, then elements may
+  be safely appended to it in parallel. The ``parSafe`` value of a list can
+  only be set during initialization, so we have to make a new list to test
   it out.
 */
 
 var lst2: list(int, parSafe=true);
 
 /*
-  Let's simulate adding elements to our new list in parallel.
+  Now we can simulate adding elements to our new list in parallel.
 */
 
 coforall tid in 0..3 with (ref lst2) do
@@ -60,7 +62,7 @@ assert(!lst2.isEmpty() && lst2.size == 32);
 /*
   Tasks spawned in a forall loop aren't guaranteed to execute in a fixed
   order. The contents of `lst2` might be out of order even though our loop
-  size is small (4 tasks).
+  size is small (only 4 tasks).
 
   We can call ``list.sort`` on our list to be on the safe side.
 */
@@ -70,7 +72,7 @@ lst2.sort();
 writeln("List 2 sorted: ", lst2);
 
 /*
-  Let's create another new list with elements that are copied from `lst2`.
+  We can create another new list with elements that are copied from `lst2`.
   The contents of the two lists should be identical.
 */
 
@@ -82,9 +84,9 @@ for (x, y) in zip(lst2, lst3) do
   assert(x == y);
 
 /*
-  Before we zip `lst2` and `lst3` together, we should vary their contents
-  a little bit. Let's ``list.pop`` the first 16 elements from `lst2` and
-  ``list.append`` them to `lst3`.
+  Before zippering `lst2` and `lst3` together, it would be good to vary their
+  contents a little bit. Let's ``list.pop`` the first 16 elements from `lst2`
+  and ``list.append`` them to `lst3`.
 
   .. note::
   
@@ -101,8 +103,11 @@ while count < 16 {
   count += 1;
 }
 
+writeln("List 2 after pops: ", lst2);
+writeln("List 3 after appends: ", lst3);
+
 /*
-  Now, let's ensure `lst2` and `lst3` have unique values. The ``list.remove``
+  Let's ensure `lst2` and `lst3` have unique values. The ``list.remove``
   method takes a secondary argument specifying how many instances of a given
   element to remove. The value `0` will remove every instance of an element
   from a list. The default value removes a single instance.
@@ -115,15 +120,16 @@ for elem in lst2 do
 
 assert(removed == 16);
 
+writeln("List 3 after removes: ", lst3);
 
 /*
-  Our third list still has some duplicates in it. Let's remove those
-  duplicates.
+  It seems like `lst3` still has some duplicates in it. Let's remove those
+  duplicates with a combination of ``list.remove`` and ``list.count``.
 */
 
 var uniqued = false;
 
-while !uniqued {
+while !uniqued do
   for elem in lst3 {
     const count = lst3.count(elem);
     if count > 1 {
@@ -132,7 +138,6 @@ while !uniqued {
     }
     uniqued = true;
   }
-}
 
 for elem in lst3 {
   const count = lst3.count(elem);
@@ -141,8 +146,7 @@ for elem in lst3 {
 
 assert(lst2.size == lst3.size);
 
-writeln("List 2 contains: ", lst2);
-writeln("List 3 contains: ", lst3);
+writeln("List 3 after removing duplicates: ", lst3);
 
 /*
   Come to think of it, `lst1` is just wasting memory at this point. Let's
@@ -150,6 +154,8 @@ writeln("List 3 contains: ", lst3);
 */
 
 lst1.clear();
+
+writeln("List 1 after clear: ", lst1);
 
 /*
   Great. Now we can zipper our two lists together. Let's double check our work
@@ -177,7 +183,7 @@ assert(lst1.isEmpty());
 lst1.extend(lst2);
 lst1.extend(lst3);
 
-writeln("List 1 contains: ", lst1);
+writeln("List 1 after extends: ", lst1);
 
 /*
    Whoops. It looks like the contents of `lst1` are backwards. We could call
@@ -196,7 +202,7 @@ for i in 1..(lst1.size / 2) {
   a <=> b;
 }
 
-writeln("List 1 contains: ", lst1);
+writeln("List 1 after correction: ", lst1);
 
 /*
   If you need to get the specific index of an element contained in a list,
