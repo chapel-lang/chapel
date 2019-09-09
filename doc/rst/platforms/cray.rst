@@ -490,7 +490,7 @@ following operations on remote atomics are done using the network::
       read()
       write()
       exchange()
-      compareExchange()
+      compareAndSwap()
       add(), fetchAdd()
       sub(), fetchSub()
 
