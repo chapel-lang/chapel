@@ -490,7 +490,7 @@ module String {
     :returns: A new `string`
   */
   proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
-    //NOTE: This functions is heavily used by the compiler to create string
+    //NOTE: This function is heavily used by the compiler to create string
     //literals. So, inlining this causes some bloat in the AST that increases
     //the compilation time slightly. Therefore, currently we are keeping this
     //one non-inlined.
