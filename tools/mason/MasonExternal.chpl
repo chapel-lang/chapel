@@ -105,7 +105,7 @@ private proc listSpkgs() {
   const status = runSpackCommand(command);
 }
 
-/* Queries spack for package existance */
+/* Queries spack for package existence */
 private proc searchSpkgs(args: [?d] string) {
   if args.size < 4 {
     listSpkgs();
@@ -282,7 +282,7 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 /* Retrieves build information for MasonUpdate */
 proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
 
-  // put above try b/c compiler comlains about return value
+  // put above try b/c compiler complains about return value
   var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
   var spkgToml: [spkgDom] unmanaged Toml;

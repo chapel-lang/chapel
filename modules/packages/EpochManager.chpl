@@ -22,7 +22,7 @@
   Epoch-Based Memory Reclamation
   ------------------------------
 
-  In Epoch-Based Memory Reclamation, the lifetime of an arbirary number
+  In Epoch-Based Memory Reclamation, the lifetime of an arbitrary number
   of objects are represented in terms of an *epoch*. While inside of an epoch,
   there is a guarantee that no object that is reachable will be reclaimed. To
   ensure this guarantee, objects are marked for deletion first prior to actually
@@ -42,7 +42,7 @@
     and that all deletion is handled through the ``EpochManager`` API.
 
   There are two variants of the EpochManager, the ``LocalEpochManager``, which is optimized
-  for shared-memory, and the ``EpochManager``, which is optimized for disributed memory.
+  for shared-memory, and the ``EpochManager``, which is optimized for distributed memory.
   The ``LocalEpochManager`` is a shared-memory variant that is implemented entirely as
   a class that enables the user to specify their own lifetime management as you would with
   any other class. The ``EpochManager`` on the other hand, is a ``record`` that is 
@@ -81,7 +81,7 @@
 
     forall i in 1..N with (var token = manager.register()) {
       token.pin();          
-      token.deferDelete(new unmanged object());
+      token.deferDelete(new unmanaged object());
       token.unpin();  
     }  
 

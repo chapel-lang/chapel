@@ -421,12 +421,12 @@ module UnitTest {
         }
         if len1 > len2 {
           var size_diff = len1 - len2;
-          tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff:string +" additionl elements.\n";
+          tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
           tmpString += "First extra element is at index "+(len2+1):string+"\n'"+seq1[len2+1]:string+"'\n";
         }
         else if len1 < len2 {
           var size_diff = len2 - len1;
-          tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff:string +" additionl elements.\n";
+          tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
           tmpString += "First extra element is at index "+(len1+1):string+"\n'"+seq2[len1+1]:string+"'\n";
         }
       }
@@ -585,7 +585,7 @@ module UnitTest {
     }
 
     pragma "no doc"
-    /*checks the type of the arguments and then do greater than comaprison */
+    /*checks the type of the arguments and then do greater than comparison */
     proc checkGreater(first, second) throws {
       type firstType = first.type,
           secondType = second.type;
@@ -789,7 +789,7 @@ module UnitTest {
     }
     
     pragma "no doc"
-    /*checks the type of the arguments and then do less than comaprison */
+    /*checks the type of the arguments and then do less than comparison */
     proc checkLessThan(first, second) throws {
       type firstType = first.type,
           secondType = second.type;

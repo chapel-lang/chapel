@@ -926,7 +926,7 @@ the code review is done, make sure the text is still accurate.
 Final merge message
 +++++++++++++++++++
 
-When merging, copy and paste the PR description into the GitHub merge dialogue
+When merging, copy and paste the PR description into the GitHub merge dialog
 box. Ensure that the title of the PR is at the top.
 
 It is good practice to @-mention the reviewer(s) at the end of the PR.

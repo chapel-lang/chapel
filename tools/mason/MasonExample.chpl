@@ -387,7 +387,7 @@ proc exampleModified(projectHome: string, projectName: string,
       return true;
   }
   else {
-    // check for binary existance
+    // check for binary existence
      if isFile(exampleBinPath) {
       // check for changes to example
        const exModTime = getLastModified(joinPath(examplePath, exampleName));

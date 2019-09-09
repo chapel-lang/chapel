@@ -158,7 +158,7 @@ module Map {
     }
 
     /*
-      Updates this map with the contents of the other, overwritting the values
+      Updates this map with the contents of the other, overwriting the values
       for already-existing keys.
 
       :arg m: The other map

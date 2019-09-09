@@ -75,14 +75,14 @@ First differing element at index 3:
 '8'
 '6'
 
-First Array contains 1 additionl elements.
+First Array contains 1 additional elements.
 First extra element is at index 5
 '8'
 
 ================================================================================
 Error Caught in Unequal 1D Array Type 3
 AssertionError: Arrays differ: '[1, 7, 6, 5, 8]' != '[1, 7, 6]'
-First Array contains 2 additionl elements.
+First Array contains 2 additional elements.
 First extra element is at index 4
 '5'
 

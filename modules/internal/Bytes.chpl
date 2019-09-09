@@ -571,7 +571,7 @@ module Bytes {
     }
 
     /*
-      Counts the number of occurences of the argument in the :record:`bytes`
+      Counts the number of occurrences of the argument in the :record:`bytes`
 
       :arg needle: The :record:`bytes` to search for
 
@@ -656,7 +656,7 @@ module Bytes {
     }
 
     /*
-      Replaces occurences of a :record:`bytes` with another.
+      Replaces occurrences of a :record:`bytes` with another.
 
       :arg needle: The :record:`bytes` to search for
 
@@ -675,7 +675,7 @@ module Bytes {
     }
 
     /*
-      Splits the :record:`bytes` on `sep` yielding the subbytes between each
+      Splits the :record:`bytes` on `sep` yielding the bytes between each
       occurrence, up to `maxsplit` times.
 
       :arg sep: The delimiter used to break the :record:`bytes` into chunks.
@@ -886,7 +886,7 @@ module Bytes {
     /*
       Splits the :record:`bytes` on a given separator
 
-      :arg sep: The seperator
+      :arg sep: The separator
 
       :returns: a :record:`3*bytes` consisting of the section before `sep`,
                 `sep`, and the section after `sep`. If `sep` is not found, the
@@ -937,7 +937,7 @@ module Bytes {
         var maxbytes = (localThis.len - thisIdx): ssize_t;
         qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
 
-        if cp == 0xfffd {  //decoder returns the replacament character
+        if cp == 0xfffd {  //decoder returns the replacement character
           if errors == decodePolicy.strict {
             throw new owned DecodeError();
           }

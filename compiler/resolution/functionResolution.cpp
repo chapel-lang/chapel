@@ -1221,7 +1221,7 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
   return false;
 }
 
-// Can we instatiate or coerce or both?
+// Can we instantiate or coerce or both?
 bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
                                       ClassTypeDecorator formal,
                                       bool allowNonSubtypes,
@@ -2589,7 +2589,7 @@ static void adjustClassCastCall(CallExpr* call)
   //  * borrowed SomeClass
   //  * unmanaged
   //  * owned
-  // This section just handles merging the decortators.
+  // This section just handles merging the decorators.
   // Casts from owned etc. to owned are still also handled in module code.
   // Down-casting is handled in the module code as well.
   if (isClassLikeOrManaged(valueType) && isClassLikeOrManaged(targetType)) {
@@ -3194,7 +3194,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
           }
 
           // TODO: we could try e.g. removing the bad call
-          // and checking other funtions instead of giving up here.
+          // and checking other functions instead of giving up here.
           USR_STOP();
 
         } else {
