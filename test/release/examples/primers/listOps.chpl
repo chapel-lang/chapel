@@ -1,17 +1,17 @@
 // List Operations
 
-//
-// The Chapel :mod:`List` module provides the implementation of the ``list``
-// type. Lists are useful for building up and iterating over a collection
-// of elements in a structured manner.
-//
+/*
+  .. default-domain:: chpl
+
+  The Chapel :mod:`List` module provides the implementation of the ``list``
+  type. Lists are useful for building up and iterating over a collection
+  of elements in a structured manner.
+*/
 
 private use List;
 
 /*
   Declare a list of ``int(64)`` and initialize it with the values ``1..8``.
-  After that, we make sure the initializer did what it was supposed to
-  do!
 */
 
 const r = 1..8;
@@ -25,6 +25,8 @@ for (x, y) in zip(r, lst1) do
 writeln("List 1 contains: ", lst1);
 
 /*
+  Great, looks like everything checks out.
+
   The most common operation performed on a list is ``list.append``. The
   following code appends some integers to the end of our list.
 */
@@ -37,14 +39,14 @@ writeln("List 1 contains: ", lst1);
 /*
   If we set the ``list.parSafe`` value of our list to `true`, then we can
   safely append elements to it in parallel. The ``parSafe`` value of a list
-  can only be during initialization, so let's make a new list to test it
-  out.
+  can only be set during initialization, so let's make a new list to test
+  it out.
 */
 
 var lst2: list(int, parSafe=true);
 
 /*
-  Let's simulate adding a lot of elements to our new list in parallel.
+  Let's simulate adding elements to our new list in parallel.
 */
 
 coforall tid in 0..3 with (ref lst2) do
