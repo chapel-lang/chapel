@@ -225,6 +225,10 @@ proc dgemm(LreplA, LreplB, LAb) {
     }
 }
 
+delete bdim1;
+delete rdim1;
+delete bdim2;
+delete rdim2;
 
 /////////////////////////////////////////////////////////////////////////////
 

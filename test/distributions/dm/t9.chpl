@@ -148,3 +148,7 @@ tl();
 //privTest(dmarr, (1,0), (3,1), 0);
 //privTest(dmarr, (1,1), (3,3), 0);
 //tl();
+
+delete vdf;
+delete sdf;
+delete ddf;
