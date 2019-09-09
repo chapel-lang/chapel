@@ -1,87 +1,88 @@
 // List Operations
 
 //
-// This primer is about list operations
+// The Chapel :mod:`List` module provides the implementation of the ``list``
+// type. Lists are useful for building up and iterating over a collection
+// of elements in a structured manner.
 //
 
-//
-// [What are lists? What are they good for?]
-//
+private use List;
 
 /*
   Declare a list of ``int(64)`` and initialize it with the values ``1..8``.
-  After that, let's make sure the initializer did what it was supposed to
+  After that, we make sure the initializer did what it was supposed to
   do!
 */
+
 const r = 1..8;
 var lst1: list(int) = r;
 
-for (x, y) in zip(r, lst) do
-  assert(x == y);
-
 assert(!lst1.isEmpty());
 
-writeln("List 1 was initialized to: ", lst1);
+for (x, y) in zip(r, lst1) do
+  assert(x == y);
+
+writeln("List 1 contains: ", lst1);
 
 /*
-  The most common operation performed on a list is an ``append``. The
+  The most common operation performed on a list is ``list.append``. The
   following code appends some integers to the end of our list.
 */
-for i in 1..8 do
+
+for i in r do
   lst1.append(i);
 
 writeln("List 1 contains: ", lst1);
 
 /*
-  We've added the same values to our list twice. It would be convenient if we
-  could empty our list before continuing the primer. We can do that with the
-  ``clear`` method.
+  If we set the ``list.parSafe`` value of our list to `true`, then we can
+  safely append elements to it in parallel. The ``parSafe`` value of a list
+  can only be during initialization, so let's make a new list to test it
+  out.
 */
-lst1.clear();
 
-assert(lst1.isEmpty());
-writeln("List 1 contains: ", lst1);
-
-/*
-  If we set the ``parSafe`` value of our list to `true`, then we can safely
-  append elements to it in parallel.
-*/
-lst1.parSafe = true;
+var lst2: list(int, parSafe=true);
 
 /*
-  Let's simulate adding a lot of elements to a list in parallel.
+  Let's simulate adding a lot of elements to our new list in parallel.
 */
-coforall tid in 1..4 do
-  forall i in 1..8 with (ref lst1) {
-    const elem = tid * i;
-    lst1.append(i);
+
+coforall tid in 0..3 with (ref lst2) do
+  for i in r {
+    const elem = tid * 8 + i;
+    lst2.append(elem);
   }
 
-assert(!lst1.isEmpty() && lst1.size == 32);
-
-writeln("List 1 contains: " lst1);
+assert(!lst2.isEmpty() && lst2.size == 32);
 
 /*
-  Odds are very good that our new list is out of order. Let's fix that with
-  a sort.
+  Tasks spawned in a forall loop aren't guaranteed to execute in a fixed
+  order. The contents of `lst2` might be out of order even though our loop
+  size is small (4 tasks).
+
+  We can call ``list.sort`` on our list to be on the safe side.
 */
-lst1.sort();
+
+lst2.sort();
+
+writeln("List 2 sorted: ", lst2);
 
 /*
-  Lists can be zipped together in ``forall`` loops. Before we can do that,
-  though, we need to make a second list.
-
-  .. note::
-  
-    Lists have a ``parSafe`` value of `false` by default. To be consistent
-    with our other list, we explicitly initialize `lst2` with a ``parSafe``
-    value of `true`.
+  Let's create another new list with elements that are copied from `lst2`.
+  The contents of the two lists should be identical.
 */
-var lst2: list(int, true);
+
+var lst3 = lst2;
+
+assert(lst2.size == lst3.size);
+
+for (x, y) in zip(lst2, lst3) do
+  assert(x == y);
 
 /*
-  Now let's pop the first half of `lst1` into `lst2`. All lists use one-based
-  indexing, so to pop the first element we'd say `lst1.pop(1)`.
+  Before we zip `lst2` and `lst3` together, we should vary their contents
+  a little bit. Let's ``list.pop`` the first 16 elements from `lst2` and
+  ``list.append`` them to `lst3`.
 
   .. note::
   
@@ -89,140 +90,128 @@ var lst2: list(int, true);
     the front of a list, all the other elements after it have to be shifted
     one to the left.
 */
-var halfSize: int = list.size / 2;
 
-while lst1.size > halfSize {
-  const elem = lst1.pop(1);
-  lst2.append(elem);
+var count = 0;
+
+while count < 16 {
+  const elem = lst2.pop(1);
+  lst3.append(elem);
+  count += 1;
 }
 
-assert(lst1.size == lst2.size);
+/*
+  Now, let's ensure `lst2` and `lst3` have unique values. The ``list.remove``
+  method takes a secondary argument specifying how many instances of a given
+  element to remove. The value `0` will remove every instance of an element
+  from a list. The default value removes a single instance.
+*/
 
-writeln("List 1 contains: ", lst1);
-writeln("List 2 contains: ", lst2);
+var removed = 0;
+
+for elem in lst2 do
+  removed += lst3.remove(elem, 0);
+
+assert(removed == 16);
+
 
 /*
-  Great. Now we can zipper our two lists together.
+  Our third list still has some duplicates in it. Let's remove those
+  duplicates.
+*/
+
+var uniqued = false;
+
+while !uniqued {
+  for elem in lst3 {
+    const count = lst3.count(elem);
+    if count > 1 {
+      lst3.remove(elem, count - 1);
+      break;
+    }
+    uniqued = true;
+  }
+}
+
+for elem in lst3 {
+  const count = lst3.count(elem);
+  assert(count == 1);
+}
+
+assert(lst2.size == lst3.size);
+
+writeln("List 2 contains: ", lst2);
+writeln("List 3 contains: ", lst3);
+
+/*
+  Come to think of it, `lst1` is just wasting memory at this point. Let's
+  go ahead and clear it using ``list.clear``.
+*/
+
+lst1.clear();
+
+/*
+  Great. Now we can zipper our two lists together. Let's double check our work
+  and make sure that our two lists really share no elements in common.
 
   .. note::
 
     List iterators are not thread safe. They implicitly assume that their list
-    is not being modified while iteration is happening, and it is the user's
+    is not being modified while iteration is occurring, and it is the user's
     responsibility to abide by this assumption.
 */
-forall (x, y) in zip(lst1, lst2) {
 
-
+forall (x, y) in zip(lst2, lst3) {
+  assert(!lst3.contains(x));
+  assert(!lst2.contains(y));
 }
 
+/*
+  We can use the ``list.extend`` method to merge the contents of our lists
+  together. Since `lst1` is now empty, we can reuse it to save space.
+*/
 
-//
-// Look at the first and last array elements without modifying the array
-//
-writeln("The first and last elements in A are: ", (A.head(), A.tail()));
+assert(lst1.isEmpty());
 
-//
-// Remove the two elements added earlier with ``push_front`` and ``push_back``.
-// The domain will become ``{1..5}`` again.
-//
-A.pop_front();
-assert(A.domain == {1..6});
-A.pop_back();
-assert(A.domain == {1..5});
+lst1.extend(lst2);
+lst1.extend(lst3);
 
-writeln("After popping the two elements pushed previously A is: ", A);
+writeln("List 1 contains: ", lst1);
 
-//
-// Insert values ``10``, ``11`` and ``12`` at indices ``4``, ``3``, and ``2``.
-// The domain will grow by 3 to become ``{1..8}`` and the array elements above
-// the inserted positions will be shifted up.
-//
-A.insert(4, 10);
-A.insert(3, 11);
-A.insert(2, 12);
-assert(A.domain == {1..8});
-writeln("After inserting some new values, A is: ", A);
+/*
+   Whoops. It looks like the contents of `lst1` are backwards. We could call
+   ``list.sort`` to fix this problem...or we fix the contents of the list
+   ourselves!
 
+   .. note::
 
-//
-// The method ``find`` searches the array for the argument.  It returns a tuple
-// containing a bool and an index. If the returned bool is ``true``, the
-// argument was found at the returned index.  If the bool is ``false``, the
-// value was not found and the index is unspecified.
-//
-var (found, idx) = A.find(10);
-if found then
-  writeln("Found 10 at index: ", idx);
-else
-  writeln("Didn't find 10");
+    The ``list.this`` subscripting operator will cause the currently running
+    program to halt if the index requested is out of bounds. Be careful!
+*/
 
-(found, idx) = A.find(7);
-if found then
-  writeln("Found 7 at index: ", idx);
-else
-  writeln("Didn't find 7");
-
-//
-// A few other useful methods are available.
-// To demo them, add a few more 5s to the array
-//
-A.push_front(5);
-A.push_back(5);
-assert(A.domain == {0..9});
-
-//
-// Count how many times an element is in the array
-//
-writeln("The value 5 is in A ", A.count(5), " times.");
-
-//
-// Reverse the elements in the array
-//
-writeln("Before calling reverse A is: ", A);
-A.reverse();
-writeln("After calling reverse A is: ", A);
-
-//
-// Array elements can be removed one at a time by specifying an
-// index to remove.  The elements above the removed one will be
-// shifted down.
-//
-A.remove(3);
-assert(A.domain == {0..8});
-writeln("After first remove A is: ", A);
-
-//
-// A range of indices can also be removed
-//
-A.remove(4..6);
-assert(A.domain == {0..5});
-writeln("After second remove A is: ", A);
-
-//
-// A starting index and a count also work
-//
-A.remove(2, 2);
-assert(A.domain == {0..3});
-writeln("After third remove A is: ", A);
-
-//
-// The array is still a normal 1D Chapel array and supports regular array
-// operations such as parallel iteration:
-//
-forall i in A.domain {
-  A[i] += 1;
+for i in 1..(lst1.size / 2) {
+  ref a = lst1[i];
+  ref b = lst1[i + lst1.size / 2];
+  a <=> b;
 }
-writeln("After adding 1 to all elements A is: ", A);
 
-//
-// Or reductions:
-//
-writeln("The sum of elements in A is ", + reduce A);
+writeln("List 1 contains: ", lst1);
 
-//
-// The ``clear`` method will empty the array completely.  If the domain's low
-// bound was ``low`` this sets the domain to ``{low..low-1}``
-//
-A.clear();
-assert(A.domain == {0..-1});
-writeln("After clearing, A is: ", A, " - with ", A.size, " elements");
+/*
+  If you need to get the specific index of an element contained in a list,
+  you can use the ``list.indexOf`` operator.
+
+  .. note::
+
+    The ``list.indexOf`` operator will halt if the given search range falls
+    outside the bounds of the list.
+*/
+for x in lst2 {
+  const idx = lst1.indexOf(x);
+  assert(x == idx);
+}
+
+for x in lst3 {
+  const idx = lst1.indexOf(x);
+  assert(x == idx);
+}
+
