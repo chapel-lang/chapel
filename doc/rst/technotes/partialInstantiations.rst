@@ -9,13 +9,14 @@ Partial Instantiations
 Overview
 --------
 
-A fully generic type expression involving a class or record is one in which
-none of the generic fields of the type have been instantiated. A partially
-generic type expression is one in which zero or more, but not all, fields have
-been instantiated. Partial instantiations can be used to more finely constrain
-a procedure's arguments, constrain valid types when initializing variables, or
-for conveniently creating other instantiations through incremental
-instantiation.
+A generic class or record can be fully instantiated, fully generic, or
+partially instantiated. A fully instantiated type expression has concrete types
+for all generic fields. A fully generic type expression is one in which none of
+the generic fields have been instantiated. A partially instantiated type
+expression has concrete types for one or more, but not all, generic fields.
+Partial instantiations can be used to more finely constrain a procedure's
+arguments, constrain valid types when initializing variables, or for
+conveniently creating other instantiations through incremental instantiation.
 
 Creating Partial Instantiations
 -------------------------------
