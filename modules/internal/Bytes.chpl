@@ -154,7 +154,11 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+  proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+    //NOTE: This function is heavily used by the compiler to create bytes
+    //literals. So, inlining this causes some bloat in the AST that increases
+    //the compilation time slightly. Therefore, currently we are keeping this
+    //one non-inlined.
     return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }

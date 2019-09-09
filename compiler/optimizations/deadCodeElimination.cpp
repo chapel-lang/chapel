@@ -322,10 +322,7 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
 //
 //   def  new_temp  : string; // defTemp
 //
-//   def  ret  : string;  // defFactoryTemp
-//   call init(ret);  // defaultInit
-//   call initWithBorrowedBuffer(ret, c"literal string", ...);  // factoryCall
-//   move new_temp, ret   //tmpMove
+//   call createStringWithBorrowedBuffer(new_temp,c"literal",...); //factoryCall
 //
 //   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
 //
@@ -333,26 +330,17 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
   SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
 
   // Step backwards from 'defn'
-  Expr* lastMove    = defn->getStmtExpr();
-  Expr* tmpMove    = lastMove->prev;
-  Expr* factoryCall    = tmpMove->prev;
-  Expr* defaultInit = factoryCall->prev;
-  Expr* defFactoryTemp = defaultInit->prev;
-  Expr* defTemp = defFactoryTemp->prev;
+  Expr* lastMove = defn->getStmtExpr();
+  Expr* factoryCall = lastMove->prev;
+  Expr* defTemp = factoryCall->prev;
 
   // Simple sanity checks
-  INT_ASSERT(isDefExpr (defTemp));
-  INT_ASSERT(isDefExpr (defFactoryTemp));
-  INT_ASSERT(isCallExpr(defaultInit));
+  INT_ASSERT(isDefExpr(defTemp));
   INT_ASSERT(isCallExpr(factoryCall));
-  INT_ASSERT(isCallExpr(tmpMove));
   INT_ASSERT(isCallExpr(lastMove));
 
   lastMove->remove();
-  tmpMove->remove();
   factoryCall->remove();
-  defaultInit->remove();
-  defFactoryTemp->remove();
   defTemp->remove();
 
   defExpr->remove();
