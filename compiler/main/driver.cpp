@@ -1385,10 +1385,6 @@ static void setMultiLocaleInterop() {
     return;
   }
 
-  if (strcmp(CHPL_COMM, "gasnet") != 0) {
-    USR_FATAL("Multi-locale libraries are only supported on gasnet");
-  }
-
   if (llvmCodegen) {
     USR_FATAL("Multi-locale libraries do not support --llvm");
   }
