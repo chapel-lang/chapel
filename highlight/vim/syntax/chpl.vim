@@ -280,14 +280,6 @@ syn keyword chplRepeat		while for do coforall forall in serial
 syn keyword chplLabel	        when otherwise label
 syn keyword chplErrorHandling   throw throws try catch
 
-" ? is an either ternary condition operator or postfix nilability operator
-" so just match it no matter what
-syn match   chplOperator display "?"  
-
-" if you match ! that follows a valid type name
-syn match   chplOperator display "[a-zA-Z0-9_]\zs!\ze[^=]"   
-
-
 " Folding
 syn region scopeFold start="{" end="}" fold transparent
 
