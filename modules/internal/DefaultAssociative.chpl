@@ -963,7 +963,7 @@ module DefaultAssociative {
   inline proc chpl__defaultHashCombine(a:uint, b:uint, fieldnum:int): uint {
     extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
     var n:uint = (17 + fieldnum):uint;
-    return a ^ chpl_bitops_rotl_64(b, n);
+    return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
   }
 
   inline proc chpl__defaultHash(b: bool): uint {
