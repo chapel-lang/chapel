@@ -135,9 +135,9 @@ Detecting Partial Instantiations
 There are a few features that allow for the detection of partial
 instantiations.
 
-The first feature is a standard library function named ``isGenericType`` that
-will simply return ``true`` if its argument is a partial instantiation or a
-fully-generic type:
+The first feature is a standard library function named :proc:`~Types.isGeneric`
+that will simply return ``true`` if its argument is a partial instantiation or
+a fully-generic type:
 
 .. code-block:: chapel
 
@@ -146,10 +146,10 @@ fully-generic type:
     param p : int;
   }
 
-  writeln(isGenericType(R));            // true
-  writeln(isGenericType(R(int)));       // true
-  writeln(isGenericType(R(p=42)));      // true
-  writeln(isGenericType(R(string, 5))); // false
+  writeln(isGeneric(R));            // true
+  writeln(isGeneric(R(int)));       // true
+  writeln(isGeneric(R(p=42)));      // true
+  writeln(isGeneric(R(string, 5))); // false
 
 Users may also query individual fields to determine whether the field has
 been instantiated by comparing the field against ``?``:
