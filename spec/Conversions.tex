@@ -45,10 +45,9 @@ An implicit conversion occurs at each of the following program locations:
       \chpl{in} or \chpl{const in}.
 
 \item The actual type argument of a function call or an operator is converted
-      to the corresponding formal argument (\rsec{Implicit_Type_Arg_Conversions}).
-      In this case, the formal has the \chpl{type} intent, including
+      to the corresponding formal argument of the \chpl{type} intent or
       the \chpl{this} formal of a type method.
-      A special rule defines how the type is converted in this case.
+      See \rsec{Implicit_Type_Arg_Conversions}.
 
 % MPF: This rule is not implemented right now,
 %      but rather reflects ideal language design.
@@ -61,9 +60,8 @@ An implicit conversion occurs at each of the following program locations:
 
 \item The condition of a conditional expression,
       conditional statement, while-do or do-while loop statement
-      is converted to the boolean type~(\rsec{Implicit_Statement_Bool_Conversions}).
-      A special rule defines the allowed source types and
-      how the expression's value changes in this case.
+      is converted to the boolean type.
+      See \rsec{Implicit_Statement_Bool_Conversions}.
 \end{itemize}
 
 Implicit conversions are not applied for actual arguments passed to \chpl{ref} or
@@ -254,8 +252,9 @@ Any combination of these three conversions is allowed.
 \label{Implicit_Type_Arg_Conversions}
 \index{conversions!implicit!type arguments}
 
-When the actual is a type, it is passed to a formal of a \chpl{type} intent,
-including the \chpl{this} formal of a type method. In this case, a subset
+An implicit type argument conversion applies only when a type actual is
+passed to a formal with the \chpl{type} intent. This includes the \chpl{this}
+formal of a type method. In this case, a subset
 of Implicit Class Conversions (\rsec{Implicit_Class_Conversions}) applies,
 in addition to Implicit Conversions To Generic Types
 (\rsec{Implicit_Generic_Type_Conversions}).
