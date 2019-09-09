@@ -112,7 +112,10 @@ be used multiple times in a type constructor call. For example:
   // Error! '?' may not be used multiple times in a type constructor call
   // proc foo(arg : R(?, ?, uint)) { ... }
   // instead, use named-expressions:
-  proc foo(arg : R(?, Z=uint)) { ... } // or 'R(Z=uint, ?)'
+  proc foo(arg : R(?, Z=uint)) { ... }
+
+  // alternatively, use the named-expression first:
+  proc bar(arg : R(Z=uint, ?)) { ... }
 
 Furthermore, once ``?`` appears in a type constructor call all later arguments
 in the same call must used named expressions. This restriction emphasizes that
