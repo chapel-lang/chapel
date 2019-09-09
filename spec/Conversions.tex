@@ -4,6 +4,7 @@
 
 A \emph{conversion} converts an expression of one type to another type,
 possibly changing its value.
+In certain cases noted below the source expression can be a type expression.
 \index{conversions!source type}
 \index{conversions!target type}
 We refer to these two types the \emph{source} and \emph{target} types.
@@ -23,10 +24,6 @@ Each location determines the target type.
 The source and target types of an implicit conversion must be allowed.
 They determine whether and how the expression's value changes.
 
-Implicit conversions are not applied when initializing \chpl{ref} or
-\chpl{type} values or for actual arguments passed to \chpl{ref} or
-\chpl{type} formal arguments.
-
 \index{conversions!implicit!occurs at}
 An implicit conversion occurs at each of the following program locations:
 
@@ -35,13 +32,24 @@ An implicit conversion occurs at each of the following program locations:
       the assignment is converted to the type of the variable
       or another lvalue on the left-hand side of the assignment.
 
+\item In a variable or field declaration, the initializing expression
+      is converted to the type of the variable or field.
+      The initializing expression is the r.h.s. of the \chpl{=}
+      in the declaration, if present, or in the field initialization
+      statement in an initializer.
+
 \item The actual argument of a function call or an operator is converted
       to the type of the corresponding formal argument, if the formal's
       intent is \chpl{param}, \chpl{in}, \chpl{const in}, or an abstract intent
       (\rsec{Abstract_Intents}) with the semantics of
       \chpl{in} or \chpl{const in}.
 
-% MPF: This rule doesn't seem to be implemented right now,
+\item The actual type argument of a function call or an operator is converted
+      to the corresponding formal argument of the \chpl{type} intent or
+      the \chpl{this} formal of a type method.
+      See \rsec{Implicit_Type_Arg_Conversions}.
+
+% MPF: This rule is not implemented right now,
 %      but rather reflects ideal language design.
 \item If the formal argument's intent is \chpl{out}, the formal argument
       is converted to the type of the corresponding actual argument
@@ -52,10 +60,12 @@ An implicit conversion occurs at each of the following program locations:
 
 \item The condition of a conditional expression,
       conditional statement, while-do or do-while loop statement
-      is converted to the boolean type~(\rsec{Implicit_Statement_Bool_Conversions}).
-      A special rule defines the allowed source types and
-      how the expression's value changes in this case.
+      is converted to the boolean type.
+      See \rsec{Implicit_Statement_Bool_Conversions}.
 \end{itemize}
+
+Implicit conversions are not applied for actual arguments passed to \chpl{ref} or
+\chpl{const ref} formal arguments.
 
 \index{conversions!implicit!allowed types}
 Implicit conversions \emph{are allowed} between
@@ -67,15 +77,15 @@ as defined in the referenced subsections:
 \item numeric types in the special case when the expression's value
       is a compile-time constant~(\rsec{Implicit_Compile_Time_Constant_Conversions}), and
 \item class types~(\rsec{Implicit_Class_Conversions}),
+\item class and generic types in certain cases (\rsec{Implicit_Type_Arg_Conversions})
 \item from an integral or class type to \chpl{bool}
       in certain cases~(\rsec{Implicit_Statement_Bool_Conversions}).
+\item generic target types (\rsec{Implicit_Generic_Type_Conversions})
 \end{itemize}
 
 In addition,
 an implicit conversion from a type to the same type is allowed for any type.
 Such conversion does not change the value of the expression.
-
-% TODO: If an implicit conversion is not allowed, it is an error.
 
 Implicit conversion is not transitive. That is, if an implicit conversion
 is allowed from type \chpl{T1} to \chpl{T2} and from \chpl{T2} to \chpl{T3},
@@ -236,6 +246,25 @@ g(b); // equivalent to g(b:borrowed C?)
 Third, an implicit conversion from class type \chpl{D} to another class
 type \chpl{C} is allowed when \chpl{D} is a subclass of \chpl{C}.
 
+Any combination of these three conversions is allowed.
+
+\subsection{Implicit Type Argument Conversions}
+\label{Implicit_Type_Arg_Conversions}
+\index{conversions!implicit!type arguments}
+
+An implicit type argument conversion applies only when a type actual is
+passed to a formal with the \chpl{type} intent. This includes the \chpl{this}
+formal of a type method. In this case, a subset
+of Implicit Class Conversions (\rsec{Implicit_Class_Conversions}) applies,
+in addition to Implicit Conversions To Generic Types
+(\rsec{Implicit_Generic_Type_Conversions}).
+
+\begin{future}
+The details are forthcoming.
+% This corresponds to the subtype / \chpl{isSubtype()} relationship
+% discussed on GitHub Issue #13541.
+\end{future}
+
 \subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
 \index{conversions!boolean!in a statement}
@@ -248,14 +277,29 @@ the following implicit conversions to \chpl{bool} are supported:
 \item An expression of a class type is taken to be false if it is nil and is true otherwise.
 \end{itemize}
 
+\subsection{Implicit Conversions To Generic Types}
+\label{Implicit_Generic_Type_Conversions}
+\index{conversions!implicit!generic types}
+
+When the target type \chpl{T} is generic (\rsec{Generic_Types}),
+an implicit conversion is allowed when there is an instantiation
+of this type such that an implicit conversion is allowed between
+the source type and that instantiation by another rule in this section.
+
+That instantiation is taken to be the instantiated type of the variable,
+field, formal argument, or the return type whose declared type
+is the generic type \chpl{T}.
+
+The conversions in this subsection apply when the source is either an expression
+or a type expression.
+
 \section{Explicit Conversions}
 \label{Explicit_Conversions}
 \index{conversions!explicit}
 
 Explicit conversions require a cast in the code.  Casts are defined
 in~\rsec{Casts}.  Explicit conversions are supported between more
-types than implicit conversions, but explicit conversions are not
-supported between all types.
+types than implicit conversions, but not between all types.
 
 The explicit conversions are a superset of the implicit conversions.
 In addition to the following definitions,
@@ -474,6 +518,9 @@ different nilability or memory management strategy. Supposing that
 \chpl{T:unmanaged class?} - nilable type with \chpl{unmanaged} management
 
 \end{itemize}
+
+The conversions in this subsection apply when the source is either an expression
+or a type expression.
 
 \subsection{Explicit Range Conversions}
 \label{Explicit_Range_Conversions}
