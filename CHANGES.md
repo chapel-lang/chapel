@@ -41,8 +41,10 @@ Highlights (see subsequent sections for further details)
   - improved the performance of parallel-safe data structures
 * additional highlights:
   - added support for creating multi-locale libraries callable from Python or C
+  - added initial support for a pre-built Chapel module on Cray Shasta systems
   - improved compiler error messages for failures in resolution and generics
   - improved `mason` w.r.t. testing, publishing, searching, and working offline
+  - improved completeness/portability for libfabric providers for CHPL_COMM=ofi
   - improved the robustness of the LLVM back-end
 
 Syntactic/Naming Changes
@@ -76,7 +78,7 @@ Semantic Changes / Changes to Chapel Language
 * made `#0` preserve the given indices of a range or domain
   (e.g., `5..#0` now returns `5..4` rather than `1..0`)
 * disabled support for assigning from ranges to multidimensional arrays
-  (see TODO blc)
+  (see 'Array Assignment' in the `Arrays` chapter of the language spec)
 * made slice expressions be governed by their slicing domain
   (e.g., the domain of `B` in `ref B = A[D];` is `D`)
 * made `proc foo(x: bool(?)` generic across all bool types including `bool`
@@ -189,6 +191,9 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.20/modules/standard/Types.html#Types.isGeneric)
 * added `isCoercible()` to the `Types` module
   (see https://chapel-lang.org/docs/1.20/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isCoercible)
+* made the `CommDiagnostics` module count atomic memory operations
+  (see https://chapel-lang.org/docs/1.20/modules/standard/CommDiagnostics.html)
+* added file:line for executeOn in verbose comm diagnostics, matching other ops
 * reduced the degree to which standard modules leak symbols into user code
 
 Package Modules
@@ -269,7 +274,7 @@ New Tools / Tool Changes
 
 Interoperability Improvements
 -----------------------------
-* added support for multi-locale Chapel libraries built with CHPL_COMM=gasnet
+* added support for multi-locale Chapel libraries
   (see <TODO> doc link)
 * the LLVM back-end now supports `--library-python` and `--library-makefile`
 * added support for exporting routines that accept/return strings
@@ -299,6 +304,7 @@ Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
 * optimized `unorderedCopy()` for remote destinations
 * improved the performance of all unordered operations
+* made out-of-memory handling with `ugni` communication more robust
 
 Memory Improvements
 -------------------
@@ -342,6 +348,8 @@ Portability
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
+* added initial support for a pre-built Chapel module on Cray Shasta systems
+  (see https://chapel-lang.org/docs/1.20/platforms/cray.html#getting-started-with-chapel-on-cray-shasta-systems)
 * updated modulefile to work if there is an incompatible cray-mpich pre-loaded
 * Fixed a problem with --llvm compilation when using dynamic linking on a Cray
 * fixed a hang for strided communication
@@ -438,11 +446,16 @@ Third-Party Software Changes
 
 Runtime Library Changes
 -----------------------
+* made CHPL_COMM=ofi significantly more complete and portable across providers
 * I/O buffers are no longer page aligned when the buffer size is very small
 * retired massivethreads tasking
 
 Launchers
 ---------
+* made verbose output from launchers include environment variables they set
+  (see https://chapel-lang.org/docs/1.20/usingchapel/launcher.html#chapel-launchers)
+* added CHPL_COMM_USE_GDB support to many more launchers
+  (see https://chapel-lang.org/docs/1.20/usingchapel/debugging.html#running-in-gdb)
 * improved CPU binding for gasnetrun* launchers
 * added a slurm-gasnetrun_mpi launcher
 
@@ -503,10 +516,14 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added CHPL_RT_OVERSUBSCRIBED to generally indicate oversubscribed execution
+  (see https://chapel-lang.org/docs/1.20/usingchapel/tasks.html#overloading-system-nodes)
 * fixed the qthreads build when CHPL_HOME doesn't match CHPL_MAKE_HOME
 * reading I/O channels now default to using `pread` instead of `mmap`
 * I/O plugins implementing Curl and HDFS are now implemented in Chapel
 * added support for `bytes` in QIO
+* reorganized and simplified runtime support for comm diagnostics
+* moved multilocale global var dissemination from comm layers into shared code
 
 Developer-oriented changes: Testing System
 ------------------------------------------
