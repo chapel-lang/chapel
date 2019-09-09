@@ -167,8 +167,9 @@ been instantiated by comparing the field against ``?``:
   writeln(A.T == ?); // false
   writeln(A.p == ?); // true
 
-Finally, a Reflection function named ``isFieldBound`` will return true if the
-given name of the field in the provided type has been instantiated:
+Finally, a Reflection function named :proc:`~Reflection.isFieldBound` will
+return true if the given name of the field in the provided type has been
+instantiated:
 
 .. code-block:: chapel
 
