@@ -33,9 +33,6 @@ are discussed in~\rsec{Generic_Types}.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  simple-class-declaration-statement
-
-simple-class-declaration-statement:
   `class' identifier class-inherit[OPT] { class-statement-list[OPT] }
 
 class-inherit:
@@ -52,11 +49,9 @@ class-statement:
   empty-statement
 \end{syntax}
 
-A \sntx{class-declaration-statement} defines a new type symbol
-specified by the identifier.  Classes inherit data and functionality
-from other classes %and/or records
-if the \sntx{inherit-type-list} is specified.
-Inheritance is described in~\rsec{Inheritance}.
+A \sntx{class-declaration-statement} defines a new class type symbol
+specified by the identifier. It inherits from the class specified
+in the \sntx{class-inherit} clause, when provided (\rsec{Inheritance}).
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
@@ -154,7 +149,7 @@ test();
 
 The \chpl{.borrow()} method is available on all class types (including
 \chpl{unmanaged} and \chpl{borrowed}) in order to support generic
-programming. For nilable class types, it returns a the borrowed nilable
+programming. For nilable class types, it returns the borrowed nilable
 class type.
 
 Errors due to accessing an instance after the end of its lifetime are
@@ -205,7 +200,7 @@ If no memory management strategy is indicated, the class will be
 considered to have generic management.
 
 Variables of class type cannot store \chpl{nil} unless the class
-type includes \chpl{?} (see~\rsec{Nilable_Classes} below).
+type is nilable (\rsec{Nilable_Classes}).
 
 The memory management strategies have the following meaning:
 
@@ -268,13 +263,13 @@ owned C
 \end{chapelexample}
 
 
-\subsection{Nilable Classes}
+\subsection{Nilable Class Types}
 \label{Nilable_Classes}
 
 Variables of class type cannot store \chpl{nil} unless the class type is
 nilable. To declare a nilable class type, use the \chpl{?} operator to
 create a nilable type. For example, if \chpl{C} is a class type, then
-\chpl{C?} indicates nilable the class type with generic management. The
+\chpl{C?} indicates the nilable class type with generic management. The
 \chpl{?} operator can be combined with memory management specifiers as
 well. For example, \chpl{borrowed C?} indicates a nilable class using the
 \chpl{borrowed} memory management strategy. Note that the \chpl{?}
@@ -302,13 +297,8 @@ receiver storing \chpl{nil}. The language helps to identify this error in
 two different ways, depending on whether or not the module is a
 \chpl{prototype} module (\rsec{Prototype_Modules}).
 
-The \chpl{borrow()} method is an exception. Suppose it is working with a
-class \chpl{C}. It will return \chpl{borrowed C} for any non-nilable
-\chpl{C} type (e.g. \chpl{owned C}). It will return \chpl{borrowed C?}
-for any nilable \chpl{C} type (e.g. \chpl{C?}).
-
 For modules that are not prototype modules, the compiler will not
-resolve calls to such class methods if the receiver has nilable type.
+resolve calls to class methods if the receiver has nilable type.
 If the programmer knows that the receiver cannot store \chpl{nil} at that
 moment, they can use \chpl{!} to assert that the receiver is not
 \chpl{nil} and to convert it to the non-nilable borrowed type. For
@@ -334,12 +324,17 @@ if c != nil {
 \end{chapeloutput}
 \end{chapelexample}
 
+The \chpl{borrow()} method is an exception. Suppose it is invoked on
+an expression of a class type \chpl{C}.
+It will return \chpl{borrowed C} for any non-nilable
+\chpl{C} type (e.g. \chpl{owned C}). It will return \chpl{borrowed C?}
+for any nilable \chpl{C} type (e.g. \chpl{C?}).
+
 \label{Methods_On_Nilable_In_Prototype_Modules}
 
 Within a \chpl{prototype} module, the compiler will implicitly convert
 a nilable method receiver to the non-nilable type by adding a \chpl{!}
 call.
-
 
 \subsection{Class Values}
 \label{Class_Values}
@@ -353,7 +348,7 @@ using a \chpl{new} expression (\rsec{Class_New}).
 For a given class type, a legal value of that type is a reference to
 an instance of either that class or a class inheriting, directly or
 indirectly, from that class.
-\chpl{nil} is a legal value of any class type.
+\chpl{nil} is a legal value of any non-nilable class type.
 
 The default value of a concrete nilable class type is \chpl{nil}. Generic
 class types and non-nilable class types do not have a default value.
@@ -385,6 +380,27 @@ can be combined.  The type of \chpl{c2} is also \chpl{borrowed C?}, determined
 implicitly from the the initialization expression.  Finally, an object
 of type \chpl{owned D} is created and assigned to \chpl{c}.
 \end{chapelexample}
+
+\subsection{The {\em nil} Value}
+\label{Class_nil_value}
+\index{classes!nil}
+\index{nil@\chpl{nil}}
+
+Chapel provides \chpl{nil} to indicate the absence of a reference to
+any object. Invoking a class method or accessing a field of the \chpl{nil}
+value results in a run-time or compile-time error.
+
+\chpl{nil} can be assigned to a variable of any nilable class type.
+There is a restriction for using \chpl{nil} as the default value or
+the actual argument of a function formal, or as the initializer
+for a variable or a field. Such a use is disallowed
+when the declared type of the formal/variable/field is non-nilable
+or generic, including generic memory management.
+
+\begin{syntax}
+nil-expression:
+  `nil'
+\end{syntax}
 
 \subsection{Class Fields}
 \label{Class_Fields}
@@ -521,20 +537,12 @@ class can be referenced only within its immediately enclosing class or record.
 \index{derived class}
 \index{classes!derived}
 
-A \emph{derived} class can inherit from one or more other classes by
-listing those classes in the derived class declaration.
-
-%When inheriting from multiple base classes, only one of the base classes
-%may contain fields.  The other classes can only define methods.  Note
-%that a class can still be derived from a class that contains fields
-%which is itself derived from a class that contains fields.
-
-%REVIEW: vass: the below ("tree") does not match the above ("multiple base classes")
-
-%These restrictions on inheritance induce a class hierarchy which has the form of
-%a tree.  A variable referring to an instance of class \chpl{C} can be
-%cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
-%less-derived classes are both permitted.
+A class inherits, or \emph{derives}, from the class specified in the class
+declaration's \sntx{class-inherit} clause when such clause is present.
+Otherwise the class inherits from the predefined \chpl{object} class
+(\rsec{The_object_Class}). In either case, there is exactly one
+\emph{parent} class.
+There can be many classes that inherit from a particular parent class.
 
 It is possible for a class to inherit from a generic class. Suppose for
 example that a class \chpl{C} inherits from class \chpl{ParentC}. In this
@@ -543,18 +551,13 @@ generic fields in the \chpl{ParentC} as described in
 ~\ref{Type_Constructors}. Furthermore, a fully specified \chpl{C} will be
 a subclass of a corresponding fully specified \chpl{ParentC}.
 
-\begin{future}
-Multiple inheritance is not currently specified or implemented.
-It is unclear if it will ever be included in the language.
-\end{future}
-
-\subsection{The object Class}
+\subsection{The {\em object} Class}
 \label{The_object_Class}
 \index{object@\chpl{object}}
 \index{classes!object@\chpl{object}}
 
 All classes are derived from the \chpl{object} class, either directly or
-indirectly.  If no class name appears in the inheritance list, the class derives
+indirectly.  If no class name appears in \sntx{class-inherit} clause, the class derives
 implicitly from \chpl{object}.  Otherwise, a class derives from \chpl{object}
 indirectly through the class it inherits.  A variable of type \chpl{object}
 can hold a reference to an object of any class type.
@@ -623,21 +626,6 @@ should not dispatch dynamically since that would make it
 impossible to access a base field within a base method should that
 field be shadowed by a subclass.
 \end{rationale}
-
-\subsection{The {\em nil} Value}
-\label{Class_nil_value}
-\index{classes!nil}
-\index{nil@\chpl{nil}}
-
-Chapel provides \chpl{nil} to indicate the absence of a reference to
-any object.  \chpl{nil} can be assigned to a variable of any class
-type.  Invoking a class method or accessing a field of the \chpl{nil}
-value results in a run-time error.
-
-\begin{syntax}
-nil-expression:
-  `nil'
-\end{syntax}
 
 \section{Class New}
 \label{Class_New}
