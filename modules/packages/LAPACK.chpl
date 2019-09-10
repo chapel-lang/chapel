@@ -25,9 +25,13 @@ Chapel idiomatic wrappers for the LAPACK library.
 
   Because of the volume of procedures provided, and because their behavior is virtually unchanged, in-depth documentation on each procedure's purpose and use is not given here.
   
-  Consult the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ site, and the `Netlibs <http://www.netlib.org/lapack/explore-html/globals_func.html>`_ and `Intel <https://software.intel.com/en-us/node/520866>`_ LAPACK documents for that information.
-  
-  Additionally, only a small set of LAPACK procedures have been tested for correctness.
+Consult the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ site, and the
+`Netlibs <http://www.netlib.org/lapack/explore-html/globals_func.html>`_ and
+`Intel
+<https://software.intel.com/en-us/mkl-developer-reference-fortran-lapack-routines>`_
+LAPACK documents for that information.
+
+Additionally, only a small set of LAPACK procedures have been tested for correctness.
 
 Differences from LAPACK
 -----------------------

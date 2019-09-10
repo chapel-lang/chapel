@@ -25,8 +25,8 @@ BLAS (Basic Linear Algebra Subprograms) are the de facto standard routines for
 low-level matrix, vector, and scalar operations. While `netlib
 <http://www.netlib.org/blas/#_documentation>`_ provides the official
 reference version of BLAS, this documentation refers to the
-`MKL BLAS <https://software.intel.com/en-us/node/520725>`_ documentation, due
-to interface similarities.
+`MKL BLAS <https://software.intel.com/en-us/mkl-developer-reference-fortran>`_
+documentation, due to interface similarities.
 
 This module is intended to work with non-distributed dense rectangular
 (``DefaultRectangular``) arrays.
