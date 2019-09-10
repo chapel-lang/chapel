@@ -487,8 +487,8 @@ module UserModule2 {
 }
 
 /* When a scope has a ``use`` of ``UserModule2``, the symbols from
-   ``ModuleThatIsUsed`` will not be available, so the following code would
-   not compile.
+   ``ModuleThatIsUsed`` will not be available due to the ``private`` modifier on
+   ``UserModule2`` 's ``use`` of it, so the following code would not compile.
 */
 
 module UsesTheUser2 {
