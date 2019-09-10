@@ -93,7 +93,7 @@ Semantic Changes / Changes to Chapel Language
 New Features
 ------------
 * added support for `private` and `public` `use` statements
-  (see <TODO> doc link)
+  (see 'The Use Statement' in the 'Statements' chapter of the language spec)
 * added a built-in `bytes` type
   (see https://chapel-lang.org/docs/1.20/builtins/Bytes.html)
 * added bytes literals `b""`, `b''`, `b""" """`, and `b''' '''`
@@ -274,7 +274,7 @@ New Tools / Tool Changes
 Interoperability Improvements
 -----------------------------
 * added support for multi-locale Chapel libraries
-  (see <TODO> doc link)
+  (see https://chapel-lang.org/docs/master/technotes/libraries.html#using-your-library-in-multilocale-settings)
 * the LLVM back-end now supports `--library-python` and `--library-makefile`
 * added support for exporting routines that accept/return strings
 * added support for overriding environment variables to `--library-makefile`
@@ -376,7 +376,8 @@ Error Messages / Semantic Checks
 * made defining a method named 'borrow' a compiler error
 * added an error for domain expressions that are types rather than values
 * added non-`[const] in` intents error messages in certain interop situations
-  (see <TODO> doc link?)
+  (see https://chapel-lang.org/docs/master/technotes/libraries.html#intents
+   and https://chapel-lang.org/docs/master/technotes/libraries.html#intents-in-python-interoperability)
 * improved error message wording for type mismatches in assignment
 * made a user-facing "the type of the actual argument is generic" error
 
@@ -458,7 +459,7 @@ Launchers
 Testing System
 --------------
 * added support for running multilocale C tests via `start_test`
-  (see <TODO> doc link)
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#comparing-to-a-c-version)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
