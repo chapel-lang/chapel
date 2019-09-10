@@ -2434,17 +2434,4 @@ module String {
     }
     return hash:uint;
   }
-
-  //
-  // Developer Extras
-  //
-  pragma "no doc"
-  proc chpldev_refToString(ref arg) : string {
-    // print out the address of class references as well
-    proc chpldev_classToString(x: object) : string
-      return " (class = " + __primitive("ref to string", x):string + ")";
-    proc chpldev_classToString(x) : string return "";
-
-    return __primitive("ref to string", arg):string + chpldev_classToString(arg);
-  }
 }
