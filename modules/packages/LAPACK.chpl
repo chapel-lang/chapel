@@ -25,14 +25,18 @@ Chapel idiomatic wrappers for the LAPACK library.
 
   Because of the volume of procedures provided, and because their behavior is virtually unchanged, in-depth documentation on each procedure's purpose and use is not given here.
   
-  Consult the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ site, and the `Netlibs <http://www.netlib.org/lapack/explore-html/globals_func.html>`_ and `Intel <https://software.intel.com/en-us/node/520866>`_ LAPACK documents for that information.
-  
-  Additionally, only a small set of LAPACK procedures have been tested for correctness.
+Consult the `Netlibs LAPACK <https://www.netlib.org/lapack/>`_ site, and the
+`Netlibs <https://www.netlib.org/lapack/explore-html/globals_func.html>`_ and
+`Intel
+<https://software.intel.com/en-us/mkl-developer-reference-fortran-lapack-routines>`_
+LAPACK documents for that information.
+
+Additionally, only a small set of LAPACK procedures have been tested for correctness.
 
 Differences from LAPACK
 -----------------------
 
-The `XYYZZZ <http://www.netlib.org/lapack/individualroutines.html>`_ naming convention for procedures has been only slightly modified with the removal of the type identifier in the procedure name,
+The `XYYZZZ <https://www.netlib.org/lapack/individualroutines.html>`_ naming convention for procedures has been only slightly modified with the removal of the type identifier in the procedure name,
 creating a set of polymorphic procedures under the name YYZZZ.
 
 Procedure arguments have been simplified. 
@@ -71,7 +75,7 @@ Compiling with LAPACK
 
 Using this module require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
 
-You can download and build the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
+You can download and build the `Netlibs LAPACK <https://www.netlib.org/lapack/>`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
 You must also have libgfortran installed on your system (typically installed along with gcc).
 
 To compile with LAPACK, Chapel needs to know:
