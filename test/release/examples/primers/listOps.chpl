@@ -49,15 +49,16 @@ writeln("List 1 after appends: ", lst1);
 
 var lst2: list(int, parSafe=true);
 
-coforall tid in 0..3 with (ref lst2) do
+coforall tid in 0..3 with (ref lst2) {
   for i in 1..8 {
     const elem = tid * 8 + i;
     lst2.append(elem);
   }
+}
 
 /*
   Tasks spawned in a coforall loop aren't guaranteed to execute in a fixed
-  order. The contents of `lst2` might be out of order even though our loop
+  order. The contents of ``lst2`` might be out of order even though our loop
   size is small (only 4 tasks).
 
   We can call ``list.sort()`` on our list to be on the safe side.
@@ -71,15 +72,15 @@ lst2.sort();
 writeln("List 2 sorted: ", lst2);
 
 /*
-  We can create another new list with values that are copied from `lst2`.
+  We can create another new list with values that are copied from ``lst2``.
 */
 
 var lst3 = lst2;
 
 /*
-  Before zippering `lst2` and `lst3` together, it would be good to vary their
-  contents a little bit. Let's ``list.pop()`` the values from the first
-  half of `lst2` and ``list.append()`` them to `lst3`.
+  Before zippering ``lst2`` and ``lst3`` together, it would be good to vary
+  their contents a little bit. Let's ``list.pop()`` the values from the first
+  half of ``lst2`` and ``list.append()`` them to ``lst3``.
 
   .. note::
   
@@ -100,7 +101,7 @@ writeln("List 2 after pops: ", lst2);
 writeln("List 3 after appends: ", lst3);
 
 /*
-  Let's ensure `lst2` and `lst3` have unique values. The ``list.remove()``
+  Let's ensure ``lst2`` and ``lst3`` have unique values. The ``list.remove()``
   method takes a secondary argument called `count` which specifies how many
   instances of a value to remove. Passing ``0`` to `count` will remove every
   value matching the input from a list.
@@ -112,8 +113,8 @@ for elem in lst2 do
 writeln("List 3 after removes: ", lst3);
 
 /*
-  Even though `lst2` and `lst3` have no values in common, `lst3` still has
-  some duplicate values that could be removed. We can do that with a
+  Even though ``lst2`` and ``lst3`` have no values in common, ``lst3`` still
+  has some duplicate values that could be removed. We can do that with a
   combination of ``list.remove()`` and ``list.count()``.
 
   .. warning::
@@ -161,7 +162,7 @@ forall (x, y) in zip(lst2, lst3) {
 }
 
 /*
-  It seems like `lst1` is just wasting memory at this point. Let's go ahead
+  It seems like ``lst1`` is just wasting memory at this point. Let's go ahead
   and clear it using ``list.clear()``. This will remove every value from
   the list and set its size to ``0``.
 */
@@ -172,7 +173,7 @@ writeln("List 1 after clear: ", lst1);
 
 /*
   We can use the ``list.extend()`` method to merge the contents of our lists
-  together. Since `lst1` is now empty, we can reuse it to save space.
+  together. Since ``lst1`` is now empty, we can reuse it to save space.
 */
 
 lst1.extend(lst2);
@@ -181,9 +182,9 @@ lst1.extend(lst3);
 writeln("List 1 after extends: ", lst1);
 
 /*
-   You'll notice that the contents of `lst1` are backwards. We could call
-   ``list.sort()`` to fix this problem...or we fix the contents of the list
-   ourselves!
+   You'll notice that the contents of ``lst1`` are backwards. We could call
+   ``list.sort()`` to fix this problem...or we can fix the contents of the
+   list ourselves!
 
    .. warning::
 
@@ -207,8 +208,8 @@ writeln("List 1 after correction: ", lst1);
 
   .. warning::
 
-    The ``list.indexOf()`` operator will halt if the given search range falls
-    outside the bounds of the list.
+    The ``list.indexOf()`` operator will halt if the search range specified
+    by the arguments `start` and `end` falls outside the bounds of the list.
 */
 
 for x in lst2 {
@@ -221,3 +222,24 @@ for x in lst3 {
   assert(x == idx);
 }
 
+/*
+  And finally, you can use the ``list.insert()`` method to insert a value
+  at any position in a list.
+
+  As a trivial example, let's insert the value ``-100`` at the front of
+  ``lst1``.
+
+  .. note::
+
+    Similar to ``list.pop()``, the ``list.insert()`` operation is O(n) in
+    the worst case.
+
+  .. warning::
+
+    The ``list.insert()`` method will halt if the index specified by the
+    argument `idx` falls outside the bounds of the list.
+*/
+
+lst1.insert(1, -100);
+
+writeln("List 1 after inserting -100: ", lst1);
