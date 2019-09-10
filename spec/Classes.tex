@@ -388,13 +388,14 @@ of type \chpl{owned D} is created and assigned to \chpl{c}.
 
 Chapel provides \chpl{nil} to indicate the absence of a reference to
 any object. Invoking a class method or accessing a field of the \chpl{nil}
-value results in a run-time error.
+value results in a run-time or compile-time error.
 
 \chpl{nil} can be assigned to a variable of any nilable class type.
-\chpl{nil} cannot be used as the initializer for a variable or a field
-or the default argument or actual argument of a function formal when
-the declared type of the variable/field/formal is generic, including
-generic memory management, or non-nilable.
+There is a restriction for using \chpl{nil} as the default value or
+the actual argument of a function formal, or as the initializer
+for a variable or a field. Such a use is disallowed
+when the declared type of the formal/variable/field is non-nilable
+or generic, including generic memory management.
 
 \begin{syntax}
 nil-expression:
@@ -540,7 +541,8 @@ A class inherits, or \emph{derives}, from the class specified in the class
 declaration's \sntx{class-inherit} clause when such clause is present.
 Otherwise the class inherits from the predefined \chpl{object} class
 (\rsec{The_object_Class}). In either case, there is exactly one
-\emph{parent} class. A class can have multiple derived classes.
+\emph{parent} class.
+There can be many classes that inherit from a particular parent class.
 
 It is possible for a class to inherit from a generic class. Suppose for
 example that a class \chpl{C} inherits from class \chpl{ParentC}. In this
