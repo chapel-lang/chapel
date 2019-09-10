@@ -162,7 +162,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const masonCompopts = getMasonDependencies(sourceList, testName);
         const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
 
-        const moveTo = "-o " + projectHome + "/target/test/" + testName;
+        const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
+        const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand);
         
@@ -172,7 +173,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         else {
           if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
-            runTestBinary(projectHome, testName, result, show);
+            runTestBinary(projectHome, outputLoc, testName, result, show);
           }
         }
       }
@@ -196,18 +197,17 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 }
 
 
-private proc runTestBinary(projectHome: string, testName: string, ref result, show: bool) {
-  const command = "".join(projectHome,'/target/test/', testName);
+private proc runTestBinary(projectHome: string, outputLoc: string, testName: string, 
+                        ref result, show: bool) {
+  const command = outputLoc;
   var testNames: list(string),
       failedTestNames: list(string),
       erroredTestNames: list(string),
       testsPassed: list(string),
       skippedTestNames: list(string);
-  var dictDomain: domain(int);
-  var dict: [dictDomain] int;
+  var localesCountMap: map(int, int, parSafe=true);
   const exitCode = runAndLog(command, testName+".chpl", result, numLocales, testsPassed,
-            testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-            skippedTestNames, show);
+            testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
   if exitCode != 0 {
     const newCommand = " ".join(command,"-nl","1");
     const testResult = runWithStatus(newCommand, show);
@@ -226,8 +226,9 @@ private proc runTestBinaries(projectHome: string, testNames: list(string),
                              numTests: int, ref result, show: bool) {
 
   for test in testNames {
+    const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
     const testName = basename(stripExt(test, ".chpl"));
-    runTestBinary(projectHome, testName, result, show);
+    runTestBinary(projectHome, outputLoc, testName, result, show);
   }
 }
 
@@ -407,11 +408,9 @@ proc testFile(file, ref result, show: bool) throws {
         erroredTestNames: list(string),
         testsPassed: list(string),
         skippedTestNames: list(string);
-    var dictDomain: domain(int);
-    var dict: [dictDomain] int;
+    var localesCountMap: map(int, int, parSafe=true);
     const exitCode = runAndLog("./"+executable, fileName, result, numLocales, testsPassed,
-              testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-              skippedTestNames, show);
+              testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
     if exitCode != 0 {
       const command = " ".join("./"+executable,"-nl","1");
       const testResult = runWithStatus(command, show);
@@ -445,7 +444,7 @@ proc testDirectory(dir, ref result, show: bool) throws {
 pragma "no doc"
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
-              ref testsPassed, ref testNames, ref dictDomain, ref dict, 
+              ref testsPassed, ref testNames, ref localesCountMap, 
               ref failedTestNames, ref erroredTestNames, ref skippedTestNames, show: bool): int throws 
 {
   var separator1 = result.separator1,
@@ -489,7 +488,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
       var testName = try! currentRunningTests.pop();
       if testNames.count(testName) != 0 then
         try! testNames.remove(testName);
-      addTestResult(result, dictDomain, dict, testNames, flavour, fileName, 
+      addTestResult(result, localesCountMap, testNames, flavour, fileName, 
                 testName, testExecMsg, failedTestNames, erroredTestNames, 
                 skippedTestNames, testsPassed, show);
       testExecMsg = "";
@@ -532,27 +531,25 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   exitCode = exec.exit_status;
   if haltOccured then
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
-              testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-              skippedTestNames, show);
+              testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
   if testNames.size != 0 {
     var maxCount = -1;
-    for key in dictDomain.sorted() {
-      if maxCount < dict[key] {
+    for key in localesCountMap {
+      if maxCount < localesCountMap[key] {
         reqLocales = key;
-        maxCount = dict[key];
+        maxCount = localesCountMap[key];
       }
     }
-    dictDomain.remove(reqLocales);
+    localesCountMap.remove(reqLocales);
     exitCode = runAndLog(executable, fileName, result, reqLocales, testsPassed,
-              testNames, dictDomain, dict, failedTestNames, erroredTestNames, 
-              skippedTestNames, show);
+              testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
   }
   return exitCode;
 }
 
 pragma "no doc"
 /*Docs: Todo*/
-proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, 
+proc addTestResult(ref result, ref localesCountMap, ref testNames, 
                   flavour, fileName, testName, errMsg, ref failedTestNames, 
                   ref erroredTestNames, ref skippedTestNames, ref testsPassed,
                   show: bool) throws 
@@ -581,12 +578,12 @@ proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames,
     when "IncorrectNumLocales" {
       if comm != "none" {
         var strSplit = errMsg.split("=");
-        var reqLocalesStr = strSplit[2].strip().split(" ");
+        var reqLocalesStr = strSplit[2].strip().split(",");
         for a in reqLocalesStr do
-          if dictDomain.contains(a: int) then
-            dict[a: int] += 1;
+          if localesCountMap.contains(a: int) then
+            localesCountMap[a: int] += 1;
           else
-            dict[a: int] = 1;
+            localesCountMap[a: int] = 1;
         testNames.append(testName);
       }
       else {

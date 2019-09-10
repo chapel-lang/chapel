@@ -1035,7 +1035,13 @@ module UnitTest {
       }
       if !canRun {
         var localesStr: string = this.dictDomain: string;
-        var localesErrorStr: string = "Required Locales = "+localesStr:string;
+        var tempLocales: list(string);
+        for loc in localesStr.split(" ") {
+          tempLocales.append(loc: string);
+        }
+        var localesErrorStr= "Required Locales = ";
+        if tempLocales.size > 1 then localesErrorStr += ",".join(tempLocales.toArray()); 
+        else localesErrorStr += localesStr:string;
         throw new owned TestIncorrectNumLocales(localesErrorStr);
       }
     }
@@ -1246,7 +1252,7 @@ module UnitTest {
         if checkCircleCount > 0 {
           testsSkipped[testName] = true;
           circleFound = true;
-          var failReason = testName + " skipped as circular dependency found";
+          var failReason = testName + " skipped because circular dependency found";
           testResult.addSkip(testName, failReason);
           testStatus[testName] = true;
           return;
@@ -1269,14 +1275,14 @@ module UnitTest {
             // if super test failed
             if testsFailed[superTest: string] {
               testsSkipped[testName] = true; // current test have failed or skipped
-              var skipReason = testName + " skipped as " + superTest: string +" failed";
+              var skipReason = testName + " skipped because " + superTest: string +" failed";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // if super test failed
             if testsSkipped[superTest: string] {
               testsSkipped[testName] = true; // current test have failed or skipped
-              var skipReason = testName + " skipped as " + superTest: string +" skipped";
+              var skipReason = testName + " skipped because " + superTest: string +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
@@ -1291,7 +1297,7 @@ module UnitTest {
             // if superTest error then
             if testsErrored[superTest: string] {
               testsSkipped[testName] = true;
-              var skipReason = testName + " skipped as " + superTest: string +" gave an Error";
+              var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
               testResult.addSkip(testName, skipReason);
               break;
             }
@@ -1300,27 +1306,27 @@ module UnitTest {
         // super test Errored
         else if testsErrored[superTest: string] {
           testsSkipped[testName] = true;
-          var skipReason = testName + " skipped as " + superTest: string +" gave an Error";
+          var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
           testResult.addSkip(testName, skipReason);
           break;
         }
         // super test Skipped 
         else if testsSkipped[superTest: string] {
           testsSkipped[testName] = true;
-          var skipReason = testName + " skipped as " + superTest: string +" Skipped";
+          var skipReason = testName + " skipped because " + superTest: string +" Skipped";
           testResult.addSkip(testName, skipReason);
           break;
         }
         //super test failed
         else {
           testsSkipped[testName] = true; // current test have failed or skipped
-          var skipReason = testName + " skipped as " + superTest: string +" failed";
+          var skipReason = testName + " skipped because " + superTest: string +" failed";
           testResult.addSkip(testName, skipReason);
         }
       }
       if circleFound {
         testsSkipped[testName] = true;
-        var skipReason = testName + " skipped as circular dependency found";
+        var skipReason = testName + " skipped because circular dependency found";
         testResult.addSkip(testName, skipReason);
       }
       // Test is not having error or failures or dependency or skipped
