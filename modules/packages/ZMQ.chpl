@@ -168,7 +168,7 @@ Serialization
 
 In Chapel, sending or receiving messages is supported for a variety of types.
 Primitive numeric types and strings are supported as the foundation.
-In addition, user-defined :type:`record` types may be serialized automatically
+In addition, user-defined ``record`` types may be serialized automatically
 as `multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
 by internal use of the :chpl:mod:`Reflection` module.
 Currently, the ZMQ module can serialize records of primitive numeric types,
@@ -193,7 +193,7 @@ strings, and other serializable records.
    ``zmq_msg_recv()`` API for :proc:`Socket.send()` and :proc:`Socket.recv()`,
    respectively, when transmitting strings.  Further, ZMQ sends the string as
    a single message of only the byte stream of the string's character array.
-   (Recall that Chapel's :type:`string` type currently only supports ASCII
+   (Recall that Chapel's ``string`` type currently only supports ASCII
    strings, not full Unicode strings.)
 
 .. _interop:

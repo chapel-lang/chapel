@@ -94,7 +94,7 @@
   instance. This means that it is easy to add data in bulk, expecting it to be distributed, when in
   reality it is not; if another node needs data, it will steal work on-demand. This may not always be
   desired, and likely will more memory consumption on a single node. We offer a way for the user to
-  invoke a more static load balancing approach, called :proc:`balance`, which will redistributed work.
+  invoke a more static load balancing approach, called :proc:`DistBag.balance`, which will redistributed work.
 
   .. code-block:: chapel
 
@@ -111,7 +111,7 @@
       To make matters worse, the waiting tasks don't even get any elements, nor does the work
       stealing task, which opens up the possibility of live-lock where nodes steal work back
       and forth before either can process it.
-  2.  Static work-stealing (A.K.A :proc:`balance`) requires a rework that performs a more distributed
+  2.  Static work-stealing (A.K.A :proc:`DistBag.balance`) requires a rework that performs a more distributed
       and fast way of distributing memory, as currently 'excess' elements are shifted to a single
       node to be redistributed in the next pass. On the note, we need to collapse the pass for moving
       excess elements into a single pass, hopefully with a zero-copy overhead.
@@ -179,7 +179,7 @@ module DistributedBag {
     The maximum amount of work to steal from a horizontal node's segment. This
     should be set to a value, in megabytes, that determines the maximum amount of
     data that should be sent in bulk at once. The maximum number of elements is
-    determined by: (:const:`distributedBagWorkStealingMemCap` * 1024 * 1024) / sizeof(:type:`eltType`).
+    determined by: (:const:`distributedBagWorkStealingMemCap` * 1024 * 1024) / sizeof(``eltType``).
     For example, if we are storing 8-byte integers and have a 1MB limit, we would
     have a maximum of 125,000 elements stolen at once.
   */

@@ -19,7 +19,7 @@
 
 /*
 
-:record:`shared` (along with :record:`~OwnedObject.owned`) manage the
+:record:`shared` (along with :record:`~OwnedObject._owned`) manage the
 deallocation of a class instance. :record:`shared` is meant to be used when
 many different references will exist to the object and these references need
 to keep the object alive.
@@ -380,7 +380,7 @@ module SharedObject {
        value returned by this function after the last :record:`shared`
        goes out of scope or deletes the contained class instance
        for another reason, including calls to
-       `=`, or :proc:`retain` when this is the last :record:`shared`
+       `=`, or ``shared.retain`` when this is the last :record:`shared`
        referring to the instance.
        In some cases such errors are caught at compile-time.
      */

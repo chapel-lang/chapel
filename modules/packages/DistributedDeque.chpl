@@ -84,7 +84,7 @@
 
     var deque = new DistDeque(int, cap=maxElem, targetLocales=ourLocales);
 
-  The deque can be used as a queue by using the :proc:`enqueue` and :proc:`dequeue` convenience
+  The deque can be used as a queue by using the :proc:DistDeque.`enqueue` and :proc:`DistDeque.dequeue` convenience
   methods or inserting from one end to remove from another...
 
   .. code-block:: chapel
@@ -92,7 +92,7 @@
     deque.enqueue(1);
     var (hasElem, elem) = deque.dequeue();
 
-  The deque can be used as a stack by using the :proc:`push` and :proc:`pop` convenience methods,
+  The deque can be used as a stack by using the :proc:`DistDeque.push` and :proc:`DistDeque.pop` convenience methods,
   or insertion and removing from the same ends...
 
   .. code-block:: chapel
@@ -100,8 +100,8 @@
     deque.push(1);
     var (hasElem, elem) = deque.pop();
 
-  The deque can be used as a list by using the :proc:`pushBack`, :proc:`pushFront`, :proc:`popBack`,
-  and :proc:`popFront` methods. While the deque is not indexable, the ability to `append` or `prepend`
+  The deque can be used as a list by using the :proc:`DistDeque.pushBack`, :proc:`DistDeque.pushFront`, :proc:`DistDeque.popBack`,
+  and :proc:`DistDeque.popFront` methods. While the deque is not indexable, the ability to `append` or `prepend`
   is powerful enough to allow a total ordering, allowing the user to define the order by letting them
   insert and remove at whichever ends they so choose.
 
@@ -151,8 +151,8 @@
       atomic operations should be provided.
 
   4.  The ordered serial iterators currently do not work when the ``globalHead`` or ``globalTail`` are negative, which is a
-      result of iteration being an after-thought. This will be improved upon soon, but for now if you use :proc:`pushBack`
-      or :proc:`pushFront` methods, I would advise against using them for now.
+      result of iteration being an after-thought. This will be improved upon soon, but for now if you use :proc:`DistDeque.pushBack`
+      or :proc:`DistDeque.pushFront` methods, I would advise against using them for now.
 
   Planned Improvements
   ____________________
