@@ -1,8 +1,8 @@
 TODO:
 * search on TODO
 * search on docs/master
-* check compiler flags
-* check example directory
+* check examples/ directory
+* spellcheck
 
 Release Changes List
 ====================
