@@ -19,9 +19,11 @@ done
 
 source $cwd/common.bash
 
-# Generate part 1 without shell expansion
+# The here-document contains the modulefile's tcl code.  We just need
+# to produce that as our stdout, but while doing so we have to insert
+# the version ID into it.
 
-cat <<\PART_1
+sed "s/_dollar_pkg_version_/$pkg_version/" <<\EOF
 #%Module
 #
 # Chapel module
@@ -82,10 +84,6 @@ if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
 } elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
     set network $env(CRAYPE_NETWORK_TARGET)
 }
-set accel 0
-if { [ info exists env(CRAY_ACCEL_TARGET) ] } {
-    set accel 1
-}
 
 setenv MPICH_GNI_DYNAMIC_CONN disabled
 if { [string match gemini $network] } {
@@ -93,12 +91,9 @@ if { [string match gemini $network] } {
 } elseif { [string match aries $network] } {
     set CHPL_HOST_PLATFORM cray-xc
 } elseif { [string match ofi $network] } {
-    if { [file exists /etc/opt/cray/release/cray-release] } {
-        set CRAY_REL_INFO [exec cat /etc/opt/cray/release/cray-release]
-        if { [string match "PRODUCT=*Shasta*" $CRAY_REL_INFO] } {
-            set CHPL_HOST_PLATFORM cray-shasta
-        }
-    }
+    set CHPL_HOST_PLATFORM cray-shasta
+} elseif { [string match slingshot* $network] } {
+    set CHPL_HOST_PLATFORM cray-shasta
 }
 if { ! [info exists CHPL_HOST_PLATFORM] } {
     puts stderr "Cannot determine host platform"
@@ -180,17 +175,7 @@ if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
 }
 
 set BASE_INSTALL_DIR    [BASE_INSTALL_DIR]
-PART_1
-
-# Generate part 2 With shell expansion
-
-cat <<PART_2
-set CHPL_LEVEL          $pkg_version
-PART_2
-
-# Generate part 3 without shell expansion
-
-cat <<\PART_3
+set CHPL_LEVEL          _dollar_pkg_version_
 set CHPL_LOC            $BASE_INSTALL_DIR/chapel/$CHPL_LEVEL/$CHPL_HOST_PLATFORM
 set is_module_rm        [module-info mode remove]
 
@@ -261,4 +246,4 @@ setenv CHPL_MODULE_HOME $CHPL_LOC
 prepend-path PATH ${CHPL_LOC}/bin/${CHPL_HOST_PLATFORM}-${CHPL_HOST_ARCH}
 prepend-path MANPATH    ${CHPL_LOC}/man
 append-path             PE_PRODUCT_LIST CHAPEL
-PART_3
+EOF
