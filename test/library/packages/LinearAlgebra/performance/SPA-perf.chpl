@@ -6,6 +6,7 @@ use MatrixUtils;
 
 use LinearAlgebra;
 use LinearAlgebra.Sparse;
+private use List;
 use Time;
 
 config const n = 1000,
@@ -163,7 +164,7 @@ record _SPA {
   type eltType = int;
   var b: [cols] bool,      // occupation
       w: [cols] eltType,   // values
-      ls: [1..0] int;  // indices
+      ls: list(int);      // indices
 
   /* Reset w, b, and ls to empty */
   proc reset() {
@@ -177,18 +178,16 @@ record _SPA {
     if this.b[pos] == 0 {
       this.w[pos] = value;
       this.b[pos] = true;
-      this.ls.push_back(pos);
+      this.ls.append(pos);
     } else {
       this.w[pos] += value;
     }
   }
 
   proc gather(ref C: [?Cdom], i) {
-    use Sort;
-
     const nzcur = C.IR[i];
     var nzi = 0;
-    sort(this.ls);
+    this.ls.sort();
 
     for idx in this.ls {
       if nzcur + nzi  > C.JC.size then break;

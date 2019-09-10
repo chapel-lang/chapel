@@ -4172,13 +4172,12 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
     return NULL;
   }
 
-  // Do not forward initializers
-  if (call->isNamedAstr(astrInit) && call->numActuals() >= 1) {
-    if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (se->symbol() == gMethodToken) {
-        return NULL;
-      }
-    }
+  // Do not forward de/initializers.
+  // Todo: what else to add here? Note: we cannot be here for a non-method.
+  if (call->isNamedAstr(astrInit)       ||
+      call->isNamedAstr(astrInitEquals) ||
+      call->isNamedAstr(astrDeinit)     ) {
+    return NULL;
   }
 
   // Detect cycles
@@ -9795,6 +9794,14 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   // Not generic? OK.
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
+
+  if (isRecord(type) &&
+      type->symbol->hasFlag(FLAG_SYNC) == false &&
+      type->symbol->hasFlag(FLAG_SINGLE) == false &&
+      type->symbol->hasFlag(FLAG_TUPLE) == false &&
+      type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    return false;
+  }
 
   bool retval = true;
 

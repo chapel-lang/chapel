@@ -803,24 +803,28 @@ the last line until all of the tasks have completed.
 \index{task parallelism!task functions}
 \index{task parallelism!task intents}
 
-% Would be nice to give this arrangement a name. Could say
-% "the task intent rule", although that sounds a bit like
-% a colloquialism.
 If a variable is referenced within the lexical scope of a
 \chpl{begin}, \chpl{cobegin}, or \chpl{coforall} statement
-and is declared outside that statement, it is considered
+and is declared outside that statement, it is subject to \emph{task intents}.
+That is, it is considered
 to be passed as an actual argument to the corresponding task function
 at task creation time. All references to the variable
-within the task function implicitly refer to the task function's
-corresponding formal argument.
+within the task function implicitly refer to a \emph{shadow variable}, i.e.
+the task function's corresponding formal argument.
 
-Each formal argument of a task function has the default intent by default.
+When the task construct is inside a method on a record and accesses
+a field of \chpl{this}, the field is treated as a regular variable.
+That is, it is passed as an actual argument to the task function and
+all references to the field within the task function implicitly refer
+to the corresponding shadow variable.
+
+Each formal argument of a task function has the default argument intent by default.
 For variables of primitive and class types, this has the effect
 of capturing the value of the variable at task creation time
 and referencing that value instead of the original variable
 within the lexical scope of the task construct.
 
-A formal can be given another intent explicitly by listing it
+A formal can be given another argument intent explicitly by listing it
 with that intent in the optional \sntx{task-intent-clause}.
 For example, for variables of most types, the \chpl{ref} intent allows
 the task construct to modify the corresponding original variable
@@ -857,7 +861,6 @@ in the online documentation:
 %   qualifying which intents are legal in the text of this paragraph.
 % * That's assuming we do not support 'out' and 'inout',
 %   which is still up for debate; otherwise leave as-is.
-% * Do we want to allow default intents? Current implementation allows them.
 
 The implicit treatment of outer scope variables as the task function's
 formal arguments applies to both module level and local variables.

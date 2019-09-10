@@ -242,18 +242,18 @@ proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool
 
 /* Returns the line number of the call to this function. */
 pragma "get line number"
-proc lineNumber param : int { }
+proc getLineNumber() param : int { }
 
 /* Returns the file name this function was called from. */
 pragma "get file name"
-proc fileName param : string { }
+proc getFileName() param : string { }
 
 /* Returns the name of the function this function was called from. */
 pragma "get function name"
-proc functionName param : string { }
+proc getRoutineName() param : string { }
 
 /* Returns the name of the module this function was called from. */
 pragma "get module name"
-proc moduleName param : string { }
+proc getModuleName() param : string { }
 
 } // module Reflection

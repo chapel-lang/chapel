@@ -101,6 +101,7 @@ sub get_used_prefixes {
         s/\[OPT\]//g;
         s/^.*://g;
         s/one\ of//g;
+        s/b[\"\']//g;
         s/[^\-\w\ ]//g;
         s/\s-/\ /g;
         s/\s+/\ /g;

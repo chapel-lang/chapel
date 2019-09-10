@@ -21,6 +21,7 @@
 private use List;
 private use Map;
 use TOML;
+use Time;
 use Spawn;
 use MasonUtils;
 use MasonHelp;
@@ -35,6 +36,8 @@ var subdir = false;
 var keepExec = false;
 var setComm: string;
 var comm: string;
+var dirs: list(string);
+var files: list(string);
 
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
@@ -47,9 +50,10 @@ proc masonTest(args) throws {
   var update = true;
   if MASON_OFFLINE then update = false;
   var compopts: list(string);
-  
-  if args.size > 2 {
-    for arg in args[2..] {
+  var countArgs = 0;
+  for arg in args {
+    countArgs += 1;
+    if countArgs > 2 {
       if arg == '-h' || arg == '--help' {
         masonTestHelp();
         exit(0);
@@ -82,7 +86,17 @@ proc masonTest(args) throws {
         setComm = arg['--setComm='.size+1..];
       }
       else {
-        compopts.append(arg);
+        try! {
+          if isFile(arg) && arg.endsWith(".chpl") {
+            files.append(arg);
+          }
+          else if isDir(arg) {
+            dirs.append(arg);
+          }
+          else {
+            compopts.append(arg);
+          }
+        }
       }
     }
   }
@@ -135,9 +149,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     // Check for tests to run
     if numTests > 0 {
 
-      var testResults = new map(string, string);
       var result =  new TestResult();
-
+      var timeElapsed = new Timer();
+      timeElapsed.start();
       for test in testNames {
 
         const testPath = "".join(projectHome, '/test/', test);
@@ -151,37 +165,23 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const moveTo = "-o " + projectHome + "/target/test/" + testName;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand);
-
+        
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
         }
         else {
-          if show || !run then writeln("compiled ", test, " successfully");
+          if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
-            var exitCode = runTestBinary(projectHome, testName, result, show);
-            if exitCode != 0 {
-              testResults[testName] = "Failed";
-            }
-            else {
-              testResults[testName] = "Passed";
-            }
+            runTestBinary(projectHome, testName, result, show);
           }
         }
       }
       if run && !parallel {
-        var testBinResults = runTestBinaries(projectHome, testNames, numTests, result, show);
-        testResults = testBinResults;
+        runTestBinaries(projectHome, testNames, numTests, result, show);
       }
+      timeElapsed.stop();
       if run {
-        if result.testsRun != 0 {
-          result.printErrors();
-          writeln(result.separator2);
-          result.printResult();
-          exit(0);
-        } else {
-          const numPassed = testResults.valuesToArray().count("Passed");
-          printTestResults(testResults, numTests, numPassed, show);
-        }
+        printTestResults(result, timeElapsed);
       }
     }
     else {
@@ -207,47 +207,37 @@ private proc runTestBinary(projectHome: string, testName: string, ref result, sh
   var dict: [dictDomain] int;
   const exitCode = runAndLog(command, testName+".chpl", result, numLocales, testsPassed,
             testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-            skippedTestNames);
+            skippedTestNames, show);
   if exitCode != 0 {
     const newCommand = " ".join(command,"-nl","1");
     const testResult = runWithStatus(newCommand, show);
-    return testResult;
+    if testResult != 0 {
+      const errMsg = testName: string +" returned exitCode = "+testResult: string;
+      result.addFailure(testName, testName+".chpl", errMsg);
+    }
+    else {
+      result.addSuccess(testName, testName+".chpl");
+    }
   }
-  return exitCode;
 }
 
 
 private proc runTestBinaries(projectHome: string, testNames: list(string),
                              numTests: int, ref result, show: bool) {
 
-  var testResults = new map(string, string);
-
   for test in testNames {
     const testName = basename(stripExt(test, ".chpl"));
-    const exitCode = runTestBinary(projectHome, testName, result, show);
-    if exitCode != 0 {
-      testResults[testName] = "Failed";
-    }
-    else {
-      testResults[testName] = "Passed";
-    }
+    runTestBinary(projectHome, testName, result, show);
   }
-  return testResults;
 }
 
 
-private proc printTestResults(testResults: map(false, ?keyType, string), numTests: int,
-                              numPassed: int, show: bool) {
+private proc printTestResults(ref result, timeElapsed) {
 
-  if show then writeln("\n--------------------\n");
-  writeln("--- Results ---");
-  for test in testResults {
-    writeln(" ".join("Test:",test, testResults[test]));
-  }
-  writeln("\n--- Summary:  ",numTests, " tests run ---");
-  writeln("-----> ", numPassed, " Passed");
-  writeln("-----> ", (numTests - numPassed), " Failed");
-  if (numTests - numPassed) == 0 {
+  result.printErrors();
+  writeln(result.separator2);
+  result.printResult(timeElapsed.elapsed());
+  if (result.testsRun - result.testsPassed) == 0 {
     exit(0);
   }
   else {
@@ -343,44 +333,22 @@ proc getRuntimeComm() throws {
 
 proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
   var comm_c: c_string;
-  var dirs: list(string);
-  var files: list(string);
-  var hadInvalidFile = false;
   try! {
     var checkChpl = spawn(["which","chpl"],stdout = PIPE);
     checkChpl.wait();
     var line: string;
     if checkChpl.stdout.readline(line) {
 
-      for a in cmdLineCompopts {
-        try! {
-          if isFile(a) && a.endsWith(".chpl") {
-            files.append(a);
-          }
-          else if isDir(a) {
-            dirs.append(a);
-          }
-          else {
-            writeln("[Error: ", a, " is not a valid file or directory]");
-            hadInvalidFile = true;
-          }
-        }
-      }
-
-      if hadInvalidFile && files.size == 0 && dirs.size == 0 {
-        exit(2);
-      }
-
       if files.size == 0 && dirs.size == 0 {
         dirs.append(".");
       }
       
       var result =  new TestResult();
-      var testResults = new map(string, string);
-
+      var timeElapsed = new Timer();
+      timeElapsed.start();
       for tests in files {
         try {
-          testFile(tests, result, testResults, show);
+          testFile(tests, result, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test File: ", tests);
@@ -390,27 +358,19 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
       for dir in dirs {
         try {
-          testDirectory(dir, result, testResults, show);
+          testDirectory(dir, result, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test Directory: ", dir);
           writeln(e);
         }
       }
-      if result.testsRun != 0 {
-        result.printErrors();
-        writeln(result.separator2);
-        result.printResult();
-        exit(0);
-      }
-      else {
-        const numPassed = testResults.valuesToArray().count("Passed");
-        const numFailed = testResults.valuesToArray().count("Failed");
-        printTestResults(testResults, numPassed + numFailed, numPassed, show);
-      }
+      timeElapsed.stop();
+      printTestResults(result, timeElapsed);
     }
     else {
       writeln("chpl not found.");
+      exit(2);
     } 
   }
   
@@ -418,7 +378,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
 pragma "no doc"
 /*Docs: Todo*/
-proc testFile(file, ref result, ref testResults, show: bool) throws {
+proc testFile(file, ref result, show: bool) throws {
   var fileName = basename(file);
   var line: string;
   var compErr = false;
@@ -441,6 +401,7 @@ proc testFile(file, ref result, ref testResults, show: bool) throws {
     stderr.writeln("compilation failed for " + fileName);
   }
   else {
+    if show then writeln("\nCompiled '", fileName, "' successfully");
     var testNames: list(string),
         failedTestNames: list(string),
         erroredTestNames: list(string),
@@ -450,19 +411,17 @@ proc testFile(file, ref result, ref testResults, show: bool) throws {
     var dict: [dictDomain] int;
     const exitCode = runAndLog("./"+executable, fileName, result, numLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-              skippedTestNames);
+              skippedTestNames, show);
     if exitCode != 0 {
       const command = " ".join("./"+executable,"-nl","1");
       const testResult = runWithStatus(command, show);
       if testResult != 0 {
-        testResults[fileName] = "Failed";
+        const errMsg = executable: string +" returned exitCode = "+testResult: string;
+        result.addFailure(executable, fileName, errMsg);
       }
       else {
-        testResults[fileName] = "Passed";
+        result.addSuccess(executable, fileName);
       }
-    }
-    else {
-      testResults[fileName] = "Passed";
     }
     if !keepExec {
       FileSystem.remove(executable);
@@ -475,10 +434,10 @@ proc testFile(file, ref result, ref testResults, show: bool) throws {
 
 pragma "no doc"
 /*Docs: Todo*/
-proc testDirectory(dir, ref result, ref testResults, show: bool) throws {
+proc testDirectory(dir, ref result, show: bool) throws {
   for file in findfiles(startdir = dir, recursive = subdir) {
     if file.endsWith(".chpl") {
-      testFile(file, result, testResults, show);
+      testFile(file, result, show);
     }
   }
 }
@@ -487,7 +446,7 @@ pragma "no doc"
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
               ref testsPassed, ref testNames, ref dictDomain, ref dict, 
-              ref failedTestNames, ref erroredTestNames, ref skippedTestNames): int throws 
+              ref failedTestNames, ref erroredTestNames, ref skippedTestNames, show: bool): int throws 
 {
   var separator1 = result.separator1,
       separator2 = result.separator2;
@@ -532,7 +491,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
         try! testNames.remove(testName);
       addTestResult(result, dictDomain, dict, testNames, flavour, fileName, 
                 testName, testExecMsg, failedTestNames, erroredTestNames, 
-                skippedTestNames, testsPassed);
+                skippedTestNames, testsPassed, show);
       testExecMsg = "";
       sep1Found = false;
     }
@@ -564,6 +523,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
       if testNames.count(testName) != 0 then
         try! testNames.remove(testName);
       erroredTestNames.append(testName);
+      if show then writeln("Ran ",testName," ERROR");
       result.addError(testName, fileName, testErrMsg);
       haltOccured =  true;
     }
@@ -573,7 +533,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   if haltOccured then
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames,
-              skippedTestNames);
+              skippedTestNames, show);
   if testNames.size != 0 {
     var maxCount = -1;
     for key in dictDomain.sorted() {
@@ -585,7 +545,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     dictDomain.remove(reqLocales);
     exitCode = runAndLog(executable, fileName, result, reqLocales, testsPassed,
               testNames, dictDomain, dict, failedTestNames, erroredTestNames, 
-              skippedTestNames);
+              skippedTestNames, show);
   }
   return exitCode;
 }
@@ -594,22 +554,27 @@ pragma "no doc"
 /*Docs: Todo*/
 proc addTestResult(ref result, ref dictDomain, ref dict, ref testNames, 
                   flavour, fileName, testName, errMsg, ref failedTestNames, 
-                  ref erroredTestNames, ref skippedTestNames, ref testsPassed) throws 
+                  ref erroredTestNames, ref skippedTestNames, ref testsPassed,
+                  show: bool) throws 
 {
   select flavour {
     when "OK" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addSuccess(testName, fileName);
       testsPassed.append(testName);
     }
     when "ERROR" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addError(testName, fileName, errMsg);
       erroredTestNames.append(testName);
     }
     when "FAIL" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addFailure(testName, fileName, errMsg);
       failedTestNames.append(testName);
     }
     when "SKIPPED" {
+      if show then writeln("Ran ",testName," ",flavour);
       result.addSkip(testName, fileName, errMsg);
       skippedTestNames.append(testName);
     }

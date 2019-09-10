@@ -262,6 +262,10 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
             
             var dependencies = getSpkgDependencies(fullSpec);
             const pkgInfo = getSpkgInfo(fullSpec, dependencies);
+
+            if !exDom.contains(name) then
+              exDom += name;
+
             exDepTree[name] = pkgInfo;
           }
         }

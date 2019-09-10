@@ -168,8 +168,10 @@ static Expr* postFoldNormal(CallExpr* call) {
 
       call->replace(retval);
 
-      // Put the call back in the AST for better errors
-      if (fatalErrorsEncountered()) {
+      // Put the call back in the AST for better errors unless we're trying
+      // to ignore multiple error messages (in which case we hope for a
+      // successful compilation).
+      if (fatalErrorsEncountered() && !inGenerousResolutionForErrors() && !fIgnoreNilabilityErrors) {
         retval->getStmtExpr()->insertBefore(call);
       }
     }
