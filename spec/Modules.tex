@@ -233,7 +233,7 @@ naming~(\rsec{Explicit_Naming}).
 \label{Visibility_Of_A_Module}
 \index{modules!access}
 
-A top-level is available for use~(\rsec{Using_Modules}) anywhere. The
+A top-level module is available for use~(\rsec{Using_Modules}) anywhere. The
 visibility of a nested module is subject to the rules
 of~\rsec{Visibility_Of_Symbols}, where the nested module is considered
 a "module-scope symbol" of its outer module.
@@ -250,8 +250,8 @@ symbol is declared
 symbol's visibility inside its module is controlled by normal lexical
 scoping and is not affected by its \sntx{privacy-specifier}.  When a
 module's symbol is visible~(\rsec{Visibility_Of_A_Module}), the
-symbols it contains are accessible via module's visible symbols are
-accessible via the use statement~(\rsec{Using_Modules}) or qualified
+visible symbols it contains are accessible via the use
+statement~(\rsec{Using_Modules}) or qualified
 naming~(\rsec{Explicit_Naming}).
 
 \subsection{Using Modules}
@@ -274,8 +274,8 @@ use statements, see~\rsec{The_Use_Statement}.
 \label{Explicit_Naming}
 \index{modules!qualified naming}
 
-When a module's symbol is visible—via a use statement, or lexically
-for nested modules—its public symbols can be referred to via
+When a module's symbol is visible---via a use statement, or lexically
+for nested modules---its public symbols can be referred to via
 qualified naming with the following syntax:
 \begin{syntax}
 module-access-expression:
