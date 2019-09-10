@@ -79,9 +79,8 @@ Semantic Changes / Changes to Chapel Language
 * made slice expressions be governed by their slicing domain
   (e.g., in `ref B = A[D];` the domain of `B` is `D` rather than a copy of it)
 * made `proc foo(x: bool(?))` generic across all bool sizes including `bool`
-  (see TODO blc)
 * `require` statements are now processed relative to the source file directory
-  (see TODO blc)
+  (see https://chapel-lang.org/docs/technotes/extern.html#expressing-dependencies)
 * class downcasts now throw `ClassCastError` for incompatible runtime types
   (see 'Explicit Class Conversions' in the spec
    and https://chapel-lang.org/docs/1.20/language/evolution.html#readme-evolution-nilability-and-casts)
@@ -125,7 +124,6 @@ Feature Improvements
 * casts on class types can now compute new types with specific management
   (see 'Explicit Class Conversions' in the spec)
 * added support for `yield`ing within `on`-clauses for inlined serial iterators
-  (see TODO blc)
 * task/forall intents in methods on records now operate on fields of `this`
   (see 'Task Intents' and 'Forall Intents' in the spec)
 * improved complex division to avoid underflow and overflow
