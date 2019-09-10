@@ -10,6 +10,8 @@
 
 private use List;
 
+config const quiet: bool = false;
+
 /*
   We'll start by declaring a list of ``int(64)`` and initializing it with the
   values contained in the range ``1..8``.
@@ -60,6 +62,9 @@ coforall tid in 0..3 with (ref lst2) do
 
   We can call ``list.sort()`` on our list to be on the safe side.
 */
+
+if !quiet then
+  writeln("List 2 before sort: ", lst2);
 
 lst2.sort();
 
