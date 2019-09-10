@@ -133,7 +133,7 @@ config var reproducible = false, verbose = false;
 
   delete bdim1;
   delete rdim1;
-  delete bdim1;
+  delete bdim2;
   delete rdim2;
 
 //
