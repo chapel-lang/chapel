@@ -6602,7 +6602,7 @@ proc channel.readf(fmtStr:string) throws {
   }
 }
 
-/* Call ``try! stdout.writef``; see :proc:`channel.writef`. */
+/* Call ``try! stdout.writef``; see ``channel.writef``. */
 proc writef(fmt:string, const args ...?k):bool {
   try! {
     return stdout.writef(fmt, (...args));
@@ -6615,7 +6615,7 @@ proc writef(fmt:string):bool {
     return stdout.writef(fmt);
   }
 }
-/* Call ``stdin.readf``; see :proc:`channel.readf`. */
+/* Call ``stdin.readf``; see ``channel.readf```. */
 proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));
 }
@@ -7083,7 +7083,7 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch throws
 
    At the time each match is returned, the channel position is
    at the start of that match. Note though that you would have
-   to use :proc:`channel.advance` to get to the position of a capture group.
+   to use ``channel.advance`` to get to the position of a capture group.
 
    After returning each match, advances to just after that
    match and looks for another match. Thus, it will not return
