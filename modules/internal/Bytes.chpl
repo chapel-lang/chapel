@@ -33,16 +33,16 @@ Creating :record:`bytes`
    var b = b"my bytes";
 
 - If you need to create :record:`bytes` using a specific buffer (i.e. data in
-  another :record:`bytes`, a :record:`c_string` or a C pointer) you can use the
+  another :record:`bytes`, a `c_string` or a C pointer) you can use the
   factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
 
-:record:`bytes` and :record:`string`
-------------------------------------
+:record:`bytes` and :record:`~String.string`
+--------------------------------------------
 
-As :record:`bytes` can store arbitrary data, any :record:`string` can be cast to
-:record:`bytes`. In that event, the bytes will store UTF-8 encoded character
-data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs to be
-decoded to be converted to string.
+As :record:`bytes` can store arbitrary data, any :record:`String.string` can be
+cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
+character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
+to be decoded to be converted to string.
 
 .. code-block:: chapel
 
@@ -57,7 +57,7 @@ decoded to be converted to string.
 
    var s2 = b.decode(); // you need to decode a bytes to convert it to a string
 
-See the documentation for the :proc:`decode()` method for details.
+See the documentation for the :proc:`~bytes.decode` method for details.
 
 Similarly, a :record:`bytes` can be initialized using a string:
 
@@ -99,7 +99,7 @@ module Bytes {
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`string`.
+     when decoding a :record:`bytes` into a UTF-8 :record:`String.string`.
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
@@ -146,11 +146,11 @@ module Bytes {
     `c_string`. If the buffer is freed before the :record:`bytes` returned from
     this function, accessing it is undefined behavior.
 
-    :arg s: :type:`c_string` to borrow the buffer from
+    :arg s: `c_string` to borrow the buffer from
 
     :arg length: Length of `s`'s buffer, excluding the terminating
                  null byte.
-    :type length: :type:`int`
+    :type length: `int`
 
     :returns: A new :record:`bytes`
   */
@@ -169,7 +169,7 @@ module Bytes {
      returned from this function, accessing it is undefined behavior.
 
      :arg s: Buffer to borrow
-     :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -193,10 +193,10 @@ module Bytes {
     Creates a new :record:`bytes` which takes ownership of the internal buffer of a
     `c_string`.The buffer will be freed when the :record:`bytes` is deinitialized.
 
-    :arg s: The :type:`c_string` to take ownership of the buffer from
+    :arg s: The `c_string` to take ownership of the buffer from
 
     :arg length: Length of `s`'s buffer, excluding the terminating null byte.
-    :type length: :type:`int`
+    :type length: `int`
 
     :returns: A new :record:`bytes`
   */
@@ -211,7 +211,7 @@ module Bytes {
      is deinitialized.
 
      :arg s: The buffer to take ownership of
-     :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -243,10 +243,10 @@ module Bytes {
     Creates a new :record:`bytes` by creating a copy of the buffer of a
     `c_string`.
 
-    :arg s: The :type:`c_string` to copy the buffer from
+    :arg s: The `c_string` to copy the buffer from
 
     :arg length: Length of `s`'s buffer, excluding the terminating null byte.
-    :type length: :type:`int`
+    :type length: `int`
 
     :returns: A new :record:`bytes`
   */
@@ -259,7 +259,7 @@ module Bytes {
      Creates a new :record:`bytes` by creating a copy of a buffer.
 
      :arg s: The buffer to copy
-     :type s: :type:`bufferType` (i.e. :type:`c_ptr(uint(8))`)
+     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
 
      :arg length: Length of buffer `s`, excluding the terminating null byte.
 
@@ -892,7 +892,7 @@ module Bytes {
 
       :arg sep: The separator
 
-      :returns: a :record:`3*bytes` consisting of the section before `sep`,
+      :returns: a `3*bytes` consisting of the section before `sep`,
                 `sep`, and the section after `sep`. If `sep` is not found, the
                 tuple will contain the whole :record:`bytes`, and then two empty
                 :record:`bytes`.

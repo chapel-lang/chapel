@@ -44,7 +44,7 @@ Methods Available in Other Modules
 
 Besides the functions below, some other modules provide routines that are
 useful for working with strings. The :mod:`IO` module provides
-:proc:`IO.string.format` which creates a string that is the result of
+`IO.string.format` which creates a string that is the result of
 formatting. It also includes functions for reading and writing strings.
 The :mod:`Regexp` module also provides some routines for searching
 within strings.
@@ -481,11 +481,11 @@ module String {
     it is undefined behavior.
 
     :arg s: Object to borrow the buffer from
-    :type s: c_string
+    :type s: `c_string`
 
     :arg length: Length of the `c_string` in bytes, excluding the terminating
                  null byte.
-    :type length: int
+    :type length: `int`
 
     :returns: A new `string`
   */
@@ -508,10 +508,10 @@ module String {
 
      :arg length: Length of the string stored in `s`, excluding the terminating
                   null byte.
-     :type length: int
+     :type length: `int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: `int`
 
      :returns: A new `string`
   */
@@ -536,7 +536,7 @@ module String {
 
     :arg length: Length of the string stored in `s`, excluding the terminating
                  null byte.
-    :type length: int
+    :type length: `int`
 
     :returns: A new `string`
   */
@@ -554,10 +554,10 @@ module String {
 
      :arg length: Length of the string stored in `s`, excluding the terminating
                   null byte.
-     :type length: int
+     :type length: `int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: `int`
 
      :returns: A new `string`
   */
@@ -585,11 +585,11 @@ module String {
     Creates a new string by creating a copy of the buffer of a `c_string`.
 
     :arg s: Object to copy the buffer from
-    :type s: c_string
+    :type s: `c_string`
 
     :arg length: Length of the `c_string` in bytes, excluding the terminating
                  null byte.
-    :type length: int
+    :type length: `int`
 
     :returns: A new `string`
   */
@@ -606,10 +606,10 @@ module String {
 
      :arg length: Length of the string stored in `s`, excluding the terminating
                   null byte.
-     :type length: int
+     :type length: `int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: `int`
 
      :returns: A new `string`
   */
