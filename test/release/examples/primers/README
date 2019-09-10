@@ -21,6 +21,7 @@ demonstrate Chapel feature areas in detail.
      LAPACKlib.chpl              : the LAPACK standard library
      LinearAlgebralib.chpl       : LinearAlgebra module
      learnChapelInYMinutes.chpl  : Chapel's entry for learnxinyminutes.com
+     listOps.chpl                : Using the `list` type
      locales.chpl                : Chapel Locale types
      modules.chpl                : Chapel modules and use statements
      nothingVariables.chpl       : Using nothing for variable and field types

@@ -74,6 +74,7 @@ Library Utilities
    :maxdepth: 1
 
    File I/O <fileIO>
+   List <listOps>
    Timers <timers>
 
 Numerical Libraries
