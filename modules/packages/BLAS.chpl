@@ -23,7 +23,7 @@ Support for Basic Linear Algebra Subprograms (BLAS) kernel routines.
 
 BLAS (Basic Linear Algebra Subprograms) are the de facto standard routines for
 low-level matrix, vector, and scalar operations. While `netlib
-<http://www.netlib.org/blas/#_documentation>`_ provides the official
+<https://www.netlib.org/blas/#_documentation>`_ provides the official
 reference version of BLAS, this documentation refers to the
 `MKL BLAS <https://software.intel.com/en-us/mkl-developer-reference-fortran>`_
 documentation, due to interface similarities.
@@ -53,7 +53,7 @@ BLAS Implementations:
   `BLAS implementations <https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms#Implementations>`_
   available.
   This module was built and tested with `netlib's C_BLAS
-  <http://www.netlib.org/blas/#_cblas>`_, but many other implementations are
+  <https://www.netlib.org/blas/#_cblas>`_, but many other implementations are
   compatible as well.
   Using a version of BLAS optimized for the user's system will yield the best
   performance.
@@ -2486,7 +2486,7 @@ module BLAS {
     different array element types require using different functions.
 
     Refer to the
-    `C_BLAS documentation <http://www.netlib.org/lapack/explore-html/dir_f88bc7ad48bfd56d75bf9d4836a2bb00.html>`_
+    `C_BLAS documentation <https://www.netlib.org/lapack/explore-html/dir_f88bc7ad48bfd56d75bf9d4836a2bb00.html>`_
     of the reference version for the usage of this module.
 
   */
