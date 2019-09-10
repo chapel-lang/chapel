@@ -198,8 +198,32 @@ To try out different values at runtime, pass the values for ``number`` to ``maso
 Testing your Package
 ~~~~~~~~~~~~~~~~~~~~
 
-Mason provides the functionality to test packages in a quick and concise manner.
-an example of adding to ``MyPackage`` and running it. The test is as follows:
+Mason provides the functionality to test packages through the ``mason test``
+subcommand. There are two styles of writing mason tests:
+
+1. Tests that utilize the `UnitTest`` module to determine pass/fail status
+2. Tests that rely on the exit code to determine pass/fail status
+
+Here is an example of a ``UnitTest``-based tests:
+
+.. code-block:: chpl
+
+   use UnitTest;
+
+   config const testParam: bool = true;
+
+   proc myTest(test: Test) {
+     test.assertTrue(testParam);
+   }
+
+Mason testing that uses ``UnitTest`` will treat each individual function as a
+test, and the test will be considered successful if no assertions failed and no
+halts were reached within the function body.
+
+See the :mod:`UnitTest` documentation to learn more about writing unit tests in
+Chapel.
+
+Here is an example of an exit-code-based tests:
 
 .. code-block:: chpl
 
@@ -212,7 +236,18 @@ an example of adding to ``MyPackage`` and running it. The test is as follows:
      exit(1);
    }
 
-Our package structure will be as follows::
+Mason testing that relies on exit code tests each file as a test, and the test
+will be considered successful if the program compiled and exited with an exit
+code of 0.
+
+These tests should be configured such that a failure produces an exit code other than 0.
+Returning a non-zero exit code can be accomplished by calling ``exit()`` or
+throwing an uncaught error.
+
+Both exit-code and ``UnitTest`` style tests can be used within a single mason
+package.
+
+After adding our test, the package structure will be as follows::
 
   MyPackage/
    │
@@ -231,15 +266,11 @@ Our package structure will be as follows::
    └── test/
         └── myPackageTest.chpl
 
-Mason testing is based on exit code which means that if the package's tests compile
-and run successfully, despite the "result" of the program, the tests pass. For this
-reason, Mason users should configure their tests such that a failure produces an
-exit code other than 0. Using ``exit()`` is the easiest way to do this, but throwing
-errors is another way to accomplish the same thing.
 
-To run the test(s), use the command ``mason test``. If tests are not explicitly specified in Mason.toml,
-Mason will gather all the tests found in ``test/``, compile them with the dependencies listed in your ``Mason.toml``
-and run them producing the following output::
+Use ``mason test`` to run the test(s). If tests are not explicitly
+specified in ``Mason.toml``, Mason will gather all the tests found in ``test/``,
+compile them with the dependencies listed in your ``Mason.toml`` and run them
+producing the following output::
 
   --- Results ---
   Test: myPackageTest Passed
@@ -248,22 +279,26 @@ and run them producing the following output::
   -----> 1 Passed
   -----> 0 Failed
 
-If the standard output of the tests is desired, simply throw the ``--show`` flag.
-The output of ``mason test --show`` in this case would be::
+Additional output can be displayed by throwing the ``--show flag``.
 
-  Test Passed!
+.. note::
 
-  --------------------
+    ``mason test`` can also be used outside of a mason package as a
+    ``UnitTest`` test runner. See :chpl:mod:`UnitTest` for more information.
 
-  --- Results ---
-  Test: myPackageTest Passed
+Tests can be listed in the ``Mason.toml`` as a TOML array of strings for the
+``tests`` field:
 
-  --- Summary:  1 tests run ---
-  -----> 1 Passed
-  -----> 0 Failed
+.. code-block:: text
 
-Mason will find tests either by searching through the ``test/`` directory, or by
-reading them from the ``Mason.toml`` where they can be specified.
+   [brick]
+   name = "myPackage"
+   version = "0.1.0"
+   chplVersion = "1.18.0"
+   tests = ["test1.chpl",
+            "test2.chpl",
+            "test3.chpl"]
+
 
 
 Creating and Running Examples
@@ -789,14 +824,14 @@ Must ensure your package has a remote origin in order to publish remotely.
 Publishing to a personal remote registry
 
 .. code-block:: sh
-   
+
    cd PackageA
    mason publish <remote-path-to-registry>
 
 To assess the ability of your package to be published to the mason-registry or
 a personal registry, run ``mason publish --dry-run <path-to-registry>`` for a
 series of quick checks or ``mason publish --check <path-to-registry`` for a more
-in depth check that will build your packages and run the full test suite. 
+in depth check that will build your packages and run the full test suite.
 
 Local Registries
 ================
@@ -850,8 +885,8 @@ the it as a dependency with ``mason add package@version``
 
    cd MyPackage
    mason add PackageA@0.1.0
-      
-    
+
+
 The Manifest File
 =================
 
@@ -901,7 +936,7 @@ Mason can be configured by setting the following environment variables:
 - ``MASON_OFFLINE`` : A boolean value that prevents mason from making calls that
   require internet access when set to ``true``. Defaults to ``false``. Mason command
   that support a ``--[no-]update`` flag can override the ``MASON_OFFLINE`` setting
-  when ``--update`` is explicitly passed. 
+  when ``--update`` is explicitly passed.
 
 The ``mason env`` command will print the inferred or set values of these
 environment variables. If a variable was set by the user, an asterisk will be
