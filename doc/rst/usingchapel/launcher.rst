@@ -120,7 +120,7 @@ resolve that to an IP address using ``gethostbyname()``.
 
 When ``CHPL_COMM == gasnet``, this will also be used to set the value of
 ``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
-http://gasnet.lbl.gov/dist/udp-conduit/README ).
+https://gasnet.lbl.gov/dist/udp-conduit/README ).
 
 .. _chpl-rt-workerip:
 
@@ -133,7 +133,7 @@ among themselves using the same interface used to connect to the master node
 (see :ref:`chpl-rt-masterip`, above).
 
 When ``CHPL_COMM == gasnet``, this will also be used to set the value of
-``GASNET_WORKERIP`` (see http://gasnet.lbl.gov/dist/udp-conduit/README ).
+``GASNET_WORKERIP`` (see https://gasnet.lbl.gov/dist/udp-conduit/README ).
 
 .. _using-slurm:
 

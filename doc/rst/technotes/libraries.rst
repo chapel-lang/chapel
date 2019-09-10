@@ -572,7 +572,7 @@ Chapel also supports ``--library`` when ``CHPL_COMM != none``.  We intend to
 support other settings in the future, see :ref:`Other Settings` in the
 :ref:`Multilocale Caveats` section for more information.
 
-To compile a multilocale library, `ZeroMQ <http://zeromq.org/>`_ must be
+To compile a multilocale library, `ZeroMQ <https://zeromq.org/>`_ must be
 installed.
 
 If ZeroMQ is not installed in a way that enables your C compiler to find it
