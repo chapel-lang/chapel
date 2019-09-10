@@ -939,10 +939,11 @@ two mechanisms.
 
        require "foo.h", "foo.c";
 
-    This has an effect similar to adding foo.h and foo.c to the
-    command line. You might need to specify -I and -L arguments
-    to indicate to the directories storing any headers or library
-    files.
+    This has an effect similar to adding foo.h and foo.c to the Chapel
+    compiler's command line. Filenames are interpreted as expressing a
+    path relative to the directory in which the source file lives.
+    You can also use the compiler's -I and -L flags to indicate search
+    directories for headers or library files.
 
     Similarly, the version below uses the require statement to indicate
     that this module depends on libfoo.a (and has a similar effect as if
