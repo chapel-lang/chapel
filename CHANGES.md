@@ -96,13 +96,13 @@ New Features
 * added a built-in `bytes` type
   (see https://chapel-lang.org/docs/1.20/builtins/Bytes.html)
 * added bytes literals `b""`, `b''`, `b""" """`, and `b''' '''`
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.20/builtins/Bytes.html)
 * added new postfix `?` and `!` operators to support nilable class features
   (see https://chapel-lang.org/docs/1.20/language/evolution.html#nilability-changes)
 * added support for partial instantiation of generic types
   (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
 * generic types can now be passed as `type` arguments and returned
-  (DOC TODO BHARSH - somewhere in partial instantiations technote)
+  (https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html#passing-and-returning-generic-types)
 * added factory functions for creating strings using existing buffers
 * added support for slicing dense arrays using sparse domains
 * added a `nothing` type with the singleton value `none`
@@ -260,7 +260,7 @@ Standard Domain Maps (Layouts and Distributions)
 New Tools / Tool Changes
 ------------------------
 * added `UnitTest` support to `mason test`
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#testing-your-package)
 * added `mason publish` subcommand to make publishing packages easier
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#submit-a-package)
 * added `mason search --show` flag to display manifest file of package
@@ -272,7 +272,7 @@ New Tools / Tool Changes
 Interoperability Improvements
 -----------------------------
 * added support for multi-locale Chapel libraries
-  (see https://chapel-lang.org/docs/master/technotes/libraries.html#using-your-library-in-multilocale-settings)
+  (see https://chapel-lang.org/docs/1.20/technotes/libraries.html#using-your-library-in-multilocale-settings)
 * the LLVM back-end now supports `--library-python` and `--library-makefile`
 * added support for exporting routines that accept/return strings
 * added support for overriding environment variables to `--library-makefile`
@@ -324,6 +324,7 @@ Documentation
 * added a warning to 'channel.readf' documentation
   (see https://chapel-lang.org/docs/1.20/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
 * removed a reference to old assignment behavior from interoperability technote
+* fixed several broken links in online documentation
 
 Example Codes
 -------------
@@ -374,8 +375,8 @@ Error Messages / Semantic Checks
 * made defining a method named 'borrow' a compiler error
 * added an error for domain expressions that are types rather than values
 * added non-`[const] in` intents error messages in certain interop situations
-  (see https://chapel-lang.org/docs/master/technotes/libraries.html#intents
-   and https://chapel-lang.org/docs/master/technotes/libraries.html#intents-in-python-interoperability)
+  (see https://chapel-lang.org/docs/1.20/technotes/libraries.html#intents
+   and https://chapel-lang.org/docs/1.20/technotes/libraries.html#intents-in-python-interoperability)
 * improved error message wording for type mismatches in assignment
 * made a user-facing "the type of the actual argument is generic" error
 
@@ -420,6 +421,8 @@ Bug Fixes
 * added a thrown error for `FileSystem.mkdir('')` instead of a seg-fault
 * fixed a bug in `TOML` where empty lines were not counted in the line number
 * fixed `mason test` bug where exit code would not reflect test results
+* fixed `mason test` bug in which subdirectories were not being traversed
+* fixed a bug in which `mason doc` did not process used modules
 * fixed `mason` help flags such that being in a package is not required
 * fixed `mason search` to only show bricks that support current Chapel version
 * fixed `make mason` such that it will not hang if hugepages is unavailable
