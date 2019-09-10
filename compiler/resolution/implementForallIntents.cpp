@@ -801,13 +801,7 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
 static AggregateType* isRecordReceiver(Symbol* sym) {
   if (sym->hasFlag(FLAG_ARG_THIS))
     if (Type* type = sym->type->getValType())
-      if (isRecord(type)                      &&
-          // Array-typed 'this' could be passed by ref-intent and so "pruned",
-          // see resolveShadowVarTypeIntent(). Then, there would not be
-          // a shadow variable for it and convertFieldsOfRecordReceiver()
-          // would not see it and would not do the transformations.
-          // So, skip arrays always, for consistency.
-          ! type->symbol->hasFlag(FLAG_ARRAY) )
+      if (isUserRecord(type))
         return toAggregateType(type);
   return NULL;
 }
