@@ -176,6 +176,9 @@ proc testsuite(type T, initphase) {
   tw(5,11, 47,42);
   tw(11,5, 42,47);
   tw(11,5, 47,42);
+
+  delete df8;
+  delete df9;
 }
 
 testsuite(int(64),  1000);
