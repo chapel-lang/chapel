@@ -21,14 +21,29 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
+define getHostValue
+$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
+        CHPL_MAKE_HOST_TARGET=--host \
+        make -f $(CHPL_MAKE_HOME)/make/Makefile.base \
+        printQ-$1)
+endef
+
 #
 # In multilocale library compilation, the client library is compiled with the
 # host compiler (CHPL_HOST_COMPILER), while the Chapel server (what is
 # launched on the compute nodes) is compiled with the target compiler
 # (CHPL_TARGET_COMPILER).
 #
-HOST_CC=$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) CHPL_MAKE_HOST_TARGET=--host make -f $(CHPL_MAKE_HOME)/make/Makefile.base printQ-CC)
+HOST_CC=$(call getHostValue,CC)
 TARG_CC=$(CC)
+
+#
+# These two sets of flags are used when compiling the launcher object files
+# in `Makefile.launcher`. We mimick them here when compiling the client
+# library.
+#
+HOST_GEN_CFLAGS=$(call getHostValue,GEN_CFLAGS)
+HOST_COMP_GEN_CFLAGS=$(call getHostValue,COMP_GEN_CFLAGS)
 
 ifdef CHPL_ZMQ_HOME
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
@@ -73,13 +88,11 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) \
 		CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) \
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
-		CHPL_MAKE_IS_MLI=1 \
-		HOST_CC="$(HOST_CC)" \
-		TARG_CC="$(TARG_CC)"
+		CHPL_MAKE_IS_MLI=1
 #
 # Compile the client bundle.
 #
-	$(HOST_CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+	$(HOST_CC) $(HOST_GEN_CFLAGS) $(HOST_COMP_GEN_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
