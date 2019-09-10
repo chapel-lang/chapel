@@ -621,7 +621,10 @@ void ModuleSymbol::addDefaultUses() {
   if (modTag != MOD_INTERNAL) {
     ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
 
-    assert (parentModule != NULL);
+    if (parentModule == NULL) {
+      SET_LINENO(this);
+      USR_FATAL("Modules must be declared inside modules or at file-scope");
+    }
 
     //
     // Don't insert 'use ChapelStandard' for nested user modules.
