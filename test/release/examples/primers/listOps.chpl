@@ -25,9 +25,8 @@ writeln("List 1 after init: ", lst1);
 
   .. note::
 
-    The implementation of the ``list`` type guarantees that appending a
-    value to the end of a list will not invalidate references to existing
-    values.
+    The ``list`` type guarantees that appending a value to the end of a list
+    will not invalidate references to existing values.
 
     This is particularly useful in a parallel context. One task may append
     values to the end of a list while others index over existing values
@@ -43,7 +42,7 @@ writeln("List 1 after appends: ", lst1);
   If a list is intended to be used in parallel, then the ``parSafe`` field
   must be set to ``true`` at initialization. 
 
-  Let's create a new list and `list.append()` values to it in parallel.
+  Let's create a new list and ``list.append()`` values to it in parallel.
 */
 
 var lst2: list(int, parSafe=true);
@@ -79,7 +78,7 @@ var lst3 = lst2;
 
   .. note::
   
-    The ``list.pop()`` operation is O(n) worst case. If you pop an value
+    The ``list.pop()`` operation is O(n) worst case. If you pop a value
     from the front of a list, all the other values after it have to be
     shifted one to the left.
 */
@@ -99,7 +98,7 @@ writeln("List 3 after appends: ", lst3);
   Let's ensure `lst2` and `lst3` have unique values. The ``list.remove()``
   method takes a secondary argument called `count` which specifies how many
   instances of a value to remove. Passing ``0`` to `count` will remove every
-  value matching input from the list.
+  value matching the input from a list.
 */
 
 for elem in lst2 do
@@ -148,7 +147,7 @@ writeln("List 3 after removing duplicates: ", lst3);
     responsibility to abide by this assumption.
 
     It is safe to modify the values of a list (i.e, references returned via
-    the ``list.this()`` operator) in a forall loop, but not the list itself.
+    indexing into a list) in a forall loop, but not the list itself.
 */
 
 forall (x, y) in zip(lst2, lst3) {
@@ -198,7 +197,7 @@ for i in 1..(lst1.size / 2) {
 writeln("List 1 after correction: ", lst1);
 
 /*
-  If you need to get the specific index of an value contained in a list, you
+  If you need to get the specific index of a value contained in a list, you
   can use the ``list.indexOf()`` operator.
 
   .. warning::
