@@ -58,6 +58,9 @@ proc testsuite(type T, initphase) {
   test({1:T..1:T, 0:T..9:T by  3 } dmapped dm);
   test({1:T..1:T, 0:T..9:T by  2 } dmapped dm);
   test({1:T..1:T, 3:T..9:T by -3 } dmapped dm);
+
+  delete vdf;
+  delete sdf;
 }
 
 testsuite(int,        0);
