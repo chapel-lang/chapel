@@ -516,7 +516,7 @@ via the ``str_style`` field in :record:`iostyle`.
   of length follow, and where the 7-bits of length from each byte store
   the 7-bit portions of the length in order from least-significant to
   most-significant. This way of encoding a variable-byte length  matches
-  `Google Protocol Buffers <https://github.com/google/protobuf/>`_.
+  `Google Protocol Buffers <https://github.com/google/protocolbuffers/protobuf/>`_.
 * ``iostringstyle.data_toeof`` indicates a string format that contains
   only the string data without any length or terminator. When reading,
   this format will read a string until the end of the file is reached.
