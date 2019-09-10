@@ -452,3 +452,48 @@ module OuterNested {
     var canSeeHidden = !hiddenFoo;
   }
 } // end of OuterNested module
+
+/* Private Uses
+   ------------
+
+   It is important to note that a module with a ``use`` of other modules will
+   by default make those symbols available to scopes that ``use`` it.
+   Considering the following pair of modules:
+*/
+module UserModule {
+  use ModuleThatIsUsed;
+}
+
+module ModuleThatIsUsed {
+  proc publiclyAvailableProc() {
+    writeln("This function is accessible!");
+  }
+}
+
+/* A scope with a ``use`` of ``UserModule`` will also be able to see the
+   symbols defined by ``ModuleThatIsUsed``.
+*/
+module UsesTheUser {
+  proc func1() {
+    use UserModule;
+    publiclyAvailableProc(); // available due to ``use`` of ModuleThatIsUsed
+  }
+}
+
+/* To avoid this, ``use`` statements can be declared as ``private``:
+ */
+module UserModule2 {
+  private use ModuleThatIsUsed;
+}
+
+/* When a scope has a ``use`` of ``UserModule2``, the symbols from
+   ``ModuleThatIsUsed`` will not be available due to the ``private`` modifier on
+   ``UserModule2`` 's ``use`` of it, so the following code would not compile.
+*/
+
+module UsesTheUser2 {
+  proc func2() {
+    use UserModule2;
+    //publiclyAvailableProc(); // Won't compile, the ``use`` is ``private``
+  }
+}
