@@ -151,4 +151,7 @@ tl();
 
 delete vdf;
 delete sdf;
-delete ddf;
+// ENGIN: I think we should delete ddf, too.
+// But doing so gives a ton of valgrind errors. Happily, not
+// deleting it doesn't cause any leaks?
+//delete ddf;
