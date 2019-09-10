@@ -238,7 +238,7 @@ generic management of class types.
   var x : unmanaged defaultC();
   var y : owned defaultC();
 
-  // Declare two varibles with different instantiations of 'C', based on a
+  // Declare two variables with different instantiations of 'C', based on a
   // common instantiation returned by 'intC', and with different management
   var a : owned intC(100);
   var b : shared intC(123);
