@@ -2,6 +2,7 @@ use Random;
 use BlockDist;
 use Time;
 use Sort;
+use SortExtras;
 use CommDiagnostics;
 
 config param debug = false;

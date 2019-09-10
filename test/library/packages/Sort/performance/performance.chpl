@@ -6,6 +6,7 @@
  */
 
 use Sort;
+use SortExtras;
 use Random;
 use Time;
 

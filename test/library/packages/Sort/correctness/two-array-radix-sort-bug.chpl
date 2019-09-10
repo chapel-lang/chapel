@@ -1,5 +1,6 @@
 use Random;
 use Sort;
+use SortExtras;
 use Math;
 use BlockDist;
 

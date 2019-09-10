@@ -1,4 +1,5 @@
 use Sort;
+use SortExtras;
 use SampleSortHelp;
 use Random;
 

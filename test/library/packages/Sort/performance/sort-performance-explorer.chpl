@@ -2,6 +2,7 @@
 // for differing algorithms, input data distributions, and input sizes.
 
 use Sort;
+use SortExtras;
 use Random;
 use Time;
 

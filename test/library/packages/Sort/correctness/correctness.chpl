@@ -3,6 +3,7 @@
  */
 
 use Sort;
+use SortExtras;
 use Random;
 
 proc main() {
