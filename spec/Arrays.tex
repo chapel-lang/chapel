@@ -417,11 +417,12 @@ array element type.
 \index{assignment!array}
 
 Array assignment is by value.  Arrays can be assigned arrays, ranges,
-domains, iterators, or tuples.
+domains, iterators, or tuples as long as the two expressions are
+compatible in terms of number of dimensions and shape.
 
 \begin{chapelexample}{assign.chpl}
-If \chpl{A} is an lvalue of array type and \chpl{B} is an expression
-of either array, range, or domain type, or an iterator, then the
+If \chpl{A} is an array variable and \chpl{B} is an expression
+of array, range, domain, or tuple type, or an iterator, then the
 assignment
 \begin{chapelpre}
 var A: [1..3] int;

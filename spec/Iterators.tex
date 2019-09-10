@@ -68,11 +68,12 @@ yield-statement:
   `yield' expression ;
 \end{syntax}
 
-When an iterator is executed and a \chpl{yield} is encountered, the value of the yield
-expression is returned.  However, the state of execution of the iterator is
-saved.  On its next invocation, execution resumes from the point immediately
-following that \chpl{yield} statement and with the saved state of execution.
-A yield statement in a variable iterator must contain an lvalue expression.
+When an iterator is executed and a \chpl{yield} is encountered, the
+value of the yield expression is returned to the iterator's callsite.
+However, the state of execution of the iterator is logically saved
+such that its execution continues from the point immediately following
+the \chpl{yield} statement.  A yield statement in an iterator that
+yields references must yield an lvalue expression.
 
 When a \chpl{return} is encountered, the iterator finishes without yielding another
 index value.  The \chpl{return} statements appearing in an iterator are not
