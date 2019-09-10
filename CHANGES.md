@@ -1,9 +1,3 @@
-TODO:
-* search on TODO
-* search on docs/master
-* check examples/ directory
-* spellcheck
-
 Release Changes List
 ====================
 
@@ -23,14 +17,13 @@ Highlights (see subsequent sections for further details)
   - improved support for partial and complete instantiations of generic types
   - added `private use` and required `use` of top-level modules for name safety
   - improved the user-facing interfaces for `atomic` types
-  - added the `nothing` type/`none` value to avoid a prior overload of `void`
+  - added the `nothing` type and `none` value to avoid dual meanings of `void`
 * libraries and domain maps:
   - added `list`, `set`, `map` types to replace array-as-vector/-map features
-  - added new `Reflection` routines to reason about source code locations
-  - made several improvements to the `LinearAlgebra` and `Sort` packages
   - added a new `UnitTest` module with support via `mason test`
-  - added new package modules: `URL`, `AtomicObjects`, and `EpochManager`
-  - added new `LockFreeStack` and `LockFreeQueue` data structures
+  - added new `Reflection` routines to reason about source code locations
+  - added a new `EpochManager` package for concurrent memory reclamation
+  - made several improvements to the `LinearAlgebra` and `Sort` packages
 * performance improvements:
   - improved the affinity and performance of parallel loops
   - optimized bulk transfers for Block-distributed arrays
@@ -55,7 +48,7 @@ Syntactic/Naming Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * top-level modules must now be `use`d in order to be referenced
-  (see TODO blc)
+  (see the `Using Modules` and `The Use Statement` sections of the Chapel spec)
 * class types must now opt into being able to store `nil` using `?`
   (e.g., `var myC: C = ...` cannot store `nil` but `var myC: C? = ...` can;
    see https://chapel-lang.org/docs/1.20/language/evolution.html#nilability-changes)
@@ -309,30 +302,37 @@ Memory Improvements
 
 Documentation
 -------------
+* added a new chapter to the language specification on error-handling
+  (see the 'Error Handling' chapter in the language specification)
+* added a new technical note describing partial instantiations
+  (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
 * updated `mason` documentation to reflect new mason features
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html)
-* updated `chpldoc` documentation to use `--output-dir` instead of `--docs-dir`
-  (see https://chapel-lang.org/docs/1.20/tools/chpldoc/chpldoc.html#documenting-modules)
-* documented that the environment must be set for Unicode with UTF8 encoding
+* documented that a user's environment must support Unicode with UTF8 encoding
   (see https://chapel-lang.org/docs/1.20/usingchapel/chplenv.html#character-set)
 * added `bytes` to the language specification as a primitive type
 * clarified that modules that are not referred to are not initialized
   (see 'Module Initialization' in the spec)
+* updated the language specification with respect to other language changes
+* updated `chpldoc` documentation to use `--output-dir` instead of `--docs-dir`
+  (see https://chapel-lang.org/docs/1.20/tools/chpldoc/chpldoc.html#documenting-modules)
 * updated reductions technote to use memory management annotations
   (see https://chapel-lang.org/docs/1.20/technotes/reduceIntents.html)
 * improved the `--help` description of the `--fast` flag
 * added a warning to 'channel.readf' documentation
   (see https://chapel-lang.org/docs/1.20/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
 * removed a reference to old assignment behavior from interoperability technote
-* fixed several broken links in online documentation
+* fixed several broken links in the online documentation
 
 Example Codes
 -------------
-* disabled some numerically unstable kernels in LCALS
+* added a primer for the new `list` type
+  (see https://chapel-lang.org/docs/1.20/primers/listOps.html)
 * replaced the `voidVariables` primer with a `nothingVariables` primer
   (see https://chapel-lang.org/docs/1.20/primers/nothingVariables.html)
 * improved the `specialMethods` primer to remove the files it creates
   (see https://chapel-lang.org/docs/1.20/primers/specialMethods.html)
+* disabled some numerically unstable kernels in LCALS
 
 Portability
 -----------
