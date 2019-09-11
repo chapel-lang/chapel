@@ -94,13 +94,14 @@ exclude_patterns = ['Makefile',
                     'developer',
                    ]
 
-nitpick_ignore = []
-for line in open('../util/nitpick_ignore'):
-    if line.strip() == "" or line.startswith("#"):
-        continue
-    dtype, target = line.split(None, 1)
-    target = target.strip()
-    nitpick_ignore.append((dtype, target))
+# TODO: uncomment this section post 1.20 release
+#nitpick_ignore = []
+#for line in open('../util/nitpick_ignore'):
+#    if line.strip() == "" or line.startswith("#"):
+#        continue
+#    dtype, target = line.split(None, 1)
+#    target = target.strip()
+#    nitpick_ignore.append((dtype, target))
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
