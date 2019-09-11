@@ -220,7 +220,7 @@ Mason testing that uses ``UnitTest`` will treat each individual function as a
 test, and the test will be considered successful if no assertions failed and no
 halts were reached within the function body.
 
-See the :mod:`UnitTest` documentation to learn more about writing unit tests in
+See the :chpl:mod:`UnitTest` documentation to learn more about writing unit tests in
 Chapel.
 
 Here is an example of an exit-code-based tests:

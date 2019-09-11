@@ -19,7 +19,7 @@
 
 /*
 
-:record:`shared` (along with :record:`~OwnedObject._owned`) manage the
+:record:`shared` (along with :record:`~OwnedObject.owned`) manage the
 deallocation of a class instance. :record:`shared` is meant to be used when
 many different references will exist to the object and these references need
 to keep the object alive.
