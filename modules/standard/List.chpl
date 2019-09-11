@@ -261,7 +261,7 @@ module List {
         a compiler error.
 
       :arg other: The range to initialize from.
-      :type other: `range(this.type.elFType)`
+      :type other: `range(this.type.eltType)`
     */
     proc init=(other: range(this.type.eltType, ?b, ?d)) {
       this.eltType = this.type.eltType;

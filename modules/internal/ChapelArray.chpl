@@ -1656,7 +1656,7 @@ module ChapelArray {
       return this.contains(i);
     }
 
-    /* Deprecated - please use domain.contains. */
+    /* Deprecated - please use :proc:`contains`. */
     inline proc member(i: _value.idxType ...rank) {
       compilerWarning("domain.member is deprecated - " +
                       "please use domain.contains instead");
