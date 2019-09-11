@@ -15,7 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CHPL_MAKE_HOST_TARGET = --target
+# Only set the preferred compiler if it is not set already.
+ifeq ($(CHPL_MAKE_HOST_TARGET),)
+	CHPL_MAKE_HOST_TARGET = --target
+endif
+
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 
