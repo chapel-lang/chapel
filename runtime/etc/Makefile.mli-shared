@@ -21,13 +21,7 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 
-all: debugPrint buildServer buildClient runTagsCommand FORCE
-
-debugPrint:
-	echo "HOST_CC: $(HOST_CC)"
-	echo "TARG_CC: $(TARG_CC)"
-	echo "HOST_CFLAGS: $(HOST_CFLAGS)"
-	echo "HOST_SHARED_LIB_CFLAGS: $(HOST_SHARED_LIB_CFLAGS)"
+all: buildServer buildClient runTagsCommand FORCE
 
 #
 # Compile loose source files in CHPLUSEROBJ. Use the TARG_CC for now, but
