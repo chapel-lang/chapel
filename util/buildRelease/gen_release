@@ -64,6 +64,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
     $resultdir = "$chplhome/tar";
 } else {
+    SystemOrDie("mkdir -pv $archive_dir");
 
     # check out a clean copy of the sources into the directory where chapel will be built
     $git_url = $ENV{'CHPL_HOME_REPOSITORY'};
@@ -94,7 +95,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     }
 
     print "[gen_release] Creating build workspace with git archive...\n";
-    SystemOrDie("cp --archive $rootdir $archive_dir");
+    SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
 
     if ($version eq "" or $version eq "developer") {
       print "[gen_release] Copying BUILD_VERSION file.\n";
