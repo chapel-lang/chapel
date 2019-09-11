@@ -3,13 +3,18 @@
 use driver_real_arrays;
 use Random;
 use Sort;
+use SortExtras;
 
 var rng = new owned RandomStream(real, 314159265);
 
-enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP };
+enum SortType { DEFAULT=0, BUBBLE, INSERTION, MERGE, SELECTION, QUICK, HEAP };
 
 
 writeln("Sort array");
+
+rng.fillRandom(R1D);
+sort(R1D);
+if !isSorted(R1D) then writeln('default sort failed');
 
 rng.fillRandom(R1D);
 BubbleSort.bubbleSort(R1D);
@@ -95,14 +100,18 @@ proc doSort(D: domain, A: [D], st: SortType) {
 }
 
 const TD1D: domain(1) = Space1.translate(-o5);
-for param st in 0..5 /* this is life without FCFs...*/ {
+for st in SortType {
   rng.fillRandom(R1D);
-  doSort(TD1D, R1D.reindex(TD1D), st:SortType);
+  doSort(TD1D, R1D.reindex(TD1D), st);
 }
 
 
 writeln("Sort rank changed array (2D->1D)");
 ref rc2DR1D = R2D(n2-1, Dom2D.dim(2));
+
+rng.fillRandom(rc2DR1D);
+sort(rc2DR1D);
+if !isSorted(rc2DR1D) then writeln('default sort failed');
 
 rng.fillRandom(rc2DR1D);
 BubbleSort.bubbleSort(rc2DR1D);
@@ -133,6 +142,10 @@ writeln("Sort rank changed array (3D->1D)");
 ref rc3DR1D = R3D(n3-1, n3-1, Dom3D.dim(3));
 
 rng.fillRandom(rc3DR1D);
+sort(rc3DR1D);
+if !isSorted(rc3DR1D) then writeln('default sort failed');
+
+rng.fillRandom(rc3DR1D);
 BubbleSort.bubbleSort(rc3DR1D);
 if !isSorted(rc3DR1D) then writeln('bubbleSort failed');
 
@@ -159,6 +172,10 @@ if !isSorted(rc3DR1D) then writeln('heapSort failed');
 
 writeln("Sort rank changed array (4D->1D)");
 ref rc4DR1D = R4D(n4-1, n4-1, n4-1, Dom4D.dim(4));
+
+rng.fillRandom(rc4DR1D);
+sort(rc4DR1D);
+if !isSorted(rc4DR1D) then writeln('default sort failed');
 
 rng.fillRandom(rc4DR1D);
 BubbleSort.bubbleSort(rc4DR1D);

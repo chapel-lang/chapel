@@ -32,11 +32,6 @@ Initializing Modules:
            ShellSort
           QuickSort
            InsertionSort
-          BubbleSort
-          HeapSort
-          BinaryInsertionSort
-          MergeSort
-          SelectionSort
         ChapelDistribution
          LinkedLists
         SysError
