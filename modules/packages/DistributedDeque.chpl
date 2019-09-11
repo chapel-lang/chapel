@@ -84,7 +84,7 @@
 
     var deque = new DistDeque(int, cap=maxElem, targetLocales=ourLocales);
 
-  The deque can be used as a queue by using the :proc:DistDeque.`enqueue` and :proc:`DistDeque.dequeue` convenience
+  The deque can be used as a queue by using the :proc:`enqueue` and :proc:`dequeue` convenience
   methods or inserting from one end to remove from another...
 
   .. code-block:: chapel

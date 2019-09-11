@@ -29,7 +29,7 @@ Dependencies
 
 The ZMQ module in Chapel is dependent on ZeroMQ.  For information on how to
 install ZeroMQ, see the
-`ZeroMQ installation instructions <https://zeromq.org/intro:get-the-software>`_.
+`ZeroMQ installation instructions <https://zeromq.org/download/>`_.
 
 .. note::
 
