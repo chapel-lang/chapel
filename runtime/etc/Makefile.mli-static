@@ -19,67 +19,35 @@
 # Makefile.mli-static
 #
 
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 
-define getHostValue
-$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
-        CHPL_MAKE_HOST_TARGET=--host \
-        make -f $(CHPL_MAKE_HOME)/make/Makefile.base \
-        printQ-$1)
-endef
+all: buildServer buildClient runTagsCommand FORCE
 
-#
-# In multilocale library compilation, the client library is compiled with the
-# host compiler (CHPL_HOST_COMPILER), while the Chapel server (what is
-# launched on the compute nodes) is compiled with the target compiler
-# (CHPL_TARGET_COMPILER).
-#
-HOST_CC=$(call getHostValue,CC)
-TARG_CC=$(CC)
-
-#
-# These two sets of flags are used when compiling the launcher object files
-# in `Makefile.launcher`. We mimick them here when compiling the client
-# library.
-#
-HOST_GEN_CFLAGS=$(call getHostValue,GEN_CFLAGS)
-HOST_COMP_GEN_CFLAGS=$(call getHostValue,COMP_GEN_CFLAGS)
-
-ifdef CHPL_ZMQ_HOME
-CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
-CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
-CHPL_ZMQ_LIB = $(CHPL_ZMQ_LIB_HOME)/libzmq.a
-CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
-else
-CHPL_ZMQ_LIB = -lzmq
-endif
-CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
-
-.PHONY: buildUserObj buildServer buildClient runTagsCommand
-
-all: buildUserObj buildServer buildClient runTagsCommand FORCE
-
-buildUserObj:
 #
 # Compile loose source files in CHPLUSEROBJ. Use the TARG_CC for now, but
 # later we may need to roll these into both client and server.
 #
+.PHONY: buildUserObj
+buildUserObj:
 	$(foreach srcFile, $(CHPLUSEROBJ), \
 		$(TARG_CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
   ;)
 
-buildServer: $(TMPSERVERNAME)
+.PHONY: buildServer
+buildServer: buildUserObj $(TMPSERVERNAME)
 
+.PHONY: buildClient
 buildClient: $(TMPBINNAME)
 
+.PHONY: runTagsCommand
 runTagsCommand: $(TAGS_COMMAND)
 
-$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
 # Invoke the launcher script, but don't actually link up the launcher binary.
 # Do this by setting CHPL_MAKE_IS_MLI=1.
 #
+$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
 		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
 		TMPBINNAME=$(TMPSERVERNAME) \
@@ -92,7 +60,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
 # Compile the client bundle.
 #
-	$(HOST_CC) $(HOST_GEN_CFLAGS) $(HOST_COMP_GEN_CFLAGS) \
+	$(HOST_CC) $(HOST_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
