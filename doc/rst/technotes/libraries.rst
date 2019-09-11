@@ -793,7 +793,7 @@ via the generated library.
 Other configurations may also become supported in the future.
 
 Host and Target Compilers
-~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Multilocale libraries currently require the host and target compiler to be
 compatible. For example, on Crays, a host value of ``gnu`` and a target
