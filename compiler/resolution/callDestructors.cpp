@@ -354,28 +354,8 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
                 move->insertAtTail(autoCopy);
               }
             }
-            //else {
-              //std::cout << "possible rhs mismatch" << std::endl;
-              //nprint_view(fn);
-              //nprint_view(symRhs);
-            //}
           }
         }
-        //else {
-          //std::cout << "lhs mismatch" << std::endl;
-
-          //std::cout << "fn " << std::endl;
-          //nprint_view(fn);
-
-          //std::cout << "fn->retSymbol " << std::endl;
-          //nprint_view(fn->retSymbol);
-
-          //std::cout << "fn->retExprType " << std::endl;
-          //nprint_view(fn->retExprType);
-
-          //std::cout << "lhs " << std::endl;
-          //nprint_view(lhs);
-        //}
       }
     }
   }
