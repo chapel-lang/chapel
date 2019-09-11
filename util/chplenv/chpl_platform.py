@@ -40,7 +40,7 @@ def get(flag='host'):
                     platform_val = 'cray-xc'
 
     if not platform_val:
-        network = os.environ.get('CRAYPE_NETWORK_TARGET')
+        network = os.environ.get('CRAYPE_NETWORK_TARGET', '')
         if network.startswith("slingshot") or network == "ofi":
             platform_val = 'cray-shasta'
 
