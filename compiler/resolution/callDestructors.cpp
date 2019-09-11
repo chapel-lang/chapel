@@ -33,6 +33,7 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "view.h"
 #include "virtualDispatch.h"
 
 /************************************* | **************************************
@@ -315,7 +316,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
       if (lhs != NULL && rhs != NULL)
       {
         // check if the lhs is actually the return symbol
-        if(lhs == toSymExpr(fn->retSymbol)) {
+        if(lhs->symbol()->hasFlag(FLAG_RVV)) {
           VarSymbol* symLhs = toVarSymbol(lhs->symbol());
           ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
 
@@ -352,8 +353,28 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
                 move->insertAtTail(autoCopy);
               }
             }
+            //else {
+              //std::cout << "possible rhs mismatch" << std::endl;
+              //nprint_view(fn);
+              //nprint_view(symRhs);
+            //}
           }
         }
+        //else {
+          //std::cout << "lhs mismatch" << std::endl;
+
+          //std::cout << "fn " << std::endl;
+          //nprint_view(fn);
+
+          //std::cout << "fn->retSymbol " << std::endl;
+          //nprint_view(fn->retSymbol);
+
+          //std::cout << "fn->retExprType " << std::endl;
+          //nprint_view(fn->retExprType);
+
+          //std::cout << "lhs " << std::endl;
+          //nprint_view(lhs);
+        //}
       }
     }
   }
