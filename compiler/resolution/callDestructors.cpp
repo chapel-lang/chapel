@@ -315,8 +315,9 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
       if (lhs != NULL && rhs != NULL)
       {
-        // check if the lhs is actually the return symbol
-        if(lhs->symbol()->hasFlag(FLAG_RVV)) {
+        // check if the lhs is actually the return/yield symbol
+        if(lhs->symbol()->hasFlag(FLAG_RVV) ||
+           lhs->symbol()->hasFlag(FLAG_YVV)) {
           VarSymbol* symLhs = toVarSymbol(lhs->symbol());
           ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
 
