@@ -23,7 +23,7 @@
   This module defines Chapel wrappers for key 64-bit
   routines from FFTW (http://www.fftw.org), version 3. The routines
   in this module exposes the simple FFTW interface. The full C API
-  may be accessed through the ``C_FFTW`` submodule.
+  may be accessed through the :mod:`C_FFTW` submodule.
   Over time, the intention is to expand these modules to support additional
   routines, prioritizing based on requests and feedback from users.
 
