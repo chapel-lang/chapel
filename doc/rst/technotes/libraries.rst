@@ -792,6 +792,12 @@ via the generated library.
 
 Other configurations may also become supported in the future.
 
+Host and Target Compilers
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Multilocale libraries currently require the host and target compiler to be
+the same. We expect this to change in the near future.
+
 Supported Types
 ~~~~~~~~~~~~~~~
 
