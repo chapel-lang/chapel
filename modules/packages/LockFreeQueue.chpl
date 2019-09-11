@@ -35,7 +35,7 @@
       }
     }
 
-  As an optimization, the user can register to receive a :class:`TokenWrapper`, and pass this
+  As an optimization, the user can register to receive a :class:`~EpochManager.TokenWrapper`, and pass this
   to the stack. This can provide significant improvement in performance by up to an order of magnitude
   by avoiding the overhead of registering and unregistering for each operation.
 

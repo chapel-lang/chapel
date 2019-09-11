@@ -155,9 +155,10 @@ As an example for specifying an I/O style, the code below specifies the minimum 
 
 I/O facilities in Chapel also include several other ways to control I/O
 formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
-with :proc:`channel.readf` and :proc:`channel.writef`. Also note that record or
-class implementations can provide custom functions implementing read or write
-operations for that type (see :ref:`readThis-writeThis-readWriteThis`).
+with :proc:`FormattedIO.channel.readf` and :proc:`FormattedIO.channel.writef`.
+Also note that record or class implementations can provide custom functions
+implementing read or write operations for that type (see
+:ref:`readThis-writeThis-readWriteThis`).
 
 .. _about-io-files:
 
@@ -516,7 +517,7 @@ via the ``str_style`` field in :record:`iostyle`.
   of length follow, and where the 7-bits of length from each byte store
   the 7-bit portions of the length in order from least-significant to
   most-significant. This way of encoding a variable-byte length  matches
-  `Google Protocol Buffers <https://github.com/google/protobuf/>`_.
+  `Google Protocol Buffers <https://github.com/protocolbuffers/protobuf>`_.
 * ``iostringstyle.data_toeof`` indicates a string format that contains
   only the string data without any length or terminator. When reading,
   this format will read a string until the end of the file is reached.
@@ -7083,7 +7084,7 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch throws
 
    At the time each match is returned, the channel position is
    at the start of that match. Note though that you would have
-   to use :proc:`channel.advance` to get to the position of a capture group.
+   to use :proc:`IO.channel.advance` to get to the position of a capture group.
 
    After returning each match, advances to just after that
    match and looks for another match. Thus, it will not return

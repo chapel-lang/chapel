@@ -62,7 +62,7 @@ You can also use the string versions of these methods: :proc:`string.search`,
 :proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`.
 
 Lastly, you can include regular expressions in the format string for
-:proc:`~IO.readf` for searching on QIO channels using the ``%/<regexp>/``
+:proc:`~FormattedIO.readf` for searching on QIO channels using the ``%/<regexp>/``
 syntax.
 
 Regular Expression Examples

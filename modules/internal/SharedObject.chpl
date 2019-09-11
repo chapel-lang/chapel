@@ -212,7 +212,7 @@ module SharedObject {
 
     /*
        Initialize a :record:`shared` taking a pointer from
-       a :record:`owned`.
+       a :record:`~OwnedObject.owned`.
 
        This :record:`shared` will take over the deletion of the class
        instance. It is an error to directly delete the class instance
@@ -380,7 +380,7 @@ module SharedObject {
        value returned by this function after the last :record:`shared`
        goes out of scope or deletes the contained class instance
        for another reason, including calls to
-       `=`, or :proc:`retain` when this is the last :record:`shared`
+       `=`, or ``shared.retain`` when this is the last :record:`shared`
        referring to the instance.
        In some cases such errors are caught at compile-time.
      */
