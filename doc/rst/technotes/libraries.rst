@@ -796,8 +796,8 @@ Host and Target Compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Multilocale libraries currently require the host and target compiler to be
-compatible. On Crays, a host value of i.e, ``gnu`` and a target value of
-``cray-prgenv-gnu`` would be considered equivalent.
+compatible. For example, on Crays, a host value of ``gnu`` and a target
+value of ``cray-prgenv-gnu`` would be considered equivalent.
 
 In the near future, the client library (the library that a user will link
 against) will be compiled by the host compiler, while the server will be
