@@ -5,4 +5,5 @@ Chapel Language Specification
 
 :download:`View Language Specification [pdf] <chapelLanguageSpec.pdf>`
 
-To see language specifications of previous versions, see :ref:`Archived Languages Specifications<chapel-archived-specs>`.
+To see previous versions of the Chapel language specification, refer
+to the :ref:`Documentation Archives<chapel-archived-specs>`.
