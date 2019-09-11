@@ -212,7 +212,7 @@ module SharedObject {
 
     /*
        Initialize a :record:`shared` taking a pointer from
-       a :record:`owned`.
+       a :record:`~OwnedObject.owned`.
 
        This :record:`shared` will take over the deletion of the class
        instance. It is an error to directly delete the class instance
