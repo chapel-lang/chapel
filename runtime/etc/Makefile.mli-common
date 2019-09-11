@@ -1,0 +1,65 @@
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Makefile.mli-common
+#
+
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+
+# $(call getHostBaseValue,value)
+define getHostBaseValue
+$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
+  CHPL_MAKE_HOST_TARGET=--host \
+  make -f $(CHPL_MAKE_HOME)/make/Makefile.base \
+  printQ-$1)
+endef
+
+# $(call runHostRule,file,rule)
+define runHostRule
+$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
+  CHPL_MAKE_HOST_TARGET=--host \
+  make -f $(CHPL_MAKE_HOME)/$1 \
+  $2)
+endef
+
+#
+# In multilocale library compilation, the client library is compiled with the
+# host compiler (CHPL_HOST_COMPILER), while the Chapel server (what is
+# launched on the compute nodes) is compiled with the target compiler
+# (CHPL_TARGET_COMPILER).
+#
+HOST_CC=$(call getHostBaseValue,CC)
+TARG_CC=$(CC)
+
+#
+# These two sets of flags are used when compiling the launcher object files
+# in `Makefile.launcher`. We mimick them here when compiling the client
+# library.
+#
+HOST_CFLAGS=$(call runHostRule,runtime/etc/Makefile.include,printcflags)
+HOST_SHARED_LIB_CFLAGS=$(call getHostBaseValue,SHARED_LIB_CFLAGS)
+
+ifdef CHPL_ZMQ_HOME
+CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
+CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
+CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
+endif
+CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+UNAME = $(shell uname)
+
+

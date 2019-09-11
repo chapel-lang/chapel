@@ -19,13 +19,23 @@
 # Makefile.mli-shared
 #
 
+# include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
-define getHostValue
+# $(call getHostBaseValue,value)
+define getHostBaseValue
 $(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
-        CHPL_MAKE_HOST_TARGET=--host \
-        make -f $(CHPL_MAKE_HOME)/make/Makefile.base \
-        printQ-$1)
+  CHPL_MAKE_HOST_TARGET=--host \
+  make -f $(CHPL_MAKE_HOME)/make/Makefile.base \
+  printQ-$1)
+endef
+
+# $(call runHostRule,file,rule)
+define runHostRule
+$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
+  CHPL_MAKE_HOST_TARGET=--host \
+  make -f $(CHPL_MAKE_HOME)/$1 \
+  $2)
 endef
 
 #
@@ -34,7 +44,7 @@ endef
 # launched on the compute nodes) is compiled with the target compiler
 # (CHPL_TARGET_COMPILER).
 #
-HOST_CC=$(call getHostValue,CC)
+HOST_CC=$(call getHostBaseValue,CC)
 TARG_CC=$(CC)
 
 #
@@ -42,9 +52,8 @@ TARG_CC=$(CC)
 # in `Makefile.launcher`. We mimick them here when compiling the client
 # library.
 #
-HOST_GEN_CFLAGS=$(call getHostValue,GEN_CFLAGS)
-HOST_COMP_GEN_CFLAGS=$(call getHostValue,COMP_GEN_CFLAGS)
-HOST_SHARED_LIB_CFLAGS=$(call getHostValue,SHARED_LIB_CFLAGS)
+HOST_CFLAGS=$(call runHostRule,runtime/etc/Makefile.include,printcflags)
+HOST_SHARED_LIB_CFLAGS=$(call getHostBaseValue,SHARED_LIB_CFLAGS)
 
 ifdef CHPL_ZMQ_HOME
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
@@ -54,27 +63,34 @@ endif
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 UNAME = $(shell uname)
 
-.PHONY: buildUserObj buildServer buildClient runTagsCommand
+all: debugPrint buildServer buildClient runTagsCommand FORCE
 
-all: buildUserObj buildServer buildClient runTagsCommand FORCE
+debugPrint:
+	echo "HOST_CC: $(HOST_CC)"
+	echo "TARG_CC: $(TARG_CC)"
+	echo "HOST_CFLAGS: $(HOST_CFLAGS)"
+	echo "HOST_SHARED_LIB_CFLAGS: $(HOST_SHARED_LIB_CFLAGS)"
 
-buildUserObj:
 #
 # Compile loose source files in CHPLUSEROBJ. Use the TARG_CC for now, but
 # later we may need to roll these into both client and server.
 #
+.PHONY: buildUserObj
+buildUserObj:
 	$(foreach srcFile, $(CHPLUSEROBJ), \
 		$(TARG_CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
 	;)
 
-buildServer: $(TMPSERVERNAME)
+.PHONY: buildServer
+buildServer: buildUserObj $(TMPSERVERNAME)
 
+.PHONY: buildClient
 buildClient: $(TMPBINNAME)
 
+.PHONY: runTagsCommand
 runTagsCommand: $(TAGS_COMMAND)
 
-$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
 # Invoke the launcher script, but don't actually link up the launcher binary.
 # Do this by setting CHPL_MAKE_IS_MLI=1. We also need to pass on the
@@ -82,6 +98,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 # things. If we don't do this, then the launcher object file that is built
 # will have text relocations.
 #
+$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
 		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
 		TMPBINNAME=$(TMPSERVERNAME) \
@@ -93,10 +110,9 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		GEN_CFLAGS="$(GEN_CFLAGS)" \
 		CHPL_MAKE_IS_MLI=1
 #
-# Compile the client bundle. Note the use of $(SHARED_LIB_CFLAGS) here.
+# Compile the client bundle. Note the use of $(HOST_SHARED_LIB_CFLAGS) here.
 #
-	$(HOST_CC) $(HOST_GEN_CFLAGS) $(HOST_COMP_GEN_CFLAGS) \
-		$(HOST_SHARED_LIB_CFLAGS) \
+	$(HOST_CC) $(HOST_CFLAGS) $(HOST_SHARED_LIB_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
