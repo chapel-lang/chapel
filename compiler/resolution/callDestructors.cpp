@@ -314,31 +314,43 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
       if (lhs != NULL && rhs != NULL)
       {
-        VarSymbol* symLhs = toVarSymbol(lhs->symbol());
-        ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
+        // check if the lhs is actually the return symbol
+        if(lhs == toSymExpr(fn->retSymbol)) {
+          VarSymbol* symLhs = toVarSymbol(lhs->symbol());
+          ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
 
-        if (symLhs != NULL && symRhs != NULL)
-        {
-          if (isUserDefinedRecord(symLhs->type) == true &&
-              symRhs->type                      == symLhs->type)
+          if (symLhs != NULL && symRhs != NULL)
           {
-            bool fromInIntent =
-              (symRhs->originalIntent == INTENT_IN ||
-               symRhs->originalIntent == INTENT_CONST_IN);
-
-            if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
-                symLhs->hasFlag(FLAG_NO_COPY)    == false &&
-                !fromInIntent &&
-                (symRhs->intent == INTENT_REF ||
-                 symRhs->intent == INTENT_CONST_REF))
+            // check if rhs is actually a formal 
+            bool rhsIsFormal = false;
+            for_formals(formal, fn) {
+              if(formal == symRhs) {
+                rhsIsFormal = true;
+                break;
+              }
+            }
+            if (rhsIsFormal &&
+                isUserDefinedRecord(symLhs->type) == true &&
+                symRhs->type                      == symLhs->type)
             {
-              SET_LINENO(move);
+              bool fromInIntent =
+                (symRhs->originalIntent == INTENT_IN ||
+                 symRhs->originalIntent == INTENT_CONST_IN);
 
-              CallExpr* autoCopy = NULL;
+              if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
+                  symLhs->hasFlag(FLAG_NO_COPY)    == false &&
+                  !fromInIntent &&
+                  (symRhs->intent == INTENT_REF ||
+                   symRhs->intent == INTENT_CONST_REF))
+              {
+                SET_LINENO(move);
 
-              rhs->remove();
-              autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
-              move->insertAtTail(autoCopy);
+                CallExpr* autoCopy = NULL;
+
+                rhs->remove();
+                autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
+                move->insertAtTail(autoCopy);
+              }
             }
           }
         }
