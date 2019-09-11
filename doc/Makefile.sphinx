@@ -1,7 +1,10 @@
 # Makefile for Sphinx documentation
 #
 # You can set these variables from the command line.
-SPHINXOPTS    = -W # TODO: Add `-n` to check cross-refs by default
+
+# TODO: SPHINXOPTS: Add `-n` to check cross-refs by default post-1.20 release
+# TODO: SPHINXOPTS: Add `--keep-going` flag when Sphinx 1.8+ is supported
+SPHINXOPTS    = -W
 SPHINXBUILD   = sphinx-build
 PAPER         =
 SOURCEDIR     = rst
