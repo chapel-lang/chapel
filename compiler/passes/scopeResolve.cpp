@@ -989,6 +989,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   // handle function call without parentheses
   } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
     checkIdInsideWithClause(usymExpr, usymExpr);
+    usymExpr->confirmAutoDestroyCandidates();
     usymExpr->replace(new CallExpr(fn));
 
   } else if (Expr* parent = usymExpr->parentExpr) {

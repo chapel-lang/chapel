@@ -185,6 +185,12 @@ class UnresolvedSymExpr : public Expr {
   virtual void    prettyPrint(std::ostream *o);
 
   virtual Expr*   getFirstExpr();
+
+  virtual void addAutoDestroyCandidate(VarSymbol *candidate);
+  virtual void confirmAutoDestroyCandidates();
+
+ private:
+  Vec<VarSymbol *> autoDestroyCandidates;
 };
 
 

@@ -703,6 +703,16 @@ void UnresolvedSymExpr::accept(AstVisitor* visitor) {
   visitor->visitUsymExpr(this);
 }
 
+void UnresolvedSymExpr::addAutoDestroyCandidate(VarSymbol *candidate) {
+  this->autoDestroyCandidates.push_back(candidate);
+}
+
+void UnresolvedSymExpr::confirmAutoDestroyCandidates() {
+  forv_Vec(VarSymbol *, sym, this->autoDestroyCandidates) {
+    sym->removeFlag(FLAG_NO_AUTO_DESTROY);
+  }
+}
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *

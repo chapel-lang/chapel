@@ -601,8 +601,12 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
     // is another variable (vs a call).
     // This does not correctly handle certain no-parens calls. See
     // tuple-string-bug.chpl and tuple-string-bug-noparens.chpl
-    if (!isCallExpr(init))
+    if (!isCallExpr(init)) {
+      if(UnresolvedSymExpr *urse = toUnresolvedSymExpr(init)) {
+        urse->addAutoDestroyCandidate(tmp);
+      }
       tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+    }
   }
   int count = 1;
   for_alist(expr, tupleBlock->body) {
