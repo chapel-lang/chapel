@@ -113,6 +113,11 @@ writeln(
   else "not verified"
 );
 
+delete bdim1;
+delete rdim1;
+delete bdim2;
+delete rdim2;
+
 
 /////////////////////////////////////////////////////////////////////////////
 

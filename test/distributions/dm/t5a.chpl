@@ -40,6 +40,9 @@ proc test(message, sel, dd1, dd2) {
   } else {
     hd("not selected"); tl();
   }
+
+  delete dd1;
+  delete dd2;
 }
 
 test("ReplicatedDim,ReplicatedDim", 1, new unmanaged ReplicatedDim(s1), new unmanaged ReplicatedDim(s2));
