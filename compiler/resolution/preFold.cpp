@@ -36,6 +36,7 @@
 #include "symbol.h"
 #include "typeSpecifier.h"
 #include "visibleFunctions.h"
+#include "wellknown.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -1969,7 +1970,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   //
   // When all we need is a C pointer, we can cut out here, returning
-  // a reference to the function symbol.
+  // a reference to the function symbol.1095699
   //
   if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
     return new SymExpr(captured_fn);
@@ -2127,13 +2128,20 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   CallExpr* n = new CallExpr(PRIM_NEW,
                              new NamedExpr(astr_chpl_manager,
-                                           new SymExpr(dtUnmanaged->symbol)),
+                                           new SymExpr(dtShared->symbol)),
                              new SymExpr(undecorated->symbol));
 
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, n));
+ 
+  //
+  // TODO: Is leaving out the cast to the superclass OK?
+  //
+  /*
   wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
                                      new CallExpr(PRIM_CAST,
                                                   parent->symbol,
                                                   n)));
+  */
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 
