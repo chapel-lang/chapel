@@ -4,12 +4,12 @@ module test {
   class Child : Parent { var c: int; }
 
   proc abd(arg:borrowed)  { writeln("abd ", arg.type:string); }
-  proc abq(arg:borrowed?) { writeln("abq ", arg.type:string); }
-  proc abb(arg:borrowed!) { writeln("abb ", arg.type:string); }
+  proc abq(arg:borrowed class?) { writeln("abq ", arg.type:string); }
+  proc abb(arg:borrowed class) { writeln("abb ", arg.type:string); }
 
   proc aod(arg:owned)  { writeln("aod ", arg.type:string); }
-  proc aoq(arg:owned?) { writeln("aoq ", arg.type:string); }
-  proc aob(arg:owned!) { writeln("aob ", arg.type:string); }
+  proc aoq(arg:owned class?) { writeln("aoq ", arg.type:string); }
+  proc aob(arg:owned class) { writeln("aob ", arg.type:string); }
 
   proc main() {
     var co = new owned Child(1, 2);

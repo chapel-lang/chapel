@@ -173,14 +173,20 @@ const char* toString(Type* type, bool decorateAllClasses) {
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
         }
-        if (startsWith(vt->symbol->name, "_owned("))
-          retval = astr("owned ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_owned"))
-          retval = astr("owned");
-        else if (startsWith(vt->symbol->name, "_shared("))
-          retval = astr("shared ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_shared"))
-          retval = astr("shared");
+        if (startsWith(vt->symbol->name, "_owned")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("owned");
+          } else {
+            retval = astr("owned ", borrowName);
+          }
+        }
+        else if (startsWith(vt->symbol->name, "_shared")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("shared");
+          } else {
+            retval = astr("shared ", borrowName);
+          }
+        }
 
       } else if (isClassLike(at)) {
         if (isClass(at)) {
@@ -571,6 +577,9 @@ void initPrimitiveTypes() {
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
+  dtBytes                              = new AggregateType(AGGREGATE_RECORD);
+  dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
+
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
@@ -618,7 +627,9 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
   CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
-  dtValue = createInternalType("value", "_chpl_value");
+  // parses from record
+  dtAnyRecord = createInternalType("record", "_anyRecord");
+  dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
   gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
   gIteratorBreakToken->addFlag(FLAG_CONST);
@@ -707,6 +718,8 @@ void initPrimitiveTypes() {
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
+  // parses from enum
+  // TODO: remove enumerated and replace it with enum
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
@@ -729,7 +742,7 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
-  dtBorrowed = createInternalType("_borrowed", "_borrowed");
+  dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
   dtBorrowedNonNilable = createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
@@ -738,7 +751,7 @@ void initPrimitiveTypes() {
   dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
   dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
+  dtUnmanaged = createInternalType("unmanaged", "unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanagedNonNilable = createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
@@ -747,10 +760,11 @@ void initPrimitiveTypes() {
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyManagement = createInternalType("_anyManagement", "_anyManagement");
-  dtAnyManagement->symbol->addFlag(FLAG_GENERIC);
+  dtAnyManagementAnyNilable = createInternalType("_anyManagementAnyNilable", "_anyManagementAnyNilable");
+  dtAnyManagementAnyNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyManagementNonNilable = createInternalType("_anyManagementNonNilable", "_anyManagementNonNilable");
+  // parses from class
+  dtAnyManagementNonNilable = createInternalType("class", "_anyManagementNonNilable");
   dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyManagementNilable = createInternalType("_anyManagementNilable", "_anyManagementNilable");
@@ -770,6 +784,11 @@ void initPrimitiveTypes() {
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
 
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
+
+  dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");
+
+  CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
+  gUninstantiated->addFlag(FLAG_PARAM);
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
@@ -854,9 +873,9 @@ void initCompilerGlobals() {
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
 
-  gLegacyNilClasses = new VarSymbol("chpl_legacyNilClasses", dtBool);
-  gLegacyNilClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyNilClasses, fLegacyNilableClasses);
+  gLegacyClasses = new VarSymbol("chpl_legacyClasses", dtBool);
+  gLegacyClasses->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gLegacyClasses, fLegacyClasses);
 
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);
@@ -964,6 +983,7 @@ bool isLegalParamType(Type* t) {
           is_complex_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
+          isBytes(t) ||
           t == dtStringC ||
           t == dtUnknown);
 }
@@ -1048,7 +1068,7 @@ bool isBuiltinGenericClassType(Type* t) {
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
          t == dtUnmanagedNonNilable ||
-         t == dtAnyManagement ||
+         t == dtAnyManagementAnyNilable ||
          t == dtAnyManagementNonNilable ||
          t == dtAnyManagementNilable;
 }
@@ -1081,6 +1101,29 @@ bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();
   return false;
+}
+
+bool isUserRecord(Type* t) {
+  if (!isRecord(t))
+    return false;
+
+  // Check for lots of exceptions - types that are implemented
+  // as records but that isn't the user view.
+  if (t == dtString ||
+      t == dtBytes ||
+      t->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DOMAIN) ||
+      t->symbol->hasFlag(FLAG_ARRAY) ||
+      t->symbol->hasFlag(FLAG_RANGE) ||
+      t->symbol->hasFlag(FLAG_TUPLE) ||
+      t->symbol->hasFlag(FLAG_SYNC) ||
+      t->symbol->hasFlag(FLAG_SINGLE) ||
+      t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
+      t->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    return false;
+
+  return true;
 }
 
 bool isUnion(Type* t) {
@@ -1293,6 +1336,10 @@ bool isArrayClass(Type* type) {
 
 bool isString(Type* type) {
   return type == dtString;
+}
+
+bool isBytes(Type* type) {
+  return type == dtBytes;
 }
 
 //
@@ -1662,4 +1709,19 @@ Immediate getDefaultImmediate(Type* t) {
 
   Immediate ret = *defaultVar->immediate;
   return ret;
+}
+
+// Returns 'true' for types that are the type of numeric literals.
+// e.g. 1 is an 'int', so this function returns 'true' for 'int'.
+// e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
+bool isNumericParamDefaultType(Type* t)
+{
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
+      t == dtBools[BOOL_SIZE_DEFAULT])
+    return true;
+
+  return false;
 }

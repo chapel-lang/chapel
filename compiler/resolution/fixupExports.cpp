@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 #include <map>
 #include <vector>
@@ -131,7 +132,8 @@ static void attemptFixups(FnSymbol* fn) {
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
 
-    if (needsFixup(as->type) && validateFormalIntent(fn, as)) {
+    bool validated = validateFormalIntent(fn, as);
+    if (needsFixup(as->type) && validated) {
       if (wrapper == NULL) { wrapper = createWrapper(fn); }
       VarSymbol* tmp = fixupFormal(wrapper, i);
       INT_ASSERT(tmp != NULL);
@@ -181,19 +183,54 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   // TODO: If we ever add more types to these fixup routines, we really ought
   // to put these conditions in tables.
   //
-  if (t == dtString) {
+  if (t == dtString || t == dtStringC || t == dtExternalArray) {
     IntentTag tag = as->intent;
 
-    // TODO: After resolution, have abstract intents been normalized?
-    if (tag != INTENT_CONST &&
-        tag != INTENT_CONST_REF &&
-        tag != INTENT_BLANK) {
-      SET_LINENO(fn);
-      USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
-                          "\'%s\' may only have the %s",
-                          as->name, t->name(), fn->userString,
-                          intentDescrString(INTENT_CONST_REF));
-      return false;
+    bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
+
+    if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
+      // TODO: After resolution, have abstract intents been normalized?
+      if (tag != INTENT_IN &&
+          tag != INTENT_CONST_IN) {
+        std::string libdesc;
+        if (multiloc) {
+          if (fLibraryPython) {
+            libdesc = "multilocale python";
+          } else {
+            libdesc = "multilocale";
+          }
+        } else {
+          libdesc = "python";
+        }
+        const char* typeName = (t == dtExternalArray) ? "array" : t->name();
+        SET_LINENO(fn);
+        if (tag == INTENT_BLANK) {
+          USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
+                         "routine \'%s\' may not be passed by const ref in "
+                         "%s libraries",
+                         as->name, typeName, fn->name, libdesc.c_str());
+
+        } else {
+          USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
+                         "routine \'%s\' may not have the %s in "
+                         "%s libraries",
+                         as->name, typeName, fn->name,
+                         intentDescrString(tag), libdesc.c_str());
+        }
+        return false;
+      }
+    } else if (t == dtString) {
+      // TODO: After resolution, have abstract intents been normalized?
+      if (tag != INTENT_CONST &&
+          tag != INTENT_CONST_REF &&
+          tag != INTENT_BLANK) {
+        SET_LINENO(fn);
+        USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
+                       "\'%s\' may not have the %s",
+                       as->name, t->name(), fn->name,
+                       intentDescrString(tag));
+        return false;
+      }
     }
   }
 

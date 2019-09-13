@@ -1,1 +1,0 @@
-compilerError((sync int):string);

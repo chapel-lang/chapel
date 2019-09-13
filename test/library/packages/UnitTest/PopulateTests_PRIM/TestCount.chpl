@@ -7,8 +7,8 @@ proc dummy_test(test) throws {
 }
 
 /* A test function which takes Test Object as argument*/
-proc test_square(test: Test) throws {
+proc test_square(test: borrowed Test) throws {
     // This is a test function
 }
-var test = new Test();
-writeln(__primitive("gather tests", (test)));
+var test: owned Test;
+writeln(__primitive("gather tests", test.borrow()));

@@ -1,10 +1,10 @@
 /* Matrix multiplication */
 
 use LayoutCS;
+use Map;
 use Time;
 
-var timerDom: domain(string);
-var subTimers: [timerDom] Timer;
+var subTimers = new map(string, Timer);
 subTimers['multiply'] = new Timer();
 subTimers['add indices'] = new Timer();
 subTimers['find indices'] = new Timer();
@@ -107,7 +107,7 @@ proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 // TODO: Optimize & Parallelize
 /* Sparse CSR-CSC multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
-  use Lists;
+  use List;
 
   if !(ADom._value.compressRows && !BDom._value.compressRows) then
     compilerError('Only CSR-CSC multiplication is currently supported');
@@ -182,7 +182,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
 
   if subtimers {
     var s: real;
-    for key in timerDom {
+    for key in subTimers {
         write(key, ': ');
         var t = subTimers[key].elapsed();
         writeln(t);

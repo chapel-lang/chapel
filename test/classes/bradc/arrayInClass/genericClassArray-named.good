@@ -4,9 +4,6 @@ x is: 1.1 2.2 3.3
 x.domain is: {one}
 x is: 1.1
 
-x.domain is: {{}}
-x is: 1.1
-
 x.domain is: {2}
 x is: 2.2
 

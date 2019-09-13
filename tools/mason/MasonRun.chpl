@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-private use Lists;
+private use List;
 use MasonBuild;
 use MasonHelp;
 use MasonUtils;
@@ -196,10 +196,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
-      //
-      // TODO: If I pass list here, we get strange warnings along the lines
-      // of "parallel iteration is not supported over unbounded ranges (?).
-      //
+
       masonBuild(buildArgs);
       runProjectBinary(show, release, execopts);
     }

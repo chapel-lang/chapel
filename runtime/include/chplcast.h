@@ -70,27 +70,5 @@ _complex128 c_string_to_complex128(c_string str, chpl_bool* err, int lineno, int
 c_string integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, chpl_bool* err);
 c_string real_to_c_string(_real64 x, chpl_bool isImag);
 
-// TODO: Can we use the pattern above, to reduce the number of interfaces required?
-static inline
-c_string chpl_bool_to_c_string(chpl_bool x) {
-  return x ? "true" : "false";
-}
-static inline
-c_string chpl_bool8_to_c_string(chpl_bool8 x) {
-  return x ? "true" : "false";
-}
-static inline
-c_string chpl_bool16_to_c_string(chpl_bool16 x) {
-  return x ? "true" : "false";
-}
-static inline
-c_string chpl_bool32_to_c_string(chpl_bool32 x) {
-  return x ? "true" : "false";
-}
-static inline
-c_string chpl_bool64_to_c_string(chpl_bool64 x) {
-  return x ? "true" : "false";
-}
-
 #include "chpl-string.h"
 #endif // _chplcast_h_

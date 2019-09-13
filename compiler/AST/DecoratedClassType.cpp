@@ -25,6 +25,13 @@
 #include "expr.h"
 #include "iterator.h"
 
+static const char* nameForUser(const char* className) {
+  if (!strcmp(className, "_owned") || !strcmp(className, "_shared"))
+    return className+1;
+
+  return className;
+}
+
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
     case CLASS_TYPE_BORROWED:
@@ -33,39 +40,36 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       else
         return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NONNIL:
-      if (developer)
-        return astr("borrowed ", className, "!");
-      else
-        return astr("borrowed ", className);
+      return astr("borrowed ", className);
     case CLASS_TYPE_BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
+
     case CLASS_TYPE_UNMANAGED:
       if (developer)
         return astr("unmanaged anynil ", className);
       else
         return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NONNIL:
-      if (developer)
-        return astr("unmanaged ", className, "!");
-      else
-        return astr("unmanaged ", className);
+      return astr("unmanaged ", className);
     case CLASS_TYPE_UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
+
     case CLASS_TYPE_MANAGED:
       if (developer)
         return astr("managed anynil ", className);
       else
-        return astr(className);
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NONNIL:
       if (developer)
-        return astr("managed ", className, "!");
+        return astr("managed ", className);
       else
-        return astr(className, "!");
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NILABLE:
       if (developer)
         return astr("managed ", className, "?");
       else
-        return astr(className, "?");
+        return astr(nameForUser(className), "?");
+
     case CLASS_TYPE_GENERIC:
       if (developer)
         return astr("anymanaged anynil ", className);
@@ -73,7 +77,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
       if (developer)
-        return astr("anymanaged ", className, "!");
+        return astr("anymanaged ", className);
       else
         return astr(className);
     case CLASS_TYPE_GENERIC_NILABLE:
@@ -81,6 +85,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr("anymanaged ", className, "?");
       else
         return astr(className, "?");
+
     // no default for help from compilation errors
   }
   INT_FATAL("Case not handled");
@@ -123,6 +128,7 @@ DecoratedClassType::DecoratedClassType(AggregateType* cls, ClassTypeDecorator d)
 
   canonicalClass = cls;
   decorator = d;
+  gDecoratedClassTypes.add(this);
 }
 
 
@@ -216,6 +222,55 @@ Type* canonicalClassType(Type* t) {
   return canonicalDecoratedClassType(t);
 }
 
+/* If 't' is a class like type or a managed type, this returns
+   the DecoratedClassType or AggregateType that represents
+   overriding the decorator in 't' (if any) with 'd'.
+
+   (A) When 't' is or wraps some MyClass, the result is:
+
+    (a1) owned or shared, non-nilable:
+           // owned non-nilable MyClass
+           _owned(MyClass)
+
+    (a2) owned or shared, nilable or generic nilability:
+           // owned nilable MyClass
+           _owned(DecoratedClassType(CLASS_TYPE_BORROWED_NILABLE, MyClass))
+
+    (a3) borrowed or unmanaged or generic management, any nilability:
+           // unmanaged, generic nilability
+           DecoratedClassType(CLASS_TYPE_UNMANAGED, MyClass)
+           // generic management, non-nilable
+           DecoratedClassType(CLASS_TYPE_GENERIC_NONNIL, MyClass)
+
+    (a4) ... except the canonical type:
+           // borrowed, non-nilable
+           MyClass
+
+    where 'MyClass' denotes its AggregateType.
+
+   (B) When 't' is generic w.r.t. the underlying class, the result is:
+
+    (b1) owned or shared, any nilability:
+           // owned, nilable
+           DecoratedClassType(CLASS_TYPE_MANAGED_NILABLE, dtOwned)
+
+    (b2) borrowed or unmanaged or generic management, any nilability:
+           // borrowed, generic nilability
+           dtBorrowed
+           // unmanaged, non-nilable
+           dtUnmanagedNonNilable
+           // generic management, generic nilability
+           dtAnyManagementAnyNilable
+
+   This function will transform generic class types, e.g.
+     dtUnmanagedNonNilable + BORROWED_NILABLE -> dtBorrowedNilable
+
+   Note that for owned/shared types, they represent the decorator in two
+   ways, depending on whether or not the contained class is specified.
+
+   A plain AggregateType represents a non-nilable borrowed class.
+
+ */
 Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
 
   // no _ddata c_ptr etc
@@ -267,7 +322,7 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
     case CLASS_TYPE_MANAGED_NILABLE:
       INT_FATAL("should be handled above");
     case CLASS_TYPE_GENERIC:
-      return dtAnyManagement;
+      return dtAnyManagementAnyNilable;
     case CLASS_TYPE_GENERIC_NONNIL:
       return dtAnyManagementNonNilable;
     case CLASS_TYPE_GENERIC_NILABLE:
@@ -327,7 +382,7 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
     return CLASS_TYPE_UNMANAGED_NONNIL;
   if (t == dtUnmanagedNilable)
     return CLASS_TYPE_UNMANAGED_NILABLE;
-  if (t == dtAnyManagement)
+  if (t == dtAnyManagementAnyNilable)
     return CLASS_TYPE_GENERIC;
   if (t == dtAnyManagementNonNilable)
     return CLASS_TYPE_GENERIC_NONNIL;

@@ -3,7 +3,7 @@ use Spawn;
 use Sort;
 use BlockDist;
 use VisualDebug;
-use Lists;
+use List;
 
 config const verbose = false;
 config const vis = "vis_strings";

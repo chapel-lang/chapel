@@ -20,7 +20,9 @@
 
 
 /* A helper file of utilities for Mason */
-private use Lists;
+private use List;
+private use Map;
+
 use Spawn;
 use FileSystem;
 use TOML;
@@ -53,7 +55,6 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
   const target = joinPath(projectHome, 'target');
   const srcBin = joinPath(target, binLoc);
-  const test = joinPath(target, 'test');
   const example = joinPath(target, 'example');
 
   if !isDir(target) {
@@ -62,11 +63,22 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   if !isDir(srcBin) {
     mkdir(srcBin);
   }
-  if !isDir(test) {
-    mkdir(test);
-  }
   if !isDir(example) {
     mkdir(example);
+  }
+
+  const actualTest = joinPath(projectHome,'test');
+  if isDir(actualTest) {
+    for dir in walkdirs(actualTest) {
+      const internalDir = target+dir.replace(projectHome,"");
+      if !isDir(internalDir) {
+        mkdir(internalDir);
+      }
+    }
+  }
+  const test = joinPath(target, 'test');
+  if(!isDir(test)) {
+    mkdir(test);
   }
 }
 
@@ -367,7 +379,7 @@ proc getChapelVersionStr() {
   return chplVersion;
 }
 
-proc gitC(newDir, command, quiet=false) {
+proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
 
   const oldDir = here.cwd();
@@ -472,7 +484,7 @@ proc isIdentifier(name:string) {
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
-  for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
+  for (k,v) in tomlTbl.A.items() {
     if v.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);

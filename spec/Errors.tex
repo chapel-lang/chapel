@@ -1,0 +1,715 @@
+\sekshun{Error Handling}
+\label{Error_Handling}
+\index{error handling}
+\index{errors}
+
+The Chapel language supports \chpl{throw}, \chpl{try}, \chpl{try!},
+\chpl{catch}, and \chpl{throws} which are described below. Chapel
+supports several error handling modes, including a mode suitable
+for prototype development and a less-permissive mode intended
+for production code.
+
+\begin{craychapel}
+Additional information about the Cray Chapel implementation of
+error handling and the \emph{strict} error handling mode, which
+is not defined here, is available online in the technical note:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/technotes/errorHandling.html}
+\end{craychapel}
+
+
+\section{Throwing Errors}
+\label{Throwing_Errors}
+\index{errors!throwing}
+\index{throw}
+\index{throws}
+
+Errors may be thrown from a function to its callee with a \chpl{throw}
+statement. For a function to throw an error, its signature must include
+a \chpl{throws} declaration. The declaration is put after the return
+type and before any \chpl{where} clauses.
+
+Only \chpl{owned} instances of a type inheriting from \chpl{Error} can be
+thrown.
+
+\begin{chapelexample}{throwing.chpl}
+\begin{chapel}
+proc canThrow(i: int): int throws {
+  if i < 0 then
+    throw new owned Error();
+
+  return i + 1;
+}
+
+proc alwaysThrows():int throws {
+  throw new owned Error();
+  // never reached
+  return 1;
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+
+\section{Handling Errors}
+\label{Handling_Errors}
+\index{errors!handling}
+
+There are three ways to handle an error:
+
+\begin{itemize}
+\item Halt with \chpl{try!}.
+\item Handle the error with \chpl{catch} blocks.
+\item Propagate the error out of the current function with \chpl{throws}.
+\end{itemize}
+
+
+\subsection{Halting on error with try!}
+\label{Halting_on_error_with_try_bang}
+\index{try!}
+\index{errors!try!}
+
+If an error is thrown by a call within the lexical scope of a \chpl{try!}
+block or a \chpl{try!} expression prefix, the program halts.
+
+\begin{chapelexample}{try-bang.chpl}
+\begin{chapel}
+proc haltsOnError():int {
+  // the try! next to the throwing call
+  // halts the program if an error occurs.
+  return try! canThrow(0);
+}
+
+proc haltsOnErrorBlock() {
+  try! {
+    canThrow(1);
+    canThrow(0);
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsection{Handling an error with catch}
+\label{Handling_an_error_with_catch}
+\index{catch}
+\index{errors!catch}
+\index{errors!try}
+
+When an error is raised by a call in a \chpl{try} or \chpl{try!} block,
+the rest of the block is abandoned and control flow is passed
+to its \chpl{catch} clause(s), if any.
+
+\subsubsection{Catch clauses}
+\label{Catch_clauses}
+
+A \chpl{try} or \chpl{try!} block can have one or more \chpl{catch} clauses.
+
+A \chpl{catch} clause can specify the variable that refers to the caught
+error within the \chpl{catch} block. If the variable is given a type,
+for example \chpl{catch e:SomeError}, it is a \emph{type filter}.
+The corresponding \chpl{catch} clause \emph{matches} the errors
+that are of the class \chpl{SomeError} or its subclass. If no type
+filter is present on a catch clause, or if no variable is present at
+all, then it is a \emph{catchall} clause, which matches all errors.
+
+The type filters are evaluated in the order that the \chpl{catch} clauses
+appear in the program. If a \chpl{catch} clause's type filter matches,
+then its block is executed to the exclusion of the others. Hence there
+is no notion of best match, only a first match.
+
+If the \chpl{catch} block itself throws an error, it is handled in the
+same manner as if that error were thrown by a statement adjacent to the
+\chpl{try}-\chpl{catch} blocks. Otherwise, after the execution of the
+\chpl{catch} block completes, the program execution proceeds to the
+next statement after the \chpl{try}-\chpl{catch} blocks.
+
+\begin{chapelexample}{catching-errors.chpl}
+\begin{chapel}
+proc catchingErrors() throws {
+  try {
+    alwaysThrows(0);
+  } catch {
+    writeln("caught an error, unnamed catchall clause");
+  }
+
+  try {
+    var x = alwaysThrows(-1);
+    writeln("never reached");
+  } catch e:FileNotFoundError {
+    writeln("caught an error, FileNotFoundError type filter matched");
+  } catch e {
+    writeln("caught an error in a named catchall clause");
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsubsection{try! with catch}
+\label{try_bang_with_catch}
+
+If an error is thrown within a \chpl{try!} block and none of its
+\chpl{catch} clauses, if any, match that error, the program halts.
+
+\begin{chapelexample}{catching-errors-halt.chpl}
+\begin{chapel}
+proc catchingErrorsHalt() {
+  try! {
+    var x = alwaysThrows(-1);
+    writeln("never reached");
+  } catch e:FileNotFoundError {
+    writeln("caught a file not found error");
+  }
+  // errors other than FileNotFoundError cause a halt
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsubsection{Nested try}
+\label{Nested_try}
+
+If an error is thrown within a \chpl{try} block and none of its
+\chpl{catch} clauses, if any, match that error, the error
+is directed to the enclosing \chpl{try} block, when present.
+
+\begin{chapelexample}{nested-try.chpl}
+\begin{chapel}
+class DemoError : Error { }
+
+proc nestedTry() {
+  try {
+    try {
+      alwaysThrows(0);
+    } catch e: DemoError {
+      writeln("caught a DemoError");
+    }
+    writeln("never reached");
+  } catch {
+    writeln("caught an Error from inner try");
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+proc alwaysThrows():int throws {
+  throw new owned Error();
+  // never reached
+  return 1;
+}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsection{Propagating an error with throws}
+\label{Propagating_an_error_with_throws}
+
+A function marked \chpl{throws} can pass along an error thrown by a
+function called within it. This can be done in several ways.
+
+\subsubsection{After catch clauses}
+\label{After_catch_clauses}
+
+Propagation can occur when no matching \chpl{catch} clause is found for an
+error raised in a \chpl{try} block.
+
+\begin{chapelexample}{catching-errors-propagate.chpl}
+\begin{chapel}
+proc catchingErrorsPropagate() throws {
+  try {
+    var x = alwaysThrows(-1);
+    writeln("never reached");
+  } catch e:FileNotFoundError {
+    writeln("caught a file not found error");
+  }
+  // errors other than FileNotFoundError propagate
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsubsection{catch-less try}
+\label{catch_less_try}
+
+A logical extension of the above is the case where no \chpl{catch} blocks
+are attached to the \chpl{try}. Here the \chpl{try} keyword marks throwing
+calls to clarify control flow.
+
+\begin{chapelexample}{propagates-error.chpl}
+\begin{chapel}
+proc propagatesError() throws {
+  // control flow changes if an error was thrown;
+  // could be indicated more clearly with try
+  canThrow(0);
+
+  try canThrow(0);
+
+  try {
+    canThrow(0);
+  }
+
+  var x = try canThrow(1);
+  writeln(x);
+
+  return try canThrow(0);
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsubsection{try expressions}
+\label{try_expressions}
+
+\chpl{try} and \chpl{try!} are available as expressions to clarify control flow
+at expression granularity. The expression form may not be used with
+\chpl{catch} clauses.
+
+\begin{chapelexample}{expression-try.chpl}
+\begin{chapel}
+proc expressionTry(): int throws {
+  var x = try canThrow(1);
+  writeln(x);
+
+  return try canThrow(0);
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsection{Complete handling}
+\label{Complete_handling}
+
+For a function to handle errors from its calls without itself throwing,
+its \chpl{try}/\chpl{catch} must be complete. This may be accomplished
+in two ways:
+
+\begin{itemize}
+
+\item A catchall clause on \chpl{try}. This prevents \chpl{try} from
+propagating the error out of the function as described above.
+
+\begin{chapelexample}{warns-on-error.chpl}
+\begin{chapel}
+proc warnsOnError(i: int): int {
+  try {
+    alwaysThrows(i);
+  } catch e {
+    writeln("Warning: caught a error ", e);
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\item
+\chpl{try!} instead of \chpl{try}. This will halt the program if no matching
+\chpl{catch} clause is found, instead of propagating.
+
+\begin{chapelexample}{halts-on-error.chpl}
+\begin{chapel}
+class DemoError : Error { }
+proc haltsOnError(i: int): int {
+  try! {
+    canThrow(i);
+  } catch e: DemoError {
+    writeln("caught a DemoError");
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\end{itemize}
+
+
+\section{Defer statement}
+\label{Errors_defer}
+
+When an error is thrown, it is sometimes necessary to clean up state and
+allocated memory. \chpl{defer} statements facilitate that by running when a
+scope is exited, regardless of how it is exited.
+
+\begin{chapelexample}{defer.chpl}
+\begin{chapel}
+proc deferredDelete(i: int) {
+  try {
+    var huge = allocateLargeObject();
+    defer {
+      delete huge;
+      writeln("huge has been deleted");
+    }
+
+    canThrow(i);
+    processObject(huge);
+  } catch {
+    writeln("no memory leaks");
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+It is not possible to throw errors out of a \chpl{defer} statement because the
+atomicity of all \chpl{defer} statements must be guaranteed, and the handling
+context would be unclear.
+
+Errors also cannot be thrown by \chpl{deinit()} for similar reasons.
+
+
+\section{Methods}
+\label{Errors_Methods}
+
+Errors can be thrown by methods, just as with any other function.
+An overriding method must throw if the overridden method throws,
+or not throw if the overridden method does not throw.
+
+\begin{chapelexample}{throwing-methods.chpl}
+\begin{chapel}
+class ThrowingObject {
+  proc f() throws {
+    throw new owned Error();
+  }
+}
+
+class SubThrowingObject : ThrowingObject {
+  // must be marked throws even though it doesn't throw
+  proc f() throws {
+    writeln("this version doesn't throw");
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+
+\section{Multilocale}
+\label{Errors_Multilocale}
+
+Errors can be thrown within \chpl{on} statements. In that event, the error
+will be propagated out of the \chpl{on} statement.
+
+\begin{chapelexample}{handle-from-on.chpl}
+\begin{chapel}
+proc handleFromOn() {
+  try {
+    on Locales[0] {
+      canThrow(1);
+    }
+  } catch {
+    writeln("caught from Locale 0");
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+
+\section{Parallelism}
+\label{Errors_Parallelism}
+
+\subsection{TaskErrors}
+\label{TaskErrors}
+
+\chpl{TaskErrors} class helps coordinate errors among groups of tasks by collecting
+them for centralized handling. It can be iterated on and filtered for
+different kinds of errors. See also
+\url{https://chapel-lang.org/docs/builtins/ChapelError.html#ChapelError.TaskErrors}.
+
+Nested \chpl{coforall} statements do not produce nested \chpl{TaskErrors}.
+Instead, the nested errors are flattened into the \chpl{TaskErrors} error
+thrown by the outer loop.
+
+\subsection{begin}
+\label{Errors_begin}
+
+Errors can be thrown within a \chpl{begin} statement. In that event, the error
+will be propagated to the \chpl{sync} statement that waits for that task.
+
+\begin{chapelexample}{handle-from-begin.chpl}
+\begin{chapel}
+proc handleFromBegin() {
+  try! {
+    sync {
+      begin canThrow(0);
+      begin canThrow(1);
+    }
+  } catch e: TaskErrors {
+    writeln("caught from Locale 0");
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsection{coforall and cobegin}
+\label{Errors_coforall_and_cobegin}
+
+Errors can be thrown from \chpl{coforall} and \chpl{cobegin}
+statements and handled as \chpl{TaskErrors}. The nested \chpl{coforall}
+loops will emit a flattened \chpl{TaskErrors} error.
+
+\begin{chapelexample}{handle-from-coforall.chpl}
+\begin{chapel}
+proc handleFromCoforall() {
+  try! {
+    writeln("before coforall block");
+    coforall i in 1..2 {
+      coforall j in 1..2 {
+        throw new owned DemoError();
+      }
+    }
+    writeln("after coforall block");
+  } catch errors: TaskErrors { // not nested
+    // all of e will be of runtime type DemoError in this example
+    for e in errors {
+      writeln("Caught task error e ", e.message());
+    }
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\begin{chapelexample}{handle-from-cobegin.chpl}
+\begin{chapel}
+proc handleFromCobegin() {
+  try! {
+    writeln("before cobegin block");
+    cobegin {
+      throw new owned DemoError();
+      throw new owned DemoError();
+    }
+    writeln("after cobegin block");
+  } catch errors: TaskErrors {
+    for e in errors {
+      writeln("Caught task error e ", e.message());
+    }
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsection{forall}
+\label{Errors_forall}
+
+Errors can be thrown from \chpl{forall} loops, too.
+Although the \chpl{forall} may execute serially within
+a single task, it will always throw a \chpl{TaskErrors} error
+if error(s) are thrown in the loop body.
+
+\begin{chapelexample}{handle-from-forall.chpl}
+\begin{chapel}
+proc handleFromForall() {
+  try! {
+    writeln("before forall block");
+    forall i in 1..2 {
+      throw new owned DemoError();
+    }
+    writeln("after forall block");
+  } catch errors: TaskErrors {
+    for e in errors {
+      writeln("Caught task error e ", e.message());
+    }
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+
+\section{Creating New Error Types}
+\label{Creating_New_Error_Types}
+
+Errors in Chapel are implemented as classes, with a base class \chpl{Error}
+defined in the standard modules. \chpl{Error} may be used directly, and new
+subclass hierarchies may be created from it.  See also
+\url{https://chapel-lang.org/docs/builtins/ChapelError.html}.
+
+A hierarchy for system errors is included in the \chpl{SysError} module,
+accessed with a \chpl{use} statement.  See also
+\url{https://chapel-lang.org/docs/modules/standard/SysError.html}
+
+\begin{chapelexample}{defining-errors.chpl}
+\begin{chapel}
+use SysError;
+
+class DemoError : Error { }
+
+class DemoSysError : SystemError { }
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+
+\section{Error Handling Modes}
+\label{Error_Handling_Modes}
+
+Certain error handling details depend on the \emph{error handling mode}:
+
+\begin{itemize}
+
+\item Code in \chpl{prototype} modules (\rsec{Prototype_Modules}),
+      including implicit modules (\rsec{Implicit_Modules}),
+      is handled in the \emph{prototype} mode.
+
+\item Otherwise, code is handled in the \emph{production} mode.
+
+\end{itemize}
+
+Code that is legal in the production mode is always legal
+in the prototype mode.
+
+\subsection{Prototype Mode}
+\label{Errors_Prototype_Mode}
+
+In the prototype mode, it is not necessary to explicitly handle
+errors from a function that throws. If an error is thrown and the calling
+function throws, the error will be propagated out of the function.  However,
+if an error is thrown and the calling function does not include
+a \chpl{throws} declaration, the program will halt.
+
+In the following example, the code is in an implicit module.
+It is legal in the prototype mode:
+
+\begin{chapelexample}{fatal-mode.chpl}
+\begin{chapel}
+canThrow(1); // handling can be omitted; halts if an error occurs
+
+proc throwsErrorsOn() throws {
+  // error propagates out of this function
+  canThrow(-1);
+}
+
+proc doesNotThrowErrorsOn() {
+  // causes a halt if called
+  alwaysThrows();
+}
+\end{chapel}
+\begin{chapelpost}
+proc canThrow(i: int): int throws {
+  if i < 0 then
+    throw new owned Error();
+
+  return i + 1;
+}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+The following module is explicitly marked as a prototype module,
+so the prototype mode applies here, too.
+
+\begin{chapelexample}{PrototypeModule.chpl}
+\begin{chapel}
+prototype module PrototypeModule {
+
+  canThrow(1); // handling can be omitted; halts if an error occurs
+
+  proc throwsErrorsOn() throws {
+    // error propagates out of this function
+    alwaysThrows();
+  }
+
+  proc doesNotThrowErrorsOn() {
+    // causes a halt if called
+    alwaysThrows();
+  }
+
+  proc canThrow(i: int): int throws {
+    if i < 0 then
+      throw new owned Error();
+
+    return i + 1;
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+\subsection{Production Mode}
+\label{Production_Mode_for_Explicit_Modules}
+
+In the production mode, it is necessary to handle errors if the
+calling function does not throw. If the calling function does
+throw, then the error will be propagated out, as with the prototype mode.
+
+\begin{chapelexample}{ProductionModule.chpl}
+\begin{chapel}
+module ProductionModule {
+  // This would cause a compilation error since the error is not handled:
+  // canThrow(1);
+
+  proc throwsErrorsOn() throws {
+    // any error thrown by alwaysThrows will propagate out
+    alwaysThrows();
+  }
+
+  // this function does not compile because the error is not handled
+  // proc doesNotThrowErrorsOn() {
+  //   alwaysThrows();
+  // }
+}
+\end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}

@@ -155,9 +155,10 @@ As an example for specifying an I/O style, the code below specifies the minimum 
 
 I/O facilities in Chapel also include several other ways to control I/O
 formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
-with :proc:`channel.readf` and :proc:`channel.writef`. Also note that record or
-class implementations can provide custom functions implementing read or write
-operations for that type (see :ref:`readThis-writeThis-readWriteThis`).
+with :proc:`FormattedIO.channel.readf` and :proc:`FormattedIO.channel.writef`.
+Also note that record or class implementations can provide custom functions
+implementing read or write operations for that type (see
+:ref:`readThis-writeThis-readWriteThis`).
 
 .. _about-io-files:
 
@@ -516,7 +517,7 @@ via the ``str_style`` field in :record:`iostyle`.
   of length follow, and where the 7-bits of length from each byte store
   the 7-bit portions of the length in order from least-significant to
   most-significant. This way of encoding a variable-byte length  matches
-  `Google Protocol Buffers <https://github.com/google/protobuf/>`_.
+  `Google Protocol Buffers <https://github.com/protocolbuffers/protobuf>`_.
 * ``iostringstyle.data_toeof`` indicates a string format that contains
   only the string data without any length or terminator. When reading,
   this format will read a string until the end of the file is reached.
@@ -791,6 +792,10 @@ extern record iostyle { // aka qio_style_t
      on what the values of ``str_style`` mean.
    */
   var string_format:uint(8) = iostringformat.word:uint(8);
+
+  /* What character do we start bytes with, when appropriate? Default is " */
+  var bytes_prefix:style_char_t = 0x62; // b
+
   // numeric scanning/printing choices
   /* When reading or writing a numeric value in a text mode channel,
      what base should be used for the number? Default of 0 means decimal.
@@ -1079,6 +1084,8 @@ private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):sys
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 private extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
+private extern proc qio_channel_seek(ch:qio_channel_ptr_t, start:int(64), end:int(64)):syserr;
+
 private extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):syserr;
 private extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):syserr;
@@ -1165,6 +1172,7 @@ private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_chann
 private extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+private extern proc qio_channel_scan_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
 private extern proc qio_channel_print_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
@@ -1557,7 +1565,7 @@ proc file.path : string throws {
     }
     chpl_free_c_string(tmp);
     if !err {
-      ret = new string(tmp2, needToCopy=false);
+      ret = createStringWithOwnedBuffer(tmp2);
     }
   }
   if err then try ioerror(err, "in file.path");
@@ -1607,6 +1615,7 @@ private param _cwr = "w+";
 
 pragma "no doc"
 proc _modestring(mode:iomode) {
+  use HaltWrappers only;
   select mode {
     when iomode.r do return _r;
     when iomode.rw do return _rw;
@@ -1663,7 +1672,8 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
 
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
-  
+  use HaltWrappers only;
+
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
       file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
 
@@ -1703,7 +1713,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
       if path_err {
         path = "unknown";
       } else {
-        path = new string(str, len, isowned=true, needToCopy=false);
+        path = createStringWithOwnedBuffer(str, len);
       }
     }
 
@@ -1776,7 +1786,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var path_cs:c_string;
     var path_err = qio_file_path_for_fd(fd, path_cs);
     var path = if path_err then "unknown"
-                           else new string(path_cs, needToCopy=false);
+                           else createStringWithOwnedBuffer(path_cs);
     try ioerror(err, "in openfd", path);
   }
   return ret;
@@ -1818,7 +1828,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var path_cs:c_string;
     var path_err = qio_file_path_for_fp(fp, path_cs);
     var path = if path_err then "unknown"
-                           else new string(path_cs, needToCopy=false);
+                           else createStringWithOwnedBuffer(path_cs);
     try ioerror(err, "in openfp", path);
   }
   return ret;
@@ -2043,7 +2053,7 @@ pragma "no doc"
 inline proc _cast(type t:string, x: ioChar) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
-  return new string(csc, needToCopy=false);
+  return createStringWithOwnedBuffer(csc);
 }
 
 
@@ -2143,7 +2153,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = new string(tmp_path, needToCopy=false);
+      path = createStringWithOwnedBuffer(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -2161,7 +2171,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = new string(tmp_path, needToCopy=false);
+      path = createStringWithOwnedBuffer(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -2321,6 +2331,39 @@ inline proc channel.revert() where this.locking == false {
 inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
+
+/*
+   Reset a channel to point to a new part of a file.
+   This function allows one to jump to a different part of a
+   file without creating a new channel. It can only be called
+   on a channel with ``locking==false``.
+
+   Besides setting a new start position, this function allows
+   one to specify a new end position. Specifying the end position
+   is usually not necessary for correct behavior but it might be
+   an important performance optimization since the channel will not
+   try to read data outside of the start..end region.
+
+   This function will, in most cases, discard the channel's buffer.
+   When writing, the data will be saved to the file before discarding.
+
+   :arg start: the new start offset, measured in bytes and counting from 0
+   :arg end: optionally, a new end offset, measured in bytes and counting from 0
+   :throws: SystemError: if seeking failed. Possible reasons include
+                         that the file is not seekable, or that the
+                         channel is marked.
+ */
+proc channel.seek(start:int, end:int = max(int)) throws {
+
+  if this.locking then
+    compilerError("Cannot seek on a locking channel");
+
+  const err = qio_channel_seek(_channel_internal, start, end);
+
+  if err then
+    throw SystemError.fromSyserr(err);
+}
+
 
 // These begin with an _ to indicated that
 // you should have a lock before you use these... there is probably
@@ -2684,7 +2727,7 @@ proc _isSimpleIoType(type t) param return
 
 pragma "no doc"
 proc _isIoPrimitiveType(type t) param return
-  _isSimpleIoType(t) || (t == string) || (t == _bytes);
+  _isSimpleIoType(t) || (t == string) || (t == bytes);
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
@@ -2728,11 +2771,15 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    x = new string(tx, length=len, needToCopy=false);
+    x = createStringWithOwnedBuffer(tx, length=len);
     return ret;
-  } else if t == _bytes {
+  } else if t == bytes {
     // handle _bytes
-    // for now, do nothing and let the function return EINVAL
+    var len:int(64);
+    var tx: c_string;
+    var ret = qio_channel_scan_bytes(false, _channel_internal, tx, len, -1);
+    x = createBytesWithOwnedBuffer(tx, length=len);
+    return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
@@ -2780,7 +2827,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     // handle string
     const local_x = x.localize();
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
-  } else if t == _bytes {
+  } else if t == bytes {
     // handle bytes
     const local_x = x.localize();
     return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
@@ -2867,11 +2914,17 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = new string(tx, length=len, needToCopy=false);
+    x = createStringWithOwnedBuffer(tx, length=len);
     return ret;
-  } else if t == _bytes {
-    // handle _bytes
-    // for now, do nothing and let the function return EINVAL
+  } else if t == bytes {
+    // handle _bytes (nothing special for bytes vs string in this case)
+    var len:int(64);
+    var tx: c_string;
+    var ret = qio_channel_read_string(false, byteorder:c_int,
+                                      qio_channel_str_style(_channel_internal),
+                                      _channel_internal, tx, len, -1);
+    x = createBytesWithOwnedBuffer(tx, length=len);
+    return ret;
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
     var err:syserr = ENOERR;
@@ -2937,7 +2990,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
   } else if t == string {
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
-  } else if t == _bytes {
+  } else if t == bytes {
     var local_x = x.localize();
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if isEnumType(t) {
@@ -3428,7 +3481,7 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
+      return createStringWithOwnedBuffer(buf, offset, offset+1);
     }
   }
 }
@@ -3655,7 +3708,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
       this._set_style(save_style);
     }
 
-    str_out = new string(tx, length=lenread, needToCopy=false);
+    str_out = createStringWithOwnedBuffer(tx, length=lenread);
   }
 
   if !err {
@@ -5337,7 +5390,7 @@ proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
 }
 
 private inline
-proc _toBytes(x:_bytes)
+proc _toBytes(x:bytes)
 {
   return (x, true);
 }
@@ -5345,14 +5398,14 @@ proc _toBytes(x:_bytes)
 private inline
 proc _toBytes(x:string)
 {
-  return (x:_bytes, true);
+  return (x:bytes, true);
 }
 
 // don't allow anything else to be cast to bytes for now
 private inline
 proc _toBytes(x:?t)
 {
-  return ("":_bytes, false);
+  return ("":bytes, false);
 }
 
 private inline
@@ -5361,12 +5414,12 @@ proc _toString(x:string)
   return (x, true);
 }
 private inline
-proc _toString(x:_bytes)
+proc _toString(x:bytes)
 {
   return ("", false);
 }
 private inline
-proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=_bytes && t!=string)
+proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=bytes && t!=string)
 {
   return (x:string, true);
 }
@@ -5376,10 +5429,10 @@ proc _toString(x:?t) where !_isIoPrimitiveType(t)
   return ("", false);
 }
 private inline
-proc _toStringFromBytesOrString(x:_bytes)
+proc _toStringFromBytesOrString(x:bytes)
 {
-  return (new string(x.buff, length=x.length, size=x._size,
-                     isowned=false, needToCopy=false), true);
+  return (createStringWithBorrowedBuffer(x.buff, length=x.length, size=x._size),
+          true);
 }
 private inline
 proc _toStringFromBytesOrString(x:string)
@@ -5445,7 +5498,7 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoP
       }
     } else {
       if isBytesType(t2) && isStringType(t) {
-        lhs = rhs.decode(DecodePolicy.Strict);
+        lhs = rhs.decode(decodePolicy.strict);
       }
       else {
         lhs = rhs:t;
@@ -6229,6 +6282,13 @@ proc channel.writef(fmtStr:string): bool throws {
    Read arguments according to a format string. See
    :ref:`about-io-formatted-io`.
 
+   .. note::
+
+      Intents for all arguments except the format string are `ref`. If `readf`
+      is used with formats that require an additional argument such as `%*i` and
+      `%*S`, then those arguments cannot be constants. Instead, store the value
+      into a variable and pass that.
+
    :arg fmt: the format string
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
@@ -6661,7 +6721,7 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
 
-  return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
+  return createStringWithOwnedBuffer(buf, offset, offset+1);
 }
 
 
@@ -6714,7 +6774,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error =
         qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
-    s = new string(ts, length=gotlen, needToCopy=false);
+    s = createStringWithOwnedBuffer(ts, length=gotlen);
   }
 
   if ! error {
@@ -7024,7 +7084,7 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch throws
 
    At the time each match is returned, the channel position is
    at the start of that match. Note though that you would have
-   to use :proc:`channel.advance` to get to the position of a capture group.
+   to use :proc:`IO.channel.advance` to get to the position of a capture group.
 
    After returning each match, advances to just after that
    match and looks for another match. Thus, it will not return

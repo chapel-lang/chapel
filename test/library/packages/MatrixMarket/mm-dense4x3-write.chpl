@@ -1,7 +1,7 @@
 use MatrixMarket;
 use IO;
 use Sort;
-use Lists;
+use List;
 
 var A:[1..4, 1..3] real;
 A[1,1] = 1.0;

@@ -166,9 +166,10 @@ module ChapelArray {
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
+  private use Reflection only;
 
   pragma "no doc"
-  config param showArrayAsVecWarnings = false;
+  config param showArrayAsVecWarnings = true;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -266,9 +267,9 @@ module ChapelArray {
     }
 
     proc _freePrivatizedClassHelp(pid, original) {
-      var prv = chpl_getPrivatizedCopy(object, pid);
+      var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
       if prv != original then
-        delete _to_unmanaged(prv);
+        delete prv;
 
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
@@ -395,8 +396,10 @@ module ChapelArray {
   // opaque domains is _OpaqueIndex, not opaque.  This function is
   // essentially a wrapper around the function that actually builds up
   // the runtime type.
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type
+  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type {
+      compilerWarning("Opaque domains are deprecated - please switch to another domain type");
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
+  }
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
@@ -843,6 +846,7 @@ module ChapelArray {
   // return type when the declared return type specifies a particular domain
   // but not the element type.
   proc chpl__checkDomainsMatch(a: [], b) {
+    use HaltWrappers only;
     if (boundsChecking) {
       if (a.domain != b) {
         HaltWrappers.boundsCheckHalt("domain mismatch on return");
@@ -851,6 +855,7 @@ module ChapelArray {
   }
 
   proc chpl__checkDomainsMatch(a: _iteratorRecord, b) {
+    use HaltWrappers only;
     if (boundsChecking) {
       // Should use iterator.shape here to avoid copy
       var tmp = a;
@@ -890,8 +895,8 @@ module ChapelArray {
   record dmap { }
 
   pragma "unsafe"
-  proc chpl__buildDistType(type t) type where isSubtype(borrowed t, BaseDist) {
-    var x: unmanaged t;
+  proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
+    var x: _to_unmanaged(t);
     var y = new _distribution(x);
     return y.type;
   }
@@ -1651,7 +1656,7 @@ module ChapelArray {
       return this.contains(i);
     }
 
-    /* Deprecated - please use :proc:`domain.contains`. */
+    /* Deprecated - please use :proc:`contains`. */
     inline proc member(i: _value.idxType ...rank) {
       compilerWarning("domain.member is deprecated - " +
                       "please use domain.contains instead");
@@ -2856,7 +2861,6 @@ module ChapelArray {
 
     /* Yield the array elements in sorted order. */
     iter sorted(comparator:?t = chpl_defaultComparator()) {
-      use Reflection;
       if canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
           yield i;
@@ -3609,15 +3613,18 @@ module ChapelArray {
   // promotion for associative array addition doesn't really make sense. instead,
   // we really just want a union
   proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     return a | b;
   }
 
   proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("+=");
     a |= b;
   }
 
   proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain | b.domain;
     var ret : [newDom] a.eltType;
     serial !newDom._value.parSafe {
@@ -3628,6 +3635,7 @@ module ChapelArray {
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("|=");
     serial !a.domain._value.parSafe {
       forall i in b.domain do a.domain.add(i);
@@ -3636,6 +3644,7 @@ module ChapelArray {
   }
 
   proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain & b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3645,6 +3654,7 @@ module ChapelArray {
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("&=");
     serial !a.domain._value.parSafe {
       forall k in a.domain {
@@ -3654,6 +3664,7 @@ module ChapelArray {
   }
 
   proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain - b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3664,6 +3675,7 @@ module ChapelArray {
   }
 
   proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("-=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
@@ -3672,6 +3684,7 @@ module ChapelArray {
 
 
   proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     var newDom = a.domain ^ b.domain;
     var ret : [newDom] a.eltType;
 
@@ -3686,6 +3699,7 @@ module ChapelArray {
   }
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
     a.chpl__assertSingleArrayDomain("^=");
     serial !a.domain._value.parSafe {
       forall k in b.domain {
@@ -4108,7 +4122,6 @@ module ChapelArray {
   }
 
   inline proc chpl__bulkTransferArray(destClass, destDom : domain, srcClass, srcDom : domain) {
-    use Reflection;
     var success = false;
 
     inline proc bulkTransferDebug(msg:string) {

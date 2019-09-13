@@ -6,7 +6,7 @@ class Helper {
 }
 
 record Foo {
-  var h : unmanaged Helper;
+  var h : unmanaged Helper?;
   var serialized = false;
 
   proc chpl__serialize() {

@@ -227,8 +227,6 @@
   #include <cstring>
   #include <stdint.h>
 
-  static int query_uid = 1;
-
   #define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
     if (N) {                                                              \
       (Current).first_line   = (Rhs)[1].first_line;                       \
@@ -300,6 +298,7 @@
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
 %token <pch> STRINGLITERAL
+%token <pch> BYTESLITERAL
 %token <pch> CSTRINGLITERAL
 %token <pch> EXTERNCODE
 
@@ -307,7 +306,7 @@
 // keywords (alphabetical)
 //
 %token TALIGN TAS TATOMIC
-%token TBEGIN TBREAK TBOOL TBORROWED TBY
+%token TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
@@ -376,12 +375,12 @@
 %left TSHIFTLEFT TSHIFTRIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
-%right TBNOT TBANG
+%right TBNOT TLNOT
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
-%left TBORROWED TOWNED TUNMANAGED TSHARED
-%right TQUESTION
+%right TBORROWED TOWNED TUNMANAGED TSHARED
+%left TQUESTION TBANG
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
@@ -398,7 +397,7 @@
 %type <pch> ident_use ident_def ident_fn_def
 %type <pch> internal_type_ident_def reserved_type_ident_use
 %type <pch> fn_ident assignop_ident opt_label_ident
-%type <pch> opt_string
+//%type <pch> opt_string
 
 
 
@@ -425,6 +424,10 @@
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> private_decl
 %type <pblockstmt> forwarding_stmt
+%type <pblockstmt> extern_export_decl_stmt
+/*%type <pblockstmt> extern_record_stmt
+%type <pblockstmt> extern_export_proc_stmt
+%type <pfnsymbol> extern_export_linkage_spec*/
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
 %type <pblockstmt> defer_stmt
@@ -455,7 +458,9 @@
 %type <pvecOfDefs> enum_ls
 
 %type <pcallexpr> zippered_iterator
-%type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
+%type <pexpr> fun_expr call_expr dot_expr
+%type <pexpr> lhs_expr
+%type <pexpr> unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> bool_literal literal_expr
 %type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
@@ -468,7 +473,7 @@
 %type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pdefexpr> query_expr opt_query_expr
+%type <pexpr> query_expr
 
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
@@ -724,6 +729,7 @@ internal_type_ident_def:
 | TREAL      { $$ = "real"; }
 | TIMAG      { $$ = "imag"; }
 | TCOMPLEX   { $$ = "complex"; }
+| TBYTES     { $$ = "bytes"; }
 | TSTRING    { $$ = "string"; }
 | TSYNC      { $$ = "sync"; }
 | TSINGLE    { $$ = "single"; }
@@ -745,6 +751,7 @@ scalar_type:
 | TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
 | TIMAG    { $$ = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
 | TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
+| TBYTES   { $$ = new SymExpr(dtBytes->symbol); }
 | TSTRING  { $$ = new SymExpr(dtString->symbol); }
 | TLOCALE  { $$ = new SymExpr(dtLocale->symbol); }
 | TNOTHING { $$ = new SymExpr(dtNothing->symbol); }
@@ -757,18 +764,8 @@ reserved_type_ident_use:
      different names. */
   TSYNC      { $$ = "_syncvar"; }
 | TSINGLE    { $$ = "_singlevar"; }
-/*| TOWNED     { $$ = "_owned"; }
-| TSHARED    { $$ = "_shared"; }
-| TBORROWED  { $$ = "_borrowed"; }
-| TUNMANAGED { $$ = "_unmanaged"; }*/
 | TDOMAIN    { $$ = "_domain"; }
 | TINDEX     { $$ = "_index"; }
-;
-
-
-opt_string:
-                { $$ = NULL; }
-| STRINGLITERAL { $$ = $1; }
 ;
 
 do_stmt:
@@ -786,15 +783,16 @@ class_level_stmt:
 | private_decl
 | TPUBLIC private_decl  { $$ = $2; }
 | TPRIVATE private_decl { applyPrivateToBlock($2); $$ = $2; }
-| enum_decl_stmt
-| type_alias_decl_stmt
-| class_decl_stmt
-| forwarding_stmt
 ;
 
 private_decl:
   fn_decl_stmt
 | var_decl_stmt
+| enum_decl_stmt
+| type_alias_decl_stmt
+| class_decl_stmt
+| forwarding_stmt
+| extern_export_decl_stmt
 ;
 
 forwarding_stmt:
@@ -802,6 +800,96 @@ forwarding_stmt:
 | TFORWARDING expr TEXCEPT except_ls TSEMI  { $$ = buildForwardingStmt($2, $4, true); }
 | TFORWARDING expr TONLY opt_only_ls TSEMI  { $$ = buildForwardingStmt($2, $4, false); }
 | TFORWARDING var_decl_stmt { $$ = buildForwardingDeclStmt($2); }
+;
+
+extern_export_decl_stmt:
+  TEXTERN TRECORD
+    {
+      @2.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4,
+                                             NULL,
+                                             AGGREGATE_RECORD,
+                                             $5,
+                                             $7,
+                                             FLAG_EXTERN,
+                                             @2.comment));
+    }
+| TEXTERN STRINGLITERAL TRECORD
+    {
+      @3.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+
+      $$ = buildChapelStmt(buildClassDefExpr($5,
+                                             $2,
+                                             AGGREGATE_RECORD,
+                                             $6,
+                                             $8,
+                                             FLAG_EXTERN,
+                                             @3.comment));
+    }
+| TEXPORT TRECORD
+    {
+      @2.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4,
+                                             NULL,
+                                             AGGREGATE_RECORD,
+                                             $5,
+                                             $7,
+                                             FLAG_EXPORT,
+                                             @2.comment));
+    }
+| TEXPORT STRINGLITERAL TRECORD
+    {
+      @3.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($5,
+                                             $2,
+                                             AGGREGATE_RECORD,
+                                             $6,
+                                             $8,
+                                             FLAG_EXPORT,
+                                             @3.comment));
+    }
+
+| TEXTERN opt_expr fn_decl_stmt
+    {
+      $$ = buildExternExportFunctionDecl(FLAG_EXTERN, $2, $3);
+    }
+| TEXPORT opt_expr fn_decl_stmt
+    {
+      $$ = buildExternExportFunctionDecl(FLAG_EXPORT, $2, $3);
+    }
+
+| TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      const char* comment = context->latestComment;
+      context->latestComment = NULL;
+
+      $3->insert(FLAG_EXTERN);
+      $$ = buildVarDecls($4, comment, $3, $2);
+    }
+| TEXPORT opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      const char* comment = context->latestComment;
+      context->latestComment = NULL;
+
+      $3->insert(FLAG_EXPORT);
+      $$ = buildVarDecls($4, comment, $3, $2);
+    }
 ;
 
 extern_block_stmt:
@@ -962,16 +1050,6 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_string class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             $2,
-                                             $3,
-                                             $5,
-                                             $7,
-                                             FLAG_EXTERN,
-                                             @3.comment));
-    }
 | class_tag ident_def opt_inherit TLCBR error TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($2,
@@ -982,16 +1060,7 @@ class_decl_stmt:
                                              FLAG_UNKNOWN,
                                              @1.comment));
     }
-| TEXTERN opt_string class_tag ident_def opt_inherit TLCBR error TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             $2,
-                                             $3,
-                                             $5,
-                                             new BlockStmt(),
-                                             FLAG_EXTERN,
-                                             @3.comment));
-    }
+  /* see also extern_decl_stmt */
 ;
 
 class_tag:
@@ -1118,41 +1187,24 @@ lambda_decl_expr:
 linkage_spec:
                 {
                   $$ = new FnSymbol("");
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
                 }
 | TINLINE       {
                   $$ = new FnSymbol("");
                   $$->addFlag(FLAG_INLINE);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-| TEXPORT opt_expr {
-                  $$ = buildLinkageFn(FLAG_EXPORT, $2);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-| TEXTERN opt_expr {
-                  $$ = buildLinkageFn(FLAG_EXTERN, $2);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
                 }
 | TOVERRIDE     {
                   $$ = new FnSymbol("");
                   $$->addFlag(FLAG_OVERRIDE);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
                 }
 ;
 
 fn_decl_stmt:
   linkage_spec proc_or_iter
     {
+      // Capture the latest comment
+      @2.comment = context->latestComment;
+      context->latestComment = NULL;
+
       // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
       captureString.clear();
@@ -1184,7 +1236,7 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @1.comment);
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @2.comment);
       context->latestComment = NULL;
     }
 ;
@@ -1350,18 +1402,16 @@ function_body_stmt:
 query_expr:
   TQUESTION ident_def
     { $$ = new DefExpr(new VarSymbol($2)); }
-| TQUESTION
-    { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
-;
-
-opt_query_expr:
-    { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
-| query_expr
 ;
 
 var_arg_expr:
-  TDOTDOTDOT expr            { $$ = $2; }
-| TDOTDOTDOT opt_query_expr  { $2->sym->addFlag(FLAG_PARAM); $$ = $2; }
+  TDOTDOTDOT             { $$ = new SymExpr(gUninstantiated); }
+| TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { if (DefExpr* def = toDefExpr($2)) {
+                             def->sym->addFlag(FLAG_PARAM);
+                           }
+                           $$ = $2;
+                         }
 ;
 
 opt_lifetime_where:
@@ -1377,21 +1427,28 @@ opt_lifetime_where:
 ;
 
 lifetime_components_expr:
-  lifetime_expr                    { $$ = $1; }
-| lifetime_components_expr TCOMMA lifetime_expr { $$ = new CallExpr(",", $1, $3); }
+  lifetime_expr
+  { $$ = $1; }
+| lifetime_components_expr TCOMMA lifetime_expr
+  { $$ = new CallExpr(",", $1, $3); }
+;
 
 lifetime_expr:
-  lifetime_ident TASSIGN lifetime_ident { $$ = new CallExpr("=", $1, $3); }
-| lifetime_ident TLESS lifetime_ident { $$ = new CallExpr("<", $1, $3); }
-| lifetime_ident TLESSEQUAL lifetime_ident { $$ = new CallExpr("<=", $1, $3); }
-| lifetime_ident TEQUAL lifetime_ident { $$ = new CallExpr("==", $1, $3); }
-| lifetime_ident TGREATER lifetime_ident { $$ = new CallExpr(">", $1, $3); }
-| lifetime_ident TGREATEREQUAL lifetime_ident { $$ = new CallExpr(">=", $1, $3); }
+  lifetime_ident TASSIGN      lifetime_ident {$$ = new CallExpr("=", $1, $3);}
+| lifetime_ident TLESS        lifetime_ident {$$ = new CallExpr("<", $1, $3);}
+| lifetime_ident TLESSEQUAL   lifetime_ident {$$ = new CallExpr("<=", $1, $3);}
+| lifetime_ident TEQUAL       lifetime_ident {$$ = new CallExpr("==", $1, $3);}
+| lifetime_ident TGREATER     lifetime_ident {$$ = new CallExpr(">", $1, $3);}
+| lifetime_ident TGREATEREQUAL lifetime_ident {$$ = new CallExpr(">=", $1, $3);}
 | TRETURN lifetime_ident { $$ = new CallExpr(PRIM_RETURN, $2); }
+;
 
 lifetime_ident:
-  TIDENT  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr($1)); }
-| TTHIS   { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
+  TIDENT
+  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr($1)); }
+| TTHIS
+  { $$ = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
+;
 
 type_alias_decl_stmt:
   TTYPE type_alias_decl_stmt_inner TSEMI
@@ -1453,12 +1510,6 @@ var_decl_stmt:
     {
       $2->insert(FLAG_CONFIG);
       $$ = buildVarDecls($3, context->latestComment, $2);
-      context->latestComment = NULL;
-    }
-| TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      $3->insert(FLAG_EXTERN);
-      $$ = buildVarDecls($4, context->latestComment, $3, $2);
       context->latestComment = NULL;
     }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
@@ -1682,9 +1733,12 @@ type_level_expr:
   sub_type_level_expr %prec TNOELSE
     { $$ = $1; }
 | sub_type_level_expr TQUESTION %prec TQUESTION
-    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS, $1); }
+    { $$ = new CallExpr( PRIM_TO_NILABLE_CLASS_CHECKED, $1); }
+| TQUESTION
+    { $$ = new SymExpr(gUninstantiated); }
 ;
 
+// TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
 sub_type_level_expr:
   nil_expr
 | lhs_expr                  // var b: a.type || (?,?) || foo()
@@ -1711,17 +1765,24 @@ sub_type_level_expr:
 | TOWNED expr
     { $$ = new CallExpr( "_owned", $2); }
 | TUNMANAGED
-    { $$ = new UnresolvedSymExpr("_unmanaged"); }
+    { $$ = new SymExpr(dtUnmanaged->symbol); }
 | TUNMANAGED expr
-    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS, $2); }
+    { $$ = new CallExpr( PRIM_TO_UNMANAGED_CLASS_CHECKED, $2); }
 | TSHARED
     { $$ = new UnresolvedSymExpr("_shared"); }
 | TSHARED expr
     { $$ = new CallExpr( "_shared", $2); }
 | TBORROWED
-    { $$ = new UnresolvedSymExpr("_borrowed"); }
+    { $$ = new SymExpr(dtBorrowed->symbol); }
 | TBORROWED expr
-    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS, $2); }
+    { $$ = new CallExpr( PRIM_TO_BORROWED_CLASS_CHECKED, $2); }
+
+| TCLASS
+    { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
+| TRECORD
+    { $$ = new SymExpr(dtAnyRecord->symbol); }
+| TENUM
+    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 ;
 
 for_expr:
@@ -1904,11 +1965,13 @@ expr:
 opt_expr:
                   { $$ = NULL; }
 | expr            { $$ = $1; }
+;
 
 opt_try_expr:
   TTRY expr       { $$ = tryExpr($2); }
 | TTRYBANG expr   { $$ = tryBangExpr($2); }
 | expr            { $$ = $1; }
+;
 
 lhs_expr:
   ident_expr
@@ -1927,6 +1990,7 @@ lhs_expr:
 fun_expr:
   lhs_expr           { $$ = $1; }
 | expr TBANG         { $$ = new CallExpr("postfix!", $1); }
+| sub_type_level_expr TQUESTION {$$ = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, $1);}
 | lambda_decl_expr   { $$ = $1; }
 ;
 
@@ -1937,10 +2001,11 @@ call_expr:
 ;
 
 dot_expr:
-  expr TDOT ident_use  { $$ = buildDotExpr($1, $3); }
-| expr TDOT TTYPE      { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| expr TDOT TDOMAIN    { $$ = buildDotExpr($1, "_dom"); }
-| expr TDOT TLOCALE    { $$ = buildDotExpr($1, "locale"); }
+  expr TDOT ident_use          { $$ = buildDotExpr($1, $3); }
+| expr TDOT TTYPE              { $$ = new CallExpr(PRIM_TYPEOF, $1); }
+| expr TDOT TDOMAIN            { $$ = buildDotExpr($1, "_dom"); }
+| expr TDOT TLOCALE            { $$ = buildDotExpr($1, "locale"); }
+| expr TDOT TBYTES TLP TRP     { $$ = new CallExpr(buildDotExpr($1, "chpl_bytes")); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.
@@ -1965,6 +2030,7 @@ literal_expr:
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
+| BYTESLITERAL          { $$ = buildBytesLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
@@ -2018,7 +2084,7 @@ unary_op_expr:
 | TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
 | TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
 | TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
-| TBANG expr                      { $$ = new CallExpr("!", $2); }
+| TBANG expr %prec TLNOT          { $$ = new CallExpr("!", $2); }
 | expr TBANG                      { $$ = new CallExpr("postfix!", $1); }
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;

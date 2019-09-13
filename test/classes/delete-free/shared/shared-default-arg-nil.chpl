@@ -10,4 +10,3 @@ proc foo(arg:int, in opt: shared MyClass? = nil ) {
 
 foo(1);
 foo(2, new shared MyClass(3));
-

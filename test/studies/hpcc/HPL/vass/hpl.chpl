@@ -131,6 +131,11 @@ config var reproducible = false, verbose = false;
   const validAnswer = verifyResults(x);
   printResults(validAnswer, execTime);
 
+  delete bdim1;
+  delete rdim1;
+  delete bdim2;
+  delete rdim2;
+
 //
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.

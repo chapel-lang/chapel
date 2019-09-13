@@ -1,5 +1,5 @@
 
-private use Lists;
+private use List;
 use MasonEnv;
 use MasonSearch;
 
@@ -67,6 +67,7 @@ proc main() {
   // Clear environment for testing
   unsetEnv("MASON_HOME");
   unsetEnv("MASON_REGISTRY");
+  unsetEnv('MASON_OFFLINE');
 
   const tempHome = here.cwd() + "/tempHome";
   const uncached = "/uncached";

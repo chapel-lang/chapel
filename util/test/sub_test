@@ -557,7 +557,7 @@ def translateOutput(output):
               ('Fatal MPP reservation error on create',
                'Jira 329 -- Fatal MPP reservation error for'),
               ('Text file busy',
-               'Jira 333 -- Text file busy for'))
+               'private issue #474 -- Text file busy for'))
 
     known_error = ''
     was_timeout = False
@@ -616,7 +616,7 @@ def filter_errors(output, pre_exec_output, execgoodfile, execlog):
     for s in err_strings:
         # NOTE: checking pre_exec (compiler) output
         if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-            extra_msg = '(possible JIRA 287) '
+            extra_msg = '(possible private issue #482) '
             break
 
     err_strings = ['could not checkout FLEXlm license']

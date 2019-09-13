@@ -2,9 +2,9 @@ module LCALSChecksums {
   use LCALSConfiguration;
   use LCALSEnums;
   use LCALSDataTypes;
+  use Map;
 
-  var ChecksumDom: domain(LoopKernelID);
-  var Checksums: [ChecksumDom] 3*real(64);
+  var Checksums = new map(LoopKernelID, 3*real(64));
 
   /* These are the checksums printed by the C++ reference versions of the LCALS
    * kernels. The computed results must be close to these to be considered

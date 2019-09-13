@@ -5,7 +5,7 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
-use Sort;
+use Map, Sort;
 
 config param tableSize = 2**16,
              columns = 61;
@@ -58,7 +58,7 @@ proc writeFreqs(data, param nclSize) {
   // TODO: Shouldn't this work?
   //
   //  var arr = [(k,v) in zip(freqs.domain, freqs)] (v,k);
-  var arr = for (k,v) in zip(freqs.domain, freqs) do (v,k);
+  var arr = for (k,v) in freqs.items() do (v,k);
 
   //  var arr: [1..freqs.size] 2*int;
   //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
@@ -84,8 +84,7 @@ proc writeCount(data, param str) {
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(int),
-      freqs: [freqDom] int;
+  var freqs = new map(int, int);
 
   //
   // TODO: Could we combine these local hash tables with a reduce
@@ -94,15 +93,14 @@ proc calculate(data, param nclSize) {
 
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
-  coforall tid in 1..numTasks {
-    var myDom: domain(int),
-        myArr: [myDom] int;
+  coforall tid in 1..numTasks with (ref freqs) {
+    var myMap = new map(int, int);
 
     for i in tid..(data.size-nclSize) by numTasks do
-      myArr[hash(data, i, nclSize)] += 1;
+      myMap[hash(data, i, nclSize)] += 1;
 
     lock$;        // acquire lock
-    for (k,v) in zip(myDom, myArr) do
+    for (k,v) in myMap.items() do
       freqs[k] += v;
     lock$ = true; // release lock
   }
@@ -148,10 +146,10 @@ inline proc hash(str, beg, param size) {
 
 
 proc string.toBytes() {
-  var bytes: [1..this.numBytes] uint(8);
-  for (b, i) in zip(bytes, 1..) do
+  var byteArr: [1..this.numBytes] uint(8);
+  for (b, i) in zip(byteArr, 1..) do
     b = this.byte(i);
-  return bytes;
+  return byteArr;
 }
 
 

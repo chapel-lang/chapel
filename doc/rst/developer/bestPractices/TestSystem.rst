@@ -146,7 +146,7 @@ file would provided:
 
 ``hi.compopts``
 
-  .. code-block::
+  .. code-block:: bash
 
      --static
 
@@ -155,7 +155,7 @@ dynamically, the file would look like this:
 
 ``hi.compopts``
 
-  .. code-block::
+  .. code-block:: bash
 
      --static
      --dynamic
@@ -183,14 +183,14 @@ combination.  For example, a test specified like this:
 
 ``multiple-options.compopts``
 
-  .. code-block::
+  .. code-block:: bash
 
     --static
     --dynamic
 
 ``multiple-options.execopts``
 
-  .. code-block::
+  .. code-block:: bash
 
     --x=true
     --x=false
@@ -235,7 +235,7 @@ on a separate line, but all will be set for a particular run.
 
 Here is an example ``.execenv`` file:
 
-  .. code-block::
+  .. code-block:: bash
 
     CHPL_RT_NUM_THREADS_PER_LOCALE=100
 
@@ -290,7 +290,7 @@ single-locale setting:
 
 ``foo.skipif``
 
-  .. code-block::
+  .. code-block:: bash
 
      CHPL_COMM != none
 
@@ -314,7 +314,7 @@ For instance:
 
 ``foo.skipif``
 
-  .. code-block::
+  .. code-block:: python
 
      #!/usr/bin/env python
 
@@ -353,7 +353,7 @@ instance:
 
 ``foo.execopts``
 
-  .. code-block::
+  .. code-block:: bash
 
      --x=true # foo.true.good
      --x=false # foo.false.good
@@ -463,7 +463,7 @@ in a file named ``foo.dat``.
 Here is a sample ``.dat`` file, for the performance test at
 `$CHPL_HOME/test/Samples/Performance`_:
 
-  .. code-block::
+  .. code-block:: text
 
      # Date	Time:	Memory:
      03/26/18 	194.3	24
@@ -541,13 +541,13 @@ and write its output to ``bar-10000.dat``.
 Comparing to a C version
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To compare a C version of a test to a Chapel version, the C version of
-the test must end with the suffix ``.test.c``.  Since ``.dat`` files must have
-unique names, the base name for the C test should vary from the Chapel
-equivalent.  For example, I might name the C version of the ``foo.chpl``
-performance test ``foo-c.test.c``.  Like any other test, the C test needs
-a ``.good`` file for correctness testing and a ``.perfkeys`` file for
-performance testing.
+To compare a C version of a test to a Chapel version, the C version of the test
+must end with the suffix ``.test.c`` for single locale tests and ``.ml-test.c``
+for multilocale tests.  Since ``.dat`` files must have unique names, the base
+name for the C test should vary from the Chapel equivalent.  For example, I
+might name the C version of the ``foo.chpl`` performance test ``foo-c.test.c``.
+Like any other test, the C test needs a ``.good`` file for correctness testing
+and a ``.perfkeys`` file for performance testing.
 
 C versions do not have to be performance tests, but this is their most common
 use case.
@@ -780,7 +780,7 @@ The output from ``start_test`` will end with the location of the log file
 containing all the output from its execution, as well as a summary of all tests
 that failed and any futures that were run.  This will look something like this:
 
-  .. code-block::
+  .. code-block:: text
 
      [Test Summary - 180328.134706]
      [Error matching program output for path/to/failing/correctness/test]
@@ -820,8 +820,10 @@ File                Contents of file
 **correctness**
 -------------------------------------------------------------------------------
 foo.chpl            Chapel test program to compile and run
-foo.test.c          C test program to compile and run. See `Comparing to a C
-                    version`_ for more information
+foo.test.c          Single locale C test program to compile and run. See
+                    `Comparing to a C version`_ for more information
+foo.ml-test.c       Multilocale C test program to compile and run.  See
+                    `Comparing to a C version`_ for more information
 foo.good            expected output of test program
 ..
 -------------------------------------------------------------------------------
@@ -836,8 +838,8 @@ EXECOPTS            directory-wide runtime flags
 foo.execenv         line separated list of environment variables settings.  See
                     `Environment Variables`_ for more information
 EXECENV             directory-wide environment variables
-foo.numlocales      number of locales to use in multi-locale run
-NUMLOCALES          directory-wide number of locales to use in multi-locale run
+foo.numlocales      number of locales to use in multilocale run
+NUMLOCALES          directory-wide number of locales to use in multilocale run
 ..
 -------------------------------------------------------------------------------
 **Helper files**

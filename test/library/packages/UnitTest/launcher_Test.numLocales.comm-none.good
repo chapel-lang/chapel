@@ -30,17 +30,7 @@ TestIncorrectNumLocales: Required Locales = 2
 SKIPPED test_locales.chpl: s3()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16 8
-
-======================================================================
-SKIPPED test_locales.chpl: s14()
-----------------------------------------------------------------------
-s14() skipped as s10() gave an Error
-
-======================================================================
-SKIPPED test_locales.chpl: s11()
-----------------------------------------------------------------------
-s11() skipped as s14() skipped
+TestIncorrectNumLocales: Required Locales = 16,8
 
 ======================================================================
 SKIPPED test_locales.chpl: s6()
@@ -52,25 +42,35 @@ TestIncorrectNumLocales: Required Locales = 6
 SKIPPED test_locales.chpl: s7()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16 8
+TestIncorrectNumLocales: Required Locales = 16,8
 
 ======================================================================
 SKIPPED test_locales.chpl: s9()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16 8
+TestIncorrectNumLocales: Required Locales = 16,8
+
+======================================================================
+SKIPPED test_locales.chpl: s14()
+----------------------------------------------------------------------
+s14() skipped because s10() gave an Error
+
+======================================================================
+SKIPPED test_locales.chpl: s11()
+----------------------------------------------------------------------
+s11() skipped because s14() skipped
 
 ======================================================================
 SKIPPED test_locales.chpl: s12()
 ----------------------------------------------------------------------
-s12() skipped as s2() Skipped
+s12() skipped because s2() Skipped
 
 ======================================================================
 SKIPPED test_locales.chpl: s13()
 ----------------------------------------------------------------------
-s13() skipped as s8() failed
+s13() skipped because s8() failed
 
 ----------------------------------------------------------------------
-Run 4 tests
+Ran 4 tests in n seconds
 
-FAILED failures = 2 errors = 1 skipped = 10 
+FAILED (passed = 1 failures = 2 errors = 1 skipped = 10 )

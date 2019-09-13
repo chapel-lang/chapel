@@ -18,7 +18,7 @@
  */
 
 
-private use Lists;
+private use List;
 use MasonUtils;
 use MasonExternal;
 use Regexp;
@@ -45,7 +45,7 @@ config const debugSpecParser=false;
 
   Note: Spack has a different syntax than
   Chapel for version ranges. They use ':' as a
-  sperator instead of '..'
+  separator instead of '..'
  */
 proc getSpecFields(spec: string) {
   var specFields: 4*string;
@@ -141,7 +141,7 @@ proc parseSpec(ref tokenList: list(string)) throws {
     throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
-    var toke = try! tokenList.pop(1);
+    var toke = tokenList.pop(1);
 
     // get package name (should always be first token)
     if package.length < 1 {
@@ -181,7 +181,7 @@ proc parseSpec(ref tokenList: list(string)) throws {
     }
     else {
       // catch corner case where some compilers like "-"
-      // include non-spec charactes e.g. clang@9.0.0-apple
+      // include non-spec characters e.g. clang@9.0.0-apple
       if !toke.startsWith("-") {
         variants.append(toke);
       }

@@ -25,7 +25,7 @@
  */
 
 use Image;    // use helper module related to writing out images
-use Lists;
+use List;
 
 //
 // =================================================

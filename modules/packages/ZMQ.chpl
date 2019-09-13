@@ -22,14 +22,14 @@
 Lightweight messaging with ZeroMQ (or ØMQ)
 
 This module provides high-level Chapel bindings to the
-`ZeroMQ messaging library <http://zeromq.org/>`_.
+`ZeroMQ messaging library <https://zeromq.org/>`_.
 
 Dependencies
 ------------
 
 The ZMQ module in Chapel is dependent on ZeroMQ.  For information on how to
 install ZeroMQ, see the
-`ZeroMQ installation instructions <http://zeromq.org/intro:get-the-software>`_.
+`ZeroMQ installation instructions <https://zeromq.org/download/>`_.
 
 .. note::
 
@@ -88,6 +88,7 @@ compatible pairs of socket types
 * :const:`PUB`  and :const:`SUB`
 * :const:`REQ`  and :const:`REP`
 * :const:`PUSH` and :const:`PULL`
+* :const:`PAIR`
 
 .. code-block:: chapel
 
@@ -167,7 +168,7 @@ Serialization
 
 In Chapel, sending or receiving messages is supported for a variety of types.
 Primitive numeric types and strings are supported as the foundation.
-In addition, user-defined :type:`record` types may be serialized automatically
+In addition, user-defined ``record`` types may be serialized automatically
 as `multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
 by internal use of the :chpl:mod:`Reflection` module.
 Currently, the ZMQ module can serialize records of primitive numeric types,
@@ -192,7 +193,7 @@ strings, and other serializable records.
    ``zmq_msg_recv()`` API for :proc:`Socket.send()` and :proc:`Socket.recv()`,
    respectively, when transmitting strings.  Further, ZMQ sends the string as
    a single message of only the byte stream of the string's character array.
-   (Recall that Chapel's :type:`string` type currently only supports ASCII
+   (Recall that Chapel's ``string`` type currently only supports ASCII
    strings, not full Unicode strings.)
 
 .. _interop:
@@ -351,6 +352,11 @@ module ZMQ {
     The puller socket type for a pipeline messaging pattern.
    */
   const PULL = ZMQ_PULL;
+
+  /* 
+    The exclusive pair pattern socket type.
+  */
+  const PAIR = ZMQ_PAIR;
 
   // -- Socket Options
   private extern const ZMQ_AFFINITY: c_int;
@@ -771,7 +777,7 @@ module ZMQ {
           throw new owned ZMQError("Error in Socket.getLastEndpoint(): " +
                                    errmsg);
         }
-        ret = new string(str, needToCopy=false);
+        ret = createStringWithOwnedBuffer(str);
       }
       return ret;
     }
@@ -941,7 +947,7 @@ module ZMQ {
         //
         // TODO: If *not crossing locales*, check for ownership and
         // conditionally have ZeroMQ free the memory.
-        var copy = new string(s=data, isowned=true);
+        var copy = createStringWithNewBuffer(s=data);
         copy.isowned = false;
 
         // Create the ZeroMQ message from the string buffer
@@ -1042,9 +1048,8 @@ module ZMQ {
         // Construct the string on the current locale, copying the data buffer
         // from the message object; then, release the message object
         var len = zmq_msg_size(msg):int;
-        var str = new string(buff=zmq_msg_data(msg):c_ptr(uint(8)),
-                             length=len, size=len+1,
-                             isowned=true, needToCopy=true);
+        var str = createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
+                                            length=len, size=len+1);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }

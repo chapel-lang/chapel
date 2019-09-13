@@ -1,0 +1,3 @@
+--legacy-classes
+# When this test is updated, change the .good to reflect the errors.
+# It is similar to duplicate-management.chpl but tests a generic class.

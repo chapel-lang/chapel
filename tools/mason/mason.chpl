@@ -23,6 +23,7 @@
 use MasonModify;
 use MasonUtils;
 use MasonHelp;
+use MasonDoc;
 use MasonEnv;
 use MasonNew;
 use MasonBuild;
@@ -126,41 +127,6 @@ proc masonClean(args) {
   }
 }
 
-
-proc masonDoc(args) {
-  try! {
-    if args.size == 3 {
-      masonDocHelp();
-      exit(0);
-    }
-    const tomlName = 'Mason.toml';
-    const cwd = getEnv("PWD");
-
-    const projectHome = getProjectHome(cwd, tomlName);
-    const tomlPath = projectHome + "/" + tomlName;
-
-    const toParse = open(projectHome + "/" + tomlName, iomode.r);
-    var tomlFile = new owned(parseToml(toParse));
-
-    const projectName = tomlFile["brick"]["name"].s;
-    const projectFile = projectName + '.chpl';
-
-    if isDir(projectHome + '/src/') {
-      if isFile(projectHome + '/src/' + projectFile) {
-        const command = 'chpldoc ' + projectHome + '/src/' + projectFile + ' -o ' + projectHome + '/doc/';
-        writeln(command);
-        runCommand(command);
-      }
-    }
-    else {
-      writeln('Mason could not find the project to document!');
-      runCommand('chpldoc');
-    }
-  }
-  catch e: MasonError {
-    stderr.writeln(e.message());
-  }
-}
 
 proc printVersion() {
   writeln('mason 0.1.2');

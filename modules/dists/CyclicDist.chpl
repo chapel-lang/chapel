@@ -18,6 +18,7 @@
  */
 
 private use DSIUtil;
+private use ChapelLocks;
 
 proc _determineRankFromStartIdx(startIdx) param {
   return if isTuple(startIdx) then startIdx.size else 1;

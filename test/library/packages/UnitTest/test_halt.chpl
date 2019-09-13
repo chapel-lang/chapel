@@ -15,4 +15,4 @@ proc test3(test: borrowed Test) throws {
   test.assertEqual(2,3.0);
 }
 
-UnitTest.runTest(test1,test2,test3);
+UnitTest.main();

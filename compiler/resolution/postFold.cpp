@@ -149,6 +149,9 @@ static Expr* postFoldNormal(CallExpr* call) {
     } else if (ret == gVoid) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
+    } else if (ret == gUninstantiated) {
+      retval = new SymExpr(gUninstantiated);
+      call->replace(retval);
     }
   }
 
@@ -164,6 +167,13 @@ static Expr* postFoldNormal(CallExpr* call) {
       retval = new SymExpr(ret->type->symbol);
 
       call->replace(retval);
+
+      // Put the call back in the AST for better errors unless we're trying
+      // to ignore multiple error messages (in which case we hope for a
+      // successful compilation).
+      if (fatalErrorsEncountered() && !inGenerousResolutionForErrors() && !fIgnoreNilabilityErrors) {
+        retval->getStmtExpr()->insertBefore(call);
+      }
     }
   }
 
@@ -283,7 +293,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
              call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES) ||
-             call->isPrimitive(PRIM_IS_PROPER_SUBTYPE)) {
+             call->isPrimitive(PRIM_IS_PROPER_SUBTYPE) ||
+             call->isPrimitive(PRIM_IS_COERCIBLE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
 
@@ -324,7 +335,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
         st                                != dtAny     &&
         pt                                != dtAny) {
 
-      bool result = isSubTypeOrInstantiation(st, pt, call);
+      bool result = false;
+      if (call->isPrimitive(PRIM_IS_COERCIBLE))
+        result = isCoercibleOrInstantiation(st, pt, call);
+      else
+        result = isSubtypeOrInstantiation(st, pt, call);
 
       if (call->isPrimitive(PRIM_IS_PROPER_SUBTYPE))
         result = result && (st != pt);
@@ -575,7 +590,25 @@ static Expr* postFoldPrimop(CallExpr* call) {
 }
 
 // This function implements PRIM_IS_SUBTYPE
-bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
+bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
+
+  // Consider instantiation
+  if (super->symbol->hasFlag(FLAG_GENERIC))
+    super = getInstantiationType(sub, NULL, super, NULL, ctx);
+
+  bool promotes = false;
+  bool dispatch = false;
+
+  if (sub && super) {
+    dispatch = sub == super ||
+               canCoerceAsSubtype(sub, NULL, super, NULL, NULL, &promotes);
+  }
+
+  return dispatch && !promotes;
+}
+
+// This function implements PRIM_IS_COERCIBLE
+bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))
@@ -589,6 +622,7 @@ bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
   return dispatch && !promotes;
 }
+
 
 static void insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
@@ -667,7 +701,8 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
         rhsSym = paramMap.get(rhsSym);
       }
       if (rhsSym->isImmediate() == true ||
-          isEnumSymbol(rhsSym)  == true) {
+          isEnumSymbol(rhsSym)  == true ||
+          rhsSym == gUninstantiated) {
         paramMap.put(lhsSym, rhsSym);
 
         lhsSym->defPoint->remove();

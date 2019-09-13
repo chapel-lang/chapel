@@ -87,6 +87,7 @@ module FileSystem {
 
   use SysError;
   private use Path;
+  private use HaltWrappers;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -592,7 +593,7 @@ proc locale.cwd(): string throws {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = new string(tmp, isowned=true, needToCopy=false);
+    ret = createStringWithOwnedBuffer(tmp);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;

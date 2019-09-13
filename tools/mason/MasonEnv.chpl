@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-private use Lists;
+private use List;
 use MasonUtils;
 use MasonHelp;
 
@@ -41,6 +41,21 @@ proc MASON_CACHED_REGISTRY {
     cachedRegistry.append(MASON_HOME + "/" + name);
 
   return cachedRegistry;
+}
+
+/* Returns value of MASON_OFFLINE, environment variable that disales online access.
+ */
+proc MASON_OFFLINE {
+  const offlineEnv = getEnv('MASON_OFFLINE');
+  const default = false;
+  var offline = false;
+
+  if (offlineEnv == 'true') || (offlineEnv == 'True') || (offlineEnv == 'TRUE') || (offlineEnv == '1') {
+    offline = true;
+  }
+  else offline = default;
+
+  return offline;
 }
 
 /* Read the MASON_REGISTRY environment variable.  It should be a comma
@@ -138,9 +153,13 @@ proc masonEnv(args) {
     }
     writeln(star);
   }
-
+  var offlineString = 'false';
+  if MASON_OFFLINE {
+    offlineString = 'true';
+  }
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
+  printVar('MASON_OFFLINE', offlineString);
 
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);

@@ -137,7 +137,7 @@ module SSCA2_kernels
 	    forall w in G.Neighbors (v) do {
 
 
-              if min_distance(w).compareExchangeStrong(-1, path_length) then {
+              if min_distance(w).compareAndSwap(-1, path_length) then {
                 Next_Level.add (w);
                 Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
 	      }
@@ -365,7 +365,7 @@ module SSCA2_kernels
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
   
-                  if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
+                  if  BCaux[v].min_distance.compareAndSwap(-1, current_distance_c) {
                     Active_Level[here.id].next!.Members.add (v);
                     if VALIDATE_BC then
                       dist_temp = current_distance_c;
@@ -500,7 +500,7 @@ module SSCA2_kernels
           var tpv = TPV[t];
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
-            var level = al[here.id]?;
+            var level: unmanaged Level_Set? = al[here.id];
             var prev = level!.previous;
             while prev != nil {
               var p2 = prev!.previous;

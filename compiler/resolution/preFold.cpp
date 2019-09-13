@@ -43,6 +43,7 @@
 
 #include <inttypes.h>
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
@@ -53,6 +54,12 @@ static std::map<std::string,
 
 //lookup table/cache for function captures
 static std::map<FnSymbol*, FnSymbol*>                      functionCaptureMap;
+
+// stores the test functions
+static std::vector<Expr* >                                 testCaptureVector;
+
+// lookup table for test function names and their index in testCaptureVector
+static std::map<std::string,int>                           testNameIndex;
 
 static Expr*          preFoldPrimOp(CallExpr* call);
 
@@ -233,6 +240,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_GATHER_TESTS: {
     int  totalTest = 0;
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of 'gather tests'. Expected an argument of type 'Test'");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to 'gather tests'");
+    }
+    
+    Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->throwsError()) {
         ModuleSymbol *mod = fn->getModule();
@@ -240,33 +256,76 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           if (fn->numFormals() == 1) {
             if (!fn->hasFlag(FLAG_GENERIC) && fn->instantiatedFrom == NULL) {
               const char* name = astr(fn->name);
-
-              // temporarily add a call to try resolving.
-              CallExpr* tryCall = new CallExpr(name);
-              // Add our new call to the AST temporarily.
-              call->getStmtExpr()->insertAfter(tryCall);
-
-              // copy actual args into tryCall.
-              for_actuals(actual, call) {
-                tryCall->insertAtTail(actual->copy());
-              }
-
-              // Try to resolve it.
-              if (tryResolveCall(tryCall)) {
+              resolveSignature(fn);
+              if(isSubtypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
                 totalTest++;
+                CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
+                fn->defPoint->getStmtExpr()->insertAfter(newCall);
+                testCaptureVector.push_back(createFunctionAsValue(newCall));
+                newCall->remove();
+                testNameIndex[name] = totalTest;
               }
-
-              // remove the call from the AST
-              tryCall->remove();
             }
           }
         }
-        
       }
     }
     retval=new SymExpr(new_IntSymbol(totalTest));
     call->replace(retval);
     break;
+  }
+
+  case PRIM_GET_TEST_BY_INDEX: {
+    int64_t index    =        0;
+    
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of 'get test by index'. Expected an argument of type 'int'");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to 'get test by index'");
+    }
+
+    if (!get_int(call->get(1), &index)) {
+      USR_FATAL(call, "illegal type for index. Expected an 'int' got '%s'",
+                call->get(1)->getValType()->name());
+    }
+
+    int64_t n = testCaptureVector.size();
+    if (index <= 0 || index > n) {
+      USR_FATAL(call, "index '%i' out of bounds, expected to be between '1' and '%i'",
+                index, n);
+    }
+
+    retval = testCaptureVector[index-1]->copy();
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_GET_TEST_BY_NAME: {
+    const char* name = NULL;
+
+    if (call->numActuals() == 0) {
+      USR_FATAL(call, "illegal call of 'get test by name'. Expected a test function name.");
+    }
+
+    if (call->numActuals() > 1) {
+      USR_FATAL(call, "too many arguments to 'get test by name'");
+    }
+
+    if(!get_string(call->get(1), &name)) {
+      USR_FATAL(call, "illegal type for expected test name. Expected a 'string' got '%s'",
+                call->get(1)->getValType()->name());
+    }
+    if (testNameIndex.find(name) != testNameIndex.end()) {
+      int index = testNameIndex[name];
+      retval = testCaptureVector[index-1]->copy();
+      call->replace(retval);
+      break; 
+    }
+    else {
+      USR_FATAL(call, "No test function with name '%s'",name);
+    }
   }
 
   case PRIM_CALL_RESOLVES:
@@ -547,6 +606,28 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_BOUND: {
+    AggregateType* at = NULL;
+    Type* thisType = call->get(1)->getValType();
+    if (AggregateType* type = toAggregateType(thisType)) {
+      at = type;
+    } else if (DecoratedClassType* dc = toDecoratedClassType(thisType)) {
+      at = dc->getCanonicalClass();
+    }
+
+    Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
+    Symbol* field = at->getField(imm->v_string);
+    if (at->symbol->hasFlag(FLAG_GENERIC) &&
+        std::find(at->genericFields.begin(), at->genericFields.end(), field) != at->genericFields.end()) {
+      retval = new SymExpr(gFalse);
+    } else {
+      retval = new SymExpr(gTrue);
+    }
+
+    call->replace(retval);
+    break;
+  }
+
   case PRIM_IS_EXTERN_TYPE: {
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_EXTERN)) {
       retval = new SymExpr(gTrue);
@@ -634,11 +715,41 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
 
   case PRIM_TO_UNMANAGED_CLASS:
+  case PRIM_TO_UNMANAGED_CLASS_CHECKED:
   case PRIM_TO_BORROWED_CLASS:
+  case PRIM_TO_BORROWED_CLASS_CHECKED:
+  case PRIM_TO_UNDECORATED_CLASS:
   case PRIM_TO_NILABLE_CLASS:
+  case PRIM_TO_NILABLE_CLASS_CHECKED:
   case PRIM_TO_NON_NILABLE_CLASS: {
     Type* totype = call->typeInfo();
     Expr* e = call->get(1);
+
+    if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+      Type* msgType = NULL;
+      if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
+        msgType = dtUnmanaged;
+      else
+        msgType = dtBorrowed;
+
+      Type* t = e->typeInfo();
+      if (!isClassLikeOrManaged(t))
+        USR_FATAL_CONT(call, "cannot make %s into a %s class",
+                             toString(t), toString(msgType));
+      if (!isTypeExpr(e))
+        USR_FATAL_CONT(call, "cannot use decorator %s on a value",
+                             toString(msgType));
+
+      checkDuplicateDecorators(msgType, t, call);
+    }
+
+    if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+      // error if it's not a type
+      if (isTypeExpr(e) == false)
+        USR_FATAL_CONT(call, "cannot apply postfix ? operator to a value - "
+                             "please use value:class? instead");
+    }
 
     if (isTypeExpr(e)) {
       retval = new SymExpr(totype->symbol);
@@ -744,14 +855,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_IS_RECORD_TYPE: {
-    AggregateType* at = toAggregateType(call->get(1)->typeInfo());
+    Type* t = call->get(1)->typeInfo();
 
-    if (isRecord(at) == true) {
+    if (isUserRecord(t))
       retval = new SymExpr(gTrue);
-
-    } else {
+    else
       retval = new SymExpr(gFalse);
-    }
 
     call->replace(retval);
 
@@ -1141,6 +1250,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       USR_FATAL(call,
                 "invalid query -- queried field must be a type or parameter");
     }
+
+    break;
+  }
+
+  case PRIM_DEFAULT_INIT_FIELD: {
+    SymExpr* initVal = toSymExpr(call->get(4)->remove());
+    SymExpr* toType = toSymExpr(call->get(3)->remove());
+    checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
+
+    retval = new CallExpr("_createFieldDefault", toType, initVal);
+    call->replace(retval);
 
     break;
   }
@@ -1537,6 +1657,41 @@ static Expr* preFoldNamed(CallExpr* call) {
         }
       }
     }
+
+  // BHARSH TODO: Move the dtUninstantiated stuff over to resolveTypeComparisonCall
+  } else if (call->isNamed("==")) {
+    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
+      Type* lt = call->get(1)->getValType();
+      Type* rt = call->get(2)->getValType();
+
+      if (lt                                != dtUnknown &&
+          rt                                != dtUnknown &&
+          lt->symbol->hasFlag(FLAG_GENERIC) == false     &&
+          rt->symbol->hasFlag(FLAG_GENERIC) == false) {
+        retval = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+        call->replace(retval);
+      }
+    } else if (call->get(2)->getValType() == dtUninstantiated) {
+      retval = (call->get(1)->getValType() == dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(retval);
+    }
+
+
+  } else if (call->isNamed("!=")) {
+    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
+      Type* lt = call->get(1)->getValType();
+      Type* rt = call->get(2)->getValType();
+
+      if (lt                                != dtUnknown &&
+          rt                                != dtUnknown) {
+        retval = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+        call->replace(retval);
+      }
+    } else if (call->get(2)->getValType() == dtUninstantiated) {
+      retval = (call->get(1)->getValType() != dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      call->replace(retval);
+    }
+
 
   } else if (call->isNamed("chpl__staticFastFollowCheck")  ||
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {
@@ -1968,12 +2123,17 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   wrapper->addFlag(FLAG_INLINE);
 
+  Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
+
+  CallExpr* n = new CallExpr(PRIM_NEW,
+                             new NamedExpr(astr_chpl_manager,
+                                           new SymExpr(dtUnmanaged->symbol)),
+                             new SymExpr(undecorated->symbol));
+
   wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
                                      new CallExpr(PRIM_CAST,
                                                   parent->symbol,
-                                                  new CallExpr(PRIM_NEW,
-                                                               new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)),
-                                                               new SymExpr(ct->symbol)))));
+                                                  n)));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 

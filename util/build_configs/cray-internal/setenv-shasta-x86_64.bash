@@ -444,10 +444,14 @@ else
         # enable building Chapel python-venv tools anyway.
         # For example, the following gives a URL to a local PyPI mirror that accepts http,
         # and the location of a pre-installed "pip" on the host machine.
-        #export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        #export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
-        export CHPL_PIP=/usr/bin/pip
-        #export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
+        if [[ -f /cray/css/users/chapelu/opt/lib/pip/__main__.py ]] ; then
+          export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
+          export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
+          export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
+          export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
+        else
+          export CHPL_PIP=/usr/bin/pip
+        fi
         ;;
     ( venv_py27 )
         load_prgenv_gnu

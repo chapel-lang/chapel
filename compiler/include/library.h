@@ -65,6 +65,8 @@ void openLibraryHelperFile(fileinfo* fi,
 void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 const char* getLibraryExtension();
 
+bool isUserRoutine(FnSymbol* fn);
+
 std::string getPythonTypeName(Type* type, PythonFileType pxd);
 
 #endif //LIBRARY_H

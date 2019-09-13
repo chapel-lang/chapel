@@ -25,6 +25,7 @@ Functions related to predefined types.
 
 */
 module Types {
+  private use HaltWrappers only;
 
 pragma "no doc" // joint documentation with the next one
 proc isType(type t) param return true;
@@ -124,7 +125,7 @@ proc isImagType(type t) param return
 proc isStringType(type t) param return t == string;
 
 /* Returns `true` if the type `t` is the `bytes` type. */
-proc isBytesType(type t) param return t == _bytes;
+proc isBytesType(type t) param return t == bytes;
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
 Old Data in C++.
@@ -230,11 +231,11 @@ proc isSharedClassType(type t:_shared)       param return true;
 pragma "no doc"
 proc isSharedClassType(type t)               param return false;
 pragma "no doc"
-proc isUnmanagedClassType(type t:_unmanaged) param return true;
+proc isUnmanagedClassType(type t:unmanaged)  param return true;
 pragma "no doc"
 proc isUnmanagedClassType(type t)            param return false;
 pragma "no doc"
-proc isBorrowedClassType(type t:_borrowed)   param return true;
+proc isBorrowedClassType(type t:borrowed)    param return true;
 pragma "no doc"
 proc isBorrowedClassType(type t)             param return false;
 

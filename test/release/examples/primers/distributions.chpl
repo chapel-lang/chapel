@@ -281,11 +281,11 @@ var (nl1, nl2) = if numLocales == 1 then (1, 1) else (2, numLocales/2);
 MyLocaleView = {0..#nl1, 0..#nl2};
 MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
 
+const d1 = new unmanaged ReplicatedDim(numLocales = nl1);
+const d2 = new unmanaged BlockCyclicDim(numLocales = nl2,
+                                        lowIdx = 1, blockSize = 2);
 const DimReplicatedBlockcyclicSpace = Space
-  dmapped DimensionalDist2D(MyLocales,
-                            new unmanaged ReplicatedDim(numLocales = nl1),
-                            new unmanaged BlockCyclicDim(numLocales = nl2,
-                                               lowIdx = 1, blockSize = 2));
+  dmapped DimensionalDist2D(MyLocales, d1, d2);
 
 var DRBA: [DimReplicatedBlockcyclicSpace] int;
 
@@ -314,3 +314,6 @@ for locId1 in 0..#nl1 do on MyLocales[locId1, 0] {
   writeln();
 
 }
+
+delete d1;
+delete d2;

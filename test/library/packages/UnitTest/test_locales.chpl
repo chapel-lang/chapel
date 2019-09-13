@@ -74,4 +74,4 @@ proc s13(test: borrowed Test) throws {
 proc s14(test: borrowed Test) throws {
   test.dependsOn(s10);
 }
-UnitTest.runTest(s1,s2,s3,s4,s11,s5,s6,s7,s8,s9,s10,s12,s13,s14);
+UnitTest.main();

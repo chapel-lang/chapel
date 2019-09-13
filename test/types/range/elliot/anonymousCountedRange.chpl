@@ -1,9 +1,9 @@
-proc testAnonRanges(type lowT, type countT, param testErrors = false) {
+proc testAnonRanges(type lowT, type countT) {
   var zero = 0:countT;
-  // Applying #0 to a 0.. uint range results in wraparound leading to an
-  // error when trying to iterate over it, so skip those cases unless we
-  // want to make sure the error is generated
-  if (isIntType(lowT) || testErrors) {
+  // Applying #0 to a 0.. uint range results in wraparound leading to
+  // an error when trying to iterate over it when bounds checks are
+  // on, so skip those cases here.
+  if (isIntType(lowT)) {
     for i in 0:lowT..#(0:countT)               do write(i, ' '); writeln();
     for i in 0:lowT..#(zero)                   do write(i, ' '); writeln();
   } else {
@@ -27,4 +27,3 @@ testAnonRanges(8);
 testAnonRanges(16);
 testAnonRanges(32);
 testAnonRanges(64);
-testAnonRanges(uint(64), int(64), true);

@@ -18,8 +18,10 @@
  */
 
 
-private use Lists;
+private use List;
+private use Map;
 use TOML;
+use Time;
 use Spawn;
 use MasonUtils;
 use MasonHelp;
@@ -27,18 +29,31 @@ use MasonUpdate;
 use MasonBuild;
 use Path;
 use FileSystem;
+use TestResult;
+use Sys;
 
-/* Runs the .chpl files found within the /tests directory */
+var subdir = false;
+var keepExec = false;
+var setComm: string;
+var comm: string;
+var dirs: list(string);
+var files: list(string);
+
+/* Runs the .chpl files found within the /tests directory of Mason packages
+   or files which in the path provided.
+*/
 proc masonTest(args) throws {
 
   var show = false;
   var run = true;
   var parallel = false;
   var update = true;
+  if MASON_OFFLINE then update = false;
   var compopts: list(string);
-
-  if args.size > 2 {
-    for arg in args[2..] {
+  var countArgs = 0;
+  for arg in args {
+    countArgs += 1;
+    if countArgs > 2 {
       if arg == '-h' || arg == '--help' {
         masonTestHelp();
         exit(0);
@@ -58,15 +73,46 @@ proc masonTest(args) throws {
       else if arg == '--no-update' {
         update = false;
       }
+      else if arg == '--keep-binary' {
+        keepExec = true;
+      }
+      else if arg == '--recursive' {
+        subdir = true;
+      }
+      else if arg == '--update' {
+        update = true;
+      }
+      else if arg.startsWith('--setComm=') {
+        setComm = arg['--setComm='.size+1..];
+      }
       else {
-        compopts.append(arg);
+        try! {
+          if isFile(arg) && arg.endsWith(".chpl") {
+            files.append(arg);
+          }
+          else if isDir(arg) {
+            dirs.append(arg);
+          }
+          else {
+            compopts.append(arg);
+          }
+        }
       }
     }
   }
+  getRuntimeComm();
   var uargs: list(string);
   if !update then uargs.append('--no-update');
-  UpdateLock(uargs);
-  runTests(show, run, parallel, compopts);
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd);
+    UpdateLock(uargs);
+    compopts.append("".join("--comm=",comm));
+    runTests(show, run, parallel, compopts);
+  }
+  catch e: MasonError {
+    runUnitTest(compopts, show);
+  }
 }
 
 private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
@@ -82,11 +128,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
-    //
-    // TODO: Temporarily use `toArray` here because `list` does not yet
-    // support parallel iteration, which the `getSrcCode` method _must_
-    // have for good performance.
-    //
+
     getSrcCode(sourceList, show);
     const project = lockFile["root"]["name"].s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
@@ -107,9 +149,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     // Check for tests to run
     if numTests > 0 {
 
-      var resultDomain: domain(string);
-      var testResults: [resultDomain] string;
-
+      var result =  new TestResult();
+      var timeElapsed = new Timer();
+      timeElapsed.start();
       for test in testNames {
 
         const testPath = "".join(projectHome, '/test/', test);
@@ -120,34 +162,27 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const masonCompopts = getMasonDependencies(sourceList, testName);
         const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
 
-        const moveTo = "-o " + projectHome + "/target/test/" + testName;
+        const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
+        const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand);
-
+        
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
         }
         else {
-          if show || !run then writeln("compiled ", test, " successfully");
+          if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
-            var result = runTestBinary(projectHome, testName, show);
-            if result != 0 {
-              testResults[testName] = "Failed";
-            }
-            else {
-              testResults[testName] = "Passed";
-            }
+            runTestBinary(projectHome, outputLoc, testName, result, show);
           }
         }
       }
       if run && !parallel {
-        var testBinResults = runTestBinaries(projectHome, testNames, numTests, show);
-        resultDomain = testBinResults.domain;
-        testResults = testBinResults;
+        runTestBinaries(projectHome, testNames, numTests, result, show);
       }
+      timeElapsed.stop();
       if run {
-        const numPassed = testResults.count("Passed");
-        printTestResults(testResults, numTests, numPassed, show);
+        printTestResults(result, timeElapsed);
       }
     }
     else {
@@ -162,45 +197,48 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 }
 
 
-private proc runTestBinary(projectHome: string, testName: string, show: bool) {
-  const command = "".join(projectHome,'/target/test/', testName);
-  const testResult = runWithStatus(command, show);
-  return testResult;
+private proc runTestBinary(projectHome: string, outputLoc: string, testName: string, 
+                        ref result, show: bool) {
+  const command = outputLoc;
+  var testNames: list(string),
+      failedTestNames: list(string),
+      erroredTestNames: list(string),
+      testsPassed: list(string),
+      skippedTestNames: list(string);
+  var localesCountMap: map(int, int, parSafe=true);
+  const exitCode = runAndLog(command, testName+".chpl", result, numLocales, testsPassed,
+            testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+  if exitCode != 0 {
+    const newCommand = " ".join(command,"-nl","1");
+    const testResult = runWithStatus(newCommand, show);
+    if testResult != 0 {
+      const errMsg = testName: string +" returned exitCode = "+testResult: string;
+      result.addFailure(testName, testName+".chpl", errMsg);
+    }
+    else {
+      result.addSuccess(testName, testName+".chpl");
+    }
+  }
 }
 
 
 private proc runTestBinaries(projectHome: string, testNames: list(string),
-                             numTests: int, show: bool) {
-
-  var resultDomain: domain(string);
-  var testResults: [resultDomain] string;
+                             numTests: int, ref result, show: bool) {
 
   for test in testNames {
+    const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
     const testName = basename(stripExt(test, ".chpl"));
-    const result = runTestBinary(projectHome, testName, show);
-    if result != 0 {
-      testResults[testName] = "Failed";
-    }
-    else {
-      testResults[testName] = "Passed";
-    }
+    runTestBinary(projectHome, outputLoc, testName, result, show);
   }
-  return testResults;
 }
 
 
-private proc printTestResults(testResults: [?d] string, numTests: int,
-                              numPassed: int, show: bool) {
+private proc printTestResults(ref result, timeElapsed) {
 
-  if show then writeln("\n--------------------\n");
-  writeln("--- Results ---");
-  for test in testResults.domain {
-    writeln(" ".join("Test:",test, testResults[test]));
-  }
-  writeln("\n--- Summary:  ",numTests, " tests run ---");
-  writeln("-----> ", numPassed, " Passed");
-  writeln("-----> ", (numTests - numPassed), " Failed");
-  if (numTests - numPassed) == 0 {
+  result.printErrors();
+  writeln(result.separator2);
+  result.printResult(timeElapsed.elapsed());
+  if (result.testsRun - result.testsPassed) == 0 {
     exit(0);
   }
   else {
@@ -265,6 +303,298 @@ proc getTestPath(fullPath: string, testPath = "") : string {
     else {
       var appendedPath = joinPath(split[2], testPath);
       return getTestPath(split[1], appendedPath);
+    }
+  }
+}
+
+/* Gets the comm */
+proc getRuntimeComm() throws {
+  var line: string;
+  var checkComm = spawn(["python",CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
+                      stdout = PIPE);
+  while checkComm.stdout.readline(line) {
+    comm = line.strip();
+  }
+  // setting communication mechanism.
+  if setComm != "" {
+    if comm != "none" {
+      comm = setComm;
+    }
+    else {
+      if setComm == "none" then comm = setComm;
+      else {
+        writeln("Trying to execute in a multiLocale environment when ",
+        "communication mechanism is `none`.");
+        writeln("Try changing the communication mechanism");
+        exit(2);
+      }
+    }
+  }
+}
+
+proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
+  var comm_c: c_string;
+  try! {
+    var checkChpl = spawn(["which","chpl"],stdout = PIPE);
+    checkChpl.wait();
+    var line: string;
+    if checkChpl.stdout.readline(line) {
+
+      if files.size == 0 && dirs.size == 0 {
+        dirs.append(".");
+      }
+      
+      var result =  new TestResult();
+      var timeElapsed = new Timer();
+      timeElapsed.start();
+      for tests in files {
+        try {
+          testFile(tests, result, show);
+        }
+        catch e {
+          writeln("Caught an Exception in Running Test File: ", tests);
+          writeln(e);
+        }
+      }
+
+      for dir in dirs {
+        try {
+          testDirectory(dir, result, show);
+        }
+        catch e {
+          writeln("Caught an Exception in Running Test Directory: ", dir);
+          writeln(e);
+        }
+      }
+      timeElapsed.stop();
+      printTestResults(result, timeElapsed);
+    }
+    else {
+      writeln("chpl not found.");
+      exit(2);
+    } 
+  }
+  
+}
+
+pragma "no doc"
+/*Docs: Todo*/
+proc testFile(file, ref result, show: bool) throws {
+  var fileName = basename(file);
+  var line: string;
+  var compErr = false;
+  var executable = stripExt(fileName,".chpl");
+  var executableReal = executable + "_real";
+  // remove the binaries if they exist
+  if isFile(executable) {
+    FileSystem.remove(executable);
+  }
+  if isFile(executableReal) {
+    FileSystem.remove(executableReal);
+  }
+
+  const moveTo = "-o " + executable;
+  const allCompOpts = "--comm " + comm;
+  const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
+  const compilation = runWithStatus(compCommand);
+
+  if compilation != 0 {
+    stderr.writeln("compilation failed for " + fileName);
+  }
+  else {
+    if show then writeln("\nCompiled '", fileName, "' successfully");
+    var testNames: list(string),
+        failedTestNames: list(string),
+        erroredTestNames: list(string),
+        testsPassed: list(string),
+        skippedTestNames: list(string);
+    var localesCountMap: map(int, int, parSafe=true);
+    const exitCode = runAndLog("./"+executable, fileName, result, numLocales, testsPassed,
+              testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+    if exitCode != 0 {
+      const command = " ".join("./"+executable,"-nl","1");
+      const testResult = runWithStatus(command, show);
+      if testResult != 0 {
+        const errMsg = executable: string +" returned exitCode = "+testResult: string;
+        result.addFailure(executable, fileName, errMsg);
+      }
+      else {
+        result.addSuccess(executable, fileName);
+      }
+    }
+    if !keepExec {
+      FileSystem.remove(executable);
+      if isFile(executableReal) {
+        FileSystem.remove(executableReal);
+      }
+    }
+  }
+}
+
+pragma "no doc"
+/*Docs: Todo*/
+proc testDirectory(dir, ref result, show: bool) throws {
+  for file in findfiles(startdir = dir, recursive = subdir) {
+    if file.endsWith(".chpl") {
+      testFile(file, result, show);
+    }
+  }
+}
+
+pragma "no doc"
+/*Docs: Todo*/
+proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
+              ref testsPassed, ref testNames, ref localesCountMap, 
+              ref failedTestNames, ref erroredTestNames, ref skippedTestNames, show: bool): int throws 
+{
+  var separator1 = result.separator1,
+      separator2 = result.separator2;
+  var flavour: string,
+      line: string,
+      testExecMsg: string;
+  var reqLocales = 0;
+  var sep1Found = false,
+      haltOccured = false;
+  var testNamesStr,
+      failedTestNamesStr,
+      erroredTestNamesStr,
+      passedTestStr,
+      skippedTestNamesStr = "None";
+
+  var currentRunningTests: list(string);
+  var exitCode: int;
+  
+  //
+  // List has a different `writeThis` format than arrays, since it encloses
+  // the collection with brackets "[0, 1, 2, 3, ..., N]". This will cause
+  // test failures since this code assumes array style output. The simplest
+  // (albeit wasteful) thing we can do here is just cast the lists to
+  // array here.
+  //
+  if testNames.size != 0 then testNamesStr = testNames.toArray(): string;
+  if failedTestNames.size != 0 then failedTestNamesStr = failedTestNames.toArray(): string;
+  if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames.toArray(): string;
+  if testsPassed.size != 0 then passedTestStr = testsPassed.toArray(): string;
+  if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames.toArray(): string;
+  var exec = spawn([executable, "-nl", reqNumLocales: string, "--testNames", 
+            testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
+            erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
+            skippedTestNamesStr], stdout = PIPE, 
+            stderr = PIPE); //Executing the file
+  //std output pipe
+  while exec.stdout.readline(line) {
+    if line.strip() == separator1 then sep1Found = true;
+    else if line.strip() == separator2 && sep1Found {
+      var testName = try! currentRunningTests.pop();
+      if testNames.count(testName) != 0 then
+        try! testNames.remove(testName);
+      addTestResult(result, localesCountMap, testNames, flavour, fileName, 
+                testName, testExecMsg, failedTestNames, erroredTestNames, 
+                skippedTestNames, testsPassed, show);
+      testExecMsg = "";
+      sep1Found = false;
+    }
+    else if line.startsWith("Flavour") {
+      var temp = line.strip().split(":");
+      flavour = temp[2].strip();
+      testExecMsg = "";
+    }
+    else if sep1Found then testExecMsg += line;
+    else {
+      if line.strip().endsWith(")") {
+        var testName = line.strip();
+        if currentRunningTests.count(testName) == 0 {
+          currentRunningTests.append(testName);
+          if testNames.count(testName) == 0 then
+            testNames.append(testName);
+        }
+        testExecMsg = "";
+      }  
+    }
+  }
+  //this is to check the error
+  if exec.stderr.readline(line) { 
+    var testErrMsg = line;
+    while exec.stderr.readline(line) do testErrMsg += line;
+    if !currentRunningTests.isEmpty() {
+      var testNameIndex = try! currentRunningTests.pop();
+      var testName = testNameIndex;
+      if testNames.count(testName) != 0 then
+        try! testNames.remove(testName);
+      erroredTestNames.append(testName);
+      if show then writeln("Ran ",testName," ERROR");
+      result.addError(testName, fileName, testErrMsg);
+      haltOccured =  true;
+    }
+  }
+  exec.wait();//wait till the subprocess is complete
+  exitCode = exec.exit_status;
+  if haltOccured then
+    exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
+              testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+  if testNames.size != 0 {
+    var maxCount = -1;
+    for key in localesCountMap {
+      if maxCount < localesCountMap[key] {
+        reqLocales = key;
+        maxCount = localesCountMap[key];
+      }
+    }
+    localesCountMap.remove(reqLocales);
+    exitCode = runAndLog(executable, fileName, result, reqLocales, testsPassed,
+              testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+  }
+  return exitCode;
+}
+
+pragma "no doc"
+/*Docs: Todo*/
+proc addTestResult(ref result, ref localesCountMap, ref testNames, 
+                  flavour, fileName, testName, errMsg, ref failedTestNames, 
+                  ref erroredTestNames, ref skippedTestNames, ref testsPassed,
+                  show: bool) throws 
+{
+  select flavour {
+    when "OK" {
+      if show then writeln("Ran ",testName," ",flavour);
+      result.addSuccess(testName, fileName);
+      testsPassed.append(testName);
+    }
+    when "ERROR" {
+      if show then writeln("Ran ",testName," ",flavour);
+      result.addError(testName, fileName, errMsg);
+      erroredTestNames.append(testName);
+    }
+    when "FAIL" {
+      if show then writeln("Ran ",testName," ",flavour);
+      result.addFailure(testName, fileName, errMsg);
+      failedTestNames.append(testName);
+    }
+    when "SKIPPED" {
+      if show then writeln("Ran ",testName," ",flavour);
+      result.addSkip(testName, fileName, errMsg);
+      skippedTestNames.append(testName);
+    }
+    when "IncorrectNumLocales" {
+      if comm != "none" {
+        var strSplit = errMsg.split("=");
+        var reqLocalesStr = strSplit[2].strip().split(",");
+        for a in reqLocalesStr do
+          if localesCountMap.contains(a: int) then
+            localesCountMap[a: int] += 1;
+          else
+            localesCountMap[a: int] = 1;
+        testNames.append(testName);
+      }
+      else {
+        var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
+        locErrMsg += errMsg; 
+        result.addSkip(testName, fileName, locErrMsg);
+        skippedTestNames.append(testName);
+      }
+    }
+    when "Dependence" {
+      testNames.append(testName);
     }
   }
 }

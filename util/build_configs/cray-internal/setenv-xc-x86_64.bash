@@ -337,9 +337,9 @@ else
     # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
     gen_version_intel=default
-    gen_version_cce=8.7.7
+    gen_version_cce=8.7.8
     if [ "$CHPL_LOCALE_MODEL" == knl ]; then
-        gen_version_cce=8.7.7
+        gen_version_cce=8.7.8
     fi
 
     target_cpu_module=craype-sandybridge

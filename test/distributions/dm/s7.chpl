@@ -98,6 +98,11 @@ writeln();
 writeln(Ab);
 writeln("DONE");
 
+delete rdim1;
+delete bdim1;
+delete rdim2;
+delete bdim2;
+
 proc test(X, Y, Z) {
   for (x, y, z) in zip(X, Y, Z) do x = y + z;
 }

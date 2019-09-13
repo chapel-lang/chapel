@@ -128,7 +128,8 @@ static void resolveFormals(FnSymbol* fn) {
     }
 
     if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
-      if (formal->type                             != dtString ||
+      if ((formal->type                             != dtString &&
+           formal->type                             != dtBytes) ||
           formal->hasFlag(FLAG_INSTANTIATED_PARAM) == false) {
         updateIfRefFormal(fn, formal);
       }
@@ -149,6 +150,18 @@ static void resolveFormals(FnSymbol* fn) {
 
     if (formal->defaultExpr != NULL && fn->hasFlag(FLAG_EXPORT)) {
       storeDefaultValuesForPython(fn, formal);
+    }
+
+    // Warn for default-intent owned/shared, since these used to
+    // mean the same as `in` intent but now mean the same as `const ref`.
+    if (fWarnUnstable &&
+        formal->getModule()->modTag == MOD_USER &&
+        isManagedPtrType(formal->getValType()) &&
+        formal->originalIntent == INTENT_BLANK) {
+      USR_WARN(formal,
+               "default intent for %s has changed from `in` to `const ref`",
+               toString(formal->getValType()));
+
     }
   }
 }
@@ -378,7 +391,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   VarSymbol* var = toVarSymbol(se->symbol());
-  if (!var->isParameter()) {
+  if (!var || !var->isParameter()) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   if (var->type == dtString || var->type == dtStringC) {
@@ -482,6 +495,9 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       if (fn->isIterator() == true) {
         markIterator(fn);
       }
+
+      if (needsCapture(fn))
+        convertFieldsOfRecordThis(fn);
 
       insertFormalTemps(fn);
 
@@ -1178,11 +1194,6 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     fn->retType = retType;
 
-    if (retType->symbol->hasFlag(FLAG_GENERIC) &&
-        fn->retTag == RET_TYPE) {
-      USR_FATAL_CONT(fn, "returning a generic type variable is not supported");
-    }
-
   } else {
 
     // Update the yielded type argument if it was requested
@@ -1337,6 +1348,12 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 }
 
 bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
+
+  // Don't add copies at call site if function body will be removed anyway.
+  // TODO: handle RET_TYPE but not for runtime types
+  if (fn && fn->retTag == RET_PARAM)
+    return false;
+
   if (isRecord(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
@@ -1655,6 +1672,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
             bool typesDiffer = (rhsType          != lhsType &&
                                 rhsType->refType != lhsType &&
                                 rhsType          != lhsType->refType);
+            bool isTypeOf = rhsCall && rhsCall->isPrimitive(PRIM_TYPEOF);
 
             SET_LINENO(rhs);
 
@@ -1805,7 +1823,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 casts.add(cast);
               }
 
-            } else {
+            } else if (!isTypeOf) {
               // handle adding casts for a regular PRIM_MOVE
 
               if (typesDiffer) {

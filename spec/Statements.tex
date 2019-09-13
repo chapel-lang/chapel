@@ -673,15 +673,17 @@ label outer for i in 1..n {
 \index{modules!using}
 \index{types!enumerated!using}
 
-The use statement provides access to the constants in an enumerated type or
-the public symbols of a module within the scope in which it appears without
-the need to provide a full qualified path.
+The use statement provides access to the constants in an enumerated
+type or to the public symbols of a module without the need to use a
+fully qualified name.  When using a module, the statement also ensures
+that the module symbol itself is visible within the current scope
+(top-level modules are not otherwise visible without a \chpl{use}).
 
 The syntax of the use statement is given by:
 
 \begin{syntax}
 use-statement:
-  `use' module-or-enum-name-list ;
+  privacy-specifier[OPT] `use' module-or-enum-name-list ;
 
 module-or-enum-name-list:
   module-or-enum-name limitation-clause[OPT]
@@ -718,6 +720,7 @@ module M1 {
 }
 
 module M2 {
+  use M1;
   proc main() {
     writeln("In M2's main.");
     M1.foo();
@@ -769,11 +772,13 @@ symbols would be inserted into this enclosing scope with the same name, and
 that name is referenced by other statements in the same scope as the use.
 
 
-Use statements are transitive by default: if a module A uses a module
-B, and module B contains a use of a module or enumerated type C, then
-C's public symbols may also be visible within A.  The exception to
-this occurs when B has public symbols that shadow symbols with the
-same name in C.
+Use statements are transitive by default: if a module A uses a module B, and
+module B contains a use of a module or enumerated type C, then C's public
+symbols may also be visible within A.  The exception to this occurs when B has
+public symbols that shadow symbols with the same name in C, or when the use of C
+has been declared explicitly \chpl{private}.  If a use statement is declared to
+be \chpl{private}, then the symbols it makes visible will only be visible to the
+scope containing the use.
 
 This notion of transitivity extends to the case in which a scope
 imports symbols from multiple modules or constants from multiple
@@ -783,18 +788,22 @@ of the public symbols in B1, B2, B3 have the potential to shadow the
 public symbols of C1, C2, and C3.  However an error is signaled if
 C1, C2, C3 have public module level definitions of the same symbol.
 
-% We would like to provide a way to specify that a use should not be
-% transitive
-
 An optional \sntx{limitation-clause} may be provided to limit the symbols made
-available by the use statement.  If an \chpl{except} list is provided, then all
+available by a given use statement.  If an \chpl{except} list is provided, then all
 the visible but unlisted symbols in the module or enumerated type will be made
 available without prefix.  If an \chpl{only} list is provided, then just the
 listed visible symbols in the module or enumerated type will be made available
 without prefix.  All visible symbols not provided via these limited use
-statements are still accessible with the module or enumerated type name prefix.
+statements are still accessible by prefixing the access with the name of the module or enumerated type.
 It is an error to provide a name in a \sntx{limitation-clause} that does not
 exist or is not visible in the respective module or enumerated type.
+
+If a type is specified in the \sntx{limitation-clause}, then the type's fields
+and methods are treated similarly to the type name.  These fields and methods
+cannot be specified in a \sntx{limitation-clause} on their own.
+
+% We need to figure out what to do about functions that return types which due
+% to the limitation-clause are not visible without prefix.
 
 If an \chpl{only} list is left empty or \chpl{except} is followed by $*$ then no
 symbols are made available to the scope without prefix.  However, any methods or

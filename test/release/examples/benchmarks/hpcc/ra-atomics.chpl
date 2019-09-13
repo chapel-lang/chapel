@@ -10,6 +10,11 @@ use BlockDist, Time;
 use HPCCProblemSize, RARandomStream;
 
 //
+// Use atomic peek/poke
+//
+use PeekPoke;
+
+//
 // The number of tables as well as the element and index types of
 // that table
 //

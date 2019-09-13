@@ -287,7 +287,7 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,?B,?), w: range(?IT,?,true), userErrors=true) : range(IT,B,true)
+proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErrors=true) : range(IT,B,true)
 {
   _densiEnsureBounded(s);
   _densiIdxCheck(s.idxType, IT, (s,w).type);
@@ -328,7 +328,7 @@ proc densify(s: range(?,?B,?), w: range(?IT,?,true), userErrors=true) : range(IT
   }
 }
 
-proc densify(sArg: range(?,?B,?S), w: range(?IT,?,false), userErrors=true) : range(IT,B,S)
+proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridable=false), userErrors=true) : range(IT,B,S)
 {
   _densiEnsureBounded(sArg);
   _densiIdxCheck(sArg.idxType, IT, (sArg,w).type);
@@ -406,7 +406,7 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?,?B,?), whole: range(?IT,?,true)) : range(IT,B,true)
+proc unDensify(dense: range(?,boundedType=?B), whole: range(?IT,?,stridable=true)) : range(IT,B,true)
 {
   _undensEnsureBounded(dense);
   if whole.boundedType == BoundedRangeType.boundedNone then
@@ -431,7 +431,7 @@ proc unDensify(dense: range(?,?B,?), whole: range(?IT,?,true)) : range(IT,B,true
   return low .. high by stride;
 }
 
-proc unDensify(dense: range(?,?B,?S), whole: range(?IT,?,false)) : range(IT,B,S)
+proc unDensify(dense: range(?,boundedType=?B,stridable=?S), whole: range(?IT,?,stridable=false)) : range(IT,B,S)
 {
   if !whole.hasLowBound() then
     compilerError("unDensify(): the 'whole' argument, when not stridable, must have a low bound");

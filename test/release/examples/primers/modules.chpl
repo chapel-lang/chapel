@@ -6,7 +6,7 @@
 
     * how to define a module
     * namespace control within a module
-    * external access to a module's symbols
+    * access to another module's symbols
     * namespace control when using a module, including:
 
       * unlimited
@@ -23,8 +23,9 @@
    a file is not enclosed in an explicit module, defined using the ``module``
    keyword, then the file itself is treated as a module with the same name as
    the file (minus the .chpl suffix).  The compiler can be directed to include
-   modules in separate files by naming them on the command line, utilizing the
-   ``-M`` flag, etc. (see the :ref:`man page <man-chpl>` for exact details).
+   modules in distinct files by naming them on the command line or by relying
+   on the ``-M`` flag (see the :ref:`man page <man-chpl>` for exact details).
+   Here, we declare a module `modToUse`:
 */
 module modToUse {
 
@@ -36,11 +37,11 @@ module modToUse {
   var bar: int = 2;
 
   /* A symbol can be declared ``private`` - this means that only code defined
-     within the same scope as the definition of this symbol (including code in
+     within the same scope as the definition of the symbol (including code in
      nested scopes) can access it.
 
-     Here, ``hiddenFoo`` is a private global variable, which is only accessible
-     by symbols contained in ``modToUse``
+     Here, ``hiddenFoo`` is a private module-level variable, making it
+     only accessible to other code contained in ``modToUse``
    */
   private var hiddenFoo = false;
 
@@ -58,7 +59,7 @@ module modToUse {
     return a + 3;
   }
 
-  /* ``Rec`` is a top-level record, with a field and a method defined inside
+  /* ``Rec`` is a module-level record, with a field and a method defined inside
      it.
    */
   record Rec {
@@ -76,7 +77,7 @@ module modToUse {
 
 } // end of modToUse module
 
-/* In the current implementation, private cannot be applied to type
+/* In the current implementation, ``private`` cannot be applied to type
    definitions; type aliases, and declarations of enums, records, and
    classes cannot be declared private.  Private also cannot be applied to
    fields or methods yet.
@@ -118,27 +119,15 @@ module MainModule {
 
     /* Access From Outside a Module
        ----------------------------
-       If a module is not the main module for a program, it is desirable for its
-       contents to be accessible to external modules.  There are several
-       strategies for accomplishing this:
+       In multi-module programs, it is common for modules to access
+       the contents of other modules.  The starting point for doing so
+       is the "``use`` statement" in Chapel.  These statements can be
+       inserted at any lexical scope that contains executable code.
 
-       First, a symbol can be referenced explicitly - this is done using the
-       module name and a separating ``.`` as a prefix to the name of the symbol
-       desired.
-     */
-    var thriceFoo = 3 * modToUse.foo; // should be '36'
-    writeln(thriceFoo);
-
-    /* If several of the module's symbols are desired, or the same symbol is
-       desired multiple times, then it can be convenient to utilize what is
-       known as a "use statement".
-
-       ``use`` statements can be inserted at any lexical scope that contains
-       executable code.
-
-       A ``use`` statement makes all of the module's visible symbols available
-       to the scope that contains the ``use`` statement.  These symbols may
-       then be accessed without the module name prefix.
+       By default, a ``use`` statement makes all of a specific
+       module's visible symbols available to the scope that contains
+       that ``use`` statement.  These symbols may then be accessed
+       directly in an unqualified manner (without a module name prefix).
 
        In this case, ``bazBarFoo`` should store the result of calling
        ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which is
@@ -152,15 +141,11 @@ module MainModule {
 
     }
     /* Since ``use`` statements only affect their containing scope, when we
-       leave a scope like this, we revert to requiring fully-qualified names
-    */
-
-
-
-    /* Since the following line doesn't live within a scope that contains a
+       leave a scope like this, we lose access to the module's symbols.  For
+       instance, since the following line isn't within a scope that contains a
        ``use`` of ``modToUse``, it would generate an error if uncommented.
-       This is because ``foo`` cannot be directly referenced, and is not
-       qualified with a module name.
+       This is because ``foo`` is not visible within our lexical scope or
+       via any ``use`` statements in that scope.
      */
     // var twiceFoo = 2 * foo;
 
@@ -170,12 +155,13 @@ module MainModule {
        Even if the ``use`` statement occurs after code which would directly
        refer to its symbols, these references are still valid.  This is
        similar to other Chapel forms of introducing symbols - for instance,
-       class declaration order does not prevent a class declared earlier from
-       referring to one declared later.
+       function declaration order does not prevent a function declared earlier
+       in a scope from calling one declared later.
 
-       Thus, as in an earlier example, ``bazBarFoo`` should store the result
-       of calling ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``,
-       which is again ``28``.
+       Thus, as in an earlier example, the following declaration of
+       ``bazBarFoo`` will store the result of calling ``modToUse.baz``
+       on ``modToUse.bar`` and ``modToUse.foo``, which is again
+       ``28``.
     */
     {
       var bazBarFoo = baz(bar, foo);
@@ -188,9 +174,9 @@ module MainModule {
 
     /* The symbols provided by a ``use`` statement are only considered when
        the name in question cannot be resolved directly within the local
-       scope. Thus, because another ``bar`` is defined here, the compiler
-       will find the ``bar`` at this scope when resolving the access within
-       the ``writeln``, rather than ``modToUse.bar``.
+       scope. Thus, because another ``bar`` is defined within this scope, the
+       reference to ``bar`` within the ``writeln`` will refer to the local
+       variable ``bar`` rather than to ``modToUse.bar``.
     */
     {
       var bar = 4.0;
@@ -224,7 +210,7 @@ module MainModule {
       }
     }
 
-    /* Multiple modules may be used in the same ``use`` statement  */
+    /* Multiple modules may be named in a single ``use`` statement  */
     {
       use modToUse, AnotherModule, ThirdModule;
 
@@ -278,6 +264,11 @@ module MainModule {
        other functions, etc. can be found in the relevant section of the
        language specification.  They will not be covered further in this
        primer.
+
+       Finally, the names of the modules themselves are made available
+       by a ``use`` statement at a scope just outside of the modules'
+       contents and just inside the next lexical scope surrounding the
+       current one.
     */
     {
 
@@ -351,7 +342,9 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* ...or equivalently, an empty identifier list after ``only``. */
+    /* ...or equivalently, an empty identifier list after ``only``.
+       These forms are typically used by programmers who prefer to
+       always fully qualify references to their modules' symbols. */
     {
       use modToUse only;
       use Conflict only;
@@ -459,3 +452,48 @@ module OuterNested {
     var canSeeHidden = !hiddenFoo;
   }
 } // end of OuterNested module
+
+/* Private Uses
+   ------------
+
+   It is important to note that a module with a ``use`` of other modules will
+   by default make those symbols available to scopes that ``use`` it.
+   Considering the following pair of modules:
+*/
+module UserModule {
+  use ModuleThatIsUsed;
+}
+
+module ModuleThatIsUsed {
+  proc publiclyAvailableProc() {
+    writeln("This function is accessible!");
+  }
+}
+
+/* A scope with a ``use`` of ``UserModule`` will also be able to see the
+   symbols defined by ``ModuleThatIsUsed``.
+*/
+module UsesTheUser {
+  proc func1() {
+    use UserModule;
+    publiclyAvailableProc(); // available due to ``use`` of ModuleThatIsUsed
+  }
+}
+
+/* To avoid this, ``use`` statements can be declared as ``private``:
+ */
+module UserModule2 {
+  private use ModuleThatIsUsed;
+}
+
+/* When a scope has a ``use`` of ``UserModule2``, the symbols from
+   ``ModuleThatIsUsed`` will not be available due to the ``private`` modifier on
+   ``UserModule2`` 's ``use`` of it, so the following code would not compile.
+*/
+
+module UsesTheUser2 {
+  proc func2() {
+    use UserModule2;
+    //publiclyAvailableProc(); // Won't compile, the ``use`` is ``private``
+  }
+}

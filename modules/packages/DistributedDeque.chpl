@@ -84,7 +84,7 @@
 
     var deque = new DistDeque(int, cap=maxElem, targetLocales=ourLocales);
 
-  The deque can be used as a queue by using the :proc:`enqueue` and :proc:`dequeue` convenience
+  The deque can be used as a queue by using the :proc:`DistributedDequeImpl.enqueue` and :proc:`DistributedDequeImpl.dequeue` convenience
   methods or inserting from one end to remove from another...
 
   .. code-block:: chapel
@@ -92,7 +92,7 @@
     deque.enqueue(1);
     var (hasElem, elem) = deque.dequeue();
 
-  The deque can be used as a stack by using the :proc:`push` and :proc:`pop` convenience methods,
+  The deque can be used as a stack by using the :proc:`DistributedDequeImpl.push` and :proc:`DistributedDequeImpl.pop` convenience methods,
   or insertion and removing from the same ends...
 
   .. code-block:: chapel
@@ -100,8 +100,8 @@
     deque.push(1);
     var (hasElem, elem) = deque.pop();
 
-  The deque can be used as a list by using the :proc:`pushBack`, :proc:`pushFront`, :proc:`popBack`,
-  and :proc:`popFront` methods. While the deque is not indexable, the ability to `append` or `prepend`
+  The deque can be used as a list by using the :proc:`DistributedDequeImpl.pushBack`, :proc:`DistributedDequeImpl.pushFront`, :proc:`DistributedDequeImpl.popBack`,
+  and :proc:`DistributedDequeImpl.popFront` methods. While the deque is not indexable, the ability to `append` or `prepend`
   is powerful enough to allow a total ordering, allowing the user to define the order by letting them
   insert and remove at whichever ends they so choose.
 
@@ -151,8 +151,8 @@
       atomic operations should be provided.
 
   4.  The ordered serial iterators currently do not work when the ``globalHead`` or ``globalTail`` are negative, which is a
-      result of iteration being an after-thought. This will be improved upon soon, but for now if you use :proc:`pushBack`
-      or :proc:`pushFront` methods, I would advise against using them for now.
+      result of iteration being an after-thought. This will be improved upon soon, but for now if you use :proc:`DistributedDequeImpl.pushBack`
+      or :proc:`DistributedDequeImpl.pushFront` methods, I would advise against using them for now.
 
   Planned Improvements
   ____________________
@@ -209,7 +209,7 @@ module DistributedDeque {
       documentation.
     */
     // This is unused, and merely for documentation purposes. See '_value'.
-    var _impl : DistributedDequeImpl(eltType)?;
+    var _impl : unmanaged DistributedDequeImpl(eltType)?;
 
     // Privatization id
     pragma "no doc"
@@ -229,7 +229,7 @@ module DistributedDeque {
       if _pid == -1 {
         halt("DistDeque is uninitialized...");
       }
-      return chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid);
+      return chpl_getPrivatizedCopy(unmanaged DistributedDequeImpl(eltType), _pid);
     }
 
     forwarding _value;
@@ -381,7 +381,7 @@ module DistributedDeque {
           on queueSize {
             var readSize = queueSize!.read();
             // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-            while readSize < 0 && !queueSize!.compareExchangeWeak(readSize, 0) {
+            while readSize < 0 && !queueSize!.compareAndSwap(readSize, 0) {
               chpl_task_yield();
               readSize = queueSize!.read();
             }
@@ -426,7 +426,7 @@ module DistributedDeque {
             on queueSize {
               var readSize = queueSize!.read();
               // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-              while readSize > this.cap && !queueSize!.compareExchangeWeak(readSize, this.cap) {
+              while readSize > this.cap && !queueSize!.compareAndSwap(readSize, this.cap) {
                 chpl_task_yield();
                 readSize = queueSize!.read();
               }
@@ -630,7 +630,7 @@ module DistributedDeque {
       for slot in slots do slot.lock$ = true;
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
-      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType)?);
+      var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
       for i in 0 .. #nSlots {
         var node = slots[i].head;
         if node == nil {
@@ -693,7 +693,7 @@ module DistributedDeque {
       for slot in slots do slot.lock$ = true;
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
-      var nodes : [{0..#nSlots}] (int, int, LocalDequeNode(eltType)?);
+      var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
       for i in 0 .. #nSlots {
         var node = slots[i].tail;
         nodes[i] = (node!.size, node!.tailIdx, node);

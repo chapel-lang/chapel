@@ -406,7 +406,7 @@ module Curl {
                           end:int(64),
                           qioChannelPtr:qio_channel_ptr_t):syserr {
         var curlch = new unmanaged CurlChannel();
-        curlch.curlf = this;
+        curlch.curlf = this:unmanaged;
         curlch.qio_ch = qioChannelPtr;
         pluginChannel = curlch;
         return start_channel(curlch, start, end);
@@ -445,7 +445,7 @@ module Curl {
     }
 
     class CurlChannel : QioPluginChannel {
-      var curlf: CurlFile;
+      var curlf: unmanaged CurlFile?;
       var qio_ch:qio_channel_ptr_t;
       var curl: c_ptr(CURL);  // Curl handle
       var curlm: c_ptr(CURLM);  // Curl multi handle
@@ -692,7 +692,7 @@ module Curl {
         return ENOMEM;
 
       // Setopt with the url
-      curl_easy_setopt_ptr(curl, CURLOPT_URL, cc.curlf.url_c:c_void_ptr);
+      curl_easy_setopt_ptr(curl, CURLOPT_URL, cc.curlf!.url_c:c_void_ptr);
 
       var writer = qio_channel_writable(cc.qio_ch);
 
@@ -718,7 +718,7 @@ module Curl {
         if err then return EINVAL;
       }
       // If it's seekable, start at the right offset
-      if cc.curlf.seekable {  // we can request byteranges
+      if cc.curlf!.seekable {  // we can request byteranges
         err = curl_easy_setopt_offset(curl, CURLOPT_RESUME_FROM_LARGE, start);
         if err then return EINVAL;
       } else {
@@ -736,11 +736,11 @@ module Curl {
 
     private proc curl_write_received(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr):size_t {
       var realsize:size_t = size * nmemb;
-      var cc = userp:CurlChannel;
+      var cc = userp:unmanaged CurlChannel?;
       var err:syserr = ENOERR;
 
       // lock the channel if it's not already locked
-      assert(cc.have_channel_lock);
+      assert(cc!.have_channel_lock);
 
       var amt = realsize.safeCast(int(64));
 
@@ -748,12 +748,12 @@ module Curl {
 
       // make sure the channel has room in the buffer for the data
       // copy the data to the channel's buffer
-      err = qio_channel_copy_to_available_unlocked(cc.qio_ch, contents, amt);
+      err = qio_channel_copy_to_available_unlocked(cc!.qio_ch, contents, amt);
 
       // unlock the channel if we locked it
 
       if err != ENOERR {
-        cc.saved_error = err;
+        cc!.saved_error = err;
         return 0;
       }
 
@@ -868,11 +868,11 @@ module Curl {
     // and cause it to stop the transfer.
     private proc curl_read_buffered(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr):size_t {
       var realsize:size_t = size * nmemb;
-      var cc = userp:CurlChannel;
+      var cc = userp:unmanaged CurlChannel?;
       var err:syserr = ENOERR;
 
       // lock the channel if it's not already locked
-      assert(cc.have_channel_lock);
+      assert(cc!.have_channel_lock);
 
       var amt = realsize.safeCast(ssize_t);
 
@@ -881,19 +881,19 @@ module Curl {
 
       var gotamt: ssize_t = 0;
       // copy the data from the channel's buffer
-      err = qio_channel_copy_from_buffered_unlocked(cc.qio_ch, contents, amt, gotamt);
+      err = qio_channel_copy_from_buffered_unlocked(cc!.qio_ch, contents, amt, gotamt);
 
       // unlock the channel if we locked it
 
       // If there was an error from the channel, abort the connection
       if err != ENOERR {
-        cc.saved_error = err;
+        cc!.saved_error = err;
         return CURL_READFUNC_ABORT;
       }
       // If the channel is not closed, but we would
       // otherwise return 0, pause the connection, so that
       // the connection is not closed until the channel is.
-      if gotamt == 0 && ! qio_channel_isclosed(0, cc.qio_ch) {
+      if gotamt == 0 && ! qio_channel_isclosed(0, cc!.qio_ch) {
         return CURL_READFUNC_PAUSE;
       }
 

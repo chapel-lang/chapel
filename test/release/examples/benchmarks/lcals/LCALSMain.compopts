@@ -1,4 +1,4 @@
 # Run the abbreviated number of trials and don't print timing or
 # checksum output, or else we'd have to filter it out in testing
 # Pending #13721, run with the legacy option.
---legacy-nilable-classes -sverify_checksums_abbreviated=true -soutputFormat=OutputStyle.MINIMAL
+--legacy-classes -sverify_checksums_abbreviated=true -soutputFormat=OutputStyle.MINIMAL

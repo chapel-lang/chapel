@@ -1,0 +1,3 @@
+string-bytes-inits.chpl:1: warning: string.init is deprecated - please use createStringWith* instead
+string-bytes-inits.chpl:2: warning: string.init is deprecated - please use createStringWith* instead
+string-bytes-inits.chpl:3: warning: string.init is deprecated - please use createStringWith* instead

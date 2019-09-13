@@ -24,7 +24,7 @@ Optimization Control Options:
       --[no-]cache-remote             [Don't] enable cache for remote data
       --[no-]copy-propagation         Enable [disable] copy propagation
       --[no-]dead-code-elimination    Enable [disable] dead code elimination
-      --fast                          Use fast default settings
+      --fast                          Disable checks; optimize/specialize code
       --[no-]fast-followers           Enable [disable] fast followers
       --[no-]ieee-float               Generate code that is strict [lax] with
                                       respect to IEEE compliance

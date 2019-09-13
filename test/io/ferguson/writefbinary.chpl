@@ -35,7 +35,7 @@ writef("D");
 writef("%>0S", test);
 writef("%>*S", 1, test);
 
-var testBytes = "test":_bytes;
+var testBytes = "test":bytes;
 
 writef("A");
 writef("%>4s", testBytes);

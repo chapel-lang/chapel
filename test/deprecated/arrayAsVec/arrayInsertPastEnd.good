@@ -1,0 +1,2 @@
+arrayInsertPastEnd.chpl:4: warning: insert is deprecated - please use list.insert
+arrayInsertPastEnd.chpl:4: error: halt reached - insert at position 5 out of bounds

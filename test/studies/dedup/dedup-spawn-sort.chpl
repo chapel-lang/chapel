@@ -1,7 +1,7 @@
 use FileSystem;
 use BlockDist;
 use Spawn;
-use Lists;
+use List;
 
 proc main(args:[] string)
 {

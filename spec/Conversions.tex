@@ -4,6 +4,7 @@
 
 A \emph{conversion} converts an expression of one type to another type,
 possibly changing its value.
+In certain cases noted below the source expression can be a type expression.
 \index{conversions!source type}
 \index{conversions!target type}
 We refer to these two types the \emph{source} and \emph{target} types.
@@ -23,10 +24,6 @@ Each location determines the target type.
 The source and target types of an implicit conversion must be allowed.
 They determine whether and how the expression's value changes.
 
-Implicit conversions are not applied when initializing \chpl{ref} or
-\chpl{type} values or for actual arguments passed to \chpl{ref} or
-\chpl{type} formal arguments.
-
 \index{conversions!implicit!occurs at}
 An implicit conversion occurs at each of the following program locations:
 
@@ -35,13 +32,24 @@ An implicit conversion occurs at each of the following program locations:
       the assignment is converted to the type of the variable
       or another lvalue on the left-hand side of the assignment.
 
+\item In a variable or field declaration, the initializing expression
+      is converted to the type of the variable or field.
+      The initializing expression is the r.h.s. of the \chpl{=}
+      in the declaration, if present, or in the field initialization
+      statement in an initializer.
+
 \item The actual argument of a function call or an operator is converted
       to the type of the corresponding formal argument, if the formal's
       intent is \chpl{param}, \chpl{in}, \chpl{const in}, or an abstract intent
       (\rsec{Abstract_Intents}) with the semantics of
       \chpl{in} or \chpl{const in}.
 
-% MPF: This rule doesn't seem to be implemented right now,
+\item The actual type argument of a function call or an operator is converted
+      to the corresponding formal argument of the \chpl{type} intent or
+      the \chpl{this} formal of a type method.
+      See \rsec{Implicit_Type_Arg_Conversions}.
+
+% MPF: This rule is not implemented right now,
 %      but rather reflects ideal language design.
 \item If the formal argument's intent is \chpl{out}, the formal argument
       is converted to the type of the corresponding actual argument
@@ -52,10 +60,12 @@ An implicit conversion occurs at each of the following program locations:
 
 \item The condition of a conditional expression,
       conditional statement, while-do or do-while loop statement
-      is converted to the boolean type~(\rsec{Implicit_Statement_Bool_Conversions}).
-      A special rule defines the allowed source types and
-      how the expression's value changes in this case.
+      is converted to the boolean type.
+      See \rsec{Implicit_Statement_Bool_Conversions}.
 \end{itemize}
+
+Implicit conversions are not applied for actual arguments passed to \chpl{ref} or
+\chpl{const ref} formal arguments.
 
 \index{conversions!implicit!allowed types}
 Implicit conversions \emph{are allowed} between
@@ -64,18 +74,18 @@ as defined in the referenced subsections:
 
 \begin{itemize}
 \item numeric and boolean types~(\rsec{Implicit_NumBool_Conversions}),
-\item class types~(\rsec{Implicit_Class_Conversions}),
-\item integral types in the special case when the expression's value
+\item numeric types in the special case when the expression's value
       is a compile-time constant~(\rsec{Implicit_Compile_Time_Constant_Conversions}), and
+\item class types~(\rsec{Implicit_Class_Conversions}),
+\item class and generic types in certain cases (\rsec{Implicit_Type_Arg_Conversions})
 \item from an integral or class type to \chpl{bool}
       in certain cases~(\rsec{Implicit_Statement_Bool_Conversions}).
+\item generic target types (\rsec{Implicit_Generic_Type_Conversions})
 \end{itemize}
 
 In addition,
 an implicit conversion from a type to the same type is allowed for any type.
 Such conversion does not change the value of the expression.
-
-% TODO: If an implicit conversion is not allowed, it is an error.
 
 Implicit conversion is not transitive. That is, if an implicit conversion
 is allowed from type \chpl{T1} to \chpl{T2} and from \chpl{T2} to \chpl{T3},
@@ -178,12 +188,82 @@ explicitly-sized counterparts.
 \index{conversions!numeric!parameter}
 \index{conversions!implicit!parameter}
 
-The following implicit conversion of a parameter is allowed:
-\begin{itemize}
-\item A parameter of type \chpl{int(64)} can be implicitly converted
-to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, or any unsigned integral type if the
-value of the parameter is within the range of the target type.
-\end{itemize}
+A parameter of numeric type can be implicitly converted to any other
+numeric type if the value of the parameter can be represented exactly by
+the target type. This rule does not allow conversions from \chpl{real} to
+\chpl{imag}, or from \chpl{complex} to a non-complex type. It does allow
+conversions from \chpl{real} or \chpl{imag} to \chpl{complex}.
+
+\subsection{Implicit Class Conversions}
+\label{Implicit_Class_Conversions}
+\index{conversions!implicit!class}
+\index{conversions!implicit!nilable}
+\index{conversions!implicit!borrow}
+\index{classes!implicit conversion}
+
+An expression of class type can be implicitly converted to the borrow type;
+to a nilable type; or to a parent class type. The value \chpl{nil} can be
+implicitly converted to any nilable class type.
+
+First, class types can be converted to the corresponding \chpl{borrowed}
+type. For example, \chpl{owned C} can be implicitly converted to
+\chpl{borrowed C}, and \chpl{shared C?} can be implicitly converted to
+\chpl{borrowed C?}. This coercion is equivalent to calling the
+\chpl{.borrow()} method.  See~\rsec{Class_Lifetime_and_Borrows}. For
+example:
+
+\begin{chapelexample}{implicit-conversion-to-borrow.chpl}
+\begin{chapel}
+class C { }
+var c:owned C = new owned C();
+
+proc f(arg: borrowed C) { }
+f(c); // equivalent to f(c.borrow())
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+Second, an expression of non-nilable class type can be implicitly
+converted to the nilable class type. Continuing the above
+example:
+
+\begin{chapelexample}{implicit-conversion-to-nilable.chpl}
+\begin{chapelpre}
+class C { }
+var c:owned C = new owned C();
+\end{chapelpre}
+\begin{chapel}
+var b:borrowed C = c.borrow();
+
+proc g(arg: borrowed C?) { }
+g(b); // equivalent to g(b:borrowed C?)
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{chapelexample}
+
+Third, an implicit conversion from class type \chpl{D} to another class
+type \chpl{C} is allowed when \chpl{D} is a subclass of \chpl{C}.
+
+Any combination of these three conversions is allowed.
+
+\subsection{Implicit Type Argument Conversions}
+\label{Implicit_Type_Arg_Conversions}
+\index{conversions!implicit!type arguments}
+
+An implicit type argument conversion applies only when a type actual is
+passed to a formal with the \chpl{type} intent. This includes the \chpl{this}
+formal of a type method. In this case, a subset
+of Implicit Class Conversions (\rsec{Implicit_Class_Conversions}) applies,
+in addition to Implicit Conversions To Generic Types
+(\rsec{Implicit_Generic_Type_Conversions}).
+
+\begin{future}
+The details are forthcoming.
+% This corresponds to the subtype / \chpl{isSubtype()} relationship
+% discussed on GitHub Issue #13541.
+\end{future}
 
 \subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
@@ -197,14 +277,29 @@ the following implicit conversions to \chpl{bool} are supported:
 \item An expression of a class type is taken to be false if it is nil and is true otherwise.
 \end{itemize}
 
+\subsection{Implicit Conversions To Generic Types}
+\label{Implicit_Generic_Type_Conversions}
+\index{conversions!implicit!generic types}
+
+When the target type \chpl{T} is generic (\rsec{Generic_Types}),
+an implicit conversion is allowed when there is an instantiation
+of this type such that an implicit conversion is allowed between
+the source type and that instantiation by another rule in this section.
+
+That instantiation is taken to be the instantiated type of the variable,
+field, formal argument, or the return type whose declared type
+is the generic type \chpl{T}.
+
+The conversions in this subsection apply when the source is either an expression
+or a type expression.
+
 \section{Explicit Conversions}
 \label{Explicit_Conversions}
 \index{conversions!explicit}
 
 Explicit conversions require a cast in the code.  Casts are defined
 in~\rsec{Casts}.  Explicit conversions are supported between more
-types than implicit conversions, but explicit conversions are not
-supported between all types.
+types than implicit conversions, but not between all types.
 
 The explicit conversions are a superset of the implicit conversions.
 In addition to the following definitions,
@@ -216,10 +311,10 @@ Such conversion does not change the value of the expression.
 \index{conversions!numeric}
 \index{conversions!explicit!numeric}
 
-Explicit conversions are allowed from any numeric type, boolean, or
-string to any other numeric type, boolean, or string.  
+Explicit conversions are allowed from any numeric type or boolean to bytes or
+string, and vice-versa.
 
-% A valid \chpl{bool} value behaves like a single unsigned bit.  
+% A valid \chpl{bool} value behaves like a single unsigned bit.
 When a \chpl{bool} is converted to a \chpl{bool}, \chpl{int}
 or \chpl{uint} of equal or larger size, its value is zero-extended to fit the
 new representation.  When a \chpl{bool} is converted to a
@@ -234,7 +329,7 @@ When a \chpl{int}, \chpl{uint}, or \chpl{real} is converted to a \chpl{bool}, th
 
 % The source type determines whether a value is zero- or sign-extended.
 When an \chpl{int} is converted to a larger \chpl{int} or \chpl{uint}, its value is
-sign-extended to fit the new representation.  
+sign-extended to fit the new representation.
 When a \chpl{uint} is converted to a larger \chpl{int} or \chpl{uint}, its value
 is zero-extended.
 When an \chpl{int} or \chpl{uint} is converted to an \chpl{int} or \chpl{uint}
@@ -310,8 +405,8 @@ part of the resulting complex value.
 \index{conversions!enumeration}
 \index{conversions!explicit!enumeration}
 
-Explicit conversions are allowed from any enumerated type to any
-\chpl{string} and vice-versa, and include \chpl{param} conversions.
+Explicit conversions are allowed from any enumerated type to
+\chpl{bytes} or \chpl{string} and vice-versa, and include \chpl{param} conversions.
 For enumerated types that are either concrete or semi-concrete
 (\rsec{Enumerated_Types}), conversions are supported between the
 enum's constants and any numeric type or \chpl{bool},
@@ -332,8 +427,8 @@ When the target type is \chpl{bool}, the value is first converted to its
 underlying integer type.  If the result is zero, the value of the \chpl{bool}
 is \chpl{false}; otherwise, it is \chpl{true}.
 
-When the target type is \chpl{string}, the value becomes the name of the
-enumerator.  % in the execution character set.
+When the target type is \chpl{bytes} or \chpl{string}, the value becomes the
+name of the enumerator.
 
 When the source type is \chpl{bool}, enumerators corresponding to the values 0
 and 1 in the underlying integer type are selected, corresponding to input values
@@ -347,37 +442,85 @@ of \chpl{false} and \chpl{true}, respectively.
 % encouragement to always supply a default clause in your switch statements!
 
 When the source type is a real or integer type, the value is converted to the
-target type's underlying integer type.  
+target type's underlying integer type.
 
 The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type is not
 permitted.
 
-When the source type is string, the enumerator whose name matches value of the input
-string is selected.  If no such enumerator exists, a runtime error occurs.
+When the source type is \chpl{bytes} or \chpl{string}, the enumerator whose name
+matches value of the input is selected.  If no such enumerator exists, an
+\chpl{IllegalArgumentError} is thrown.
 
 \subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
 \index{conversions!class}
 \index{conversions!explicit!class}
+\index{classes!explicit conversion}
 
 An expression of static class type \chpl{C} can be explicitly
 converted to a class type \chpl{D} provided that \chpl{C} is derived
 from \chpl{D} or \chpl{D} is derived from \chpl{C}.
 
-When at run time the source expression refers to an instance of
-\chpl{D} or it subclass, its value is not changed.
-Otherwise, or when the source expression is \chpl{nil},
-the result of the conversion is \chpl{nil}.
+When at run time the source expression refers to an instance of \chpl{D}
+or it subclass, its value is not changed.  Otherwise, the cast fails and
+the result depends on whether or not the destination type is nilable. If
+the cast fails and the destination type is not nilable, the cast
+expression will throw a \chpl{classCastError}. If the cast fails and the
+destination type is nilable, as with \chpl{D?}, then the result will be
+\chpl{nil}.
 
-\subsection{Explicit Record Conversions}
-\label{Explicit_Record_Conversions}
-\index{conversions!records}
-\index{conversions!explicit!records}
+An expression of class type can also be converted to a different
+nilability with a cast. For conversions from a nilable class type to a
+non-nilable class type, the cast will throw a \chpl{NilClassError} if the
+value was actually \chpl{nil}.
 
-An expression of record type \chpl{C} can be explicitly converted to
-another record type \chpl{D} provided that \chpl{C} is derived
-from \chpl{D}.  There are no explicit record conversions that are not
-also implicit record conversions.
+In some cases a new variant of a class type needs to be computed that has
+different nilability or memory management strategy. Supposing that
+\chpl{T} represents a class type, then these casts may compute a new type:
+
+\begin{itemize}
+\item
+\chpl{T:owned} - new management is \chpl{owned}, nilability from \chpl{T}
+
+\item
+\chpl{T:shared} - new management \chpl{shared}, nilability from \chpl{T}
+
+\item
+\chpl{T:borrowed} - new management \chpl{borrowed}, nilability from \chpl{T}
+
+\item
+\chpl{T:unmanaged} - new management \chpl{unmanaged}, nilability from \chpl{T}
+
+\item
+\chpl{T:class} - non-nilable type with specific concrete or generic management from \chpl{T}
+
+\item
+\chpl{T:class?} - nilable type with specific concrete or generic management from \chpl{T}
+
+\item
+\chpl{T:owned class} - non-nilable type with \chpl{owned} management
+\item
+\chpl{T:owned class?} - nilable type with \chpl{owned} management
+
+\item
+\chpl{T:shared class} - non-nilable type with \chpl{shared} management
+\item
+\chpl{T:shared class?} - nilable type with \chpl{shared} management
+
+\item
+\chpl{T:borrowed class} - non-nilable type with \chpl{borrowed} management
+\item
+\chpl{T:borrowed class?} - nilable type with \chpl{borrowed} management
+
+\item
+\chpl{T:unmanaged class} - non-nilable type with \chpl{unmanaged} management
+\item
+\chpl{T:unmanaged class?} - nilable type with \chpl{unmanaged} management
+
+\end{itemize}
+
+The conversions in this subsection apply when the source is either an expression
+or a type expression.
 
 \subsection{Explicit Range Conversions}
 \label{Explicit_Range_Conversions}
@@ -394,6 +537,16 @@ to an unstridable range type, changing the stride to 1 in the process.
 
 An expression of stridable domain type can be explicitly converted
 to an unstridable domain type, changing all strides to 1 in the process.
+
+\subsection{Explicit String to Bytes Conversions}
+\label{Explicit_String_to_Bytes_Conversions}
+\index{conversions!string to bytes}
+\index{conversions!explicit!string to bytes}
+
+An expression of \chpl{string} type can be explicitly converted to a
+\chpl{bytes}. However, the reverse is not possible as a \chpl{bytes} can contain
+arbitrary bytes. Instead, \chpl{bytes.decode()} method should be used to produce
+a \chpl{string} from a \chpl{bytes}.
 
 \subsection{Explicit Type to String Conversions}
 \label{Explicit_Type_to_String_Conversions}

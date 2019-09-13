@@ -313,7 +313,8 @@ static bool checkOverrides(FnSymbol* fn) {
           //     (which we manage and want to keep clean)
           (parentMod && parentMod->modTag != MOD_USER)) &&
           // No override checking for type methods.
-         fn->thisTag != INTENT_TYPE;
+         fn->thisTag != INTENT_TYPE &&
+         !fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION) ;
 }
 
 static bool ignoreOverrides(FnSymbol* fn) {
@@ -371,10 +372,10 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
         !cfn->hasFlag(FLAG_OVERRIDE)) {
       const char* ptype = pfn->_this->type->symbol->name;
       const char* ctype = cfn->_this->type->symbol->name;
-      USR_WARN(cfn, "%s.%s overrides parent class method %s.%s but "
-                    "missing override keyword",
-                    ctype, cfn->name,
-                    ptype, cfn->name);
+      USR_FATAL_CONT(cfn, "%s.%s overrides parent class method %s.%s but "
+                          "missing override keyword",
+                          ctype, cfn->name,
+                          ptype, cfn->name);
       // Add the flag to avoid duplicate errors
       cfn->addFlag(FLAG_OVERRIDE);
     }
@@ -710,6 +711,8 @@ static void addVirtualMethodTableEntry(Type*     type,
                                        bool      exclusive) {
   Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
   bool            found = false;
+
+  if (type->symbol->hasFlag(FLAG_GENERIC)) return;
 
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();
@@ -1089,10 +1092,9 @@ static void checkMethodsOverride() {
                                     "to override",
                                      ct->symbol->name, fn->name);
               } else {
-                gdbShouldBreakHere();
-                USR_WARN(fn, "%s.%s override keyword required for method "
-                             "matching signature of superclass method",
-                             ct->symbol->name, fn->name);
+                USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
+                                   "matching signature of superclass method",
+                                   ct->symbol->name, fn->name);
               }
 
               erroredFunctions.insert(eFn);

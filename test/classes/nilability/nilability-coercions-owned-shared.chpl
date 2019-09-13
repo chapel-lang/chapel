@@ -39,7 +39,7 @@ module test {
       writeln(x.type:string, " ", x);
       var y:borrowed Child? = c;
       writeln(y.type:string, " ", y);
-      var z:borrowed? = c;
+      var z:borrowed class? = c;
       writeln(z.type:string, " ", z);
     }
     // owned Child -> borrowed Child
@@ -67,7 +67,7 @@ module test {
       writeln(x.type:string, " ", x);
       var y:borrowed Child? = cq;
       writeln(y.type:string, " ", y);
-      var z:borrowed? = cq;
+      var z:borrowed class? = cq;
       writeln(z.type:string, " ", z);
     }
     // method dispatch with owned Child?

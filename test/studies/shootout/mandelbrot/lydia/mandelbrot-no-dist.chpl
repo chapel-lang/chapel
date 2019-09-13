@@ -10,13 +10,13 @@ proc main()
   const byteRange = 0..#bytesRequired:int(64);
   const sizeRange = 0..#size:int(64);
 
-  var bytes : [sizeRange, byteRange] uint(8);
+  var byteArr : [sizeRange, byteRange] uint(8);
 
   const limit : real = 4.0;
   const maxIter : int = 50;
 
 
-  forall (byte,(y,bytex)) in zip(bytes,bytes.domain) do
+  forall (byte,(y,bytex)) in zip(byteArr,byteArr.domain) do
     {
       var byte_acc : uint(8) = 0;
 
@@ -54,9 +54,9 @@ proc main()
   writeln("P4");
   writeln(size," ",size);
 
-  for (x,y) in bytes.domain do
+  for (x,y) in byteArr.domain do
     {
-      putchar(bytes(x,y));
+      putchar(byteArr(x,y));
     }
 
 }

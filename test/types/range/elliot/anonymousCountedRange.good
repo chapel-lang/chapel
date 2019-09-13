@@ -94,4 +94,3 @@
 0 2 4 6 8 
 0 2 4 6 8 10 12 14 16 18 
 10 11 12 13 14 15 16 17 18 19 
-anonymousCountedRange.chpl:7: error: halt reached - Iteration over a bounded range may be incorrect due to overflow.

@@ -1,5 +1,5 @@
 use Sort;
-use Lists;
+use List;
 
 record TwoRepeated {
   var first:int;

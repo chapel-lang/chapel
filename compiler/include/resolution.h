@@ -109,12 +109,22 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
 
 bool canCoerceDecorators(ClassTypeDecorator actual,
                          ClassTypeDecorator formal,
+                         bool allowNonSubtypes,
                          bool implicitBang);
 bool canInstantiateDecorators(ClassTypeDecorator actual,
                               ClassTypeDecorator formal);
 bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
                                       ClassTypeDecorator formal,
+                                      bool allowNonSubtypes,
                                       bool implicitBang);
+
+bool canCoerceAsSubtype(Type*     actualType,
+                        Symbol*   actualSym,
+                        Type*     formalType,
+                        ArgSymbol* formalSym,
+                        FnSymbol* fn,
+                        bool*     promotes = NULL,
+                        bool*     paramNarrows = NULL);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
@@ -144,6 +154,7 @@ FnSymbol* getTheIteratorFn(Type* icType);
 // task intents
 extern Symbol* markPruned;
 bool isReduceOp(Type* type);
+void convertFieldsOfRecordThis(FnSymbol* fn);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
@@ -223,6 +234,8 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
+
+// This one does not call USR_STOP
 void printResolutionErrorUnresolved(CallInfo&                  info,
                                     Vec<FnSymbol*>&            visibleFns);
 
@@ -234,13 +247,16 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 
 void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 
+void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
+
 void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-bool isSubTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
@@ -296,13 +312,20 @@ void trimVisibleCandidates(CallInfo& call,
                            Vec<FnSymbol*>& mostApplicable,
                            Vec<FnSymbol*>& visibleFns);
 
-bool isNumericParamDefaultType(Type* type);
-
 void resolveGenericActuals(CallExpr* call);
 
 Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
                                   ClassTypeDecorator useDec,
                                   AggregateType* manager,
                                   Expr* ctx);
+
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
+
+// These enable resolution for functions that don't really match
+// according to the language definition in order to get more errors
+// reported at once. E.g. C? can pass to C.
+void startGenerousResolutionForErrors();
+bool inGenerousResolutionForErrors();
+void stopGenerousResolutionForErrors();
 
 #endif

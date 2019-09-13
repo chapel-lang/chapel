@@ -3,7 +3,7 @@ This script generates the various combinations of lhs and rhs class types
 for `lhs = rhs` in various contexts of initialization/assignment, fields/
 vars, etc.
 
-It is always an error upon --no-legacy-nilable-classes when
+It is always an error upon --no-legacy-classes when
 `lhs` is non-nilable while `rhs` is nilable or `nil`.
 
 It is always OK when `lhs` is nilable and `rhs` is `nil`.

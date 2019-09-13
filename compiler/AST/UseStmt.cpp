@@ -176,7 +176,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = scope->lookup(src)) {
+    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -506,6 +506,22 @@ void UseStmt::trackMethods() {
       }
     }
   }
+}
+
+ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (strcmp(name, se->symbol()->name) == 0) {
+        return modSym;
+      }
+    }
+  } else {
+    // It seems as though we'd need to handle matches against more general
+    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
+    // an example that requires this.  I suppose it could be because we
+    // resolve such cases element-by-element rather than wholesale...
+  }
+  return NULL;
 }
 
 /************************************* | **************************************

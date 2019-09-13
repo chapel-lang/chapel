@@ -13,13 +13,6 @@ class AssocC {
   var x: [assocDom] t;
 }
 
-class OpaqueC {
-  type t;
-
-  var opaqueDom: domain(opaque);
-  var x: [opaqueDom] t;
-}
-
 class SparseC {
   type t;
   
@@ -52,7 +45,6 @@ proc foo(C) {
 
   var myArithC = new unmanaged ArithC(assocArr);
   var myAssocC = new unmanaged AssocC(assocArr);
-  var myOpaqueC = new unmanaged OpaqueC(assocArr);
   var mySparseC = new unmanaged SparseC(assocArr);
   var myEnumC = new unmanaged EnumC(assocArr);
 
@@ -65,9 +57,6 @@ proc foo(C) {
   myAssocC.assocDom += "two";
   [j in assocDom] myAssocC.x("two")(j) = 2 + 2/10.0;
 
-  const newInd = myOpaqueC.opaqueDom.create();
-  [j in assocDom] myOpaqueC.x(newInd)(j) = 2 + 2/10.0;
-
   mySparseC.sparseDom += 2;
   [j in assocDom] mySparseC.x(2)(j) = 2 + 2/10.0;
 
@@ -77,58 +66,11 @@ proc foo(C) {
 
   foo(myArithC);
   foo(myAssocC);
-  foo(myOpaqueC);
   foo(mySparseC);
   foo(myEnumC);
 
   delete myArithC;
   delete myAssocC;
-  delete myOpaqueC;
-  delete mySparseC;
-  delete myEnumC;
-}
-
-
-{
-  // declare associative class instances
-
-  var opaqueDom: domain(opaque);
-  type opaqueArr = [opaqueDom] real;
-
-  var myArithC = new unmanaged ArithC(opaqueArr);
-  var myAssocC = new unmanaged AssocC(opaqueArr);
-  var myOpaqueC = new unmanaged OpaqueC(opaqueArr);
-  var mySparseC = new unmanaged SparseC(opaqueArr);
-  var myEnumC = new unmanaged EnumC(opaqueArr);
-
-  opaqueDom.create();
-
-  // initialize class instances
-
-  [i in myArithC.x.domain] [j in opaqueDom] myArithC.x(i)(j) = i + 2/10.0;
-  
-  myAssocC.assocDom += "two";
-  [j in opaqueDom] myAssocC.x("two")(j) = 2 + 2/10.0;
-  
-  const newInd = myOpaqueC.opaqueDom.create();
-  [j in opaqueDom] myOpaqueC.x(newInd)(j) = 2 + 2/10.0;
-  
-  mySparseC.sparseDom += 2;
-  [j in opaqueDom] mySparseC.x(2)(j) = 2 + 2/10.0;
-  
-  [i in myEnumC.x.domain] [j in opaqueDom] myEnumC.x(i)(j) = i:int + 2:real/10.0;
-  
-  // check class instances
-  
-  foo(myArithC);
-  foo(myAssocC);
-  foo(myOpaqueC);
-  foo(mySparseC);
-  foo(myEnumC);
-
-  delete myArithC;
-  delete myAssocC;
-  delete myOpaqueC;
   delete mySparseC;
   delete myEnumC;
 }
@@ -142,7 +84,6 @@ proc foo(C) {
 
   var myArithC = new unmanaged ArithC(sparseArr);
   var myAssocC = new unmanaged AssocC(sparseArr);
-  var myOpaqueC = new unmanaged OpaqueC(sparseArr);
   var mySparseC = new unmanaged SparseC(sparseArr);
   var myEnumC = new unmanaged EnumC(sparseArr);
 
@@ -155,9 +96,6 @@ proc foo(C) {
   myAssocC.assocDom += "two";
   [j in sparseDom] myAssocC.x("two")(j) = 2 + j/10.0;
   
-  const newInd = myOpaqueC.opaqueDom.create();
-  [j in sparseDom] myOpaqueC.x(newInd)(j) = 2 + j/10.0;
-  
   mySparseC.sparseDom += 2;
   [j in sparseDom] mySparseC.x(2)(j) = 2 + j/10.0;
   
@@ -167,13 +105,11 @@ proc foo(C) {
   
   foo(myArithC);
   foo(myAssocC);
-  foo(myOpaqueC);
   foo(mySparseC);
   foo(myEnumC);
 
   delete myArithC;
   delete myAssocC;
-  delete myOpaqueC;
   delete mySparseC;
   delete myEnumC;
 }
@@ -188,7 +124,6 @@ proc foo(C) {
 
   var myArithC = new unmanaged ArithC(enumArr);
   var myAssocC = new unmanaged AssocC(enumArr);
-  var myOpaqueC = new unmanaged OpaqueC(enumArr);
   var mySparseC = new unmanaged SparseC(enumArr);
   var myEnumC = new unmanaged EnumC(enumArr);
 
@@ -199,9 +134,6 @@ proc foo(C) {
   myAssocC.assocDom += "two";
   [j in enumDom] myAssocC.x("two")(j) = 2 + j:real/10.0;
   
-  const newInd = myOpaqueC.opaqueDom.create();
-  [j in enumDom] myOpaqueC.x(newInd)(j) = 2 + j:real/10.0;
-  
   mySparseC.sparseDom += 2;
   [j in enumDom] mySparseC.x(2)(j) = 2 + j:real/10.0;
   
@@ -211,13 +143,11 @@ proc foo(C) {
   
   foo(myArithC);
   foo(myAssocC);
-  foo(myOpaqueC);
   foo(mySparseC);
   foo(myEnumC);
 
   delete myArithC;
   delete myAssocC;
-  delete myOpaqueC;
   delete mySparseC;
   delete myEnumC;
 }

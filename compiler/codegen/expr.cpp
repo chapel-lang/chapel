@@ -4461,7 +4461,7 @@ DEFINE_PRIM(PRIM_SETCID) {
     //
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)    == true &&
         call->get(1)->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
-      // Don't set cid for an extern class.
+      // Don't set cid for a no-object class.
       // This should probably be an error in the future.
 
     } else {

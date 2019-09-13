@@ -1,4 +1,0 @@
-default-value-dyn-owned.chpl:14: error: unresolved call 'something_default_bar(owned C)'
-default-value-dyn-owned.chpl:14: note: this candidate did not match: something_default_bar(foo: owned B)
-default-value-dyn-owned.chpl:14: note: because call actual argument #1 with type owned C
-default-value-dyn-owned.chpl:14: note: is passed to formal 'const ref foo: owned B'
