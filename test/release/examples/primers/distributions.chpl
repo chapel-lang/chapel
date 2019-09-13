@@ -313,7 +313,7 @@ for locId1 in 0..#nl1 do on MyLocales[locId1, 0] {
   writeln(Helper);
   writeln();
 
-  delete d1;
-  delete d2;
-
 }
+
+delete d1;
+delete d2;
