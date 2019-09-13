@@ -11,9 +11,9 @@ setupLocales(s1, s2);
 
 /////////// distribution
 
-var vdf = new unmanaged BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1,
+var vdf = new BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1,
                               name="D1");
-var sdf = new unmanaged BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2,
+var sdf = new BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2,
                               name="D2");
 
 hd("new DimensionalDist2D()");
@@ -148,7 +148,3 @@ tl();
 //privTest(dmarr, (1,0), (3,1), 0);
 //privTest(dmarr, (1,1), (3,3), 0);
 //tl();
-
-delete vdf;
-delete sdf;
-// 'ddf' is wrapped into a 'dmap' and so is deleted automatically.

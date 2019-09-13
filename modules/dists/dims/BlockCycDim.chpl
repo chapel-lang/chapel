@@ -48,7 +48,7 @@ that would be produced by a 1D :class:`~BlockCycDist.BlockCyclic` distribution.
 
 **Initializer Arguments**
 
-The ``BlockCyclicDim`` class initializer is defined as follows:
+The ``BlockCyclicDim`` record initializer is defined as follows:
 
   .. code-block:: chapel
 
@@ -73,7 +73,7 @@ The arguments are as follows:
       is used internally by the implementation and
       should not be specified by the user code
 */
-class BlockCyclicDim {
+record BlockCyclicDim {
   // distribution parameters
   const numLocales: int;
   const lowIdx:     int;  // we want the most general type here
@@ -88,7 +88,7 @@ class BlockCyclicDim {
   const cycleSizePos: bcdPosInt = (blockSize:bcdPosInt) * (numLocales:bcdPosInt);
 }
 
-class BlockCyclic1dom {
+record BlockCyclic1dom {
   type idxType;
   type stoIndexT;
   param stridable: bool;
@@ -114,7 +114,7 @@ class BlockCyclic1dom {
   var dsiSetIndicesUnimplementedCase: bool;
 }
 
-class BlockCyclic1locdom {
+record BlockCyclic1locdom {
   type idxType;
   type stoIndexT;
   const locId: locIdT;
@@ -123,30 +123,27 @@ class BlockCyclic1locdom {
 
 /////////// privatization - start
 
-proc BlockCyclicDim.dsiSupportsPrivatization1d() param return true;
-
 proc BlockCyclicDim.dsiGetPrivatizeData1d() {
   return (lowIdx, blockSize, numLocales, name);
 }
 
-proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
-  return new unmanaged BlockCyclicDim(lowIdx = privatizeData(1),
-                   blockSize = privatizeData(2),
-                   numLocales = privatizeData(3),
-                   name = privatizeData(4));
+proc type BlockCyclicDim.dsiPrivatize1d(privatizeData) {
+  return new BlockCyclicDim(lowIdx = privatizeData(1),
+                            blockSize = privatizeData(2),
+                            numLocales = privatizeData(3),
+                            name = privatizeData(4));
 }
 
 proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
-
-proc BlockCyclic1dom.dsiSupportsPrivatization1d() param return true;
 
 proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
   return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
 }
 
-proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
+proc type BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new unmanaged BlockCyclic1dom(idxType   = this.idxType,
+  return new BlockCyclic1dom(
+                  idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
                   name            = privatizeData(5),
@@ -164,12 +161,7 @@ proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
   return (wholeR, wholeRstrideAbs, storagePerCycle);
 }
 
-proc BlockCyclic1dom.dsiReprivatize1d(other, reprivatizeData) {
-  if other.idxType   != this.idxType ||
-     other.stoIndexT != this.stoIndexT ||
-     other.stridable != this.stridable then
-    compilerError("inconsistent types in privatization");
-
+proc BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR          = reprivatizeData(1);
   this.wholeRstrideAbs = reprivatizeData(2);
   this.storagePerCycle = reprivatizeData(3);
@@ -223,7 +215,7 @@ inline proc _checkFitsWithin(src: integral, type destT)
 }
 
 proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
-                                  type stoIndexT)
+                                           type stoIndexT)
 {
   checkInvariants();
   const lowIdxDom = this.lowIdx;
@@ -259,7 +251,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 
   _checkFitsWithin(adjLowIdx, idxType);
 
-  const result = new unmanaged BlockCyclic1dom(idxType = idxType,
+  const result = new BlockCyclic1dom(idxType = idxType,
                   stoIndexT = stoIndexT,
                   stridable = stridable,
                   adjLowIdx = adjLowIdx: idxType,
@@ -274,7 +266,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 proc BlockCyclic1dom.dsiIsReplicated1d() param return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new unmanaged BlockCyclic1locdom(idxType = this.idxType,
+  const result = new BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;
