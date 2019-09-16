@@ -1,5 +1,0 @@
-AST dump for InPlacePartitioning after pass scopeResolve.
-Module use list: ChapelStandard 
-
-{(329760 'used modules list'(328362 'use' ChapelStandard[19734]))
-}

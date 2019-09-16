@@ -1,6 +1,0 @@
-AST dump for InPlacePartitioning after pass expandExternArrayCalls.
-Module use list: 
-
-{
-  (328362 'use' ChapelStandard)
-}

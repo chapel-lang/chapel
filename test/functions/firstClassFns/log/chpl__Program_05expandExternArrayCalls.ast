@@ -1,6 +1,0 @@
-AST dump for chpl__Program after pass expandExternArrayCalls.
-Module use list: 
-
-{
-  type object[253]
-}

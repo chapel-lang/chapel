@@ -1,9 +1,0 @@
-AST dump for LocalesArray after pass cleanup.
-Module use list: 
-
-{
-  (111747 'use' ChapelStandard)
-  (111752 call chpl_init_rootLocale)
-  const Locales[111767] "const" "locale private" "ref var"(111766 call(111762 call .(111760 call postfix!(111758 call _cast(111757 'to borrowed class from unknown'(111756 'to nilable class from type' RootLocale)) rootLocale)) c"getDefaultLocaleArray"))
-  const LocaleSpace[111774] "const"(111771 call . Locales c"_dom")
-}

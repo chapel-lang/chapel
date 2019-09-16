@@ -1,9 +1,0 @@
-AST dump for NetworkAtomicTypes after pass createTaskFunctions.
-Module use list: 
-
-{
-  function chpl__init_NetworkAtomicTypes[390165]() : void[4] "insert line file info" "module init"
-  {
-    (458190 return _void[47])
-  }
-}
