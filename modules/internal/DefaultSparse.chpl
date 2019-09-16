@@ -354,7 +354,13 @@ module DefaultSparse {
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+      if this.dsiNumIndices == 0 {
+        this.dsiBulkAdd(rhs.indices[nnzDom.low..#rhs.dsiNumIndices],
+                        dataSorted=true, isUnique=true);
+      }
+      else {
+        chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+      }
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
