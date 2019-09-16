@@ -33,7 +33,6 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "view.h"
 #include "virtualDispatch.h"
 
 /************************************* | **************************************
