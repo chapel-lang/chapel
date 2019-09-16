@@ -152,7 +152,16 @@ class CSDom: BaseSparseDomImpl {
   override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+      this._nnz = rhs._nnz;
+      _bulkGrow();
+
+      this.startIdx = rhs.startIdx;
+      this.idx = rhs.idx;
+    }
+    else {
+      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    }
   }
 
   proc dsiBuildArray(type eltType)

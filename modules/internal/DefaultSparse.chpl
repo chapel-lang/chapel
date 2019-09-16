@@ -354,9 +354,11 @@ module DefaultSparse {
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      if this.dsiNumIndices == 0 {
-        this.dsiBulkAdd(rhs.indices[nnzDom.low..#rhs.dsiNumIndices],
-                        dataSorted=true, isUnique=true);
+      if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+        this._nnz = rhs._nnz;
+        _bulkGrow();
+
+        this.indices = rhs.indices;
       }
       else {
         chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
