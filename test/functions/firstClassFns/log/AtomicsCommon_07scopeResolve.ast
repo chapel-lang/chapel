@@ -1,0 +1,46 @@
+AST dump for AtomicsCommon after pass scopeResolve.
+Module use list: ChapelStandard 
+
+{
+  function atomic_refcnt[54760].inc[54621](arg _mt[54764]:_MT[227], arg this[54762]:atomic_refcnt[54760], arg cnt[54618] =
+  1) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    if(54645 call _cond_test CHPL_CACHE_REMOTE[342])
+    {
+      (54635 call(54625 call .(339673 call . this[54762] c"_cnt") c"add") cnt[54618](order = relaxed[180097]))
+    }
+    {
+      (54643 call(54638 call .(339680 call . this[54762] c"_cnt") c"add") cnt[54618])
+    }
+  }
+  function atomic_refcnt[54760].dec[54656](arg _mt[54768]:_MT[227], arg this[54766]:atomic_refcnt[54760]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown got[54666](54665 call int(64)[13] 64)
+    if(54732 call _cond_test CHPL_CACHE_REMOTE[342])
+    {
+      (54684 call = got[54666](54683 call(54673 call .(339688 call . this[54766] c"_cnt") c"fetchSub") 1(order = release[180093])))
+      if(54704 call _cond_test(54690 call == got[54666] 1))
+      {
+        (54698 call atomicFence acquire[180095])
+        (54702 return 0)
+      }
+      (54712 return(54710 call - got[54666] 1))
+    }
+    {
+      (54722 call = got[54666](54721 call(54716 call .(339698 call . this[54766] c"_cnt") c"fetchSub") 1))
+      (54730 return(54728 call - got[54666] 1))
+    }
+  }
+  { scopeless type
+    (54661 call int(64)[13] 64)
+  }
+  function atomic_refcnt[54760].read[54741](arg _mt[54772]:_MT[227], arg this[54770]:atomic_refcnt[54760]) : _unknown[43] "inline" "method" "primary method"
+  {
+    (54753 return(54752 call(54748 call .(339704 call . this[54770] c"_cnt") c"read")))
+  }
+  { scopeless type
+    (54746 call int(64)[13] 64)
+  }
+  type atomic_refcnt[54760] unknown _cnt[54612](54611 call chpl__processorAtomicType int(64)[13])
+  (329328 'used modules list'(54604 'use' ChapelStandard[19734]))
+}

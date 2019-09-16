@@ -1,0 +1,41 @@
+AST dump for printFCF after pass createTaskFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_printFCF[390309]() : void[4] "insert line file info" "module init"
+  {
+    (647937 'move' call_tmp[647934](365491 'capture fn for chpl' justCheck))
+    (647942 'move' call_tmp[647939](197614 call _cast string[24] call_tmp[647934]))
+    (197617 call writeln call_tmp[647939])
+    (477263 return _void[47])
+  }
+  function justCheck[197601](arg i[197598]:int(64)[13]) : _unknown[43] "no return value for void"
+  {
+    (197606 call writeln i[197598])
+    (477261 return _void[47])
+  }
+  unknown call_tmp[647934] "expr temp" "maybe param" "maybe type" "temp"
+  unknown call_tmp[647939] "expr temp" "maybe param" "maybe type" "temp"
+  function main[692896]() : void[4]
+  {
+    (692899 return _void[47])
+  }
+  function chpl_gen_main[692902](arg _arg[692901]:chpl_main_argument[165963]) : int(64)[13] "compiler generated" "export" "generated main" "local args"
+  {
+    val ret[692937]:int(64)[13] "RVV" "temp"
+    val _main_ret[692906]:int(64)[13] "temp"
+    unknown _endCount[692907] "temp"
+    (692913 'move' _endCount[692907](692910 call _endCountAlloc 0))
+    (692915 'set dynamic end count' _endCount[692907])
+    (692917 call chpl_rt_preUserCodeHook)
+    (692919 call chpl__init_printFCF[390309])
+    (692921 call main)
+    (692923 'move' _main_ret[692906] 0)
+    (692926 call chpl_rt_postUserCodeHook)
+    (692928 call _waitEndCount _endCount[692907])
+    (692931 call chpl_deinitModules)
+    (692942 'move' ret[692937](692941 'deref' _main_ret[692906]))
+    (692939 return ret[692937])
+  }
+  (329501 'used modules list'(328302 'use' ChapelStandard[19734]))
+}

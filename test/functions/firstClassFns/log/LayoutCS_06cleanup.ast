@@ -1,0 +1,1654 @@
+AST dump for LayoutCS after pass cleanup.
+Module use list: 
+
+{
+  (328392 'use' ChapelStandard)
+  (318695 'use' RangeChunk 'only' )
+  unknown debugCS[318698] "config" "no doc" "param" 0
+  unknown LayoutCSDefaultToSorted[318702] "config" "param" 1
+  function _ColumnComparator[318731].key[318712](arg _mt[318735]:_MT[227], arg this[318733]:_ColumnComparator[318731], arg idx[318709] :
+  _tuple) : _unknown[43] "method" "primary method"
+  {
+    (318725 return(318723 call _build_tuple(318717 call idx 2)(318721 call idx 1)))
+  }
+  type _ColumnComparator[318731]
+  const _columnComparator[318739] "const" "no doc" _ColumnComparator
+  function isCSType[318746](arg t[318744]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    (318756 return(329244 'is_subtype' CS(318752 call _to_borrowed t)))
+  }
+  function CS[318892](?).dsiNewSparseDom[318780](arg _mt[318896]:_MT[227], arg this[318894]:CS[318892](?), param arg rank[318777] :
+  int[13], arg idxType[318782]:_any[170](?), arg dom[318785] :
+  _domain) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (318816 return(318815 'new'(318814 'to unmanaged class from unknown'(318813 call CSDom rank idxType(318795 call . this c"compressRows")(318801 call . this c"sortedIndices")(318805 call . dom c"stridable")(318811 call _to_unmanaged this) dom))))
+  }
+  function CS[318892](?).dsiClone[318823](arg _mt[318900]:_MT[227], arg this[318898]:CS[318892](?)) : _unknown[43] "method" "primary method"
+  {
+    (318840 return(318839 'new'(318838 'to unmanaged class from unknown'(318837 call CS(compressRows =(318827 call . this c"compressRows"))(sortedIndices =(318833 call . this c"sortedIndices"))))))
+  }
+  function CS[318892](?).dsiEqualDMaps[318861](arg _mt[318904]:_MT[227], arg this[318902]:CS[318892](?), arg that[318858] :
+  (318857 call CS(318849 call . this c"compressRows")(318854 call . this c"sortedIndices"))) param : _unknown[43] "method" "primary method"
+  {
+    (318864 return 1)
+  }
+  function CS[318892](?).dsiEqualDMaps[318873](arg _mt[318908]:_MT[227], arg this[318906]:CS[318892](?), arg that[318871]:_any[170](?)) param : _unknown[43] "method" "primary method"
+  {
+    (318876 return 0)
+  }
+  function CS[318892](?).dsiIsLayout[318883](arg _mt[318912]:_MT[227], arg this[318910]:CS[318892](?)) param : _unknown[43] "method" "primary method"
+  {
+    (318886 return 1)
+  }
+  type CS[318892](?) unknown compressRows[318766] "param" 1 bool[10] unknown sortedIndices[318771] "param" LayoutCSDefaultToSorted bool[10] BaseDist
+  function CSDom[323355](?).init[318991](arg _mt[323359]:_MT[227], arg this[323357]:CSDom[323355](?), param arg rank[318989]:_any[170](?), arg idxType[318993]:_any[170](?), param arg compressRows[318995]:_any[170](?), param arg sortedIndices[318997]:_any[170](?), param arg stridable[318999]:_any[170](?), arg dist[319007] :
+  (319006 'to unmanaged class from unknown'(319005 call CS compressRows sortedIndices)), arg parentDom[319011] :
+  _domain) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(319047 call _cond_test(319025 call ||(319016 call != rank 2)(319023 call !=(319019 call . parentDom c"rank") 2)))
+    {
+      (319045 call compilerError "Only 2D sparse domains are supported by the CS distribution")
+    }
+    if(319098 call _cond_test(319058 call !=(319054 call . parentDom c"idxType") idxType))
+    {
+      (319096 call compilerError(319093 call +(319084 call +(319081 call + "idxType mismatch in CSDom.init(): "(319079 call _cast string[24] idxType)) " != ")(319091 call _cast string[24](319087 call . parentDom c"idxType"))))
+    }
+    (319111 call(319104 call . super c"init") rank idxType parentDom)
+    (319118 call =(319114 call . this c"compressRows") compressRows)
+    (319126 call =(319122 call . this c"sortedIndices") sortedIndices)
+    (319134 call =(319130 call . this c"stridable") stridable)
+    (319142 call =(319138 call . this c"dist") dist)
+    (319153 call = rowRange(319152 call(319147 call . parentDom c"dim") 1))
+    (319164 call = colRange(319163 call(319158 call . parentDom c"dim") 2))
+    (319204 call = startIdxDom(319201 IfExpr  compressRows then
+    { scopeless
+      (319183 call chpl__buildDomainExpr(319180 call chpl_build_bounded_range(319170 call . rowRange c"low")(319178 call +(319174 call . rowRange c"high") 1)))
+    } else
+    { scopeless
+      (319199 call chpl__buildDomainExpr(319196 call chpl_build_bounded_range(319186 call . colRange c"low")(319194 call +(319190 call . colRange c"high") 1)))
+    } ))
+    (319212 call(319208 call . this c"complete"))
+    (319222 call = nnzDom(319220 call chpl__buildDomainExpr(319217 call chpl_build_bounded_range 1 _nnz)))
+    (319227 call dsiClear)
+  }
+  function CSDom[323355](?).getNNZ[319233](arg _mt[323363]:_MT[227], arg this[323361]:CSDom[323355](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (319237 return _nnz)
+  }
+  { scopeless type
+    int[13]
+  }
+  function CSDom[323355](?).dsiMyDist[319245](arg _mt[323367]:_MT[227], arg this[323365]:CSDom[323355](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (319248 return dist)
+  }
+  function CSDom[323355](?).dsiAssignDomain[319259](arg _mt[323371]:_MT[227], arg this[323369]:CSDom[323355](?), arg rhs[319256] :
+  _domain, arg lhsPrivate[319262] :
+  bool[10]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (319269 call chpl_assignDomainWithIndsIterSafeForRemoving this rhs)
+  }
+  function CSDom[323355](?).dsiBuildArray[319278](arg _mt[323375]:_MT[227], arg this[323373]:CSDom[323355](?), arg eltType[319276]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (319296 return(319295 'new'(319294 'to unmanaged class from unknown'(319293 call CSArr(eltType = eltType)(rank = rank)(idxType = idxType)(dom =(319291 call _to_unmanaged this))))))
+  }
+  function CSDom[323355](?).dsiIndsIterSafeForRemoving[319303](arg _mt[323379]:_MT[227], arg this[323377]:CSDom[323355](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown cursor[319320](319317 IfExpr (319306 call . this c"compressRows") then
+    { scopeless
+      (319310 call . rowRange c"high")
+    } else
+    { scopeless
+      (319314 call . colRange c"high")
+    } )
+    {
+      unknown _indexOfInterest[319409] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[319410] "expr temp" "temp"
+      (319419 'move' _iterator[319410](319417 call _getIterator(319430 call chpl_direct_range_iter 1 _nnz(319426 call - 1))))
+      Defer
+      {
+        {
+          (319446 call _freeIterator _iterator[319410])
+        }
+      }
+      { scopeless type
+        (319435 'move' _indexOfInterest[319409](319432 call iteratorIndex _iterator[319410]))
+      }
+      ForLoop
+      {
+        unknown i[319439] "index var" "insert auto destroy"
+        (319441 'move' i[319439] _indexOfInterest[319409])
+        {
+          {
+            unknown tmp[319347] "temp"
+            (319375 'move' tmp[319347](319368 call _cond_test(319370 call >(319372 call startIdx cursor) i)))
+            WhileDo
+            {
+              {
+                (319343 call -= cursor 1)
+              }
+              label _continueLabel[319350]
+              (319363 'move' tmp[319347](319356 call _cond_test(319358 call >(319360 call startIdx cursor) i)))
+              tmp[319347]
+            }
+            label _breakLabel[319351]
+          }
+          if(319405 call _cond_test(319380 call . this c"compressRows"))
+          {
+            (319391 yield(319389 call _build_tuple cursor(319387 call idx i)))
+          }
+          {
+            (319402 yield(319400 call _build_tuple(319397 call idx i) cursor))
+          }
+        }
+        label _continueLabel[319414]
+        _indexOfInterest[319409]
+        _iterator[319410]
+      }
+      label _breakLabel[319415]
+    }
+  }
+  function CSDom[323355](?).these[319457](arg _mt[323383]:_MT[227], arg this[323381]:CSDom[323355](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown cursor[319474](319471 IfExpr (319460 call . this c"compressRows") then
+    { scopeless
+      (319464 call . rowRange c"low")
+    } else
+    { scopeless
+      (319468 call . colRange c"low")
+    } )
+    {
+      unknown _indexOfInterest[319567] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[319568] "expr temp" "temp"
+      (319577 'move' _iterator[319568](319575 call _getIterator(319582 call chpl_direct_range_iter 1 _nnz 1)))
+      Defer
+      {
+        {
+          (319598 call _freeIterator _iterator[319568])
+        }
+      }
+      { scopeless type
+        (319587 'move' _indexOfInterest[319567](319584 call iteratorIndex _iterator[319568]))
+      }
+      ForLoop
+      {
+        unknown i[319591] "index var" "insert auto destroy"
+        (319593 'move' i[319591] _indexOfInterest[319567])
+        {
+          {
+            unknown tmp[319499] "temp"
+            (319533 'move' tmp[319499](319523 call _cond_test(319525 call <=(319527 call startIdx(319529 call + cursor 1)) i)))
+            WhileDo
+            {
+              {
+                (319495 call += cursor 1)
+              }
+              label _continueLabel[319502]
+              (319518 'move' tmp[319499](319508 call _cond_test(319510 call <=(319512 call startIdx(319514 call + cursor 1)) i)))
+              tmp[319499]
+            }
+            label _breakLabel[319503]
+          }
+          if(319561 call _cond_test(319538 call . this c"compressRows"))
+          {
+            (319549 yield(319547 call _build_tuple cursor(319545 call idx i)))
+          }
+          {
+            (319559 yield(319557 call _build_tuple(319554 call idx i) cursor))
+          }
+        }
+        label _continueLabel[319572]
+        _indexOfInterest[319567]
+        _iterator[319568]
+      }
+      label _breakLabel[319573]
+    }
+  }
+  function CSDom[323355](?).these[319613](arg _mt[323387]:_MT[227], arg this[323385]:CSDom[323355](?), param arg tag[319610] :
+  iterKind) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    const numElems[319623] "const" _nnz
+    const numChunks[319631] "const"(319630 call _computeNumChunks numElems)
+    if(319659 call _cond_test debugCS)
+    {
+      (319657 call writeln "CSDom leader: " numChunks " chunks, " numElems " elems")
+    }
+    if(319870 call _cond_test(319666 call == numChunks 1))
+    {
+      (319674 yield(319672 call _build_tuple this 1 numElems))
+    }
+    {
+      unknown tmpIter[319699] "expr temp" "maybe ref" "no copy" "temp"
+      (319702 'move' tmpIter[319699](319684 call chunks(319680 call chpl_build_bounded_range 1 numElems) numChunks))
+      unknown isRngDomArr[319851] "maybe param" "temp"
+      (319866 'move' isRngDomArr[319851](319864 call ||(319853 call isBoundedRange tmpIter[319699])(319862 call ||(319856 call isDomain tmpIter[319699])(319859 call isArray tmpIter[319699]))))
+      if isRngDomArr[319851]
+      {
+        const _coforallCount[319718] "const" "end count" "temp"
+        (319787 'move' _coforallCount[319718](319784 call _endCountAlloc 1))
+        unknown numTasks[319719] "temp"
+        (319771 'move' numTasks[319719](319767 call . tmpIter[319699] c"size"))
+        (319762 call _upEndCount _coforallCount[319718] 1 numTasks[319719])
+        (319759 call chpl_resetTaskSpawn numTasks[319719])
+        unknown _indexOfInterest[319726] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[319727] "expr temp" "temp"
+        (319736 'move' _iterator[319727](319734 call _getIterator tmpIter[319699]))
+        Defer
+        {
+          {
+            (319752 call _freeIterator _iterator[319727])
+          }
+        }
+        { scopeless type
+          (319741 'move' _indexOfInterest[319726](319738 call iteratorIndex _iterator[319727]))
+        }
+        ForLoop
+        {
+          unknown chunk[319745] "coforall index var" "index var" "insert auto destroy"
+          (319747 'move' chunk[319745] _indexOfInterest[319726])
+          {
+            (319705 yield(319707 call _build_tuple this(319710 call . chunk c"first")(319714 call . chunk c"last")))
+            (319721 call _downEndCount _coforallCount[319718] nil[38])
+            (319720 'coforall loop')
+          }
+          label _continueLabel[319731]
+          _indexOfInterest[319726]
+          _iterator[319727]
+        }
+        label _breakLabel[319732]
+        Defer
+        {
+          {
+            (319774 call _endCountFree _coforallCount[319718])
+          }
+        }
+        (319779 call _waitEndCount _coforallCount[319718] 1 numTasks[319719])
+      }
+      {
+        const _coforallCount[319791] "const" "end count" "temp"
+        (319848 'move' _coforallCount[319791](319845 call _endCountAlloc 1))
+        unknown _indexOfInterest[319799] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[319800] "expr temp" "temp"
+        (319809 'move' _iterator[319800](319807 call _getIterator tmpIter[319699]))
+        Defer
+        {
+          {
+            (319825 call _freeIterator _iterator[319800])
+          }
+        }
+        { scopeless type
+          (319814 'move' _indexOfInterest[319799](319811 call iteratorIndex _iterator[319800]))
+        }
+        ForLoop
+        {
+          unknown chunk[319818] "coforall index var" "index var" "insert auto destroy"
+          (319820 'move' chunk[319818] _indexOfInterest[319799])
+          (319832 call _upEndCount _coforallCount[319791] 1)
+          {
+            (319697 yield(319695 call _build_tuple this(319687 call . chunk c"first")(319692 call . chunk c"last")))
+            (319794 call _downEndCount _coforallCount[319791] nil[38])
+            (319793 'coforall loop')
+          }
+          label _continueLabel[319804]
+          _indexOfInterest[319799]
+          _iterator[319800]
+        }
+        label _breakLabel[319805]
+        Defer
+        {
+          {
+            (319836 call _endCountFree _coforallCount[319791])
+          }
+        }
+        (319841 call _waitEndCount _coforallCount[319791] 1)
+      }
+    }
+  }
+  where {
+    (319620 call == tag(319617 call . iterKind c"leader"))
+  }
+  function CSDom[323355](?).these[319884](arg _mt[323391]:_MT[227], arg this[323389]:CSDom[323355](?), param arg tag[319881] :
+  iterKind, arg followThis[319892] :
+  (319890 call _build_tuple ?[249] ?[249] ?[249])) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown tmp[319910] "no auto destroy" "no copy" "temp" followThis
+    (319920 call _check_tuple_var_decl tmp[319910] 3)
+    unknown followThisDom[319902](319911 call tmp[319910] 1)
+    unknown startIx[319904](319914 call tmp[319910] 2)
+    unknown endIx[319906](319917 call tmp[319910] 3)
+    if(319951 call _cond_test boundsChecking)
+    {
+      (319949 call assert(319930 call <= startIx endIx) "CSDom follower - got nothing to iterate over")
+    }
+    if(319982 call _cond_test(319958 call != followThisDom this))
+    {
+      (319980 call halt "Sparse domains can't be zippered with anything other than themselves and their arrays (CS layout)")
+    }
+    unknown cursor[319991](319990 call _private_findStart startIx)
+    if(320055 call _cond_test debugCS)
+    {
+      (320053 call writeln "CSDom follower: " startIx ".." endIx "  startIdx(" cursor ")="(320052 call startIdx cursor))
+    }
+    {
+      unknown _indexOfInterest[320148] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[320149] "expr temp" "temp"
+      (320158 'move' _iterator[320149](320156 call _getIterator(320163 call chpl_direct_range_iter startIx endIx 1)))
+      Defer
+      {
+        {
+          (320179 call _freeIterator _iterator[320149])
+        }
+      }
+      { scopeless type
+        (320168 'move' _indexOfInterest[320148](320165 call iteratorIndex _iterator[320149]))
+      }
+      ForLoop
+      {
+        unknown i[320172] "index var" "insert auto destroy"
+        (320174 'move' i[320172] _indexOfInterest[320148])
+        {
+          {
+            unknown tmp[320080] "temp"
+            (320114 'move' tmp[320080](320104 call _cond_test(320106 call <=(320108 call startIdx(320110 call + cursor 1)) i)))
+            WhileDo
+            {
+              (320077 call += cursor 1)
+              label _continueLabel[320083]
+              (320099 'move' tmp[320080](320089 call _cond_test(320091 call <=(320093 call startIdx(320095 call + cursor 1)) i)))
+              tmp[320080]
+            }
+            label _breakLabel[320084]
+          }
+          if(320142 call _cond_test(320119 call . this c"compressRows"))
+          {
+            (320130 yield(320128 call _build_tuple cursor(320126 call idx i)))
+          }
+          {
+            (320140 yield(320138 call _build_tuple(320135 call idx i) cursor))
+          }
+        }
+        label _continueLabel[320153]
+        _indexOfInterest[320148]
+        _iterator[320149]
+      }
+      label _breakLabel[320154]
+    }
+  }
+  where {
+    (319900 call == tag(319897 call . iterKind c"follower"))
+  }
+  function CSDom[323355](?).these[320195](arg _mt[323395]:_MT[227], arg this[323393]:CSDom[323355](?), param arg tag[320192] :
+  iterKind, arg followThis[320197]:_any[170](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    (320224 call compilerError "Sparse iterators can't yet be zippered with others (CS layout)")
+    (320228 yield 0)
+  }
+  where {
+    (320204 call == tag(320201 call . iterKind c"follower"))
+  }
+  function CSDom[323355](?)._private_findStart[320237](arg _mt[323399]:_MT[227], arg this[323397]:CSDom[323355](?), arg startIx[320235]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (320251 return(320250 call _private_findStart startIx(320243 call . startIdxDom c"low")(320247 call . startIdxDom c"high")))
+  }
+  function CSDom[323355](?)._private_findStart[320260](arg _mt[323403]:_MT[227], arg this[323401]:CSDom[323355](?), arg startIx[320258]:_any[170](?), arg low[320262]:_any[170](?), arg high[320264]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown approx[320267] 2
+    unknown l[320272] low
+    unknown h[320276] high
+    {
+      unknown tmp[320320] "temp"
+      (320350 'move' tmp[320320](320342 call _cond_test(320344 call > h(320347 call + l approx))))
+      WhileDo
+      {
+        {
+          unknown m[320293](320291 call /(320288 call + h l) 2)
+          if(320314 call _cond_test(320302 call <=(320300 call startIdx m) startIx))
+          {
+            (320306 call = l m)
+          }
+          {
+            (320311 call = h m)
+          }
+        }
+        label _continueLabel[320323]
+        (320337 'move' tmp[320320](320329 call _cond_test(320331 call > h(320334 call + l approx))))
+        tmp[320320]
+      }
+      label _breakLabel[320324]
+    }
+    unknown hh[320361](320360 call min(320356 call + l approx) high)
+    if(320420 call _cond_test boundsChecking)
+    {
+      (320390 call assert(320371 call <=(320369 call startIdx l) startIx) "CSDom.findStart-1")
+      (320418 call assert(320399 call < startIx(320398 call startIdx hh)) "CSDom.findStart-2")
+    }
+    (320425 return l)
+  }
+  function CSDom[323355](?).stopIdx[320433](arg _mt[323407]:_MT[227], arg this[323405]:CSDom[323355](?), arg i[320431]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (320445 return(320443 call -(320441 call startIdx(320438 call + i 1)) 1))
+  }
+  function CSDom[323355](?).find[320459](arg _mt[323411]:_MT[227], arg this[323409]:CSDom[323355](?), arg ind[320456] :
+  (320454 call * rank idxType)) : _unknown[43] "method" "primary method"
+  {
+    (320463 'use' Search)
+    const tmp[320472] "const" "no auto destroy" "no copy" "temp" ind
+    (320479 call _check_tuple_var_decl tmp[320472] 2)
+    const row[320466] "const"(320473 call tmp[320472] 1)
+    const col[320468] "const"(320476 call tmp[320472] 2)
+    unknown ret[320489](320487 call _build_tuple bool[10] idxType)
+    if(320594 call _cond_test(320493 call . this c"compressRows"))
+    {
+      if(320539 call _cond_test(320497 call . this c"sortedIndices"))
+      {
+        (320516 call = ret(320515 call binarySearch idx col(lo =(320508 call startIdx row))(hi =(320513 call stopIdx row))))
+      }
+      {
+        (320535 call = ret(320534 call linearSearch idx col(lo =(320527 call startIdx row))(hi =(320532 call stopIdx row))))
+      }
+    }
+    {
+      if(320588 call _cond_test(320546 call . this c"sortedIndices"))
+      {
+        (320565 call = ret(320564 call binarySearch idx row(lo =(320557 call startIdx col))(hi =(320562 call stopIdx col))))
+      }
+      {
+        (320584 call = ret(320583 call linearSearch idx row(lo =(320576 call startIdx col))(hi =(320581 call stopIdx col))))
+      }
+    }
+    (320599 return ret)
+  }
+  function CSDom[323355](?).dsiMember[320612](arg _mt[323415]:_MT[227], arg this[323413]:CSDom[323355](?), arg ind[320609] :
+  (320607 call * rank idxType)) : _unknown[43] "method" "primary method"
+  {
+    if(320646 call _cond_test(320620 call(320615 call . parentDom c"contains") ind))
+    {
+      const tmp[320630] "const" "no copy" "temp"(320629 call find ind)
+      (320637 call _check_tuple_var_decl tmp[320630] 2)
+      const found[320621] "const"(320631 call tmp[320630] 1)
+      const loc[320623] "const"(320634 call tmp[320630] 2)
+      (320644 return found)
+    }
+    (320652 return 0)
+  }
+  function CSDom[323355](?).dsiFirst[320658](arg _mt[323419]:_MT[227], arg this[323417]:CSDom[323355](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    if(320677 call _cond_test(320662 call == _nnz 0))
+    {
+      (320675 return(320673 call -(320665 call . parentDom c"low")(320671 call _build_tuple 1 1)))
+    }
+    const _low[320687] "const"(320684 call . nnzDom c"low")
+    {
+      unknown _indexOfInterest[320753] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[320754] "expr temp" "temp"
+      (320763 'move' _iterator[320754](320761 call _getIterator startIdxDom))
+      Defer
+      {
+        {
+          (320779 call _freeIterator _iterator[320754])
+        }
+      }
+      { scopeless type
+        (320768 'move' _indexOfInterest[320753](320765 call iteratorIndex _iterator[320754]))
+      }
+      ForLoop
+      {
+        unknown i[320772] "index var" "insert auto destroy"
+        (320774 'move' i[320772] _indexOfInterest[320753])
+        {
+          if(320748 call _cond_test(320697 call >(320695 call startIdx i) _low))
+          {
+            if(320741 call _cond_test(320700 call . this c"compressRows"))
+            {
+              (320720 return(320718 call _build_tuple(320705 call - i 1)(320716 call idx(320712 call .(320709 call . idx c"_dom") c"low"))))
+            }
+            {
+              (320739 return(320737 call _build_tuple(320731 call idx(320727 call .(320724 call . idx c"_dom") c"low"))(320734 call - i 1)))
+            }
+          }
+        }
+        label _continueLabel[320758]
+        _indexOfInterest[320753]
+        _iterator[320754]
+      }
+      label _breakLabel[320759]
+    }
+    (320804 call halt "Something went wrong in dsiFirst")
+    (320811 return(320809 call _build_tuple 0 0))
+  }
+  function CSDom[323355](?).dsiLast[320817](arg _mt[323423]:_MT[227], arg this[323421]:CSDom[323355](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    if(320836 call _cond_test(320821 call == _nnz 0))
+    {
+      (320834 return(320832 call -(320824 call . parentDom c"low")(320830 call _build_tuple 1 1)))
+    }
+    unknown _last[320852](320850 call -(320848 call(320843 call . parentDom c"low") 1) 1)
+    {
+      unknown _indexOfInterest[320877] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[320878] "expr temp" "temp"
+      (320887 'move' _iterator[320878](320885 call _getIterator startIdxDom))
+      Defer
+      {
+        {
+          (320903 call _freeIterator _iterator[320878])
+        }
+      }
+      { scopeless type
+        (320892 'move' _indexOfInterest[320877](320889 call iteratorIndex _iterator[320878]))
+      }
+      ForLoop
+      {
+        unknown i[320896] "index var" "insert auto destroy"
+        (320898 'move' i[320896] _indexOfInterest[320877])
+        if(320872 call _cond_test(320862 call >(320860 call startIdx i) _last))
+        {
+          (320869 call = _last(320867 call - i 1))
+        }
+        label _continueLabel[320882]
+        _indexOfInterest[320877]
+        _iterator[320878]
+      }
+      label _breakLabel[320883]
+    }
+    if(320934 call _cond_test(320911 call . this c"compressRows"))
+    {
+      (320922 return(320920 call _build_tuple _last(320918 call idx _nnz)))
+    }
+    {
+      (320932 return(320930 call _build_tuple(320927 call idx _nnz) _last))
+    }
+  }
+  function CSDom[323355](?).dsiAdd[320951](arg _mt[323427]:_MT[227], arg this[323425]:CSDom[323355](?), arg ind[320948] :
+  (320946 call * rank idxType)) : _unknown[43] "method" "primary method"
+  {
+    (320956 call boundsCheck ind)
+    const tmp[320968] "const" "no copy" "temp"(320967 call find ind)
+    (320975 call _check_tuple_var_decl tmp[320968] 2)
+    const found[320959] "const"(320969 call tmp[320968] 1)
+    const insertPt[320961] "const"(320972 call tmp[320968] 2)
+    if(320984 call _cond_test found)
+    {
+      (320982 return 0)
+    }
+    (320991 call += _nnz 1)
+    unknown oldNNZDomSize[320998](320995 call . nnzDom c"size")
+    (321004 call _grow _nnz)
+    const tmp[321012] "const" "no auto destroy" "no copy" "temp" ind
+    (321019 call _check_tuple_var_decl tmp[321012] 2)
+    const row[321006] "const"(321013 call tmp[321012] 1)
+    const col[321008] "const"(321016 call tmp[321012] 2)
+    {
+      unknown _indexOfInterest[321052] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[321053] "expr temp" "temp"
+      (321062 'move' _iterator[321053](321060 call _getIterator(321079 call chpl_direct_range_iter insertPt(321076 call - _nnz 1)(321072 call - 1))))
+      Defer
+      {
+        {
+          (321095 call _freeIterator _iterator[321053])
+        }
+      }
+      { scopeless type
+        (321084 'move' _indexOfInterest[321052](321081 call iteratorIndex _iterator[321053]))
+      }
+      ForLoop
+      {
+        unknown i[321088] "index var" "insert auto destroy"
+        (321090 'move' i[321088] _indexOfInterest[321052])
+        {
+          (321048 call =(321043 call idx(321040 call + i 1))(321047 call idx i))
+        }
+        label _continueLabel[321057]
+        _indexOfInterest[321052]
+        _iterator[321053]
+      }
+      label _breakLabel[321058]
+    }
+    if(321122 call _cond_test(321103 call . this c"compressRows"))
+    {
+      (321111 call =(321109 call idx insertPt) col)
+    }
+    {
+      (321119 call =(321117 call idx insertPt) row)
+    }
+    unknown start[321137](321134 IfExpr (321129 call . this c"compressRows") then
+    { scopeless
+      row
+    } else
+    { scopeless
+      col
+    } )
+    {
+      unknown _indexOfInterest[321160] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[321161] "expr temp" "temp"
+      (321170 'move' _iterator[321161](321168 call _getIterator(321181 call chpl_direct_range_iter(321174 call + start 1)(321178 call . startIdxDom c"high") 1)))
+      Defer
+      {
+        {
+          (321197 call _freeIterator _iterator[321161])
+        }
+      }
+      { scopeless type
+        (321186 'move' _indexOfInterest[321160](321183 call iteratorIndex _iterator[321161]))
+      }
+      ForLoop
+      {
+        unknown rc[321190] "index var" "insert auto destroy"
+        (321192 'move' rc[321190] _indexOfInterest[321160])
+        {
+          (321156 call +=(321154 call startIdx rc) 1)
+        }
+        label _continueLabel[321165]
+        _indexOfInterest[321160]
+        _iterator[321161]
+      }
+      label _breakLabel[321166]
+    }
+    {
+      unknown _indexOfInterest[321231] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[321232] "expr temp" "temp"
+      (321241 'move' _iterator[321232](321239 call _getIterator _arrs))
+      Defer
+      {
+        {
+          (321257 call _freeIterator _iterator[321232])
+        }
+      }
+      { scopeless type
+        (321246 'move' _indexOfInterest[321231](321243 call iteratorIndex _iterator[321232]))
+      }
+      ForLoop
+      {
+        unknown a[321250] "index var" "insert auto destroy"
+        (321252 'move' a[321250] _indexOfInterest[321231])
+        {
+          (321228 call(321207 call . a c"sparseShiftArray")(321215 call chpl_build_bounded_range insertPt(321213 call - _nnz 1))(321226 call chpl_build_bounded_range(321220 call + oldNNZDomSize 1)(321223 call . nnzDom c"size")))
+        }
+        label _continueLabel[321236]
+        _indexOfInterest[321231]
+        _iterator[321232]
+      }
+      label _breakLabel[321237]
+    }
+    (321265 return 1)
+  }
+  function CSDom[323355](?).bulkAdd_help[321283](arg _mt[323431]:_MT[227], arg this[323429]:CSDom[323355](?), arg inds[321280] :
+  (321278 call chpl__buildArrayRuntimeType unknown indsDom[321271](321276 call * rank idxType)), arg dataSorted[321286] =
+  0, arg isUnique[321290] =
+  0, arg addOn[321298] =
+  (321296 call _cast(321295 'to nilable class from type' locale[26]) nil[38])) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (321303 'use' Sort 'only' )
+    if(321343 call _cond_test(321308 call != addOn nil[38]))
+    {
+      if(321338 call _cond_test(321315 call != addOn(321313 call chpl_localeID_to_locale(321312 '_wide_get_locale' this))))
+      {
+        (321335 call halt "Bulk index addition is only possible on the locale where the\n            sparse domain is created")
+      }
+    }
+    if(321373 call _cond_test(321348 call . this c"compressRows"))
+    {
+      (321361 call bulkAdd_prepareInds inds dataSorted isUnique(cmp =(321357 call . Sort c"defaultComparator")))
+    }
+    {
+      (321370 call bulkAdd_prepareInds inds dataSorted isUnique(cmp = _columnComparator))
+    }
+    if(321801 call _cond_test(321380 call == _nnz 0))
+    {
+      const dupCount[321391] "const"(321388 IfExpr  isUnique then
+      { scopeless
+        0
+      } else
+      { scopeless
+        (321387 call _countDuplicates inds)
+      } )
+      (321403 call += _nnz(321401 call -(321397 call . inds c"size") dupCount))
+      (321408 call _bulkGrow)
+      unknown idxIdx[321411] 1
+      unknown prevIdx[321425](321423 call -(321415 call . parentDom c"low")(321421 call _build_tuple 1 1))
+      unknown current[321429] idxType
+      if(321464 call _cond_test(321433 call . this c"compressRows"))
+      {
+        (321447 call = current(321444 call .(321443 call(321438 call . parentDom c"dim") 1) c"low"))
+      }
+      {
+        (321461 call = current(321458 call .(321457 call(321452 call . parentDom c"dim") 2) c"low"))
+      }
+      {
+        unknown _indexOfInterest[321668] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[321669] "expr temp" "temp"
+        (321678 'move' _iterator[321669](321676 call _getIterator inds))
+        Defer
+        {
+          {
+            (321708 call _freeIterator _iterator[321669])
+          }
+        }
+        { scopeless type
+          (321683 'move' _indexOfInterest[321668](321680 call iteratorIndex _iterator[321669]))
+        }
+        ForLoop
+        {
+          (321688 call _check_tuple_var_decl _indexOfInterest[321668] 2)
+          unknown i[321694] "index var" "insert auto destroy"
+          (321696 'move' i[321694](321692 call _indexOfInterest[321668] 1))
+          unknown j[321701] "index var" "insert auto destroy"
+          (321703 'move' j[321701](321699 call _indexOfInterest[321668] 2))
+          {
+            if(321501 call _cond_test(321487 call &&(321477 call ! isUnique)(321485 call ==(321482 call _build_tuple i j) prevIdx)))
+            {
+              continue nil[38]
+            }
+            {
+              (321498 call = prevIdx(321496 call _build_tuple i j))
+            }
+            if(321664 call _cond_test(321509 call . this c"compressRows"))
+            {
+              {
+                unknown tmp[321536] "temp"
+                (321560 'move' tmp[321536](321555 call _cond_test(321557 call != i current)))
+                WhileDo
+                {
+                  {
+                    (321518 call += current 1)
+                    (321533 call =(321528 call startIdx(321525 call + current 1))(321532 call startIdx current))
+                  }
+                  label _continueLabel[321539]
+                  (321550 'move' tmp[321536](321545 call _cond_test(321547 call != i current)))
+                  tmp[321536]
+                }
+                label _breakLabel[321540]
+              }
+              (321572 call +=(321570 call startIdx(321567 call + i 1)) 1)
+              (321580 call =(321578 call idx idxIdx) j)
+              (321585 call += idxIdx 1)
+            }
+            {
+              {
+                unknown tmp[321612] "temp"
+                (321636 'move' tmp[321612](321631 call _cond_test(321633 call != j current)))
+                WhileDo
+                {
+                  {
+                    (321594 call += current 1)
+                    (321609 call =(321604 call startIdx(321601 call + current 1))(321608 call startIdx current))
+                  }
+                  label _continueLabel[321615]
+                  (321626 'move' tmp[321612](321621 call _cond_test(321623 call != j current)))
+                  tmp[321612]
+                }
+                label _breakLabel[321616]
+              }
+              (321648 call +=(321646 call startIdx(321643 call + j 1)) 1)
+              (321656 call =(321654 call idx idxIdx) i)
+              (321661 call += idxIdx 1)
+            }
+          }
+          label _continueLabel[321673]
+          _indexOfInterest[321668]
+          _iterator[321669]
+        }
+        label _breakLabel[321674]
+      }
+      const startIdxHigh[321722] "const"(321721 call startIdx(321718 call + current 1))
+      {
+        unknown _indexOfInterest[321748] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[321749] "expr temp" "temp"
+        (321758 'move' _iterator[321749](321756 call _getIterator(321772 call chpl_direct_range_iter(321762 call + current 2)(321766 call .(321768 call . startIdx c"_dom") c"high") 1)))
+        Defer
+        {
+          {
+            (321788 call _freeIterator _iterator[321749])
+          }
+        }
+        { scopeless type
+          (321777 'move' _indexOfInterest[321748](321774 call iteratorIndex _iterator[321749]))
+        }
+        ForLoop
+        {
+          unknown r[321781] "index var" "insert auto destroy"
+          (321783 'move' r[321781] _indexOfInterest[321748])
+          {
+            (321744 call =(321742 call startIdx r) startIdxHigh)
+          }
+          label _continueLabel[321753]
+          _indexOfInterest[321748]
+          _iterator[321749]
+        }
+        label _breakLabel[321754]
+      }
+      (321799 return(321797 call - idxIdx 1))
+    }
+    const tmp[321816] "const" "no copy" "temp"(321815 call __getActualInsertPts this inds isUnique)
+    (321823 call _check_tuple_var_decl tmp[321816] 2)
+    const actualInsertPts[321805] "const"(321817 call tmp[321816] 1)
+    const actualAddCnt[321807] "const"(321820 call tmp[321816] 2)
+    const oldnnz[321829] "const" _nnz
+    (321834 call += _nnz actualAddCnt)
+    (321839 call _bulkGrow)
+    unknown newIndIdx[321845](321842 call . indsDom c"high")
+    unknown oldIndIdx[321849] oldnnz
+    unknown newLoc[321856](321855 call actualInsertPts newIndIdx)
+    {
+      unknown tmp[321897] "temp"
+      (321925 'move' tmp[321897](321918 call _cond_test(321920 call == newLoc(321923 call - 1))))
+      WhileDo
+      {
+        {
+          (321867 call -= newIndIdx 1)
+          if(321884 call _cond_test(321879 call == newIndIdx(321877 call -(321873 call . indsDom c"low") 1)))
+          {
+            break nil[38]
+          }
+          (321894 call = newLoc(321893 call actualInsertPts newIndIdx))
+        }
+        label _continueLabel[321900]
+        (321913 'move' tmp[321897](321906 call _cond_test(321908 call == newLoc(321911 call - 1))))
+        tmp[321897]
+      }
+      label _breakLabel[321901]
+    }
+    unknown arrShiftMap[321941](321939 call chpl__buildArrayRuntimeType(321937 call chpl__ensureDomainExpr(321933 call chpl__buildDomainExpr(321930 call chpl_build_bounded_range 1 oldnnz))) int[13])
+    {
+      unknown _indexOfInterest[322159] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[322160] "expr temp" "temp"
+      (322169 'move' _iterator[322160](322167 call _getIterator(322180 call chpl_direct_range_iter 1 _nnz(322176 call - 1))))
+      Defer
+      {
+        {
+          (322196 call _freeIterator _iterator[322160])
+        }
+      }
+      { scopeless type
+        (322185 'move' _indexOfInterest[322159](322182 call iteratorIndex _iterator[322160]))
+      }
+      ForLoop
+      {
+        unknown i[322189] "index var" "insert auto destroy"
+        (322191 'move' i[322189] _indexOfInterest[322159])
+        {
+          if(322153 call _cond_test(321962 call &&(321956 call >= oldIndIdx 1)(321960 call > i newLoc)))
+          {
+            (321972 call =(321967 call idx i)(321971 call idx oldIndIdx))
+            (321981 call =(321979 call arrShiftMap oldIndIdx) i)
+            (321986 call -= oldIndIdx 1)
+          }
+          {
+            if(322148 call _cond_test(322000 call &&(321994 call >= newIndIdx(321991 call . indsDom c"low"))(321998 call == i newLoc)))
+            {
+              if(322036 call _cond_test(322003 call . this c"compressRows"))
+              {
+                (322017 call =(322009 call idx i)(322016 call(322013 call inds newIndIdx) 2))
+              }
+              {
+                (322032 call =(322024 call idx i)(322031 call(322028 call inds newIndIdx) 1))
+              }
+              (322043 call -= newIndIdx 1)
+              if(322068 call _cond_test(322051 call >= newIndIdx(322048 call . indsDom c"low")))
+              {
+                (322058 call = newLoc(322057 call actualInsertPts newIndIdx))
+              }
+              {
+                (322065 call = newLoc(322063 call - 2))
+              }
+              {
+                unknown tmp[322112] "temp"
+                (322140 'move' tmp[322112](322133 call _cond_test(322135 call == newLoc(322138 call - 1))))
+                WhileDo
+                {
+                  {
+                    (322082 call -= newIndIdx 1)
+                    if(322099 call _cond_test(322094 call == newIndIdx(322092 call -(322088 call . indsDom c"low") 1)))
+                    {
+                      break nil[38]
+                    }
+                    (322109 call = newLoc(322108 call actualInsertPts newIndIdx))
+                  }
+                  label _continueLabel[322115]
+                  (322128 'move' tmp[322112](322121 call _cond_test(322123 call == newLoc(322126 call - 1))))
+                  tmp[322112]
+                }
+                label _breakLabel[322116]
+              }
+            }
+            {
+              (322146 call halt "Something went wrong")
+            }
+          }
+        }
+        label _continueLabel[322164]
+        _indexOfInterest[322159]
+        _iterator[322160]
+      }
+      label _breakLabel[322165]
+    }
+    unknown prevCursor[322230](322227 IfExpr (322204 call . this c"compressRows") then
+    { scopeless
+      (322214 call .(322213 call(322208 call . parentDom c"dim") 1) c"low")
+    } else
+    { scopeless
+      (322224 call .(322223 call(322218 call . parentDom c"dim") 2) c"low")
+    } )
+    unknown cursor[322234] int[13]
+    unknown cursorCnt[322238] 0
+    {
+      unknown _indexOfInterest[322397] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[322398] "expr temp" "temp"
+      (322412 'move' _iterator[322398](322249 call _build_tuple(322407 call _getIterator inds)(322410 call _getIterator actualInsertPts)))
+      Defer
+      {
+        {
+          (322442 call _freeIterator _iterator[322398])
+        }
+      }
+      { scopeless type
+        (322417 'move' _indexOfInterest[322397](322414 call iteratorIndex _iterator[322398]))
+      }
+      ForLoop
+      {
+        (322422 call _check_tuple_var_decl _indexOfInterest[322397] 2)
+        unknown ind[322428] "index var" "insert auto destroy"
+        (322430 'move' ind[322428](322426 call _indexOfInterest[322397] 1))
+        unknown p[322435] "index var" "insert auto destroy"
+        (322437 'move' p[322435](322433 call _indexOfInterest[322397] 2))
+        {
+          if(322259 call _cond_test(322254 call == p(322252 call - 1)))
+          {
+            continue nil[38]
+          }
+          if(322287 call _cond_test(322266 call . this c"compressRows"))
+          {
+            (322274 call = cursor(322273 call ind 1))
+          }
+          {
+            (322283 call = cursor(322282 call ind 2))
+          }
+          if(322392 call _cond_test(322293 call == cursor prevCursor))
+          {
+            (322297 call += cursorCnt 1)
+          }
+          {
+            (322308 call +=(322306 call startIdx(322303 call + prevCursor 1)) cursorCnt)
+            if(322378 call _cond_test(322317 call >(322314 call - cursor prevCursor) 1))
+            {
+              {
+                unknown _indexOfInterest[322336] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[322337] "expr temp" "temp"
+                (322346 'move' _iterator[322337](322344 call _getIterator(322354 call chpl_direct_range_iter(322350 call + prevCursor 2) cursor 1)))
+                Defer
+                {
+                  {
+                    (322370 call _freeIterator _iterator[322337])
+                  }
+                }
+                { scopeless type
+                  (322359 'move' _indexOfInterest[322336](322356 call iteratorIndex _iterator[322337]))
+                }
+                ForLoop
+                {
+                  unknown i[322363] "index var" "insert auto destroy"
+                  (322365 'move' i[322363] _indexOfInterest[322336])
+                  {
+                    (322332 call +=(322330 call startIdx i) cursorCnt)
+                  }
+                  label _continueLabel[322341]
+                  _indexOfInterest[322336]
+                  _iterator[322337]
+                }
+                label _breakLabel[322342]
+              }
+            }
+            (322384 call += cursorCnt 1)
+            (322389 call = prevCursor cursor)
+          }
+        }
+        label _continueLabel[322402]
+        _indexOfInterest[322397]
+        _iterator[322398]
+      }
+      label _breakLabel[322403]
+    }
+    {
+      unknown _indexOfInterest[322469] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[322470] "expr temp" "temp"
+      (322479 'move' _iterator[322470](322477 call _getIterator(322490 call chpl_direct_range_iter(322483 call + prevCursor 1)(322487 call . startIdxDom c"high") 1)))
+      Defer
+      {
+        {
+          (322506 call _freeIterator _iterator[322470])
+        }
+      }
+      { scopeless type
+        (322495 'move' _indexOfInterest[322469](322492 call iteratorIndex _iterator[322470]))
+      }
+      ForLoop
+      {
+        unknown i[322499] "index var" "insert auto destroy"
+        (322501 'move' i[322499] _indexOfInterest[322469])
+        {
+          (322465 call +=(322463 call startIdx i) cursorCnt)
+        }
+        label _continueLabel[322474]
+        _indexOfInterest[322469]
+        _iterator[322470]
+      }
+      label _breakLabel[322475]
+    }
+    {
+      unknown _indexOfInterest[322524] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[322525] "expr temp" "temp"
+      (322534 'move' _iterator[322525](322532 call _getIterator _arrs))
+      Defer
+      {
+        {
+          (322550 call _freeIterator _iterator[322525])
+        }
+      }
+      { scopeless type
+        (322539 'move' _indexOfInterest[322524](322536 call iteratorIndex _iterator[322525]))
+      }
+      ForLoop
+      {
+        unknown a[322543] "index var" "insert auto destroy"
+        (322545 'move' a[322543] _indexOfInterest[322524])
+        (322522 call(322516 call . a c"sparseBulkShiftArray") arrShiftMap oldnnz)
+        label _continueLabel[322529]
+        _indexOfInterest[322524]
+        _iterator[322525]
+      }
+      label _breakLabel[322530]
+    }
+    (322558 return actualAddCnt)
+  }
+  function CSDom[323355](?).dsiRemove[322571](arg _mt[323435]:_MT[227], arg this[323433]:CSDom[323355](?), arg ind[322568] :
+  (322566 call * rank idxType)) : _unknown[43] "method" "primary method"
+  {
+    const tmp[322582] "const" "no copy" "temp"(322581 call find ind)
+    (322589 call _check_tuple_var_decl tmp[322582] 2)
+    const found[322573] "const"(322583 call tmp[322582] 1)
+    const insertPt[322575] "const"(322586 call tmp[322582] 2)
+    if(322601 call _cond_test(322596 call ! found))
+    {
+      (322599 return 0)
+    }
+    (322608 call -= _nnz 1)
+    (322614 call _shrink _nnz)
+    const tmp[322622] "const" "no auto destroy" "no copy" "temp" ind
+    (322629 call _check_tuple_var_decl tmp[322622] 2)
+    const row[322616] "const"(322623 call tmp[322622] 1)
+    const col[322618] "const"(322626 call tmp[322622] 2)
+    {
+      unknown _indexOfInterest[322654] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[322655] "expr temp" "temp"
+      (322664 'move' _iterator[322655](322662 call _getIterator(322669 call chpl_direct_range_iter insertPt _nnz 1)))
+      Defer
+      {
+        {
+          (322685 call _freeIterator _iterator[322655])
+        }
+      }
+      { scopeless type
+        (322674 'move' _indexOfInterest[322654](322671 call iteratorIndex _iterator[322655]))
+      }
+      ForLoop
+      {
+        unknown i[322678] "index var" "insert auto destroy"
+        (322680 'move' i[322678] _indexOfInterest[322654])
+        {
+          (322650 call =(322642 call idx i)(322649 call idx(322646 call + i 1)))
+        }
+        label _continueLabel[322659]
+        _indexOfInterest[322654]
+        _iterator[322655]
+      }
+      label _breakLabel[322660]
+    }
+    if(322826 call _cond_test(322693 call . this c"compressRows"))
+    {
+      {
+        unknown _indexOfInterest[322716] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[322717] "expr temp" "temp"
+        (322726 'move' _iterator[322717](322724 call _getIterator(322737 call chpl_direct_range_iter(322730 call + row 1)(322734 call . startIdxDom c"high") 1)))
+        Defer
+        {
+          {
+            (322753 call _freeIterator _iterator[322717])
+          }
+        }
+        { scopeless type
+          (322742 'move' _indexOfInterest[322716](322739 call iteratorIndex _iterator[322717]))
+        }
+        ForLoop
+        {
+          unknown r[322746] "index var" "insert auto destroy"
+          (322748 'move' r[322746] _indexOfInterest[322716])
+          {
+            (322712 call -=(322710 call startIdx r) 1)
+          }
+          label _continueLabel[322721]
+          _indexOfInterest[322716]
+          _iterator[322717]
+        }
+        label _breakLabel[322722]
+      }
+    }
+    {
+      {
+        unknown _indexOfInterest[322781] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[322782] "expr temp" "temp"
+        (322791 'move' _iterator[322782](322789 call _getIterator(322802 call chpl_direct_range_iter(322795 call + col 1)(322799 call . startIdxDom c"high") 1)))
+        Defer
+        {
+          {
+            (322818 call _freeIterator _iterator[322782])
+          }
+        }
+        { scopeless type
+          (322807 'move' _indexOfInterest[322781](322804 call iteratorIndex _iterator[322782]))
+        }
+        ForLoop
+        {
+          unknown r[322811] "index var" "insert auto destroy"
+          (322813 'move' r[322811] _indexOfInterest[322781])
+          {
+            (322777 call -=(322775 call startIdx r) 1)
+          }
+          label _continueLabel[322786]
+          _indexOfInterest[322781]
+          _iterator[322782]
+        }
+        label _breakLabel[322787]
+      }
+    }
+    {
+      unknown _indexOfInterest[322847] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[322848] "expr temp" "temp"
+      (322857 'move' _iterator[322848](322855 call _getIterator _arrs))
+      Defer
+      {
+        {
+          (322873 call _freeIterator _iterator[322848])
+        }
+      }
+      { scopeless type
+        (322862 'move' _indexOfInterest[322847](322859 call iteratorIndex _iterator[322848]))
+      }
+      ForLoop
+      {
+        unknown a[322866] "index var" "insert auto destroy"
+        (322868 'move' a[322866] _indexOfInterest[322847])
+        {
+          (322844 call(322833 call . a c"sparseShiftArrayBack")(322841 call chpl_build_bounded_range insertPt(322839 call - _nnz 1)))
+        }
+        label _continueLabel[322852]
+        _indexOfInterest[322847]
+        _iterator[322848]
+      }
+      label _breakLabel[322853]
+    }
+    (322881 return 1)
+  }
+  function CSDom[323355](?).dsiClear[322887](arg _mt[323439]:_MT[227], arg this[323437]:CSDom[323355](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    (322891 call = _nnz 0)
+    (322897 call = startIdx 1)
+  }
+  function CSDom[323355](?).dimIter[322906](arg _mt[323443]:_MT[227], arg this[323441]:CSDom[323355](?), param arg d[322904]:_any[170](?), arg ind[322908]:_any[170](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    if(322978 call _cond_test(322918 call &&(322912 call != d 2)(322915 call . this c"compressRows")))
+    {
+      (322938 call compilerError "dimIter(1, ..) not supported on CS(compressRows=true) domains")
+    }
+    {
+      if(322974 call _cond_test(322951 call &&(322943 call != d 1)(322949 call !(322946 call . this c"compressRows"))))
+      {
+        (322971 call compilerError "dimIter(2, ..) not supported on CS(compressRows=false) domains")
+      }
+    }
+    {
+      unknown _indexOfInterest[323001] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[323002] "expr temp" "temp"
+      (323011 'move' _iterator[323002](323009 call _getIterator(323020 call chpl_direct_range_iter(323015 call startIdx ind)(323018 call stopIdx ind) 1)))
+      Defer
+      {
+        {
+          (323036 call _freeIterator _iterator[323002])
+        }
+      }
+      { scopeless type
+        (323025 'move' _indexOfInterest[323001](323022 call iteratorIndex _iterator[323002]))
+      }
+      ForLoop
+      {
+        unknown i[323029] "index var" "insert auto destroy"
+        (323031 'move' i[323029] _indexOfInterest[323001])
+        (322999 yield(322998 call idx i))
+        label _continueLabel[323006]
+        _indexOfInterest[323001]
+        _iterator[323002]
+      }
+      label _breakLabel[323007]
+    }
+  }
+  function CSDom[323355](?).dsiSerialWrite[323049](arg _mt[323447]:_MT[227], arg this[323445]:CSDom[323355](?), arg f[323047]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (323053 call <~> f "{\n")
+    if(323343 call _cond_test(323058 call . this c"compressRows"))
+    {
+      {
+        unknown _indexOfInterest[323168] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[323169] "expr temp" "temp"
+        (323178 'move' _iterator[323169](323176 call _getIterator rowRange))
+        Defer
+        {
+          {
+            (323194 call _freeIterator _iterator[323169])
+          }
+        }
+        { scopeless type
+          (323183 'move' _indexOfInterest[323168](323180 call iteratorIndex _iterator[323169]))
+        }
+        ForLoop
+        {
+          unknown r[323187] "index var" "insert auto destroy"
+          (323189 'move' r[323187] _indexOfInterest[323168])
+          {
+            const lo[323067] "const"(323066 call startIdx r)
+            const hi[323074] "const"(323073 call stopIdx r)
+            {
+              unknown _indexOfInterest[323130] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[323131] "expr temp" "temp"
+              (323140 'move' _iterator[323131](323138 call _getIterator(323145 call chpl_direct_range_iter lo hi 1)))
+              Defer
+              {
+                {
+                  (323161 call _freeIterator _iterator[323131])
+                }
+              }
+              { scopeless type
+                (323150 'move' _indexOfInterest[323130](323147 call iteratorIndex _iterator[323131]))
+              }
+              ForLoop
+              {
+                unknown c[323154] "index var" "insert auto destroy"
+                (323156 'move' c[323154] _indexOfInterest[323130])
+                {
+                  (323126 call <~>(323100 call <~>(323097 call <~>(323091 call <~>(323088 call <~>(323085 call <~> f " (") r) ", ")(323096 call idx c)) ")")(323123 IfExpr (323104 call == c hi) then
+                  { scopeless
+                    "\n"
+                  } else
+                  { scopeless
+                    ""
+                  } ))
+                }
+                label _continueLabel[323135]
+                _indexOfInterest[323130]
+                _iterator[323131]
+              }
+              label _breakLabel[323136]
+            }
+          }
+          label _continueLabel[323173]
+          _indexOfInterest[323168]
+          _iterator[323169]
+        }
+        label _breakLabel[323174]
+      }
+    }
+    {
+      {
+        unknown _indexOfInterest[323309] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[323310] "expr temp" "temp"
+        (323319 'move' _iterator[323310](323317 call _getIterator colRange))
+        Defer
+        {
+          {
+            (323335 call _freeIterator _iterator[323310])
+          }
+        }
+        { scopeless type
+          (323324 'move' _indexOfInterest[323309](323321 call iteratorIndex _iterator[323310]))
+        }
+        ForLoop
+        {
+          unknown c[323328] "index var" "insert auto destroy"
+          (323330 'move' c[323328] _indexOfInterest[323309])
+          {
+            const lo[323208] "const"(323207 call startIdx c)
+            const hi[323215] "const"(323214 call stopIdx c)
+            {
+              unknown _indexOfInterest[323271] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[323272] "expr temp" "temp"
+              (323281 'move' _iterator[323272](323279 call _getIterator(323286 call chpl_direct_range_iter lo hi 1)))
+              Defer
+              {
+                {
+                  (323302 call _freeIterator _iterator[323272])
+                }
+              }
+              { scopeless type
+                (323291 'move' _indexOfInterest[323271](323288 call iteratorIndex _iterator[323272]))
+              }
+              ForLoop
+              {
+                unknown r[323295] "index var" "insert auto destroy"
+                (323297 'move' r[323295] _indexOfInterest[323271])
+                {
+                  (323267 call <~>(323241 call <~>(323238 call <~>(323235 call <~>(323232 call <~>(323226 call <~> f " (")(323231 call idx r)) ", ") c) ")")(323264 IfExpr (323245 call == r hi) then
+                  { scopeless
+                    "\n"
+                  } else
+                  { scopeless
+                    ""
+                  } ))
+                }
+                label _continueLabel[323276]
+                _indexOfInterest[323271]
+                _iterator[323272]
+              }
+              label _breakLabel[323277]
+            }
+          }
+          label _continueLabel[323314]
+          _indexOfInterest[323309]
+          _iterator[323310]
+        }
+        label _breakLabel[323315]
+      }
+    }
+    (323349 call <~> f "}\n")
+  }
+  type CSDom[323355](?) unknown compressRows[318918] "param" unknown sortedIndices[318921] "param" unknown stridable[318924] "param" unknown dist[318933](318932 'to unmanaged class from unknown'(318931 call CS compressRows sortedIndices)) unknown rowRange[318942](318941 call range idxType(stridable = stridable)) unknown colRange[318951](318950 call range idxType(stridable = stridable)) unknown startIdxDom[318960](318958 call chpl__buildDomainRuntimeType defaultDist 1 idxType) unknown _nnz[318964] 0 unknown startIdx[318974] "local field"(318972 call chpl__buildArrayRuntimeType(318970 call chpl__ensureDomainExpr startIdxDom) idxType) unknown idx[318984] "local field"(318982 call chpl__buildArrayRuntimeType(318980 call chpl__ensureDomainExpr nnzDom) idxType) BaseSparseDomImpl
+  function CSArr[324242].dsiAccess[323462](arg _mt[324246]:_MT[227], arg this[324244]:CSArr[324242], arg ind[323459] :
+  (323457 call * rank idxType)) ref : _unknown[43] "method" "primary method"
+  {
+    (323470 call(323465 call . dom c"boundsCheck") ind)
+    const tmp[323485] "const" "no copy" "temp"(323484 call(323479 call . dom c"find") ind)
+    (323492 call _check_tuple_var_decl tmp[323485] 2)
+    const found[323473] "const"(323486 call tmp[323485] 1)
+    const loc[323475] "const"(323489 call tmp[323485] 2)
+    if(323510 call _cond_test found)
+    {
+      (323502 return(323501 call data loc))
+    }
+    {
+      (323508 call halt "attempting to assign a 'zero' value in a sparse array: " ind)
+    }
+  }
+  function CSArr[324242].dsiAccess[323527](arg _mt[324250]:_MT[227], arg this[324248]:CSArr[324242], arg ind[323524] :
+  (323522 call * rank idxType)) : _unknown[43] "method" "primary method"
+  {
+    (323539 call(323534 call . dom c"boundsCheck") ind)
+    const tmp[323554] "const" "no copy" "temp"(323553 call(323548 call . dom c"find") ind)
+    (323561 call _check_tuple_var_decl tmp[323554] 2)
+    const found[323542] "const"(323555 call tmp[323554] 1)
+    const loc[323544] "const"(323558 call tmp[323554] 2)
+    if(323576 call _cond_test found)
+    {
+      (323571 return(323570 call data loc))
+    }
+    {
+      (323574 return irv)
+    }
+  }
+  where {
+    (323532 call shouldReturnRvalueByValue eltType)
+  }
+  function CSArr[324242].dsiAccess[323594](arg _mt[324254]:_MT[227], arg this[324252]:CSArr[324242], arg ind[323591] :
+  (323589 call * rank idxType)) const ref : _unknown[43] "method" "primary method"
+  {
+    (323606 call(323601 call . dom c"boundsCheck") ind)
+    const tmp[323621] "const" "no copy" "temp"(323620 call(323615 call . dom c"find") ind)
+    (323628 call _check_tuple_var_decl tmp[323621] 2)
+    const found[323609] "const"(323622 call tmp[323621] 1)
+    const loc[323611] "const"(323625 call tmp[323621] 2)
+    if(323643 call _cond_test found)
+    {
+      (323638 return(323637 call data loc))
+    }
+    {
+      (323641 return irv)
+    }
+  }
+  where {
+    (323599 call shouldReturnRvalueByConstRef eltType)
+  }
+  function CSArr[324242].these[323654](arg _mt[324258]:_MT[227], arg this[324256]:CSArr[324242]) ref : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[323670] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[323671] "expr temp" "temp"
+      (323680 'move' _iterator[323671](323678 call _getIterator(323688 call chpl_direct_range_iter 1(323685 call . dom c"_nnz") 1)))
+      Defer
+      {
+        {
+          (323704 call _freeIterator _iterator[323671])
+        }
+      }
+      { scopeless type
+        (323693 'move' _indexOfInterest[323670](323690 call iteratorIndex _iterator[323671]))
+      }
+      ForLoop
+      {
+        unknown i[323697] "index var" "insert auto destroy"
+        (323699 'move' i[323697] _indexOfInterest[323670])
+        (323668 yield(323667 call data i))
+        label _continueLabel[323675]
+        _indexOfInterest[323670]
+        _iterator[323671]
+      }
+      label _breakLabel[323676]
+    }
+  }
+  function CSArr[324242].these[323720](arg _mt[324262]:_MT[227], arg this[324260]:CSArr[324242], param arg tag[323717] :
+  iterKind) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[323740] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[323741] "expr temp" "temp"
+      (323750 'move' _iterator[323741](323748 call _getIterator(323736 call(323731 call . dom c"these") tag)))
+      Defer
+      {
+        {
+          (323767 call _freeIterator _iterator[323741])
+        }
+      }
+      { scopeless type
+        (323756 'move' _indexOfInterest[323740](323753 call iteratorIndex _iterator[323741]))
+      }
+      ForLoop
+      {
+        unknown followThis[323760] "index var" "insert auto destroy"
+        (323762 'move' followThis[323760] _indexOfInterest[323740])
+        (323738 yield followThis)
+        label _continueLabel[323745]
+        _indexOfInterest[323740]
+        _iterator[323741]
+      }
+      label _breakLabel[323746]
+    }
+  }
+  where {
+    (323727 call == tag(323724 call . iterKind c"leader"))
+  }
+  function CSArr[324242].these[323784](arg _mt[324266]:_MT[227], arg this[324264]:CSArr[324242], param arg tag[323781] :
+  iterKind, arg followThis[323792] :
+  (323790 call _build_tuple ?[249] ?[249] ?[249])) ref : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown tmp[323810] "no auto destroy" "no copy" "temp" followThis
+    (323820 call _check_tuple_var_decl tmp[323810] 3)
+    unknown followThisDom[323802](323811 call tmp[323810] 1)
+    unknown startIx[323804](323814 call tmp[323810] 2)
+    unknown endIx[323806](323817 call tmp[323810] 3)
+    if(323853 call _cond_test(323831 call != followThisDom(323828 call . this c"dom")))
+    {
+      (323851 call halt "Sparse arrays can't be zippered with anything other than their domains and sibling arrays (CS layout)")
+    }
+    if(323882 call _cond_test debugCS)
+    {
+      (323880 call writeln "CSArr follower: " startIx ".." endIx)
+    }
+    {
+      unknown _indexOfInterest[323898] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[323899] "expr temp" "temp"
+      (323908 'move' _iterator[323899](323906 call _getIterator(323913 call chpl_direct_range_iter startIx endIx 1)))
+      Defer
+      {
+        {
+          (323929 call _freeIterator _iterator[323899])
+        }
+      }
+      { scopeless type
+        (323918 'move' _indexOfInterest[323898](323915 call iteratorIndex _iterator[323899]))
+      }
+      ForLoop
+      {
+        unknown i[323922] "index var" "insert auto destroy"
+        (323924 'move' i[323922] _indexOfInterest[323898])
+        (323896 yield(323895 call data i))
+        label _continueLabel[323903]
+        _indexOfInterest[323898]
+        _iterator[323899]
+      }
+      label _breakLabel[323904]
+    }
+  }
+  where {
+    (323800 call == tag(323797 call . iterKind c"follower"))
+  }
+  function CSArr[324242].these[323945](arg _mt[324270]:_MT[227], arg this[324268]:CSArr[324242], param arg tag[323942] :
+  iterKind, arg followThis[323947]:_any[170](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    (323959 call compilerError "Sparse iterators can't yet be zippered with others (CS layout)")
+    (323963 yield 0)
+  }
+  where {
+    (323954 call == tag(323951 call . iterKind c"follower"))
+  }
+  function CSArr[324242].dsiSerialWrite[323972](arg _mt[324274]:_MT[227], arg this[324272]:CSArr[324242], arg f[323970]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(324234 call _cond_test(323975 call . dom c"compressRows"))
+    {
+      {
+        unknown _indexOfInterest[324073] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[324074] "expr temp" "temp"
+        (324083 'move' _iterator[324074](324081 call _getIterator(323982 call . dom c"rowRange")))
+        Defer
+        {
+          {
+            (324100 call _freeIterator _iterator[324074])
+          }
+        }
+        { scopeless type
+          (324089 'move' _indexOfInterest[324073](324086 call iteratorIndex _iterator[324074]))
+        }
+        ForLoop
+        {
+          unknown r[324093] "index var" "insert auto destroy"
+          (324095 'move' r[324093] _indexOfInterest[324073])
+          {
+            const lo[323994] "const"(323993 call(323988 call . dom c"startIdx") r)
+            const hi[324007] "const"(324006 call(324001 call . dom c"stopIdx") r)
+            {
+              unknown _indexOfInterest[324035] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[324036] "expr temp" "temp"
+              (324045 'move' _iterator[324036](324043 call _getIterator(324050 call chpl_direct_range_iter lo hi 1)))
+              Defer
+              {
+                {
+                  (324066 call _freeIterator _iterator[324036])
+                }
+              }
+              { scopeless type
+                (324055 'move' _indexOfInterest[324035](324052 call iteratorIndex _iterator[324036]))
+              }
+              ForLoop
+              {
+                unknown c[324059] "index var" "insert auto destroy"
+                (324061 'move' c[324059] _indexOfInterest[324035])
+                {
+                  (324031 call <~>(324020 call <~> f(324019 call data c))(324028 IfExpr (324024 call == c hi) then
+                  { scopeless
+                    "\n"
+                  } else
+                  { scopeless
+                    " "
+                  } ))
+                }
+                label _continueLabel[324040]
+                _indexOfInterest[324035]
+                _iterator[324036]
+              }
+              label _breakLabel[324041]
+            }
+          }
+          label _continueLabel[324078]
+          _indexOfInterest[324073]
+          _iterator[324074]
+        }
+        label _breakLabel[324079]
+      }
+    }
+    {
+      {
+        unknown _indexOfInterest[324199] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[324200] "expr temp" "temp"
+        (324209 'move' _iterator[324200](324207 call _getIterator(324112 call . dom c"colRange")))
+        Defer
+        {
+          {
+            (324226 call _freeIterator _iterator[324200])
+          }
+        }
+        { scopeless type
+          (324215 'move' _indexOfInterest[324199](324212 call iteratorIndex _iterator[324200]))
+        }
+        ForLoop
+        {
+          unknown c[324219] "index var" "insert auto destroy"
+          (324221 'move' c[324219] _indexOfInterest[324199])
+          {
+            const lo[324122] "const"(324121 call(324116 call . dom c"startIdx") c)
+            const hi[324133] "const"(324132 call(324127 call . dom c"stopIdx") c)
+            {
+              unknown _indexOfInterest[324161] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[324162] "expr temp" "temp"
+              (324171 'move' _iterator[324162](324169 call _getIterator(324176 call chpl_direct_range_iter lo hi 1)))
+              Defer
+              {
+                {
+                  (324192 call _freeIterator _iterator[324162])
+                }
+              }
+              { scopeless type
+                (324181 'move' _indexOfInterest[324161](324178 call iteratorIndex _iterator[324162]))
+              }
+              ForLoop
+              {
+                unknown r[324185] "index var" "insert auto destroy"
+                (324187 'move' r[324185] _indexOfInterest[324161])
+                {
+                  (324157 call <~>(324146 call <~> f(324145 call data r))(324154 IfExpr (324150 call == r hi) then
+                  { scopeless
+                    "\n"
+                  } else
+                  { scopeless
+                    " "
+                  } ))
+                }
+                label _continueLabel[324166]
+                _indexOfInterest[324161]
+                _iterator[324162]
+              }
+              label _breakLabel[324167]
+            }
+          }
+          label _continueLabel[324204]
+          _indexOfInterest[324199]
+          _iterator[324200]
+        }
+        label _breakLabel[324205]
+      }
+    }
+  }
+  type CSArr[324242] BaseSparseArrImpl
+}

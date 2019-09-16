@@ -1,0 +1,74 @@
+AST dump for MemTracking after pass parse.
+Module use list: 
+
+{
+  (165350 'use' ChapelStandard)
+  { scopeless
+    const memTrack[165355] "config" "const" 0 bool[10]
+    const memStats[165360] "config" "const" 0 bool[10]
+    const memLeaksByType[165365] "config" "const" 0 bool[10]
+    const memLeaks[165370] "config" "const" 0 bool[10]
+    const memMax[165375] "config" "const" 0 uint[107]
+    const memThreshold[165380] "config" "const" 0 uint[107]
+    const memLog[165384] "config" "const" string[24]
+  }
+  const memLeaksLog[165388] "config" "const" "no auto destroy" string[24]
+  const memLeaksByDesc[165392] "config" "const" "no auto destroy" string[24]
+  { scopeless
+    const cMemMax[165402] "const"(165401 call(165396 call . memMax c"safeCast") size_t)
+    const cMemThreshold[165412] "const"(165411 call(165406 call . memThreshold c"safeCast") size_t)
+  }
+  function chpl_memTracking_returnConfigVals[165421](ref arg ret_memTrack[165418] :
+  bool[10], ref arg ret_memStats[165424] :
+  bool[10], ref arg ret_memLeaksByType[165428] :
+  bool[10], ref arg ret_memLeaksByDesc[165432] :
+  c_string, ref arg ret_memLeaks[165436] :
+  bool[10], ref arg ret_memMax[165440] :
+  size_t, ref arg ret_memThreshold[165444] :
+  size_t, ref arg ret_memLog[165448] :
+  c_string, ref arg ret_memLeaksLog[165452] :
+  c_string) : _unknown[43] "export" "local args"
+  {
+    (165457 call = ret_memTrack memTrack)
+    (165463 call = ret_memStats memStats)
+    (165468 call = ret_memLeaksByType memLeaksByType)
+    (165473 call = ret_memLeaks memLeaks)
+    (165478 call = ret_memMax cMemMax)
+    (165483 call = ret_memThreshold cMemThreshold)
+    if(165645 call _cond_test(165491 call !=(165487 call . here c"id") 0))
+    {
+      if(165529 call _cond_test(165498 call !=(165494 call . memLeaksByDesc c"length") 0))
+      {
+        unknown local_memLeaksByDesc[165501] memLeaksByDesc
+        (165510 call =(165506 call . local_memLeaksByDesc c"isowned") 0)
+        (165520 call = ret_memLeaksByDesc(165519 call(165515 call . local_memLeaksByDesc c"c_str")))
+      }
+      {
+        (165525 call = ret_memLeaksByDesc nil[38])
+      }
+      if(165570 call _cond_test(165539 call !=(165535 call . memLog c"length") 0))
+      {
+        unknown local_memLog[165542] memLog
+        (165551 call =(165547 call . local_memLog c"isowned") 0)
+        (165561 call = ret_memLog(165560 call(165556 call . local_memLog c"c_str")))
+      }
+      {
+        (165566 call = ret_memLog nil[38])
+      }
+      if(165610 call _cond_test(165579 call !=(165575 call . memLeaksLog c"length") 0))
+      {
+        unknown local_memLeaksLog[165582] memLeaksLog
+        (165591 call =(165587 call . local_memLeaksLog c"isowned") 0)
+        (165601 call = ret_memLeaksLog(165600 call(165596 call . local_memLeaksLog c"c_str")))
+      }
+      {
+        (165606 call = ret_memLeaksLog nil[38])
+      }
+    }
+    {
+      (165621 call = ret_memLeaksByDesc(165620 call(165616 call . memLeaksByDesc c"c_str")))
+      (165632 call = ret_memLog(165631 call(165627 call . memLog c"c_str")))
+      (165642 call = ret_memLeaksLog(165641 call(165637 call . memLeaksLog c"c_str")))
+    }
+  }
+}

@@ -1,0 +1,215 @@
+AST dump for AtomicsCommon after pass createTaskFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_AtomicsCommon[390168]() : void[4] "insert line file info" "module init"
+  {
+    (458236 return _void[47])
+  }
+  function atomic_refcnt[54760].inc[54621](arg _mt[54764]:_MT[227], arg this[54762]:atomic_refcnt[54760], arg cnt[54618] :
+  1 =
+  1) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[558994] "expr temp" "maybe param" "maybe type" "temp"
+    (558997 'move' call_tmp[558994](54645 call _cond_test CHPL_CACHE_REMOTE[342]))
+    if call_tmp[558994]
+    {
+      unknown call_tmp[559001] "expr temp" "maybe param" "maybe type" "temp"
+      (559004 'move' call_tmp[559001](339673 call _cnt _mt[232] this[54762]))
+      (54635 call(54625 call (partial) add _mt[232] call_tmp[559001]) cnt[54618](order = relaxed[180097]))
+    }
+    {
+      unknown call_tmp[559010] "expr temp" "maybe param" "maybe type" "temp"
+      (559013 'move' call_tmp[559010](339680 call _cnt _mt[232] this[54762]))
+      (54643 call(54638 call (partial) add _mt[232] call_tmp[559010]) cnt[54618])
+    }
+    (458192 return _void[47])
+  }
+  function atomic_refcnt[54760].dec[54656](arg _mt[54768]:_MT[227], arg this[54766]:atomic_refcnt[54760]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[458196] "RVV" "temp"
+    unknown got[54666] "insert auto destroy"
+    unknown call_tmp[559017] "expr temp" "maybe param" "maybe type" "temp"
+    (559020 'move' call_tmp[559017](54665 call int(64)[13] 64))
+    (489366 'default init var' got[54666] call_tmp[559017])
+    unknown call_tmp[559022] "expr temp" "maybe param" "maybe type" "temp"
+    (559025 'move' call_tmp[559022](54732 call _cond_test CHPL_CACHE_REMOTE[342]))
+    if call_tmp[559022]
+    {
+      unknown call_tmp[559029] "expr temp" "maybe param" "maybe type" "temp"
+      (559032 'move' call_tmp[559029](339688 call _cnt _mt[232] this[54766]))
+      unknown call_tmp[559036] "expr temp" "maybe param" "maybe type" "temp"
+      (559039 'move' call_tmp[559036](54683 call(54673 call (partial) fetchSub _mt[232] call_tmp[559029]) 1(order = release[180093])))
+      (54684 call = got[54666] call_tmp[559036])
+      unknown call_tmp[559041] "expr temp" "maybe param" "maybe type" "temp"
+      (559044 'move' call_tmp[559041](54690 call == got[54666] 1))
+      unknown call_tmp[559046] "expr temp" "maybe param" "maybe type" "temp"
+      (559049 'move' call_tmp[559046](54704 call _cond_test call_tmp[559041]))
+      if call_tmp[559046]
+      {
+        (54698 call atomicFence acquire[180095])
+        unknown call_tmp[559051] "expr temp" "maybe param" "maybe type" "temp"
+        (559054 'move' call_tmp[559051](458201 call int(64)[13] 64))
+        (458204 'move' ret[458196](458203 'coerce' 0 call_tmp[559051]))
+        gotoReturn _end_dec[458194] _end_dec[458194]
+      }
+      unknown call_tmp[559056] "expr temp" "maybe param" "maybe type" "temp"
+      (559059 'move' call_tmp[559056](54710 call - got[54666] 1))
+      unknown call_tmp[559061] "expr temp" "maybe param" "maybe type" "temp"
+      (559064 'move' call_tmp[559061](458209 call int(64)[13] 64))
+      (458212 'move' ret[458196](458211 'coerce' call_tmp[559056] call_tmp[559061]))
+      gotoReturn _end_dec[458194] _end_dec[458194]
+    }
+    {
+      unknown call_tmp[559068] "expr temp" "maybe param" "maybe type" "temp"
+      (559071 'move' call_tmp[559068](339698 call _cnt _mt[232] this[54766]))
+      unknown call_tmp[559075] "expr temp" "maybe param" "maybe type" "temp"
+      (559078 'move' call_tmp[559075](54721 call(54716 call (partial) fetchSub _mt[232] call_tmp[559068]) 1))
+      (54722 call = got[54666] call_tmp[559075])
+      unknown call_tmp[559080] "expr temp" "maybe param" "maybe type" "temp"
+      (559083 'move' call_tmp[559080](54728 call - got[54666] 1))
+      unknown call_tmp[559085] "expr temp" "maybe param" "maybe type" "temp"
+      (559088 'move' call_tmp[559085](458217 call int(64)[13] 64))
+      (458220 'move' ret[458196](458219 'coerce' call_tmp[559080] call_tmp[559085]))
+      gotoReturn _end_dec[458194] _end_dec[458194]
+    }
+    label _end_dec[458194]
+    (458198 return ret[458196])
+  }
+  { scopeless type
+    (54661 call int(64)[13] 64)
+  }
+  function atomic_refcnt[54760].read[54741](arg _mt[54772]:_MT[227], arg this[54770]:atomic_refcnt[54760]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[458226] "RVV" "temp"
+    unknown call_tmp[559092] "expr temp" "maybe param" "maybe type" "temp"
+    (559095 'move' call_tmp[559092](339704 call _cnt _mt[232] this[54770]))
+    unknown call_tmp[559099] "expr temp" "maybe param" "maybe type" "temp"
+    (559102 'move' call_tmp[559099](54752 call(54748 call (partial) read _mt[232] call_tmp[559092])))
+    unknown call_tmp[559104] "expr temp" "maybe param" "maybe type" "temp"
+    (559107 'move' call_tmp[559104](458231 call int(64)[13] 64))
+    (458234 'move' ret[458226](458233 'coerce' call_tmp[559099] call_tmp[559104]))
+    (458228 return ret[458226])
+  }
+  { scopeless type
+    (54746 call int(64)[13] 64)
+  }
+  function atomic_refcnt[54760]._cnt[701473](arg _mt[701475]:_MT[227], ref arg this[701477]:atomic_refcnt[54760]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[701486] "RVV" "temp"
+    unknown call_tmp[701493] "expr temp" "maybe param" "maybe type" "temp"
+    (701496 'move' call_tmp[701493](701481 '.' this[701477] c"_cnt"))
+    (701491 'move' ret[701486](701490 'addr of' call_tmp[701493]))
+    (701488 return ret[701486])
+  }
+  function atomic_refcnt[54760].init[701498](arg _mt[701500]:_MT[227], ref arg this[701501]:atomic_refcnt[54760], in arg _cnt[701504] :
+  (701507 call chpl__processorAtomicType int(64)[13]) =
+  _typeDefaultT[239]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (701520 'init field' this[701501] c"_cnt" _cnt[701504])
+    (701523 return _void[47])
+  }
+  function atomic_refcnt[54760].init=[701525](arg _mt[701528]:_MT[227], ref arg this[701529]:atomic_refcnt[54760], arg other[701530]:atomic_refcnt[54760]) : void[4] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    unknown call_tmp[701559] "maybe param" "maybe type" "temp"
+    (701562 'move' call_tmp[701559](701538 call _cnt _mt[232] other[701530]))
+    unknown call_tmp[701564] "maybe param" "maybe type" "temp"
+    (701567 'move' call_tmp[701564](701547 call chpl__processorAtomicType int(64)[13]))
+    unknown tmp[701544] "temp"
+    (701549 'init var' tmp[701544] call_tmp[701559] call_tmp[701564])
+    (701551 'init field' this[701529] c"_cnt" tmp[701544])
+    (701555 return _void[47])
+  }
+  function atomic_refcnt[54760].deinit[701569](arg _mt[701571]:_MT[227], arg this[701573]:atomic_refcnt[54760]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (701575 return _void[47])
+  }
+  function atomic_refcnt[54760].writeThis[701578](arg _mt[701582]:_MT[227], arg this[701580]:atomic_refcnt[54760], arg f[701581]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (701587 call writeThisDefaultImpl f[701581] this[701580])
+    (701591 return _void[47])
+  }
+  function atomic_refcnt[54760].readThis[701593](arg _mt[701597]:_MT[227], arg this[701595]:atomic_refcnt[54760], arg f[701596]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (701601 call readThisDefaultImpl f[701596] this[701595])
+    (701606 return _void[47])
+  }
+  function ==[701608](arg _arg1[701610]:atomic_refcnt[54760], arg _arg2[701611]:atomic_refcnt[54760]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[701640]:bool[10] "RVV" "temp"
+    unknown call_tmp[701652] "expr temp" "maybe param" "maybe type" "temp"
+    (701655 'move' call_tmp[701652](701621 call _cnt _mt[232] _arg1[701610]))
+    unknown call_tmp[701657] "expr temp" "maybe param" "maybe type" "temp"
+    (701660 'move' call_tmp[701657](701625 call _cnt _mt[232] _arg2[701611]))
+    unknown call_tmp[701662] "expr temp" "maybe param" "maybe type" "temp"
+    (701665 'move' call_tmp[701662](701629 call != call_tmp[701652] call_tmp[701657]))
+    if call_tmp[701662]
+    {
+      (701645 'move' ret[701640](701644 'deref' 0))
+      gotoReturn _end_==[701638] _end_==[701638]
+    }
+    (701650 'move' ret[701640](701649 'deref' 1))
+    label _end_==[701638]
+    (701642 return ret[701640])
+  }
+  where {
+    unknown call_tmp[701667] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701670 'move' call_tmp[701667](701614 'typeof' _arg1[701610]))
+    unknown call_tmp[701672] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701675 'move' call_tmp[701672](701616 'typeof' _arg2[701611]))
+    (701618 call == call_tmp[701667] call_tmp[701672])
+  }
+  function !=[701677](arg _arg1[701679]:atomic_refcnt[54760], arg _arg2[701680]:atomic_refcnt[54760]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[701709]:bool[10] "RVV" "temp"
+    unknown call_tmp[701721] "expr temp" "maybe param" "maybe type" "temp"
+    (701724 'move' call_tmp[701721](701690 call _cnt _mt[232] _arg1[701679]))
+    unknown call_tmp[701726] "expr temp" "maybe param" "maybe type" "temp"
+    (701729 'move' call_tmp[701726](701694 call _cnt _mt[232] _arg2[701680]))
+    unknown call_tmp[701731] "expr temp" "maybe param" "maybe type" "temp"
+    (701734 'move' call_tmp[701731](701698 call != call_tmp[701721] call_tmp[701726]))
+    if call_tmp[701731]
+    {
+      (701714 'move' ret[701709](701713 'deref' 1))
+      gotoReturn _end_!=[701707] _end_!=[701707]
+    }
+    (701719 'move' ret[701709](701718 'deref' 0))
+    label _end_!=[701707]
+    (701711 return ret[701709])
+  }
+  where {
+    unknown call_tmp[701736] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701739 'move' call_tmp[701736](701683 'typeof' _arg1[701679]))
+    unknown call_tmp[701741] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701744 'move' call_tmp[701741](701685 'typeof' _arg2[701680]))
+    (701687 call == call_tmp[701736] call_tmp[701741])
+  }
+  function =[701746](ref arg _arg1[701748]:atomic_refcnt[54760], const?  ref arg _arg2[701749]:atomic_refcnt[54760]) : void[4] "assignop" "compiler generated" "last resort"
+  {
+    unknown call_tmp[701774] "expr temp" "maybe param" "maybe type" "temp"
+    (701777 'move' call_tmp[701774](701759 call _cnt _mt[232] _arg1[701748]))
+    unknown call_tmp[701781] "expr temp" "maybe param" "maybe type" "temp"
+    (701784 'move' call_tmp[701781](701763 call _cnt _mt[232] _arg2[701749]))
+    (701767 call = call_tmp[701774] call_tmp[701781])
+    (701770 return _void[47])
+  }
+  where {
+    unknown call_tmp[701786] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701789 'move' call_tmp[701786](701752 'typeof' _arg1[701748]))
+    unknown call_tmp[701791] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701794 'move' call_tmp[701791](701754 'typeof' _arg2[701749]))
+    (701756 call == call_tmp[701786] call_tmp[701791])
+  }
+  function chpl__defaultHash[701796](arg r[701798]:atomic_refcnt[54760]) : _unknown[43] "compiler generated" "last resort"
+  {
+    unknown ret[701810] "RVV" "temp"
+    unknown call_tmp[701817] "expr temp" "maybe param" "maybe type" "temp"
+    (701820 'move' call_tmp[701817](701800 call _cnt _mt[232] r[701798]))
+    unknown call_tmp[701822] "expr temp" "maybe param" "maybe type" "temp"
+    (701825 'move' call_tmp[701822](701804 call chpl__defaultHash call_tmp[701817]))
+    (701815 'move' ret[701810](701814 'deref' call_tmp[701822]))
+    (701812 return ret[701810])
+  }
+  type atomic_refcnt[54760] unknown _cnt[54612](54611 call chpl__processorAtomicType int(64)[13])
+  (329328 'used modules list'(54604 'use' ChapelStandard[19734]))
+}

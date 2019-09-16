@@ -1,0 +1,16 @@
+AST dump for stopInitCommDiags after pass cleanup.
+Module use list: 
+
+{
+  (170418 'use' CommDiagnostics)
+  if(170427 call _cond_test printInitVerboseComm)
+  {
+    (170424 call stopVerboseComm)
+  }
+  if(170448 call _cond_test printInitCommCounts)
+  {
+    (170434 call stopCommDiagnostics)
+    (170442 call writeln(170440 call getCommDiagnostics))
+    (170446 call resetCommDiagnostics)
+  }
+}

@@ -1,0 +1,35 @@
+AST dump for PrintModuleInitOrder after pass flattenClasses.
+Module use list: 
+
+{
+  const printModuleInitOrder[19910] "config" "const" 0
+  unknown moduleInitLevel[19921] "print module init indent level"(19919 call _cast(19918 call int(64)[13] 32) 2)
+  function printModuleInit[19930](arg s1[19927] :
+  c_string[19], arg s2[19933] :
+  c_string[19], arg len[19937] :
+  int(64)[13]) : _unknown[43] "print module init fn" "no return value for void"
+  {
+    function printf[19946](arg s1[19943] :
+    c_string[19], arg len[19952] :
+    (19951 call int(64)[13] 32), arg s2[19956] :
+    c_string[19]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+    {
+    }
+    if(19988 call _cond_test printModuleInitOrder[19910])
+    {
+      (19986 call printf s1[19927](19983 call +(19974 call + moduleInitLevel[19921](19972 call _cast(19971 call int(64)[13] 32) len[19937]))(19981 call _cast(19980 call int(64)[13] 32) 2)) s2[19933])
+    }
+  }
+  function initPrint[19997]() : _unknown[43] "no return value for void"
+  {
+    function printf[20005](arg s[20002] :
+    c_string[19]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+    {
+    }
+    (20030 call printf "Initializing Modules:\n")
+  }
+  if(20039 call _cond_test printModuleInitOrder[19910])
+  {
+    (20037 call initPrint)
+  }
+}

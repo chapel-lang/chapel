@@ -1,0 +1,25 @@
+AST dump for Assert after pass parse.
+Module use list: 
+
+{
+  (328306 'use' ChapelStandard)
+  function assert[197962](arg test[197959] :
+  bool[10]) : _unknown[43] "always propagate line file info" "insert line file info"
+  {
+    if(197972 call _cond_test(197965 call ! test))
+    {
+      { scopeless
+        (197970 'chpl_error' c"assert failed")
+      }
+    }
+  }
+  function assert[197987](arg test[197984] :
+  bool[10], arg args[197991]:_any[170](?) ...) : _unknown[43] "always propagate line file info" "insert line file info"
+  {
+    if(198019 call _cond_test(197995 call ! test))
+    {
+      unknown tmpstring[198005](198003 call + "assert failed - "(198002 call stringify(198000 'expand_tuple' args)))
+      (198017 'chpl_error'(198016 call(198012 call . tmpstring c"c_str")))
+    }
+  }
+}

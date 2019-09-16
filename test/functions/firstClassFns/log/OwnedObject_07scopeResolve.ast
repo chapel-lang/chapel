@@ -1,0 +1,361 @@
+AST dump for OwnedObject after pass scopeResolve.
+Module use list: ChapelStandard HaltWrappers 
+
+{
+  function _owned[39039](?).chpl_forwarding_expr1[38124](arg _mt[39043]:_MT[227], arg this[39041]:_owned[39039](?)) : _unknown[43] "compiler generated" "inline" "maybe ref" "method" "primary method" "reference to const when const this"
+  {
+    (38126 return(38123 call(335768 call . this[39041] c"borrow")))
+  }
+  function _owned[39039](?).init[38134](arg _mt[39047]:_MT[227], arg this[39045]:_owned[39039](?), arg chpl_t[38132]:_any[170](?)) : _unknown[43] "leaves this nil" "method" "primary method" "no return value for void"
+  {
+    if(38162 call _cond_test(38140 call !(38139 call isClass chpl_t[38132])))
+    {
+      (38160 call compilerError "owned only works with classes")
+    }
+    (38178 call =(38171 call . this[39045] c"chpl_t")(38177 call _to_borrowed chpl_t[38132]))
+    (38188 call =(38184 call . this[39045] c"chpl_p") nil[38])
+  }
+  function _owned[39039](?).init[38199](arg _mt[39051]:_MT[227], arg this[39049]:_owned[39039](?), arg p[38196] :
+  borrowed[200](?)) : _unknown[43] "method" "primary method" "no doc" "no return value for void"
+  {
+    (38219 call compilerError "cannot initialize owned from a borrow")
+    (38233 call(38225 call . this[39049] c"init")(38231 call _to_unmanaged p[38196]))
+  }
+  function _owned[39039](?).init[38243](arg _mt[39055]:_MT[227], arg this[39053]:_owned[39039](?), arg p[38240] :
+  unmanaged[209](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (38254 call =(38246 call . this[39053] c"chpl_t")(38253 call _to_borrowed(38251 'typeof' p[38240])))
+    (38266 call =(38259 call . this[39053] c"chpl_p")(38265 call _to_borrowed p[38240]))
+  }
+  function _owned[39039](?).init[38278](arg _mt[39059]:_MT[227], arg this[39057]:_owned[39039](?), arg p[38275] :
+  unknown T[38273]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (38309 call compilerError "owned only works with classes")
+    (38317 call =(38313 call . this[39057] c"chpl_t") T[38273])
+    (38325 call =(38321 call . this[39057] c"chpl_p") p[38275])
+  }
+  where {
+    (38304 call &&(38295 call &&(38285 call ==(38283 call isClass T[38273]) 0)(38293 call ==(328421 'is_subtype' _owned[39039](?) T[38273]) 0))(38302 call ==(38300 call isIterator p[38275]) 0))
+  }
+  function _owned[39039](?).init=[38337](arg _mt[39063]:_MT[227], arg this[39061]:_owned[39039](?), ref arg src[38334] :
+  _owned[39039](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(38377 call _cond_test(38353 call &&(38348 call &&(38343 call isNonNilableClass(38341 'typeof' this[39061]))(38347 call isNilableClass src[38334]))(38351 call ! 0)))
+    {
+      (38375 call compilerError "cannot create a non-nilable owned variable from a nilable class instance")
+    }
+    if(38460 call _cond_test(38396 call ==(328422 'is_coercible'(38391 call .(38390 'typeof' this[39061]) c"chpl_t")(38385 call . src[38334] c"chpl_t")) 0))
+    {
+      (38458 call compilerError "cannot coerce '"(38419 call _cast string[24](38417 'typeof' src[38334])) "' to '"(38440 call _cast string[24](38438 'typeof' this[39061])) "' in initialization")
+    }
+    (38474 call =(38466 call . this[39061] c"chpl_t")(38471 call .(38470 'typeof' this[39061]) c"chpl_t"))
+    (38487 call =(38478 call . this[39061] c"chpl_p")(38486 call(38482 call . src[38334] c"release")))
+    (38495 call(38491 call . this[39061] c"complete"))
+  }
+  function _owned[39039](?).init=[38505](arg _mt[39067]:_MT[227], arg this[39065]:_owned[39039](?), arg src[38502] :
+  _shared[41357](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (38525 call compilerError "cannot create an owned variable from a shared class instance")
+    (38533 call =(38529 call . this[39065] c"chpl_t") int(64)[13])
+  }
+  function _owned[39039](?).init=[38544](arg _mt[39071]:_MT[227], arg this[39069]:_owned[39039](?), arg src[38541] :
+  borrowed[200](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (38566 call compilerError "cannot create an owned variable from a borrowed class instance")
+    (38574 call =(38570 call . this[39069] c"chpl_t") int(64)[13])
+  }
+  function _owned[39039](?).init=[38585](arg _mt[39075]:_MT[227], arg this[39073]:_owned[39039](?), arg src[38582] :
+  unmanaged[209](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (38605 call compilerError "cannot create an owned variable from an unmanaged class instance")
+    (38613 call =(38609 call . this[39073] c"chpl_t") int(64)[13])
+  }
+  function _owned[39039](?).init=[38624](arg _mt[39079]:_MT[227], arg this[39077]:_owned[39039](?), arg src[38621] :
+  _nilType[36]) : _unknown[43] "method" "primary method" "no doc" "no return value for void"
+  {
+    (38636 call(38627 call . this[39077] c"init")(38632 call .(38631 'typeof' this[39077]) c"chpl_t"))
+    if(38669 call _cond_test(38646 call &&(38642 call isNonNilableClass(335811 call . this[39077] c"chpl_t"))(38644 call ! 0)))
+    {
+      (38666 call compilerError "Assigning non-nilable owned to nil")
+    }
+  }
+  function _owned[39039](?).init[38681](arg _mt[39083]:_MT[227], arg this[39081]:_owned[39039](?), ref arg src[38678] :
+  _owned[39039](?)) : _unknown[43] "method" "primary method" "no doc" "no return value for void"
+  {
+    (38691 call =(38684 call . this[39081] c"chpl_t")(38688 call . src[38678] c"chpl_t"))
+    (38705 call =(38696 call . this[39081] c"chpl_p")(38704 call(38700 call . src[38678] c"release")))
+  }
+  function _owned[39039](?).deinit[38712](arg _mt[39087]:_MT[227], arg this[39085]:_owned[39039](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+    if(38736 call _cond_test(38717 call isClass(335822 call . this[39085] c"chpl_p")))
+    {
+      if(38730 call _cond_test(38720 call !=(335827 call . this[39085] c"chpl_p") nil[38]))
+      {
+        (38727 call chpl__delete(38725 call _to_unmanaged(335832 call . this[39085] c"chpl_p")))
+      }
+    }
+  }
+  function _owned[39039](?).clear[38745](arg _mt[39091]:_MT[227], ref arg this[39089]:_owned[39039](?)) : _unknown[43] "leaves this nil" "method" "primary method" "no return value for void"
+  {
+    if(38765 call _cond_test(38749 call !=(335837 call . this[39089] c"chpl_p") nil[38]))
+    {
+      (38756 call chpl__delete(38754 call _to_unmanaged(335842 call . this[39089] c"chpl_p")))
+      (38762 call =(335847 call . this[39089] c"chpl_p") nil[38])
+    }
+  }
+  function _owned[39039](?).retain[38778](arg _mt[39095]:_MT[227], ref arg this[39093]:_owned[39039](?), arg newPtr[38775] :
+  unmanaged[209](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(38878 call _cond_test(38786 call !(328423 'is_coercible'(335853 call . this[39093] c"chpl_t")(38782 'typeof' newPtr[38775]))))
+    {
+      (38876 call compilerError(38873 call +(38855 call +(38846 call +(38828 call +(38810 call + "cannot retain '"(38808 call _cast string[24](38806 'typeof' newPtr[38775]))) "' ") "(expected '")(38853 call _cast string[24](38851 call _to_unmanaged(335859 call . this[39093] c"chpl_t")))) "')"))
+    }
+    unknown oldPtr[38885](335864 call . this[39093] c"chpl_p")
+    (38890 call =(335869 call . this[39093] c"chpl_p") newPtr[38775])
+    if(38902 call _cond_test oldPtr[38885])
+    {
+      (38899 call chpl__delete(38897 call _to_unmanaged oldPtr[38885]))
+    }
+  }
+  function _owned[39039](?).release[38911](arg _mt[39099]:_MT[227], ref arg this[39097]:_owned[39039](?)) : _unknown[43] "leaves this nil" "nil from this" "method" "primary method"
+  {
+    unknown oldPtr[38914](335877 call . this[39097] c"chpl_p")
+    (38920 call =(335882 call . this[39097] c"chpl_p") nil[38])
+    if(38961 call _cond_test(38928 call ==(38926 call _to_nilable(335887 call . this[39097] c"chpl_t"))(335892 call . this[39097] c"chpl_t")))
+    {
+      (38934 return(38933 call _to_unmanaged oldPtr[38914]))
+    }
+    {
+      if(38957 call _cond_test 0)
+      {
+        (38945 return(38944 call _to_unmanaged(38942 call _to_nonnil oldPtr[38914])))
+      }
+      {
+        (38954 return(38953 call _to_unmanaged(38950 call postfix! oldPtr[38914])))
+      }
+    }
+  }
+  function _owned[39039](?).borrow[38970](arg _mt[39103]:_MT[227], arg this[39101]:_owned[39039](?)) : _unknown[43] "nil from this" "method" "primary method"
+  {
+    if(39001 call _cond_test(38977 call ==(38975 call _to_nilable(335901 call . this[39101] c"chpl_t"))(335906 call . this[39101] c"chpl_t")))
+    {
+      (38980 return(335911 call . this[39101] c"chpl_p"))
+    }
+    {
+      if(38997 call _cond_test 0)
+      {
+        (38988 return(38987 call _to_nonnil(335917 call . this[39101] c"chpl_p")))
+      }
+      {
+        (38994 return(38992 call postfix!(335922 call . this[39101] c"chpl_p")))
+      }
+    }
+  }
+  function _owned[39039](?).borrow[39011](arg _mt[39107]:_MT[227], arg this[39105]:_owned[39039](?)) type : _unknown[43] "method" "primary method"
+  {
+    if(39031 call _cond_test(39018 call ==(39016 call _to_nilable(335927 call . this[39105] c"chpl_t"))(335932 call . this[39105] c"chpl_t")))
+    {
+      (39021 return(335937 call . this[39105] c"chpl_t"))
+    }
+    {
+      (39028 return(39027 call _to_nonnil(335942 call . this[39105] c"chpl_t")))
+    }
+  }
+  type _owned[39039](?) unknown chpl_t[38111] "no doc" "type variable" unknown chpl_p[38118] "no doc" "owned"(38117 'to nilable class' chpl_t[38111]) forwarding ( )
+  type managed _owned[389732](?)
+  type managed _owned?[389728](?)
+  function =[39116](ref arg lhs[39113] :
+  _owned[39039](?), ref arg rhs[39119] :
+  _owned[39039](?)) : _unknown[43] "assignop" "no return value for void"
+  {
+    if(39160 call _cond_test(39156 call &&(39147 call ==(39143 call . lhs[39113] c"chpl_p") nil[38])(39154 call ==(39150 call . rhs[39119] c"chpl_p") nil[38])))
+    {
+      (39158 return _void[47])
+    }
+    if(39238 call _cond_test 1)
+    {
+      if(39233 call _cond_test(39177 call ==(39172 call _to_nonnil(39168 call . lhs[39113] c"chpl_t"))(39174 call . lhs[39113] c"chpl_t")))
+      {
+        if(39228 call _cond_test(39190 call ==(39185 call _to_nilable(39181 call . rhs[39119] c"chpl_t"))(39187 call . rhs[39119] c"chpl_t")))
+        {
+          if(39223 call _cond_test(39197 call ==(39193 call . rhs[39119] c"chpl_p") nil[38]))
+          {
+            (39220 call nilCheckHalt module=[244] HaltWrappers[197622] "argument to owned = is nil")
+          }
+        }
+      }
+    }
+    (39257 call(39245 call . lhs[39113] c"retain")(39254 call postfix!(39253 call(39249 call . rhs[39119] c"release"))))
+    (329313 'used modules list'(39139 'use' HaltWrappers[197622] 'only' ))
+  }
+  where {
+    (39135 call || 0(39133 call !(39131 call &&(39126 call isNonNilableClass lhs[39113])(39130 call isNilableClass rhs[39119]))))
+  }
+  function =[39268](ref arg lhs[39265] :
+  _owned[39039](?), arg rhs[39271] :
+  _nilType[36]) : _unknown[43] "assignop" "no doc" "no return value for void"
+  {
+    (39290 call(39286 call . lhs[39265] c"clear"))
+  }
+  where {
+    (39281 call || 0(39279 call !(39278 call isNonNilableClass lhs[39265])))
+  }
+  function <=>[39306](ref arg lhs[39303] :
+  (39302 call _owned[39039](?) unknown t[39299]), ref arg rhs[39312] :
+  (39311 call _owned[39039](?) t[39299])) : _unknown[43] "no return value for void"
+  {
+    (39323 call <=>(39316 call . lhs[39303] c"chpl_p")(39320 call . rhs[39312] c"chpl_p"))
+  }
+  function chpl__initCopy[39335](ref arg src[39332] :
+  _owned[39039](?)) : _unknown[43] "init copy fn" "no doc"
+  {
+    unknown ret[39342](39341 'new'(39340 call _owned[39039](?) src[39332]))
+    (39347 return ret[39342])
+  }
+  function chpl__autoCopy[39357](ref arg src[39354] :
+  _owned[39039](?)) : _unknown[43] "auto copy fn" "no doc"
+  {
+    unknown ret[39364](39363 'new'(39362 call _owned[39039](?) src[39354]))
+    (39369 return ret[39364])
+  }
+  function chpl__autoDestroy[39379](ref arg x[39376] :
+  _owned[39039](?)) : _unknown[43] "auto destroy fn" "no doc" "no return value for void"
+  {
+    (39402 'call destructor'(39401 'deref' x[39376]))
+  }
+  function _owned[39039](?).readWriteThis[39412](arg _mt[39417]:_MT[227], arg this[39414]:_owned[39039](?) :
+  _owned[39039](?), arg f[39410]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    (39424 call <~> f[39410](39421 call . this[39414] c"chpl_p"))
+  }
+  function _cast[39439](arg t[39436] :
+  managed _owned?[389728](?), in arg x[39444] :
+  managed _owned[389732](?)) : _unknown[43] "inline" "no doc"
+  {
+    unknown castPtr[39477](39475 call _cast(39474 call _to_nilable(39472 call _to_unmanaged(39468 call . t[39436] c"chpl_t")))(39462 call . x[39444] c"chpl_p"))
+    (39486 call =(39482 call . x[39444] c"chpl_p") nil[38])
+    (39494 return(39493 'new'(39492 call _owned[39039](?) castPtr[39477])))
+  }
+  where {
+    (328425 'is_subtype'(39459 call _to_nonnil(39455 call . t[39436] c"chpl_t"))(39449 call . x[39444] c"chpl_t"))
+  }
+  function _cast[39508](arg t[39505] :
+  managed _owned?[389728](?), in arg x[39514] :
+  managed _owned?[389728](?)) : _unknown[43] "inline" "no doc"
+  {
+    unknown castPtr[39544](39542 call _cast(39541 call _to_nilable(39539 call _to_unmanaged(39535 call . t[39505] c"chpl_t")))(39529 call . x[39514] c"chpl_p"))
+    (39553 call =(39549 call . x[39514] c"chpl_p") nil[38])
+    (39561 return(39560 'new'(39559 call _owned[39039](?) castPtr[39544])))
+  }
+  where {
+    (328426 'is_subtype'(39524 call . t[39505] c"chpl_t")(39519 call . x[39514] c"chpl_t"))
+  }
+  function _cast[39574](arg t[39571] :
+  managed _owned[389732](?), in arg x[39579] :
+  managed _owned[389732](?)) : _unknown[43] "inline" "no doc"
+  {
+    unknown castPtr[39609](39607 call _cast(39606 call _to_nilable(39604 call _to_unmanaged(39600 call . t[39571] c"chpl_t")))(39594 call . x[39579] c"chpl_p"))
+    (39618 call =(39614 call . x[39579] c"chpl_p") nil[38])
+    (39628 return(39627 'new'(39626 call _owned[39039](?)(39623 call postfix! castPtr[39609]))))
+  }
+  where {
+    (328427 'is_subtype'(39589 call . t[39571] c"chpl_t")(39584 call . x[39579] c"chpl_t"))
+  }
+  function _cast[39641](arg t[39638] :
+  managed _owned[389732](?), in arg x[39647] :
+  managed _owned?[389728](?)) : _unknown[43] throws "inline" "no doc"
+  {
+    unknown castPtr[39680](39678 call _cast(39677 call _to_nilable(39675 call _to_unmanaged(39671 call . t[39638] c"chpl_t")))(39665 call . x[39647] c"chpl_p"))
+    if(39697 call _cond_test(39686 call == castPtr[39680] nil[38]))
+    {
+      (39694 'throw'(39693 'new'(39691 call _owned[39039](?)(39690 call anymanaged NilClassError[333101](?)))))
+    }
+    (39706 call =(39702 call . x[39647] c"chpl_p") nil[38])
+    (39716 return(39715 'new'(39714 call _owned[39039](?)(39711 call postfix! castPtr[39680]))))
+  }
+  where {
+    (328428 'is_subtype'(39660 call . t[39638] c"chpl_t")(39657 call _to_nonnil(39653 call . x[39647] c"chpl_t")))
+  }
+  function _cast[39729](arg t[39726] :
+  managed _owned[389732](?), ref arg x[39735] :
+  managed _owned?[389728](?)) : _unknown[43] throws "inline"
+  {
+    if(39768 call _cond_test(39757 call ==(39753 call . x[39735] c"chpl_p") nil[38]))
+    {
+      (39765 'throw'(39764 'new'(39762 call _owned[39039](?)(39761 call anymanaged NilClassError[333101](?)))))
+    }
+    unknown castPtr[39790](39789 'try-expr'(39787 call _cast(39786 call _to_nonnil(39784 call _to_unmanaged(39780 call . t[39726] c"chpl_t")))(39774 call . x[39735] c"chpl_p")))
+    (39798 call =(39794 call . x[39735] c"chpl_p") nil[38])
+    (39806 return(39805 'new'(39804 call _owned[39039](?) castPtr[39790])))
+  }
+  where {
+    (328429 'is_proper_subtype'(39750 call _to_nonnil(39746 call . x[39735] c"chpl_t"))(39740 call . t[39726] c"chpl_t"))
+  }
+  function _cast[39819](arg t[39816] :
+  managed _owned[389732](?), ref arg x[39824] :
+  managed _owned[389732](?)) : _unknown[43] throws "inline"
+  {
+    unknown castPtr[39855](39854 'try-expr'(39852 call _cast(39851 call _to_nonnil(39849 call _to_unmanaged(39845 call . t[39816] c"chpl_t")))(39839 call . x[39824] c"chpl_p")))
+    (39864 call =(39860 call . x[39824] c"chpl_p") nil[38])
+    (39872 return(39871 'new'(39870 call _owned[39039](?) castPtr[39855])))
+  }
+  where {
+    (328430 'is_proper_subtype'(39834 call . x[39824] c"chpl_t")(39829 call . t[39816] c"chpl_t"))
+  }
+  function _cast[39886](arg t[39883] :
+  managed _owned?[389728](?), ref arg x[39892] :
+  managed _owned?[389728](?)) : _unknown[43] "inline"
+  {
+    unknown castPtr[39922](39920 call _cast(39919 call _to_nilable(39917 call _to_unmanaged(39913 call . t[39883] c"chpl_t")))(39907 call . x[39892] c"chpl_p"))
+    if(39939 call _cond_test(39928 call != castPtr[39922] nil[38]))
+    {
+      (39935 call =(39931 call . x[39892] c"chpl_p") nil[38])
+    }
+    (39948 return(39947 'new'(39946 call _owned[39039](?) castPtr[39922])))
+  }
+  where {
+    (328431 'is_proper_subtype'(39902 call . x[39892] c"chpl_t")(39897 call . t[39883] c"chpl_t"))
+  }
+  function _cast[39962](arg t[39959] :
+  managed _owned?[389728](?), ref arg x[39967] :
+  managed _owned[389732](?)) : _unknown[43] "inline"
+  {
+    unknown castPtr[40000](39998 call _cast(39997 call _to_nilable(39995 call _to_unmanaged(39991 call . t[39959] c"chpl_t")))(39985 call . x[39967] c"chpl_p"))
+    if(40017 call _cond_test(40006 call != castPtr[40000] nil[38]))
+    {
+      (40013 call =(40009 call . x[39967] c"chpl_p") nil[38])
+    }
+    (40026 return(40025 'new'(40024 call _owned[39039](?) castPtr[40000])))
+  }
+  where {
+    (328432 'is_proper_subtype'(39980 call . x[39967] c"chpl_t")(39977 call _to_nonnil(39973 call . t[39959] c"chpl_t")))
+  }
+  function _cast[40037](arg t[40034] :
+  _owned[39039](?), arg x[40040] :
+  _nilType[36]) : _unknown[43] "inline" "no doc"
+  {
+    if(40081 call _cond_test(40059 call &&(40054 call !=(40049 call _to_nilable(40045 call . t[40034] c"chpl_t"))(40051 call . t[40034] c"chpl_t"))(40057 call ! 0)))
+    {
+      (40079 call compilerError "Illegal cast from nil to non-nilable owned type")
+    }
+    unknown tmp[40088] t[40034]
+    (40092 return tmp[40088])
+  }
+  function postfix![40102](const  ref arg x[40099] :
+  _owned[39039](?)) : _unknown[43] "always propagate line file info" "inline" "no doc"
+  {
+    if(40149 call _cond_test 1)
+    {
+      if(40144 call _cond_test(40121 call ==(40116 call _to_nilable(40112 call . x[40099] c"chpl_t"))(40118 call . x[40099] c"chpl_t")))
+      {
+        if(40139 call _cond_test(40128 call ==(40124 call . x[40099] c"chpl_p") nil[38]))
+        {
+          (40136 call nilCheckHalt module=[244] HaltWrappers[197622] "argument to ! is nil")
+        }
+      }
+    }
+    (40160 return(40159 call _to_nonnil(40155 call . x[40099] c"chpl_p")))
+    (329315 'used modules list'(40106 'use' HaltWrappers[197622] 'only' ))
+  }
+  (329311 'used modules list'(38107 'use' ChapelStandard[19734]))
+}

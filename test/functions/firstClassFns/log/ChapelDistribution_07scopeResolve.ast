@@ -1,0 +1,1496 @@
+AST dump for ChapelDistribution after pass scopeResolve.
+Module use list: ChapelArray ChapelLocks ChapelRange LinkedLists Sort 
+
+{
+  function BaseDist[142349].deinit[141829](arg _mt[142353]:_MT[227], arg this[142351]:BaseDist[142349]) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseDist[142349].remove[141836](arg _mt[142357]:_MT[227], arg this[142355]:BaseDist[142349]) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    unknown free_dist[141842] 0
+    if(141915 call _cond_test(141848 call(354921 call . this[142355] c"dsiTrackDomains")))
+    {
+      {
+        const tmp[141903] "const" "temp"
+        (141904 'move' tmp[141903](141901 'deref'(141900 '_wide_get_locale' this[142355])))
+        {
+          unknown dom_count[141853](141851 call - 1)
+          {
+            (141862 call(141858 call .(354929 call . this[142355] c"_domsLock") c"lock"))
+            (141867 call =(354936 call . this[142355] c"_free_when_no_doms") 1)
+            (141875 call = dom_count[141853](141872 call .(354942 call . this[142355] c"_doms") c"size"))
+            (141883 call(141879 call .(354947 call . this[142355] c"_domsLock") c"unlock"))
+          }
+          if(141895 call _cond_test(141888 call == dom_count[141853] 0))
+          {
+            (141892 call = free_dist[141842] 1)
+          }
+        }
+      }
+    }
+    {
+      (141911 call = free_dist[141842] 1)
+    }
+    if(141929 call _cond_test free_dist[141842])
+    {
+      (141924 return(141923 call _to_unmanaged this[142355]))
+    }
+    {
+      (141927 return nil[38])
+    }
+  }
+  { scopeless type
+    unmanaged BaseDist?[389876]
+  }
+  function BaseDist[142349].remove_dom[141945](arg _mt[142361]:_MT[227], arg this[142359]:BaseDist[142349], arg x[141942] :
+  unmanaged BaseDom[389803]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown count[141951](141949 call - 1)
+    {
+      const tmp[142016] "const" "temp"
+      (142017 'move' tmp[142016](142014 'deref'(142013 '_wide_get_locale' this[142359])))
+      {
+        unknown cnt[141959](141957 call - 1)
+        {
+          (141968 call(141964 call .(354959 call . this[142359] c"_domsLock") c"lock"))
+          (141977 call(141972 call .(354964 call . this[142359] c"_doms") c"remove") x[141942])
+          (141984 call = cnt[141959](141981 call .(354971 call . this[142359] c"_doms") c"size"))
+          if(141995 call _cond_test(141988 call !(354976 call . this[142359] c"_free_when_no_doms")))
+          {
+            (141992 call += cnt[141959] 1)
+          }
+          (142005 call(142001 call .(354982 call . this[142359] c"_domsLock") c"unlock"))
+        }
+        (142010 call = count[141951] cnt[141959])
+      }
+    }
+    (142025 return(142023 call == count[141951] 0))
+  }
+  { scopeless type
+    bool[10]
+  }
+  function BaseDist[142349].add_dom[142037](arg _mt[142365]:_MT[227], arg this[142363]:BaseDist[142349], arg x[142034] :
+  unmanaged BaseDom[389803]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[142066] "const" "temp"
+      (142067 'move' tmp[142066](142064 'deref'(142063 '_wide_get_locale' this[142363])))
+      {
+        (142045 call(142041 call .(354992 call . this[142363] c"_domsLock") c"lock"))
+        (142054 call(142049 call .(354997 call . this[142363] c"_doms") c"append") x[142034])
+        (142061 call(142057 call .(355003 call . this[142363] c"_domsLock") c"unlock"))
+      }
+    }
+  }
+  function BaseDist[142349].dsiNewRectangularDom[142080](arg _mt[142369]:_MT[227], arg this[142367]:BaseDist[142349], param arg rank[142077] :
+  int(64)[13], arg idxType[142082]:_any[170](?), param arg stridable[142085] :
+  bool[10], arg inds[142088]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (142108 call compilerError "rectangular domains not supported by this distribution")
+  }
+  function BaseDist[142349].dsiNewAssociativeDom[142117](arg _mt[142373]:_MT[227], arg this[142371]:BaseDist[142349], arg idxType[142115]:_any[170](?), param arg parSafe[142120] :
+  bool[10]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (142141 call compilerError "associative domains not supported by this distribution")
+  }
+  function BaseDist[142349].dsiNewAssociativeDom[142150](arg _mt[142377]:_MT[227], arg this[142375]:BaseDist[142349], arg idxType[142148]:_any[170](?), param arg parSafe[142153] :
+  bool[10]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (142178 call compilerError "enumerated domains not supported by this distribution")
+  }
+  where {
+    (142159 call isEnumType idxType[142148])
+  }
+  function BaseDist[142349].dsiNewOpaqueDom[142188](arg _mt[142381]:_MT[227], arg this[142379]:BaseDist[142349], arg idxType[142186]:_any[170](?), param arg parSafe[142191] :
+  bool[10]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (142212 call compilerError "opaque domains not supported by this distribution")
+  }
+  function BaseDist[142349].dsiNewSparseDom[142223](arg _mt[142385]:_MT[227], arg this[142383]:BaseDist[142349], param arg rank[142220] :
+  int(64)[13], arg idxType[142225]:_any[170](?), arg dom[142228] :
+  _domain[123390](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (142249 call compilerError "sparse domains not supported by this distribution")
+  }
+  function BaseDist[142349].dsiSupportsPrivatization[142256](arg _mt[142389]:_MT[227], arg this[142387]:BaseDist[142349]) param : _unknown[43] "method" "primary method"
+  {
+    (142259 return 0)
+  }
+  function BaseDist[142349].dsiRequiresPrivatization[142266](arg _mt[142393]:_MT[227], arg this[142391]:BaseDist[142349]) param : _unknown[43] "method" "primary method"
+  {
+    (142269 return 0)
+  }
+  function BaseDist[142349].dsiDestroyDist[142276](arg _mt[142397]:_MT[227], arg this[142395]:BaseDist[142349]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseDist[142349].dsiDisplayRepresentation[142283](arg _mt[142401]:_MT[227], arg this[142399]:BaseDist[142349]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (142303 call writeln "<no way to display representation>")
+  }
+  function BaseDist[142349].trackDomains[142310](arg _mt[142405]:_MT[227], arg this[142403]:BaseDist[142349]) param : _unknown[43] "method" "primary method"
+  {
+    (142313 return 1)
+  }
+  function BaseDist[142349].dsiTrackDomains[142320](arg _mt[142409]:_MT[227], arg this[142407]:BaseDist[142349]) : _unknown[43] "method" "primary method"
+  {
+    (142323 return 1)
+  }
+  function BaseDist[142349].singleton[142330](arg _mt[142413]:_MT[227], arg this[142411]:BaseDist[142349]) param : _unknown[43] "method" "primary method"
+  {
+    (142333 return 0)
+  }
+  function BaseDist[142349].dsiIsLayout[142340](arg _mt[142417]:_MT[227], arg this[142415]:BaseDist[142349]) param : _unknown[43] "method" "primary method"
+  {
+    (142343 return 0)
+  }
+  type BaseDist[142349] val super[331007]:object[253] "super class" unknown _doms[141811](141810 call LinkedList[275404](?) unmanaged BaseDom[389803]) unknown _domsLock[141815] chpl_LocalSpinlock[180469] unknown _free_when_no_doms[141819] bool[10] unknown pid[141824] nullPid[111825] int(64)[13]
+  type unmanaged BaseDist[389902]
+  type unmanaged BaseDist?[389876]
+  type anymanaged BaseDist?[389872](?)
+  type anymanaged BaseDist[350867](?)
+  function BaseDom[143244].init[142448](arg _mt[143248]:_MT[227], arg this[143246]:BaseDom[143244]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseDom[143244].deinit[142455](arg _mt[143252]:_MT[227], arg this[143250]:BaseDom[143244]) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseDom[143244].dsiMyDist[142462](arg _mt[143256]:_MT[227], arg this[143254]:BaseDom[143244]) : _unknown[43] "method" "primary method" "unsafe"
+  {
+    (142484 call halt "internal error: dsiMyDist is not implemented")
+    unknown ret[142489] unmanaged BaseDist[389902]
+    (142493 return ret[142489])
+  }
+  { scopeless type
+    unmanaged BaseDist[389902]
+  }
+  function BaseDom[143244].remove[142500](arg _mt[143260]:_MT[227], arg this[143258]:BaseDom[143244]) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (142528 call assert(142525 call ==(142521 call(142517 call .(142514 call(355020 call . this[143258] c"dsiMyDist")) c"dsiTrackDomains"))(142524 call(355026 call . this[143258] c"dsiLinksDistribution"))))
+    unknown ret_dom[142535] nil[38] unmanaged BaseDom?[389887]
+    unknown ret_dist[142542] nil[38] unmanaged BaseDist?[389876]
+    unknown dist[142548](142547 call(355032 call . this[143258] c"dsiMyDist"))
+    unknown free_dom[142552] 0
+    unknown remove_dist[142556] 0
+    {
+      const tmp[142640] "const" "temp"
+      (142641 'move' tmp[142640](142638 'deref'(142637 '_wide_get_locale' this[143258])))
+      {
+        unknown arr_count[142561] 0
+        {
+          (142570 call(142566 call .(355040 call . this[143258] c"_arrsLock") c"lock"))
+          (142578 call = arr_count[142561](142575 call .(355046 call . this[143258] c"_arrs") c"size"))
+          (142583 call += arr_count[142561](355054 call . this[143258] c"_arrs_containing_dom"))
+          (142588 call =(355059 call . this[143258] c"_free_when_no_arrs") 1)
+          (142596 call(142592 call .(355064 call . this[143258] c"_arrsLock") c"unlock"))
+        }
+        if(142633 call _cond_test(142601 call == arr_count[142561] 0))
+        {
+          (142605 call = free_dom[142552] 1)
+          if(142629 call _cond_test(142611 call(355070 call . this[143258] c"dsiLinksDistribution")))
+          {
+            (142625 call = remove_dist[142556](142624 call(142616 call . dist[142548] c"remove_dom")(142622 call _to_unmanaged this[143258])))
+          }
+        }
+      }
+    }
+    if(142654 call _cond_test free_dom[142552])
+    {
+      (142651 call = ret_dom[142535](142650 call _to_unmanaged this[143258]))
+    }
+    if(142665 call _cond_test remove_dist[142556])
+    {
+      (142662 call = ret_dist[142542] dist[142548])
+    }
+    (142675 return(142673 call _build_tuple ret_dom[142535] ret_dist[142542]))
+  }
+  { scopeless type
+    (142509 call _build_tuple unmanaged BaseDom?[389887] unmanaged BaseDist?[389876])
+  }
+  function BaseDom[143244].remove_arr[142687](arg _mt[143264]:_MT[227], arg this[143262]:BaseDom[143244], arg x[142684] :
+  unmanaged BaseArr[389867], param arg rmFromList[142690] =
+  1) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown count[142697](142695 call - 1)
+    {
+      const tmp[142779] "const" "temp"
+      (142780 'move' tmp[142779](142777 'deref'(142776 '_wide_get_locale' this[143262])))
+      {
+        unknown cnt[142705](142703 call - 1)
+        {
+          (142714 call(142710 call .(355088 call . this[143262] c"_arrsLock") c"lock"))
+          if(142731 call _cond_test rmFromList[142690])
+          {
+            (142724 call(142719 call .(355094 call . this[143262] c"_arrs") c"remove") x[142684])
+          }
+          {
+            (142728 call -=(355100 call . this[143262] c"_arrs_containing_dom") 1)
+          }
+          (142742 call = cnt[142705](142739 call .(355106 call . this[143262] c"_arrs") c"size"))
+          (142747 call += cnt[142705](355112 call . this[143262] c"_arrs_containing_dom"))
+          if(142758 call _cond_test(142751 call !(355117 call . this[143262] c"_free_when_no_arrs")))
+          {
+            (142755 call += cnt[142705] 1)
+          }
+          (142768 call(142764 call .(355123 call . this[143262] c"_arrsLock") c"unlock"))
+        }
+        (142773 call = count[142697] cnt[142705])
+      }
+    }
+    (142788 return(142786 call == count[142697] 0))
+  }
+  { scopeless type
+    bool[10]
+  }
+  function BaseDom[143244].add_arr[142800](arg _mt[143268]:_MT[227], arg this[143266]:BaseDom[143244], arg x[142797] :
+  unmanaged BaseArr[389867], param arg locking[142803] =
+  1, param arg addToList[142807] =
+  1) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[142861] "const" "temp"
+      (142862 'move' tmp[142861](142859 'deref'(142858 '_wide_get_locale' this[143266])))
+      {
+        if(142819 call _cond_test locking[142803])
+        {
+          (142817 call(142813 call .(355134 call . this[143266] c"_arrsLock") c"lock"))
+        }
+        if(142839 call _cond_test addToList[142807])
+        {
+          (142832 call(142827 call .(355140 call . this[143266] c"_arrs") c"append") x[142797])
+        }
+        {
+          (142836 call +=(355146 call . this[143266] c"_arrs_containing_dom") 1)
+        }
+        if(142853 call _cond_test locking[142803])
+        {
+          (142851 call(142847 call .(355152 call . this[143266] c"_arrsLock") c"unlock"))
+        }
+      }
+    }
+  }
+  function BaseDom[143244].remove_containing_arr[142876](arg _mt[143272]:_MT[227], arg this[143270]:BaseDom[143244], arg x[142873] :
+  unmanaged BaseArr[389867]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown count[142882](142880 call - 1)
+    {
+      const tmp[142923] "const" "temp"
+      (142924 'move' tmp[142923](142921 'deref'(142920 '_wide_get_locale' this[143270])))
+      {
+        (142892 call(142888 call .(355159 call . this[143270] c"_arrsLock") c"lock"))
+        (142897 call -=(355164 call . this[143270] c"_arrs_containing_dom") 1)
+        (142905 call = count[142882](142902 call .(355170 call . this[143270] c"_arrs") c"size"))
+        (142910 call += count[142882](355176 call . this[143270] c"_arrs_containing_dom"))
+        (142918 call(142914 call .(355181 call . this[143270] c"_arrsLock") c"unlock"))
+      }
+    }
+    (142929 return count[142882])
+  }
+  { scopeless type
+    int(64)[13]
+  }
+  function BaseDom[143244].add_containing_arr[142941](arg _mt[143276]:_MT[227], arg this[143274]:BaseDom[143244], arg x[142938] :
+  unmanaged BaseArr[389867]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[142967] "const" "temp"
+      (142968 'move' tmp[142967](142965 'deref'(142964 '_wide_get_locale' this[143274])))
+      {
+        (142949 call(142945 call .(355189 call . this[143274] c"_arrsLock") c"lock"))
+        (142954 call +=(355194 call . this[143274] c"_arrs_containing_dom") 1)
+        (142962 call(142958 call .(355199 call . this[143274] c"_arrsLock") c"unlock"))
+      }
+    }
+  }
+  function BaseDom[143244]._backupArrays[142977](arg _mt[143280]:_MT[227], arg this[143278]:BaseDom[143244]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[142990] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[142991] "expr temp" "temp"
+      (143000 'move' _iterator[142991](142998 call _getIterator(355204 call . this[143278] c"_arrs")))
+      Defer
+      {
+        {
+          (143016 call _freeIterator _iterator[142991])
+        }
+      }
+      { scopeless type
+        (143005 'move' _indexOfInterest[142990](143002 call iteratorIndex _iterator[142991]))
+      }
+      ForLoop
+      {
+        unknown arr[143009] "index var" "insert auto destroy"
+        (143011 'move' arr[143009] _indexOfInterest[142990])
+        (142988 call(142984 call . arr[143009] c"_backupArray"))
+        label _continueLabel[142995]
+        _indexOfInterest[142990]
+        _iterator[142991]
+      }
+      label _breakLabel[142996]
+    }
+  }
+  function BaseDom[143244]._removeArrayBackups[143028](arg _mt[143284]:_MT[227], arg this[143282]:BaseDom[143244]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[143041] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[143042] "expr temp" "temp"
+      (143051 'move' _iterator[143042](143049 call _getIterator(355210 call . this[143282] c"_arrs")))
+      Defer
+      {
+        {
+          (143067 call _freeIterator _iterator[143042])
+        }
+      }
+      { scopeless type
+        (143056 'move' _indexOfInterest[143041](143053 call iteratorIndex _iterator[143042]))
+      }
+      ForLoop
+      {
+        unknown arr[143060] "index var" "insert auto destroy"
+        (143062 'move' arr[143060] _indexOfInterest[143041])
+        (143039 call(143035 call . arr[143060] c"_removeArrayBackup"))
+        label _continueLabel[143046]
+        _indexOfInterest[143041]
+        _iterator[143042]
+      }
+      label _breakLabel[143047]
+    }
+  }
+  function BaseDom[143244]._preserveArrayElements[143081](arg _mt[143288]:_MT[227], arg this[143286]:BaseDom[143244], arg oldslot[143079]:_any[170](?), arg newslot[143083]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[143098] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[143099] "expr temp" "temp"
+      (143108 'move' _iterator[143099](143106 call _getIterator(355216 call . this[143286] c"_arrs")))
+      Defer
+      {
+        {
+          (143124 call _freeIterator _iterator[143099])
+        }
+      }
+      { scopeless type
+        (143113 'move' _indexOfInterest[143098](143110 call iteratorIndex _iterator[143099]))
+      }
+      ForLoop
+      {
+        unknown arr[143117] "index var" "insert auto destroy"
+        (143119 'move' arr[143117] _indexOfInterest[143098])
+        (143096 call(143090 call . arr[143117] c"_preserveArrayElement") oldslot[143079] newslot[143083])
+        label _continueLabel[143103]
+        _indexOfInterest[143098]
+        _iterator[143099]
+      }
+      label _breakLabel[143104]
+    }
+  }
+  function BaseDom[143244].dsiSupportsPrivatization[143136](arg _mt[143292]:_MT[227], arg this[143290]:BaseDom[143244]) param : _unknown[43] "method" "primary method"
+  {
+    (143139 return 0)
+  }
+  function BaseDom[143244].dsiRequiresPrivatization[143146](arg _mt[143296]:_MT[227], arg this[143294]:BaseDom[143244]) param : _unknown[43] "method" "primary method"
+  {
+    (143149 return 0)
+  }
+  function BaseDom[143244].linksDistribution[143156](arg _mt[143300]:_MT[227], arg this[143298]:BaseDom[143244]) param : _unknown[43] "method" "primary method"
+  {
+    (143159 return 1)
+  }
+  function BaseDom[143244].dsiLinksDistribution[143166](arg _mt[143304]:_MT[227], arg this[143302]:BaseDom[143244]) : _unknown[43] "method" "primary method"
+  {
+    (143169 return 1)
+  }
+  function BaseDom[143244].dsiDestroyDom[143176](arg _mt[143308]:_MT[227], arg this[143306]:BaseDom[143244]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseDom[143244].dsiDisplayRepresentation[143183](arg _mt[143312]:_MT[227], arg this[143310]:BaseDom[143244]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (143188 call writeln "<no way to display representation>")
+  }
+  function anymanaged anynil BaseDom[389611](?).isDefaultRectangular[143195](arg _mt[143316]:_MT[227], arg this[143314]:anymanaged anynil BaseDom[389611](?)) param : _unknown[43] "method" "primary method"
+  {
+    (143198 return 0)
+  }
+  function BaseDom[143244].isDefaultRectangular[143205](arg _mt[143320]:_MT[227], arg this[143318]:BaseDom[143244]) param : _unknown[43] "method" "primary method"
+  {
+    (143208 return 0)
+  }
+  function BaseDom[143244].isSliceDomainView[143215](arg _mt[143324]:_MT[227], arg this[143322]:BaseDom[143244]) param : _unknown[43] "method" "primary method"
+  {
+    (143218 return 0)
+  }
+  function BaseDom[143244].isRankChangeDomainView[143225](arg _mt[143328]:_MT[227], arg this[143326]:BaseDom[143244]) param : _unknown[43] "method" "primary method"
+  {
+    (143228 return 0)
+  }
+  function BaseDom[143244].isReindexDomainView[143235](arg _mt[143332]:_MT[227], arg this[143330]:BaseDom[143244]) param : _unknown[43] "method" "primary method"
+  {
+    (143238 return 0)
+  }
+  type BaseDom[143244] val super[331011]:object[253] "super class" unknown _arrs[142426](142425 call LinkedList[275404](?) unmanaged BaseArr[389867]) unknown _arrs_containing_dom[142430] int(64)[13] unknown _arrsLock[142434] chpl_LocalSpinlock[180469] unknown _free_when_no_arrs[142438] bool[10] unknown pid[142443] nullPid[111825] int(64)[13]
+  type unmanaged BaseDom?[389887]
+  type anymanaged BaseDom?[389883](?)
+  type unmanaged BaseDom[389803]
+  type anymanaged anynil BaseDom[389611](?)
+  type anymanaged BaseDom[339776](?)
+  function BaseRectangularDom[143416](?).getBaseArrType[143351](arg _mt[143420]:_MT[227], arg this[143418]:BaseRectangularDom[143416](?)) type : _unknown[43] "method" "primary method"
+  {
+    unknown tmp[143364](143363 'new'(143362 'to unmanaged class from unknown'(143361 call anymanaged BaseArrOverRectangularDom[355223](?)(rank =(355228 call . this[143418] c"rank"))(idxType =(355233 call . this[143418] c"idxType"))(stridable =(355238 call . this[143418] c"stridable")))))
+    (143370 return(143369 'typeof' tmp[143364]))
+  }
+  function BaseRectangularDom[143416](?).deinit[143376](arg _mt[143424]:_MT[227], arg this[143422]:BaseRectangularDom[143416](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseRectangularDom[143416](?).dsiAdd[143385](arg _mt[143428]:_MT[227], arg this[143426]:BaseRectangularDom[143416](?), arg x[143383]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (143390 call compilerError "Cannot add indices to a rectangular domain")
+    (143394 return 0)
+  }
+  function BaseRectangularDom[143416](?).dsiRemove[143402](arg _mt[143432]:_MT[227], arg this[143430]:BaseRectangularDom[143416](?), arg x[143400]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (143407 call compilerError "Cannot remove indices from a rectangular domain")
+    (143411 return 0)
+  }
+  type BaseRectangularDom[143416](?) val super[331013]:BaseDom[143244] "super class" unknown rank[143339] "param" int(64)[13] unknown idxType[143342] "type variable" unknown stridable[143346] "param" bool[10]
+  type anymanaged BaseRectangularDom[350552](?)
+  function BaseSparseDomImpl[144471](?).deinit[143450](arg _mt[144475]:_MT[227], arg this[144473]:BaseSparseDomImpl[144471](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseSparseDomImpl[144471](?).dsiBulkAdd[143468](arg _mt[144479]:_MT[227], arg this[144477]:BaseSparseDomImpl[144471](?), arg inds[143465] :
+  (143462 call chpl__buildArrayRuntimeType nil[38](143460 call chpl__buildIndexType(355244 call . this[144477] c"rank")(355249 call . this[144477] c"idxType"))), arg dataSorted[143471] =
+  0, arg isUnique[143475] =
+  0, arg preserveInds[143479] =
+  1, arg addOn[143487] =
+  (143485 call _cast borrowed locale?[389810] nil[38])) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    if(143520 call _cond_test(143494 call &&(143491 call ! dataSorted[143471]) preserveInds[143479]))
+    {
+      unknown _inds[143497] inds[143465]
+      (143508 return(143507 call(355258 call . this[144477] c"bulkAdd_help") _inds[143497] dataSorted[143471] isUnique[143475] addOn[143487]))
+    }
+    {
+      (143517 return(143516 call(355266 call . this[144477] c"bulkAdd_help") inds[143465] dataSorted[143471] isUnique[143475] addOn[143487]))
+    }
+  }
+  function BaseSparseDomImpl[144471](?).bulkAdd_help[143542](arg _mt[144483]:_MT[227], arg this[144481]:BaseSparseDomImpl[144471](?), arg inds[143539] :
+  (143537 call chpl__buildArrayRuntimeType unknown indsDom[143529](143535 call chpl__buildIndexType(355275 call . this[144481] c"rank")(355280 call . this[144481] c"idxType"))), arg dataSorted[143545] =
+  0, arg isUnique[143549] =
+  0, arg addOn[143557] =
+  (143555 call _cast borrowed locale?[389810] nil[38])) : _unknown[43] "method" "primary method"
+  {
+    (143578 call halt "Helper function called on the BaseSparseDomImpl")
+    (143584 return(143582 call - 1))
+  }
+  function BaseSparseDomImpl[144471](?)._grow[143594](arg _mt[144487]:_MT[227], arg this[144485]:BaseSparseDomImpl[144471](?), arg size[143591] :
+  int(64)[13], arg factor[143597] =
+  arrayAsVecGrowthFactor[111851]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    const oldNNZDomSize[143604] "const"(143601 call .(355286 call . this[144485] c"nnzDom") c"size")
+    if(143644 call _cond_test(143610 call > size[143591] oldNNZDomSize[143604]))
+    {
+      const _newNNZDomSize[143627] "const"(143624 IfExpr  oldNNZDomSize[143604] then
+      { scopeless
+        (143621 call _cast int(64)[13](143619 call ceil(143616 call * factor[143597] oldNNZDomSize[143604])))
+      } else
+      { scopeless
+        1
+      } )
+      (143641 call =(355296 call . this[144485] c"nnzDom")(143639 call chpl__buildDomainExpr(143636 call #(143633 call chpl_build_low_bounded_range 1) _newNNZDomSize[143627])))
+    }
+  }
+  function BaseSparseDomImpl[144471](?)._shrink[143656](arg _mt[144491]:_MT[227], arg this[144489]:BaseSparseDomImpl[144471](?), arg size[143653] :
+  int(64)[13], arg factor[143659] =
+  arrayAsVecGrowthFactor[111851]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    if(143728 call _cond_test(143664 call == size[143653] 0))
+    {
+      (143674 call =(355304 call . this[144489] c"nnzDom")(143672 call chpl__buildDomainExpr(143669 call chpl_build_bounded_range 1 0)))
+    }
+    {
+      const shrinkThreshold[143691] "const"(143689 call _cast int(64)[13](143686 call /(143679 call .(355309 call . this[144489] c"nnzDom") c"size")(143684 call ** factor[143659] 2)))
+      if(143724 call _cond_test(143697 call < size[143653] shrinkThreshold[143691]))
+      {
+        const _newNNZDomSize[143709] "const"(143707 call _cast int(64)[13](143704 call /(143700 call .(355317 call . this[144489] c"nnzDom") c"size") factor[143659]))
+        (143721 call =(355323 call . this[144489] c"nnzDom")(143719 call chpl__buildDomainExpr(143716 call chpl_build_bounded_range 1 _newNNZDomSize[143709])))
+      }
+    }
+  }
+  function BaseSparseDomImpl[144471](?)._bulkGrow[143737](arg _mt[144495]:_MT[227], arg this[144493]:BaseSparseDomImpl[144471](?)) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    const nnz[143742] "const"(143741 call(355330 call . this[144493] c"getNNZ"))
+    if(143783 call _cond_test(143751 call > nnz[143742](143748 call .(355336 call . this[144493] c"nnzDom") c"size")))
+    {
+      const _newNNZDomSize[143768] "const"(143766 call _cast int(64)[13](143764 call exp2(143761 call +(143757 call log2 nnz[143742]) 1.0)))
+      (143780 call =(355342 call . this[144493] c"nnzDom")(143778 call chpl__buildDomainExpr(143775 call chpl_build_bounded_range 1 _newNNZDomSize[143768])))
+    }
+  }
+  function BaseSparseDomImpl[144471](?)._countDuplicates[143793](arg _mt[144499]:_MT[227], arg this[144497]:BaseSparseDomImpl[144471](?), arg arr[143791]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown dupCount[143802](143800 call - 1)
+    unknown prev[143816](143815 call arr[143791](143811 call .(143808 call . arr[143791] c"_dom") c"low"))
+    {
+      unknown _indexOfInterest[143844] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[143845] "expr temp" "temp"
+      (143854 'move' _iterator[143845](143852 call _getIterator arr[143791]))
+      Defer
+      {
+        {
+          (143870 call _freeIterator _iterator[143845])
+        }
+      }
+      { scopeless type
+        (143859 'move' _indexOfInterest[143844](143856 call iteratorIndex _iterator[143845]))
+      }
+      ForLoop
+      {
+        unknown a[143863] "index var" "insert auto destroy"
+        (143865 'move' a[143863] _indexOfInterest[143844])
+        {
+          if(143835 call _cond_test(143823 call == a[143863] prev[143816]))
+          {
+            (143827 call += dupCount[143802] 1)
+          }
+          {
+            (143832 call = prev[143816] a[143863])
+          }
+          {
+          }
+        }
+        label _continueLabel[143849]
+        _indexOfInterest[143844]
+        _iterator[143845]
+      }
+      label _breakLabel[143850]
+    }
+    (143878 return dupCount[143802])
+  }
+  where {
+    (143798 call isArray arr[143791])
+  }
+  function BaseSparseDomImpl[144471](?).bulkAdd_prepareInds[143887](arg _mt[144503]:_MT[227], arg this[144501]:BaseSparseDomImpl[144471](?), arg inds[143885]:_any[170](?), arg dataSorted[143889]:_any[170](?), arg isUnique[143891]:_any[170](?), arg cmp[143893]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(143910 call _cond_test(143901 call ! dataSorted[143889]))
+    {
+      (143908 call sort inds[143885](comparator = cmp[143893]))
+    }
+    if(144119 call _cond_test 1)
+    {
+      if(143949 call _cond_test(143925 call && dataSorted[143889](143923 call !(143922 call isSorted inds[143885](comparator = cmp[143893])))))
+      {
+        (143947 call halt "bulkAdd: Data not sorted, call the function with \n              dataSorted=false")
+      }
+      if(144075 call _cond_test isUnique[143891])
+      {
+        const indsStart[143963] "const"(143960 call .(143957 call . inds[143885] c"_dom") c"low")
+        const indsEnd[143974] "const"(143971 call .(143968 call . inds[143885] c"_dom") c"high")
+        unknown lastInd[143981](143980 call inds[143885] indsStart[143963])
+        {
+          unknown _indexOfInterest[144034] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[144035] "expr temp" "temp"
+          (144044 'move' _iterator[144035](144042 call _getIterator(144052 call chpl_direct_range_iter(144048 call + indsStart[143963] 1) indsEnd[143974] 1)))
+          Defer
+          {
+            {
+              (144068 call _freeIterator _iterator[144035])
+            }
+          }
+          { scopeless type
+            (144057 'move' _indexOfInterest[144034](144054 call iteratorIndex _iterator[144035]))
+          }
+          ForLoop
+          {
+            unknown i[144061] "index var" "insert auto destroy"
+            (144063 'move' i[144061] _indexOfInterest[144034])
+            {
+              if(144027 call _cond_test(143997 call ==(143995 call inds[143885] i[144061]) lastInd[143981]))
+              {
+                (144017 call halt "bulkAdd: There are duplicates, call the function \n                  with isUnique=false")
+              }
+              {
+                (144024 call = lastInd[143981](144023 call inds[143885] i[144061]))
+              }
+            }
+            label _continueLabel[144039]
+            _indexOfInterest[144034]
+            _iterator[144035]
+          }
+          label _breakLabel[144040]
+        }
+      }
+      {
+        unknown _indexOfInterest[144086] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[144087] "expr temp" "temp"
+        (144096 'move' _iterator[144087](144094 call _getIterator inds[143885]))
+        Defer
+        {
+          {
+            (144112 call _freeIterator _iterator[144087])
+          }
+        }
+        { scopeless type
+          (144101 'move' _indexOfInterest[144086](144098 call iteratorIndex _iterator[144087]))
+        }
+        ForLoop
+        {
+          unknown i[144105] "index var" "insert auto destroy"
+          (144107 'move' i[144105] _indexOfInterest[144086])
+          (144084 call(355378 call . this[144501] c"boundsCheck") i[144105])
+          label _continueLabel[144091]
+          _indexOfInterest[144086]
+          _iterator[144087]
+        }
+        label _breakLabel[144092]
+      }
+    }
+    (329405 'used modules list'(143897 'use' Sort[251417]))
+  }
+  function BaseSparseDomImpl[144471](?).__getActualInsertPts[144129](arg _mt[144507]:_MT[227], arg this[144505]:BaseSparseDomImpl[144471](?), arg d[144127]:_any[170](?), arg inds[144131]:_any[170](?), arg isUnique[144133]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown indivInsertPts[144145](144143 call chpl__buildArrayRuntimeType(144141 call chpl__ensureDomainExpr(144136 call . inds[144131] c"_dom")) int(64)[13])
+    unknown actualInsertPts[144159](144157 call chpl__buildArrayRuntimeType(144155 call chpl__ensureDomainExpr(144150 call . inds[144131] c"_dom")) int(64)[13])
+    if(144266 call _cond_test(144163 call ! isUnique[144133]))
+    {
+      unknown lastInd[144178](144176 call +(144174 call inds[144131](144170 call .(144167 call . inds[144131] c"_dom") c"low")) 1)
+      {
+        unknown _indexOfInterest[144214] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[144215] "expr temp" "temp"
+        (144229 'move' _iterator[144215](144190 call _build_tuple(144224 call _getIterator inds[144131])(144227 call _getIterator indivInsertPts[144145])))
+        Defer
+        {
+          {
+            (144259 call _freeIterator _iterator[144215])
+          }
+        }
+        { scopeless type
+          (144234 'move' _indexOfInterest[144214](144231 call iteratorIndex _iterator[144215]))
+        }
+        ForLoop
+        {
+          (144239 call _check_tuple_var_decl _indexOfInterest[144214] 2)
+          unknown i[144245] "index var" "insert auto destroy"
+          (144247 'move' i[144245](144243 call _indexOfInterest[144214] 1))
+          unknown p[144252] "index var" "insert auto destroy"
+          (144254 'move' p[144252](144250 call _indexOfInterest[144214] 2))
+          {
+            if(144207 call _cond_test(144193 call == i[144245] lastInd[144178]))
+            {
+              (144199 call = p[144252](144197 call - 1))
+            }
+            {
+              (144204 call = lastInd[144178] i[144245])
+            }
+          }
+          label _continueLabel[144219]
+          _indexOfInterest[144214]
+          _iterator[144215]
+        }
+        label _breakLabel[144220]
+      }
+    }
+    Forall {
+      induction variables:
+        
+        unknown i[144333] "index var" "insert auto destroy"
+        
+        unknown p[144335] "index var" "insert auto destroy"
+      iterated expressions:
+        inds[144131]
+        indivInsertPts[144145]
+      shadow variables:
+      forall body
+      {
+        if(144327 call _cond_test(144286 call || isUnique[144133](144284 call != p[144335](144282 call - 1))))
+        {
+          const tmp[144302] "const" "no copy" "temp"(144301 call(144296 call . d[144127] c"find") i[144333])
+          (144309 call _check_tuple_var_decl tmp[144302] 2)
+          const found[144288] "const"(144303 call tmp[144302] 1)
+          const insertPt[144290] "const"(144306 call tmp[144302] 2)
+          (144324 call = p[144335](144321 IfExpr  found[144288] then
+          { scopeless
+            (144318 call - 1)
+          } else
+          { scopeless
+            insertPt[144290]
+          } ))
+        }
+      }
+    }
+    unknown actualAddCnt[144339] 0
+    {
+      unknown _indexOfInterest[144382] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[144383] "expr temp" "temp"
+      (144397 'move' _iterator[144383](144350 call _build_tuple(144392 call _getIterator indivInsertPts[144145])(144395 call _getIterator actualInsertPts[144159])))
+      Defer
+      {
+        {
+          (144427 call _freeIterator _iterator[144383])
+        }
+      }
+      { scopeless type
+        (144402 'move' _indexOfInterest[144382](144399 call iteratorIndex _iterator[144383]))
+      }
+      ForLoop
+      {
+        (144407 call _check_tuple_var_decl _indexOfInterest[144382] 2)
+        unknown ip[144413] "index var" "insert auto destroy"
+        (144415 'move' ip[144413](144411 call _indexOfInterest[144382] 1))
+        unknown ap[144420] "index var" "insert auto destroy"
+        (144422 'move' ap[144420](144418 call _indexOfInterest[144382] 2))
+        {
+          if(144376 call _cond_test(144355 call != ip[144413](144353 call - 1)))
+          {
+            (144362 call = ap[144420](144360 call + ip[144413] actualAddCnt[144339]))
+            (144368 call += actualAddCnt[144339] 1)
+          }
+          {
+            (144373 call = ap[144420] ip[144413])
+          }
+        }
+        label _continueLabel[144387]
+        _indexOfInterest[144382]
+        _iterator[144383]
+      }
+      label _breakLabel[144388]
+    }
+    (144439 return(144437 call _build_tuple actualInsertPts[144159] actualAddCnt[144339]))
+  }
+  function BaseSparseDomImpl[144471](?).dsiClear[144445](arg _mt[144511]:_MT[227], arg this[144509]:BaseSparseDomImpl[144471](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (144465 call halt "not implemented")
+  }
+  type BaseSparseDomImpl[144471](?) val super[331029]:BaseSparseDom[145163](?) "super class" unknown nnzDom[143445](143443 call chpl__buildDomainExpr(143440 call chpl_build_bounded_range 1 0))
+  function SparseIndexBuffer[144693](?).init[144564](arg _mt[144697]:_MT[227], arg this[144695]:SparseIndexBuffer[144693](?), arg size[144562]:_any[170](?), param arg rank[144567] :
+  int(64)[13], arg obj[144570]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (144577 call =(144573 call . this[144695] c"rank") rank[144567])
+    (144586 call =(144582 call . this[144695] c"obj") obj[144570])
+    (144599 call =(355428 call . this[144695] c"bufDom")(144597 call chpl__buildDomainExpr(144594 call #(144591 call chpl_build_low_bounded_range 0) size[144562])))
+  }
+  function SparseIndexBuffer[144693](?).deinit[144606](arg _mt[144701]:_MT[227], arg this[144699]:SparseIndexBuffer[144693](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+    (144610 call(355435 call . this[144699] c"commit"))
+  }
+  function SparseIndexBuffer[144693](?).add[144621](arg _mt[144705]:_MT[227], arg this[144703]:SparseIndexBuffer[144693](?), arg idx[144618] :
+  (355440 call . this[144703] c"idxType")) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (144628 call =(144626 call(355447 call . this[144703] c"buf")(355454 call . this[144703] c"cur")) idx[144618])
+    (144634 call +=(355460 call . this[144703] c"cur") 1)
+    if(144648 call _cond_test(144642 call ==(355465 call . this[144703] c"cur")(144639 call .(355470 call . this[144703] c"buf") c"size")))
+    {
+      (144646 call(355474 call . this[144703] c"commit"))
+    }
+  }
+  function SparseIndexBuffer[144693](?).commit[144657](arg _mt[144709]:_MT[227], arg this[144707]:SparseIndexBuffer[144693](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(144679 call _cond_test(144661 call >=(355479 call . this[144707] c"cur") 1))
+    {
+      (144677 call(144664 call .(355484 call . this[144707] c"obj") c"dsiBulkAdd")(144675 call(355489 call . this[144707] c"buf")(144672 call chpl_build_high_bounded_range(144670 call -(355494 call . this[144707] c"cur") 1))))
+    }
+    (144687 call =(355499 call . this[144707] c"cur") 0)
+  }
+  type SparseIndexBuffer[144693](?) unknown rank[144516] "param" int(64)[13] unknown obj[144520] anymanaged BaseSparseDom[350579](?) unknown idxType[144535] "type variable"(144532 IfExpr (144525 call == rank[144516] 1) then
+  { scopeless
+    int(64)[13]
+  } else
+  { scopeless
+    (144530 call * rank[144516] int(64)[13])
+  } ) unknown bufDom[144543](144541 call chpl__buildDomainRuntimeType defaultDist[93214] 1) unknown buf[144553](144551 call chpl__buildArrayRuntimeType(144549 call chpl__ensureDomainExpr bufDom[144543]) idxType[144535]) unknown cur[144557] 0
+  function BaseSparseDom[145163](?).getNNZ[144727](arg _mt[145167]:_MT[227], arg this[145165]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (144748 call halt "nnz queried on base class")
+  }
+  { scopeless type
+    int(64)[13]
+  }
+  function BaseSparseDom[145163](?).deinit[144756](arg _mt[145171]:_MT[227], arg this[145169]:BaseSparseDom[145163](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseSparseDom[145163](?).dsiClear[144763](arg _mt[145175]:_MT[227], arg this[145173]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (144783 call halt "clear not implemented for this distribution - BaseSparseDom")
+  }
+  function BaseSparseDom[145163](?).dsiBulkAdd[144801](arg _mt[145179]:_MT[227], arg this[145177]:BaseSparseDom[145163](?), arg inds[144798] :
+  (144795 call chpl__buildArrayRuntimeType nil[38](144793 call chpl__buildIndexType(355504 call . this[145177] c"rank")(355509 call . this[145177] c"idxType"))), arg dataSorted[144804] =
+  0, arg isUnique[144808] =
+  0, arg preserveInds[144812] =
+  1, arg addOn[144820] =
+  (144818 call _cast borrowed locale?[389810] nil[38])) : _unknown[43] "method" "primary method"
+  {
+    (144842 call halt "Bulk addition is not supported by this sparse domain")
+    (144846 return 0)
+  }
+  { scopeless type
+    int(64)[13]
+  }
+  function BaseSparseDom[145163](?).boundsCheck[144861](arg _mt[145183]:_MT[227], arg this[145181]:BaseSparseDom[145163](?), arg ind[144858] :
+  (144856 call chpl__buildIndexType(355514 call . this[145181] c"rank")(355519 call . this[145181] c"idxType"))) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(144918 call _cond_test 1)
+    {
+      if(144913 call _cond_test(144872 call !(144871 call(144866 call .(355525 call . this[145181] c"parentDom") c"contains") ind[144858])))
+      {
+        (144911 call halt "Sparse domain/array index out of bounds: " ind[144858] " (expected to be within "(355532 call . this[145181] c"parentDom") ")")
+      }
+    }
+  }
+  { scopeless type
+    void[4]
+  }
+  function BaseSparseDom[145163](?).dsiDim[144933](arg _mt[145187]:_MT[227], arg this[145185]:BaseSparseDom[145163](?), arg d[144930] :
+  int(64)[13]) : _unknown[43] "method" "primary method"
+  {
+    (144942 return(144941 call(144936 call .(355537 call . this[145185] c"parentDom") c"dim") d[144930]))
+  }
+  function BaseSparseDom[145163](?).dsiDims[144949](arg _mt[145191]:_MT[227], arg this[145189]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method"
+  {
+    (144957 return(144956 call(144952 call .(355543 call . this[145189] c"parentDom") c"dims")))
+  }
+  function BaseSparseDom[145163](?).dsiNumIndices[144964](arg _mt[145195]:_MT[227], arg this[145193]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (144969 return(144968 call(355547 call . this[145193] c"getNNZ")))
+  }
+  function BaseSparseDom[145163](?).dsiSize[144976](arg _mt[145199]:_MT[227], arg this[145197]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (144981 return(144980 call(355551 call . this[145197] c"getNNZ")))
+  }
+  function BaseSparseDom[145163](?).dsiLow[144988](arg _mt[145203]:_MT[227], arg this[145201]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (144994 return(144991 call .(355556 call . this[145201] c"parentDom") c"low"))
+  }
+  function BaseSparseDom[145163](?).dsiHigh[145001](arg _mt[145207]:_MT[227], arg this[145205]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (145007 return(145004 call .(355561 call . this[145205] c"parentDom") c"high"))
+  }
+  function BaseSparseDom[145163](?).dsiStride[145014](arg _mt[145211]:_MT[227], arg this[145209]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (145020 return(145017 call .(355566 call . this[145209] c"parentDom") c"stride"))
+  }
+  function BaseSparseDom[145163](?).dsiAlignment[145027](arg _mt[145215]:_MT[227], arg this[145213]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (145033 return(145030 call .(355571 call . this[145213] c"parentDom") c"alignment"))
+  }
+  function BaseSparseDom[145163](?).dsiFirst[145040](arg _mt[145219]:_MT[227], arg this[145217]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (145060 call halt "dsiFirst is not implemented")
+    const _tmp[145067] "const"(145065 call *(355576 call . this[145217] c"rank")(355581 call . this[145217] c"idxType"))
+    (145071 return _tmp[145067])
+  }
+  function BaseSparseDom[145163](?).dsiLast[145077](arg _mt[145223]:_MT[227], arg this[145221]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (145097 call halt "dsiLast not implemented")
+    const _tmp[145104] "const"(145102 call *(355587 call . this[145221] c"rank")(355592 call . this[145221] c"idxType"))
+    (145108 return _tmp[145104])
+  }
+  function BaseSparseDom[145163](?).dsiAlignedLow[145114](arg _mt[145227]:_MT[227], arg this[145225]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (145120 return(145117 call .(355598 call . this[145225] c"parentDom") c"alignedLow"))
+  }
+  function BaseSparseDom[145163](?).dsiAlignedHigh[145127](arg _mt[145231]:_MT[227], arg this[145229]:BaseSparseDom[145163](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (145133 return(145130 call .(355603 call . this[145229] c"parentDom") c"alignedHigh"))
+  }
+  function BaseSparseDom[145163](?).dsiMakeIndexBuffer[145142](arg _mt[145235]:_MT[227], arg this[145233]:BaseSparseDom[145163](?), arg size[145140]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (145157 return(145156 'new'(145155 call SparseIndexBuffer[144693](?)(rank =(145146 call . this[145233] c"rank"))(obj = this[145233])(size = size[145140]))))
+  }
+  type BaseSparseDom[145163](?) val super[331027]:BaseDom[143244] "super class" unknown rank[144716] "param" int(64)[13] unknown idxType[144719] "type variable" unknown parentDom[144722]
+  type anymanaged BaseSparseDom[350579](?)
+  function BaseAssociativeDom[145308].deinit[145243](arg _mt[145312]:_MT[227], arg this[145310]:BaseAssociativeDom[145308]) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseAssociativeDom[145308].dsiClear[145250](arg _mt[145316]:_MT[227], arg this[145314]:BaseAssociativeDom[145308]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145270 call halt "clear not implemented for this distribution")
+  }
+  function BaseAssociativeDom[145308].dsiAdd[145279](arg _mt[145320]:_MT[227], arg this[145318]:BaseAssociativeDom[145308], arg idx[145277]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (145299 call compilerError "Index addition is not supported by this domain")
+    (145303 return 0)
+  }
+  type BaseAssociativeDom[145308] val super[331031]:BaseDom[143244] "super class"
+  type anymanaged BaseAssociativeDom[350562](?)
+  function BaseOpaqueDom[145346].deinit[145328](arg _mt[145350]:_MT[227], arg this[145348]:BaseOpaqueDom[145346]) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseOpaqueDom[145346].dsiClear[145335](arg _mt[145354]:_MT[227], arg this[145352]:BaseOpaqueDom[145346]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145340 call halt "clear not implemented for this distribution")
+  }
+  type BaseOpaqueDom[145346] val super[331033]:BaseDom[143244] "super class"
+  type anymanaged BaseOpaqueDom[350571](?)
+  function BaseArr[145926].chpl__rvfMe[145370](arg _mt[145930]:_MT[227], arg this[145928]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145373 return 0)
+  }
+  function BaseArr[145926].isSliceArrayView[145380](arg _mt[145934]:_MT[227], arg this[145932]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145383 return 0)
+  }
+  function BaseArr[145926].isRankChangeArrayView[145390](arg _mt[145938]:_MT[227], arg this[145936]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145393 return 0)
+  }
+  function BaseArr[145926].isReindexArrayView[145400](arg _mt[145942]:_MT[227], arg this[145940]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145403 return 0)
+  }
+  function BaseArr[145926].deinit[145410](arg _mt[145946]:_MT[227], arg this[145944]:BaseArr[145926]) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseArr[145926].dsiStaticFastFollowCheck[145419](arg _mt[145950]:_MT[227], arg this[145948]:BaseArr[145926], arg leadType[145417]:_any[170](?)) param : _unknown[43] "method" "primary method"
+  {
+    (145422 return 0)
+  }
+  function BaseArr[145926].dsiGetBaseDom[145429](arg _mt[145954]:_MT[227], arg this[145952]:BaseArr[145926]) : _unknown[43] "method" "primary method" "unsafe"
+  {
+    (145451 call halt "internal error: dsiGetBaseDom is not implemented")
+    unknown ret[145456] unmanaged BaseDom[389803]
+    (145460 return ret[145456])
+  }
+  { scopeless type
+    unmanaged BaseDom[389803]
+  }
+  function BaseArr[145926].remove[145471](arg _mt[145958]:_MT[227], arg this[145956]:BaseArr[145926], param arg rmFromList[145468] :
+  bool[10]) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    unknown ret_arr[145474] this[145956]
+    unknown ret_dom[145482] nil[38] unmanaged BaseDom?[389887]
+    unknown rm_dom[145486] 0
+    unknown dom[145492](145491 call(355619 call . this[145956] c"dsiGetBaseDom"))
+    (145509 call = rm_dom[145486](145508 call(145499 call . dom[145492] c"remove_arr")(145505 call _to_unmanaged this[145956]) rmFromList[145468]))
+    if(145518 call _cond_test rm_dom[145486])
+    {
+      (145515 call = ret_dom[145482] dom[145492])
+    }
+    (145528 return(145526 call _build_tuple ret_arr[145474] ret_dom[145482]))
+  }
+  function BaseArr[145926].dsiDestroyArr[145534](arg _mt[145962]:_MT[227], arg this[145960]:BaseArr[145926]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseArr[145926].dsiReallocate[145545](arg _mt[145966]:_MT[227], arg this[145964]:BaseArr[145926], arg d[145542] :
+  _domain[123390](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145565 call halt "reallocating not supported for this array type")
+  }
+  function BaseArr[145926].dsiPostReallocate[145572](arg _mt[145970]:_MT[227], arg this[145968]:BaseArr[145926]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseArr[145926]._purge[145583](arg _mt[145974]:_MT[227], arg this[145972]:BaseArr[145926], arg ind[145580] :
+  int(64)[13]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145603 call halt "purging not supported for this array type")
+  }
+  function BaseArr[145926]._resize[145614](arg _mt[145978]:_MT[227], arg this[145976]:BaseArr[145926], arg length[145611] :
+  int(64)[13], arg old_map[145616]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145636 call halt "resizing not supported for this array type")
+  }
+  function BaseArr[145926].sparseShiftArray[145645](arg _mt[145982]:_MT[227], arg this[145980]:BaseArr[145926], arg shiftrange[145643]:_any[170](?), arg initrange[145647]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145667 call halt "sparseGrowDomain not supported for non-sparse arrays")
+  }
+  function BaseArr[145926].sparseShiftArrayBack[145676](arg _mt[145986]:_MT[227], arg this[145984]:BaseArr[145926], arg shiftrange[145674]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145696 call halt "sparseShiftArrayBack not supported for non-sparse arrays")
+  }
+  function BaseArr[145926].sparseBulkShiftArray[145705](arg _mt[145990]:_MT[227], arg this[145988]:BaseArr[145926], arg shiftMap[145703]:_any[170](?), arg oldnnz[145707]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145727 call halt "sparseBulkShiftArray not supported for non-sparse arrays")
+  }
+  function BaseArr[145926].clearEntry[145736](arg _mt[145994]:_MT[227], arg this[145992]:BaseArr[145926], arg idx[145734]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145756 call halt "clearEntry() not supported for non-associative arrays")
+  }
+  function BaseArr[145926]._backupArray[145763](arg _mt[145998]:_MT[227], arg this[145996]:BaseArr[145926]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145783 call halt "_backupArray() not supported for non-associative arrays")
+  }
+  function BaseArr[145926]._removeArrayBackup[145790](arg _mt[146002]:_MT[227], arg this[146000]:BaseArr[145926]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145810 call halt "_removeArrayBackup() not supported for non-associative arrays")
+  }
+  function BaseArr[145926]._preserveArrayElement[145819](arg _mt[146006]:_MT[227], arg this[146004]:BaseArr[145926], arg oldslot[145817]:_any[170](?), arg newslot[145821]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145841 call halt "_preserveArrayElement() not supported for non-associative arrays")
+  }
+  function BaseArr[145926].dsiSupportsAlignedFollower[145848](arg _mt[146010]:_MT[227], arg this[146008]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145851 return 0)
+  }
+  function BaseArr[145926].dsiSupportsPrivatization[145858](arg _mt[146014]:_MT[227], arg this[146012]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145861 return 0)
+  }
+  function BaseArr[145926].dsiRequiresPrivatization[145868](arg _mt[146018]:_MT[227], arg this[146016]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145871 return 0)
+  }
+  function BaseArr[145926].dsiDisplayRepresentation[145878](arg _mt[146022]:_MT[227], arg this[146020]:BaseArr[145926]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (145883 call writeln "<no way to display representation>")
+  }
+  function anymanaged anynil BaseArr[389614](?).isDefaultRectangular[145890](arg _mt[146026]:_MT[227], arg this[146024]:anymanaged anynil BaseArr[389614](?)) param : _unknown[43] "method" "primary method"
+  {
+    (145893 return 0)
+  }
+  function BaseArr[145926].isDefaultRectangular[145900](arg _mt[146030]:_MT[227], arg this[146028]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145903 return 0)
+  }
+  function BaseArr[145926].doiCanBulkTransferRankChange[145910](arg _mt[146034]:_MT[227], arg this[146032]:BaseArr[145926]) param : _unknown[43] "method" "primary method"
+  {
+    (145913 return 0)
+  }
+  function BaseArr[145926].decEltCountsIfNeeded[145920](arg _mt[146038]:_MT[227], arg this[146036]:BaseArr[145926]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+  }
+  type BaseArr[145926] val super[331019]:object[253] "super class" unknown pid[145360] nullPid[111825] int(64)[13] unknown _decEltRefCounts[145365] 0 bool[10]
+  type unmanaged BaseArr?[390007]
+  type anymanaged BaseArr?[390003](?)
+  type unmanaged BaseArr[389867]
+  type anymanaged anynil BaseArr[389614](?)
+  type anymanaged BaseArr[350645](?)
+  function AbsBaseArr[146070](?).decEltCountsIfNeeded[146049](arg _mt[146074]:_MT[227], arg this[146072]:AbsBaseArr[146070](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    if(146062 call _cond_test(355634 call . this[146072] c"_decEltRefCounts"))
+    {
+      (146059 call chpl_decRefCountsForDomainsInArrayEltTypes(146056 call _to_unmanaged this[146072])(355640 call . this[146072] c"eltType"))
+    }
+  }
+  type AbsBaseArr[146070](?) val super[331035]:BaseArr[145926] "super class" unknown eltType[146044] "type variable"
+  function BaseArrOverRectangularDom[146174](?).dsiReallocate[146108](arg _mt[146178]:_MT[227], arg this[146176]:BaseArrOverRectangularDom[146174](?), arg bounds[146105] :
+  (146103 call *(355645 call . this[146176] c"rank")(146102 call range[66183](?)(355651 call . this[146176] c"idxType") bounded[66079](355657 call . this[146176] c"stridable")))) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (146113 call halt "reallocating not supported for this array type")
+  }
+  function BaseArrOverRectangularDom[146174](?).dsiReallocate[146132](arg _mt[146182]:_MT[227], arg this[146180]:BaseArrOverRectangularDom[146174](?), arg allocBound[146129] :
+  (146128 call range[66183](?)(355663 call . this[146180] c"idxType") bounded[66079](355669 call . this[146180] c"stridable")), arg arrayBound[146143] :
+  (146142 call range[66183](?)(355675 call . this[146180] c"idxType") bounded[66079](355681 call . this[146180] c"stridable"))) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (146153 call halt "reallocating not supported for this array type")
+  }
+  where {
+    (146148 call ==(355686 call . this[146180] c"rank") 1)
+  }
+  function BaseArrOverRectangularDom[146174](?).dsiPostReallocate[146161](arg _mt[146186]:_MT[227], arg this[146184]:BaseArrOverRectangularDom[146174](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+  }
+  function BaseArrOverRectangularDom[146174](?).deinit[146168](arg _mt[146190]:_MT[227], arg this[146188]:BaseArrOverRectangularDom[146174](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  type BaseArrOverRectangularDom[146174](?) val super[331021]:BaseArr[145926] "super class" unknown rank[146081] "param" int(64)[13] unknown idxType[146084] "type variable" unknown stridable[146088] "param" bool[10]
+  type anymanaged BaseArrOverRectangularDom[355223](?)
+  function BaseRectangularArr[146229](?).deinit[146201](arg _mt[146233]:_MT[227], arg this[146231]:BaseRectangularArr[146229](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseRectangularArr[146229](?).decEltCountsIfNeeded[146208](arg _mt[146237]:_MT[227], arg this[146235]:BaseRectangularArr[146229](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    if(146221 call _cond_test(355691 call . this[146235] c"_decEltRefCounts"))
+    {
+      (146218 call chpl_decRefCountsForDomainsInArrayEltTypes(146215 call _to_unmanaged this[146235])(355697 call . this[146235] c"eltType"))
+    }
+  }
+  type BaseRectangularArr[146229](?) val super[331023]:BaseArrOverRectangularDom[146174](?) "super class" unknown eltType[146196] "type variable"
+  function BaseSparseArr[146286](?).dsiGetBaseDom[146270](arg _mt[146290]:_MT[227], arg this[146288]:BaseSparseArr[146286](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (146273 return(355704 call . this[146288] c"dom"))
+  }
+  function BaseSparseArr[146286](?).deinit[146280](arg _mt[146294]:_MT[227], arg this[146292]:BaseSparseArr[146286](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  type BaseSparseArr[146286](?) val super[331037]:AbsBaseArr[146070](?) "super class" unknown rank[146244] "param" int(64)[13] unknown idxType[146247] "type variable" unknown dom[146250] unknown data[146265] "local field"(146263 call chpl__buildArrayRuntimeType(146261 call chpl__ensureDomainExpr(146256 call . dom[146250] c"nnzDom")) eltType[146044])
+  function BaseSparseArrImpl[146829](?).deinit[146302](arg _mt[146833]:_MT[227], arg this[146831]:BaseSparseArrImpl[146829](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+  }
+  function BaseSparseArrImpl[146829](?).IRV[146313](arg _mt[146837]:_MT[227], arg this[146835]:BaseSparseArrImpl[146829](?)) ref : _unknown[43] "method" "primary method" "no parens"
+  {
+    (146316 return(355712 call . this[146835] c"irv"))
+  }
+  function BaseSparseArrImpl[146829](?).sparseBulkShiftArray[146325](arg _mt[146841]:_MT[227], arg this[146839]:BaseSparseArrImpl[146829](?), arg shiftMap[146323]:_any[170](?), arg oldnnz[146327]:_any[170](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    unknown newIdx[146330] int(64)[13]
+    unknown prevNewIdx[146335] 1
+    Forall {
+      induction variables:
+        
+        unknown i[146367] "index var" "insert auto destroy"
+      iterated expressions:
+        (146356 call chpl_build_bounded_range(146347 call +(146343 call .(146340 call . shiftMap[146323] c"_dom") c"high") 1)(146353 call .(146350 call .(355718 call . this[146839] c"dom") c"nnzDom") c"high"))
+      shadow variables:
+      forall body
+      {
+        (146363 call =(146361 call(355723 call . this[146839] c"data") i[146367])(355729 call . this[146839] c"irv"))
+      }
+    }
+    {
+      unknown _indexOfInterest[146489] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[146490] "expr temp" "temp"
+      (146548 'move' _iterator[146490](146400 call _build_tuple(146507 call _getIterator(146518 call chpl_direct_range_iter 1 oldnnz[146327](146514 call - 1)))(146534 call _getIterator(146521 call chpl_by(146529 call(146523 call .(146525 call . shiftMap[146323] c"_dom") c"dim") 1)(146532 call - 1)))))
+      Defer
+      {
+        {
+          (146578 call _freeIterator _iterator[146490])
+        }
+      }
+      { scopeless type
+        (146553 'move' _indexOfInterest[146489](146550 call iteratorIndex _iterator[146490]))
+      }
+      ForLoop
+      {
+        (146558 call _check_tuple_var_decl _indexOfInterest[146489] 2)
+        unknown i[146564] "index var" "insert auto destroy"
+        (146566 'move' i[146564](146562 call _indexOfInterest[146489] 1))
+        unknown _newIdx[146571] "index var" "insert auto destroy"
+        (146573 'move' _newIdx[146571](146569 call _indexOfInterest[146489] 2))
+        {
+          (146406 call = newIdx[146330](146405 call shiftMap[146323] _newIdx[146571]))
+          (146418 call =(146413 call(355737 call . this[146839] c"data") newIdx[146330])(146417 call(355743 call . this[146839] c"data") i[146564]))
+          {
+            unknown _indexOfInterest[146440] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[146441] "expr temp" "temp"
+            (146450 'move' _iterator[146441](146448 call _getIterator(146461 call chpl_direct_range_iter(146454 call + newIdx[146330] 1)(146458 call - prevNewIdx[146335] 1) 1)))
+            Defer
+            {
+              {
+                (146477 call _freeIterator _iterator[146441])
+              }
+            }
+            { scopeless type
+              (146466 'move' _indexOfInterest[146440](146463 call iteratorIndex _iterator[146441]))
+            }
+            ForLoop
+            {
+              unknown emptyIndex[146470] "index var" "insert auto destroy"
+              (146472 'move' emptyIndex[146470] _indexOfInterest[146440])
+              (146437 call =(146435 call(355749 call . this[146839] c"data") emptyIndex[146470])(355755 call . this[146839] c"irv"))
+              label _continueLabel[146445]
+              _indexOfInterest[146440]
+              _iterator[146441]
+            }
+            label _breakLabel[146446]
+          }
+          (146486 call = prevNewIdx[146335] newIdx[146330])
+        }
+        label _continueLabel[146494]
+        _indexOfInterest[146489]
+        _iterator[146490]
+      }
+      label _breakLabel[146495]
+    }
+    {
+      unknown _indexOfInterest[146601] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[146602] "expr temp" "temp"
+      (146611 'move' _iterator[146602](146609 call _getIterator(146619 call chpl_direct_range_iter 1(146616 call - prevNewIdx[146335] 1) 1)))
+      Defer
+      {
+        {
+          (146635 call _freeIterator _iterator[146602])
+        }
+      }
+      { scopeless type
+        (146624 'move' _indexOfInterest[146601](146621 call iteratorIndex _iterator[146602]))
+      }
+      ForLoop
+      {
+        unknown i[146628] "index var" "insert auto destroy"
+        (146630 'move' i[146628] _indexOfInterest[146601])
+        (146598 call =(146596 call(355766 call . this[146839] c"data") i[146628])(355772 call . this[146839] c"irv"))
+        label _continueLabel[146606]
+        _indexOfInterest[146601]
+        _iterator[146602]
+      }
+      label _breakLabel[146607]
+    }
+  }
+  function BaseSparseArrImpl[146829](?).sparseShiftArray[146648](arg _mt[146845]:_MT[227], arg this[146843]:BaseSparseArrImpl[146829](?), arg shiftrange[146646]:_any[170](?), arg initrange[146650]:_any[170](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[146663] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[146664] "expr temp" "temp"
+      (146673 'move' _iterator[146664](146671 call _getIterator initrange[146650]))
+      Defer
+      {
+        {
+          (146689 call _freeIterator _iterator[146664])
+        }
+      }
+      { scopeless type
+        (146678 'move' _indexOfInterest[146663](146675 call iteratorIndex _iterator[146664]))
+      }
+      ForLoop
+      {
+        unknown i[146682] "index var" "insert auto destroy"
+        (146684 'move' i[146682] _indexOfInterest[146663])
+        {
+          (146659 call =(146657 call(355779 call . this[146843] c"data") i[146682])(355785 call . this[146843] c"irv"))
+        }
+        label _continueLabel[146668]
+        _indexOfInterest[146663]
+        _iterator[146664]
+      }
+      label _breakLabel[146669]
+    }
+    {
+      unknown _indexOfInterest[146719] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[146720] "expr temp" "temp"
+      (146729 'move' _iterator[146720](146727 call _getIterator(146702 call chpl_by shiftrange[146646](146700 call - 1))))
+      Defer
+      {
+        {
+          (146749 call _freeIterator _iterator[146720])
+        }
+      }
+      { scopeless type
+        (146738 'move' _indexOfInterest[146719](146735 call iteratorIndex _iterator[146720]))
+      }
+      ForLoop
+      {
+        unknown i[146742] "index var" "insert auto destroy"
+        (146744 'move' i[146742] _indexOfInterest[146719])
+        {
+          (146715 call =(146710 call(355791 call . this[146843] c"data")(146707 call + i[146742] 1))(146714 call(355797 call . this[146843] c"data") i[146742]))
+        }
+        label _continueLabel[146724]
+        _indexOfInterest[146719]
+        _iterator[146720]
+      }
+      label _breakLabel[146725]
+    }
+    (146764 call =(146762 call(355803 call . this[146843] c"data")(146758 call . shiftrange[146646] c"low"))(355809 call . this[146843] c"irv"))
+  }
+  function BaseSparseArrImpl[146829](?).sparseShiftArrayBack[146773](arg _mt[146849]:_MT[227], arg this[146847]:BaseSparseArrImpl[146829](?), arg shiftrange[146771]:_any[170](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[146792] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[146793] "expr temp" "temp"
+      (146802 'move' _iterator[146793](146800 call _getIterator shiftrange[146771]))
+      Defer
+      {
+        {
+          (146818 call _freeIterator _iterator[146793])
+        }
+      }
+      { scopeless type
+        (146807 'move' _indexOfInterest[146792](146804 call iteratorIndex _iterator[146793]))
+      }
+      ForLoop
+      {
+        unknown i[146811] "index var" "insert auto destroy"
+        (146813 'move' i[146811] _indexOfInterest[146792])
+        {
+          (146788 call =(146780 call(355815 call . this[146847] c"data") i[146811])(146787 call(355821 call . this[146847] c"data")(146784 call + i[146811] 1)))
+        }
+        label _continueLabel[146797]
+        _indexOfInterest[146792]
+        _iterator[146793]
+      }
+      label _breakLabel[146798]
+    }
+  }
+  type BaseSparseArrImpl[146829](?) val super[331039]:BaseSparseArr[146286](?) "super class" unknown irv[146308] eltType[146044]
+  function _delete_dist[146859](arg dist[146856] :
+  unmanaged BaseDist[389902], param arg privatized[146862] :
+  bool[10]) : _unknown[43] "no return value for void"
+  {
+    (146872 call(146868 call . dist[146856] c"dsiDestroyDist"))
+    if(146886 call _cond_test privatized[146862])
+    {
+      (146883 call _freePrivatizedClass(146878 call . dist[146856] c"pid") dist[146856])
+    }
+    (146892 call chpl__delete dist[146856])
+  }
+  function _delete_dom[146901](arg dom[146899]:_any[170](?), param arg privatized[146904] :
+  bool[10]) : _unknown[43] "no return value for void"
+  {
+    (146914 call(146910 call . dom[146899] c"dsiDestroyDom"))
+    if(146928 call _cond_test privatized[146904])
+    {
+      (146925 call _freePrivatizedClass(146920 call . dom[146899] c"pid") dom[146899])
+    }
+    (146934 call chpl__delete dom[146899])
+  }
+  function _delete_arr[146946](arg arr[146943] :
+  unmanaged BaseArr[389867], param arg privatized[146949] :
+  bool[10]) : _unknown[43] "no return value for void"
+  {
+    (146959 call(146955 call . arr[146943] c"dsiDestroyArr"))
+    (146969 call(146965 call . arr[146943] c"decEltCountsIfNeeded"))
+    if(146982 call _cond_test privatized[146949])
+    {
+      (146979 call _freePrivatizedClass(146974 call . arr[146943] c"pid") arr[146943])
+    }
+    (146988 call chpl__delete arr[146943])
+  }
+  function chpl_assignDomainWithGetSetIndices[147000](arg lhs[146997] :
+  unknown t[146995], arg rhs[147003] :
+  _domain[123390](?)) : _unknown[43] "no return value for void"
+  {
+    unknown arrType[147022] "type variable"(147021 call(147017 call . lhs[146997] c"getBaseArrType"))
+    unknown rank[147030] "param"(147027 call . lhs[146997] c"rank")
+    unknown idxType[147037] "type variable"(147034 call . lhs[146997] c"idxType")
+    unknown stridable[147044] "param"(147041 call . lhs[146997] c"stridable")
+    {
+      unknown _indexOfInterest[147230] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[147231] "expr temp" "temp"
+      (147240 'move' _iterator[147231](147238 call _getIterator(147049 call . lhs[146997] c"_arrs")))
+      Defer
+      {
+        {
+          (147257 call _freeIterator _iterator[147231])
+        }
+      }
+      { scopeless type
+        (147246 'move' _indexOfInterest[147230](147243 call iteratorIndex _iterator[147231]))
+      }
+      ForLoop
+      {
+        unknown e[147250] "index var" "insert auto destroy"
+        (147252 'move' e[147250] _indexOfInterest[147230])
+        {
+          {
+            const tmp[147224] "const" "temp"
+            (147225 'move' tmp[147224](147222 'deref'(147221 '_wide_get_locale' e[147250])))
+            {
+              unknown eCastQ[147058](147056 call _cast(147055 'to nilable class from type' arrType[147022]) e[147250])
+              if(147110 call _cond_test(147064 call == eCastQ[147058] nil[38]))
+              {
+                (147108 call halt "internal error: "(147086 call _cast string[24] t[146995]) " contains an bad array type "(147106 call _cast string[24] arrType[147022]))
+              }
+              unknown eCast[147118](147116 call postfix! eCastQ[147058])
+              unknown inds[147127](147126 call(147122 call . rhs[147003] c"getIndices"))
+              unknown tmp[147142](147140 call * rank[147030](147139 call range[66183](?) idxType[147037] bounded[66079] stridable[147044]))
+              {
+                unknown i[147179] 0
+                unknown tmp[147180] "maybe param" "temp"
+                (147192 'move' tmp[147180](147190 call chpl_compute_low_param_loop_bound 1 rank[147030]))
+                unknown tmp[147181] "maybe param" "temp"
+                (147199 'move' tmp[147181](147197 call chpl_compute_high_param_loop_bound 1 rank[147030]))
+                unknown tmp[147182] "maybe param" "temp"
+                (147202 'move' tmp[147182] 1)
+                ParamForLoop
+                { i[147179] tmp[147180] tmp[147181] tmp[147182]
+                  {
+                    unknown from[147153](147152 call inds[147127] i[147179])
+                    (147176 call =(147160 call tmp[147142] i[147179])(147175 call(147162 call . from[147153] c"safeCast")(147173 call range[66183](?) idxType[147037] bounded[66079] stridable[147044])))
+                  }
+                }
+                label _unused_continueLabel[147184]
+                label _breakLabel[147183]
+              }
+              (147219 call(147214 call . eCast[147118] c"dsiReallocate") tmp[147142])
+            }
+          }
+        }
+        label _continueLabel[147235]
+        _indexOfInterest[147230]
+        _iterator[147231]
+      }
+      label _breakLabel[147236]
+    }
+    (147275 call(147265 call . lhs[146997] c"dsiSetIndices")(147273 call(147269 call . rhs[147003] c"getIndices")))
+    {
+      unknown _indexOfInterest[147313] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[147314] "expr temp" "temp"
+      (147323 'move' _iterator[147314](147321 call _getIterator(147279 call . lhs[146997] c"_arrs")))
+      Defer
+      {
+        {
+          (147340 call _freeIterator _iterator[147314])
+        }
+      }
+      { scopeless type
+        (147329 'move' _indexOfInterest[147313](147326 call iteratorIndex _iterator[147314]))
+      }
+      ForLoop
+      {
+        unknown e[147333] "index var" "insert auto destroy"
+        (147335 'move' e[147333] _indexOfInterest[147313])
+        {
+          unknown eCastQ[147287](147285 call _cast(147284 'to nilable class from type' arrType[147022]) e[147333])
+          unknown eCast[147294](147292 call postfix! eCastQ[147287])
+          {
+            const tmp[147308] "const" "temp"
+            (147309 'move' tmp[147308](147306 'deref'(147305 '_wide_get_locale' e[147333])))
+            (147303 call(147299 call . eCast[147294] c"dsiPostReallocate"))
+          }
+        }
+        label _continueLabel[147318]
+        _indexOfInterest[147313]
+        _iterator[147314]
+      }
+      label _breakLabel[147319]
+    }
+    if(147359 call _cond_test(147352 call(147348 call . lhs[146997] c"dsiSupportsPrivatization")))
+    {
+      (147356 call _reprivatize lhs[146997])
+    }
+  }
+  where {
+    (328611 'is_subtype' anymanaged BaseRectangularDom[350552](?)(147010 call _to_borrowed t[146995]))
+  }
+  function chpl_assignDomainWithIndsIterSafeForRemoving[147373](arg lhs[147370] :
+  unknown t[147368], arg rhs[147376] :
+  _domain[123390](?)) : _unknown[43] "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[147439] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[147440] "expr temp" "temp"
+      (147449 'move' _iterator[147440](147447 call _getIterator(147415 call(147411 call . lhs[147370] c"dsiIndsIterSafeForRemoving"))))
+      Defer
+      {
+        {
+          (147466 call _freeIterator _iterator[147440])
+        }
+      }
+      { scopeless type
+        (147455 'move' _indexOfInterest[147439](147452 call iteratorIndex _iterator[147440]))
+      }
+      ForLoop
+      {
+        unknown i[147459] "index var" "insert auto destroy"
+        (147461 'move' i[147459] _indexOfInterest[147439])
+        {
+          if(147434 call _cond_test(147423 call !(147422 call(147417 call . rhs[147376] c"contains") i[147459])))
+          {
+            (147431 call(147426 call . lhs[147370] c"dsiRemove") i[147459])
+          }
+        }
+        label _continueLabel[147444]
+        _indexOfInterest[147439]
+        _iterator[147440]
+      }
+      label _breakLabel[147445]
+    }
+    {
+      unknown _indexOfInterest[147499] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[147500] "expr temp" "temp"
+      (147509 'move' _iterator[147500](147507 call _getIterator rhs[147376]))
+      Defer
+      {
+        {
+          (147525 call _freeIterator _iterator[147500])
+        }
+      }
+      { scopeless type
+        (147514 'move' _indexOfInterest[147499](147511 call iteratorIndex _iterator[147500]))
+      }
+      ForLoop
+      {
+        unknown i[147518] "index var" "insert auto destroy"
+        (147520 'move' i[147518] _indexOfInterest[147499])
+        {
+          if(147494 call _cond_test(147483 call !(147482 call(147477 call . lhs[147370] c"dsiMember") i[147518])))
+          {
+            (147491 call(147486 call . lhs[147370] c"dsiAdd") i[147518])
+          }
+        }
+        label _continueLabel[147504]
+        _indexOfInterest[147499]
+        _iterator[147500]
+      }
+      label _breakLabel[147505]
+    }
+  }
+  where {
+    (147405 call ||(147395 call ||(328612 'is_subtype' anymanaged BaseSparseDom[350579](?)(147383 call _to_borrowed t[147368]))(328613 'is_subtype' anymanaged BaseAssociativeDom[350562](?)(147391 call _to_borrowed t[147368])))(328614 'is_subtype' anymanaged BaseOpaqueDom[350571](?)(147401 call _to_borrowed t[147368])))
+  }
+  (329400 'used modules list'(141796 'use' ChapelArray[111781])(141798 'use' ChapelLocks[180347])(141799 'use' ChapelRange[66056])(141803 'use' LinkedLists[273878]))
+}

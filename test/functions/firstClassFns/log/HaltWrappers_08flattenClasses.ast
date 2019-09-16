@@ -1,0 +1,72 @@
+AST dump for HaltWrappers after pass flattenClasses.
+Module use list: ChapelStandard 
+
+{
+  function initHalt[197629](arg s[197626] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no doc" "no return value for void"
+  {
+    (197634 call halt s[197626])
+  }
+  function iterHalt[197646](arg s[197643] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no doc" "no return value for void"
+  {
+    (197651 call halt s[197643])
+  }
+  function pureVirtualMethodHalt[197658]() : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197678 call halt "pure virtual method called")
+  }
+  function exhaustiveSelectHalt[197689](arg s[197686] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197694 call halt s[197686])
+  }
+  function zipLengthHalt[197705](arg s[197702] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197710 call halt s[197702])
+  }
+  function outOfMemoryHalt[197721](arg s[197718] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    const err[197745] "const"(197743 call +(197740 call + "Out of memory allocating \"" s[197718]) "\"")
+    (197762 'chpl_error'(197761 call(197757 call .(197756 call(197752 call . err[197745] c"localize")) c"c_str")))
+  }
+  function nilCheckHalt[197772](arg s[197769] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197777 call halt s[197769])
+  }
+  function boundsCheckHalt[197788](arg s[197785] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197793 call halt s[197785])
+  }
+  function formalDomainCheckHalt[197804](arg s[197801] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197809 call halt s[197801])
+  }
+  function localCheckHalt[197820](arg s[197817] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197825 call halt s[197817])
+  }
+  function safeCastCheckHalt[197836](arg s[197833] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197841 call halt s[197833])
+  }
+  function divByZeroCheckHalt[197852](arg s[197849] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197857 call halt s[197849])
+  }
+  function unimplementedFeatureHalt[197868](arg subject[197865] :
+  string[24], arg feature[197871] :
+  string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (197946 call halt subject[197865] " doesn't support " feature[197871](197944 call +(197926 call + " yet\n" "  (please feel encouraged to file a GitHub issue requesting this:\n") "   https://github.com/chapel-lang/chapel/issues)"))
+  }
+  (329503 'used modules list'(328304 'use' ChapelStandard[19734]))
+}

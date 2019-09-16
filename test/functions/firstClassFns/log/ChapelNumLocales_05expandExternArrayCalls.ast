@@ -1,0 +1,12 @@
+AST dump for ChapelNumLocales after pass expandExternArrayCalls.
+Module use list: 
+
+{
+  function chpl_comm_default_num_locales[197578]() : _unknown[43] "extern" "local args" "no fn body"
+  {
+  }
+  { scopeless type
+    int[13]
+  }
+  const numLocales[197588] "config" "const"(197587 call chpl_comm_default_num_locales)
+}

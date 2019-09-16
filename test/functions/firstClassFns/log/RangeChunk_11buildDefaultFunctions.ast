@@ -1,0 +1,776 @@
+AST dump for RangeChunk after pass buildDefaultFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_RangeChunk[390348]() : void[4] "insert line file info" "module init"
+  {
+    (486396 return _void[47])
+  }
+  type RemElems[250327] def Thru[250321]:RemElems[250327] def Pack[250323]:RemElems[250327] def Mod[250325]:RemElems[250327]
+  function chunks[250352](arg r[250349]:range[66183](?), arg numChunks[250355]:integral[188](?), arg remPol[250360]:RemElems[250327] =
+  Thru[250321]) : _unknown[43] "compiler added where" "iterator fn" "no return value for void"
+  {
+    unknown ret[486231] "RVV" "temp"
+    {
+      unknown _indexOfInterest[250422] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[250423] "expr temp" "temp"
+      unknown call_tmp[676601] "expr temp" "maybe param" "maybe type" "temp"
+      (676604 'move' call_tmp[676601](250380 call chunksOrder r[250349] numChunks[250355] remPol[250360]))
+      (250432 'move' _iterator[250423](250430 call _getIterator call_tmp[676601]))
+      Defer
+      {
+        {
+          (250463 call _freeIterator _iterator[250423])
+        }
+      }
+      { scopeless type
+        (250438 'move' _indexOfInterest[250422](250435 call iteratorIndex _iterator[250423]))
+      }
+      ForLoop
+      {
+        (250443 call _check_tuple_var_decl _indexOfInterest[250422] 2)
+        unknown startOrder[250449] "index var" "insert auto destroy"
+        (250451 'move' startOrder[250449](250447 call _indexOfInterest[250422] 1))
+        unknown endOrder[250456] "index var" "insert auto destroy"
+        (250458 'move' endOrder[250456](250454 call _indexOfInterest[250422] 2))
+        {
+          unknown call_tmp[676608] "maybe param" "maybe type" "temp"
+          (676611 'move' call_tmp[676608](250387 call(250382 call (partial) orderToIndex _mt[232] r[250349]) startOrder[250449]))
+          const start[250388] "const" "insert auto destroy"
+          (495912 'init var' start[250388] call_tmp[676608])
+          unknown call_tmp[676615] "maybe param" "maybe type" "temp"
+          (676618 'move' call_tmp[676615](250398 call(250393 call (partial) orderToIndex _mt[232] r[250349]) endOrder[250456]))
+          const end[250399] "const" "insert auto destroy"
+          (495914 'init var' end[250399] call_tmp[676615])
+          unknown yret[486235] "YVV" "temp"
+          unknown tmp[526122] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+          unknown tmp[526123] "maybe param" "temp"
+          unknown call_tmp[676620] "expr temp" "maybe param" "maybe type" "temp"
+          (676623 'move' call_tmp[676620](440911 'query' r[250349] 3))
+          (526128 'move' tmp[526123](526126 call _cond_test call_tmp[676620]))
+          if tmp[526123]
+          {
+            unknown tmp[526130] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+            unknown call_tmp[676625] "expr temp" "maybe param" "maybe type" "temp"
+            (676628 'move' call_tmp[676625](250405 call chpl_build_bounded_range start[250388] end[250399]))
+            unknown call_tmp[676632] "expr temp" "maybe param" "maybe type" "temp"
+            (676635 'move' call_tmp[676632](250408 call stride _mt[232] r[250349]))
+            (526132 'move' tmp[526130](250411 call chpl_by call_tmp[676625] call_tmp[676632]))
+            (526137 'move' tmp[526122](526134 '_paramFoldLogical' tmp[526123] tmp[526130]))
+          }
+          {
+            unknown tmp[526139] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+            (526141 'move' tmp[526139](250415 call chpl_build_bounded_range start[250388] end[250399]))
+            (526146 'move' tmp[526122](526143 '_paramFoldLogical' tmp[526123] tmp[526139]))
+          }
+          unknown call_tmp[676637] "expr temp" "maybe param" "maybe type" "temp"
+          (676640 'move' call_tmp[676637](486239 'query' r[250349] 1))
+          unknown call_tmp[676642] "expr temp" "maybe param" "maybe type" "temp"
+          (676645 'move' call_tmp[676642](486243 'query' r[250349] 3))
+          unknown call_tmp[676647] "expr temp" "maybe param" "maybe type" "temp"
+          (676650 'move' call_tmp[676647](486238 call range[66183](?) call_tmp[676637] bounded[66079] call_tmp[676642]))
+          (486247 'move' yret[486235](486246 'coerce' tmp[526122] call_tmp[676647]))
+          (486249 yield yret[486235])
+        }
+        label _continueLabel[250427]
+        _indexOfInterest[250422]
+        _iterator[250423]
+      }
+      label _breakLabel[250428]
+    }
+    (486233 return ret[486231])
+  }
+  where {
+    unknown call_tmp[676652] "expr temp" "maybe param" "maybe type" "temp"
+    (676655 'move' call_tmp[676652](440898 'query' r[250349] 2))
+    unknown call_tmp[676657] "expr temp" "maybe param" "maybe type" "temp"
+    (676660 'move' call_tmp[676657](440902 call == bounded[66079] call_tmp[676652]))
+    (440906 call & 1 call_tmp[676657])
+  }
+  { scopeless type
+    unknown call_tmp[676662] "expr temp" "maybe param" "maybe type" "temp"
+    (676665 'move' call_tmp[676662](440895 'query' r[250349] 1))
+    unknown call_tmp[676667] "expr temp" "maybe param" "maybe type" "temp"
+    (676670 'move' call_tmp[676667](440914 'query' r[250349] 3))
+    (250369 call range[66183](?) call_tmp[676662] bounded[66079] call_tmp[676667])
+  }
+  function chunk[250487](arg r[250484]:range[66183](?), arg numChunks[250490]:integral[188](?), arg idx[250494]:integral[188](?), arg remPol[250499]:RemElems[250327] =
+  Thru[250321]) : _unknown[43] "compiler added where"
+  {
+    unknown ret[486253] "RVV" "temp"
+    unknown call_tmp[676672] "maybe param" "maybe type" "temp"
+    (676675 'move' call_tmp[676672](250520 call chunkOrder r[250484] numChunks[250490] idx[250494] remPol[250499]))
+    const tmp[250521] "const" "insert auto destroy" "no copy" "temp"
+    (495916 'init var' tmp[250521] call_tmp[676672])
+    (250528 call _check_tuple_var_decl tmp[250521] 2)
+    unknown call_tmp[676677] "maybe param" "maybe type" "temp"
+    (676680 'move' call_tmp[676677](250522 call tmp[250521] 1))
+    const startOrder[250509] "const" "insert auto destroy"
+    (495918 'init var' startOrder[250509] call_tmp[676677])
+    unknown call_tmp[676682] "maybe param" "maybe type" "temp"
+    (676685 'move' call_tmp[676682](250525 call tmp[250521] 2))
+    const endOrder[250511] "const" "insert auto destroy"
+    (495920 'init var' endOrder[250511] call_tmp[676682])
+    unknown call_tmp[676689] "maybe param" "maybe type" "temp"
+    (676692 'move' call_tmp[676689](250540 call(250535 call (partial) orderToIndex _mt[232] r[250484]) startOrder[250509]))
+    const start[250541] "const" "insert auto destroy"
+    (495922 'init var' start[250541] call_tmp[676689])
+    unknown call_tmp[676696] "maybe param" "maybe type" "temp"
+    (676699 'move' call_tmp[676696](250550 call(250545 call (partial) orderToIndex _mt[232] r[250484]) endOrder[250511]))
+    const end[250551] "const" "insert auto destroy"
+    (495924 'init var' end[250551] call_tmp[676696])
+    unknown tmp[526153] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[526154] "maybe param" "temp"
+    unknown call_tmp[676701] "expr temp" "maybe param" "maybe type" "temp"
+    (676704 'move' call_tmp[676701](440939 'query' r[250484] 3))
+    (526159 'move' tmp[526154](526157 call _cond_test call_tmp[676701]))
+    if tmp[526154]
+    {
+      unknown tmp[526161] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[676706] "expr temp" "maybe param" "maybe type" "temp"
+      (676709 'move' call_tmp[676706](250557 call chpl_build_bounded_range start[250541] end[250551]))
+      unknown call_tmp[676713] "expr temp" "maybe param" "maybe type" "temp"
+      (676716 'move' call_tmp[676713](250560 call stride _mt[232] r[250484]))
+      (526163 'move' tmp[526161](250563 call chpl_by call_tmp[676706] call_tmp[676713]))
+      (526168 'move' tmp[526153](526165 '_paramFoldLogical' tmp[526154] tmp[526161]))
+    }
+    {
+      unknown tmp[526170] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (526172 'move' tmp[526170](250567 call chpl_build_bounded_range start[250541] end[250551]))
+      (526177 'move' tmp[526153](526174 '_paramFoldLogical' tmp[526154] tmp[526170]))
+    }
+    unknown call_tmp[676718] "expr temp" "maybe param" "maybe type" "temp"
+    (676721 'move' call_tmp[676718](486259 'query' r[250484] 1))
+    unknown call_tmp[676723] "expr temp" "maybe param" "maybe type" "temp"
+    (676726 'move' call_tmp[676723](486263 'query' r[250484] 3))
+    unknown call_tmp[676728] "expr temp" "maybe param" "maybe type" "temp"
+    (676731 'move' call_tmp[676728](486258 call range[66183](?) call_tmp[676718] bounded[66079] call_tmp[676723]))
+    (486267 'move' ret[486253](486266 'coerce' tmp[526153] call_tmp[676728]))
+    (486255 return ret[486253])
+  }
+  where {
+    unknown call_tmp[676733] "expr temp" "maybe param" "maybe type" "temp"
+    (676736 'move' call_tmp[676733](440926 'query' r[250484] 2))
+    unknown call_tmp[676738] "expr temp" "maybe param" "maybe type" "temp"
+    (676741 'move' call_tmp[676738](440930 call == bounded[66079] call_tmp[676733]))
+    (440934 call & 1 call_tmp[676738])
+  }
+  { scopeless type
+    unknown call_tmp[676743] "expr temp" "maybe param" "maybe type" "temp"
+    (676746 'move' call_tmp[676743](440923 'query' r[250484] 1))
+    unknown call_tmp[676748] "expr temp" "maybe param" "maybe type" "temp"
+    (676751 'move' call_tmp[676748](440942 'query' r[250484] 3))
+    (250508 call range[66183](?) call_tmp[676743] bounded[66079] call_tmp[676748])
+  }
+  function chunksOrder[250589](arg r[250586]:range[66183](?), arg numChunks[250592]:integral[188](?), arg remPol[250597]:RemElems[250327] =
+  Thru[250321]) : _unknown[43] "compiler added where" "iterator fn" "no return value for void"
+  {
+    unknown ret[486271] "RVV" "temp"
+    unknown tmp[408426] "maybe param" "temp"
+    unknown call_tmp[676755] "expr temp" "maybe param" "maybe type" "temp"
+    (676758 'move' call_tmp[676755](250606 call length _mt[232] r[250586]))
+    (408437 'move' tmp[408426](250610 call == call_tmp[676755] 0))
+    unknown call_tmp[676760] "expr temp" "maybe param" "maybe type" "temp"
+    (676763 'move' call_tmp[676760](408439 call _cond_invalid tmp[408426]))
+    if call_tmp[676760]
+    {
+      (408442 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[526184] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[526185] "maybe param" "temp"
+    unknown call_tmp[676765] "expr temp" "maybe param" "maybe type" "temp"
+    (676768 'move' call_tmp[676765](408427 call isTrue tmp[408426]))
+    (526190 'move' tmp[526185](526188 call _cond_test call_tmp[676765]))
+    if tmp[526185]
+    {
+      (526195 'move' tmp[526184](526192 '_paramFoldLogical' tmp[526185] 1))
+    }
+    {
+      unknown tmp[526197] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[676770] "expr temp" "maybe param" "maybe type" "temp"
+      (676773 'move' call_tmp[676770](250614 call <= numChunks[250592] 0))
+      (526199 'move' tmp[526197](408431 call isTrue call_tmp[676770]))
+      (526204 'move' tmp[526184](526201 '_paramFoldLogical' tmp[526185] tmp[526197]))
+    }
+    unknown call_tmp[676775] "expr temp" "maybe param" "maybe type" "temp"
+    (676778 'move' call_tmp[676775](250620 call _cond_test tmp[526184]))
+    if call_tmp[676775]
+    {
+      gotoReturn _end_chunksOrder[486269] _end_chunksOrder[486269]
+    }
+    unknown call_tmp[676782] "maybe param" "maybe type" "temp"
+    (676785 'move' call_tmp[676782](250627 call length _mt[232] r[250586]))
+    const nElems[250630] "const" "insert auto destroy"
+    (495926 'init var' nElems[250630] call_tmp[676782])
+    unknown call_tmp[676787] "expr temp" "maybe param" "maybe type" "temp"
+    (676790 'move' call_tmp[676787](440951 'query' r[250586] 1))
+    unknown call_tmp[676792] "expr temp" "maybe param" "maybe type" "temp"
+    (676795 'move' call_tmp[676792](250637 call min numChunks[250592] nElems[250630]))
+    unknown call_tmp[676797] "maybe param" "maybe type" "temp"
+    (676800 'move' call_tmp[676797](250639 call _cast call_tmp[676787] call_tmp[676792]))
+    unknown nChunks[250641] "insert auto destroy"
+    (495928 'init var' nChunks[250641] call_tmp[676797])
+    unknown chunkSize[250644] "insert auto destroy"
+    unknown call_tmp[676802] "expr temp" "maybe param" "maybe type" "temp"
+    (676805 'move' call_tmp[676802](440954 'query' r[250586] 1))
+    (495930 'default init var' chunkSize[250644] call_tmp[676802])
+    unknown rem[250648] "insert auto destroy"
+    unknown call_tmp[676807] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (676810 'move' call_tmp[676807](250652 'typeof' chunkSize[250644]))
+    (495932 'default init var' rem[250648] call_tmp[676807])
+    {
+      unknown tmp[250719] "expr temp" "maybe param" "maybe type" "temp"
+      (250721 'move' tmp[250719] remPol[250597])
+      unknown call_tmp[676812] "expr temp" "maybe param" "maybe type" "temp"
+      (676815 'move' call_tmp[676812](250723 call == tmp[250719] Pack[250323]))
+      unknown call_tmp[676817] "expr temp" "maybe param" "maybe type" "temp"
+      (676820 'move' call_tmp[676817](250726 call _cond_test call_tmp[676812]))
+      if call_tmp[676817]
+      {
+        unknown call_tmp[676822] "expr temp" "maybe param" "maybe type" "temp"
+        (676825 'move' call_tmp[676822](250660 call / nElems[250630] nChunks[250641]))
+        (250662 call = chunkSize[250644] call_tmp[676822])
+        unknown call_tmp[676827] "expr temp" "maybe param" "maybe type" "temp"
+        (676830 'move' call_tmp[676827](250668 call * chunkSize[250644] nChunks[250641]))
+        unknown call_tmp[676832] "expr temp" "maybe param" "maybe type" "temp"
+        (676835 'move' call_tmp[676832](250671 call != call_tmp[676827] nElems[250630]))
+        unknown call_tmp[676837] "expr temp" "maybe param" "maybe type" "temp"
+        (676840 'move' call_tmp[676837](250688 call _cond_test call_tmp[676832]))
+        if call_tmp[676837]
+        {
+          (250675 call += chunkSize[250644] 1)
+          unknown call_tmp[676842] "expr temp" "maybe param" "maybe type" "temp"
+          (676845 'move' call_tmp[676842](250684 call divceil nElems[250630] chunkSize[250644]))
+          (250685 call = nChunks[250641] call_tmp[676842])
+        }
+      }
+      {
+        unknown call_tmp[676847] "expr temp" "maybe param" "maybe type" "temp"
+        (676850 'move' call_tmp[676847](250729 call == tmp[250719] Mod[250325]))
+        unknown call_tmp[676852] "expr temp" "maybe param" "maybe type" "temp"
+        (676855 'move' call_tmp[676852](250732 call _cond_test call_tmp[676847]))
+        if call_tmp[676852]
+        {
+          unknown call_tmp[676857] "expr temp" "maybe param" "maybe type" "temp"
+          (676860 'move' call_tmp[676857](250699 call / nElems[250630] nChunks[250641]))
+          (250701 call = chunkSize[250644] call_tmp[676857])
+          unknown call_tmp[676862] "expr temp" "maybe param" "maybe type" "temp"
+          (676865 'move' call_tmp[676862](250709 call * chunkSize[250644] nChunks[250641]))
+          unknown call_tmp[676867] "expr temp" "maybe param" "maybe type" "temp"
+          (676870 'move' call_tmp[676867](250711 call - nElems[250630] call_tmp[676862]))
+          (250713 call = rem[250648] call_tmp[676867])
+        }
+      }
+    }
+    {
+      unknown _indexOfInterest[250853] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[250854] "expr temp" "temp"
+      unknown call_tmp[676872] "expr temp" "maybe param" "maybe type" "temp"
+      (676875 'move' call_tmp[676872](250870 call chpl_direct_counted_range_iter 0 nChunks[250641]))
+      (250863 'move' _iterator[250854](250861 call _getIterator call_tmp[676872]))
+      Defer
+      {
+        {
+          (250886 call _freeIterator _iterator[250854])
+        }
+      }
+      { scopeless type
+        (250875 'move' _indexOfInterest[250853](250872 call iteratorIndex _iterator[250854]))
+      }
+      ForLoop
+      {
+        unknown i[250879] "index var" "insert auto destroy"
+        (250881 'move' i[250879] _indexOfInterest[250853])
+        {
+          unknown chunk[250748] "insert auto destroy"
+          unknown call_tmp[676877] "expr temp" "maybe param" "maybe type" "temp"
+          (676880 'move' call_tmp[676877](440957 'query' r[250586] 1))
+          unknown call_tmp[676882] "expr temp" "maybe param" "maybe type" "temp"
+          (676885 'move' call_tmp[676882](250746 call * 2 call_tmp[676877]))
+          (495934 'default init var' chunk[250748] call_tmp[676882])
+          {
+            unknown tmp[250825] "expr temp" "maybe param" "maybe type" "temp"
+            (250827 'move' tmp[250825] remPol[250597])
+            unknown call_tmp[676887] "expr temp" "maybe param" "maybe type" "temp"
+            (676890 'move' call_tmp[676887](250829 call == tmp[250825] Thru[250321]))
+            unknown call_tmp[676892] "expr temp" "maybe param" "maybe type" "temp"
+            (676895 'move' call_tmp[676892](250832 call _cond_test call_tmp[676887]))
+            if call_tmp[676892]
+            {
+              unknown call_tmp[676897] "expr temp" "maybe param" "maybe type" "temp"
+              (676900 'move' call_tmp[676897](250762 call chunkOrderThru nElems[250630] nChunks[250641] i[250879]))
+              (250763 call = chunk[250748] call_tmp[676897])
+            }
+            {
+              unknown call_tmp[676902] "expr temp" "maybe param" "maybe type" "temp"
+              (676905 'move' call_tmp[676902](250835 call == tmp[250825] Pack[250323]))
+              unknown call_tmp[676907] "expr temp" "maybe param" "maybe type" "temp"
+              (676910 'move' call_tmp[676907](250838 call _cond_test call_tmp[676902]))
+              if call_tmp[676907]
+              {
+                unknown call_tmp[676912] "expr temp" "maybe param" "maybe type" "temp"
+                (676915 'move' call_tmp[676912](250777 call chunkOrderPack chunkSize[250644] nElems[250630] i[250879]))
+                (250778 call = chunk[250748] call_tmp[676912])
+              }
+              {
+                unknown call_tmp[676917] "expr temp" "maybe param" "maybe type" "temp"
+                (676920 'move' call_tmp[676917](250842 call == tmp[250825] Mod[250325]))
+                unknown call_tmp[676922] "expr temp" "maybe param" "maybe type" "temp"
+                (676925 'move' call_tmp[676922](250845 call _cond_test call_tmp[676917]))
+                if call_tmp[676922]
+                {
+                  unknown call_tmp[676927] "expr temp" "maybe param" "maybe type" "temp"
+                  (676930 'move' call_tmp[676927](250794 call chunkOrderMod chunkSize[250644] rem[250648] nElems[250630] nChunks[250641] i[250879]))
+                  (250795 call = chunk[250748] call_tmp[676927])
+                }
+                {
+                  (250819 call halt "RangeChunk: unknown RemElems in chunksOrder")
+                }
+              }
+            }
+          }
+          unknown yret[486277] "YVV" "temp"
+          unknown call_tmp[676932] "expr temp" "maybe param" "maybe type" "temp"
+          (676935 'move' call_tmp[676932](486282 'query' r[250586] 1))
+          unknown call_tmp[676937] "expr temp" "maybe param" "maybe type" "temp"
+          (676940 'move' call_tmp[676937](486280 call * 2 call_tmp[676932]))
+          (486286 'move' yret[486277](486285 'coerce' chunk[250748] call_tmp[676937]))
+          (486288 yield yret[486277])
+        }
+        label _continueLabel[250858]
+        _indexOfInterest[250853]
+        _iterator[250854]
+      }
+      label _breakLabel[250859]
+    }
+    label _end_chunksOrder[486269]
+    (486273 return ret[486271])
+  }
+  where {
+    unknown call_tmp[676942] "expr temp" "maybe param" "maybe type" "temp"
+    (676945 'move' call_tmp[676942](440963 'query' r[250586] 2))
+    unknown call_tmp[676947] "expr temp" "maybe param" "maybe type" "temp"
+    (676950 'move' call_tmp[676947](440967 call == bounded[66079] call_tmp[676942]))
+    (440971 call & 1 call_tmp[676947])
+  }
+  { scopeless type
+    unknown call_tmp[676952] "expr temp" "maybe param" "maybe type" "temp"
+    (676955 'move' call_tmp[676952](440960 'query' r[250586] 1))
+    (250603 call * 2 call_tmp[676952])
+  }
+  function chunkOrder[250908](arg r[250905]:range[66183](?), arg numChunks[250911]:integral[188](?), arg idx[250915]:integral[188](?), arg remPol[250920]:RemElems[250327] =
+  Thru[250321]) : _unknown[43] "compiler added where"
+  {
+    unknown ret[486292] "RVV" "temp"
+    unknown tmp[408447] "maybe param" "temp"
+    unknown tmp[408468] "maybe param" "temp"
+    unknown tmp[408489] "maybe param" "temp"
+    unknown call_tmp[676959] "expr temp" "maybe param" "maybe type" "temp"
+    (676962 'move' call_tmp[676959](250929 call length _mt[232] r[250905]))
+    (408500 'move' tmp[408489](250933 call == call_tmp[676959] 0))
+    unknown call_tmp[676964] "expr temp" "maybe param" "maybe type" "temp"
+    (676967 'move' call_tmp[676964](408502 call _cond_invalid tmp[408489]))
+    if call_tmp[676964]
+    {
+      (408505 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[526211] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[526212] "maybe param" "temp"
+    unknown call_tmp[676969] "expr temp" "maybe param" "maybe type" "temp"
+    (676972 'move' call_tmp[676969](408490 call isTrue tmp[408489]))
+    (526217 'move' tmp[526212](526215 call _cond_test call_tmp[676969]))
+    if tmp[526212]
+    {
+      (526222 'move' tmp[526211](526219 '_paramFoldLogical' tmp[526212] 1))
+    }
+    {
+      unknown tmp[526224] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[676974] "expr temp" "maybe param" "maybe type" "temp"
+      (676977 'move' call_tmp[676974](250937 call <= numChunks[250911] 0))
+      (526226 'move' tmp[526224](408494 call isTrue call_tmp[676974]))
+      (526231 'move' tmp[526211](526228 '_paramFoldLogical' tmp[526212] tmp[526224]))
+    }
+    (408479 'move' tmp[408468] tmp[526211])
+    unknown call_tmp[676979] "expr temp" "maybe param" "maybe type" "temp"
+    (676982 'move' call_tmp[676979](408481 call _cond_invalid tmp[408468]))
+    if call_tmp[676979]
+    {
+      (408484 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[526238] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[526239] "maybe param" "temp"
+    unknown call_tmp[676984] "expr temp" "maybe param" "maybe type" "temp"
+    (676987 'move' call_tmp[676984](408469 call isTrue tmp[408468]))
+    (526244 'move' tmp[526239](526242 call _cond_test call_tmp[676984]))
+    if tmp[526239]
+    {
+      (526249 'move' tmp[526238](526246 '_paramFoldLogical' tmp[526239] 1))
+    }
+    {
+      unknown tmp[526251] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[676989] "expr temp" "maybe param" "maybe type" "temp"
+      (676992 'move' call_tmp[676989](250943 call < idx[250915] 0))
+      (526253 'move' tmp[526251](408473 call isTrue call_tmp[676989]))
+      (526258 'move' tmp[526238](526255 '_paramFoldLogical' tmp[526239] tmp[526251]))
+    }
+    (408458 'move' tmp[408447] tmp[526238])
+    unknown call_tmp[676994] "expr temp" "maybe param" "maybe type" "temp"
+    (676997 'move' call_tmp[676994](408460 call _cond_invalid tmp[408447]))
+    if call_tmp[676994]
+    {
+      (408463 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[526265] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[526266] "maybe param" "temp"
+    unknown call_tmp[676999] "expr temp" "maybe param" "maybe type" "temp"
+    (677002 'move' call_tmp[676999](408448 call isTrue tmp[408447]))
+    (526271 'move' tmp[526266](526269 call _cond_test call_tmp[676999]))
+    if tmp[526266]
+    {
+      (526276 'move' tmp[526265](526273 '_paramFoldLogical' tmp[526266] 1))
+    }
+    {
+      unknown tmp[526278] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[677004] "expr temp" "maybe param" "maybe type" "temp"
+      (677007 'move' call_tmp[677004](250949 call >= idx[250915] numChunks[250911]))
+      (526280 'move' tmp[526278](408452 call isTrue call_tmp[677004]))
+      (526285 'move' tmp[526265](526282 '_paramFoldLogical' tmp[526266] tmp[526278]))
+    }
+    unknown call_tmp[677009] "expr temp" "maybe param" "maybe type" "temp"
+    (677012 'move' call_tmp[677009](250966 call _cond_test tmp[526265]))
+    if call_tmp[677009]
+    {
+      unknown call_tmp[677014] "expr temp" "maybe param" "maybe type" "temp"
+      (677017 'move' call_tmp[677014](440985 'query' r[250905] 1))
+      unknown call_tmp[677019] "expr temp" "maybe param" "maybe type" "temp"
+      (677022 'move' call_tmp[677019](250955 call _cast call_tmp[677014] 1))
+      unknown call_tmp[677024] "expr temp" "maybe param" "maybe type" "temp"
+      (677027 'move' call_tmp[677024](440988 'query' r[250905] 1))
+      unknown call_tmp[677029] "expr temp" "maybe param" "maybe type" "temp"
+      (677032 'move' call_tmp[677029](250959 call _cast call_tmp[677024] 0))
+      unknown call_tmp[677034] "expr temp" "maybe param" "maybe type" "temp"
+      (677037 'move' call_tmp[677034](250962 call _build_tuple call_tmp[677019] call_tmp[677029]))
+      unknown call_tmp[677039] "expr temp" "maybe param" "maybe type" "temp"
+      (677042 'move' call_tmp[677039](486299 'query' r[250905] 1))
+      unknown call_tmp[677044] "expr temp" "maybe param" "maybe type" "temp"
+      (677047 'move' call_tmp[677044](486297 call * 2 call_tmp[677039]))
+      (486303 'move' ret[486292](486302 'coerce' call_tmp[677034] call_tmp[677044]))
+      gotoReturn _end_chunkOrder[486290] _end_chunkOrder[486290]
+    }
+    unknown call_tmp[677051] "maybe param" "maybe type" "temp"
+    (677054 'move' call_tmp[677051](250973 call length _mt[232] r[250905]))
+    const nElems[250976] "const" "insert auto destroy"
+    (495936 'init var' nElems[250976] call_tmp[677051])
+    unknown call_tmp[677056] "expr temp" "maybe param" "maybe type" "temp"
+    (677059 'move' call_tmp[677056](440991 'query' r[250905] 1))
+    unknown call_tmp[677061] "expr temp" "maybe param" "maybe type" "temp"
+    (677064 'move' call_tmp[677061](250983 call min numChunks[250911] nElems[250976]))
+    unknown call_tmp[677066] "maybe param" "maybe type" "temp"
+    (677069 'move' call_tmp[677066](250985 call _cast call_tmp[677056] call_tmp[677061]))
+    const nChunks[250987] "const" "insert auto destroy"
+    (495938 'init var' nChunks[250987] call_tmp[677066])
+    unknown call_tmp[677071] "expr temp" "maybe param" "maybe type" "temp"
+    (677074 'move' call_tmp[677071](440994 'query' r[250905] 1))
+    unknown call_tmp[677076] "maybe param" "maybe type" "temp"
+    (677079 'move' call_tmp[677076](250992 call _cast call_tmp[677071] idx[250915]))
+    const i[250994] "const" "insert auto destroy"
+    (495940 'init var' i[250994] call_tmp[677076])
+    {
+      unknown tmp[251105] "expr temp" "maybe param" "maybe type" "temp"
+      (251107 'move' tmp[251105] remPol[250920])
+      unknown call_tmp[677081] "expr temp" "maybe param" "maybe type" "temp"
+      (677084 'move' call_tmp[677081](251109 call == tmp[251105] Thru[250321]))
+      unknown call_tmp[677086] "expr temp" "maybe param" "maybe type" "temp"
+      (677089 'move' call_tmp[677086](251112 call _cond_test call_tmp[677081]))
+      if call_tmp[677086]
+      {
+        unknown call_tmp[677091] "expr temp" "maybe param" "maybe type" "temp"
+        (677094 'move' call_tmp[677091](251006 call chunkOrderThru nElems[250976] nChunks[250987] i[250994]))
+        unknown call_tmp[677096] "expr temp" "maybe param" "maybe type" "temp"
+        (677099 'move' call_tmp[677096](486310 'query' r[250905] 1))
+        unknown call_tmp[677101] "expr temp" "maybe param" "maybe type" "temp"
+        (677104 'move' call_tmp[677101](486308 call * 2 call_tmp[677096]))
+        (486314 'move' ret[486292](486313 'coerce' call_tmp[677091] call_tmp[677101]))
+        gotoReturn _end_chunkOrder[486290] _end_chunkOrder[486290]
+      }
+      {
+        unknown call_tmp[677106] "expr temp" "maybe param" "maybe type" "temp"
+        (677109 'move' call_tmp[677106](251115 call == tmp[251105] Pack[250323]))
+        unknown call_tmp[677111] "expr temp" "maybe param" "maybe type" "temp"
+        (677114 'move' call_tmp[677111](251118 call _cond_test call_tmp[677106]))
+        if call_tmp[677111]
+        {
+          unknown call_tmp[677116] "maybe param" "maybe type" "temp"
+          (677119 'move' call_tmp[677116](251016 call / nElems[250976] nChunks[250987]))
+          unknown chunkSize[251018] "insert auto destroy"
+          (495942 'init var' chunkSize[251018] call_tmp[677116])
+          unknown call_tmp[677121] "expr temp" "maybe param" "maybe type" "temp"
+          (677124 'move' call_tmp[677121](251024 call * chunkSize[251018] nChunks[250987]))
+          unknown call_tmp[677126] "expr temp" "maybe param" "maybe type" "temp"
+          (677129 'move' call_tmp[677126](251027 call != call_tmp[677121] nElems[250976]))
+          unknown call_tmp[677131] "expr temp" "maybe param" "maybe type" "temp"
+          (677134 'move' call_tmp[677131](251034 call _cond_test call_tmp[677126]))
+          if call_tmp[677131]
+          {
+            (251031 call += chunkSize[251018] 1)
+          }
+          unknown call_tmp[677136] "expr temp" "maybe param" "maybe type" "temp"
+          (677139 'move' call_tmp[677136](251044 call chunkOrderPack chunkSize[251018] nElems[250976] i[250994]))
+          unknown call_tmp[677141] "expr temp" "maybe param" "maybe type" "temp"
+          (677144 'move' call_tmp[677141](486321 'query' r[250905] 1))
+          unknown call_tmp[677146] "expr temp" "maybe param" "maybe type" "temp"
+          (677149 'move' call_tmp[677146](486319 call * 2 call_tmp[677141]))
+          (486325 'move' ret[486292](486324 'coerce' call_tmp[677136] call_tmp[677146]))
+          gotoReturn _end_chunkOrder[486290] _end_chunkOrder[486290]
+        }
+        {
+          unknown call_tmp[677151] "expr temp" "maybe param" "maybe type" "temp"
+          (677154 'move' call_tmp[677151](251122 call == tmp[251105] Mod[250325]))
+          unknown call_tmp[677156] "expr temp" "maybe param" "maybe type" "temp"
+          (677159 'move' call_tmp[677156](251125 call _cond_test call_tmp[677151]))
+          if call_tmp[677156]
+          {
+            unknown call_tmp[677161] "maybe param" "maybe type" "temp"
+            (677164 'move' call_tmp[677161](251053 call / nElems[250976] nChunks[250987]))
+            const chunkSize[251055] "const" "insert auto destroy"
+            (495944 'init var' chunkSize[251055] call_tmp[677161])
+            unknown call_tmp[677166] "expr temp" "maybe param" "maybe type" "temp"
+            (677169 'move' call_tmp[677166](251062 call * chunkSize[251055] nChunks[250987]))
+            unknown call_tmp[677171] "maybe param" "maybe type" "temp"
+            (677174 'move' call_tmp[677171](251064 call - nElems[250976] call_tmp[677166]))
+            const rem[251066] "const" "insert auto destroy"
+            (495946 'init var' rem[251066] call_tmp[677171])
+            unknown call_tmp[677176] "expr temp" "maybe param" "maybe type" "temp"
+            (677179 'move' call_tmp[677176](251076 call chunkOrderMod chunkSize[251055] rem[251066] nElems[250976] nChunks[250987] i[250994]))
+            unknown call_tmp[677181] "expr temp" "maybe param" "maybe type" "temp"
+            (677184 'move' call_tmp[677181](486332 'query' r[250905] 1))
+            unknown call_tmp[677186] "expr temp" "maybe param" "maybe type" "temp"
+            (677189 'move' call_tmp[677186](486330 call * 2 call_tmp[677181]))
+            (486336 'move' ret[486292](486335 'coerce' call_tmp[677176] call_tmp[677186]))
+            gotoReturn _end_chunkOrder[486290] _end_chunkOrder[486290]
+          }
+          {
+            (251099 call halt "RangeChunk: unknown RemElems in chunkOrder")
+          }
+        }
+      }
+    }
+    label _end_chunkOrder[486290]
+    (486294 return ret[486292])
+  }
+  where {
+    unknown call_tmp[677191] "expr temp" "maybe param" "maybe type" "temp"
+    (677194 'move' call_tmp[677191](441000 'query' r[250905] 2))
+    unknown call_tmp[677196] "expr temp" "maybe param" "maybe type" "temp"
+    (677199 'move' call_tmp[677196](441004 call == bounded[66079] call_tmp[677191]))
+    (441008 call & 1 call_tmp[677196])
+  }
+  { scopeless type
+    unknown call_tmp[677201] "expr temp" "maybe param" "maybe type" "temp"
+    (677204 'move' call_tmp[677201](440997 'query' r[250905] 1))
+    (250926 call * 2 call_tmp[677201])
+  }
+  function chunkOrderThru[251140](arg nElems[251137]:_any[170](?), arg nChunks[251143] :
+  (441017 'typeof' nElems[251137]), arg i[251147] :
+  (441019 'typeof' nElems[251137])) : _unknown[43] "no doc" "private"
+  {
+    unknown ret[486342] "RVV" "temp"
+    unknown call_tmp[677206] "maybe param" "maybe type" "temp"
+    (677209 'move' call_tmp[677206](251157 call * nElems[251137] i[251147]))
+    const m[251159] "const" "insert auto destroy"
+    (495948 'init var' m[251159] call_tmp[677206])
+    const start[251179] "const" "insert auto destroy"
+    unknown tmp[526292] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[526293] "maybe param" "temp"
+    unknown call_tmp[677211] "expr temp" "maybe param" "maybe type" "temp"
+    (677214 'move' call_tmp[677211](251165 call == i[251147] 0))
+    (526298 'move' tmp[526293](526296 call _cond_test call_tmp[677211]))
+    if tmp[526293]
+    {
+      unknown tmp[526300] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[677216] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (677219 'move' call_tmp[677216](441021 'typeof' nElems[251137]))
+      (526302 'move' tmp[526300](251169 call _cast call_tmp[677216] 0))
+      (526307 'move' tmp[526292](526304 '_paramFoldLogical' tmp[526293] tmp[526300]))
+    }
+    {
+      unknown tmp[526309] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (526311 'move' tmp[526309](251175 call divceil m[251159] nChunks[251143]))
+      (526316 'move' tmp[526292](526313 '_paramFoldLogical' tmp[526293] tmp[526309]))
+    }
+    (495950 'init var' start[251179] tmp[526292])
+    const end[251207] "const" "insert auto destroy"
+    unknown tmp[526323] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[526324] "maybe param" "temp"
+    unknown call_tmp[677221] "expr temp" "maybe param" "maybe type" "temp"
+    (677224 'move' call_tmp[677221](251185 call - nChunks[251143] 1))
+    unknown call_tmp[677226] "expr temp" "maybe param" "maybe type" "temp"
+    (677229 'move' call_tmp[677226](251187 call == i[251147] call_tmp[677221]))
+    (526329 'move' tmp[526324](526327 call _cond_test call_tmp[677226]))
+    if tmp[526324]
+    {
+      unknown tmp[526331] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (526333 'move' tmp[526331](251191 call - nElems[251137] 1))
+      (526338 'move' tmp[526323](526335 '_paramFoldLogical' tmp[526324] tmp[526331]))
+    }
+    {
+      unknown tmp[526340] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[677231] "expr temp" "maybe param" "maybe type" "temp"
+      (677234 'move' call_tmp[677231](251196 call + m[251159] nElems[251137]))
+      unknown call_tmp[677236] "expr temp" "maybe param" "maybe type" "temp"
+      (677239 'move' call_tmp[677236](251200 call divceil call_tmp[677231] nChunks[251143]))
+      (526342 'move' tmp[526340](251202 call - call_tmp[677236] 1))
+      (526347 'move' tmp[526323](526344 '_paramFoldLogical' tmp[526324] tmp[526340]))
+    }
+    (495952 'init var' end[251207] tmp[526323])
+    unknown call_tmp[677241] "expr temp" "maybe param" "maybe type" "temp"
+    (677244 'move' call_tmp[677241](251213 call _build_tuple start[251179] end[251207]))
+    unknown call_tmp[677246] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677249 'move' call_tmp[677246](486348 'typeof' nElems[251137]))
+    unknown call_tmp[677251] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677254 'move' call_tmp[677251](486350 'typeof' nElems[251137]))
+    unknown call_tmp[677256] "expr temp" "maybe param" "maybe type" "temp"
+    (677259 'move' call_tmp[677256](486347 call _build_tuple call_tmp[677246] call_tmp[677251]))
+    (486353 'move' ret[486342](486352 'coerce' call_tmp[677241] call_tmp[677256]))
+    (486344 return ret[486342])
+  }
+  { scopeless type
+    unknown call_tmp[677261] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677264 'move' call_tmp[677261](441023 'typeof' nElems[251137]))
+    unknown call_tmp[677266] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677269 'move' call_tmp[677266](441025 'typeof' nElems[251137]))
+    (251153 call _build_tuple call_tmp[677261] call_tmp[677266])
+  }
+  function chunkOrderPack[251227](arg chunkSize[251224]:_any[170](?), arg nElems[251230] :
+  (441027 'typeof' chunkSize[251224]), arg i[251234] :
+  (441029 'typeof' chunkSize[251224])) : _unknown[43] "no doc" "private"
+  {
+    unknown ret[486357] "RVV" "temp"
+    unknown call_tmp[677271] "maybe param" "maybe type" "temp"
+    (677274 'move' call_tmp[677271](251244 call * chunkSize[251224] i[251234]))
+    const start[251246] "const" "insert auto destroy"
+    (495954 'init var' start[251246] call_tmp[677271])
+    unknown call_tmp[677276] "expr temp" "maybe param" "maybe type" "temp"
+    (677279 'move' call_tmp[677276](251252 call >= start[251246] nElems[251230]))
+    unknown call_tmp[677281] "expr temp" "maybe param" "maybe type" "temp"
+    (677284 'move' call_tmp[677281](251267 call _cond_test call_tmp[677276]))
+    if call_tmp[677281]
+    {
+      unknown call_tmp[677286] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (677289 'move' call_tmp[677286](441031 'typeof' chunkSize[251224]))
+      unknown call_tmp[677291] "expr temp" "maybe param" "maybe type" "temp"
+      (677294 'move' call_tmp[677291](251256 call _cast call_tmp[677286] 1))
+      unknown call_tmp[677296] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (677299 'move' call_tmp[677296](441033 'typeof' chunkSize[251224]))
+      unknown call_tmp[677301] "expr temp" "maybe param" "maybe type" "temp"
+      (677304 'move' call_tmp[677301](251260 call _cast call_tmp[677296] 0))
+      unknown call_tmp[677306] "expr temp" "maybe param" "maybe type" "temp"
+      (677309 'move' call_tmp[677306](251263 call _build_tuple call_tmp[677291] call_tmp[677301]))
+      unknown call_tmp[677311] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (677314 'move' call_tmp[677311](486363 'typeof' chunkSize[251224]))
+      unknown call_tmp[677316] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (677319 'move' call_tmp[677316](486365 'typeof' chunkSize[251224]))
+      unknown call_tmp[677321] "expr temp" "maybe param" "maybe type" "temp"
+      (677324 'move' call_tmp[677321](486362 call _build_tuple call_tmp[677311] call_tmp[677316]))
+      (486368 'move' ret[486357](486367 'coerce' call_tmp[677306] call_tmp[677321]))
+      gotoReturn _end_chunkOrderPack[486355] _end_chunkOrderPack[486355]
+    }
+    unknown call_tmp[677326] "expr temp" "maybe param" "maybe type" "temp"
+    (677329 'move' call_tmp[677326](251274 call + start[251246] chunkSize[251224]))
+    unknown call_tmp[677331] "maybe param" "maybe type" "temp"
+    (677334 'move' call_tmp[677331](251277 call - call_tmp[677326] 1))
+    unknown end[251279] "insert auto destroy"
+    (495956 'init var' end[251279] call_tmp[677331])
+    unknown call_tmp[677336] "expr temp" "maybe param" "maybe type" "temp"
+    (677339 'move' call_tmp[677336](251284 call >= end[251279] nElems[251230]))
+    unknown call_tmp[677341] "expr temp" "maybe param" "maybe type" "temp"
+    (677344 'move' call_tmp[677341](251294 call _cond_test call_tmp[677336]))
+    if call_tmp[677341]
+    {
+      unknown call_tmp[677346] "expr temp" "maybe param" "maybe type" "temp"
+      (677349 'move' call_tmp[677346](251289 call - nElems[251230] 1))
+      (251291 call = end[251279] call_tmp[677346])
+    }
+    unknown call_tmp[677351] "expr temp" "maybe param" "maybe type" "temp"
+    (677354 'move' call_tmp[677351](251302 call _build_tuple start[251246] end[251279]))
+    unknown call_tmp[677356] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677359 'move' call_tmp[677356](486374 'typeof' chunkSize[251224]))
+    unknown call_tmp[677361] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677364 'move' call_tmp[677361](486376 'typeof' chunkSize[251224]))
+    unknown call_tmp[677366] "expr temp" "maybe param" "maybe type" "temp"
+    (677369 'move' call_tmp[677366](486373 call _build_tuple call_tmp[677356] call_tmp[677361]))
+    (486379 'move' ret[486357](486378 'coerce' call_tmp[677351] call_tmp[677366]))
+    label _end_chunkOrderPack[486355]
+    (486359 return ret[486357])
+  }
+  { scopeless type
+    unknown call_tmp[677371] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677374 'move' call_tmp[677371](441035 'typeof' chunkSize[251224]))
+    unknown call_tmp[677376] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677379 'move' call_tmp[677376](441037 'typeof' chunkSize[251224]))
+    (251240 call _build_tuple call_tmp[677371] call_tmp[677376])
+  }
+  function chunkOrderMod[251316](arg chunkSize[251313]:_any[170](?), arg rem[251319] :
+  (441039 'typeof' chunkSize[251313]), arg nElems[251323] :
+  (441041 'typeof' chunkSize[251313]), arg nChunks[251327] :
+  (441043 'typeof' chunkSize[251313]), arg i[251331] :
+  (441045 'typeof' chunkSize[251313])) : _unknown[43] "no doc" "private"
+  {
+    unknown ret[486383] "RVV" "temp"
+    unknown start[251339] "insert auto destroy"
+    unknown call_tmp[677381] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677384 'move' call_tmp[677381](441047 'typeof' chunkSize[251313]))
+    (495958 'default init var' start[251339] call_tmp[677381])
+    unknown end[251343] "insert auto destroy"
+    unknown call_tmp[677386] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677389 'move' call_tmp[677386](251347 'typeof' start[251339]))
+    (495960 'default init var' end[251343] call_tmp[677386])
+    unknown call_tmp[677391] "expr temp" "maybe param" "maybe type" "temp"
+    (677394 'move' call_tmp[677391](251351 call < i[251331] rem[251319]))
+    unknown call_tmp[677396] "expr temp" "maybe param" "maybe type" "temp"
+    (677399 'move' call_tmp[677396](251399 call _cond_test call_tmp[677391]))
+    if call_tmp[677396]
+    {
+      unknown call_tmp[677401] "expr temp" "maybe param" "maybe type" "temp"
+      (677404 'move' call_tmp[677401](251357 call + chunkSize[251313] 1))
+      unknown call_tmp[677406] "expr temp" "maybe param" "maybe type" "temp"
+      (677409 'move' call_tmp[677406](251359 call * i[251331] call_tmp[677401]))
+      (251361 call = start[251339] call_tmp[677406])
+      unknown call_tmp[677411] "expr temp" "maybe param" "maybe type" "temp"
+      (677414 'move' call_tmp[677411](251368 call + start[251339] chunkSize[251313]))
+      (251370 call = end[251343] call_tmp[677411])
+    }
+    {
+      unknown call_tmp[677416] "expr temp" "maybe param" "maybe type" "temp"
+      (677419 'move' call_tmp[677416](251377 call - nChunks[251327] i[251331]))
+      unknown call_tmp[677421] "expr temp" "maybe param" "maybe type" "temp"
+      (677424 'move' call_tmp[677421](251380 call * call_tmp[677416] chunkSize[251313]))
+      unknown call_tmp[677426] "expr temp" "maybe param" "maybe type" "temp"
+      (677429 'move' call_tmp[677426](251382 call - nElems[251323] call_tmp[677421]))
+      (251384 call = start[251339] call_tmp[677426])
+      unknown call_tmp[677431] "expr temp" "maybe param" "maybe type" "temp"
+      (677434 'move' call_tmp[677431](251391 call + start[251339] chunkSize[251313]))
+      unknown call_tmp[677436] "expr temp" "maybe param" "maybe type" "temp"
+      (677439 'move' call_tmp[677436](251394 call - call_tmp[677431] 1))
+      (251396 call = end[251343] call_tmp[677436])
+    }
+    unknown call_tmp[677441] "expr temp" "maybe param" "maybe type" "temp"
+    (677444 'move' call_tmp[677441](251406 call _build_tuple start[251339] end[251343]))
+    unknown call_tmp[677446] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677449 'move' call_tmp[677446](486389 'typeof' chunkSize[251313]))
+    unknown call_tmp[677451] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677454 'move' call_tmp[677451](486391 'typeof' chunkSize[251313]))
+    unknown call_tmp[677456] "expr temp" "maybe param" "maybe type" "temp"
+    (677459 'move' call_tmp[677456](486388 call _build_tuple call_tmp[677446] call_tmp[677451]))
+    (486394 'move' ret[486383](486393 'coerce' call_tmp[677441] call_tmp[677456]))
+    (486385 return ret[486383])
+  }
+  { scopeless type
+    unknown call_tmp[677461] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677464 'move' call_tmp[677461](441049 'typeof' chunkSize[251313]))
+    unknown call_tmp[677466] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (677469 'move' call_tmp[677466](441051 'typeof' chunkSize[251313]))
+    (251337 call _build_tuple call_tmp[677461] call_tmp[677466])
+  }
+  (329541 'used modules list'(328328 'use' ChapelStandard[19734])(250333 'use' RemElems[250327])(250337 'use' BoundedRangeType[66087]))
+}

@@ -1,0 +1,42 @@
+AST dump for Assert after pass buildDefaultFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_Assert[390315]() : void[4] "insert line file info" "module init"
+  {
+    (477297 return _void[47])
+  }
+  function assert[197962](arg test[197959]:bool[10]) : _unknown[43] "always propagate line file info" "insert line file info" "no return value for void"
+  {
+    unknown call_tmp[647978] "expr temp" "maybe param" "maybe type" "temp"
+    (647981 'move' call_tmp[647978](197965 call ! test[197959]))
+    unknown call_tmp[647983] "expr temp" "maybe param" "maybe type" "temp"
+    (647986 'move' call_tmp[647983](197972 call _cond_test call_tmp[647978]))
+    if call_tmp[647983]
+    {
+      (197970 'chpl_error' c"assert failed")
+    }
+    (477293 return _void[47])
+  }
+  function assert[197987](arg test[197984]:bool[10], arg args[197991]:_any[170](?) ...) : _unknown[43] "always propagate line file info" "insert line file info" "no return value for void"
+  {
+    unknown call_tmp[647988] "expr temp" "maybe param" "maybe type" "temp"
+    (647991 'move' call_tmp[647988](197995 call ! test[197984]))
+    unknown call_tmp[647993] "expr temp" "maybe param" "maybe type" "temp"
+    (647996 'move' call_tmp[647993](198019 call _cond_test call_tmp[647988]))
+    if call_tmp[647993]
+    {
+      unknown call_tmp[647998] "expr temp" "maybe param" "maybe type" "temp"
+      (648001 'move' call_tmp[647998](198002 call stringify(198000 'expand_tuple' args[197991])))
+      unknown call_tmp[648003] "maybe param" "maybe type" "temp"
+      (648006 'move' call_tmp[648003](198003 call + "assert failed - " call_tmp[647998]))
+      unknown tmpstring[198005] "insert auto destroy"
+      (493662 'init var' tmpstring[198005] call_tmp[648003])
+      unknown call_tmp[648010] "expr temp" "maybe param" "maybe type" "temp"
+      (648013 'move' call_tmp[648010](198016 call(198012 call (partial) c_str _mt[232] tmpstring[198005])))
+      (198017 'chpl_error' call_tmp[648010])
+    }
+    (477295 return _void[47])
+  }
+  (329505 'used modules list'(328306 'use' ChapelStandard[19734]))
+}

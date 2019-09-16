@@ -1,0 +1,2041 @@
+AST dump for BytesStringCommon after pass buildDefaultFunctions.
+Module use list: Bytes ByteBufferHelpers String 
+
+{
+  function chpl__init_BytesStringCommon[390264]() : void[4] "insert line file info" "module init"
+  {
+    (493049 'init var' showStringBytesInitDeprWarnings[173841] 1)
+    (473733 return _void[47])
+  }
+  unknown showStringBytesInitDeprWarnings[173841] "config" "no doc" "param"
+  function isBytesOrStringType[173848](arg t[173846]:_any[170](?)) param : _unknown[43] "private"
+  {
+    unknown ret[473482] "RVV" "param" "temp"
+    unknown tmp[404226] "maybe param" "temp"
+    (404237 'move' tmp[404226](173853 call == t[173846] bytes[22]))
+    unknown call_tmp[632268] "expr temp" "maybe param" "maybe type" "temp"
+    (632271 'move' call_tmp[632268](404239 call _cond_invalid tmp[404226]))
+    if call_tmp[632268]
+    {
+      (404242 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[519669] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519670] "maybe param" "temp"
+    unknown call_tmp[632273] "expr temp" "maybe param" "maybe type" "temp"
+    (632276 'move' call_tmp[632273](404227 call isTrue tmp[404226]))
+    (519675 'move' tmp[519670](519673 call _cond_test call_tmp[632273]))
+    if tmp[519670]
+    {
+      (519680 'move' tmp[519669](519677 '_paramFoldLogical' tmp[519670] 1))
+    }
+    {
+      unknown tmp[519682] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[632278] "expr temp" "maybe param" "maybe type" "temp"
+      (632281 'move' call_tmp[632278](173857 call == t[173846] string[24]))
+      (519684 'move' tmp[519682](404231 call isTrue call_tmp[632278]))
+      (519689 'move' tmp[519669](519686 '_paramFoldLogical' tmp[519670] tmp[519682]))
+    }
+    (473488 'move' ret[473482](473487 'coerce' tmp[519669] bool[10]))
+    (473484 return ret[473482])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function assertArgType[173871](arg t[173869]:_any[170](?), param arg methodName[173874]:string[24]) param : _unknown[43] "private" "no return value for void"
+  {
+    unknown call_tmp[632283] "expr temp" "maybe param" "maybe type" "temp"
+    (632286 'move' call_tmp[632283](173880 call isBytesOrStringType t[173869]))
+    unknown call_tmp[632288] "expr temp" "maybe param" "maybe type" "temp"
+    (632291 'move' call_tmp[632288](173881 call ! call_tmp[632283]))
+    unknown call_tmp[632293] "expr temp" "maybe param" "maybe type" "temp"
+    (632296 'move' call_tmp[632293](173925 call _cond_test call_tmp[632288]))
+    if call_tmp[632293]
+    {
+      unknown call_tmp[632298] "expr temp" "maybe param" "maybe type" "temp"
+      (632301 'move' call_tmp[632298](173901 call + "BytesStringCommon." methodName[173874]))
+      unknown call_tmp[632303] "expr temp" "maybe param" "maybe type" "temp"
+      (632306 'move' call_tmp[632303](173919 call + call_tmp[632298] " can only be called with bytes or string argument(s)"))
+      (173922 call compilerError call_tmp[632303])
+    }
+    (473490 return _void[47])
+  }
+  function getCStr[173939](const  ref arg x[173936]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[473503] "RVV" "temp"
+    unknown call_tmp[632308] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632311 'move' call_tmp[632308](437541 'typeof' x[173936]))
+    (173961 call assertArgType call_tmp[632308] "getCStr")
+    function _cast[173970](arg t[173967]:c_string[19], arg b[173973] :
+    bufferType[172923]) : _unknown[43] "inline"
+    {
+      unknown ret[473494] "RVV" "temp"
+      unknown call_tmp[632313] "expr temp" "maybe param" "maybe type" "temp"
+      (632316 'move' call_tmp[632313](173980 'cast' t[173967] b[173973]))
+      (473499 'move' ret[473494](473498 'deref' call_tmp[632313]))
+      (473496 return ret[473494])
+    }
+    unknown tmp[404247] "maybe param" "temp"
+    (404258 'move' tmp[404247](173988 call == 1 0))
+    unknown call_tmp[632318] "expr temp" "maybe param" "maybe type" "temp"
+    (632321 'move' call_tmp[632318](404260 call _cond_invalid tmp[404247]))
+    if call_tmp[632318]
+    {
+      (404263 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519696] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519697] "maybe param" "temp"
+    unknown call_tmp[632323] "expr temp" "maybe param" "maybe type" "temp"
+    (632326 'move' call_tmp[632323](404248 call isTrue tmp[404247]))
+    (519702 'move' tmp[519697](519700 call _cond_test call_tmp[632323]))
+    if tmp[519697]
+    {
+      unknown tmp[519704] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[632330] "expr temp" "maybe param" "maybe type" "temp"
+      (632333 'move' call_tmp[632330](173991 call locale_id _mt[232] x[173936]))
+      unknown call_tmp[632335] "expr temp" "maybe param" "maybe type" "temp"
+      (632338 'move' call_tmp[632335](173995 call != call_tmp[632330] chpl_nodeID[195933]))
+      (519706 'move' tmp[519704](404251 call isTrue call_tmp[632335]))
+      (519711 'move' tmp[519696](519708 '_paramFoldLogical' tmp[519697] tmp[519704]))
+    }
+    {
+      (519716 'move' tmp[519696](519713 '_paramFoldLogical' tmp[519697] 0))
+    }
+    unknown call_tmp[632340] "expr temp" "maybe param" "maybe type" "temp"
+    (632343 'move' call_tmp[632340](174025 call _cond_test tmp[519696]))
+    if call_tmp[632340]
+    {
+      unknown call_tmp[632345] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (632348 'move' call_tmp[632345](437543 'typeof' x[173936]))
+      unknown call_tmp[632350] "expr temp" "maybe param" "maybe type" "temp"
+      (632353 'move' call_tmp[632350](174018 call _cast string[24] call_tmp[632345]))
+      unknown call_tmp[632355] "expr temp" "maybe param" "maybe type" "temp"
+      (632358 'move' call_tmp[632355](174020 call + "Cannot call .c_str() on a remote " call_tmp[632350]))
+      (174023 call halt call_tmp[632355])
+    }
+    unknown call_tmp[632362] "expr temp" "maybe param" "maybe type" "temp"
+    (632365 'move' call_tmp[632362](174031 call buff _mt[232] x[173936]))
+    unknown call_tmp[632367] "expr temp" "maybe param" "maybe type" "temp"
+    (632370 'move' call_tmp[632367](174035 call _cast c_string[19] call_tmp[632362]))
+    (473509 'move' ret[473503](473508 'coerce' call_tmp[632367] c_string[19]))
+    (473505 return ret[473503])
+  }
+  { scopeless type
+    c_string[19]
+  }
+  function initWithBorrowedBuffer[174049](ref arg x[174046]:_any[170](?), arg other[174052] :
+  (437545 'typeof' x[174046])) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[632372] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632375 'move' call_tmp[632372](437547 'typeof' x[174046]))
+    (174074 call assertArgType call_tmp[632372] "initWithBorrowedBuffer")
+    unknown call_tmp[632379] "expr temp" "maybe param" "maybe type" "temp"
+    (632382 'move' call_tmp[632379](174078 call isowned _mt[232] x[174046]))
+    (174082 call = call_tmp[632379] 0)
+    unknown call_tmp[632386] "expr temp" "maybe param" "maybe type" "temp"
+    (632389 'move' call_tmp[632386](174086 call locale_id _mt[232] other[174052]))
+    unknown call_tmp[632391] "maybe param" "maybe type" "temp"
+    (632394 'move' call_tmp[632391](174090 call != call_tmp[632386] chpl_nodeID[195933]))
+    const otherRemote[174092] "const" "insert auto destroy"
+    (493051 'init var' otherRemote[174092] call_tmp[632391])
+    unknown call_tmp[632398] "maybe param" "maybe type" "temp"
+    (632401 'move' call_tmp[632398](174096 call numBytes _mt[232] other[174052]))
+    const otherLen[174099] "const" "insert auto destroy"
+    (493053 'init var' otherLen[174099] call_tmp[632398])
+    unknown call_tmp[632403] "expr temp" "maybe param" "maybe type" "temp"
+    (632406 'move' call_tmp[632403](174104 call > otherLen[174099] 0))
+    unknown call_tmp[632408] "expr temp" "maybe param" "maybe type" "temp"
+    (632411 'move' call_tmp[632408](174182 call _cond_test call_tmp[632403]))
+    if call_tmp[632408]
+    {
+      unknown call_tmp[632415] "expr temp" "maybe param" "maybe type" "temp"
+      (632418 'move' call_tmp[632415](174107 call len _mt[232] x[174046]))
+      (174111 call = call_tmp[632415] otherLen[174099])
+      unknown call_tmp[632420] "expr temp" "maybe param" "maybe type" "temp"
+      (632423 'move' call_tmp[632420](174178 call _cond_test otherRemote[174092]))
+      if call_tmp[632420]
+      {
+        unknown call_tmp[632427] "expr temp" "maybe param" "maybe type" "temp"
+        (632430 'move' call_tmp[632427](174117 call isowned _mt[232] x[174046]))
+        (174121 call = call_tmp[632427] 1)
+        unknown call_tmp[632434] "expr temp" "maybe param" "maybe type" "temp"
+        (632437 'move' call_tmp[632434](174126 call buff _mt[232] x[174046]))
+        unknown call_tmp[632441] "expr temp" "maybe param" "maybe type" "temp"
+        (632444 'move' call_tmp[632441](174131 call locale_id _mt[232] other[174052]))
+        unknown call_tmp[632448] "expr temp" "maybe param" "maybe type" "temp"
+        (632451 'move' call_tmp[632448](174136 call buff _mt[232] other[174052]))
+        unknown call_tmp[632453] "expr temp" "maybe param" "maybe type" "temp"
+        (632456 'move' call_tmp[632453](174140 call bufferCopyRemote call_tmp[632441] call_tmp[632448] otherLen[174099]))
+        (174141 call = call_tmp[632434] call_tmp[632453])
+        unknown call_tmp[632460] "expr temp" "maybe param" "maybe type" "temp"
+        (632463 'move' call_tmp[632460](174145 call _size _mt[232] x[174046]))
+        unknown call_tmp[632465] "expr temp" "maybe param" "maybe type" "temp"
+        (632468 'move' call_tmp[632465](174150 call + otherLen[174099] 1))
+        (174152 call = call_tmp[632460] call_tmp[632465])
+      }
+      {
+        unknown call_tmp[632472] "expr temp" "maybe param" "maybe type" "temp"
+        (632475 'move' call_tmp[632472](174156 call buff _mt[232] x[174046]))
+        unknown call_tmp[632479] "expr temp" "maybe param" "maybe type" "temp"
+        (632482 'move' call_tmp[632479](174160 call buff _mt[232] other[174052]))
+        (174163 call = call_tmp[632472] call_tmp[632479])
+        unknown call_tmp[632486] "expr temp" "maybe param" "maybe type" "temp"
+        (632489 'move' call_tmp[632486](174168 call _size _mt[232] x[174046]))
+        unknown call_tmp[632493] "expr temp" "maybe param" "maybe type" "temp"
+        (632496 'move' call_tmp[632493](174172 call _size _mt[232] other[174052]))
+        (174175 call = call_tmp[632486] call_tmp[632493])
+      }
+    }
+    (473511 return _void[47])
+  }
+  function initWithBorrowedBuffer[174195](ref arg x[174192]:_any[170](?), arg other[174198] :
+  bufferType[172923], arg length[174202]:int(64)[13], arg size[174206]:int(64)[13]) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[632498] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632501 'move' call_tmp[632498](437549 'typeof' x[174192]))
+    (174213 call assertArgType call_tmp[632498] "initWithBorrowedBuffer")
+    unknown call_tmp[632505] "expr temp" "maybe param" "maybe type" "temp"
+    (632508 'move' call_tmp[632505](174217 call isowned _mt[232] x[174192]))
+    (174221 call = call_tmp[632505] 0)
+    unknown call_tmp[632512] "expr temp" "maybe param" "maybe type" "temp"
+    (632515 'move' call_tmp[632512](174225 call buff _mt[232] x[174192]))
+    (174229 call = call_tmp[632512] other[174198])
+    unknown call_tmp[632519] "expr temp" "maybe param" "maybe type" "temp"
+    (632522 'move' call_tmp[632519](174233 call _size _mt[232] x[174192]))
+    (174237 call = call_tmp[632519] size[174206])
+    unknown call_tmp[632526] "expr temp" "maybe param" "maybe type" "temp"
+    (632529 'move' call_tmp[632526](174241 call len _mt[232] x[174192]))
+    (174245 call = call_tmp[632526] length[174202])
+    (473513 return _void[47])
+  }
+  function initWithOwnedBuffer[174257](ref arg x[174254]:_any[170](?), arg other[174260] :
+  bufferType[172923], arg length[174264]:int(64)[13], arg size[174268]:int(64)[13]) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[632531] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632534 'move' call_tmp[632531](437551 'typeof' x[174254]))
+    (174290 call assertArgType call_tmp[632531] "initWithOwnedBuffer")
+    unknown call_tmp[632538] "expr temp" "maybe param" "maybe type" "temp"
+    (632541 'move' call_tmp[632538](174294 call isowned _mt[232] x[174254]))
+    (174298 call = call_tmp[632538] 1)
+    unknown call_tmp[632545] "expr temp" "maybe param" "maybe type" "temp"
+    (632548 'move' call_tmp[632545](174302 call buff _mt[232] x[174254]))
+    (174306 call = call_tmp[632545] other[174260])
+    unknown call_tmp[632552] "expr temp" "maybe param" "maybe type" "temp"
+    (632555 'move' call_tmp[632552](174310 call _size _mt[232] x[174254]))
+    (174314 call = call_tmp[632552] size[174268])
+    unknown call_tmp[632559] "expr temp" "maybe param" "maybe type" "temp"
+    (632562 'move' call_tmp[632559](174318 call len _mt[232] x[174254]))
+    (174322 call = call_tmp[632559] length[174264])
+    (473515 return _void[47])
+  }
+  function initWithNewBuffer[174334](ref arg x[174331]:_any[170](?), arg other[174337] :
+  (437553 'typeof' x[174331])) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[632564] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632567 'move' call_tmp[632564](437555 'typeof' x[174331]))
+    (174359 call assertArgType call_tmp[632564] "initWithNewBuffer")
+    unknown call_tmp[632571] "expr temp" "maybe param" "maybe type" "temp"
+    (632574 'move' call_tmp[632571](174363 call locale_id _mt[232] other[174337]))
+    unknown call_tmp[632576] "maybe param" "maybe type" "temp"
+    (632579 'move' call_tmp[632576](174367 call != call_tmp[632571] chpl_nodeID[195933]))
+    const otherRemote[174369] "const" "insert auto destroy"
+    (493055 'init var' otherRemote[174369] call_tmp[632576])
+    unknown call_tmp[632583] "maybe param" "maybe type" "temp"
+    (632586 'move' call_tmp[632583](174373 call numBytes _mt[232] other[174337]))
+    const otherLen[174376] "const" "insert auto destroy"
+    (493057 'init var' otherLen[174376] call_tmp[632583])
+    unknown call_tmp[632590] "expr temp" "maybe param" "maybe type" "temp"
+    (632593 'move' call_tmp[632590](174380 call isowned _mt[232] x[174331]))
+    (174384 call = call_tmp[632590] 1)
+    unknown call_tmp[632595] "expr temp" "maybe param" "maybe type" "temp"
+    (632598 'move' call_tmp[632595](174389 call > otherLen[174376] 0))
+    unknown call_tmp[632600] "expr temp" "maybe param" "maybe type" "temp"
+    (632603 'move' call_tmp[632600](174492 call _cond_test call_tmp[632595]))
+    if call_tmp[632600]
+    {
+      unknown call_tmp[632607] "expr temp" "maybe param" "maybe type" "temp"
+      (632610 'move' call_tmp[632607](174392 call len _mt[232] x[174331]))
+      (174396 call = call_tmp[632607] otherLen[174376])
+      unknown call_tmp[632612] "expr temp" "maybe param" "maybe type" "temp"
+      (632615 'move' call_tmp[632612](174488 call _cond_test otherRemote[174369]))
+      if call_tmp[632612]
+      {
+        unknown call_tmp[632619] "expr temp" "maybe param" "maybe type" "temp"
+        (632622 'move' call_tmp[632619](174402 call buff _mt[232] x[174331]))
+        unknown call_tmp[632626] "expr temp" "maybe param" "maybe type" "temp"
+        (632629 'move' call_tmp[632626](174407 call locale_id _mt[232] other[174337]))
+        unknown call_tmp[632633] "expr temp" "maybe param" "maybe type" "temp"
+        (632636 'move' call_tmp[632633](174412 call buff _mt[232] other[174337]))
+        unknown call_tmp[632638] "expr temp" "maybe param" "maybe type" "temp"
+        (632641 'move' call_tmp[632638](174416 call bufferCopyRemote call_tmp[632626] call_tmp[632633] otherLen[174376]))
+        (174417 call = call_tmp[632619] call_tmp[632638])
+        unknown call_tmp[632645] "expr temp" "maybe param" "maybe type" "temp"
+        (632648 'move' call_tmp[632645](174422 call _size _mt[232] x[174331]))
+        unknown call_tmp[632650] "expr temp" "maybe param" "maybe type" "temp"
+        (632653 'move' call_tmp[632650](174427 call + otherLen[174376] 1))
+        (174429 call = call_tmp[632645] call_tmp[632650])
+      }
+      {
+        unknown call_tmp[632657] "expr temp" "maybe param" "maybe type" "temp"
+        (632660 'move' call_tmp[632657](174439 call buff _mt[232] other[174337]))
+        unknown call_tmp[632662] "maybe param" "maybe type" "temp"
+        (632665 'move' call_tmp[632662](174444 call bufferCopyLocal call_tmp[632657] otherLen[174376]))
+        const tmp[174445] "const" "insert auto destroy" "no copy" "temp"
+        (493059 'init var' tmp[174445] call_tmp[632662])
+        (174452 call _check_tuple_var_decl tmp[174445] 2)
+        unknown call_tmp[632667] "maybe param" "maybe type" "temp"
+        (632670 'move' call_tmp[632667](174446 call tmp[174445] 1))
+        const buf[174432] "const" "insert auto destroy"
+        (493061 'init var' buf[174432] call_tmp[632667])
+        unknown call_tmp[632672] "maybe param" "maybe type" "temp"
+        (632675 'move' call_tmp[632672](174449 call tmp[174445] 2))
+        const allocSize[174434] "const" "insert auto destroy"
+        (493063 'init var' allocSize[174434] call_tmp[632672])
+        unknown call_tmp[632679] "expr temp" "maybe param" "maybe type" "temp"
+        (632682 'move' call_tmp[632679](174459 call buff _mt[232] x[174331]))
+        (174463 call = call_tmp[632679] buf[174432])
+        unknown call_tmp[632688] "expr temp" "maybe param" "maybe type" "temp"
+        (632691 'move' call_tmp[632688](174471 call len _mt[232] x[174331]))
+        unknown call_tmp[632693] "expr temp" "maybe param" "maybe type" "temp"
+        (632696 'move' call_tmp[632693](174475 call(174467 call (partial) buff _mt[232] x[174331]) call_tmp[632688]))
+        (174477 call = call_tmp[632693] 0)
+        unknown call_tmp[632700] "expr temp" "maybe param" "maybe type" "temp"
+        (632703 'move' call_tmp[632700](174481 call _size _mt[232] x[174331]))
+        (174485 call = call_tmp[632700] allocSize[174434])
+      }
+    }
+    (473517 return _void[47])
+  }
+  function initWithNewBuffer[174505](ref arg x[174502]:_any[170](?), arg other[174508] :
+  bufferType[172923], arg length[174512]:int(64)[13], arg size[174516]:int(64)[13]) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[632705] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632708 'move' call_tmp[632705](437557 'typeof' x[174502]))
+    (174523 call assertArgType call_tmp[632705] "initWithNewBuffer")
+    const otherLen[174527] "const" "insert auto destroy"
+    (493065 'init var' otherLen[174527] length[174512])
+    unknown call_tmp[632712] "expr temp" "maybe param" "maybe type" "temp"
+    (632715 'move' call_tmp[632712](174531 call isowned _mt[232] x[174502]))
+    (174535 call = call_tmp[632712] 1)
+    unknown call_tmp[632717] "expr temp" "maybe param" "maybe type" "temp"
+    (632720 'move' call_tmp[632717](174540 call > otherLen[174527] 0))
+    unknown call_tmp[632722] "expr temp" "maybe param" "maybe type" "temp"
+    (632725 'move' call_tmp[632722](174606 call _cond_test call_tmp[632717]))
+    if call_tmp[632722]
+    {
+      unknown call_tmp[632727] "expr temp" "maybe param" "maybe type" "temp"
+      (632730 'move' call_tmp[632727](174550 call _cast bufferType[172923] other[174508]))
+      unknown call_tmp[632732] "maybe param" "maybe type" "temp"
+      (632735 'move' call_tmp[632732](174554 call bufferCopyLocal call_tmp[632727] otherLen[174527]))
+      const tmp[174555] "const" "insert auto destroy" "no copy" "temp"
+      (493067 'init var' tmp[174555] call_tmp[632732])
+      (174562 call _check_tuple_var_decl tmp[174555] 2)
+      unknown call_tmp[632737] "maybe param" "maybe type" "temp"
+      (632740 'move' call_tmp[632737](174556 call tmp[174555] 1))
+      const buf[174542] "const" "insert auto destroy"
+      (493069 'init var' buf[174542] call_tmp[632737])
+      unknown call_tmp[632742] "maybe param" "maybe type" "temp"
+      (632745 'move' call_tmp[632742](174559 call tmp[174555] 2))
+      const allocSize[174544] "const" "insert auto destroy"
+      (493071 'init var' allocSize[174544] call_tmp[632742])
+      unknown call_tmp[632749] "expr temp" "maybe param" "maybe type" "temp"
+      (632752 'move' call_tmp[632749](174569 call buff _mt[232] x[174502]))
+      (174573 call = call_tmp[632749] buf[174542])
+      unknown call_tmp[632756] "expr temp" "maybe param" "maybe type" "temp"
+      (632759 'move' call_tmp[632756](174577 call len _mt[232] x[174502]))
+      (174581 call = call_tmp[632756] otherLen[174527])
+      unknown call_tmp[632765] "expr temp" "maybe param" "maybe type" "temp"
+      (632768 'move' call_tmp[632765](174589 call len _mt[232] x[174502]))
+      unknown call_tmp[632770] "expr temp" "maybe param" "maybe type" "temp"
+      (632773 'move' call_tmp[632770](174593 call(174585 call (partial) buff _mt[232] x[174502]) call_tmp[632765]))
+      (174595 call = call_tmp[632770] 0)
+      unknown call_tmp[632777] "expr temp" "maybe param" "maybe type" "temp"
+      (632780 'move' call_tmp[632777](174599 call _size _mt[232] x[174502]))
+      (174603 call = call_tmp[632777] allocSize[174544])
+    }
+    (473519 return _void[47])
+  }
+  function getSlice[174619](const  ref arg x[174616]:_any[170](?), arg r[174625]:range[66183](?)) : _unknown[43]
+  {
+    unknown ret[473523] "RVV" "temp"
+    unknown call_tmp[632782] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632785 'move' call_tmp[632782](437559 'typeof' x[174616]))
+    (174647 call assertArgType call_tmp[632782] "getSlice")
+    unknown ret[174651] "insert auto destroy"
+    unknown call_tmp[632787] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (632790 'move' call_tmp[632787](437561 'typeof' x[174616]))
+    (493073 'default init var' ret[174651] call_tmp[632787])
+    unknown call_tmp[632794] "expr temp" "maybe param" "maybe type" "temp"
+    (632797 'move' call_tmp[632794](174659 call(174655 call (partial) isEmpty _mt[232] x[174616])))
+    unknown call_tmp[632799] "expr temp" "maybe param" "maybe type" "temp"
+    (632802 'move' call_tmp[632799](174663 call _cond_test call_tmp[632794]))
+    if call_tmp[632799]
+    {
+      (473528 'move' ret[473523](473527 'deref' ret[174651]))
+      gotoReturn _end_getSlice[473521] _end_getSlice[473521]
+    }
+    unknown call_tmp[632806] "maybe param" "maybe type" "temp"
+    (632809 'move' call_tmp[632806](174674 call(174669 call (partial) _getView _mt[232] x[174616]) r[174625]))
+    const r2[174675] "const" "insert auto destroy"
+    (493075 'init var' r2[174675] call_tmp[632806])
+    unknown call_tmp[632813] "expr temp" "maybe param" "maybe type" "temp"
+    (632816 'move' call_tmp[632813](174679 call size _mt[232] r2[174675]))
+    unknown call_tmp[632818] "expr temp" "maybe param" "maybe type" "temp"
+    (632821 'move' call_tmp[632818](174683 call <= call_tmp[632813] 0))
+    unknown call_tmp[632823] "expr temp" "maybe param" "maybe type" "temp"
+    (632826 'move' call_tmp[632823](174949 call _cond_test call_tmp[632818]))
+    if call_tmp[632823]
+    {
+      (174702 call = ret[174651] "")
+    }
+    {
+      unknown call_tmp[632830] "expr temp" "maybe param" "maybe type" "temp"
+      (632833 'move' call_tmp[632830](174707 call high _mt[232] r2[174675]))
+      unknown call_tmp[632837] "expr temp" "maybe param" "maybe type" "temp"
+      (632840 'move' call_tmp[632837](174711 call low _mt[232] r2[174675]))
+      unknown call_tmp[632842] "expr temp" "maybe param" "maybe type" "temp"
+      (632845 'move' call_tmp[632842](174714 call - call_tmp[632830] call_tmp[632837]))
+      unknown call_tmp[632847] "maybe param" "maybe type" "temp"
+      (632850 'move' call_tmp[632847](174717 call + call_tmp[632842] 1))
+      const copyLen[174719] "const" "insert auto destroy"
+      (493077 'init var' copyLen[174719] call_tmp[632847])
+      unknown call_tmp[632854] "expr temp" "maybe param" "maybe type" "temp"
+      (632857 'move' call_tmp[632854](174730 call buff _mt[232] x[174616]))
+      unknown call_tmp[632861] "expr temp" "maybe param" "maybe type" "temp"
+      (632864 'move' call_tmp[632861](174736 call low _mt[232] r2[174675]))
+      unknown call_tmp[632866] "expr temp" "maybe param" "maybe type" "temp"
+      (632869 'move' call_tmp[632866](174740 call - call_tmp[632861] 1))
+      unknown call_tmp[632873] "expr temp" "maybe param" "maybe type" "temp"
+      (632876 'move' call_tmp[632873](174746 call locale_id _mt[232] x[174616]))
+      unknown call_tmp[632878] "maybe param" "maybe type" "temp"
+      (632881 'move' call_tmp[632878](174750 call bufferCopy(buf = call_tmp[632854])(off = call_tmp[632866])(len = copyLen[174719])(loc = call_tmp[632873])))
+      unknown tmp[174751] "insert auto destroy" "no copy" "temp"
+      (493079 'init var' tmp[174751] call_tmp[632878])
+      (174758 call _check_tuple_var_decl tmp[174751] 2)
+      unknown call_tmp[632883] "maybe param" "maybe type" "temp"
+      (632886 'move' call_tmp[632883](174752 call tmp[174751] 1))
+      unknown copyBuf[174723] "insert auto destroy"
+      (493081 'init var' copyBuf[174723] call_tmp[632883])
+      unknown call_tmp[632888] "maybe param" "maybe type" "temp"
+      (632891 'move' call_tmp[632888](174755 call tmp[174751] 2))
+      unknown copySize[174725] "insert auto destroy"
+      (493083 'init var' copySize[174725] call_tmp[632888])
+      unknown call_tmp[632895] "expr temp" "maybe param" "maybe type" "temp"
+      (632898 'move' call_tmp[632895](174764 call stride _mt[232] r2[174675]))
+      unknown call_tmp[632900] "expr temp" "maybe param" "maybe type" "temp"
+      (632903 'move' call_tmp[632900](174768 call == call_tmp[632895] 1))
+      unknown call_tmp[632905] "expr temp" "maybe param" "maybe type" "temp"
+      (632908 'move' call_tmp[632905](174920 call _cond_test call_tmp[632900]))
+      if call_tmp[632905]
+      {
+        unknown call_tmp[632912] "expr temp" "maybe param" "maybe type" "temp"
+        (632915 'move' call_tmp[632912](174771 call buff _mt[232] ret[174651]))
+        (174775 call = call_tmp[632912] copyBuf[174723])
+        unknown call_tmp[632919] "expr temp" "maybe param" "maybe type" "temp"
+        (632922 'move' call_tmp[632919](174780 call _size _mt[232] ret[174651]))
+        (174784 call = call_tmp[632919] copySize[174725])
+      }
+      {
+        unknown call_tmp[632926] "expr temp" "maybe param" "maybe type" "temp"
+        (632929 'move' call_tmp[632926](174794 call size _mt[232] r2[174675]))
+        unknown call_tmp[632931] "expr temp" "maybe param" "maybe type" "temp"
+        (632934 'move' call_tmp[632931](174798 call + call_tmp[632926] 1))
+        unknown call_tmp[632936] "maybe param" "maybe type" "temp"
+        (632939 'move' call_tmp[632936](174801 call bufferAlloc call_tmp[632931]))
+        unknown tmp[174802] "insert auto destroy" "no copy" "temp"
+        (493085 'init var' tmp[174802] call_tmp[632936])
+        (174809 call _check_tuple_var_decl tmp[174802] 2)
+        unknown call_tmp[632941] "maybe param" "maybe type" "temp"
+        (632944 'move' call_tmp[632941](174803 call tmp[174802] 1))
+        unknown newBuf[174787] "insert auto destroy"
+        (493087 'init var' newBuf[174787] call_tmp[632941])
+        unknown call_tmp[632946] "maybe param" "maybe type" "temp"
+        (632949 'move' call_tmp[632946](174806 call tmp[174802] 2))
+        unknown allocSize[174789] "insert auto destroy"
+        (493089 'init var' allocSize[174789] call_tmp[632946])
+        {
+          unknown _indexOfInterest[174844] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[174845] "expr temp" "temp"
+          unknown call_tmp[632951] "expr temp" "maybe param" "maybe type" "temp"
+          (632954 'move' call_tmp[632951](174854 call _getIterator r2[174675]))
+          unknown call_tmp[632956] "expr temp" "maybe param" "maybe type" "temp"
+          (632959 'move' call_tmp[632956](174857 call chpl_build_low_bounded_range 0))
+          unknown call_tmp[632961] "expr temp" "maybe param" "maybe type" "temp"
+          (632964 'move' call_tmp[632961](174859 call _getIterator call_tmp[632956]))
+          (174862 'move' _iterator[174845](174825 call _build_tuple call_tmp[632951] call_tmp[632961]))
+          Defer
+          {
+            {
+              (174892 call _freeIterator _iterator[174845])
+            }
+          }
+          { scopeless type
+            (174867 'move' _indexOfInterest[174844](174864 call iteratorIndex _iterator[174845]))
+          }
+          ForLoop
+          {
+            (174872 call _check_tuple_var_decl _indexOfInterest[174844] 2)
+            unknown r2_i[174878] "index var" "insert auto destroy"
+            (174880 'move' r2_i[174878](174876 call _indexOfInterest[174844] 1))
+            unknown i[174885] "index var" "insert auto destroy"
+            (174887 'move' i[174885](174883 call _indexOfInterest[174844] 2))
+            {
+              unknown call_tmp[632966] "expr temp" "maybe param" "maybe type" "temp"
+              (632969 'move' call_tmp[632966](174829 call newBuf[174787] i[174885]))
+              unknown call_tmp[632973] "expr temp" "maybe param" "maybe type" "temp"
+              (632976 'move' call_tmp[632973](174833 call low _mt[232] r2[174675]))
+              unknown call_tmp[632978] "expr temp" "maybe param" "maybe type" "temp"
+              (632981 'move' call_tmp[632978](174836 call - r2_i[174878] call_tmp[632973]))
+              unknown call_tmp[632983] "expr temp" "maybe param" "maybe type" "temp"
+              (632986 'move' call_tmp[632983](174839 call copyBuf[174723] call_tmp[632978]))
+              (174840 call = call_tmp[632966] call_tmp[632983])
+            }
+            label _continueLabel[174849]
+            _indexOfInterest[174844]
+            _iterator[174845]
+          }
+          label _breakLabel[174850]
+        }
+        unknown call_tmp[632990] "expr temp" "maybe param" "maybe type" "temp"
+        (632993 'move' call_tmp[632990](174900 call buff _mt[232] ret[174651]))
+        (174904 call = call_tmp[632990] newBuf[174787])
+        unknown call_tmp[632997] "expr temp" "maybe param" "maybe type" "temp"
+        (633000 'move' call_tmp[632997](174908 call _size _mt[232] ret[174651]))
+        (174912 call = call_tmp[632997] allocSize[174789])
+        (174918 call bufferFree copyBuf[174723])
+      }
+      unknown call_tmp[633004] "expr temp" "maybe param" "maybe type" "temp"
+      (633007 'move' call_tmp[633004](174925 call len _mt[232] ret[174651]))
+      unknown call_tmp[633011] "expr temp" "maybe param" "maybe type" "temp"
+      (633014 'move' call_tmp[633011](174929 call size _mt[232] r2[174675]))
+      (174932 call = call_tmp[633004] call_tmp[633011])
+      unknown call_tmp[633020] "expr temp" "maybe param" "maybe type" "temp"
+      (633023 'move' call_tmp[633020](174940 call len _mt[232] ret[174651]))
+      unknown call_tmp[633025] "expr temp" "maybe param" "maybe type" "temp"
+      (633028 'move' call_tmp[633025](174944 call(174936 call (partial) buff _mt[232] ret[174651]) call_tmp[633020]))
+      (174946 call = call_tmp[633025] 0)
+    }
+    (473533 'move' ret[473523](473532 'deref' ret[174651]))
+    label _end_getSlice[473521]
+    (473525 return ret[473523])
+  }
+  function getIndexType[174962](arg t[174960]:_any[170](?)) type : _unknown[43]
+  {
+    unknown ret[473537] "RVV" "temp" "type variable"
+    unknown call_tmp[633030] "expr temp" "maybe param" "maybe type" "temp"
+    (633033 'move' call_tmp[633030](174966 call == t[174960] bytes[22]))
+    unknown call_tmp[633035] "expr temp" "maybe param" "maybe type" "temp"
+    (633038 'move' call_tmp[633035](175012 call _cond_test call_tmp[633030]))
+    if call_tmp[633035]
+    {
+      (473542 'move' ret[473537](473541 'deref' idxType[21186]))
+      gotoReturn _end_getIndexType[473535] _end_getIndexType[473535]
+    }
+    {
+      unknown call_tmp[633040] "expr temp" "maybe param" "maybe type" "temp"
+      (633043 'move' call_tmp[633040](174976 call == t[174960] string[24]))
+      unknown call_tmp[633045] "expr temp" "maybe param" "maybe type" "temp"
+      (633048 'move' call_tmp[633045](175006 call _cond_test call_tmp[633040]))
+      if call_tmp[633045]
+      {
+        (473547 'move' ret[473537](473546 'deref' byteIndex[27114]))
+        gotoReturn _end_getIndexType[473535] _end_getIndexType[473535]
+      }
+      {
+        (175004 call compilerError "This function should only be used by bytes or string")
+      }
+    }
+    label _end_getIndexType[473535]
+    (473539 return ret[473537])
+  }
+  function doReplace[175028](const  ref arg x[175025]:_any[170](?), arg needle[175031] :
+  (437572 'typeof' x[175025]), arg replacement[175035] :
+  (437574 'typeof' x[175025]), arg count[175042]:int(64)[13] =
+  (175040 call - 1)) : _unknown[43]
+  {
+    unknown ret[473553] "RVV" "temp"
+    unknown call_tmp[633050] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633053 'move' call_tmp[633050](437576 'typeof' x[175025]))
+    (175066 call assertArgType call_tmp[633050] "doReplace")
+    unknown call_tmp[633055] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633058 'move' call_tmp[633055](437578 'typeof' x[175025]))
+    unknown _idxt[175073] "insert auto destroy" "type variable"(175072 call getIndexType call_tmp[633055])
+    unknown call_tmp[633060] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633063 'move' call_tmp[633060](493093 'typeof' x[175025]))
+    (493095 'move' _idxt[175073](493092 call getIndexType call_tmp[633060]))
+    unknown call_tmp[633065] "maybe param" "maybe type" "temp" "type variable"
+    (633068 'move' call_tmp[633065](437580 'typeof' x[175025]))
+    unknown result[175078] "insert auto destroy"
+    (493097 'init var' result[175078] x[175025] call_tmp[633065])
+    unknown found[175083] "insert auto destroy"
+    (493099 'init var' found[175083] 0 int(64)[13])
+    unknown startIdx[175088] "insert auto destroy"
+    (493101 'init var' startIdx[175088] 1 _idxt[175073])
+    unknown call_tmp[633072] "maybe param" "maybe type" "temp"
+    (633075 'move' call_tmp[633072](175097 call(175093 call (partial) localize _mt[232] needle[175031])))
+    unknown call_tmp[633077] "maybe param" "maybe type" "temp" "type variable"
+    (633080 'move' call_tmp[633077](437582 'typeof' x[175025]))
+    const localNeedle[175098] "const" "insert auto destroy"
+    (493103 'init var' localNeedle[175098] call_tmp[633072] call_tmp[633077])
+    unknown call_tmp[633084] "maybe param" "maybe type" "temp"
+    (633087 'move' call_tmp[633084](175107 call(175103 call (partial) localize _mt[232] replacement[175035])))
+    unknown call_tmp[633089] "maybe param" "maybe type" "temp" "type variable"
+    (633092 'move' call_tmp[633089](437584 'typeof' x[175025]))
+    const localReplacement[175108] "const" "insert auto destroy"
+    (493105 'init var' localReplacement[175108] call_tmp[633084] call_tmp[633089])
+    {
+      unknown tmp[175192] "temp"
+      unknown tmp[404289] "maybe param" "temp"
+      (404300 'move' tmp[404289](175221 call < count[175042] 0))
+      unknown call_tmp[633094] "expr temp" "maybe param" "maybe type" "temp"
+      (633097 'move' call_tmp[633094](404302 call _cond_invalid tmp[404289]))
+      if call_tmp[633094]
+      {
+        (404305 call compilerError "cannot promote short-circuiting || operator")
+      }
+      unknown tmp[519723] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[519724] "maybe param" "temp"
+      unknown call_tmp[633099] "expr temp" "maybe param" "maybe type" "temp"
+      (633102 'move' call_tmp[633099](404290 call isTrue tmp[404289]))
+      (519729 'move' tmp[519724](519727 call _cond_test call_tmp[633099]))
+      if tmp[519724]
+      {
+        (519734 'move' tmp[519723](519731 '_paramFoldLogical' tmp[519724] 1))
+      }
+      {
+        unknown tmp[519736] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[633104] "expr temp" "maybe param" "maybe type" "temp"
+        (633107 'move' call_tmp[633104](175225 call < found[175083] count[175042]))
+        (519738 'move' tmp[519736](404294 call isTrue call_tmp[633104]))
+        (519743 'move' tmp[519723](519740 '_paramFoldLogical' tmp[519724] tmp[519736]))
+      }
+      (175228 'move' tmp[175192](175217 call _cond_test tmp[519723]))
+      WhileDo
+      {
+        {
+          unknown call_tmp[633111] "expr temp" "maybe param" "maybe type" "temp"
+          (633114 'move' call_tmp[633111](175128 call chpl_build_low_bounded_range startIdx[175088]))
+          unknown call_tmp[633116] "maybe param" "maybe type" "temp"
+          (633119 'move' call_tmp[633116](175130 call(175122 call (partial) find _mt[232] result[175078]) localNeedle[175098] call_tmp[633111]))
+          const idx[175131] "const" "insert auto destroy"
+          (493107 'init var' idx[175131] call_tmp[633116])
+          unknown call_tmp[633121] "expr temp" "maybe param" "maybe type" "temp"
+          (633124 'move' call_tmp[633121](175136 call ! idx[175131]))
+          unknown call_tmp[633126] "expr temp" "maybe param" "maybe type" "temp"
+          (633129 'move' call_tmp[633126](175141 call _cond_test call_tmp[633121]))
+          if call_tmp[633126]
+          {
+            break _breakLabel[175196] _breakLabel[175196]
+          }
+          (175148 call += found[175083] 1)
+          unknown call_tmp[633131] "expr temp" "maybe param" "maybe type" "temp"
+          (633134 'move' call_tmp[633131](175155 call - idx[175131] 1))
+          unknown call_tmp[633136] "expr temp" "maybe param" "maybe type" "temp"
+          (633139 'move' call_tmp[633136](175157 call chpl_build_high_bounded_range call_tmp[633131]))
+          unknown call_tmp[633141] "expr temp" "maybe param" "maybe type" "temp"
+          (633144 'move' call_tmp[633141](175160 call result[175078] call_tmp[633136]))
+          unknown call_tmp[633146] "expr temp" "maybe param" "maybe type" "temp"
+          (633149 'move' call_tmp[633146](175162 call + call_tmp[633141] localReplacement[175108]))
+          unknown call_tmp[633153] "expr temp" "maybe param" "maybe type" "temp"
+          (633156 'move' call_tmp[633153](175167 call numBytes _mt[232] localNeedle[175098]))
+          unknown call_tmp[633158] "expr temp" "maybe param" "maybe type" "temp"
+          (633161 'move' call_tmp[633158](175170 call + idx[175131] call_tmp[633153]))
+          unknown call_tmp[633163] "expr temp" "maybe param" "maybe type" "temp"
+          (633166 'move' call_tmp[633163](175172 call chpl_build_low_bounded_range call_tmp[633158]))
+          unknown call_tmp[633168] "expr temp" "maybe param" "maybe type" "temp"
+          (633171 'move' call_tmp[633168](175175 call result[175078] call_tmp[633163]))
+          unknown call_tmp[633173] "expr temp" "maybe param" "maybe type" "temp"
+          (633176 'move' call_tmp[633173](175176 call + call_tmp[633146] call_tmp[633168]))
+          (175178 call = result[175078] call_tmp[633173])
+          unknown call_tmp[633180] "expr temp" "maybe param" "maybe type" "temp"
+          (633183 'move' call_tmp[633180](175184 call numBytes _mt[232] localReplacement[175108]))
+          unknown call_tmp[633185] "expr temp" "maybe param" "maybe type" "temp"
+          (633188 'move' call_tmp[633185](175187 call + idx[175131] call_tmp[633180]))
+          (175189 call = startIdx[175088] call_tmp[633185])
+        }
+        label _continueLabel[175195]
+        unknown tmp[404268] "maybe param" "temp"
+        (404279 'move' tmp[404268](175205 call < count[175042] 0))
+        unknown call_tmp[633190] "expr temp" "maybe param" "maybe type" "temp"
+        (633193 'move' call_tmp[633190](404281 call _cond_invalid tmp[404268]))
+        if call_tmp[633190]
+        {
+          (404284 call compilerError "cannot promote short-circuiting || operator")
+        }
+        unknown tmp[519750] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[519751] "maybe param" "temp"
+        unknown call_tmp[633195] "expr temp" "maybe param" "maybe type" "temp"
+        (633198 'move' call_tmp[633195](404269 call isTrue tmp[404268]))
+        (519756 'move' tmp[519751](519754 call _cond_test call_tmp[633195]))
+        if tmp[519751]
+        {
+          (519761 'move' tmp[519750](519758 '_paramFoldLogical' tmp[519751] 1))
+        }
+        {
+          unknown tmp[519763] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[633200] "expr temp" "maybe param" "maybe type" "temp"
+          (633203 'move' call_tmp[633200](175209 call < found[175083] count[175042]))
+          (519765 'move' tmp[519763](404273 call isTrue call_tmp[633200]))
+          (519770 'move' tmp[519750](519767 '_paramFoldLogical' tmp[519751] tmp[519763]))
+        }
+        (175212 'move' tmp[175192](175201 call _cond_test tmp[519750]))
+        tmp[175192]
+      }
+      label _breakLabel[175196]
+    }
+    unknown call_tmp[633205] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633208 'move' call_tmp[633205](473557 'typeof' x[175025]))
+    (473560 'move' ret[473553](473559 'coerce' result[175078] call_tmp[633205]))
+    (473555 return ret[473553])
+  }
+  { scopeless type
+    (437586 'typeof' x[175025])
+  }
+  function doSplit[175244](const  ref arg x[175241]:_any[170](?), arg sep[175247] :
+  (437588 'typeof' x[175241]), arg maxsplit[175254]:int(64)[13] =
+  (175252 call - 1), arg ignoreEmpty[175260]:bool[10] =
+  0) : _unknown[43] "iterator fn" "no return value for void"
+  {
+    unknown ret[473564] "RVV" "temp"
+    unknown call_tmp[633210] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633213 'move' call_tmp[633210](437590 'typeof' x[175241]))
+    (175284 call assertArgType call_tmp[633210] "doSplit")
+    unknown call_tmp[633215] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633218 'move' call_tmp[633215](437592 'typeof' x[175241]))
+    unknown _idxt[175291] "insert auto destroy" "type variable"(175290 call getIndexType call_tmp[633215])
+    unknown call_tmp[633220] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633223 'move' call_tmp[633220](493111 'typeof' x[175241]))
+    (493113 'move' _idxt[175291](493110 call getIndexType call_tmp[633220]))
+    unknown tmp[404352] "maybe param" "temp"
+    unknown tmp[404373] "maybe param" "temp"
+    (404384 'move' tmp[404373](175296 call == maxsplit[175254] 0))
+    unknown call_tmp[633225] "expr temp" "maybe param" "maybe type" "temp"
+    (633228 'move' call_tmp[633225](404386 call _cond_invalid tmp[404373]))
+    if call_tmp[633225]
+    {
+      (404389 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519777] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519778] "maybe param" "temp"
+    unknown call_tmp[633230] "expr temp" "maybe param" "maybe type" "temp"
+    (633233 'move' call_tmp[633230](404374 call isTrue tmp[404373]))
+    (519783 'move' tmp[519778](519781 call _cond_test call_tmp[633230]))
+    if tmp[519778]
+    {
+      unknown tmp[519785] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (519787 'move' tmp[519785](404377 call isTrue ignoreEmpty[175260]))
+      (519792 'move' tmp[519777](519789 '_paramFoldLogical' tmp[519778] tmp[519785]))
+    }
+    {
+      (519797 'move' tmp[519777](519794 '_paramFoldLogical' tmp[519778] 0))
+    }
+    (404363 'move' tmp[404352] tmp[519777])
+    unknown call_tmp[633235] "expr temp" "maybe param" "maybe type" "temp"
+    (633238 'move' call_tmp[633235](404365 call _cond_invalid tmp[404352]))
+    if call_tmp[633235]
+    {
+      (404368 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519804] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519805] "maybe param" "temp"
+    unknown call_tmp[633240] "expr temp" "maybe param" "maybe type" "temp"
+    (633243 'move' call_tmp[633240](404353 call isTrue tmp[404352]))
+    (519810 'move' tmp[519805](519808 call _cond_test call_tmp[633240]))
+    if tmp[519805]
+    {
+      unknown tmp[519812] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[633247] "expr temp" "maybe param" "maybe type" "temp"
+      (633250 'move' call_tmp[633247](175306 call(175302 call (partial) isEmpty _mt[232] x[175241])))
+      (519814 'move' tmp[519812](404356 call isTrue call_tmp[633247]))
+      (519819 'move' tmp[519804](519816 '_paramFoldLogical' tmp[519805] tmp[519812]))
+    }
+    {
+      (519824 'move' tmp[519804](519821 '_paramFoldLogical' tmp[519805] 0))
+    }
+    unknown call_tmp[633252] "expr temp" "maybe param" "maybe type" "temp"
+    (633255 'move' call_tmp[633252](175309 call ! tmp[519804]))
+    unknown call_tmp[633257] "expr temp" "maybe param" "maybe type" "temp"
+    (633260 'move' call_tmp[633257](175512 call _cond_test call_tmp[633252]))
+    if call_tmp[633257]
+    {
+      unknown call_tmp[633264] "maybe param" "maybe type" "temp"
+      (633267 'move' call_tmp[633264](175317 call(175313 call (partial) localize _mt[232] x[175241])))
+      unknown call_tmp[633269] "maybe param" "maybe type" "temp" "type variable"
+      (633272 'move' call_tmp[633269](437594 'typeof' x[175241]))
+      const localThis[175318] "const" "insert auto destroy"
+      (493115 'init var' localThis[175318] call_tmp[633264] call_tmp[633269])
+      unknown call_tmp[633276] "maybe param" "maybe type" "temp"
+      (633279 'move' call_tmp[633276](175328 call(175324 call (partial) localize _mt[232] sep[175247])))
+      unknown call_tmp[633281] "maybe param" "maybe type" "temp" "type variable"
+      (633284 'move' call_tmp[633281](437596 'typeof' x[175241]))
+      const localSep[175329] "const" "insert auto destroy"
+      (493117 'init var' localSep[175329] call_tmp[633276] call_tmp[633281])
+      unknown call_tmp[633286] "maybe param" "maybe type" "temp"
+      (633289 'move' call_tmp[633286](175335 call <= maxsplit[175254] 0))
+      unknown splitAll[175337] "insert auto destroy"
+      (493119 'init var' splitAll[175337] call_tmp[633286] bool[10])
+      unknown splitCount[175342] "insert auto destroy"
+      (493121 'init var' splitCount[175342] 0 int(64)[13])
+      unknown start[175347] "insert auto destroy"
+      (493123 'init var' start[175347] 1 _idxt[175291])
+      unknown done[175352] "insert auto destroy"
+      (493125 'init var' done[175352] 0 bool[10])
+      {
+        unknown tmp[175487] "temp"
+        unknown call_tmp[633291] "expr temp" "maybe param" "maybe type" "temp"
+        (633294 'move' call_tmp[633291](175507 call ! done[175352]))
+        (175509 'move' tmp[175487](175505 call _cond_test call_tmp[633291]))
+        WhileDo
+        {
+          {
+            unknown chunk[175359] "insert auto destroy"
+            unknown call_tmp[633296] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+            (633299 'move' call_tmp[633296](437598 'typeof' x[175241]))
+            (493127 'default init var' chunk[175359] call_tmp[633296])
+            unknown end[175364] "insert auto destroy"
+            (493129 'default init var' end[175364] _idxt[175291])
+            unknown call_tmp[633301] "expr temp" "maybe param" "maybe type" "temp"
+            (633304 'move' call_tmp[633301](175369 call == maxsplit[175254] 0))
+            unknown call_tmp[633306] "expr temp" "maybe param" "maybe type" "temp"
+            (633309 'move' call_tmp[633306](175448 call _cond_test call_tmp[633301]))
+            if call_tmp[633306]
+            {
+              (175373 call = chunk[175359] localThis[175318])
+              (175379 call = done[175352] 1)
+            }
+            {
+              unknown tmp[404310] "maybe param" "temp"
+              (404321 'move' tmp[404310] splitAll[175337])
+              unknown call_tmp[633311] "expr temp" "maybe param" "maybe type" "temp"
+              (633314 'move' call_tmp[633311](404323 call _cond_invalid tmp[404310]))
+              if call_tmp[633311]
+              {
+                (404326 call compilerError "cannot promote short-circuiting || operator")
+              }
+              unknown tmp[519831] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+              unknown tmp[519832] "maybe param" "temp"
+              unknown call_tmp[633316] "expr temp" "maybe param" "maybe type" "temp"
+              (633319 'move' call_tmp[633316](404311 call isTrue tmp[404310]))
+              (519837 'move' tmp[519832](519835 call _cond_test call_tmp[633316]))
+              if tmp[519832]
+              {
+                (519842 'move' tmp[519831](519839 '_paramFoldLogical' tmp[519832] 1))
+              }
+              {
+                unknown tmp[519844] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                unknown call_tmp[633321] "expr temp" "maybe param" "maybe type" "temp"
+                (633324 'move' call_tmp[633321](175385 call < splitCount[175342] maxsplit[175254]))
+                (519846 'move' tmp[519844](404315 call isTrue call_tmp[633321]))
+                (519851 'move' tmp[519831](519848 '_paramFoldLogical' tmp[519832] tmp[519844]))
+              }
+              unknown call_tmp[633326] "expr temp" "maybe param" "maybe type" "temp"
+              (633329 'move' call_tmp[633326](175403 call _cond_test tmp[519831]))
+              if call_tmp[633326]
+              {
+                unknown call_tmp[633333] "expr temp" "maybe param" "maybe type" "temp"
+                (633336 'move' call_tmp[633333](175397 call chpl_build_low_bounded_range start[175347]))
+                unknown call_tmp[633338] "expr temp" "maybe param" "maybe type" "temp"
+                (633341 'move' call_tmp[633338](175399 call(175391 call (partial) find _mt[232] localThis[175318]) localSep[175329] call_tmp[633333]))
+                (175400 call = end[175364] call_tmp[633338])
+              }
+              unknown call_tmp[633343] "expr temp" "maybe param" "maybe type" "temp"
+              (633346 'move' call_tmp[633343](175411 call == end[175364] 0))
+              unknown call_tmp[633348] "expr temp" "maybe param" "maybe type" "temp"
+              (633351 'move' call_tmp[633348](175444 call _cond_test call_tmp[633343]))
+              if call_tmp[633348]
+              {
+                unknown call_tmp[633353] "expr temp" "maybe param" "maybe type" "temp"
+                (633356 'move' call_tmp[633353](175416 call chpl_build_low_bounded_range start[175347]))
+                unknown call_tmp[633358] "expr temp" "maybe param" "maybe type" "temp"
+                (633361 'move' call_tmp[633358](175419 call localThis[175318] call_tmp[633353]))
+                (175420 call = chunk[175359] call_tmp[633358])
+                (175426 call = done[175352] 1)
+              }
+              {
+                unknown call_tmp[633363] "expr temp" "maybe param" "maybe type" "temp"
+                (633366 'move' call_tmp[633363](175434 call - end[175364] 1))
+                unknown call_tmp[633368] "expr temp" "maybe param" "maybe type" "temp"
+                (633371 'move' call_tmp[633368](175436 call chpl_build_bounded_range start[175347] call_tmp[633363]))
+                unknown call_tmp[633373] "expr temp" "maybe param" "maybe type" "temp"
+                (633376 'move' call_tmp[633373](175439 call localThis[175318] call_tmp[633368]))
+                (175440 call = chunk[175359] call_tmp[633373])
+              }
+            }
+            unknown tmp[404331] "maybe param" "temp"
+            (404342 'move' tmp[404331] ignoreEmpty[175260])
+            unknown call_tmp[633378] "expr temp" "maybe param" "maybe type" "temp"
+            (633381 'move' call_tmp[633378](404344 call _cond_invalid tmp[404331]))
+            if call_tmp[633378]
+            {
+              (404347 call compilerError "cannot promote short-circuiting && operator")
+            }
+            unknown tmp[519858] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+            unknown tmp[519859] "maybe param" "temp"
+            unknown call_tmp[633383] "expr temp" "maybe param" "maybe type" "temp"
+            (633386 'move' call_tmp[633383](404332 call isTrue tmp[404331]))
+            (519864 'move' tmp[519859](519862 call _cond_test call_tmp[633383]))
+            if tmp[519859]
+            {
+              unknown tmp[519866] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+              unknown call_tmp[633390] "expr temp" "maybe param" "maybe type" "temp"
+              (633393 'move' call_tmp[633390](175458 call(175454 call (partial) isEmpty _mt[232] chunk[175359])))
+              (519868 'move' tmp[519866](404335 call isTrue call_tmp[633390]))
+              (519873 'move' tmp[519858](519870 '_paramFoldLogical' tmp[519859] tmp[519866]))
+            }
+            {
+              (519878 'move' tmp[519858](519875 '_paramFoldLogical' tmp[519859] 0))
+            }
+            unknown call_tmp[633395] "expr temp" "maybe param" "maybe type" "temp"
+            (633398 'move' call_tmp[633395](175461 call ! tmp[519858]))
+            unknown call_tmp[633400] "expr temp" "maybe param" "maybe type" "temp"
+            (633403 'move' call_tmp[633400](175472 call _cond_test call_tmp[633395]))
+            if call_tmp[633400]
+            {
+              unknown yret[473568] "YVV" "temp"
+              unknown call_tmp[633405] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+              (633408 'move' call_tmp[633405](473570 'typeof' x[175241]))
+              (473573 'move' yret[473568](473572 'coerce' chunk[175359] call_tmp[633405]))
+              (473575 yield yret[473568])
+              (175469 call += splitCount[175342] 1)
+            }
+            unknown call_tmp[633412] "expr temp" "maybe param" "maybe type" "temp"
+            (633415 'move' call_tmp[633412](175479 call numBytes _mt[232] localSep[175329]))
+            unknown call_tmp[633417] "expr temp" "maybe param" "maybe type" "temp"
+            (633420 'move' call_tmp[633417](175482 call + end[175364] call_tmp[633412]))
+            (175484 call = start[175347] call_tmp[633417])
+          }
+          label _continueLabel[175490]
+          unknown call_tmp[633422] "expr temp" "maybe param" "maybe type" "temp"
+          (633425 'move' call_tmp[633422](175498 call ! done[175352]))
+          (175500 'move' tmp[175487](175496 call _cond_test call_tmp[633422]))
+          tmp[175487]
+        }
+        label _breakLabel[175491]
+      }
+    }
+    (473566 return ret[473564])
+  }
+  { scopeless type
+    (437600 'typeof' x[175241])
+  }
+  function startsEndsWith[175526](const  ref arg x[175523]:_any[170](?), arg needles[175528]:_any[170](?), param arg fromLeft[175531]:bool[10]) : _unknown[43] "inline" "no doc"
+  {
+    unknown ret[473579] "RVV" "temp"
+    unknown call_tmp[633427] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633430 'move' call_tmp[633427](437602 'typeof' x[175523]))
+    (175568 call assertArgType call_tmp[633427] "startsEndsWith")
+    unknown ret[175573] "insert auto destroy"
+    (493131 'init var' ret[175573] 0 bool[10])
+    {
+      const tmp[175749] "const" "temp"
+      unknown call_tmp[633434] "expr temp" "maybe param" "maybe type" "temp"
+      (633437 'move' call_tmp[633434](175580 call locale_id _mt[232] x[175523]))
+      unknown call_tmp[633439] "expr temp" "maybe param" "maybe type" "temp"
+      (633442 'move' call_tmp[633439](175585 call chpl_buildLocaleID call_tmp[633434] c_sublocid_any[90220]))
+      unknown call_tmp[633444] "expr temp" "maybe param" "maybe type" "temp"
+      (633447 'move' call_tmp[633444](175586 'chpl_on_locale_num' call_tmp[633439]))
+      (175750 'move' tmp[175749](175747 'deref' call_tmp[633444]))
+      {
+        {
+          unknown _indexOfInterest[175713] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[175714] "expr temp" "temp"
+          (175723 'move' _iterator[175714](175721 call _getIterator needles[175528]))
+          Defer
+          {
+            {
+              (175739 call _freeIterator _iterator[175714])
+            }
+          }
+          { scopeless type
+            (175728 'move' _indexOfInterest[175713](175725 call iteratorIndex _iterator[175714]))
+          }
+          ForLoop
+          {
+            unknown needle[175732] "index var" "insert auto destroy"
+            (175734 'move' needle[175732] _indexOfInterest[175713])
+            {
+              unknown call_tmp[633451] "maybe param" "maybe type" "temp"
+              (633454 'move' call_tmp[633451](175590 call len _mt[232] needle[175732]))
+              const needleLen[175593] "const" "insert auto destroy"
+              (493133 'init var' needleLen[175593] call_tmp[633451])
+              unknown call_tmp[633456] "expr temp" "maybe param" "maybe type" "temp"
+              (633459 'move' call_tmp[633456](175599 call == needleLen[175593] 0))
+              unknown call_tmp[633461] "expr temp" "maybe param" "maybe type" "temp"
+              (633464 'move' call_tmp[633461](175610 call _cond_test call_tmp[633456]))
+              if call_tmp[633461]
+              {
+                (175603 call = ret[175573] 1)
+                break _breakLabel[175719] _breakLabel[175719]
+              }
+              unknown call_tmp[633468] "expr temp" "maybe param" "maybe type" "temp"
+              (633471 'move' call_tmp[633468](175616 call len _mt[232] x[175523]))
+              unknown call_tmp[633473] "expr temp" "maybe param" "maybe type" "temp"
+              (633476 'move' call_tmp[633473](175619 call > needleLen[175593] call_tmp[633468]))
+              unknown call_tmp[633478] "expr temp" "maybe param" "maybe type" "temp"
+              (633481 'move' call_tmp[633478](175624 call _cond_test call_tmp[633473]))
+              if call_tmp[633478]
+              {
+                continue _continueLabel[175718] _continueLabel[175718]
+              }
+              unknown call_tmp[633485] "maybe param" "maybe type" "temp"
+              (633488 'move' call_tmp[633485](175634 call(175630 call (partial) localize _mt[232] needle[175732])))
+              const localNeedle[175635] "const" "insert auto destroy"
+              (493135 'init var' localNeedle[175635] call_tmp[633485])
+              unknown call_tmp[633490] "expr temp" "maybe param" "maybe type" "temp"
+              (633493 'move' call_tmp[633490](175697 call _cond_test fromLeft[175531]))
+              if call_tmp[633490]
+              {
+                unknown call_tmp[633497] "expr temp" "maybe param" "maybe type" "temp"
+                (633500 'move' call_tmp[633497](175642 call buff _mt[232] x[175523]))
+                unknown call_tmp[633504] "expr temp" "maybe param" "maybe type" "temp"
+                (633507 'move' call_tmp[633504](175650 call buff _mt[232] localNeedle[175635]))
+                unknown call_tmp[633509] "expr temp" "maybe param" "maybe type" "temp"
+                (633512 'move' call_tmp[633509](175658 call bufferEqualsLocal(buf1 = call_tmp[633497])(off1 = 0)(buf2 = call_tmp[633504])(off2 = 0)(len = needleLen[175593])))
+                (175659 call = ret[175573] call_tmp[633509])
+              }
+              {
+                unknown call_tmp[633516] "expr temp" "maybe param" "maybe type" "temp"
+                (633519 'move' call_tmp[633516](175664 call len _mt[232] x[175523]))
+                unknown call_tmp[633521] "maybe param" "maybe type" "temp"
+                (633524 'move' call_tmp[633521](175668 call - call_tmp[633516] needleLen[175593]))
+                unknown offset[175670] "insert auto destroy"
+                (493137 'init var' offset[175670] call_tmp[633521])
+                unknown call_tmp[633528] "expr temp" "maybe param" "maybe type" "temp"
+                (633531 'move' call_tmp[633528](175677 call buff _mt[232] x[175523]))
+                unknown call_tmp[633535] "expr temp" "maybe param" "maybe type" "temp"
+                (633538 'move' call_tmp[633535](175685 call buff _mt[232] localNeedle[175635]))
+                unknown call_tmp[633540] "expr temp" "maybe param" "maybe type" "temp"
+                (633543 'move' call_tmp[633540](175693 call bufferEqualsLocal(buf1 = call_tmp[633528])(off1 = offset[175670])(buf2 = call_tmp[633535])(off2 = 0)(len = needleLen[175593])))
+                (175694 call = ret[175573] call_tmp[633540])
+              }
+              unknown call_tmp[633545] "expr temp" "maybe param" "maybe type" "temp"
+              (633548 'move' call_tmp[633545](175703 call == ret[175573] 1))
+              unknown call_tmp[633550] "expr temp" "maybe param" "maybe type" "temp"
+              (633553 'move' call_tmp[633550](175708 call _cond_test call_tmp[633545]))
+              if call_tmp[633550]
+              {
+                break _breakLabel[175719] _breakLabel[175719]
+              }
+            }
+            label _continueLabel[175718]
+            _indexOfInterest[175713]
+            _iterator[175714]
+          }
+          label _breakLabel[175719]
+        }
+      }
+    }
+    (473585 'move' ret[473579](473584 'coerce' ret[175573] bool[10]))
+    (473581 return ret[473579])
+  }
+  where {
+    unknown tmp[404394] "maybe param" "temp"
+    (404405 'move' tmp[404394](175538 call isHomogeneousTuple needles[175528]))
+    unknown call_tmp[633555] "expr temp" "maybe param" "maybe type" "temp"
+    (633558 'move' call_tmp[633555](404407 call _cond_invalid tmp[404394]))
+    if call_tmp[633555]
+    {
+      (404410 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519885] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519886] "maybe param" "temp"
+    unknown call_tmp[633560] "expr temp" "maybe param" "maybe type" "temp"
+    (633563 'move' call_tmp[633560](404395 call isTrue tmp[404394]))
+    (519891 'move' tmp[519886](519889 call _cond_test call_tmp[633560]))
+    if tmp[519886]
+    {
+      { scopeless type
+        unknown call_type_tmp[443850] "expr temp" "maybe type" "temp" "type variable"
+        unknown call_tmp[633565] "expr temp" "maybe param" "maybe type" "temp"
+        (633568 'move' call_tmp[633565](175542 call needles[175528] 1))
+        (443854 'move' call_type_tmp[443850](175543 'typeof' call_tmp[633565]))
+      }
+      unknown tmp[519893] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[633570] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (633573 'move' call_tmp[633570](437604 'typeof' x[175523]))
+      unknown call_tmp[633575] "expr temp" "maybe param" "maybe type" "temp"
+      (633578 'move' call_tmp[633575](175545 call == call_type_tmp[443850] call_tmp[633570]))
+      (519895 'move' tmp[519893](404398 call isTrue call_tmp[633575]))
+      (519900 'move' tmp[519885](519897 '_paramFoldLogical' tmp[519886] tmp[519893]))
+    }
+    {
+      (519905 'move' tmp[519885](519902 '_paramFoldLogical' tmp[519886] 0))
+    }
+    (691955 call _statementLevelSymbol tmp[519885])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function doJoinIterator[175768](const  ref arg x[175765]:_any[170](?), arg ir[175771]:_iteratorRecord[194](?)) : _unknown[43]
+  {
+    unknown ret[473589] "RVV" "temp"
+    unknown call_tmp[633580] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633583 'move' call_tmp[633580](437606 'typeof' x[175765]))
+    (175794 call assertArgType call_tmp[633580] "doJoinIterator")
+    unknown s[175798] "insert auto destroy"
+    unknown call_tmp[633585] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633588 'move' call_tmp[633585](437608 'typeof' x[175765]))
+    (493139 'default init var' s[175798] call_tmp[633585])
+    unknown first[175803] "insert auto destroy"
+    (493141 'init var' first[175803] 1 bool[10])
+    {
+      unknown _indexOfInterest[175831] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[175832] "expr temp" "temp"
+      (175841 'move' _iterator[175832](175839 call _getIterator ir[175771]))
+      Defer
+      {
+        {
+          (175857 call _freeIterator _iterator[175832])
+        }
+      }
+      { scopeless type
+        (175846 'move' _indexOfInterest[175831](175843 call iteratorIndex _iterator[175832]))
+      }
+      ForLoop
+      {
+        unknown i[175850] "index var" "insert auto destroy"
+        (175852 'move' i[175850] _indexOfInterest[175831])
+        {
+          unknown call_tmp[633590] "expr temp" "maybe param" "maybe type" "temp"
+          (633593 'move' call_tmp[633590](175819 call _cond_test first[175803]))
+          if call_tmp[633590]
+          {
+            (175811 call = first[175803] 0)
+          }
+          {
+            (175816 call += s[175798] x[175765])
+          }
+          (175828 call += s[175798] i[175850])
+        }
+        label _continueLabel[175836]
+        _indexOfInterest[175831]
+        _iterator[175832]
+      }
+      label _breakLabel[175837]
+    }
+    unknown call_tmp[633595] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633598 'move' call_tmp[633595](473593 'typeof' x[175765]))
+    (473596 'move' ret[473589](473595 'coerce' s[175798] call_tmp[633595]))
+    (473591 return ret[473589])
+  }
+  { scopeless type
+    (437610 'typeof' x[175765])
+  }
+  function doJoin[175877](const  ref arg x[175874]:_any[170](?), const  ref arg S[175879]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[473600] "RVV" "temp"
+    unknown call_tmp[633600] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633603 'move' call_tmp[633600](437612 'typeof' x[175874]))
+    (175911 call assertArgType call_tmp[633600] "doJoin")
+    unknown call_tmp[633607] "expr temp" "maybe param" "maybe type" "temp"
+    (633610 'move' call_tmp[633607](175915 call size _mt[232] S[175879]))
+    unknown call_tmp[633612] "expr temp" "maybe param" "maybe type" "temp"
+    (633615 'move' call_tmp[633612](175919 call == call_tmp[633607] 0))
+    unknown call_tmp[633617] "expr temp" "maybe param" "maybe type" "temp"
+    (633620 'move' call_tmp[633617](176292 call _cond_test call_tmp[633612]))
+    if call_tmp[633617]
+    {
+      unknown call_tmp[633622] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (633625 'move' call_tmp[633622](473604 'typeof' x[175874]))
+      (473607 'move' ret[473600](473606 'coerce' "" call_tmp[633622]))
+      gotoReturn _end_doJoin[473598] _end_doJoin[473598]
+    }
+    {
+      unknown call_tmp[633629] "expr temp" "maybe param" "maybe type" "temp"
+      (633632 'move' call_tmp[633629](175941 call size _mt[232] S[175879]))
+      unknown call_tmp[633634] "expr temp" "maybe param" "maybe type" "temp"
+      (633637 'move' call_tmp[633634](175945 call == call_tmp[633629] 1))
+      unknown call_tmp[633639] "expr temp" "maybe param" "maybe type" "temp"
+      (633642 'move' call_tmp[633639](176288 call _cond_test call_tmp[633634]))
+      if call_tmp[633639]
+      {
+        unknown ret[175948] "insert auto destroy"
+        unknown call_tmp[633644] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+        (633647 'move' call_tmp[633644](437614 'typeof' x[175874]))
+        (493143 'default init var' ret[175948] call_tmp[633644])
+        unknown call_tmp[633649] "expr temp" "maybe param" "maybe type" "temp"
+        (633652 'move' call_tmp[633649](175955 call isArray S[175879]))
+        unknown call_tmp[633654] "expr temp" "maybe param" "maybe type" "temp"
+        (633657 'move' call_tmp[633654](175980 call _cond_test call_tmp[633649]))
+        if call_tmp[633654]
+        {
+          unknown call_tmp[633661] "expr temp" "maybe param" "maybe type" "temp"
+          (633664 'move' call_tmp[633661](175959 call _dom _mt[232] S[175879]))
+          unknown call_tmp[633668] "expr temp" "maybe param" "maybe type" "temp"
+          (633671 'move' call_tmp[633668](175962 call first _mt[232] call_tmp[633661]))
+          unknown call_tmp[633673] "expr temp" "maybe param" "maybe type" "temp"
+          (633676 'move' call_tmp[633673](175966 call S[175879] call_tmp[633668]))
+          (175967 call = ret[175948] call_tmp[633673])
+        }
+        {
+          unknown call_tmp[633678] "expr temp" "maybe param" "maybe type" "temp"
+          (633681 'move' call_tmp[633678](175975 call S[175879] 1))
+          (175976 call = ret[175948] call_tmp[633678])
+        }
+        unknown call_tmp[633683] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+        (633686 'move' call_tmp[633683](473611 'typeof' x[175874]))
+        (473614 'move' ret[473600](473613 'coerce' ret[175948] call_tmp[633683]))
+        gotoReturn _end_doJoin[473598] _end_doJoin[473598]
+      }
+      {
+        unknown call_tmp[633690] "expr temp" "maybe param" "maybe type" "temp"
+        (633693 'move' call_tmp[633690](175989 call len _mt[232] x[175874]))
+        unknown call_tmp[633697] "expr temp" "maybe param" "maybe type" "temp"
+        (633700 'move' call_tmp[633697](175993 call size _mt[232] S[175879]))
+        unknown call_tmp[633702] "expr temp" "maybe param" "maybe type" "temp"
+        (633705 'move' call_tmp[633702](175997 call - call_tmp[633697] 1))
+        unknown call_tmp[633707] "maybe param" "maybe type" "temp"
+        (633710 'move' call_tmp[633707](175999 call * call_tmp[633690] call_tmp[633702]))
+        unknown joinedSize[176001] "insert auto destroy"
+        (493145 'init var' joinedSize[176001] call_tmp[633707] int(64)[13])
+        {
+          unknown _indexOfInterest[176015] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[176016] "expr temp" "temp"
+          (176025 'move' _iterator[176016](176023 call _getIterator S[175879]))
+          Defer
+          {
+            {
+              (176041 call _freeIterator _iterator[176016])
+            }
+          }
+          { scopeless type
+            (176030 'move' _indexOfInterest[176015](176027 call iteratorIndex _iterator[176016]))
+          }
+          ForLoop
+          {
+            unknown s[176034] "index var" "insert auto destroy"
+            (176036 'move' s[176034] _indexOfInterest[176015])
+            unknown call_tmp[633714] "expr temp" "maybe param" "maybe type" "temp"
+            (633717 'move' call_tmp[633714](176009 call numBytes _mt[232] s[176034]))
+            (176012 call += joinedSize[176001] call_tmp[633714])
+            label _continueLabel[176020]
+            _indexOfInterest[176015]
+            _iterator[176016]
+          }
+          label _breakLabel[176021]
+        }
+        unknown call_tmp[633719] "expr temp" "maybe param" "maybe type" "temp"
+        (633722 'move' call_tmp[633719](176050 call == joinedSize[176001] 0))
+        unknown call_tmp[633724] "expr temp" "maybe param" "maybe type" "temp"
+        (633727 'move' call_tmp[633724](176070 call _cond_test call_tmp[633719]))
+        if call_tmp[633724]
+        {
+          unknown call_tmp[633729] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+          (633732 'move' call_tmp[633729](473618 'typeof' x[175874]))
+          (473621 'move' ret[473600](473620 'coerce' "" call_tmp[633729]))
+          gotoReturn _end_doJoin[473598] _end_doJoin[473598]
+        }
+        unknown joined[176076] "insert auto destroy"
+        unknown call_tmp[633734] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+        (633737 'move' call_tmp[633734](437616 'typeof' x[175874]))
+        (493147 'default init var' joined[176076] call_tmp[633734])
+        unknown call_tmp[633741] "expr temp" "maybe param" "maybe type" "temp"
+        (633744 'move' call_tmp[633741](176080 call len _mt[232] joined[176076]))
+        (176084 call = call_tmp[633741] joinedSize[176001])
+        unknown call_tmp[633748] "expr temp" "maybe param" "maybe type" "temp"
+        (633751 'move' call_tmp[633748](176094 call len _mt[232] joined[176076]))
+        unknown call_tmp[633753] "expr temp" "maybe param" "maybe type" "temp"
+        (633756 'move' call_tmp[633753](176098 call + call_tmp[633748] 1))
+        unknown call_tmp[633758] "maybe param" "maybe type" "temp"
+        (633761 'move' call_tmp[633758](176101 call bufferAlloc call_tmp[633753]))
+        unknown tmp[176102] "insert auto destroy" "no copy" "temp"
+        (493149 'init var' tmp[176102] call_tmp[633758])
+        (176109 call _check_tuple_var_decl tmp[176102] 2)
+        unknown call_tmp[633763] "maybe param" "maybe type" "temp"
+        (633766 'move' call_tmp[633763](176103 call tmp[176102] 1))
+        unknown newBuf[176087] "insert auto destroy"
+        (493151 'init var' newBuf[176087] call_tmp[633763])
+        unknown call_tmp[633768] "maybe param" "maybe type" "temp"
+        (633771 'move' call_tmp[633768](176106 call tmp[176102] 2))
+        unknown allocSize[176089] "insert auto destroy"
+        (493153 'init var' allocSize[176089] call_tmp[633768])
+        unknown call_tmp[633775] "expr temp" "maybe param" "maybe type" "temp"
+        (633778 'move' call_tmp[633775](176115 call _size _mt[232] joined[176076]))
+        (176119 call = call_tmp[633775] allocSize[176089])
+        unknown call_tmp[633782] "expr temp" "maybe param" "maybe type" "temp"
+        (633785 'move' call_tmp[633782](176123 call buff _mt[232] joined[176076]))
+        (176127 call = call_tmp[633782] newBuf[176087])
+        unknown first[176131] "insert auto destroy"
+        (493155 'init var' first[176131] 1)
+        unknown offset[176135] "insert auto destroy"
+        (493157 'init var' offset[176135] 0)
+        {
+          unknown _indexOfInterest[176238] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[176239] "expr temp" "temp"
+          (176248 'move' _iterator[176239](176246 call _getIterator S[175879]))
+          Defer
+          {
+            {
+              (176264 call _freeIterator _iterator[176239])
+            }
+          }
+          { scopeless type
+            (176253 'move' _indexOfInterest[176238](176250 call iteratorIndex _iterator[176239]))
+          }
+          ForLoop
+          {
+            unknown s[176257] "index var" "insert auto destroy"
+            (176259 'move' s[176257] _indexOfInterest[176238])
+            {
+              unknown call_tmp[633789] "maybe param" "maybe type" "temp"
+              (633792 'move' call_tmp[633789](176141 call len _mt[232] s[176257]))
+              const sLen[176144] "const" "insert auto destroy"
+              (493159 'init var' sLen[176144] call_tmp[633789])
+              unknown call_tmp[633794] "expr temp" "maybe param" "maybe type" "temp"
+              (633797 'move' call_tmp[633794](176196 call _cond_test first[176131]))
+              if call_tmp[633794]
+              {
+                (176151 call = first[176131] 0)
+              }
+              {
+                unknown call_tmp[633801] "expr temp" "maybe param" "maybe type" "temp"
+                (633804 'move' call_tmp[633801](176156 call len _mt[232] x[175874]))
+                unknown call_tmp[633806] "expr temp" "maybe param" "maybe type" "temp"
+                (633809 'move' call_tmp[633806](176160 call != call_tmp[633801] 0))
+                unknown call_tmp[633811] "expr temp" "maybe param" "maybe type" "temp"
+                (633814 'move' call_tmp[633811](176192 call _cond_test call_tmp[633806]))
+                if call_tmp[633811]
+                {
+                  unknown call_tmp[633818] "expr temp" "maybe param" "maybe type" "temp"
+                  (633821 'move' call_tmp[633818](176164 call buff _mt[232] joined[176076]))
+                  unknown call_tmp[633825] "expr temp" "maybe param" "maybe type" "temp"
+                  (633828 'move' call_tmp[633825](176170 call buff _mt[232] x[175874]))
+                  unknown call_tmp[633832] "expr temp" "maybe param" "maybe type" "temp"
+                  (633835 'move' call_tmp[633832](176175 call len _mt[232] x[175874]))
+                  (176181 call bufferMemcpyLocal(dst = call_tmp[633818])(src = call_tmp[633825])(len = call_tmp[633832])(dst_off = offset[176135]))
+                  unknown call_tmp[633839] "expr temp" "maybe param" "maybe type" "temp"
+                  (633842 'move' call_tmp[633839](176186 call len _mt[232] x[175874]))
+                  (176189 call += offset[176135] call_tmp[633839])
+                }
+              }
+              unknown call_tmp[633844] "expr temp" "maybe param" "maybe type" "temp"
+              (633847 'move' call_tmp[633844](176203 call != sLen[176144] 0))
+              unknown call_tmp[633849] "expr temp" "maybe param" "maybe type" "temp"
+              (633852 'move' call_tmp[633849](176234 call _cond_test call_tmp[633844]))
+              if call_tmp[633849]
+              {
+                unknown call_tmp[633856] "expr temp" "maybe param" "maybe type" "temp"
+                (633859 'move' call_tmp[633856](176207 call buff _mt[232] joined[176076]))
+                unknown call_tmp[633863] "expr temp" "maybe param" "maybe type" "temp"
+                (633866 'move' call_tmp[633863](176215 call locale_id _mt[232] s[176257]))
+                unknown call_tmp[633870] "expr temp" "maybe param" "maybe type" "temp"
+                (633873 'move' call_tmp[633870](176220 call buff _mt[232] s[176257]))
+                (176226 call bufferMemcpy(dst = call_tmp[633856])(dst_off = offset[176135])(src_loc = call_tmp[633863])(src = call_tmp[633870])(len = sLen[176144]))
+                (176231 call += offset[176135] sLen[176144])
+              }
+            }
+            label _continueLabel[176243]
+            _indexOfInterest[176238]
+            _iterator[176239]
+          }
+          label _breakLabel[176244]
+        }
+        unknown call_tmp[633879] "expr temp" "maybe param" "maybe type" "temp"
+        (633882 'move' call_tmp[633879](176276 call len _mt[232] joined[176076]))
+        unknown call_tmp[633884] "expr temp" "maybe param" "maybe type" "temp"
+        (633887 'move' call_tmp[633884](176280 call(176272 call (partial) buff _mt[232] joined[176076]) call_tmp[633879]))
+        (176282 call = call_tmp[633884] 0)
+        unknown call_tmp[633889] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+        (633892 'move' call_tmp[633889](473625 'typeof' x[175874]))
+        (473628 'move' ret[473600](473627 'coerce' joined[176076] call_tmp[633889]))
+        gotoReturn _end_doJoin[473598] _end_doJoin[473598]
+      }
+    }
+    label _end_doJoin[473598]
+    (473602 return ret[473600])
+  }
+  where {
+    unknown tmp[404415] "maybe param" "temp"
+    (404426 'move' tmp[404415](175885 call isTuple S[175879]))
+    unknown call_tmp[633894] "expr temp" "maybe param" "maybe type" "temp"
+    (633897 'move' call_tmp[633894](404428 call _cond_invalid tmp[404415]))
+    if call_tmp[633894]
+    {
+      (404431 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[519912] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519913] "maybe param" "temp"
+    unknown call_tmp[633899] "expr temp" "maybe param" "maybe type" "temp"
+    (633902 'move' call_tmp[633899](404416 call isTrue tmp[404415]))
+    (519918 'move' tmp[519913](519916 call _cond_test call_tmp[633899]))
+    if tmp[519913]
+    {
+      (519923 'move' tmp[519912](519920 '_paramFoldLogical' tmp[519913] 1))
+    }
+    {
+      unknown tmp[519925] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[633904] "expr temp" "maybe param" "maybe type" "temp"
+      (633907 'move' call_tmp[633904](175889 call isArray S[175879]))
+      (519927 'move' tmp[519925](404420 call isTrue call_tmp[633904]))
+      (519932 'move' tmp[519912](519929 '_paramFoldLogical' tmp[519913] tmp[519925]))
+    }
+    (691957 call _statementLevelSymbol tmp[519912])
+  }
+  { scopeless type
+    (437618 'typeof' x[175874])
+  }
+  function doPartition[176308](const  ref arg x[176305]:_any[170](?), arg sep[176311] :
+  (437620 'typeof' x[176305])) : _unknown[43]
+  {
+    unknown ret[473634] "RVV" "temp"
+    unknown call_tmp[633909] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (633912 'move' call_tmp[633909](437622 'typeof' x[176305]))
+    (176337 call assertArgType call_tmp[633909] "doPartition")
+    unknown call_tmp[633916] "maybe param" "maybe type" "temp"
+    (633919 'move' call_tmp[633916](176346 call(176341 call (partial) find _mt[232] x[176305]) sep[176311]))
+    const idx[176347] "const" "insert auto destroy"
+    (493161 'init var' idx[176347] call_tmp[633916])
+    unknown call_tmp[633921] "expr temp" "maybe param" "maybe type" "temp"
+    (633924 'move' call_tmp[633921](176352 call != idx[176347] 0))
+    unknown call_tmp[633926] "expr temp" "maybe param" "maybe type" "temp"
+    (633929 'move' call_tmp[633926](176427 call _cond_test call_tmp[633921]))
+    if call_tmp[633926]
+    {
+      unknown call_tmp[633931] "expr temp" "maybe param" "maybe type" "temp"
+      (633934 'move' call_tmp[633931](176357 call - idx[176347] 1))
+      unknown call_tmp[633936] "expr temp" "maybe param" "maybe type" "temp"
+      (633939 'move' call_tmp[633936](176359 call chpl_build_high_bounded_range call_tmp[633931]))
+      unknown call_tmp[633941] "expr temp" "maybe param" "maybe type" "temp"
+      (633944 'move' call_tmp[633941](176362 call x[176305] call_tmp[633936]))
+      unknown call_tmp[633948] "expr temp" "maybe param" "maybe type" "temp"
+      (633951 'move' call_tmp[633948](176368 call numBytes _mt[232] sep[176311]))
+      unknown call_tmp[633953] "expr temp" "maybe param" "maybe type" "temp"
+      (633956 'move' call_tmp[633953](176371 call + idx[176347] call_tmp[633948]))
+      unknown call_tmp[633958] "expr temp" "maybe param" "maybe type" "temp"
+      (633961 'move' call_tmp[633958](176373 call chpl_build_low_bounded_range call_tmp[633953]))
+      unknown call_tmp[633963] "expr temp" "maybe param" "maybe type" "temp"
+      (633966 'move' call_tmp[633963](176376 call x[176305] call_tmp[633958]))
+      unknown call_tmp[633968] "expr temp" "maybe param" "maybe type" "temp"
+      (633971 'move' call_tmp[633968](176377 call _build_tuple call_tmp[633941] sep[176311] call_tmp[633963]))
+      unknown call_tmp[633973] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (633976 'move' call_tmp[633973](473641 'typeof' x[176305]))
+      unknown call_tmp[633978] "expr temp" "maybe param" "maybe type" "temp"
+      (633981 'move' call_tmp[633978](473639 call * 3 call_tmp[633973]))
+      (473644 'move' ret[473634](473643 'coerce' call_tmp[633968] call_tmp[633978]))
+      gotoReturn _end_doPartition[473632] _end_doPartition[473632]
+    }
+    {
+      unknown call_tmp[633983] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (633986 'move' call_tmp[633983](437624 'typeof' x[176305]))
+      unknown call_tmp[633988] "expr temp" "maybe param" "maybe type" "temp"
+      (633991 'move' call_tmp[633988](176400 call _cast call_tmp[633983] ""))
+      unknown call_tmp[633993] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (633996 'move' call_tmp[633993](437626 'typeof' x[176305]))
+      unknown call_tmp[633998] "expr temp" "maybe param" "maybe type" "temp"
+      (634001 'move' call_tmp[633998](176420 call _cast call_tmp[633993] ""))
+      unknown call_tmp[634003] "expr temp" "maybe param" "maybe type" "temp"
+      (634006 'move' call_tmp[634003](176422 call _build_tuple x[176305] call_tmp[633988] call_tmp[633998]))
+      unknown call_tmp[634008] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (634011 'move' call_tmp[634008](473651 'typeof' x[176305]))
+      unknown call_tmp[634013] "expr temp" "maybe param" "maybe type" "temp"
+      (634016 'move' call_tmp[634013](473649 call * 3 call_tmp[634008]))
+      (473654 'move' ret[473634](473653 'coerce' call_tmp[634003] call_tmp[634013]))
+      gotoReturn _end_doPartition[473632] _end_doPartition[473632]
+    }
+    label _end_doPartition[473632]
+    (473636 return ret[473634])
+  }
+  { scopeless type
+    unknown call_tmp[634018] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634021 'move' call_tmp[634018](437628 'typeof' x[176305]))
+    (176316 call * 3 call_tmp[634018])
+  }
+  function doAppend[176441](ref arg lhs[176438]:_any[170](?), const  ref arg rhs[176444] :
+  (437630 'typeof' lhs[176438])) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[634023] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634026 'move' call_tmp[634023](437632 'typeof' lhs[176438]))
+    (176466 call assertArgType call_tmp[634023] "doAppend")
+    unknown call_tmp[634030] "expr temp" "maybe param" "maybe type" "temp"
+    (634033 'move' call_tmp[634030](176470 call len _mt[232] rhs[176444]))
+    unknown call_tmp[634035] "expr temp" "maybe param" "maybe type" "temp"
+    (634038 'move' call_tmp[634035](176474 call == call_tmp[634030] 0))
+    unknown call_tmp[634040] "expr temp" "maybe param" "maybe type" "temp"
+    (634043 'move' call_tmp[634040](176478 call _cond_test call_tmp[634035]))
+    if call_tmp[634040]
+    {
+      gotoReturn _end_doAppend[473658] _end_doAppend[473658]
+    }
+    {
+      const tmp[176700] "const" "temp"
+      unknown call_tmp[634047] "expr temp" "maybe param" "maybe type" "temp"
+      (634050 'move' call_tmp[634047](176487 call locale_id _mt[232] lhs[176438]))
+      unknown call_tmp[634052] "expr temp" "maybe param" "maybe type" "temp"
+      (634055 'move' call_tmp[634052](176492 call chpl_buildLocaleID call_tmp[634047] c_sublocid_any[90220]))
+      unknown call_tmp[634057] "expr temp" "maybe param" "maybe type" "temp"
+      (634060 'move' call_tmp[634057](176493 'chpl_on_locale_num' call_tmp[634052]))
+      (176701 'move' tmp[176700](176698 'deref' call_tmp[634057]))
+      {
+        unknown call_tmp[634064] "maybe param" "maybe type" "temp"
+        (634067 'move' call_tmp[634064](176495 call len _mt[232] rhs[176444]))
+        const rhsLen[176498] "const" "insert auto destroy"
+        (493163 'init var' rhsLen[176498] call_tmp[634064])
+        unknown call_tmp[634071] "expr temp" "maybe param" "maybe type" "temp"
+        (634074 'move' call_tmp[634071](176503 call len _mt[232] lhs[176438]))
+        unknown call_tmp[634076] "maybe param" "maybe type" "temp"
+        (634079 'move' call_tmp[634076](176507 call + call_tmp[634071] rhsLen[176498]))
+        const newLength[176509] "const" "insert auto destroy"
+        (493165 'init var' newLength[176509] call_tmp[634076])
+        unknown call_tmp[634083] "expr temp" "maybe param" "maybe type" "temp"
+        (634086 'move' call_tmp[634083](176513 call _size _mt[232] lhs[176438]))
+        unknown call_tmp[634088] "expr temp" "maybe param" "maybe type" "temp"
+        (634091 'move' call_tmp[634088](176517 call <= call_tmp[634083] newLength[176509]))
+        unknown call_tmp[634093] "expr temp" "maybe param" "maybe type" "temp"
+        (634096 'move' call_tmp[634093](176651 call _cond_test call_tmp[634088]))
+        if call_tmp[634093]
+        {
+          unknown call_tmp[634098] "expr temp" "maybe param" "maybe type" "temp"
+          (634101 'move' call_tmp[634098](176522 call + newLength[176509] 1))
+          unknown call_tmp[634105] "expr temp" "maybe param" "maybe type" "temp"
+          (634108 'move' call_tmp[634105](176526 call len _mt[232] lhs[176438]))
+          unknown call_tmp[634110] "expr temp" "maybe param" "maybe type" "temp"
+          (634113 'move' call_tmp[634110](176530 call * call_tmp[634105] chpl_stringGrowthFactor[172932]))
+          unknown call_tmp[634115] "expr temp" "maybe param" "maybe type" "temp"
+          (634118 'move' call_tmp[634115](176533 call _cast int(64)[13] call_tmp[634110]))
+          unknown call_tmp[634120] "maybe param" "maybe type" "temp"
+          (634123 'move' call_tmp[634120](176535 call max call_tmp[634098] call_tmp[634115]))
+          const requestedSize[176536] "const" "insert auto destroy"
+          (493167 'init var' requestedSize[176536] call_tmp[634120])
+          unknown call_tmp[634127] "expr temp" "maybe param" "maybe type" "temp"
+          (634130 'move' call_tmp[634127](176541 call isowned _mt[232] lhs[176438]))
+          unknown call_tmp[634132] "expr temp" "maybe param" "maybe type" "temp"
+          (634135 'move' call_tmp[634132](176647 call _cond_test call_tmp[634127]))
+          if call_tmp[634132]
+          {
+            unknown call_tmp[634139] "expr temp" "maybe param" "maybe type" "temp"
+            (634142 'move' call_tmp[634139](176551 call buff _mt[232] lhs[176438]))
+            unknown call_tmp[634144] "maybe param" "maybe type" "temp"
+            (634147 'move' call_tmp[634144](176556 call bufferRealloc call_tmp[634139] requestedSize[176536]))
+            unknown tmp[176557] "insert auto destroy" "no copy" "temp"
+            (493169 'init var' tmp[176557] call_tmp[634144])
+            (176564 call _check_tuple_var_decl tmp[176557] 2)
+            unknown call_tmp[634149] "maybe param" "maybe type" "temp"
+            (634152 'move' call_tmp[634149](176558 call tmp[176557] 1))
+            unknown newBuff[176544] "insert auto destroy"
+            (493171 'init var' newBuff[176544] call_tmp[634149])
+            unknown call_tmp[634154] "maybe param" "maybe type" "temp"
+            (634157 'move' call_tmp[634154](176561 call tmp[176557] 2))
+            unknown allocSize[176546] "insert auto destroy"
+            (493173 'init var' allocSize[176546] call_tmp[634154])
+            unknown call_tmp[634161] "expr temp" "maybe param" "maybe type" "temp"
+            (634164 'move' call_tmp[634161](176571 call buff _mt[232] lhs[176438]))
+            (176575 call = call_tmp[634161] newBuff[176544])
+            unknown call_tmp[634168] "expr temp" "maybe param" "maybe type" "temp"
+            (634171 'move' call_tmp[634168](176579 call _size _mt[232] lhs[176438]))
+            (176583 call = call_tmp[634168] allocSize[176546])
+          }
+          {
+            unknown call_tmp[634173] "maybe param" "maybe type" "temp"
+            (634176 'move' call_tmp[634173](176594 call bufferAlloc requestedSize[176536]))
+            unknown tmp[176595] "insert auto destroy" "no copy" "temp"
+            (493175 'init var' tmp[176595] call_tmp[634173])
+            (176602 call _check_tuple_var_decl tmp[176595] 2)
+            unknown call_tmp[634178] "maybe param" "maybe type" "temp"
+            (634181 'move' call_tmp[634178](176596 call tmp[176595] 1))
+            unknown newBuff[176586] "insert auto destroy"
+            (493177 'init var' newBuff[176586] call_tmp[634178])
+            unknown call_tmp[634183] "maybe param" "maybe type" "temp"
+            (634186 'move' call_tmp[634183](176599 call tmp[176595] 2))
+            unknown allocSize[176588] "insert auto destroy"
+            (493179 'init var' allocSize[176588] call_tmp[634183])
+            unknown call_tmp[634190] "expr temp" "maybe param" "maybe type" "temp"
+            (634193 'move' call_tmp[634190](176613 call buff _mt[232] lhs[176438]))
+            unknown call_tmp[634197] "expr temp" "maybe param" "maybe type" "temp"
+            (634200 'move' call_tmp[634197](176618 call len _mt[232] lhs[176438]))
+            (176621 call bufferMemcpyLocal(dst = newBuff[176586])(src = call_tmp[634190]) call_tmp[634197])
+            unknown call_tmp[634204] "expr temp" "maybe param" "maybe type" "temp"
+            (634207 'move' call_tmp[634204](176624 call buff _mt[232] lhs[176438]))
+            (176628 call = call_tmp[634204] newBuff[176586])
+            unknown call_tmp[634211] "expr temp" "maybe param" "maybe type" "temp"
+            (634214 'move' call_tmp[634211](176632 call _size _mt[232] lhs[176438]))
+            (176636 call = call_tmp[634211] allocSize[176588])
+            unknown call_tmp[634218] "expr temp" "maybe param" "maybe type" "temp"
+            (634221 'move' call_tmp[634218](176640 call isowned _mt[232] lhs[176438]))
+            (176644 call = call_tmp[634218] 1)
+          }
+        }
+        unknown call_tmp[634225] "expr temp" "maybe param" "maybe type" "temp"
+        (634228 'move' call_tmp[634225](176657 call buff _mt[232] lhs[176438]))
+        unknown call_tmp[634232] "expr temp" "maybe param" "maybe type" "temp"
+        (634235 'move' call_tmp[634232](176663 call locale_id _mt[232] rhs[176444]))
+        unknown call_tmp[634239] "expr temp" "maybe param" "maybe type" "temp"
+        (634242 'move' call_tmp[634239](176668 call buff _mt[232] rhs[176444]))
+        unknown call_tmp[634246] "expr temp" "maybe param" "maybe type" "temp"
+        (634249 'move' call_tmp[634246](176673 call len _mt[232] lhs[176438]))
+        (176677 call bufferMemcpy(dst = call_tmp[634225])(src_loc = call_tmp[634232]) call_tmp[634239] rhsLen[176498](dst_off = call_tmp[634246]))
+        unknown call_tmp[634253] "expr temp" "maybe param" "maybe type" "temp"
+        (634256 'move' call_tmp[634253](176680 call len _mt[232] lhs[176438]))
+        (176684 call = call_tmp[634253] newLength[176509])
+        unknown call_tmp[634260] "expr temp" "maybe param" "maybe type" "temp"
+        (634263 'move' call_tmp[634260](176693 call(176688 call (partial) buff _mt[232] lhs[176438]) newLength[176509]))
+        (176695 call = call_tmp[634260] 0)
+      }
+    }
+    label _end_doAppend[473658]
+    (473660 return _void[47])
+  }
+  function doAssign[176714](ref arg lhs[176711]:_any[170](?), arg rhs[176717] :
+  (437634 'typeof' lhs[176711])) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[634265] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634268 'move' call_tmp[634265](437636 'typeof' lhs[176711]))
+    (176739 call assertArgType call_tmp[634265] "doAssign")
+    function helpMe[176748](ref arg lhs[176745] :
+    (437638 'typeof' lhs[176711]), arg rhs[176751] :
+    (437640 'typeof' lhs[176711])) : _unknown[43] "inline" "no return value for void"
+    {
+      unknown tmp[404436] "maybe param" "temp"
+      (404447 'move' tmp[404436] 1)
+      unknown call_tmp[634270] "expr temp" "maybe param" "maybe type" "temp"
+      (634273 'move' call_tmp[634270](404449 call _cond_invalid tmp[404436]))
+      if call_tmp[634270]
+      {
+        (404452 call compilerError "cannot promote short-circuiting || operator")
+      }
+      unknown tmp[519939] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[519940] "maybe param" "temp"
+      unknown call_tmp[634275] "expr temp" "maybe param" "maybe type" "temp"
+      (634278 'move' call_tmp[634275](404437 call isTrue tmp[404436]))
+      (519945 'move' tmp[519940](519943 call _cond_test call_tmp[634275]))
+      if tmp[519940]
+      {
+        (519950 'move' tmp[519939](519947 '_paramFoldLogical' tmp[519940] 1))
+      }
+      {
+        unknown tmp[519952] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[634282] "expr temp" "maybe param" "maybe type" "temp"
+        (634285 'move' call_tmp[634282](176756 call locale_id _mt[232] rhs[176751]))
+        unknown call_tmp[634287] "expr temp" "maybe param" "maybe type" "temp"
+        (634290 'move' call_tmp[634287](176760 call == call_tmp[634282] chpl_nodeID[195933]))
+        (519954 'move' tmp[519952](404441 call isTrue call_tmp[634287]))
+        (519959 'move' tmp[519939](519956 '_paramFoldLogical' tmp[519940] tmp[519952]))
+      }
+      unknown call_tmp[634292] "expr temp" "maybe param" "maybe type" "temp"
+      (634295 'move' call_tmp[634292](176839 call _cond_test tmp[519939]))
+      if call_tmp[634292]
+      {
+        unknown call_tmp[634301] "expr temp" "maybe param" "maybe type" "temp"
+        (634304 'move' call_tmp[634301](176769 call buff _mt[232] rhs[176751]))
+        unknown call_tmp[634308] "expr temp" "maybe param" "maybe type" "temp"
+        (634311 'move' call_tmp[634308](176774 call len _mt[232] rhs[176751]))
+        unknown call_tmp[634315] "expr temp" "maybe param" "maybe type" "temp"
+        (634318 'move' call_tmp[634315](176778 call _size _mt[232] rhs[176751]))
+        (176783 call(176765 call (partial) reinitString _mt[232] lhs[176745]) call_tmp[634301] call_tmp[634308] call_tmp[634315](needToCopy = 1))
+      }
+      {
+        unknown call_tmp[634322] "maybe param" "maybe type" "temp"
+        (634325 'move' call_tmp[634322](176787 call len _mt[232] rhs[176751]))
+        const len[176790] "const" "insert auto destroy"
+        (493181 'init var' len[176790] call_tmp[634322])
+        unknown remote_buf[176796] "insert auto destroy"
+        (493183 'init var' remote_buf[176796] nil[38] bufferType[172923])
+        unknown call_tmp[634327] "expr temp" "maybe param" "maybe type" "temp"
+        (634330 'move' call_tmp[634327](176801 call != len[176790] 0))
+        unknown call_tmp[634332] "expr temp" "maybe param" "maybe type" "temp"
+        (634335 'move' call_tmp[634332](176819 call _cond_test call_tmp[634327]))
+        if call_tmp[634332]
+        {
+          unknown call_tmp[634339] "expr temp" "maybe param" "maybe type" "temp"
+          (634342 'move' call_tmp[634339](176806 call locale_id _mt[232] rhs[176751]))
+          unknown call_tmp[634346] "expr temp" "maybe param" "maybe type" "temp"
+          (634349 'move' call_tmp[634346](176811 call buff _mt[232] rhs[176751]))
+          unknown call_tmp[634351] "expr temp" "maybe param" "maybe type" "temp"
+          (634354 'move' call_tmp[634351](176815 call bufferCopyRemote call_tmp[634339] call_tmp[634346] len[176790]))
+          (176816 call = remote_buf[176796] call_tmp[634351])
+        }
+        unknown call_tmp[634358] "expr temp" "maybe param" "maybe type" "temp"
+        (634361 'move' call_tmp[634358](176833 call + len[176790] 1))
+        (176837 call(176825 call (partial) reinitString _mt[232] lhs[176745]) remote_buf[176796] len[176790] call_tmp[634358](needToCopy = 0))
+      }
+      (473664 return _void[47])
+    }
+    unknown tmp[404457] "maybe param" "temp"
+    (404468 'move' tmp[404457] 1)
+    unknown call_tmp[634363] "expr temp" "maybe param" "maybe type" "temp"
+    (634366 'move' call_tmp[634363](404470 call _cond_invalid tmp[404457]))
+    if call_tmp[634363]
+    {
+      (404473 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[519966] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519967] "maybe param" "temp"
+    unknown call_tmp[634368] "expr temp" "maybe param" "maybe type" "temp"
+    (634371 'move' call_tmp[634368](404458 call isTrue tmp[404457]))
+    (519972 'move' tmp[519967](519970 call _cond_test call_tmp[634368]))
+    if tmp[519967]
+    {
+      (519977 'move' tmp[519966](519974 '_paramFoldLogical' tmp[519967] 1))
+    }
+    {
+      unknown tmp[519979] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[634375] "expr temp" "maybe param" "maybe type" "temp"
+      (634378 'move' call_tmp[634375](176848 call locale_id _mt[232] lhs[176711]))
+      unknown call_tmp[634380] "expr temp" "maybe param" "maybe type" "temp"
+      (634383 'move' call_tmp[634380](176852 call == call_tmp[634375] chpl_nodeID[195933]))
+      (519981 'move' tmp[519979](404462 call isTrue call_tmp[634380]))
+      (519986 'move' tmp[519966](519983 '_paramFoldLogical' tmp[519967] tmp[519979]))
+    }
+    unknown call_tmp[634385] "expr temp" "maybe param" "maybe type" "temp"
+    (634388 'move' call_tmp[634385](176889 call _cond_test tmp[519966]))
+    if call_tmp[634385]
+    {
+      (176860 call helpMe lhs[176711] rhs[176717])
+    }
+    {
+      {
+        const tmp[176883] "const" "temp"
+        unknown call_tmp[634392] "expr temp" "maybe param" "maybe type" "temp"
+        (634395 'move' call_tmp[634392](176867 call locale_id _mt[232] lhs[176711]))
+        unknown call_tmp[634397] "expr temp" "maybe param" "maybe type" "temp"
+        (634400 'move' call_tmp[634397](176872 call chpl_buildLocaleID call_tmp[634392] c_sublocid_any[90220]))
+        unknown call_tmp[634402] "expr temp" "maybe param" "maybe type" "temp"
+        (634405 'move' call_tmp[634402](176873 'chpl_on_locale_num' call_tmp[634397]))
+        (176884 'move' tmp[176883](176881 'deref' call_tmp[634402]))
+        {
+          (176878 call helpMe lhs[176711] rhs[176717])
+        }
+      }
+    }
+    (473666 return _void[47])
+  }
+  function doAssign[176902](ref arg lhs[176899]:_any[170](?), arg rhs_c[176905]:c_string[19]) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[634407] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634410 'move' call_tmp[634407](437642 'typeof' lhs[176899]))
+    (176912 call assertArgType call_tmp[634407] "doAssign")
+    unknown tmp[404478] "maybe param" "temp"
+    (404489 'move' tmp[404478](176916 call ! 1))
+    unknown call_tmp[634412] "expr temp" "maybe param" "maybe type" "temp"
+    (634415 'move' call_tmp[634412](404491 call _cond_invalid tmp[404478]))
+    if call_tmp[634412]
+    {
+      (404494 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519993] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519994] "maybe param" "temp"
+    unknown call_tmp[634417] "expr temp" "maybe param" "maybe type" "temp"
+    (634420 'move' call_tmp[634417](404479 call isTrue tmp[404478]))
+    (519999 'move' tmp[519994](519997 call _cond_test call_tmp[634417]))
+    if tmp[519994]
+    {
+      unknown tmp[520001] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[634424] "expr temp" "maybe param" "maybe type" "temp"
+      (634427 'move' call_tmp[634424](176919 call locale_id _mt[232] lhs[176899]))
+      unknown call_tmp[634429] "expr temp" "maybe param" "maybe type" "temp"
+      (634432 'move' call_tmp[634429](176923 call != call_tmp[634424] chpl_nodeID[195933]))
+      (520003 'move' tmp[520001](404482 call isTrue call_tmp[634429]))
+      (520008 'move' tmp[519993](520005 '_paramFoldLogical' tmp[519994] tmp[520001]))
+    }
+    {
+      (520013 'move' tmp[519993](520010 '_paramFoldLogical' tmp[519994] 0))
+    }
+    unknown call_tmp[634434] "expr temp" "maybe param" "maybe type" "temp"
+    (634437 'move' call_tmp[634434](176947 call _cond_test tmp[519993]))
+    if call_tmp[634434]
+    {
+      (176945 call halt "Cannot assign a c_string to a remote string.")
+    }
+    unknown call_tmp[634441] "maybe param" "maybe type" "temp"
+    (634444 'move' call_tmp[634441](176953 call length _mt[232] rhs_c[176905]))
+    const len[176956] "const" "insert auto destroy"
+    (493185 'init var' len[176956] call_tmp[634441])
+    unknown call_tmp[634446] "maybe param" "maybe type" "temp"
+    (634449 'move' call_tmp[634446](176962 call _cast bufferType[172923] rhs_c[176905]))
+    const buff[176964] "const" "insert auto destroy"
+    (493187 'init var' buff[176964] call_tmp[634446] bufferType[172923])
+    unknown call_tmp[634453] "expr temp" "maybe param" "maybe type" "temp"
+    (634456 'move' call_tmp[634453](176976 call + len[176956] 1))
+    (176980 call(176968 call (partial) reinitString _mt[232] lhs[176899]) buff[176964] len[176956] call_tmp[634453](needToCopy = 1))
+    (473668 return _void[47])
+  }
+  function doMultiply[176991](const  ref arg x[176988]:_any[170](?), arg n[176994]:integral[188](?)) : _unknown[43]
+  {
+    unknown ret[473672] "RVV" "temp"
+    unknown call_tmp[634458] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634461 'move' call_tmp[634458](437644 'typeof' x[176988]))
+    (177016 call assertArgType call_tmp[634458] "doMultiply")
+    unknown call_tmp[634465] "maybe param" "maybe type" "temp"
+    (634468 'move' call_tmp[634465](177020 call numBytes _mt[232] x[176988]))
+    const sLen[177023] "const" "insert auto destroy"
+    (493189 'init var' sLen[177023] call_tmp[634465])
+    unknown call_tmp[634470] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634473 'move' call_tmp[634470](437646 'typeof' x[176988]))
+    unknown call_tmp[634475] "expr temp" "maybe param" "maybe type" "temp"
+    (634478 'move' call_tmp[634475](177029 call isBytesType call_tmp[634470]))
+    unknown call_tmp[634480] "expr temp" "maybe param" "maybe type" "temp"
+    (634483 'move' call_tmp[634480](177169 call _cond_test call_tmp[634475]))
+    if call_tmp[634480]
+    {
+      unknown call_tmp[634485] "expr temp" "maybe param" "maybe type" "temp"
+      (634488 'move' call_tmp[634485](177032 call <= n[176994] 0))
+      unknown call_tmp[634490] "expr temp" "maybe param" "maybe type" "temp"
+      (634493 'move' call_tmp[634490](177052 call _cond_test call_tmp[634485]))
+      if call_tmp[634490]
+      {
+        (473677 'move' ret[473672](473676 'deref' b""))
+        gotoReturn _end_doMultiply[473670] _end_doMultiply[473670]
+      }
+      unknown call_tmp[634495] "expr temp" "maybe param" "maybe type" "temp"
+      (634498 'move' call_tmp[634495](177060 call == sLen[177023] 0))
+      unknown call_tmp[634500] "expr temp" "maybe param" "maybe type" "temp"
+      (634503 'move' call_tmp[634500](177080 call _cond_test call_tmp[634495]))
+      if call_tmp[634500]
+      {
+        (473682 'move' ret[473672](473681 'deref' b""))
+        gotoReturn _end_doMultiply[473670] _end_doMultiply[473670]
+      }
+    }
+    {
+      unknown call_tmp[634505] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (634508 'move' call_tmp[634505](437648 'typeof' x[176988]))
+      unknown call_tmp[634510] "expr temp" "maybe param" "maybe type" "temp"
+      (634513 'move' call_tmp[634510](177088 call isStringType call_tmp[634505]))
+      unknown call_tmp[634515] "expr temp" "maybe param" "maybe type" "temp"
+      (634518 'move' call_tmp[634515](177165 call _cond_test call_tmp[634510]))
+      if call_tmp[634515]
+      {
+        unknown call_tmp[634520] "expr temp" "maybe param" "maybe type" "temp"
+        (634523 'move' call_tmp[634520](177091 call <= n[176994] 0))
+        unknown call_tmp[634525] "expr temp" "maybe param" "maybe type" "temp"
+        (634528 'move' call_tmp[634525](177111 call _cond_test call_tmp[634520]))
+        if call_tmp[634525]
+        {
+          (473687 'move' ret[473672](473686 'deref' ""))
+          gotoReturn _end_doMultiply[473670] _end_doMultiply[473670]
+        }
+        unknown call_tmp[634530] "expr temp" "maybe param" "maybe type" "temp"
+        (634533 'move' call_tmp[634530](177119 call == sLen[177023] 0))
+        unknown call_tmp[634535] "expr temp" "maybe param" "maybe type" "temp"
+        (634538 'move' call_tmp[634535](177139 call _cond_test call_tmp[634530]))
+        if call_tmp[634535]
+        {
+          (473692 'move' ret[473672](473691 'deref' ""))
+          gotoReturn _end_doMultiply[473670] _end_doMultiply[473670]
+        }
+      }
+      {
+        (177162 call compilerError "Unexpected type")
+      }
+    }
+    unknown ret[177175] "insert auto destroy"
+    unknown call_tmp[634540] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634543 'move' call_tmp[634540](437650 'typeof' x[176988]))
+    (493191 'default init var' ret[177175] call_tmp[634540])
+    unknown call_tmp[634547] "expr temp" "maybe param" "maybe type" "temp"
+    (634550 'move' call_tmp[634547](177179 call len _mt[232] ret[177175]))
+    unknown call_tmp[634552] "expr temp" "maybe param" "maybe type" "temp"
+    (634555 'move' call_tmp[634552](177184 call * sLen[177023] n[176994]))
+    (177186 call = call_tmp[634547] call_tmp[634552])
+    unknown call_tmp[634559] "expr temp" "maybe param" "maybe type" "temp"
+    (634562 'move' call_tmp[634559](177196 call len _mt[232] ret[177175]))
+    unknown call_tmp[634564] "expr temp" "maybe param" "maybe type" "temp"
+    (634567 'move' call_tmp[634564](177200 call + call_tmp[634559] 1))
+    unknown call_tmp[634569] "maybe param" "maybe type" "temp"
+    (634572 'move' call_tmp[634569](177203 call bufferAlloc call_tmp[634564]))
+    unknown tmp[177204] "insert auto destroy" "no copy" "temp"
+    (493193 'init var' tmp[177204] call_tmp[634569])
+    (177211 call _check_tuple_var_decl tmp[177204] 2)
+    unknown call_tmp[634574] "maybe param" "maybe type" "temp"
+    (634577 'move' call_tmp[634574](177205 call tmp[177204] 1))
+    unknown buff[177189] "insert auto destroy"
+    (493195 'init var' buff[177189] call_tmp[634574])
+    unknown call_tmp[634579] "maybe param" "maybe type" "temp"
+    (634582 'move' call_tmp[634579](177208 call tmp[177204] 2))
+    unknown allocSize[177191] "insert auto destroy"
+    (493197 'init var' allocSize[177191] call_tmp[634579])
+    unknown call_tmp[634586] "expr temp" "maybe param" "maybe type" "temp"
+    (634589 'move' call_tmp[634586](177217 call buff _mt[232] ret[177175]))
+    (177221 call = call_tmp[634586] buff[177189])
+    unknown call_tmp[634593] "expr temp" "maybe param" "maybe type" "temp"
+    (634596 'move' call_tmp[634593](177225 call _size _mt[232] ret[177175]))
+    (177229 call = call_tmp[634593] allocSize[177191])
+    unknown call_tmp[634600] "expr temp" "maybe param" "maybe type" "temp"
+    (634603 'move' call_tmp[634600](177233 call isowned _mt[232] ret[177175]))
+    (177237 call = call_tmp[634600] 1)
+    unknown call_tmp[634607] "expr temp" "maybe param" "maybe type" "temp"
+    (634610 'move' call_tmp[634607](177242 call buff _mt[232] ret[177175]))
+    unknown call_tmp[634614] "expr temp" "maybe param" "maybe type" "temp"
+    (634617 'move' call_tmp[634614](177248 call locale_id _mt[232] x[176988]))
+    unknown call_tmp[634621] "expr temp" "maybe param" "maybe type" "temp"
+    (634624 'move' call_tmp[634621](177253 call buff _mt[232] x[176988]))
+    unknown call_tmp[634628] "expr temp" "maybe param" "maybe type" "temp"
+    (634631 'move' call_tmp[634628](177258 call len _mt[232] x[176988]))
+    (177262 call bufferMemcpy(dst = call_tmp[634607])(src_loc = call_tmp[634614])(src = call_tmp[634621])(len = call_tmp[634628]))
+    unknown offset[177265] "insert auto destroy"
+    (493199 'init var' offset[177265] sLen[177023])
+    {
+      unknown _indexOfInterest[177303] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[177304] "expr temp" "temp"
+      unknown call_tmp[634633] "expr temp" "maybe param" "maybe type" "temp"
+      (634636 'move' call_tmp[634633](177318 call - n[176994] 1))
+      unknown call_tmp[634638] "expr temp" "maybe param" "maybe type" "temp"
+      (634641 'move' call_tmp[634638](177321 call chpl_direct_range_iter 1 call_tmp[634633] 1))
+      (177313 'move' _iterator[177304](177311 call _getIterator call_tmp[634638]))
+      Defer
+      {
+        {
+          (177337 call _freeIterator _iterator[177304])
+        }
+      }
+      { scopeless type
+        (177326 'move' _indexOfInterest[177303](177323 call iteratorIndex _iterator[177304]))
+      }
+      ForLoop
+      {
+        unknown i[177330] "index var" "insert auto destroy"
+        (177332 'move' i[177330] _indexOfInterest[177303])
+        {
+          unknown call_tmp[634645] "expr temp" "maybe param" "maybe type" "temp"
+          (634648 'move' call_tmp[634645](177278 call buff _mt[232] ret[177175]))
+          unknown call_tmp[634652] "expr temp" "maybe param" "maybe type" "temp"
+          (634655 'move' call_tmp[634652](177284 call buff _mt[232] ret[177175]))
+          unknown call_tmp[634659] "expr temp" "maybe param" "maybe type" "temp"
+          (634662 'move' call_tmp[634659](177289 call len _mt[232] x[176988]))
+          (177295 call bufferMemcpyLocal(dst = call_tmp[634645])(src = call_tmp[634652])(len = call_tmp[634659])(dst_off = offset[177265]))
+          (177300 call += offset[177265] sLen[177023])
+        }
+        label _continueLabel[177308]
+        _indexOfInterest[177303]
+        _iterator[177304]
+      }
+      label _breakLabel[177309]
+    }
+    unknown call_tmp[634668] "expr temp" "maybe param" "maybe type" "temp"
+    (634671 'move' call_tmp[634668](177349 call len _mt[232] ret[177175]))
+    unknown call_tmp[634673] "expr temp" "maybe param" "maybe type" "temp"
+    (634676 'move' call_tmp[634673](177353 call(177345 call (partial) buff _mt[232] ret[177175]) call_tmp[634668]))
+    (177355 call = call_tmp[634673] 0)
+    (473697 'move' ret[473672](473696 'deref' ret[177175]))
+    label _end_doMultiply[473670]
+    (473674 return ret[473672])
+  }
+  function doConcat[177370](arg s0[177367]:_any[170](?), arg s1[177373] :
+  (437652 'typeof' s0[177367])) : _unknown[43]
+  {
+    unknown ret[473701] "RVV" "temp"
+    unknown call_tmp[634680] "maybe param" "maybe type" "temp"
+    (634683 'move' call_tmp[634680](177378 call len _mt[232] s0[177367]))
+    const s0len[177381] "const" "insert auto destroy"
+    (493201 'init var' s0len[177381] call_tmp[634680])
+    unknown call_tmp[634685] "expr temp" "maybe param" "maybe type" "temp"
+    (634688 'move' call_tmp[634685](177387 call == s0len[177381] 0))
+    unknown call_tmp[634690] "expr temp" "maybe param" "maybe type" "temp"
+    (634693 'move' call_tmp[634690](177395 call _cond_test call_tmp[634685]))
+    if call_tmp[634690]
+    {
+      unknown call_tmp[634695] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (634698 'move' call_tmp[634695](437654 'typeof' s0[177367]))
+      unknown call_tmp[634700] "expr temp" "maybe param" "maybe type" "temp"
+      (634703 'move' call_tmp[634700](177391 call _cast call_tmp[634695] s1[177373]))
+      unknown call_tmp[634705] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (634708 'move' call_tmp[634705](473705 'typeof' s0[177367]))
+      (473708 'move' ret[473701](473707 'coerce' call_tmp[634700] call_tmp[634705]))
+      gotoReturn _end_doConcat[473699] _end_doConcat[473699]
+    }
+    unknown call_tmp[634712] "maybe param" "maybe type" "temp"
+    (634715 'move' call_tmp[634712](177401 call len _mt[232] s1[177373]))
+    const s1len[177404] "const" "insert auto destroy"
+    (493203 'init var' s1len[177404] call_tmp[634712])
+    unknown call_tmp[634717] "expr temp" "maybe param" "maybe type" "temp"
+    (634720 'move' call_tmp[634717](177409 call == s1len[177404] 0))
+    unknown call_tmp[634722] "expr temp" "maybe param" "maybe type" "temp"
+    (634725 'move' call_tmp[634722](177414 call _cond_test call_tmp[634717]))
+    if call_tmp[634722]
+    {
+      unknown call_tmp[634727] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (634730 'move' call_tmp[634727](473712 'typeof' s0[177367]))
+      (473715 'move' ret[473701](473714 'coerce' s0[177367] call_tmp[634727]))
+      gotoReturn _end_doConcat[473699] _end_doConcat[473699]
+    }
+    unknown ret[177420] "insert auto destroy"
+    unknown call_tmp[634732] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634735 'move' call_tmp[634732](437656 'typeof' s0[177367]))
+    (493205 'default init var' ret[177420] call_tmp[634732])
+    unknown call_tmp[634739] "expr temp" "maybe param" "maybe type" "temp"
+    (634742 'move' call_tmp[634739](177424 call len _mt[232] ret[177420]))
+    unknown call_tmp[634744] "expr temp" "maybe param" "maybe type" "temp"
+    (634747 'move' call_tmp[634744](177429 call + s0len[177381] s1len[177404]))
+    (177431 call = call_tmp[634739] call_tmp[634744])
+    unknown call_tmp[634751] "expr temp" "maybe param" "maybe type" "temp"
+    (634754 'move' call_tmp[634751](177441 call len _mt[232] ret[177420]))
+    unknown call_tmp[634756] "expr temp" "maybe param" "maybe type" "temp"
+    (634759 'move' call_tmp[634756](177445 call + call_tmp[634751] 1))
+    unknown call_tmp[634761] "maybe param" "maybe type" "temp"
+    (634764 'move' call_tmp[634761](177448 call bufferAlloc call_tmp[634756]))
+    unknown tmp[177449] "insert auto destroy" "no copy" "temp"
+    (493207 'init var' tmp[177449] call_tmp[634761])
+    (177456 call _check_tuple_var_decl tmp[177449] 2)
+    unknown call_tmp[634766] "maybe param" "maybe type" "temp"
+    (634769 'move' call_tmp[634766](177450 call tmp[177449] 1))
+    unknown buff[177434] "insert auto destroy"
+    (493209 'init var' buff[177434] call_tmp[634766])
+    unknown call_tmp[634771] "maybe param" "maybe type" "temp"
+    (634774 'move' call_tmp[634771](177453 call tmp[177449] 2))
+    unknown allocSize[177436] "insert auto destroy"
+    (493211 'init var' allocSize[177436] call_tmp[634771])
+    unknown call_tmp[634778] "expr temp" "maybe param" "maybe type" "temp"
+    (634781 'move' call_tmp[634778](177462 call buff _mt[232] ret[177420]))
+    (177466 call = call_tmp[634778] buff[177434])
+    unknown call_tmp[634785] "expr temp" "maybe param" "maybe type" "temp"
+    (634788 'move' call_tmp[634785](177470 call _size _mt[232] ret[177420]))
+    (177474 call = call_tmp[634785] allocSize[177436])
+    unknown call_tmp[634792] "expr temp" "maybe param" "maybe type" "temp"
+    (634795 'move' call_tmp[634792](177478 call isowned _mt[232] ret[177420]))
+    (177482 call = call_tmp[634792] 1)
+    unknown call_tmp[634799] "expr temp" "maybe param" "maybe type" "temp"
+    (634802 'move' call_tmp[634799](177487 call buff _mt[232] ret[177420]))
+    unknown call_tmp[634806] "expr temp" "maybe param" "maybe type" "temp"
+    (634809 'move' call_tmp[634806](177493 call locale_id _mt[232] s0[177367]))
+    unknown call_tmp[634813] "expr temp" "maybe param" "maybe type" "temp"
+    (634816 'move' call_tmp[634813](177498 call buff _mt[232] s0[177367]))
+    (177504 call bufferMemcpy(dst = call_tmp[634799])(src_loc = call_tmp[634806])(src = call_tmp[634813])(len = s0len[177381]))
+    unknown call_tmp[634820] "expr temp" "maybe param" "maybe type" "temp"
+    (634823 'move' call_tmp[634820](177508 call buff _mt[232] ret[177420]))
+    unknown call_tmp[634827] "expr temp" "maybe param" "maybe type" "temp"
+    (634830 'move' call_tmp[634827](177514 call locale_id _mt[232] s1[177373]))
+    unknown call_tmp[634834] "expr temp" "maybe param" "maybe type" "temp"
+    (634837 'move' call_tmp[634834](177519 call buff _mt[232] s1[177373]))
+    (177527 call bufferMemcpy(dst = call_tmp[634820])(src_loc = call_tmp[634827])(src = call_tmp[634834])(len = s1len[177404])(dst_off = s0len[177381]))
+    unknown call_tmp[634843] "expr temp" "maybe param" "maybe type" "temp"
+    (634846 'move' call_tmp[634843](177534 call len _mt[232] ret[177420]))
+    unknown call_tmp[634848] "expr temp" "maybe param" "maybe type" "temp"
+    (634851 'move' call_tmp[634848](177538 call(177530 call (partial) buff _mt[232] ret[177420]) call_tmp[634843]))
+    (177540 call = call_tmp[634848] 0)
+    unknown call_tmp[634853] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634856 'move' call_tmp[634853](473719 'typeof' s0[177367]))
+    (473722 'move' ret[473701](473721 'coerce' ret[177420] call_tmp[634853]))
+    label _end_doConcat[473699]
+    (473703 return ret[473701])
+  }
+  { scopeless type
+    (437658 'typeof' s0[177367])
+  }
+  function doEq[177556](arg a[177553]:_any[170](?), arg b[177560]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[473726] "RVV" "temp"
+    unknown call_tmp[634858] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634861 'move' call_tmp[634858](437660 'typeof' a[177553]))
+    (177582 call assertArgType call_tmp[634858] "doEq")
+    unknown call_tmp[634863] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (634866 'move' call_tmp[634863](437662 'typeof' b[177560]))
+    (177589 call assertArgType call_tmp[634863] "doEq")
+    unknown call_tmp[634870] "expr temp" "maybe param" "maybe type" "temp"
+    (634873 'move' call_tmp[634870](177593 call buff _mt[232] a[177553]))
+    unknown call_tmp[634877] "expr temp" "maybe param" "maybe type" "temp"
+    (634880 'move' call_tmp[634877](177598 call len _mt[232] a[177553]))
+    unknown call_tmp[634884] "expr temp" "maybe param" "maybe type" "temp"
+    (634887 'move' call_tmp[634884](177602 call locale_id _mt[232] a[177553]))
+    unknown call_tmp[634891] "expr temp" "maybe param" "maybe type" "temp"
+    (634894 'move' call_tmp[634891](177606 call buff _mt[232] b[177560]))
+    unknown call_tmp[634898] "expr temp" "maybe param" "maybe type" "temp"
+    (634901 'move' call_tmp[634898](177610 call len _mt[232] b[177560]))
+    unknown call_tmp[634905] "expr temp" "maybe param" "maybe type" "temp"
+    (634908 'move' call_tmp[634905](177614 call locale_id _mt[232] b[177560]))
+    unknown call_tmp[634910] "expr temp" "maybe param" "maybe type" "temp"
+    (634913 'move' call_tmp[634910](177617 call _strcmp call_tmp[634870] call_tmp[634877] call_tmp[634884] call_tmp[634891] call_tmp[634898] call_tmp[634905]))
+    unknown call_tmp[634915] "expr temp" "maybe param" "maybe type" "temp"
+    (634918 'move' call_tmp[634915](177619 call == call_tmp[634910] 0))
+    (473731 'move' ret[473726](473730 'deref' call_tmp[634915]))
+    (473728 return ret[473726])
+  }
+  (329458 'used modules list'(173833 'use' Bytes[21121])(173838 'use' ByteBufferHelpers[172903]))
+}

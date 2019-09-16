@@ -1,0 +1,656 @@
+AST dump for ChapelError after pass parse.
+Module use list: 
+
+{
+  (166466 'use' ChapelStandard)
+  (166471 'use' ChapelLocks)
+  type Error[166551] unknown _next[166478] "no doc" nil[38](166476 'to unmanaged class from unknown'(166475 'to nilable class from type' Error)) unknown thrownLine[166482] "no doc" int[13] unknown thrownFileId[166489] "no doc"(166488 call int[13] 32) function Error[166551].init[166494](arg _mt[166555]:_MT[227], arg this[166553]:Error[166551]) : _unknown[43] "method" "primary method"
+  {
+    (166498 call = _next nil[38])
+  } function Error[166551].message[166506](arg _mt[166559]:_MT[227], arg this[166557]:Error[166551]) : _unknown[43] "method" "primary method"
+  {
+    (166524 return "")
+  } function Error[166551].writeThis[166533](arg _mt[166563]:_MT[227], arg this[166561]:Error[166551], arg f[166531]:_any[170](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    unknown description[166539](166538 call chpl_describe_error this)
+    (166545 call <~> f description)
+  }
+  type NilThrownError[166595] function NilThrownError[166595].message[166571](arg _mt[166599]:_MT[227], arg this[166597]:NilThrownError[166595]) : _unknown[43] "method" "primary method" "no doc" "method overrides"
+  {
+    (166589 return "thrown error was nil")
+  } Error
+  type NilClassError[166631] function NilClassError[166631].message[166607](arg _mt[166635]:_MT[227], arg this[166633]:NilClassError[166631]) : _unknown[43] "method" "primary method" "no doc" "method overrides"
+  {
+    (166625 return "cannot convert nil class to non nilable type")
+  } Error
+  type ClassCastError[166667] function ClassCastError[166667].message[166643](arg _mt[166671]:_MT[227], arg this[166669]:ClassCastError[166667]) : _unknown[43] "method" "primary method" "no doc" "method overrides"
+  {
+    (166661 return "cannot cast class to type - runtime types not compatible")
+  } Error
+  type IllegalArgumentError[166811] unknown formal[166678] string[24] unknown info[166682] string[24] function IllegalArgumentError[166811].init[166687](arg _mt[166815]:_MT[227], arg this[166813]:IllegalArgumentError[166811]) : _unknown[43] "method" "primary method"
+  {
+  } function IllegalArgumentError[166811].init[166698](arg _mt[166819]:_MT[227], arg this[166817]:IllegalArgumentError[166811], arg info[166695] :
+  string[24]) : _unknown[43] "method" "primary method"
+  {
+    (166707 call =(166703 call . this c"info") info)
+  } function IllegalArgumentError[166811].init[166719](arg _mt[166823]:_MT[227], arg this[166821]:IllegalArgumentError[166811], arg formal[166716] :
+  string[24], arg info[166722] :
+  string[24]) : _unknown[43] "method" "primary method"
+  {
+    (166732 call =(166728 call . this c"formal") formal)
+    (166741 call =(166737 call . this c"info") info)
+  } function IllegalArgumentError[166811].message[166748](arg _mt[166827]:_MT[227], arg this[166825]:IllegalArgumentError[166811]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    if(166801 call _cond_test(166755 call(166751 call . formal c"isEmpty")))
+    {
+      { scopeless
+        (166757 return info)
+      }
+    }
+    {
+      { scopeless
+        (166799 return(166797 call +(166794 call +(166776 call + "illegal argument '" formal) "': ") info))
+      }
+    }
+  } Error
+  type chpl_TaskErrors[166911] unknown _head[166835] nil[38](166833 'to unmanaged class from unknown'(166832 'to nilable class from type' Error)) unknown _errorsLock[166839] chpl_LocalSpinlock function chpl_TaskErrors[166911].append[166849](arg _mt[166915]:_MT[227], arg this[166913]:chpl_TaskErrors[166911], arg err[166846] :
+  (166845 'to unmanaged class from unknown' Error)) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[166889] "const" "temp"
+      (166890 'move' tmp[166889](166887 'deref'(166886 '_wide_get_locale' this)))
+      {
+        (166857 call(166853 call . _errorsLock c"lock"))
+        unknown tmp[166861] _head
+        (166871 call =(166867 call . err c"_next") tmp)
+        (166876 call = _head err)
+        (166884 call(166880 call . _errorsLock c"unlock"))
+      }
+    }
+  } function chpl_TaskErrors[166911].empty[166899](arg _mt[166919]:_MT[227], arg this[166917]:chpl_TaskErrors[166911]) : _unknown[43] "method" "primary method"
+  {
+    (166905 return(166903 call == _head nil[38]))
+  }
+  type TaskErrors[168189] unknown nErrors[166926] "no doc" int[13] unknown errorsArray[166935] "no doc"(166934 call c_ptr(166931 call _owned Error)) function TaskErrors[168189].init[166944](arg _mt[168193]:_MT[227], arg this[168191]:TaskErrors[168189], ref arg group[166941] :
+  chpl_TaskErrors) : _unknown[43] "method" "primary method" "no doc"
+  {
+    unknown head[166955](166952 call . group c"_head")(166948 'to unmanaged class from unknown'(166947 'to nilable class from type' Error))
+    (166964 call =(166960 call . group c"_head") nil[38])
+    (166972 call(166968 call . this c"complete"))
+    unknown cur[166977](166976 'to unmanaged class from unknown'(166975 'to nilable class from type' Error))
+    unknown n[166981] 0
+    (166986 call = cur head)
+    {
+      unknown tmp[167088] "temp"
+      (167112 'move' tmp[167088](167107 call _cond_test(167109 call != cur nil[38])))
+      WhileDo
+      {
+        {
+          unknown curnext[166999](166996 call .(166994 call postfix! cur) c"_next")
+          unknown asTaskErr[167012](167010 call _cast(167009 'to unmanaged class from unknown'(167008 'to nilable class from type' TaskErrors)) cur)(167005 'to unmanaged class from unknown'(167004 'to nilable class from type' TaskErrors))
+          if(167079 call _cond_test(167017 call == asTaskErr nil[38]))
+          {
+            (167021 call += n 1)
+          }
+          {
+            {
+              unknown _indexOfInterest[167044] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[167045] "expr temp" "temp"
+              (167054 'move' _iterator[167045](167052 call _getIterator(167027 call postfix! asTaskErr)))
+              Defer
+              {
+                {
+                  (167071 call _freeIterator _iterator[167045])
+                }
+              }
+              { scopeless type
+                (167060 'move' _indexOfInterest[167044](167057 call iteratorIndex _iterator[167045]))
+              }
+              ForLoop
+              {
+                unknown e[167064] "index var" "insert auto destroy"
+                (167066 'move' e[167064] _indexOfInterest[167044])
+                {
+                  if(167038 call _cond_test(167031 call != e nil[38]))
+                  {
+                    { scopeless
+                      (167035 call += n 1)
+                    }
+                  }
+                }
+                label _continueLabel[167049]
+                _indexOfInterest[167044]
+                _iterator[167045]
+              }
+              label _breakLabel[167050]
+            }
+          }
+          (167085 call = cur curnext)
+        }
+        label _continueLabel[167091]
+        (167102 'move' tmp[167088](167097 call _cond_test(167099 call != cur nil[38])))
+        tmp[167088]
+      }
+      label _breakLabel[167092]
+    }
+    (167117 call = nErrors n)
+    (167128 call = errorsArray(167127 call c_calloc(167123 call _owned Error) n))
+    unknown idx[167132] 0
+    (167137 call = cur head)
+    {
+      unknown tmp[167275] "temp"
+      (167299 'move' tmp[167275](167294 call _cond_test(167296 call != cur nil[38])))
+      WhileDo
+      {
+        {
+          unknown curnext[167150](167147 call .(167145 call postfix! cur) c"_next")
+          (167161 call =(167157 call .(167155 call postfix! cur) c"_next") nil[38])
+          unknown asTaskErr[167173](167171 call _cast(167170 'to unmanaged class from unknown'(167169 'to nilable class from type' TaskErrors)) cur)(167166 'to unmanaged class from unknown'(167165 'to nilable class from type' TaskErrors))
+          if(167266 call _cond_test(167178 call == asTaskErr nil[38]))
+          {
+            (167191 call(167184 call .(167183 call errorsArray idx) c"retain")(167188 call postfix! cur))
+            (167196 call += idx 1)
+          }
+          {
+            {
+              unknown _indexOfInterest[167226] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[167227] "expr temp" "temp"
+              (167236 'move' _iterator[167227](167234 call _getIterator(167201 call postfix! asTaskErr)))
+              Defer
+              {
+                {
+                  (167253 call _freeIterator _iterator[167227])
+                }
+              }
+              { scopeless type
+                (167242 'move' _indexOfInterest[167226](167239 call iteratorIndex _iterator[167227]))
+              }
+              ForLoop
+              {
+                unknown e[167246] "index var" "insert auto destroy"
+                (167248 'move' e[167246] _indexOfInterest[167226])
+                {
+                  if(167221 call _cond_test(167205 call != e nil[38]))
+                  {
+                    (167212 call =(167210 call errorsArray idx) e)
+                    (167218 call += idx 1)
+                  }
+                }
+                label _continueLabel[167231]
+                _indexOfInterest[167226]
+                _iterator[167227]
+              }
+              label _breakLabel[167232]
+            }
+            (167263 call chpl__delete asTaskErr)
+          }
+          (167272 call = cur curnext)
+        }
+        label _continueLabel[167278]
+        (167289 'move' tmp[167275](167284 call _cond_test(167286 call != cur nil[38])))
+        tmp[167275]
+      }
+      label _breakLabel[167279]
+    }
+  } function TaskErrors[168189].init[167311](arg _mt[168197]:_MT[227], arg this[168195]:TaskErrors[168189], arg err[167308] :
+  (167307 'to unmanaged class from unknown' Error)) : _unknown[43] "method" "primary method"
+  {
+    (167315 call = nErrors 1)
+    (167327 call = errorsArray(167326 call c_calloc(167322 call _owned Error) 1))
+    (167335 call(167331 call . this c"complete"))
+    (167342 call =(167338 call . err c"_next") nil[38])
+    (167354 call(167349 call .(167348 call errorsArray 0) c"retain") err)
+  } function TaskErrors[168189].init[167360](arg _mt[168201]:_MT[227], arg this[168199]:TaskErrors[168189]) : _unknown[43] "method" "primary method"
+  {
+    (167364 call = nErrors 0)
+    (167370 call = errorsArray nil[38])
+  } function TaskErrors[168189].deinit[167377](arg _mt[168205]:_MT[227], arg this[168203]:TaskErrors[168189]) : _unknown[43] "destructor" "method" "primary method"
+  {
+    if(167444 call _cond_test errorsArray)
+    {
+      {
+        unknown _indexOfInterest[167398] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[167399] "expr temp" "temp"
+        (167408 'move' _iterator[167399](167406 call _getIterator(167415 call chpl_direct_counted_range_iter 0 nErrors)))
+        Defer
+        {
+          {
+            (167431 call _freeIterator _iterator[167399])
+          }
+        }
+        { scopeless type
+          (167420 'move' _indexOfInterest[167398](167417 call iteratorIndex _iterator[167399]))
+        }
+        ForLoop
+        {
+          unknown i[167424] "index var" "insert auto destroy"
+          (167426 'move' i[167424] _indexOfInterest[167398])
+          {
+            (167395 call(167391 call .(167390 call errorsArray i) c"clear"))
+          }
+          label _continueLabel[167403]
+          _indexOfInterest[167398]
+          _iterator[167399]
+        }
+        label _breakLabel[167404]
+      }
+      (167442 call c_free errorsArray)
+    }
+  } function TaskErrors[168189].these[167453](arg _mt[168209]:_MT[227], arg this[168207]:TaskErrors[168189]) ref : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[167471] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[167472] "expr temp" "temp"
+      (167481 'move' _iterator[167472](167479 call _getIterator(167488 call chpl_direct_counted_range_iter 0 nErrors)))
+      Defer
+      {
+        {
+          (167504 call _freeIterator _iterator[167472])
+        }
+      }
+      { scopeless type
+        (167493 'move' _indexOfInterest[167471](167490 call iteratorIndex _iterator[167472]))
+      }
+      ForLoop
+      {
+        unknown i[167497] "index var" "insert auto destroy"
+        (167499 'move' i[167497] _indexOfInterest[167471])
+        { scopeless
+          (167469 yield(167468 call errorsArray i))
+        }
+        label _continueLabel[167476]
+        _indexOfInterest[167471]
+        _iterator[167472]
+      }
+      label _breakLabel[167477]
+    }
+  }
+  { scopeless type
+    (167456 call _owned Error)
+  } function TaskErrors[168189].first[167517](arg _mt[168213]:_MT[227], arg this[168211]:TaskErrors[168189]) ref : _unknown[43] "method" "primary method"
+  {
+    unknown first[167523] 0
+    {
+      unknown _indexOfInterest[167555] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[167556] "expr temp" "temp"
+      (167565 'move' _iterator[167556](167563 call _getIterator(167572 call chpl_direct_counted_range_iter 0 nErrors)))
+      Defer
+      {
+        {
+          (167588 call _freeIterator _iterator[167556])
+        }
+      }
+      { scopeless type
+        (167577 'move' _indexOfInterest[167555](167574 call iteratorIndex _iterator[167556]))
+      }
+      ForLoop
+      {
+        unknown i[167581] "index var" "insert auto destroy"
+        (167583 'move' i[167581] _indexOfInterest[167555])
+        {
+          if(167550 call _cond_test(167539 call !=(167537 call errorsArray i) nil[38]))
+          {
+            (167543 call = first i)
+            break nil[38]
+          }
+        }
+        label _continueLabel[167560]
+        _indexOfInterest[167555]
+        _iterator[167556]
+      }
+      label _breakLabel[167561]
+    }
+    (167599 return(167598 call errorsArray first))
+  }
+  { scopeless type
+    (167520 call _owned Error)
+  } function TaskErrors[168189].message[167606](arg _mt[168217]:_MT[227], arg this[168215]:TaskErrors[168189]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    unknown n[167610] 0
+    unknown minMsg[167615] string[24]
+    unknown maxMsg[167619] string[24]
+    unknown first[167625](167624 'to borrowed class from unknown'(167623 'to nilable class from type' Error))
+    unknown last[167631](167630 'to borrowed class from unknown'(167629 'to nilable class from type' Error))
+    {
+      unknown _indexOfInterest[167736] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[167737] "expr temp" "temp"
+      (167746 'move' _iterator[167737](167744 call _getIterator(167637 call these)))
+      Defer
+      {
+        {
+          (167763 call _freeIterator _iterator[167737])
+        }
+      }
+      { scopeless type
+        (167752 'move' _indexOfInterest[167736](167749 call iteratorIndex _iterator[167737]))
+      }
+      ForLoop
+      {
+        unknown e[167756] "index var" "insert auto destroy"
+        (167758 'move' e[167756] _indexOfInterest[167736])
+        {
+          if(167680 call _cond_test(167668 call ||(167655 call == minMsg "")(167666 call <(167664 call(167660 call . e c"message")) minMsg)))
+          {
+            { scopeless
+              (167677 call = minMsg(167676 call(167672 call . e c"message")))
+            }
+          }
+          if(167726 call _cond_test(167714 call ||(167703 call == maxMsg "")(167712 call >(167710 call(167706 call . e c"message")) maxMsg)))
+          {
+            { scopeless
+              (167723 call = maxMsg(167722 call(167718 call . e c"message")))
+            }
+          }
+          (167733 call += n 1)
+        }
+        label _continueLabel[167741]
+        _indexOfInterest[167736]
+        _iterator[167737]
+      }
+      label _breakLabel[167742]
+    }
+    {
+      {
+        unknown _indexOfInterest[167808] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[167809] "expr temp" "temp"
+        (167818 'move' _iterator[167809](167816 call _getIterator(167773 call these)))
+        Defer
+        {
+          {
+            (167835 call _freeIterator _iterator[167809])
+          }
+        }
+        { scopeless type
+          (167824 'move' _indexOfInterest[167808](167821 call iteratorIndex _iterator[167809]))
+        }
+        ForLoop
+        {
+          unknown e[167828] "index var" "insert auto destroy"
+          (167830 'move' e[167828] _indexOfInterest[167808])
+          {
+            if(167803 call _cond_test(167781 call ==(167779 call(167775 call . e c"message")) minMsg))
+            {
+              if(167792 call _cond_test(167785 call == first nil[38]))
+              {
+                { scopeless
+                  (167789 call = first e)
+                }
+              }
+              (167800 call = last e)
+            }
+          }
+          label _continueLabel[167813]
+          _indexOfInterest[167808]
+          _iterator[167809]
+        }
+        label _breakLabel[167814]
+      }
+      if(167906 call _cond_test(167845 call != minMsg maxMsg))
+      {
+        {
+          unknown _indexOfInterest[167871] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[167872] "expr temp" "temp"
+          (167881 'move' _iterator[167872](167879 call _getIterator(167850 call these)))
+          Defer
+          {
+            {
+              (167898 call _freeIterator _iterator[167872])
+            }
+          }
+          { scopeless type
+            (167887 'move' _indexOfInterest[167871](167884 call iteratorIndex _iterator[167872]))
+          }
+          ForLoop
+          {
+            unknown e[167891] "index var" "insert auto destroy"
+            (167893 'move' e[167891] _indexOfInterest[167871])
+            {
+              if(167866 call _cond_test(167858 call ==(167856 call(167852 call . e c"message")) maxMsg))
+              {
+                (167862 call = last e)
+              }
+            }
+            label _continueLabel[167876]
+            _indexOfInterest[167871]
+            _iterator[167872]
+          }
+          label _breakLabel[167877]
+        }
+      }
+    }
+    unknown ret[167932](167930 call +(167912 call _cast string[24] n) " errors: ")
+    if(168006 call _cond_test(167949 call &&(167943 call &&(167937 call != first nil[38])(167941 call != last nil[38]))(167947 call != first last)))
+    {
+      { scopeless
+        (167984 call += ret(167982 call +(167974 call +(167957 call chpl_describe_error(167954 call postfix! first)) " ... ")(167981 call chpl_describe_error(167978 call postfix! last))))
+      }
+    }
+    {
+      { scopeless
+        if(168001 call _cond_test(167989 call != first nil[38]))
+        {
+          { scopeless
+            (167998 call += ret(167997 call chpl_describe_error(167994 call postfix! first)))
+          }
+        }
+      }
+    }
+    (168013 return ret)
+  }
+  { scopeless type
+    string[24]
+  } function TaskErrors[168189].filter[168022](arg _mt[168221]:_MT[227], arg this[168219]:TaskErrors[168189], arg t[168020]:_any[170](?)) : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[168066] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[168067] "expr temp" "temp"
+      (168076 'move' _iterator[168067](168074 call _getIterator(168036 call these)))
+      Defer
+      {
+        {
+          (168093 call _freeIterator _iterator[168067])
+        }
+      }
+      { scopeless type
+        (168082 'move' _indexOfInterest[168066](168079 call iteratorIndex _iterator[168067]))
+      }
+      ForLoop
+      {
+        unknown e[168086] "index var" "insert auto destroy"
+        (168088 'move' e[168086] _indexOfInterest[168066])
+        {
+          unknown tmp[168050](168048 call _cast(168047 call _to_nilable(168045 call _to_unmanaged t))(168040 call _to_unmanaged e))
+          if(168061 call _cond_test tmp)
+          {
+            { scopeless
+              (168059 yield(168058 call _to_nonnil tmp))
+            }
+          }
+        }
+        label _continueLabel[168071]
+        _indexOfInterest[168066]
+        _iterator[168067]
+      }
+      label _breakLabel[168072]
+    }
+  }
+  where {
+    (168032 call isSubtype(168028 call _to_borrowed t)(168031 'to borrowed class from unknown' Error))
+  } function TaskErrors[168189].filter[168108](arg _mt[168225]:_MT[227], arg this[168223]:TaskErrors[168189], arg t[168106]:_any[170](?)) : _unknown[43] "iterator fn" "method" "primary method" "no doc"
+  {
+    (168128 call compilerError "Filtered iterator only supports subclasses of Error")
+  } function TaskErrors[168189].contains[168137](arg _mt[168229]:_MT[227], arg this[168227]:TaskErrors[168189], arg t[168135]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[168148] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[168149] "expr temp" "temp"
+      (168158 'move' _iterator[168149](168156 call _getIterator(168143 call filter t)))
+      Defer
+      {
+        {
+          (168175 call _freeIterator _iterator[168149])
+        }
+      }
+      { scopeless type
+        (168164 'move' _indexOfInterest[168148](168161 call iteratorIndex _iterator[168149]))
+      }
+      ForLoop
+      {
+        unknown e[168168] "index var" "insert auto destroy"
+        (168170 'move' e[168168] _indexOfInterest[168148])
+        {
+          (168145 return 1)
+        }
+        label _continueLabel[168153]
+        _indexOfInterest[168148]
+        _iterator[168149]
+      }
+      label _breakLabel[168154]
+    }
+    (168184 return 0)
+  } Error
+  function chpl_error_type_name[168239](arg err[168236] :
+  (168235 'to borrowed class from unknown' Error)) : _unknown[43] "no doc"
+  {
+    unknown cid[168261](168260 'getcid' err)
+    unknown nameC[168285](168284 'class name by id' cid) c_string
+    unknown nameS[168292](168290 call _cast string[24] nameC)
+    (168296 return nameS)
+  }
+  { scopeless type
+    string[24]
+  }
+  function chpl_describe_error[168308](arg err[168305] :
+  (168304 'to borrowed class from unknown' Error)) : _unknown[43] "no doc"
+  {
+    unknown nameS[168315](168314 call chpl_error_type_name err)
+    unknown ret[168331](168329 call +(168321 call + nameS ": ")(168328 call(168324 call . err c"message")))
+    (168335 return ret)
+  }
+  { scopeless type
+    string[24]
+  }
+  function chpl_do_fix_thrown_error[168348](arg err[168345] :
+  (168344 'to unmanaged class from unknown'(168343 'to nilable class from type' Error))) : _unknown[43] "always propagate line file info" "insert line file info" "no doc"
+  {
+    unknown fixErr[168356] err(168354 'to unmanaged class from unknown'(168353 'to nilable class from type' Error))
+    if(168373 call _cond_test(168362 call == fixErr nil[38]))
+    {
+      { scopeless
+        (168370 call = fixErr(168369 'new'(168368 'to unmanaged class from unknown'(168367 call NilThrownError))))
+      }
+    }
+    const line[168396] "const"(168395 '_get_user_line')
+    const fileId[168417] "const"(168416 '_get_user_file')
+    (168429 call =(168425 call .(168421 call postfix! fixErr) c"thrownLine") line)
+    (168441 call =(168437 call .(168433 call postfix! fixErr) c"thrownFileId") fileId)
+    (168448 return(168447 call _to_nonnil fixErr))
+  }
+  { scopeless type
+    (168351 'to unmanaged class from unknown' Error)
+  }
+  function chpl_fix_thrown_error[168462](in arg err[168459] :
+  (168457 call _owned(168456 'to nilable class from type' Error))) : _unknown[43] "always propagate line file info" "insert line file info" "no doc"
+  {
+    (168475 return(168474 call chpl_do_fix_thrown_error(168472 call(168468 call . err c"release"))))
+  }
+  { scopeless type
+    (168465 'to unmanaged class from unknown' Error)
+  }
+  function chpl_fix_thrown_error[168489](in arg err[168486] :
+  (168484 call _owned Error)) : _unknown[43] "always propagate line file info" "insert line file info" "no doc"
+  {
+    (168502 return(168501 call chpl_do_fix_thrown_error(168499 call(168495 call . err c"release"))))
+  }
+  { scopeless type
+    (168492 'to unmanaged class from unknown' Error)
+  }
+  function chpl_fix_thrown_error[168514](arg err[168511] :
+  _nilType) : _unknown[43] "always propagate line file info" "insert line file info" "no doc"
+  {
+    (168520 return(168519 call chpl_do_fix_thrown_error nil[38]))
+  }
+  function chpl_fix_thrown_error[168529](arg err[168527]:_any[170](?)) : _unknown[43] "last resort" "no doc"
+  {
+    unknown t[168533] "type variable"(168532 'typeof' err)
+    if(168634 call _cond_test(168543 call isCoercible t(168542 'to borrowed class from unknown'(168541 'to nilable class from type' Error))))
+    {
+      (168583 call compilerError "Cannot throw an instance of type \'"(168564 call _cast string[24] t) "\' - please throw owned" 1)
+    }
+    {
+      { scopeless
+        if(168630 call _cond_test(168589 call isClassType t))
+        {
+          (168616 call compilerError "Cannot throw an instance of type \'"(168598 call _cast string[24](168595 call _cast borrowed[200](?) t)) "\', not a subtype of Error")
+        }
+        {
+          (168627 call compilerError "Cannot throw an instance of type \'"(168624 call _cast string[24] t) "\', not a subtype of Error")
+        }
+      }
+    }
+  }
+  function chpl_fix_thrown_error[168645](arg errType[168643]:_any[170](?)) : _unknown[43] "last resort" "no doc"
+  {
+    (168685 call compilerError "Cannot throw a type: '"(168667 call _cast string[24] errType) "'. Did you forget the keyword 'new'\?")
+  }
+  function chpl_delete_error[168698](arg err[168695] :
+  (168694 'to unmanaged class from unknown'(168693 'to nilable class from type' Error))) : _unknown[43] "no doc"
+  {
+    if(168709 call _cond_test(168702 call != err nil[38]))
+    {
+      { scopeless
+        (168706 call chpl__delete err)
+      }
+    }
+  }
+  function chpl_uncaught_error[168724](arg err[168721] :
+  (168720 'to unmanaged class from unknown' Error)) : _unknown[43] "always propagate line file info" "function terminates program" "insert line file info" "no doc"
+  {
+    function chpl_error_preformatted[168730](arg c_string[168728]:_any[170](?)) : void[4] "extern" "local args" "no fn body"
+    {
+    }
+    const myFileC[168757] "const"(168756 'chpl_lookupFilename'(168755 '_get_user_file')) c_string
+    const myFileS[168764] "const"(168762 call _cast string[24] myFileC)
+    const myLine[168770] "const"(168769 '_get_user_line')
+    const thrownFileC[168781] "const"(168780 'chpl_lookupFilename'(168777 call . err c"thrownFileId")) c_string
+    const thrownFileS[168788] "const"(168786 call _cast string[24] thrownFileC)
+    const thrownLine[168795] "const"(168792 call . err c"thrownLine")
+    unknown s[168901](168899 call +(168881 call +(168875 call +(168872 call +(168869 call +(168866 call +(168848 call +(168842 call +(168839 call +(168836 call +(168818 call + "uncaught "(168817 call chpl_describe_error err)) "\n  ") thrownFileS) ":")(168846 call _cast string[24] thrownLine)) ": thrown here") "\n  ") myFileS) ":")(168879 call _cast string[24] myLine)) ": uncaught here")
+    (168912 call chpl_error_preformatted(168910 call(168906 call . s c"c_str")))
+  }
+  function chpl_propagate_error[168923](arg err[168920] :
+  (168919 'to unmanaged class from unknown' Error)) : _unknown[43] "always propagate line file info" "insert line file info" "no doc"
+  {
+    (168928 call chpl_uncaught_error err)
+  }
+  function chpl_forall_error[168940](arg err[168937] :
+  (168936 'to unmanaged class from unknown' Error)) : _unknown[43] "no doc"
+  {
+    if(168953 call _cond_test(168948 call _cast(168947 'to unmanaged class from unknown'(168946 'to nilable class from type' TaskErrors)) err))
+    {
+      { scopeless
+        (168951 return err)
+      }
+    }
+    (168965 return(168964 'new'(168963 'to unmanaged class from unknown'(168962 call TaskErrors err))))
+  }
+  { scopeless type
+    (168943 'to unmanaged class from unknown' Error)
+  }
+  function chpl_enum_cast_error[168976](arg casted[168973] :
+  string[24], arg enumName[168979] :
+  string[24]) : _unknown[43] throws "always propagate line file info" "insert line file info" "no doc"
+  {
+    if(169063 call _cond_test(168987 call(168983 call . casted c"isEmpty")))
+    {
+      { scopeless
+        (169013 'throw'(169012 'new'(169010 call _owned(169009 call IllegalArgumentError(169006 call + "bad cast from empty string to " enumName)))))
+      }
+    }
+    {
+      { scopeless
+        (169061 'throw'(169060 'new'(169058 call _owned(169057 call IllegalArgumentError(169054 call +(169051 call +(169033 call + "bad cast from string '" casted) "' to ") enumName)))))
+      }
+    }
+  }
+}

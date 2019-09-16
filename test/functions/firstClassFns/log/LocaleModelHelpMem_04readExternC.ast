@@ -1,0 +1,114 @@
+AST dump for LocaleModelHelpMem after pass readExternC.
+Module use list: 
+
+{
+  (180794 'use' ChapelStandard)
+  function chpl_memhook_md_num[180799]() : _unknown[43] "extern" "local args" "no fn body" "private" "fn synchronization free"
+  {
+  }
+  { scopeless type
+    chpl_mem_descInt_t
+  }
+  function chpl_here_alloc[180814](arg size[180811] :
+  (180810 call int[13] 64), arg md[180817] :
+  chpl_mem_descInt_t) : _unknown[43] "allocator" "always propagate line file info" "locale model alloc"
+  {
+    function chpl_mem_alloc[180827](arg size[180824] :
+    size_t, arg md[180830] :
+    chpl_mem_descInt_t) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      c_void_ptr
+    }
+    (180854 return(180853 call chpl_mem_alloc(180845 call(180840 call . size c"safeCast") size_t)(180851 call + md(180850 call chpl_memhook_md_num))))
+  }
+  { scopeless type
+    c_void_ptr
+  }
+  function chpl_here_alloc[180865](arg size[180862] :
+  integral, arg md[180868] :
+  chpl_mem_descInt_t) : _unknown[43] "allocator" "always propagate line file info"
+  {
+    function chpl_mem_alloc[180878](arg size[180875] :
+    size_t, arg md[180881] :
+    chpl_mem_descInt_t) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      c_void_ptr
+    }
+    (180905 return(180904 call chpl_mem_alloc(180896 call(180891 call . size c"safeCast") size_t)(180902 call + md(180901 call chpl_memhook_md_num))))
+  }
+  { scopeless type
+    c_void_ptr
+  }
+  function chpl_here_calloc[180916](arg size[180913] :
+  integral, arg number[180919] :
+  integral, arg md[180923] :
+  chpl_mem_descInt_t) : _unknown[43] "allocator" "always propagate line file info"
+  {
+    function chpl_mem_calloc[180933](arg number[180930] :
+    size_t, arg size[180936] :
+    size_t, arg md[180940] :
+    chpl_mem_descInt_t) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      c_void_ptr
+    }
+    (180971 return(180970 call chpl_mem_calloc(180955 call(180950 call . number c"safeCast") size_t)(180963 call(180958 call . size c"safeCast") size_t)(180968 call + md(180967 call chpl_memhook_md_num))))
+  }
+  { scopeless type
+    c_void_ptr
+  }
+  function chpl_here_realloc[180982](arg ptr[180979] :
+  c_void_ptr, arg size[180985] :
+  integral, arg md[180989] :
+  chpl_mem_descInt_t) : _unknown[43] "allocator" "always propagate line file info"
+  {
+    function chpl_mem_realloc[180999](arg ptr[180996] :
+    c_void_ptr, arg size[181002] :
+    size_t, arg md[181006] :
+    chpl_mem_descInt_t) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      c_void_ptr
+    }
+    (181031 return(181030 call chpl_mem_realloc ptr(181023 call(181018 call . size c"safeCast") size_t)(181028 call + md(181027 call chpl_memhook_md_num))))
+  }
+  { scopeless type
+    c_void_ptr
+  }
+  function chpl_here_good_alloc_size[181042](arg min_size[181039] :
+  integral) : _unknown[43] "always propagate line file info" "fn synchronization free"
+  {
+    function chpl_mem_good_alloc_size[181052](arg min_size[181049] :
+    size_t) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      size_t
+    }
+    (181076 return(181075 call(181069 call .(181068 call chpl_mem_good_alloc_size(181066 call(181061 call . min_size c"safeCast") size_t)) c"safeCast")(181073 'typeof' min_size)))
+  }
+  { scopeless type
+    (181045 'typeof' min_size)
+  }
+  function chpl_here_free[181087](arg ptr[181084] :
+  c_void_ptr) : _unknown[43] "always propagate line file info" "locale model free"
+  {
+    function chpl_mem_free[181096](arg ptr[181093] :
+    c_void_ptr) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      void[4]
+    }
+    (181106 call chpl_mem_free ptr)
+  }
+  { scopeless type
+    void[4]
+  }
+}

@@ -1,0 +1,428 @@
+AST dump for SysError after pass parse.
+Module use list: 
+
+{
+  (328322 'use' ChapelStandard)
+  (216467 'use' SysBasic)
+  type SystemError[217059] unknown err[216474] syserr unknown details[216478] string[24] function SystemError[217059].init[216487](arg _mt[217063]:_MT[227], arg this[217061]:SystemError[217059], arg err[216484] :
+  syserr, arg details[216506] :
+  string[24] =
+  "") : _unknown[43] "method" "primary method"
+  {
+    (216515 call =(216511 call . this c"err") err)
+    (216526 call =(216522 call . this c"details") details)
+  } function SystemError[217059].message[216533](arg _mt[217067]:_MT[227], arg this[217065]:SystemError[217059]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    unknown strerror_err[216537] ENOERR err_t
+    unknown errstr[216546](216545 call sys_strerror_syserr_str err strerror_err)
+    unknown err_msg[216553](216552 call createStringWithOwnedBuffer errstr)
+    if(216575 call _cond_test(216562 call !(216561 call(216557 call . details c"isEmpty"))))
+    {
+      { scopeless
+        (216572 call += err_msg(216570 call +(216567 call + " (" details) ")"))
+      }
+    }
+    (216581 return err_msg)
+  } function SystemError[217059].fromSyserr[216591](arg _mt[217071]:_MT[227], arg this[217069]:SystemError[217059], arg err[216588] :
+  syserr, arg details[216610] :
+  string[24] =
+  "") : _unknown[43] "always propagate line file info" "insert line file info" "method" "primary method"
+  {
+    if(216998 call _cond_test(216634 call ||(216628 call ||(216622 call ||(216616 call == err EAGAIN)(216620 call == err EALREADY))(216626 call == err EWOULDBLOCK))(216632 call == err EINPROGRESS)))
+    {
+      (216644 return(216643 'new'(216641 call _owned(216640 call BlockingIOError details err))))
+    }
+    {
+      { scopeless
+        if(216993 call _cond_test(216649 call == err ECHILD))
+        {
+          (216659 return(216658 'new'(216656 call _owned(216655 call ChildProcessError details err))))
+        }
+        {
+          { scopeless
+            if(216988 call _cond_test(216670 call ||(216664 call == err EPIPE)(216668 call == err ESHUTDOWN)))
+            {
+              (216680 return(216679 'new'(216677 call _owned(216676 call BrokenPipeError details err))))
+            }
+            {
+              { scopeless
+                if(216983 call _cond_test(216685 call == err ECONNABORTED))
+                {
+                  (216695 return(216694 'new'(216692 call _owned(216691 call ConnectionAbortedError details err))))
+                }
+                {
+                  { scopeless
+                    if(216978 call _cond_test(216700 call == err ECONNREFUSED))
+                    {
+                      (216710 return(216709 'new'(216707 call _owned(216706 call ConnectionRefusedError details err))))
+                    }
+                    {
+                      { scopeless
+                        if(216973 call _cond_test(216715 call == err ECONNRESET))
+                        {
+                          (216725 return(216724 'new'(216722 call _owned(216721 call ConnectionResetError details err))))
+                        }
+                        {
+                          { scopeless
+                            if(216968 call _cond_test(216730 call == err EEXIST))
+                            {
+                              (216740 return(216739 'new'(216737 call _owned(216736 call FileExistsError details err))))
+                            }
+                            {
+                              { scopeless
+                                if(216963 call _cond_test(216745 call == err ENOENT))
+                                {
+                                  (216755 return(216754 'new'(216752 call _owned(216751 call FileNotFoundError details err))))
+                                }
+                                {
+                                  { scopeless
+                                    if(216958 call _cond_test(216760 call == err EINTR))
+                                    {
+                                      (216770 return(216769 'new'(216767 call _owned(216766 call InterruptedError details err))))
+                                    }
+                                    {
+                                      { scopeless
+                                        if(216953 call _cond_test(216775 call == err EISDIR))
+                                        {
+                                          (216785 return(216784 'new'(216782 call _owned(216781 call IsADirectoryError details err))))
+                                        }
+                                        {
+                                          { scopeless
+                                            if(216948 call _cond_test(216790 call == err ENOTDIR))
+                                            {
+                                              (216800 return(216799 'new'(216797 call _owned(216796 call NotADirectoryError details err))))
+                                            }
+                                            {
+                                              { scopeless
+                                                if(216943 call _cond_test(216811 call ||(216805 call == err EACCES)(216809 call == err EPERM)))
+                                                {
+                                                  (216821 return(216820 'new'(216818 call _owned(216817 call PermissionError details err))))
+                                                }
+                                                {
+                                                  { scopeless
+                                                    if(216938 call _cond_test(216826 call == err ESRCH))
+                                                    {
+                                                      (216836 return(216835 'new'(216833 call _owned(216832 call ProcessLookupError details err))))
+                                                    }
+                                                    {
+                                                      { scopeless
+                                                        if(216933 call _cond_test(216841 call == err ETIMEDOUT))
+                                                        {
+                                                          (216851 return(216850 'new'(216848 call _owned(216847 call TimeoutError details err))))
+                                                        }
+                                                        {
+                                                          { scopeless
+                                                            if(216928 call _cond_test(216856 call == err EEOF))
+                                                            {
+                                                              (216866 return(216865 'new'(216863 call _owned(216862 call EOFError details err))))
+                                                            }
+                                                            {
+                                                              { scopeless
+                                                                if(216923 call _cond_test(216871 call == err ESHORT))
+                                                                {
+                                                                  (216881 return(216880 'new'(216878 call _owned(216877 call UnexpectedEOFError details err))))
+                                                                }
+                                                                {
+                                                                  { scopeless
+                                                                    if(216918 call _cond_test(216886 call == err EFORMAT))
+                                                                    {
+                                                                      (216896 return(216895 'new'(216893 call _owned(216892 call BadFormatError details err))))
+                                                                    }
+                                                                    {
+                                                                      { scopeless
+                                                                        if(216914 call _cond_test(216901 call == err EIO))
+                                                                        {
+                                                                          (216911 return(216910 'new'(216908 call _owned(216907 call IOError err details))))
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    (217012 return(217011 'new'(217009 call _owned(217008 call SystemError err details))))
+  } function SystemError[217059].fromSyserr[217022](arg _mt[217075]:_MT[227], arg this[217073]:SystemError[217059], arg err[217019] :
+  int[13], arg details[217041] :
+  string[24] =
+  "") : _unknown[43] "always propagate line file info" "insert line file info" "method" "primary method"
+  {
+    (217053 return(217052 call fromSyserr(217048 call _cast syserr err) details))
+  } Error
+  type BlockingIOError[217128] function BlockingIOError[217128].init[217104](arg _mt[217132]:_MT[227], arg this[217130]:BlockingIOError[217128], arg details[217100] :
+  string[24] =
+  "", arg err[217111] :
+  syserr =
+  (217109 call _cast syserr EWOULDBLOCK)) : _unknown[43] "method" "primary method"
+  {
+    (217122 call(217116 call . super c"init") err details)
+  } SystemError
+  type ChildProcessError[217185] function ChildProcessError[217185].init[217161](arg _mt[217189]:_MT[227], arg this[217187]:ChildProcessError[217185], arg details[217157] :
+  string[24] =
+  "", arg err[217168] :
+  syserr =
+  (217166 call _cast syserr ECHILD)) : _unknown[43] "method" "primary method"
+  {
+    (217179 call(217173 call . super c"init") err details)
+  } SystemError
+  type ConnectionError[217237] function ConnectionError[217237].init[217201](arg _mt[217241]:_MT[227], arg this[217239]:ConnectionError[217237], arg err[217198] :
+  syserr, arg details[217220] :
+  string[24] =
+  "") : _unknown[43] "method" "primary method"
+  {
+    (217231 call(217225 call . super c"init") err details)
+  } SystemError
+  type BrokenPipeError[217294] function BrokenPipeError[217294].init[217270](arg _mt[217298]:_MT[227], arg this[217296]:BrokenPipeError[217294], arg details[217266] :
+  string[24] =
+  "", arg err[217277] :
+  syserr =
+  (217275 call _cast syserr EPIPE)) : _unknown[43] "method" "primary method"
+  {
+    (217288 call(217282 call . super c"init") err details)
+  } ConnectionError
+  type ConnectionAbortedError[217351] function ConnectionAbortedError[217351].init[217327](arg _mt[217355]:_MT[227], arg this[217353]:ConnectionAbortedError[217351], arg details[217323] :
+  string[24] =
+  "", arg err[217334] :
+  syserr =
+  (217332 call _cast syserr ECONNABORTED)) : _unknown[43] "method" "primary method"
+  {
+    (217345 call(217339 call . super c"init") err details)
+  } ConnectionError
+  type ConnectionRefusedError[217408] function ConnectionRefusedError[217408].init[217384](arg _mt[217412]:_MT[227], arg this[217410]:ConnectionRefusedError[217408], arg details[217380] :
+  string[24] =
+  "", arg err[217391] :
+  syserr =
+  (217389 call _cast syserr ECONNREFUSED)) : _unknown[43] "method" "primary method"
+  {
+    (217402 call(217396 call . super c"init") err details)
+  } ConnectionError
+  type ConnectionResetError[217465] function ConnectionResetError[217465].init[217441](arg _mt[217469]:_MT[227], arg this[217467]:ConnectionResetError[217465], arg details[217437] :
+  string[24] =
+  "", arg err[217448] :
+  syserr =
+  (217446 call _cast syserr ECONNRESET)) : _unknown[43] "method" "primary method"
+  {
+    (217459 call(217453 call . super c"init") err details)
+  } ConnectionError
+  type FileExistsError[217522] function FileExistsError[217522].init[217498](arg _mt[217526]:_MT[227], arg this[217524]:FileExistsError[217522], arg details[217494] :
+  string[24] =
+  "", arg err[217505] :
+  syserr =
+  (217503 call _cast syserr EEXIST)) : _unknown[43] "method" "primary method"
+  {
+    (217516 call(217510 call . super c"init") err details)
+  } SystemError
+  type FileNotFoundError[217579] function FileNotFoundError[217579].init[217555](arg _mt[217583]:_MT[227], arg this[217581]:FileNotFoundError[217579], arg details[217551] :
+  string[24] =
+  "", arg err[217562] :
+  syserr =
+  (217560 call _cast syserr ENOENT)) : _unknown[43] "method" "primary method"
+  {
+    (217573 call(217567 call . super c"init") err details)
+  } SystemError
+  type InterruptedError[217636] function InterruptedError[217636].init[217612](arg _mt[217640]:_MT[227], arg this[217638]:InterruptedError[217636], arg details[217608] :
+  string[24] =
+  "", arg err[217619] :
+  syserr =
+  (217617 call _cast syserr EINTR)) : _unknown[43] "method" "primary method"
+  {
+    (217630 call(217624 call . super c"init") err details)
+  } SystemError
+  type IsADirectoryError[217693] function IsADirectoryError[217693].init[217669](arg _mt[217697]:_MT[227], arg this[217695]:IsADirectoryError[217693], arg details[217665] :
+  string[24] =
+  "", arg err[217676] :
+  syserr =
+  (217674 call _cast syserr EISDIR)) : _unknown[43] "method" "primary method"
+  {
+    (217687 call(217681 call . super c"init") err details)
+  } SystemError
+  type NotADirectoryError[217750] function NotADirectoryError[217750].init[217726](arg _mt[217754]:_MT[227], arg this[217752]:NotADirectoryError[217750], arg details[217722] :
+  string[24] =
+  "", arg err[217733] :
+  syserr =
+  (217731 call _cast syserr ENOTDIR)) : _unknown[43] "method" "primary method"
+  {
+    (217744 call(217738 call . super c"init") err details)
+  } SystemError
+  type PermissionError[217807] function PermissionError[217807].init[217783](arg _mt[217811]:_MT[227], arg this[217809]:PermissionError[217807], arg details[217779] :
+  string[24] =
+  "", arg err[217790] :
+  syserr =
+  (217788 call _cast syserr EPERM)) : _unknown[43] "method" "primary method"
+  {
+    (217801 call(217795 call . super c"init") err details)
+  } SystemError
+  type ProcessLookupError[217864] function ProcessLookupError[217864].init[217840](arg _mt[217868]:_MT[227], arg this[217866]:ProcessLookupError[217864], arg details[217836] :
+  string[24] =
+  "", arg err[217847] :
+  syserr =
+  (217845 call _cast syserr ESRCH)) : _unknown[43] "method" "primary method"
+  {
+    (217858 call(217852 call . super c"init") err details)
+  } SystemError
+  type TimeoutError[217921] function TimeoutError[217921].init[217897](arg _mt[217925]:_MT[227], arg this[217923]:TimeoutError[217921], arg details[217893] :
+  string[24] =
+  "", arg err[217904] :
+  syserr =
+  (217902 call _cast syserr ETIMEDOUT)) : _unknown[43] "method" "primary method"
+  {
+    (217915 call(217909 call . super c"init") err details)
+  } SystemError
+  type IOError[217973] function IOError[217973].init[217937](arg _mt[217977]:_MT[227], arg this[217975]:IOError[217973], arg err[217934] :
+  syserr, arg details[217956] :
+  string[24] =
+  "") : _unknown[43] "method" "primary method"
+  {
+    (217967 call(217961 call . super c"init") err details)
+  } SystemError
+  type EOFError[218030] function EOFError[218030].init[218006](arg _mt[218034]:_MT[227], arg this[218032]:EOFError[218030], arg details[218002] :
+  string[24] =
+  "", arg err[218013] :
+  syserr =
+  (218011 call _cast syserr EEOF)) : _unknown[43] "method" "primary method"
+  {
+    (218024 call(218018 call . super c"init") err details)
+  } IOError
+  type UnexpectedEOFError[218087] function UnexpectedEOFError[218087].init[218063](arg _mt[218091]:_MT[227], arg this[218089]:UnexpectedEOFError[218087], arg details[218059] :
+  string[24] =
+  "", arg err[218070] :
+  syserr =
+  (218068 call _cast syserr ESHORT)) : _unknown[43] "method" "primary method"
+  {
+    (218081 call(218075 call . super c"init") err details)
+  } IOError
+  type BadFormatError[218144] function BadFormatError[218144].init[218120](arg _mt[218148]:_MT[227], arg this[218146]:BadFormatError[218144], arg details[218116] :
+  string[24] =
+  "", arg err[218127] :
+  syserr =
+  (218125 call _cast syserr EFORMAT)) : _unknown[43] "method" "primary method"
+  {
+    (218138 call(218132 call . super c"init") err details)
+  } IOError
+  function sys_strerror_syserr_str[218157](arg error[218154] :
+  syserr, out arg err_in_strerror[218160] :
+  err_t) : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    c_string
+  }
+  function quote_string[218173](arg s[218170] :
+  string[24], arg len[218176] :
+  ssize_t) : _unknown[43] "private"
+  {
+    const QIO_STRING_FORMAT_CHPL[218183] "const" "extern"(218182 call uint[107] 8)
+    function qio_quote_string[218196](arg s[218193] :
+    (218192 call uint[107] 8), arg e[218202] :
+    (218201 call uint[107] 8), arg f[218209] :
+    (218208 call uint[107] 8), arg ptr[218213] :
+    c_string, arg len[218217] :
+    ssize_t, ref arg ret[218221] :
+    c_string, arg ti[218225] :
+    c_void_ptr) : _unknown[43] "extern" "local args" "no fn body"
+    {
+    }
+    { scopeless type
+      syserr
+    }
+    function qio_strdup[218238](arg s[218235] :
+    c_string) : _unknown[43] "extern" "local args" "no fn body"
+    {
+    }
+    { scopeless type
+      c_string
+    }
+    unknown ret[218245] c_string
+    unknown err[218281](218280 call qio_quote_string(218255 call _cast(218254 call uint[107] 8) 34)(218263 call _cast(218262 call uint[107] 8) 34) QIO_STRING_FORMAT_CHPL(218276 call(218272 call .(218271 call(218267 call . s c"localize")) c"c_str")) len ret c_nil) syserr
+    if(218309 call _cond_test err)
+    {
+      { scopeless
+        (218307 return(218306 call createStringWithOwnedBuffer(218304 call qio_strdup "<error>")))
+      }
+    }
+    (218318 return(218317 call createStringWithOwnedBuffer ret))
+  }
+  function ioerror[218328](arg error[218325] :
+  syserr, arg msg[218331] :
+  string[24], arg path[218335] :
+  string[24], arg offset[218342] :
+  (218341 call int[13] 64)) : _unknown[43] throws "always propagate line file info" "insert line file info"
+  {
+    if(218422 call _cond_test error)
+    {
+      const quotedpath[218357] "const"(218356 call quote_string path(218354 call _cast ssize_t(218350 call . path c"numBytes")))
+      unknown details[218407](218405 call +(218399 call +(218381 call +(218378 call + msg " with path ") quotedpath) " offset ")(218403 call _cast string[24] offset))
+      (218420 'throw'(218419 call(218413 call . SystemError c"fromSyserr") error details))
+    }
+  }
+  function ioerror[218435](arg error[218432] :
+  syserr, arg msg[218438] :
+  string[24], arg path[218442] :
+  string[24]) : _unknown[43] throws "always propagate line file info" "insert line file info" "no doc"
+  {
+    if(218481 call _cond_test error)
+    {
+      const quotedpath[218457] "const"(218456 call quote_string path(218454 call _cast ssize_t(218450 call . path c"numBytes")))
+      unknown details[218468](218466 call +(218463 call + msg " with path ") quotedpath)
+      (218479 'throw'(218478 call(218472 call . SystemError c"fromSyserr") error details))
+    }
+  }
+  function ioerror[218494](arg error[218491] :
+  syserr, arg msg[218497] :
+  string[24]) : _unknown[43] throws "always propagate line file info" "insert line file info" "no doc"
+  {
+    if(218511 call _cond_test error)
+    {
+      { scopeless
+        (218509 'throw'(218508 call(218502 call . SystemError c"fromSyserr") error msg))
+      }
+    }
+  }
+  function ioerror[218525](arg errstr[218522] :
+  string[24], arg msg[218528] :
+  string[24], arg path[218532] :
+  string[24], arg offset[218539] :
+  (218538 call int[13] 64)) : _unknown[43] throws "always propagate line file info" "insert line file info"
+  {
+    const quotedpath[218553] "const"(218552 call quote_string path(218550 call _cast ssize_t(218546 call . path c"numBytes")))
+    const details[218579] "const"(218577 call +(218571 call +(218568 call +(218565 call +(218562 call +(218559 call + errstr " ") msg) " with path ") quotedpath) " offset ")(218575 call _cast string[24] offset))
+    (218593 'throw'(218592 call(218583 call . SystemError c"fromSyserr")(218588 call _cast syserr EIO) details))
+  }
+  function errorToString[218603](arg error[218600] :
+  syserr) : _unknown[43]
+  {
+    unknown strerror_err[218608] ENOERR err_t
+    const errstr[218617] "const"(218616 call sys_strerror_syserr_str error strerror_err)
+    (218624 return(218623 call createStringWithOwnedBuffer errstr))
+  }
+  { scopeless type
+    string[24]
+  }
+}

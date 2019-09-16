@@ -1,0 +1,170 @@
+AST dump for MergeSort after pass cleanup.
+Module use list: 
+
+{
+  (328340 'use' ChapelStandard)
+  function mergeSort[254697](arg Data[254694] :
+  (254692 call chpl__buildArrayRuntimeType unknown Dom[254687] unknown eltType[254690]), arg minlen[254700] =
+  16, arg comparator[254706] :
+  unknown rec[254703] =
+  defaultComparator) : _unknown[43] "no return value for void"
+  {
+    (254714 call chpl_check_comparator comparator eltType)
+    if(254745 call _cond_test(254722 call !=(254718 call . Dom c"rank") 1))
+    {
+      (254742 call compilerError "mergeSort() requires 1-D array")
+    }
+    (254762 call _MergeSort Data(254753 call . Dom c"alignedLow")(254757 call . Dom c"alignedHigh") minlen comparator)
+  }
+  function _MergeSort[254777](arg Data[254774] :
+  (254772 call chpl__buildArrayRuntimeType unknown Dom[254769]), arg lo[254780] :
+  int[13], arg hi[254784] :
+  int[13], arg minlen[254788] =
+  16, arg comparator[254794] :
+  unknown rec[254791] =
+  defaultComparator) : _unknown[43] "private" "no return value for void"
+  {
+    if(254827 call _cond_test(254810 call <(254807 call - hi lo) minlen))
+    {
+      (254822 call(254813 call . InsertionSort c"insertionSort") Data(comparator = comparator) lo hi)
+      (254825 return _void[47])
+    }
+    const stride[254847] "const"(254844 IfExpr (254833 call . Dom c"stridable") then
+    { scopeless
+      (254842 call abs(254838 call . Dom c"stride"))
+    } else
+    { scopeless
+      1
+    } )
+    const size[254857] "const"(254855 call /(254852 call - hi lo) stride)
+    const mid[254870] "const"(254868 call + lo(254866 call *(254863 call / size 2) stride))
+    if(254972 call _cond_test(254889 call <(254878 call(254874 call . here c"runningTasks"))(254888 call(254882 call . here c"numPUs")(logical = 1))))
+    {
+      {
+        const _cobeginCount[254915] "const" "end count" "temp"
+        (254936 'move' _cobeginCount[254915](254933 call _endCountAlloc 1))
+        (254928 call _upEndCount _cobeginCount[254915] 1 2)
+        {
+          {
+            (254898 call _MergeSort Data lo mid minlen comparator)
+          }
+          (254918 call _downEndCount _cobeginCount[254915] nil[38])
+          (254917 'cobegin block')
+        }
+        {
+          {
+            (254912 call _MergeSort Data(254907 call + mid stride) hi minlen comparator)
+          }
+          (254924 call _downEndCount _cobeginCount[254915] nil[38])
+          (254923 'cobegin block')
+        }
+        Defer
+        {
+          {
+            (254939 call _endCountFree _cobeginCount[254915])
+          }
+        }
+        (254944 call _waitEndCount _cobeginCount[254915] 1 2)
+      }
+    }
+    {
+      (254957 call _MergeSort Data lo mid minlen comparator)
+      (254970 call _MergeSort Data(254965 call + mid stride) hi minlen comparator)
+    }
+    (254983 call _Merge Data lo mid hi comparator)
+  }
+  where {
+    (254803 call ==(254799 call . Dom c"rank") 1)
+  }
+  function _Merge[255000](arg Data[254997] :
+  (254995 call chpl__buildArrayRuntimeType unknown Dom[254990] unknown eltType[254993]), arg lo[255003] :
+  int[13], arg mid[255007] :
+  int[13], arg hi[255011] :
+  int[13], arg comparator[255017] :
+  unknown rec[255014] =
+  defaultComparator) : _unknown[43] "private" "no return value for void"
+  {
+    const stride[255036] "const"(255033 IfExpr (255022 call . Dom c"stridable") then
+    { scopeless
+      (255031 call abs(255027 call . Dom c"stride"))
+    } else
+    { scopeless
+      1
+    } )
+    const a1size[255050] "const"(255047 call .(255045 call chpl_by(255042 call chpl_build_bounded_range lo mid) stride) c"size")
+    unknown A1[255090](255087 IfExpr (255067 call . Dom c"stridable") then
+    { scopeless
+      (255079 call Data(255076 call chpl_by(255073 call chpl_build_bounded_range lo mid) stride))
+    } else
+    { scopeless
+      (255086 call Data(255083 call chpl_build_bounded_range lo mid))
+    } )(255064 call chpl__buildArrayRuntimeType(255062 call chpl__ensureDomainExpr(255055 call chpl_build_bounded_range 1 a1size))(255059 call . Data c"eltType"))
+    const a2size[255106] "const"(255103 call .(255101 call chpl_by(255098 call chpl_build_bounded_range(255095 call + mid stride) hi) stride) c"size")
+    unknown A2[255152](255149 IfExpr (255123 call . Dom c"stridable") then
+    { scopeless
+      (255138 call Data(255135 call chpl_by(255132 call chpl_build_bounded_range(255129 call + mid stride) hi) stride))
+    } else
+    { scopeless
+      (255148 call Data(255145 call chpl_build_bounded_range(255142 call + mid 1) hi))
+    } )(255120 call chpl__buildArrayRuntimeType(255118 call chpl__ensureDomainExpr(255111 call chpl_build_bounded_range 1 a2size))(255115 call . Data c"eltType"))
+    unknown a1[255156] 1
+    unknown a2[255160] 1
+    unknown i[255164] lo
+    {
+      unknown tmp[255241] "temp"
+      (255277 'move' tmp[255241](255266 call _cond_test(255268 call &&(255270 call <= a1 a1size)(255274 call <= a2 a2size))))
+      WhileDo
+      {
+        {
+          if(255236 call _cond_test(255190 call <=(255188 call chpl_compare(255181 call A1 a1)(255186 call A2 a2) comparator) 0))
+          {
+            (255200 call =(255195 call Data i)(255199 call A1 a1))
+            (255206 call += a1 1)
+            (255211 call += i stride)
+          }
+          {
+            (255222 call =(255217 call Data i)(255221 call A2 a2))
+            (255228 call += a2 1)
+            (255233 call += i stride)
+          }
+        }
+        label _continueLabel[255244]
+        (255261 'move' tmp[255241](255250 call _cond_test(255252 call &&(255254 call <= a1 a1size)(255258 call <= a2 a2size))))
+        tmp[255241]
+      }
+      label _breakLabel[255245]
+    }
+    {
+      unknown tmp[255306] "temp"
+      (255330 'move' tmp[255306](255325 call _cond_test(255327 call <= a1 a1size)))
+      WhileDo
+      {
+        {
+          (255292 call =(255287 call Data i)(255291 call A1 a1))
+          (255298 call += a1 1)
+          (255303 call += i stride)
+        }
+        label _continueLabel[255309]
+        (255320 'move' tmp[255306](255315 call _cond_test(255317 call <= a1 a1size)))
+        tmp[255306]
+      }
+      label _breakLabel[255310]
+    }
+    {
+      unknown tmp[255359] "temp"
+      (255383 'move' tmp[255359](255378 call _cond_test(255380 call <= a2 a2size)))
+      WhileDo
+      {
+        {
+          (255345 call =(255340 call Data i)(255344 call A2 a2))
+          (255351 call += a2 1)
+          (255356 call += i stride)
+        }
+        label _continueLabel[255362]
+        (255373 'move' tmp[255359](255368 call _cond_test(255370 call <= a2 a2size)))
+        tmp[255359]
+      }
+      label _breakLabel[255363]
+    }
+  }
+}

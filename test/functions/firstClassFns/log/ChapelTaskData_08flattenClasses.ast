@@ -1,0 +1,103 @@
+AST dump for ChapelTaskData after pass flattenClasses.
+Module use list: ChapelStandard 
+
+{
+  const chpl_offset_endCount[169086] "const" "private"(169084 call _cast size_t[209674] 0)
+  const chpl_offset_serial[169092] "const" "private"(169091 call sizeof_endcount_ptr)
+  const chpl_offset_end[169099] "const" "private"(169097 call + chpl_offset_serial[169092] 1)
+  function sizeof_endcount_ptr[169104]() : _unknown[43] "private"
+  {
+    (169116 return(169114 call +(169109 call c_sizeof chpl_localeID_t[197056])(169113 call c_sizeof c_void_ptr[141])))
+  }
+  function chpl_task_data_setDynamicEndCount[169130](arg tls[169127] :
+  (169126 call c_ptr[193070](?) chpl_task_ChapelData_t[89000]), arg end[169133] :
+  _remoteEndCountType[12542]) : _unknown[43] "no return value for void"
+  {
+    unknown prv[169143](169141 call _cast(169140 call c_ptr[193070](?) c_uchar[209625]) tls[169127])
+    unknown i[169148] size_t[209674]
+    unknown loc[169155](169154 '_wide_get_locale' end[169133])
+    unknown adr[169162](169161 '_wide_get_addr' end[169133])
+    (169167 call = i[169148] chpl_offset_endCount[169086])
+    (169187 call c_memcpy(169177 call c_ptrTo(169175 call prv[169143] i[169148]))(169182 call c_ptrTo loc[169155])(169186 call c_sizeof chpl_localeID_t[197056]))
+    (169194 call += i[169148](169193 call c_sizeof chpl_localeID_t[197056]))
+    (169214 call c_memcpy(169204 call c_ptrTo(169202 call prv[169143] i[169148]))(169209 call c_ptrTo adr[169162])(169213 call c_sizeof c_void_ptr[141]))
+  }
+  function chpl_task_data_getDynamicEndCount[169227](arg tls[169224] :
+  (169223 call c_ptr[193070](?) chpl_task_ChapelData_t[89000])) : _unknown[43]
+  {
+    unknown prv[169236](169234 call _cast(169233 call c_ptr[193070](?) c_uchar[209625]) tls[169224])
+    unknown i[169241] size_t[209674]
+    unknown loc[169245] chpl_localeID_t[197056]
+    unknown adr[169249] c_void_ptr[141]
+    (169254 call = i[169241] chpl_offset_endCount[169086])
+    (169274 call c_memcpy(169261 call c_ptrTo loc[169245])(169269 call c_ptrTo(169267 call prv[169236] i[169241]))(169273 call c_sizeof chpl_localeID_t[197056]))
+    (169281 call += i[169241](169280 call c_sizeof chpl_localeID_t[197056]))
+    (169301 call c_memcpy(169288 call c_ptrTo adr[169249])(169296 call c_ptrTo(169294 call prv[169236] i[169241]))(169300 call c_sizeof c_void_ptr[141]))
+    unknown ret[169324](169323 '_wide_make' _remoteEndCountType[12542] loc[169245] adr[169249])
+    (169328 return ret[169324])
+  }
+  function chpl_task_data_setSerial[169341](arg tls[169338] :
+  (169337 call c_ptr[193070](?) chpl_task_ChapelData_t[89000]), arg makeSerial[169344] :
+  bool[10]) : _unknown[43] "no return value for void"
+  {
+    unknown prv[169355](169353 call _cast(169352 call c_ptr[193070](?) c_uchar[209625]) tls[169338])
+    unknown i[169360] chpl_offset_serial[169092]
+    unknown v[169368] 0(169366 call uint(64)[107] 8)
+    if(169377 call _cond_test makeSerial[169344])
+    {
+      (169374 call = v[169368] 1)
+    }
+    (169402 call c_memcpy(169389 call c_ptrTo(169387 call prv[169355] i[169360]))(169394 call c_ptrTo v[169368])(169401 call c_sizeof(169399 call uint(64)[107] 8)))
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_task_data_getSerial[169416](arg tls[169413] :
+  (169412 call c_ptr[193070](?) chpl_task_ChapelData_t[89000])) : _unknown[43]
+  {
+    unknown ret[169421] 0 bool[10]
+    unknown prv[169432](169430 call _cast(169429 call c_ptr[193070](?) c_uchar[209625]) tls[169413])
+    unknown i[169436] chpl_offset_serial[169092]
+    unknown v[169444] 0(169442 call uint(64)[107] 8)
+    (169467 call c_memcpy(169451 call c_ptrTo v[169444])(169459 call c_ptrTo(169457 call prv[169432] i[169436]))(169466 call c_sizeof(169464 call uint(64)[107] 8)))
+    if(169484 call _cond_test 1)
+    {
+      (169482 call assert(169479 call ||(169473 call == v[169444] 0)(169477 call == v[169444] 1)))
+    }
+    (169493 return(169491 call == v[169444] 1))
+  }
+  { scopeless type
+    bool[10]
+  }
+  function chpl_task_setDynamicEndCount[169504](arg end[169501] :
+  _remoteEndCountType[12542]) : _unknown[43] "no return value for void"
+  {
+    (169512 call chpl_task_data_setDynamicEndCount(169509 call chpl_task_getChapelData) end[169501])
+  }
+  function chpl_task_getDynamicEndCount[169519]() : _unknown[43]
+  {
+    (169528 return(169527 call chpl_task_data_getDynamicEndCount(169525 call chpl_task_getChapelData)))
+  }
+  { scopeless type
+    _remoteEndCountType[12542]
+  }
+  function chpl_task_setSerial[169540](arg makeSerial[169537] :
+  bool[10]) : _unknown[43] "export" "local args" "no return value for void"
+  {
+    (169549 call chpl_task_data_setSerial(169546 call chpl_task_getChapelData) makeSerial[169537])
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_task_getSerial[169557]() : _unknown[43] "export" "local args"
+  {
+    (169566 return(169565 call chpl_task_data_getSerial(169563 call chpl_task_getChapelData)))
+  }
+  { scopeless type
+    bool[10]
+  }
+  {
+    (169581 call assert(169578 call <= chpl_offset_end[169099](169577 call c_sizeof chpl_task_ChapelData_t[89000])))
+  }
+  (329445 'used modules list'(169079 'use' ChapelStandard[19734]))
+}

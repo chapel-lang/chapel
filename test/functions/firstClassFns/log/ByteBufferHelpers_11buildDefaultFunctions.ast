@@ -1,0 +1,572 @@
+AST dump for ByteBufferHelpers after pass buildDefaultFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_ByteBufferHelpers[390261]() : void[4] "insert line file info" "module init"
+  {
+    (492994 'move' byteType[172913](492992 call uint(64)[107] 8))
+    (631764 'move' call_tmp[631761](172920 call uint(64)[107] 8))
+    (631769 'move' call_tmp[631766](492999 call uint(64)[107] 8))
+    (493001 'move' bufferType[172923](492997 call c_ptr[193070](?) call_tmp[631766]))
+    (493005 'move' locIdType[172928](493003 'typeof' chpl_nodeID[195933]))
+    (493007 'init var' chpl_stringGrowthFactor[172932] 1.5)
+    (473478 return _void[47])
+  }
+  unknown byteType[172913] "insert auto destroy" "no doc" "type variable"(172912 call uint(64)[107] 8)
+  unknown call_tmp[631761] "expr temp" "maybe param" "maybe type" "temp"
+  unknown bufferType[172923] "insert auto destroy" "no doc" "type variable"(172922 call c_ptr[193070](?) call_tmp[631761])
+  unknown locIdType[172928] "insert auto destroy" "no doc" "type variable"(172927 'typeof' chpl_nodeID[195933])
+  unknown chpl_stringGrowthFactor[172932] "config" "param"
+  function chpl_memhook_md_num[172937]() : _unknown[43] "extern" "local args" "no fn body" "private" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[473302] "RVV" "temp"
+    (473304 return ret[473302])
+  }
+  { scopeless type
+    chpl_mem_descInt_t[11750]
+  }
+  function offset_STR_COPY_DATA[172945]() : _unknown[43] "no parens" "private"
+  {
+    unknown ret[473308] "RVV" "temp"
+    const CHPL_RT_MD_STR_COPY_DATA[172948] "const" "extern" "insert auto destroy"
+    { scopeless type extern
+      (493009 'default init var' CHPL_RT_MD_STR_COPY_DATA[172948] chpl_mem_descInt_t[11750])
+    }
+    unknown call_tmp[631771] "expr temp" "maybe param" "maybe type" "temp"
+    (631774 'move' call_tmp[631771](172955 call chpl_memhook_md_num))
+    unknown call_tmp[631776] "expr temp" "maybe param" "maybe type" "temp"
+    (631779 'move' call_tmp[631776](172956 call - CHPL_RT_MD_STR_COPY_DATA[172948] call_tmp[631771]))
+    (473313 'move' ret[473308](473312 'deref' call_tmp[631776]))
+    (473310 return ret[473308])
+  }
+  function offset_STR_COPY_REMOTE[172964]() : _unknown[43] "no parens" "private"
+  {
+    unknown ret[473317] "RVV" "temp"
+    const CHPL_RT_MD_STR_COPY_REMOTE[172967] "const" "extern" "insert auto destroy"
+    { scopeless type extern
+      (493012 'default init var' CHPL_RT_MD_STR_COPY_REMOTE[172967] chpl_mem_descInt_t[11750])
+    }
+    unknown call_tmp[631781] "expr temp" "maybe param" "maybe type" "temp"
+    (631784 'move' call_tmp[631781](172974 call chpl_memhook_md_num))
+    unknown call_tmp[631786] "expr temp" "maybe param" "maybe type" "temp"
+    (631789 'move' call_tmp[631786](172975 call - CHPL_RT_MD_STR_COPY_REMOTE[172967] call_tmp[631781]))
+    (473322 'move' ret[473317](473321 'deref' call_tmp[631786]))
+    (473319 return ret[473317])
+  }
+  function chpl_string_comm_get[172987](arg dest[172984] :
+  bufferType[172923], arg src_loc_id[172993] :
+  (172992 call int(64)[13] 64), arg src_addr[172997] :
+  bufferType[172923], arg len[173001]:integral[188](?)) : _unknown[43] "inline" "no return value for void"
+  {
+    unknown call_tmp[631793] "expr temp" "maybe param" "maybe type" "temp"
+    (631796 'move' call_tmp[631793](173030 call(173025 call (partial) safeCast _mt[232] len[173001]) size_t[209674]))
+    (173031 'chpl_comm_get' dest[172984] src_loc_id[172993] src_addr[172997] call_tmp[631793])
+    (473324 return _void[47])
+  }
+  function bufferAlloc[173040](arg requestedSize[173038]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[473328] "RVV" "temp"
+    unknown call_tmp[631798] "expr temp" "maybe param" "maybe type" "temp"
+    (631801 'move' call_tmp[631798](173046 call chpl_here_good_alloc_size requestedSize[173038]))
+    unknown call_tmp[631803] "maybe param" "maybe type" "temp"
+    (631806 'move' call_tmp[631803](173049 call max call_tmp[631798] chpl_stringMinAllocSize[346]))
+    const allocSize[173050] "const" "insert auto destroy"
+    (493015 'init var' allocSize[173050] call_tmp[631803])
+    unknown call_tmp[631808] "expr temp" "maybe param" "maybe type" "temp"
+    (631811 'move' call_tmp[631808](360410 call offset_STR_COPY_DATA[172945]))
+    unknown call_tmp[631813] "expr temp" "maybe param" "maybe type" "temp"
+    (631816 'move' call_tmp[631813](173058 call chpl_here_alloc allocSize[173050] call_tmp[631808]))
+    unknown call_tmp[631818] "maybe param" "maybe type" "temp"
+    (631821 'move' call_tmp[631818](173060 call _cast bufferType[172923] call_tmp[631813]))
+    unknown buf[173062] "insert auto destroy"
+    (493017 'init var' buf[173062] call_tmp[631818])
+    unknown call_tmp[631823] "expr temp" "maybe param" "maybe type" "temp"
+    (631826 'move' call_tmp[631823](173068 call _build_tuple buf[173062] allocSize[173050]))
+    (473333 'move' ret[473328](473332 'deref' call_tmp[631823]))
+    (473330 return ret[473328])
+  }
+  function bufferAllocExact[173078](arg requestedSize[173076]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[473337] "RVV" "temp"
+    unknown call_tmp[631828] "expr temp" "maybe param" "maybe type" "temp"
+    (631831 'move' call_tmp[631828](360416 call offset_STR_COPY_DATA[172945]))
+    unknown call_tmp[631833] "expr temp" "maybe param" "maybe type" "temp"
+    (631836 'move' call_tmp[631833](173084 call chpl_here_alloc requestedSize[173076] call_tmp[631828]))
+    unknown call_tmp[631838] "maybe param" "maybe type" "temp"
+    (631841 'move' call_tmp[631838](173086 call _cast bufferType[172923] call_tmp[631833]))
+    unknown buf[173088] "insert auto destroy"
+    (493019 'init var' buf[173088] call_tmp[631838])
+    (473342 'move' ret[473337](473341 'deref' buf[173088]))
+    (473339 return ret[473337])
+  }
+  function bufferRealloc[173101](arg buf[173099]:_any[170](?), arg requestedSize[173103]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[473346] "RVV" "temp"
+    unknown call_tmp[631843] "expr temp" "maybe param" "maybe type" "temp"
+    (631846 'move' call_tmp[631843](173109 call + requestedSize[173103] 1))
+    unknown call_tmp[631848] "expr temp" "maybe param" "maybe type" "temp"
+    (631851 'move' call_tmp[631848](173112 call chpl_here_good_alloc_size call_tmp[631843]))
+    unknown call_tmp[631853] "maybe param" "maybe type" "temp"
+    (631856 'move' call_tmp[631853](173115 call max call_tmp[631848] chpl_stringMinAllocSize[346]))
+    const allocSize[173116] "const" "insert auto destroy"
+    (493021 'init var' allocSize[173116] call_tmp[631853])
+    unknown call_tmp[631858] "expr temp" "maybe param" "maybe type" "temp"
+    (631861 'move' call_tmp[631858](360424 call offset_STR_COPY_DATA[172945]))
+    unknown call_tmp[631863] "expr temp" "maybe param" "maybe type" "temp"
+    (631866 'move' call_tmp[631863](173125 call chpl_here_realloc buf[173099] allocSize[173116] call_tmp[631858]))
+    unknown call_tmp[631868] "maybe param" "maybe type" "temp"
+    (631871 'move' call_tmp[631868](173127 call _cast bufferType[172923] call_tmp[631863]))
+    unknown newBuff[173129] "insert auto destroy"
+    (493023 'init var' newBuff[173129] call_tmp[631868])
+    unknown call_tmp[631873] "expr temp" "maybe param" "maybe type" "temp"
+    (631876 'move' call_tmp[631873](173135 call _build_tuple newBuff[173129] allocSize[173116]))
+    (473351 'move' ret[473346](473350 'deref' call_tmp[631873]))
+    (473348 return ret[473346])
+  }
+  function bufferCopyRemote[173150](arg src_loc_id[173147] :
+  (173146 call int(64)[13] 64), arg src_addr[173153] :
+  bufferType[172923], arg len[173157]:int(64)[13]) : _unknown[43]
+  {
+    unknown ret[473355] "RVV" "temp"
+    unknown call_tmp[631878] "expr temp" "maybe param" "maybe type" "temp"
+    (631881 'move' call_tmp[631878](173164 call + len[173157] 1))
+    unknown call_tmp[631883] "expr temp" "maybe param" "maybe type" "temp"
+    (631886 'move' call_tmp[631883](360432 call offset_STR_COPY_REMOTE[172964]))
+    unknown call_tmp[631888] "expr temp" "maybe param" "maybe type" "temp"
+    (631891 'move' call_tmp[631888](173168 call chpl_here_alloc call_tmp[631878] call_tmp[631883]))
+    unknown call_tmp[631893] "maybe param" "maybe type" "temp"
+    (631896 'move' call_tmp[631893](173170 call _cast bufferType[172923] call_tmp[631888]))
+    const dest[173172] "const" "insert auto destroy"
+    (493025 'init var' dest[173172] call_tmp[631893])
+    (173182 call chpl_string_comm_get dest[173172] src_loc_id[173147] src_addr[173153] len[173157])
+    unknown call_tmp[631898] "expr temp" "maybe param" "maybe type" "temp"
+    (631901 'move' call_tmp[631898](173187 call dest[173172] len[173157]))
+    (173189 call = call_tmp[631898] 0)
+    (473361 'move' ret[473355](473360 'coerce' dest[173172] bufferType[172923]))
+    (473357 return ret[473355])
+  }
+  { scopeless type
+    bufferType[172923]
+  }
+  function bufferCopyLocal[173204](arg src_addr[173201] :
+  bufferType[172923], arg len[173207]:int(64)[13]) : _unknown[43] "inline"
+  {
+    unknown ret[473365] "RVV" "temp"
+    unknown call_tmp[631903] "expr temp" "maybe param" "maybe type" "temp"
+    (631906 'move' call_tmp[631903](173218 call + len[173207] 1))
+    unknown call_tmp[631908] "maybe param" "maybe type" "temp"
+    (631911 'move' call_tmp[631908](173221 call bufferAlloc call_tmp[631903]))
+    const tmp[173222] "const" "insert auto destroy" "no copy" "temp"
+    (493027 'init var' tmp[173222] call_tmp[631908])
+    (173229 call _check_tuple_var_decl tmp[173222] 2)
+    unknown call_tmp[631913] "maybe param" "maybe type" "temp"
+    (631916 'move' call_tmp[631913](173223 call tmp[173222] 1))
+    const dst[173210] "const" "insert auto destroy"
+    (493029 'init var' dst[173210] call_tmp[631913])
+    unknown call_tmp[631918] "maybe param" "maybe type" "temp"
+    (631921 'move' call_tmp[631918](173226 call tmp[173222] 2))
+    const allocSize[173212] "const" "insert auto destroy"
+    (493031 'init var' allocSize[173212] call_tmp[631918])
+    (173243 call bufferMemcpyLocal(dst = dst[173210])(src = src_addr[173201])(len = len[173207]))
+    unknown call_tmp[631923] "expr temp" "maybe param" "maybe type" "temp"
+    (631926 'move' call_tmp[631923](173248 call _build_tuple dst[173210] allocSize[173212]))
+    (473370 'move' ret[473365](473369 'deref' call_tmp[631923]))
+    (473367 return ret[473365])
+  }
+  function bufferFree[173258](arg buf[173256]:_any[170](?)) : _unknown[43] "inline" "no return value for void"
+  {
+    (173263 call chpl_here_free buf[173256])
+    (473372 return _void[47])
+  }
+  function bufferCopy[173274](arg buf[173271] :
+  bufferType[172923], arg off[173277]:int(64)[13], arg len[173281]:int(64)[13], arg loc[173285] :
+  locIdType[172928]) : _unknown[43] "inline"
+  {
+    unknown ret[473376] "RVV" "temp"
+    unknown tmp[404100] "maybe param" "temp"
+    (404111 'move' tmp[404100](173289 call ! 1))
+    unknown call_tmp[631928] "expr temp" "maybe param" "maybe type" "temp"
+    (631931 'move' call_tmp[631928](404113 call _cond_invalid tmp[404100]))
+    if call_tmp[631928]
+    {
+      (404116 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519507] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519508] "maybe param" "temp"
+    unknown call_tmp[631933] "expr temp" "maybe param" "maybe type" "temp"
+    (631936 'move' call_tmp[631933](404101 call isTrue tmp[404100]))
+    (519513 'move' tmp[519508](519511 call _cond_test call_tmp[631933]))
+    if tmp[519508]
+    {
+      unknown tmp[519515] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[631938] "expr temp" "maybe param" "maybe type" "temp"
+      (631941 'move' call_tmp[631938](173293 call != loc[173285] chpl_nodeID[195933]))
+      (519517 'move' tmp[519515](404104 call isTrue call_tmp[631938]))
+      (519522 'move' tmp[519507](519519 '_paramFoldLogical' tmp[519508] tmp[519515]))
+    }
+    {
+      (519527 'move' tmp[519507](519524 '_paramFoldLogical' tmp[519508] 0))
+    }
+    unknown call_tmp[631943] "expr temp" "maybe param" "maybe type" "temp"
+    (631946 'move' call_tmp[631943](173328 call _cond_test tmp[519507]))
+    if call_tmp[631943]
+    {
+      unknown call_tmp[631948] "expr temp" "maybe param" "maybe type" "temp"
+      (631951 'move' call_tmp[631948](173302 call + buf[173271] off[173277]))
+      unknown call_tmp[631953] "maybe param" "maybe type" "temp"
+      (631956 'move' call_tmp[631953](173305 call bufferCopyRemote loc[173285] call_tmp[631948] len[173281]))
+      unknown newBuf[173306] "insert auto destroy"
+      (493033 'init var' newBuf[173306] call_tmp[631953])
+      unknown call_tmp[631958] "expr temp" "maybe param" "maybe type" "temp"
+      (631961 'move' call_tmp[631958](173313 call _build_tuple newBuf[173306] len[173281]))
+      (473381 'move' ret[473376](473380 'deref' call_tmp[631958]))
+      gotoReturn _end_bufferCopy[473374] _end_bufferCopy[473374]
+    }
+    {
+      unknown call_tmp[631963] "expr temp" "maybe param" "maybe type" "temp"
+      (631966 'move' call_tmp[631963](173320 call + buf[173271] off[173277]))
+      unknown call_tmp[631968] "expr temp" "maybe param" "maybe type" "temp"
+      (631971 'move' call_tmp[631968](173324 call bufferCopyLocal call_tmp[631963] len[173281]))
+      (473386 'move' ret[473376](473385 'deref' call_tmp[631968]))
+      gotoReturn _end_bufferCopy[473374] _end_bufferCopy[473374]
+    }
+    label _end_bufferCopy[473374]
+    (473378 return ret[473376])
+  }
+  function bufferMemcpy[173339](arg dst[173337]:_any[170](?), arg src_loc[173341]:_any[170](?), arg src[173343]:_any[170](?), arg len[173345]:_any[170](?), arg dst_off[173348] :
+  0 =
+  0, arg src_off[173352] :
+  0 =
+  0) : _unknown[43] "inline" "no return value for void"
+  {
+    unknown tmp[404121] "maybe param" "temp"
+    (404132 'move' tmp[404121](173356 call ! 1))
+    unknown call_tmp[631973] "expr temp" "maybe param" "maybe type" "temp"
+    (631976 'move' call_tmp[631973](404134 call _cond_invalid tmp[404121]))
+    if call_tmp[631973]
+    {
+      (404137 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519534] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519535] "maybe param" "temp"
+    unknown call_tmp[631978] "expr temp" "maybe param" "maybe type" "temp"
+    (631981 'move' call_tmp[631978](404122 call isTrue tmp[404121]))
+    (519540 'move' tmp[519535](519538 call _cond_test call_tmp[631978]))
+    if tmp[519535]
+    {
+      unknown tmp[519542] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[631983] "expr temp" "maybe param" "maybe type" "temp"
+      (631986 'move' call_tmp[631983](173360 call != src_loc[173341] chpl_nodeID[195933]))
+      (519544 'move' tmp[519542](404125 call isTrue call_tmp[631983]))
+      (519549 'move' tmp[519534](519546 '_paramFoldLogical' tmp[519535] tmp[519542]))
+    }
+    {
+      (519554 'move' tmp[519534](519551 '_paramFoldLogical' tmp[519535] 0))
+    }
+    unknown call_tmp[631988] "expr temp" "maybe param" "maybe type" "temp"
+    (631991 'move' call_tmp[631988](173393 call _cond_test tmp[519534]))
+    if call_tmp[631988]
+    {
+      unknown call_tmp[631993] "expr temp" "maybe param" "maybe type" "temp"
+      (631996 'move' call_tmp[631993](173367 call + dst[173337] dst_off[173348]))
+      unknown call_tmp[631998] "expr temp" "maybe param" "maybe type" "temp"
+      (632001 'move' call_tmp[631998](173373 call + src[173343] src_off[173352]))
+      (173376 call chpl_string_comm_get call_tmp[631993] src_loc[173341] call_tmp[631998] len[173345])
+    }
+    {
+      unknown call_tmp[632003] "expr temp" "maybe param" "maybe type" "temp"
+      (632006 'move' call_tmp[632003](173382 call + dst[173337] dst_off[173348]))
+      unknown call_tmp[632008] "expr temp" "maybe param" "maybe type" "temp"
+      (632011 'move' call_tmp[632008](173387 call + src[173343] src_off[173352]))
+      (173390 call c_memcpy call_tmp[632003] call_tmp[632008] len[173345])
+    }
+    (473390 return _void[47])
+  }
+  function bufferMemcpyLocal[173404](arg dst[173402]:_any[170](?), arg src[173406]:_any[170](?), arg len[173408]:_any[170](?), arg dst_off[173411] :
+  0 =
+  0, arg src_off[173415] :
+  0 =
+  0) : _unknown[43] "inline" "no return value for void"
+  {
+    unknown call_tmp[632013] "expr temp" "maybe param" "maybe type" "temp"
+    (632016 'move' call_tmp[632013](173421 call _cast bufferType[172923] dst[173402]))
+    unknown call_tmp[632018] "expr temp" "maybe param" "maybe type" "temp"
+    (632021 'move' call_tmp[632018](173424 call + call_tmp[632013] dst_off[173411]))
+    unknown call_tmp[632023] "expr temp" "maybe param" "maybe type" "temp"
+    (632026 'move' call_tmp[632023](173429 call _cast bufferType[172923] src[173406]))
+    unknown call_tmp[632028] "expr temp" "maybe param" "maybe type" "temp"
+    (632031 'move' call_tmp[632028](173432 call + call_tmp[632023] src_off[173415]))
+    (173435 call c_memcpy call_tmp[632018] call_tmp[632028] len[173408])
+    (473392 return _void[47])
+  }
+  function bufferMemmoveLocal[173444](arg dst[173442]:_any[170](?), arg src[173446]:_any[170](?), arg len[173448]:_any[170](?), arg dst_off[173451] :
+  0 =
+  0, arg src_off[173455] :
+  0 =
+  0) : _unknown[43] "inline" "no return value for void"
+  {
+    unknown call_tmp[632033] "expr temp" "maybe param" "maybe type" "temp"
+    (632036 'move' call_tmp[632033](173461 call + dst[173442] dst_off[173451]))
+    unknown call_tmp[632038] "expr temp" "maybe param" "maybe type" "temp"
+    (632041 'move' call_tmp[632038](173466 call + src[173446] src_off[173455]))
+    (173469 call c_memmove call_tmp[632033] call_tmp[632038] len[173448])
+    (473394 return _void[47])
+  }
+  function bufferGetByte[173478](arg buf[173476]:_any[170](?), arg off[173480]:_any[170](?), arg loc[173482]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[473398] "RVV" "temp"
+    unknown tmp[404142] "maybe param" "temp"
+    (404153 'move' tmp[404142](173485 call ! 1))
+    unknown call_tmp[632043] "expr temp" "maybe param" "maybe type" "temp"
+    (632046 'move' call_tmp[632043](404155 call _cond_invalid tmp[404142]))
+    if call_tmp[632043]
+    {
+      (404158 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519561] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519562] "maybe param" "temp"
+    unknown call_tmp[632048] "expr temp" "maybe param" "maybe type" "temp"
+    (632051 'move' call_tmp[632048](404143 call isTrue tmp[404142]))
+    (519567 'move' tmp[519562](519565 call _cond_test call_tmp[632048]))
+    if tmp[519562]
+    {
+      unknown tmp[519569] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[632053] "expr temp" "maybe param" "maybe type" "temp"
+      (632056 'move' call_tmp[632053](173489 call != loc[173482] chpl_nodeID[195933]))
+      (519571 'move' tmp[519569](404146 call isTrue call_tmp[632053]))
+      (519576 'move' tmp[519561](519573 '_paramFoldLogical' tmp[519562] tmp[519569]))
+    }
+    {
+      (519581 'move' tmp[519561](519578 '_paramFoldLogical' tmp[519562] 0))
+    }
+    unknown call_tmp[632058] "expr temp" "maybe param" "maybe type" "temp"
+    (632061 'move' call_tmp[632058](173522 call _cond_test tmp[519561]))
+    if call_tmp[632058]
+    {
+      unknown call_tmp[632063] "expr temp" "maybe param" "maybe type" "temp"
+      (632066 'move' call_tmp[632063](173499 call + buf[173476] off[173480]))
+      unknown call_tmp[632068] "maybe param" "maybe type" "temp"
+      (632071 'move' call_tmp[632068](173504 call bufferCopyRemote(src_loc_id = loc[173482])(src_addr = call_tmp[632063])(len = 1)))
+      const newBuf[173505] "const" "insert auto destroy"
+      (493035 'init var' newBuf[173505] call_tmp[632068])
+      unknown call_tmp[632073] "expr temp" "maybe param" "maybe type" "temp"
+      (632076 'move' call_tmp[632073](173512 call newBuf[173505] 0))
+      (473403 'move' ret[473398](473402 'deref' call_tmp[632073]))
+      gotoReturn _end_bufferGetByte[473396] _end_bufferGetByte[473396]
+    }
+    {
+      unknown call_tmp[632078] "expr temp" "maybe param" "maybe type" "temp"
+      (632081 'move' call_tmp[632078](173518 call buf[173476] off[173480]))
+      (473408 'move' ret[473398](473407 'deref' call_tmp[632078]))
+      gotoReturn _end_bufferGetByte[473396] _end_bufferGetByte[473396]
+    }
+    label _end_bufferGetByte[473396]
+    (473400 return ret[473398])
+  }
+  function bufferEquals[173533](arg buf1[173531]:_any[170](?), arg off1[173535]:_any[170](?), arg loc1[173537]:_any[170](?), arg buf2[173539]:_any[170](?), arg off2[173541]:_any[170](?), arg loc2[173543]:_any[170](?), arg len[173545]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[473414] "RVV" "temp"
+    unknown call_tmp[632083] "expr temp" "maybe param" "maybe type" "temp"
+    (632086 'move' call_tmp[632083](173550 call + buf1[173531] off1[173535]))
+    unknown call_tmp[632088] "expr temp" "maybe param" "maybe type" "temp"
+    (632091 'move' call_tmp[632088](173560 call + buf2[173539] off2[173541]))
+    unknown call_tmp[632093] "expr temp" "maybe param" "maybe type" "temp"
+    (632096 'move' call_tmp[632093](173567 call _strcmp(buf1 = call_tmp[632083])(len1 = len[173545])(loc1 = loc1[173537])(buf2 = call_tmp[632088])(len2 = len[173545])(loc2 = loc1[173537])))
+    unknown call_tmp[632098] "expr temp" "maybe param" "maybe type" "temp"
+    (632101 'move' call_tmp[632098](173569 call == call_tmp[632093] 0))
+    (473419 'move' ret[473414](473418 'deref' call_tmp[632098]))
+    (473416 return ret[473414])
+  }
+  function bufferEqualsLocal[173580](arg buf1[173578]:_any[170](?), arg off1[173582]:_any[170](?), arg buf2[173584]:_any[170](?), arg off2[173586]:_any[170](?), arg len[173588]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[473423] "RVV" "temp"
+    unknown call_tmp[632103] "expr temp" "maybe param" "maybe type" "temp"
+    (632106 'move' call_tmp[632103](173593 call + buf1[173578] off1[173582]))
+    unknown call_tmp[632108] "expr temp" "maybe param" "maybe type" "temp"
+    (632111 'move' call_tmp[632108](173601 call + buf2[173584] off2[173586]))
+    unknown call_tmp[632113] "expr temp" "maybe param" "maybe type" "temp"
+    (632116 'move' call_tmp[632113](173606 call _strcmp_local(buf1 = call_tmp[632103])(len1 = len[173588])(buf2 = call_tmp[632108])(len2 = len[173588])))
+    unknown call_tmp[632118] "expr temp" "maybe param" "maybe type" "temp"
+    (632121 'move' call_tmp[632118](173608 call == call_tmp[632113] 0))
+    (473428 'move' ret[473423](473427 'deref' call_tmp[632118]))
+    (473425 return ret[473423])
+  }
+  function _strcmp_local[173619](arg buf1[173617]:_any[170](?), arg len1[173621]:_any[170](?), arg buf2[173623]:_any[170](?), arg len2[173625]:_any[170](?)) : _unknown[43] "inline" "private"
+  {
+    unknown ret[473432] "RVV" "temp"
+    unknown call_tmp[632123] "maybe param" "maybe type" "temp"
+    (632126 'move' call_tmp[632123](173632 call min len1[173621] len2[173625]))
+    const size[173633] "const" "insert auto destroy"
+    (493037 'init var' size[173633] call_tmp[632123])
+    unknown call_tmp[632128] "maybe param" "maybe type" "temp"
+    (632131 'move' call_tmp[632128](173642 call c_memcmp buf1[173617] buf2[173623] size[173633]))
+    const result[173643] "const" "insert auto destroy"
+    (493039 'init var' result[173643] call_tmp[632128])
+    unknown call_tmp[632133] "expr temp" "maybe param" "maybe type" "temp"
+    (632136 'move' call_tmp[632133](173648 call == result[173643] 0))
+    unknown call_tmp[632138] "expr temp" "maybe param" "maybe type" "temp"
+    (632141 'move' call_tmp[632138](173677 call _cond_test call_tmp[632133]))
+    if call_tmp[632138]
+    {
+      unknown call_tmp[632143] "expr temp" "maybe param" "maybe type" "temp"
+      (632146 'move' call_tmp[632143](173652 call < size[173633] len1[173621]))
+      unknown call_tmp[632148] "expr temp" "maybe param" "maybe type" "temp"
+      (632151 'move' call_tmp[632148](173657 call _cond_test call_tmp[632143]))
+      if call_tmp[632148]
+      {
+        (473438 'move' ret[473432](473437 'coerce' 1 int(64)[13]))
+        gotoReturn _end__strcmp_local[473430] _end__strcmp_local[473430]
+      }
+      unknown call_tmp[632153] "expr temp" "maybe param" "maybe type" "temp"
+      (632156 'move' call_tmp[632153](173665 call < size[173633] len2[173625]))
+      unknown call_tmp[632158] "expr temp" "maybe param" "maybe type" "temp"
+      (632161 'move' call_tmp[632158](173672 call _cond_test call_tmp[632153]))
+      if call_tmp[632158]
+      {
+        unknown call_tmp[632163] "expr temp" "maybe param" "maybe type" "temp"
+        (632166 'move' call_tmp[632163](173668 call - 1))
+        (473444 'move' ret[473432](473443 'coerce' call_tmp[632163] int(64)[13]))
+        gotoReturn _end__strcmp_local[473430] _end__strcmp_local[473430]
+      }
+    }
+    (473450 'move' ret[473432](473449 'coerce' result[173643] int(64)[13]))
+    label _end__strcmp_local[473430]
+    (473434 return ret[473432])
+  }
+  { scopeless type
+    int(64)[13]
+  }
+  function _strcmp[173691](arg buf1[173689]:_any[170](?), arg len1[173693]:_any[170](?), arg loc1[173695]:_any[170](?), arg buf2[173697]:_any[170](?), arg len2[173699]:_any[170](?), arg loc2[173701]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[473454] "RVV" "temp"
+    unknown tmp[404205] "maybe param" "temp"
+    (404216 'move' tmp[404205](173705 call == loc1[173695] chpl_nodeID[195933]))
+    unknown call_tmp[632168] "expr temp" "maybe param" "maybe type" "temp"
+    (632171 'move' call_tmp[632168](404218 call _cond_invalid tmp[404205]))
+    if call_tmp[632168]
+    {
+      (404221 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[519588] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519589] "maybe param" "temp"
+    unknown call_tmp[632173] "expr temp" "maybe param" "maybe type" "temp"
+    (632176 'move' call_tmp[632173](404206 call isTrue tmp[404205]))
+    (519594 'move' tmp[519589](519592 call _cond_test call_tmp[632173]))
+    if tmp[519589]
+    {
+      unknown tmp[519596] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[632178] "expr temp" "maybe param" "maybe type" "temp"
+      (632181 'move' call_tmp[632178](173709 call == loc2[173701] chpl_nodeID[195933]))
+      (519598 'move' tmp[519596](404209 call isTrue call_tmp[632178]))
+      (519603 'move' tmp[519588](519600 '_paramFoldLogical' tmp[519589] tmp[519596]))
+    }
+    {
+      (519608 'move' tmp[519588](519605 '_paramFoldLogical' tmp[519589] 0))
+    }
+    unknown call_tmp[632183] "expr temp" "maybe param" "maybe type" "temp"
+    (632186 'move' call_tmp[632183](173818 call _cond_test tmp[519588]))
+    if call_tmp[632183]
+    {
+      unknown call_tmp[632188] "expr temp" "maybe param" "maybe type" "temp"
+      (632191 'move' call_tmp[632188](173719 call _strcmp_local buf1[173689] len1[173693] buf2[173697] len2[173699]))
+      (473459 'move' ret[473454](473458 'deref' call_tmp[632188]))
+      gotoReturn _end__strcmp[473452] _end__strcmp[473452]
+    }
+    {
+      unknown tmp[404184] "maybe param" "temp"
+      (404195 'move' tmp[404184](173725 call != loc1[173695] chpl_nodeID[195933]))
+      unknown call_tmp[632193] "expr temp" "maybe param" "maybe type" "temp"
+      (632196 'move' call_tmp[632193](404197 call _cond_invalid tmp[404184]))
+      if call_tmp[632193]
+      {
+        (404200 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[519615] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[519616] "maybe param" "temp"
+      unknown call_tmp[632198] "expr temp" "maybe param" "maybe type" "temp"
+      (632201 'move' call_tmp[632198](404185 call isTrue tmp[404184]))
+      (519621 'move' tmp[519616](519619 call _cond_test call_tmp[632198]))
+      if tmp[519616]
+      {
+        unknown tmp[519623] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[632203] "expr temp" "maybe param" "maybe type" "temp"
+        (632206 'move' call_tmp[632203](173729 call == loc2[173701] chpl_nodeID[195933]))
+        (519625 'move' tmp[519623](404188 call isTrue call_tmp[632203]))
+        (519630 'move' tmp[519615](519627 '_paramFoldLogical' tmp[519616] tmp[519623]))
+      }
+      {
+        (519635 'move' tmp[519615](519632 '_paramFoldLogical' tmp[519616] 0))
+      }
+      unknown call_tmp[632208] "expr temp" "maybe param" "maybe type" "temp"
+      (632211 'move' call_tmp[632208](173813 call _cond_test tmp[519615]))
+      if call_tmp[632208]
+      {
+        unknown call_tmp[632213] "maybe param" "maybe type" "temp"
+        (632216 'move' call_tmp[632213](173738 call bufferCopyRemote loc1[173695] buf1[173689] len1[173693]))
+        unknown locBuf1[173739] "insert auto destroy"
+        (493041 'init var' locBuf1[173739] call_tmp[632213])
+        unknown call_tmp[632218] "expr temp" "maybe param" "maybe type" "temp"
+        (632221 'move' call_tmp[632218](173749 call _strcmp_local locBuf1[173739] len1[173693] buf2[173697] len2[173699]))
+        (473464 'move' ret[473454](473463 'deref' call_tmp[632218]))
+        gotoReturn _end__strcmp[473452] _end__strcmp[473452]
+      }
+      {
+        unknown tmp[404163] "maybe param" "temp"
+        (404174 'move' tmp[404163](173754 call == loc1[173695] chpl_nodeID[195933]))
+        unknown call_tmp[632223] "expr temp" "maybe param" "maybe type" "temp"
+        (632226 'move' call_tmp[632223](404176 call _cond_invalid tmp[404163]))
+        if call_tmp[632223]
+        {
+          (404179 call compilerError "cannot promote short-circuiting && operator")
+        }
+        unknown tmp[519642] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[519643] "maybe param" "temp"
+        unknown call_tmp[632228] "expr temp" "maybe param" "maybe type" "temp"
+        (632231 'move' call_tmp[632228](404164 call isTrue tmp[404163]))
+        (519648 'move' tmp[519643](519646 call _cond_test call_tmp[632228]))
+        if tmp[519643]
+        {
+          unknown tmp[519650] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[632233] "expr temp" "maybe param" "maybe type" "temp"
+          (632236 'move' call_tmp[632233](173758 call != loc2[173701] chpl_nodeID[195933]))
+          (519652 'move' tmp[519650](404167 call isTrue call_tmp[632233]))
+          (519657 'move' tmp[519642](519654 '_paramFoldLogical' tmp[519643] tmp[519650]))
+        }
+        {
+          (519662 'move' tmp[519642](519659 '_paramFoldLogical' tmp[519643] 0))
+        }
+        unknown call_tmp[632238] "expr temp" "maybe param" "maybe type" "temp"
+        (632241 'move' call_tmp[632238](173809 call _cond_test tmp[519642]))
+        if call_tmp[632238]
+        {
+          unknown call_tmp[632243] "maybe param" "maybe type" "temp"
+          (632246 'move' call_tmp[632243](173767 call bufferCopyRemote loc2[173701] buf2[173697] len2[173699]))
+          unknown locBuf2[173768] "insert auto destroy"
+          (493043 'init var' locBuf2[173768] call_tmp[632243])
+          unknown call_tmp[632248] "expr temp" "maybe param" "maybe type" "temp"
+          (632251 'move' call_tmp[632248](173778 call _strcmp_local buf1[173689] len1[173693] locBuf2[173768] len2[173699]))
+          (473469 'move' ret[473454](473468 'deref' call_tmp[632248]))
+          gotoReturn _end__strcmp[473452] _end__strcmp[473452]
+        }
+        {
+          unknown call_tmp[632253] "maybe param" "maybe type" "temp"
+          (632256 'move' call_tmp[632253](173786 call bufferCopyRemote loc1[173695] buf1[173689] len1[173693]))
+          unknown locBuf1[173787] "insert auto destroy"
+          (493045 'init var' locBuf1[173787] call_tmp[632253])
+          unknown call_tmp[632258] "maybe param" "maybe type" "temp"
+          (632261 'move' call_tmp[632258](173796 call bufferCopyRemote loc2[173701] buf2[173697] len2[173699]))
+          unknown locBuf2[173797] "insert auto destroy"
+          (493047 'init var' locBuf2[173797] call_tmp[632258])
+          unknown call_tmp[632263] "expr temp" "maybe param" "maybe type" "temp"
+          (632266 'move' call_tmp[632263](173806 call _strcmp_local locBuf1[173787] len1[173693] locBuf2[173797] len2[173699]))
+          (473474 'move' ret[473454](473473 'deref' call_tmp[632263]))
+          gotoReturn _end__strcmp[473452] _end__strcmp[473452]
+        }
+      }
+    }
+    label _end__strcmp[473452]
+    (473456 return ret[473454])
+  }
+  unknown call_tmp[631766] "expr temp" "maybe param" "maybe type" "temp"
+  (329456 'used modules list'(172906 'use' ChapelStandard[19734]))
+}

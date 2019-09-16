@@ -1,0 +1,74 @@
+AST dump for ChapelTaskDataHelp after pass normalize.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_ChapelTaskDataHelp[390195]() : void[4] "insert line file info" "module init"
+  {
+    (464298 return _void[47])
+  }
+  type chpl_task_ChapelData_t[89000]
+  function chpl_task_getChapelData[89004]() : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[464282] "RVV" "temp"
+    (464284 return ret[464282])
+  }
+  { scopeless type
+    (89009 call c_ptr[193070](?) chpl_task_ChapelData_t[89000])
+  }
+  function chpl_task_getBundleChapelData[89019](arg args[89016]:chpl_task_bundle_p[197085]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[464288] "RVV" "temp"
+    (464290 return ret[464288])
+  }
+  { scopeless type
+    (89024 call c_ptr[193070](?) chpl_task_ChapelData_t[89000])
+  }
+  function chpl_task_data_setup[89034](arg args[89031]:chpl_task_bundle_p[197085], arg tls[89040] :
+  (89039 call c_ptr[193070](?) chpl_task_ChapelData_t[89000])) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[580368] "maybe param" "maybe type" "temp"
+    (580371 'move' call_tmp[580368](89046 call chpl_task_getBundleChapelData args[89031]))
+    unknown bundleData[89047] "insert auto destroy"
+    (490205 'init var' bundleData[89047] call_tmp[580368])
+    unknown call_tmp[580373] "expr temp" "maybe param" "maybe type" "temp"
+    (580376 'move' call_tmp[580373](89058 call c_sizeof chpl_task_ChapelData_t[89000]))
+    (89059 call c_memcpy bundleData[89047] tls[89040] call_tmp[580373])
+    (464292 return _void[47])
+  }
+  function chpl_save_task_error[89069](arg e[89066]:anymanaged _EndCountBase[345371](?), arg err[89074]:unmanaged Error?[389670]) : _unknown[43] "task complete impl fn" "no return value for void"
+  {
+    unknown call_tmp[580378] "expr temp" "maybe param" "maybe type" "temp"
+    (580381 'move' call_tmp[580378](89079 call != err[89074] nil[38]))
+    unknown call_tmp[580383] "expr temp" "maybe param" "maybe type" "temp"
+    (580386 'move' call_tmp[580383](89097 call _cond_test call_tmp[580378]))
+    if call_tmp[580383]
+    {
+      unknown call_tmp[580390] "expr temp" "maybe param" "maybe type" "temp"
+      (580393 'move' call_tmp[580390](89082 call errors _mt[232] e[89066]))
+      unknown call_tmp[580397] "expr temp" "maybe param" "maybe type" "temp"
+      (580400 'move' call_tmp[580397](89091 call postfix! err[89074]))
+      (89094 call(89087 call (partial) append _mt[232] call_tmp[580390]) call_tmp[580397])
+    }
+    (464294 return _void[47])
+  }
+  function chpl_save_task_error_owned[89110](arg e[89107]:anymanaged _EndCountBase[345371](?), in arg err[89116] :
+  (89114 call _owned[39039](?) anymanaged Error?[389666](?))) : _unknown[43] "task complete impl fn" "no return value for void"
+  {
+    unknown call_tmp[580402] "expr temp" "maybe param" "maybe type" "temp"
+    (580405 'move' call_tmp[580402](89121 call != err[89116] nil[38]))
+    unknown call_tmp[580407] "expr temp" "maybe param" "maybe type" "temp"
+    (580410 'move' call_tmp[580407](89142 call _cond_test call_tmp[580402]))
+    if call_tmp[580407]
+    {
+      unknown call_tmp[580414] "expr temp" "maybe param" "maybe type" "temp"
+      (580417 'move' call_tmp[580414](89124 call errors _mt[232] e[89107]))
+      unknown call_tmp[580423] "expr temp" "maybe param" "maybe type" "temp"
+      (580426 'move' call_tmp[580423](89135 call(89131 call (partial) release _mt[232] err[89116])))
+      unknown call_tmp[580428] "expr temp" "maybe param" "maybe type" "temp"
+      (580431 'move' call_tmp[580428](89136 call postfix! call_tmp[580423]))
+      (89139 call(89127 call (partial) append _mt[232] call_tmp[580414]) call_tmp[580428])
+    }
+    (464296 return _void[47])
+  }
+  (329355 'used modules list'(88993 'use' ChapelStandard[19734]))
+}

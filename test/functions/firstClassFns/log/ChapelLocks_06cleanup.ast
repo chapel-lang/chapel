@@ -1,0 +1,30 @@
+AST dump for ChapelLocks after pass cleanup.
+Module use list: 
+
+{
+  (180350 'use' MemConsistency)
+  function chpl_LocalSpinlock[180469].lock[180363](arg _mt[180473]:_MT[227], arg this[180471]:chpl_LocalSpinlock[180469]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[180442] "const" "temp"
+      (180443 'move' tmp[180442](180440 'deref'(180439 '_wide_get_locale' this)))
+      {
+        unknown tmp[180388] "temp"
+        (180436 'move' tmp[180388](180419 call _cond_test(180421 call ||(180426 call(180423 call . l c"read"))(180431 call(180428 call . l c"testAndSet")(180433 call . memoryOrder c"acquire")))))
+        WhileDo
+        {
+          (180386 call chpl_task_yield)
+          label _continueLabel[180391]
+          (180414 'move' tmp[180388](180397 call _cond_test(180399 call ||(180404 call(180401 call . l c"read"))(180409 call(180406 call . l c"testAndSet")(180411 call . memoryOrder c"acquire")))))
+          tmp[180388]
+        }
+        label _breakLabel[180392]
+      }
+    }
+  }
+  function chpl_LocalSpinlock[180469].unlock[180452](arg _mt[180477]:_MT[227], arg this[180475]:chpl_LocalSpinlock[180469]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    (180463 call(180455 call . l c"clear")(180459 call . memoryOrder c"release"))
+  }
+  type chpl_LocalSpinlock[180469] unknown l[180358](180357 call chpl__processorAtomicType bool[10])
+}

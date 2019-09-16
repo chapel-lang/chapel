@@ -1,0 +1,14 @@
+AST dump for chpl__Program after pass normalize.
+Module use list: 
+
+{
+  function chpl__init_chpl__Program[390123]() : void[4] "insert line file info" "module init"
+  {
+    (444546 return _void[47])
+  }
+  type object[253]
+  type unmanaged object[389863]
+  type borrowed object?[389644]
+  type anymanaged object?[389640](?)
+  type anymanaged object[331796](?)
+}

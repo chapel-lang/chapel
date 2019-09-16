@@ -1,0 +1,6 @@
+AST dump for InPlacePartitioning after pass readExternC.
+Module use list: 
+
+{
+  (328362 'use' ChapelStandard)
+}

@@ -1,0 +1,32 @@
+AST dump for ChapelTaskTable after pass scopeResolve.
+Module use list: 
+
+{
+  function chpldev_taskTable_add[165245](arg taskID[165242] :
+  chpl_taskID_t[155], arg lineno[165251] :
+  (165250 call uint(64)[107] 32), arg filename[165258] :
+  (165257 call int(64)[13] 32), arg tl_info[165265] :
+  (165264 call uint(64)[107] 64)) : _unknown[43] "export" "local args" "no return value for void"
+  {
+  }
+  function chpldev_taskTable_remove[165278](arg taskID[165275] :
+  chpl_taskID_t[155]) : _unknown[43] "export" "local args" "no return value for void"
+  {
+  }
+  function chpldev_taskTable_set_active[165289](arg taskID[165286] :
+  chpl_taskID_t[155]) : _unknown[43] "export" "local args" "no return value for void"
+  {
+  }
+  function chpldev_taskTable_set_suspended[165300](arg taskID[165297] :
+  chpl_taskID_t[155]) : _unknown[43] "export" "local args" "no return value for void"
+  {
+  }
+  function chpldev_taskTable_get_tl_info[165311](arg taskID[165308] :
+  chpl_taskID_t[155]) : _unknown[43] "export" "local args" "no return value for void"
+  {
+  }
+  function chpldev_taskTable_print[165318]() : _unknown[43] "export" "local args" "no return value for void"
+  {
+    (165338 call halt "To use task tracking, you must recompile with --task-tracking")
+  }
+}

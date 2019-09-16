@@ -1,0 +1,6 @@
+AST dump for chpl__Program after pass cleanup.
+Module use list: 
+
+{
+  type object[253]
+}

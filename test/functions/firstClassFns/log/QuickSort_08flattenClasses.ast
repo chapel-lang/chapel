@@ -1,0 +1,190 @@
+AST dump for QuickSort after pass flattenClasses.
+Module use list: ChapelStandard InsertionSort 
+
+{
+  function quickSort[255403](arg Data[255400] :
+  (255398 call chpl__buildArrayRuntimeType unknown Dom[255393] unknown eltType[255396]), arg minlen[255406] =
+  16, arg comparator[255412] :
+  unknown rec[255409] =
+  defaultComparator[251428]) : _unknown[43] "no return value for void"
+  {
+    (255420 call chpl_check_comparator comparator[255412] eltType[255396])
+    if(255451 call _cond_test(255428 call !=(255424 call . Dom[255393] c"rank") 1))
+    {
+      (255448 call compilerError "quickSort() requires 1-D array")
+    }
+    const stride[255462] "const"(255461 call abs(255457 call . Dom[255393] c"stride"))
+    const lo[255469] "const"(255466 call . Dom[255393] c"alignedLow")
+    const hi[255476] "const"(255473 call . Dom[255393] c"alignedHigh")
+    const size[255483] "const"(255480 call . Dom[255393] c"size")
+    const mid[255527] "const"(255524 IfExpr (255488 call == hi[255476] lo[255469]) then
+    { scopeless
+      hi[255476]
+    } else
+    { scopeless(255521 IfExpr (255493 call % size[255483] 2) then
+      { scopeless
+        (255506 call + lo[255469](255504 call *(255501 call /(255498 call - size[255483] 1) 2) stride[255462]))
+      } else
+      { scopeless
+        (255519 call + lo[255469](255517 call *(255514 call -(255511 call / size[255483] 2) 1) stride[255462]))
+      } )
+    } )
+    if(255550 call _cond_test(255535 call <(255532 call - hi[255476] lo[255469]) minlen[255406]))
+    {
+      (255545 call insertionSort module=[244] InsertionSort[253899] Data[255400](comparator = comparator[255412]))
+      (255548 return _void[47])
+    }
+    if(255580 call _cond_test(255567 call <(255565 call chpl_compare(255558 call Data[255400] mid[255527])(255563 call Data[255400] lo[255469]) comparator[255412]) 0))
+    {
+      (255577 call <=>(255572 call Data[255400] mid[255527])(255576 call Data[255400] lo[255469]))
+    }
+    if(255611 call _cond_test(255598 call <(255596 call chpl_compare(255589 call Data[255400] hi[255476])(255594 call Data[255400] lo[255469]) comparator[255412]) 0))
+    {
+      (255608 call <=>(255603 call Data[255400] hi[255476])(255607 call Data[255400] lo[255469]))
+    }
+    if(255642 call _cond_test(255629 call <(255627 call chpl_compare(255620 call Data[255400] hi[255476])(255625 call Data[255400] mid[255527]) comparator[255412]) 0))
+    {
+      (255639 call <=>(255634 call Data[255400] hi[255476])(255638 call Data[255400] mid[255527]))
+    }
+    const pivotVal[255651] "const"(255650 call Data[255400] mid[255527])
+    (255665 call =(255657 call Data[255400] mid[255527])(255664 call Data[255400](255661 call - hi[255476] stride[255462])))
+    (255676 call =(255674 call Data[255400](255671 call - hi[255476] stride[255462])) pivotVal[255651])
+    unknown loptr[255680] lo[255469]
+    unknown hiptr[255687](255685 call - hi[255476] stride[255462])
+    {
+      unknown tmp[255801] "temp"
+      (255825 'move' tmp[255801](255820 call _cond_test(255822 call < loptr[255680] hiptr[255687])))
+      WhileDo
+      {
+        {
+          {
+            unknown tmp[255712] "temp"
+            DoWhile
+            {
+              {
+                (255696 call += loptr[255680] stride[255462])
+                label _continueLabel[255715]
+                (255731 'move' tmp[255712](255720 call _cond_test(255722 call <(255724 call chpl_compare(255726 call Data[255400] loptr[255680]) pivotVal[255651] comparator[255412]) 0)))
+              }
+              tmp[255712]
+            }
+            label _breakLabel[255716]
+          }
+          {
+            unknown tmp[255756] "temp"
+            DoWhile
+            {
+              {
+                (255740 call -= hiptr[255687] stride[255462])
+                label _continueLabel[255759]
+                (255775 'move' tmp[255756](255764 call _cond_test(255766 call <(255768 call chpl_compare pivotVal[255651](255771 call Data[255400] hiptr[255687]) comparator[255412]) 0)))
+              }
+              tmp[255756]
+            }
+            label _breakLabel[255760]
+          }
+          if(255797 call _cond_test(255783 call < loptr[255680] hiptr[255687]))
+          {
+            (255793 call <=>(255788 call Data[255400] loptr[255680])(255792 call Data[255400] hiptr[255687]))
+          }
+        }
+        label _continueLabel[255804]
+        (255815 'move' tmp[255801](255810 call _cond_test(255812 call < loptr[255680] hiptr[255687])))
+        tmp[255801]
+      }
+      label _breakLabel[255805]
+    }
+    (255839 call =(255834 call Data[255400](255831 call - hi[255476] stride[255462]))(255838 call Data[255400] loptr[255680]))
+    (255847 call =(255845 call Data[255400] loptr[255680]) pivotVal[255651])
+    (255869 call quickSort(255865 call Data[255400](255862 call chpl_align(255859 call chpl_by(255856 call chpl_build_high_bounded_range(255854 call - loptr[255680] stride[255462])) stride[255462]) lo[255469])) minlen[255406] comparator[255412])
+    (255890 call quickSort(255886 call Data[255400](255883 call chpl_align(255880 call chpl_by(255877 call chpl_build_low_bounded_range(255875 call + loptr[255680] stride[255462])) stride[255462]) lo[255469])) minlen[255406] comparator[255412])
+  }
+  function quickSort[255907](arg Data[255904] :
+  (255902 call chpl__buildArrayRuntimeType unknown Dom[255897] unknown eltType[255900]), arg minlen[255910] =
+  16, arg comparator[255916] :
+  unknown rec[255913] =
+  defaultComparator[251428]) : _unknown[43] "no return value for void"
+  {
+    (255930 call chpl_check_comparator comparator[255916] eltType[255900])
+    if(255946 call _cond_test(255938 call !=(255934 call . Dom[255897] c"rank") 1))
+    {
+      (255943 call compilerError "quickSort() requires 1-D array")
+    }
+    const lo[255954] "const"(255951 call . Dom[255897] c"low")
+    const hi[255961] "const"(255958 call . Dom[255897] c"high")
+    const mid[255977] "const"(255975 call + lo[255954](255973 call /(255970 call +(255967 call - hi[255961] lo[255954]) 1) 2))
+    if(256000 call _cond_test(255985 call <(255982 call - hi[255961] lo[255954]) minlen[255910]))
+    {
+      (255995 call insertionSort module=[244] InsertionSort[253899] Data[255904](comparator = comparator[255916]))
+      (255998 return _void[47])
+    }
+    if(256030 call _cond_test(256017 call <(256015 call chpl_compare(256008 call Data[255904] mid[255977])(256013 call Data[255904] lo[255954]) comparator[255916]) 0))
+    {
+      (256027 call <=>(256022 call Data[255904] mid[255977])(256026 call Data[255904] lo[255954]))
+    }
+    if(256061 call _cond_test(256048 call <(256046 call chpl_compare(256039 call Data[255904] hi[255961])(256044 call Data[255904] lo[255954]) comparator[255916]) 0))
+    {
+      (256058 call <=>(256053 call Data[255904] hi[255961])(256057 call Data[255904] lo[255954]))
+    }
+    if(256092 call _cond_test(256079 call <(256077 call chpl_compare(256070 call Data[255904] hi[255961])(256075 call Data[255904] mid[255977]) comparator[255916]) 0))
+    {
+      (256089 call <=>(256084 call Data[255904] hi[255961])(256088 call Data[255904] mid[255977]))
+    }
+    const pivotVal[256101] "const"(256100 call Data[255904] mid[255977])
+    (256115 call =(256107 call Data[255904] mid[255977])(256114 call Data[255904](256111 call - hi[255961] 1)))
+    (256126 call =(256124 call Data[255904](256121 call - hi[255961] 1)) pivotVal[256101])
+    unknown loptr[256130] lo[255954]
+    unknown hiptr[256137](256135 call - hi[255961] 1)
+    {
+      unknown tmp[256251] "temp"
+      (256275 'move' tmp[256251](256270 call _cond_test(256272 call < loptr[256130] hiptr[256137])))
+      WhileDo
+      {
+        {
+          {
+            unknown tmp[256162] "temp"
+            DoWhile
+            {
+              {
+                (256146 call += loptr[256130] 1)
+                label _continueLabel[256165]
+                (256181 'move' tmp[256162](256170 call _cond_test(256172 call <(256174 call chpl_compare(256176 call Data[255904] loptr[256130]) pivotVal[256101] comparator[255916]) 0)))
+              }
+              tmp[256162]
+            }
+            label _breakLabel[256166]
+          }
+          {
+            unknown tmp[256206] "temp"
+            DoWhile
+            {
+              {
+                (256190 call -= hiptr[256137] 1)
+                label _continueLabel[256209]
+                (256225 'move' tmp[256206](256214 call _cond_test(256216 call <(256218 call chpl_compare pivotVal[256101](256221 call Data[255904] hiptr[256137]) comparator[255916]) 0)))
+              }
+              tmp[256206]
+            }
+            label _breakLabel[256210]
+          }
+          if(256247 call _cond_test(256233 call < loptr[256130] hiptr[256137]))
+          {
+            (256243 call <=>(256238 call Data[255904] loptr[256130])(256242 call Data[255904] hiptr[256137]))
+          }
+        }
+        label _continueLabel[256254]
+        (256265 'move' tmp[256251](256260 call _cond_test(256262 call < loptr[256130] hiptr[256137])))
+        tmp[256251]
+      }
+      label _breakLabel[256255]
+    }
+    (256289 call =(256284 call Data[255904](256281 call - hi[255961] 1))(256288 call Data[255904] loptr[256130]))
+    (256297 call =(256295 call Data[255904] loptr[256130]) pivotVal[256101])
+    (256313 call quickSort(256309 call Data[255904](256306 call chpl_build_high_bounded_range(256304 call - loptr[256130] 1))) minlen[255910] comparator[255916])
+    (256328 call quickSort(256324 call Data[255904](256321 call chpl_build_low_bounded_range(256319 call + loptr[256130] 1))) minlen[255910] comparator[255916])
+  }
+  where {
+    (255924 call !(255921 call . Dom[255897] c"stridable"))
+  }
+  (329611 'used modules list'(328342 'use' ChapelStandard[19734]))
+}

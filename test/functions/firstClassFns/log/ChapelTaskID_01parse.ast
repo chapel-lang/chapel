@@ -1,0 +1,29 @@
+AST dump for ChapelTaskID after pass parse.
+Module use list: 
+
+{
+  function =[165159](ref arg a[165156] :
+  chpl_taskID_t, arg b[165162] :
+  chpl_taskID_t) : _unknown[43] "assignop" "inline"
+  {
+    (165169 '=' a b)
+  }
+  function ==[165181](arg a[165178] :
+  chpl_taskID_t, arg b[165184] :
+  chpl_taskID_t) : _unknown[43] "inline"
+  {
+    { scopeless
+      (165192 return(165191 '==' a b))
+    }
+  }
+  function _cast[165201](arg t[165199]:_any[170](?), arg x[165204] :
+  chpl_taskID_t) : _unknown[43] "inline"
+  {
+    { scopeless
+      (165228 return(165227 'cast' t x))
+    }
+  }
+  where {
+    (165221 call ||(165212 call == t(165211 call int[13] 64))(165219 call == t(165218 call uint[107] 64)))
+  }
+}

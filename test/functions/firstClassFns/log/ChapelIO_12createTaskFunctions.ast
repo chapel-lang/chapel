@@ -1,0 +1,1905 @@
+AST dump for ChapelIO after pass createTaskFunctions.
+Module use list: ChapelBase ChapelLocale SysBasic IO 
+
+{
+  function chpl__init_ChapelIO[390216]() : void[4] "insert line file info" "module init"
+  {
+    (470836 return _void[47])
+  }
+  function _isNilObject[147557](arg val[147555]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    unknown ret[470734] "RVV" "temp"
+    function helper[147566](arg o[147563]:object[253]) : _unknown[43]
+    {
+      unknown ret[470716] "RVV" "temp"
+      unknown call_tmp[617397] "expr temp" "maybe param" "maybe type" "temp"
+      (617400 'move' call_tmp[617397](147570 call == o[147563] nil[38]))
+      (470721 'move' ret[470716](470720 'deref' call_tmp[617397]))
+      (470718 return ret[470716])
+    }
+    function helper[147582](arg o[147580]:_any[170](?)) : _unknown[43]
+    {
+      unknown ret[470725] "RVV" "temp"
+      (470730 'move' ret[470725](470729 'deref' 0))
+      (470727 return ret[470725])
+    }
+    unknown call_tmp[617402] "expr temp" "maybe param" "maybe type" "temp"
+    (617405 'move' call_tmp[617402](147593 call helper val[147555]))
+    (470739 'move' ret[470734](470738 'deref' call_tmp[617402]))
+    (470736 return ret[470734])
+  }
+  function isIoField[147606](arg x[147604]:_any[170](?), param arg i[147608]:_any[170](?)) param : _unknown[43] "private"
+  {
+    unknown ret[470743] "RVV" "param" "temp"
+    unknown tmp[402525] "maybe param" "temp"
+    unknown tmp[402546] "maybe param" "temp"
+    unknown call_tmp[617407] "expr temp" "maybe param" "maybe type" "temp"
+    (617410 'move' call_tmp[617407](147630 'field by num' x[147604] i[147608]))
+    (402557 'move' tmp[402546](147632 call isType call_tmp[617407]))
+    unknown call_tmp[617412] "expr temp" "maybe param" "maybe type" "temp"
+    (617415 'move' call_tmp[617412](402559 call _cond_invalid tmp[402546]))
+    if call_tmp[617412]
+    {
+      (402562 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[517378] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[517379] "maybe param" "temp"
+    unknown call_tmp[617417] "expr temp" "maybe param" "maybe type" "temp"
+    (617420 'move' call_tmp[617417](402547 call isTrue tmp[402546]))
+    (517384 'move' tmp[517379](517382 call _cond_test call_tmp[617417]))
+    if tmp[517379]
+    {
+      (517389 'move' tmp[517378](517386 '_paramFoldLogical' tmp[517379] 1))
+    }
+    {
+      unknown tmp[517391] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[617422] "expr temp" "maybe param" "maybe type" "temp"
+      (617425 'move' call_tmp[617422](147638 'field by num' x[147604] i[147608]))
+      unknown call_tmp[617427] "expr temp" "maybe param" "maybe type" "temp"
+      (617430 'move' call_tmp[617427](147640 call isParam call_tmp[617422]))
+      (517393 'move' tmp[517391](402551 call isTrue call_tmp[617427]))
+      (517398 'move' tmp[517378](517395 '_paramFoldLogical' tmp[517379] tmp[517391]))
+    }
+    (402536 'move' tmp[402525] tmp[517378])
+    unknown call_tmp[617432] "expr temp" "maybe param" "maybe type" "temp"
+    (617435 'move' call_tmp[617432](402538 call _cond_invalid tmp[402525]))
+    if call_tmp[617432]
+    {
+      (402541 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[517405] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[517406] "maybe param" "temp"
+    unknown call_tmp[617437] "expr temp" "maybe param" "maybe type" "temp"
+    (617440 'move' call_tmp[617437](402526 call isTrue tmp[402525]))
+    (517411 'move' tmp[517406](517409 call _cond_test call_tmp[617437]))
+    if tmp[517406]
+    {
+      (517416 'move' tmp[517405](517413 '_paramFoldLogical' tmp[517406] 1))
+    }
+    {
+      { scopeless type
+        unknown call_type_tmp[443706] "expr temp" "maybe type" "temp" "type variable"
+        unknown call_tmp[617442] "expr temp" "maybe param" "maybe type" "temp"
+        (617445 'move' call_tmp[617442](147647 'field by num' x[147604] i[147608]))
+        (443710 'move' call_type_tmp[443706](147648 'typeof' call_tmp[617442]))
+      }
+      unknown tmp[517418] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[617447] "expr temp" "maybe param" "maybe type" "temp"
+      (617450 'move' call_tmp[617447](147650 call == call_type_tmp[443706] nothing[7]))
+      (517420 'move' tmp[517418](402530 call isTrue call_tmp[617447]))
+      (517425 'move' tmp[517405](517422 '_paramFoldLogical' tmp[517406] tmp[517418]))
+    }
+    unknown call_tmp[617452] "expr temp" "maybe param" "maybe type" "temp"
+    (617455 'move' call_tmp[617452](147662 call _cond_test tmp[517405]))
+    if call_tmp[617452]
+    {
+      (470748 'move' ret[470743](470747 'deref' 0))
+      gotoReturn _end_isIoField[470741] _end_isIoField[470741]
+    }
+    {
+      (470753 'move' ret[470743](470752 'deref' 1))
+      gotoReturn _end_isIoField[470741] _end_isIoField[470741]
+    }
+    label _end_isIoField[470741]
+    (470745 return ret[470743])
+  }
+  function ioFieldNameEqLiteral[147673](arg ch[147671]:_any[170](?), arg t[147675]:_any[170](?), param arg i[147677]:_any[170](?)) : _unknown[43] "private"
+  {
+    unknown ret[470759] "RVV" "temp"
+    unknown call_tmp[617459] "maybe param" "maybe type" "temp"
+    (617462 'move' call_tmp[617459](147685 call(147680 call (partial) styleElement _mt[232] ch[147671]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+    unknown st[147686] "insert auto destroy"
+    (491929 'init var' st[147686] call_tmp[617459])
+    unknown call_tmp[617464] "expr temp" "maybe param" "maybe type" "temp"
+    (617467 'move' call_tmp[617464](147692 call == st[147686] QIO_AGGREGATE_FORMAT_JSON[19410]))
+    unknown call_tmp[617469] "expr temp" "maybe param" "maybe type" "temp"
+    (617472 'move' call_tmp[617469](147787 call _cond_test call_tmp[617464]))
+    if call_tmp[617469]
+    {
+      unknown call_tmp[617474] "expr temp" "maybe param" "maybe type" "temp"
+      (617477 'move' call_tmp[617474](147730 'field num to name' t[147675] i[147677]))
+      unknown call_tmp[617479] "expr temp" "maybe param" "maybe type" "temp"
+      (617482 'move' call_tmp[617479](147731 call + "\"" call_tmp[617474]))
+      unknown call_tmp[617484] "expr temp" "maybe param" "maybe type" "temp"
+      (617487 'move' call_tmp[617484](147749 call + call_tmp[617479] "\":"))
+      unknown call_tmp[617489] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (617492 'move' call_tmp[617489](691449 'new' ioLiteral[226016] call_tmp[617484]))
+      (470764 'move' ret[470759](470763 'deref' call_tmp[617489]))
+      gotoReturn _end_ioFieldNameEqLiteral[470757] _end_ioFieldNameEqLiteral[470757]
+    }
+    {
+      unknown call_tmp[617494] "expr temp" "maybe param" "maybe type" "temp"
+      (617497 'move' call_tmp[617494](147762 'field num to name' t[147675] i[147677]))
+      unknown call_tmp[617499] "expr temp" "maybe param" "maybe type" "temp"
+      (617502 'move' call_tmp[617499](147779 call + call_tmp[617494] " = "))
+      unknown call_tmp[617504] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (617507 'move' call_tmp[617504](691450 'new' ioLiteral[226016] call_tmp[617499]))
+      (470769 'move' ret[470759](470768 'deref' call_tmp[617504]))
+      gotoReturn _end_ioFieldNameEqLiteral[470757] _end_ioFieldNameEqLiteral[470757]
+    }
+    label _end_ioFieldNameEqLiteral[470757]
+    (470761 return ret[470759])
+  }
+  function ioFieldNameLiteral[147797](arg ch[147795]:_any[170](?), arg t[147799]:_any[170](?), param arg i[147801]:_any[170](?)) : _unknown[43] "private"
+  {
+    unknown ret[470775] "RVV" "temp"
+    unknown call_tmp[617511] "maybe param" "maybe type" "temp"
+    (617514 'move' call_tmp[617511](147809 call(147804 call (partial) styleElement _mt[232] ch[147795]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+    unknown st[147810] "insert auto destroy"
+    (491931 'init var' st[147810] call_tmp[617511])
+    unknown call_tmp[617516] "expr temp" "maybe param" "maybe type" "temp"
+    (617519 'move' call_tmp[617516](147816 call == st[147810] QIO_AGGREGATE_FORMAT_JSON[19410]))
+    unknown call_tmp[617521] "expr temp" "maybe param" "maybe type" "temp"
+    (617524 'move' call_tmp[617521](147848 call _cond_test call_tmp[617516]))
+    if call_tmp[617521]
+    {
+      unknown call_tmp[617526] "expr temp" "maybe param" "maybe type" "temp"
+      (617529 'move' call_tmp[617526](147824 'field num to name' t[147799] i[147801]))
+      unknown call_tmp[617531] "expr temp" "maybe param" "maybe type" "temp"
+      (617534 'move' call_tmp[617531](147825 call + "\"" call_tmp[617526]))
+      unknown call_tmp[617536] "expr temp" "maybe param" "maybe type" "temp"
+      (617539 'move' call_tmp[617536](147828 call + call_tmp[617531] "\""))
+      unknown call_tmp[617541] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (617544 'move' call_tmp[617541](691451 'new' ioLiteral[226016] call_tmp[617536]))
+      (470780 'move' ret[470775](470779 'deref' call_tmp[617541]))
+      gotoReturn _end_ioFieldNameLiteral[470773] _end_ioFieldNameLiteral[470773]
+    }
+    {
+      unknown call_tmp[617546] "expr temp" "maybe param" "maybe type" "temp"
+      (617549 'move' call_tmp[617546](147841 'field num to name' t[147799] i[147801]))
+      unknown call_tmp[617551] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (617554 'move' call_tmp[617551](691452 'new' ioLiteral[226016] call_tmp[617546]))
+      (470785 'move' ret[470775](470784 'deref' call_tmp[617551]))
+      gotoReturn _end_ioFieldNameLiteral[470773] _end_ioFieldNameLiteral[470773]
+    }
+    label _end_ioFieldNameLiteral[470773]
+    (470777 return ret[470775])
+  }
+  function writeThisFieldsDefaultImpl[147858](arg writer[147856]:_any[170](?), arg x[147862]:_any[170](?), inout arg first[147866]:bool[10]) : _unknown[43] "no doc" "no return value for void"
+  {
+    unknown call_tmp[617556] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (617559 'move' call_tmp[617556](436715 'typeof' x[147862]))
+    unknown call_tmp[617561] "maybe param" "maybe type" "temp"
+    (617564 'move' call_tmp[617561](147887 'num fields' call_tmp[617556]))
+    unknown num_fields[147888] "param"
+    (491933 'init var' num_fields[147888] call_tmp[617561])
+    unknown call_tmp[617568] "maybe param" "maybe type" "temp"
+    (617571 'move' call_tmp[617568](147897 call(147893 call (partial) binary _mt[232] writer[147856])))
+    unknown isBinary[147898] "insert auto destroy"
+    (491935 'init var' isBinary[147898] call_tmp[617568])
+    unknown call_tmp[617573] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (617576 'move' call_tmp[617573](436717 'typeof' x[147862]))
+    unknown call_tmp[617578] "expr temp" "maybe param" "maybe type" "temp"
+    (617581 'move' call_tmp[617578](147904 call isClassType call_tmp[617573]))
+    unknown call_tmp[617583] "expr temp" "maybe param" "maybe type" "temp"
+    (617586 'move' call_tmp[617583](147931 call _cond_test call_tmp[617578]))
+    if call_tmp[617583]
+    {
+      unknown call_tmp[617588] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (617591 'move' call_tmp[617588](436719 'typeof' x[147862]))
+      unknown call_tmp[617593] "expr temp" "maybe param" "maybe type" "temp"
+      (617596 'move' call_tmp[617593](147908 call _to_borrowed call_tmp[617588]))
+      unknown call_tmp[617598] "expr temp" "maybe param" "maybe type" "temp"
+      (617601 'move' call_tmp[617598](147911 call != call_tmp[617593] object[253]))
+      unknown call_tmp[617603] "expr temp" "maybe param" "maybe type" "temp"
+      (617606 'move' call_tmp[617603](147926 call _cond_test call_tmp[617598]))
+      if call_tmp[617603]
+      {
+        unknown call_tmp[617610] "expr temp" "maybe param" "maybe type" "temp"
+        (617613 'move' call_tmp[617610](147919 call super _mt[232] x[147862]))
+        (147923 call writeThisFieldsDefaultImpl writer[147856] call_tmp[617610] first[147866])
+      }
+    }
+    unknown call_tmp[617615] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (617618 'move' call_tmp[617615](436721 'typeof' x[147862]))
+    unknown call_tmp[617620] "expr temp" "maybe param" "maybe type" "temp"
+    (617623 'move' call_tmp[617620](147938 call isUnionType call_tmp[617615]))
+    unknown call_tmp[617625] "expr temp" "maybe param" "maybe type" "temp"
+    (617628 'move' call_tmp[617625](147939 call ! call_tmp[617620]))
+    unknown call_tmp[617630] "expr temp" "maybe param" "maybe type" "temp"
+    (617633 'move' call_tmp[617630](148180 call _cond_test call_tmp[617625]))
+    if call_tmp[617630]
+    {
+      {
+        unknown i[148025] "insert auto destroy"
+        (491937 'init var' i[148025] 0)
+        unknown tmp[148026] "maybe param" "temp"
+        (148038 'move' tmp[148026](148036 call chpl_compute_low_param_loop_bound 1 num_fields[147888]))
+        unknown tmp[148027] "maybe param" "temp"
+        (148045 'move' tmp[148027](148043 call chpl_compute_high_param_loop_bound 1 num_fields[147888]))
+        unknown tmp[148028] "maybe param" "temp"
+        (148048 'move' tmp[148028] 1)
+        ParamForLoop
+        { i[148025] tmp[148026] tmp[148027] tmp[148028]
+          {
+            unknown call_tmp[617635] "expr temp" "maybe param" "maybe type" "temp"
+            (617638 'move' call_tmp[617635](147949 call isIoField x[147862] i[148025]))
+            unknown call_tmp[617640] "expr temp" "maybe param" "maybe type" "temp"
+            (617643 'move' call_tmp[617640](148020 call _cond_test call_tmp[617635]))
+            if call_tmp[617640]
+            {
+              unknown call_tmp[617645] "expr temp" "maybe param" "maybe type" "temp"
+              (617648 'move' call_tmp[617645](147951 call ! isBinary[147898]))
+              unknown call_tmp[617650] "expr temp" "maybe param" "maybe type" "temp"
+              (617653 'move' call_tmp[617650](147998 call _cond_test call_tmp[617645]))
+              if call_tmp[617650]
+              {
+                unknown call_tmp[617655] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                (617658 'move' call_tmp[617655](691453 'new' ioLiteral[226016] ", "))
+                unknown comma[147958] "insert auto destroy"
+                (491939 'init var' comma[147958] call_tmp[617655])
+                unknown call_tmp[617660] "expr temp" "maybe param" "maybe type" "temp"
+                (617663 'move' call_tmp[617660](147963 call ! first[147866]))
+                unknown call_tmp[617665] "expr temp" "maybe param" "maybe type" "temp"
+                (617668 'move' call_tmp[617665](147975 call _cond_test call_tmp[617660]))
+                if call_tmp[617665]
+                {
+                  (147973 call(147968 call (partial) readwrite _mt[232] writer[147856]) comma[147958])
+                }
+                unknown call_tmp[617672] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+                (617675 'move' call_tmp[617672](436723 'typeof' x[147862]))
+                unknown call_tmp[617677] "maybe param" "maybe type" "temp"
+                (617680 'move' call_tmp[617677](147986 call ioFieldNameEqLiteral writer[147856] call_tmp[617672] i[148025]))
+                unknown eq[147987] "insert auto destroy"
+                (491941 'init var' eq[147987] call_tmp[617677] ioLiteral[226016])
+                (147996 call(147991 call (partial) readwrite _mt[232] writer[147856]) eq[147987])
+              }
+              unknown call_tmp[617686] "expr temp" "maybe param" "maybe type" "temp"
+              (617689 'move' call_tmp[617686](148011 'field by num' x[147862] i[148025]))
+              (148013 call(148004 call (partial) readwrite _mt[232] writer[147856]) call_tmp[617686])
+              (148017 call = first[147866] 0)
+            }
+          }
+        }
+        label _unused_continueLabel[148030]
+        label _breakLabel[148029]
+      }
+    }
+    {
+      unknown call_tmp[617691] "maybe param" "maybe type" "temp"
+      (617694 'move' call_tmp[617691](148078 'get_union_id' x[147862]))
+      unknown id[148079] "insert auto destroy"
+      (491943 'init var' id[148079] call_tmp[617691])
+      {
+        unknown i[148146] "insert auto destroy"
+        (491945 'init var' i[148146] 0)
+        unknown tmp[148147] "maybe param" "temp"
+        (148159 'move' tmp[148147](148157 call chpl_compute_low_param_loop_bound 1 num_fields[147888]))
+        unknown tmp[148148] "maybe param" "temp"
+        (148166 'move' tmp[148148](148164 call chpl_compute_high_param_loop_bound 1 num_fields[147888]))
+        unknown tmp[148149] "maybe param" "temp"
+        (148169 'move' tmp[148149] 1)
+        ParamForLoop
+        { i[148146] tmp[148147] tmp[148148] tmp[148149]
+          {
+            unknown tmp[402567] "maybe param" "temp"
+            (402578 'move' tmp[402567](148091 call isIoField x[147862] i[148146]))
+            unknown call_tmp[617696] "expr temp" "maybe param" "maybe type" "temp"
+            (617699 'move' call_tmp[617696](402580 call _cond_invalid tmp[402567]))
+            if call_tmp[617696]
+            {
+              (402583 call compilerError "cannot promote short-circuiting && operator")
+            }
+            unknown tmp[517432] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+            unknown tmp[517433] "maybe param" "temp"
+            unknown call_tmp[617701] "expr temp" "maybe param" "maybe type" "temp"
+            (617704 'move' call_tmp[617701](402568 call isTrue tmp[402567]))
+            (517438 'move' tmp[517433](517436 call _cond_test call_tmp[617701]))
+            if tmp[517433]
+            {
+              unknown tmp[517440] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+              unknown call_tmp[617706] "expr temp" "maybe param" "maybe type" "temp"
+              (617709 'move' call_tmp[617706](148094 call == i[148146] id[148079]))
+              (517442 'move' tmp[517440](402571 call isTrue call_tmp[617706]))
+              (517447 'move' tmp[517432](517444 '_paramFoldLogical' tmp[517433] tmp[517440]))
+            }
+            {
+              (517452 'move' tmp[517432](517449 '_paramFoldLogical' tmp[517433] 0))
+            }
+            unknown call_tmp[617711] "expr temp" "maybe param" "maybe type" "temp"
+            (617714 'move' call_tmp[617711](148141 call _cond_test tmp[517432]))
+            if call_tmp[617711]
+            {
+              unknown call_tmp[617716] "expr temp" "maybe param" "maybe type" "temp"
+              (617719 'move' call_tmp[617716](148124 call _cond_test isBinary[147898]))
+              if call_tmp[617716]
+              {
+                (148102 call write id[148079])
+              }
+              {
+                unknown call_tmp[617721] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+                (617724 'move' call_tmp[617721](436725 'typeof' x[147862]))
+                unknown call_tmp[617726] "maybe param" "maybe type" "temp"
+                (617729 'move' call_tmp[617726](148111 call ioFieldNameEqLiteral writer[147856] call_tmp[617721] i[148146]))
+                unknown eq[148112] "insert auto destroy"
+                (491947 'init var' eq[148112] call_tmp[617726] ioLiteral[226016])
+                (148122 call(148117 call (partial) readwrite _mt[232] writer[147856]) eq[148112])
+              }
+              unknown call_tmp[617735] "expr temp" "maybe param" "maybe type" "temp"
+              (617738 'move' call_tmp[617735](148137 'field by num' x[147862] i[148146]))
+              (148139 call(148130 call (partial) readwrite _mt[232] writer[147856]) call_tmp[617735])
+            }
+          }
+        }
+        label _unused_continueLabel[148151]
+        label _breakLabel[148150]
+      }
+    }
+    (470789 return _void[47])
+  }
+  function writeThisDefaultImpl[148190](arg writer[148188]:_any[170](?), arg x[148194]:_any[170](?)) : _unknown[43] "no doc" "no return value for void"
+  {
+    unknown call_tmp[617742] "expr temp" "maybe param" "maybe type" "temp"
+    (617745 'move' call_tmp[617742](148202 call(148198 call (partial) binary _mt[232] writer[148188])))
+    unknown call_tmp[617747] "expr temp" "maybe param" "maybe type" "temp"
+    (617750 'move' call_tmp[617747](148203 call ! call_tmp[617742]))
+    unknown call_tmp[617752] "expr temp" "maybe param" "maybe type" "temp"
+    (617755 'move' call_tmp[617752](148318 call _cond_test call_tmp[617747]))
+    if call_tmp[617752]
+    {
+      unknown call_tmp[617759] "maybe param" "maybe type" "temp"
+      (617762 'move' call_tmp[617759](148211 call(148206 call (partial) styleElement _mt[232] writer[148188]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+      unknown st[148212] "insert auto destroy"
+      (491949 'init var' st[148212] call_tmp[617759])
+      unknown start[148217] "insert auto destroy"
+      (491951 'default init var' start[148217] ioLiteral[226016])
+      unknown call_tmp[617764] "expr temp" "maybe param" "maybe type" "temp"
+      (617767 'move' call_tmp[617764](148222 call == st[148212] QIO_AGGREGATE_FORMAT_JSON[19410]))
+      unknown call_tmp[617769] "expr temp" "maybe param" "maybe type" "temp"
+      (617772 'move' call_tmp[617769](148305 call _cond_test call_tmp[617764]))
+      if call_tmp[617769]
+      {
+        unknown call_tmp[617774] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (617777 'move' call_tmp[617774](691454 'new' ioLiteral[226016] "{"))
+        (148230 call = start[148217] call_tmp[617774])
+      }
+      {
+        unknown call_tmp[617779] "expr temp" "maybe param" "maybe type" "temp"
+        (617782 'move' call_tmp[617779](148236 call == st[148212] QIO_AGGREGATE_FORMAT_CHPL[19406]))
+        unknown call_tmp[617784] "expr temp" "maybe param" "maybe type" "temp"
+        (617787 'move' call_tmp[617784](148301 call _cond_test call_tmp[617779]))
+        if call_tmp[617784]
+        {
+          unknown call_tmp[617789] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+          (617792 'move' call_tmp[617789](436727 'typeof' x[148194]))
+          unknown call_tmp[617794] "expr temp" "maybe param" "maybe type" "temp"
+          (617797 'move' call_tmp[617794](148258 call _cast string[24] call_tmp[617789]))
+          unknown call_tmp[617799] "expr temp" "maybe param" "maybe type" "temp"
+          (617802 'move' call_tmp[617799](148260 call + "new " call_tmp[617794]))
+          unknown call_tmp[617804] "expr temp" "maybe param" "maybe type" "temp"
+          (617807 'move' call_tmp[617804](148263 call + call_tmp[617799] "("))
+          unknown call_tmp[617809] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+          (617812 'move' call_tmp[617809](691455 'new' ioLiteral[226016] call_tmp[617804]))
+          (148268 call = start[148217] call_tmp[617809])
+        }
+        {
+          unknown call_tmp[617814] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+          (617817 'move' call_tmp[617814](436729 'typeof' x[148194]))
+          unknown call_tmp[617819] "expr temp" "maybe param" "maybe type" "temp"
+          (617822 'move' call_tmp[617819](148275 call isClassType call_tmp[617814]))
+          unknown call_tmp[617824] "expr temp" "maybe param" "maybe type" "temp"
+          (617827 'move' call_tmp[617824](148296 call _cond_test call_tmp[617819]))
+          if call_tmp[617824]
+          {
+            unknown call_tmp[617829] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+            (617832 'move' call_tmp[617829](691456 'new' ioLiteral[226016] "{"))
+            (148282 call = start[148217] call_tmp[617829])
+          }
+          {
+            unknown call_tmp[617834] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+            (617837 'move' call_tmp[617834](691457 'new' ioLiteral[226016] "("))
+            (148292 call = start[148217] call_tmp[617834])
+          }
+        }
+      }
+      (148316 call(148311 call (partial) readwrite _mt[232] writer[148188]) start[148217])
+    }
+    unknown first[148324] "insert auto destroy"
+    (491953 'init var' first[148324] 1)
+    (148332 call writeThisFieldsDefaultImpl writer[148188] x[148194] first[148324])
+    unknown call_tmp[617843] "expr temp" "maybe param" "maybe type" "temp"
+    (617846 'move' call_tmp[617843](148339 call(148335 call (partial) binary _mt[232] writer[148188])))
+    unknown call_tmp[617848] "expr temp" "maybe param" "maybe type" "temp"
+    (617851 'move' call_tmp[617848](148340 call ! call_tmp[617843]))
+    unknown call_tmp[617853] "expr temp" "maybe param" "maybe type" "temp"
+    (617856 'move' call_tmp[617853](148431 call _cond_test call_tmp[617848]))
+    if call_tmp[617853]
+    {
+      unknown call_tmp[617860] "maybe param" "maybe type" "temp"
+      (617863 'move' call_tmp[617860](148348 call(148343 call (partial) styleElement _mt[232] writer[148188]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+      unknown st[148349] "insert auto destroy"
+      (491955 'init var' st[148349] call_tmp[617860])
+      unknown end[148354] "insert auto destroy"
+      (491957 'default init var' end[148354] ioLiteral[226016])
+      unknown call_tmp[617865] "expr temp" "maybe param" "maybe type" "temp"
+      (617868 'move' call_tmp[617865](148359 call == st[148349] QIO_AGGREGATE_FORMAT_JSON[19410]))
+      unknown call_tmp[617870] "expr temp" "maybe param" "maybe type" "temp"
+      (617873 'move' call_tmp[617870](148418 call _cond_test call_tmp[617865]))
+      if call_tmp[617870]
+      {
+        unknown call_tmp[617875] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (617878 'move' call_tmp[617875](691458 'new' ioLiteral[226016] "}"))
+        (148367 call = end[148354] call_tmp[617875])
+      }
+      {
+        unknown call_tmp[617880] "expr temp" "maybe param" "maybe type" "temp"
+        (617883 'move' call_tmp[617880](148373 call == st[148349] QIO_AGGREGATE_FORMAT_CHPL[19406]))
+        unknown call_tmp[617885] "expr temp" "maybe param" "maybe type" "temp"
+        (617888 'move' call_tmp[617885](148414 call _cond_test call_tmp[617880]))
+        if call_tmp[617885]
+        {
+          unknown call_tmp[617890] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+          (617893 'move' call_tmp[617890](691459 'new' ioLiteral[226016] ")"))
+          (148381 call = end[148354] call_tmp[617890])
+        }
+        {
+          unknown call_tmp[617895] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+          (617898 'move' call_tmp[617895](436731 'typeof' x[148194]))
+          unknown call_tmp[617900] "expr temp" "maybe param" "maybe type" "temp"
+          (617903 'move' call_tmp[617900](148388 call isClassType call_tmp[617895]))
+          unknown call_tmp[617905] "expr temp" "maybe param" "maybe type" "temp"
+          (617908 'move' call_tmp[617905](148409 call _cond_test call_tmp[617900]))
+          if call_tmp[617905]
+          {
+            unknown call_tmp[617910] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+            (617913 'move' call_tmp[617910](691460 'new' ioLiteral[226016] "}"))
+            (148395 call = end[148354] call_tmp[617910])
+          }
+          {
+            unknown call_tmp[617915] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+            (617918 'move' call_tmp[617915](691461 'new' ioLiteral[226016] ")"))
+            (148405 call = end[148354] call_tmp[617915])
+          }
+        }
+      }
+      (148429 call(148424 call (partial) readwrite _mt[232] writer[148188]) end[148354])
+    }
+    (470791 return _void[47])
+  }
+  function skipFieldsAtEnd[148441](arg reader[148439]:_any[170](?), inout arg needsComma[148444]:bool[10]) : _unknown[43] "private" "no return value for void"
+  {
+    unknown call_tmp[617924] "maybe param" "maybe type" "temp"
+    (617927 'move' call_tmp[617924](148453 call(148448 call (partial) styleElement _mt[232] reader[148439]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+    unknown st[148454] "insert auto destroy"
+    (491959 'init var' st[148454] call_tmp[617924])
+    unknown call_tmp[617931] "maybe param" "maybe type" "temp"
+    (617934 'move' call_tmp[617931](148464 call(148459 call (partial) styleElement _mt[232] reader[148439]) QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS[19386]))
+    unknown skip_unk[148465] "insert auto destroy"
+    (491961 'init var' skip_unk[148465] call_tmp[617931])
+    unknown tmp[402588] "maybe param" "temp"
+    (402599 'move' tmp[402588](148470 call != skip_unk[148465] 0))
+    unknown call_tmp[617936] "expr temp" "maybe param" "maybe type" "temp"
+    (617939 'move' call_tmp[617936](402601 call _cond_invalid tmp[402588]))
+    if call_tmp[617936]
+    {
+      (402604 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[517459] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[517460] "maybe param" "temp"
+    unknown call_tmp[617941] "expr temp" "maybe param" "maybe type" "temp"
+    (617944 'move' call_tmp[617941](402589 call isTrue tmp[402588]))
+    (517465 'move' tmp[517460](517463 call _cond_test call_tmp[617941]))
+    if tmp[517460]
+    {
+      unknown tmp[517467] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[617946] "expr temp" "maybe param" "maybe type" "temp"
+      (617949 'move' call_tmp[617946](148474 call == st[148454] QIO_AGGREGATE_FORMAT_JSON[19410]))
+      (517469 'move' tmp[517467](402592 call isTrue call_tmp[617946]))
+      (517474 'move' tmp[517459](517471 '_paramFoldLogical' tmp[517460] tmp[517467]))
+    }
+    {
+      (517479 'move' tmp[517459](517476 '_paramFoldLogical' tmp[517460] 0))
+    }
+    unknown call_tmp[617951] "expr temp" "maybe param" "maybe type" "temp"
+    (617954 'move' call_tmp[617951](148619 call _cond_test tmp[517459]))
+    if call_tmp[617951]
+    {
+      {
+        unknown tmp[148597] "temp"
+        (148615 'move' tmp[148597](148613 call _cond_test 1))
+        WhileDo
+        {
+          {
+            unknown call_tmp[617956] "expr temp" "maybe param" "maybe type" "temp"
+            (617959 'move' call_tmp[617956](148541 call _cond_test needsComma[148444]))
+            if call_tmp[617956]
+            {
+              unknown call_tmp[617961] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+              (617964 'move' call_tmp[617961](691462 'new' ioLiteral[226016] "," 1))
+              unknown comma[148486] "insert auto destroy"
+              (491963 'init var' comma[148486] call_tmp[617961])
+              (148496 call(148491 call (partial) readwrite _mt[232] reader[148439]) comma[148486])
+              unknown call_tmp[617970] "expr temp" "maybe param" "maybe type" "temp"
+              (617973 'move' call_tmp[617970](148503 call(148499 call (partial) error _mt[232] reader[148439])))
+              unknown call_tmp[617975] "expr temp" "maybe param" "maybe type" "temp"
+              (617978 'move' call_tmp[617975](148504 call ! call_tmp[617970]))
+              unknown call_tmp[617980] "expr temp" "maybe param" "maybe type" "temp"
+              (617983 'move' call_tmp[617980](148536 call _cond_test call_tmp[617975]))
+              if call_tmp[617980]
+              {
+                (148508 call = needsComma[148444] 0)
+              }
+              {
+                unknown call_tmp[617987] "expr temp" "maybe param" "maybe type" "temp"
+                (617990 'move' call_tmp[617987](148517 call(148513 call (partial) error _mt[232] reader[148439])))
+                unknown call_tmp[617992] "expr temp" "maybe param" "maybe type" "temp"
+                (617995 'move' call_tmp[617992](356035 call EFORMAT[210730]))
+                unknown call_tmp[617997] "expr temp" "maybe param" "maybe type" "temp"
+                (618000 'move' call_tmp[617997](148519 call == call_tmp[617987] call_tmp[617992]))
+                unknown call_tmp[618002] "expr temp" "maybe param" "maybe type" "temp"
+                (618005 'move' call_tmp[618002](148532 call _cond_test call_tmp[617997]))
+                if call_tmp[618002]
+                {
+                  (148526 call(148522 call (partial) clearError _mt[232] reader[148439]))
+                  break _breakLabel[148601] _breakLabel[148601]
+                }
+              }
+            }
+            unknown call_tmp[618009] "maybe param" "maybe type" "temp"
+            (618012 'move' call_tmp[618009](356039 call ENOERR[210102]))
+            unknown err[148548] "insert auto destroy"
+            (491965 'init var' err[148548] call_tmp[618009] syserr[210032])
+            Try
+            {
+              {
+                (148558 call(148554 call (partial) skipField _mt[232] reader[148439]))
+                (148563 call = needsComma[148444] 1)
+              }
+            }
+            Catch e : anymanaged SystemError
+            {
+              unknown call_tmp[618016] "expr temp" "maybe param" "maybe type" "temp"
+              (618019 'move' call_tmp[618016](328618 'current error'))
+              unknown call_tmp[618021] "maybe param" "maybe type" "temp"
+              (618024 'move' call_tmp[618021](328619 'dynamic_cast' unmanaged SystemError[390112] call_tmp[618016]))
+              unknown tmp[328616] "insert auto destroy" "temp"
+              (491967 'init var' tmp[328616] call_tmp[618021])
+              unknown call_tmp[618026] "expr temp" "maybe param" "maybe type" "temp"
+              (618029 'move' call_tmp[618026](328628 '!=' tmp[328616] nil[38]))
+              if call_tmp[618026]
+              {
+                unknown call_tmp[618031] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                (618034 'move' call_tmp[618031](691463 'new' _owned[39039](?) tmp[328616]))
+                unknown e[328634] "insert auto destroy"
+                (491969 'init var' e[328634] call_tmp[618031])
+                {
+                  unknown call_tmp[618038] "expr temp" "maybe param" "maybe type" "temp"
+                  (618041 'move' call_tmp[618038](148572 call err _mt[232] e[328634]))
+                  (148575 call = err[148548] call_tmp[618038])
+                }
+              }
+              {
+              }
+            }
+            Catch
+            {
+              unknown call_tmp[618043] "maybe param" "maybe type" "temp"
+              (618046 'move' call_tmp[618043](328643 'current error'))
+              unknown tmp[328641] "insert auto destroy" "temp"
+              (491971 'init var' tmp[328641] call_tmp[618043])
+              unknown call_tmp[618048] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+              (618051 'move' call_tmp[618048](691464 'new' _owned[39039](?) tmp[328641]))
+              unknown chpl_anon_error[328646] "insert auto destroy"
+              (491973 'init var' chpl_anon_error[328646] call_tmp[618048])
+              {
+                (148582 call = err[148548] EINVAL[210884])
+              }
+            }
+            (148595 call(148590 call (partial) setError _mt[232] reader[148439]) err[148548])
+          }
+          label _continueLabel[148600]
+          (148608 'move' tmp[148597](148606 call _cond_test 1))
+          tmp[148597]
+        }
+        label _breakLabel[148601]
+      }
+    }
+    (470793 return _void[47])
+  }
+  function readThisFieldsDefaultImpl[148629](arg reader[148627]:_any[170](?), arg t[148631]:_any[170](?), ref arg x[148633]:_any[170](?), inout arg needsComma[148636]:bool[10]) : _unknown[43] "no doc" "no return value for void"
+  {
+    unknown call_tmp[618055] "maybe param" "maybe type" "temp"
+    (618058 'move' call_tmp[618055](148642 'num fields' t[148631]))
+    unknown num_fields[148643] "param"
+    (491975 'init var' num_fields[148643] call_tmp[618055])
+    unknown call_tmp[618062] "maybe param" "maybe type" "temp"
+    (618065 'move' call_tmp[618062](148652 call(148648 call (partial) binary _mt[232] reader[148627])))
+    unknown isBinary[148653] "insert auto destroy"
+    (491977 'init var' isBinary[148653] call_tmp[618062])
+    unknown call_tmp[618067] "maybe param" "maybe type" "temp"
+    (618070 'move' call_tmp[618067](356053 call ENOERR[210102]))
+    unknown superclass_error[148658] "insert auto destroy"
+    (491979 'init var' superclass_error[148658] call_tmp[618067] syserr[210032])
+    unknown call_tmp[618072] "expr temp" "maybe param" "maybe type" "temp"
+    (618075 'move' call_tmp[618072](148664 call isClassType t[148631]))
+    unknown call_tmp[618077] "expr temp" "maybe param" "maybe type" "temp"
+    (618080 'move' call_tmp[618077](148710 call _cond_test call_tmp[618072]))
+    if call_tmp[618077]
+    {
+      unknown call_tmp[618082] "expr temp" "maybe param" "maybe type" "temp"
+      (618085 'move' call_tmp[618082](148668 call _to_borrowed t[148631]))
+      unknown call_tmp[618087] "expr temp" "maybe param" "maybe type" "temp"
+      (618090 'move' call_tmp[618087](148671 call != call_tmp[618082] object[253]))
+      unknown call_tmp[618092] "expr temp" "maybe param" "maybe type" "temp"
+      (618095 'move' call_tmp[618092](148705 call _cond_test call_tmp[618087]))
+      if call_tmp[618092]
+      {
+        { scopeless type
+          unknown call_type_tmp[443712] "expr temp" "maybe type" "temp" "type variable"
+          unknown call_tmp[618099] "expr temp" "maybe param" "maybe type" "temp"
+          (618102 'move' call_tmp[618099](148674 call super _mt[232] x[148633]))
+          (443716 'move' call_type_tmp[443712](148677 'typeof' call_tmp[618099]))
+        }
+        unknown superType[148678] "insert auto destroy" "type variable" call_type_tmp[443712]
+        (491982 'move' superType[148678] call_type_tmp[443712])
+        unknown castTmp[148684] "insert auto destroy"
+        (491984 'init var' castTmp[148684] x[148633] superType[148678])
+        (148693 call readThisFieldsDefaultImpl reader[148627] superType[148678] castTmp[148684] needsComma[148636])
+        unknown call_tmp[618106] "expr temp" "maybe param" "maybe type" "temp"
+        (618109 'move' call_tmp[618106](148701 call(148697 call (partial) error _mt[232] reader[148627])))
+        (148702 call = superclass_error[148658] call_tmp[618106])
+      }
+    }
+    unknown call_tmp[618111] "expr temp" "maybe param" "maybe type" "temp"
+    (618114 'move' call_tmp[618111](148717 call isUnionType t[148631]))
+    unknown call_tmp[618116] "expr temp" "maybe param" "maybe type" "temp"
+    (618119 'move' call_tmp[618116](148718 call ! call_tmp[618111]))
+    unknown call_tmp[618121] "expr temp" "maybe param" "maybe type" "temp"
+    (618124 'move' call_tmp[618121](149603 call _cond_test call_tmp[618116]))
+    if call_tmp[618121]
+    {
+      unknown call_tmp[618126] "expr temp" "maybe param" "maybe type" "temp"
+      (618129 'move' call_tmp[618126](149318 call _cond_test isBinary[148653]))
+      if call_tmp[618126]
+      {
+        {
+          unknown i[148748] "insert auto destroy"
+          (491986 'init var' i[148748] 0)
+          unknown tmp[148749] "maybe param" "temp"
+          (148761 'move' tmp[148749](148759 call chpl_compute_low_param_loop_bound 1 num_fields[148643]))
+          unknown tmp[148750] "maybe param" "temp"
+          (148768 'move' tmp[148750](148766 call chpl_compute_high_param_loop_bound 1 num_fields[148643]))
+          unknown tmp[148751] "maybe param" "temp"
+          (148771 'move' tmp[148751] 1)
+          ParamForLoop
+          { i[148748] tmp[148749] tmp[148750] tmp[148751]
+            {
+              unknown call_tmp[618131] "expr temp" "maybe param" "maybe type" "temp"
+              (618134 'move' call_tmp[618131](148729 call isIoField x[148633] i[148748]))
+              unknown call_tmp[618136] "expr temp" "maybe param" "maybe type" "temp"
+              (618139 'move' call_tmp[618136](148743 call _cond_test call_tmp[618131]))
+              if call_tmp[618136]
+              {
+                unknown call_tmp[618143] "expr temp" "maybe param" "maybe type" "temp"
+                (618146 'move' call_tmp[618143](148738 'field by num' x[148633] i[148748]))
+                (148740 call(148731 call (partial) readwrite _mt[232] reader[148627]) call_tmp[618143])
+              }
+            }
+          }
+          label _unused_continueLabel[148753]
+          label _breakLabel[148752]
+        }
+      }
+      {
+        unknown call_tmp[618148] "expr temp" "maybe param" "maybe type" "temp"
+        (618151 'move' call_tmp[618148](148785 call > num_fields[148643] 0))
+        unknown call_tmp[618153] "expr temp" "maybe param" "maybe type" "temp"
+        (618156 'move' call_tmp[618153](149314 call _cond_test call_tmp[618148]))
+        if call_tmp[618153]
+        {
+          unknown read_field[148791] "insert auto destroy"
+          unknown call_tmp[618158] "expr temp" "maybe param" "maybe type" "temp"
+          (618161 'move' call_tmp[618158](148789 call * num_fields[148643] bool[10]))
+          (491988 'default init var' read_field[148791] call_tmp[618158])
+          unknown num_to_read[148796] "insert auto destroy"
+          (491990 'init var' num_to_read[148796] 0)
+          unknown num_read[148800] "insert auto destroy"
+          (491992 'init var' num_read[148800] 0)
+          {
+            unknown i[148823] "insert auto destroy"
+            (491994 'init var' i[148823] 0)
+            unknown tmp[148824] "maybe param" "temp"
+            (148836 'move' tmp[148824](148834 call chpl_compute_low_param_loop_bound 1 num_fields[148643]))
+            unknown tmp[148825] "maybe param" "temp"
+            (148843 'move' tmp[148825](148841 call chpl_compute_high_param_loop_bound 1 num_fields[148643]))
+            unknown tmp[148826] "maybe param" "temp"
+            (148846 'move' tmp[148826] 1)
+            ParamForLoop
+            { i[148823] tmp[148824] tmp[148825] tmp[148826]
+              {
+                unknown call_tmp[618163] "expr temp" "maybe param" "maybe type" "temp"
+                (618166 'move' call_tmp[618163](148811 call isIoField x[148633] i[148823]))
+                unknown call_tmp[618168] "expr temp" "maybe param" "maybe type" "temp"
+                (618171 'move' call_tmp[618168](148818 call _cond_test call_tmp[618163]))
+                if call_tmp[618168]
+                {
+                  (148814 call += num_to_read[148796] 1)
+                }
+              }
+            }
+            label _unused_continueLabel[148828]
+            label _breakLabel[148827]
+          }
+          {
+            unknown tmp[149253] "temp"
+            unknown call_tmp[618173] "expr temp" "maybe param" "maybe type" "temp"
+            (618176 'move' call_tmp[618173](149274 call < num_read[148800] num_to_read[148796]))
+            (149277 'move' tmp[149253](149272 call _cond_test call_tmp[618173]))
+            WhileDo
+            {
+              {
+                unknown call_tmp[618178] "expr temp" "maybe param" "maybe type" "temp"
+                (618181 'move' call_tmp[618178](148916 call _cond_test needsComma[148636]))
+                if call_tmp[618178]
+                {
+                  unknown call_tmp[618183] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                  (618186 'move' call_tmp[618183](691465 'new' ioLiteral[226016] "," 1))
+                  unknown comma[148868] "insert auto destroy"
+                  (491996 'init var' comma[148868] call_tmp[618183])
+                  (148878 call(148873 call (partial) readwrite _mt[232] reader[148627]) comma[148868])
+                  unknown call_tmp[618192] "expr temp" "maybe param" "maybe type" "temp"
+                  (618195 'move' call_tmp[618192](148885 call(148881 call (partial) error _mt[232] reader[148627])))
+                  unknown call_tmp[618197] "expr temp" "maybe param" "maybe type" "temp"
+                  (618200 'move' call_tmp[618197](148886 call ! call_tmp[618192]))
+                  unknown call_tmp[618202] "expr temp" "maybe param" "maybe type" "temp"
+                  (618205 'move' call_tmp[618202](148911 call _cond_test call_tmp[618197]))
+                  if call_tmp[618202]
+                  {
+                    (148890 call = needsComma[148636] 0)
+                  }
+                  {
+                    unknown call_tmp[618209] "expr temp" "maybe param" "maybe type" "temp"
+                    (618212 'move' call_tmp[618209](148899 call(148895 call (partial) error _mt[232] reader[148627])))
+                    unknown call_tmp[618214] "expr temp" "maybe param" "maybe type" "temp"
+                    (618217 'move' call_tmp[618214](356090 call EFORMAT[210730]))
+                    unknown call_tmp[618219] "expr temp" "maybe param" "maybe type" "temp"
+                    (618222 'move' call_tmp[618219](148901 call == call_tmp[618209] call_tmp[618214]))
+                    unknown call_tmp[618224] "expr temp" "maybe param" "maybe type" "temp"
+                    (618227 'move' call_tmp[618224](148907 call _cond_test call_tmp[618219]))
+                    if call_tmp[618224]
+                    {
+                      break _breakLabel[149257] _breakLabel[149257]
+                    }
+                  }
+                }
+                unknown call_tmp[618231] "maybe param" "maybe type" "temp"
+                (618234 'move' call_tmp[618231](148927 call(148922 call (partial) styleElement _mt[232] reader[148627]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+                unknown st[148928] "insert auto destroy"
+                (491998 'init var' st[148928] call_tmp[618231])
+                unknown call_tmp[618238] "maybe param" "maybe type" "temp"
+                (618241 'move' call_tmp[618238](148937 call(148932 call (partial) styleElement _mt[232] reader[148627]) QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS[19386]))
+                unknown skip_unk[148938] "insert auto destroy"
+                (492000 'init var' skip_unk[148938] call_tmp[618238])
+                unknown read_field_name[148942] "insert auto destroy"
+                (492002 'init var' read_field_name[148942] 0)
+                {
+                  unknown i[149132] "insert auto destroy"
+                  (492004 'init var' i[149132] 0)
+                  unknown tmp[149133] "maybe param" "temp"
+                  (149145 'move' tmp[149133](149143 call chpl_compute_low_param_loop_bound 1 num_fields[148643]))
+                  unknown tmp[149134] "maybe param" "temp"
+                  (149152 'move' tmp[149134](149150 call chpl_compute_high_param_loop_bound 1 num_fields[148643]))
+                  unknown tmp[149135] "maybe param" "temp"
+                  (149155 'move' tmp[149135] 1)
+                  ParamForLoop
+                  { i[149132] tmp[149133] tmp[149134] tmp[149135]
+                    {
+                      unknown call_tmp[618243] "expr temp" "maybe param" "maybe type" "temp"
+                      (618246 'move' call_tmp[618243](148953 call isIoField x[148633] i[149132]))
+                      unknown call_tmp[618248] "expr temp" "maybe param" "maybe type" "temp"
+                      (618251 'move' call_tmp[618248](149127 call _cond_test call_tmp[618243]))
+                      if call_tmp[618248]
+                      {
+                        unknown tmp[402630] "maybe param" "temp"
+                        (402641 'move' tmp[402630](148955 call ! read_field_name[148942]))
+                        unknown call_tmp[618253] "expr temp" "maybe param" "maybe type" "temp"
+                        (618256 'move' call_tmp[618253](402643 call _cond_invalid tmp[402630]))
+                        if call_tmp[618253]
+                        {
+                          (402646 call compilerError "cannot promote short-circuiting && operator")
+                        }
+                        unknown tmp[517486] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+                        unknown tmp[517487] "maybe param" "temp"
+                        unknown call_tmp[618258] "expr temp" "maybe param" "maybe type" "temp"
+                        (618261 'move' call_tmp[618258](402631 call isTrue tmp[402630]))
+                        (517492 'move' tmp[517487](517490 call _cond_test call_tmp[618258]))
+                        if tmp[517487]
+                        {
+                          unknown tmp[517494] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                          unknown call_tmp[618263] "expr temp" "maybe param" "maybe type" "temp"
+                          (618266 'move' call_tmp[618263](148960 call read_field[148791] i[149132]))
+                          unknown call_tmp[618268] "expr temp" "maybe param" "maybe type" "temp"
+                          (618271 'move' call_tmp[618268](148961 call ! call_tmp[618263]))
+                          (517496 'move' tmp[517494](402634 call isTrue call_tmp[618268]))
+                          (517501 'move' tmp[517486](517498 '_paramFoldLogical' tmp[517487] tmp[517494]))
+                        }
+                        {
+                          (517506 'move' tmp[517486](517503 '_paramFoldLogical' tmp[517487] 0))
+                        }
+                        unknown call_tmp[618273] "expr temp" "maybe param" "maybe type" "temp"
+                        (618276 'move' call_tmp[618273](149122 call _cond_test tmp[517486]))
+                        if call_tmp[618273]
+                        {
+                          unknown call_tmp[618278] "maybe param" "maybe type" "temp"
+                          (618281 'move' call_tmp[618278](148971 call ioFieldNameLiteral reader[148627] t[148631] i[149132]))
+                          unknown fname[148972] "insert auto destroy"
+                          (492006 'init var' fname[148972] call_tmp[618278] ioLiteral[226016])
+                          (148982 call(148977 call (partial) readwrite _mt[232] reader[148627]) fname[148972])
+                          unknown tmp[402609] "maybe param" "temp"
+                          unknown call_tmp[618287] "expr temp" "maybe param" "maybe type" "temp"
+                          (618290 'move' call_tmp[618287](148989 call(148985 call (partial) error _mt[232] reader[148627])))
+                          unknown call_tmp[618292] "expr temp" "maybe param" "maybe type" "temp"
+                          (618295 'move' call_tmp[618292](356109 call EFORMAT[210730]))
+                          (402620 'move' tmp[402609](148991 call == call_tmp[618287] call_tmp[618292]))
+                          unknown call_tmp[618297] "expr temp" "maybe param" "maybe type" "temp"
+                          (618300 'move' call_tmp[618297](402622 call _cond_invalid tmp[402609]))
+                          if call_tmp[618297]
+                          {
+                            (402625 call compilerError "cannot promote short-circuiting || operator")
+                          }
+                          unknown tmp[517513] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+                          unknown tmp[517514] "maybe param" "temp"
+                          unknown call_tmp[618302] "expr temp" "maybe param" "maybe type" "temp"
+                          (618305 'move' call_tmp[618302](402610 call isTrue tmp[402609]))
+                          (517519 'move' tmp[517514](517517 call _cond_test call_tmp[618302]))
+                          if tmp[517514]
+                          {
+                            (517524 'move' tmp[517513](517521 '_paramFoldLogical' tmp[517514] 1))
+                          }
+                          {
+                            unknown tmp[517526] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                            unknown call_tmp[618309] "expr temp" "maybe param" "maybe type" "temp"
+                            (618312 'move' call_tmp[618309](148998 call(148994 call (partial) error _mt[232] reader[148627])))
+                            unknown call_tmp[618314] "expr temp" "maybe param" "maybe type" "temp"
+                            (618317 'move' call_tmp[618314](356112 call EEOF[210684]))
+                            unknown call_tmp[618319] "expr temp" "maybe param" "maybe type" "temp"
+                            (618322 'move' call_tmp[618319](149000 call == call_tmp[618309] call_tmp[618314]))
+                            (517528 'move' tmp[517526](402614 call isTrue call_tmp[618319]))
+                            (517533 'move' tmp[517513](517530 '_paramFoldLogical' tmp[517514] tmp[517526]))
+                          }
+                          unknown call_tmp[618324] "expr temp" "maybe param" "maybe type" "temp"
+                          (618327 'move' call_tmp[618324](149118 call _cond_test tmp[517513]))
+                          if call_tmp[618324]
+                          {
+                            (149009 call(149005 call (partial) clearError _mt[232] reader[148627]))
+                          }
+                          {
+                            (149014 call = read_field_name[148942] 1)
+                            (149020 call = needsComma[148636] 1)
+                            unknown eq[149024] "insert auto destroy"
+                            (492008 'default init var' eq[149024] ioLiteral[226016])
+                            unknown call_tmp[618331] "expr temp" "maybe param" "maybe type" "temp"
+                            (618334 'move' call_tmp[618331](149029 call == st[148928] QIO_AGGREGATE_FORMAT_JSON[19410]))
+                            unknown call_tmp[618336] "expr temp" "maybe param" "maybe type" "temp"
+                            (618339 'move' call_tmp[618336](149068 call _cond_test call_tmp[618331]))
+                            if call_tmp[618336]
+                            {
+                              unknown call_tmp[618341] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                              (618344 'move' call_tmp[618341](691466 'new' ioLiteral[226016] ":" 1))
+                              (149053 call = eq[149024] call_tmp[618341])
+                            }
+                            {
+                              unknown call_tmp[618346] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                              (618349 'move' call_tmp[618346](691467 'new' ioLiteral[226016] "=" 1))
+                              (149064 call = eq[149024] call_tmp[618346])
+                            }
+                            (149078 call(149073 call (partial) readwrite _mt[232] reader[148627]) eq[149024])
+                            unknown call_tmp[618355] "expr temp" "maybe param" "maybe type" "temp"
+                            (618358 'move' call_tmp[618355](149088 'field by num' x[148633] i[149132]))
+                            (149090 call(149081 call (partial) readwrite _mt[232] reader[148627]) call_tmp[618355])
+                            unknown call_tmp[618362] "expr temp" "maybe param" "maybe type" "temp"
+                            (618365 'move' call_tmp[618362](149097 call(149093 call (partial) error _mt[232] reader[148627])))
+                            unknown call_tmp[618367] "expr temp" "maybe param" "maybe type" "temp"
+                            (618370 'move' call_tmp[618367](149098 call ! call_tmp[618362]))
+                            unknown call_tmp[618372] "expr temp" "maybe param" "maybe type" "temp"
+                            (618375 'move' call_tmp[618372](149114 call _cond_test call_tmp[618367]))
+                            if call_tmp[618372]
+                            {
+                              unknown call_tmp[618377] "expr temp" "maybe param" "maybe type" "temp"
+                              (618380 'move' call_tmp[618377](149103 call read_field[148791] i[149132]))
+                              (149105 call = call_tmp[618377] 1)
+                              (149111 call += num_read[148800] 1)
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  label _unused_continueLabel[149137]
+                  label _breakLabel[149136]
+                }
+                unknown call_tmp[618382] "expr temp" "maybe param" "maybe type" "temp"
+                (618385 'move' call_tmp[618382](149167 call ! read_field_name[148942]))
+                unknown call_tmp[618387] "expr temp" "maybe param" "maybe type" "temp"
+                (618390 'move' call_tmp[618387](149249 call _cond_test call_tmp[618382]))
+                if call_tmp[618387]
+                {
+                  unknown tmp[402651] "maybe param" "temp"
+                  (402662 'move' tmp[402651](149171 call != skip_unk[148938] 0))
+                  unknown call_tmp[618392] "expr temp" "maybe param" "maybe type" "temp"
+                  (618395 'move' call_tmp[618392](402664 call _cond_invalid tmp[402651]))
+                  if call_tmp[618392]
+                  {
+                    (402667 call compilerError "cannot promote short-circuiting && operator")
+                  }
+                  unknown tmp[517540] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+                  unknown tmp[517541] "maybe param" "temp"
+                  unknown call_tmp[618397] "expr temp" "maybe param" "maybe type" "temp"
+                  (618400 'move' call_tmp[618397](402652 call isTrue tmp[402651]))
+                  (517546 'move' tmp[517541](517544 call _cond_test call_tmp[618397]))
+                  if tmp[517541]
+                  {
+                    unknown tmp[517548] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                    unknown call_tmp[618402] "expr temp" "maybe param" "maybe type" "temp"
+                    (618405 'move' call_tmp[618402](149175 call == st[148928] QIO_AGGREGATE_FORMAT_JSON[19410]))
+                    (517550 'move' tmp[517548](402655 call isTrue call_tmp[618402]))
+                    (517555 'move' tmp[517540](517552 '_paramFoldLogical' tmp[517541] tmp[517548]))
+                  }
+                  {
+                    (517560 'move' tmp[517540](517557 '_paramFoldLogical' tmp[517541] 0))
+                  }
+                  unknown call_tmp[618407] "expr temp" "maybe param" "maybe type" "temp"
+                  (618410 'move' call_tmp[618407](149244 call _cond_test tmp[517540]))
+                  if call_tmp[618407]
+                  {
+                    unknown call_tmp[618412] "maybe param" "maybe type" "temp"
+                    (618415 'move' call_tmp[618412](356139 call ENOERR[210102]))
+                    unknown err[149181] "insert auto destroy"
+                    (492010 'init var' err[149181] call_tmp[618412] syserr[210032])
+                    Try
+                    {
+                      {
+                        (149190 call(149186 call (partial) skipField _mt[232] reader[148627]))
+                        (149195 call = needsComma[148636] 1)
+                      }
+                    }
+                    Catch e : anymanaged SystemError
+                    {
+                      unknown call_tmp[618419] "expr temp" "maybe param" "maybe type" "temp"
+                      (618422 'move' call_tmp[618419](328655 'current error'))
+                      unknown call_tmp[618424] "maybe param" "maybe type" "temp"
+                      (618427 'move' call_tmp[618424](328656 'dynamic_cast' unmanaged SystemError[390112] call_tmp[618419]))
+                      unknown tmp[328653] "insert auto destroy" "temp"
+                      (492012 'init var' tmp[328653] call_tmp[618424])
+                      unknown call_tmp[618429] "expr temp" "maybe param" "maybe type" "temp"
+                      (618432 'move' call_tmp[618429](328665 '!=' tmp[328653] nil[38]))
+                      if call_tmp[618429]
+                      {
+                        unknown call_tmp[618434] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                        (618437 'move' call_tmp[618434](691468 'new' _owned[39039](?) tmp[328653]))
+                        unknown e[328671] "insert auto destroy"
+                        (492014 'init var' e[328671] call_tmp[618434])
+                        {
+                          unknown call_tmp[618441] "expr temp" "maybe param" "maybe type" "temp"
+                          (618444 'move' call_tmp[618441](149204 call err _mt[232] e[328671]))
+                          (149207 call = err[149181] call_tmp[618441])
+                        }
+                      }
+                      {
+                      }
+                    }
+                    Catch
+                    {
+                      unknown call_tmp[618446] "maybe param" "maybe type" "temp"
+                      (618449 'move' call_tmp[618446](328680 'current error'))
+                      unknown tmp[328678] "insert auto destroy" "temp"
+                      (492016 'init var' tmp[328678] call_tmp[618446])
+                      unknown call_tmp[618451] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                      (618454 'move' call_tmp[618451](691469 'new' _owned[39039](?) tmp[328678]))
+                      unknown chpl_anon_error[328683] "insert auto destroy"
+                      (492018 'init var' chpl_anon_error[328683] call_tmp[618451])
+                      {
+                        (149214 call = err[149181] EINVAL[210884])
+                      }
+                    }
+                    (149227 call(149222 call (partial) setError _mt[232] reader[148627]) err[149181])
+                  }
+                  {
+                    unknown call_tmp[618460] "expr temp" "maybe param" "maybe type" "temp"
+                    (618463 'move' call_tmp[618460](356151 call EFORMAT[210730]))
+                    unknown call_tmp[618465] "expr temp" "maybe param" "maybe type" "temp"
+                    (618468 'move' call_tmp[618465](149235 call _cast syserr[210032] call_tmp[618460]))
+                    (149238 call(149230 call (partial) setError _mt[232] reader[148627]) call_tmp[618465])
+                    break _breakLabel[149257] _breakLabel[149257]
+                  }
+                }
+              }
+              label _continueLabel[149256]
+              unknown call_tmp[618470] "expr temp" "maybe param" "maybe type" "temp"
+              (618473 'move' call_tmp[618470](149264 call < num_read[148800] num_to_read[148796]))
+              (149267 'move' tmp[149253](149262 call _cond_test call_tmp[618470]))
+              tmp[149253]
+            }
+            label _breakLabel[149257]
+          }
+          {
+            unknown call_tmp[618475] "maybe param" "maybe type" "temp"
+            (618478 'move' call_tmp[618475](149282 call == num_read[148800] num_to_read[148796]))
+            unknown ok[149284] "insert auto destroy"
+            (492020 'init var' ok[149284] call_tmp[618475])
+            unknown call_tmp[618480] "expr temp" "maybe param" "maybe type" "temp"
+            (618483 'move' call_tmp[618480](149308 call _cond_test ok[149284]))
+            if call_tmp[618480]
+            {
+              (149295 call(149290 call (partial) setError _mt[232] reader[148627]) superclass_error[148658])
+            }
+            {
+              unknown call_tmp[618489] "expr temp" "maybe param" "maybe type" "temp"
+              (618492 'move' call_tmp[618489](356164 call EFORMAT[210730]))
+              unknown call_tmp[618494] "expr temp" "maybe param" "maybe type" "temp"
+              (618497 'move' call_tmp[618494](149303 call _cast syserr[210032] call_tmp[618489]))
+              (149306 call(149298 call (partial) setError _mt[232] reader[148627]) call_tmp[618494])
+            }
+          }
+        }
+      }
+    }
+    {
+      unknown call_tmp[618499] "expr temp" "maybe param" "maybe type" "temp"
+      (618502 'move' call_tmp[618499](149598 call _cond_test isBinary[148653]))
+      if call_tmp[618499]
+      {
+        unknown call_tmp[618504] "maybe param" "maybe type" "temp"
+        (618507 'move' call_tmp[618504](149328 'get_union_id' x[148633]))
+        unknown id[149329] "insert auto destroy"
+        (492022 'init var' id[149329] call_tmp[618504])
+        (149339 call(149334 call (partial) readwrite _mt[232] reader[148627]) id[149329])
+        {
+          unknown i[149374] "insert auto destroy"
+          (492024 'init var' i[149374] 0)
+          unknown tmp[149375] "maybe param" "temp"
+          (149387 'move' tmp[149375](149385 call chpl_compute_low_param_loop_bound 1 num_fields[148643]))
+          unknown tmp[149376] "maybe param" "temp"
+          (149394 'move' tmp[149376](149392 call chpl_compute_high_param_loop_bound 1 num_fields[148643]))
+          unknown tmp[149377] "maybe param" "temp"
+          (149397 'move' tmp[149377] 1)
+          ParamForLoop
+          { i[149374] tmp[149375] tmp[149376] tmp[149377]
+            {
+              unknown tmp[402672] "maybe param" "temp"
+              (402683 'move' tmp[402672](149349 call isIoField x[148633] i[149374]))
+              unknown call_tmp[618511] "expr temp" "maybe param" "maybe type" "temp"
+              (618514 'move' call_tmp[618511](402685 call _cond_invalid tmp[402672]))
+              if call_tmp[618511]
+              {
+                (402688 call compilerError "cannot promote short-circuiting && operator")
+              }
+              unknown tmp[517567] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+              unknown tmp[517568] "maybe param" "temp"
+              unknown call_tmp[618516] "expr temp" "maybe param" "maybe type" "temp"
+              (618519 'move' call_tmp[618516](402673 call isTrue tmp[402672]))
+              (517573 'move' tmp[517568](517571 call _cond_test call_tmp[618516]))
+              if tmp[517568]
+              {
+                unknown tmp[517575] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                unknown call_tmp[618521] "expr temp" "maybe param" "maybe type" "temp"
+                (618524 'move' call_tmp[618521](149352 call == i[149374] id[149329]))
+                (517577 'move' tmp[517575](402676 call isTrue call_tmp[618521]))
+                (517582 'move' tmp[517567](517579 '_paramFoldLogical' tmp[517568] tmp[517575]))
+              }
+              {
+                (517587 'move' tmp[517567](517584 '_paramFoldLogical' tmp[517568] 0))
+              }
+              unknown call_tmp[618526] "expr temp" "maybe param" "maybe type" "temp"
+              (618529 'move' call_tmp[618526](149369 call _cond_test tmp[517567]))
+              if call_tmp[618526]
+              {
+                unknown call_tmp[618533] "expr temp" "maybe param" "maybe type" "temp"
+                (618536 'move' call_tmp[618533](149364 'field by num' x[148633] i[149374]))
+                (149366 call(149357 call (partial) readwrite _mt[232] reader[148627]) call_tmp[618533])
+              }
+            }
+          }
+          label _unused_continueLabel[149379]
+          label _breakLabel[149378]
+        }
+      }
+      {
+        unknown found_field[149409] "insert auto destroy"
+        (492026 'init var' found_field[149409] 0)
+        {
+          unknown i[149545] "insert auto destroy"
+          (492028 'init var' i[149545] 0)
+          unknown tmp[149546] "maybe param" "temp"
+          (149558 'move' tmp[149546](149556 call chpl_compute_low_param_loop_bound 1 num_fields[148643]))
+          unknown tmp[149547] "maybe param" "temp"
+          (149565 'move' tmp[149547](149563 call chpl_compute_high_param_loop_bound 1 num_fields[148643]))
+          unknown tmp[149548] "maybe param" "temp"
+          (149568 'move' tmp[149548] 1)
+          ParamForLoop
+          { i[149545] tmp[149546] tmp[149547] tmp[149548]
+            {
+              unknown call_tmp[618538] "expr temp" "maybe param" "maybe type" "temp"
+              (618541 'move' call_tmp[618538](149421 call isIoField x[148633] i[149545]))
+              unknown call_tmp[618543] "expr temp" "maybe param" "maybe type" "temp"
+              (618546 'move' call_tmp[618543](149540 call _cond_test call_tmp[618538]))
+              if call_tmp[618543]
+              {
+                unknown call_tmp[618550] "maybe param" "maybe type" "temp"
+                (618553 'move' call_tmp[618550](149428 call(149423 call (partial) styleElement _mt[232] reader[148627]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+                unknown st[149429] "insert auto destroy"
+                (492030 'init var' st[149429] call_tmp[618550])
+                unknown call_tmp[618555] "maybe param" "maybe type" "temp"
+                (618558 'move' call_tmp[618555](149439 call ioFieldNameLiteral reader[148627] t[148631] i[149545]))
+                unknown fname[149440] "insert auto destroy"
+                (492032 'init var' fname[149440] call_tmp[618555] ioLiteral[226016])
+                (149449 call(149444 call (partial) readwrite _mt[232] reader[148627]) fname[149440])
+                unknown tmp[402693] "maybe param" "temp"
+                unknown call_tmp[618564] "expr temp" "maybe param" "maybe type" "temp"
+                (618567 'move' call_tmp[618564](149456 call(149452 call (partial) error _mt[232] reader[148627])))
+                unknown call_tmp[618569] "expr temp" "maybe param" "maybe type" "temp"
+                (618572 'move' call_tmp[618569](356192 call EFORMAT[210730]))
+                (402704 'move' tmp[402693](149458 call == call_tmp[618564] call_tmp[618569]))
+                unknown call_tmp[618574] "expr temp" "maybe param" "maybe type" "temp"
+                (618577 'move' call_tmp[618574](402706 call _cond_invalid tmp[402693]))
+                if call_tmp[618574]
+                {
+                  (402709 call compilerError "cannot promote short-circuiting || operator")
+                }
+                unknown tmp[517594] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+                unknown tmp[517595] "maybe param" "temp"
+                unknown call_tmp[618579] "expr temp" "maybe param" "maybe type" "temp"
+                (618582 'move' call_tmp[618579](402694 call isTrue tmp[402693]))
+                (517600 'move' tmp[517595](517598 call _cond_test call_tmp[618579]))
+                if tmp[517595]
+                {
+                  (517605 'move' tmp[517594](517602 '_paramFoldLogical' tmp[517595] 1))
+                }
+                {
+                  unknown tmp[517607] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                  unknown call_tmp[618586] "expr temp" "maybe param" "maybe type" "temp"
+                  (618589 'move' call_tmp[618586](149465 call(149461 call (partial) error _mt[232] reader[148627])))
+                  unknown call_tmp[618591] "expr temp" "maybe param" "maybe type" "temp"
+                  (618594 'move' call_tmp[618591](356195 call EEOF[210684]))
+                  unknown call_tmp[618596] "expr temp" "maybe param" "maybe type" "temp"
+                  (618599 'move' call_tmp[618596](149467 call == call_tmp[618586] call_tmp[618591]))
+                  (517609 'move' tmp[517607](402698 call isTrue call_tmp[618596]))
+                  (517614 'move' tmp[517594](517611 '_paramFoldLogical' tmp[517595] tmp[517607]))
+                }
+                unknown call_tmp[618601] "expr temp" "maybe param" "maybe type" "temp"
+                (618604 'move' call_tmp[618601](149536 call _cond_test tmp[517594]))
+                if call_tmp[618601]
+                {
+                  (149476 call(149472 call (partial) clearError _mt[232] reader[148627]))
+                }
+                {
+                  (149481 call = found_field[149409] 1)
+                  unknown eq[149486] "insert auto destroy"
+                  (492034 'default init var' eq[149486] ioLiteral[226016])
+                  unknown call_tmp[618608] "expr temp" "maybe param" "maybe type" "temp"
+                  (618611 'move' call_tmp[618608](149491 call == st[149429] QIO_AGGREGATE_FORMAT_JSON[19410]))
+                  unknown call_tmp[618613] "expr temp" "maybe param" "maybe type" "temp"
+                  (618616 'move' call_tmp[618613](149515 call _cond_test call_tmp[618608]))
+                  if call_tmp[618613]
+                  {
+                    unknown call_tmp[618618] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                    (618621 'move' call_tmp[618618](691470 'new' ioLiteral[226016] ":" 1))
+                    (149500 call = eq[149486] call_tmp[618618])
+                  }
+                  {
+                    unknown call_tmp[618623] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+                    (618626 'move' call_tmp[618623](691471 'new' ioLiteral[226016] "=" 1))
+                    (149511 call = eq[149486] call_tmp[618623])
+                  }
+                  (149522 call readIt eq[149486])
+                  unknown call_tmp[618630] "expr temp" "maybe param" "maybe type" "temp"
+                  (618633 'move' call_tmp[618630](149532 'field by num' x[148633] i[149545]))
+                  (149534 call(149525 call (partial) readwrite _mt[232] reader[148627]) call_tmp[618630])
+                }
+              }
+            }
+          }
+          label _unused_continueLabel[149550]
+          label _breakLabel[149549]
+        }
+        unknown call_tmp[618635] "expr temp" "maybe param" "maybe type" "temp"
+        (618638 'move' call_tmp[618635](149580 call ! found_field[149409]))
+        unknown call_tmp[618640] "expr temp" "maybe param" "maybe type" "temp"
+        (618643 'move' call_tmp[618640](149594 call _cond_test call_tmp[618635]))
+        if call_tmp[618640]
+        {
+          unknown call_tmp[618647] "expr temp" "maybe param" "maybe type" "temp"
+          (618650 'move' call_tmp[618647](356213 call EFORMAT[210730]))
+          unknown call_tmp[618652] "expr temp" "maybe param" "maybe type" "temp"
+          (618655 'move' call_tmp[618652](149588 call _cast syserr[210032] call_tmp[618647]))
+          (149591 call(149583 call (partial) setError _mt[232] reader[148627]) call_tmp[618652])
+        }
+      }
+    }
+    (470795 return _void[47])
+  }
+  function readThisDefaultImpl[149613](arg reader[149611]:_any[170](?), arg x[149617]:_any[170](?)) : _unknown[43] "no doc" "no return value for void"
+  {
+    unknown call_tmp[618659] "expr temp" "maybe param" "maybe type" "temp"
+    (618662 'move' call_tmp[618659](149629 call(149625 call (partial) binary _mt[232] reader[149611])))
+    unknown call_tmp[618664] "expr temp" "maybe param" "maybe type" "temp"
+    (618667 'move' call_tmp[618664](149630 call ! call_tmp[618659]))
+    unknown call_tmp[618669] "expr temp" "maybe param" "maybe type" "temp"
+    (618672 'move' call_tmp[618669](149692 call _cond_test call_tmp[618664]))
+    if call_tmp[618669]
+    {
+      unknown call_tmp[618676] "maybe param" "maybe type" "temp"
+      (618679 'move' call_tmp[618676](149638 call(149633 call (partial) styleElement _mt[232] reader[149611]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+      unknown st[149639] "insert auto destroy"
+      (492036 'init var' st[149639] call_tmp[618676])
+      unknown start[149644] "insert auto destroy"
+      (492038 'default init var' start[149644] ioLiteral[226016])
+      unknown call_tmp[618681] "expr temp" "maybe param" "maybe type" "temp"
+      (618684 'move' call_tmp[618681](149649 call == st[149639] QIO_AGGREGATE_FORMAT_CHPL[19406]))
+      unknown call_tmp[618686] "expr temp" "maybe param" "maybe type" "temp"
+      (618689 'move' call_tmp[618686](149680 call _cond_test call_tmp[618681]))
+      if call_tmp[618686]
+      {
+        unknown call_tmp[618691] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+        (618694 'move' call_tmp[618691](436733 'typeof' x[149617]))
+        unknown call_tmp[618696] "expr temp" "maybe param" "maybe type" "temp"
+        (618699 'move' call_tmp[618696](149656 call _cast string[24] call_tmp[618691]))
+        unknown call_tmp[618701] "expr temp" "maybe param" "maybe type" "temp"
+        (618704 'move' call_tmp[618701](149658 call + "new " call_tmp[618696]))
+        unknown call_tmp[618706] "expr temp" "maybe param" "maybe type" "temp"
+        (618709 'move' call_tmp[618706](149661 call + call_tmp[618701] "("))
+        unknown call_tmp[618711] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (618714 'move' call_tmp[618711](691472 'new' ioLiteral[226016] call_tmp[618706]))
+        (149666 call = start[149644] call_tmp[618711])
+      }
+      {
+        unknown call_tmp[618716] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (618719 'move' call_tmp[618716](691473 'new' ioLiteral[226016] "{"))
+        (149676 call = start[149644] call_tmp[618716])
+      }
+      (149690 call(149685 call (partial) readwrite _mt[232] reader[149611]) start[149644])
+    }
+    unknown needsComma[149698] "insert auto destroy"
+    (492040 'init var' needsComma[149698] 0)
+    unknown obj[149702] "insert auto destroy"
+    (492042 'init var' obj[149702] x[149617])
+    unknown call_tmp[618725] "expr temp" "maybe param" "maybe type" "temp"
+    (618728 'move' call_tmp[618725](149710 call(149706 call (partial) error _mt[232] reader[149611])))
+    unknown call_tmp[618730] "expr temp" "maybe param" "maybe type" "temp"
+    (618733 'move' call_tmp[618730](149711 call ! call_tmp[618725]))
+    unknown call_tmp[618735] "expr temp" "maybe param" "maybe type" "temp"
+    (618738 'move' call_tmp[618735](149722 call _cond_test call_tmp[618730]))
+    if call_tmp[618735]
+    {
+      unknown call_tmp[618740] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (618743 'move' call_tmp[618740](436735 'typeof' x[149617]))
+      (149719 call readThisFieldsDefaultImpl reader[149611] call_tmp[618740] obj[149702] needsComma[149698])
+    }
+    unknown call_tmp[618747] "expr temp" "maybe param" "maybe type" "temp"
+    (618750 'move' call_tmp[618747](149731 call(149727 call (partial) error _mt[232] reader[149611])))
+    unknown call_tmp[618752] "expr temp" "maybe param" "maybe type" "temp"
+    (618755 'move' call_tmp[618752](149732 call ! call_tmp[618747]))
+    unknown call_tmp[618757] "expr temp" "maybe param" "maybe type" "temp"
+    (618760 'move' call_tmp[618757](149741 call _cond_test call_tmp[618752]))
+    if call_tmp[618757]
+    {
+      (149738 call skipFieldsAtEnd reader[149611] needsComma[149698])
+    }
+    unknown call_tmp[618764] "expr temp" "maybe param" "maybe type" "temp"
+    (618767 'move' call_tmp[618764](149750 call(149746 call (partial) binary _mt[232] reader[149611])))
+    unknown call_tmp[618769] "expr temp" "maybe param" "maybe type" "temp"
+    (618772 'move' call_tmp[618769](149751 call ! call_tmp[618764]))
+    unknown call_tmp[618774] "expr temp" "maybe param" "maybe type" "temp"
+    (618777 'move' call_tmp[618774](149804 call _cond_test call_tmp[618769]))
+    if call_tmp[618774]
+    {
+      unknown call_tmp[618781] "maybe param" "maybe type" "temp"
+      (618784 'move' call_tmp[618781](149759 call(149754 call (partial) styleElement _mt[232] reader[149611]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+      unknown st[149760] "insert auto destroy"
+      (492044 'init var' st[149760] call_tmp[618781])
+      unknown end[149765] "insert auto destroy"
+      (492046 'default init var' end[149765] ioLiteral[226016])
+      unknown call_tmp[618786] "expr temp" "maybe param" "maybe type" "temp"
+      (618789 'move' call_tmp[618786](149770 call == st[149760] QIO_AGGREGATE_FORMAT_CHPL[19406]))
+      unknown call_tmp[618791] "expr temp" "maybe param" "maybe type" "temp"
+      (618794 'move' call_tmp[618791](149792 call _cond_test call_tmp[618786]))
+      if call_tmp[618791]
+      {
+        unknown call_tmp[618796] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (618799 'move' call_tmp[618796](691474 'new' ioLiteral[226016] ")"))
+        (149778 call = end[149765] call_tmp[618796])
+      }
+      {
+        unknown call_tmp[618801] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (618804 'move' call_tmp[618801](691475 'new' ioLiteral[226016] "}"))
+        (149788 call = end[149765] call_tmp[618801])
+      }
+      (149802 call(149797 call (partial) readwrite _mt[232] reader[149611]) end[149765])
+    }
+    (470797 return _void[47])
+  }
+  where {
+    unknown call_tmp[618808] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (618811 'move' call_tmp[618808](436737 'typeof' x[149617]))
+    (149623 call isClassType call_tmp[618808])
+  }
+  function readThisDefaultImpl[149815](arg reader[149813]:_any[170](?), ref arg x[149819]:_any[170](?)) : _unknown[43] "no doc" "no return value for void"
+  {
+    unknown call_tmp[618815] "expr temp" "maybe param" "maybe type" "temp"
+    (618818 'move' call_tmp[618815](149833 call(149829 call (partial) binary _mt[232] reader[149813])))
+    unknown call_tmp[618820] "expr temp" "maybe param" "maybe type" "temp"
+    (618823 'move' call_tmp[618820](149834 call ! call_tmp[618815]))
+    unknown call_tmp[618825] "expr temp" "maybe param" "maybe type" "temp"
+    (618828 'move' call_tmp[618825](149915 call _cond_test call_tmp[618820]))
+    if call_tmp[618825]
+    {
+      unknown call_tmp[618832] "maybe param" "maybe type" "temp"
+      (618835 'move' call_tmp[618832](149842 call(149837 call (partial) styleElement _mt[232] reader[149813]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+      unknown st[149843] "insert auto destroy"
+      (492048 'init var' st[149843] call_tmp[618832])
+      unknown start[149848] "insert auto destroy"
+      (492050 'default init var' start[149848] ioLiteral[226016])
+      unknown call_tmp[618837] "expr temp" "maybe param" "maybe type" "temp"
+      (618840 'move' call_tmp[618837](149853 call == st[149843] QIO_AGGREGATE_FORMAT_CHPL[19406]))
+      unknown call_tmp[618842] "expr temp" "maybe param" "maybe type" "temp"
+      (618845 'move' call_tmp[618842](149902 call _cond_test call_tmp[618837]))
+      if call_tmp[618842]
+      {
+        unknown call_tmp[618847] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+        (618850 'move' call_tmp[618847](436739 'typeof' x[149819]))
+        unknown call_tmp[618852] "expr temp" "maybe param" "maybe type" "temp"
+        (618855 'move' call_tmp[618852](149860 call _cast string[24] call_tmp[618847]))
+        unknown call_tmp[618857] "expr temp" "maybe param" "maybe type" "temp"
+        (618860 'move' call_tmp[618857](149862 call + "new " call_tmp[618852]))
+        unknown call_tmp[618862] "expr temp" "maybe param" "maybe type" "temp"
+        (618865 'move' call_tmp[618862](149865 call + call_tmp[618857] "("))
+        unknown call_tmp[618867] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (618870 'move' call_tmp[618867](691476 'new' ioLiteral[226016] call_tmp[618862]))
+        (149870 call = start[149848] call_tmp[618867])
+      }
+      {
+        unknown call_tmp[618872] "expr temp" "maybe param" "maybe type" "temp"
+        (618875 'move' call_tmp[618872](149876 call == st[149843] QIO_AGGREGATE_FORMAT_JSON[19410]))
+        unknown call_tmp[618877] "expr temp" "maybe param" "maybe type" "temp"
+        (618880 'move' call_tmp[618877](149898 call _cond_test call_tmp[618872]))
+        if call_tmp[618877]
+        {
+          unknown call_tmp[618882] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+          (618885 'move' call_tmp[618882](691477 'new' ioLiteral[226016] "{"))
+          (149884 call = start[149848] call_tmp[618882])
+        }
+        {
+          unknown call_tmp[618887] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+          (618890 'move' call_tmp[618887](691478 'new' ioLiteral[226016] "("))
+          (149894 call = start[149848] call_tmp[618887])
+        }
+      }
+      (149913 call(149908 call (partial) readwrite _mt[232] reader[149813]) start[149848])
+    }
+    unknown needsComma[149921] "insert auto destroy"
+    (492052 'init var' needsComma[149921] 0)
+    unknown call_tmp[618896] "expr temp" "maybe param" "maybe type" "temp"
+    (618899 'move' call_tmp[618896](149929 call(149925 call (partial) error _mt[232] reader[149813])))
+    unknown call_tmp[618901] "expr temp" "maybe param" "maybe type" "temp"
+    (618904 'move' call_tmp[618901](149930 call ! call_tmp[618896]))
+    unknown call_tmp[618906] "expr temp" "maybe param" "maybe type" "temp"
+    (618909 'move' call_tmp[618906](149941 call _cond_test call_tmp[618901]))
+    if call_tmp[618906]
+    {
+      unknown call_tmp[618911] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (618914 'move' call_tmp[618911](436741 'typeof' x[149819]))
+      (149938 call readThisFieldsDefaultImpl reader[149813] call_tmp[618911] x[149819] needsComma[149921])
+    }
+    unknown call_tmp[618918] "expr temp" "maybe param" "maybe type" "temp"
+    (618921 'move' call_tmp[618918](149950 call(149946 call (partial) error _mt[232] reader[149813])))
+    unknown call_tmp[618923] "expr temp" "maybe param" "maybe type" "temp"
+    (618926 'move' call_tmp[618923](149951 call ! call_tmp[618918]))
+    unknown call_tmp[618928] "expr temp" "maybe param" "maybe type" "temp"
+    (618931 'move' call_tmp[618928](149960 call _cond_test call_tmp[618923]))
+    if call_tmp[618928]
+    {
+      (149957 call skipFieldsAtEnd reader[149813] needsComma[149921])
+    }
+    unknown call_tmp[618935] "expr temp" "maybe param" "maybe type" "temp"
+    (618938 'move' call_tmp[618935](149969 call(149965 call (partial) binary _mt[232] reader[149813])))
+    unknown call_tmp[618940] "expr temp" "maybe param" "maybe type" "temp"
+    (618943 'move' call_tmp[618940](149970 call ! call_tmp[618935]))
+    unknown call_tmp[618945] "expr temp" "maybe param" "maybe type" "temp"
+    (618948 'move' call_tmp[618945](150023 call _cond_test call_tmp[618940]))
+    if call_tmp[618945]
+    {
+      unknown call_tmp[618952] "maybe param" "maybe type" "temp"
+      (618955 'move' call_tmp[618952](149978 call(149973 call (partial) styleElement _mt[232] reader[149813]) QIO_STYLE_ELEMENT_AGGREGATE[19370]))
+      unknown st[149979] "insert auto destroy"
+      (492054 'init var' st[149979] call_tmp[618952])
+      unknown end[149984] "insert auto destroy"
+      (492056 'default init var' end[149984] ioLiteral[226016])
+      unknown call_tmp[618957] "expr temp" "maybe param" "maybe type" "temp"
+      (618960 'move' call_tmp[618957](149989 call == st[149979] QIO_AGGREGATE_FORMAT_JSON[19410]))
+      unknown call_tmp[618962] "expr temp" "maybe param" "maybe type" "temp"
+      (618965 'move' call_tmp[618962](150011 call _cond_test call_tmp[618957]))
+      if call_tmp[618962]
+      {
+        unknown call_tmp[618967] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (618970 'move' call_tmp[618967](691479 'new' ioLiteral[226016] "}"))
+        (149997 call = end[149984] call_tmp[618967])
+      }
+      {
+        unknown call_tmp[618972] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (618975 'move' call_tmp[618972](691480 'new' ioLiteral[226016] ")"))
+        (150007 call = end[149984] call_tmp[618972])
+      }
+      (150021 call(150016 call (partial) readwrite _mt[232] reader[149813]) end[149984])
+    }
+    (470799 return _void[47])
+  }
+  where {
+    unknown call_tmp[618979] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (618982 'move' call_tmp[618979](436743 'typeof' x[149819]))
+    unknown call_tmp[618984] "expr temp" "maybe param" "maybe type" "temp"
+    (618987 'move' call_tmp[618984](149825 call isClassType call_tmp[618979]))
+    (149826 call ! call_tmp[618984])
+  }
+  function halt[150032]() : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    (150054 'chpl_error' c"halt reached")
+    (470801 return _void[47])
+  }
+  function halt[150065](arg s[150062]:string[24]) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    unknown call_tmp[618991] "expr temp" "maybe param" "maybe type" "temp"
+    (618994 'move' call_tmp[618991](150073 call(150069 call (partial) localize _mt[232] s[150062])))
+    unknown call_tmp[618998] "expr temp" "maybe param" "maybe type" "temp"
+    (619001 'move' call_tmp[618998](150078 call(150074 call (partial) c_str _mt[232] call_tmp[618991])))
+    (150080 call halt call_tmp[618998])
+    (470803 return _void[47])
+  }
+  function halt[150092](arg args[150089]:_any[170](?) ...) : _unknown[43] "always propagate line file info" "function terminates program" "no return value for void"
+  {
+    unknown call_tmp[619003] "expr temp" "maybe param" "maybe type" "temp"
+    (619006 'move' call_tmp[619003](150114 call stringify(150112 'expand_tuple' args[150089])))
+    unknown call_tmp[619008] "maybe param" "maybe type" "temp"
+    (619011 'move' call_tmp[619008](150115 call + "halt reached - " call_tmp[619003]))
+    unknown tmpstring[150117] "insert auto destroy"
+    (492058 'init var' tmpstring[150117] call_tmp[619008])
+    unknown call_tmp[619015] "expr temp" "maybe param" "maybe type" "temp"
+    (619018 'move' call_tmp[619015](150128 call(150124 call (partial) c_str _mt[232] tmpstring[150117])))
+    (150129 'chpl_error' call_tmp[619015])
+    (470805 return _void[47])
+  }
+  function warning[150139](arg s[150136]:string[24]) : _unknown[43] "always propagate line file info" "no return value for void"
+  {
+    unknown call_tmp[619022] "expr temp" "maybe param" "maybe type" "temp"
+    (619025 'move' call_tmp[619022](150163 call(150159 call (partial) localize _mt[232] s[150136])))
+    unknown call_tmp[619029] "expr temp" "maybe param" "maybe type" "temp"
+    (619032 'move' call_tmp[619029](150168 call(150164 call (partial) c_str _mt[232] call_tmp[619022])))
+    (150169 'chpl_warning' call_tmp[619029])
+    (470807 return _void[47])
+  }
+  function warning[150181](arg args[150178]:_any[170](?) ...) : _unknown[43] "always propagate line file info" "no return value for void"
+  {
+    unknown call_tmp[619034] "maybe param" "maybe type" "temp"
+    (619037 'move' call_tmp[619034](150187 call stringify(150185 'expand_tuple' args[150178])))
+    unknown tmpstring[150188] "insert auto destroy"
+    (492060 'init var' tmpstring[150188] call_tmp[619034])
+    (150195 call warning tmpstring[150188])
+    (470809 return _void[47])
+  }
+  function _ddata[11791](?).writeThis[150204](arg _mt[150209]:_MT[227], arg this[150206]:_ddata[11791](?) :
+  _ddata[11791](?), arg f[150202]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    (150229 call compilerWarning "printing _ddata class")
+    (150249 call <~> f[150202] "<_ddata class cannot be printed>")
+    (470811 return _void[47])
+  }
+  function chpl_taskID_t[155].writeThis[150259](arg _mt[150264]:_MT[227], arg this[150261]:chpl_taskID_t[155] :
+  chpl_taskID_t[155], arg f[150257]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    unknown call_tmp[619039] "expr temp" "maybe param" "maybe type" "temp"
+    (619042 'move' call_tmp[619039](150274 call uint(64)[107] 64))
+    unknown call_tmp[619044] "maybe param" "maybe type" "temp"
+    (619047 'move' call_tmp[619044](150275 call _cast call_tmp[619039] this[150261]))
+    unknown call_tmp[619049] "maybe param" "maybe type" "temp"
+    (619052 'move' call_tmp[619049](150269 call uint(64)[107] 64))
+    unknown tmp[150277] "insert auto destroy"
+    (492062 'init var' tmp[150277] call_tmp[619044] call_tmp[619049])
+    (150283 call <~> f[150257] tmp[150277])
+    (470813 return _void[47])
+  }
+  function chpl_taskID_t[155].readThis[150293](arg _mt[150298]:_MT[227], arg this[150295]:chpl_taskID_t[155] :
+  chpl_taskID_t[155], arg f[150291]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    unknown tmp[150304] "insert auto destroy"
+    unknown call_tmp[619054] "expr temp" "maybe param" "maybe type" "temp"
+    (619057 'move' call_tmp[619054](150303 call uint(64)[107] 64))
+    (492064 'default init var' tmp[150304] call_tmp[619054])
+    (150310 call <~> f[150291] tmp[150304])
+    unknown call_tmp[619059] "expr temp" "maybe param" "maybe type" "temp"
+    (619062 'move' call_tmp[619059](150316 call _cast chpl_taskID_t[155] tmp[150304]))
+    (150318 call = this[150295] call_tmp[619059])
+    (470815 return _void[47])
+  }
+  function nothing[7].writeThis[150328](arg _mt[150333]:_MT[227], arg this[150330]:nothing[7] :
+  nothing[7], arg f[150326]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    (470817 return _void[47])
+  }
+  function _tuple[58502](?).readWriteThis[150343](arg _mt[150348]:_MT[227], arg this[150345]:_tuple[58502](?) :
+  _tuple[58502](?), arg f[150341]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    unknown call_tmp[619066] "maybe param" "maybe type" "temp"
+    (619069 'move' call_tmp[619066](150356 call(150351 call (partial) styleElement _mt[232] f[150341]) QIO_STYLE_ELEMENT_TUPLE[19374]))
+    unknown st[150357] "insert auto destroy"
+    (492066 'init var' st[150357] call_tmp[619066])
+    unknown start[150362] "insert auto destroy"
+    (492068 'default init var' start[150362] ioLiteral[226016])
+    unknown comma[150366] "insert auto destroy"
+    (492070 'default init var' comma[150366] ioLiteral[226016])
+    unknown end[150370] "insert auto destroy"
+    (492072 'default init var' end[150370] ioLiteral[226016])
+    unknown call_tmp[619073] "maybe param" "maybe type" "temp"
+    (619076 'move' call_tmp[619073](150378 call(150374 call (partial) binary _mt[232] f[150341])))
+    unknown binary[150379] "insert auto destroy"
+    (492074 'init var' binary[150379] call_tmp[619073])
+    unknown call_tmp[619078] "expr temp" "maybe param" "maybe type" "temp"
+    (619081 'move' call_tmp[619078](150384 call == st[150357] QIO_TUPLE_FORMAT_SPACE[19418]))
+    unknown call_tmp[619083] "expr temp" "maybe param" "maybe type" "temp"
+    (619086 'move' call_tmp[619083](150508 call _cond_test call_tmp[619078]))
+    if call_tmp[619083]
+    {
+      unknown call_tmp[619088] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (619091 'move' call_tmp[619088](691481 'new' ioLiteral[226016] ""))
+      (150407 call = start[150362] call_tmp[619088])
+      unknown call_tmp[619093] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (619096 'move' call_tmp[619093](691482 'new' ioLiteral[226016] " "))
+      (150417 call = comma[150366] call_tmp[619093])
+      unknown call_tmp[619098] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (619101 'move' call_tmp[619098](691483 'new' ioLiteral[226016] ""))
+      (150441 call = end[150370] call_tmp[619098])
+    }
+    {
+      unknown call_tmp[619103] "expr temp" "maybe param" "maybe type" "temp"
+      (619106 'move' call_tmp[619103](150446 call == st[150357] QIO_TUPLE_FORMAT_JSON[19422]))
+      unknown call_tmp[619108] "expr temp" "maybe param" "maybe type" "temp"
+      (619111 'move' call_tmp[619108](150504 call _cond_test call_tmp[619103]))
+      if call_tmp[619108]
+      {
+        unknown call_tmp[619113] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (619116 'move' call_tmp[619113](691484 'new' ioLiteral[226016] "["))
+        (150454 call = start[150362] call_tmp[619113])
+        unknown call_tmp[619118] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (619121 'move' call_tmp[619118](691485 'new' ioLiteral[226016] ", "))
+        (150464 call = comma[150366] call_tmp[619118])
+        unknown call_tmp[619123] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (619126 'move' call_tmp[619123](691486 'new' ioLiteral[226016] "]"))
+        (150473 call = end[150370] call_tmp[619123])
+      }
+      {
+        unknown call_tmp[619128] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (619131 'move' call_tmp[619128](691487 'new' ioLiteral[226016] "("))
+        (150482 call = start[150362] call_tmp[619128])
+        unknown call_tmp[619133] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (619136 'move' call_tmp[619133](691488 'new' ioLiteral[226016] ", "))
+        (150492 call = comma[150366] call_tmp[619133])
+        unknown call_tmp[619138] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (619141 'move' call_tmp[619138](691489 'new' ioLiteral[226016] ")"))
+        (150501 call = end[150370] call_tmp[619138])
+      }
+    }
+    unknown call_tmp[619143] "expr temp" "maybe param" "maybe type" "temp"
+    (619146 'move' call_tmp[619143](150514 call ! binary[150379]))
+    unknown call_tmp[619148] "expr temp" "maybe param" "maybe type" "temp"
+    (619151 'move' call_tmp[619148](150522 call _cond_test call_tmp[619143]))
+    if call_tmp[619148]
+    {
+      (150518 call <~> f[150341] start[150362])
+    }
+    unknown call_tmp[619155] "expr temp" "maybe param" "maybe type" "temp"
+    (619158 'move' call_tmp[619155](356337 call size _mt[232] this[150345]))
+    unknown call_tmp[619160] "expr temp" "maybe param" "maybe type" "temp"
+    (619163 'move' call_tmp[619160](150528 call != call_tmp[619155] 0))
+    unknown call_tmp[619165] "expr temp" "maybe param" "maybe type" "temp"
+    (619168 'move' call_tmp[619165](150599 call _cond_test call_tmp[619160]))
+    if call_tmp[619165]
+    {
+      unknown call_tmp[619170] "expr temp" "maybe param" "maybe type" "temp"
+      (619173 'move' call_tmp[619170](150534 call this[150345] 1))
+      (150535 call <~> f[150341] call_tmp[619170])
+      {
+        unknown i[150565] "insert auto destroy"
+        (492076 'init var' i[150565] 0)
+        unknown tmp[150566] "maybe param" "temp"
+        unknown call_tmp[619177] "expr temp" "maybe param" "maybe type" "temp"
+        (619180 'move' call_tmp[619177](356344 call size _mt[232] this[150345]))
+        (150578 'move' tmp[150566](150576 call chpl_compute_low_param_loop_bound 2 call_tmp[619177]))
+        unknown tmp[150567] "maybe param" "temp"
+        unknown call_tmp[619184] "expr temp" "maybe param" "maybe type" "temp"
+        (619187 'move' call_tmp[619184](356355 call size _mt[232] this[150345]))
+        (150585 'move' tmp[150567](150583 call chpl_compute_high_param_loop_bound 2 call_tmp[619184]))
+        unknown tmp[150568] "maybe param" "temp"
+        (150588 'move' tmp[150568] 1)
+        ParamForLoop
+        { i[150565] tmp[150566] tmp[150567] tmp[150568]
+          {
+            unknown call_tmp[619189] "expr temp" "maybe param" "maybe type" "temp"
+            (619192 'move' call_tmp[619189](150544 call ! binary[150379]))
+            unknown call_tmp[619194] "expr temp" "maybe param" "maybe type" "temp"
+            (619197 'move' call_tmp[619194](150552 call _cond_test call_tmp[619189]))
+            if call_tmp[619194]
+            {
+              (150548 call <~> f[150341] comma[150366])
+            }
+            unknown call_tmp[619199] "expr temp" "maybe param" "maybe type" "temp"
+            (619202 'move' call_tmp[619199](150561 call this[150345] i[150565]))
+            (150562 call <~> f[150341] call_tmp[619199])
+          }
+        }
+        label _unused_continueLabel[150570]
+        label _breakLabel[150569]
+      }
+    }
+    unknown call_tmp[619204] "expr temp" "maybe param" "maybe type" "temp"
+    (619207 'move' call_tmp[619204](150604 call ! binary[150379]))
+    unknown call_tmp[619209] "expr temp" "maybe param" "maybe type" "temp"
+    (619212 'move' call_tmp[619209](150612 call _cond_test call_tmp[619204]))
+    if call_tmp[619209]
+    {
+      (150608 call <~> f[150341] end[150370])
+    }
+    (470819 return _void[47])
+  }
+  function range[66183](?).writeThis[150623](arg _mt[150628]:_MT[227], arg this[150625]:range[66183](?) :
+  range[66183](?), arg f[150621]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    unknown alignCheckRange[150631] "insert auto destroy"
+    (492078 'init var' alignCheckRange[150631] this[150625])
+    unknown call_tmp[619216] "expr temp" "maybe param" "maybe type" "temp"
+    (619219 'move' call_tmp[619216](150636 call writing _mt[232] f[150621]))
+    unknown call_tmp[619221] "expr temp" "maybe param" "maybe type" "temp"
+    (619224 'move' call_tmp[619221](150647 call _cond_test call_tmp[619216]))
+    if call_tmp[619221]
+    {
+      (150644 call(150640 call (partial) normalizeAlignment _mt[232] alignCheckRange[150631]))
+    }
+    unknown call_tmp[619230] "expr temp" "maybe param" "maybe type" "temp"
+    (619233 'move' call_tmp[619230](150653 call(356365 call (partial) hasLowBound _mt[232] this[150625])))
+    unknown call_tmp[619235] "expr temp" "maybe param" "maybe type" "temp"
+    (619238 'move' call_tmp[619235](150659 call _cond_test call_tmp[619230]))
+    if call_tmp[619235]
+    {
+      unknown call_tmp[619242] "expr temp" "maybe param" "maybe type" "temp"
+      (619245 'move' call_tmp[619242](356370 call low _mt[232] this[150625]))
+      (150656 call <~> f[150621] call_tmp[619242])
+    }
+    unknown call_tmp[619247] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (619250 'move' call_tmp[619247](691490 'new' ioLiteral[226016] ".."))
+    (150670 call <~> f[150621] call_tmp[619247])
+    unknown call_tmp[619254] "expr temp" "maybe param" "maybe type" "temp"
+    (619257 'move' call_tmp[619254](150675 call(356376 call (partial) hasHighBound _mt[232] this[150625])))
+    unknown call_tmp[619259] "expr temp" "maybe param" "maybe type" "temp"
+    (619262 'move' call_tmp[619259](150681 call _cond_test call_tmp[619254]))
+    if call_tmp[619259]
+    {
+      unknown call_tmp[619266] "expr temp" "maybe param" "maybe type" "temp"
+      (619269 'move' call_tmp[619266](356381 call high _mt[232] this[150625]))
+      (150678 call <~> f[150621] call_tmp[619266])
+    }
+    unknown call_tmp[619273] "expr temp" "maybe param" "maybe type" "temp"
+    (619276 'move' call_tmp[619273](356385 call stride _mt[232] this[150625]))
+    unknown call_tmp[619278] "expr temp" "maybe param" "maybe type" "temp"
+    (619281 'move' call_tmp[619278](150688 call != call_tmp[619273] 1))
+    unknown call_tmp[619283] "expr temp" "maybe param" "maybe type" "temp"
+    (619286 'move' call_tmp[619283](150702 call _cond_test call_tmp[619278]))
+    if call_tmp[619283]
+    {
+      unknown call_tmp[619288] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (619291 'move' call_tmp[619288](691491 'new' ioLiteral[226016] " by "))
+      unknown call_tmp[619293] "expr temp" "maybe param" "maybe type" "temp"
+      (619296 'move' call_tmp[619293](150696 call <~> f[150621] call_tmp[619288]))
+      unknown call_tmp[619300] "expr temp" "maybe param" "maybe type" "temp"
+      (619303 'move' call_tmp[619300](356391 call stride _mt[232] this[150625]))
+      (150699 call <~> call_tmp[619293] call_tmp[619300])
+    }
+    unknown tmp[402714] "maybe param" "temp"
+    unknown call_tmp[619307] "expr temp" "maybe param" "maybe type" "temp"
+    (619310 'move' call_tmp[619307](150712 call(150708 call (partial) isNaturallyAligned _mt[232] alignCheckRange[150631])))
+    (402725 'move' tmp[402714](150713 call ! call_tmp[619307]))
+    unknown call_tmp[619312] "expr temp" "maybe param" "maybe type" "temp"
+    (619315 'move' call_tmp[619312](402727 call _cond_invalid tmp[402714]))
+    if call_tmp[619312]
+    {
+      (402730 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[517621] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[517622] "maybe param" "temp"
+    unknown call_tmp[619317] "expr temp" "maybe param" "maybe type" "temp"
+    (619320 'move' call_tmp[619317](402715 call isTrue tmp[402714]))
+    (517627 'move' tmp[517622](517625 call _cond_test call_tmp[619317]))
+    if tmp[517622]
+    {
+      unknown tmp[517629] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[619324] "expr temp" "maybe param" "maybe type" "temp"
+      (619327 'move' call_tmp[619324](356396 call aligned _mt[232] this[150625]))
+      (517631 'move' tmp[517629](402718 call isTrue call_tmp[619324]))
+      (517636 'move' tmp[517621](517633 '_paramFoldLogical' tmp[517622] tmp[517629]))
+    }
+    {
+      (517641 'move' tmp[517621](517638 '_paramFoldLogical' tmp[517622] 0))
+    }
+    unknown call_tmp[619329] "expr temp" "maybe param" "maybe type" "temp"
+    (619332 'move' call_tmp[619329](150740 call _cond_test tmp[517621]))
+    if call_tmp[619329]
+    {
+      unknown call_tmp[619334] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (619337 'move' call_tmp[619334](691492 'new' ioLiteral[226016] " align "))
+      unknown call_tmp[619339] "expr temp" "maybe param" "maybe type" "temp"
+      (619342 'move' call_tmp[619339](150724 call <~> f[150621] call_tmp[619334]))
+      unknown call_tmp[619348] "expr temp" "maybe param" "maybe type" "temp"
+      (619351 'move' call_tmp[619348](356406 call alignment _mt[232] this[150625]))
+      unknown call_tmp[619353] "expr temp" "maybe param" "maybe type" "temp"
+      (619356 'move' call_tmp[619353](150731 call chpl__idxToInt call_tmp[619348]))
+      unknown call_tmp[619360] "expr temp" "maybe param" "maybe type" "temp"
+      (619363 'move' call_tmp[619360](356410 call stride _mt[232] this[150625]))
+      unknown call_tmp[619365] "expr temp" "maybe param" "maybe type" "temp"
+      (619368 'move' call_tmp[619365](150734 call chpl__mod call_tmp[619353] call_tmp[619360]))
+      unknown call_tmp[619370] "expr temp" "maybe param" "maybe type" "temp"
+      (619373 'move' call_tmp[619370](150736 call(356402 call (partial) chpl_intToIdx _mt[232] this[150625]) call_tmp[619365]))
+      (150737 call <~> call_tmp[619339] call_tmp[619370])
+    }
+    (470821 return _void[47])
+  }
+  function range[66183](?).readThis[150752](arg _mt[150757]:_MT[227], ref arg this[150754]:range[66183](?) :
+  range[66183](?), arg f[150750]:_any[170](?)) : _unknown[43] "method" "no doc" "no return value for void"
+  {
+    unknown call_tmp[619377] "expr temp" "maybe param" "maybe type" "temp"
+    (619380 'move' call_tmp[619377](150761 call(356414 call (partial) hasLowBound _mt[232] this[150754])))
+    unknown call_tmp[619382] "expr temp" "maybe param" "maybe type" "temp"
+    (619385 'move' call_tmp[619382](150767 call _cond_test call_tmp[619377]))
+    if call_tmp[619382]
+    {
+      unknown call_tmp[619389] "expr temp" "maybe param" "maybe type" "temp"
+      (619392 'move' call_tmp[619389](356420 call _low _mt[232] this[150754]))
+      (150764 call <~> f[150750] call_tmp[619389])
+    }
+    unknown call_tmp[619394] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (619397 'move' call_tmp[619394](691493 'new' ioLiteral[226016] ".."))
+    (150779 call <~> f[150750] call_tmp[619394])
+    unknown call_tmp[619401] "expr temp" "maybe param" "maybe type" "temp"
+    (619404 'move' call_tmp[619401](150784 call(356426 call (partial) hasHighBound _mt[232] this[150754])))
+    unknown call_tmp[619406] "expr temp" "maybe param" "maybe type" "temp"
+    (619409 'move' call_tmp[619406](150790 call _cond_test call_tmp[619401]))
+    if call_tmp[619406]
+    {
+      unknown call_tmp[619413] "expr temp" "maybe param" "maybe type" "temp"
+      (619416 'move' call_tmp[619413](356432 call _high _mt[232] this[150754]))
+      (150787 call <~> f[150750] call_tmp[619413])
+    }
+    unknown call_tmp[619420] "expr temp" "maybe param" "maybe type" "temp"
+    (619423 'move' call_tmp[619420](356436 call stride _mt[232] this[150754]))
+    unknown call_tmp[619425] "expr temp" "maybe param" "maybe type" "temp"
+    (619428 'move' call_tmp[619425](150797 call != call_tmp[619420] 1))
+    unknown call_tmp[619430] "expr temp" "maybe param" "maybe type" "temp"
+    (619433 'move' call_tmp[619430](150811 call _cond_test call_tmp[619425]))
+    if call_tmp[619430]
+    {
+      unknown call_tmp[619435] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (619438 'move' call_tmp[619435](691494 'new' ioLiteral[226016] " by "))
+      unknown call_tmp[619440] "expr temp" "maybe param" "maybe type" "temp"
+      (619443 'move' call_tmp[619440](150805 call <~> f[150750] call_tmp[619435]))
+      unknown call_tmp[619447] "expr temp" "maybe param" "maybe type" "temp"
+      (619450 'move' call_tmp[619447](356442 call stride _mt[232] this[150754]))
+      (150808 call <~> call_tmp[619440] call_tmp[619447])
+    }
+    unknown call_tmp[619454] "expr temp" "maybe param" "maybe type" "temp"
+    (619457 'move' call_tmp[619454](150821 call(150817 call (partial) error _mt[232] f[150750])))
+    unknown call_tmp[619459] "expr temp" "maybe param" "maybe type" "temp"
+    (619462 'move' call_tmp[619459](150822 call ! call_tmp[619454]))
+    unknown call_tmp[619464] "expr temp" "maybe param" "maybe type" "temp"
+    (619467 'move' call_tmp[619464](150888 call _cond_test call_tmp[619459]))
+    if call_tmp[619464]
+    {
+      unknown call_tmp[619469] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+      (619472 'move' call_tmp[619469](691495 'new' ioLiteral[226016] " align "))
+      (150830 call <~> f[150750] call_tmp[619469])
+      unknown call_tmp[619476] "expr temp" "maybe param" "maybe type" "temp"
+      (619479 'move' call_tmp[619476](150839 call(150835 call (partial) error _mt[232] f[150750])))
+      unknown call_tmp[619481] "expr temp" "maybe param" "maybe type" "temp"
+      (619484 'move' call_tmp[619481](356449 call EFORMAT[210730]))
+      unknown call_tmp[619486] "expr temp" "maybe param" "maybe type" "temp"
+      (619489 'move' call_tmp[619486](150841 call == call_tmp[619476] call_tmp[619481]))
+      unknown call_tmp[619491] "expr temp" "maybe param" "maybe type" "temp"
+      (619494 'move' call_tmp[619491](150884 call _cond_test call_tmp[619486]))
+      if call_tmp[619491]
+      {
+        (150848 call(150844 call (partial) clearError _mt[232] f[150750]))
+      }
+      {
+        unknown call_tmp[619500] "expr temp" "maybe param" "maybe type" "temp"
+        (619503 'move' call_tmp[619500](356454 call stridable _mt[232] this[150754]))
+        unknown call_tmp[619505] "expr temp" "maybe param" "maybe type" "temp"
+        (619508 'move' call_tmp[619505](150879 call _cond_test call_tmp[619500]))
+        if call_tmp[619505]
+        {
+          unknown a[150853] "insert auto destroy"
+          unknown call_tmp[619512] "expr temp" "maybe param" "maybe type" "temp"
+          (619515 'move' call_tmp[619512](356458 call intIdxType _mt[232] this[150754]))
+          (492080 'default init var' a[150853] call_tmp[619512])
+          (150859 call <~> f[150750] a[150853])
+          unknown call_tmp[619519] "expr temp" "maybe param" "maybe type" "temp"
+          (619522 'move' call_tmp[619519](356465 call _alignment _mt[232] this[150754]))
+          (150864 call = call_tmp[619519] a[150853])
+        }
+        {
+          unknown call_tmp[619526] "expr temp" "maybe param" "maybe type" "temp"
+          (619529 'move' call_tmp[619526](356470 call EFORMAT[210730]))
+          unknown call_tmp[619531] "expr temp" "maybe param" "maybe type" "temp"
+          (619534 'move' call_tmp[619531](150873 call _cast syserr[210032] call_tmp[619526]))
+          (150876 call(150868 call (partial) setError _mt[232] f[150750]) call_tmp[619531])
+        }
+      }
+    }
+    (470823 return _void[47])
+  }
+  function LocaleModel[89595].writeThis[150899](arg _mt[150904]:_MT[227], arg this[150901]:LocaleModel[89595] :
+  LocaleModel[89595], arg f[150897]:_any[170](?)) : _unknown[43] "method" "method overrides" "no return value for void"
+  {
+    unknown call_tmp[619536] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (619539 'move' call_tmp[619536](691496 'new' ioLiteral[226016] "LOCALE"))
+    unknown call_tmp[619541] "expr temp" "maybe param" "maybe type" "temp"
+    (619544 'move' call_tmp[619541](150927 call <~> f[150897] call_tmp[619536]))
+    unknown call_tmp[619548] "expr temp" "maybe param" "maybe type" "temp"
+    (619551 'move' call_tmp[619548](150931 call(356478 call (partial) chpl_id _mt[232] this[150901])))
+    (150932 call <~> call_tmp[619541] call_tmp[619548])
+    (470825 return _void[47])
+  }
+  function _cast[150942](arg t[150940]:_any[170](?), arg x[150944]:_any[170](?)) : _unknown[43] "last resort" "no doc"
+  {
+    unknown ret[470829] "RVV" "temp"
+    unknown call_tmp[619553] "expr temp" "maybe param" "maybe type" "temp"
+    (619556 'move' call_tmp[619553](150962 call stringify x[150944]))
+    (470834 'move' ret[470829](470833 'deref' call_tmp[619553]))
+    (470831 return ret[470829])
+  }
+  where {
+    unknown tmp[402735] "maybe param" "temp"
+    (402746 'move' tmp[402735](150948 call == t[150940] string[24]))
+    unknown call_tmp[619558] "expr temp" "maybe param" "maybe type" "temp"
+    (619561 'move' call_tmp[619558](402748 call _cond_invalid tmp[402735]))
+    if call_tmp[619558]
+    {
+      (402751 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[517648] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[517649] "maybe param" "temp"
+    unknown call_tmp[619563] "expr temp" "maybe param" "maybe type" "temp"
+    (619566 'move' call_tmp[619563](402736 call isTrue tmp[402735]))
+    (517654 'move' tmp[517649](517652 call _cond_test call_tmp[619563]))
+    if tmp[517649]
+    {
+      unknown tmp[517656] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[619568] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (619571 'move' call_tmp[619568](150952 'typeof' x[150944]))
+      unknown call_tmp[619573] "expr temp" "maybe param" "maybe type" "temp"
+      (619576 'move' call_tmp[619573](150954 call isPrimitiveType call_tmp[619568]))
+      unknown call_tmp[619578] "expr temp" "maybe param" "maybe type" "temp"
+      (619581 'move' call_tmp[619578](150955 call ! call_tmp[619573]))
+      (517658 'move' tmp[517656](402739 call isTrue call_tmp[619578]))
+      (517663 'move' tmp[517648](517660 '_paramFoldLogical' tmp[517649] tmp[517656]))
+    }
+    {
+      (517668 'move' tmp[517648](517665 '_paramFoldLogical' tmp[517649] 0))
+    }
+    (691949 call _statementLevelSymbol tmp[517648])
+  }
+  (329407 'used modules list'(147542 'use' ChapelBase[302])(147547 'use' ChapelLocale[90191])(147551 'use' SysBasic[209963])(147600 'use' IO[218633]))
+}

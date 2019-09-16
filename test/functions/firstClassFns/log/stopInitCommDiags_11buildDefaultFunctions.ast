@@ -1,0 +1,26 @@
+AST dump for stopInitCommDiags after pass buildDefaultFunctions.
+Module use list: CommDiagnostics 
+
+{
+  function chpl__init_stopInitCommDiags[390255]() : void[4] "insert line file info" "module init"
+  {
+    (630309 'move' call_tmp[630306](170427 call _cond_test printInitVerboseComm[209554]))
+    if call_tmp[630306]
+    {
+      (170424 call stopVerboseComm)
+    }
+    (630314 'move' call_tmp[630311](170448 call _cond_test printInitCommCounts[209558]))
+    if call_tmp[630311]
+    {
+      (170434 call stopCommDiagnostics)
+      unknown call_tmp[630316] "expr temp" "maybe param" "maybe type" "temp"
+      (630319 'move' call_tmp[630316](170440 call getCommDiagnostics))
+      (170442 call writeln call_tmp[630316])
+      (170446 call resetCommDiagnostics)
+    }
+    (473055 return _void[47])
+  }
+  unknown call_tmp[630306] "expr temp" "maybe param" "maybe type" "temp"
+  unknown call_tmp[630311] "expr temp" "maybe param" "maybe type" "temp"
+  (329452 'used modules list'(170418 'use' CommDiagnostics[208942]))
+}

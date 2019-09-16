@@ -1,0 +1,15 @@
+AST dump for TwoArrayRadixSort after pass scopeResolve.
+Module use list: ChapelStandard TwoArrayPartitioning RadixSortHelp 
+
+{ function twoArrayRadixSort[270362](arg Data[270359] :(270356 call chpl__buildArrayRuntimeType nil[38]), arg comparator[270367] : unknown rec[270364] = defaultComparator[251428]) : _unknown[43] "no return value for void"
+  { unknown sequentialSizePerTask[270372] 4096 unknown baseCaseSize[270377] 16 unknown endbit[270381] int(64)[13](270390 call = endbit[270381](270389 call msbRadixSortParamLastStartBit Data[270359] comparator[270367]))
+    if(270405 call _cond_test(270395 call < endbit[270381] 0))
+    {(270402 call = endbit[270381](270401 call max int(64)[13]))
+    } unknown Scratch[270412](270411 'typeof' Data[270359])
+    if(270513 call _cond_test(270423 call(270419 call .(270416 call . Data[270359] c"_instance") c"isDefaultRectangular")))
+    { unknown state[270439](270438 'new'(270437 call TwoArrayBucketizerSharedState[262498](?)(bucketizer =(270428 'new'(270427 call RadixBucketizer[260302])))(baseCaseSize = baseCaseSize[270377])(sequentialSizePerTask = sequentialSizePerTask[270372])(endbit = endbit[270381])))(270464 call partitioningSortWithScratchSpace(270448 call .(270445 call . Data[270359] c"_dom") c"low")(270456 call .(270453 call . Data[270359] c"_dom") c"high") Data[270359] Scratch[270412] state[270439] comparator[270367] 0)
+    }
+    { unknown state[270486](270485 'new'(270484 call TwoArrayDistributedBucketizerSharedState[262766](?)(bucketizerType = RadixBucketizer[260302])(numLocales =(270476 call .(270475 call(270471 call . Data[270359] c"targetLocales")) c"numElements"))(baseCaseSize = baseCaseSize[270377])(endbit = endbit[270381])))(270511 call distributedPartitioningSortWithScratchSpace(270495 call .(270492 call . Data[270359] c"_dom") c"low")(270503 call .(270500 call . Data[270359] c"_dom") c"high") Data[270359] Scratch[270412] state[270486] comparator[270367] 0)
+    }
+  }(329709 'used modules list'(328358 'use' ChapelStandard[19734])(270347 'use' TwoArrayPartitioning[262190])(270352 'use' RadixSortHelp[259064]))
+}

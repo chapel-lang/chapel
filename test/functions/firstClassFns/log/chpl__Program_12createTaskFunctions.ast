@@ -1,0 +1,33 @@
+AST dump for chpl__Program after pass createTaskFunctions.
+Module use list: 
+
+{
+  function chpl__init_chpl__Program[390123]() : void[4] "insert line file info" "module init"
+  {
+    (444546 return _void[47])
+  }
+  function object[253].init[766711](arg _mt[766713]:_MT[227], arg this[766714]:object[253]) : void[4] "compiler generated" "inline" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (766722 'setcid' this[766714])
+    (766724 return _void[47])
+  }
+  function object[253].deinit[766726](arg _mt[766728]:_MT[227], arg this[766730]:object[253]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (766732 return _void[47])
+  }
+  function object[253].writeThis[766735](arg _mt[766739]:_MT[227], arg this[766737]:object[253], arg f[766738]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (766744 call writeThisDefaultImpl f[766738] this[766737])
+    (766748 return _void[47])
+  }
+  function object[253].readThis[766750](arg _mt[766754]:_MT[227], arg this[766752]:object[253], arg f[766753]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (766758 call readThisDefaultImpl f[766753] this[766752])
+    (766763 return _void[47])
+  }
+  type object[253]
+  type unmanaged object[389863]
+  type borrowed object?[389644]
+  type anymanaged object?[389640](?)
+  type anymanaged object[331796](?)
+}

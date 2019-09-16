@@ -1,0 +1,330 @@
+AST dump for LocaleModel after pass readExternC.
+Module use list: 
+
+{
+  (89156 'use' LocaleModelHelpFlat)
+  (89161 'use' LocaleModelHelpMem)
+  function chpl_localeModel_sublocToExecutionSubloc[89169](arg full_subloc[89166] :
+  chpl_sublocID_t) : _unknown[43] "export" "local args"
+  {
+    (89172 return full_subloc)
+  }
+  function chpl_localeModel_sublocMerge[89183](arg full_subloc[89180] :
+  chpl_sublocID_t, arg execution_subloc[89186] :
+  chpl_sublocID_t) : _unknown[43] "export" "local args"
+  {
+    (89190 return execution_subloc)
+  }
+  const chpl_emptyLocaleSpace[89207] "const"(89205 call chpl__buildDomainExpr(89202 call chpl_build_bounded_range 1 0))(89198 call chpl__buildDomainRuntimeType defaultDist 1)
+  const chpl_emptyLocales[89217] "const"(89215 call chpl__buildArrayRuntimeType(89213 call chpl__ensureDomainExpr chpl_emptyLocaleSpace) locale[26])
+  type LocaleModel[89595] const _node_id[89224] "const" int[13] unknown local_name[89228] string[24] function LocaleModel[89595].init[89233](arg _mt[89599]:_MT[227], arg this[89597]:LocaleModel[89595]) : _unknown[43] "method" "primary method"
+  {
+    if(89257 call _cond_test doneCreatingLocales)
+    {
+      (89254 call halt "Cannot create additional LocaleModel instances")
+    }
+    (89267 call = _node_id(89265 call _cast int[13] chpl_nodeID))
+    (89275 call(89271 call . this c"complete"))
+    (89279 call setup)
+  } function LocaleModel[89595].init[89289](arg _mt[89603]:_MT[227], arg this[89601]:LocaleModel[89595], arg parent_loc[89286] :
+  locale[26]) : _unknown[43] "method" "primary method"
+  {
+    if(89298 call _cond_test doneCreatingLocales)
+    {
+      (89295 call halt "Cannot create additional LocaleModel instances")
+    }
+    (89309 call(89304 call . super c"init") parent_loc)
+    (89316 call = _node_id(89314 call _cast int[13] chpl_nodeID))
+    (89324 call(89320 call . this c"complete"))
+    (89328 call setup)
+  } function LocaleModel[89595].chpl_id[89334](arg _mt[89607]:_MT[227], arg this[89605]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89337 return _node_id)
+    }
+  } function LocaleModel[89595].chpl_localeid[89344](arg _mt[89611]:_MT[227], arg this[89609]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (89354 return(89353 call chpl_buildLocaleID(89349 call _cast chpl_nodeID_t _node_id) c_sublocid_any))
+  } function LocaleModel[89595].chpl_name[89361](arg _mt[89615]:_MT[227], arg this[89613]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89364 return local_name)
+    }
+  } function LocaleModel[89595].defaultMemory[89371](arg _mt[89619]:_MT[227], arg this[89617]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (89375 return this)
+  }
+  { scopeless type
+    locale[26]
+  } function LocaleModel[89595].largeMemory[89383](arg _mt[89623]:_MT[227], arg this[89621]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (89387 return this)
+  }
+  { scopeless type
+    locale[26]
+  } function LocaleModel[89595].lowLatencyMemory[89395](arg _mt[89627]:_MT[227], arg this[89625]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (89399 return this)
+  }
+  { scopeless type
+    locale[26]
+  } function LocaleModel[89595].highBandwidthMemory[89407](arg _mt[89631]:_MT[227], arg this[89629]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (89411 return this)
+  }
+  { scopeless type
+    locale[26]
+  } function LocaleModel[89595].getChildSpace[89419](arg _mt[89635]:_MT[227], arg this[89633]:LocaleModel[89595]) : _unknown[43] "method" "primary method"
+  {
+    { scopeless
+      (89422 return chpl_emptyLocaleSpace)
+    }
+  } function LocaleModel[89595].getChildCount[89429](arg _mt[89639]:_MT[227], arg this[89637]:LocaleModel[89595]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89432 return 0)
+    }
+  } function LocaleModel[89595].getChildIndices[89439](arg _mt[89643]:_MT[227], arg this[89641]:LocaleModel[89595]) : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[89447] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[89448] "expr temp" "temp"
+      (89457 'move' _iterator[89448](89455 call _getIterator chpl_emptyLocaleSpace))
+      Defer
+      {
+        {
+          (89473 call _freeIterator _iterator[89448])
+        }
+      }
+      { scopeless type
+        (89462 'move' _indexOfInterest[89447](89459 call iteratorIndex _iterator[89448]))
+      }
+      ForLoop
+      {
+        unknown idx[89466] "index var" "insert auto destroy"
+        (89468 'move' idx[89466] _indexOfInterest[89447])
+        { scopeless
+          (89445 yield idx)
+        }
+        label _continueLabel[89452]
+        _indexOfInterest[89447]
+        _iterator[89448]
+      }
+      label _breakLabel[89453]
+    }
+  }
+  { scopeless type
+    int[13]
+  } function LocaleModel[89595].getChild[89490](arg _mt[89647]:_MT[227], arg this[89645]:LocaleModel[89595], arg idx[89487] :
+  int[13]) : _unknown[43] "method" "primary method" "method overrides" "unsafe"
+  {
+    (89511 call halt "requesting a child from a flat LocaleModel locale")
+    unknown tmp[89515] locale[26]
+    (89519 return tmp)
+  }
+  { scopeless type
+    locale[26]
+  } function LocaleModel[89595].getChildren[89526](arg _mt[89651]:_MT[227], arg this[89649]:LocaleModel[89595]) : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[89534] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[89535] "expr temp" "temp"
+      (89544 'move' _iterator[89535](89542 call _getIterator chpl_emptyLocales))
+      Defer
+      {
+        {
+          (89560 call _freeIterator _iterator[89535])
+        }
+      }
+      { scopeless type
+        (89549 'move' _indexOfInterest[89534](89546 call iteratorIndex _iterator[89535]))
+      }
+      ForLoop
+      {
+        unknown loc[89553] "index var" "insert auto destroy"
+        (89555 'move' loc[89553] _indexOfInterest[89534])
+        { scopeless
+          (89532 yield loc)
+        }
+        label _continueLabel[89539]
+        _indexOfInterest[89534]
+        _iterator[89535]
+      }
+      label _breakLabel[89540]
+    }
+  }
+  { scopeless type
+    locale[26]
+  } function LocaleModel[89595].getChildArray[89573](arg _mt[89655]:_MT[227], arg this[89653]:LocaleModel[89595]) : _unknown[43] "method" "primary method"
+  {
+    (89576 return chpl_emptyLocales)
+  } function LocaleModel[89595].setup[89583](arg _mt[89659]:_MT[227], arg this[89657]:LocaleModel[89595]) : _unknown[43] "method" "primary method"
+  {
+    (89589 call helpSetupLocaleFlat this local_name)
+  } AbstractLocaleModel
+  type RootLocale[90090] const myLocaleSpace[89680] "const"(89678 call chpl__buildDomainExpr(89675 call chpl_build_bounded_range 0(89673 call - numLocales 1)))(89668 call chpl__buildDomainRuntimeType defaultDist 1) unknown myLocales[89690](89688 call chpl__buildArrayRuntimeType(89686 call chpl__ensureDomainExpr myLocaleSpace) locale[26]) function RootLocale[90090].init[89695](arg _mt[90094]:_MT[227], arg this[90092]:RootLocale[90090]) : _unknown[43] "method" "primary method"
+  {
+    (89703 call(89698 call . super c"init") nil[38])
+    (89708 call = nPUsPhysAcc 0)
+    (89713 call = nPUsPhysAll 0)
+    (89718 call = nPUsLogAcc 0)
+    (89723 call = nPUsLogAll 0)
+    (89728 call = maxTaskPar 0)
+  } function RootLocale[90090].setup[89735](arg _mt[90098]:_MT[227], arg this[90096]:RootLocale[90090]) : _unknown[43] "method" "primary method"
+  {
+    (89740 call helpSetupRootLocaleFlat this)
+  } function RootLocale[90090].chpl_id[89747](arg _mt[90102]:_MT[227], arg this[90100]:RootLocale[90090]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89750 return numLocales)
+    }
+  } function RootLocale[90090].chpl_localeid[89757](arg _mt[90106]:_MT[227], arg this[90104]:RootLocale[90090]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (89767 return(89766 call chpl_buildLocaleID(89762 call _cast chpl_nodeID_t numLocales) c_sublocid_none))
+  } function RootLocale[90090].chpl_name[89774](arg _mt[90110]:_MT[227], arg this[90108]:RootLocale[90090]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89779 return(89778 call local_name))
+    }
+  } function RootLocale[90090].local_name[89786](arg _mt[90114]:_MT[227], arg this[90112]:RootLocale[90090]) : _unknown[43] "method" "primary method"
+  {
+    { scopeless
+      (89804 return "rootLocale")
+    }
+  } function RootLocale[90090].writeThis[89813](arg _mt[90118]:_MT[227], arg this[90116]:RootLocale[90090], arg f[89811]:_any[170](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (89817 call <~> f name)
+  } function RootLocale[90090].getChildCount[89825](arg _mt[90122]:_MT[227], arg this[90120]:RootLocale[90090]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89838 return(89835 call .(89830 call . this c"myLocaleSpace") c"numIndices"))
+    }
+  } function RootLocale[90090].getChildSpace[89845](arg _mt[90126]:_MT[227], arg this[90124]:RootLocale[90090]) : _unknown[43] "method" "primary method"
+  {
+    { scopeless
+      (89851 return(89848 call . this c"myLocaleSpace"))
+    }
+  } function RootLocale[90090].getChildIndices[89858](arg _mt[90130]:_MT[227], arg this[90128]:RootLocale[90090]) : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[89869] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[89870] "expr temp" "temp"
+      (89879 'move' _iterator[89870](89877 call _getIterator(89863 call . this c"myLocaleSpace")))
+      Defer
+      {
+        {
+          (89896 call _freeIterator _iterator[89870])
+        }
+      }
+      { scopeless type
+        (89885 'move' _indexOfInterest[89869](89882 call iteratorIndex _iterator[89870]))
+      }
+      ForLoop
+      {
+        unknown idx[89889] "index var" "insert auto destroy"
+        (89891 'move' idx[89889] _indexOfInterest[89869])
+        { scopeless
+          (89867 yield idx)
+        }
+        label _continueLabel[89874]
+        _indexOfInterest[89869]
+        _iterator[89870]
+      }
+      label _breakLabel[89875]
+    }
+  }
+  { scopeless type
+    int[13]
+  } function RootLocale[90090].getChild[89913](arg _mt[90134]:_MT[227], arg this[90132]:RootLocale[90090], arg idx[89910] :
+  int[13]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89924 return(89923 call(89918 call . this c"myLocales") idx))
+    }
+  } function RootLocale[90090].getChildren[89931](arg _mt[90138]:_MT[227], arg this[90136]:RootLocale[90090]) : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[89942] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[89943] "expr temp" "temp"
+      (89952 'move' _iterator[89943](89950 call _getIterator(89936 call . this c"myLocales")))
+      Defer
+      {
+        {
+          (89969 call _freeIterator _iterator[89943])
+        }
+      }
+      { scopeless type
+        (89958 'move' _indexOfInterest[89942](89955 call iteratorIndex _iterator[89943]))
+      }
+      ForLoop
+      {
+        unknown loc[89962] "index var" "insert auto destroy"
+        (89964 'move' loc[89962] _indexOfInterest[89942])
+        { scopeless
+          (89940 yield loc)
+        }
+        label _continueLabel[89947]
+        _indexOfInterest[89942]
+        _iterator[89943]
+      }
+      label _breakLabel[89948]
+    }
+  }
+  { scopeless type
+    locale[26]
+  } function RootLocale[90090].getDefaultLocaleSpace[89982](arg _mt[90142]:_MT[227], arg this[90140]:RootLocale[90090]) const ref : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89988 return(89985 call . this c"myLocaleSpace"))
+    }
+  } function RootLocale[90090].getDefaultLocaleArray[89995](arg _mt[90146]:_MT[227], arg this[90144]:RootLocale[90090]) const ref : _unknown[43] "method" "primary method" "method overrides"
+  {
+    { scopeless
+      (89998 return myLocales)
+    }
+  } function RootLocale[90090].localeIDtoLocale[90009](arg _mt[90150]:_MT[227], arg this[90148]:RootLocale[90090], arg id[90006] :
+  chpl_localeID_t) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (90018 return(90017 call myLocales(90015 call chpl_rt_nodeFromLocaleID id)))
+  } function RootLocale[90090].deinit[90025](arg _mt[90154]:_MT[227], arg this[90152]:RootLocale[90090]) : _unknown[43] "destructor" "method" "primary method"
+  {
+    {
+      unknown _indexOfInterest[90053] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[90054] "expr temp" "temp"
+      (90063 'move' _iterator[90054](90061 call _getIterator myLocales))
+      Defer
+      {
+        {
+          (90079 call _freeIterator _iterator[90054])
+        }
+      }
+      { scopeless type
+        (90068 'move' _indexOfInterest[90053](90065 call iteratorIndex _iterator[90054]))
+      }
+      ForLoop
+      {
+        unknown loc[90072] "index var" "insert auto destroy"
+        (90074 'move' loc[90072] _indexOfInterest[90053])
+        {
+          {
+            const tmp[90047] "const" "temp"
+            (90048 'move' tmp[90047](90045 'deref'(90044 '_wide_get_locale' loc)))
+            {
+              (90032 call = rootLocaleInitialized 0)
+              (90041 call chpl__delete(90039 call _to_unmanaged loc))
+            }
+          }
+        }
+        label _continueLabel[90058]
+        _indexOfInterest[90053]
+        _iterator[90054]
+      }
+      label _breakLabel[90059]
+    }
+  } AbstractRootLocale
+  function chpl_getSubloc[90159]() : _unknown[43] "inline"
+  {
+    (90179 call halt "called chpl_getSubloc() in a locale model that lacks sublocales")
+    (90183 return c_sublocid_none)
+  }
+}

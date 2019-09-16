@@ -1,0 +1,179 @@
+AST dump for LocaleModelHelpRuntime after pass flattenClasses.
+Module use list: ChapelStandard 
+
+{
+  type chpl_localeID_t[197056]
+  {
+  }
+  type chpl_comm_on_bundle_t[197063]
+  {
+  }
+  type chpl_task_bundle_t[197070]
+  {
+  }
+  type chpl_comm_on_bundle_p[197079]
+  type chpl_task_bundle_p[197085]
+  function chpl_comm_on_bundle_task_bundle[197093](arg bundle[197090] :
+  chpl_comm_on_bundle_p[197079]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    chpl_task_bundle_p[197085]
+  }
+  function chpl__initCopy[197121](arg initial[197118] :
+  chpl_localeID_t[197056]) : _unknown[43] "extern" "init copy fn" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    chpl_localeID_t[197056]
+  }
+  function chpl_rt_buildLocaleID[197133](arg node[197130] :
+  chpl_nodeID_t[90205], arg subloc[197136] :
+  chpl_sublocID_t[90212]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    chpl_localeID_t[197056]
+  }
+  function chpl_rt_nodeFromLocaleID[197149](arg loc[197146] :
+  chpl_localeID_t[197056]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    chpl_nodeID_t[90205]
+  }
+  function chpl_rt_sublocFromLocaleID[197161](arg loc[197158] :
+  chpl_localeID_t[197056]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    chpl_sublocID_t[90212]
+  }
+  function chpl_buildLocaleID[197173](arg node[197170] :
+  chpl_nodeID_t[90205], arg subloc[197176] :
+  chpl_sublocID_t[90212]) : _unknown[43] "export" "insert line file info" "local args"
+  {
+    (197184 return(197183 call chpl_rt_buildLocaleID node[197170] subloc[197176]))
+  }
+  function chpl_nodeFromLocaleID[197195](arg loc[197192] :
+  chpl_localeID_t[197056]) : _unknown[43] "export" "insert line file info" "local args"
+  {
+    (197201 return(197200 call chpl_rt_nodeFromLocaleID loc[197192]))
+  }
+  function chpl_sublocFromLocaleID[197212](arg loc[197209] :
+  chpl_localeID_t[197056]) : _unknown[43] "export" "insert line file info" "local args"
+  {
+    (197218 return(197217 call chpl_rt_sublocFromLocaleID loc[197209]))
+  }
+  function chpl_comm_execute_on[197229](arg loc_id[197226] :
+  int(64)[13], arg subloc_id[197232] :
+  int(64)[13], arg fn[197236] :
+  int(64)[13], arg args[197240] :
+  chpl_comm_on_bundle_p[197079], arg arg_size[197244] :
+  size_t[209674]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_comm_execute_on_fast[197255](arg loc_id[197252] :
+  int(64)[13], arg subloc_id[197258] :
+  int(64)[13], arg fn[197262] :
+  int(64)[13], arg args[197266] :
+  chpl_comm_on_bundle_p[197079], arg args_size[197270] :
+  size_t[209674]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_comm_execute_on_nb[197281](arg loc_id[197278] :
+  int(64)[13], arg subloc_id[197284] :
+  int(64)[13], arg fn[197288] :
+  int(64)[13], arg args[197292] :
+  chpl_comm_on_bundle_p[197079], arg args_size[197296] :
+  size_t[209674]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_comm_taskCallFTable[197307](arg fn[197304] :
+  int(64)[13], arg args[197310] :
+  chpl_comm_on_bundle_p[197079], arg args_size[197314] :
+  size_t[209674], arg subloc_id[197318] :
+  int(64)[13]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_ftable_call[197331](arg fn[197328] :
+  int(64)[13], arg args[197334] :
+  chpl_comm_on_bundle_p[197079]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_ftable_call[197347](arg fn[197344] :
+  int(64)[13], arg args[197350] :
+  chpl_task_bundle_p[197085]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_task_addToTaskList[197363](arg fn[197360] :
+  int(64)[13], arg args[197366] :
+  chpl_task_bundle_p[197085], arg args_size[197370] :
+  size_t[209674], arg subloc_id[197374] :
+  int(64)[13], ref arg tlist[197378] :
+  c_void_ptr[141], arg tlist_node_id[197382] :
+  int(64)[13], arg is_begin[197386] :
+  bool[10]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_task_executeTasksInList[197397](ref arg tlist[197394] :
+  c_void_ptr[141]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_task_yield[197403]() : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_taskListAddBegin[197413](arg subloc_id[197410] :
+  int(64)[13], arg fn[197416] :
+  int(64)[13], arg args[197420] :
+  chpl_task_bundle_p[197085], arg args_size[197424] :
+  size_t[209674], ref arg tlist[197428] :
+  c_void_ptr[141], arg tlist_node_id[197432] :
+  int(64)[13]) : _unknown[43] "export" "insert line file info" "local args" "no return value for void"
+  {
+    unknown tls[197438](197437 call chpl_task_getChapelData)
+    unknown isSerial[197446](197445 call chpl_task_data_getSerial tls[197438])
+    if(197475 call _cond_test isSerial[197446])
+    {
+      (197454 call chpl_ftable_call fn[197416] args[197420])
+    }
+    {
+      (197461 call chpl_task_data_setup args[197420] tls[197438])
+      (197473 call chpl_task_addToTaskList fn[197416] args[197420] args_size[197424] subloc_id[197410] tlist[197428] tlist_node_id[197432] 1)
+    }
+  }
+  function chpl_taskListAddCoStmt[197487](arg subloc_id[197484] :
+  int(64)[13], arg fn[197490] :
+  int(64)[13], arg args[197494] :
+  chpl_task_bundle_p[197085], arg args_size[197498] :
+  size_t[209674], ref arg tlist[197502] :
+  c_void_ptr[141], arg tlist_node_id[197506] :
+  int(64)[13]) : _unknown[43] "export" "insert line file info" "local args" "no return value for void"
+  {
+    unknown tls[197512](197511 call chpl_task_getChapelData)
+    unknown isSerial[197520](197519 call chpl_task_data_getSerial tls[197512])
+    if(197549 call _cond_test isSerial[197520])
+    {
+      (197528 call chpl_ftable_call fn[197490] args[197494])
+    }
+    {
+      (197535 call chpl_task_data_setup args[197494] tls[197512])
+      (197547 call chpl_task_addToTaskList fn[197490] args[197494] args_size[197498] subloc_id[197484] tlist[197502] tlist_node_id[197506] 0)
+    }
+  }
+  function chpl_taskListExecute[197561](ref arg task_list[197558] :
+  c_void_ptr[141]) : _unknown[43] "export" "insert line file info" "local args" "no return value for void"
+  {
+    (197566 call chpl_task_executeTasksInList task_list[197558])
+  }
+  (329499 'used modules list'(197051 'use' ChapelStandard[19734]))
+}

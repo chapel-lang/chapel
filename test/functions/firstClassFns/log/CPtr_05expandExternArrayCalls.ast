@@ -1,0 +1,777 @@
+AST dump for CPtr after pass expandExternArrayCalls.
+Module use list: 
+
+{
+  (192961 'use' ChapelStandard)
+  { scopeless
+    (192967 'use' SysBasic)
+    (192969 'use' SysError)
+  }
+  (192972 'use' HaltWrappers 'only' )
+  function c_nil[192976]() : _unknown[43] "inline" "no parens"
+  {
+    (192984 return(192983 'cast' c_void_ptr nil[38]))
+  }
+  { scopeless type
+    c_void_ptr
+  }
+  function is_c_nil[192994](arg x[192992]:_any[170](?)) : _unknown[43] "inline"
+  {
+    (193005 return(193003 call ==(193001 'cast' c_void_ptr x) c_nil))
+  }
+  { scopeless type
+    bool[10]
+  }
+  type c_ptr[193070](?) unknown eltType[193012] "type variable" function c_ptr[193070](?).this[193021](arg _mt[193074]:_MT[227], arg this[193072]:c_ptr[193070](?), arg i[193018] :
+  integral) ref : _unknown[43] "inline" "method" "primary method"
+  {
+    (193028 return(193027 'array_get' this i))
+  } function c_ptr[193070](?).deref[193035](arg _mt[193078]:_MT[227], arg this[193076]:c_ptr[193070](?)) ref : _unknown[43] "inline" "method" "primary method"
+  {
+    (193042 return(193041 'array_get' this 0))
+  } function c_ptr[193070](?).writeThis[193051](arg _mt[193082]:_MT[227], arg this[193080]:c_ptr[193070](?), arg ch[193049]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    (193064 call(193059 call .(193055 call _cast c_void_ptr this) c"writeThis") ch)
+  }
+  type c_array[193758](?) unknown eltType[193086] "type variable" unknown size[193089] "param" function c_array[193758](?).init[193096](arg _mt[193762]:_MT[227], arg this[193760]:c_array[193758](?), arg eltType[193094]:_any[170](?), param arg size[193098]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (193105 call =(193101 call . this c"eltType") eltType)
+    (193114 call =(193110 call . this c"size") size)
+    (193122 call(193118 call . this c"complete"))
+    unknown i[193125] 0
+    {
+      unknown tmp[193156] "temp"
+      (193180 'move' tmp[193156](193175 call _cond_test(193177 call < i size)))
+      WhileDo
+      {
+        {
+          unknown default[193133] "no auto destroy" eltType
+          unknown eltRef[193142] "ref var"(193141 'array_get' this i)
+          (193149 '=' eltRef default)
+          (193153 call += i 1)
+        }
+        label _continueLabel[193159]
+        (193170 'move' tmp[193156](193165 call _cond_test(193167 call < i size)))
+        tmp[193156]
+      }
+      label _breakLabel[193160]
+    }
+  } function c_array[193758](?).deinit[193187](arg _mt[193766]:_MT[227], arg this[193764]:c_array[193758](?)) : _unknown[43] "destructor" "method" "primary method"
+  {
+    unknown i[193190] 0
+    {
+      unknown tmp[193213] "temp"
+      (193237 'move' tmp[193213](193232 call _cond_test(193234 call < i size)))
+      WhileDo
+      {
+        {
+          (193205 call chpl__autoDestroy(193203 'array_get' this i))
+          (193210 call += i 1)
+        }
+        label _continueLabel[193216]
+        (193227 'move' tmp[193213](193222 call _cond_test(193224 call < i size)))
+        tmp[193213]
+      }
+      label _breakLabel[193217]
+    }
+  } function c_array[193758](?).this[193248](arg _mt[193770]:_MT[227], ref arg this[193768]:c_array[193758](?), arg i[193245] :
+  integral) ref : _unknown[43] "inline" "method" "primary method"
+  {
+    if(193326 call _cond_test boundsChecking)
+    {
+      { scopeless
+        if(193321 call _cond_test(193260 call ||(193254 call < i 0)(193258 call >= i size)))
+        {
+          { scopeless
+            (193319 call(193263 call . HaltWrappers c"boundsCheckHalt")(193316 call +(193313 call +(193304 call +(193286 call + "c array index out of bounds "(193284 call _cast string[24] i)) "(indices are 0..")(193311 call _cast string[24](193308 call - size 1))) ")"))
+          }
+        }
+      }
+    }
+    (193337 return(193336 'array_get' this i))
+  }
+  { scopeless type
+    eltType
+  } function c_array[193758](?).this[193348](arg _mt[193774]:_MT[227], const  ref arg this[193772]:c_array[193758](?), arg i[193345] :
+  integral) const ref : _unknown[43] "inline" "method" "primary method" "no doc"
+  {
+    if(193396 call _cond_test boundsChecking)
+    {
+      { scopeless
+        if(193391 call _cond_test(193360 call ||(193354 call < i 0)(193358 call >= i size)))
+        {
+          { scopeless
+            (193389 call(193363 call . HaltWrappers c"boundsCheckHalt")(193386 call +(193383 call +(193374 call +(193371 call + "c array index out of bounds "(193369 call _cast string[24] i)) "(indices are 0..")(193381 call _cast string[24](193378 call - size 1))) ")"))
+          }
+        }
+      }
+    }
+    (193407 return(193406 'array_get' this i))
+  }
+  { scopeless type
+    eltType
+  } function c_array[193758](?).this[193418](arg _mt[193778]:_MT[227], ref arg this[193776]:c_array[193758](?), param arg i[193415] :
+  integral) ref : _unknown[43] "inline" "method" "primary method"
+  {
+    if(193457 call _cond_test(193429 call ||(193423 call < i 0)(193427 call >= i size)))
+    {
+      { scopeless
+        (193455 call compilerError(193452 call +(193449 call +(193440 call +(193437 call + "c array index out of bounds "(193435 call _cast string[24] i)) "(indices are 0..")(193447 call _cast string[24](193444 call - size 1))) ")"))
+      }
+    }
+    (193468 return(193467 'array_get' this i))
+  }
+  { scopeless type
+    eltType
+  } function c_array[193758](?).this[193479](arg _mt[193782]:_MT[227], const  ref arg this[193780]:c_array[193758](?), param arg i[193476] :
+  integral) const ref : _unknown[43] "inline" "method" "primary method" "no doc"
+  {
+    if(193518 call _cond_test(193490 call ||(193484 call < i 0)(193488 call >= i size)))
+    {
+      { scopeless
+        (193516 call compilerError(193513 call +(193510 call +(193501 call +(193498 call + "c array index out of bounds "(193496 call _cast string[24] i)) "(indices are 0..")(193508 call _cast string[24](193505 call - size 1))) ")"))
+      }
+    }
+    (193529 return(193528 'array_get' this i))
+  }
+  { scopeless type
+    eltType
+  } function c_array[193758](?).writeThis[193538](arg _mt[193786]:_MT[227], arg this[193784]:c_array[193758](?), arg ch[193536]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (193546 call <~> ch(193545 'new'(193544 call ioLiteral "[")))
+    unknown first[193551] 1
+    {
+      unknown _indexOfInterest[193591] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[193592] "expr temp" "temp"
+      (193601 'move' _iterator[193592](193599 call _getIterator(193608 call chpl_direct_counted_range_iter 0 size)))
+      Defer
+      {
+        {
+          (193624 call _freeIterator _iterator[193592])
+        }
+      }
+      { scopeless type
+        (193613 'move' _indexOfInterest[193591](193610 call iteratorIndex _iterator[193592]))
+      }
+      ForLoop
+      {
+        unknown i[193617] "index var" "insert auto destroy"
+        (193619 'move' i[193617] _indexOfInterest[193591])
+        {
+          (193566 call <~> ch(193565 call this i))
+          if(193586 call _cond_test(193575 call != i(193573 call - size 1)))
+          {
+            { scopeless
+              (193583 call <~> ch(193582 'new'(193581 call ioLiteral ", ")))
+            }
+          }
+        }
+        label _continueLabel[193596]
+        _indexOfInterest[193591]
+        _iterator[193592]
+      }
+      label _breakLabel[193597]
+    }
+    (193637 call <~> ch(193636 'new'(193635 call ioLiteral "]")))
+  } function c_array[193758](?).length[193644](arg _mt[193790]:_MT[227], arg this[193788]:c_array[193758](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    (193647 return size)
+  } function c_array[193758](?).init=[193658](arg _mt[193794]:_MT[227], arg this[193792]:c_array[193758](?), arg other[193655] :
+  c_array) : _unknown[43] "method" "primary method"
+  {
+    (193668 call =(193661 call . this c"eltType")(193665 call . other c"eltType"))
+    (193680 call =(193673 call . this c"size")(193677 call . other c"size"))
+    (193688 call(193684 call . this c"complete"))
+    {
+      unknown _indexOfInterest[193715] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[193716] "expr temp" "temp"
+      (193725 'move' _iterator[193716](193723 call _getIterator(193732 call chpl_direct_counted_range_iter 0 size)))
+      Defer
+      {
+        {
+          (193748 call _freeIterator _iterator[193716])
+        }
+      }
+      { scopeless type
+        (193737 'move' _indexOfInterest[193715](193734 call iteratorIndex _iterator[193716]))
+      }
+      ForLoop
+      {
+        unknown i[193741] "index var" "insert auto destroy"
+        (193743 'move' i[193741] _indexOfInterest[193715])
+        {
+          unknown value[193702] "no auto destroy"(193701 call other i) eltType
+          (193713 '='(193711 call this i) value)
+        }
+        label _continueLabel[193720]
+        _indexOfInterest[193715]
+        _iterator[193716]
+      }
+      label _breakLabel[193721]
+    }
+  }
+  function =[193803](ref arg lhs[193800] :
+  c_array, arg rhs[193806] :
+  c_array) : _unknown[43] "assignop"
+  {
+    if(193839 call _cond_test(193817 call !=(193810 call . lhs c"eltType")(193814 call . rhs c"eltType")))
+    {
+      { scopeless
+        (193837 call compilerError "element type mismatch in c_array assignment")
+      }
+    }
+    if(193875 call _cond_test(193853 call !=(193846 call . lhs c"size")(193850 call . rhs c"size")))
+    {
+      { scopeless
+        (193873 call compilerError "size mismatch in c_array assignment")
+      }
+    }
+    {
+      unknown _indexOfInterest[193902] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[193903] "expr temp" "temp"
+      (193912 'move' _iterator[193903](193910 call _getIterator(193922 call chpl_direct_counted_range_iter 0(193918 call . lhs c"size"))))
+      Defer
+      {
+        {
+          (193938 call _freeIterator _iterator[193903])
+        }
+      }
+      { scopeless type
+        (193927 'move' _indexOfInterest[193902](193924 call iteratorIndex _iterator[193903]))
+      }
+      ForLoop
+      {
+        unknown i[193931] "index var" "insert auto destroy"
+        (193933 'move' i[193931] _indexOfInterest[193902])
+        {
+          (193898 call =(193893 call lhs i)(193897 call rhs i))
+        }
+        label _continueLabel[193907]
+        _indexOfInterest[193902]
+        _iterator[193903]
+      }
+      label _breakLabel[193908]
+    }
+  }
+  function =[193953](ref arg lhs[193950] :
+  c_ptr, ref arg rhs[193956] :
+  c_array) : _unknown[43] "assignop"
+  {
+    (193977 call = lhs(193976 call c_ptrTo(193974 call rhs 0)))
+  }
+  where {
+    (193967 call ==(193960 call . lhs c"eltType")(193964 call . rhs c"eltType"))
+  }
+  function _unknown[43].writeThis[193989](arg _mt[193994]:_MT[227], arg this[193991] :
+  c_void_ptr, arg ch[193987]:_any[170](?)) : _unknown[43] "inline" "method" "no doc"
+  {
+    Try
+    {
+      {
+        (194021 call(193997 call . ch c"writef") "0x%xu"(194019 call _cast c_uintptr this))
+      }
+    }
+    Catch e : SystemError
+    {
+      (194037 call(194029 call . ch c"setError")(194033 call . e c"err"))
+    }
+    Catch
+    {
+      (194050 call(194042 call . ch c"setError")(194047 call _cast syserr EINVAL))
+    }
+  }
+  function =[194065](ref arg a[194062] :
+  c_ptr, arg b[194068] :
+  c_ptr) : _unknown[43] "assignop" "inline" "no doc"
+  {
+    (194075 '=' a b)
+  }
+  function =[194086](ref arg a[194083] :
+  c_ptr, arg b[194089] :
+  c_void_ptr) : _unknown[43] "assignop" "inline" "no doc"
+  {
+    (194096 '=' a b)
+  }
+  function _cast[194107](arg t[194104] :
+  c_void_ptr, arg x[194110] :
+  c_fn_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194118 return(194117 'cast' c_void_ptr x))
+  }
+  function _cast[194129](arg t[194126] :
+  c_ptr, arg x[194132] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194140 return(194139 'cast' t x))
+  }
+  function _cast[194155](arg t[194152] :
+  (194151 call c_ptr unknown e[194148]), ref arg x[194158] :
+  c_array) : _unknown[43] "inline" "no doc"
+  {
+    (194175 return(194174 call c_ptrTo(194172 call x 0)))
+  }
+  where {
+    (194166 call ==(194162 call . x c"eltType") e)
+  }
+  function _cast[194187](arg t[194184] :
+  c_void_ptr, ref arg x[194190] :
+  c_array) : _unknown[43] "inline" "no doc"
+  {
+    (194203 return(194201 call _cast c_void_ptr(194199 call c_ptrTo(194197 call x 0))))
+  }
+  function _cast[194214](arg t[194211] :
+  c_void_ptr, arg x[194217] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194225 return(194224 'cast' t x))
+  }
+  function _cast[194236](arg t[194233] :
+  c_ptr, arg x[194239] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194247 return(194246 'cast' t x))
+  }
+  function _cast[194258](arg t[194255] :
+  string[24], arg x[194261] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194286 return(194285 call createStringWithOwnedBuffer(194283 'ref to string' x)))
+  }
+  function _cast[194297](arg t[194294] :
+  string[24], arg x[194300] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194310 return(194309 call createStringWithOwnedBuffer(194307 'ref to string' x)))
+  }
+  function _cast[194321](arg t[194318] :
+  _anyManagementAnyNilable, arg x[194324] :
+  c_void_ptr) : _unknown[43] "inline" "last resort" "no doc"
+  {
+    if(194471 call _cond_test(194335 call ||(194330 call isUnmanagedClass t)(194334 call isBorrowedClass t)))
+    {
+      if(194432 call _cond_test(194338 call ! chpl_legacyClasses))
+      {
+        (194382 call compilerWarning(194379 call +(194361 call + "cast from c_void_ptr to "(194359 call _cast string[24] t)) " is deprecated"))
+        (194430 call compilerWarning(194427 call +(194409 call + "cast to "(194407 call _cast string[24](194405 call _to_nilable t))) " instead"))
+      }
+      (194442 return(194441 'cast' t x))
+    }
+    {
+      (194468 call compilerWarning(194465 call + "invalid cast from c_void_ptr to managed type "(194463 call _cast string[24] t)))
+    }
+  }
+  function _cast[194486](arg t[194483] :
+  (194482 'to unmanaged class from unknown'(194481 'to nilable class from type' class[221](?))), arg x[194489] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194497 return(194496 'cast' t x))
+  }
+  function _cast[194510](arg t[194507] :
+  (194506 'to borrowed class from unknown'(194505 'to nilable class from type' class[221](?))), arg x[194513] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194521 return(194520 'cast' t x))
+  }
+  function _cast[194532](arg t[194529] :
+  c_void_ptr, arg x[194535] :
+  borrowed[200](?)) : _unknown[43] "inline" "no doc"
+  {
+    (194543 return(194542 'cast' t x))
+  }
+  function _cast[194554](arg t[194551] :
+  c_void_ptr, arg x[194557] :
+  unmanaged[209](?)) : _unknown[43] "inline" "no doc"
+  {
+    (194565 return(194564 'cast' t x))
+  }
+  function _cast[194576](arg t[194573] :
+  _ddata, arg x[194579] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194597 return(194596 'cast' t x))
+  }
+  where {
+    (194590 call ==(194583 call . t c"eltType")(194587 call . x c"eltType"))
+  }
+  function _cast[194609](arg t[194606] :
+  _ddata, arg x[194612] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194620 return(194619 'cast' t x))
+  }
+  function _cast[194631](arg t[194628] :
+  c_void_ptr, arg x[194634] :
+  _ddata) : _unknown[43] "inline" "no doc"
+  {
+    (194642 return(194641 'cast' t x))
+  }
+  function _cast[194653](arg t[194650] :
+  c_intptr, arg x[194656] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194664 return(194663 'cast' t x))
+    }
+  }
+  function _cast[194675](arg t[194672] :
+  c_uintptr, arg x[194678] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194686 return(194685 'cast' t x))
+    }
+  }
+  function _cast[194700](arg t[194697] :
+  (194696 call int[13] 64), arg x[194703] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194718 return(194717 'cast' t x))
+    }
+  }
+  where {
+    (194711 call != c_uintptr(194710 call int[13] 64))
+  }
+  function _cast[194733](arg t[194730] :
+  (194729 call uint[107] 64), arg x[194736] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194751 return(194750 'cast' t x))
+    }
+  }
+  where {
+    (194744 call != c_uintptr(194743 call uint[107] 64))
+  }
+  function _cast[194763](arg t[194760] :
+  c_intptr, arg x[194766] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194774 return(194773 'cast' t x))
+    }
+  }
+  function _cast[194785](arg t[194782] :
+  c_uintptr, arg x[194788] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194796 return(194795 'cast' t x))
+    }
+  }
+  function _cast[194810](arg t[194807] :
+  (194806 call int[13] 64), arg x[194813] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194828 return(194827 'cast' t x))
+    }
+  }
+  where {
+    (194821 call != c_intptr(194820 call int[13] 64))
+  }
+  function _cast[194843](arg t[194840] :
+  (194839 call uint[107] 64), arg x[194846] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (194861 return(194860 'cast' t x))
+    }
+  }
+  where {
+    (194854 call != c_uintptr(194853 call int[13] 64))
+  }
+  function =[194873](ref arg a[194870] :
+  c_fn_ptr, arg b[194876] :
+  c_fn_ptr) : _unknown[43] "assignop" "inline" "no doc"
+  {
+    (194883 '=' a b)
+  }
+  function ==[194894](arg a[194891] :
+  c_ptr, arg b[194897] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194915 return(194914 'ptr_eq' a b))
+  }
+  where {
+    (194908 call ==(194901 call . a c"eltType")(194905 call . b c"eltType"))
+  }
+  function ==[194927](arg a[194924] :
+  c_ptr, arg b[194930] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194938 return(194937 'ptr_eq' a b))
+  }
+  function ==[194949](arg a[194946] :
+  c_void_ptr, arg b[194952] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194960 return(194959 'ptr_eq' a b))
+  }
+  function !=[194971](arg a[194968] :
+  c_ptr, arg b[194974] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (194992 return(194991 'ptr_neq' a b))
+  }
+  where {
+    (194985 call ==(194978 call . a c"eltType")(194982 call . b c"eltType"))
+  }
+  function !=[195004](arg a[195001] :
+  c_ptr, arg b[195007] :
+  c_void_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (195015 return(195014 'ptr_neq' a b))
+  }
+  function !=[195026](arg a[195023] :
+  c_void_ptr, arg b[195029] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (195037 return(195036 'ptr_neq' a b))
+  }
+  function _cond_test[195048](arg x[195045] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (195054 return(195052 call != x c_nil))
+    }
+  }
+  function ![195065](arg x[195062] :
+  c_ptr) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (195071 return(195069 call == x c_nil))
+    }
+  }
+  function +[195082](arg a[195079] :
+  c_ptr, arg b[195085] :
+  integral) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (195093 return(195092 '+' a b))
+    }
+  }
+  function -[195104](arg a[195101] :
+  c_ptr, arg b[195107] :
+  integral) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (195115 return(195114 '-' a b))
+    }
+  }
+  function -[195130](arg a[195127] :
+  (195126 call c_ptr unknown t[195123]), arg b[195136] :
+  (195135 call c_ptr t)) : _unknown[43] "inline" "no doc"
+  {
+    (195155 return(195154 call c_pointer_diff a b(195152 call _cast c_ptrdiff(195150 call c_sizeof(195146 call . a c"eltType")))))
+  }
+  { scopeless type
+    c_ptrdiff
+  }
+  function c_pointer_return[195168](ref arg x[195165] :
+  unknown t[195163]) : _unknown[43] "extern" "local args" "no fn body" "no doc" "fn synchronization free"
+  {
+  }
+  { scopeless type
+    (195173 call c_ptr t)
+  }
+  function c_pointer_diff[195183](arg a[195180] :
+  c_void_ptr, arg b[195186] :
+  c_void_ptr, arg eltSize[195190] :
+  c_ptrdiff) : _unknown[43] "extern" "local args" "no fn body" "no doc" "fn synchronization free"
+  {
+  }
+  { scopeless type
+    c_ptrdiff
+  }
+  function c_ptrTo[195205](arg arr[195202] :
+  (195199 call chpl__buildArrayRuntimeType nil[38])) : _unknown[43] "inline"
+  {
+    (195224 return(195223 call c_pointer_return(195221 call arr(195217 call .(195214 call . arr c"_dom") c"low"))))
+  }
+  where {
+    (195210 call isRectangularArr arr)
+  }
+  function c_ptrTo[195237](ref arg x[195234] :
+  unknown t[195232]) : _unknown[43] "inline"
+  {
+    if(195268 call _cond_test(195246 call isArrayType t))
+    {
+      { scopeless
+        (195266 call compilerError "c_ptrTo unsupported array type" 2)
+      }
+    }
+    if(195299 call _cond_test(195277 call isDomainType t))
+    {
+      { scopeless
+        (195297 call compilerError "c_ptrTo domain type not supported" 2)
+      }
+    }
+    (195308 return(195307 call c_pointer_return x))
+  }
+  { scopeless type
+    (195242 call c_ptr t)
+  }
+  function c_ptrTo[195319](arg x[195316] :
+  c_fn_ptr) : _unknown[43] "inline" "no doc"
+  {
+    (195322 return x)
+  }
+  function _unknown[43].this[195330](arg _mt[195335]:_MT[227], arg this[195332] :
+  c_fn_ptr) : _unknown[43] "method" "no doc"
+  {
+    (195355 call compilerError "Can't call a C function pointer within Chapel")
+  }
+  function _unknown[43].this[195367](arg _mt[195372]:_MT[227], arg this[195369] :
+  c_fn_ptr, arg args[195364]:_any[170](?) ...) : _unknown[43] "method" "no doc"
+  {
+    (195377 call compilerError "Can't call a C function pointer within Chapel")
+  }
+  function offset_ARRAY_ELEMENTS[195384]() : _unknown[43] "no parens" "private"
+  {
+    const CHPL_RT_MD_ARRAY_ELEMENTS[195387] "const" "extern" chpl_mem_descInt_t
+    function chpl_memhook_md_num[195393]() : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      chpl_mem_descInt_t
+    }
+    (195405 return(195403 call - CHPL_RT_MD_ARRAY_ELEMENTS(195402 call chpl_memhook_md_num)))
+  }
+  function c_sizeof[195413](arg x[195411]:_any[170](?)) : _unknown[43] "inline"
+  {
+    function sizeof[195420](arg x[195418]:_any[170](?)) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      size_t
+    }
+    (195431 return(195430 call sizeof x))
+  }
+  { scopeless type
+    size_t
+  }
+  function c_offsetof[195440](arg t[195438]:_any[170](?), param arg fieldname[195443] :
+  string[24]) : _unknown[43]
+  {
+    (195453 'use' Reflection)
+    unknown x[195457] "no auto destroy" "no init" t
+    (195480 return(195478 call -(195469 call _cast size_t(195467 call c_ptrTo(195465 call getFieldRef x fieldname)))(195476 call _cast size_t(195474 call c_ptrTo x))))
+  }
+  where {
+    (195450 call isRecordType t)
+  }
+  { scopeless type
+    size_t
+  }
+  function c_offsetof[195490](arg t[195488]:_any[170](?), param arg fieldname[195493] :
+  string[24]) : _unknown[43] "no doc"
+  {
+    (195520 call compilerError "Cannot call c_offsetof on type that is not a record")
+  }
+  where {
+    (195500 call !(195499 call isRecordType t))
+  }
+  function c_calloc[195530](arg eltType[195528]:_any[170](?), arg size[195533] :
+  integral) : _unknown[43] "inline"
+  {
+    const alloc_size[195553] "const"(195551 call *(195546 call(195541 call . size c"safeCast") size_t)(195550 call c_sizeof eltType))
+    (195569 return(195567 call _cast(195566 call c_ptr eltType)(195562 call chpl_here_calloc alloc_size 1 offset_ARRAY_ELEMENTS)))
+  }
+  { scopeless type
+    (195539 call c_ptr eltType)
+  }
+  function c_malloc[195578](arg eltType[195576]:_any[170](?), arg size[195581] :
+  integral) : _unknown[43] "inline"
+  {
+    const alloc_size[195601] "const"(195599 call *(195594 call(195589 call . size c"safeCast") size_t)(195598 call c_sizeof eltType))
+    (195616 return(195614 call _cast(195613 call c_ptr eltType)(195609 call chpl_here_alloc alloc_size offset_ARRAY_ELEMENTS)))
+  }
+  { scopeless type
+    (195587 call c_ptr eltType)
+  }
+  function c_free[195627](arg data[195624] :
+  c_void_ptr) : _unknown[43] "inline"
+  {
+    (195632 call chpl_here_free data)
+  }
+  function isAnyCPtr[195643](arg t[195640] :
+  c_ptr) param : _unknown[43]
+  {
+    { scopeless
+      (195646 return 1)
+    }
+  }
+  function isAnyCPtr[195657](arg t[195654] :
+  c_void_ptr) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (195660 return 1)
+    }
+  }
+  function isAnyCPtr[195669](arg t[195667]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (195672 return 0)
+    }
+  }
+  function c_memmove[195683](arg dest[195680] :
+  c_void_ptr, const arg src[195686] :
+  c_void_ptr, arg n[195690] :
+  integral) : _unknown[43] "inline" "fn synchronization free"
+  {
+    function memmove[195699](arg dest[195696] :
+    c_void_ptr, const arg src[195702] :
+    c_void_ptr, arg n[195706] :
+    size_t) : void[4] "extern" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    (195723 call memmove dest src(195722 call(195717 call . n c"safeCast") size_t))
+  }
+  function c_memcpy[195733](arg dest[195730] :
+  c_void_ptr, const arg src[195736] :
+  c_void_ptr, arg n[195740] :
+  integral) : _unknown[43] "inline" "fn synchronization free"
+  {
+    function memcpy[195749](arg dest[195746] :
+    c_void_ptr, const arg src[195752] :
+    c_void_ptr, arg n[195756] :
+    size_t) : void[4] "extern" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    (195773 call memcpy dest src(195772 call(195767 call . n c"safeCast") size_t))
+  }
+  function c_memcmp[195783](const arg s1[195780] :
+  c_void_ptr, const arg s2[195786] :
+  c_void_ptr, arg n[195790] :
+  integral) : _unknown[43] "inline" "fn synchronization free"
+  {
+    function memcmp[195799](const arg s1[195796] :
+    c_void_ptr, const arg s2[195802] :
+    c_void_ptr, arg n[195806] :
+    size_t) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      c_int
+    }
+    (195832 return(195831 call(195826 call .(195825 call memcmp s1 s2(195824 call(195819 call . n c"safeCast") size_t)) c"safeCast") int[13]))
+  }
+  function c_memset[195842](arg s[195839] :
+  c_void_ptr, arg c[195845] :
+  integral, arg n[195849] :
+  integral) : _unknown[43] "inline" "fn synchronization free"
+  {
+    function memset[195858](arg s[195855] :
+    c_void_ptr, arg c[195861] :
+    c_int, arg n[195865] :
+    size_t) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free"
+    {
+    }
+    { scopeless type
+      c_void_ptr
+    }
+    (195890 call memset s(195882 call(195877 call . c c"safeCast") c_int)(195889 call(195884 call . n c"safeCast") size_t))
+    (195893 return s)
+  }
+}

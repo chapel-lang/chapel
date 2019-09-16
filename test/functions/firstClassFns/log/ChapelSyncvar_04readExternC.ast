@@ -1,0 +1,749 @@
+AST dump for ChapelSyncvar after pass readExternC.
+Module use list: 
+
+{
+  (85143 'use' ChapelStandard)
+  (85148 'use' AlignedTSupport)
+  (85152 'use' MemConsistency)
+  (85156 'use' SyncVarRuntimeSupport)
+  function isSupported[85162](arg t[85160]:_any[170](?)) param : _unknown[43] "private"
+  {
+    { scopeless
+      (85216 return(85214 call ||(85208 call ||(85202 call ||(85196 call ||(85190 call ||(85184 call ||(85178 call ||(85172 call ||(85167 call isNothingType t)(85171 call isBoolType t))(85177 call isIntegralType t))(85183 call isRealType t))(85189 call isImagType t))(85195 call isEnumType t))(85201 call isClassType t))(85207 call isStringType t))(85212 call == t chpl_taskID_t)))
+    }
+  }
+  function ensureFEType[85225](arg t[85223]:_any[170](?)) : _unknown[43] "private"
+  {
+    if(85274 call _cond_test(85232 call ==(85230 call isSupported t) 0))
+    {
+      { scopeless
+        (85272 call compilerError "sync/single types cannot contain type '"(85254 call _cast string[24] t) "'")
+      }
+    }
+    if(85309 call _cond_test(85287 call &&(85281 call ! chpl_legacyClasses)(85286 call isNonNilableClass t)))
+    {
+      { scopeless
+        (85307 call compilerError "sync/single types cannot contain non-nilable classes")
+      }
+    }
+    if(85338 call _cond_test(85317 call isGenericType t))
+    {
+      { scopeless
+        (85336 call compilerError "sync/single types cannot contain generic types")
+      }
+    }
+  }
+  unknown useNativeSyncVar[85346] "config" "no doc" "param" 1
+  function getSyncClassType[85353](arg valType[85351]:_any[170](?)) type : _unknown[43] "private"
+  {
+    if(85378 call _cond_test(85360 call && useNativeSyncVar(85359 call supportsNativeSyncVar valType)))
+    {
+      (85367 return(85366 'to unmanaged class from unknown'(85365 call _qthreads_synccls valType)))
+    }
+    {
+      (85375 return(85374 'to unmanaged class from unknown'(85373 call _synccls valType)))
+    }
+  }
+  function chpl__readXX[85389](arg x[85387]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    { scopeless
+      (85392 return x)
+    }
+  }
+  sync type _syncvar[85613](?) unknown valType[85398] "type variable" unknown wrapped[85405](85404 call getSyncClassType valType) unknown isOwned[85410] 1 bool[10] function _syncvar[85613](?).init[85417](arg _mt[85617]:_MT[227], arg this[85615]:_syncvar[85613](?), arg valType[85415]:_any[170](?)) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (85422 call ensureFEType valType)
+    (85432 call =(85428 call . this c"valType") valType)
+    (85448 call =(85438 call . this c"wrapped")(85447 'new'(85446 call(85444 call getSyncClassType valType))))
+  } function _syncvar[85613](?).init[85459](arg _mt[85621]:_MT[227], arg this[85619]:_syncvar[85613](?), const arg other[85456] :
+  _syncvar) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (85469 call =(85462 call . this c"valType")(85466 call . other c"valType"))
+    (85481 call =(85474 call . this c"wrapped")(85478 call . other c"wrapped"))
+    (85491 call =(85487 call . this c"isOwned") 0)
+  } function _syncvar[85613](?).init=[85505](arg _mt[85625]:_MT[227], arg this[85623]:_syncvar[85613](?), const arg other[85502] :
+  (85499 call . this c"valType")) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (85514 call(85508 call . this c"init")(85512 'typeof' other))
+    (85525 call(85520 call . this c"writeEF") other)
+  } function _syncvar[85613](?).deinit[85531](arg _mt[85629]:_MT[227], arg this[85627]:_syncvar[85613](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method"
+  {
+    if(85542 call _cond_test(85535 call == isOwned 1))
+    {
+      { scopeless
+        (85539 call chpl__delete wrapped)
+      }
+    }
+  } function _syncvar[85613](?).readThis[85554](arg _mt[85633]:_MT[227], arg this[85631]:_syncvar[85613](?), arg x[85552]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (85576 call compilerError "sync variables cannot currently be read - use writeEF/writeFF instead")
+  } function _syncvar[85613](?).writeThis[85585](arg _mt[85637]:_MT[227], arg this[85635]:_syncvar[85613](?), arg x[85583]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (85607 call compilerError "sync variables cannot currently be written - apply readFE/readFF() to those variables first")
+  }
+  function isSyncType[85646](arg t[85643] :
+  _syncvar) param : _unknown[43] "no doc"
+  {
+    (85649 return 1)
+  }
+  function isSyncType[85658](arg t[85656]:_any[170](?)) param : _unknown[43]
+  {
+    (85661 return 0)
+  }
+  function _unknown[43].readFE[85669](arg _mt[85674]:_MT[227], arg this[85671] :
+  _syncvar) : _unknown[43] "method"
+  {
+    (85682 return(85681 call(85677 call . wrapped c"readFE")))
+  }
+  function _unknown[43].readFF[85690](arg _mt[85695]:_MT[227], arg this[85692] :
+  _syncvar) : _unknown[43] "method"
+  {
+    (85703 return(85702 call(85698 call . wrapped c"readFF")))
+  }
+  function _unknown[43].readXX[85711](arg _mt[85716]:_MT[227], arg this[85713] :
+  _syncvar) : _unknown[43] "method"
+  {
+    (85720 call chpl_task_yield)
+    (85731 return(85730 call(85726 call . wrapped c"readXX")))
+  }
+  function _unknown[43].writeEF[85742](arg _mt[85747]:_MT[227], arg this[85744] :
+  _syncvar, arg x[85739] :
+  valType) : _unknown[43] "method"
+  {
+    (85755 call(85750 call . wrapped c"writeEF") x)
+  }
+  function _unknown[43].writeFF[85767](arg _mt[85772]:_MT[227], arg this[85769] :
+  _syncvar, arg x[85764] :
+  valType) : _unknown[43] "method"
+  {
+    (85782 call(85777 call . wrapped c"writeFF") x)
+  }
+  function _unknown[43].writeXF[85794](arg _mt[85799]:_MT[227], arg this[85796] :
+  _syncvar, arg x[85791] :
+  valType) : _unknown[43] "method"
+  {
+    (85809 call(85804 call . wrapped c"writeXF") x)
+  }
+  function _unknown[43].reset[85817](arg _mt[85822]:_MT[227], arg this[85819] :
+  _syncvar) : _unknown[43] "method"
+  {
+    (85831 call(85827 call . wrapped c"reset"))
+  }
+  function _unknown[43].isFull[85839](arg _mt[85844]:_MT[227], arg this[85841] :
+  _syncvar) : _unknown[43] "method" "no parens"
+  {
+    (85852 return(85849 call . wrapped c"isFull"))
+  }
+  function =[85867](ref arg lhs[85864] :
+  (85863 call _syncvar unknown t[85860]), arg rhs[85870] :
+  t) : _unknown[43] "assignop"
+  {
+    (85882 call(85877 call .(85874 call . lhs c"wrapped") c"writeEF") rhs)
+  }
+  function +=[85897](ref arg lhs[85894] :
+  (85893 call _syncvar unknown t[85890]), arg rhs[85900] :
+  t) : _unknown[43] "assignop"
+  {
+    (85923 call(85907 call .(85904 call . lhs c"wrapped") c"writeEF")(85920 call +(85918 call(85914 call .(85911 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function -=[85938](ref arg lhs[85935] :
+  (85934 call _syncvar unknown t[85931]), arg rhs[85941] :
+  t) : _unknown[43] "assignop"
+  {
+    (85964 call(85948 call .(85945 call . lhs c"wrapped") c"writeEF")(85961 call -(85959 call(85955 call .(85952 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function *=[85979](ref arg lhs[85976] :
+  (85975 call _syncvar unknown t[85972]), arg rhs[85982] :
+  t) : _unknown[43] "assignop"
+  {
+    (86005 call(85989 call .(85986 call . lhs c"wrapped") c"writeEF")(86002 call *(86000 call(85996 call .(85993 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function /=[86020](ref arg lhs[86017] :
+  (86016 call _syncvar unknown t[86013]), arg rhs[86023] :
+  t) : _unknown[43] "assignop"
+  {
+    (86046 call(86030 call .(86027 call . lhs c"wrapped") c"writeEF")(86043 call /(86041 call(86037 call .(86034 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function %=[86061](ref arg lhs[86058] :
+  (86057 call _syncvar unknown t[86054]), arg rhs[86064] :
+  t) : _unknown[43] "assignop"
+  {
+    (86087 call(86071 call .(86068 call . lhs c"wrapped") c"writeEF")(86084 call %(86082 call(86078 call .(86075 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function **=[86102](ref arg lhs[86099] :
+  (86098 call _syncvar unknown t[86095]), arg rhs[86105] :
+  t) : _unknown[43] "assignop"
+  {
+    (86128 call(86112 call .(86109 call . lhs c"wrapped") c"writeEF")(86125 call **(86123 call(86119 call .(86116 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function &=[86143](ref arg lhs[86140] :
+  (86139 call _syncvar unknown t[86136]), arg rhs[86146] :
+  t) : _unknown[43] "assignop"
+  {
+    (86169 call(86153 call .(86150 call . lhs c"wrapped") c"writeEF")(86166 call &(86164 call(86160 call .(86157 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function |=[86184](ref arg lhs[86181] :
+  (86180 call _syncvar unknown t[86177]), arg rhs[86187] :
+  t) : _unknown[43] "assignop"
+  {
+    (86210 call(86194 call .(86191 call . lhs c"wrapped") c"writeEF")(86207 call |(86205 call(86201 call .(86198 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function ^=[86225](ref arg lhs[86222] :
+  (86221 call _syncvar unknown t[86218]), arg rhs[86228] :
+  t) : _unknown[43] "assignop"
+  {
+    (86251 call(86235 call .(86232 call . lhs c"wrapped") c"writeEF")(86248 call ^(86246 call(86242 call .(86239 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function >>=[86266](ref arg lhs[86263] :
+  (86262 call _syncvar unknown t[86259]), arg rhs[86269] :
+  t) : _unknown[43] "assignop"
+  {
+    (86292 call(86276 call .(86273 call . lhs c"wrapped") c"writeEF")(86289 call >>(86287 call(86283 call .(86280 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function <<=[86307](ref arg lhs[86304] :
+  (86303 call _syncvar unknown t[86300]), arg rhs[86310] :
+  t) : _unknown[43] "assignop"
+  {
+    (86333 call(86317 call .(86314 call . lhs c"wrapped") c"writeEF")(86330 call <<(86328 call(86324 call .(86321 call . lhs c"wrapped") c"readFE")) rhs))
+  }
+  function chpl__initCopy[86348](ref arg sv[86345] :
+  (86344 call _syncvar unknown t[86341])) : _unknown[43] "init copy fn"
+  {
+    (86356 return(86355 call(86351 call . sv c"readFE")))
+  }
+  function chpl__autoCopy[86367](const  ref arg rhs[86364] :
+  _syncvar) : _unknown[43] "auto copy fn" "no doc"
+  {
+    (86374 return(86373 'new'(86372 call _syncvar rhs)))
+  }
+  function chpl__maybeAutoDestroyed[86389](arg x[86386] :
+  (86385 call _syncvar unknown t[86382])) param : _unknown[43] "inline"
+  {
+    { scopeless
+      (86392 return 1)
+    }
+  }
+  function chpl__autoDestroy[86406](arg x[86403] :
+  (86402 call _syncvar ?[249])) : _unknown[43] "inline"
+  {
+    if(86423 call _cond_test(86413 call ==(86409 call . x c"isOwned") 1))
+    {
+      { scopeless
+        (86420 call chpl__delete(86416 call . x c"wrapped"))
+      }
+    }
+  }
+  function chpl__readXX[86440](const  ref arg x[86437] :
+  (86436 call _syncvar ?[249])) : _unknown[43] "no doc"
+  {
+    { scopeless
+      (86448 return(86447 call(86443 call . x c"readXX")))
+    }
+  }
+  function <=>[86459](arg lhs[86456] :
+  _syncvar, ref arg rhs[86461]:_any[170](?)) : _unknown[43]
+  {
+    const tmp[86464] "const" lhs
+    (86470 call = lhs rhs)
+    (86475 call = rhs tmp)
+  }
+  function <=>[86484](ref arg lhs[86482]:_any[170](?), arg rhs[86487] :
+  _syncvar) : _unknown[43]
+  {
+    const tmp[86491] "const" lhs
+    (86497 call = lhs rhs)
+    (86502 call = rhs tmp)
+  }
+  function <=>[86513](arg lhs[86510] :
+  _syncvar, arg rhs[86516] :
+  _syncvar) : _unknown[43]
+  {
+    const tmp[86520] "const" lhs
+    (86526 call = lhs rhs)
+    (86531 call = rhs tmp)
+  }
+  type _synccls[86999](?) unknown valType[86537] "type variable" unknown value[86541] valType unknown syncAux[86545] chpl_sync_aux_t function _synccls[86999](?).init[86552](arg _mt[87003]:_MT[227], arg this[87001]:_synccls[86999](?), arg valType[86550]:_any[170](?)) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (86559 call =(86555 call . this c"valType") valType)
+    (86568 call(86564 call . this c"complete"))
+    (86573 call chpl_sync_initAux syncAux)
+  } function _synccls[86999](?).deinit[86579](arg _mt[87007]:_MT[227], arg this[87005]:_synccls[86999](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method"
+  {
+    (86584 call chpl_sync_destroyAux syncAux)
+  } function _synccls[86999](?).readFE[86591](arg _mt[87011]:_MT[227], arg this[87009]:_synccls[86999](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[86594] valType
+    {
+      const tmp[86635] "const" "temp"
+      (86636 'move' tmp[86635](86633 'deref'(86632 '_wide_get_locale' this)))
+      {
+        unknown localRet[86600] valType
+        (86606 call chpl_rmem_consist_release)
+        (86611 call chpl_sync_waitFullAndLock syncAux)
+        (86615 call = localRet value)
+        (86621 call chpl_sync_markAndSignalEmpty syncAux)
+        (86625 call chpl_rmem_consist_acquire)
+        (86629 call = ret localRet)
+      }
+    }
+    (86641 return ret)
+  } function _synccls[86999](?).readFF[86647](arg _mt[87015]:_MT[227], arg this[87013]:_synccls[86999](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[86650] valType
+    {
+      const tmp[86691] "const" "temp"
+      (86692 'move' tmp[86691](86689 'deref'(86688 '_wide_get_locale' this)))
+      {
+        unknown localRet[86656] valType
+        (86662 call chpl_rmem_consist_release)
+        (86667 call chpl_sync_waitFullAndLock syncAux)
+        (86671 call = localRet value)
+        (86677 call chpl_sync_markAndSignalFull syncAux)
+        (86681 call chpl_rmem_consist_acquire)
+        (86685 call = ret localRet)
+      }
+    }
+    (86697 return ret)
+  } function _synccls[86999](?).readXX[86703](arg _mt[87019]:_MT[227], arg this[87017]:_synccls[86999](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[86706] valType
+    {
+      const tmp[86747] "const" "temp"
+      (86748 'move' tmp[86747](86745 'deref'(86744 '_wide_get_locale' this)))
+      {
+        unknown localRet[86712] valType
+        (86718 call chpl_rmem_consist_release)
+        (86723 call chpl_sync_lock syncAux)
+        (86727 call = localRet value)
+        (86733 call chpl_sync_unlock syncAux)
+        (86737 call chpl_rmem_consist_acquire)
+        (86741 call = ret localRet)
+      }
+    }
+    (86753 return ret)
+  } function _synccls[86999](?).writeEF[86763](arg _mt[87023]:_MT[227], arg this[87021]:_synccls[86999](?), arg val[86760] :
+  valType) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[86799] "const" "temp"
+      (86800 'move' tmp[86799](86797 'deref'(86796 '_wide_get_locale' this)))
+      {
+        (86774 call chpl_rmem_consist_release)
+        (86780 call chpl_sync_waitEmptyAndLock syncAux)
+        (86784 call = value val)
+        (86790 call chpl_sync_markAndSignalFull syncAux)
+        (86794 call chpl_rmem_consist_acquire)
+      }
+    }
+  }
+  {
+    (86769 call <(86766 'lifetime_of' this)(86768 'lifetime_of' val))
+  } function _synccls[86999](?).writeFF[86814](arg _mt[87027]:_MT[227], arg this[87025]:_synccls[86999](?), arg val[86811] :
+  valType) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[86850] "const" "temp"
+      (86851 'move' tmp[86850](86848 'deref'(86847 '_wide_get_locale' this)))
+      {
+        (86825 call chpl_rmem_consist_release)
+        (86831 call chpl_sync_waitFullAndLock syncAux)
+        (86835 call = value val)
+        (86841 call chpl_sync_markAndSignalFull syncAux)
+        (86845 call chpl_rmem_consist_acquire)
+      }
+    }
+  }
+  {
+    (86820 call <(86817 'lifetime_of' this)(86819 'lifetime_of' val))
+  } function _synccls[86999](?).writeXF[86865](arg _mt[87031]:_MT[227], arg this[87029]:_synccls[86999](?), arg val[86862] :
+  valType) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[86901] "const" "temp"
+      (86902 'move' tmp[86901](86899 'deref'(86898 '_wide_get_locale' this)))
+      {
+        (86876 call chpl_rmem_consist_release)
+        (86882 call chpl_sync_lock syncAux)
+        (86886 call = value val)
+        (86892 call chpl_sync_markAndSignalFull syncAux)
+        (86896 call chpl_rmem_consist_acquire)
+      }
+    }
+  }
+  {
+    (86871 call <(86868 'lifetime_of' this)(86870 'lifetime_of' val))
+  } function _synccls[86999](?).reset[86912](arg _mt[87035]:_MT[227], arg this[87033]:_synccls[86999](?)) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[86946] "const" "temp"
+      (86947 'move' tmp[86946](86944 'deref'(86943 '_wide_get_locale' this)))
+      {
+        const defaultValue[86916] "const" valType
+        (86922 call chpl_rmem_consist_release)
+        (86927 call chpl_sync_lock syncAux)
+        (86931 call = value defaultValue)
+        (86937 call chpl_sync_markAndSignalEmpty syncAux)
+        (86941 call chpl_rmem_consist_acquire)
+      }
+    }
+  } function _synccls[86999](?).isFull[86956](arg _mt[87039]:_MT[227], arg this[87037]:_synccls[86999](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown b[86959] bool[10]
+    {
+      const tmp[86988] "const" "temp"
+      (86989 'move' tmp[86988](86986 'deref'(86985 '_wide_get_locale' this)))
+      {
+        (86966 call chpl_rmem_consist_release)
+        (86978 call = b(86977 call chpl_sync_isFull(86974 call c_ptrTo value) syncAux))
+        (86983 call chpl_rmem_consist_acquire)
+      }
+    }
+    (86994 return b)
+  }
+  type _qthreads_synccls[87458](?) unknown valType[87043] "type variable" unknown alignedValue[87047] aligned_t function _qthreads_synccls[87458](?).init[87054](arg _mt[87462]:_MT[227], arg this[87460]:_qthreads_synccls[87458](?), arg valType[87052]:_any[170](?)) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (87061 call =(87057 call . this c"valType") valType)
+    (87070 call(87066 call . this c"complete"))
+    (87079 call qthread_purge_to alignedValue(87078 call defaultOfAlignedT valType))
+  } function _qthreads_synccls[87458](?).deinit[87085](arg _mt[87466]:_MT[227], arg this[87464]:_qthreads_synccls[87458](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method"
+  {
+    (87090 call qthread_fill alignedValue)
+  } function _qthreads_synccls[87458](?).readFE[87097](arg _mt[87470]:_MT[227], arg this[87468]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[87100] valType
+    {
+      const tmp[87135] "const" "temp"
+      (87136 'move' tmp[87135](87133 'deref'(87132 '_wide_get_locale' this)))
+      {
+        unknown alignedLocalRet[87106] aligned_t
+        (87112 call chpl_rmem_consist_release)
+        (87118 call qthread_readFE alignedLocalRet alignedValue)
+        (87122 call chpl_rmem_consist_acquire)
+        (87129 call = ret(87127 call _cast valType alignedLocalRet))
+      }
+    }
+    (87141 return ret)
+  } function _qthreads_synccls[87458](?).readFF[87147](arg _mt[87474]:_MT[227], arg this[87472]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[87150] valType
+    {
+      const tmp[87185] "const" "temp"
+      (87186 'move' tmp[87185](87183 'deref'(87182 '_wide_get_locale' this)))
+      {
+        unknown alignedLocalRet[87156] aligned_t
+        (87162 call chpl_rmem_consist_release)
+        (87168 call qthread_readFF alignedLocalRet alignedValue)
+        (87172 call chpl_rmem_consist_acquire)
+        (87179 call = ret(87177 call _cast valType alignedLocalRet))
+      }
+    }
+    (87191 return ret)
+  } function _qthreads_synccls[87458](?).readXX[87197](arg _mt[87478]:_MT[227], arg this[87476]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[87200] valType
+    {
+      const tmp[87235] "const" "temp"
+      (87236 'move' tmp[87235](87233 'deref'(87232 '_wide_get_locale' this)))
+      {
+        unknown alignedLocalRet[87206] aligned_t
+        (87212 call chpl_rmem_consist_release)
+        (87218 call qthread_readXX alignedLocalRet alignedValue)
+        (87222 call chpl_rmem_consist_acquire)
+        (87229 call = ret(87227 call _cast valType alignedLocalRet))
+      }
+    }
+    (87241 return ret)
+  } function _qthreads_synccls[87458](?).writeEF[87251](arg _mt[87482]:_MT[227], arg this[87480]:_qthreads_synccls[87458](?), arg val[87248] :
+  valType) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[87281] "const" "temp"
+      (87282 'move' tmp[87281](87279 'deref'(87278 '_wide_get_locale' this)))
+      {
+        (87262 call chpl_rmem_consist_release)
+        (87272 call qthread_writeEF alignedValue(87270 call _cast aligned_t val))
+        (87276 call chpl_rmem_consist_acquire)
+      }
+    }
+  }
+  {
+    (87257 call <(87254 'lifetime_of' this)(87256 'lifetime_of' val))
+  } function _qthreads_synccls[87458](?).writeFF[87296](arg _mt[87486]:_MT[227], arg this[87484]:_qthreads_synccls[87458](?), arg val[87293] :
+  valType) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[87326] "const" "temp"
+      (87327 'move' tmp[87326](87324 'deref'(87323 '_wide_get_locale' this)))
+      {
+        (87307 call chpl_rmem_consist_release)
+        (87317 call qthread_writeFF alignedValue(87315 call _cast aligned_t val))
+        (87321 call chpl_rmem_consist_acquire)
+      }
+    }
+  }
+  {
+    (87302 call <(87299 'lifetime_of' this)(87301 'lifetime_of' val))
+  } function _qthreads_synccls[87458](?).writeXF[87341](arg _mt[87490]:_MT[227], arg this[87488]:_qthreads_synccls[87458](?), arg val[87338] :
+  valType) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[87371] "const" "temp"
+      (87372 'move' tmp[87371](87369 'deref'(87368 '_wide_get_locale' this)))
+      {
+        (87352 call chpl_rmem_consist_release)
+        (87362 call qthread_writeF alignedValue(87360 call _cast aligned_t val))
+        (87366 call chpl_rmem_consist_acquire)
+      }
+    }
+  }
+  {
+    (87347 call <(87344 'lifetime_of' this)(87346 'lifetime_of' val))
+  } function _qthreads_synccls[87458](?).reset[87382](arg _mt[87494]:_MT[227], arg this[87492]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[87406] "const" "temp"
+      (87407 'move' tmp[87406](87404 'deref'(87403 '_wide_get_locale' this)))
+      {
+        (87387 call chpl_rmem_consist_release)
+        (87397 call qthread_purge_to alignedValue(87396 call defaultOfAlignedT valType))
+        (87401 call chpl_rmem_consist_acquire)
+      }
+    }
+  } function _qthreads_synccls[87458](?).isFull[87416](arg _mt[87498]:_MT[227], arg this[87496]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown b[87419] bool[10]
+    {
+      const tmp[87447] "const" "temp"
+      (87448 'move' tmp[87447](87445 'deref'(87444 '_wide_get_locale' this)))
+      {
+        (87426 call chpl_rmem_consist_release)
+        (87437 call = b(87435 call _cast bool[10](87433 call qthread_feb_status alignedValue)))
+        (87442 call chpl_rmem_consist_acquire)
+      }
+    }
+    (87453 return b)
+  }
+  function isSyncValue[87507](arg x[87504] :
+  _syncvar) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (87510 return 1)
+    }
+  }
+  function isSyncValue[87519](arg x[87517]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (87522 return 0)
+    }
+  }
+  single type _singlevar[87725](?) unknown valType[87528] "type variable" unknown wrapped[87536](87535 'to unmanaged class from unknown'(87534 call _singlecls valType)) unknown isOwned[87541] 1 bool[10] function _singlevar[87725](?).init[87548](arg _mt[87729]:_MT[227], arg this[87727]:_singlevar[87725](?), arg valType[87546]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (87553 call ensureFEType valType)
+    (87561 call =(87557 call . this c"valType") valType)
+    (87571 call = wrapped(87570 'new'(87569 'to unmanaged class from unknown'(87568 call _singlecls valType))))
+  } function _singlevar[87725](?).init[87582](arg _mt[87733]:_MT[227], arg this[87731]:_singlevar[87725](?), const arg other[87579] :
+  _singlevar) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (87592 call =(87585 call . this c"valType")(87589 call . other c"valType"))
+    (87601 call = wrapped(87598 call . other c"wrapped"))
+    (87606 call = isOwned 0)
+  } function _singlevar[87725](?).init=[87621](arg _mt[87737]:_MT[227], arg this[87735]:_singlevar[87725](?), const arg other[87618] :
+  (87615 call .(87614 'typeof' this) c"valType")) : _unknown[43] "dont disable remote value forwarding" "method" "primary method"
+  {
+    (87630 call(87624 call . this c"init")(87628 'typeof' other))
+    (87639 call(87634 call . this c"writeEF") other)
+  } function _singlevar[87725](?).deinit[87645](arg _mt[87741]:_MT[227], arg this[87739]:_singlevar[87725](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method"
+  {
+    if(87656 call _cond_test(87649 call == isOwned 1))
+    {
+      { scopeless
+        (87653 call chpl__delete wrapped)
+      }
+    }
+  } function _singlevar[87725](?).readThis[87668](arg _mt[87745]:_MT[227], arg this[87743]:_singlevar[87725](?), arg x[87666]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (87688 call compilerError "single variables cannot currently be read - use writeEF instead")
+  } function _singlevar[87725](?).writeThis[87697](arg _mt[87749]:_MT[227], arg this[87747]:_singlevar[87725](?), arg x[87695]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (87719 call compilerError "single variables cannot currently be written - apply readFF() to those variables first")
+  }
+  function isSingleType[87758](arg t[87755] :
+  _singlevar) param : _unknown[43] "no doc"
+  {
+    (87761 return 1)
+  }
+  function isSingleType[87770](arg t[87768]:_any[170](?)) param : _unknown[43]
+  {
+    (87773 return 0)
+  }
+  function _unknown[43].readFF[87781](arg _mt[87786]:_MT[227], arg this[87783] :
+  _singlevar) : _unknown[43] "method"
+  {
+    (87794 return(87793 call(87789 call . wrapped c"readFF")))
+  }
+  function _unknown[43].readXX[87802](arg _mt[87807]:_MT[227], arg this[87804] :
+  _singlevar) : _unknown[43] "method"
+  {
+    (87811 call chpl_task_yield)
+    (87820 return(87819 call(87815 call . wrapped c"readXX")))
+  }
+  function _unknown[43].writeEF[87831](arg _mt[87836]:_MT[227], arg this[87833] :
+  _singlevar, arg x[87828] :
+  valType) : _unknown[43] "method"
+  {
+    (87844 call(87839 call . wrapped c"writeEF") x)
+  }
+  function _unknown[43].isFull[87852](arg _mt[87857]:_MT[227], arg this[87854] :
+  _singlevar) : _unknown[43] "method" "no parens"
+  {
+    (87863 return(87860 call . wrapped c"isFull"))
+  }
+  function =[87878](ref arg lhs[87875] :
+  (87874 call _singlevar unknown t[87871]), arg rhs[87881] :
+  t) : _unknown[43] "assignop"
+  {
+    (87893 call(87888 call .(87885 call . lhs c"wrapped") c"writeEF") rhs)
+  }
+  function chpl__initCopy[87908](ref arg sv[87905] :
+  (87904 call _singlevar unknown t[87901])) : _unknown[43] "init copy fn"
+  {
+    (87916 return(87915 call(87911 call . sv c"readFF")))
+  }
+  function chpl__autoCopy[87927](const  ref arg rhs[87924] :
+  _singlevar) : _unknown[43] "auto copy fn" "no doc"
+  {
+    (87934 return(87933 'new'(87932 call _singlevar rhs)))
+  }
+  function chpl__maybeAutoDestroyed[87949](arg x[87946] :
+  (87945 call _singlevar unknown t[87942])) param : _unknown[43] "inline"
+  {
+    { scopeless
+      (87952 return 1)
+    }
+  }
+  function chpl__autoDestroy[87966](arg x[87963] :
+  (87962 call _singlevar ?[249])) : _unknown[43] "inline"
+  {
+    if(87983 call _cond_test(87973 call ==(87969 call . x c"isOwned") 1))
+    {
+      { scopeless
+        (87980 call chpl__delete(87976 call . x c"wrapped"))
+      }
+    }
+  }
+  function chpl__readXX[88000](const  ref arg x[87997] :
+  (87996 call _singlevar ?[249])) : _unknown[43] "no doc"
+  {
+    { scopeless
+      (88008 return(88007 call(88003 call . x c"readXX")))
+    }
+  }
+  type _singlecls[88333](?) unknown valType[88014] "type variable" unknown value[88018] valType unknown singleAux[88022] chpl_single_aux_t function _singlecls[88333](?).init[88029](arg _mt[88337]:_MT[227], arg this[88335]:_singlecls[88333](?), arg valType[88027]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (88036 call =(88032 call . this c"valType") valType)
+    (88045 call(88041 call . this c"complete"))
+    (88050 call chpl_single_initAux singleAux)
+  } function _singlecls[88333](?).deinit[88056](arg _mt[88341]:_MT[227], arg this[88339]:_singlecls[88333](?)) : _unknown[43] "destructor" "method" "primary method"
+  {
+    (88061 call chpl_single_destroyAux singleAux)
+  } function _singlecls[88333](?).readFF[88068](arg _mt[88345]:_MT[227], arg this[88343]:_singlecls[88333](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[88071] valType
+    {
+      const tmp[88127] "const" "temp"
+      (88128 'move' tmp[88127](88125 'deref'(88124 '_wide_get_locale' this)))
+      {
+        unknown localRet[88077] valType
+        (88083 call chpl_rmem_consist_release)
+        if(88110 call _cond_test(88086 call . this c"isFull"))
+        {
+          { scopeless
+            (88091 call = localRet value)
+          }
+        }
+        {
+          (88097 call chpl_single_waitFullAndLock singleAux)
+          (88102 call = localRet value)
+          (88108 call chpl_single_markAndSignalFull singleAux)
+        }
+        (88117 call chpl_rmem_consist_acquire)
+        (88121 call = ret localRet)
+      }
+    }
+    (88133 return ret)
+  } function _singlecls[88333](?).readXX[88139](arg _mt[88349]:_MT[227], arg this[88347]:_singlecls[88333](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[88142] valType
+    {
+      const tmp[88198] "const" "temp"
+      (88199 'move' tmp[88198](88196 'deref'(88195 '_wide_get_locale' this)))
+      {
+        unknown localRet[88148] valType
+        (88154 call chpl_rmem_consist_release)
+        if(88181 call _cond_test(88157 call . this c"isFull"))
+        {
+          { scopeless
+            (88162 call = localRet value)
+          }
+        }
+        {
+          (88168 call chpl_single_lock singleAux)
+          (88173 call = localRet value)
+          (88179 call chpl_single_unlock singleAux)
+        }
+        (88188 call chpl_rmem_consist_acquire)
+        (88192 call = ret localRet)
+      }
+    }
+    (88204 return ret)
+  } function _singlecls[88333](?).writeEF[88214](arg _mt[88353]:_MT[227], arg this[88351]:_singlecls[88333](?), arg val[88211] :
+  valType) : _unknown[43] "method" "primary method"
+  {
+    {
+      const tmp[88279] "const" "temp"
+      (88280 'move' tmp[88279](88277 'deref'(88276 '_wide_get_locale' this)))
+      {
+        (88225 call chpl_rmem_consist_release)
+        (88231 call chpl_single_lock singleAux)
+        if(88257 call _cond_test(88234 call . this c"isFull"))
+        {
+          { scopeless
+            (88255 call halt "single var already defined")
+          }
+        }
+        (88264 call = value val)
+        (88270 call chpl_single_markAndSignalFull singleAux)
+        (88274 call chpl_rmem_consist_acquire)
+      }
+    }
+  }
+  {
+    (88220 call <(88217 'lifetime_of' this)(88219 'lifetime_of' val))
+  } function _singlecls[88333](?).isFull[88290](arg _mt[88357]:_MT[227], arg this[88355]:_singlecls[88333](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown b[88293] bool[10]
+    {
+      const tmp[88322] "const" "temp"
+      (88323 'move' tmp[88322](88320 'deref'(88319 '_wide_get_locale' this)))
+      {
+        (88300 call chpl_rmem_consist_release)
+        (88312 call = b(88311 call chpl_single_isFull(88308 call c_ptrTo value) singleAux))
+        (88317 call chpl_rmem_consist_acquire)
+      }
+    }
+    (88328 return b)
+  }
+  function isSingleValue[88366](arg x[88363] :
+  _singlevar) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (88369 return 1)
+    }
+  }
+  function isSingleValue[88378](arg x[88376]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (88381 return 0)
+    }
+  }
+}

@@ -1,0 +1,1973 @@
+AST dump for TwoArrayPartitioning after pass cleanup.
+Module use list: 
+
+{
+  (328356 'use' ChapelStandard)
+  (262193 'use' BlockDist)
+  (262198 'use' MSBRadixSort)
+  unknown debug[262201] "param" "private" 0
+  unknown maxBuckets[262207] "param" 512
+  function TwoArraySortTask[262314].init[262233](arg _mt[262318]:_MT[227], arg this[262316]:TwoArraySortTask[262314]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+  }
+  function TwoArraySortTask[262314].init[262244](arg _mt[262322]:_MT[227], arg this[262320]:TwoArraySortTask[262314], arg start[262241] :
+  int[13], arg size[262247] :
+  int[13], arg startbit[262251] :
+  int[13], arg inA[262255] :
+  bool[10], arg doSort[262259] :
+  bool[10]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (262269 call =(262265 call . this c"start") start)
+    (262278 call =(262274 call . this c"size") size)
+    (262288 call =(262284 call . this c"startbit") startbit)
+    (262298 call =(262294 call . this c"inA") inA)
+    (262308 call =(262304 call . this c"doSort") doSort)
+  }
+  type TwoArraySortTask[262314] unknown start[262212] int[13] unknown size[262216] int[13] unknown startbit[262220] int[13] unknown inA[262224] bool[10] unknown doSort[262228] bool[10]
+  type TwoArrayBucketizerPerTaskState[262342] unknown localCounts[262338](262336 call chpl__buildArrayRuntimeType(262334 call chpl__ensureDomainExpr(262330 call #(262327 call chpl_build_low_bounded_range 0) maxBuckets)) int[13])
+  type TwoArrayBucketizerSharedState[262498](?) unknown nTasks[262359](262356 IfExpr (262349 call > dataParTasksPerLocale 0) then
+  { scopeless
+    dataParTasksPerLocale
+  } else
+  { scopeless
+    (262353 call . here c"maxTaskPar")
+  } ) int[13] unknown countsSize[262367](262365 call * nTasks maxBuckets) int[13] unknown bucketizer[262370] unknown globalCounts[262385](262383 call chpl__buildArrayRuntimeType(262381 call chpl__ensureDomainExpr(262377 call #(262374 call chpl_build_low_bounded_range 0) countsSize)) int[13]) unknown globalEnds[262400](262398 call chpl__buildArrayRuntimeType(262396 call chpl__ensureDomainExpr(262392 call #(262389 call chpl_build_low_bounded_range 0) countsSize)) int[13]) unknown localState[262415](262413 call chpl__buildArrayRuntimeType(262411 call chpl__ensureDomainExpr(262407 call #(262404 call chpl_build_low_bounded_range 0) nTasks)) TwoArrayBucketizerPerTaskState) unknown counts[262430](262428 call chpl__buildArrayRuntimeType(262426 call chpl__ensureDomainExpr(262422 call #(262419 call chpl_build_low_bounded_range 0) maxBuckets)) int[13]) unknown ends[262445](262443 call chpl__buildArrayRuntimeType(262441 call chpl__ensureDomainExpr(262437 call #(262434 call chpl_build_low_bounded_range 0) maxBuckets)) int[13]) unknown outputInA[262460](262458 call chpl__buildArrayRuntimeType(262456 call chpl__ensureDomainExpr(262452 call #(262449 call chpl_build_low_bounded_range 0) maxBuckets)) bool[10]) unknown bigTasks[262467](262466 call list TwoArraySortTask) unknown smallTasks[262474](262473 call list TwoArraySortTask) unknown baseCaseSize[262479] 16 int[13] unknown sequentialSizePerTask[262486] 4096 int[13] unknown endbit[262494](262493 call max int[13]) int[13]
+  type TwoArrayDistributedBucketizerStatePerLocale[262551](?) unknown bucketizerType[262502] "type variable" unknown compat[262509](262508 call TwoArrayBucketizerSharedState bucketizerType) unknown countsSize[262517](262515 call * numLocales maxBuckets) int[13] unknown globalCounts[262532](262530 call chpl__buildArrayRuntimeType(262528 call chpl__ensureDomainExpr(262524 call #(262521 call chpl_build_low_bounded_range 0) countsSize)) int[13]) unknown globalEnds[262547](262545 call chpl__buildArrayRuntimeType(262543 call chpl__ensureDomainExpr(262539 call #(262536 call chpl_build_low_bounded_range 0) countsSize)) int[13])
+  type TasksForLocale[262563] unknown localTasks[262559](262558 call list TwoArraySortTask)
+  function TwoArrayDistributedBucketizerSharedState[262766](?).postinit[262664](arg _mt[262770]:_MT[227], arg this[262768]:TwoArrayDistributedBucketizerSharedState[262766](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[262729] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[262730] "expr temp" "temp"
+      (262739 'move' _iterator[262730](262737 call _getIterator perLocale))
+      Defer
+      {
+        {
+          (262755 call _freeIterator _iterator[262730])
+        }
+      }
+      { scopeless type
+        (262744 'move' _indexOfInterest[262729](262741 call iteratorIndex _iterator[262730]))
+      }
+      ForLoop
+      {
+        unknown p[262748] "index var" "insert auto destroy"
+        (262750 'move' p[262748] _indexOfInterest[262729])
+        {
+          (262680 call =(262676 call .(262671 call . p c"compat") c"baseCaseSize") baseCaseSize)
+          (262694 call =(262690 call .(262685 call . p c"compat") c"endbit") endbit)
+          (262711 call assert(262708 call >(262704 call .(262699 call . p c"compat") c"nTasks") 0))
+          (262727 call assert(262724 call >(262720 call .(262715 call . p c"compat") c"countsSize") 0))
+        }
+        label _continueLabel[262734]
+        _indexOfInterest[262729]
+        _iterator[262730]
+      }
+      label _breakLabel[262735]
+    }
+  }
+  type TwoArrayDistributedBucketizerSharedState[262766](?) unknown bucketizerType[262567] "type variable" unknown numLocales[262571] int[13] unknown perLocale[262587](262586 call newBlockArr(262579 call #(262576 call chpl_build_low_bounded_range 0) numLocales)(262585 call TwoArrayDistributedBucketizerStatePerLocale bucketizerType)) const baseCaseSize[262591] "const" int[13] const endbit[262599] "const"(262598 call max int[13]) int[13] const countsSize[262607] "const"(262605 call * numLocales maxBuckets) int[13] unknown globalCounts[262622](262620 call chpl__buildArrayRuntimeType(262618 call chpl__ensureDomainExpr(262614 call #(262611 call chpl_build_low_bounded_range 0) countsSize)) int[13]) unknown globalEnds[262637](262635 call chpl__buildArrayRuntimeType(262633 call chpl__ensureDomainExpr(262629 call #(262626 call chpl_build_low_bounded_range 0) countsSize)) int[13]) unknown distTasks[262644](262643 call list TwoArraySortTask) unknown localTasks[262659](262657 call chpl__buildArrayRuntimeType(262655 call chpl__ensureDomainExpr(262651 call #(262648 call chpl_build_low_bounded_range 0) numLocales)) TasksForLocale)
+  function bucketize[262779](arg start_n[262776] :
+  int[13], arg end_n[262782] :
+  int[13], arg dst[262788] :
+  (262785 call chpl__buildArrayRuntimeType nil[38]), arg src[262794] :
+  (262791 call chpl__buildArrayRuntimeType nil[38]), ref arg state[262798] :
+  TwoArrayBucketizerSharedState, arg criterion[262801]:_any[170](?), arg startbit[262804] :
+  int[13]) : _unknown[43] "no return value for void"
+  {
+    if(262849 call _cond_test debug)
+    {
+      (262847 call writeln "bucketize "(262828 call chpl_build_bounded_range start_n end_n) " startbit=" startbit)
+    }
+    const nBuckets[262866] "const"(262865 call(262861 call .(262858 call . state c"bucketizer") c"getNumBuckets"))
+    const n[262876] "const"(262874 call +(262871 call - end_n start_n) 1)
+    const nTasks[262894] "const"(262891 IfExpr (262884 call >= n(262881 call . state c"nTasks")) then
+    { scopeless
+      (262887 call . state c"nTasks")
+    } else
+    { scopeless
+      1
+    } )
+    (262903 call assert(262900 call > nTasks 0))
+    if(262922 call _cond_test(262907 call == n 0))
+    {
+      (262916 call =(262912 call . state c"counts") 0)
+      (262920 return _void[47])
+    }
+    const countsSize[262930] "const"(262928 call * nTasks nBuckets)
+    const blockSize[262938] "const"(262937 call divceil n nTasks)
+    const nBlocks[262946] "const"(262945 call divceil n blockSize)
+    {
+      unknown tmpIter[263262] "expr temp" "maybe ref" "no copy" "temp"
+      (263265 'move' tmpIter[263262](262954 call #(262951 call chpl_build_low_bounded_range 0) nTasks))
+      unknown isRngDomArr[263627] "maybe param" "temp"
+      (263642 'move' isRngDomArr[263627](263640 call ||(263629 call isBoundedRange tmpIter[263262])(263638 call ||(263632 call isDomain tmpIter[263262])(263635 call isArray tmpIter[263262]))))
+      if isRngDomArr[263627]
+      {
+        const _coforallCount[263494] "const" "end count" "temp"
+        (263563 'move' _coforallCount[263494](263560 call _endCountAlloc 1))
+        unknown numTasks[263495] "temp"
+        (263547 'move' numTasks[263495](263543 call . tmpIter[263262] c"size"))
+        (263538 call _upEndCount _coforallCount[263494] 1 numTasks[263495])
+        (263535 call chpl_resetTaskSpawn numTasks[263495])
+        unknown _indexOfInterest[263502] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[263503] "expr temp" "temp"
+        (263512 'move' _iterator[263503](263510 call _getIterator tmpIter[263262]))
+        Defer
+        {
+          {
+            (263528 call _freeIterator _iterator[263503])
+          }
+        }
+        { scopeless type
+          (263517 'move' _indexOfInterest[263502](263514 call iteratorIndex _iterator[263503]))
+        }
+        ForLoop
+        {
+          unknown tid[263521] "coforall index var" "index var" "insert auto destroy"
+          (263523 'move' tid[263521] _indexOfInterest[263502])
+          {
+            {
+              unknown start[263271](263273 call + start_n(263276 call * tid blockSize))
+              unknown end[263280](263282 call -(263284 call + start blockSize) 1)
+              if(263290 call _cond_test(263292 call > end end_n))
+              {
+                (263297 call = end end_n)
+              }
+              if(263302 call _cond_test debug)
+              {
+                (263307 call writeln "tid " tid " considering "(263312 call chpl_build_bounded_range start end))
+              }
+              unknown counts[263316] "ref var"(263318 call .(263323 call(263320 call . state c"localState") tid) c"localCounts")
+              {
+                unknown _indexOfInterest[263328] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[263330] "expr temp" "temp"
+                (263332 'move' _iterator[263330](263335 call _getIterator(263337 call chpl_direct_counted_range_iter 0 nBuckets)))
+                Defer
+                {
+                  {
+                    (263342 call _freeIterator _iterator[263330])
+                  }
+                }
+                { scopeless type
+                  (263346 'move' _indexOfInterest[263328](263349 call iteratorIndex _iterator[263330]))
+                }
+                ForLoop
+                {
+                  unknown bin[263354] "index var" "insert auto destroy"
+                  (263356 'move' bin[263354] _indexOfInterest[263328])
+                  {
+                    (263361 call =(263363 call counts bin) 0)
+                  }
+                  label _continueLabel[263366]
+                  _indexOfInterest[263328]
+                  _iterator[263330]
+                }
+                label _breakLabel[263368]
+              }
+              {
+                unknown _indexOfInterest[263371] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[263373] "expr temp" "temp"
+                (263375 'move' _iterator[263373](263378 call _getIterator(263386 call(263380 call .(263382 call . state c"bucketizer") c"classify") src start end criterion startbit)))
+                Defer
+                {
+                  {
+                    (263394 call _freeIterator _iterator[263373])
+                  }
+                }
+                { scopeless type
+                  (263398 'move' _indexOfInterest[263371](263401 call iteratorIndex _iterator[263373]))
+                }
+                ForLoop
+                {
+                  (263407 call _check_tuple_var_decl _indexOfInterest[263371] 2)
+                  unknown i[263410] "index var" "insert auto destroy"
+                  (263412 'move' i[263410](263415 call _indexOfInterest[263371] 1))
+                  unknown bin[263417] "index var" "insert auto destroy"
+                  (263419 'move' bin[263417](263422 call _indexOfInterest[263371] 2))
+                  {
+                    (263426 call +=(263428 call counts bin) 1)
+                  }
+                  label _continueLabel[263431]
+                  _indexOfInterest[263371]
+                  _iterator[263373]
+                }
+                label _breakLabel[263433]
+              }
+              {
+                unknown _indexOfInterest[263436] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[263438] "expr temp" "temp"
+                (263440 'move' _iterator[263438](263443 call _getIterator(263445 call vectorizeOnly(263447 call #(263449 call chpl_build_low_bounded_range 0) nBuckets))))
+                Defer
+                {
+                  {
+                    (263454 call _freeIterator _iterator[263438])
+                  }
+                }
+                { scopeless type
+                  (263458 'move' _indexOfInterest[263436](263461 call iteratorIndex _iterator[263438]))
+                }
+                ForLoop
+                {
+                  unknown bin[263466] "index var" "insert auto destroy"
+                  (263468 'move' bin[263466] _indexOfInterest[263436])
+                  {
+                    (263473 call =(263478 call(263475 call . state c"globalCounts")(263480 call +(263482 call * bin nTasks) tid))(263487 call counts bin))
+                  }
+                  label _continueLabel[263489]
+                  _indexOfInterest[263436]
+                  _iterator[263438]
+                }
+                label _breakLabel[263491]
+              }
+            }
+            (263497 call _downEndCount _coforallCount[263494] nil[38])
+            (263496 'coforall loop')
+            (263267 'actuals list' tiMarkRef[289] state)
+          }
+          label _continueLabel[263507]
+          _indexOfInterest[263502]
+          _iterator[263503]
+        }
+        label _breakLabel[263508]
+        Defer
+        {
+          {
+            (263550 call _endCountFree _coforallCount[263494])
+          }
+        }
+        (263555 call _waitEndCount _coforallCount[263494] 1 numTasks[263495])
+      }
+      {
+        const _coforallCount[263567] "const" "end count" "temp"
+        (263624 'move' _coforallCount[263567](263621 call _endCountAlloc 1))
+        unknown _indexOfInterest[263575] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[263576] "expr temp" "temp"
+        (263585 'move' _iterator[263576](263583 call _getIterator tmpIter[263262]))
+        Defer
+        {
+          {
+            (263601 call _freeIterator _iterator[263576])
+          }
+        }
+        { scopeless type
+          (263590 'move' _indexOfInterest[263575](263587 call iteratorIndex _iterator[263576]))
+        }
+        ForLoop
+        {
+          unknown tid[263594] "coforall index var" "index var" "insert auto destroy"
+          (263596 'move' tid[263594] _indexOfInterest[263575])
+          (263608 call _upEndCount _coforallCount[263567] 1)
+          {
+            {
+              unknown start[262971](262969 call + start_n(262967 call * tid blockSize))
+              unknown end[262982](262980 call -(262977 call + start blockSize) 1)
+              if(262995 call _cond_test(262987 call > end end_n))
+              {
+                (262991 call = end end_n)
+              }
+              if(263041 call _cond_test debug)
+              {
+                (263039 call writeln "tid " tid " considering "(263037 call chpl_build_bounded_range start end))
+              }
+              unknown counts[263060] "ref var"(263057 call .(263054 call(263049 call . state c"localState") tid) c"localCounts")
+              {
+                unknown _indexOfInterest[263079] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[263080] "expr temp" "temp"
+                (263089 'move' _iterator[263080](263087 call _getIterator(263096 call chpl_direct_counted_range_iter 0 nBuckets)))
+                Defer
+                {
+                  {
+                    (263112 call _freeIterator _iterator[263080])
+                  }
+                }
+                { scopeless type
+                  (263101 'move' _indexOfInterest[263079](263098 call iteratorIndex _iterator[263080]))
+                }
+                ForLoop
+                {
+                  unknown bin[263105] "index var" "insert auto destroy"
+                  (263107 'move' bin[263105] _indexOfInterest[263079])
+                  {
+                    (263075 call =(263073 call counts bin) 0)
+                  }
+                  label _continueLabel[263084]
+                  _indexOfInterest[263079]
+                  _iterator[263080]
+                }
+                label _breakLabel[263085]
+              }
+              {
+                unknown _indexOfInterest[263147] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[263148] "expr temp" "temp"
+                (263157 'move' _iterator[263148](263155 call _getIterator(263137 call(263128 call .(263125 call . state c"bucketizer") c"classify") src start end criterion startbit)))
+                Defer
+                {
+                  {
+                    (263188 call _freeIterator _iterator[263148])
+                  }
+                }
+                { scopeless type
+                  (263163 'move' _indexOfInterest[263147](263160 call iteratorIndex _iterator[263148]))
+                }
+                ForLoop
+                {
+                  (263168 call _check_tuple_var_decl _indexOfInterest[263147] 2)
+                  unknown i[263174] "index var" "insert auto destroy"
+                  (263176 'move' i[263174](263172 call _indexOfInterest[263147] 1))
+                  unknown bin[263181] "index var" "insert auto destroy"
+                  (263183 'move' bin[263181](263179 call _indexOfInterest[263147] 2))
+                  {
+                    (263143 call +=(263141 call counts bin) 1)
+                  }
+                  label _continueLabel[263152]
+                  _indexOfInterest[263147]
+                  _iterator[263148]
+                }
+                label _breakLabel[263153]
+              }
+              {
+                unknown _indexOfInterest[263228] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[263229] "expr temp" "temp"
+                (263238 'move' _iterator[263229](263236 call _getIterator(263204 call vectorizeOnly(263201 call #(263198 call chpl_build_low_bounded_range 0) nBuckets))))
+                Defer
+                {
+                  {
+                    (263255 call _freeIterator _iterator[263229])
+                  }
+                }
+                { scopeless type
+                  (263244 'move' _indexOfInterest[263228](263241 call iteratorIndex _iterator[263229]))
+                }
+                ForLoop
+                {
+                  unknown bin[263248] "index var" "insert auto destroy"
+                  (263250 'move' bin[263248] _indexOfInterest[263228])
+                  {
+                    (263224 call =(263219 call(263208 call . state c"globalCounts")(263216 call +(263213 call * bin nTasks) tid))(263223 call counts bin))
+                  }
+                  label _continueLabel[263233]
+                  _indexOfInterest[263228]
+                  _iterator[263229]
+                }
+                label _breakLabel[263234]
+              }
+            }
+            (263570 call _downEndCount _coforallCount[263567] nil[38])
+            (263569 'coforall loop')
+            (262961 'actuals list' tiMarkRef[289] state)
+          }
+          label _continueLabel[263580]
+          _indexOfInterest[263575]
+          _iterator[263576]
+        }
+        label _breakLabel[263581]
+        Defer
+        {
+          {
+            (263612 call _endCountFree _coforallCount[263567])
+          }
+        }
+        (263617 call _waitEndCount _coforallCount[263567] 1)
+      }
+    }
+    function chpl__scan2[263657](arg chpl_toScan[263659]:_any[170](?)) : _unknown[43] "compiler nested function" "fn returns iterator"
+    {
+      unknown chpl_eltType[263661] "maybe type" "temp"
+      { scopeless type
+        (263665 'move' chpl_eltType[263661](263667 'typeof'(263669 call chpl__initCopy(263671 call iteratorIndex(263673 call _getIterator chpl_toScan[263659])))))
+      }
+      const tmp[263662] "const" "temp"
+      (263682 'move' tmp[263662](263681 'new'(263680 call SumReduceScanOp(eltType = chpl_eltType[263661])(_chpl_manager = unmanaged[209](?)))))
+      (263684 return(263686 call chpl__scanIterator tmp[263662] chpl_toScan[263659]))
+    }
+    (263694 call =(263649 call . state c"globalEnds")(263692 call +(263690 call chpl__scan2(263654 call . state c"globalCounts")) start_n))
+    if(263892 call _cond_test debug)
+    {
+      {
+        unknown _indexOfInterest[263851] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[263852] "expr temp" "temp"
+        (263861 'move' _iterator[263852](263859 call _getIterator(263868 call chpl_direct_counted_range_iter 0 nBuckets)))
+        Defer
+        {
+          {
+            (263884 call _freeIterator _iterator[263852])
+          }
+        }
+        { scopeless type
+          (263873 'move' _indexOfInterest[263851](263870 call iteratorIndex _iterator[263852]))
+        }
+        ForLoop
+        {
+          unknown bin[263877] "index var" "insert auto destroy"
+          (263879 'move' bin[263877] _indexOfInterest[263851])
+          {
+            {
+              unknown _indexOfInterest[263810] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[263811] "expr temp" "temp"
+              (263820 'move' _iterator[263811](263818 call _getIterator(263827 call chpl_direct_counted_range_iter 0 nTasks)))
+              Defer
+              {
+                {
+                  (263843 call _freeIterator _iterator[263811])
+                }
+              }
+              { scopeless type
+                (263832 'move' _indexOfInterest[263810](263829 call iteratorIndex _iterator[263811]))
+              }
+              ForLoop
+              {
+                unknown tid[263836] "index var" "insert auto destroy"
+                (263838 'move' tid[263836] _indexOfInterest[263810])
+                {
+                  unknown gb[263719](263717 call +(263714 call * bin nTasks) tid)
+                  if(263806 call _cond_test(263731 call !=(263729 call(263724 call . state c"globalCounts") gb) 0))
+                  {
+                    (263803 call writeln "tid " tid " count[" bin "] = "(263776 call(263771 call . state c"globalCounts") gb) " end = "(263801 call -(263799 call(263794 call . state c"globalEnds") gb) 1))
+                  }
+                }
+                label _continueLabel[263815]
+                _indexOfInterest[263810]
+                _iterator[263811]
+              }
+              label _breakLabel[263816]
+            }
+          }
+          label _continueLabel[263856]
+          _indexOfInterest[263851]
+          _iterator[263852]
+        }
+        label _breakLabel[263857]
+      }
+    }
+    {
+      unknown tmpIter[264246] "expr temp" "maybe ref" "no copy" "temp"
+      (264249 'move' tmpIter[264246](263901 call #(263898 call chpl_build_low_bounded_range 0) nTasks))
+      unknown isRngDomArr[264619] "maybe param" "temp"
+      (264634 'move' isRngDomArr[264619](264632 call ||(264621 call isBoundedRange tmpIter[264246])(264630 call ||(264624 call isDomain tmpIter[264246])(264627 call isArray tmpIter[264246]))))
+      if isRngDomArr[264619]
+      {
+        const _coforallCount[264486] "const" "end count" "temp"
+        (264555 'move' _coforallCount[264486](264552 call _endCountAlloc 1))
+        unknown numTasks[264487] "temp"
+        (264539 'move' numTasks[264487](264535 call . tmpIter[264246] c"size"))
+        (264530 call _upEndCount _coforallCount[264486] 1 numTasks[264487])
+        (264527 call chpl_resetTaskSpawn numTasks[264487])
+        unknown _indexOfInterest[264494] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[264495] "expr temp" "temp"
+        (264504 'move' _iterator[264495](264502 call _getIterator tmpIter[264246]))
+        Defer
+        {
+          {
+            (264520 call _freeIterator _iterator[264495])
+          }
+        }
+        { scopeless type
+          (264509 'move' _indexOfInterest[264494](264506 call iteratorIndex _iterator[264495]))
+        }
+        ForLoop
+        {
+          unknown tid[264513] "coforall index var" "index var" "insert auto destroy"
+          (264515 'move' tid[264513] _indexOfInterest[264494])
+          {
+            {
+              unknown start[264255](264257 call + start_n(264260 call * tid blockSize))
+              unknown end[264264](264266 call -(264268 call + start blockSize) 1)
+              if(264274 call _cond_test(264276 call > end end_n))
+              {
+                (264281 call = end end_n)
+              }
+              unknown nextOffsets[264285] "ref var"(264287 call .(264292 call(264289 call . state c"localState") tid) c"localCounts")
+              {
+                unknown _indexOfInterest[264297] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[264299] "expr temp" "temp"
+                (264301 'move' _iterator[264299](264304 call _getIterator(264306 call chpl_direct_counted_range_iter 0 nBuckets)))
+                Defer
+                {
+                  {
+                    (264311 call _freeIterator _iterator[264299])
+                  }
+                }
+                { scopeless type
+                  (264315 'move' _indexOfInterest[264297](264318 call iteratorIndex _iterator[264299]))
+                }
+                ForLoop
+                {
+                  unknown bin[264323] "index var" "insert auto destroy"
+                  (264325 'move' bin[264323] _indexOfInterest[264297])
+                  {
+                    unknown globalBin[264329](264331 call +(264333 call * bin nTasks) tid)
+                    (264339 call =(264341 call nextOffsets bin)(264359 IfExpr (264344 call > globalBin 0) then
+                    { scopeless
+                      (264352 call(264349 call . state c"globalEnds")(264354 call - globalBin 1))
+                    } else
+                    { scopeless
+                      start_n
+                    } ))
+                    if(264361 call _cond_test debug)
+                    {
+                      if(264365 call _cond_test(264367 call !=(264372 call(264369 call . state c"globalCounts") globalBin) 0))
+                      {
+                        (264377 call writeln "tid " tid " nextOffsets[" bin "] = "(264384 call nextOffsets bin))
+                      }
+                    }
+                  }
+                  label _continueLabel[264388]
+                  _indexOfInterest[264297]
+                  _iterator[264299]
+                }
+                label _breakLabel[264390]
+              }
+              {
+                unknown _indexOfInterest[264393] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[264395] "expr temp" "temp"
+                (264397 'move' _iterator[264395](264400 call _getIterator(264408 call(264402 call .(264404 call . state c"bucketizer") c"classify") src start end criterion startbit)))
+                Defer
+                {
+                  {
+                    (264416 call _freeIterator _iterator[264395])
+                  }
+                }
+                { scopeless type
+                  (264420 'move' _indexOfInterest[264393](264423 call iteratorIndex _iterator[264395]))
+                }
+                ForLoop
+                {
+                  (264429 call _check_tuple_var_decl _indexOfInterest[264393] 2)
+                  unknown i[264432] "index var" "insert auto destroy"
+                  (264434 'move' i[264432](264437 call _indexOfInterest[264393] 1))
+                  unknown bin[264439] "index var" "insert auto destroy"
+                  (264441 'move' bin[264439](264444 call _indexOfInterest[264393] 2))
+                  {
+                    unknown next[264447] "ref var"(264449 call nextOffsets bin)
+                    if(264453 call _cond_test debug)
+                    {
+                      (264457 call writeln "tid " tid " dst[" next "] = src[" i "] bin " bin)
+                    }
+                    (264471 call(264468 call . ShallowCopy c"shallowCopy") dst next src i 1)
+                    (264478 call += next 1)
+                  }
+                  label _continueLabel[264481]
+                  _indexOfInterest[264393]
+                  _iterator[264395]
+                }
+                label _breakLabel[264483]
+              }
+            }
+            (264489 call _downEndCount _coforallCount[264486] nil[38])
+            (264488 'coforall loop')
+            (264251 'actuals list' tiMarkRef[289] state)
+          }
+          label _continueLabel[264499]
+          _indexOfInterest[264494]
+          _iterator[264495]
+        }
+        label _breakLabel[264500]
+        Defer
+        {
+          {
+            (264542 call _endCountFree _coforallCount[264486])
+          }
+        }
+        (264547 call _waitEndCount _coforallCount[264486] 1 numTasks[264487])
+      }
+      {
+        const _coforallCount[264559] "const" "end count" "temp"
+        (264616 'move' _coforallCount[264559](264613 call _endCountAlloc 1))
+        unknown _indexOfInterest[264567] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[264568] "expr temp" "temp"
+        (264577 'move' _iterator[264568](264575 call _getIterator tmpIter[264246]))
+        Defer
+        {
+          {
+            (264593 call _freeIterator _iterator[264568])
+          }
+        }
+        { scopeless type
+          (264582 'move' _indexOfInterest[264567](264579 call iteratorIndex _iterator[264568]))
+        }
+        ForLoop
+        {
+          unknown tid[264586] "coforall index var" "index var" "insert auto destroy"
+          (264588 'move' tid[264586] _indexOfInterest[264567])
+          (264600 call _upEndCount _coforallCount[264559] 1)
+          {
+            {
+              unknown start[263918](263916 call + start_n(263914 call * tid blockSize))
+              unknown end[263929](263927 call -(263924 call + start blockSize) 1)
+              if(263942 call _cond_test(263934 call > end end_n))
+              {
+                (263938 call = end end_n)
+              }
+              unknown nextOffsets[263956] "ref var"(263953 call .(263952 call(263947 call . state c"localState") tid) c"localCounts")
+              {
+                unknown _indexOfInterest[264051] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[264052] "expr temp" "temp"
+                (264061 'move' _iterator[264052](264059 call _getIterator(264068 call chpl_direct_counted_range_iter 0 nBuckets)))
+                Defer
+                {
+                  {
+                    (264084 call _freeIterator _iterator[264052])
+                  }
+                }
+                { scopeless type
+                  (264073 'move' _indexOfInterest[264051](264070 call iteratorIndex _iterator[264052]))
+                }
+                ForLoop
+                {
+                  unknown bin[264077] "index var" "insert auto destroy"
+                  (264079 'move' bin[264077] _indexOfInterest[264051])
+                  {
+                    unknown globalBin[263973](263971 call +(263968 call * bin nTasks) tid)
+                    (263999 call =(263980 call nextOffsets bin)(263996 IfExpr (263983 call > globalBin 0) then
+                    { scopeless
+                      (263994 call(263986 call . state c"globalEnds")(263991 call - globalBin 1))
+                    } else
+                    { scopeless
+                      start_n
+                    } ))
+                    if(264047 call _cond_test debug)
+                    {
+                      if(264042 call _cond_test(264011 call !=(264009 call(264004 call . state c"globalCounts") globalBin) 0))
+                      {
+                        (264039 call writeln "tid " tid " nextOffsets[" bin "] = "(264038 call nextOffsets bin))
+                      }
+                    }
+                  }
+                  label _continueLabel[264056]
+                  _indexOfInterest[264051]
+                  _iterator[264052]
+                }
+                label _breakLabel[264057]
+              }
+              {
+                unknown _indexOfInterest[264198] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                unknown _iterator[264199] "expr temp" "temp"
+                (264208 'move' _iterator[264199](264206 call _getIterator(264109 call(264100 call .(264097 call . state c"bucketizer") c"classify") src start end criterion startbit)))
+                Defer
+                {
+                  {
+                    (264239 call _freeIterator _iterator[264199])
+                  }
+                }
+                { scopeless type
+                  (264214 'move' _indexOfInterest[264198](264211 call iteratorIndex _iterator[264199]))
+                }
+                ForLoop
+                {
+                  (264219 call _check_tuple_var_decl _indexOfInterest[264198] 2)
+                  unknown i[264225] "index var" "insert auto destroy"
+                  (264227 'move' i[264225](264223 call _indexOfInterest[264198] 1))
+                  unknown bin[264232] "index var" "insert auto destroy"
+                  (264234 'move' bin[264232](264230 call _indexOfInterest[264198] 2))
+                  {
+                    unknown next[264114] "ref var"(264113 call nextOffsets bin)
+                    if(264177 call _cond_test debug)
+                    {
+                      (264174 call writeln "tid " tid " dst[" next "] = src[" i "] bin " bin)
+                    }
+                    (264191 call(264182 call . ShallowCopy c"shallowCopy") dst next src i 1)
+                    (264195 call += next 1)
+                  }
+                  label _continueLabel[264203]
+                  _indexOfInterest[264198]
+                  _iterator[264199]
+                }
+                label _breakLabel[264204]
+              }
+            }
+            (264562 call _downEndCount _coforallCount[264559] nil[38])
+            (264561 'coforall loop')
+            (263908 'actuals list' tiMarkRef[289] state)
+          }
+          label _continueLabel[264572]
+          _indexOfInterest[264567]
+          _iterator[264568]
+        }
+        label _breakLabel[264573]
+        Defer
+        {
+          {
+            (264604 call _endCountFree _coforallCount[264559])
+          }
+        }
+        (264609 call _waitEndCount _coforallCount[264559] 1)
+      }
+    }
+    unknown counts[264642] "ref var"(264639 call . state c"counts")
+    Forall {
+      induction variables:
+        
+        unknown bin[264731] "index var" "insert auto destroy"
+      iterated expressions:
+        (264650 call #(264647 call chpl_build_low_bounded_range 0) nBuckets)
+      shadow variables:
+      forall body
+      {
+        unknown total[264653] 0
+        {
+          unknown _indexOfInterest[264682] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[264683] "expr temp" "temp"
+          (264692 'move' _iterator[264683](264690 call _getIterator(264699 call chpl_direct_counted_range_iter 0 nTasks)))
+          Defer
+          {
+            {
+              (264715 call _freeIterator _iterator[264683])
+            }
+          }
+          { scopeless type
+            (264704 'move' _indexOfInterest[264682](264701 call iteratorIndex _iterator[264683]))
+          }
+          ForLoop
+          {
+            unknown tid[264708] "index var" "insert auto destroy"
+            (264710 'move' tid[264708] _indexOfInterest[264682])
+            {
+              (264678 call += total(264677 call(264666 call . state c"globalCounts")(264674 call +(264671 call * bin nTasks) tid)))
+            }
+            label _continueLabel[264687]
+            _indexOfInterest[264682]
+            _iterator[264683]
+          }
+          label _breakLabel[264688]
+        }
+        (264727 call =(264725 call counts bin) total)
+      }
+    }
+  }
+  function testBucketize[264742](arg start_n[264739] :
+  int[13], arg end_n[264745] :
+  int[13], arg dst[264751] :
+  (264748 call chpl__buildArrayRuntimeType nil[38]), arg src[264757] :
+  (264754 call chpl__buildArrayRuntimeType nil[38]), arg bucketizer[264760]:_any[170](?), arg criterion[264762]:_any[170](?), arg startbit[264765] :
+  int[13]) : _unknown[43]
+  {
+    unknown state[264774](264773 'new'(264772 call TwoArrayBucketizerSharedState(bucketizer = bucketizer)))
+    (264787 call bucketize start_n end_n dst src state criterion startbit)
+    (264793 return(264790 call . state c"counts"))
+  }
+  function partitioningSortWithScratchSpaceHandleSampling[264803](arg start_n[264800] :
+  int[13], arg end_n[264806] :
+  int[13], arg A[264812] :
+  (264809 call chpl__buildArrayRuntimeType nil[38]), arg Scratch[264818] :
+  (264815 call chpl__buildArrayRuntimeType nil[38]), ref arg state[264822] :
+  TwoArrayBucketizerSharedState, arg criterion[264825]:_any[170](?), arg startbit[264828] :
+  int[13]) : _unknown[43] "private" "no return value for void"
+  {
+    if(265138 call _cond_test(329131 'is_subtype'(264842 call . SampleSortHelp c"SampleBucketizer")(264837 'typeof'(264834 call . state c"bucketizer"))))
+    {
+      unknown n[264853](264851 call -(264848 call + 1 end_n) start_n)
+      unknown logNumBuckets[264866](264865 call(264860 call . SampleSortHelp c"computeLogBucketSize") n)
+      unknown numBuckets[264873](264871 call << 1 logNumBuckets)
+      unknown sampleStep[264886](264885 call(264879 call . SampleSortHelp c"chooseSampleStep") n logNumBuckets)
+      unknown sampleSize[264896](264894 call -(264891 call * sampleStep numBuckets) 1)
+      if(264942 call _cond_test(264901 call >= sampleSize n))
+      {
+        if(264924 call _cond_test debug)
+        {
+          (264922 call writeln "Reducing sample size because it was too big")
+        }
+        (264939 call = sampleSize(264938 call max 1(264936 call / n 2)))
+      }
+      (264957 call(264949 call . SampleSortHelp c"putRandomSampleAtArrayStart") start_n end_n A sampleSize)
+      if(264980 call _cond_test debug)
+      {
+        (264978 call writeln "recursing to sort the sample")
+      }
+      if(265035 call _cond_test(264990 call <= sampleSize(264988 call * 1024 1024)))
+      {
+        (265014 call msbRadixSort start_n(265000 call -(264997 call + start_n sampleSize) 1) A criterion startbit(265006 call . state c"endbit")(settings =(265012 'new'(265011 call MSBRadixSortSettings))))
+      }
+      {
+        (265032 call partitioningSortWithScratchSpace start_n(265025 call -(265022 call + start_n sampleSize) 1) A Scratch state criterion startbit)
+      }
+      if(265061 call _cond_test debug)
+      {
+        (265058 call(265043 call . RadixSortHelp c"checkSorted") start_n(265053 call -(265050 call + start_n sampleSize) 1) A criterion startbit)
+      }
+      (265077 call createSplittersFromSample A(265069 call . state c"bucketizer") criterion start_n sampleSize sampleStep numBuckets)
+      if(265134 call _cond_test debug)
+      {
+        (265102 call writeln "sample bucketizer "(265099 call . state c"bucketizer"))
+        (265132 call writef "A %i %i A=%xt\n" start_n end_n(265131 call A(265128 call chpl_build_bounded_range start_n end_n)))
+      }
+    }
+  }
+  { scopeless type
+    void[4]
+  }
+  function partitioningSortWithScratchSpace[265152](arg start_n[265149] :
+  int[13], arg end_n[265155] :
+  int[13], arg A[265161] :
+  (265158 call chpl__buildArrayRuntimeType nil[38]), arg Scratch[265167] :
+  (265164 call chpl__buildArrayRuntimeType nil[38]), ref arg state[265171] :
+  TwoArrayBucketizerSharedState, arg criterion[265174]:_any[170](?), arg startbit[265177] :
+  int[13]) : _unknown[43] "no return value for void"
+  {
+    if(265190 call _cond_test(265186 call > startbit(265183 call . state c"endbit")))
+    {
+      (265188 return _void[47])
+    }
+    if(265224 call _cond_test(265204 call <(265198 call - end_n start_n)(265201 call . state c"baseCaseSize")))
+    {
+      (265219 call(265209 call . ShellSort c"shellSort") A criterion(start = start_n)(end = end_n))
+      (265222 return _void[47])
+    }
+    if(265268 call _cond_test debug)
+    {
+      (265251 call writeln "partitioningSortWithScratchSpace(" start_n "," end_n ")")
+      (265266 call writef "A %i %i A=%xt\n" start_n end_n(265265 call A(265262 call chpl_build_bounded_range start_n end_n)))
+    }
+    const n[265279] "const"(265277 call +(265274 call - end_n start_n) 1)
+    const maxSequentialSize[265304] "const"(265303 call max(265288 call / n(265285 call . state c"nTasks"))(265301 call *(265292 call . state c"nTasks")(265298 call . state c"sequentialSizePerTask")))
+    (265328 call(265313 call .(265310 call . state c"bigTasks") c"append")(265326 'new'(265325 call TwoArraySortTask start_n n startbit(inA = 1)(doSort = 1))))
+    (265342 call assert(265339 call ==(265335 call .(265332 call . state c"bigTasks") c"size") 1))
+    (265358 call assert(265355 call ==(265351 call .(265348 call . state c"smallTasks") c"size") 0))
+    {
+      unknown tmp[265996] "temp"
+      (266032 'move' tmp[265996](266021 call _cond_test(266023 call !(266031 call(266025 call .(266027 call . state c"bigTasks") c"isEmpty")))))
+      WhileDo
+      {
+        {
+          const task[265382] "const"(265381 call(265377 call .(265372 call . state c"bigTasks") c"pop"))
+          const taskEnd[265399] "const"(265397 call -(265394 call +(265387 call . task c"start")(265391 call . task c"size")) 1)
+          (265408 call assert(265404 call . task c"doSort"))
+          if(265439 call _cond_test debug)
+          {
+            (265436 call writeln "doing big task "(265434 call chpl_build_bounded_range(265430 call . task c"start") taskEnd))
+          }
+          if(265599 call _cond_test(265444 call . task c"inA"))
+          {
+            (265462 call partitioningSortWithScratchSpaceHandleSampling(265449 call . task c"start") taskEnd A Scratch state criterion(265459 call . task c"startbit"))
+            (265480 call bucketize(265467 call . task c"start") taskEnd Scratch A state criterion(265477 call . task c"startbit"))
+            if(265519 call _cond_test debug)
+            {
+              (265516 call writef "pb %i %i Scratch=%xt\n"(265502 call . task c"start") taskEnd(265515 call Scratch(265512 call chpl_build_bounded_range(265508 call . task c"start") taskEnd)))
+            }
+          }
+          {
+            (265538 call partitioningSortWithScratchSpaceHandleSampling(265525 call . task c"start") taskEnd Scratch A state criterion(265535 call . task c"startbit"))
+            (265556 call bucketize(265543 call . task c"start") taskEnd A Scratch state criterion(265553 call . task c"startbit"))
+            if(265595 call _cond_test debug)
+            {
+              (265592 call writef "pb %i %i A=%xt\n"(265578 call . task c"start") taskEnd(265591 call A(265588 call chpl_build_bounded_range(265584 call . task c"start") taskEnd)))
+            }
+          }
+          const nowInA[265609] "const"(265607 call !(265604 call . task c"inA"))
+          function chpl__scan3[265623](arg chpl_toScan[265625]:_any[170](?)) : _unknown[43] "compiler nested function" "fn returns iterator"
+          {
+            unknown chpl_eltType[265627] "maybe type" "temp"
+            { scopeless type
+              (265631 'move' chpl_eltType[265627](265633 'typeof'(265635 call chpl__initCopy(265637 call iteratorIndex(265639 call _getIterator chpl_toScan[265625])))))
+            }
+            const tmp[265628] "const" "temp"
+            (265648 'move' tmp[265628](265647 'new'(265646 call SumReduceScanOp(eltType = chpl_eltType[265627])(_chpl_manager = unmanaged[209](?)))))
+            (265650 return(265652 call chpl__scanIterator tmp[265628] chpl_toScan[265625]))
+          }
+          (265663 call =(265615 call . state c"ends")(265661 call +(265656 call chpl__scan3(265620 call . state c"counts"))(265658 call . task c"start")))
+          const nBuckets[265675] "const"(265674 call(265670 call .(265667 call . state c"bucketizer") c"getNumBuckets"))
+          {
+            unknown _indexOfInterest[265956] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[265957] "expr temp" "temp"
+            (265966 'move' _iterator[265957](265964 call _getIterator(265973 call chpl_direct_counted_range_iter 0 nBuckets)))
+            Defer
+            {
+              {
+                (265989 call _freeIterator _iterator[265957])
+              }
+            }
+            { scopeless type
+              (265978 'move' _indexOfInterest[265956](265975 call iteratorIndex _iterator[265957]))
+            }
+            ForLoop
+            {
+              unknown bin[265982] "index var" "insert auto destroy"
+              (265984 'move' bin[265982] _indexOfInterest[265956])
+              {
+                const binSize[265692] "const"(265691 call(265686 call . state c"counts") bin)
+                const binStart[265706] "const"(265704 call -(265702 call(265697 call . state c"ends") bin) binSize)
+                const binEnd[265716] "const"(265714 call -(265711 call + binStart binSize) 1)
+                const binStartBit[265734] "const"(265733 call(265725 call .(265720 call . state c"bucketizer") c"getNextStartBit")(265729 call . task c"startbit"))
+                const sortit[265754] "const"(265753 call(265748 call .(265747 call(265743 call .(265738 call . state c"bucketizer") c"getBinsToRecursivelySort")) c"contains") bin)
+                if(265951 call _cond_test(265759 call == binSize 0))
+                {
+                }
+                {
+                  if(265946 call _cond_test(265768 call &&(265763 call ! nowInA)(265766 call ! sortit)))
+                  {
+                    (265787 call(265774 call .(265771 call . state c"smallTasks") c"append")(265785 'new'(265784 call TwoArraySortTask binStart binSize binStartBit nowInA sortit)))
+                  }
+                  {
+                    if(265942 call _cond_test(265807 call ||(265801 call ||(265795 call > binStartBit(265792 call . state c"endbit"))(265799 call >= binStart binEnd))(265805 call <= binSize maxSequentialSize)))
+                    {
+                      if(265859 call _cond_test(265814 call && debug(265812 call > binSize 0)))
+                      {
+                        (265856 call writeln "handling bin " bin " "(265838 call chpl_build_bounded_range binStart binEnd) " as small")
+                      }
+                      (265881 call(265868 call .(265865 call . state c"smallTasks") c"append")(265879 'new'(265878 call TwoArraySortTask binStart binSize binStartBit nowInA sortit)))
+                    }
+                    {
+                      if(265918 call _cond_test(265888 call && debug(265886 call > binSize 0)))
+                      {
+                        (265915 call writeln "handling bin " bin " "(265897 call chpl_build_bounded_range binStart binEnd) " as big")
+                      }
+                      (265940 call(265927 call .(265924 call . state c"bigTasks") c"append")(265938 'new'(265937 call TwoArraySortTask binStart binSize binStartBit nowInA sortit)))
+                    }
+                  }
+                }
+              }
+              label _continueLabel[265961]
+              _indexOfInterest[265956]
+              _iterator[265957]
+            }
+            label _breakLabel[265962]
+          }
+        }
+        label _continueLabel[265999]
+        (266016 'move' tmp[265996](266005 call _cond_test(266007 call !(266015 call(266009 call .(266011 call . state c"bigTasks") c"isEmpty")))))
+        tmp[265996]
+      }
+      label _breakLabel[266000]
+    }
+    Forall {
+      induction variables:
+        
+        unknown task[266176] "index var" "insert auto destroy"
+      iterated expressions:
+        (266037 call . state c"smallTasks")
+      shadow variables:
+      forall body
+      {
+        const size[266044] "const"(266041 call . task c"size")
+        const taskEnd[266058] "const"(266056 call -(266053 call +(266049 call . task c"start") size) 1)
+        if(266171 call _cond_test(266063 call > size 0))
+        {
+          if(266090 call _cond_test(266069 call !(266066 call . task c"inA")))
+          {
+            (266087 call(266072 call . ShallowCopy c"shallowCopy") A(266078 call . task c"start") Scratch(266083 call . task c"start") size)
+          }
+          if(266132 call _cond_test debug)
+          {
+            (266129 call writef "doing small task %i %i A=%xt\n"(266115 call . task c"start") taskEnd(266128 call A(266125 call chpl_build_bounded_range(266121 call . task c"start") taskEnd)))
+          }
+          if(266167 call _cond_test(266137 call . task c"doSort"))
+          {
+            (266164 call msbRadixSort(266142 call . task c"start") taskEnd A criterion(266150 call . task c"startbit")(266154 call . state c"endbit")(settings =(266162 'new'(266161 call MSBRadixSortSettings(alwaysSerial = 1)))))
+          }
+        }
+      }
+    }
+    if(266251 call _cond_test debug)
+    {
+      (266207 call writef "ps %i %i A=%xt\n" start_n end_n(266206 call A(266203 call chpl_build_bounded_range start_n end_n)))
+      (266237 call writef "ps %i %i Scratch=%xt\n" start_n end_n(266236 call Scratch(266233 call chpl_build_bounded_range start_n end_n)))
+      (266249 call(266240 call . RadixSortHelp c"checkSorted") start_n end_n A criterion startbit)
+    }
+  }
+  { scopeless type
+    void[4]
+  }
+  function distributedPartitioningSortWithScratchSpaceBaseCase[266264](arg start_n[266261] :
+  int[13], arg end_n[266267] :
+  int[13], arg A[266273] :
+  (266270 call chpl__buildArrayRuntimeType nil[38]), arg Scratch[266279] :
+  (266276 call chpl__buildArrayRuntimeType nil[38]), ref arg state[266283] :
+  TwoArrayDistributedBucketizerSharedState, arg criterion[266286]:_any[170](?), arg startbit[266289] :
+  int[13]) : _unknown[43] "private" "no return value for void"
+  {
+    if(266302 call _cond_test(266298 call > startbit(266295 call . state c"endbit")))
+    {
+      (266300 return _void[47])
+    }
+    const n[266315] "const"(266313 call +(266310 call - end_n start_n) 1)
+    const localSubdomain[266326] "const"(266325 call(266321 call . A c"localSubdomain"))
+    const curDomain[266336] "const"(266334 call chpl__buildDomainExpr(266331 call chpl_build_bounded_range start_n end_n))
+    const intersect[266343] "const"(266342 call curDomain localSubdomain)
+    if(266504 call _cond_test(266348 call == curDomain intersect))
+    {
+      if(266404 call _cond_test(266355 call > n(266352 call . state c"baseCaseSize")))
+      {
+        (266381 call msbRadixSort start_n end_n(266369 call(266364 call . A c"localSlice") curDomain) criterion startbit(266373 call . state c"endbit")(settings =(266379 'new'(266378 call MSBRadixSortSettings))))
+      }
+      {
+        (266401 call(266385 call . ShellSort c"shellSort")(266394 call(266389 call . A c"localSlice") curDomain) criterion(start = start_n)(end = end_n))
+      }
+    }
+    {
+      const size[266416] "const"(266414 call +(266411 call - end_n start_n) 1)
+      unknown LocalA[266433](266431 call chpl__buildArrayRuntimeType(266429 call chpl__ensureDomainExpr(266422 call chpl_build_bounded_range start_n end_n))(266426 call . A c"eltType"))
+      (266446 call(266437 call . ShallowCopy c"shallowCopy") LocalA start_n A start_n size)
+      if(266488 call _cond_test(266453 call > n(266450 call . state c"baseCaseSize")))
+      {
+        (266471 call msbRadixSort start_n end_n LocalA criterion startbit(266463 call . state c"endbit")(settings =(266469 'new'(266468 call MSBRadixSortSettings))))
+      }
+      {
+        (266485 call(266475 call . ShellSort c"shellSort") LocalA criterion(start = start_n)(end = end_n))
+      }
+      (266502 call(266493 call . ShallowCopy c"shallowCopy") A start_n LocalA start_n size)
+    }
+    if(266521 call _cond_test debug)
+    {
+      (266518 call(266510 call . RadixSortHelp c"checkSorted") start_n end_n A criterion)
+    }
+    (266525 return _void[47])
+  }
+  { scopeless type
+    void[4]
+  }
+  function distributedPartitioningSortWithScratchSpaceHandleSampling[266536](arg start_n[266533] :
+  int[13], arg end_n[266539] :
+  int[13], arg A[266545] :
+  (266542 call chpl__buildArrayRuntimeType nil[38]), arg Scratch[266551] :
+  (266548 call chpl__buildArrayRuntimeType nil[38]), ref arg state[266555] :
+  TwoArrayDistributedBucketizerSharedState, arg criterion[266558]:_any[170](?), arg startbit[266561] :
+  int[13]) : _unknown[43] "private" "no return value for void"
+  {
+    if(266898 call _cond_test(329136 'is_subtype'(266584 call . SampleSortHelp c"SampleBucketizer")(266581 'typeof'(266578 call .(266575 call .(266574 call(266569 call . state c"perLocale") 0) c"compat") c"bucketizer"))))
+    {
+      unknown n[266595](266593 call -(266590 call + 1 end_n) start_n)
+      unknown logNumBuckets[266606](266605 call(266600 call . SampleSortHelp c"computeLogBucketSize") n)
+      unknown numBuckets[266613](266611 call << 1 logNumBuckets)
+      unknown sampleStep[266624](266623 call(266617 call . SampleSortHelp c"chooseSampleStep") n logNumBuckets)
+      unknown sampleSize[266634](266632 call -(266629 call * sampleStep numBuckets) 1)
+      if(266665 call _cond_test(266639 call >= sampleSize n))
+      {
+        if(266647 call _cond_test debug)
+        {
+          (266645 call writeln "Reducing sample size because it was too big")
+        }
+        (266662 call = sampleSize(266661 call max 1(266659 call / n 2)))
+      }
+      (266678 call(266670 call . SampleSortHelp c"putRandomSampleAtArrayStart") start_n end_n A sampleSize)
+      if(266686 call _cond_test debug)
+      {
+        (266684 call writeln "recursing to sort the sample")
+      }
+      if(266734 call _cond_test(266696 call <= sampleSize(266694 call * 1024 1024)))
+      {
+        (266713 call distributedPartitioningSortWithScratchSpaceBaseCase start_n(266706 call -(266703 call + start_n sampleSize) 1) A Scratch state criterion startbit)
+      }
+      {
+        (266731 call distributedPartitioningSortWithScratchSpace start_n(266724 call -(266721 call + start_n sampleSize) 1) A Scratch state criterion startbit)
+      }
+      if(266758 call _cond_test debug)
+      {
+        (266755 call(266740 call . RadixSortHelp c"checkSorted") start_n(266750 call -(266747 call + start_n sampleSize) 1) A criterion startbit)
+      }
+      (266783 call createSplittersFromSample A(266775 call .(266772 call .(266771 call(266766 call . state c"perLocale") 0) c"compat") c"bucketizer") criterion start_n sampleSize sampleStep numBuckets)
+      if(266819 call _cond_test debug)
+      {
+        (266802 call writeln "sample bucketizer "(266799 call .(266796 call .(266795 call(266790 call . state c"perLocale") 0) c"compat") c"bucketizer"))
+        (266817 call writef "A %i %i A=%xt\n" start_n end_n(266816 call A(266813 call chpl_build_bounded_range start_n end_n)))
+      }
+      {
+        unknown _indexOfInterest[266857] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[266858] "expr temp" "temp"
+        (266867 'move' _iterator[266858](266865 call _getIterator(266875 call chpl_direct_range_iter 1(266872 call . state c"numLocales") 1)))
+        Defer
+        {
+          {
+            (266891 call _freeIterator _iterator[266858])
+          }
+        }
+        { scopeless type
+          (266880 'move' _indexOfInterest[266857](266877 call iteratorIndex _iterator[266858]))
+        }
+        ForLoop
+        {
+          unknown lid[266884] "index var" "insert auto destroy"
+          (266886 'move' lid[266884] _indexOfInterest[266857])
+          {
+            (266853 call =(266840 call .(266839 call(266834 call . state c"perLocale") lid) c"bucketizer")(266850 call .(266849 call(266844 call . state c"perLocale") 0) c"bucketizer"))
+          }
+          label _continueLabel[266862]
+          _indexOfInterest[266857]
+          _iterator[266858]
+        }
+        label _breakLabel[266863]
+      }
+    }
+  }
+  { scopeless type
+    void[4]
+  }
+  function distributedPartitioningSortWithScratchSpace[266912](arg start_n[266909] :
+  int[13], arg end_n[266915] :
+  int[13], arg A[266921] :
+  (266918 call chpl__buildArrayRuntimeType nil[38]), arg Scratch[266927] :
+  (266924 call chpl__buildArrayRuntimeType nil[38]), ref arg state[266931] :
+  TwoArrayDistributedBucketizerSharedState, arg criterion[266934]:_any[170](?), arg startbit[266937] :
+  int[13]) : _unknown[43] "no return value for void"
+  {
+    if(266972 call _cond_test(266949 call !(266948 call(266944 call . A c"hasSingleLocalSubdomain"))))
+    {
+      (266969 call compilerError "distributedPartitioningSortWithScratchSpace needs single local subdomain")
+    }
+    if(266986 call _cond_test(266982 call > startbit(266979 call . state c"endbit")))
+    {
+      (266984 return _void[47])
+    }
+    if(267015 call _cond_test(266999 call <(266993 call - end_n start_n)(266996 call . state c"baseCaseSize")))
+    {
+      (267010 call distributedPartitioningSortWithScratchSpaceBaseCase start_n end_n A Scratch state criterion startbit)
+      (267013 return _void[47])
+    }
+    if(267081 call _cond_test debug)
+    {
+      (267078 call writeln "in distributed radix sort " start_n ".." end_n " startbit " startbit " endbit "(267075 call . state c"endbit"))
+    }
+    const n[267092] "const"(267090 call +(267087 call - end_n start_n) 1)
+    (267114 call(267101 call .(267098 call . state c"distTasks") c"append")(267112 'new'(267111 call TwoArraySortTask start_n n startbit 1 1)))
+    (267128 call assert(267125 call ==(267121 call .(267118 call . state c"distTasks") c"size") 1))
+    {
+      unknown tmp[269677] "temp"
+      (269713 'move' tmp[269677](269702 call _cond_test(269704 call !(269712 call(269706 call .(269708 call . state c"distTasks") c"isEmpty")))))
+      WhileDo
+      {
+        {
+          const task[267150] "const"(267149 call(267145 call .(267142 call . state c"distTasks") c"pop"))
+          const taskStart[267158] "const"(267155 call . task c"start")
+          const taskEnd[267174] "const"(267172 call -(267169 call +(267162 call . task c"start")(267166 call . task c"size")) 1)
+          (267183 call assert(267179 call . task c"doSort"))
+          (267191 call assert(267187 call . task c"inA"))
+          (267208 call distributedPartitioningSortWithScratchSpaceHandleSampling(267195 call . task c"start") taskEnd A Scratch state criterion(267205 call . task c"startbit"))
+          const nBuckets[267228] "const"(267227 call(267223 call .(267220 call .(267217 call .(267216 call(267211 call . state c"perLocale") 0) c"compat") c"bucketizer") c"getNumBuckets"))
+          const nTasks[267235] "const"(267232 call . state c"numLocales")
+          {
+            unknown tmpIter[267560] "expr temp" "maybe ref" "no copy" "temp"
+            (267563 'move' tmpIter[267560](267255 call _build_tuple(267250 call(267246 call . A c"targetLocales"))(267253 call chpl_build_low_bounded_range 0)))
+            unknown isRngDomArr[267951] "maybe param" "temp"
+            (267966 'move' isRngDomArr[267951](267964 call ||(267953 call isBoundedRange tmpIter[267560])(267962 call ||(267956 call isDomain tmpIter[267560])(267959 call isArray tmpIter[267560]))))
+            if isRngDomArr[267951]
+            {
+              const _coforallCount[267790] "const" "end count" "temp"
+              (267873 'move' _coforallCount[267790](267870 call _endCountAlloc 1))
+              unknown numTasks[267791] "temp"
+              (267857 'move' numTasks[267791](267853 call . tmpIter[267560] c"size"))
+              (267848 call _upEndCount _coforallCount[267790] 1 numTasks[267791])
+              (267845 call chpl_resetTaskSpawn numTasks[267791])
+              unknown _indexOfInterest[267798] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[267799] "expr temp" "temp"
+              (267808 'move' _iterator[267799](267806 call _getIteratorZip tmpIter[267560]))
+              Defer
+              {
+                {
+                  (267838 call _freeIterator _iterator[267799])
+                }
+              }
+              { scopeless type
+                (267813 'move' _indexOfInterest[267798](267810 call iteratorIndex _iterator[267799]))
+              }
+              ForLoop
+              {
+                (267818 call _check_tuple_var_decl _indexOfInterest[267798] 2)
+                unknown loc[267824] "coforall index var" "index var" "insert auto destroy"
+                (267826 'move' loc[267824](267822 call _indexOfInterest[267798] 1))
+                unknown tid[267831] "coforall index var" "index var" "insert auto destroy"
+                (267833 'move' tid[267831](267829 call _indexOfInterest[267798] 2))
+                {
+                  {
+                    const tmp[267569] "const" "temp"
+                    (267571 'move' tmp[267569](267573 'deref'(267574 '_wide_get_locale' loc)))
+                    {
+                      const localDomain[267577] "const"(267583 call(267582 call(267579 call . A c"localSubdomain"))(267585 call chpl_build_bounded_range(267587 call . task c"start") taskEnd))
+                      unknown localSrc[267592] "ref var"(267597 call(267594 call . A c"localSlice") localDomain)
+                      unknown localDst[267600] "ref var"(267605 call(267602 call . Scratch c"localSlice") localDomain)
+                      (267609 call bucketize(267611 call . localDomain c"alignedLow")(267615 call . localDomain c"alignedHigh") localDst localSrc(267621 call .(267626 call(267623 call . state c"perLocale") tid) c"compat") criterion(267631 call . task c"startbit"))
+                      unknown localCounts[267634] "ref var"(267636 call .(267638 call .(267643 call(267640 call . state c"perLocale") tid) c"compat") c"counts")
+                      if(267649 call _cond_test debug)
+                      {
+                        unknown total[267652] 0
+                        {
+                          unknown _indexOfInterest[267656] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                          unknown _iterator[267658] "expr temp" "temp"
+                          (267660 'move' _iterator[267658](267663 call _getIterator(267665 call chpl_direct_counted_range_iter 0 nBuckets)))
+                          Defer
+                          {
+                            {
+                              (267670 call _freeIterator _iterator[267658])
+                            }
+                          }
+                          { scopeless type
+                            (267674 'move' _indexOfInterest[267656](267677 call iteratorIndex _iterator[267658]))
+                          }
+                          ForLoop
+                          {
+                            unknown bin[267682] "index var" "insert auto destroy"
+                            (267684 'move' bin[267682] _indexOfInterest[267656])
+                            {
+                              if(267689 call _cond_test(267691 call >(267693 call localCounts bin) 0))
+                              {
+                                (267698 call writeln "localCounts[" bin "]="(267703 call localCounts bin))
+                                (267706 call += total(267709 call localCounts bin))
+                              }
+                            }
+                            label _continueLabel[267712]
+                            _indexOfInterest[267656]
+                            _iterator[267658]
+                          }
+                          label _breakLabel[267714]
+                        }
+                        (267717 call assert(267719 call == total(267722 call . localDomain c"numIndices")))
+                      }
+                      {
+                        unknown _indexOfInterest[267727] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                        unknown _iterator[267729] "expr temp" "temp"
+                        (267731 'move' _iterator[267729](267734 call _getIterator(267736 call vectorizeOnly(267738 call #(267740 call chpl_build_low_bounded_range 0) nBuckets))))
+                        Defer
+                        {
+                          {
+                            (267745 call _freeIterator _iterator[267729])
+                          }
+                        }
+                        { scopeless type
+                          (267749 'move' _indexOfInterest[267727](267752 call iteratorIndex _iterator[267729]))
+                        }
+                        ForLoop
+                        {
+                          unknown bin[267757] "index var" "insert auto destroy"
+                          (267759 'move' bin[267757] _indexOfInterest[267727])
+                          {
+                            (267764 call =(267774 call(267766 call .(267771 call(267768 call . state c"perLocale") 0) c"globalCounts")(267776 call +(267778 call * bin nTasks) tid))(267783 call localCounts bin))
+                          }
+                          label _continueLabel[267785]
+                          _indexOfInterest[267727]
+                          _iterator[267729]
+                        }
+                        label _breakLabel[267787]
+                      }
+                    }
+                  }
+                  (267793 call _downEndCount _coforallCount[267790] nil[38])
+                  (267792 'coforall loop')
+                  (267565 'actuals list' tiMarkRef[289] state)
+                }
+                label _continueLabel[267803]
+                _indexOfInterest[267798]
+                _iterator[267799]
+              }
+              label _breakLabel[267804]
+              Defer
+              {
+                {
+                  (267860 call _endCountFree _coforallCount[267790])
+                }
+              }
+              (267865 call _waitEndCount _coforallCount[267790] 1 numTasks[267791])
+            }
+            {
+              const _coforallCount[267877] "const" "end count" "temp"
+              (267948 'move' _coforallCount[267877](267945 call _endCountAlloc 1))
+              unknown _indexOfInterest[267885] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[267886] "expr temp" "temp"
+              (267895 'move' _iterator[267886](267893 call _getIteratorZip tmpIter[267560]))
+              Defer
+              {
+                {
+                  (267925 call _freeIterator _iterator[267886])
+                }
+              }
+              { scopeless type
+                (267900 'move' _indexOfInterest[267885](267897 call iteratorIndex _iterator[267886]))
+              }
+              ForLoop
+              {
+                (267905 call _check_tuple_var_decl _indexOfInterest[267885] 2)
+                unknown loc[267911] "coforall index var" "index var" "insert auto destroy"
+                (267913 'move' loc[267911](267909 call _indexOfInterest[267885] 1))
+                unknown tid[267918] "coforall index var" "index var" "insert auto destroy"
+                (267920 'move' tid[267918](267916 call _indexOfInterest[267885] 2))
+                (267932 call _upEndCount _coforallCount[267877] 1)
+                {
+                  {
+                    const tmp[267553] "const" "temp"
+                    (267554 'move' tmp[267553](267551 'deref'(267550 '_wide_get_locale' loc)))
+                    {
+                      const localDomain[267280] "const"(267279 call(267270 call(267266 call . A c"localSubdomain"))(267276 call chpl_build_bounded_range(267272 call . task c"start") taskEnd))
+                      unknown localSrc[267291] "ref var"(267290 call(267285 call . A c"localSlice") localDomain)
+                      unknown localDst[267301] "ref var"(267300 call(267295 call . Scratch c"localSlice") localDomain)
+                      (267331 call bucketize(267306 call . localDomain c"alignedLow")(267311 call . localDomain c"alignedHigh") localDst localSrc(267323 call .(267322 call(267317 call . state c"perLocale") tid) c"compat") criterion(267328 call . task c"startbit"))
+                      unknown localCounts[267346] "ref var"(267343 call .(267340 call .(267339 call(267334 call . state c"perLocale") tid) c"compat") c"counts")
+                      if(267475 call _cond_test debug)
+                      {
+                        unknown total[267351] 0
+                        {
+                          unknown _indexOfInterest[267424] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                          unknown _iterator[267425] "expr temp" "temp"
+                          (267434 'move' _iterator[267425](267432 call _getIterator(267441 call chpl_direct_counted_range_iter 0 nBuckets)))
+                          Defer
+                          {
+                            {
+                              (267457 call _freeIterator _iterator[267425])
+                            }
+                          }
+                          { scopeless type
+                            (267446 'move' _indexOfInterest[267424](267443 call iteratorIndex _iterator[267425]))
+                          }
+                          ForLoop
+                          {
+                            unknown bin[267450] "index var" "insert auto destroy"
+                            (267452 'move' bin[267450] _indexOfInterest[267424])
+                            {
+                              if(267419 call _cond_test(267367 call >(267365 call localCounts bin) 0))
+                              {
+                                (267408 call writeln "localCounts[" bin "]="(267407 call localCounts bin))
+                                (267416 call += total(267415 call localCounts bin))
+                              }
+                            }
+                            label _continueLabel[267429]
+                            _indexOfInterest[267424]
+                            _iterator[267425]
+                          }
+                          label _breakLabel[267430]
+                        }
+                        (267473 call assert(267470 call == total(267467 call . localDomain c"numIndices")))
+                      }
+                      {
+                        unknown _indexOfInterest[267516] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                        unknown _iterator[267517] "expr temp" "temp"
+                        (267526 'move' _iterator[267517](267524 call _getIterator(267488 call vectorizeOnly(267485 call #(267482 call chpl_build_low_bounded_range 0) nBuckets))))
+                        Defer
+                        {
+                          {
+                            (267543 call _freeIterator _iterator[267517])
+                          }
+                        }
+                        { scopeless type
+                          (267532 'move' _indexOfInterest[267516](267529 call iteratorIndex _iterator[267517]))
+                        }
+                        ForLoop
+                        {
+                          unknown bin[267536] "index var" "insert auto destroy"
+                          (267538 'move' bin[267536] _indexOfInterest[267516])
+                          {
+                            (267512 call =(267507 call(267496 call .(267495 call(267490 call . state c"perLocale") 0) c"globalCounts")(267504 call +(267501 call * bin nTasks) tid))(267511 call localCounts bin))
+                          }
+                          label _continueLabel[267521]
+                          _indexOfInterest[267516]
+                          _iterator[267517]
+                        }
+                        label _breakLabel[267522]
+                      }
+                    }
+                  }
+                  (267880 call _downEndCount _coforallCount[267877] nil[38])
+                  (267879 'coforall loop')
+                  (267261 'actuals list' tiMarkRef[289] state)
+                }
+                label _continueLabel[267890]
+                _indexOfInterest[267885]
+                _iterator[267886]
+              }
+              label _breakLabel[267891]
+              Defer
+              {
+                {
+                  (267936 call _endCountFree _coforallCount[267877])
+                }
+              }
+              (267941 call _waitEndCount _coforallCount[267877] 1)
+            }
+          }
+          if(268002 call _cond_test debug)
+          {
+            (267999 call writef "after bucketize local portions, Scratch is %xt\n"(267998 call Scratch(267995 call chpl_build_bounded_range(267991 call . task c"start") taskEnd)))
+          }
+          function chpl__scan4[268027](arg chpl_toScan[268029]:_any[170](?)) : _unknown[43] "compiler nested function" "fn returns iterator"
+          {
+            unknown chpl_eltType[268031] "maybe type" "temp"
+            { scopeless type
+              (268035 'move' chpl_eltType[268031](268037 'typeof'(268039 call chpl__initCopy(268041 call iteratorIndex(268043 call _getIterator chpl_toScan[268029])))))
+            }
+            const tmp[268032] "const" "temp"
+            (268052 'move' tmp[268032](268051 'new'(268050 call SumReduceScanOp(eltType = chpl_eltType[268031])(_chpl_manager = unmanaged[209](?)))))
+            (268054 return(268056 call chpl__scanIterator tmp[268032] chpl_toScan[268029]))
+          }
+          (268067 call =(268013 call .(268012 call(268007 call . state c"perLocale") 0) c"globalEnds")(268065 call +(268060 call chpl__scan4(268024 call .(268023 call(268018 call . state c"perLocale") 0) c"globalCounts"))(268062 call . task c"start")))
+          Forall {
+            induction variables:
+              
+              unknown loc[268149] "index var" "insert auto destroy"
+              
+              unknown tid[268151] "index var" "insert auto destroy"
+            iterated expressions:
+              (268080 call(268076 call . A c"targetLocales"))
+              (268083 call chpl_build_low_bounded_range 0)
+            shadow variables:
+              state[268087] 'ref' intent
+                init block
+                {
+                }
+                deinit block
+                {
+                }
+            forall body
+            {
+              if(268143 call _cond_test(268094 call != tid 0))
+              {
+                (268116 call =(268103 call .(268102 call(268097 call . state c"perLocale") tid) c"globalCounts")(268113 call .(268112 call(268107 call . state c"perLocale") 0) c"globalCounts"))
+                (268140 call =(268127 call .(268126 call(268121 call . state c"perLocale") tid) c"globalEnds")(268137 call .(268136 call(268131 call . state c"perLocale") 0) c"globalEnds"))
+              }
+            }
+          }
+          if(268333 call _cond_test debug)
+          {
+            unknown total[268156] 0
+            {
+              unknown _indexOfInterest[268279] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[268280] "expr temp" "temp"
+              (268289 'move' _iterator[268280](268287 call _getIterator(268299 call chpl_direct_counted_range_iter 0(268295 call . state c"countsSize"))))
+              Defer
+              {
+                {
+                  (268315 call _freeIterator _iterator[268280])
+                }
+              }
+              { scopeless type
+                (268304 'move' _indexOfInterest[268279](268301 call iteratorIndex _iterator[268280]))
+              }
+              ForLoop
+              {
+                unknown i[268308] "index var" "insert auto destroy"
+                (268310 'move' i[268308] _indexOfInterest[268279])
+                {
+                  if(268274 call _cond_test(268184 call !=(268182 call(268177 call .(268176 call(268171 call . state c"perLocale") 0) c"globalCounts") i) 0))
+                  {
+                    (268200 call += total(268199 call(268194 call .(268193 call(268188 call . state c"perLocale") 0) c"globalCounts") i))
+                    (268237 call writeln "state.globalCounts[" i "]="(268236 call(268231 call .(268230 call(268225 call . state c"perLocale") 0) c"globalCounts") i))
+                    (268272 call writeln "state.globalEnds[" i "]="(268271 call(268266 call .(268265 call(268260 call . state c"perLocale") 0) c"globalEnds") i))
+                  }
+                }
+                label _continueLabel[268284]
+                _indexOfInterest[268279]
+                _iterator[268280]
+              }
+              label _breakLabel[268285]
+            }
+            (268331 call assert(268328 call == total(268325 call . task c"size")))
+          }
+          {
+            unknown tmpIter[268793] "expr temp" "maybe ref" "no copy" "temp"
+            (268796 'move' tmpIter[268793](268352 call _build_tuple(268347 call(268343 call . A c"targetLocales"))(268350 call chpl_build_low_bounded_range 0)))
+            unknown isRngDomArr[269265] "maybe param" "temp"
+            (269280 'move' isRngDomArr[269265](269278 call ||(269267 call isBoundedRange tmpIter[268793])(269276 call ||(269270 call isDomain tmpIter[268793])(269273 call isArray tmpIter[268793]))))
+            if isRngDomArr[269265]
+            {
+              const _coforallCount[269104] "const" "end count" "temp"
+              (269187 'move' _coforallCount[269104](269184 call _endCountAlloc 1))
+              unknown numTasks[269105] "temp"
+              (269171 'move' numTasks[269105](269167 call . tmpIter[268793] c"size"))
+              (269162 call _upEndCount _coforallCount[269104] 1 numTasks[269105])
+              (269159 call chpl_resetTaskSpawn numTasks[269105])
+              unknown _indexOfInterest[269112] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[269113] "expr temp" "temp"
+              (269122 'move' _iterator[269113](269120 call _getIteratorZip tmpIter[268793]))
+              Defer
+              {
+                {
+                  (269152 call _freeIterator _iterator[269113])
+                }
+              }
+              { scopeless type
+                (269127 'move' _indexOfInterest[269112](269124 call iteratorIndex _iterator[269113]))
+              }
+              ForLoop
+              {
+                (269132 call _check_tuple_var_decl _indexOfInterest[269112] 2)
+                unknown loc[269138] "coforall index var" "index var" "insert auto destroy"
+                (269140 'move' loc[269138](269136 call _indexOfInterest[269112] 1))
+                unknown tid[269145] "coforall index var" "index var" "insert auto destroy"
+                (269147 'move' tid[269145](269143 call _indexOfInterest[269112] 2))
+                {
+                  {
+                    const tmp[268802] "const" "temp"
+                    (268804 'move' tmp[268802](268806 'deref'(268807 '_wide_get_locale' loc)))
+                    {
+                      const globalCounts[268810] "const" "ref var"(268812 call .(268817 call(268814 call . state c"perLocale") tid) c"globalCounts")
+                      const globalEnds[268821] "const" "ref var"(268823 call .(268828 call(268825 call . state c"perLocale") tid) c"globalEnds")
+                      const localSubdomain[268832] "const"(268838 call(268837 call(268834 call . A c"localSubdomain"))(268840 call chpl_build_bounded_range(268842 call . task c"start") taskEnd))
+                      unknown localOffsets[268847] "ref var"(268849 call .(268851 call .(268856 call(268853 call . state c"perLocale") tid) c"compat") c"counts")
+                      {
+                        unknown offset[268862](268864 call . localSubdomain c"low")
+                        {
+                          unknown _indexOfInterest[268869] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                          unknown _iterator[268871] "expr temp" "temp"
+                          (268873 'move' _iterator[268871](268876 call _getIterator(268878 call chpl_direct_counted_range_iter 0 nBuckets)))
+                          Defer
+                          {
+                            {
+                              (268883 call _freeIterator _iterator[268871])
+                            }
+                          }
+                          { scopeless type
+                            (268887 'move' _indexOfInterest[268869](268890 call iteratorIndex _iterator[268871]))
+                          }
+                          ForLoop
+                          {
+                            unknown bin[268895] "index var" "insert auto destroy"
+                            (268897 'move' bin[268895] _indexOfInterest[268869])
+                            {
+                              (268902 call =(268904 call localOffsets bin) offset)
+                              (268908 call += offset(268911 call globalCounts(268913 call +(268915 call * bin nTasks) tid)))
+                            }
+                            label _continueLabel[268919]
+                            _indexOfInterest[268869]
+                            _iterator[268871]
+                          }
+                          label _breakLabel[268921]
+                        }
+                      }
+                      Forall {
+                        induction variables:
+                          
+                          unknown bin[269095] "index var" "insert auto destroy"
+                        iterated expressions:
+                          (269098 call #(269100 call chpl_build_low_bounded_range 0) nBuckets)
+                        shadow variables:
+                        forall body
+                        {
+                          unknown size[268924](268926 call globalCounts(268928 call +(268930 call * bin nTasks) tid))
+                          if(268936 call _cond_test(268938 call > size 0))
+                          {
+                            unknown localStart[268942](268944 call localOffsets bin)
+                            unknown localEnd[268947](268949 call -(268951 call + localStart size) 1)
+                            unknown globalStart[268956](268982 IfExpr (268958 call >(268960 call +(268962 call * bin nTasks) tid) 0) then
+                            { scopeless
+                              (268969 call globalEnds(268971 call -(268973 call +(268975 call * bin nTasks) tid) 1))
+                            } else
+                            { scopeless
+                              taskStart
+                            } )
+                            unknown globalEnd[268984](268986 call -(268988 call globalEnds(268990 call +(268992 call * bin nTasks) tid)) 1)
+                            if(268999 call _cond_test debug)
+                            {
+                              (269003 call writeln "bin " bin " tid " tid " range "(269010 call chpl_build_bounded_range taskStart taskEnd) " A[" globalStart ".." globalEnd "] = Scratch[" localStart ".." localEnd "]")
+                              (269023 call assert(269025 call ==(269027 call globalCounts(269029 call +(269031 call * bin nTasks) tid))(269044 call(269036 call .(269041 call(269038 call . state c"perLocale") 0) c"globalCounts")(269046 call +(269048 call * bin nTasks) tid))))
+                              (269053 call assert(269055 call ==(269057 call globalEnds(269059 call +(269061 call * bin nTasks) tid))(269074 call(269066 call .(269071 call(269068 call . state c"perLocale") 0) c"globalEnds")(269076 call +(269078 call * bin nTasks) tid))))
+                            }
+                            (269087 call(269084 call . ShallowCopy c"shallowCopy") A globalStart Scratch localStart size)
+                          }
+                        }
+                      }
+                    }
+                  }
+                  (269107 call _downEndCount _coforallCount[269104] nil[38])
+                  (269106 'coforall loop')
+                  (268798 'actuals list' tiMarkRef[289] state)
+                }
+                label _continueLabel[269117]
+                _indexOfInterest[269112]
+                _iterator[269113]
+              }
+              label _breakLabel[269118]
+              Defer
+              {
+                {
+                  (269174 call _endCountFree _coforallCount[269104])
+                }
+              }
+              (269179 call _waitEndCount _coforallCount[269104] 1 numTasks[269105])
+            }
+            {
+              const _coforallCount[269191] "const" "end count" "temp"
+              (269262 'move' _coforallCount[269191](269259 call _endCountAlloc 1))
+              unknown _indexOfInterest[269199] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[269200] "expr temp" "temp"
+              (269209 'move' _iterator[269200](269207 call _getIteratorZip tmpIter[268793]))
+              Defer
+              {
+                {
+                  (269239 call _freeIterator _iterator[269200])
+                }
+              }
+              { scopeless type
+                (269214 'move' _indexOfInterest[269199](269211 call iteratorIndex _iterator[269200]))
+              }
+              ForLoop
+              {
+                (269219 call _check_tuple_var_decl _indexOfInterest[269199] 2)
+                unknown loc[269225] "coforall index var" "index var" "insert auto destroy"
+                (269227 'move' loc[269225](269223 call _indexOfInterest[269199] 1))
+                unknown tid[269232] "coforall index var" "index var" "insert auto destroy"
+                (269234 'move' tid[269232](269230 call _indexOfInterest[269199] 2))
+                (269246 call _upEndCount _coforallCount[269191] 1)
+                {
+                  {
+                    const tmp[268786] "const" "temp"
+                    (268787 'move' tmp[268786](268784 'deref'(268783 '_wide_get_locale' loc)))
+                    {
+                      const globalCounts[268372] "const" "ref var"(268369 call .(268368 call(268363 call . state c"perLocale") tid) c"globalCounts")
+                      const globalEnds[268386] "const" "ref var"(268383 call .(268382 call(268377 call . state c"perLocale") tid) c"globalEnds")
+                      const localSubdomain[268404] "const"(268403 call(268394 call(268390 call . A c"localSubdomain"))(268400 call chpl_build_bounded_range(268396 call . task c"start") taskEnd))
+                      unknown localOffsets[268420] "ref var"(268417 call .(268414 call .(268413 call(268408 call . state c"perLocale") tid) c"compat") c"counts")
+                      {
+                        unknown offset[268427](268424 call . localSubdomain c"low")
+                        {
+                          unknown _indexOfInterest[268461] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                          unknown _iterator[268462] "expr temp" "temp"
+                          (268471 'move' _iterator[268462](268469 call _getIterator(268478 call chpl_direct_counted_range_iter 0 nBuckets)))
+                          Defer
+                          {
+                            {
+                              (268494 call _freeIterator _iterator[268462])
+                            }
+                          }
+                          { scopeless type
+                            (268483 'move' _indexOfInterest[268461](268480 call iteratorIndex _iterator[268462]))
+                          }
+                          ForLoop
+                          {
+                            unknown bin[268487] "index var" "insert auto destroy"
+                            (268489 'move' bin[268487] _indexOfInterest[268461])
+                            {
+                              (268443 call =(268441 call localOffsets bin) offset)
+                              (268458 call += offset(268457 call globalCounts(268454 call +(268451 call * bin nTasks) tid)))
+                            }
+                            label _continueLabel[268466]
+                            _indexOfInterest[268461]
+                            _iterator[268462]
+                          }
+                          label _breakLabel[268467]
+                        }
+                      }
+                      Forall {
+                        induction variables:
+                          
+                          unknown bin[268780] "index var" "insert auto destroy"
+                        iterated expressions:
+                          (268506 call #(268503 call chpl_build_low_bounded_range 0) nBuckets)
+                        shadow variables:
+                        forall body
+                        {
+                          unknown size[268518](268517 call globalCounts(268514 call +(268511 call * bin nTasks) tid))
+                          if(268775 call _cond_test(268524 call > size 0))
+                          {
+                            unknown localStart[268530](268529 call localOffsets bin)
+                            unknown localEnd[268541](268539 call -(268536 call + localStart size) 1)
+                            unknown globalStart[268571](268568 IfExpr (268552 call >(268549 call +(268546 call * bin nTasks) tid) 0) then
+                            { scopeless
+                              (268566 call globalEnds(268563 call -(268560 call +(268557 call * bin nTasks) tid) 1))
+                            } else
+                            { scopeless
+                              taskStart
+                            } )
+                            unknown globalEnd[268587](268585 call -(268583 call globalEnds(268580 call +(268577 call * bin nTasks) tid)) 1)
+                            if(268759 call _cond_test debug)
+                            {
+                              (268686 call writeln "bin " bin " tid " tid " range "(268645 call chpl_build_bounded_range taskStart taskEnd) " A[" globalStart ".." globalEnd "] = Scratch[" localStart ".." localEnd "]")
+                              (268722 call assert(268719 call ==(268699 call globalCounts(268696 call +(268693 call * bin nTasks) tid))(268718 call(268707 call .(268706 call(268701 call . state c"perLocale") 0) c"globalCounts")(268715 call +(268712 call * bin nTasks) tid))))
+                              (268757 call assert(268754 call ==(268734 call globalEnds(268731 call +(268728 call * bin nTasks) tid))(268753 call(268742 call .(268741 call(268736 call . state c"perLocale") 0) c"globalEnds")(268750 call +(268747 call * bin nTasks) tid))))
+                            }
+                            (268773 call(268764 call . ShallowCopy c"shallowCopy") A globalStart Scratch localStart size)
+                          }
+                        }
+                      }
+                    }
+                  }
+                  (269194 call _downEndCount _coforallCount[269191] nil[38])
+                  (269193 'coforall loop')
+                  (268358 'actuals list' tiMarkRef[289] state)
+                }
+                label _continueLabel[269204]
+                _indexOfInterest[269199]
+                _iterator[269200]
+              }
+              label _breakLabel[269205]
+              Defer
+              {
+                {
+                  (269250 call _endCountFree _coforallCount[269191])
+                }
+              }
+              (269255 call _waitEndCount _coforallCount[269191] 1)
+            }
+          }
+          if(269316 call _cond_test debug)
+          {
+            (269313 call writef "after distribute, A is %xt\n"(269312 call A(269309 call chpl_build_bounded_range(269305 call . task c"start") taskEnd)))
+          }
+          {
+            unknown _indexOfInterest[269643] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[269644] "expr temp" "temp"
+            (269653 'move' _iterator[269644](269651 call _getIterator(269338 call(269334 call .(269331 call .(269328 call .(269327 call(269322 call . state c"perLocale") 0) c"compat") c"bucketizer") c"getBinsToRecursivelySort"))))
+            Defer
+            {
+              {
+                (269670 call _freeIterator _iterator[269644])
+              }
+            }
+            { scopeless type
+              (269659 'move' _indexOfInterest[269643](269656 call iteratorIndex _iterator[269644]))
+            }
+            ForLoop
+            {
+              unknown bin[269663] "index var" "insert auto destroy"
+              (269665 'move' bin[269663] _indexOfInterest[269643])
+              {
+                const binStart[269372] "const"(269369 IfExpr (269344 call >(269341 call * bin nTasks) 0) then
+                { scopeless
+                  (269364 call(269353 call .(269352 call(269347 call . state c"perLocale") 0) c"globalEnds")(269361 call -(269358 call * bin nTasks) 1))
+                } else
+                { scopeless
+                  (269366 call . task c"start")
+                } )
+                const binEnd[269401] "const"(269399 call -(269397 call(269383 call .(269382 call(269377 call . state c"perLocale") 0) c"globalEnds")(269394 call -(269391 call +(269388 call * bin nTasks) nTasks) 1)) 1)
+                const binSize[269411] "const"(269409 call +(269406 call - binEnd binStart) 1)
+                const binStartBit[269436] "const"(269435 call(269427 call .(269424 call .(269421 call .(269420 call(269415 call . state c"perLocale") 0) c"compat") c"bucketizer") c"getNextStartBit")(269431 call . task c"startbit"))
+                if(269639 call _cond_test(269441 call > binSize 1))
+                {
+                  unknown isOnOneLocale[269444] 0
+                  unknown theLocaleId[269451](269449 call - 1)
+                  {
+                    unknown _indexOfInterest[269526] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                    unknown _iterator[269527] "expr temp" "temp"
+                    (269549 'move' _iterator[269527](269469 call _build_tuple(269540 call _getIterator(269539 call(269536 call . A c"targetLocales")))(269546 call _getIterator(269544 call chpl_build_low_bounded_range 0))))
+                    Defer
+                    {
+                      {
+                        (269579 call _freeIterator _iterator[269527])
+                      }
+                    }
+                    { scopeless type
+                      (269554 'move' _indexOfInterest[269526](269551 call iteratorIndex _iterator[269527]))
+                    }
+                    ForLoop
+                    {
+                      (269559 call _check_tuple_var_decl _indexOfInterest[269526] 2)
+                      unknown loc[269565] "index var" "insert auto destroy"
+                      (269567 'move' loc[269565](269563 call _indexOfInterest[269526] 1))
+                      unknown tid[269572] "index var" "insert auto destroy"
+                      (269574 'move' tid[269572](269570 call _indexOfInterest[269526] 2))
+                      {
+                        const localSubdomain[269486] "const"(269485 call(269476 call(269471 call . A c"localSubdomain") loc)(269482 call chpl_build_bounded_range(269478 call . task c"start") taskEnd))
+                        const curDomain[269497] "const"(269495 call chpl__buildDomainExpr(269492 call chpl_build_bounded_range binStart binEnd))
+                        const intersect[269504] "const"(269503 call curDomain localSubdomain)
+                        if(269522 call _cond_test(269509 call == curDomain intersect))
+                        {
+                          (269513 call = isOnOneLocale 1)
+                          (269519 call = theLocaleId tid)
+                        }
+                      }
+                      label _continueLabel[269531]
+                      _indexOfInterest[269526]
+                      _iterator[269527]
+                    }
+                    label _breakLabel[269532]
+                  }
+                  if(269635 call _cond_test isOnOneLocale)
+                  {
+                    (269612 call(269599 call .(269596 call .(269595 call(269590 call . state c"localTasks") theLocaleId) c"localTasks") c"append")(269610 'new'(269609 call TwoArraySortTask binStart binSize binStartBit 1 1)))
+                  }
+                  {
+                    (269632 call(269619 call .(269616 call . state c"distTasks") c"append")(269630 'new'(269629 call TwoArraySortTask binStart binSize binStartBit 1 1)))
+                  }
+                }
+              }
+              label _continueLabel[269648]
+              _indexOfInterest[269643]
+              _iterator[269644]
+            }
+            label _breakLabel[269649]
+          }
+        }
+        label _continueLabel[269680]
+        (269697 'move' tmp[269677](269686 call _cond_test(269688 call !(269696 call(269690 call .(269692 call . state c"distTasks") c"isEmpty")))))
+        tmp[269677]
+      }
+      label _breakLabel[269681]
+    }
+    {
+      unknown tmpIter[269967] "expr temp" "maybe ref" "no copy" "temp"
+      (269970 'move' tmpIter[269967](269731 call _build_tuple(269726 call(269722 call . A c"targetLocales"))(269729 call chpl_build_low_bounded_range 0)))
+      unknown isRngDomArr[270320] "maybe param" "temp"
+      (270335 'move' isRngDomArr[270320](270333 call ||(270322 call isBoundedRange tmpIter[269967])(270331 call ||(270325 call isDomain tmpIter[269967])(270328 call isArray tmpIter[269967]))))
+      if isRngDomArr[270320]
+      {
+        const _coforallCount[270159] "const" "end count" "temp"
+        (270242 'move' _coforallCount[270159](270239 call _endCountAlloc 1))
+        unknown numTasks[270160] "temp"
+        (270226 'move' numTasks[270160](270222 call . tmpIter[269967] c"size"))
+        (270217 call _upEndCount _coforallCount[270159] 1 numTasks[270160])
+        (270214 call chpl_resetTaskSpawn numTasks[270160])
+        unknown _indexOfInterest[270167] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[270168] "expr temp" "temp"
+        (270177 'move' _iterator[270168](270175 call _getIteratorZip tmpIter[269967]))
+        Defer
+        {
+          {
+            (270207 call _freeIterator _iterator[270168])
+          }
+        }
+        { scopeless type
+          (270182 'move' _indexOfInterest[270167](270179 call iteratorIndex _iterator[270168]))
+        }
+        ForLoop
+        {
+          (270187 call _check_tuple_var_decl _indexOfInterest[270167] 2)
+          unknown loc[270193] "coforall index var" "index var" "insert auto destroy"
+          (270195 'move' loc[270193](270191 call _indexOfInterest[270167] 1))
+          unknown tid[270200] "coforall index var" "index var" "insert auto destroy"
+          (270202 'move' tid[270200](270198 call _indexOfInterest[270167] 2))
+          {
+            {
+              const tmp[269976] "const" "temp"
+              (269978 'move' tmp[269976](269980 'deref'(269981 '_wide_get_locale' loc)))
+              {
+                unknown myTasks[269984](269986 call .(269991 call(269988 call . state c"localTasks") tid) c"localTasks")
+                unknown baseCaseSize[269995](269997 call . state c"baseCaseSize")
+                unknown compat[270001] "ref var"(270003 call .(270008 call(270005 call . state c"perLocale") tid) c"compat")
+                {
+                  unknown _indexOfInterest[270013] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                  unknown _iterator[270015] "expr temp" "temp"
+                  (270017 'move' _iterator[270015](270020 call _getIterator myTasks))
+                  Defer
+                  {
+                    {
+                      (270024 call _freeIterator _iterator[270015])
+                    }
+                  }
+                  { scopeless type
+                    (270028 'move' _indexOfInterest[270013](270031 call iteratorIndex _iterator[270015]))
+                  }
+                  ForLoop
+                  {
+                    unknown task[270036] "index var" "insert auto destroy"
+                    (270038 'move' task[270036] _indexOfInterest[270013])
+                    {
+                      const taskEnd[270042] "const"(270044 call -(270046 call +(270048 call . task c"start")(270052 call . task c"size")) 1)
+                      const curDomain[270057] "const"(270059 call chpl__buildDomainExpr(270061 call chpl_build_bounded_range(270063 call . task c"start") taskEnd))
+                      if(270069 call _cond_test(270071 call > n baseCaseSize))
+                      {
+                        (270082 call(270076 call .(270078 call . compat c"bigTasks") c"clear"))
+                        (270090 call(270084 call .(270086 call . compat c"smallTasks") c"clear"))
+                        (270092 call partitioningSortWithScratchSpace(270094 call . task c"start") taskEnd(270102 call(270099 call . A c"localSlice") curDomain)(270108 call(270105 call . Scratch c"localSlice") curDomain) compat criterion(270113 call . task c"startbit"))
+                      }
+                      {
+                        (270121 call(270118 call . ShellSort c"shellSort")(270126 call(270123 call . A c"localSlice") curDomain) criterion(start =(270130 call . task c"start"))(end = taskEnd))
+                      }
+                      if(270138 call _cond_test debug)
+                      {
+                        (270142 call writef "after recursive sorts, dst is %xt\n"(270145 call A(270147 call chpl_build_bounded_range(270149 call . task c"start") taskEnd)))
+                      }
+                    }
+                    label _continueLabel[270154]
+                    _indexOfInterest[270013]
+                    _iterator[270015]
+                  }
+                  label _breakLabel[270156]
+                }
+              }
+            }
+            (270162 call _downEndCount _coforallCount[270159] nil[38])
+            (270161 'coforall loop')
+            (269972 'actuals list' tiMarkRef[289] state)
+          }
+          label _continueLabel[270172]
+          _indexOfInterest[270167]
+          _iterator[270168]
+        }
+        label _breakLabel[270173]
+        Defer
+        {
+          {
+            (270229 call _endCountFree _coforallCount[270159])
+          }
+        }
+        (270234 call _waitEndCount _coforallCount[270159] 1 numTasks[270160])
+      }
+      {
+        const _coforallCount[270246] "const" "end count" "temp"
+        (270317 'move' _coforallCount[270246](270314 call _endCountAlloc 1))
+        unknown _indexOfInterest[270254] "coforall index var" "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[270255] "expr temp" "temp"
+        (270264 'move' _iterator[270255](270262 call _getIteratorZip tmpIter[269967]))
+        Defer
+        {
+          {
+            (270294 call _freeIterator _iterator[270255])
+          }
+        }
+        { scopeless type
+          (270269 'move' _indexOfInterest[270254](270266 call iteratorIndex _iterator[270255]))
+        }
+        ForLoop
+        {
+          (270274 call _check_tuple_var_decl _indexOfInterest[270254] 2)
+          unknown loc[270280] "coforall index var" "index var" "insert auto destroy"
+          (270282 'move' loc[270280](270278 call _indexOfInterest[270254] 1))
+          unknown tid[270287] "coforall index var" "index var" "insert auto destroy"
+          (270289 'move' tid[270287](270285 call _indexOfInterest[270254] 2))
+          (270301 call _upEndCount _coforallCount[270246] 1)
+          {
+            {
+              const tmp[269960] "const" "temp"
+              (269961 'move' tmp[269960](269958 'deref'(269957 '_wide_get_locale' loc)))
+              {
+                unknown myTasks[269751](269748 call .(269747 call(269742 call . state c"localTasks") tid) c"localTasks")
+                unknown baseCaseSize[269759](269756 call . state c"baseCaseSize")
+                unknown compat[269772] "ref var"(269769 call .(269768 call(269763 call . state c"perLocale") tid) c"compat")
+                {
+                  unknown _indexOfInterest[269924] "an _indexOfInterest or chpl__followIdx variable" "temp"
+                  unknown _iterator[269925] "expr temp" "temp"
+                  (269934 'move' _iterator[269925](269932 call _getIterator myTasks))
+                  Defer
+                  {
+                    {
+                      (269950 call _freeIterator _iterator[269925])
+                    }
+                  }
+                  { scopeless type
+                    (269939 'move' _indexOfInterest[269924](269936 call iteratorIndex _iterator[269925]))
+                  }
+                  ForLoop
+                  {
+                    unknown task[269943] "index var" "insert auto destroy"
+                    (269945 'move' task[269943] _indexOfInterest[269924])
+                    {
+                      const taskEnd[269790] "const"(269788 call -(269785 call +(269778 call . task c"start")(269782 call . task c"size")) 1)
+                      const curDomain[269804] "const"(269802 call chpl__buildDomainExpr(269799 call chpl_build_bounded_range(269795 call . task c"start") taskEnd))
+                      if(269884 call _cond_test(269809 call > n baseCaseSize))
+                      {
+                        (269819 call(269815 call .(269812 call . compat c"bigTasks") c"clear"))
+                        (269830 call(269826 call .(269823 call . compat c"smallTasks") c"clear"))
+                        (269859 call partitioningSortWithScratchSpace(269834 call . task c"start") taskEnd(269845 call(269840 call . A c"localSlice") curDomain)(269852 call(269847 call . Scratch c"localSlice") curDomain) compat criterion(269856 call . task c"startbit"))
+                      }
+                      {
+                        (269881 call(269862 call . ShellSort c"shellSort")(269871 call(269866 call . A c"localSlice") curDomain) criterion(start =(269875 call . task c"start"))(end = taskEnd))
+                      }
+                      if(269920 call _cond_test debug)
+                      {
+                        (269917 call writef "after recursive sorts, dst is %xt\n"(269916 call A(269913 call chpl_build_bounded_range(269909 call . task c"start") taskEnd)))
+                      }
+                    }
+                    label _continueLabel[269929]
+                    _indexOfInterest[269924]
+                    _iterator[269925]
+                  }
+                  label _breakLabel[269930]
+                }
+              }
+            }
+            (270249 call _downEndCount _coforallCount[270246] nil[38])
+            (270248 'coforall loop')
+            (269737 'actuals list' tiMarkRef[289] state)
+          }
+          label _continueLabel[270259]
+          _indexOfInterest[270254]
+          _iterator[270255]
+        }
+        label _breakLabel[270260]
+        Defer
+        {
+          {
+            (270305 call _endCountFree _coforallCount[270246])
+          }
+        }
+        (270310 call _waitEndCount _coforallCount[270246] 1)
+      }
+    }
+  }
+  { scopeless type
+    void[4]
+  }
+}

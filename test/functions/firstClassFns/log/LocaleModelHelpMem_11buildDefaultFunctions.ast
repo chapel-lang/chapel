@@ -1,0 +1,179 @@
+AST dump for LocaleModelHelpMem after pass buildDefaultFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_LocaleModelHelpMem[390279]() : void[4] "insert line file info" "module init"
+  {
+    (474180 return _void[47])
+  }
+  function chpl_memhook_md_num[180799]() : _unknown[43] "extern" "local args" "no fn body" "private" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[474083] "RVV" "temp"
+    (474085 return ret[474083])
+  }
+  { scopeless type
+    chpl_mem_descInt_t[11750]
+  }
+  function chpl_here_alloc[180814](arg size[180811] :
+  (180810 call int(64)[13] 64), arg md[180817] :
+  chpl_mem_descInt_t[11750]) : _unknown[43] "allocator" "always propagate line file info" "locale model alloc"
+  {
+    unknown ret[474095] "RVV" "temp"
+    function chpl_mem_alloc[180827](arg size[180824] :
+    size_t[209674], arg md[180830] :
+    chpl_mem_descInt_t[11750]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free" "no return value for void"
+    {
+      unknown ret[474089] "RVV" "temp"
+      (474091 return ret[474089])
+    }
+    { scopeless type
+      c_void_ptr[141]
+    }
+    unknown call_tmp[636585] "expr temp" "maybe param" "maybe type" "temp"
+    (636588 'move' call_tmp[636585](180845 call(180840 call (partial) safeCast _mt[232] size[180811]) size_t[209674]))
+    unknown call_tmp[636590] "expr temp" "maybe param" "maybe type" "temp"
+    (636593 'move' call_tmp[636590](180850 call chpl_memhook_md_num))
+    unknown call_tmp[636595] "expr temp" "maybe param" "maybe type" "temp"
+    (636598 'move' call_tmp[636595](180851 call + md[180817] call_tmp[636590]))
+    unknown call_tmp[636600] "expr temp" "maybe param" "maybe type" "temp"
+    (636603 'move' call_tmp[636600](180853 call chpl_mem_alloc call_tmp[636585] call_tmp[636595]))
+    (474101 'move' ret[474095](474100 'coerce' call_tmp[636600] c_void_ptr[141]))
+    (474097 return ret[474095])
+  }
+  { scopeless type
+    c_void_ptr[141]
+  }
+  function chpl_here_alloc[180865](arg size[180862]:integral[188](?), arg md[180868] :
+  chpl_mem_descInt_t[11750]) : _unknown[43] "allocator" "always propagate line file info"
+  {
+    unknown ret[474111] "RVV" "temp"
+    function chpl_mem_alloc[180878](arg size[180875] :
+    size_t[209674], arg md[180881] :
+    chpl_mem_descInt_t[11750]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free" "no return value for void"
+    {
+      unknown ret[474105] "RVV" "temp"
+      (474107 return ret[474105])
+    }
+    { scopeless type
+      c_void_ptr[141]
+    }
+    unknown call_tmp[636607] "expr temp" "maybe param" "maybe type" "temp"
+    (636610 'move' call_tmp[636607](180896 call(180891 call (partial) safeCast _mt[232] size[180862]) size_t[209674]))
+    unknown call_tmp[636612] "expr temp" "maybe param" "maybe type" "temp"
+    (636615 'move' call_tmp[636612](180901 call chpl_memhook_md_num))
+    unknown call_tmp[636617] "expr temp" "maybe param" "maybe type" "temp"
+    (636620 'move' call_tmp[636617](180902 call + md[180868] call_tmp[636612]))
+    unknown call_tmp[636622] "expr temp" "maybe param" "maybe type" "temp"
+    (636625 'move' call_tmp[636622](180904 call chpl_mem_alloc call_tmp[636607] call_tmp[636617]))
+    (474117 'move' ret[474111](474116 'coerce' call_tmp[636622] c_void_ptr[141]))
+    (474113 return ret[474111])
+  }
+  { scopeless type
+    c_void_ptr[141]
+  }
+  function chpl_here_calloc[180916](arg size[180913]:integral[188](?), arg number[180919]:integral[188](?), arg md[180923] :
+  chpl_mem_descInt_t[11750]) : _unknown[43] "allocator" "always propagate line file info"
+  {
+    unknown ret[474127] "RVV" "temp"
+    function chpl_mem_calloc[180933](arg number[180930] :
+    size_t[209674], arg size[180936] :
+    size_t[209674], arg md[180940] :
+    chpl_mem_descInt_t[11750]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free" "no return value for void"
+    {
+      unknown ret[474121] "RVV" "temp"
+      (474123 return ret[474121])
+    }
+    { scopeless type
+      c_void_ptr[141]
+    }
+    unknown call_tmp[636629] "expr temp" "maybe param" "maybe type" "temp"
+    (636632 'move' call_tmp[636629](180955 call(180950 call (partial) safeCast _mt[232] number[180919]) size_t[209674]))
+    unknown call_tmp[636636] "expr temp" "maybe param" "maybe type" "temp"
+    (636639 'move' call_tmp[636636](180963 call(180958 call (partial) safeCast _mt[232] size[180913]) size_t[209674]))
+    unknown call_tmp[636641] "expr temp" "maybe param" "maybe type" "temp"
+    (636644 'move' call_tmp[636641](180967 call chpl_memhook_md_num))
+    unknown call_tmp[636646] "expr temp" "maybe param" "maybe type" "temp"
+    (636649 'move' call_tmp[636646](180968 call + md[180923] call_tmp[636641]))
+    unknown call_tmp[636651] "expr temp" "maybe param" "maybe type" "temp"
+    (636654 'move' call_tmp[636651](180970 call chpl_mem_calloc call_tmp[636629] call_tmp[636636] call_tmp[636646]))
+    (474133 'move' ret[474127](474132 'coerce' call_tmp[636651] c_void_ptr[141]))
+    (474129 return ret[474127])
+  }
+  { scopeless type
+    c_void_ptr[141]
+  }
+  function chpl_here_realloc[180982](arg ptr[180979]:c_void_ptr[141], arg size[180985]:integral[188](?), arg md[180989] :
+  chpl_mem_descInt_t[11750]) : _unknown[43] "allocator" "always propagate line file info"
+  {
+    unknown ret[474143] "RVV" "temp"
+    function chpl_mem_realloc[180999](arg ptr[180996]:c_void_ptr[141], arg size[181002] :
+    size_t[209674], arg md[181006] :
+    chpl_mem_descInt_t[11750]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free" "no return value for void"
+    {
+      unknown ret[474137] "RVV" "temp"
+      (474139 return ret[474137])
+    }
+    { scopeless type
+      c_void_ptr[141]
+    }
+    unknown call_tmp[636658] "expr temp" "maybe param" "maybe type" "temp"
+    (636661 'move' call_tmp[636658](181023 call(181018 call (partial) safeCast _mt[232] size[180985]) size_t[209674]))
+    unknown call_tmp[636663] "expr temp" "maybe param" "maybe type" "temp"
+    (636666 'move' call_tmp[636663](181027 call chpl_memhook_md_num))
+    unknown call_tmp[636668] "expr temp" "maybe param" "maybe type" "temp"
+    (636671 'move' call_tmp[636668](181028 call + md[180989] call_tmp[636663]))
+    unknown call_tmp[636673] "expr temp" "maybe param" "maybe type" "temp"
+    (636676 'move' call_tmp[636673](181030 call chpl_mem_realloc ptr[180979] call_tmp[636658] call_tmp[636668]))
+    (474149 'move' ret[474143](474148 'coerce' call_tmp[636673] c_void_ptr[141]))
+    (474145 return ret[474143])
+  }
+  { scopeless type
+    c_void_ptr[141]
+  }
+  function chpl_here_good_alloc_size[181042](arg min_size[181039]:integral[188](?)) : _unknown[43] "always propagate line file info" "fn synchronization free"
+  {
+    unknown ret[474159] "RVV" "temp"
+    function chpl_mem_good_alloc_size[181052](arg min_size[181049] :
+    size_t[209674]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free" "no return value for void"
+    {
+      unknown ret[474153] "RVV" "temp"
+      (474155 return ret[474153])
+    }
+    { scopeless type
+      size_t[209674]
+    }
+    unknown call_tmp[636680] "expr temp" "maybe param" "maybe type" "temp"
+    (636683 'move' call_tmp[636680](181066 call(181061 call (partial) safeCast _mt[232] min_size[181039]) size_t[209674]))
+    unknown call_tmp[636685] "expr temp" "maybe param" "maybe type" "temp"
+    (636688 'move' call_tmp[636685](181068 call chpl_mem_good_alloc_size call_tmp[636680]))
+    unknown call_tmp[636692] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (636695 'move' call_tmp[636692](181073 'typeof' min_size[181039]))
+    unknown call_tmp[636697] "expr temp" "maybe param" "maybe type" "temp"
+    (636700 'move' call_tmp[636697](181075 call(181069 call (partial) safeCast _mt[232] call_tmp[636685]) call_tmp[636692]))
+    unknown call_tmp[636702] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (636705 'move' call_tmp[636702](474163 'typeof' min_size[181039]))
+    (474166 'move' ret[474159](474165 'coerce' call_tmp[636697] call_tmp[636702]))
+    (474161 return ret[474159])
+  }
+  { scopeless type
+    (181045 'typeof' min_size[181039])
+  }
+  function chpl_here_free[181087](arg ptr[181084]:c_void_ptr[141]) : _unknown[43] "always propagate line file info" "locale model free" "no return value for void"
+  {
+    unknown ret[474176] "RVV" "temp"
+    function chpl_mem_free[181096](arg ptr[181093]:c_void_ptr[141]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "fn synchronization free" "no return value for void"
+    {
+      unknown ret[474170] "RVV" "temp"
+      (474172 return ret[474170])
+    }
+    { scopeless type
+      void[4]
+    }
+    (181106 call chpl_mem_free ptr[181084])
+    (474178 return ret[474176])
+  }
+  { scopeless type
+    void[4]
+  }
+  (329470 'used modules list'(180794 'use' ChapelStandard[19734]))
+}

@@ -1,0 +1,65 @@
+AST dump for BubbleSort after pass scopeResolve.
+Module use list: ChapelStandard 
+
+{
+  function bubbleSort[253247](arg Data[253244] :
+  (253242 call chpl__buildArrayRuntimeType unknown Dom[253237] unknown eltType[253240]), arg comparator[253252] :
+  unknown rec[253249] =
+  defaultComparator[251428]) : _unknown[43] "no return value for void"
+  {
+    (253260 call chpl_check_comparator comparator[253252] eltType[253240])
+    if(253291 call _cond_test(253268 call !=(253264 call . Dom[253237] c"rank") 1))
+    {
+      (253288 call compilerError "bubbleSort() requires 1-D array")
+    }
+    const low[253299] "const"(253296 call . Dom[253237] c"alignedLow")
+    const high[253306] "const"(253303 call . Dom[253237] c"alignedHigh")
+    const stride[253316] "const"(253315 call abs(253311 call . Dom[253237] c"stride"))
+    unknown swapped[253320] 1
+    {
+      unknown tmp[253432] "temp"
+      (253450 'move' tmp[253432](253448 call _cond_test swapped[253320]))
+      WhileDo
+      {
+        {
+          (253326 call = swapped[253320] 0)
+          {
+            unknown _indexOfInterest[253384] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[253385] "expr temp" "temp"
+            (253394 'move' _iterator[253385](253392 call _getIterator(253409 call chpl_direct_range_iter low[253299](253406 call - high[253306] stride[253316]) stride[253316])))
+            Defer
+            {
+              {
+                (253425 call _freeIterator _iterator[253385])
+              }
+            }
+            { scopeless type
+              (253414 'move' _indexOfInterest[253384](253411 call iteratorIndex _iterator[253385]))
+            }
+            ForLoop
+            {
+              unknown i[253418] "index var" "insert auto destroy"
+              (253420 'move' i[253418] _indexOfInterest[253384])
+              {
+                if(253379 call _cond_test(253357 call >(253355 call chpl_compare(253345 call Data[253244] i[253418])(253353 call Data[253244](253350 call + i[253418] stride[253316])) comparator[253252]) 0))
+                {
+                  (253370 call <=>(253362 call Data[253244] i[253418])(253369 call Data[253244](253366 call + i[253418] stride[253316])))
+                  (253376 call = swapped[253320] 1)
+                }
+              }
+              label _continueLabel[253389]
+              _indexOfInterest[253384]
+              _iterator[253385]
+            }
+            label _breakLabel[253390]
+          }
+        }
+        label _continueLabel[253435]
+        (253443 'move' tmp[253432](253441 call _cond_test swapped[253320]))
+        tmp[253432]
+      }
+      label _breakLabel[253436]
+    }
+  }
+  (329571 'used modules list'(328332 'use' ChapelStandard[19734]))
+}

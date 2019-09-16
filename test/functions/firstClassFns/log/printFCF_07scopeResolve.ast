@@ -1,0 +1,12 @@
+AST dump for printFCF after pass scopeResolve.
+Module use list: ChapelStandard 
+
+{
+  function justCheck[197601](arg i[197598] :
+  int(64)[13]) : _unknown[43] "no return value for void"
+  {
+    (197606 call writeln i[197598])
+  }
+  (197617 call writeln(197614 call _cast string[24](365491 'capture fn for chpl' justCheck)))
+  (329501 'used modules list'(328302 'use' ChapelStandard[19734]))
+}

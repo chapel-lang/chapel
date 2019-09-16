@@ -1,0 +1,212 @@
+AST dump for ChapelLocks after pass buildDefaultFunctions.
+Module use list: MemConsistency 
+
+{
+  function chpl__init_ChapelLocks[390273]() : void[4] "insert line file info" "module init"
+  {
+    (474061 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].lock[180363](arg _mt[180473]:_MT[227], arg this[180471]:chpl_LocalSpinlock[180469]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[180442] "const" "temp"
+      unknown call_tmp[636388] "expr temp" "maybe param" "maybe type" "temp"
+      (636391 'move' call_tmp[636388](180439 '_wide_get_locale' this[180471]))
+      (180443 'move' tmp[180442](180440 'deref' call_tmp[636388]))
+      {
+        unknown tmp[180388] "temp"
+        unknown tmp[404604] "maybe param" "temp"
+        unknown call_tmp[636395] "expr temp" "maybe param" "maybe type" "temp"
+        (636398 'move' call_tmp[636395](361327 call l _mt[232] this[180471]))
+        (404615 'move' tmp[404604](180426 call(180423 call (partial) read _mt[232] call_tmp[636395])))
+        unknown call_tmp[636402] "expr temp" "maybe param" "maybe type" "temp"
+        (636405 'move' call_tmp[636402](404617 call _cond_invalid tmp[404604]))
+        if call_tmp[636402]
+        {
+          (404620 call compilerError "cannot promote short-circuiting || operator")
+        }
+        unknown tmp[520128] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[520129] "maybe param" "temp"
+        unknown call_tmp[636407] "expr temp" "maybe param" "maybe type" "temp"
+        (636410 'move' call_tmp[636407](404605 call isTrue tmp[404604]))
+        (520134 'move' tmp[520129](520132 call _cond_test call_tmp[636407]))
+        if tmp[520129]
+        {
+          (520139 'move' tmp[520128](520136 '_paramFoldLogical' tmp[520129] 1))
+        }
+        {
+          unknown tmp[520141] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[636414] "expr temp" "maybe param" "maybe type" "temp"
+          (636417 'move' call_tmp[636414](361332 call l _mt[232] this[180471]))
+          unknown call_tmp[636421] "expr temp" "maybe param" "maybe type" "temp"
+          (636424 'move' call_tmp[636421](180431 call(180428 call (partial) testAndSet _mt[232] call_tmp[636414]) acquire[180095]))
+          (520143 'move' tmp[520141](404609 call isTrue call_tmp[636421]))
+          (520148 'move' tmp[520128](520145 '_paramFoldLogical' tmp[520129] tmp[520141]))
+        }
+        (180436 'move' tmp[180388](180419 call _cond_test tmp[520128]))
+        WhileDo
+        {
+          (180386 call chpl_task_yield)
+          label _continueLabel[180391]
+          unknown tmp[404583] "maybe param" "temp"
+          unknown call_tmp[636428] "expr temp" "maybe param" "maybe type" "temp"
+          (636431 'move' call_tmp[636428](361316 call l _mt[232] this[180471]))
+          (404594 'move' tmp[404583](180404 call(180401 call (partial) read _mt[232] call_tmp[636428])))
+          unknown call_tmp[636435] "expr temp" "maybe param" "maybe type" "temp"
+          (636438 'move' call_tmp[636435](404596 call _cond_invalid tmp[404583]))
+          if call_tmp[636435]
+          {
+            (404599 call compilerError "cannot promote short-circuiting || operator")
+          }
+          unknown tmp[520155] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+          unknown tmp[520156] "maybe param" "temp"
+          unknown call_tmp[636440] "expr temp" "maybe param" "maybe type" "temp"
+          (636443 'move' call_tmp[636440](404584 call isTrue tmp[404583]))
+          (520161 'move' tmp[520156](520159 call _cond_test call_tmp[636440]))
+          if tmp[520156]
+          {
+            (520166 'move' tmp[520155](520163 '_paramFoldLogical' tmp[520156] 1))
+          }
+          {
+            unknown tmp[520168] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+            unknown call_tmp[636447] "expr temp" "maybe param" "maybe type" "temp"
+            (636450 'move' call_tmp[636447](361321 call l _mt[232] this[180471]))
+            unknown call_tmp[636454] "expr temp" "maybe param" "maybe type" "temp"
+            (636457 'move' call_tmp[636454](180409 call(180406 call (partial) testAndSet _mt[232] call_tmp[636447]) acquire[180095]))
+            (520170 'move' tmp[520168](404588 call isTrue call_tmp[636454]))
+            (520175 'move' tmp[520155](520172 '_paramFoldLogical' tmp[520156] tmp[520168]))
+          }
+          (180414 'move' tmp[180388](180397 call _cond_test tmp[520155]))
+          tmp[180388]
+        }
+        label _breakLabel[180392]
+      }
+    }
+    (474057 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].unlock[180452](arg _mt[180477]:_MT[227], arg this[180475]:chpl_LocalSpinlock[180469]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[636461] "expr temp" "maybe param" "maybe type" "temp"
+    (636464 'move' call_tmp[636461](361338 call l _mt[232] this[180475]))
+    (180463 call(180455 call (partial) clear _mt[232] call_tmp[636461]) release[180093])
+    (474059 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].l[729432](arg _mt[729434]:_MT[227], ref arg this[729436]:chpl_LocalSpinlock[180469]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[729445] "RVV" "temp"
+    unknown call_tmp[729452] "expr temp" "maybe param" "maybe type" "temp"
+    (729455 'move' call_tmp[729452](729440 '.' this[729436] c"l"))
+    (729450 'move' ret[729445](729449 'addr of' call_tmp[729452]))
+    (729447 return ret[729445])
+  }
+  function chpl_LocalSpinlock[180469].init[729457](arg _mt[729459]:_MT[227], ref arg this[729460]:chpl_LocalSpinlock[180469], in arg l[729463] :
+  (729466 call chpl__processorAtomicType bool[10]) =
+  _typeDefaultT[239]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (729479 'init field' this[729460] c"l" l[729463])
+    (729482 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].init=[729484](arg _mt[729487]:_MT[227], ref arg this[729488]:chpl_LocalSpinlock[180469], arg other[729489]:chpl_LocalSpinlock[180469]) : void[4] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    unknown call_tmp[729518] "maybe param" "maybe type" "temp"
+    (729521 'move' call_tmp[729518](729497 call l _mt[232] other[729489]))
+    unknown call_tmp[729523] "maybe param" "maybe type" "temp"
+    (729526 'move' call_tmp[729523](729506 call chpl__processorAtomicType bool[10]))
+    unknown tmp[729503] "temp"
+    (729508 'init var' tmp[729503] call_tmp[729518] call_tmp[729523])
+    (729510 'init field' this[729488] c"l" tmp[729503])
+    (729514 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].deinit[729528](arg _mt[729530]:_MT[227], arg this[729532]:chpl_LocalSpinlock[180469]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (729534 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].writeThis[729537](arg _mt[729541]:_MT[227], arg this[729539]:chpl_LocalSpinlock[180469], arg f[729540]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (729546 call writeThisDefaultImpl f[729540] this[729539])
+    (729550 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].readThis[729552](arg _mt[729556]:_MT[227], arg this[729554]:chpl_LocalSpinlock[180469], arg f[729555]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (729560 call readThisDefaultImpl f[729555] this[729554])
+    (729565 return _void[47])
+  }
+  function ==[729567](arg _arg1[729569]:chpl_LocalSpinlock[180469], arg _arg2[729570]:chpl_LocalSpinlock[180469]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[729599]:bool[10] "RVV" "temp"
+    unknown call_tmp[729611] "expr temp" "maybe param" "maybe type" "temp"
+    (729614 'move' call_tmp[729611](729580 call l _mt[232] _arg1[729569]))
+    unknown call_tmp[729616] "expr temp" "maybe param" "maybe type" "temp"
+    (729619 'move' call_tmp[729616](729584 call l _mt[232] _arg2[729570]))
+    unknown call_tmp[729621] "expr temp" "maybe param" "maybe type" "temp"
+    (729624 'move' call_tmp[729621](729588 call != call_tmp[729611] call_tmp[729616]))
+    if call_tmp[729621]
+    {
+      (729604 'move' ret[729599](729603 'deref' 0))
+      gotoReturn _end_==[729597] _end_==[729597]
+    }
+    (729609 'move' ret[729599](729608 'deref' 1))
+    label _end_==[729597]
+    (729601 return ret[729599])
+  }
+  where {
+    unknown call_tmp[729626] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (729629 'move' call_tmp[729626](729573 'typeof' _arg1[729569]))
+    unknown call_tmp[729631] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (729634 'move' call_tmp[729631](729575 'typeof' _arg2[729570]))
+    (729577 call == call_tmp[729626] call_tmp[729631])
+  }
+  function !=[729636](arg _arg1[729638]:chpl_LocalSpinlock[180469], arg _arg2[729639]:chpl_LocalSpinlock[180469]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[729668]:bool[10] "RVV" "temp"
+    unknown call_tmp[729680] "expr temp" "maybe param" "maybe type" "temp"
+    (729683 'move' call_tmp[729680](729649 call l _mt[232] _arg1[729638]))
+    unknown call_tmp[729685] "expr temp" "maybe param" "maybe type" "temp"
+    (729688 'move' call_tmp[729685](729653 call l _mt[232] _arg2[729639]))
+    unknown call_tmp[729690] "expr temp" "maybe param" "maybe type" "temp"
+    (729693 'move' call_tmp[729690](729657 call != call_tmp[729680] call_tmp[729685]))
+    if call_tmp[729690]
+    {
+      (729673 'move' ret[729668](729672 'deref' 1))
+      gotoReturn _end_!=[729666] _end_!=[729666]
+    }
+    (729678 'move' ret[729668](729677 'deref' 0))
+    label _end_!=[729666]
+    (729670 return ret[729668])
+  }
+  where {
+    unknown call_tmp[729695] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (729698 'move' call_tmp[729695](729642 'typeof' _arg1[729638]))
+    unknown call_tmp[729700] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (729703 'move' call_tmp[729700](729644 'typeof' _arg2[729639]))
+    (729646 call == call_tmp[729695] call_tmp[729700])
+  }
+  function =[729705](ref arg _arg1[729707]:chpl_LocalSpinlock[180469], const?  ref arg _arg2[729708]:chpl_LocalSpinlock[180469]) : void[4] "assignop" "compiler generated" "last resort"
+  {
+    unknown call_tmp[729733] "expr temp" "maybe param" "maybe type" "temp"
+    (729736 'move' call_tmp[729733](729718 call l _mt[232] _arg1[729707]))
+    unknown call_tmp[729740] "expr temp" "maybe param" "maybe type" "temp"
+    (729743 'move' call_tmp[729740](729722 call l _mt[232] _arg2[729708]))
+    (729726 call = call_tmp[729733] call_tmp[729740])
+    (729729 return _void[47])
+  }
+  where {
+    unknown call_tmp[729745] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (729748 'move' call_tmp[729745](729711 'typeof' _arg1[729707]))
+    unknown call_tmp[729750] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (729753 'move' call_tmp[729750](729713 'typeof' _arg2[729708]))
+    (729715 call == call_tmp[729745] call_tmp[729750])
+  }
+  function chpl__defaultHash[729755](arg r[729757]:chpl_LocalSpinlock[180469]) : _unknown[43] "compiler generated" "last resort"
+  {
+    unknown ret[729769] "RVV" "temp"
+    unknown call_tmp[729776] "expr temp" "maybe param" "maybe type" "temp"
+    (729779 'move' call_tmp[729776](729759 call l _mt[232] r[729757]))
+    unknown call_tmp[729781] "expr temp" "maybe param" "maybe type" "temp"
+    (729784 'move' call_tmp[729781](729763 call chpl__defaultHash call_tmp[729776]))
+    (729774 'move' ret[729769](729773 'deref' call_tmp[729781]))
+    (729771 return ret[729769])
+  }
+  type chpl_LocalSpinlock[180469] unknown l[180358](180357 call chpl__processorAtomicType bool[10])
+  (329465 'used modules list'(180350 'use' MemConsistency[179748]))
+}

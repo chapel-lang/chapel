@@ -1,0 +1,1616 @@
+AST dump for ChapelReduce after pass normalize.
+Module use list: ChapelStandard ChapelLocks Reflection 
+
+{
+  function chpl__init_ChapelReduce[390183]() : void[4] "insert line file info" "module init"
+  {
+    (490098 'init var' enableParScan[82899] 0)
+    (577408 'move' call_tmp[577405](82923 call _cond_test enableParScan[82899]))
+    if call_tmp[577405]
+    {
+      (82921 call compilerWarning "'enableParScan' has been deprecated (it is now always enabled)")
+    }
+    (463663 return _void[47])
+  }
+  unknown enableParScan[82899] "config" "param"
+  unknown call_tmp[577405] "expr temp" "maybe param" "maybe type" "temp"
+  function chpl__scanStateResTypesMatch[82932](arg op[82930]:_any[170](?)) param : _unknown[43]
+  {
+    unknown ret[463167] "RVV" "param" "temp"
+    { scopeless type
+      unknown call_type_tmp[443137] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[577412] "expr temp" "maybe param" "maybe type" "temp"
+      (577415 'move' call_tmp[577412](82941 call(82937 call (partial) generate _mt[232] op[82930])))
+      (443141 'move' call_type_tmp[443137](82942 'typeof' call_tmp[577412]))
+    }
+    unknown resType[82943] "insert auto destroy" "type variable" call_type_tmp[443137]
+    (490101 'move' resType[82943] call_type_tmp[443137])
+    { scopeless type
+      unknown call_type_tmp[443143] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[577419] "expr temp" "maybe param" "maybe type" "temp"
+      (577422 'move' call_tmp[577419](82950 call identity _mt[232] op[82930]))
+      (443147 'move' call_type_tmp[443143](82953 'typeof' call_tmp[577419]))
+    }
+    unknown stateType[82954] "insert auto destroy" "type variable" call_type_tmp[443143]
+    (490104 'move' stateType[82954] call_type_tmp[443143])
+    unknown call_tmp[577424] "expr temp" "maybe param" "maybe type" "temp"
+    (577427 'move' call_tmp[577424](82959 call == resType[82943] stateType[82954]))
+    (463172 'move' ret[463167](463171 'deref' call_tmp[577424]))
+    (463169 return ret[463167])
+  }
+  function chpl__scanIteratorZip[82969](arg op[82967]:_any[170](?), arg data[82971]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[463176] "RVV" "temp"
+    (82991 call compilerWarning "scan has been serialized (see issue #12482)")
+    unknown arr[83009] "insert auto destroy"
+    function chpl__loopexpr_iter1[529233](?)(arg iterator[529235]:_any[170](?), arg op[529271]:_any[170](?)) : _unknown[43] "generic" "iterator fn"
+    {
+      unknown ret[529276] "RVV" "temp"
+      {
+        unknown _indexOfInterest[529240] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[529241] "expr temp" "temp"
+        (529250 'move' _iterator[529241](529248 call _getIteratorZip iterator[529235]))
+        Defer
+        {
+          {
+            (529264 call _freeIterator _iterator[529241])
+          }
+        }
+        { scopeless type
+          (529255 'move' _indexOfInterest[529240](529252 call iteratorIndex _iterator[529241]))
+        }
+        ForLoop
+        {
+          unknown d[83007] "index var" "insert auto destroy"
+          (529259 'move' d[83007] _indexOfInterest[529240])
+          {
+            {
+              unknown yret[529280] "YVV" "temp"
+              unknown call_tmp[529287] "expr temp" "maybe param" "maybe type" "temp"
+              (529290 'move' call_tmp[529287](83003 call chpl__accumgen op[529271] d[83007]))
+              (529283 'move' yret[529280](529282 'deref' call_tmp[529287]))
+              (529285 yield yret[529280])
+            }
+          }
+          label _continueLabel[529245]
+          _indexOfInterest[529240]
+          _iterator[529241]
+        }
+        label _breakLabel[529246]
+      }
+      (529278 return ret[529276])
+    }
+    function chpl__forexpr1[529213](?)(arg iterExpr[529216]:_any[170](?), arg op[529220]:_any[170](?)) : _unknown[43] "compiler generated" "compiler nested function" "generic" "fn returns iterator"
+    {
+      unknown ret[529294] "RVV" "temp"
+      unknown _iterator[529223] "expr temp" "maybe ref" "temp"
+      (529225 'move' _iterator[529223] iterExpr[529216])
+      unknown call_tmp[529301] "expr temp" "maybe param" "maybe type" "temp"
+      (529304 'move' call_tmp[529301](529228 call chpl__loopexpr_iter1 _iterator[529223] op[529220]))
+      (529299 'move' ret[529294](529298 'deref' call_tmp[529301]))
+      (529296 return ret[529294])
+    }
+    unknown call_tmp[529306] "expr temp" "maybe param" "maybe type" "temp"
+    (529309 'move' call_tmp[529306](82998 call _build_tuple(82996 'expand_tuple' data[82971])))
+    unknown call_tmp[529311] "maybe param" "maybe type" "temp"
+    (529314 'move' call_tmp[529311](529218 call chpl__forexpr1 call_tmp[529306] op[82967]))
+    (529319 'iterator record set shape' call_tmp[529311](529317 'expand_tuple' data[82971]) 1)
+    (490106 'init var' arr[83009] call_tmp[529311])
+    (83014 call chpl__delete op[82967])
+    (463181 'move' ret[463176](463180 'deref' arr[83009]))
+    (463178 return ret[463176])
+  }
+  function chpl__scanIterator[83026](arg op[83024]:_any[170](?), arg data[83028]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[463185] "RVV" "temp"
+    unknown tmp[397128] "maybe param" "temp"
+    (397139 'move' tmp[397128](83038 call isArray data[83028]))
+    unknown call_tmp[577429] "expr temp" "maybe param" "maybe type" "temp"
+    (577432 'move' call_tmp[577429](397141 call _cond_invalid tmp[397128]))
+    if call_tmp[577429]
+    {
+      (397144 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown supportsPar[83062] "param"
+    unknown tmp[508917] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[508918] "maybe param" "temp"
+    unknown call_tmp[577434] "expr temp" "maybe param" "maybe type" "temp"
+    (577437 'move' call_tmp[577434](397129 call isTrue tmp[397128]))
+    (508923 'move' tmp[508918](508921 call _cond_test call_tmp[577434]))
+    if tmp[508918]
+    {
+      unknown tmp[508925] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[577439] "expr temp" "maybe param" "maybe type" "temp"
+      (577442 'move' call_tmp[577439](83059 call canResolveMethod data[83028] "_scan" op[83024]))
+      (508927 'move' tmp[508925](397132 call isTrue call_tmp[577439]))
+      (508932 'move' tmp[508917](508929 '_paramFoldLogical' tmp[508918] tmp[508925]))
+    }
+    {
+      (508937 'move' tmp[508917](508934 '_paramFoldLogical' tmp[508918] 0))
+    }
+    (490108 'init var' supportsPar[83062] tmp[508917])
+    unknown call_tmp[577444] "expr temp" "maybe param" "maybe type" "temp"
+    (577447 'move' call_tmp[577444](83104 call _cond_test supportsPar[83062]))
+    if call_tmp[577444]
+    {
+      unknown call_tmp[577451] "expr temp" "maybe param" "maybe type" "temp"
+      (577454 'move' call_tmp[577451](83072 call(83067 call (partial) _scan _mt[232] data[83028]) op[83024]))
+      (463190 'move' ret[463185](463189 'deref' call_tmp[577451]))
+      gotoReturn _end_chpl__scanIterator[463183] _end_chpl__scanIterator[463183]
+    }
+    {
+      (83079 call compilerWarning "scan has been serialized (see issue #12482)")
+      unknown arr[83093] "insert auto destroy"
+      function chpl__loopexpr_iter2[529341](?)(arg iterator[529343]:_any[170](?), arg op[529379]:_any[170](?)) : _unknown[43] "generic" "iterator fn"
+      {
+        unknown ret[529384] "RVV" "temp"
+        {
+          unknown _indexOfInterest[529348] "an _indexOfInterest or chpl__followIdx variable" "temp"
+          unknown _iterator[529349] "expr temp" "temp"
+          (529358 'move' _iterator[529349](529356 call _getIterator iterator[529343]))
+          Defer
+          {
+            {
+              (529372 call _freeIterator _iterator[529349])
+            }
+          }
+          { scopeless type
+            (529363 'move' _indexOfInterest[529348](529360 call iteratorIndex _iterator[529349]))
+          }
+          ForLoop
+          {
+            unknown d[83091] "index var" "insert auto destroy"
+            (529367 'move' d[83091] _indexOfInterest[529348])
+            {
+              {
+                unknown yret[529388] "YVV" "temp"
+                unknown call_tmp[529395] "expr temp" "maybe param" "maybe type" "temp"
+                (529398 'move' call_tmp[529395](83088 call chpl__accumgen op[529379] d[83091]))
+                (529391 'move' yret[529388](529390 'deref' call_tmp[529395]))
+                (529393 yield yret[529388])
+              }
+            }
+            label _continueLabel[529353]
+            _indexOfInterest[529348]
+            _iterator[529349]
+          }
+          label _breakLabel[529354]
+        }
+        (529386 return ret[529384])
+      }
+      function chpl__forexpr2[529321](?)(arg iterExpr[529324]:_any[170](?), arg op[529328]:_any[170](?)) : _unknown[43] "compiler generated" "compiler nested function" "generic" "fn returns iterator"
+      {
+        unknown ret[529402] "RVV" "temp"
+        unknown _iterator[529331] "expr temp" "maybe ref" "temp"
+        (529333 'move' _iterator[529331] iterExpr[529324])
+        unknown call_tmp[529409] "expr temp" "maybe param" "maybe type" "temp"
+        (529412 'move' call_tmp[529409](529336 call chpl__loopexpr_iter2 _iterator[529331] op[529328]))
+        (529407 'move' ret[529402](529406 'deref' call_tmp[529409]))
+        (529404 return ret[529402])
+      }
+      unknown call_tmp[529414] "maybe param" "maybe type" "temp"
+      (529417 'move' call_tmp[529414](529326 call chpl__forexpr2 data[83028] op[83024]))
+      (529421 'iterator record set shape' call_tmp[529414] data[83028] 1)
+      (490110 'init var' arr[83093] call_tmp[529414])
+      (83098 call chpl__delete op[83024])
+      (463195 'move' ret[463185](463194 'deref' arr[83093]))
+      gotoReturn _end_chpl__scanIterator[463183] _end_chpl__scanIterator[463183]
+    }
+    label _end_chpl__scanIterator[463183]
+    (463187 return ret[463185])
+    (329343 'used modules list'(83032 'use' Reflection[211223]))
+  }
+  function chpl__accumgen[83114](arg op[83112]:_any[170](?), arg d[83116]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[463201] "RVV" "temp"
+    (83126 call(83121 call (partial) accumulate _mt[232] op[83112]) d[83116])
+    unknown call_tmp[577460] "expr temp" "maybe param" "maybe type" "temp"
+    (577463 'move' call_tmp[577460](83134 call(83130 call (partial) generate _mt[232] op[83112])))
+    (463206 'move' ret[463201](463205 'deref' call_tmp[577460]))
+    (463203 return ret[463201])
+  }
+  function chpl__reduceCombine[83143](arg globalOp[83141]:_any[170](?), arg localOp[83145]:_any[170](?)) : _unknown[43] "no return value for void"
+  {
+    {
+      const tmp[83188] "const" "temp"
+      unknown call_tmp[577465] "expr temp" "maybe param" "maybe type" "temp"
+      (577468 'move' call_tmp[577465](83185 '_wide_get_locale' globalOp[83141]))
+      (83189 'move' tmp[83188](83186 'deref' call_tmp[577465]))
+      {
+        unknown call_tmp[577472] "expr temp" "maybe param" "maybe type" "temp"
+        (577475 'move' call_tmp[577472](83151 call l _mt[232] globalOp[83141]))
+        (83160 call(83156 call (partial) lock _mt[232] call_tmp[577472]))
+        (83171 call(83166 call (partial) combine _mt[232] globalOp[83141]) localOp[83145])
+        unknown call_tmp[577483] "expr temp" "maybe param" "maybe type" "temp"
+        (577486 'move' call_tmp[577483](83174 call l _mt[232] globalOp[83141]))
+        (83183 call(83179 call (partial) unlock _mt[232] call_tmp[577483]))
+      }
+    }
+    (463208 return _void[47])
+  }
+  function chpl__cleanupLocalOp[83200](arg globalOp[83198]:_any[170](?), arg localOp[83202]:_any[170](?)) : _unknown[43] "inline" "no return value for void"
+  {
+    (83206 call chpl__delete localOp[83202])
+    (463210 return _void[47])
+  }
+  function chpl_sumTypeIsSame[83216](arg eltType[83214]:_any[170](?)) param : _unknown[43]
+  {
+    unknown ret[463214] "RVV" "param" "temp"
+    unknown tmp[397149] "maybe param" "temp"
+    (397160 'move' tmp[397149](83221 call isNumeric eltType[83214]))
+    unknown call_tmp[577490] "expr temp" "maybe param" "maybe type" "temp"
+    (577493 'move' call_tmp[577490](397162 call _cond_invalid tmp[397149]))
+    if call_tmp[577490]
+    {
+      (397165 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[508944] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[508945] "maybe param" "temp"
+    unknown call_tmp[577495] "expr temp" "maybe param" "maybe type" "temp"
+    (577498 'move' call_tmp[577495](397150 call isTrue tmp[397149]))
+    (508950 'move' tmp[508945](508948 call _cond_test call_tmp[577495]))
+    if tmp[508945]
+    {
+      (508955 'move' tmp[508944](508952 '_paramFoldLogical' tmp[508945] 1))
+    }
+    {
+      unknown tmp[508957] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[577500] "expr temp" "maybe param" "maybe type" "temp"
+      (577503 'move' call_tmp[577500](83225 call isString eltType[83214]))
+      (508959 'move' tmp[508957](397154 call isTrue call_tmp[577500]))
+      (508964 'move' tmp[508944](508961 '_paramFoldLogical' tmp[508945] tmp[508957]))
+    }
+    unknown call_tmp[577505] "expr temp" "maybe param" "maybe type" "temp"
+    (577508 'move' call_tmp[577505](83296 call _cond_test tmp[508944]))
+    if call_tmp[577505]
+    {
+      (463219 'move' ret[463214](463218 'deref' 1))
+      gotoReturn _end_chpl_sumTypeIsSame[463212] _end_chpl_sumTypeIsSame[463212]
+    }
+    {
+      unknown call_tmp[577510] "expr temp" "maybe param" "maybe type" "temp"
+      (577513 'move' call_tmp[577510](83235 call isDomain eltType[83214]))
+      unknown call_tmp[577515] "expr temp" "maybe param" "maybe type" "temp"
+      (577518 'move' call_tmp[577515](83291 call _cond_test call_tmp[577510]))
+      if call_tmp[577515]
+      {
+        unknown d[83237] "insert auto destroy"
+        (490112 'default init var' d[83237] eltType[83214])
+        unknown call_tmp[577520] "expr temp" "maybe param" "maybe type" "temp"
+        (577523 'move' call_tmp[577520](83244 call isAssociativeDom d[83237]))
+        (463224 'move' ret[463214](463223 'deref' call_tmp[577520]))
+        gotoReturn _end_chpl_sumTypeIsSame[463212] _end_chpl_sumTypeIsSame[463212]
+      }
+      {
+        unknown call_tmp[577525] "expr temp" "maybe param" "maybe type" "temp"
+        (577528 'move' call_tmp[577525](83250 call isArray eltType[83214]))
+        unknown call_tmp[577530] "expr temp" "maybe param" "maybe type" "temp"
+        (577533 'move' call_tmp[577530](83287 call _cond_test call_tmp[577525]))
+        if call_tmp[577530]
+        {
+          unknown arrInstType[83256] "insert auto destroy" "type variable"(83255 'static field type' eltType[83214] "_instance")
+          (490117 'move' arrInstType[83256](490114 'static field type' eltType[83214] "_instance"))
+          unknown instanceObj[83262] "insert auto destroy"
+          unknown call_tmp[577535] "expr temp" "maybe param" "maybe type" "temp"
+          (577538 'move' call_tmp[577535](83261 'to nilable class from type' arrInstType[83256]))
+          (490119 'default init var' instanceObj[83262] call_tmp[577535])
+          unknown call_tmp[577540] "expr temp" "maybe param" "maybe type" "temp"
+          (577543 'move' call_tmp[577540](83268 call postfix! instanceObj[83262]))
+          unknown call_tmp[577547] "expr temp" "maybe param" "maybe type" "temp"
+          (577550 'move' call_tmp[577547](83270 call eltType _mt[232] call_tmp[577540]))
+          unknown instanceEltType[83274] "insert auto destroy" "type variable"(83273 'static typeof' call_tmp[577547])
+          unknown call_tmp[577552] "expr temp" "maybe param" "maybe type" "temp"
+          (577555 'move' call_tmp[577552](490125 call postfix! instanceObj[83262]))
+          unknown call_tmp[577559] "expr temp" "maybe param" "maybe type" "temp"
+          (577562 'move' call_tmp[577559](490123 call eltType _mt[232] call_tmp[577552]))
+          (490128 'move' instanceEltType[83274](490121 'static typeof' call_tmp[577559]))
+          unknown call_tmp[577564] "expr temp" "maybe param" "maybe type" "temp"
+          (577567 'move' call_tmp[577564](83280 call chpl_sumTypeIsSame instanceEltType[83274]))
+          (463229 'move' ret[463214](463228 'deref' call_tmp[577564]))
+          gotoReturn _end_chpl_sumTypeIsSame[463212] _end_chpl_sumTypeIsSame[463212]
+        }
+        {
+          (463234 'move' ret[463214](463233 'deref' 0))
+          gotoReturn _end_chpl_sumTypeIsSame[463212] _end_chpl_sumTypeIsSame[463212]
+        }
+      }
+    }
+    label _end_chpl_sumTypeIsSame[463212]
+    (463216 return ret[463214])
+  }
+  function chpl__sumType[83308](arg eltType[83306]:_any[170](?)) type : _unknown[43]
+  {
+    unknown ret[463240] "RVV" "temp" "type variable"
+    unknown call_tmp[577569] "expr temp" "maybe param" "maybe type" "temp"
+    (577572 'move' call_tmp[577569](83313 call chpl_sumTypeIsSame eltType[83306]))
+    unknown call_tmp[577574] "expr temp" "maybe param" "maybe type" "temp"
+    (577577 'move' call_tmp[577574](83418 call _cond_test call_tmp[577569]))
+    if call_tmp[577574]
+    {
+      (463245 'move' ret[463240](463244 'deref' eltType[83306]))
+      gotoReturn _end_chpl__sumType[463238] _end_chpl__sumType[463238]
+    }
+    {
+      unknown x[83319] "insert auto destroy"
+      (490130 'default init var' x[83319] eltType[83306])
+      unknown call_tmp[577579] "expr temp" "maybe param" "maybe type" "temp"
+      (577582 'move' call_tmp[577579](83326 call isArray x[83319]))
+      unknown call_tmp[577584] "expr temp" "maybe param" "maybe type" "temp"
+      (577587 'move' call_tmp[577584](83414 call _cond_test call_tmp[577579]))
+      if call_tmp[577584]
+      {
+        unknown xET[83331] "insert auto destroy" "type variable"(83328 call eltType _mt[232] x[83319])
+        (490136 'move' xET[83331](490133 call eltType _mt[232] x[83319]))
+        unknown xST[83339] "insert auto destroy" "type variable"(83338 call chpl__sumType xET[83331])
+        (490141 'move' xST[83339](490139 call chpl__sumType xET[83331]))
+        unknown call_tmp[577593] "expr temp" "maybe param" "maybe type" "temp"
+        (577596 'move' call_tmp[577593](83344 call == xET[83331] xST[83339]))
+        unknown call_tmp[577598] "expr temp" "maybe param" "maybe type" "temp"
+        (577601 'move' call_tmp[577598](83359 call _cond_test call_tmp[577593]))
+        if call_tmp[577598]
+        {
+          (463250 'move' ret[463240](463249 'deref' eltType[83306]))
+          gotoReturn _end_chpl__sumType[463238] _end_chpl__sumType[463238]
+        }
+        {
+          function chpl__loopexpr_iter3[529510](?)(arg iterator[529512]:_any[170](?)) : _unknown[43] "generic" "iterator fn"
+          {
+            unknown ret[529645] "RVV" "temp"
+            {
+              unknown _indexOfInterest[529517] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[529518] "expr temp" "temp"
+              (529527 'move' _iterator[529518](529525 call _getIterator iterator[529512]))
+              Defer
+              {
+                {
+                  (529544 call _freeIterator _iterator[529518])
+                }
+              }
+              { scopeless type
+                (529532 'move' _indexOfInterest[529517](529529 call iteratorIndex _iterator[529518]))
+              }
+              ForLoop
+              {
+                unknown chpl__elidedIdx[529537] "index var" "insert auto destroy"
+                (529539 'move' chpl__elidedIdx[529537] _indexOfInterest[529517])
+                {
+                  {
+                    unknown yret[529649] "YVV" "temp"
+                    (529652 'move' yret[529649](529651 'deref' xST[83339]))
+                    (529654 yield yret[529649])
+                  }
+                }
+                label _continueLabel[529522]
+                _indexOfInterest[529517]
+                _iterator[529518]
+              }
+              label _breakLabel[529523]
+            }
+            (529647 return ret[529645])
+          }
+          function chpl__loopexpr_iter3[529551](?)(param arg tag[529555]:iterKind[697], arg iterator[529558]:_any[170](?)) : _unknown[43] "generic" "fn returns iterator"
+          {
+            unknown ret[529680] "RVV" "temp"
+            const _leaderIterator[529570] "const" "expr temp" "temp"
+            (529575 'move' _leaderIterator[529570](529572 call _toLeader iterator[529558]))
+            (529685 'move' ret[529680](529684 'deref' _leaderIterator[529570]))
+            (529682 return ret[529680])
+          }
+          where {
+            unknown tmp[529657] "maybe param" "temp"
+            (529668 'move' tmp[529657](529560 call == tag[529555] leader[691]))
+            unknown call_tmp[529714] "expr temp" "maybe param" "maybe type" "temp"
+            (529717 'move' call_tmp[529714](529670 call _cond_invalid tmp[529657]))
+            if call_tmp[529714]
+            {
+              (529673 call compilerError "cannot promote short-circuiting && operator")
+            }
+            unknown tmp[529687] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+            unknown tmp[529688] "maybe param" "temp"
+            unknown call_tmp[529719] "expr temp" "maybe param" "maybe type" "temp"
+            (529722 'move' call_tmp[529719](529658 call isTrue tmp[529657]))
+            (529693 'move' tmp[529688](529691 call _cond_test call_tmp[529719]))
+            if tmp[529688]
+            {
+              unknown tmp[529695] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+              unknown call_tmp[529724] "expr temp" "maybe param" "maybe type" "temp"
+              (529727 'move' call_tmp[529724](529564 'call resolves' "_toLeader" iterator[529558]))
+              (529697 'move' tmp[529695](529661 call isTrue call_tmp[529724]))
+              (529702 'move' tmp[529687](529699 '_paramFoldLogical' tmp[529688] tmp[529695]))
+            }
+            {
+              (529707 'move' tmp[529687](529704 '_paramFoldLogical' tmp[529688] 0))
+            }
+            (692031 call _statementLevelSymbol tmp[529687])
+          }
+          function chpl__loopexpr_iter3[529579](?)(param arg tag[529583]:iterKind[697], arg followThis[529586]:_any[170](?), arg iterator[529588]:_any[170](?)) : _unknown[43] "generic" "iterator fn"
+          {
+            unknown ret[529732] "RVV" "temp"
+            const _followerIterator[529595] "const" "expr temp" "temp"
+            (529601 'move' _followerIterator[529595](529597 call _toFollower iterator[529588] followThis[529586]))
+            {
+              unknown _indexOfInterest[529608] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[529609] "expr temp" "temp"
+              (529618 'move' _iterator[529609](529616 call _getIterator _followerIterator[529595]))
+              Defer
+              {
+                {
+                  (529635 call _freeIterator _iterator[529609])
+                }
+              }
+              { scopeless type
+                (529623 'move' _indexOfInterest[529608](529620 call iteratorIndex _iterator[529609]))
+              }
+              ForLoop
+              {
+                unknown chpl__elidedIdx[529628] "index var" "insert auto destroy"
+                (529630 'move' chpl__elidedIdx[529628] _indexOfInterest[529608])
+                {
+                  {
+                    unknown yret[529736] "YVV" "temp"
+                    (529739 'move' yret[529736](529738 'deref' xST[83339]))
+                    (529741 yield yret[529736])
+                  }
+                }
+                label _continueLabel[529613]
+                _indexOfInterest[529608]
+                _iterator[529609]
+              }
+              label _breakLabel[529614]
+            }
+            (529734 return ret[529732])
+          }
+          where {
+            (529591 call == tag[529583] follower[693])
+          }
+          function chpl__forallexpr3[529423](?)(arg iterExpr[529426]:_any[170](?)) : _unknown[43] "compiler generated" "compiler nested function" "generic" "maybe array type" "maybe type" "fn returns iterator"
+          {
+            unknown ret[529747] "RVV" "maybe type" "temp"
+            function _isArrayTypeFn[529432]() : _unknown[43] "inline"
+            {
+              unknown _iterator[529437] "temp"
+              (529442 'move' _iterator[529437](529439 call _getIterator iterExpr[529426]))
+              unknown _indexOfInterest[529444] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              (529449 'move' _indexOfInterest[529444](529446 call iteratorIndex _iterator[529437]))
+              unknown chpl__elidedIdx[529455] "index var" "insert auto destroy"
+              (529457 'move' chpl__elidedIdx[529455] _indexOfInterest[529444])
+              unknown isType_result[529459] "param" "temp"
+              {
+                (529465 'move' isType_result[529459](529463 call isType xST[83339]))
+              }
+              if isType_result[529459]
+              {
+                (529468 'move' _isArrayType[529435] 1)
+              }
+              {
+                (529471 'move' _isArrayType[529435] 0)
+              }
+              (529743 return _void[47])
+            }
+            unknown _isArrayType[529435] "maybe param" "temp"
+            { scopeless type
+              (529478 call _isArrayTypeFn[529432])
+            }
+            if _isArrayType[529435]
+            {
+              unknown _arrayType[529480] "expr temp" "maybe type" "temp"
+              unknown _domain[529483] "expr temp" "no auto destroy" "temp"
+              (529488 'move' _domain[529483](529485 call chpl__ensureDomainExpr iterExpr[529426]))
+              {
+                (529495 'move' _arrayType[529480](529492 call chpl__buildArrayRuntimeType _domain[529483] xST[83339]))
+              }
+              (529752 'move' ret[529747](529751 'deref' _arrayType[529480]))
+              gotoReturn _end_chpl__forallexpr3[529745] _end_chpl__forallexpr3[529745]
+            }
+            {
+              unknown _iterator[529501] "expr temp" "maybe ref" "temp"
+              (529503 'move' _iterator[529501] iterExpr[529426])
+              unknown call_tmp[529761] "expr temp" "maybe param" "maybe type" "temp"
+              (529764 'move' call_tmp[529761](529506 call chpl__loopexpr_iter3 _iterator[529501]))
+              (529757 'move' ret[529747](529756 'deref' call_tmp[529761]))
+              gotoReturn _end_chpl__forallexpr3[529745] _end_chpl__forallexpr3[529745]
+            }
+            label _end_chpl__forallexpr3[529745]
+            (529749 return ret[529747])
+          }
+          unknown call_tmp[529768] "expr temp" "maybe param" "maybe type" "temp"
+          (529771 'move' call_tmp[529768](83350 call _dom _mt[232] x[83319]))
+          unknown call_tmp[529773] "expr temp" "maybe param" "maybe type" "temp"
+          (529776 'move' call_tmp[529773](529428 call chpl__forallexpr3 call_tmp[529768]))
+          (529780 'iterator record set shape' call_tmp[529773] call_tmp[529768] 0)
+          (463255 'move' ret[463240](463254 'deref' call_tmp[529773]))
+          gotoReturn _end_chpl__sumType[463238] _end_chpl__sumType[463238]
+        }
+      }
+      {
+        unknown call_tmp[577603] "expr temp" "maybe param" "maybe type" "temp"
+        (577606 'move' call_tmp[577603](83375 call canResolve "+" x[83319] x[83319]))
+        unknown call_tmp[577608] "expr temp" "maybe param" "maybe type" "temp"
+        (577611 'move' call_tmp[577608](83376 call ! call_tmp[577603]))
+        unknown call_tmp[577613] "expr temp" "maybe param" "maybe type" "temp"
+        (577616 'move' call_tmp[577613](83402 call _cond_test call_tmp[577608]))
+        if call_tmp[577613]
+        {
+          unknown call_tmp[577618] "expr temp" "maybe param" "maybe type" "temp"
+          (577621 'move' call_tmp[577618](83398 call _cast string[24] eltType[83306]))
+          (83400 call compilerError "+ reduce cannot be used on values of the type " call_tmp[577618])
+        }
+        { scopeless type
+          unknown call_type_tmp[443149] "expr temp" "maybe type" "temp" "type variable"
+          unknown call_tmp[577623] "expr temp" "maybe param" "maybe type" "temp"
+          (577626 'move' call_tmp[577623](83409 call + x[83319] x[83319]))
+          (443153 'move' call_type_tmp[443149](83411 'typeof' call_tmp[577623]))
+        }
+        (463260 'move' ret[463240](463259 'deref' call_type_tmp[443149]))
+        gotoReturn _end_chpl__sumType[463238] _end_chpl__sumType[463238]
+        (329345 'used modules list'(83367 'use' Reflection[211223]))
+      }
+    }
+    label _end_chpl__sumType[463238]
+    (463242 return ret[463240])
+  }
+  type ReduceScanOp[83431] val super[330965]:object[253] "super class" val l[83427]:chpl_LocalSpinlock[180469] chpl_LocalSpinlock[180469]
+  function SumReduceScanOp[83540](?).identity[83449](arg _mt[83544]:_MT[227], arg this[83542]:SumReduceScanOp[83540](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    unknown ret[463266] "RVV" "temp"
+    unknown x[83455] "insert auto destroy"
+    unknown call_tmp[577630] "expr temp" "maybe param" "maybe type" "temp"
+    (577633 'move' call_tmp[577630](344069 call eltType _mt[232] this[83542]))
+    unknown call_tmp[577635] "expr temp" "maybe param" "maybe type" "temp"
+    (577638 'move' call_tmp[577635](83454 call chpl__sumType call_tmp[577630]))
+    (490143 'default init var' x[83455] call_tmp[577635])
+    (463271 'move' ret[463266](463270 'deref' x[83455]))
+    (463268 return ret[463266])
+  }
+  function SumReduceScanOp[83540](?).accumulate[83468](arg _mt[83548]:_MT[227], arg this[83546]:SumReduceScanOp[83540](?), arg x[83466]:_any[170](?)) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577642] "expr temp" "maybe param" "maybe type" "temp"
+    (577645 'move' call_tmp[577642](344075 call value _mt[232] this[83546]))
+    (83472 call += call_tmp[577642] x[83466])
+    (463273 return _void[47])
+  }
+  function SumReduceScanOp[83540](?).accumulateOntoState[83482](arg _mt[83552]:_MT[227], arg this[83550]:SumReduceScanOp[83540](?), ref arg state[83480]:_any[170](?), arg x[83484]:_any[170](?)) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    (83488 call += state[83480] x[83484])
+    (463275 return _void[47])
+  }
+  function SumReduceScanOp[83540](?).combine[83498](arg _mt[83556]:_MT[227], arg this[83554]:SumReduceScanOp[83540](?), arg x[83496]:_any[170](?)) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577649] "expr temp" "maybe param" "maybe type" "temp"
+    (577652 'move' call_tmp[577649](344083 call value _mt[232] this[83554]))
+    unknown call_tmp[577656] "expr temp" "maybe param" "maybe type" "temp"
+    (577659 'move' call_tmp[577656](83504 call value _mt[232] x[83496]))
+    (83507 call += call_tmp[577649] call_tmp[577656])
+    (463277 return _void[47])
+  }
+  function SumReduceScanOp[83540](?).generate[83515](arg _mt[83560]:_MT[227], arg this[83558]:SumReduceScanOp[83540](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[463281] "RVV" "temp"
+    unknown call_tmp[577663] "expr temp" "maybe param" "maybe type" "temp"
+    (577666 'move' call_tmp[577663](344089 call value _mt[232] this[83558]))
+    (463286 'move' ret[463281](463285 'deref' call_tmp[577663]))
+    (463283 return ret[463281])
+  }
+  function SumReduceScanOp[83540](?).clone[83525](arg _mt[83564]:_MT[227], arg this[83562]:SumReduceScanOp[83540](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[463290] "RVV" "temp"
+    unknown call_tmp[577670] "expr temp" "maybe param" "maybe type" "temp"
+    (577673 'move' call_tmp[577670](344098 call eltType _mt[232] this[83562]))
+    unknown call_tmp[577675] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (577678 'move' call_tmp[577675](691360 'new' anymanaged SumReduceScanOp[344093](?)(eltType = call_tmp[577670])(_chpl_manager = unmanaged[209](?))))
+    (463295 'move' ret[463290](463294 'deref' call_tmp[577675]))
+    (463292 return ret[463290])
+  }
+  type SumReduceScanOp[83540](?) val super[330967]:ReduceScanOp[83431] "super class" unknown eltType[83437] "type variable" unknown value[83444](83443 call chpl__sumType eltType[83437])
+  type anymanaged SumReduceScanOp[344093](?)
+  function ProductReduceScanOp[83667](?).identity[83582](arg _mt[83671]:_MT[227], arg this[83669]:ProductReduceScanOp[83667](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463299] "RVV" "temp"
+    unknown call_tmp[577682] "expr temp" "maybe param" "maybe type" "temp"
+    (577685 'move' call_tmp[577682](344104 call eltType _mt[232] this[83669]))
+    unknown call_tmp[577687] "expr temp" "maybe param" "maybe type" "temp"
+    (577690 'move' call_tmp[577687](83587 call _prod_id call_tmp[577682]))
+    (463304 'move' ret[463299](463303 'deref' call_tmp[577687]))
+    (463301 return ret[463299])
+  }
+  function ProductReduceScanOp[83667](?).accumulate[83597](arg _mt[83675]:_MT[227], arg this[83673]:ProductReduceScanOp[83667](?), arg x[83595]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577694] "expr temp" "maybe param" "maybe type" "temp"
+    (577697 'move' call_tmp[577694](344109 call value _mt[232] this[83673]))
+    (83601 call *= call_tmp[577694] x[83595])
+    (463306 return _void[47])
+  }
+  function ProductReduceScanOp[83667](?).accumulateOntoState[83611](arg _mt[83679]:_MT[227], arg this[83677]:ProductReduceScanOp[83667](?), ref arg state[83609]:_any[170](?), arg x[83613]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (83617 call *= state[83609] x[83613])
+    (463308 return _void[47])
+  }
+  function ProductReduceScanOp[83667](?).combine[83627](arg _mt[83683]:_MT[227], arg this[83681]:ProductReduceScanOp[83667](?), arg x[83625]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577701] "expr temp" "maybe param" "maybe type" "temp"
+    (577704 'move' call_tmp[577701](344117 call value _mt[232] this[83681]))
+    unknown call_tmp[577708] "expr temp" "maybe param" "maybe type" "temp"
+    (577711 'move' call_tmp[577708](83631 call value _mt[232] x[83625]))
+    (83634 call *= call_tmp[577701] call_tmp[577708])
+    (463310 return _void[47])
+  }
+  function ProductReduceScanOp[83667](?).generate[83642](arg _mt[83687]:_MT[227], arg this[83685]:ProductReduceScanOp[83667](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463314] "RVV" "temp"
+    unknown call_tmp[577715] "expr temp" "maybe param" "maybe type" "temp"
+    (577718 'move' call_tmp[577715](344123 call value _mt[232] this[83685]))
+    (463319 'move' ret[463314](463318 'deref' call_tmp[577715]))
+    (463316 return ret[463314])
+  }
+  function ProductReduceScanOp[83667](?).clone[83652](arg _mt[83691]:_MT[227], arg this[83689]:ProductReduceScanOp[83667](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463323] "RVV" "temp"
+    unknown call_tmp[577722] "expr temp" "maybe param" "maybe type" "temp"
+    (577725 'move' call_tmp[577722](344132 call eltType _mt[232] this[83689]))
+    unknown call_tmp[577727] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (577730 'move' call_tmp[577727](691361 'new' anymanaged ProductReduceScanOp[344127](?)(eltType = call_tmp[577722])(_chpl_manager = unmanaged[209](?))))
+    (463328 'move' ret[463323](463327 'deref' call_tmp[577727]))
+    (463325 return ret[463323])
+  }
+  type ProductReduceScanOp[83667](?) val super[330969]:ReduceScanOp[83431] "super class" unknown eltType[83570] "type variable" unknown value[83577](83576 call _prod_id eltType[83570])
+  type anymanaged ProductReduceScanOp[344127](?)
+  function MaxReduceScanOp[83806](?).identity[83709](arg _mt[83810]:_MT[227], arg this[83808]:MaxReduceScanOp[83806](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463332] "RVV" "temp"
+    unknown call_tmp[577734] "expr temp" "maybe param" "maybe type" "temp"
+    (577737 'move' call_tmp[577734](344138 call eltType _mt[232] this[83808]))
+    unknown call_tmp[577739] "expr temp" "maybe param" "maybe type" "temp"
+    (577742 'move' call_tmp[577739](83714 call min call_tmp[577734]))
+    (463337 'move' ret[463332](463336 'deref' call_tmp[577739]))
+    (463334 return ret[463332])
+  }
+  function MaxReduceScanOp[83806](?).accumulate[83724](arg _mt[83814]:_MT[227], arg this[83812]:MaxReduceScanOp[83806](?), arg x[83722]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577746] "expr temp" "maybe param" "maybe type" "temp"
+    (577749 'move' call_tmp[577746](344143 call value _mt[232] this[83812]))
+    unknown call_tmp[577753] "expr temp" "maybe param" "maybe type" "temp"
+    (577756 'move' call_tmp[577753](344149 call value _mt[232] this[83812]))
+    unknown call_tmp[577758] "expr temp" "maybe param" "maybe type" "temp"
+    (577761 'move' call_tmp[577758](83731 call max x[83722] call_tmp[577753]))
+    (83732 call = call_tmp[577746] call_tmp[577758])
+    (463339 return _void[47])
+  }
+  function MaxReduceScanOp[83806](?).accumulateOntoState[83742](arg _mt[83818]:_MT[227], arg this[83816]:MaxReduceScanOp[83806](?), ref arg state[83740]:_any[170](?), arg x[83744]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577763] "expr temp" "maybe param" "maybe type" "temp"
+    (577766 'move' call_tmp[577763](83751 call max state[83740] x[83744]))
+    (83752 call = state[83740] call_tmp[577763])
+    (463341 return _void[47])
+  }
+  function MaxReduceScanOp[83806](?).combine[83762](arg _mt[83822]:_MT[227], arg this[83820]:MaxReduceScanOp[83806](?), arg x[83760]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577770] "expr temp" "maybe param" "maybe type" "temp"
+    (577773 'move' call_tmp[577770](344157 call value _mt[232] this[83820]))
+    unknown call_tmp[577777] "expr temp" "maybe param" "maybe type" "temp"
+    (577780 'move' call_tmp[577777](344162 call value _mt[232] this[83820]))
+    unknown call_tmp[577784] "expr temp" "maybe param" "maybe type" "temp"
+    (577787 'move' call_tmp[577784](83769 call value _mt[232] x[83760]))
+    unknown call_tmp[577789] "expr temp" "maybe param" "maybe type" "temp"
+    (577792 'move' call_tmp[577789](83772 call max call_tmp[577777] call_tmp[577784]))
+    (83773 call = call_tmp[577770] call_tmp[577789])
+    (463343 return _void[47])
+  }
+  function MaxReduceScanOp[83806](?).generate[83781](arg _mt[83826]:_MT[227], arg this[83824]:MaxReduceScanOp[83806](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463347] "RVV" "temp"
+    unknown call_tmp[577796] "expr temp" "maybe param" "maybe type" "temp"
+    (577799 'move' call_tmp[577796](344168 call value _mt[232] this[83824]))
+    (463352 'move' ret[463347](463351 'deref' call_tmp[577796]))
+    (463349 return ret[463347])
+  }
+  function MaxReduceScanOp[83806](?).clone[83791](arg _mt[83830]:_MT[227], arg this[83828]:MaxReduceScanOp[83806](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463356] "RVV" "temp"
+    unknown call_tmp[577803] "expr temp" "maybe param" "maybe type" "temp"
+    (577806 'move' call_tmp[577803](344177 call eltType _mt[232] this[83828]))
+    unknown call_tmp[577808] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (577811 'move' call_tmp[577808](691362 'new' anymanaged MaxReduceScanOp[344172](?)(eltType = call_tmp[577803])(_chpl_manager = unmanaged[209](?))))
+    (463361 'move' ret[463356](463360 'deref' call_tmp[577808]))
+    (463358 return ret[463356])
+  }
+  type MaxReduceScanOp[83806](?) val super[330971]:ReduceScanOp[83431] "super class" unknown eltType[83697] "type variable" unknown value[83704](83703 call min eltType[83697])
+  type anymanaged MaxReduceScanOp[344172](?)
+  function MinReduceScanOp[83945](?).identity[83848](arg _mt[83949]:_MT[227], arg this[83947]:MinReduceScanOp[83945](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463365] "RVV" "temp"
+    unknown call_tmp[577815] "expr temp" "maybe param" "maybe type" "temp"
+    (577818 'move' call_tmp[577815](344183 call eltType _mt[232] this[83947]))
+    unknown call_tmp[577820] "expr temp" "maybe param" "maybe type" "temp"
+    (577823 'move' call_tmp[577820](83853 call max call_tmp[577815]))
+    (463370 'move' ret[463365](463369 'deref' call_tmp[577820]))
+    (463367 return ret[463365])
+  }
+  function MinReduceScanOp[83945](?).accumulate[83863](arg _mt[83953]:_MT[227], arg this[83951]:MinReduceScanOp[83945](?), arg x[83861]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577827] "expr temp" "maybe param" "maybe type" "temp"
+    (577830 'move' call_tmp[577827](344188 call value _mt[232] this[83951]))
+    unknown call_tmp[577834] "expr temp" "maybe param" "maybe type" "temp"
+    (577837 'move' call_tmp[577834](344194 call value _mt[232] this[83951]))
+    unknown call_tmp[577839] "expr temp" "maybe param" "maybe type" "temp"
+    (577842 'move' call_tmp[577839](83870 call min x[83861] call_tmp[577834]))
+    (83871 call = call_tmp[577827] call_tmp[577839])
+    (463372 return _void[47])
+  }
+  function MinReduceScanOp[83945](?).accumulateOntoState[83881](arg _mt[83957]:_MT[227], arg this[83955]:MinReduceScanOp[83945](?), ref arg state[83879]:_any[170](?), arg x[83883]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577844] "expr temp" "maybe param" "maybe type" "temp"
+    (577847 'move' call_tmp[577844](83890 call min state[83879] x[83883]))
+    (83891 call = state[83879] call_tmp[577844])
+    (463374 return _void[47])
+  }
+  function MinReduceScanOp[83945](?).combine[83901](arg _mt[83961]:_MT[227], arg this[83959]:MinReduceScanOp[83945](?), arg x[83899]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[577851] "expr temp" "maybe param" "maybe type" "temp"
+    (577854 'move' call_tmp[577851](344202 call value _mt[232] this[83959]))
+    unknown call_tmp[577858] "expr temp" "maybe param" "maybe type" "temp"
+    (577861 'move' call_tmp[577858](344207 call value _mt[232] this[83959]))
+    unknown call_tmp[577865] "expr temp" "maybe param" "maybe type" "temp"
+    (577868 'move' call_tmp[577865](83908 call value _mt[232] x[83899]))
+    unknown call_tmp[577870] "expr temp" "maybe param" "maybe type" "temp"
+    (577873 'move' call_tmp[577870](83911 call min call_tmp[577858] call_tmp[577865]))
+    (83912 call = call_tmp[577851] call_tmp[577870])
+    (463376 return _void[47])
+  }
+  function MinReduceScanOp[83945](?).generate[83920](arg _mt[83965]:_MT[227], arg this[83963]:MinReduceScanOp[83945](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463380] "RVV" "temp"
+    unknown call_tmp[577877] "expr temp" "maybe param" "maybe type" "temp"
+    (577880 'move' call_tmp[577877](344213 call value _mt[232] this[83963]))
+    (463385 'move' ret[463380](463384 'deref' call_tmp[577877]))
+    (463382 return ret[463380])
+  }
+  function MinReduceScanOp[83945](?).clone[83930](arg _mt[83969]:_MT[227], arg this[83967]:MinReduceScanOp[83945](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463389] "RVV" "temp"
+    unknown call_tmp[577884] "expr temp" "maybe param" "maybe type" "temp"
+    (577887 'move' call_tmp[577884](344222 call eltType _mt[232] this[83967]))
+    unknown call_tmp[577889] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (577892 'move' call_tmp[577889](691363 'new' anymanaged MinReduceScanOp[344217](?)(eltType = call_tmp[577884])(_chpl_manager = unmanaged[209](?))))
+    (463394 'move' ret[463389](463393 'deref' call_tmp[577889]))
+    (463391 return ret[463389])
+  }
+  type MinReduceScanOp[83945](?) val super[330973]:ReduceScanOp[83431] "super class" unknown eltType[83836] "type variable" unknown value[83843](83842 call max eltType[83836])
+  type anymanaged MinReduceScanOp[344217](?)
+  function LogicalAndReduceScanOp[84099](?).identity[83987](arg _mt[84103]:_MT[227], arg this[84101]:LogicalAndReduceScanOp[84099](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463398] "RVV" "temp"
+    unknown call_tmp[577896] "expr temp" "maybe param" "maybe type" "temp"
+    (577899 'move' call_tmp[577896](344228 call eltType _mt[232] this[84101]))
+    unknown call_tmp[577901] "expr temp" "maybe param" "maybe type" "temp"
+    (577904 'move' call_tmp[577901](83992 call _land_id call_tmp[577896]))
+    (463403 'move' ret[463398](463402 'deref' call_tmp[577901]))
+    (463400 return ret[463398])
+  }
+  function LogicalAndReduceScanOp[84099](?).accumulate[84002](arg _mt[84107]:_MT[227], arg this[84105]:LogicalAndReduceScanOp[84099](?), arg x[84000]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown tmp[84007] "temp"
+      unknown call_tmp[577908] "expr temp" "maybe param" "maybe type" "temp"
+      (577911 'move' call_tmp[577908](344233 call value _mt[232] this[84105]))
+      (84010 'move' tmp[84007](84009 'addr of' call_tmp[577908]))
+      unknown tmp[397170] "maybe param" "temp"
+      (397181 'move' tmp[397170] tmp[84007])
+      unknown call_tmp[577913] "expr temp" "maybe param" "maybe type" "temp"
+      (577916 'move' call_tmp[577913](397183 call _cond_invalid tmp[397170]))
+      if call_tmp[577913]
+      {
+        (397186 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[508971] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[508972] "maybe param" "temp"
+      unknown call_tmp[577918] "expr temp" "maybe param" "maybe type" "temp"
+      (577921 'move' call_tmp[577918](397171 call isTrue tmp[397170]))
+      (508977 'move' tmp[508972](508975 call _cond_test call_tmp[577918]))
+      if tmp[508972]
+      {
+        unknown tmp[508979] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        (508981 'move' tmp[508979](397174 call isTrue x[84000]))
+        (508986 'move' tmp[508971](508983 '_paramFoldLogical' tmp[508972] tmp[508979]))
+      }
+      {
+        (508991 'move' tmp[508971](508988 '_paramFoldLogical' tmp[508972] 0))
+      }
+      (84015 call = tmp[84007] tmp[508971])
+    }
+    (463405 return _void[47])
+  }
+  function LogicalAndReduceScanOp[84099](?).accumulateOntoState[84025](arg _mt[84111]:_MT[227], arg this[84109]:LogicalAndReduceScanOp[84099](?), ref arg state[84023]:_any[170](?), arg x[84027]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown tmp[84032] "temp"
+      (84035 'move' tmp[84032](84034 'addr of' state[84023]))
+      unknown tmp[397191] "maybe param" "temp"
+      (397202 'move' tmp[397191] tmp[84032])
+      unknown call_tmp[577923] "expr temp" "maybe param" "maybe type" "temp"
+      (577926 'move' call_tmp[577923](397204 call _cond_invalid tmp[397191]))
+      if call_tmp[577923]
+      {
+        (397207 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[508998] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[508999] "maybe param" "temp"
+      unknown call_tmp[577928] "expr temp" "maybe param" "maybe type" "temp"
+      (577931 'move' call_tmp[577928](397192 call isTrue tmp[397191]))
+      (509004 'move' tmp[508999](509002 call _cond_test call_tmp[577928]))
+      if tmp[508999]
+      {
+        unknown tmp[509006] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        (509008 'move' tmp[509006](397195 call isTrue x[84027]))
+        (509013 'move' tmp[508998](509010 '_paramFoldLogical' tmp[508999] tmp[509006]))
+      }
+      {
+        (509018 'move' tmp[508998](509015 '_paramFoldLogical' tmp[508999] 0))
+      }
+      (84040 call = tmp[84032] tmp[508998])
+    }
+    (463407 return _void[47])
+  }
+  function LogicalAndReduceScanOp[84099](?).combine[84050](arg _mt[84115]:_MT[227], arg this[84113]:LogicalAndReduceScanOp[84099](?), arg x[84048]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown tmp[84058] "temp"
+      unknown call_tmp[577935] "expr temp" "maybe param" "maybe type" "temp"
+      (577938 'move' call_tmp[577935](344241 call value _mt[232] this[84113]))
+      (84061 'move' tmp[84058](84060 'addr of' call_tmp[577935]))
+      unknown tmp[397212] "maybe param" "temp"
+      (397223 'move' tmp[397212] tmp[84058])
+      unknown call_tmp[577940] "expr temp" "maybe param" "maybe type" "temp"
+      (577943 'move' call_tmp[577940](397225 call _cond_invalid tmp[397212]))
+      if call_tmp[577940]
+      {
+        (397228 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[509025] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509026] "maybe param" "temp"
+      unknown call_tmp[577945] "expr temp" "maybe param" "maybe type" "temp"
+      (577948 'move' call_tmp[577945](397213 call isTrue tmp[397212]))
+      (509031 'move' tmp[509026](509029 call _cond_test call_tmp[577945]))
+      if tmp[509026]
+      {
+        unknown tmp[509033] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[577952] "expr temp" "maybe param" "maybe type" "temp"
+        (577955 'move' call_tmp[577952](84054 call value _mt[232] x[84048]))
+        (509035 'move' tmp[509033](397216 call isTrue call_tmp[577952]))
+        (509040 'move' tmp[509025](509037 '_paramFoldLogical' tmp[509026] tmp[509033]))
+      }
+      {
+        (509045 'move' tmp[509025](509042 '_paramFoldLogical' tmp[509026] 0))
+      }
+      (84066 call = tmp[84058] tmp[509025])
+    }
+    (463409 return _void[47])
+  }
+  function LogicalAndReduceScanOp[84099](?).generate[84074](arg _mt[84119]:_MT[227], arg this[84117]:LogicalAndReduceScanOp[84099](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463413] "RVV" "temp"
+    unknown call_tmp[577959] "expr temp" "maybe param" "maybe type" "temp"
+    (577962 'move' call_tmp[577959](344247 call value _mt[232] this[84117]))
+    (463418 'move' ret[463413](463417 'deref' call_tmp[577959]))
+    (463415 return ret[463413])
+  }
+  function LogicalAndReduceScanOp[84099](?).clone[84084](arg _mt[84123]:_MT[227], arg this[84121]:LogicalAndReduceScanOp[84099](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463422] "RVV" "temp"
+    unknown call_tmp[577966] "expr temp" "maybe param" "maybe type" "temp"
+    (577969 'move' call_tmp[577966](344256 call eltType _mt[232] this[84121]))
+    unknown call_tmp[577971] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (577974 'move' call_tmp[577971](691364 'new' anymanaged LogicalAndReduceScanOp[344251](?)(eltType = call_tmp[577966])(_chpl_manager = unmanaged[209](?))))
+    (463427 'move' ret[463422](463426 'deref' call_tmp[577971]))
+    (463424 return ret[463422])
+  }
+  type LogicalAndReduceScanOp[84099](?) val super[330975]:ReduceScanOp[83431] "super class" unknown eltType[83975] "type variable" unknown value[83982](83981 call _land_id eltType[83975])
+  type anymanaged LogicalAndReduceScanOp[344251](?)
+  function LogicalOrReduceScanOp[84253](?).identity[84141](arg _mt[84257]:_MT[227], arg this[84255]:LogicalOrReduceScanOp[84253](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463431] "RVV" "temp"
+    unknown call_tmp[577978] "expr temp" "maybe param" "maybe type" "temp"
+    (577981 'move' call_tmp[577978](344262 call eltType _mt[232] this[84255]))
+    unknown call_tmp[577983] "expr temp" "maybe param" "maybe type" "temp"
+    (577986 'move' call_tmp[577983](84146 call _lor_id call_tmp[577978]))
+    (463436 'move' ret[463431](463435 'deref' call_tmp[577983]))
+    (463433 return ret[463431])
+  }
+  function LogicalOrReduceScanOp[84253](?).accumulate[84156](arg _mt[84261]:_MT[227], arg this[84259]:LogicalOrReduceScanOp[84253](?), arg x[84154]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown tmp[84161] "temp"
+      unknown call_tmp[577990] "expr temp" "maybe param" "maybe type" "temp"
+      (577993 'move' call_tmp[577990](344267 call value _mt[232] this[84259]))
+      (84164 'move' tmp[84161](84163 'addr of' call_tmp[577990]))
+      unknown tmp[397233] "maybe param" "temp"
+      (397244 'move' tmp[397233] tmp[84161])
+      unknown call_tmp[577995] "expr temp" "maybe param" "maybe type" "temp"
+      (577998 'move' call_tmp[577995](397246 call _cond_invalid tmp[397233]))
+      if call_tmp[577995]
+      {
+        (397249 call compilerError "cannot promote short-circuiting || operator")
+      }
+      unknown tmp[509052] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509053] "maybe param" "temp"
+      unknown call_tmp[578000] "expr temp" "maybe param" "maybe type" "temp"
+      (578003 'move' call_tmp[578000](397234 call isTrue tmp[397233]))
+      (509058 'move' tmp[509053](509056 call _cond_test call_tmp[578000]))
+      if tmp[509053]
+      {
+        (509063 'move' tmp[509052](509060 '_paramFoldLogical' tmp[509053] 1))
+      }
+      {
+        unknown tmp[509065] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        (509067 'move' tmp[509065](397238 call isTrue x[84154]))
+        (509072 'move' tmp[509052](509069 '_paramFoldLogical' tmp[509053] tmp[509065]))
+      }
+      (84169 call = tmp[84161] tmp[509052])
+    }
+    (463438 return _void[47])
+  }
+  function LogicalOrReduceScanOp[84253](?).accumulateOntoState[84179](arg _mt[84265]:_MT[227], arg this[84263]:LogicalOrReduceScanOp[84253](?), ref arg state[84177]:_any[170](?), arg x[84181]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown tmp[84186] "temp"
+      (84189 'move' tmp[84186](84188 'addr of' state[84177]))
+      unknown tmp[397254] "maybe param" "temp"
+      (397265 'move' tmp[397254] tmp[84186])
+      unknown call_tmp[578005] "expr temp" "maybe param" "maybe type" "temp"
+      (578008 'move' call_tmp[578005](397267 call _cond_invalid tmp[397254]))
+      if call_tmp[578005]
+      {
+        (397270 call compilerError "cannot promote short-circuiting || operator")
+      }
+      unknown tmp[509079] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509080] "maybe param" "temp"
+      unknown call_tmp[578010] "expr temp" "maybe param" "maybe type" "temp"
+      (578013 'move' call_tmp[578010](397255 call isTrue tmp[397254]))
+      (509085 'move' tmp[509080](509083 call _cond_test call_tmp[578010]))
+      if tmp[509080]
+      {
+        (509090 'move' tmp[509079](509087 '_paramFoldLogical' tmp[509080] 1))
+      }
+      {
+        unknown tmp[509092] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        (509094 'move' tmp[509092](397259 call isTrue x[84181]))
+        (509099 'move' tmp[509079](509096 '_paramFoldLogical' tmp[509080] tmp[509092]))
+      }
+      (84194 call = tmp[84186] tmp[509079])
+    }
+    (463440 return _void[47])
+  }
+  function LogicalOrReduceScanOp[84253](?).combine[84204](arg _mt[84269]:_MT[227], arg this[84267]:LogicalOrReduceScanOp[84253](?), arg x[84202]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown tmp[84212] "temp"
+      unknown call_tmp[578017] "expr temp" "maybe param" "maybe type" "temp"
+      (578020 'move' call_tmp[578017](344275 call value _mt[232] this[84267]))
+      (84215 'move' tmp[84212](84214 'addr of' call_tmp[578017]))
+      unknown tmp[397275] "maybe param" "temp"
+      (397286 'move' tmp[397275] tmp[84212])
+      unknown call_tmp[578022] "expr temp" "maybe param" "maybe type" "temp"
+      (578025 'move' call_tmp[578022](397288 call _cond_invalid tmp[397275]))
+      if call_tmp[578022]
+      {
+        (397291 call compilerError "cannot promote short-circuiting || operator")
+      }
+      unknown tmp[509106] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509107] "maybe param" "temp"
+      unknown call_tmp[578027] "expr temp" "maybe param" "maybe type" "temp"
+      (578030 'move' call_tmp[578027](397276 call isTrue tmp[397275]))
+      (509112 'move' tmp[509107](509110 call _cond_test call_tmp[578027]))
+      if tmp[509107]
+      {
+        (509117 'move' tmp[509106](509114 '_paramFoldLogical' tmp[509107] 1))
+      }
+      {
+        unknown tmp[509119] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[578034] "expr temp" "maybe param" "maybe type" "temp"
+        (578037 'move' call_tmp[578034](84208 call value _mt[232] x[84202]))
+        (509121 'move' tmp[509119](397280 call isTrue call_tmp[578034]))
+        (509126 'move' tmp[509106](509123 '_paramFoldLogical' tmp[509107] tmp[509119]))
+      }
+      (84220 call = tmp[84212] tmp[509106])
+    }
+    (463442 return _void[47])
+  }
+  function LogicalOrReduceScanOp[84253](?).generate[84228](arg _mt[84273]:_MT[227], arg this[84271]:LogicalOrReduceScanOp[84253](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463446] "RVV" "temp"
+    unknown call_tmp[578041] "expr temp" "maybe param" "maybe type" "temp"
+    (578044 'move' call_tmp[578041](344281 call value _mt[232] this[84271]))
+    (463451 'move' ret[463446](463450 'deref' call_tmp[578041]))
+    (463448 return ret[463446])
+  }
+  function LogicalOrReduceScanOp[84253](?).clone[84238](arg _mt[84277]:_MT[227], arg this[84275]:LogicalOrReduceScanOp[84253](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463455] "RVV" "temp"
+    unknown call_tmp[578048] "expr temp" "maybe param" "maybe type" "temp"
+    (578051 'move' call_tmp[578048](344290 call eltType _mt[232] this[84275]))
+    unknown call_tmp[578053] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (578056 'move' call_tmp[578053](691365 'new' anymanaged LogicalOrReduceScanOp[344285](?)(eltType = call_tmp[578048])(_chpl_manager = unmanaged[209](?))))
+    (463460 'move' ret[463455](463459 'deref' call_tmp[578053]))
+    (463457 return ret[463455])
+  }
+  type LogicalOrReduceScanOp[84253](?) val super[330977]:ReduceScanOp[83431] "super class" unknown eltType[84129] "type variable" unknown value[84136](84135 call _lor_id eltType[84129])
+  type anymanaged LogicalOrReduceScanOp[344285](?)
+  function BitwiseAndReduceScanOp[84380](?).identity[84295](arg _mt[84384]:_MT[227], arg this[84382]:BitwiseAndReduceScanOp[84380](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463464] "RVV" "temp"
+    unknown call_tmp[578060] "expr temp" "maybe param" "maybe type" "temp"
+    (578063 'move' call_tmp[578060](344296 call eltType _mt[232] this[84382]))
+    unknown call_tmp[578065] "expr temp" "maybe param" "maybe type" "temp"
+    (578068 'move' call_tmp[578065](84300 call _band_id call_tmp[578060]))
+    (463469 'move' ret[463464](463468 'deref' call_tmp[578065]))
+    (463466 return ret[463464])
+  }
+  function BitwiseAndReduceScanOp[84380](?).accumulate[84310](arg _mt[84388]:_MT[227], arg this[84386]:BitwiseAndReduceScanOp[84380](?), arg x[84308]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578072] "expr temp" "maybe param" "maybe type" "temp"
+    (578075 'move' call_tmp[578072](344301 call value _mt[232] this[84386]))
+    (84314 call &= call_tmp[578072] x[84308])
+    (463471 return _void[47])
+  }
+  function BitwiseAndReduceScanOp[84380](?).accumulateOntoState[84324](arg _mt[84392]:_MT[227], arg this[84390]:BitwiseAndReduceScanOp[84380](?), ref arg state[84322]:_any[170](?), arg x[84326]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (84330 call &= state[84322] x[84326])
+    (463473 return _void[47])
+  }
+  function BitwiseAndReduceScanOp[84380](?).combine[84340](arg _mt[84396]:_MT[227], arg this[84394]:BitwiseAndReduceScanOp[84380](?), arg x[84338]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578079] "expr temp" "maybe param" "maybe type" "temp"
+    (578082 'move' call_tmp[578079](344309 call value _mt[232] this[84394]))
+    unknown call_tmp[578086] "expr temp" "maybe param" "maybe type" "temp"
+    (578089 'move' call_tmp[578086](84344 call value _mt[232] x[84338]))
+    (84347 call &= call_tmp[578079] call_tmp[578086])
+    (463475 return _void[47])
+  }
+  function BitwiseAndReduceScanOp[84380](?).generate[84355](arg _mt[84400]:_MT[227], arg this[84398]:BitwiseAndReduceScanOp[84380](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463479] "RVV" "temp"
+    unknown call_tmp[578093] "expr temp" "maybe param" "maybe type" "temp"
+    (578096 'move' call_tmp[578093](344315 call value _mt[232] this[84398]))
+    (463484 'move' ret[463479](463483 'deref' call_tmp[578093]))
+    (463481 return ret[463479])
+  }
+  function BitwiseAndReduceScanOp[84380](?).clone[84365](arg _mt[84404]:_MT[227], arg this[84402]:BitwiseAndReduceScanOp[84380](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463488] "RVV" "temp"
+    unknown call_tmp[578100] "expr temp" "maybe param" "maybe type" "temp"
+    (578103 'move' call_tmp[578100](344324 call eltType _mt[232] this[84402]))
+    unknown call_tmp[578105] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (578108 'move' call_tmp[578105](691366 'new' anymanaged BitwiseAndReduceScanOp[344319](?)(eltType = call_tmp[578100])(_chpl_manager = unmanaged[209](?))))
+    (463493 'move' ret[463488](463492 'deref' call_tmp[578105]))
+    (463490 return ret[463488])
+  }
+  type BitwiseAndReduceScanOp[84380](?) val super[330979]:ReduceScanOp[83431] "super class" unknown eltType[84283] "type variable" unknown value[84290](84289 call _band_id eltType[84283])
+  type anymanaged BitwiseAndReduceScanOp[344319](?)
+  function BitwiseOrReduceScanOp[84507](?).identity[84422](arg _mt[84511]:_MT[227], arg this[84509]:BitwiseOrReduceScanOp[84507](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463497] "RVV" "temp"
+    unknown call_tmp[578112] "expr temp" "maybe param" "maybe type" "temp"
+    (578115 'move' call_tmp[578112](344330 call eltType _mt[232] this[84509]))
+    unknown call_tmp[578117] "expr temp" "maybe param" "maybe type" "temp"
+    (578120 'move' call_tmp[578117](84427 call _bor_id call_tmp[578112]))
+    (463502 'move' ret[463497](463501 'deref' call_tmp[578117]))
+    (463499 return ret[463497])
+  }
+  function BitwiseOrReduceScanOp[84507](?).accumulate[84437](arg _mt[84515]:_MT[227], arg this[84513]:BitwiseOrReduceScanOp[84507](?), arg x[84435]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578124] "expr temp" "maybe param" "maybe type" "temp"
+    (578127 'move' call_tmp[578124](344335 call value _mt[232] this[84513]))
+    (84441 call |= call_tmp[578124] x[84435])
+    (463504 return _void[47])
+  }
+  function BitwiseOrReduceScanOp[84507](?).accumulateOntoState[84451](arg _mt[84519]:_MT[227], arg this[84517]:BitwiseOrReduceScanOp[84507](?), ref arg state[84449]:_any[170](?), arg x[84453]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (84457 call |= state[84449] x[84453])
+    (463506 return _void[47])
+  }
+  function BitwiseOrReduceScanOp[84507](?).combine[84467](arg _mt[84523]:_MT[227], arg this[84521]:BitwiseOrReduceScanOp[84507](?), arg x[84465]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578131] "expr temp" "maybe param" "maybe type" "temp"
+    (578134 'move' call_tmp[578131](344343 call value _mt[232] this[84521]))
+    unknown call_tmp[578138] "expr temp" "maybe param" "maybe type" "temp"
+    (578141 'move' call_tmp[578138](84471 call value _mt[232] x[84465]))
+    (84474 call |= call_tmp[578131] call_tmp[578138])
+    (463508 return _void[47])
+  }
+  function BitwiseOrReduceScanOp[84507](?).generate[84482](arg _mt[84527]:_MT[227], arg this[84525]:BitwiseOrReduceScanOp[84507](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463512] "RVV" "temp"
+    unknown call_tmp[578145] "expr temp" "maybe param" "maybe type" "temp"
+    (578148 'move' call_tmp[578145](344349 call value _mt[232] this[84525]))
+    (463517 'move' ret[463512](463516 'deref' call_tmp[578145]))
+    (463514 return ret[463512])
+  }
+  function BitwiseOrReduceScanOp[84507](?).clone[84492](arg _mt[84531]:_MT[227], arg this[84529]:BitwiseOrReduceScanOp[84507](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463521] "RVV" "temp"
+    unknown call_tmp[578152] "expr temp" "maybe param" "maybe type" "temp"
+    (578155 'move' call_tmp[578152](344358 call eltType _mt[232] this[84529]))
+    unknown call_tmp[578157] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (578160 'move' call_tmp[578157](691367 'new' anymanaged BitwiseOrReduceScanOp[344353](?)(eltType = call_tmp[578152])(_chpl_manager = unmanaged[209](?))))
+    (463526 'move' ret[463521](463525 'deref' call_tmp[578157]))
+    (463523 return ret[463521])
+  }
+  type BitwiseOrReduceScanOp[84507](?) val super[330981]:ReduceScanOp[83431] "super class" unknown eltType[84410] "type variable" unknown value[84417](84416 call _bor_id eltType[84410])
+  type anymanaged BitwiseOrReduceScanOp[344353](?)
+  function BitwiseXorReduceScanOp[84634](?).identity[84549](arg _mt[84638]:_MT[227], arg this[84636]:BitwiseXorReduceScanOp[84634](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463530] "RVV" "temp"
+    unknown call_tmp[578164] "expr temp" "maybe param" "maybe type" "temp"
+    (578167 'move' call_tmp[578164](344364 call eltType _mt[232] this[84636]))
+    unknown call_tmp[578169] "expr temp" "maybe param" "maybe type" "temp"
+    (578172 'move' call_tmp[578169](84554 call _bxor_id call_tmp[578164]))
+    (463535 'move' ret[463530](463534 'deref' call_tmp[578169]))
+    (463532 return ret[463530])
+  }
+  function BitwiseXorReduceScanOp[84634](?).accumulate[84564](arg _mt[84642]:_MT[227], arg this[84640]:BitwiseXorReduceScanOp[84634](?), arg x[84562]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578176] "expr temp" "maybe param" "maybe type" "temp"
+    (578179 'move' call_tmp[578176](344369 call value _mt[232] this[84640]))
+    (84568 call ^= call_tmp[578176] x[84562])
+    (463537 return _void[47])
+  }
+  function BitwiseXorReduceScanOp[84634](?).accumulateOntoState[84578](arg _mt[84646]:_MT[227], arg this[84644]:BitwiseXorReduceScanOp[84634](?), ref arg state[84576]:_any[170](?), arg x[84580]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (84584 call ^= state[84576] x[84580])
+    (463539 return _void[47])
+  }
+  function BitwiseXorReduceScanOp[84634](?).combine[84594](arg _mt[84650]:_MT[227], arg this[84648]:BitwiseXorReduceScanOp[84634](?), arg x[84592]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578183] "expr temp" "maybe param" "maybe type" "temp"
+    (578186 'move' call_tmp[578183](344377 call value _mt[232] this[84648]))
+    unknown call_tmp[578190] "expr temp" "maybe param" "maybe type" "temp"
+    (578193 'move' call_tmp[578190](84598 call value _mt[232] x[84592]))
+    (84601 call ^= call_tmp[578183] call_tmp[578190])
+    (463541 return _void[47])
+  }
+  function BitwiseXorReduceScanOp[84634](?).generate[84609](arg _mt[84654]:_MT[227], arg this[84652]:BitwiseXorReduceScanOp[84634](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463545] "RVV" "temp"
+    unknown call_tmp[578197] "expr temp" "maybe param" "maybe type" "temp"
+    (578200 'move' call_tmp[578197](344383 call value _mt[232] this[84652]))
+    (463550 'move' ret[463545](463549 'deref' call_tmp[578197]))
+    (463547 return ret[463545])
+  }
+  function BitwiseXorReduceScanOp[84634](?).clone[84619](arg _mt[84658]:_MT[227], arg this[84656]:BitwiseXorReduceScanOp[84634](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463554] "RVV" "temp"
+    unknown call_tmp[578204] "expr temp" "maybe param" "maybe type" "temp"
+    (578207 'move' call_tmp[578204](344392 call eltType _mt[232] this[84656]))
+    unknown call_tmp[578209] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (578212 'move' call_tmp[578209](691368 'new' anymanaged BitwiseXorReduceScanOp[344387](?)(eltType = call_tmp[578204])(_chpl_manager = unmanaged[209](?))))
+    (463559 'move' ret[463554](463558 'deref' call_tmp[578209]))
+    (463556 return ret[463554])
+  }
+  type BitwiseXorReduceScanOp[84634](?) val super[330983]:ReduceScanOp[83431] "super class" unknown eltType[84537] "type variable" unknown value[84544](84543 call _bxor_id eltType[84537])
+  type anymanaged BitwiseXorReduceScanOp[344387](?)
+  function _maxloc_id[84665](arg eltType[84663]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[463563] "RVV" "temp"
+    unknown call_tmp[578214] "expr temp" "maybe param" "maybe type" "temp"
+    (578217 'move' call_tmp[578214](84671 call eltType[84663] 1))
+    unknown call_tmp[578219] "expr temp" "maybe param" "maybe type" "temp"
+    (578222 'move' call_tmp[578219](84673 call min call_tmp[578214]))
+    unknown call_tmp[578224] "expr temp" "maybe param" "maybe type" "temp"
+    (578227 'move' call_tmp[578224](84678 call eltType[84663] 2))
+    unknown call_tmp[578229] "expr temp" "maybe param" "maybe type" "temp"
+    (578232 'move' call_tmp[578229](84680 call max call_tmp[578224]))
+    unknown call_tmp[578234] "expr temp" "maybe param" "maybe type" "temp"
+    (578237 'move' call_tmp[578234](84682 call _build_tuple call_tmp[578219] call_tmp[578229]))
+    (463568 'move' ret[463563](463567 'deref' call_tmp[578234]))
+    (463565 return ret[463563])
+  }
+  function _minloc_id[84693](arg eltType[84691]:_any[170](?)) : _unknown[43]
+  {
+    unknown ret[463572] "RVV" "temp"
+    unknown call_tmp[578239] "expr temp" "maybe param" "maybe type" "temp"
+    (578242 'move' call_tmp[578239](84698 call max eltType[84691]))
+    (463577 'move' ret[463572](463576 'deref' call_tmp[578239]))
+    (463574 return ret[463572])
+  }
+  function maxloc[84877](?).identity[84719](arg _mt[84881]:_MT[227], arg this[84879]:maxloc[84877](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463581] "RVV" "temp"
+    unknown call_tmp[578246] "expr temp" "maybe param" "maybe type" "temp"
+    (578249 'move' call_tmp[578246](344401 call eltType _mt[232] this[84879]))
+    unknown call_tmp[578251] "expr temp" "maybe param" "maybe type" "temp"
+    (578254 'move' call_tmp[578251](84724 call _maxloc_id call_tmp[578246]))
+    (463586 'move' ret[463581](463585 'deref' call_tmp[578251]))
+    (463583 return ret[463581])
+  }
+  function maxloc[84877](?).accumulate[84734](arg _mt[84885]:_MT[227], arg this[84883]:maxloc[84877](?), arg x[84732]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578260] "expr temp" "maybe param" "maybe type" "temp"
+    (578263 'move' call_tmp[578260](344410 call value _mt[232] this[84883]))
+    (84740 call(344405 call (partial) accumulateOntoState _mt[232] this[84883]) call_tmp[578260] x[84732])
+    (463588 return _void[47])
+  }
+  function maxloc[84877](?).accumulateOntoState[84749](arg _mt[84889]:_MT[227], arg this[84887]:maxloc[84877](?), ref arg state[84747]:_any[170](?), arg x[84751]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown tmp[397296] "maybe param" "temp"
+    unknown tmp[397317] "maybe param" "temp"
+    unknown call_tmp[578265] "expr temp" "maybe param" "maybe type" "temp"
+    (578268 'move' call_tmp[578265](84756 call x[84751] 1))
+    unknown call_tmp[578270] "expr temp" "maybe param" "maybe type" "temp"
+    (578273 'move' call_tmp[578270](84760 call state[84747] 1))
+    (397328 'move' tmp[397317](84761 call > call_tmp[578265] call_tmp[578270]))
+    unknown call_tmp[578275] "expr temp" "maybe param" "maybe type" "temp"
+    (578278 'move' call_tmp[578275](397330 call _cond_invalid tmp[397317]))
+    if call_tmp[578275]
+    {
+      (397333 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509160] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509161] "maybe param" "temp"
+    unknown call_tmp[578280] "expr temp" "maybe param" "maybe type" "temp"
+    (578283 'move' call_tmp[578280](397318 call isTrue tmp[397317]))
+    (509166 'move' tmp[509161](509164 call _cond_test call_tmp[578280]))
+    if tmp[509161]
+    {
+      (509171 'move' tmp[509160](509168 '_paramFoldLogical' tmp[509161] 1))
+    }
+    {
+      unknown tmp[397338] "maybe param" "temp"
+      unknown call_tmp[578285] "expr temp" "maybe param" "maybe type" "temp"
+      (578288 'move' call_tmp[578285](84766 call x[84751] 1))
+      unknown call_tmp[578290] "expr temp" "maybe param" "maybe type" "temp"
+      (578293 'move' call_tmp[578290](84770 call state[84747] 1))
+      (397349 'move' tmp[397338](84771 call == call_tmp[578285] call_tmp[578290]))
+      unknown call_tmp[578295] "expr temp" "maybe param" "maybe type" "temp"
+      (578298 'move' call_tmp[578295](397351 call _cond_invalid tmp[397338]))
+      if call_tmp[578295]
+      {
+        (397354 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[509133] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509134] "maybe param" "temp"
+      unknown call_tmp[578300] "expr temp" "maybe param" "maybe type" "temp"
+      (578303 'move' call_tmp[578300](397339 call isTrue tmp[397338]))
+      (509139 'move' tmp[509134](509137 call _cond_test call_tmp[578300]))
+      if tmp[509134]
+      {
+        unknown tmp[509141] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[578305] "expr temp" "maybe param" "maybe type" "temp"
+        (578308 'move' call_tmp[578305](84776 call x[84751] 2))
+        unknown call_tmp[578310] "expr temp" "maybe param" "maybe type" "temp"
+        (578313 'move' call_tmp[578310](84780 call state[84747] 2))
+        unknown call_tmp[578315] "expr temp" "maybe param" "maybe type" "temp"
+        (578318 'move' call_tmp[578315](84781 call < call_tmp[578305] call_tmp[578310]))
+        (509143 'move' tmp[509141](397342 call isTrue call_tmp[578315]))
+        (509148 'move' tmp[509133](509145 '_paramFoldLogical' tmp[509134] tmp[509141]))
+      }
+      {
+        (509153 'move' tmp[509133](509150 '_paramFoldLogical' tmp[509134] 0))
+      }
+      unknown tmp[509173] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (509175 'move' tmp[509173](397322 call isTrue tmp[509133]))
+      (509180 'move' tmp[509160](509177 '_paramFoldLogical' tmp[509161] tmp[509173]))
+    }
+    (397307 'move' tmp[397296] tmp[509160])
+    unknown call_tmp[578320] "expr temp" "maybe param" "maybe type" "temp"
+    (578323 'move' call_tmp[578320](397309 call _cond_invalid tmp[397296]))
+    if call_tmp[578320]
+    {
+      (397312 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509241] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509242] "maybe param" "temp"
+    unknown call_tmp[578325] "expr temp" "maybe param" "maybe type" "temp"
+    (578328 'move' call_tmp[578325](397297 call isTrue tmp[397296]))
+    (509247 'move' tmp[509242](509245 call _cond_test call_tmp[578325]))
+    if tmp[509242]
+    {
+      (509252 'move' tmp[509241](509249 '_paramFoldLogical' tmp[509242] 1))
+    }
+    {
+      unknown tmp[397359] "maybe param" "temp"
+      unknown call_tmp[578330] "expr temp" "maybe param" "maybe type" "temp"
+      (578333 'move' call_tmp[578330](84791 call x[84751] 1))
+      (397370 'move' tmp[397359](84793 call gotNaN call_tmp[578330]))
+      unknown call_tmp[578335] "expr temp" "maybe param" "maybe type" "temp"
+      (578338 'move' call_tmp[578335](397372 call _cond_invalid tmp[397359]))
+      if call_tmp[578335]
+      {
+        (397375 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[509214] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509215] "maybe param" "temp"
+      unknown call_tmp[578340] "expr temp" "maybe param" "maybe type" "temp"
+      (578343 'move' call_tmp[578340](397360 call isTrue tmp[397359]))
+      (509220 'move' tmp[509215](509218 call _cond_test call_tmp[578340]))
+      if tmp[509215]
+      {
+        unknown tmp[397380] "maybe param" "temp"
+        unknown call_tmp[578345] "expr temp" "maybe param" "maybe type" "temp"
+        (578348 'move' call_tmp[578345](84798 call state[84747] 1))
+        unknown call_tmp[578350] "expr temp" "maybe param" "maybe type" "temp"
+        (578353 'move' call_tmp[578350](84800 call gotNaN call_tmp[578345]))
+        (397391 'move' tmp[397380](84801 call ! call_tmp[578350]))
+        unknown call_tmp[578355] "expr temp" "maybe param" "maybe type" "temp"
+        (578358 'move' call_tmp[578355](397393 call _cond_invalid tmp[397380]))
+        if call_tmp[578355]
+        {
+          (397396 call compilerError "cannot promote short-circuiting || operator")
+        }
+        unknown tmp[509187] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[509188] "maybe param" "temp"
+        unknown call_tmp[578360] "expr temp" "maybe param" "maybe type" "temp"
+        (578363 'move' call_tmp[578360](397381 call isTrue tmp[397380]))
+        (509193 'move' tmp[509188](509191 call _cond_test call_tmp[578360]))
+        if tmp[509188]
+        {
+          (509198 'move' tmp[509187](509195 '_paramFoldLogical' tmp[509188] 1))
+        }
+        {
+          unknown tmp[509200] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[578365] "expr temp" "maybe param" "maybe type" "temp"
+          (578368 'move' call_tmp[578365](84806 call x[84751] 2))
+          unknown call_tmp[578370] "expr temp" "maybe param" "maybe type" "temp"
+          (578373 'move' call_tmp[578370](84810 call state[84747] 2))
+          unknown call_tmp[578375] "expr temp" "maybe param" "maybe type" "temp"
+          (578378 'move' call_tmp[578375](84811 call < call_tmp[578365] call_tmp[578370]))
+          (509202 'move' tmp[509200](397385 call isTrue call_tmp[578375]))
+          (509207 'move' tmp[509187](509204 '_paramFoldLogical' tmp[509188] tmp[509200]))
+        }
+        unknown tmp[509222] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        (509224 'move' tmp[509222](397363 call isTrue tmp[509187]))
+        (509229 'move' tmp[509214](509226 '_paramFoldLogical' tmp[509215] tmp[509222]))
+      }
+      {
+        (509234 'move' tmp[509214](509231 '_paramFoldLogical' tmp[509215] 0))
+      }
+      unknown tmp[509254] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (509256 'move' tmp[509254](397301 call isTrue tmp[509214]))
+      (509261 'move' tmp[509241](509258 '_paramFoldLogical' tmp[509242] tmp[509254]))
+    }
+    unknown call_tmp[578380] "expr temp" "maybe param" "maybe type" "temp"
+    (578383 'move' call_tmp[578380](84824 call _cond_test tmp[509241]))
+    if call_tmp[578380]
+    {
+      (84821 call = state[84747] x[84751])
+    }
+    (463590 return _void[47])
+  }
+  function maxloc[84877](?).combine[84836](arg _mt[84893]:_MT[227], arg this[84891]:maxloc[84877](?), arg x[84834]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578389] "expr temp" "maybe param" "maybe type" "temp"
+    (578392 'move' call_tmp[578389](344432 call value _mt[232] this[84891]))
+    unknown call_tmp[578396] "expr temp" "maybe param" "maybe type" "temp"
+    (578399 'move' call_tmp[578396](84842 call value _mt[232] x[84834]))
+    (84845 call(344427 call (partial) accumulateOntoState _mt[232] this[84891]) call_tmp[578389] call_tmp[578396])
+    (463592 return _void[47])
+  }
+  function maxloc[84877](?).generate[84852](arg _mt[84897]:_MT[227], arg this[84895]:maxloc[84877](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463596] "RVV" "temp"
+    unknown call_tmp[578403] "expr temp" "maybe param" "maybe type" "temp"
+    (578406 'move' call_tmp[578403](344438 call value _mt[232] this[84895]))
+    (463601 'move' ret[463596](463600 'deref' call_tmp[578403]))
+    (463598 return ret[463596])
+  }
+  function maxloc[84877](?).clone[84862](arg _mt[84901]:_MT[227], arg this[84899]:maxloc[84877](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463605] "RVV" "temp"
+    unknown call_tmp[578410] "expr temp" "maybe param" "maybe type" "temp"
+    (578413 'move' call_tmp[578410](344447 call eltType _mt[232] this[84899]))
+    unknown call_tmp[578415] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (578418 'move' call_tmp[578415](691369 'new' anymanaged maxloc[344442](?)(eltType = call_tmp[578410])(_chpl_manager = unmanaged[209](?))))
+    (463610 'move' ret[463605](463609 'deref' call_tmp[578415]))
+    (463607 return ret[463605])
+  }
+  type maxloc[84877](?) val super[330985]:ReduceScanOp[83431] "super class" unknown eltType[84707] "type variable" unknown value[84714](84713 call _maxloc_id eltType[84707])
+  type anymanaged maxloc[344442](?)
+  function minloc[85077](?).identity[84919](arg _mt[85081]:_MT[227], arg this[85079]:minloc[85077](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463614] "RVV" "temp"
+    unknown call_tmp[578422] "expr temp" "maybe param" "maybe type" "temp"
+    (578425 'move' call_tmp[578422](344453 call eltType _mt[232] this[85079]))
+    unknown call_tmp[578427] "expr temp" "maybe param" "maybe type" "temp"
+    (578430 'move' call_tmp[578427](84924 call _minloc_id call_tmp[578422]))
+    (463619 'move' ret[463614](463618 'deref' call_tmp[578427]))
+    (463616 return ret[463614])
+  }
+  function minloc[85077](?).accumulate[84934](arg _mt[85085]:_MT[227], arg this[85083]:minloc[85077](?), arg x[84932]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578436] "expr temp" "maybe param" "maybe type" "temp"
+    (578439 'move' call_tmp[578436](344462 call value _mt[232] this[85083]))
+    (84940 call(344457 call (partial) accumulateOntoState _mt[232] this[85083]) call_tmp[578436] x[84932])
+    (463621 return _void[47])
+  }
+  function minloc[85077](?).accumulateOntoState[84949](arg _mt[85089]:_MT[227], arg this[85087]:minloc[85077](?), ref arg state[84947]:_any[170](?), arg x[84951]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown tmp[397401] "maybe param" "temp"
+    unknown tmp[397422] "maybe param" "temp"
+    unknown call_tmp[578441] "expr temp" "maybe param" "maybe type" "temp"
+    (578444 'move' call_tmp[578441](84956 call x[84951] 1))
+    unknown call_tmp[578446] "expr temp" "maybe param" "maybe type" "temp"
+    (578449 'move' call_tmp[578446](84960 call state[84947] 1))
+    (397433 'move' tmp[397422](84961 call < call_tmp[578441] call_tmp[578446]))
+    unknown call_tmp[578451] "expr temp" "maybe param" "maybe type" "temp"
+    (578454 'move' call_tmp[578451](397435 call _cond_invalid tmp[397422]))
+    if call_tmp[578451]
+    {
+      (397438 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509295] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509296] "maybe param" "temp"
+    unknown call_tmp[578456] "expr temp" "maybe param" "maybe type" "temp"
+    (578459 'move' call_tmp[578456](397423 call isTrue tmp[397422]))
+    (509301 'move' tmp[509296](509299 call _cond_test call_tmp[578456]))
+    if tmp[509296]
+    {
+      (509306 'move' tmp[509295](509303 '_paramFoldLogical' tmp[509296] 1))
+    }
+    {
+      unknown tmp[397443] "maybe param" "temp"
+      unknown call_tmp[578461] "expr temp" "maybe param" "maybe type" "temp"
+      (578464 'move' call_tmp[578461](84966 call x[84951] 1))
+      unknown call_tmp[578466] "expr temp" "maybe param" "maybe type" "temp"
+      (578469 'move' call_tmp[578466](84970 call state[84947] 1))
+      (397454 'move' tmp[397443](84971 call == call_tmp[578461] call_tmp[578466]))
+      unknown call_tmp[578471] "expr temp" "maybe param" "maybe type" "temp"
+      (578474 'move' call_tmp[578471](397456 call _cond_invalid tmp[397443]))
+      if call_tmp[578471]
+      {
+        (397459 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[509268] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509269] "maybe param" "temp"
+      unknown call_tmp[578476] "expr temp" "maybe param" "maybe type" "temp"
+      (578479 'move' call_tmp[578476](397444 call isTrue tmp[397443]))
+      (509274 'move' tmp[509269](509272 call _cond_test call_tmp[578476]))
+      if tmp[509269]
+      {
+        unknown tmp[509276] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[578481] "expr temp" "maybe param" "maybe type" "temp"
+        (578484 'move' call_tmp[578481](84976 call x[84951] 2))
+        unknown call_tmp[578486] "expr temp" "maybe param" "maybe type" "temp"
+        (578489 'move' call_tmp[578486](84980 call state[84947] 2))
+        unknown call_tmp[578491] "expr temp" "maybe param" "maybe type" "temp"
+        (578494 'move' call_tmp[578491](84981 call < call_tmp[578481] call_tmp[578486]))
+        (509278 'move' tmp[509276](397447 call isTrue call_tmp[578491]))
+        (509283 'move' tmp[509268](509280 '_paramFoldLogical' tmp[509269] tmp[509276]))
+      }
+      {
+        (509288 'move' tmp[509268](509285 '_paramFoldLogical' tmp[509269] 0))
+      }
+      unknown tmp[509308] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (509310 'move' tmp[509308](397427 call isTrue tmp[509268]))
+      (509315 'move' tmp[509295](509312 '_paramFoldLogical' tmp[509296] tmp[509308]))
+    }
+    (397412 'move' tmp[397401] tmp[509295])
+    unknown call_tmp[578496] "expr temp" "maybe param" "maybe type" "temp"
+    (578499 'move' call_tmp[578496](397414 call _cond_invalid tmp[397401]))
+    if call_tmp[578496]
+    {
+      (397417 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509376] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509377] "maybe param" "temp"
+    unknown call_tmp[578501] "expr temp" "maybe param" "maybe type" "temp"
+    (578504 'move' call_tmp[578501](397402 call isTrue tmp[397401]))
+    (509382 'move' tmp[509377](509380 call _cond_test call_tmp[578501]))
+    if tmp[509377]
+    {
+      (509387 'move' tmp[509376](509384 '_paramFoldLogical' tmp[509377] 1))
+    }
+    {
+      unknown tmp[397464] "maybe param" "temp"
+      unknown call_tmp[578506] "expr temp" "maybe param" "maybe type" "temp"
+      (578509 'move' call_tmp[578506](84991 call x[84951] 1))
+      (397475 'move' tmp[397464](84993 call gotNaN call_tmp[578506]))
+      unknown call_tmp[578511] "expr temp" "maybe param" "maybe type" "temp"
+      (578514 'move' call_tmp[578511](397477 call _cond_invalid tmp[397464]))
+      if call_tmp[578511]
+      {
+        (397480 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[509349] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[509350] "maybe param" "temp"
+      unknown call_tmp[578516] "expr temp" "maybe param" "maybe type" "temp"
+      (578519 'move' call_tmp[578516](397465 call isTrue tmp[397464]))
+      (509355 'move' tmp[509350](509353 call _cond_test call_tmp[578516]))
+      if tmp[509350]
+      {
+        unknown tmp[397485] "maybe param" "temp"
+        unknown call_tmp[578521] "expr temp" "maybe param" "maybe type" "temp"
+        (578524 'move' call_tmp[578521](84998 call state[84947] 1))
+        unknown call_tmp[578526] "expr temp" "maybe param" "maybe type" "temp"
+        (578529 'move' call_tmp[578526](85000 call gotNaN call_tmp[578521]))
+        (397496 'move' tmp[397485](85001 call ! call_tmp[578526]))
+        unknown call_tmp[578531] "expr temp" "maybe param" "maybe type" "temp"
+        (578534 'move' call_tmp[578531](397498 call _cond_invalid tmp[397485]))
+        if call_tmp[578531]
+        {
+          (397501 call compilerError "cannot promote short-circuiting || operator")
+        }
+        unknown tmp[509322] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[509323] "maybe param" "temp"
+        unknown call_tmp[578536] "expr temp" "maybe param" "maybe type" "temp"
+        (578539 'move' call_tmp[578536](397486 call isTrue tmp[397485]))
+        (509328 'move' tmp[509323](509326 call _cond_test call_tmp[578536]))
+        if tmp[509323]
+        {
+          (509333 'move' tmp[509322](509330 '_paramFoldLogical' tmp[509323] 1))
+        }
+        {
+          unknown tmp[509335] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[578541] "expr temp" "maybe param" "maybe type" "temp"
+          (578544 'move' call_tmp[578541](85006 call x[84951] 2))
+          unknown call_tmp[578546] "expr temp" "maybe param" "maybe type" "temp"
+          (578549 'move' call_tmp[578546](85010 call state[84947] 2))
+          unknown call_tmp[578551] "expr temp" "maybe param" "maybe type" "temp"
+          (578554 'move' call_tmp[578551](85011 call < call_tmp[578541] call_tmp[578546]))
+          (509337 'move' tmp[509335](397490 call isTrue call_tmp[578551]))
+          (509342 'move' tmp[509322](509339 '_paramFoldLogical' tmp[509323] tmp[509335]))
+        }
+        unknown tmp[509357] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        (509359 'move' tmp[509357](397468 call isTrue tmp[509322]))
+        (509364 'move' tmp[509349](509361 '_paramFoldLogical' tmp[509350] tmp[509357]))
+      }
+      {
+        (509369 'move' tmp[509349](509366 '_paramFoldLogical' tmp[509350] 0))
+      }
+      unknown tmp[509389] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      (509391 'move' tmp[509389](397406 call isTrue tmp[509349]))
+      (509396 'move' tmp[509376](509393 '_paramFoldLogical' tmp[509377] tmp[509389]))
+    }
+    unknown call_tmp[578556] "expr temp" "maybe param" "maybe type" "temp"
+    (578559 'move' call_tmp[578556](85024 call _cond_test tmp[509376]))
+    if call_tmp[578556]
+    {
+      (85021 call = state[84947] x[84951])
+    }
+    (463623 return _void[47])
+  }
+  function minloc[85077](?).combine[85036](arg _mt[85093]:_MT[227], arg this[85091]:minloc[85077](?), arg x[85034]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578565] "expr temp" "maybe param" "maybe type" "temp"
+    (578568 'move' call_tmp[578565](344484 call value _mt[232] this[85091]))
+    unknown call_tmp[578572] "expr temp" "maybe param" "maybe type" "temp"
+    (578575 'move' call_tmp[578572](85042 call value _mt[232] x[85034]))
+    (85045 call(344479 call (partial) accumulateOntoState _mt[232] this[85091]) call_tmp[578565] call_tmp[578572])
+    (463625 return _void[47])
+  }
+  function minloc[85077](?).generate[85052](arg _mt[85097]:_MT[227], arg this[85095]:minloc[85077](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463629] "RVV" "temp"
+    unknown call_tmp[578579] "expr temp" "maybe param" "maybe type" "temp"
+    (578582 'move' call_tmp[578579](344490 call value _mt[232] this[85095]))
+    (463634 'move' ret[463629](463633 'deref' call_tmp[578579]))
+    (463631 return ret[463629])
+  }
+  function minloc[85077](?).clone[85062](arg _mt[85101]:_MT[227], arg this[85099]:minloc[85077](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463638] "RVV" "temp"
+    unknown call_tmp[578586] "expr temp" "maybe param" "maybe type" "temp"
+    (578589 'move' call_tmp[578586](344499 call eltType _mt[232] this[85099]))
+    unknown call_tmp[578591] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (578594 'move' call_tmp[578591](691370 'new' anymanaged minloc[344494](?)(eltType = call_tmp[578586])(_chpl_manager = unmanaged[209](?))))
+    (463643 'move' ret[463638](463642 'deref' call_tmp[578591]))
+    (463640 return ret[463638])
+  }
+  type minloc[85077](?) val super[330987]:ReduceScanOp[83431] "super class" unknown eltType[84907] "type variable" unknown value[84914](84913 call _minloc_id eltType[84907])
+  type anymanaged minloc[344494](?)
+  function gotNaN[85108](arg value[85106]:_any[170](?)) : _unknown[43] "inline" "private"
+  {
+    unknown ret[463647] "RVV" "temp"
+    unknown call_tmp[578596] "expr temp" "maybe param" "maybe type" "temp"
+    (578599 'move' call_tmp[578596](85117 call isnan value[85106]))
+    (463652 'move' ret[463647](463651 'deref' call_tmp[578596]))
+    (463649 return ret[463647])
+  }
+  where {
+    (85113 call isReal value[85106])
+  }
+  function gotNaN[85128](arg value[85126]:_any[170](?)) param : _unknown[43] "private"
+  {
+    unknown ret[463656] "RVV" "param" "temp"
+    (463661 'move' ret[463656](463660 'deref' 0))
+    (463658 return ret[463656])
+  }
+  (329340 'used modules list'(82891 'use' ChapelStandard[19734])(82896 'use' ChapelLocks[180347]))
+}

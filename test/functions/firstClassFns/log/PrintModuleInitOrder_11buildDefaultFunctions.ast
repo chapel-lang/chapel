@@ -1,0 +1,76 @@
+AST dump for PrintModuleInitOrder after pass buildDefaultFunctions.
+Module use list: 
+
+{
+  function chpl__init_PrintModuleInitOrder[390135]() : void[4] "export" "insert line file info" "local args" "module init"
+  {
+    (541058 'move' call_tmp[541055](488551 call chpl_config_has_value c"printModuleInitOrder" c"Built-in"))
+    (541063 'move' call_tmp[541060](488554 call ! call_tmp[541055]))
+    if call_tmp[541060]
+    {
+      (488545 'noop')
+      (488570 'init var' tmp[488540] 0)
+    }
+    {
+      unknown call_tmp[541065] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (541068 'move' call_tmp[541065](488558 'typeof' tmp[488540]))
+      unknown call_tmp[541070] "expr temp" "maybe param" "maybe type" "temp"
+      (541073 'move' call_tmp[541070](488561 call chpl_config_get_value c"printModuleInitOrder" c"Built-in"))
+      (488566 'move' tmp[488540](488564 call _command_line_cast c"printModuleInitOrder" call_tmp[541065] call_tmp[541070]))
+    }
+    (488542 'move' printModuleInitOrder[19910] tmp[488540])
+    (541078 'move' call_tmp[541075](19918 call int(64)[13] 32))
+    (541083 'move' call_tmp[541080](19919 call _cast call_tmp[541075] 2))
+    (488572 'init var' moduleInitLevel[19921] call_tmp[541080])
+    (541123 'move' call_tmp[541120](20039 call _cond_test printModuleInitOrder[19910]))
+    if call_tmp[541120]
+    {
+      (20037 call initPrint)
+    }
+    (452952 return _void[47])
+  }
+  unknown tmp[488540] "temp"
+  const printModuleInitOrder[19910] "config" "const" "insert auto destroy"
+  unknown call_tmp[541055] "expr temp" "maybe param" "maybe type" "temp"
+  unknown call_tmp[541060] "expr temp" "maybe param" "maybe type" "temp"
+  unknown call_tmp[541075] "expr temp" "maybe param" "maybe type" "temp"
+  unknown call_tmp[541080] "maybe param" "maybe type" "temp"
+  unknown moduleInitLevel[19921] "insert auto destroy" "print module init indent level"
+  function printModuleInit[19930](arg s1[19927]:c_string[19], arg s2[19933]:c_string[19], arg len[19937]:int(64)[13]) : _unknown[43] "print module init fn" "no return value for void"
+  {
+    function printf[19946](arg s1[19943]:c_string[19], arg len[19952] :
+    (19951 call int(64)[13] 32), arg s2[19956]:c_string[19]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+    {
+      (452944 return _void[47])
+    }
+    unknown call_tmp[541085] "expr temp" "maybe param" "maybe type" "temp"
+    (541088 'move' call_tmp[541085](19988 call _cond_test printModuleInitOrder[19910]))
+    if call_tmp[541085]
+    {
+      unknown call_tmp[541090] "expr temp" "maybe param" "maybe type" "temp"
+      (541093 'move' call_tmp[541090](19971 call int(64)[13] 32))
+      unknown call_tmp[541095] "expr temp" "maybe param" "maybe type" "temp"
+      (541098 'move' call_tmp[541095](19972 call _cast call_tmp[541090] len[19937]))
+      unknown call_tmp[541100] "expr temp" "maybe param" "maybe type" "temp"
+      (541103 'move' call_tmp[541100](19974 call + moduleInitLevel[19921] call_tmp[541095]))
+      unknown call_tmp[541105] "expr temp" "maybe param" "maybe type" "temp"
+      (541108 'move' call_tmp[541105](19980 call int(64)[13] 32))
+      unknown call_tmp[541110] "expr temp" "maybe param" "maybe type" "temp"
+      (541113 'move' call_tmp[541110](19981 call _cast call_tmp[541105] 2))
+      unknown call_tmp[541115] "expr temp" "maybe param" "maybe type" "temp"
+      (541118 'move' call_tmp[541115](19983 call + call_tmp[541100] call_tmp[541110]))
+      (19986 call printf s1[19927] call_tmp[541115] s2[19933])
+    }
+    (452946 return _void[47])
+  }
+  function initPrint[19997]() : _unknown[43] "no return value for void"
+  {
+    function printf[20005](arg s[20002]:c_string[19]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+    {
+      (452948 return _void[47])
+    }
+    (20030 call printf "Initializing Modules:\n")
+    (452950 return _void[47])
+  }
+  unknown call_tmp[541120] "expr temp" "maybe param" "maybe type" "temp"
+}

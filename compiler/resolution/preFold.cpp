@@ -36,6 +36,7 @@
 #include "symbol.h"
 #include "typeSpecifier.h"
 #include "visibleFunctions.h"
+#include "view.h"
 #include "wellknown.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -2121,30 +2122,45 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   ct->methods.add(thisMethod);
 
   FnSymbol* wrapper = new FnSymbol("wrapper");
-
   wrapper->addFlag(FLAG_INLINE);
+  
+  // Insert the wrapper into the AST now so we can resolve some things.
+  call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
+  
+  BlockStmt* block = new BlockStmt();
+  wrapper->insertAtTail(block);
 
   Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
 
-  CallExpr* n = new CallExpr(PRIM_NEW,
-                             new NamedExpr(astr_chpl_manager,
-                                           new SymExpr(dtShared->symbol)),
-                             new SymExpr(undecorated->symbol));
+  Expr* unmanagedMarker = new NamedExpr(astr_chpl_manager,
+                                       new SymExpr(dtUnmanaged->symbol));
 
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, n));
+  CallExpr* subClass = new CallExpr(PRIM_NEW,
+                                    unmanagedMarker,
+                                    new SymExpr(undecorated->symbol));
+
+  CallExpr* parClass = new CallExpr(PRIM_CAST,
+                                    new SymExpr(parent->symbol),
+                                    subClass);
+
+  block->insertAtTail(parClass);
+  tryResolveCall(parClass);
+  parClass->remove();
+  //printf("%s\n", parClass->typeInfo()->name());
+
+  CallExpr* getBaseType = new CallExpr(dtShared->symbol, parent->symbol);
+  block->insertAtTail(getBaseType);
+  tryResolveCall(getBaseType);
+  getBaseType->remove();
+
+  VarSymbol* temp = newTemp("sharedBaseClass", getBaseType->typeInfo());
+  block->insertAtTail(new DefExpr(temp));
+  
+  CallExpr* init = new CallExpr("init", gMethodToken, temp, parClass);
+  block->insertAtTail(init);
+
+  block->insertAtTail(new CallExpr(PRIM_RETURN, temp));
  
-  //
-  // TODO: Is leaving out the cast to the superclass OK?
-  //
-  /*
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
-                                     new CallExpr(PRIM_CAST,
-                                                  parent->symbol,
-                                                  n)));
-  */
-
-  call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
-
   normalize(wrapper);
 
   CallExpr* callWrapper = new CallExpr(wrapper);

@@ -1,0 +1,404 @@
+AST dump for LocaleModelHelpRuntime after pass createTaskFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_LocaleModelHelpRuntime[390303]() : void[4] "insert line file info" "module init"
+  {
+    {
+    }
+    {
+    }
+    {
+    }
+    (477251 return _void[47])
+  }
+  function chpl_localeID_t[197056].init[734802](arg _mt[734804]:_MT[227], ref arg this[734805]:chpl_localeID_t[197056]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (734809 return _void[47])
+  }
+  function chpl_localeID_t[197056].init=[734811](arg _mt[734814]:_MT[227], arg this[734815]:chpl_localeID_t[197056], arg other[734816]:chpl_localeID_t[197056]) : _unknown[43] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    (734820 '=' this[734815] other[734816])
+    (734823 return _void[47])
+  }
+  function chpl_localeID_t[197056].deinit[734825](arg _mt[734827]:_MT[227], arg this[734829]:chpl_localeID_t[197056]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (734831 return _void[47])
+  }
+  function chpl_localeID_t[197056].writeThis[734834](arg _mt[734838]:_MT[227], arg this[734836]:chpl_localeID_t[197056], arg f[734837]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (734843 call writeThisDefaultImpl f[734837] this[734836])
+    (734847 return _void[47])
+  }
+  function chpl_localeID_t[197056].readThis[734849](arg _mt[734853]:_MT[227], arg this[734851]:chpl_localeID_t[197056], arg f[734852]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (734857 call readThisDefaultImpl f[734852] this[734851])
+    (734862 return _void[47])
+  }
+  function ==[734864](arg _arg1[734866]:chpl_localeID_t[197056], arg _arg2[734867]:chpl_localeID_t[197056]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[734882]:bool[10] "RVV" "temp"
+    (734887 'move' ret[734882](734886 'deref' 1))
+    (734884 return ret[734882])
+  }
+  where {
+    unknown call_tmp[734889] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734892 'move' call_tmp[734889](734870 'typeof' _arg1[734866]))
+    unknown call_tmp[734894] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734897 'move' call_tmp[734894](734872 'typeof' _arg2[734867]))
+    (734874 call == call_tmp[734889] call_tmp[734894])
+  }
+  function !=[734899](arg _arg1[734901]:chpl_localeID_t[197056], arg _arg2[734902]:chpl_localeID_t[197056]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[734917]:bool[10] "RVV" "temp"
+    (734922 'move' ret[734917](734921 'deref' 0))
+    (734919 return ret[734917])
+  }
+  where {
+    unknown call_tmp[734924] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734927 'move' call_tmp[734924](734905 'typeof' _arg1[734901]))
+    unknown call_tmp[734929] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734932 'move' call_tmp[734929](734907 'typeof' _arg2[734902]))
+    (734909 call == call_tmp[734924] call_tmp[734929])
+  }
+  function =[734934](ref arg _arg1[734936]:chpl_localeID_t[197056], const?  ref arg _arg2[734937]:chpl_localeID_t[197056]) : void[4] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (734947 '=' _arg1[734936] _arg2[734937])
+    (734951 return _void[47])
+  }
+  where {
+    unknown call_tmp[734953] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734956 'move' call_tmp[734953](734940 'typeof' _arg1[734936]))
+    unknown call_tmp[734958] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734961 'move' call_tmp[734958](734942 'typeof' _arg2[734937]))
+    (734944 call == call_tmp[734953] call_tmp[734958])
+  }
+  function chpl__defaultHash[734963](arg r[734965]:chpl_localeID_t[197056]) : _unknown[43] "compiler generated" "inline" "last resort"
+  {
+    unknown ret[734972] "RVV" "temp"
+    (734977 'move' ret[734972](734976 'deref' 0))
+    (734974 return ret[734972])
+  }
+  type chpl_localeID_t[197056]
+  function chpl_comm_on_bundle_t[197063].init[734979](arg _mt[734981]:_MT[227], ref arg this[734982]:chpl_comm_on_bundle_t[197063]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (734986 return _void[47])
+  }
+  function chpl_comm_on_bundle_t[197063].init=[734988](arg _mt[734991]:_MT[227], arg this[734992]:chpl_comm_on_bundle_t[197063], arg other[734993]:chpl_comm_on_bundle_t[197063]) : _unknown[43] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    (734997 '=' this[734992] other[734993])
+    (735000 return _void[47])
+  }
+  function chpl_comm_on_bundle_t[197063].deinit[735002](arg _mt[735004]:_MT[227], arg this[735006]:chpl_comm_on_bundle_t[197063]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (735008 return _void[47])
+  }
+  function chpl_comm_on_bundle_t[197063].writeThis[735011](arg _mt[735015]:_MT[227], arg this[735013]:chpl_comm_on_bundle_t[197063], arg f[735014]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (735020 call writeThisDefaultImpl f[735014] this[735013])
+    (735024 return _void[47])
+  }
+  function chpl_comm_on_bundle_t[197063].readThis[735026](arg _mt[735030]:_MT[227], arg this[735028]:chpl_comm_on_bundle_t[197063], arg f[735029]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (735034 call readThisDefaultImpl f[735029] this[735028])
+    (735039 return _void[47])
+  }
+  function ==[735041](arg _arg1[735043]:chpl_comm_on_bundle_t[197063], arg _arg2[735044]:chpl_comm_on_bundle_t[197063]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[735059]:bool[10] "RVV" "temp"
+    (735064 'move' ret[735059](735063 'deref' 1))
+    (735061 return ret[735059])
+  }
+  where {
+    unknown call_tmp[735066] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735069 'move' call_tmp[735066](735047 'typeof' _arg1[735043]))
+    unknown call_tmp[735071] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735074 'move' call_tmp[735071](735049 'typeof' _arg2[735044]))
+    (735051 call == call_tmp[735066] call_tmp[735071])
+  }
+  function !=[735076](arg _arg1[735078]:chpl_comm_on_bundle_t[197063], arg _arg2[735079]:chpl_comm_on_bundle_t[197063]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[735094]:bool[10] "RVV" "temp"
+    (735099 'move' ret[735094](735098 'deref' 0))
+    (735096 return ret[735094])
+  }
+  where {
+    unknown call_tmp[735101] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735104 'move' call_tmp[735101](735082 'typeof' _arg1[735078]))
+    unknown call_tmp[735106] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735109 'move' call_tmp[735106](735084 'typeof' _arg2[735079]))
+    (735086 call == call_tmp[735101] call_tmp[735106])
+  }
+  function =[735111](ref arg _arg1[735113]:chpl_comm_on_bundle_t[197063], const?  ref arg _arg2[735114]:chpl_comm_on_bundle_t[197063]) : void[4] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (735124 '=' _arg1[735113] _arg2[735114])
+    (735128 return _void[47])
+  }
+  where {
+    unknown call_tmp[735130] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735133 'move' call_tmp[735130](735117 'typeof' _arg1[735113]))
+    unknown call_tmp[735135] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735138 'move' call_tmp[735135](735119 'typeof' _arg2[735114]))
+    (735121 call == call_tmp[735130] call_tmp[735135])
+  }
+  function chpl__defaultHash[735140](arg r[735142]:chpl_comm_on_bundle_t[197063]) : _unknown[43] "compiler generated" "inline" "last resort"
+  {
+    unknown ret[735149] "RVV" "temp"
+    (735154 'move' ret[735149](735153 'deref' 0))
+    (735151 return ret[735149])
+  }
+  type chpl_comm_on_bundle_t[197063]
+  function chpl_task_bundle_t[197070].init[735156](arg _mt[735158]:_MT[227], ref arg this[735159]:chpl_task_bundle_t[197070]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (735163 return _void[47])
+  }
+  function chpl_task_bundle_t[197070].init=[735165](arg _mt[735168]:_MT[227], arg this[735169]:chpl_task_bundle_t[197070], arg other[735170]:chpl_task_bundle_t[197070]) : _unknown[43] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    (735174 '=' this[735169] other[735170])
+    (735177 return _void[47])
+  }
+  function chpl_task_bundle_t[197070].deinit[735179](arg _mt[735181]:_MT[227], arg this[735183]:chpl_task_bundle_t[197070]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (735185 return _void[47])
+  }
+  function chpl_task_bundle_t[197070].writeThis[735188](arg _mt[735192]:_MT[227], arg this[735190]:chpl_task_bundle_t[197070], arg f[735191]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (735197 call writeThisDefaultImpl f[735191] this[735190])
+    (735201 return _void[47])
+  }
+  function chpl_task_bundle_t[197070].readThis[735203](arg _mt[735207]:_MT[227], arg this[735205]:chpl_task_bundle_t[197070], arg f[735206]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (735211 call readThisDefaultImpl f[735206] this[735205])
+    (735216 return _void[47])
+  }
+  function ==[735218](arg _arg1[735220]:chpl_task_bundle_t[197070], arg _arg2[735221]:chpl_task_bundle_t[197070]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[735236]:bool[10] "RVV" "temp"
+    (735241 'move' ret[735236](735240 'deref' 1))
+    (735238 return ret[735236])
+  }
+  where {
+    unknown call_tmp[735243] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735246 'move' call_tmp[735243](735224 'typeof' _arg1[735220]))
+    unknown call_tmp[735248] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735251 'move' call_tmp[735248](735226 'typeof' _arg2[735221]))
+    (735228 call == call_tmp[735243] call_tmp[735248])
+  }
+  function !=[735253](arg _arg1[735255]:chpl_task_bundle_t[197070], arg _arg2[735256]:chpl_task_bundle_t[197070]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[735271]:bool[10] "RVV" "temp"
+    (735276 'move' ret[735271](735275 'deref' 0))
+    (735273 return ret[735271])
+  }
+  where {
+    unknown call_tmp[735278] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735281 'move' call_tmp[735278](735259 'typeof' _arg1[735255]))
+    unknown call_tmp[735283] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735286 'move' call_tmp[735283](735261 'typeof' _arg2[735256]))
+    (735263 call == call_tmp[735278] call_tmp[735283])
+  }
+  function =[735288](ref arg _arg1[735290]:chpl_task_bundle_t[197070], const?  ref arg _arg2[735291]:chpl_task_bundle_t[197070]) : void[4] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (735301 '=' _arg1[735290] _arg2[735291])
+    (735305 return _void[47])
+  }
+  where {
+    unknown call_tmp[735307] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735310 'move' call_tmp[735307](735294 'typeof' _arg1[735290]))
+    unknown call_tmp[735312] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (735315 'move' call_tmp[735312](735296 'typeof' _arg2[735291]))
+    (735298 call == call_tmp[735307] call_tmp[735312])
+  }
+  function chpl__defaultHash[735317](arg r[735319]:chpl_task_bundle_t[197070]) : _unknown[43] "compiler generated" "inline" "last resort"
+  {
+    unknown ret[735326] "RVV" "temp"
+    (735331 'move' ret[735326](735330 'deref' 0))
+    (735328 return ret[735326])
+  }
+  type chpl_task_bundle_t[197070]
+  function =[735333](ref arg _arg1[735335]:chpl_comm_on_bundle_p[197079], arg _arg2[735336]:chpl_comm_on_bundle_p[197079]) : _unknown[43] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (735339 '=' _arg1[735335] _arg2[735336])
+    (735343 return _void[47])
+  }
+  type chpl_comm_on_bundle_p[197079]
+  function =[735345](ref arg _arg1[735347]:chpl_task_bundle_p[197085], arg _arg2[735348]:chpl_task_bundle_p[197085]) : _unknown[43] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (735351 '=' _arg1[735347] _arg2[735348])
+    (735355 return _void[47])
+  }
+  type chpl_task_bundle_p[197085]
+  function chpl_comm_on_bundle_task_bundle[197093](arg bundle[197090]:chpl_comm_on_bundle_p[197079]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[477160] "RVV" "temp"
+    (477162 return ret[477160])
+  }
+  { scopeless type
+    chpl_task_bundle_p[197085]
+  }
+  function chpl__initCopy[197121](arg initial[197118]:chpl_localeID_t[197056]) : _unknown[43] "extern" "init copy fn" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[477166] "RVV" "temp"
+    (477168 return ret[477166])
+  }
+  { scopeless type
+    chpl_localeID_t[197056]
+  }
+  function chpl_rt_buildLocaleID[197133](arg node[197130] :
+  chpl_nodeID_t[90205], arg subloc[197136] :
+  chpl_sublocID_t[90212]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[477172] "RVV" "temp"
+    (477174 return ret[477172])
+  }
+  { scopeless type
+    chpl_localeID_t[197056]
+  }
+  function chpl_rt_nodeFromLocaleID[197149](arg loc[197146]:chpl_localeID_t[197056]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[477178] "RVV" "temp"
+    (477180 return ret[477178])
+  }
+  { scopeless type
+    chpl_nodeID_t[90205]
+  }
+  function chpl_rt_sublocFromLocaleID[197161](arg loc[197158]:chpl_localeID_t[197056]) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+    unknown ret[477184] "RVV" "temp"
+    (477186 return ret[477184])
+  }
+  { scopeless type
+    chpl_sublocID_t[90212]
+  }
+  function chpl_buildLocaleID[197173](arg node[197170] :
+  chpl_nodeID_t[90205], arg subloc[197176] :
+  chpl_sublocID_t[90212]) : _unknown[43] "export" "insert line file info" "local args"
+  {
+    unknown ret[477190] "RVV" "temp"
+    unknown call_tmp[647864] "expr temp" "maybe param" "maybe type" "temp"
+    (647867 'move' call_tmp[647864](197183 call chpl_rt_buildLocaleID node[197170] subloc[197176]))
+    (477195 'move' ret[477190](477194 'deref' call_tmp[647864]))
+    (477192 return ret[477190])
+  }
+  function chpl_nodeFromLocaleID[197195](arg loc[197192]:chpl_localeID_t[197056]) : _unknown[43] "export" "insert line file info" "local args"
+  {
+    unknown ret[477199] "RVV" "temp"
+    unknown call_tmp[647869] "expr temp" "maybe param" "maybe type" "temp"
+    (647872 'move' call_tmp[647869](197200 call chpl_rt_nodeFromLocaleID loc[197192]))
+    (477204 'move' ret[477199](477203 'deref' call_tmp[647869]))
+    (477201 return ret[477199])
+  }
+  function chpl_sublocFromLocaleID[197212](arg loc[197209]:chpl_localeID_t[197056]) : _unknown[43] "export" "insert line file info" "local args"
+  {
+    unknown ret[477208] "RVV" "temp"
+    unknown call_tmp[647874] "expr temp" "maybe param" "maybe type" "temp"
+    (647877 'move' call_tmp[647874](197217 call chpl_rt_sublocFromLocaleID loc[197209]))
+    (477213 'move' ret[477208](477212 'deref' call_tmp[647874]))
+    (477210 return ret[477208])
+  }
+  function chpl_comm_execute_on[197229](arg loc_id[197226]:int(64)[13], arg subloc_id[197232]:int(64)[13], arg fn[197236]:int(64)[13], arg args[197240]:chpl_comm_on_bundle_p[197079], arg arg_size[197244] :
+  size_t[209674]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+    (477215 return _void[47])
+  }
+  function chpl_comm_execute_on_fast[197255](arg loc_id[197252]:int(64)[13], arg subloc_id[197258]:int(64)[13], arg fn[197262]:int(64)[13], arg args[197266]:chpl_comm_on_bundle_p[197079], arg args_size[197270] :
+  size_t[209674]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+    (477217 return _void[47])
+  }
+  function chpl_comm_execute_on_nb[197281](arg loc_id[197278]:int(64)[13], arg subloc_id[197284]:int(64)[13], arg fn[197288]:int(64)[13], arg args[197292]:chpl_comm_on_bundle_p[197079], arg args_size[197296] :
+  size_t[209674]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+    (477219 return _void[47])
+  }
+  function chpl_comm_taskCallFTable[197307](arg fn[197304]:int(64)[13], arg args[197310]:chpl_comm_on_bundle_p[197079], arg args_size[197314] :
+  size_t[209674], arg subloc_id[197318]:int(64)[13]) : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+    unknown ret[477223] "RVV" "temp"
+    (477225 return ret[477223])
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_ftable_call[197331](arg fn[197328]:int(64)[13], arg args[197334]:chpl_comm_on_bundle_p[197079]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+    unknown ret[477229] "RVV" "temp"
+    (477231 return ret[477229])
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_ftable_call[197347](arg fn[197344]:int(64)[13], arg args[197350]:chpl_task_bundle_p[197085]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+    unknown ret[477235] "RVV" "temp"
+    (477237 return ret[477235])
+  }
+  { scopeless type
+    void[4]
+  }
+  function chpl_task_addToTaskList[197363](arg fn[197360]:int(64)[13], arg args[197366]:chpl_task_bundle_p[197085], arg args_size[197370] :
+  size_t[209674], arg subloc_id[197374]:int(64)[13], ref arg tlist[197378]:c_void_ptr[141], arg tlist_node_id[197382]:int(64)[13], arg is_begin[197386]:bool[10]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+    (477239 return _void[47])
+  }
+  function chpl_task_executeTasksInList[197397](ref arg tlist[197394]:c_void_ptr[141]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+    (477241 return _void[47])
+  }
+  function chpl_task_yield[197403]() : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+    (477243 return _void[47])
+  }
+  function chpl_taskListAddBegin[197413](arg subloc_id[197410]:int(64)[13], arg fn[197416]:int(64)[13], arg args[197420]:chpl_task_bundle_p[197085], arg args_size[197424] :
+  size_t[209674], ref arg tlist[197428]:c_void_ptr[141], arg tlist_node_id[197432]:int(64)[13]) : _unknown[43] "export" "insert line file info" "local args" "no return value for void"
+  {
+    unknown call_tmp[647879] "maybe param" "maybe type" "temp"
+    (647882 'move' call_tmp[647879](197437 call chpl_task_getChapelData))
+    unknown tls[197438] "insert auto destroy"
+    (493624 'init var' tls[197438] call_tmp[647879])
+    unknown call_tmp[647884] "maybe param" "maybe type" "temp"
+    (647887 'move' call_tmp[647884](197445 call chpl_task_data_getSerial tls[197438]))
+    unknown isSerial[197446] "insert auto destroy"
+    (493626 'init var' isSerial[197446] call_tmp[647884])
+    unknown call_tmp[647889] "expr temp" "maybe param" "maybe type" "temp"
+    (647892 'move' call_tmp[647889](197475 call _cond_test isSerial[197446]))
+    if call_tmp[647889]
+    {
+      (197454 call chpl_ftable_call fn[197416] args[197420])
+    }
+    {
+      (197461 call chpl_task_data_setup args[197420] tls[197438])
+      (197473 call chpl_task_addToTaskList fn[197416] args[197420] args_size[197424] subloc_id[197410] tlist[197428] tlist_node_id[197432] 1)
+    }
+    (477245 return _void[47])
+  }
+  function chpl_taskListAddCoStmt[197487](arg subloc_id[197484]:int(64)[13], arg fn[197490]:int(64)[13], arg args[197494]:chpl_task_bundle_p[197085], arg args_size[197498] :
+  size_t[209674], ref arg tlist[197502]:c_void_ptr[141], arg tlist_node_id[197506]:int(64)[13]) : _unknown[43] "export" "insert line file info" "local args" "no return value for void"
+  {
+    unknown call_tmp[647894] "maybe param" "maybe type" "temp"
+    (647897 'move' call_tmp[647894](197511 call chpl_task_getChapelData))
+    unknown tls[197512] "insert auto destroy"
+    (493628 'init var' tls[197512] call_tmp[647894])
+    unknown call_tmp[647899] "maybe param" "maybe type" "temp"
+    (647902 'move' call_tmp[647899](197519 call chpl_task_data_getSerial tls[197512]))
+    unknown isSerial[197520] "insert auto destroy"
+    (493630 'init var' isSerial[197520] call_tmp[647899])
+    unknown call_tmp[647904] "expr temp" "maybe param" "maybe type" "temp"
+    (647907 'move' call_tmp[647904](197549 call _cond_test isSerial[197520]))
+    if call_tmp[647904]
+    {
+      (197528 call chpl_ftable_call fn[197490] args[197494])
+    }
+    {
+      (197535 call chpl_task_data_setup args[197494] tls[197512])
+      (197547 call chpl_task_addToTaskList fn[197490] args[197494] args_size[197498] subloc_id[197484] tlist[197502] tlist_node_id[197506] 0)
+    }
+    (477247 return _void[47])
+  }
+  function chpl_taskListExecute[197561](ref arg task_list[197558]:c_void_ptr[141]) : _unknown[43] "export" "insert line file info" "local args" "no return value for void"
+  {
+    (197566 call chpl_task_executeTasksInList task_list[197558])
+    (477249 return _void[47])
+  }
+  (329499 'used modules list'(197051 'use' ChapelStandard[19734]))
+}

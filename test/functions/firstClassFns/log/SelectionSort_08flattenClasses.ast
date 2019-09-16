@@ -1,0 +1,75 @@
+AST dump for SelectionSort after pass flattenClasses.
+Module use list: ChapelStandard 
+
+{
+  function selectionSort[256348](arg Data[256345] :
+  (256343 call chpl__buildArrayRuntimeType unknown Dom[256338] unknown eltType[256341]), arg comparator[256353] :
+  unknown rec[256350] =
+  defaultComparator[251428]) : _unknown[43] "no return value for void"
+  {
+    if(256385 call _cond_test(256362 call !=(256358 call . Dom[256338] c"rank") 1))
+    {
+      (256382 call compilerError "selectionSort() requires 1-D array")
+    }
+    const low[256394] "const"(256391 call . Dom[256338] c"alignedLow")
+    const high[256401] "const"(256398 call . Dom[256338] c"alignedHigh")
+    const stride[256411] "const"(256410 call abs(256406 call . Dom[256338] c"stride"))
+    {
+      unknown _indexOfInterest[256517] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[256518] "expr temp" "temp"
+      (256527 'move' _iterator[256518](256525 call _getIterator(256542 call chpl_direct_range_iter low[256394](256539 call - high[256401] stride[256411]) stride[256411])))
+      Defer
+      {
+        {
+          (256558 call _freeIterator _iterator[256518])
+        }
+      }
+      { scopeless type
+        (256547 'move' _indexOfInterest[256517](256544 call iteratorIndex _iterator[256518]))
+      }
+      ForLoop
+      {
+        unknown i[256551] "index var" "insert auto destroy"
+        (256553 'move' i[256551] _indexOfInterest[256517])
+        {
+          unknown jMin[256426] i[256551]
+          {
+            unknown _indexOfInterest[256464] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[256465] "expr temp" "temp"
+            (256474 'move' _iterator[256465](256472 call _getIterator(256483 call chpl_direct_range_iter i[256551] high[256401] stride[256411])))
+            Defer
+            {
+              {
+                (256499 call _freeIterator _iterator[256465])
+              }
+            }
+            { scopeless type
+              (256488 'move' _indexOfInterest[256464](256485 call iteratorIndex _iterator[256465]))
+            }
+            ForLoop
+            {
+              unknown j[256492] "index var" "insert auto destroy"
+              (256494 'move' j[256492] _indexOfInterest[256464])
+              {
+                if(256458 call _cond_test(256451 call <(256449 call chpl_compare(256442 call Data[256345] j[256492])(256447 call Data[256345] jMin[256426]) comparator[256353]) 0))
+                {
+                  (256455 call = jMin[256426] j[256492])
+                }
+              }
+              label _continueLabel[256469]
+              _indexOfInterest[256464]
+              _iterator[256465]
+            }
+            label _breakLabel[256470]
+          }
+          (256514 call <=>(256509 call Data[256345] i[256551])(256513 call Data[256345] jMin[256426]))
+        }
+        label _continueLabel[256522]
+        _indexOfInterest[256517]
+        _iterator[256518]
+      }
+      label _breakLabel[256523]
+    }
+  }
+  (329619 'used modules list'(328344 'use' ChapelStandard[19734]))
+}

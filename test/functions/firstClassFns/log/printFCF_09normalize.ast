@@ -1,0 +1,20 @@
+AST dump for printFCF after pass normalize.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_printFCF[390309]() : void[4] "insert line file info" "module init"
+  {
+    (647937 'move' call_tmp[647934](365491 'capture fn for chpl' justCheck))
+    (647942 'move' call_tmp[647939](197614 call _cast string[24] call_tmp[647934]))
+    (197617 call writeln call_tmp[647939])
+    (477263 return _void[47])
+  }
+  function justCheck[197601](arg i[197598]:int(64)[13]) : _unknown[43] "no return value for void"
+  {
+    (197606 call writeln i[197598])
+    (477261 return _void[47])
+  }
+  unknown call_tmp[647934] "expr temp" "maybe param" "maybe type" "temp"
+  unknown call_tmp[647939] "expr temp" "maybe param" "maybe type" "temp"
+  (329501 'used modules list'(328302 'use' ChapelStandard[19734]))
+}

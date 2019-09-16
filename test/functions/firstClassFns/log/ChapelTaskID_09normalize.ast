@@ -1,0 +1,61 @@
+AST dump for ChapelTaskID after pass normalize.
+Module use list: 
+
+{
+  function chpl__init_ChapelTaskID[390231]() : void[4] "insert line file info" "module init"
+  {
+    (472520 return _void[47])
+  }
+  function =[165159](ref arg a[165156]:chpl_taskID_t[155], arg b[165162]:chpl_taskID_t[155]) : _unknown[43] "assignop" "inline" "no return value for void"
+  {
+    (165169 '=' a[165156] b[165162])
+    (472500 return _void[47])
+  }
+  function ==[165181](arg a[165178]:chpl_taskID_t[155], arg b[165184]:chpl_taskID_t[155]) : _unknown[43] "inline"
+  {
+    unknown ret[472504] "RVV" "temp"
+    unknown call_tmp[627591] "expr temp" "maybe param" "maybe type" "temp"
+    (627594 'move' call_tmp[627591](165191 '==' a[165178] b[165184]))
+    (472509 'move' ret[472504](472508 'deref' call_tmp[627591]))
+    (472506 return ret[472504])
+  }
+  function _cast[165201](arg t[165199]:_any[170](?), arg x[165204]:chpl_taskID_t[155]) : _unknown[43] "inline"
+  {
+    unknown ret[472513] "RVV" "temp"
+    unknown call_tmp[627596] "expr temp" "maybe param" "maybe type" "temp"
+    (627599 'move' call_tmp[627596](165227 'cast' t[165199] x[165204]))
+    (472518 'move' ret[472513](472517 'deref' call_tmp[627596]))
+    (472515 return ret[472513])
+  }
+  where {
+    unknown tmp[403785] "maybe param" "temp"
+    unknown call_tmp[627601] "expr temp" "maybe param" "maybe type" "temp"
+    (627604 'move' call_tmp[627601](165211 call int(64)[13] 64))
+    (403796 'move' tmp[403785](165212 call == t[165199] call_tmp[627601]))
+    unknown call_tmp[627606] "expr temp" "maybe param" "maybe type" "temp"
+    (627609 'move' call_tmp[627606](403798 call _cond_invalid tmp[403785]))
+    if call_tmp[627606]
+    {
+      (403801 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[519102] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[519103] "maybe param" "temp"
+    unknown call_tmp[627611] "expr temp" "maybe param" "maybe type" "temp"
+    (627614 'move' call_tmp[627611](403786 call isTrue tmp[403785]))
+    (519108 'move' tmp[519103](519106 call _cond_test call_tmp[627611]))
+    if tmp[519103]
+    {
+      (519113 'move' tmp[519102](519110 '_paramFoldLogical' tmp[519103] 1))
+    }
+    {
+      unknown tmp[519115] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[627616] "expr temp" "maybe param" "maybe type" "temp"
+      (627619 'move' call_tmp[627616](165218 call uint(64)[107] 64))
+      unknown call_tmp[627621] "expr temp" "maybe param" "maybe type" "temp"
+      (627624 'move' call_tmp[627621](165219 call == t[165199] call_tmp[627616]))
+      (519117 'move' tmp[519115](403790 call isTrue call_tmp[627621]))
+      (519122 'move' tmp[519102](519119 '_paramFoldLogical' tmp[519103] tmp[519115]))
+    }
+    (691953 call _statementLevelSymbol tmp[519102])
+  }
+}

@@ -1,0 +1,165 @@
+AST dump for SyncVarRuntimeSupport after pass scopeResolve.
+Module use list: ChapelStandard AlignedTSupport 
+
+{
+  type chpl_sync_aux_t[88400]
+  {
+  }
+  function chpl_sync_initAux[88411](ref arg aux[88408] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_destroyAux[88421](ref arg aux[88418] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_waitEmptyAndLock[88431](ref arg aux[88428] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_waitFullAndLock[88441](ref arg aux[88438] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_lock[88451](ref arg aux[88448] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_unlock[88461](ref arg aux[88458] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_markAndSignalEmpty[88471](ref arg aux[88468] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_markAndSignalFull[88481](ref arg aux[88478] :
+  chpl_sync_aux_t[88400]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_sync_isFull[88491](arg value[88488] :
+  c_void_ptr[141], ref arg aux[88494] :
+  chpl_sync_aux_t[88400]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    bool[10]
+  }
+  type chpl_single_aux_t[88503]
+  {
+  }
+  function chpl_single_initAux[88514](ref arg aux[88511] :
+  chpl_single_aux_t[88503]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_single_destroyAux[88524](ref arg aux[88521] :
+  chpl_single_aux_t[88503]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_single_waitFullAndLock[88534](ref arg aux[88531] :
+  chpl_single_aux_t[88503]) : void[4] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_single_lock[88544](ref arg aux[88541] :
+  chpl_single_aux_t[88503]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_single_unlock[88554](ref arg aux[88551] :
+  chpl_single_aux_t[88503]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_single_markAndSignalFull[88564](ref arg aux[88561] :
+  chpl_single_aux_t[88503]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  function chpl_single_isFull[88574](arg value[88571] :
+  c_void_ptr[141], ref arg aux[88577] :
+  chpl_single_aux_t[88503]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    bool[10]
+  }
+  function supportsNativeSyncVar[88588](arg t[88586]:_any[170](?)) param : _unknown[43]
+  {
+    (88624 return(88622 call &&(88613 call &&(88607 call == CHPL_TASKS[42685] "qthreads")(88612 call castableToAlignedT t[88586]))(88620 call ==(88618 call numBits c_uintptr[209653]) 64)))
+  }
+  function qthread_readFE[88635](ref arg dest[88632] :
+  aligned_t[88784], const  ref arg src[88638] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_readFF[88651](ref arg dest[88648] :
+  aligned_t[88784], const  ref arg src[88654] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_readXX[88667](ref arg dest[88664] :
+  aligned_t[88784], const  ref arg src[88670] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_writeEF[88683](ref arg dest[88680] :
+  aligned_t[88784], const  ref arg src[88686] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_writeFF[88699](ref arg dest[88696] :
+  aligned_t[88784], const  ref arg src[88702] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_writeF[88715](ref arg dest[88712] :
+  aligned_t[88784], const  ref arg src[88718] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_purge_to[88731](ref arg dest[88728] :
+  aligned_t[88784], const  ref arg src[88734] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_empty[88747](const  ref arg dest[88744] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_fill[88759](const  ref arg dest[88756] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  function qthread_feb_status[88771](const  ref arg dest[88768] :
+  aligned_t[88784]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_int[209569]
+  }
+  (329352 'used modules list'(88391 'use' ChapelStandard[19734])(88396 'use' AlignedTSupport[88779]))
+}

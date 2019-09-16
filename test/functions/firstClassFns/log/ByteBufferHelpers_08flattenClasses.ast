@@ -1,0 +1,183 @@
+AST dump for ByteBufferHelpers after pass flattenClasses.
+Module use list: ChapelStandard 
+
+{
+  unknown byteType[172913] "no doc" "type variable"(172912 call uint(64)[107] 8)
+  unknown bufferType[172923] "no doc" "type variable"(172922 call c_ptr[193070](?)(172920 call uint(64)[107] 8))
+  unknown locIdType[172928] "no doc" "type variable"(172927 'typeof' chpl_nodeID[195933])
+  unknown chpl_stringGrowthFactor[172932] "config" "param" 1.5
+  function chpl_memhook_md_num[172937]() : _unknown[43] "extern" "local args" "no fn body" "private" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    chpl_mem_descInt_t[11750]
+  }
+  function offset_STR_COPY_DATA[172945]() : _unknown[43] "no parens" "private"
+  {
+    const CHPL_RT_MD_STR_COPY_DATA[172948] "const" "extern" chpl_mem_descInt_t[11750]
+    (172958 return(172956 call - CHPL_RT_MD_STR_COPY_DATA[172948](172955 call chpl_memhook_md_num)))
+  }
+  function offset_STR_COPY_REMOTE[172964]() : _unknown[43] "no parens" "private"
+  {
+    const CHPL_RT_MD_STR_COPY_REMOTE[172967] "const" "extern" chpl_mem_descInt_t[11750]
+    (172977 return(172975 call - CHPL_RT_MD_STR_COPY_REMOTE[172967](172974 call chpl_memhook_md_num)))
+  }
+  function chpl_string_comm_get[172987](arg dest[172984] :
+  bufferType[172923], arg src_loc_id[172993] :
+  (172992 call int(64)[13] 64), arg src_addr[172997] :
+  bufferType[172923], arg len[173001] :
+  integral[188](?)) : _unknown[43] "inline" "no return value for void"
+  {
+    (173031 'chpl_comm_get' dest[172984] src_loc_id[172993] src_addr[172997](173030 call(173025 call . len[173001] c"safeCast") size_t[209674]))
+  }
+  function bufferAlloc[173040](arg requestedSize[173038]:_any[170](?)) : _unknown[43] "inline"
+  {
+    const allocSize[173050] "const"(173049 call max(173046 call chpl_here_good_alloc_size requestedSize[173038]) chpl_stringMinAllocSize[346])
+    unknown buf[173062](173060 call _cast bufferType[172923](173058 call chpl_here_alloc allocSize[173050](360410 call offset_STR_COPY_DATA[172945])))
+    (173070 return(173068 call _build_tuple buf[173062] allocSize[173050]))
+  }
+  function bufferAllocExact[173078](arg requestedSize[173076]:_any[170](?)) : _unknown[43]
+  {
+    unknown buf[173088](173086 call _cast bufferType[172923](173084 call chpl_here_alloc requestedSize[173076](360416 call offset_STR_COPY_DATA[172945])))
+    (173093 return buf[173088])
+  }
+  function bufferRealloc[173101](arg buf[173099]:_any[170](?), arg requestedSize[173103]:_any[170](?)) : _unknown[43]
+  {
+    const allocSize[173116] "const"(173115 call max(173112 call chpl_here_good_alloc_size(173109 call + requestedSize[173103] 1)) chpl_stringMinAllocSize[346])
+    unknown newBuff[173129](173127 call _cast bufferType[172923](173125 call chpl_here_realloc buf[173099] allocSize[173116](360424 call offset_STR_COPY_DATA[172945])))
+    (173137 return(173135 call _build_tuple newBuff[173129] allocSize[173116]))
+  }
+  function bufferCopyRemote[173150](arg src_loc_id[173147] :
+  (173146 call int(64)[13] 64), arg src_addr[173153] :
+  bufferType[172923], arg len[173157] :
+  int(64)[13]) : _unknown[43]
+  {
+    const dest[173172] "const"(173170 call _cast bufferType[172923](173168 call chpl_here_alloc(173164 call + len[173157] 1)(360432 call offset_STR_COPY_REMOTE[172964])))
+    (173182 call chpl_string_comm_get dest[173172] src_loc_id[173147] src_addr[173153] len[173157])
+    (173189 call =(173187 call dest[173172] len[173157]) 0)
+    (173193 return dest[173172])
+  }
+  { scopeless type
+    bufferType[172923]
+  }
+  function bufferCopyLocal[173204](arg src_addr[173201] :
+  bufferType[172923], arg len[173207] :
+  int(64)[13]) : _unknown[43] "inline"
+  {
+    const tmp[173222] "const" "no copy" "temp"(173221 call bufferAlloc(173218 call + len[173207] 1))
+    (173229 call _check_tuple_var_decl tmp[173222] 2)
+    const dst[173210] "const"(173223 call tmp[173222] 1)
+    const allocSize[173212] "const"(173226 call tmp[173222] 2)
+    (173243 call bufferMemcpyLocal(dst = dst[173210])(src = src_addr[173201])(len = len[173207]))
+    (173250 return(173248 call _build_tuple dst[173210] allocSize[173212]))
+  }
+  function bufferFree[173258](arg buf[173256]:_any[170](?)) : _unknown[43] "inline" "no return value for void"
+  {
+    (173263 call chpl_here_free buf[173256])
+  }
+  function bufferCopy[173274](arg buf[173271] :
+  bufferType[172923], arg off[173277] :
+  int(64)[13], arg len[173281] :
+  int(64)[13], arg loc[173285] :
+  locIdType[172928]) : _unknown[43] "inline"
+  {
+    if(173328 call _cond_test(173295 call &&(173289 call ! 1)(173293 call != loc[173285] chpl_nodeID[195933])))
+    {
+      unknown newBuf[173306](173305 call bufferCopyRemote loc[173285](173302 call + buf[173271] off[173277]) len[173281])
+      (173315 return(173313 call _build_tuple newBuf[173306] len[173281]))
+    }
+    {
+      (173325 return(173324 call bufferCopyLocal(173320 call + buf[173271] off[173277]) len[173281]))
+    }
+  }
+  function bufferMemcpy[173339](arg dst[173337]:_any[170](?), arg src_loc[173341]:_any[170](?), arg src[173343]:_any[170](?), arg len[173345]:_any[170](?), arg dst_off[173348] =
+  0, arg src_off[173352] =
+  0) : _unknown[43] "inline" "no return value for void"
+  {
+    if(173393 call _cond_test(173362 call &&(173356 call ! 1)(173360 call != src_loc[173341] chpl_nodeID[195933])))
+    {
+      (173376 call chpl_string_comm_get(173367 call + dst[173337] dst_off[173348]) src_loc[173341](173373 call + src[173343] src_off[173352]) len[173345])
+    }
+    {
+      (173390 call c_memcpy(173382 call + dst[173337] dst_off[173348])(173387 call + src[173343] src_off[173352]) len[173345])
+    }
+  }
+  function bufferMemcpyLocal[173404](arg dst[173402]:_any[170](?), arg src[173406]:_any[170](?), arg len[173408]:_any[170](?), arg dst_off[173411] =
+  0, arg src_off[173415] =
+  0) : _unknown[43] "inline" "no return value for void"
+  {
+    (173435 call c_memcpy(173424 call +(173421 call _cast bufferType[172923] dst[173402]) dst_off[173411])(173432 call +(173429 call _cast bufferType[172923] src[173406]) src_off[173415]) len[173408])
+  }
+  function bufferMemmoveLocal[173444](arg dst[173442]:_any[170](?), arg src[173446]:_any[170](?), arg len[173448]:_any[170](?), arg dst_off[173451] =
+  0, arg src_off[173455] =
+  0) : _unknown[43] "inline" "no return value for void"
+  {
+    (173469 call c_memmove(173461 call + dst[173442] dst_off[173451])(173466 call + src[173446] src_off[173455]) len[173448])
+  }
+  function bufferGetByte[173478](arg buf[173476]:_any[170](?), arg off[173480]:_any[170](?), arg loc[173482]:_any[170](?)) : _unknown[43] "inline"
+  {
+    if(173522 call _cond_test(173491 call &&(173485 call ! 1)(173489 call != loc[173482] chpl_nodeID[195933])))
+    {
+      const newBuf[173505] "const"(173504 call bufferCopyRemote(src_loc_id = loc[173482])(src_addr =(173499 call + buf[173476] off[173480]))(len = 1))
+      (173513 return(173512 call newBuf[173505] 0))
+    }
+    {
+      (173519 return(173518 call buf[173476] off[173480]))
+    }
+  }
+  function bufferEquals[173533](arg buf1[173531]:_any[170](?), arg off1[173535]:_any[170](?), arg loc1[173537]:_any[170](?), arg buf2[173539]:_any[170](?), arg off2[173541]:_any[170](?), arg loc2[173543]:_any[170](?), arg len[173545]:_any[170](?)) : _unknown[43] "inline"
+  {
+    (173571 return(173569 call ==(173567 call _strcmp(buf1 =(173550 call + buf1[173531] off1[173535]))(len1 = len[173545])(loc1 = loc1[173537])(buf2 =(173560 call + buf2[173539] off2[173541]))(len2 = len[173545])(loc2 = loc1[173537])) 0))
+  }
+  function bufferEqualsLocal[173580](arg buf1[173578]:_any[170](?), arg off1[173582]:_any[170](?), arg buf2[173584]:_any[170](?), arg off2[173586]:_any[170](?), arg len[173588]:_any[170](?)) : _unknown[43] "inline"
+  {
+    (173610 return(173608 call ==(173606 call _strcmp_local(buf1 =(173593 call + buf1[173578] off1[173582]))(len1 = len[173588])(buf2 =(173601 call + buf2[173584] off2[173586]))(len2 = len[173588])) 0))
+  }
+  function _strcmp_local[173619](arg buf1[173617]:_any[170](?), arg len1[173621]:_any[170](?), arg buf2[173623]:_any[170](?), arg len2[173625]:_any[170](?)) : _unknown[43] "inline" "private"
+  {
+    const size[173633] "const"(173632 call min len1[173621] len2[173625])
+    const result[173643] "const"(173642 call c_memcmp buf1[173617] buf2[173623] size[173633])
+    if(173677 call _cond_test(173648 call == result[173643] 0))
+    {
+      if(173657 call _cond_test(173652 call < size[173633] len1[173621]))
+      {
+        (173655 return 1)
+      }
+      if(173672 call _cond_test(173665 call < size[173633] len2[173625]))
+      {
+        (173670 return(173668 call - 1))
+      }
+    }
+    (173682 return result[173643])
+  }
+  { scopeless type
+    int(64)[13]
+  }
+  function _strcmp[173691](arg buf1[173689]:_any[170](?), arg len1[173693]:_any[170](?), arg loc1[173695]:_any[170](?), arg buf2[173697]:_any[170](?), arg len2[173699]:_any[170](?), arg loc2[173701]:_any[170](?)) : _unknown[43] "inline"
+  {
+    if(173818 call _cond_test(173711 call &&(173705 call == loc1[173695] chpl_nodeID[195933])(173709 call == loc2[173701] chpl_nodeID[195933])))
+    {
+      (173720 return(173719 call _strcmp_local buf1[173689] len1[173693] buf2[173697] len2[173699]))
+    }
+    {
+      if(173813 call _cond_test(173731 call &&(173725 call != loc1[173695] chpl_nodeID[195933])(173729 call == loc2[173701] chpl_nodeID[195933])))
+      {
+        unknown locBuf1[173739](173738 call bufferCopyRemote loc1[173695] buf1[173689] len1[173693])
+        (173750 return(173749 call _strcmp_local locBuf1[173739] len1[173693] buf2[173697] len2[173699]))
+      }
+      {
+        if(173809 call _cond_test(173760 call &&(173754 call == loc1[173695] chpl_nodeID[195933])(173758 call != loc2[173701] chpl_nodeID[195933])))
+        {
+          unknown locBuf2[173768](173767 call bufferCopyRemote loc2[173701] buf2[173697] len2[173699])
+          (173779 return(173778 call _strcmp_local buf1[173689] len1[173693] locBuf2[173768] len2[173699]))
+        }
+        {
+          unknown locBuf1[173787](173786 call bufferCopyRemote loc1[173695] buf1[173689] len1[173693])
+          unknown locBuf2[173797](173796 call bufferCopyRemote loc2[173701] buf2[173697] len2[173699])
+          (173807 return(173806 call _strcmp_local locBuf1[173787] len1[173693] locBuf2[173797] len2[173699]))
+        }
+      }
+    }
+  }
+  (329456 'used modules list'(172906 'use' ChapelStandard[19734]))
+}

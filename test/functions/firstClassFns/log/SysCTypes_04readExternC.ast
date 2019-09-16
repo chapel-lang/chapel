@@ -1,0 +1,46 @@
+AST dump for SysCTypes after pass readExternC.
+Module use list: 
+
+{
+  (328314 'use' ChapelStandard)
+  unknown c_int[209569] "extern" "type variable"(209568 call int[13] 32)
+  unknown c_uint[209576] "extern" "type variable"(209575 call uint[107] 32)
+  unknown c_long[209583] "extern" "type variable"(209582 call int[13] 64)
+  unknown c_ulong[209590] "extern" "type variable"(209589 call uint[107] 64)
+  unknown c_longlong[209597] "extern" "type variable"(209596 call int[13] 64)
+  unknown c_ulonglong[209604] "extern" "type variable"(209603 call uint[107] 64)
+  unknown c_char[209611] "extern" "type variable"(209610 call int[13] 8)
+  unknown c_schar[209618] "extern" "type variable"(209617 call int[13] 8)
+  unknown c_uchar[209625] "extern" "type variable"(209624 call uint[107] 8)
+  unknown c_short[209632] "extern" "type variable"(209631 call int[13] 16)
+  unknown c_ushort[209639] "extern" "type variable"(209638 call uint[107] 16)
+  unknown c_intptr[209646] "extern" "type variable"(209645 call int[13] 64)
+  unknown c_uintptr[209653] "extern" "type variable"(209652 call uint[107] 64)
+  unknown c_ptrdiff[209660] "extern" "type variable"(209659 call int[13] 64)
+  unknown ssize_t[209667] "extern" "type variable"(209666 call int[13] 64)
+  unknown size_t[209674] "extern" "type variable"(209673 call uint[107] 64)
+  {
+    function sizeof[209681](arg t[209679]:_any[170](?)) : _unknown[43] "extern" "local args" "no fn body"
+    {
+    }
+    { scopeless type
+      size_t
+    }
+    (209703 call assert(209700 call ==(209692 call sizeof c_int)(209699 call sizeof(209697 call int[13] 32))))
+    (209720 call assert(209717 call ==(209709 call sizeof c_uint)(209716 call sizeof(209714 call uint[107] 32))))
+    (209737 call assert(209734 call ==(209726 call sizeof c_long)(209733 call sizeof(209731 call int[13] 64))))
+    (209754 call assert(209751 call ==(209743 call sizeof c_ulong)(209750 call sizeof(209748 call uint[107] 64))))
+    (209771 call assert(209768 call ==(209760 call sizeof c_longlong)(209767 call sizeof(209765 call int[13] 64))))
+    (209788 call assert(209785 call ==(209777 call sizeof c_ulonglong)(209784 call sizeof(209782 call uint[107] 64))))
+    (209805 call assert(209802 call ==(209794 call sizeof c_char)(209801 call sizeof(209799 call int[13] 8))))
+    (209822 call assert(209819 call ==(209811 call sizeof c_schar)(209818 call sizeof(209816 call int[13] 8))))
+    (209839 call assert(209836 call ==(209828 call sizeof c_uchar)(209835 call sizeof(209833 call uint[107] 8))))
+    (209856 call assert(209853 call ==(209845 call sizeof c_short)(209852 call sizeof(209850 call int[13] 16))))
+    (209873 call assert(209870 call ==(209862 call sizeof c_ushort)(209869 call sizeof(209867 call uint[107] 16))))
+    (209890 call assert(209887 call ==(209879 call sizeof c_intptr)(209886 call sizeof(209884 call int[13] 64))))
+    (209907 call assert(209904 call ==(209896 call sizeof c_uintptr)(209903 call sizeof(209901 call uint[107] 64))))
+    (209924 call assert(209921 call ==(209913 call sizeof c_ptrdiff)(209920 call sizeof(209918 call int[13] 64))))
+    (209941 call assert(209938 call ==(209930 call sizeof ssize_t)(209937 call sizeof(209935 call int[13] 64))))
+    (209958 call assert(209955 call ==(209947 call sizeof size_t)(209954 call sizeof(209952 call uint[107] 64))))
+  }
+}

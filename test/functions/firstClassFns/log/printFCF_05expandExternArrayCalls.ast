@@ -1,0 +1,12 @@
+AST dump for printFCF after pass expandExternArrayCalls.
+Module use list: 
+
+{
+  (328302 'use' ChapelStandard)
+  function justCheck[197601](arg i[197598] :
+  int[13]) : _unknown[43]
+  {
+    (197606 call writeln i)
+  }
+  (197617 call writeln(197614 call _cast string[24] justCheck))
+}

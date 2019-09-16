@@ -1,0 +1,114 @@
+AST dump for AlignedTSupport after pass createTaskFunctions.
+Module use list: 
+
+{
+  function chpl__init_AlignedTSupport[390192]() : void[4] "insert line file info" "module init"
+  {
+    (464278 return _void[47])
+  }
+  function =[709175](ref arg _arg1[709177]:aligned_t[88784], arg _arg2[709178]:aligned_t[88784]) : _unknown[43] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (709181 '=' _arg1[709177] _arg2[709178])
+    (709185 return _void[47])
+  }
+  type aligned_t[88784]
+  function castableToAlignedT[88791](arg t[88789]:_any[170](?)) param : _unknown[43]
+  {
+    unknown ret[464222] "RVV" "param" "temp"
+    unknown tmp[397758] "maybe param" "temp"
+    (397769 'move' tmp[397758](88796 call isIntegralType t[88789]))
+    unknown call_tmp[580303] "expr temp" "maybe param" "maybe type" "temp"
+    (580306 'move' call_tmp[580303](397771 call _cond_invalid tmp[397758]))
+    if call_tmp[580303]
+    {
+      (397774 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509727] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509728] "maybe param" "temp"
+    unknown call_tmp[580308] "expr temp" "maybe param" "maybe type" "temp"
+    (580311 'move' call_tmp[580308](397759 call isTrue tmp[397758]))
+    (509733 'move' tmp[509728](509731 call _cond_test call_tmp[580308]))
+    if tmp[509728]
+    {
+      (509738 'move' tmp[509727](509735 '_paramFoldLogical' tmp[509728] 1))
+    }
+    {
+      unknown tmp[509740] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[580313] "expr temp" "maybe param" "maybe type" "temp"
+      (580316 'move' call_tmp[580313](88800 call isBoolType t[88789]))
+      (509742 'move' tmp[509740](397763 call isTrue call_tmp[580313]))
+      (509747 'move' tmp[509727](509744 '_paramFoldLogical' tmp[509728] tmp[509740]))
+    }
+    (464227 'move' ret[464222](464226 'deref' tmp[509727]))
+    (464224 return ret[464222])
+  }
+  function _cast[88814](arg t[88811]:aligned_t[88784], arg x[88817]:integral[188](?)) : _unknown[43] "inline"
+  {
+    unknown ret[464231] "RVV" "temp"
+    unknown call_tmp[580318] "expr temp" "maybe param" "maybe type" "temp"
+    (580321 'move' call_tmp[580318](88824 'cast' t[88811] x[88817]))
+    (464236 'move' ret[464231](464235 'deref' call_tmp[580318]))
+    (464233 return ret[464231])
+  }
+  function _cast[88836](arg t[88833]:aligned_t[88784], arg x[88839]:bool[10]) : _unknown[43] "inline"
+  {
+    unknown ret[464240] "RVV" "temp"
+    unknown call_tmp[580323] "expr temp" "maybe param" "maybe type" "temp"
+    (580326 'move' call_tmp[580323](88846 'cast' t[88833] x[88839]))
+    (464245 'move' ret[464240](464244 'deref' call_tmp[580323]))
+    (464242 return ret[464240])
+  }
+  function _cast[88858](arg t[88855]:chpl_anybool[173](?), arg x[88861]:aligned_t[88784]) : _unknown[43] "inline"
+  {
+    unknown ret[464249] "RVV" "temp"
+    unknown call_tmp[580328] "expr temp" "maybe param" "maybe type" "temp"
+    (580331 'move' call_tmp[580328](88868 'cast' t[88855] x[88861]))
+    (464254 'move' ret[464249](464253 'deref' call_tmp[580328]))
+    (464251 return ret[464249])
+  }
+  function _cast[88880](arg t[88877]:integral[188](?), arg x[88883]:aligned_t[88784]) : _unknown[43] "inline"
+  {
+    unknown ret[464258] "RVV" "temp"
+    unknown call_tmp[580333] "expr temp" "maybe param" "maybe type" "temp"
+    (580336 'move' call_tmp[580333](88890 'cast' t[88877] x[88883]))
+    (464263 'move' ret[464258](464262 'deref' call_tmp[580333]))
+    (464260 return ret[464258])
+  }
+  function defaultOfAlignedT[88900](arg t[88898]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[464267] "RVV" "temp"
+    const defaultValue[88903] "const" "insert auto destroy"
+    (490199 'default init var' defaultValue[88903] t[88898])
+    unknown call_tmp[580338] "expr temp" "maybe param" "maybe type" "temp"
+    (580341 'move' call_tmp[580338](88909 call _cast aligned_t[88784] defaultValue[88903]))
+    (464272 'move' ret[464267](464271 'deref' call_tmp[580338]))
+    (464269 return ret[464267])
+  }
+  function aligned_t[88784].writeThis[88920](arg _mt[88925]:_MT[227], arg this[88922]:aligned_t[88784] :
+  aligned_t[88784], arg f[88918]:_any[170](?)) : _unknown[43] "method" "no return value for void"
+  {
+    unknown call_tmp[580343] "expr temp" "maybe param" "maybe type" "temp"
+    (580346 'move' call_tmp[580343](88935 call uint(64)[107] 64))
+    unknown call_tmp[580348] "maybe param" "maybe type" "temp"
+    (580351 'move' call_tmp[580348](88936 call _cast call_tmp[580343] this[88922]))
+    unknown call_tmp[580353] "maybe param" "maybe type" "temp"
+    (580356 'move' call_tmp[580353](88930 call uint(64)[107] 64))
+    unknown tmp[88938] "insert auto destroy"
+    (490201 'init var' tmp[88938] call_tmp[580348] call_tmp[580353])
+    (88944 call <~> f[88918] tmp[88938])
+    (464274 return _void[47])
+  }
+  function aligned_t[88784].readThis[88954](arg _mt[88959]:_MT[227], arg this[88956]:aligned_t[88784] :
+  aligned_t[88784], arg f[88952]:_any[170](?)) : _unknown[43] "method" "no return value for void"
+  {
+    unknown tmp[88965] "insert auto destroy"
+    unknown call_tmp[580358] "expr temp" "maybe param" "maybe type" "temp"
+    (580361 'move' call_tmp[580358](88964 call uint(64)[107] 64))
+    (490203 'default init var' tmp[88965] call_tmp[580358])
+    (88971 call <~> f[88952] tmp[88965])
+    unknown call_tmp[580363] "expr temp" "maybe param" "maybe type" "temp"
+    (580366 'move' call_tmp[580363](88977 call _cast aligned_t[88784] tmp[88965]))
+    (88979 call = this[88956] call_tmp[580363])
+    (464276 return _void[47])
+  }
+}

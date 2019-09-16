@@ -1,0 +1,1003 @@
+AST dump for Regexp after pass readExternC.
+Module use list: 
+
+{
+  (328372 'use' ChapelStandard)
+  { scopeless
+    (277793 'use' SysBasic)
+    (277795 'use' SysError)
+  }
+  type qio_regexp_t[277801]
+  type qio_regexp_options_t[277837] unknown utf8[277805] bool[10] unknown posix[277809] bool[10] unknown literal[277813] bool[10] unknown nocapture[277817] bool[10] unknown ignorecase[277821] bool[10] unknown multiline[277825] bool[10] unknown dotnl[277829] bool[10] unknown nongreedy[277833] bool[10]
+  function qio_regexp_null[277842]() : _unknown[43] "extern" "local args" "no fn body" "no doc"
+  {
+  }
+  { scopeless type
+    qio_regexp_t
+  }
+  function qio_regexp_init_default_options[277854](ref arg options[277851] :
+  qio_regexp_options_t) : void[4] "extern" "local args" "no fn body" "private"
+  {
+  }
+  function qio_regexp_create_compile[277864](arg str[277861] :
+  c_string, arg strlen[277870] :
+  (277869 call int[13] 64), ref arg options[277874] :
+  qio_regexp_options_t, ref arg compiled[277878] :
+  qio_regexp_t) : void[4] "extern" "local args" "no fn body" "private"
+  {
+  }
+  function qio_regexp_create_compile_flags[277889](arg str[277886] :
+  c_string, arg strlen[277895] :
+  (277894 call int[13] 64), arg flags[277899] :
+  c_string, arg flagslen[277906] :
+  (277905 call int[13] 64), arg isUtf8[277910] :
+  bool[10], ref arg compiled[277914] :
+  qio_regexp_t) : void[4] "extern" "local args" "no fn body" "private"
+  {
+  }
+  function qio_regexp_create_compile_flags_2[277925](arg str[277922] :
+  c_void_ptr, arg strlen[277931] :
+  (277930 call int[13] 64), arg flags[277935] :
+  c_void_ptr, arg flagslen[277942] :
+  (277941 call int[13] 64), arg isUtf8[277946] :
+  bool[10], ref arg compiled[277950] :
+  qio_regexp_t) : void[4] "extern" "local args" "no fn body" "no doc"
+  {
+  }
+  function qio_regexp_retain[277961](const  ref arg compiled[277958] :
+  qio_regexp_t) : void[4] "extern" "local args" "no fn body" "private"
+  {
+  }
+  function qio_regexp_release[277971](ref arg compiled[277968] :
+  qio_regexp_t) : void[4] "extern" "local args" "no fn body" "no doc"
+  {
+  }
+  function qio_regexp_get_options[277981](const  ref arg regexp[277978] :
+  qio_regexp_t, ref arg options[277984] :
+  qio_regexp_options_t) : void[4] "extern" "local args" "no fn body" "no doc" "private"
+  {
+  }
+  function qio_regexp_get_pattern[277995](const  ref arg regexp[277992] :
+  qio_regexp_t, ref arg pattern[277998] :
+  c_string) : void[4] "extern" "local args" "no fn body" "private"
+  {
+  }
+  function qio_regexp_get_ncaptures[278009](const  ref arg regexp[278006] :
+  qio_regexp_t) : _unknown[43] "extern" "local args" "no fn body" "no doc"
+  {
+  }
+  { scopeless type
+    (278014 call int[13] 64)
+  }
+  function qio_regexp_ok[278024](const  ref arg regexp[278021] :
+  qio_regexp_t) : _unknown[43] "extern" "local args" "no fn body" "no doc"
+  {
+  }
+  { scopeless type
+    bool[10]
+  }
+  function qio_regexp_error[278036](const  ref arg regexp[278033] :
+  qio_regexp_t) : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    c_string
+  }
+  const QIO_REGEXP_ANCHOR_UNANCHORED[278043] "const" "extern" "no doc" c_int
+  const QIO_REGEXP_ANCHOR_START[278047] "const" "extern" "no doc" c_int
+  const QIO_REGEXP_ANCHOR_BOTH[278051] "const" "extern" "no doc" c_int
+  type qio_regexp_string_piece_t[278070] unknown offset[278059](278058 call int[13] 64) unknown len[278066](278065 call int[13] 64)
+  function qio_regexp_string_piece_isnull[278079](ref arg sp[278076] :
+  qio_regexp_string_piece_t) : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    bool[10]
+  }
+  function qio_regexp_match[278091](const  ref arg re[278088] :
+  qio_regexp_t, arg text[278094] :
+  c_string, arg textlen[278101] :
+  (278100 call int[13] 64), arg startpos[278108] :
+  (278107 call int[13] 64), arg endpos[278115] :
+  (278114 call int[13] 64), arg anchor[278119] :
+  c_int, arg submatch[278126] :
+  (278125 call _ddata qio_regexp_string_piece_t), arg nsubmatch[278133] :
+  (278132 call int[13] 64)) : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    bool[10]
+  }
+  function qio_regexp_replace[278146](const  ref arg re[278143] :
+  qio_regexp_t, arg repl[278149] :
+  c_string, arg repllen[278156] :
+  (278155 call int[13] 64), arg text[278160] :
+  c_string, arg textlen[278167] :
+  (278166 call int[13] 64), arg startpos[278174] :
+  (278173 call int[13] 64), arg endpos[278181] :
+  (278180 call int[13] 64), arg global[278185] :
+  bool[10], ref arg replaced[278189] :
+  c_string, ref arg replaced_len[278196] :
+  (278195 call int[13] 64)) : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    (278202 call int[13] 64)
+  }
+  type BadRegexpError[278245] unknown msg[278210] string[24] function BadRegexpError[278245].init[278219](arg _mt[278249]:_MT[227], arg this[278247]:BadRegexpError[278245], arg msg[278216] :
+  string[24]) : _unknown[43] "method" "primary method"
+  {
+    (278228 call =(278224 call . this c"msg") msg)
+  } function BadRegexpError[278245].message[278236](arg _mt[278253]:_MT[227], arg this[278251]:BadRegexpError[278245]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    (278239 return msg)
+  } Error
+  function compile[278262](arg pattern[278259] :
+  string[24], arg utf8[278265] =
+  1, arg posix[278269] =
+  0, arg literal[278273] =
+  0, arg nocapture[278277] =
+  0, arg ignorecase[278281] =
+  0, arg multiline[278285] =
+  0, arg dotnl[278289] =
+  0, arg nongreedy[278293] =
+  0) : _unknown[43] throws
+  {
+    if(278322 call _cond_test(278299 call == CHPL_REGEXP "none"))
+    {
+      (278319 call compilerError "Cannot use Regexp with CHPL_REGEXP=none")
+    }
+    unknown opts[278328] qio_regexp_options_t
+    (278334 call qio_regexp_init_default_options opts)
+    (278343 call =(278339 call . opts c"utf8") utf8)
+    (278353 call =(278349 call . opts c"posix") posix)
+    (278361 call =(278357 call . opts c"literal") literal)
+    (278371 call =(278367 call . opts c"nocapture") nocapture)
+    (278381 call =(278377 call . opts c"ignorecase") ignorecase)
+    (278391 call =(278387 call . opts c"multiline") multiline)
+    (278401 call =(278397 call . opts c"dotnl") dotnl)
+    (278411 call =(278407 call . opts c"nongreedy") nongreedy)
+    unknown ret[278415] regexp
+    (278440 call qio_regexp_create_compile(278429 call(278425 call .(278424 call(278420 call . pattern c"localize")) c"c_str"))(278432 call . pattern c"numBytes") opts(278437 call . ret c"_regexp"))
+    if(278502 call _cond_test(278449 call !(278448 call qio_regexp_ok(278444 call . ret c"_regexp"))))
+    {
+      unknown err_str[278458](278457 call qio_regexp_error(278453 call . ret c"_regexp"))
+      unknown err_msg[278490](278488 call +(278485 call +(278482 call +(278464 call _cast string[24] err_str) " when compiling regexp '") pattern) "'")
+      (278500 'throw'(278499 'new'(278497 call _owned(278496 call BadRegexpError err_msg))))
+    }
+    (278507 return ret)
+  }
+  { scopeless type
+    regexp
+  }
+  function compile[278518](arg pattern[278515] :
+  string[24], out arg error[278521] :
+  syserr, arg utf8[278524]:_any[170](?), arg posix[278526]:_any[170](?), arg literal[278528]:_any[170](?), arg nocapture[278530]:_any[170](?), arg ignorecase[278532]:_any[170](?), arg multiline[278534]:_any[170](?), arg dotnl[278536]:_any[170](?), arg nongreedy[278538]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    (278561 call compilerWarning "'out error: syserr' pattern has been deprecated, use 'throws' function instead")
+    unknown ret[278565] regexp
+    Try
+    {
+      {
+        (278581 call = ret(278580 call compile pattern utf8 posix literal nocapture ignorecase multiline dotnl nongreedy))
+      }
+    }
+    Catch e : SystemError
+    {
+      (278594 call = error(278591 call . e c"err"))
+    }
+    Catch
+    {
+      (278601 call = error EINVAL)
+    }
+    (278609 return ret)
+  }
+  { scopeless type
+    regexp
+  }
+  type stringPart[278628] unknown offset[278616] byteIndex unknown numBytes[278620] int[13] unknown from[278624] string[24]
+  type reMatch[278645] unknown matched[278633] bool[10] unknown offset[278637] byteIndex unknown length[278641] int[13]
+  function _to_reMatch[278654](ref arg p[278651] :
+  qio_regexp_string_piece_t) : _unknown[43] "no doc"
+  {
+    if(278695 call _cond_test(278660 call qio_regexp_string_piece_isnull p))
+    {
+      (278673 return(278672 'new'(278671 call reMatch 0(278668 call _cast byteIndex(278665 call - 1)) 0)))
+    }
+    {
+      (278692 return(278691 'new'(278690 call reMatch 1(278684 call _cast byteIndex(278680 call . p c"offset"))(278687 call . p c"len"))))
+    }
+  }
+  { scopeless type
+    reMatch
+  }
+  function ![278709](arg m[278706] :
+  reMatch) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (278717 return(278715 call !(278712 call . m c"matched")))
+    }
+  }
+  function _cond_test[278728](arg m[278725] :
+  reMatch) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (278734 return(278731 call . m c"matched"))
+    }
+  }
+  function _unknown[43].this[278746](arg _mt[278751]:_MT[227], arg this[278748] :
+  string[24], arg m[278743] :
+  reMatch) : _unknown[43] "method"
+  {
+    if(278795 call _cond_test(278754 call . m c"matched"))
+    {
+      { scopeless
+        (278775 return(278774 call this(278771 call #(278765 call chpl_build_low_bounded_range(278763 call +(278759 call . m c"offset") 1))(278768 call . m c"length"))))
+      }
+    }
+    {
+      { scopeless
+        (278793 return "")
+      }
+    }
+  }
+  type regexp[281396] unknown home[278807] "no doc" here locale[26] unknown _regexp[278814] "no doc"(278813 call qio_regexp_null) qio_regexp_t function regexp[281396].init[278819](arg _mt[281400]:_MT[227], arg this[281398]:regexp[281396]) : _unknown[43] "method" "primary method"
+  {
+  } function regexp[281396].init=[278830](arg _mt[281404]:_MT[227], arg this[281402]:regexp[281396], arg x[278827] :
+  regexp) : _unknown[43] "method" "primary method"
+  {
+    (278840 call =(278833 call . this c"home")(278837 call . x c"home"))
+    (278852 call =(278845 call . this c"_regexp")(278849 call . x c"_regexp"))
+    (278860 call(278856 call . this c"complete"))
+    {
+      const tmp[278872] "const" "temp"
+      (278873 'move' tmp[278872](278870 'deref'(278869 '_wide_get_locale' home)))
+      {
+        (278866 call qio_regexp_retain _regexp)
+      }
+    }
+  } function regexp[281396].ok[278881](arg _mt[281408]:_MT[227], arg this[281406]:regexp[281396]) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (278888 return(278887 call qio_regexp_ok _regexp))
+  }
+  { scopeless type
+    bool[10]
+  } function regexp[281396].error[278896](arg _mt[281412]:_MT[227], arg this[281410]:regexp[281396]) : _unknown[43] "method" "primary method"
+  {
+    (278906 return(278904 call _cast string[24](278902 call qio_regexp_error _regexp)))
+  }
+  { scopeless type
+    string[24]
+  } function regexp[281396].deinit[278914](arg _mt[281416]:_MT[227], ref arg this[281414]:regexp[281396]) : _unknown[43] "destructor" "method" "primary method" "no doc"
+  {
+    (278919 call qio_regexp_release _regexp)
+    (278926 call = _regexp(278925 call qio_regexp_null))
+  } function regexp[281396]._handle_captures[278937](arg _mt[281420]:_MT[227], arg this[281418]:regexp[281396], arg text[278934] :
+  string[24], arg matches[278943] :
+  (278942 call _ddata qio_regexp_string_piece_t), arg nmatches[278947] :
+  int[13], ref arg captures[278950]:_any[170](?)) : _unknown[43] "method" "primary method" "no doc"
+  {
+    (278961 call assert(278958 call >= nmatches(278955 call . captures c"size")))
+    {
+      unknown i[279095] 0
+      unknown tmp[279096] "maybe param" "temp"
+      (279108 'move' tmp[279096](279106 call chpl_compute_low_param_loop_bound 1(278966 call . captures c"size")))
+      unknown tmp[279097] "maybe param" "temp"
+      (279118 'move' tmp[279097](279116 call chpl_compute_high_param_loop_bound 1(279113 call . captures c"size")))
+      unknown tmp[279098] "maybe param" "temp"
+      (279121 'move' tmp[279098] 1)
+      ParamForLoop
+      { i[279095] tmp[279096] tmp[279097] tmp[279098]
+        {
+          unknown m[278978](278977 call _to_reMatch(278975 call matches i))
+          if(279091 call _cond_test(278988 call ==(278986 'typeof'(278985 call captures i)) reMatch))
+          {
+            (278995 call =(278993 call captures i) m)
+          }
+          {
+            if(279086 call _cond_test(279000 call . m c"matched"))
+            {
+              if(279064 call _cond_test(279009 call ==(279007 'typeof'(279006 call captures i)) string[24]))
+              {
+                (279019 call =(279014 call captures i)(279018 call text m))
+              }
+              {
+                Try
+                {
+                  {
+                    (279038 call =(279026 call captures i)(279036 call _cast(279035 'typeof'(279034 call captures i))(279030 call text m)))
+                  }
+                }
+                Catch
+                {
+                  unknown empty[279048](279047 'typeof'(279046 call captures i))
+                  (279057 call =(279055 call captures i) empty)
+                }
+              }
+            }
+            {
+              unknown empty[279074](279073 'typeof'(279072 call captures i))
+              (279083 call =(279081 call captures i) empty)
+            }
+          }
+        }
+      }
+      label _unused_continueLabel[279100]
+      label _breakLabel[279099]
+    }
+  } function regexp[281396].search[279141](arg _mt[281424]:_MT[227], arg this[281422]:regexp[281396], arg text[279138] :
+  unknown t[279136], ref arg captures[279145]:_any[170](?) ...) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[279160] reMatch
+    {
+      const tmp[279370] "const" "temp"
+      (279371 'move' tmp[279370](279368 'deref'(279367 '_wide_get_locale'(279165 call . this c"home"))))
+      {
+        unknown pos[279169] byteIndex
+        unknown endpos[279174] byteIndex
+        if(279194 call _cond_test(279179 call == t stringPart))
+        {
+          { scopeless
+            (279186 call = pos(279183 call . text c"offset"))
+          }
+        }
+        {
+          { scopeless
+            (279191 call = pos 0)
+          }
+        }
+        (279208 call = endpos(279206 call + pos(279203 call . text c"numBytes")))
+        unknown matches[279215](279214 call _ddata qio_regexp_string_piece_t)
+        unknown nmatches[279225](279223 call + 1(279220 call . captures c"size"))
+        (279234 call = matches(279233 call _ddata_allocate qio_regexp_string_piece_t nmatches))
+        unknown got[279238] bool[10]
+        if(279323 call _cond_test(279243 call == t stringPart))
+        {
+          (279284 call = got(279283 call qio_regexp_match _regexp(279264 call(279260 call .(279259 call(279255 call .(279252 call . text c"from") c"localize")) c"c_str"))(279269 call .(279266 call . text c"from") c"numBytes")(279274 call _cast int[13] pos)(279278 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_UNANCHORED matches nmatches))
+        }
+        {
+          (279319 call = got(279318 call qio_regexp_match _regexp(279302 call(279298 call .(279297 call(279293 call . text c"localize")) c"c_str"))(279304 call . text c"numBytes")(279309 call _cast int[13] pos)(279313 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_UNANCHORED matches nmatches))
+        }
+        (279333 call _handle_captures text matches nmatches captures)
+        (279358 call = ret(279357 'new'(279356 call reMatch got(279347 call _cast byteIndex(279343 call .(279342 call matches 0) c"offset"))(279353 call .(279352 call matches 0) c"len"))))
+        (279365 call _ddata_free matches nmatches)
+      }
+    }
+    (279376 return ret)
+  }
+  where {
+    (279157 call ||(279151 call == t string[24])(279155 call == t stringPart))
+  }
+  { scopeless type
+    reMatch
+  } function regexp[281396].search[279389](arg _mt[281428]:_MT[227], arg this[281426]:regexp[281396], arg text[279386] :
+  unknown t[279384]) : _unknown[43] "method" "primary method" "no doc"
+  {
+    unknown ret[279403] reMatch
+    {
+      const tmp[279597] "const" "temp"
+      (279598 'move' tmp[279597](279595 'deref'(279594 '_wide_get_locale'(279408 call . this c"home"))))
+      {
+        unknown pos[279412] byteIndex
+        unknown endpos[279417] byteIndex
+        if(279437 call _cond_test(279422 call == t stringPart))
+        {
+          { scopeless
+            (279429 call = pos(279426 call . text c"offset"))
+          }
+        }
+        {
+          { scopeless
+            (279434 call = pos 0)
+          }
+        }
+        (279451 call = endpos(279449 call + pos(279446 call . text c"numBytes")))
+        unknown matches[279458](279457 call _ddata qio_regexp_string_piece_t)
+        unknown nmatches[279462] 1
+        (279471 call = matches(279470 call _ddata_allocate qio_regexp_string_piece_t nmatches))
+        unknown got[279475] bool[10]
+        if(279558 call _cond_test(279480 call == t stringPart))
+        {
+          (279519 call = got(279518 call qio_regexp_match _regexp(279499 call(279495 call .(279494 call(279490 call .(279487 call . text c"from") c"localize")) c"c_str"))(279504 call .(279501 call . text c"from") c"numBytes")(279509 call _cast int[13] pos)(279513 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_UNANCHORED matches nmatches))
+        }
+        {
+          (279554 call = got(279553 call qio_regexp_match _regexp(279537 call(279533 call .(279532 call(279528 call . text c"localize")) c"c_str"))(279539 call . text c"numBytes")(279544 call _cast int[13] pos)(279548 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_UNANCHORED matches nmatches))
+        }
+        (279585 call = ret(279584 'new'(279583 call reMatch got(279574 call _cast byteIndex(279570 call .(279569 call matches 0) c"offset"))(279580 call .(279579 call matches 0) c"len"))))
+        (279592 call _ddata_free matches nmatches)
+      }
+    }
+    (279603 return ret)
+  }
+  where {
+    (279400 call ||(279394 call == t string[24])(279398 call == t stringPart))
+  }
+  { scopeless type
+    reMatch
+  } function regexp[281396].match[279616](arg _mt[281432]:_MT[227], arg this[281430]:regexp[281396], arg text[279613] :
+  unknown t[279611], ref arg captures[279620]:_any[170](?) ...) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[279635] reMatch
+    {
+      const tmp[279843] "const" "temp"
+      (279844 'move' tmp[279843](279841 'deref'(279840 '_wide_get_locale'(279640 call . this c"home"))))
+      {
+        unknown pos[279644] byteIndex
+        unknown endpos[279649] byteIndex
+        if(279669 call _cond_test(279654 call == t stringPart))
+        {
+          { scopeless
+            (279661 call = pos(279658 call . text c"offset"))
+          }
+        }
+        {
+          { scopeless
+            (279666 call = pos 0)
+          }
+        }
+        (279683 call = endpos(279681 call + pos(279678 call . text c"numBytes")))
+        unknown matches[279690](279689 call _ddata qio_regexp_string_piece_t)
+        unknown nmatches[279700](279698 call + 1(279695 call . captures c"size"))
+        (279709 call = matches(279708 call _ddata_allocate qio_regexp_string_piece_t nmatches))
+        unknown got[279713] bool[10]
+        if(279796 call _cond_test(279718 call == t stringPart))
+        {
+          (279757 call = got(279756 call qio_regexp_match _regexp(279737 call(279733 call .(279732 call(279728 call .(279725 call . text c"from") c"localize")) c"c_str"))(279742 call .(279739 call . text c"from") c"numBytes")(279747 call _cast int[13] pos)(279751 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_START matches nmatches))
+        }
+        {
+          (279792 call = got(279791 call qio_regexp_match _regexp(279775 call(279771 call .(279770 call(279766 call . text c"localize")) c"c_str"))(279777 call . text c"numBytes")(279782 call _cast int[13] pos)(279786 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_START matches nmatches))
+        }
+        (279806 call _handle_captures text matches nmatches captures)
+        (279831 call = ret(279830 'new'(279829 call reMatch got(279820 call _cast byteIndex(279816 call .(279815 call matches 0) c"offset"))(279826 call .(279825 call matches 0) c"len"))))
+        (279838 call _ddata_free matches nmatches)
+      }
+    }
+    (279849 return ret)
+  }
+  where {
+    (279632 call ||(279626 call == t string[24])(279630 call == t stringPart))
+  }
+  { scopeless type
+    reMatch
+  } function regexp[281396].match[279862](arg _mt[281436]:_MT[227], arg this[281434]:regexp[281396], arg text[279859] :
+  unknown t[279857]) : _unknown[43] "method" "primary method" "no doc"
+  {
+    unknown ret[279876] reMatch
+    {
+      const tmp[280070] "const" "temp"
+      (280071 'move' tmp[280070](280068 'deref'(280067 '_wide_get_locale'(279881 call . this c"home"))))
+      {
+        unknown pos[279885] byteIndex
+        unknown endpos[279890] byteIndex
+        if(279910 call _cond_test(279895 call == t stringPart))
+        {
+          { scopeless
+            (279902 call = pos(279899 call . text c"offset"))
+          }
+        }
+        {
+          { scopeless
+            (279907 call = pos 0)
+          }
+        }
+        (279924 call = endpos(279922 call + pos(279919 call . text c"numBytes")))
+        unknown matches[279931](279930 call _ddata qio_regexp_string_piece_t)
+        unknown nmatches[279935] 1
+        (279944 call = matches(279943 call _ddata_allocate qio_regexp_string_piece_t nmatches))
+        unknown got[279948] bool[10]
+        if(280031 call _cond_test(279953 call == t stringPart))
+        {
+          (279992 call = got(279991 call qio_regexp_match _regexp(279972 call(279968 call .(279967 call(279963 call .(279960 call . text c"from") c"localize")) c"c_str"))(279977 call .(279974 call . text c"from") c"numBytes")(279982 call _cast int[13] pos)(279986 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_START matches nmatches))
+        }
+        {
+          (280027 call = got(280026 call qio_regexp_match _regexp(280010 call(280006 call .(280005 call(280001 call . text c"localize")) c"c_str"))(280012 call . text c"numBytes")(280017 call _cast int[13] pos)(280021 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_START matches nmatches))
+        }
+        (280058 call = ret(280057 'new'(280056 call reMatch got(280047 call _cast byteIndex(280043 call .(280042 call matches 0) c"offset"))(280053 call .(280052 call matches 0) c"len"))))
+        (280065 call _ddata_free matches nmatches)
+      }
+    }
+    (280076 return ret)
+  }
+  where {
+    (279873 call ||(279867 call == t string[24])(279871 call == t stringPart))
+  }
+  { scopeless type
+    reMatch
+  } function regexp[281396].split[280089](arg _mt[281440]:_MT[227], arg this[281438]:regexp[281396], arg text[280086] :
+  unknown t[280084], arg maxsplit[280093] :
+  int[13] =
+  0) : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    unknown matches[280111](280110 call _ddata qio_regexp_string_piece_t)
+    unknown ncaptures[280119](280118 call qio_regexp_get_ncaptures _regexp)
+    unknown nmatches[280126](280124 call + 1 ncaptures)
+    unknown pos[280130] byteIndex
+    unknown endpos[280134] byteIndex
+    {
+      const tmp[280154] "const" "temp"
+      (280155 'move' tmp[280154](280152 'deref'(280151 '_wide_get_locale'(280138 call . this c"home"))))
+      {
+        (280147 call = matches(280146 call _ddata_allocate qio_regexp_string_piece_t nmatches))
+      }
+    }
+    if(280176 call _cond_test(280161 call == t stringPart))
+    {
+      { scopeless
+        (280168 call = pos(280165 call . text c"offset"))
+      }
+    }
+    {
+      { scopeless
+        (280173 call = pos 0)
+      }
+    }
+    (280190 call = endpos(280188 call + pos(280185 call . text c"numBytes")))
+    unknown splits[280194] 0
+    unknown maxsplits[280198] maxsplit
+    if(280213 call _cond_test(280203 call == maxsplit 0))
+    {
+      { scopeless
+        (280210 call = maxsplits(280209 call max int[13]))
+      }
+    }
+    {
+      unknown tmp[280487] "temp"
+      (280505 'move' tmp[280487](280503 call _cond_test 1))
+      WhileDo
+      {
+        {
+          unknown splitstart[280221] 0 byteIndex
+          unknown splitend[280227] 0 byteIndex
+          unknown got[280231] bool[10]
+          {
+            const tmp[280276] "const" "temp"
+            (280277 'move' tmp[280276](280274 'deref'(280273 '_wide_get_locale'(280235 call . this c"home"))))
+            {
+              (280269 call = got(280268 call qio_regexp_match _regexp(280252 call(280248 call .(280247 call(280243 call . text c"localize")) c"c_str"))(280254 call . text c"numBytes")(280259 call _cast int[13] pos)(280263 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_UNANCHORED matches nmatches))
+            }
+          }
+          (280283 call += splits 1)
+          if(280336 call _cond_test(280291 call && got(280289 call <= splits maxsplits)))
+          {
+            (280301 call = splitstart(280298 call .(280297 call matches 0) c"offset"))
+            (280322 call = splitend(280320 call +(280310 call .(280309 call matches 0) c"offset")(280317 call .(280316 call matches 0) c"len")))
+          }
+          {
+            (280327 call = splitstart endpos)
+            (280333 call = splitend endpos)
+          }
+          if(280376 call _cond_test(280342 call < pos splitstart))
+          {
+            (280354 yield(280353 call text(280350 call chpl_build_bounded_range(280347 call + pos 1) splitstart)))
+          }
+          {
+            (280373 yield "")
+          }
+          if(280461 call _cond_test got)
+          {
+            {
+              unknown _indexOfInterest[280422] "an _indexOfInterest or chpl__followIdx variable" "temp"
+              unknown _iterator[280423] "expr temp" "temp"
+              (280432 'move' _iterator[280423](280430 call _getIterator(280437 call chpl_direct_range_iter 1 ncaptures 1)))
+              Defer
+              {
+                {
+                  (280453 call _freeIterator _iterator[280423])
+                }
+              }
+              { scopeless type
+                (280442 'move' _indexOfInterest[280422](280439 call iteratorIndex _iterator[280423]))
+              }
+              ForLoop
+              {
+                unknown i[280446] "index var" "insert auto destroy"
+                (280448 'move' i[280446] _indexOfInterest[280422])
+                {
+                  (280419 yield(280418 call text(280416 'new'(280415 call reMatch(280395 call !(280394 call qio_regexp_string_piece_isnull(280392 call matches i)))(280406 call _cast byteIndex(280402 call .(280401 call matches i) c"offset"))(280412 call .(280411 call matches i) c"len")))))
+                }
+                label _continueLabel[280427]
+                _indexOfInterest[280422]
+                _iterator[280423]
+              }
+              label _breakLabel[280428]
+            }
+          }
+          (280467 call = pos splitend)
+          if(280482 call _cond_test(280477 call ||(280472 call > splits maxsplits)(280475 call ! got)))
+          {
+            { scopeless
+              break nil[38]
+            }
+          }
+        }
+        label _continueLabel[280490]
+        (280498 'move' tmp[280487](280496 call _cond_test 1))
+        tmp[280487]
+      }
+      label _breakLabel[280491]
+    }
+    {
+      const tmp[280522] "const" "temp"
+      (280523 'move' tmp[280522](280520 'deref'(280519 '_wide_get_locale'(280509 call . this c"home"))))
+      {
+        (280516 call _ddata_free matches nmatches)
+      }
+    }
+  }
+  where {
+    (280105 call ||(280099 call == t string[24])(280103 call == t stringPart))
+  } function regexp[281396].matches[280537](arg _mt[281444]:_MT[227], arg this[281442]:regexp[281396], arg text[280534] :
+  unknown t[280532], param arg captures[280540] =
+  0, arg maxmatches[280548] :
+  int[13] =
+  (280547 call max int[13])) : _unknown[43] "iterator fn" "method" "primary method"
+  {
+    unknown matches[280566](280565 call _ddata qio_regexp_string_piece_t)
+    unknown nmatches[280574](280572 call + 1 captures)
+    unknown pos[280578] byteIndex
+    unknown endpos[280582] byteIndex
+    unknown textLength[280586] int[13]
+    {
+      const tmp[280606] "const" "temp"
+      (280607 'move' tmp[280606](280604 'deref'(280603 '_wide_get_locale'(280590 call . this c"home"))))
+      {
+        (280599 call = matches(280598 call _ddata_allocate qio_regexp_string_piece_t nmatches))
+      }
+    }
+    if(280628 call _cond_test(280613 call == t stringPart))
+    {
+      { scopeless
+        (280620 call = pos(280617 call . text c"offset"))
+      }
+    }
+    {
+      { scopeless
+        (280625 call = pos 0)
+      }
+    }
+    (280639 call = textLength(280636 call . text c"numBytes"))
+    (280647 call = endpos(280645 call + pos textLength))
+    unknown nfound[280651] 0
+    unknown cur[280655] pos
+    {
+      unknown tmp[280841] "temp"
+      (280877 'move' tmp[280841](280866 call _cond_test(280868 call &&(280870 call < nfound maxmatches)(280874 call < cur endpos))))
+      WhileDo
+      {
+        {
+          unknown got[280669] bool[10]
+          {
+            const tmp[280712] "const" "temp"
+            (280713 'move' tmp[280712](280710 'deref'(280709 '_wide_get_locale'(280674 call . this c"home"))))
+            {
+              (280705 call = got(280704 call qio_regexp_match _regexp(280691 call(280687 call .(280686 call(280682 call . text c"localize")) c"c_str")) textLength(280695 call _cast int[13] cur)(280699 call _cast int[13] endpos) QIO_REGEXP_ANCHOR_UNANCHORED matches nmatches))
+            }
+          }
+          if(280723 call _cond_test(280718 call ! got))
+          {
+            { scopeless
+              break nil[38]
+            }
+          }
+          unknown nret[280732] "param"(280730 call + captures 1)
+          unknown ret[280739](280737 call * nret reMatch)
+          {
+            unknown _indexOfInterest[280780] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[280781] "expr temp" "temp"
+            (280790 'move' _iterator[280781](280788 call _getIterator(280795 call chpl_direct_range_iter 0 captures 1)))
+            Defer
+            {
+              {
+                (280811 call _freeIterator _iterator[280781])
+              }
+            }
+            { scopeless type
+              (280800 'move' _indexOfInterest[280780](280797 call iteratorIndex _iterator[280781]))
+            }
+            ForLoop
+            {
+              unknown i[280804] "index var" "insert auto destroy"
+              (280806 'move' i[280804] _indexOfInterest[280780])
+              {
+                (280776 call =(280753 call ret(280750 call + i 1))(280775 'new'(280774 call reMatch got(280765 call _cast byteIndex(280761 call .(280760 call matches i) c"offset"))(280771 call .(280770 call matches i) c"len"))))
+              }
+              label _continueLabel[280785]
+              _indexOfInterest[280780]
+              _iterator[280781]
+            }
+            label _breakLabel[280786]
+          }
+          (280819 yield ret)
+          (280838 call = cur(280836 call +(280826 call .(280825 call matches 0) c"offset")(280833 call .(280832 call matches 0) c"len")))
+        }
+        label _continueLabel[280844]
+        (280861 'move' tmp[280841](280850 call _cond_test(280852 call &&(280854 call < nfound maxmatches)(280858 call < cur endpos))))
+        tmp[280841]
+      }
+      label _breakLabel[280845]
+    }
+    {
+      const tmp[280894] "const" "temp"
+      (280895 'move' tmp[280894](280892 'deref'(280891 '_wide_get_locale'(280881 call . this c"home"))))
+      {
+        (280888 call _ddata_free matches nmatches)
+      }
+    }
+  }
+  where {
+    (280560 call ||(280554 call == t string[24])(280558 call == t stringPart))
+  } function regexp[281396].subn[280908](arg _mt[281448]:_MT[227], arg this[281446]:regexp[281396], arg repl[280905] :
+  string[24], arg text[280912] :
+  unknown t[280910], arg global[280916] =
+  1) : _unknown[43] "method" "primary method"
+  {
+    unknown pos[280935] byteIndex
+    unknown endpos[280940] byteIndex
+    if(280960 call _cond_test(280945 call == t stringPart))
+    {
+      { scopeless
+        (280952 call = pos(280949 call . text c"offset"))
+      }
+    }
+    {
+      { scopeless
+        (280957 call = pos 0)
+      }
+    }
+    (280974 call = endpos(280972 call + pos(280969 call . text c"numBytes")))
+    unknown replaced[280978] c_string
+    unknown nreplaced[280982] int[13]
+    unknown replaced_len[280989](280988 call int[13] 64)
+    if(281102 call _cond_test(280994 call == t stringPart))
+    {
+      (281048 call = nreplaced(281047 call qio_regexp_replace _regexp(281010 call(281006 call .(281005 call(281001 call . repl c"localize")) c"c_str"))(281012 call . repl c"numBytes")(281028 call(281024 call .(281023 call(281019 call .(281016 call . text c"from") c"localize")) c"c_str"))(281033 call .(281030 call . text c"from") c"numBytes")(281038 call _cast int[13] pos)(281042 call _cast int[13] endpos) global replaced replaced_len))
+    }
+    {
+      (281098 call = nreplaced(281097 call qio_regexp_replace _regexp(281066 call(281062 call .(281061 call(281057 call . repl c"localize")) c"c_str"))(281068 call . repl c"numBytes")(281081 call(281077 call .(281076 call(281072 call . text c"localize")) c"c_str"))(281083 call . text c"numBytes")(281088 call _cast int[13] pos)(281092 call _cast int[13] endpos) global replaced replaced_len))
+    }
+    const ret[281110] "const"(281109 call createStringWithOwnedBuffer replaced)
+    (281118 return(281116 call _build_tuple ret nreplaced))
+  }
+  where {
+    (280932 call ||(280926 call == t string[24])(280930 call == t stringPart))
+  }
+  { scopeless type
+    (280922 call _build_tuple string[24] int[13])
+  } function regexp[281396].sub[281130](arg _mt[281452]:_MT[227], arg this[281450]:regexp[281396], arg repl[281127] :
+  string[24], arg text[281134] :
+  unknown t[281132], arg global[281138] =
+  1) : _unknown[43] "method" "primary method"
+  {
+    { scopeless
+      unknown tmp[281162] "no copy" "temp"(281161 call subn repl text global)
+      (281169 call _check_tuple_var_decl tmp[281162] 2)
+      unknown str[281151](281163 call tmp[281162] 1)
+      unknown count[281153](281166 call tmp[281162] 2)
+    }
+    (281176 return str)
+  }
+  where {
+    (281149 call ||(281143 call == t string[24])(281147 call == t stringPart))
+  } function regexp[281396].writeThis[281185](arg _mt[281456]:_MT[227], arg this[281454]:regexp[281396], arg f[281183]:_any[170](?)) : _unknown[43] "method" "primary method" "no doc"
+  {
+    unknown pattern[281188] string[24]
+    {
+      const tmp[281221] "const" "temp"
+      (281222 'move' tmp[281221](281219 'deref'(281218 '_wide_get_locale'(281193 call . this c"home"))))
+      {
+        unknown patternTemp[281197] c_string
+        (281208 call qio_regexp_get_pattern(281203 call . this c"_regexp") patternTemp)
+        (281215 call = pattern(281214 call createStringWithNewBuffer patternTemp))
+      }
+    }
+    (281264 call <~>(281246 call <~>(281243 call <~> f "new regexp(\"") pattern) "\")")
+  } function regexp[281396].readThis[281273](arg _mt[281460]:_MT[227], arg this[281458]:regexp[281396], arg f[281271]:_any[170](?)) : _unknown[43] "method" "primary method" "no doc"
+  {
+    unknown pattern[281276] string[24]
+    unknown litOne[281285](281284 'new'(281283 call ioLiteral "new regexp(\""))
+    unknown litTwo[281293](281292 'new'(281291 call ioLiteral "\")"))
+    Try
+    {
+      {
+        if(281356 call _cond_test(281304 call(281297 call . f c"read") litOne pattern litTwo))
+        {
+          {
+            const tmp[281350] "const" "temp"
+            (281351 'move' tmp[281350](281348 'deref'(281347 '_wide_get_locale'(281306 call . this c"home"))))
+            {
+              unknown localPattern[281315](281314 call(281310 call . pattern c"localize"))
+              unknown opts[281320] qio_regexp_options_t
+              (281326 call qio_regexp_init_default_options opts)
+              (281345 call qio_regexp_create_compile(281334 call(281330 call . localPattern c"c_str"))(281337 call . localPattern c"numBytes") opts(281342 call . this c"_regexp"))
+            }
+          }
+        }
+      }
+    }
+    Catch e : SystemError
+    {
+      (281374 call(281366 call . f c"setError")(281370 call . e c"err"))
+    }
+    Catch
+    {
+      (281387 call(281379 call . f c"setError")(281384 call _cast syserr EINVAL))
+    }
+  }
+  function =[281469](ref arg ret[281466] :
+  regexp, arg x[281472] :
+  regexp) : _unknown[43] "assignop" "no doc"
+  {
+    if(281601 call _cond_test(281483 call ==(281476 call . x c"home")(281480 call . ret c"home")))
+    {
+      {
+        const tmp[281509] "const" "temp"
+        (281510 'move' tmp[281509](281507 'deref'(281506 '_wide_get_locale'(281486 call . x c"home"))))
+        {
+          (281495 call qio_regexp_retain(281491 call . x c"_regexp"))
+          (281504 call qio_regexp_release(281500 call . ret c"_regexp"))
+        }
+      }
+      (281523 call =(281516 call . ret c"_regexp")(281520 call . x c"_regexp"))
+    }
+    {
+      unknown pattern[281527] c_string
+      unknown options[281532] qio_regexp_options_t
+      {
+        const tmp[281551] "const" "temp"
+        (281552 'move' tmp[281551](281549 'deref'(281548 '_wide_get_locale'(281536 call . ret c"home"))))
+        {
+          (281545 call qio_regexp_release(281541 call . ret c"_regexp"))
+        }
+      }
+      {
+        const tmp[281582] "const" "temp"
+        (281583 'move' tmp[281582](281580 'deref'(281579 '_wide_get_locale'(281557 call . x c"home"))))
+        {
+          (281567 call qio_regexp_get_pattern(281562 call . x c"_regexp") pattern)
+          (281577 call qio_regexp_get_options(281572 call . x c"_regexp") options)
+        }
+      }
+      (281599 call qio_regexp_create_compile pattern(281591 call . pattern c"length") options(281596 call . ret c"_regexp"))
+    }
+  }
+  function _cast[281612](arg t[281610]:_any[170](?), arg x[281615] :
+  regexp) : _unknown[43] "inline" "no doc"
+  {
+    unknown pattern[281623] string[24]
+    {
+      const tmp[281656] "const" "temp"
+      (281657 'move' tmp[281656](281654 'deref'(281653 '_wide_get_locale'(281628 call . x c"home"))))
+      {
+        unknown cs[281632] c_string
+        (281643 call qio_regexp_get_pattern(281638 call . x c"_regexp") cs)
+        (281650 call = pattern(281649 call createStringWithOwnedBuffer cs))
+      }
+    }
+    (281662 return pattern)
+  }
+  where {
+    (281620 call == t string[24])
+  }
+  function _cast[281671](arg t[281669]:_any[170](?), arg x[281674] :
+  string[24]) : _unknown[43] throws "inline" "no doc"
+  {
+    (281685 return(281684 call compile x))
+  }
+  where {
+    (281679 call == t regexp)
+  }
+  function _unknown[43].search[281698](arg _mt[281707]:_MT[227], arg this[281704] :
+  string[24], arg needle[281695] :
+  string[24], arg ignorecase[281701] =
+  0) : _unknown[43] "method"
+  {
+    unknown re[281720](281719 call compile needle(literal = 1)(nocapture = 1)(ignorecase = ignorecase))
+    (281731 return(281730 call(281725 call . re c"search") this))
+  }
+  { scopeless type
+    reMatch
+  }
+  function _unknown[43].search[281743](arg _mt[281748]:_MT[227], arg this[281745] :
+  string[24], arg needle[281740] :
+  regexp) : _unknown[43] "method" "no doc"
+  {
+    (281758 return(281757 call(281752 call . needle c"search") this))
+  }
+  { scopeless type
+    reMatch
+  }
+  function _unknown[43].search[281771](arg _mt[281781]:_MT[227], arg this[281778] :
+  string[24], arg needle[281768] :
+  regexp, ref arg captures[281775]:_any[170](?) ...) : _unknown[43] "method"
+  {
+    (281793 return(281792 call(281785 call . needle c"search") this(281791 'expand_tuple' captures)))
+  }
+  { scopeless type
+    reMatch
+  }
+  function _unknown[43].match[281806](arg _mt[281811]:_MT[227], arg this[281808] :
+  string[24], arg pattern[281803] :
+  regexp) : _unknown[43] "method" "no doc"
+  {
+    (281821 return(281820 call(281815 call . pattern c"match") this))
+  }
+  { scopeless type
+    reMatch
+  }
+  function _unknown[43].match[281834](arg _mt[281844]:_MT[227], arg this[281841] :
+  string[24], arg pattern[281831] :
+  regexp, ref arg captures[281838]:_any[170](?) ...) : _unknown[43] "method"
+  {
+    (281856 return(281855 call(281848 call . pattern c"match") this(281854 'expand_tuple' captures)))
+  }
+  { scopeless type
+    reMatch
+  }
+  function _unknown[43].split[281869](arg _mt[281880]:_MT[227], arg this[281877] :
+  string[24], arg pattern[281866] :
+  regexp, arg maxsplit[281873] :
+  int[13] =
+  0) : _unknown[43] "iterator fn" "method"
+  {
+    {
+      unknown _indexOfInterest[281895] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[281896] "expr temp" "temp"
+      (281905 'move' _iterator[281896](281903 call _getIterator(281890 call(281884 call . pattern c"split") this maxsplit)))
+      Defer
+      {
+        {
+          (281922 call _freeIterator _iterator[281896])
+        }
+      }
+      { scopeless type
+        (281911 'move' _indexOfInterest[281895](281908 call iteratorIndex _iterator[281896]))
+      }
+      ForLoop
+      {
+        unknown v[281915] "index var" "insert auto destroy"
+        (281917 'move' v[281915] _indexOfInterest[281895])
+        {
+          (281892 yield v)
+        }
+        label _continueLabel[281900]
+        _indexOfInterest[281895]
+        _iterator[281896]
+      }
+      label _breakLabel[281901]
+    }
+  }
+  function _unknown[43].matches[281939](arg _mt[281957]:_MT[227], arg this[281954] :
+  string[24], arg pattern[281936] :
+  regexp, param arg captures[281942] =
+  0, arg maxmatches[281950] :
+  int[13] =
+  (281949 call max int[13])) : _unknown[43] "iterator fn" "method"
+  {
+    {
+      unknown _indexOfInterest[281973] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[281974] "expr temp" "temp"
+      (281983 'move' _iterator[281974](281981 call _getIterator(281968 call(281961 call . pattern c"matches") this captures maxmatches)))
+      Defer
+      {
+        {
+          (282000 call _freeIterator _iterator[281974])
+        }
+      }
+      { scopeless type
+        (281989 'move' _indexOfInterest[281973](281986 call iteratorIndex _iterator[281974]))
+      }
+      ForLoop
+      {
+        unknown v[281993] "index var" "insert auto destroy"
+        (281995 'move' v[281993] _indexOfInterest[281973])
+        {
+          (281970 yield v)
+        }
+        label _continueLabel[281978]
+        _indexOfInterest[281973]
+        _iterator[281974]
+      }
+      label _breakLabel[281979]
+    }
+  }
+}

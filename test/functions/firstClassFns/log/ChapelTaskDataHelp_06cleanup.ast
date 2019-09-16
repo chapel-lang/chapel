@@ -1,0 +1,45 @@
+AST dump for ChapelTaskDataHelp after pass cleanup.
+Module use list: 
+
+{
+  (88993 'use' ChapelStandard)
+  type chpl_task_ChapelData_t[89000]
+  function chpl_task_getChapelData[89004]() : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    (89009 call c_ptr chpl_task_ChapelData_t)
+  }
+  function chpl_task_getBundleChapelData[89019](arg args[89016] :
+  chpl_task_bundle_p) : _unknown[43] "extern" "local args" "no fn body" "fn synchronization free" "no return value for void"
+  {
+  }
+  { scopeless type
+    (89024 call c_ptr chpl_task_ChapelData_t)
+  }
+  function chpl_task_data_setup[89034](arg args[89031] :
+  chpl_task_bundle_p, arg tls[89040] :
+  (89039 call c_ptr chpl_task_ChapelData_t)) : _unknown[43] "no return value for void"
+  {
+    unknown bundleData[89047](89046 call chpl_task_getBundleChapelData args)
+    (89059 call c_memcpy bundleData tls(89058 call c_sizeof chpl_task_ChapelData_t))
+  }
+  function chpl_save_task_error[89069](arg e[89066] :
+  _EndCountBase, arg err[89074] :
+  (89073 'to unmanaged class from unknown'(89072 'to nilable class from type' Error))) : _unknown[43] "task complete impl fn" "no return value for void"
+  {
+    if(89097 call _cond_test(89079 call != err nil[38]))
+    {
+      (89094 call(89087 call .(89082 call . e c"errors") c"append")(89091 call postfix! err))
+    }
+  }
+  function chpl_save_task_error_owned[89110](arg e[89107] :
+  _EndCountBase, in arg err[89116] :
+  (89114 call _owned(89113 'to nilable class from type' Error))) : _unknown[43] "task complete impl fn" "no return value for void"
+  {
+    if(89142 call _cond_test(89121 call != err nil[38]))
+    {
+      (89139 call(89127 call .(89124 call . e c"errors") c"append")(89136 call postfix!(89135 call(89131 call . err c"release"))))
+    }
+  }
+}

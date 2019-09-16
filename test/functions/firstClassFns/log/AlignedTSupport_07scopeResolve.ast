@@ -1,0 +1,52 @@
+AST dump for AlignedTSupport after pass scopeResolve.
+Module use list: 
+
+{
+  type aligned_t[88784]
+  function castableToAlignedT[88791](arg t[88789]:_any[170](?)) param : _unknown[43]
+  {
+    (88803 return(88801 call ||(88796 call isIntegralType t[88789])(88800 call isBoolType t[88789])))
+  }
+  function _cast[88814](arg t[88811] :
+  aligned_t[88784], arg x[88817] :
+  integral[188](?)) : _unknown[43] "inline"
+  {
+    (88825 return(88824 'cast' t[88811] x[88817]))
+  }
+  function _cast[88836](arg t[88833] :
+  aligned_t[88784], arg x[88839] :
+  bool[10]) : _unknown[43] "inline"
+  {
+    (88847 return(88846 'cast' t[88833] x[88839]))
+  }
+  function _cast[88858](arg t[88855] :
+  chpl_anybool[173](?), arg x[88861] :
+  aligned_t[88784]) : _unknown[43] "inline"
+  {
+    (88869 return(88868 'cast' t[88855] x[88861]))
+  }
+  function _cast[88880](arg t[88877] :
+  integral[188](?), arg x[88883] :
+  aligned_t[88784]) : _unknown[43] "inline"
+  {
+    (88891 return(88890 'cast' t[88877] x[88883]))
+  }
+  function defaultOfAlignedT[88900](arg t[88898]:_any[170](?)) : _unknown[43] "inline"
+  {
+    const defaultValue[88903] "const" t[88898]
+    (88911 return(88909 call _cast aligned_t[88784] defaultValue[88903]))
+  }
+  function aligned_t[88784].writeThis[88920](arg _mt[88925]:_MT[227], arg this[88922]:aligned_t[88784] :
+  aligned_t[88784], arg f[88918]:_any[170](?)) : _unknown[43] "method" "no return value for void"
+  {
+    unknown tmp[88938](88936 call _cast(88935 call uint(64)[107] 64) this[88922])(88930 call uint(64)[107] 64)
+    (88944 call <~> f[88918] tmp[88938])
+  }
+  function aligned_t[88784].readThis[88954](arg _mt[88959]:_MT[227], arg this[88956]:aligned_t[88784] :
+  aligned_t[88784], arg f[88952]:_any[170](?)) : _unknown[43] "method" "no return value for void"
+  {
+    unknown tmp[88965](88964 call uint(64)[107] 64)
+    (88971 call <~> f[88952] tmp[88965])
+    (88979 call = this[88956](88977 call _cast aligned_t[88784] tmp[88965]))
+  }
+}

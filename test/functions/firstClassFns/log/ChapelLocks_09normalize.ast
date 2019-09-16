@@ -1,0 +1,96 @@
+AST dump for ChapelLocks after pass normalize.
+Module use list: MemConsistency 
+
+{
+  function chpl__init_ChapelLocks[390273]() : void[4] "insert line file info" "module init"
+  {
+    (474061 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].lock[180363](arg _mt[180473]:_MT[227], arg this[180471]:chpl_LocalSpinlock[180469]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[180442] "const" "temp"
+      unknown call_tmp[636388] "expr temp" "maybe param" "maybe type" "temp"
+      (636391 'move' call_tmp[636388](180439 '_wide_get_locale' this[180471]))
+      (180443 'move' tmp[180442](180440 'deref' call_tmp[636388]))
+      {
+        unknown tmp[180388] "temp"
+        unknown tmp[404604] "maybe param" "temp"
+        unknown call_tmp[636395] "expr temp" "maybe param" "maybe type" "temp"
+        (636398 'move' call_tmp[636395](361327 call l _mt[232] this[180471]))
+        (404615 'move' tmp[404604](180426 call(180423 call (partial) read _mt[232] call_tmp[636395])))
+        unknown call_tmp[636402] "expr temp" "maybe param" "maybe type" "temp"
+        (636405 'move' call_tmp[636402](404617 call _cond_invalid tmp[404604]))
+        if call_tmp[636402]
+        {
+          (404620 call compilerError "cannot promote short-circuiting || operator")
+        }
+        unknown tmp[520128] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[520129] "maybe param" "temp"
+        unknown call_tmp[636407] "expr temp" "maybe param" "maybe type" "temp"
+        (636410 'move' call_tmp[636407](404605 call isTrue tmp[404604]))
+        (520134 'move' tmp[520129](520132 call _cond_test call_tmp[636407]))
+        if tmp[520129]
+        {
+          (520139 'move' tmp[520128](520136 '_paramFoldLogical' tmp[520129] 1))
+        }
+        {
+          unknown tmp[520141] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[636414] "expr temp" "maybe param" "maybe type" "temp"
+          (636417 'move' call_tmp[636414](361332 call l _mt[232] this[180471]))
+          unknown call_tmp[636421] "expr temp" "maybe param" "maybe type" "temp"
+          (636424 'move' call_tmp[636421](180431 call(180428 call (partial) testAndSet _mt[232] call_tmp[636414]) acquire[180095]))
+          (520143 'move' tmp[520141](404609 call isTrue call_tmp[636421]))
+          (520148 'move' tmp[520128](520145 '_paramFoldLogical' tmp[520129] tmp[520141]))
+        }
+        (180436 'move' tmp[180388](180419 call _cond_test tmp[520128]))
+        WhileDo
+        {
+          (180386 call chpl_task_yield)
+          label _continueLabel[180391]
+          unknown tmp[404583] "maybe param" "temp"
+          unknown call_tmp[636428] "expr temp" "maybe param" "maybe type" "temp"
+          (636431 'move' call_tmp[636428](361316 call l _mt[232] this[180471]))
+          (404594 'move' tmp[404583](180404 call(180401 call (partial) read _mt[232] call_tmp[636428])))
+          unknown call_tmp[636435] "expr temp" "maybe param" "maybe type" "temp"
+          (636438 'move' call_tmp[636435](404596 call _cond_invalid tmp[404583]))
+          if call_tmp[636435]
+          {
+            (404599 call compilerError "cannot promote short-circuiting || operator")
+          }
+          unknown tmp[520155] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+          unknown tmp[520156] "maybe param" "temp"
+          unknown call_tmp[636440] "expr temp" "maybe param" "maybe type" "temp"
+          (636443 'move' call_tmp[636440](404584 call isTrue tmp[404583]))
+          (520161 'move' tmp[520156](520159 call _cond_test call_tmp[636440]))
+          if tmp[520156]
+          {
+            (520166 'move' tmp[520155](520163 '_paramFoldLogical' tmp[520156] 1))
+          }
+          {
+            unknown tmp[520168] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+            unknown call_tmp[636447] "expr temp" "maybe param" "maybe type" "temp"
+            (636450 'move' call_tmp[636447](361321 call l _mt[232] this[180471]))
+            unknown call_tmp[636454] "expr temp" "maybe param" "maybe type" "temp"
+            (636457 'move' call_tmp[636454](180409 call(180406 call (partial) testAndSet _mt[232] call_tmp[636447]) acquire[180095]))
+            (520170 'move' tmp[520168](404588 call isTrue call_tmp[636454]))
+            (520175 'move' tmp[520155](520172 '_paramFoldLogical' tmp[520156] tmp[520168]))
+          }
+          (180414 'move' tmp[180388](180397 call _cond_test tmp[520155]))
+          tmp[180388]
+        }
+        label _breakLabel[180392]
+      }
+    }
+    (474057 return _void[47])
+  }
+  function chpl_LocalSpinlock[180469].unlock[180452](arg _mt[180477]:_MT[227], arg this[180475]:chpl_LocalSpinlock[180469]) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[636461] "expr temp" "maybe param" "maybe type" "temp"
+    (636464 'move' call_tmp[636461](361338 call l _mt[232] this[180475]))
+    (180463 call(180455 call (partial) clear _mt[232] call_tmp[636461]) release[180093])
+    (474059 return _void[47])
+  }
+  type chpl_LocalSpinlock[180469] unknown l[180358](180357 call chpl__processorAtomicType bool[10])
+  (329465 'used modules list'(180350 'use' MemConsistency[179748]))
+}

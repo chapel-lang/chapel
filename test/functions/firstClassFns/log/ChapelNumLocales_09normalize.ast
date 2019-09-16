@@ -1,0 +1,38 @@
+AST dump for ChapelNumLocales after pass normalize.
+Module use list: 
+
+{
+  function chpl__init_ChapelNumLocales[390306]() : void[4] "insert line file info" "module init"
+  {
+    (647912 'move' call_tmp[647909](493639 call chpl_config_has_value c"numLocales" c"Built-in"))
+    (647917 'move' call_tmp[647914](493642 call ! call_tmp[647909]))
+    if call_tmp[647914]
+    {
+      (493637 'noop')
+      unknown call_tmp[647919] "maybe param" "maybe type" "temp"
+      (647922 'move' call_tmp[647919](197587 call chpl_comm_default_num_locales))
+      (493658 'init var' tmp[493632] call_tmp[647919])
+    }
+    {
+      unknown call_tmp[647924] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+      (647927 'move' call_tmp[647924](493646 'typeof' tmp[493632]))
+      unknown call_tmp[647929] "expr temp" "maybe param" "maybe type" "temp"
+      (647932 'move' call_tmp[647929](493649 call chpl_config_get_value c"numLocales" c"Built-in"))
+      (493654 'move' tmp[493632](493652 call _command_line_cast c"numLocales" call_tmp[647924] call_tmp[647929]))
+    }
+    (493634 'move' numLocales[197588] tmp[493632])
+    (477259 return _void[47])
+  }
+  function chpl_comm_default_num_locales[197578]() : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+    unknown ret[477255] "RVV" "temp"
+    (477257 return ret[477255])
+  }
+  { scopeless type
+    int(64)[13]
+  }
+  unknown tmp[493632] "temp"
+  const numLocales[197588] "config" "const" "insert auto destroy"
+  unknown call_tmp[647909] "expr temp" "maybe param" "maybe type" "temp"
+  unknown call_tmp[647914] "expr temp" "maybe param" "maybe type" "temp"
+}

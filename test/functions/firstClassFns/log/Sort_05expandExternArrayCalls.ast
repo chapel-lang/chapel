@@ -1,0 +1,646 @@
+AST dump for Sort after pass expandExternArrayCalls.
+Module use list: 
+
+{
+  (328330 'use' ChapelStandard)
+  (251420 'use' List)
+  (251425 'use' Reflection)
+  const defaultComparator[251428] "const" DefaultComparator
+  const reverseComparator[251435] "const"(251434 call ReverseComparator DefaultComparator)
+  function compareByPart[251445](arg a[251442] :
+  unknown t[251440], arg b[251448] :
+  t, arg comparator[251453] :
+  unknown rec[251451]) : _unknown[43] "inline" "private"
+  {
+    unknown curPart[251457] 1
+    {
+      unknown tmp[251567] "temp"
+      (251585 'move' tmp[251567](251583 call _cond_test 1))
+      WhileDo
+      {
+        {
+          { scopeless
+            unknown tmp[251477] "no copy" "temp"(251476 call(251470 call . comparator c"keyPart") a curPart)
+            (251484 call _check_tuple_var_decl tmp[251477] 2)
+            unknown aSection[251462](251478 call tmp[251477] 1)
+            unknown aPart[251464](251481 call tmp[251477] 2)
+          }
+          { scopeless
+            unknown tmp[251503] "no copy" "temp"(251502 call(251496 call . comparator c"keyPart") b curPart)
+            (251510 call _check_tuple_var_decl tmp[251503] 2)
+            unknown bSection[251490](251504 call tmp[251503] 1)
+            unknown bPart[251492](251507 call tmp[251503] 2)
+          }
+          if(251532 call _cond_test(251523 call ||(251517 call != aSection 0)(251521 call != bSection 0)))
+          {
+            (251529 return(251527 call - aSection bSection))
+          }
+          if(251546 call _cond_test(251538 call < aPart bPart))
+          {
+            (251543 return(251541 call - 1))
+          }
+          if(251558 call _cond_test(251552 call > aPart bPart))
+          {
+            (251555 return 1)
+          }
+          (251564 call += curPart 1)
+        }
+        label _continueLabel[251570]
+        (251578 'move' tmp[251567](251576 call _cond_test 1))
+        tmp[251567]
+      }
+      label _breakLabel[251571]
+    }
+    (251589 return 1)
+  }
+  function chpl_compare[251600](arg a[251597] :
+  unknown t[251595], arg b[251603] :
+  t, arg comparator[251608] :
+  unknown rec[251606]) : _unknown[43] "inline" "no doc"
+  {
+    if(251772 call _cond_test(251631 call canResolveMethod comparator "key" a))
+    {
+      (251654 return(251653 call(251635 call . defaultComparator c"compare")(251644 call(251639 call . comparator c"key") a)(251652 call(251647 call . comparator c"key") b)))
+    }
+    {
+      { scopeless
+        if(251767 call _cond_test(251676 call canResolveMethod comparator "compare" a b))
+        {
+          (251685 return(251684 call(251678 call . comparator c"compare") a b))
+        }
+        {
+          { scopeless
+            if(251763 call _cond_test(251707 call canResolveMethod comparator "keyPart" a 1))
+            {
+              (251714 return(251713 call compareByPart a b comparator))
+            }
+            {
+              (251760 call compilerError(251757 call +(251739 call + "The comparator "(251737 call _cast string[24](251735 'typeof' comparator))) " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method"))
+            }
+          }
+        }
+      }
+    }
+  }
+  function chpl_check_comparator[251784](arg comparator[251782]:_any[170](?), arg eltType[251786]:_any[170](?)) param : _unknown[43] "no doc" "unsafe"
+  {
+    const data[251789] "const" eltType
+    unknown errorDepth[251794] "param" 2
+    if(252311 call _cond_test(251800 call ==(251798 'typeof' comparator) DefaultComparator))
+    {
+    }
+    {
+      { scopeless
+        if(252306 call _cond_test(251808 call canResolveMethod comparator "key" data))
+        {
+          const keydata[251816] "const"(251815 call(251810 call . comparator c"key") data)
+          unknown keytype[251822] "type variable"(251821 'typeof' keydata)
+          if(251881 call _cond_test(251831 call !(251830 call canResolve "<" keydata keydata)))
+          {
+            { scopeless
+              (251879 call compilerError(errorDepth = errorDepth) "The key method in "(251856 call _cast string[24](251854 'typeof' comparator)) " must return an object that supports the '<' function when used with "(251876 call _cast string[24] eltType) " elements")
+            }
+          }
+          if(251921 call _cond_test(251892 call canResolveMethod comparator "compare" data data))
+          {
+            (251918 call compilerError(errorDepth = errorDepth)(251900 call _cast string[24](251898 'typeof' comparator)) " contains both a key method and a compare method")
+          }
+          if(251960 call _cond_test(251931 call canResolveMethod comparator "keyPart" data 1))
+          {
+            (251957 call compilerError(errorDepth = errorDepth)(251939 call _cast string[24](251937 'typeof' comparator)) " contains both a key method and a keyPart method")
+          }
+        }
+        {
+          { scopeless
+            if(252301 call _cond_test(251970 call canResolveMethod comparator "compare" data data))
+            {
+              unknown comparetype[251980] "type variable"(251979 'typeof'(251978 call(251972 call . comparator c"compare") data data))
+              if(252038 call _cond_test(251988 call !(251987 call isNumericType comparetype)))
+              {
+                { scopeless
+                  (252036 call compilerError(errorDepth = errorDepth) "The compare method in "(252013 call _cast string[24](252011 'typeof' comparator)) " must return a numeric type when used with "(252033 call _cast string[24] eltType) " elements")
+                }
+              }
+            }
+            {
+              { scopeless
+                if(252297 call _cond_test(252049 call canResolveMethod comparator "keyPart" data 1))
+                {
+                  unknown idx[252052] 1 int[13]
+                  unknown partType[252065] "type variable"(252064 'typeof'(252063 call(252057 call . comparator c"keyPart") data idx))
+                  if(252122 call _cond_test(252072 call !(252071 call isTupleType partType)))
+                  {
+                    { scopeless
+                      (252120 call compilerError(errorDepth = errorDepth) "The keyPart method in "(252097 call _cast string[24](252095 'typeof' comparator)) " must return a tuple when used with "(252117 call _cast string[24] eltType) " elements")
+                    }
+                  }
+                  unknown tmp[252128] partType
+                  unknown expectInt[252135](252134 call tmp 1)
+                  unknown expectIntUint[252142](252141 call tmp 2)
+                  if(252185 call _cond_test(252150 call !(252149 call isInt(252147 'typeof' expectInt))))
+                  {
+                    { scopeless
+                      (252183 call compilerError(errorDepth = errorDepth) "The keyPart method in "(252160 call _cast string[24](252158 'typeof' comparator)) " must return a tuple with 1st element int(\?) when used with "(252180 call _cast string[24] eltType) " elements")
+                    }
+                  }
+                  if(252235 call _cond_test(252200 call !(252198 call ||(252193 call isInt expectIntUint)(252197 call isUint expectIntUint))))
+                  {
+                    { scopeless
+                      (252233 call compilerError(errorDepth = errorDepth) "The keyPart method in "(252210 call _cast string[24](252208 'typeof' comparator)) " must return a tuple with 2nd element int(\?) or uint(\?) when used with "(252230 call _cast string[24] eltType) " elements")
+                    }
+                  }
+                }
+                {
+                  (252294 call compilerError(errorDepth = errorDepth)(252292 call +(252286 call +(252268 call +(252250 call + "The comparator "(252248 call _cast string[24](252246 'typeof' comparator))) " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method ") " for element type ")(252290 call _cast string[24] eltType)))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    (252317 return 1)
+  }
+  function radixSortOk[252333](arg Data[252330] :
+  (252328 call chpl__buildArrayRuntimeType unknown Dom[252323] unknown eltType[252326]), arg comparator[252335]:_any[170](?)) param : _unknown[43] "private" "unsafe"
+  {
+    if(252408 call _cond_test(252341 call !(252338 call . Dom c"stridable")))
+    {
+      unknown tmp[252351](252350 'typeof'(252349 call Data(252345 call . Dom c"alignedLow")))
+      if(252403 call _cond_test(252361 call canResolveMethod comparator "keyPart" tmp 1))
+      {
+        (252363 return 1)
+      }
+      {
+        { scopeless
+          if(252399 call _cond_test(252371 call canResolveMethod comparator "key" tmp))
+          {
+            unknown key[252380](252379 'typeof'(252378 call(252373 call . comparator c"key") tmp))
+            if(252394 call _cond_test(252390 call canResolveMethod defaultComparator "keyPart" key 1))
+            {
+              { scopeless
+                (252392 return 1)
+              }
+            }
+          }
+        }
+      }
+    }
+    (252414 return 0)
+  }
+  function sort[252430](arg Data[252427] :
+  (252425 call chpl__buildArrayRuntimeType unknown Dom[252420] unknown eltType[252423]), arg comparator[252435] :
+  unknown rec[252432] =
+  defaultComparator) : _unknown[43]
+  {
+    (252443 call chpl_check_comparator comparator eltType)
+    if(252458 call _cond_test(252454 call >=(252447 call . Dom c"low")(252451 call . Dom c"high")))
+    {
+      { scopeless
+        (252456 return)
+      }
+    }
+    if(252494 call _cond_test(252467 call radixSortOk Data comparator))
+    {
+      (252478 call(252471 call . MSBRadixSort c"msbRadixSort") Data(comparator = comparator))
+    }
+    {
+      (252491 call(252484 call . QuickSort c"quickSort") Data(comparator = comparator))
+    }
+  }
+  function sort[252512](arg Data[252509] :
+  (252507 call chpl__buildArrayRuntimeType unknown Dom[252502] unknown eltType[252505]), arg comparator[252517] :
+  unknown rec[252514] =
+  defaultComparator) : _unknown[43] "no doc"
+  {
+    (252546 call compilerError "sort() requires 1-D array")
+  }
+  where {
+    (252526 call !=(252522 call . Dom c"rank") 1)
+  }
+  function isSorted[252564](arg Data[252561] :
+  (252559 call chpl__buildArrayRuntimeType unknown Dom[252554] unknown eltType[252557]), arg comparator[252569] :
+  unknown rec[252566] =
+  defaultComparator) : _unknown[43]
+  {
+    (252578 call chpl_check_comparator comparator eltType)
+    const stride[252596] "const"(252593 IfExpr (252582 call . Dom c"stridable") then
+    { scopeless
+      (252591 call abs(252587 call . Dom c"stride"))
+    } else
+    { scopeless
+      1
+    } )
+    unknown sorted[252600] 1
+    Forall {
+      induction variables:
+        
+        unknown element[252662] "index var" "insert auto destroy"
+        
+        unknown i[252664] "index var" "insert auto destroy"
+      iterated expressions:
+        Data
+        Dom
+      shadow variables:
+        sorted[252614] 'reduce' intent
+          init block
+          {
+          }
+          deinit block
+          {
+          }
+      forall body
+      {
+        if(252656 call _cond_test(252625 call > i(252622 call . Dom c"alignedLow")))
+        {
+          {
+            unknown tmp[252644] "temp"
+            (252647 'move' tmp[252644](252646 'addr of' sorted))
+            (252652 call = tmp[252644](252649 call && tmp[252644](252641 call <=(252639 call chpl_compare(252635 call Data(252632 call - i stride)) element comparator) 0)))
+          }
+        }
+      }
+    }
+    (252668 return sorted)
+  }
+  { scopeless type
+    bool[10]
+  }
+  function isSorted[252685](arg Data[252682] :
+  (252680 call chpl__buildArrayRuntimeType unknown Dom[252675] unknown eltType[252678]), arg comparator[252690] :
+  unknown rec[252687] =
+  defaultComparator) : _unknown[43] "no doc"
+  {
+    (252719 call compilerError "isSorted() requires 1-D array")
+  }
+  where {
+    (252699 call !=(252695 call . Dom c"rank") 1)
+  }
+  function sorted[252729](arg x[252727]:_any[170](?), arg comparator[252734] :
+  unknown rec[252731] =
+  defaultComparator) : _unknown[43] "iterator fn"
+  {
+    unknown y[252739] x
+    if(252769 call _cond_test(252747 call !(252746 call isArrayValue y)))
+    {
+      { scopeless
+        (252767 call compilerError "Sort.sorted called on non-iterable")
+      }
+    }
+    (252779 call sort y(comparator = comparator))
+    {
+      unknown _indexOfInterest[252786] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[252787] "expr temp" "temp"
+      (252796 'move' _iterator[252787](252794 call _getIterator y))
+      Defer
+      {
+        {
+          (252812 call _freeIterator _iterator[252787])
+        }
+      }
+      { scopeless type
+        (252801 'move' _indexOfInterest[252786](252798 call iteratorIndex _iterator[252787]))
+      }
+      ForLoop
+      {
+        unknown i[252805] "index var" "insert auto destroy"
+        (252807 'move' i[252805] _indexOfInterest[252786])
+        { scopeless
+          (252784 yield i)
+        }
+        label _continueLabel[252791]
+        _indexOfInterest[252786]
+        _iterator[252787]
+      }
+      label _breakLabel[252792]
+    }
+  }
+  function bubbleSort[252833](arg Data[252830] :
+  (252828 call chpl__buildArrayRuntimeType unknown Dom[252823] unknown eltType[252826]), arg comparator[252838] :
+  unknown rec[252835] =
+  defaultComparator) : _unknown[43]
+  {
+    (252860 call compilerWarning "bubbleSort is deprecated - please use sort")
+    (252872 call(252866 call . BubbleSort c"bubbleSort") Data comparator)
+  }
+  function heapSort[252888](arg Data[252885] :
+  (252883 call chpl__buildArrayRuntimeType unknown Dom[252878] unknown eltType[252881]), arg comparator[252893] :
+  unknown rec[252890] =
+  defaultComparator) : _unknown[43]
+  {
+    (252915 call compilerWarning "heapSort is deprecated - please use sort")
+    (252927 call(252921 call . HeapSort c"heapSort") Data comparator)
+  }
+  function insertionSort[252943](arg Data[252940] :
+  (252938 call chpl__buildArrayRuntimeType unknown Dom[252933] unknown eltType[252936]), arg comparator[252948] :
+  unknown rec[252945] =
+  defaultComparator, arg lo[252957] :
+  int[13] =
+  (252954 call . Dom c"alignedLow"), arg hi[252966] :
+  int[13] =
+  (252963 call . Dom c"alignedHigh")) : _unknown[43]
+  {
+    (252988 call compilerWarning "insertionSort is deprecated - please use sort")
+    (253002 call(252994 call . InsertionSort c"insertionSort") Data comparator lo hi)
+  }
+  function binaryInsertionSort[253018](arg Data[253015] :
+  (253013 call chpl__buildArrayRuntimeType unknown Dom[253008] unknown eltType[253011]), arg comparator[253023] :
+  unknown rec[253020] =
+  defaultComparator) : _unknown[43]
+  {
+    (253045 call compilerWarning "binaryInsertionSort is deprecated - please use sort")
+    (253057 call(253051 call . BinaryInsertionSort c"binaryInsertionSort") Data comparator)
+  }
+  function mergeSort[253073](arg Data[253070] :
+  (253068 call chpl__buildArrayRuntimeType unknown Dom[253063] unknown eltType[253066]), arg minlen[253076] =
+  16, arg comparator[253082] :
+  unknown rec[253079] =
+  defaultComparator) : _unknown[43]
+  {
+    (253104 call compilerWarning "mergeSort is deprecated - please use sort")
+    (253117 call(253110 call . MergeSort c"mergeSort") Data minlen comparator)
+  }
+  function quickSort[253133](arg Data[253130] :
+  (253128 call chpl__buildArrayRuntimeType unknown Dom[253123] unknown eltType[253126]), arg minlen[253136] =
+  16, arg comparator[253142] :
+  unknown rec[253139] =
+  defaultComparator) : _unknown[43]
+  {
+    (253164 call compilerWarning "quickSort is deprecated - please use sort")
+    (253175 call(253168 call . QuickSort c"quickSort") Data minlen comparator)
+  }
+  function selectionSort[253191](arg Data[253188] :
+  (253186 call chpl__buildArrayRuntimeType unknown Dom[253181] unknown eltType[253184]), arg comparator[253196] :
+  unknown rec[253193] =
+  defaultComparator) : _unknown[43]
+  {
+    (253218 call compilerWarning "selectionSort is deprecated - please use sort")
+    (253230 call(253224 call . SelectionSort c"selectionSort") Data comparator)
+  }
+  type DefaultComparator[273189] function DefaultComparator[273189].compare[272561](arg _mt[273193]:_MT[227], arg this[273191]:DefaultComparator[273189], arg a[272559]:_any[170](?), arg b[272563]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    if(272591 call _cond_test(272567 call < a b))
+    {
+      (272572 return(272570 call - 1))
+    }
+    {
+      { scopeless
+        if(272586 call _cond_test(272577 call < b a))
+        {
+          (272580 return 1)
+        }
+        {
+          { scopeless
+            (272584 return 0)
+          }
+        }
+      }
+    }
+  } function DefaultComparator[273189].keyPart[272605](arg _mt[273197]:_MT[227], arg this[273195]:DefaultComparator[273189], arg x[272602] :
+  integral, arg i[272608] :
+  int[13]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown section[272647](272644 IfExpr (272626 call > i 1) then
+    { scopeless
+      (272635 call -(272633 call _cast(272632 call int[13] 8) 1))
+    } else
+    { scopeless
+      (272642 call _cast(272641 call int[13] 8) 0)
+    } )(272623 call int[13] 8)
+    (272656 return(272654 call _build_tuple section x))
+  }
+  { scopeless type
+    (272618 call _build_tuple(272614 call int[13] 8)(272616 'typeof' x))
+  } function DefaultComparator[273189].keyPart[272667](arg _mt[273201]:_MT[227], arg this[273199]:DefaultComparator[273189], arg x[272664] :
+  chpl_anyreal, arg i[272670] :
+  int[13]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown section[272715](272712 IfExpr (272694 call > i 1) then
+    { scopeless
+      (272703 call -(272701 call _cast(272700 call int[13] 8) 1))
+    } else
+    { scopeless
+      (272710 call _cast(272709 call int[13] 8) 0)
+    } )(272691 call int[13] 8)
+    unknown nbits[272724] "param"(272723 call numBits(272721 'typeof' x))
+    unknown src[272728] x
+    unknown dst[272735](272734 call uint[107] nbits)
+    (272753 call c_memcpy(272742 call c_ptrTo dst)(272747 call c_ptrTo src)(272752 call c_sizeof(272750 'typeof' src)))
+    if(272796 call _cond_test(272763 call ==(272760 call >> dst(272758 call - nbits 1)) 1))
+    {
+      (272769 call = dst(272767 call ~ dst))
+    }
+    {
+      const one[272778] "const" 1(272776 call uint[107] nbits)
+      (272793 call = dst(272791 call ^ dst(272789 call << one(272787 call - nbits 1))))
+    }
+    (272805 return(272803 call _build_tuple section dst))
+  }
+  { scopeless type
+    (272686 call _build_tuple(272676 call int[13] 8)(272684 call uint[107](272682 call numBits(272680 'typeof' x))))
+  } function DefaultComparator[273189].keyPart[272816](arg _mt[273205]:_MT[227], arg this[273203]:DefaultComparator[273189], arg x[272813] :
+  chpl_anyimag, arg i[272819] :
+  int[13]) : _unknown[43] "inline" "method" "primary method"
+  {
+    (272852 return(272851 call keyPart(272847 call _cast(272846 call real[16](272844 call numBits(272842 'typeof' x))) x) i))
+  }
+  { scopeless type
+    (272835 call _build_tuple(272825 call int[13] 8)(272833 call uint[107](272831 call numBits(272829 'typeof' x))))
+  } function DefaultComparator[273189].keyPart[272864](arg _mt[273209]:_MT[227], arg this[273207]:DefaultComparator[273189], arg x[272861] :
+  _tuple, arg i[272867] :
+  int[13]) : _unknown[43] "inline" "method" "primary method"
+  {
+    { scopeless
+      const tmp[272926] "const" "no copy" "temp"(272925 call(272916 call . this c"keyPart")(272922 call x i) 1)
+      (272930 call _check_tuple_var_decl tmp[272926] 2)
+      const part[272912] "const"(272927 call tmp[272926] 2)
+    }
+    if(272963 call _cond_test(272941 call > i(272938 call . x c"size")))
+    {
+      { scopeless
+        (272954 return(272952 call _build_tuple(272944 call - 1)(272949 call _cast(272948 'typeof' part) 0)))
+      }
+    }
+    {
+      { scopeless
+        (272961 return(272959 call _build_tuple 0 part))
+      }
+    }
+  }
+  where {
+    (272908 call &&(272873 call isHomogeneousTuple x)(272906 call ||(272897 call ||(272888 call ||(272880 call isInt(272878 call x 1))(272887 call isUint(272885 call x 1)))(272896 call isReal(272894 call x 1)))(272905 call isImag(272903 call x 1))))
+  } function DefaultComparator[273189].keyPart[272978](arg _mt[273213]:_MT[227], arg this[273211]:DefaultComparator[273189], arg x[272975] :
+  string[24], arg i[272981] :
+  int[13]) : _unknown[43] "inline" "method" "primary method"
+  {
+    if(273010 call _cond_test boundsChecking)
+    {
+      { scopeless
+        (273008 call assert(273005 call ==(272998 call . x c"locale_id")(273002 call . here c"id")))
+      }
+    }
+    unknown ptr[273031](273029 call _cast(273028 call c_ptr(273026 call uint[107] 8))(273021 call(273017 call . x c"c_str")))
+    unknown len[273038](273035 call . x c"numBytes")
+    unknown section[273064](273061 IfExpr (273043 call <= i len) then
+    { scopeless
+      (273050 call _cast(273049 call int[13] 8) 0)
+    } else
+    { scopeless
+      (273059 call -(273057 call _cast(273056 call int[13] 8) 1))
+    } )
+    unknown part[273088](273085 IfExpr (273069 call <= i len) then
+    { scopeless
+      (273077 call ptr(273074 call - i 1))
+    } else
+    { scopeless
+      (273083 call _cast(273082 call uint[107] 8) 0)
+    } )
+    (273096 return(273094 call _build_tuple section part))
+  }
+  { scopeless type
+    (272993 call _build_tuple(272987 call int[13] 8)(272991 call uint[107] 8))
+  } function DefaultComparator[273189].keyPart[273107](arg _mt[273217]:_MT[227], arg this[273215]:DefaultComparator[273189], arg x[273104] :
+  c_string, arg i[273110] :
+  int[13]) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ptr[273134](273132 call _cast(273131 call c_ptr(273129 call uint[107] 8)) x)
+    unknown byte[273145](273144 call ptr(273141 call - i 1))
+    unknown section[273171](273168 IfExpr (273150 call != byte 0) then
+    { scopeless
+      (273157 call _cast(273156 call int[13] 8) 0)
+    } else
+    { scopeless
+      (273166 call -(273164 call _cast(273163 call int[13] 8) 1))
+    } )
+    unknown part[273175] byte
+    (273183 return(273181 call _build_tuple section part))
+  }
+  { scopeless type
+    (273122 call _build_tuple(273116 call int[13] 8)(273120 call uint[107] 8))
+  }
+  type ReverseComparator[273819](?) unknown comparator[273221] function ReverseComparator[273819](?).init[273226](arg _mt[273823]:_MT[227], arg this[273821]:ReverseComparator[273819](?)) : _unknown[43] "method" "primary method"
+  {
+    (273235 call =(273231 call . this c"comparator") defaultComparator)
+  } function ReverseComparator[273819](?).init[273245](arg _mt[273827]:_MT[227], arg this[273825]:ReverseComparator[273819](?), arg comparator[273243]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    (273252 call =(273248 call . this c"comparator") comparator)
+  } function ReverseComparator[273819](?).init=[273267](arg _mt[273831]:_MT[227], arg this[273829]:ReverseComparator[273819](?), arg revcomp[273264] :
+  (273263 call ReverseComparator ?[249])) : _unknown[43] "method" "primary method" "no doc"
+  {
+    (273277 call =(273270 call . this c"comparator")(273274 call . revcomp c"comparator"))
+  } function ReverseComparator[273819](?).typeIsBitReversible[273287](arg _mt[273835]:_MT[227], arg this[273833]:ReverseComparator[273819](?), arg t[273285]:_any[170](?)) param : _unknown[43] "method" "primary method" "no doc"
+  {
+    if(273308 call _cond_test(273292 call isHomogeneousTupleType t))
+    {
+      unknown tmp[273294] t
+      (273306 return(273305 call typeIsBitReversible(273303 'typeof'(273302 call tmp 1))))
+    }
+    if(273320 call _cond_test(273316 call isUintType t))
+    {
+      { scopeless
+        (273318 return 1)
+      }
+    }
+    if(273332 call _cond_test(273328 call isIntType t))
+    {
+      { scopeless
+        (273330 return 1)
+      }
+    }
+    (273338 return 0)
+  } function ReverseComparator[273819](?).typeIsNegateReversible[273346](arg _mt[273839]:_MT[227], arg this[273837]:ReverseComparator[273819](?), arg t[273344]:_any[170](?)) param : _unknown[43] "method" "primary method" "no doc"
+  {
+    if(273367 call _cond_test(273351 call isHomogeneousTupleType t))
+    {
+      unknown tmp[273353] t
+      (273365 return(273364 call typeIsNegateReversible(273362 'typeof'(273361 call tmp 1))))
+    }
+    if(273385 call _cond_test(273380 call ||(273375 call isIntType t)(273379 call isUintType t)))
+    {
+      { scopeless
+        (273383 return 0)
+      }
+    }
+    if(273397 call _cond_test(273393 call isNumericType t))
+    {
+      { scopeless
+        (273395 return 1)
+      }
+    }
+    (273403 return 0)
+  } function ReverseComparator[273819](?).hasKeyPart[273411](arg _mt[273843]:_MT[227], arg this[273841]:ReverseComparator[273819](?), arg a[273409]:_any[170](?)) param : _unknown[43] "method" "primary method" "no doc"
+  {
+    (273423 return(273422 call canResolveMethod(273415 call . this c"comparator") "keyPart" a 1))
+  } function ReverseComparator[273819](?).hasKeyPartFromKey[273432](arg _mt[273847]:_MT[227], arg this[273845]:ReverseComparator[273819](?), arg a[273430]:_any[170](?)) param : _unknown[43] "method" "primary method" "no doc"
+  {
+    if(273464 call _cond_test(273442 call canResolveMethod(273436 call . this c"comparator") "key" a))
+    {
+      unknown key[273451](273450 'typeof'(273449 call(273444 call . comparator c"key") a))
+      (273462 return(273461 call canResolveMethod defaultComparator "keyPart" key 1))
+    }
+    (273470 return 0)
+  } function ReverseComparator[273819](?).hasCompare[273478](arg _mt[273851]:_MT[227], arg this[273849]:ReverseComparator[273819](?), arg a[273476]:_any[170](?), arg b[273480]:_any[170](?)) param : _unknown[43] "method" "primary method" "no doc"
+  {
+    (273492 return(273491 call canResolveMethod(273484 call . this c"comparator") "compare" a b))
+  } function ReverseComparator[273819](?).hasCompareFromKey[273501](arg _mt[273855]:_MT[227], arg this[273853]:ReverseComparator[273819](?), arg a[273499]:_any[170](?)) param : _unknown[43] "method" "primary method" "no doc"
+  {
+    if(273533 call _cond_test(273511 call canResolveMethod(273505 call . this c"comparator") "key" a))
+    {
+      unknown key[273520](273519 'typeof'(273518 call(273513 call . comparator c"key") a))
+      (273531 return(273530 call canResolveMethod defaultComparator "compare" key key))
+    }
+    (273539 return 0)
+  } function ReverseComparator[273819](?).getKeyPart[273547](arg _mt[273859]:_MT[227], arg this[273857]:ReverseComparator[273819](?), arg cmp[273545]:_any[170](?), arg a[273549]:_any[170](?), arg i[273551]:_any[170](?)) : _unknown[43] "inline" "method" "primary method" "no doc"
+  {
+    { scopeless
+      unknown tmp[273566] "no copy" "temp"(273565 call(273559 call . cmp c"keyPart") a i)
+      (273573 call _check_tuple_var_decl tmp[273566] 2)
+      unknown section[273553](273567 call tmp[273566] 1)
+      unknown part[273555](273570 call tmp[273566] 2)
+    }
+    if(273638 call _cond_test(273583 call typeIsBitReversible(273581 'typeof' part)))
+    {
+      (273593 return(273591 call _build_tuple(273585 call - section)(273588 call ~ part)))
+    }
+    {
+      { scopeless
+        if(273634 call _cond_test(273600 call typeIsNegateReversible(273598 'typeof' part)))
+        {
+          (273610 return(273608 call _build_tuple(273602 call - section)(273605 call - part)))
+        }
+        {
+          (273631 call compilerError "keyPart must return int or uint")
+        }
+      }
+    }
+  } function ReverseComparator[273819](?).keyPart[273649](arg _mt[273863]:_MT[227], arg this[273861]:ReverseComparator[273819](?), arg a[273647]:_any[170](?), arg i[273651]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    (273671 call chpl_check_comparator(273665 call . this c"comparator")(273670 'typeof' a))
+    if(273708 call _cond_test(273677 call hasKeyPartFromKey a))
+    {
+      (273693 return(273692 call getKeyPart defaultComparator(273690 call(273685 call .(273682 call . this c"comparator") c"key") a) i))
+    }
+    {
+      (273705 return(273704 call getKeyPart(273698 call . this c"comparator") a i))
+    }
+  }
+  where {
+    (273661 call ||(273656 call hasKeyPart a)(273660 call hasKeyPartFromKey a))
+  } function ReverseComparator[273819](?).doCompare[273719](arg _mt[273867]:_MT[227], arg this[273865]:ReverseComparator[273819](?), arg cmp[273717]:_any[170](?), arg a[273721]:_any[170](?), arg b[273723]:_any[170](?)) : _unknown[43] "inline" "method" "primary method" "no doc"
+  {
+    (273733 return(273732 call(273726 call . cmp c"compare") b a))
+  } function ReverseComparator[273819](?).compare[273742](arg _mt[273871]:_MT[227], arg this[273869]:ReverseComparator[273819](?), arg a[273740]:_any[170](?), arg b[273744]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    (273765 call chpl_check_comparator(273759 call . this c"comparator")(273764 'typeof' a))
+    if(273811 call _cond_test(273771 call hasCompareFromKey a))
+    {
+      (273796 return(273795 call doCompare defaultComparator(273784 call(273779 call .(273776 call . this c"comparator") c"key") a)(273794 call(273789 call .(273786 call . this c"comparator") c"key") b)))
+    }
+    {
+      (273808 return(273807 call doCompare(273801 call . this c"comparator") a b))
+    }
+  }
+  where {
+    (273755 call ||(273750 call hasCompare a b)(273754 call hasCompareFromKey a))
+  }
+}

@@ -1,0 +1,119 @@
+AST dump for BubbleSort after pass createTaskFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_BubbleSort[390354]() : void[4] "insert line file info" "module init"
+  {
+    (486806 return _void[47])
+  }
+  function bubbleSort[253247](arg Data[253244]:_array[133150](?), arg comparator[253252]:_any[170](?) :
+  defaultComparator[251428] =
+  defaultComparator[251428]) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[679347] "expr temp" "maybe param" "maybe type" "temp"
+    (679350 'move' call_tmp[679347](441155 call eltType _mt[232] Data[253244]))
+    (253260 call chpl_check_comparator comparator[253252] call_tmp[679347])
+    unknown call_tmp[679354] "expr temp" "maybe param" "maybe type" "temp"
+    (679357 'move' call_tmp[679354](441139 call _dom _mt[232] Data[253244]))
+    unknown call_tmp[679361] "expr temp" "maybe param" "maybe type" "temp"
+    (679364 'move' call_tmp[679361](253264 call rank _mt[232] call_tmp[679354]))
+    unknown call_tmp[679366] "expr temp" "maybe param" "maybe type" "temp"
+    (679369 'move' call_tmp[679366](253268 call != call_tmp[679361] 1))
+    unknown call_tmp[679371] "expr temp" "maybe param" "maybe type" "temp"
+    (679374 'move' call_tmp[679371](253291 call _cond_test call_tmp[679366]))
+    if call_tmp[679371]
+    {
+      (253288 call compilerError "bubbleSort() requires 1-D array")
+    }
+    unknown call_tmp[679378] "expr temp" "maybe param" "maybe type" "temp"
+    (679381 'move' call_tmp[679378](441143 call _dom _mt[232] Data[253244]))
+    unknown call_tmp[679385] "maybe param" "maybe type" "temp"
+    (679388 'move' call_tmp[679385](253296 call alignedLow _mt[232] call_tmp[679378]))
+    const low[253299] "const" "insert auto destroy"
+    (496060 'init var' low[253299] call_tmp[679385])
+    unknown call_tmp[679392] "expr temp" "maybe param" "maybe type" "temp"
+    (679395 'move' call_tmp[679392](441147 call _dom _mt[232] Data[253244]))
+    unknown call_tmp[679399] "maybe param" "maybe type" "temp"
+    (679402 'move' call_tmp[679399](253303 call alignedHigh _mt[232] call_tmp[679392]))
+    const high[253306] "const" "insert auto destroy"
+    (496062 'init var' high[253306] call_tmp[679399])
+    unknown call_tmp[679406] "expr temp" "maybe param" "maybe type" "temp"
+    (679409 'move' call_tmp[679406](441151 call _dom _mt[232] Data[253244]))
+    unknown call_tmp[679413] "expr temp" "maybe param" "maybe type" "temp"
+    (679416 'move' call_tmp[679413](253311 call stride _mt[232] call_tmp[679406]))
+    unknown call_tmp[679418] "maybe param" "maybe type" "temp"
+    (679421 'move' call_tmp[679418](253315 call abs call_tmp[679413]))
+    const stride[253316] "const" "insert auto destroy"
+    (496064 'init var' stride[253316] call_tmp[679418])
+    unknown swapped[253320] "insert auto destroy"
+    (496066 'init var' swapped[253320] 1)
+    {
+      unknown tmp[253432] "temp"
+      (253450 'move' tmp[253432](253448 call _cond_test swapped[253320]))
+      WhileDo
+      {
+        {
+          (253326 call = swapped[253320] 0)
+          {
+            unknown _indexOfInterest[253384] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[253385] "expr temp" "temp"
+            unknown call_tmp[679423] "expr temp" "maybe param" "maybe type" "temp"
+            (679426 'move' call_tmp[679423](253406 call - high[253306] stride[253316]))
+            unknown call_tmp[679428] "expr temp" "maybe param" "maybe type" "temp"
+            (679431 'move' call_tmp[679428](253409 call chpl_direct_range_iter low[253299] call_tmp[679423] stride[253316]))
+            (253394 'move' _iterator[253385](253392 call _getIterator call_tmp[679428]))
+            Defer
+            {
+              {
+                (253425 call _freeIterator _iterator[253385])
+              }
+            }
+            { scopeless type
+              (253414 'move' _indexOfInterest[253384](253411 call iteratorIndex _iterator[253385]))
+            }
+            ForLoop
+            {
+              unknown i[253418] "index var" "insert auto destroy"
+              (253420 'move' i[253418] _indexOfInterest[253384])
+              {
+                unknown call_tmp[679433] "expr temp" "maybe param" "maybe type" "temp"
+                (679436 'move' call_tmp[679433](253345 call Data[253244] i[253418]))
+                unknown call_tmp[679438] "expr temp" "maybe param" "maybe type" "temp"
+                (679441 'move' call_tmp[679438](253350 call + i[253418] stride[253316]))
+                unknown call_tmp[679443] "expr temp" "maybe param" "maybe type" "temp"
+                (679446 'move' call_tmp[679443](253353 call Data[253244] call_tmp[679438]))
+                unknown call_tmp[679448] "expr temp" "maybe param" "maybe type" "temp"
+                (679451 'move' call_tmp[679448](253355 call chpl_compare call_tmp[679433] call_tmp[679443] comparator[253252]))
+                unknown call_tmp[679453] "expr temp" "maybe param" "maybe type" "temp"
+                (679456 'move' call_tmp[679453](253357 call > call_tmp[679448] 0))
+                unknown call_tmp[679458] "expr temp" "maybe param" "maybe type" "temp"
+                (679461 'move' call_tmp[679458](253379 call _cond_test call_tmp[679453]))
+                if call_tmp[679458]
+                {
+                  unknown call_tmp[679463] "expr temp" "maybe param" "maybe type" "temp"
+                  (679466 'move' call_tmp[679463](253362 call Data[253244] i[253418]))
+                  unknown call_tmp[679468] "expr temp" "maybe param" "maybe type" "temp"
+                  (679471 'move' call_tmp[679468](253366 call + i[253418] stride[253316]))
+                  unknown call_tmp[679473] "expr temp" "maybe param" "maybe type" "temp"
+                  (679476 'move' call_tmp[679473](253369 call Data[253244] call_tmp[679468]))
+                  (253370 call <=> call_tmp[679463] call_tmp[679473])
+                  (253376 call = swapped[253320] 1)
+                }
+              }
+              label _continueLabel[253389]
+              _indexOfInterest[253384]
+              _iterator[253385]
+            }
+            label _breakLabel[253390]
+          }
+        }
+        label _continueLabel[253435]
+        (253443 'move' tmp[253432](253441 call _cond_test swapped[253320]))
+        tmp[253432]
+      }
+      label _breakLabel[253436]
+    }
+    (486804 return _void[47])
+  }
+  (329571 'used modules list'(328332 'use' ChapelStandard[19734]))
+}

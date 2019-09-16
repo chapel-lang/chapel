@@ -1,0 +1,287 @@
+AST dump for Time after pass readExternC.
+Module use list: 
+
+{
+  (328388 'use' ChapelStandard)
+  (311888 'use' SysBasic)
+  (311893 'use' HaltWrappers 'only' )
+  function chpl_now_time[311897]() : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    real[16]
+  }
+  type _timevalue[311907]
+  function chpl_null_timevalue[311911]() : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    _timevalue
+  }
+  function chpl_now_timevalue[311919]() : _unknown[43] "extern" "local args" "no fn body" "private"
+  {
+  }
+  { scopeless type
+    _timevalue
+  }
+  function chpl_timevalue_parts[311931](arg t[311928] :
+  _timevalue, out arg seconds[311937] :
+  (311936 call int[13] 32), out arg minutes[311944] :
+  (311943 call int[13] 32), out arg hours[311951] :
+  (311950 call int[13] 32), out arg mday[311958] :
+  (311957 call int[13] 32), out arg month[311965] :
+  (311964 call int[13] 32), out arg year[311972] :
+  (311971 call int[13] 32), out arg wday[311979] :
+  (311978 call int[13] 32), out arg yday[311986] :
+  (311985 call int[13] 32), out arg isdst[311993] :
+  (311992 call int[13] 32)) : void[4] "extern" "local args" "no fn body" "private"
+  {
+  }
+  type TimeUnits[312009] def microseconds[311999]:TimeUnits[312009] def milliseconds[312001]:TimeUnits[312009] def seconds[312003]:TimeUnits[312009] def minutes[312005]:TimeUnits[312009] def hours[312007]:TimeUnits[312009]
+  type Day[312028] def sunday[312014]:Day[312028] 0 def monday[312016]:Day[312028] def tuesday[312018]:Day[312028] def wednesday[312020]:Day[312028] def thursday[312022]:Day[312028] def friday[312024]:Day[312028] def saturday[312026]:Day[312028]
+  function getCurrentTime[312044](arg unit[312040] :
+  TimeUnits =
+  (312037 call . TimeUnits c"seconds")) : _unknown[43]
+  {
+    { scopeless
+      (312057 return(312056 call _convert_microseconds unit(312055 call chpl_now_time)))
+    }
+  }
+  { scopeless type
+    (312049 call real[16] 64)
+  }
+  function getCurrentDate[312065]() : _unknown[43]
+  {
+    unknown now[312070](312069 call chpl_now_timevalue)
+    { scopeless
+      unknown seconds[312074](312101 call int[13] 32)
+      unknown minutes[312077](312120 'typeof' seconds)
+      unknown hours[312080](312118 'typeof' minutes)
+      unknown mday[312083](312116 'typeof' hours)
+      unknown month[312086](312114 'typeof' mday)
+      unknown year[312089](312112 'typeof' month)
+      unknown wday[312092](312110 'typeof' year)
+      unknown yday[312095](312108 'typeof' wday)
+      unknown isdst[312102](312106 'typeof' yday)
+    }
+    (312133 call chpl_timevalue_parts now seconds minutes hours mday month year wday yday isdst)
+    (312149 return(312147 call _build_tuple(312139 call + year 1900)(312143 call + month 1) mday))
+  }
+  function getCurrentDayOfWeek[312155]() : _unknown[43]
+  {
+    unknown now[312161](312160 call chpl_now_timevalue)
+    { scopeless
+      unknown seconds[312165](312192 call int[13] 32)
+      unknown minutes[312168](312211 'typeof' seconds)
+      unknown hours[312171](312209 'typeof' minutes)
+      unknown mday[312174](312207 'typeof' hours)
+      unknown month[312177](312205 'typeof' mday)
+      unknown year[312180](312203 'typeof' month)
+      unknown wday[312183](312201 'typeof' year)
+      unknown yday[312186](312199 'typeof' wday)
+      unknown isdst[312193](312197 'typeof' yday)
+    }
+    (312224 call chpl_timevalue_parts now seconds minutes hours mday month year wday yday isdst)
+    (312230 return(312228 call _cast Day wday))
+  }
+  { scopeless type
+    Day
+  }
+  function sleep[312241](arg t[312238] :
+  real[16], arg unit[312248] :
+  TimeUnits =
+  (312245 call . TimeUnits c"seconds")) : _unknown[43] "inline"
+  {
+    function chpl_task_sleep[312259](arg s[312256] :
+    c_double) : _unknown[43] "extern" "local args" "no fn body"
+    {
+    }
+    { scopeless type
+      void[4]
+    }
+    if(312295 call _cond_test(312268 call < t 0))
+    {
+      (312290 call warning "sleep() called with negative time parameter: '" t "'")
+      (312293 return)
+    }
+    (312312 call chpl_task_sleep(312309 call _cast c_double(312307 call _convert_to_seconds unit(312305 call _cast real[16] t))))
+  }
+  { scopeless type
+    void[4]
+  }
+  type Timer[312523] unknown time[312322] "no doc"(312321 call chpl_null_timevalue) _timevalue unknown accumulated[312327] "no doc" 0.0 real[16] unknown running[312332] "no doc" 0 bool[10] function Timer[312523].clear[312337](arg _mt[312527]:_MT[227], arg this[312525]:Timer[312523]) : _unknown[43] "method" "primary method"
+  {
+    (312342 call = accumulated 0.0)
+    if(312355 call _cond_test running)
+    {
+      (312351 call = time(312350 call chpl_now_timevalue))
+    }
+  }
+  { scopeless type
+    void[4]
+  } function Timer[312523].start[312364](arg _mt[312531]:_MT[227], arg this[312529]:Timer[312523]) : _unknown[43] "method" "primary method"
+  {
+    if(312404 call _cond_test(312368 call ! running))
+    {
+      (312372 call = running 1)
+      (312380 call = time(312379 call chpl_now_timevalue))
+    }
+    {
+      (312401 call warning "start called on a timer that has not been stopped")
+    }
+  }
+  { scopeless type
+    void[4]
+  } function Timer[312523].stop[312414](arg _mt[312535]:_MT[227], arg this[312533]:Timer[312523]) : _unknown[43] "method" "primary method"
+  {
+    if(312461 call _cond_test running)
+    {
+      unknown time2[312422](312421 call chpl_now_timevalue) _timevalue
+      (312432 call += accumulated(312431 call _diff_time time2 time))
+      (312437 call = running 0)
+    }
+    {
+      (312458 call warning "stop called on a timer that has not been started")
+    }
+  }
+  { scopeless type
+    void[4]
+  } function Timer[312523].elapsed[312480](arg _mt[312539]:_MT[227], arg this[312537]:Timer[312523], arg unit[312476] :
+  TimeUnits =
+  (312473 call . TimeUnits c"seconds")) : _unknown[43] "method" "primary method"
+  {
+    if(312514 call _cond_test running)
+    {
+      unknown time2[312488](312487 call chpl_now_timevalue) _timevalue
+      (312504 return(312503 call _convert_microseconds unit(312501 call + accumulated(312500 call _diff_time time2 time))))
+    }
+    {
+      (312511 return(312510 call _convert_microseconds unit accumulated))
+    }
+  }
+  { scopeless type
+    real[16]
+  }
+  function _diff_time[312548](arg t1[312545] :
+  _timevalue, arg t2[312551] :
+  _timevalue) : _unknown[43] "inline" "private"
+  {
+    function chpl_timevalue_seconds[312560](arg t[312557] :
+    _timevalue) : _unknown[43] "extern" "local args" "no fn body"
+    {
+    }
+    { scopeless type
+      (312565 call int[13] 64)
+    }
+    function chpl_timevalue_microseconds[312576](arg t[312573] :
+    _timevalue) : _unknown[43] "extern" "local args" "no fn body"
+    {
+    }
+    { scopeless type
+      (312581 call int[13] 64)
+    }
+    unknown s1[312589](312588 call chpl_timevalue_seconds t1)
+    unknown us1[312596](312595 call chpl_timevalue_microseconds t1)
+    unknown s2[312603](312602 call chpl_timevalue_seconds t2)
+    unknown us2[312610](312609 call chpl_timevalue_microseconds t2)
+    (312631 return(312629 call -(312620 call +(312617 call * s1 1e+06) us1)(312627 call +(312624 call * s2 1e+06) us2)))
+  }
+  function _convert_to_seconds[312641](arg unit[312638] :
+  TimeUnits, arg us[312644] :
+  real[16]) : _unknown[43] "private"
+  {
+    {
+      unknown tmp[312731] "expr temp" "maybe param" "maybe type" "temp"
+      (312733 'move' tmp[312731] unit)
+      if(312738 call _cond_test(312735 call == tmp[312731](312650 call . TimeUnits c"microseconds")))
+      {
+        { scopeless
+          (312660 return(312658 call * us 1e-06))
+        }
+      }
+      {
+        if(312744 call _cond_test(312741 call == tmp[312731](312668 call . TimeUnits c"milliseconds")))
+        {
+          { scopeless
+            (312678 return(312676 call * us 0.001))
+          }
+        }
+        {
+          if(312751 call _cond_test(312748 call == tmp[312731](312684 call . TimeUnits c"seconds")))
+          {
+            { scopeless
+              (312689 return us)
+            }
+          }
+          {
+            if(312758 call _cond_test(312755 call == tmp[312731](312697 call . TimeUnits c"minutes")))
+            {
+              { scopeless
+                (312707 return(312705 call * us 60.0))
+              }
+            }
+            {
+              if(312765 call _cond_test(312762 call == tmp[312731](312715 call . TimeUnits c"hours")))
+              {
+                { scopeless
+                  (312725 return(312723 call * us 3600.0))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    (312792 call(312772 call . HaltWrappers c"exhaustiveSelectHalt") "unknown timeunits type")
+    (312797 return(312795 call - 1.0))
+  }
+  function _convert_microseconds[312807](arg unit[312804] :
+  TimeUnits, arg us[312810] :
+  real[16]) : _unknown[43] "private"
+  {
+    {
+      unknown tmp[312889] "expr temp" "maybe param" "maybe type" "temp"
+      (312891 'move' tmp[312889] unit)
+      if(312896 call _cond_test(312893 call == tmp[312889](312816 call . TimeUnits c"microseconds")))
+      {
+        { scopeless
+          (312821 return us)
+        }
+      }
+      {
+        if(312902 call _cond_test(312899 call == tmp[312889](312827 call . TimeUnits c"milliseconds")))
+        {
+          { scopeless
+            (312837 return(312835 call / us 1000.0))
+          }
+        }
+        {
+          if(312909 call _cond_test(312906 call == tmp[312889](312843 call . TimeUnits c"seconds")))
+          {
+            { scopeless
+              (312851 return(312849 call / us 1e+06))
+            }
+          }
+          {
+            if(312916 call _cond_test(312913 call == tmp[312889](312857 call . TimeUnits c"minutes")))
+            {
+              { scopeless
+                (312867 return(312865 call / us 6e+07))
+              }
+            }
+            {
+              if(312923 call _cond_test(312920 call == tmp[312889](312873 call . TimeUnits c"hours")))
+              {
+                { scopeless
+                  (312883 return(312881 call / us 3.6e+09))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    (312935 call(312930 call . HaltWrappers c"exhaustiveSelectHalt") "unknown timeunits type")
+    (312940 return(312938 call - 1.0))
+  }
+}

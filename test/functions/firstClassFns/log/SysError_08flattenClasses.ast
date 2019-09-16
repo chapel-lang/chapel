@@ -1,0 +1,431 @@
+AST dump for SysError after pass flattenClasses.
+Module use list: ChapelStandard SysBasic 
+
+{
+  function SystemError[217059].init[216487](arg _mt[217063]:_MT[227], arg this[217061]:SystemError[217059], arg err[216484] :
+  syserr[210032], arg details[216506] :
+  string[24] =
+  "") : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (216515 call =(216511 call . this[217061] c"err") err[216484])
+    (216526 call =(216522 call . this[217061] c"details") details[216506])
+  }
+  function SystemError[217059].message[216533](arg _mt[217067]:_MT[227], arg this[217065]:SystemError[217059]) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    unknown strerror_err[216537](367105 call ENOERR[210102]) err_t[210035]
+    unknown errstr[216546](216545 call sys_strerror_syserr_str(367109 call . this[217065] c"err") strerror_err[216537])
+    unknown err_msg[216553](216552 call createStringWithOwnedBuffer errstr[216546])
+    if(216575 call _cond_test(216562 call !(216561 call(216557 call .(367116 call . this[217065] c"details") c"isEmpty"))))
+    {
+      (216572 call += err_msg[216553](216570 call +(216567 call + " ("(367122 call . this[217065] c"details")) ")"))
+    }
+    (216581 return err_msg[216553])
+  }
+  function anymanaged anynil SystemError[389620](?).fromSyserr[216591](arg _mt[217071]:_MT[227], arg this[217069]:anymanaged anynil SystemError[389620](?), arg err[216588] :
+  syserr[210032], arg details[216610] :
+  string[24] =
+  "") : _unknown[43] "always propagate line file info" "insert line file info" "method" "primary method"
+  {
+    if(216998 call _cond_test(216634 call ||(216628 call ||(216622 call ||(216616 call == err[216588] EAGAIN[210764])(216620 call == err[216588] EALREADY[210768]))(216626 call == err[216588] EWOULDBLOCK[211208]))(216632 call == err[216588] EINPROGRESS[210876])))
+    {
+      (216644 return(216643 'new'(216641 call _owned[39039](?)(216640 call anymanaged BlockingIOError[367136](?) details[216610] err[216588]))))
+    }
+    {
+      if(216993 call _cond_test(216649 call == err[216588] ECHILD[210808]))
+      {
+        (216659 return(216658 'new'(216656 call _owned[39039](?)(216655 call anymanaged ChildProcessError[367145](?) details[216610] err[216588]))))
+      }
+      {
+        if(216988 call _cond_test(216670 call ||(216664 call == err[216588] EPIPE[211120])(216668 call == err[216588] ESHUTDOWN[211160])))
+        {
+          (216680 return(216679 'new'(216677 call _owned[39039](?)(216676 call anymanaged BrokenPipeError[367156](?) details[216610] err[216588]))))
+        }
+        {
+          if(216983 call _cond_test(216685 call == err[216588] ECONNABORTED[210820]))
+          {
+            (216695 return(216694 'new'(216692 call _owned[39039](?)(216691 call anymanaged ConnectionAbortedError[367165](?) details[216610] err[216588]))))
+          }
+          {
+            if(216978 call _cond_test(216700 call == err[216588] ECONNREFUSED[210824]))
+            {
+              (216710 return(216709 'new'(216707 call _owned[39039](?)(216706 call anymanaged ConnectionRefusedError[367174](?) details[216610] err[216588]))))
+            }
+            {
+              if(216973 call _cond_test(216715 call == err[216588] ECONNRESET[210828]))
+              {
+                (216725 return(216724 'new'(216722 call _owned[39039](?)(216721 call anymanaged ConnectionResetError[367183](?) details[216610] err[216588]))))
+              }
+              {
+                if(216968 call _cond_test(216730 call == err[216588] EEXIST[210848]))
+                {
+                  (216740 return(216739 'new'(216737 call _owned[39039](?)(216736 call anymanaged FileExistsError[367192](?) details[216610] err[216588]))))
+                }
+                {
+                  if(216963 call _cond_test(216745 call == err[216588] ENOENT[211008]))
+                  {
+                    (216755 return(216754 'new'(216752 call _owned[39039](?)(216751 call anymanaged FileNotFoundError[367201](?) details[216610] err[216588]))))
+                  }
+                  {
+                    if(216958 call _cond_test(216760 call == err[216588] EINTR[210880]))
+                    {
+                      (216770 return(216769 'new'(216767 call _owned[39039](?)(216766 call anymanaged InterruptedError[367210](?) details[216610] err[216588]))))
+                    }
+                    {
+                      if(216953 call _cond_test(216775 call == err[216588] EISDIR[210896]))
+                      {
+                        (216785 return(216784 'new'(216782 call _owned[39039](?)(216781 call anymanaged IsADirectoryError[367219](?) details[216610] err[216588]))))
+                      }
+                      {
+                        if(216948 call _cond_test(216790 call == err[216588] ENOTDIR[211076]))
+                        {
+                          (216800 return(216799 'new'(216797 call _owned[39039](?)(216796 call anymanaged NotADirectoryError[367228](?) details[216610] err[216588]))))
+                        }
+                        {
+                          if(216943 call _cond_test(216811 call ||(216805 call == err[216588] EACCES[210748])(216809 call == err[216588] EPERM[211112])))
+                          {
+                            (216821 return(216820 'new'(216818 call _owned[39039](?)(216817 call anymanaged PermissionError[367239](?) details[216610] err[216588]))))
+                          }
+                          {
+                            if(216938 call _cond_test(216826 call == err[216588] ESRCH[211172]))
+                            {
+                              (216836 return(216835 'new'(216833 call _owned[39039](?)(216832 call anymanaged ProcessLookupError[367248](?) details[216610] err[216588]))))
+                            }
+                            {
+                              if(216933 call _cond_test(216841 call == err[216588] ETIMEDOUT[211188]))
+                              {
+                                (216851 return(216850 'new'(216848 call _owned[39039](?)(216847 call anymanaged TimeoutError[367257](?) details[216610] err[216588]))))
+                              }
+                              {
+                                if(216928 call _cond_test(216856 call == err[216588](367264 call EEOF[210684])))
+                                {
+                                  (216866 return(216865 'new'(216863 call _owned[39039](?)(216862 call anymanaged EOFError[367267](?) details[216610] err[216588]))))
+                                }
+                                {
+                                  if(216923 call _cond_test(216871 call == err[216588](367274 call ESHORT[210707])))
+                                  {
+                                    (216881 return(216880 'new'(216878 call _owned[39039](?)(216877 call anymanaged UnexpectedEOFError[367277](?) details[216610] err[216588]))))
+                                  }
+                                  {
+                                    if(216918 call _cond_test(216886 call == err[216588](367284 call EFORMAT[210730])))
+                                    {
+                                      (216896 return(216895 'new'(216893 call _owned[39039](?)(216892 call anymanaged BadFormatError[367287](?) details[216610] err[216588]))))
+                                    }
+                                    {
+                                      if(216914 call _cond_test(216901 call == err[216588] EIO[210888]))
+                                      {
+                                        (216911 return(216910 'new'(216908 call _owned[39039](?)(216907 call anymanaged IOError[367296](?) err[216588] details[216610]))))
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    (217012 return(217011 'new'(217009 call _owned[39039](?)(217008 call anymanaged SystemError[349884](?) err[216588] details[216610]))))
+  }
+  function anymanaged anynil SystemError[389620](?).fromSyserr[217022](arg _mt[217075]:_MT[227], arg this[217073]:anymanaged anynil SystemError[389620](?), arg err[217019] :
+  int(64)[13], arg details[217041] :
+  string[24] =
+  "") : _unknown[43] "always propagate line file info" "insert line file info" "method" "primary method"
+  {
+    (217053 return(217052 call(367307 call . this[217073] c"fromSyserr")(217048 call _cast syserr[210032] err[217019]) details[217041]))
+  }
+  type SystemError[217059] val super[331077]:Error[166551] "super class" unknown err[216474] syserr[210032] unknown details[216478] string[24]
+  type unmanaged SystemError[390112]
+  type anymanaged anynil SystemError[389620](?)
+  type anymanaged SystemError[349884](?)
+  function BlockingIOError[217128].init[217104](arg _mt[217132]:_MT[227], arg this[217130]:BlockingIOError[217128], arg details[217100] :
+  string[24] =
+  "", arg err[217111] :
+  syserr[210032] =
+  (217109 call _cast syserr[210032] EWOULDBLOCK[211208])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217122 call(217116 call .(367318 call . this[217130] c"super") c"init") err[217111] details[217100])
+  }
+  type BlockingIOError[217128] val super[331079]:SystemError[217059] "super class"
+  type anymanaged BlockingIOError[367136](?)
+  function ChildProcessError[217185].init[217161](arg _mt[217189]:_MT[227], arg this[217187]:ChildProcessError[217185], arg details[217157] :
+  string[24] =
+  "", arg err[217168] :
+  syserr[210032] =
+  (217166 call _cast syserr[210032] ECHILD[210808])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217179 call(217173 call .(367328 call . this[217187] c"super") c"init") err[217168] details[217157])
+  }
+  type ChildProcessError[217185] val super[331081]:SystemError[217059] "super class"
+  type anymanaged ChildProcessError[367145](?)
+  function ConnectionError[217237].init[217201](arg _mt[217241]:_MT[227], arg this[217239]:ConnectionError[217237], arg err[217198] :
+  syserr[210032], arg details[217220] :
+  string[24] =
+  "") : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217231 call(217225 call .(367336 call . this[217239] c"super") c"init") err[217198] details[217220])
+  }
+  type ConnectionError[217237] val super[331083]:SystemError[217059] "super class"
+  function BrokenPipeError[217294].init[217270](arg _mt[217298]:_MT[227], arg this[217296]:BrokenPipeError[217294], arg details[217266] :
+  string[24] =
+  "", arg err[217277] :
+  syserr[210032] =
+  (217275 call _cast syserr[210032] EPIPE[211120])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217288 call(217282 call .(367346 call . this[217296] c"super") c"init") err[217277] details[217266])
+  }
+  type BrokenPipeError[217294] val super[331085]:ConnectionError[217237] "super class"
+  type anymanaged BrokenPipeError[367156](?)
+  function ConnectionAbortedError[217351].init[217327](arg _mt[217355]:_MT[227], arg this[217353]:ConnectionAbortedError[217351], arg details[217323] :
+  string[24] =
+  "", arg err[217334] :
+  syserr[210032] =
+  (217332 call _cast syserr[210032] ECONNABORTED[210820])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217345 call(217339 call .(367356 call . this[217353] c"super") c"init") err[217334] details[217323])
+  }
+  type ConnectionAbortedError[217351] val super[331087]:ConnectionError[217237] "super class"
+  type anymanaged ConnectionAbortedError[367165](?)
+  function ConnectionRefusedError[217408].init[217384](arg _mt[217412]:_MT[227], arg this[217410]:ConnectionRefusedError[217408], arg details[217380] :
+  string[24] =
+  "", arg err[217391] :
+  syserr[210032] =
+  (217389 call _cast syserr[210032] ECONNREFUSED[210824])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217402 call(217396 call .(367366 call . this[217410] c"super") c"init") err[217391] details[217380])
+  }
+  type ConnectionRefusedError[217408] val super[331089]:ConnectionError[217237] "super class"
+  type anymanaged ConnectionRefusedError[367174](?)
+  function ConnectionResetError[217465].init[217441](arg _mt[217469]:_MT[227], arg this[217467]:ConnectionResetError[217465], arg details[217437] :
+  string[24] =
+  "", arg err[217448] :
+  syserr[210032] =
+  (217446 call _cast syserr[210032] ECONNRESET[210828])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217459 call(217453 call .(367376 call . this[217467] c"super") c"init") err[217448] details[217437])
+  }
+  type ConnectionResetError[217465] val super[331091]:ConnectionError[217237] "super class"
+  type anymanaged ConnectionResetError[367183](?)
+  function FileExistsError[217522].init[217498](arg _mt[217526]:_MT[227], arg this[217524]:FileExistsError[217522], arg details[217494] :
+  string[24] =
+  "", arg err[217505] :
+  syserr[210032] =
+  (217503 call _cast syserr[210032] EEXIST[210848])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217516 call(217510 call .(367386 call . this[217524] c"super") c"init") err[217505] details[217494])
+  }
+  type FileExistsError[217522] val super[331093]:SystemError[217059] "super class"
+  type anymanaged FileExistsError[367192](?)
+  function FileNotFoundError[217579].init[217555](arg _mt[217583]:_MT[227], arg this[217581]:FileNotFoundError[217579], arg details[217551] :
+  string[24] =
+  "", arg err[217562] :
+  syserr[210032] =
+  (217560 call _cast syserr[210032] ENOENT[211008])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217573 call(217567 call .(367396 call . this[217581] c"super") c"init") err[217562] details[217551])
+  }
+  type FileNotFoundError[217579] val super[331095]:SystemError[217059] "super class"
+  type anymanaged FileNotFoundError[367201](?)
+  function InterruptedError[217636].init[217612](arg _mt[217640]:_MT[227], arg this[217638]:InterruptedError[217636], arg details[217608] :
+  string[24] =
+  "", arg err[217619] :
+  syserr[210032] =
+  (217617 call _cast syserr[210032] EINTR[210880])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217630 call(217624 call .(367406 call . this[217638] c"super") c"init") err[217619] details[217608])
+  }
+  type InterruptedError[217636] val super[331097]:SystemError[217059] "super class"
+  type anymanaged InterruptedError[367210](?)
+  function IsADirectoryError[217693].init[217669](arg _mt[217697]:_MT[227], arg this[217695]:IsADirectoryError[217693], arg details[217665] :
+  string[24] =
+  "", arg err[217676] :
+  syserr[210032] =
+  (217674 call _cast syserr[210032] EISDIR[210896])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217687 call(217681 call .(367416 call . this[217695] c"super") c"init") err[217676] details[217665])
+  }
+  type IsADirectoryError[217693] val super[331099]:SystemError[217059] "super class"
+  type anymanaged IsADirectoryError[367219](?)
+  function NotADirectoryError[217750].init[217726](arg _mt[217754]:_MT[227], arg this[217752]:NotADirectoryError[217750], arg details[217722] :
+  string[24] =
+  "", arg err[217733] :
+  syserr[210032] =
+  (217731 call _cast syserr[210032] ENOTDIR[211076])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217744 call(217738 call .(367426 call . this[217752] c"super") c"init") err[217733] details[217722])
+  }
+  type NotADirectoryError[217750] val super[331101]:SystemError[217059] "super class"
+  type anymanaged NotADirectoryError[367228](?)
+  function PermissionError[217807].init[217783](arg _mt[217811]:_MT[227], arg this[217809]:PermissionError[217807], arg details[217779] :
+  string[24] =
+  "", arg err[217790] :
+  syserr[210032] =
+  (217788 call _cast syserr[210032] EPERM[211112])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217801 call(217795 call .(367436 call . this[217809] c"super") c"init") err[217790] details[217779])
+  }
+  type PermissionError[217807] val super[331103]:SystemError[217059] "super class"
+  type anymanaged PermissionError[367239](?)
+  function ProcessLookupError[217864].init[217840](arg _mt[217868]:_MT[227], arg this[217866]:ProcessLookupError[217864], arg details[217836] :
+  string[24] =
+  "", arg err[217847] :
+  syserr[210032] =
+  (217845 call _cast syserr[210032] ESRCH[211172])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217858 call(217852 call .(367446 call . this[217866] c"super") c"init") err[217847] details[217836])
+  }
+  type ProcessLookupError[217864] val super[331105]:SystemError[217059] "super class"
+  type anymanaged ProcessLookupError[367248](?)
+  function TimeoutError[217921].init[217897](arg _mt[217925]:_MT[227], arg this[217923]:TimeoutError[217921], arg details[217893] :
+  string[24] =
+  "", arg err[217904] :
+  syserr[210032] =
+  (217902 call _cast syserr[210032] ETIMEDOUT[211188])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217915 call(217909 call .(367456 call . this[217923] c"super") c"init") err[217904] details[217893])
+  }
+  type TimeoutError[217921] val super[331107]:SystemError[217059] "super class"
+  type anymanaged TimeoutError[367257](?)
+  function IOError[217973].init[217937](arg _mt[217977]:_MT[227], arg this[217975]:IOError[217973], arg err[217934] :
+  syserr[210032], arg details[217956] :
+  string[24] =
+  "") : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (217967 call(217961 call .(367464 call . this[217975] c"super") c"init") err[217934] details[217956])
+  }
+  type IOError[217973] val super[331109]:SystemError[217059] "super class"
+  type anymanaged IOError[367296](?)
+  function EOFError[218030].init[218006](arg _mt[218034]:_MT[227], arg this[218032]:EOFError[218030], arg details[218002] :
+  string[24] =
+  "", arg err[218013] :
+  syserr[210032] =
+  (218011 call _cast syserr[210032](367470 call EEOF[210684]))) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (218024 call(218018 call .(367475 call . this[218032] c"super") c"init") err[218013] details[218002])
+  }
+  type EOFError[218030] val super[331111]:IOError[217973] "super class"
+  type anymanaged EOFError[367267](?)
+  function UnexpectedEOFError[218087].init[218063](arg _mt[218091]:_MT[227], arg this[218089]:UnexpectedEOFError[218087], arg details[218059] :
+  string[24] =
+  "", arg err[218070] :
+  syserr[210032] =
+  (218068 call _cast syserr[210032](367481 call ESHORT[210707]))) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (218081 call(218075 call .(367486 call . this[218089] c"super") c"init") err[218070] details[218059])
+  }
+  type UnexpectedEOFError[218087] val super[331113]:IOError[217973] "super class"
+  type anymanaged UnexpectedEOFError[367277](?)
+  function BadFormatError[218144].init[218120](arg _mt[218148]:_MT[227], arg this[218146]:BadFormatError[218144], arg details[218116] :
+  string[24] =
+  "", arg err[218127] :
+  syserr[210032] =
+  (218125 call _cast syserr[210032](367492 call EFORMAT[210730]))) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (218138 call(218132 call .(367497 call . this[218146] c"super") c"init") err[218127] details[218116])
+  }
+  type BadFormatError[218144] val super[331115]:IOError[217973] "super class"
+  type anymanaged BadFormatError[367287](?)
+  function sys_strerror_syserr_str[218157](arg error[218154] :
+  syserr[210032], out arg err_in_strerror[218160] :
+  err_t[210035]) : _unknown[43] "extern" "local args" "no fn body" "private" "no return value for void"
+  {
+  }
+  { scopeless type
+    c_string[19]
+  }
+  function quote_string[218173](arg s[218170] :
+  string[24], arg len[218176] :
+  ssize_t[209667]) : _unknown[43] "private"
+  {
+    const QIO_STRING_FORMAT_CHPL[218183] "const" "extern"(218182 call uint(64)[107] 8)
+    function qio_quote_string[218196](arg s[218193] :
+    (218192 call uint(64)[107] 8), arg e[218202] :
+    (218201 call uint(64)[107] 8), arg f[218209] :
+    (218208 call uint(64)[107] 8), arg ptr[218213] :
+    c_string[19], arg len[218217] :
+    ssize_t[209667], ref arg ret[218221] :
+    c_string[19], arg ti[218225] :
+    c_void_ptr[141]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+    }
+    { scopeless type
+      syserr[210032]
+    }
+    function qio_strdup[218238](arg s[218235] :
+    c_string[19]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+    }
+    { scopeless type
+      c_string[19]
+    }
+    unknown ret[218245] c_string[19]
+    unknown err[218281](218280 call qio_quote_string(218255 call _cast(218254 call uint(64)[107] 8) 34)(218263 call _cast(218262 call uint(64)[107] 8) 34) QIO_STRING_FORMAT_CHPL[218183](218276 call(218272 call .(218271 call(218267 call . s[218170] c"localize")) c"c_str")) len[218176] ret[218245](367519 call c_nil[192976])) syserr[210032]
+    if(218309 call _cond_test err[218281])
+    {
+      (218307 return(218306 call createStringWithOwnedBuffer(218304 call qio_strdup "<error>")))
+    }
+    (218318 return(218317 call createStringWithOwnedBuffer ret[218245]))
+  }
+  function ioerror[218328](arg error[218325] :
+  syserr[210032], arg msg[218331] :
+  string[24], arg path[218335] :
+  string[24], arg offset[218342] :
+  (218341 call int(64)[13] 64)) : _unknown[43] throws "always propagate line file info" "insert line file info" "no return value for void"
+  {
+    if(218422 call _cond_test error[218325])
+    {
+      const quotedpath[218357] "const"(218356 call quote_string path[218335](218354 call _cast ssize_t[209667](218350 call . path[218335] c"numBytes")))
+      unknown details[218407](218405 call +(218399 call +(218381 call +(218378 call + msg[218331] " with path ") quotedpath[218357]) " offset ")(218403 call _cast string[24] offset[218342]))
+      (218420 'throw'(218419 call(218413 call . anymanaged SystemError[349884](?) c"fromSyserr") error[218325] details[218407]))
+    }
+  }
+  function ioerror[218435](arg error[218432] :
+  syserr[210032], arg msg[218438] :
+  string[24], arg path[218442] :
+  string[24]) : _unknown[43] throws "always propagate line file info" "insert line file info" "no doc" "no return value for void"
+  {
+    if(218481 call _cond_test error[218432])
+    {
+      const quotedpath[218457] "const"(218456 call quote_string path[218442](218454 call _cast ssize_t[209667](218450 call . path[218442] c"numBytes")))
+      unknown details[218468](218466 call +(218463 call + msg[218438] " with path ") quotedpath[218457])
+      (218479 'throw'(218478 call(218472 call . anymanaged SystemError[349884](?) c"fromSyserr") error[218432] details[218468]))
+    }
+  }
+  function ioerror[218494](arg error[218491] :
+  syserr[210032], arg msg[218497] :
+  string[24]) : _unknown[43] throws "always propagate line file info" "insert line file info" "no doc" "no return value for void"
+  {
+    if(218511 call _cond_test error[218491])
+    {
+      (218509 'throw'(218508 call(218502 call . anymanaged SystemError[349884](?) c"fromSyserr") error[218491] msg[218497]))
+    }
+  }
+  function ioerror[218525](arg errstr[218522] :
+  string[24], arg msg[218528] :
+  string[24], arg path[218532] :
+  string[24], arg offset[218539] :
+  (218538 call int(64)[13] 64)) : _unknown[43] throws "always propagate line file info" "insert line file info" "no return value for void"
+  {
+    const quotedpath[218553] "const"(218552 call quote_string path[218532](218550 call _cast ssize_t[209667](218546 call . path[218532] c"numBytes")))
+    const details[218579] "const"(218577 call +(218571 call +(218568 call +(218565 call +(218562 call +(218559 call + errstr[218522] " ") msg[218528]) " with path ") quotedpath[218553]) " offset ")(218575 call _cast string[24] offset[218539]))
+    (218593 'throw'(218592 call(218583 call . anymanaged SystemError[349884](?) c"fromSyserr")(218588 call _cast syserr[210032] EIO[210888]) details[218579]))
+  }
+  function errorToString[218603](arg error[218600] :
+  syserr[210032]) : _unknown[43]
+  {
+    unknown strerror_err[218608](367562 call ENOERR[210102]) err_t[210035]
+    const errstr[218617] "const"(218616 call sys_strerror_syserr_str error[218600] strerror_err[218608])
+    (218624 return(218623 call createStringWithOwnedBuffer errstr[218617]))
+  }
+  { scopeless type
+    string[24]
+  }
+  (329526 'used modules list'(328322 'use' ChapelStandard[19734])(216467 'use' SysBasic[209963]))
+}

@@ -1,0 +1,451 @@
+AST dump for LinkedLists after pass cleanup.
+Module use list: 
+
+{
+  (328366 'use' ChapelStandard)
+  (273881 'use' SysBasic)
+  type listNode[273902](?) unknown eltType[273885] "type variable" unknown data[273889] eltType unknown next[273898](273897 'to unmanaged class from unknown'(273896 'to nilable class from type'(273895 call listNode eltType)))
+  function =[273915](ref arg l1[273912] :
+  (273911 call LinkedList unknown t[273908]), const  ref arg l2[273922] :
+  (273921 call LinkedList unknown t2[273918])) : _unknown[43] "assignop" "no doc" "no return value for void"
+  {
+    (273930 call(273926 call . l1 c"destroy"))
+    {
+      unknown _indexOfInterest[273943] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[273944] "expr temp" "temp"
+      (273953 'move' _iterator[273944](273951 call _getIterator l2))
+      Defer
+      {
+        {
+          (273969 call _freeIterator _iterator[273944])
+        }
+      }
+      { scopeless type
+        (273958 'move' _indexOfInterest[273943](273955 call iteratorIndex _iterator[273944]))
+      }
+      ForLoop
+      {
+        unknown i[273962] "index var" "insert auto destroy"
+        (273964 'move' i[273962] _indexOfInterest[273943])
+        (273941 call(273936 call . l1 c"append") i)
+        label _continueLabel[273948]
+        _indexOfInterest[273943]
+        _iterator[273944]
+      }
+      label _breakLabel[273949]
+    }
+  }
+  function LinkedList[275404](?).init[274008](arg _mt[275408]:_MT[227], arg this[275406]:LinkedList[275404](?), arg eltType[274006]:_any[170](?), arg first[274017] :
+  (274015 'to unmanaged class from unknown'(274014 'to nilable class from type'(274013 call listNode eltType))) =
+  nil[38], arg last[274028] :
+  (274026 'to unmanaged class from unknown'(274025 'to nilable class from type'(274024 call listNode eltType))) =
+  nil[38]) : _unknown[43] "method" "primary method" "no doc" "no return value for void"
+  {
+    (274037 call =(274033 call . this c"eltType") eltType)
+    (274046 call =(274042 call . this c"first") first)
+    (274054 call =(274050 call . this c"last") last)
+  }
+  function LinkedList[275404](?).init=[274066](arg _mt[275412]:_MT[227], arg this[275410]:LinkedList[275404](?), arg l[274063] :
+  (274062 'typeof' this)) : _unknown[43] "method" "primary method" "no doc" "no return value for void"
+  {
+    (274076 call =(274069 call . this c"eltType")(274073 call . l c"eltType"))
+    (274085 call(274081 call . this c"complete"))
+    {
+      unknown _indexOfInterest[274097] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[274098] "expr temp" "temp"
+      (274107 'move' _iterator[274098](274105 call _getIterator l))
+      Defer
+      {
+        {
+          (274123 call _freeIterator _iterator[274098])
+        }
+      }
+      { scopeless type
+        (274112 'move' _indexOfInterest[274097](274109 call iteratorIndex _iterator[274098]))
+      }
+      ForLoop
+      {
+        unknown i[274116] "index var" "insert auto destroy"
+        (274118 'move' i[274116] _indexOfInterest[274097])
+        (274095 call(274090 call . this c"append") i)
+        label _continueLabel[274102]
+        _indexOfInterest[274097]
+        _iterator[274098]
+      }
+      label _breakLabel[274103]
+    }
+  }
+  function LinkedList[275404](?).size[274134](arg _mt[275416]:_MT[227], arg this[275414]:LinkedList[275404](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    (274137 return length)
+  }
+  function LinkedList[275404](?).these[274144](arg _mt[275420]:_MT[227], arg this[275418]:LinkedList[275404](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown tmp[274147] first
+    {
+      unknown tmp[274176] "temp"
+      (274200 'move' tmp[274176](274195 call _cond_test(274197 call != tmp nil[38])))
+      WhileDo
+      {
+        {
+          (274161 yield(274158 call .(274156 call postfix! tmp) c"data"))
+          (274173 call = tmp(274170 call .(274166 call postfix! tmp) c"next"))
+        }
+        label _continueLabel[274179]
+        (274190 'move' tmp[274176](274185 call _cond_test(274187 call != tmp nil[38])))
+        tmp[274176]
+      }
+      label _breakLabel[274180]
+    }
+  }
+  function LinkedList[275404](?).append[274211](arg _mt[275424]:_MT[227], ref arg this[275422]:LinkedList[275404](?), arg e[274208] :
+  eltType) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    if(274258 call _cond_test last)
+    {
+      (274227 call =(274217 call .(274215 call postfix! last) c"next")(274226 'new'(274225 'to unmanaged class from unknown'(274224 call listNode eltType e))))
+      (274238 call = last(274235 call .(274233 call postfix! last) c"next"))
+    }
+    {
+      (274249 call = first(274248 'new'(274247 'to unmanaged class from unknown'(274246 call listNode eltType e))))
+      (274255 call = last first)
+    }
+    (274265 call += length 1)
+  }
+  function LinkedList[275404](?).push_back[274276](arg _mt[275428]:_MT[227], arg this[275426]:LinkedList[275404](?), arg e[274273] :
+  eltType) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    (274281 call append e)
+  }
+  function LinkedList[275404](?).append[274292](arg _mt[275432]:_MT[227], arg this[275430]:LinkedList[275404](?), arg e[274289] :
+  eltType, arg es[274297] ... :
+  eltType) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (274304 call append e)
+    {
+      unknown i[274319] 0
+      unknown tmp[274320] "maybe param" "temp"
+      (274332 'move' tmp[274320](274330 call chpl_compute_low_param_loop_bound 1 k))
+      unknown tmp[274321] "maybe param" "temp"
+      (274339 'move' tmp[274321](274337 call chpl_compute_high_param_loop_bound 1 k))
+      unknown tmp[274322] "maybe param" "temp"
+      (274342 'move' tmp[274322] 1)
+      ParamForLoop
+      { i[274319] tmp[274320] tmp[274321] tmp[274322]
+        (274317 call append(274315 call es i))
+      }
+      label _unused_continueLabel[274324]
+      label _breakLabel[274323]
+    }
+  }
+  function LinkedList[275404](?).prepend[274361](arg _mt[275436]:_MT[227], arg this[275434]:LinkedList[275404](?), arg e[274358] :
+  eltType) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (274372 call = first(274371 'new'(274370 'to unmanaged class from unknown'(274369 call listNode eltType e first))))
+    if(274385 call _cond_test(274378 call == last nil[38]))
+    {
+      (274382 call = last first)
+    }
+    (274392 call += length 1)
+  }
+  function LinkedList[275404](?).push_front[274403](arg _mt[275440]:_MT[227], arg this[275438]:LinkedList[275404](?), arg e[274400] :
+  eltType) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    (274408 call prepend e)
+  }
+  function LinkedList[275404](?).concat[274422](arg _mt[275444]:_MT[227], arg this[275442]:LinkedList[275404](?), arg l[274419] :
+  (274418 call LinkedList eltType)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      unknown _indexOfInterest[274431] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[274432] "expr temp" "temp"
+      (274441 'move' _iterator[274432](274439 call _getIterator l))
+      Defer
+      {
+        {
+          (274457 call _freeIterator _iterator[274432])
+        }
+      }
+      { scopeless type
+        (274446 'move' _indexOfInterest[274431](274443 call iteratorIndex _iterator[274432]))
+      }
+      ForLoop
+      {
+        unknown e[274450] "index var" "insert auto destroy"
+        (274452 'move' e[274450] _indexOfInterest[274431])
+        (274429 call append e)
+        label _continueLabel[274436]
+        _indexOfInterest[274431]
+        _iterator[274432]
+      }
+      label _breakLabel[274437]
+    }
+  }
+  function LinkedList[275404](?).remove[274473](arg _mt[275448]:_MT[227], ref arg this[275446]:LinkedList[275404](?), arg x[274470] :
+  eltType) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown tmp[274476] first
+    unknown prev[274482] nil[38](274480 'typeof' first)
+    {
+      unknown tmp[274517] "temp"
+      (274563 'move' tmp[274517](274547 call _cond_test(274549 call &&(274551 call != tmp nil[38])(274555 call !=(274557 call .(274559 call postfix! tmp) c"data") x))))
+      WhileDo
+      {
+        {
+          (274503 call = prev tmp)
+          (274514 call = tmp(274511 call .(274509 call postfix! tmp) c"next"))
+        }
+        label _continueLabel[274520]
+        (274542 'move' tmp[274517](274526 call _cond_test(274528 call &&(274530 call != tmp nil[38])(274534 call !=(274536 call .(274538 call postfix! tmp) c"data") x))))
+        tmp[274517]
+      }
+      label _breakLabel[274521]
+    }
+    if(274638 call _cond_test(274568 call != tmp nil[38]))
+    {
+      if(274589 call _cond_test(274572 call != prev nil[38]))
+      {
+        (274586 call =(274577 call .(274575 call postfix! prev) c"next")(274583 call .(274581 call postfix! tmp) c"next"))
+      }
+      if(274609 call _cond_test(274597 call == first tmp))
+      {
+        (274606 call = first(274603 call .(274601 call postfix! tmp) c"next"))
+      }
+      if(274623 call _cond_test(274616 call == last tmp))
+      {
+        (274620 call = last prev)
+      }
+      (274630 call chpl__delete tmp)
+      (274635 call -= length 1)
+    }
+  }
+  function LinkedList[275404](?).pop_front[274646](arg _mt[275452]:_MT[227], arg this[275450]:LinkedList[275404](?)) : _unknown[43] "method" "primary method"
+  {
+    (274651 'use' HaltWrappers 'only' )
+    if(274685 call _cond_test(274659 call && boundsChecking(274657 call < length 1)))
+    {
+      (274682 call(274662 call . HaltWrappers c"boundsCheckHalt") "pop_front on empty list")
+    }
+    unknown oldfirst[274692](274690 call postfix! first)
+    unknown newfirst[274701](274698 call .(274696 call postfix! first) c"next")
+    unknown ret[274708](274705 call . oldfirst c"data")
+    (274713 call = first newfirst)
+    if(274725 call _cond_test(274718 call == last oldfirst))
+    {
+      (274722 call = last newfirst)
+    }
+    (274732 call -= length 1)
+    (274737 call chpl__delete oldfirst)
+    (274741 return ret)
+  }
+  { scopeless type
+    eltType
+  }
+  function LinkedList[275404](?).destroy[274748](arg _mt[275456]:_MT[227], arg this[275454]:LinkedList[275404](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown current[274751] first
+    {
+      unknown tmp[274779] "temp"
+      (274803 'move' tmp[274779](274798 call _cond_test(274800 call != current nil[38])))
+      WhileDo
+      {
+        {
+          unknown next[274765](274762 call .(274760 call postfix! current) c"next")
+          (274771 call chpl__delete current)
+          (274776 call = current next)
+        }
+        label _continueLabel[274782]
+        (274793 'move' tmp[274779](274788 call _cond_test(274790 call != current nil[38])))
+        tmp[274779]
+      }
+      label _breakLabel[274783]
+    }
+    (274808 call = first nil[38])
+    (274813 call = last nil[38])
+    (274818 call = length 0)
+  }
+  function LinkedList[275404](?).deinit[274825](arg _mt[275460]:_MT[227], arg this[275458]:LinkedList[275404](?)) : _unknown[43] "destructor" "method" "primary method" "no doc" "no return value for void"
+  {
+    (274829 call destroy)
+  }
+  function LinkedList[275404](?).writeThis[274838](arg _mt[275464]:_MT[227], arg this[275462]:LinkedList[275404](?), arg f[274836]:_any[170](?)) : _unknown[43] "method" "primary method" "no doc" "no return value for void"
+  {
+    unknown binary[274846](274845 call(274841 call . f c"binary"))
+    unknown arrayStyle[274857](274856 call(274851 call . f c"styleElement") QIO_STYLE_ELEMENT_ARRAY)
+    unknown isspace[274869](274867 call &&(274862 call == arrayStyle QIO_ARRAY_FORMAT_SPACE)(274865 call ! binary))
+    unknown isjson[274881](274879 call &&(274874 call == arrayStyle QIO_ARRAY_FORMAT_JSON)(274877 call ! binary))
+    unknown ischpl[274893](274891 call &&(274886 call == arrayStyle QIO_ARRAY_FORMAT_CHPL)(274889 call ! binary))
+    if(274903 call _cond_test binary)
+    {
+      (274899 call <~> f length)
+    }
+    if(274921 call _cond_test(274909 call || isjson ischpl))
+    {
+      (274917 call <~> f(274916 'new'(274915 call ioLiteral "[")))
+    }
+    unknown first[274926] 1
+    {
+      unknown _indexOfInterest[274983] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[274984] "expr temp" "temp"
+      (274993 'move' _iterator[274984](274991 call _getIterator this))
+      Defer
+      {
+        {
+          (275009 call _freeIterator _iterator[274984])
+        }
+      }
+      { scopeless type
+        (274998 'move' _indexOfInterest[274983](274995 call iteratorIndex _iterator[274984]))
+      }
+      ForLoop
+      {
+        unknown e[275002] "index var" "insert auto destroy"
+        (275004 'move' e[275002] _indexOfInterest[274983])
+        {
+          if(274972 call _cond_test first)
+          {
+            (274934 call = first 0)
+          }
+          {
+            if(274965 call _cond_test isspace)
+            {
+              (274944 call <~> f(274943 'new'(274942 call ioLiteral " ")))
+            }
+            {
+              if(274960 call _cond_test(274949 call || isjson ischpl))
+              {
+                (274957 call <~> f(274956 'new'(274955 call ioLiteral ", ")))
+              }
+            }
+          }
+          (274980 call <~> f e)
+        }
+        label _continueLabel[274988]
+        _indexOfInterest[274983]
+        _iterator[274984]
+      }
+      label _breakLabel[274989]
+    }
+    if(275030 call _cond_test(275018 call || isjson ischpl))
+    {
+      (275026 call <~> f(275025 'new'(275024 call ioLiteral "]")))
+    }
+  }
+  function LinkedList[275404](?).readThis[275040](arg _mt[275468]:_MT[227], arg this[275466]:LinkedList[275404](?), arg f[275038]:_any[170](?)) : _unknown[43] "method" "primary method" "no doc" "no return value for void"
+  {
+    unknown binary[275048](275047 call(275043 call . f c"binary"))
+    unknown arrayStyle[275059](275058 call(275053 call . f c"styleElement") QIO_STYLE_ELEMENT_ARRAY)
+    unknown isspace[275071](275069 call &&(275064 call == arrayStyle QIO_ARRAY_FORMAT_SPACE)(275067 call ! binary))
+    unknown isjson[275083](275081 call &&(275076 call == arrayStyle QIO_ARRAY_FORMAT_JSON)(275079 call ! binary))
+    unknown ischpl[275095](275093 call &&(275088 call == arrayStyle QIO_ARRAY_FORMAT_CHPL)(275091 call ! binary))
+    unknown num[275099] 0
+    if(275109 call _cond_test binary)
+    {
+      (275105 call <~> f num)
+    }
+    if(275127 call _cond_test(275115 call || isjson ischpl))
+    {
+      (275123 call <~> f(275122 'new'(275121 call ioLiteral "[")))
+    }
+    if(275144 call _cond_test(275137 call !(275136 call(275132 call . f c"error"))))
+    {
+      (275141 call destroy)
+    }
+    unknown first[275149] 1
+    unknown i[275153] 0
+    unknown read_end[275157] 0
+    {
+      unknown tmp[275342] "temp"
+      (275372 'move' tmp[275342](275364 call _cond_test(275366 call !(275371 call(275368 call . f c"error")))))
+      WhileDo
+      {
+        {
+          if(275318 call _cond_test binary)
+          {
+            if(275176 call _cond_test(275171 call >= i num))
+            {
+              break nil[38]
+            }
+          }
+          {
+            if(275313 call _cond_test first)
+            {
+              (275185 call = first 0)
+              if(275219 call _cond_test(275191 call || isjson ischpl))
+              {
+                (275199 call <~> f(275198 'new'(275197 call ioLiteral "]")))
+              }
+              {
+                if(275215 call _cond_test isspace)
+                {
+                  (275211 call <~> f(275210 'new'(275209 call ioNewline(skipWhitespaceOnly = 1))))
+                }
+              }
+              if(275250 call _cond_test(275231 call ==(275229 call(275225 call . f c"error")) EFORMAT))
+              {
+                (275238 call(275234 call . f c"clearError"))
+              }
+              {
+                (275243 call = read_end 1)
+                break nil[38]
+              }
+            }
+            {
+              if(275282 call _cond_test isspace)
+              {
+                (275261 call <~> f(275260 'new'(275259 call ioLiteral " ")))
+              }
+              {
+                if(275277 call _cond_test(275266 call || isjson ischpl))
+                {
+                  (275274 call <~> f(275273 'new'(275272 call ioLiteral ",")))
+                }
+              }
+              if(275309 call _cond_test(275296 call ==(275294 call(275290 call . f c"error")) EFORMAT))
+              {
+                (275303 call(275299 call . f c"clearError"))
+                break nil[38]
+              }
+            }
+          }
+          unknown elt[275324] eltType
+          (275329 call <~> f elt)
+          (275335 call append elt)
+          (275339 call += i 1)
+        }
+        label _continueLabel[275345]
+        (275359 'move' tmp[275342](275351 call _cond_test(275353 call !(275358 call(275355 call . f c"error")))))
+        tmp[275342]
+      }
+      label _breakLabel[275346]
+    }
+    if(275397 call _cond_test(275376 call ! read_end))
+    {
+      if(275392 call _cond_test(275380 call || isjson ischpl))
+      {
+        (275388 call <~> f(275387 'new'(275386 call ioLiteral "]")))
+      }
+    }
+  }
+  type LinkedList[275404](?) unknown eltType[273979] "type variable" unknown first[273988] "no doc" "owned"(273987 'to unmanaged class from unknown'(273986 'to nilable class from type'(273985 call listNode eltType))) unknown last[273997] "no doc" "owned"(273996 'to unmanaged class from unknown'(273995 'to nilable class from type'(273994 call listNode eltType))) unknown length[274001] int[13]
+  function makeList[275478](arg x[275475]:_any[170](?) ...) : _unknown[43]
+  {
+    unknown s[275488](275487 call LinkedList(275485 'typeof'(275484 call x 1)))
+    {
+      unknown i[275507] 0
+      unknown tmp[275508] "maybe param" "temp"
+      (275520 'move' tmp[275508](275518 call chpl_compute_low_param_loop_bound 1 k))
+      unknown tmp[275509] "maybe param" "temp"
+      (275527 'move' tmp[275509](275525 call chpl_compute_high_param_loop_bound 1 k))
+      unknown tmp[275510] "maybe param" "temp"
+      (275530 'move' tmp[275510] 1)
+      ParamForLoop
+      { i[275507] tmp[275508] tmp[275509] tmp[275510]
+        (275505 call(275497 call . s c"append")(275503 call x i))
+      }
+      label _unused_continueLabel[275512]
+      label _breakLabel[275511]
+    }
+    (275542 return s)
+  }
+}

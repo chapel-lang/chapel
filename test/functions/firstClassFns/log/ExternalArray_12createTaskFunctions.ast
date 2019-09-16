@@ -1,0 +1,799 @@
+AST dump for ExternalArray after pass createTaskFunctions.
+Module use list: ChapelStandard HaltWrappers 
+
+{
+  function chpl__init_ExternalArray[390285]() : void[4] "insert line file info" "module init"
+  {
+    (474337 return _void[47])
+  }
+  function chpl_opaque_array[181534]._pid[729786](arg _mt[729788]:_MT[227], ref arg this[729790]:chpl_opaque_array[181534]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[729799] "RVV" "temp"
+    unknown call_tmp[729806] "expr temp" "maybe param" "maybe type" "temp"
+    (729809 'move' call_tmp[729806](729794 '.' this[729790] c"_pid"))
+    (729804 'move' ret[729799](729803 'addr of' call_tmp[729806]))
+    (729801 return ret[729799])
+  }
+  function chpl_opaque_array[181534]._instance[729811](arg _mt[729813]:_MT[227], ref arg this[729815]:chpl_opaque_array[181534]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[729824] "RVV" "temp"
+    unknown call_tmp[729831] "expr temp" "maybe param" "maybe type" "temp"
+    (729834 'move' call_tmp[729831](729819 '.' this[729815] c"_instance"))
+    (729829 'move' ret[729824](729828 'addr of' call_tmp[729831]))
+    (729826 return ret[729824])
+  }
+  function chpl_opaque_array[181534]._unowned[729836](arg _mt[729838]:_MT[227], ref arg this[729840]:chpl_opaque_array[181534]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[729849] "RVV" "temp"
+    unknown call_tmp[729856] "expr temp" "maybe param" "maybe type" "temp"
+    (729859 'move' call_tmp[729856](729844 '.' this[729840] c"_unowned"))
+    (729854 'move' ret[729849](729853 'addr of' call_tmp[729856]))
+    (729851 return ret[729849])
+  }
+  function chpl_opaque_array[181534].init[729861](arg _mt[729863]:_MT[227], ref arg this[729864]:chpl_opaque_array[181534], in arg _pid[729867]:int(64)[13] =
+  _typeDefaultT[239], in arg _instance[729880]:c_void_ptr[141] =
+  _typeDefaultT[239], in arg _unowned[729893]:bool[10] =
+  _typeDefaultT[239]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (729907 'init field' this[729864] c"_pid" _pid[729867])
+    (729910 'init field' this[729864] c"_instance" _instance[729880])
+    (729913 'init field' this[729864] c"_unowned" _unowned[729893])
+    (729916 return _void[47])
+  }
+  function chpl_opaque_array[181534].init=[729918](arg _mt[729921]:_MT[227], arg this[729922]:chpl_opaque_array[181534], arg other[729923]:chpl_opaque_array[181534]) : _unknown[43] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    (729927 '=' this[729922] other[729923])
+    (729930 return _void[47])
+  }
+  function chpl_opaque_array[181534].deinit[729932](arg _mt[729934]:_MT[227], arg this[729936]:chpl_opaque_array[181534]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (729938 return _void[47])
+  }
+  function chpl_opaque_array[181534].writeThis[729941](arg _mt[729945]:_MT[227], arg this[729943]:chpl_opaque_array[181534], arg f[729944]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (729950 call writeThisDefaultImpl f[729944] this[729943])
+    (729954 return _void[47])
+  }
+  function chpl_opaque_array[181534].readThis[729956](arg _mt[729960]:_MT[227], arg this[729958]:chpl_opaque_array[181534], arg f[729959]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (729964 call readThisDefaultImpl f[729959] this[729958])
+    (729969 return _void[47])
+  }
+  function ==[729971](arg _arg1[729973]:chpl_opaque_array[181534], arg _arg2[729974]:chpl_opaque_array[181534]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[730031]:bool[10] "RVV" "temp"
+    unknown call_tmp[730053] "expr temp" "maybe param" "maybe type" "temp"
+    (730056 'move' call_tmp[730053](729984 call _pid _mt[232] _arg1[729973]))
+    unknown call_tmp[730058] "expr temp" "maybe param" "maybe type" "temp"
+    (730061 'move' call_tmp[730058](729988 call _pid _mt[232] _arg2[729974]))
+    unknown call_tmp[730063] "expr temp" "maybe param" "maybe type" "temp"
+    (730066 'move' call_tmp[730063](729992 call != call_tmp[730053] call_tmp[730058]))
+    if call_tmp[730063]
+    {
+      (730036 'move' ret[730031](730035 'deref' 0))
+      gotoReturn _end_==[730029] _end_==[730029]
+    }
+    unknown call_tmp[730068] "expr temp" "maybe param" "maybe type" "temp"
+    (730071 'move' call_tmp[730068](729998 call _instance _mt[232] _arg1[729973]))
+    unknown call_tmp[730073] "expr temp" "maybe param" "maybe type" "temp"
+    (730076 'move' call_tmp[730073](730002 call _instance _mt[232] _arg2[729974]))
+    unknown call_tmp[730078] "expr temp" "maybe param" "maybe type" "temp"
+    (730081 'move' call_tmp[730078](730006 call != call_tmp[730068] call_tmp[730073]))
+    if call_tmp[730078]
+    {
+      (730041 'move' ret[730031](730040 'deref' 0))
+      gotoReturn _end_==[730029] _end_==[730029]
+    }
+    unknown call_tmp[730083] "expr temp" "maybe param" "maybe type" "temp"
+    (730086 'move' call_tmp[730083](730012 call _unowned _mt[232] _arg1[729973]))
+    unknown call_tmp[730088] "expr temp" "maybe param" "maybe type" "temp"
+    (730091 'move' call_tmp[730088](730016 call _unowned _mt[232] _arg2[729974]))
+    unknown call_tmp[730093] "expr temp" "maybe param" "maybe type" "temp"
+    (730096 'move' call_tmp[730093](730020 call != call_tmp[730083] call_tmp[730088]))
+    if call_tmp[730093]
+    {
+      (730046 'move' ret[730031](730045 'deref' 0))
+      gotoReturn _end_==[730029] _end_==[730029]
+    }
+    (730051 'move' ret[730031](730050 'deref' 1))
+    label _end_==[730029]
+    (730033 return ret[730031])
+  }
+  where {
+    unknown call_tmp[730098] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730101 'move' call_tmp[730098](729977 'typeof' _arg1[729973]))
+    unknown call_tmp[730103] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730106 'move' call_tmp[730103](729979 'typeof' _arg2[729974]))
+    (729981 call == call_tmp[730098] call_tmp[730103])
+  }
+  function !=[730108](arg _arg1[730110]:chpl_opaque_array[181534], arg _arg2[730111]:chpl_opaque_array[181534]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[730168]:bool[10] "RVV" "temp"
+    unknown call_tmp[730190] "expr temp" "maybe param" "maybe type" "temp"
+    (730193 'move' call_tmp[730190](730121 call _pid _mt[232] _arg1[730110]))
+    unknown call_tmp[730195] "expr temp" "maybe param" "maybe type" "temp"
+    (730198 'move' call_tmp[730195](730125 call _pid _mt[232] _arg2[730111]))
+    unknown call_tmp[730200] "expr temp" "maybe param" "maybe type" "temp"
+    (730203 'move' call_tmp[730200](730129 call != call_tmp[730190] call_tmp[730195]))
+    if call_tmp[730200]
+    {
+      (730173 'move' ret[730168](730172 'deref' 1))
+      gotoReturn _end_!=[730166] _end_!=[730166]
+    }
+    unknown call_tmp[730205] "expr temp" "maybe param" "maybe type" "temp"
+    (730208 'move' call_tmp[730205](730135 call _instance _mt[232] _arg1[730110]))
+    unknown call_tmp[730210] "expr temp" "maybe param" "maybe type" "temp"
+    (730213 'move' call_tmp[730210](730139 call _instance _mt[232] _arg2[730111]))
+    unknown call_tmp[730215] "expr temp" "maybe param" "maybe type" "temp"
+    (730218 'move' call_tmp[730215](730143 call != call_tmp[730205] call_tmp[730210]))
+    if call_tmp[730215]
+    {
+      (730178 'move' ret[730168](730177 'deref' 1))
+      gotoReturn _end_!=[730166] _end_!=[730166]
+    }
+    unknown call_tmp[730220] "expr temp" "maybe param" "maybe type" "temp"
+    (730223 'move' call_tmp[730220](730149 call _unowned _mt[232] _arg1[730110]))
+    unknown call_tmp[730225] "expr temp" "maybe param" "maybe type" "temp"
+    (730228 'move' call_tmp[730225](730153 call _unowned _mt[232] _arg2[730111]))
+    unknown call_tmp[730230] "expr temp" "maybe param" "maybe type" "temp"
+    (730233 'move' call_tmp[730230](730157 call != call_tmp[730220] call_tmp[730225]))
+    if call_tmp[730230]
+    {
+      (730183 'move' ret[730168](730182 'deref' 1))
+      gotoReturn _end_!=[730166] _end_!=[730166]
+    }
+    (730188 'move' ret[730168](730187 'deref' 0))
+    label _end_!=[730166]
+    (730170 return ret[730168])
+  }
+  where {
+    unknown call_tmp[730235] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730238 'move' call_tmp[730235](730114 'typeof' _arg1[730110]))
+    unknown call_tmp[730240] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730243 'move' call_tmp[730240](730116 'typeof' _arg2[730111]))
+    (730118 call == call_tmp[730235] call_tmp[730240])
+  }
+  function =[730245](ref arg _arg1[730247]:chpl_opaque_array[181534], const?  ref arg _arg2[730248]:chpl_opaque_array[181534]) : void[4] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (730258 '=' _arg1[730247] _arg2[730248])
+    (730262 return _void[47])
+  }
+  where {
+    unknown call_tmp[730264] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730267 'move' call_tmp[730264](730251 'typeof' _arg1[730247]))
+    unknown call_tmp[730269] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730272 'move' call_tmp[730269](730253 'typeof' _arg2[730248]))
+    (730255 call == call_tmp[730264] call_tmp[730269])
+  }
+  function chpl__defaultHash[730274](arg r[730276]:chpl_opaque_array[181534]) : _unknown[43] "compiler generated" "last resort"
+  {
+    unknown ret[730306] "RVV" "temp"
+    unknown call_tmp[730313] "expr temp" "maybe param" "maybe type" "temp"
+    (730316 'move' call_tmp[730313](730293 call _unowned _mt[232] r[730276]))
+    unknown call_tmp[730318] "expr temp" "maybe param" "maybe type" "temp"
+    (730321 'move' call_tmp[730318](730297 call chpl__defaultHash call_tmp[730313]))
+    unknown call_tmp[730323] "expr temp" "maybe param" "maybe type" "temp"
+    (730326 'move' call_tmp[730323](730284 call _instance _mt[232] r[730276]))
+    unknown call_tmp[730328] "expr temp" "maybe param" "maybe type" "temp"
+    (730331 'move' call_tmp[730328](730288 call chpl__defaultHash call_tmp[730323]))
+    unknown call_tmp[730333] "expr temp" "maybe param" "maybe type" "temp"
+    (730336 'move' call_tmp[730333](730278 call _pid _mt[232] r[730276]))
+    unknown call_tmp[730338] "expr temp" "maybe param" "maybe type" "temp"
+    (730341 'move' call_tmp[730338](730282 call chpl__defaultHash call_tmp[730333]))
+    unknown call_tmp[730343] "expr temp" "maybe param" "maybe type" "temp"
+    (730346 'move' call_tmp[730343](730290 call chpl__defaultHashCombine call_tmp[730328] call_tmp[730338] 2))
+    unknown call_tmp[730348] "expr temp" "maybe param" "maybe type" "temp"
+    (730351 'move' call_tmp[730348](730299 call chpl__defaultHashCombine call_tmp[730318] call_tmp[730343] 3))
+    (730311 'move' ret[730306](730310 'deref' call_tmp[730348]))
+    (730308 return ret[730306])
+  }
+  type chpl_opaque_array[181534] val _pid[181522]:int(64)[13] int(64)[13] val _instance[181526]:c_void_ptr[141] c_void_ptr[141] val _unowned[181530]:bool[10] bool[10]
+  function chpl_external_array[181551].elts[730353](arg _mt[730355]:_MT[227], ref arg this[730357]:chpl_external_array[181551]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[730366] "RVV" "temp"
+    unknown call_tmp[730373] "expr temp" "maybe param" "maybe type" "temp"
+    (730376 'move' call_tmp[730373](730361 '.' this[730357] c"elts"))
+    (730371 'move' ret[730366](730370 'addr of' call_tmp[730373]))
+    (730368 return ret[730366])
+  }
+  function chpl_external_array[181551].num_elts[730378](arg _mt[730380]:_MT[227], ref arg this[730382]:chpl_external_array[181551]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[730391] "RVV" "temp"
+    unknown call_tmp[730398] "expr temp" "maybe param" "maybe type" "temp"
+    (730401 'move' call_tmp[730398](730386 '.' this[730382] c"num_elts"))
+    (730396 'move' ret[730391](730395 'addr of' call_tmp[730398]))
+    (730393 return ret[730391])
+  }
+  function chpl_external_array[181551].freer[730403](arg _mt[730405]:_MT[227], ref arg this[730407]:chpl_external_array[181551]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[730416] "RVV" "temp"
+    unknown call_tmp[730423] "expr temp" "maybe param" "maybe type" "temp"
+    (730426 'move' call_tmp[730423](730411 '.' this[730407] c"freer"))
+    (730421 'move' ret[730416](730420 'addr of' call_tmp[730423]))
+    (730418 return ret[730416])
+  }
+  function chpl_external_array[181551].init[730428](arg _mt[730430]:_MT[227], ref arg this[730431]:chpl_external_array[181551], in arg elts[730434]:c_void_ptr[141] =
+  _typeDefaultT[239], in arg num_elts[730447]:uint(64)[107] =
+  _typeDefaultT[239], in arg freer[730460]:c_void_ptr[141] =
+  _typeDefaultT[239]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (730474 'init field' this[730431] c"elts" elts[730434])
+    (730477 'init field' this[730431] c"num_elts" num_elts[730447])
+    (730480 'init field' this[730431] c"freer" freer[730460])
+    (730483 return _void[47])
+  }
+  function chpl_external_array[181551].init=[730485](arg _mt[730488]:_MT[227], arg this[730489]:chpl_external_array[181551], arg other[730490]:chpl_external_array[181551]) : _unknown[43] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    (730494 '=' this[730489] other[730490])
+    (730497 return _void[47])
+  }
+  function chpl_external_array[181551].deinit[730499](arg _mt[730501]:_MT[227], arg this[730503]:chpl_external_array[181551]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (730505 return _void[47])
+  }
+  function chpl_external_array[181551].writeThis[730508](arg _mt[730512]:_MT[227], arg this[730510]:chpl_external_array[181551], arg f[730511]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (730517 call writeThisDefaultImpl f[730511] this[730510])
+    (730521 return _void[47])
+  }
+  function chpl_external_array[181551].readThis[730523](arg _mt[730527]:_MT[227], arg this[730525]:chpl_external_array[181551], arg f[730526]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (730531 call readThisDefaultImpl f[730526] this[730525])
+    (730536 return _void[47])
+  }
+  function ==[730538](arg _arg1[730540]:chpl_external_array[181551], arg _arg2[730541]:chpl_external_array[181551]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[730598]:bool[10] "RVV" "temp"
+    unknown call_tmp[730620] "expr temp" "maybe param" "maybe type" "temp"
+    (730623 'move' call_tmp[730620](730551 call elts _mt[232] _arg1[730540]))
+    unknown call_tmp[730625] "expr temp" "maybe param" "maybe type" "temp"
+    (730628 'move' call_tmp[730625](730555 call elts _mt[232] _arg2[730541]))
+    unknown call_tmp[730630] "expr temp" "maybe param" "maybe type" "temp"
+    (730633 'move' call_tmp[730630](730559 call != call_tmp[730620] call_tmp[730625]))
+    if call_tmp[730630]
+    {
+      (730603 'move' ret[730598](730602 'deref' 0))
+      gotoReturn _end_==[730596] _end_==[730596]
+    }
+    unknown call_tmp[730635] "expr temp" "maybe param" "maybe type" "temp"
+    (730638 'move' call_tmp[730635](730565 call num_elts _mt[232] _arg1[730540]))
+    unknown call_tmp[730640] "expr temp" "maybe param" "maybe type" "temp"
+    (730643 'move' call_tmp[730640](730569 call num_elts _mt[232] _arg2[730541]))
+    unknown call_tmp[730645] "expr temp" "maybe param" "maybe type" "temp"
+    (730648 'move' call_tmp[730645](730573 call != call_tmp[730635] call_tmp[730640]))
+    if call_tmp[730645]
+    {
+      (730608 'move' ret[730598](730607 'deref' 0))
+      gotoReturn _end_==[730596] _end_==[730596]
+    }
+    unknown call_tmp[730650] "expr temp" "maybe param" "maybe type" "temp"
+    (730653 'move' call_tmp[730650](730579 call freer _mt[232] _arg1[730540]))
+    unknown call_tmp[730655] "expr temp" "maybe param" "maybe type" "temp"
+    (730658 'move' call_tmp[730655](730583 call freer _mt[232] _arg2[730541]))
+    unknown call_tmp[730660] "expr temp" "maybe param" "maybe type" "temp"
+    (730663 'move' call_tmp[730660](730587 call != call_tmp[730650] call_tmp[730655]))
+    if call_tmp[730660]
+    {
+      (730613 'move' ret[730598](730612 'deref' 0))
+      gotoReturn _end_==[730596] _end_==[730596]
+    }
+    (730618 'move' ret[730598](730617 'deref' 1))
+    label _end_==[730596]
+    (730600 return ret[730598])
+  }
+  where {
+    unknown call_tmp[730665] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730668 'move' call_tmp[730665](730544 'typeof' _arg1[730540]))
+    unknown call_tmp[730670] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730673 'move' call_tmp[730670](730546 'typeof' _arg2[730541]))
+    (730548 call == call_tmp[730665] call_tmp[730670])
+  }
+  function !=[730675](arg _arg1[730677]:chpl_external_array[181551], arg _arg2[730678]:chpl_external_array[181551]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[730735]:bool[10] "RVV" "temp"
+    unknown call_tmp[730757] "expr temp" "maybe param" "maybe type" "temp"
+    (730760 'move' call_tmp[730757](730688 call elts _mt[232] _arg1[730677]))
+    unknown call_tmp[730762] "expr temp" "maybe param" "maybe type" "temp"
+    (730765 'move' call_tmp[730762](730692 call elts _mt[232] _arg2[730678]))
+    unknown call_tmp[730767] "expr temp" "maybe param" "maybe type" "temp"
+    (730770 'move' call_tmp[730767](730696 call != call_tmp[730757] call_tmp[730762]))
+    if call_tmp[730767]
+    {
+      (730740 'move' ret[730735](730739 'deref' 1))
+      gotoReturn _end_!=[730733] _end_!=[730733]
+    }
+    unknown call_tmp[730772] "expr temp" "maybe param" "maybe type" "temp"
+    (730775 'move' call_tmp[730772](730702 call num_elts _mt[232] _arg1[730677]))
+    unknown call_tmp[730777] "expr temp" "maybe param" "maybe type" "temp"
+    (730780 'move' call_tmp[730777](730706 call num_elts _mt[232] _arg2[730678]))
+    unknown call_tmp[730782] "expr temp" "maybe param" "maybe type" "temp"
+    (730785 'move' call_tmp[730782](730710 call != call_tmp[730772] call_tmp[730777]))
+    if call_tmp[730782]
+    {
+      (730745 'move' ret[730735](730744 'deref' 1))
+      gotoReturn _end_!=[730733] _end_!=[730733]
+    }
+    unknown call_tmp[730787] "expr temp" "maybe param" "maybe type" "temp"
+    (730790 'move' call_tmp[730787](730716 call freer _mt[232] _arg1[730677]))
+    unknown call_tmp[730792] "expr temp" "maybe param" "maybe type" "temp"
+    (730795 'move' call_tmp[730792](730720 call freer _mt[232] _arg2[730678]))
+    unknown call_tmp[730797] "expr temp" "maybe param" "maybe type" "temp"
+    (730800 'move' call_tmp[730797](730724 call != call_tmp[730787] call_tmp[730792]))
+    if call_tmp[730797]
+    {
+      (730750 'move' ret[730735](730749 'deref' 1))
+      gotoReturn _end_!=[730733] _end_!=[730733]
+    }
+    (730755 'move' ret[730735](730754 'deref' 0))
+    label _end_!=[730733]
+    (730737 return ret[730735])
+  }
+  where {
+    unknown call_tmp[730802] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730805 'move' call_tmp[730802](730681 'typeof' _arg1[730677]))
+    unknown call_tmp[730807] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730810 'move' call_tmp[730807](730683 'typeof' _arg2[730678]))
+    (730685 call == call_tmp[730802] call_tmp[730807])
+  }
+  function =[730812](ref arg _arg1[730814]:chpl_external_array[181551], const?  ref arg _arg2[730815]:chpl_external_array[181551]) : void[4] "assignop" "compiler generated" "inline" "last resort"
+  {
+    (730825 '=' _arg1[730814] _arg2[730815])
+    (730829 return _void[47])
+  }
+  where {
+    unknown call_tmp[730831] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730834 'move' call_tmp[730831](730818 'typeof' _arg1[730814]))
+    unknown call_tmp[730836] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (730839 'move' call_tmp[730836](730820 'typeof' _arg2[730815]))
+    (730822 call == call_tmp[730831] call_tmp[730836])
+  }
+  function chpl__defaultHash[730841](arg r[730843]:chpl_external_array[181551]) : _unknown[43] "compiler generated" "last resort"
+  {
+    unknown ret[730873] "RVV" "temp"
+    unknown call_tmp[730880] "expr temp" "maybe param" "maybe type" "temp"
+    (730883 'move' call_tmp[730880](730860 call freer _mt[232] r[730843]))
+    unknown call_tmp[730885] "expr temp" "maybe param" "maybe type" "temp"
+    (730888 'move' call_tmp[730885](730864 call chpl__defaultHash call_tmp[730880]))
+    unknown call_tmp[730890] "expr temp" "maybe param" "maybe type" "temp"
+    (730893 'move' call_tmp[730890](730851 call num_elts _mt[232] r[730843]))
+    unknown call_tmp[730895] "expr temp" "maybe param" "maybe type" "temp"
+    (730898 'move' call_tmp[730895](730855 call chpl__defaultHash call_tmp[730890]))
+    unknown call_tmp[730900] "expr temp" "maybe param" "maybe type" "temp"
+    (730903 'move' call_tmp[730900](730845 call elts _mt[232] r[730843]))
+    unknown call_tmp[730905] "expr temp" "maybe param" "maybe type" "temp"
+    (730908 'move' call_tmp[730905](730849 call chpl__defaultHash call_tmp[730900]))
+    unknown call_tmp[730910] "expr temp" "maybe param" "maybe type" "temp"
+    (730913 'move' call_tmp[730910](730857 call chpl__defaultHashCombine call_tmp[730895] call_tmp[730905] 2))
+    unknown call_tmp[730915] "expr temp" "maybe param" "maybe type" "temp"
+    (730918 'move' call_tmp[730915](730866 call chpl__defaultHashCombine call_tmp[730885] call_tmp[730910] 3))
+    (730878 'move' ret[730873](730877 'deref' call_tmp[730915]))
+    (730875 return ret[730873])
+  }
+  type chpl_external_array[181551] val elts[181539]:c_void_ptr[141] c_void_ptr[141] val num_elts[181543]:uint(64)[107] uint(64)[107] val freer[181547]:c_void_ptr[141] c_void_ptr[141]
+  function chpl_make_external_array[181560](arg elt_size[181557]:uint(64)[107], arg num_elts[181563]:uint(64)[107]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+    unknown ret[474210] "RVV" "temp"
+    (474212 return ret[474210])
+  }
+  { scopeless type
+    chpl_external_array[181551]
+  }
+  function chpl_make_external_array_ptr[181576](arg elts[181573]:c_void_ptr[141], arg num_elts[181579]:uint(64)[107]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+    unknown ret[474216] "RVV" "temp"
+    (474218 return ret[474216])
+  }
+  { scopeless type
+    chpl_external_array[181551]
+  }
+  function chpl_make_external_array_ptr_free[181592](arg elts[181589]:c_void_ptr[141], arg num_elts[181595]:uint(64)[107]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+  {
+    unknown ret[474222] "RVV" "temp"
+    (474224 return ret[474222])
+  }
+  { scopeless type
+    chpl_external_array[181551]
+  }
+  function chpl_free_external_array[181608](arg x[181605]:chpl_external_array[181551]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+    (474226 return _void[47])
+  }
+  function chpl_call_free_func[181618](arg func[181615]:c_void_ptr[141], arg elts[181621]:c_void_ptr[141]) : void[4] "extern" "local args" "no fn body" "no return value for void"
+  {
+    (474228 return _void[47])
+  }
+  function makeArrayFromPtr[181632](arg value[181629]:c_ptr[193070](?), arg num_elts[181635]:uint(64)[107]) : _unknown[43] "no copy return"
+  {
+    unknown ret[474232] "RVV" "temp"
+    unknown call_tmp[636840] "expr temp" "maybe param" "maybe type" "temp"
+    (636843 'move' call_tmp[636840](181641 call _cast c_void_ptr[141] value[181629]))
+    unknown call_tmp[636845] "maybe param" "maybe type" "temp"
+    (636848 'move' call_tmp[636845](181645 call chpl_make_external_array_ptr call_tmp[636840] num_elts[181635]))
+    unknown data[181646] "insert auto destroy"
+    (493331 'init var' data[181646] call_tmp[636845])
+    unknown call_tmp[636852] "expr temp" "maybe param" "maybe type" "temp"
+    (636855 'move' call_tmp[636852](181654 call eltType _mt[232] value[181629]))
+    unknown call_tmp[636857] "expr temp" "maybe param" "maybe type" "temp"
+    (636860 'move' call_tmp[636857](181657 call makeArrayFromExternArray data[181646] call_tmp[636852]))
+    (474237 'move' ret[474232](474236 'deref' call_tmp[636857]))
+    (474234 return ret[474232])
+  }
+  function makeArrayFromExternArray[181668](arg value[181665]:chpl_external_array[181551], arg eltType[181670]:_any[170](?)) : _unknown[43] "no copy return"
+  {
+    unknown ret[474241] "RVV" "temp"
+    unknown call_tmp[636864] "expr temp" "maybe param" "maybe type" "temp"
+    (636867 'move' call_tmp[636864](181684 call chpl_build_low_bounded_range 0))
+    unknown call_tmp[636871] "expr temp" "maybe param" "maybe type" "temp"
+    (636874 'move' call_tmp[636871](181689 call num_elts _mt[232] value[181665]))
+    unknown call_tmp[636876] "expr temp" "maybe param" "maybe type" "temp"
+    (636879 'move' call_tmp[636876](181692 call # call_tmp[636864] call_tmp[636871]))
+    unknown call_tmp[636881] "expr temp" "maybe param" "maybe type" "temp"
+    (636884 'move' call_tmp[636881](181694 call _build_tuple call_tmp[636876]))
+    unknown call_tmp[636886] "maybe param" "maybe type" "temp"
+    (636889 'move' call_tmp[636886](181697 call(181673 call (partial) dsiNewRectangularDom _mt[232] defaultDist[93214])(rank = 1)(idxType = int(64)[13])(stridable = 0)(inds = call_tmp[636881])))
+    unknown dom[181698] "insert auto destroy"
+    (493333 'init var' dom[181698] call_tmp[636886])
+    unknown call_tmp[636893] "expr temp" "maybe param" "maybe type" "temp"
+    (636896 'move' call_tmp[636893](181703 call _free_when_no_arrs _mt[232] dom[181698]))
+    (181707 call = call_tmp[636893] 1)
+    unknown call_tmp[636900] "expr temp" "maybe param" "maybe type" "temp"
+    (636903 'move' call_tmp[636900](181717 call idxType _mt[232] dom[181698]))
+    unknown call_tmp[636907] "expr temp" "maybe param" "maybe type" "temp"
+    (636910 'move' call_tmp[636907](181722 call stridable _mt[232] dom[181698]))
+    unknown call_tmp[636912] "expr temp" "maybe param" "maybe type" "temp"
+    (636915 'move' call_tmp[636912](181737 call _ddata[11791](?) eltType[181670]))
+    unknown call_tmp[636919] "expr temp" "maybe param" "maybe type" "temp"
+    (636922 'move' call_tmp[636919](181731 call elts _mt[232] value[181665]))
+    unknown call_tmp[636924] "expr temp" "maybe param" "maybe type" "temp"
+    (636927 'move' call_tmp[636924](181738 call _cast call_tmp[636912] call_tmp[636919]))
+    unknown call_tmp[636931] "expr temp" "maybe param" "maybe type" "temp"
+    (636934 'move' call_tmp[636931](181744 call freer _mt[232] value[181665]))
+    unknown call_tmp[636936] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (636939 'move' call_tmp[636936](691546 'new' anymanaged DefaultRectangularArr[347545](?)(eltType = eltType[181670])(rank = 1)(idxType = call_tmp[636900])(stridable = call_tmp[636907])(dom = dom[181698])(data = call_tmp[636924])(externFreeFunc = call_tmp[636931])(externArr = 1)(_borrowed = 1)(_chpl_manager = unmanaged[209](?))))
+    unknown arr[181755] "insert auto destroy"
+    (493335 'init var' arr[181755] call_tmp[636936])
+    (181766 call(181759 call (partial) add_arr _mt[232] dom[181698]) arr[181755](locking = 0))
+    unknown call_tmp[636943] "expr temp" "maybe param" "maybe type" "temp"
+    (636946 'move' call_tmp[636943](181771 call _newArray arr[181755]))
+    (474246 'move' ret[474241](474245 'deref' call_tmp[636943]))
+    (474243 return ret[474241])
+  }
+  function makeArrayFromOpaque[181782](arg value[181779]:chpl_opaque_array[181534], arg arrType[181784]:_any[170](?)) : _unknown[43] "no copy return"
+  {
+    unknown ret[474250] "RVV" "temp"
+    unknown call_tmp[636948] "expr temp" "maybe param" "maybe type" "temp"
+    (636951 'move' call_tmp[636948](181791 'to nilable class from type' arrType[181784]))
+    unknown call_tmp[636955] "expr temp" "maybe param" "maybe type" "temp"
+    (636958 'move' call_tmp[636955](181787 call _instance _mt[232] value[181779]))
+    unknown call_tmp[636960] "maybe param" "maybe type" "temp"
+    (636963 'move' call_tmp[636960](181792 call _cast call_tmp[636948] call_tmp[636955]))
+    unknown asArrType[181794] "insert auto destroy"
+    (493337 'init var' asArrType[181794] call_tmp[636960])
+    unknown call_tmp[636965] "expr temp" "maybe param" "maybe type" "temp"
+    (636968 'move' call_tmp[636965](181800 call == asArrType[181794] nil[38]))
+    unknown call_tmp[636970] "expr temp" "maybe param" "maybe type" "temp"
+    (636973 'move' call_tmp[636970](181822 call _cond_test call_tmp[636965]))
+    if call_tmp[636970]
+    {
+      (181820 call halt "nil array passed to makeArrayFromOpaque")
+    }
+    unknown call_tmp[636975] "maybe param" "maybe type" "temp"
+    (636978 'move' call_tmp[636975](181829 call _cast arrType[181784] asArrType[181794]))
+    unknown asNonNilArrType[181832] "insert auto destroy"
+    (493339 'init var' asNonNilArrType[181832] call_tmp[636975])
+    unknown call_tmp[636980] "maybe param" "maybe type" "temp"
+    (636983 'move' call_tmp[636980](181838 call _newArray asNonNilArrType[181832]))
+    unknown ret[181839] "insert auto destroy"
+    (493341 'init var' ret[181839] call_tmp[636980])
+    unknown call_tmp[636987] "expr temp" "maybe param" "maybe type" "temp"
+    (636990 'move' call_tmp[636987](181843 call _pid _mt[232] ret[181839]))
+    unknown call_tmp[636994] "expr temp" "maybe param" "maybe type" "temp"
+    (636997 'move' call_tmp[636994](181847 call _pid _mt[232] value[181779]))
+    (181850 call = call_tmp[636987] call_tmp[636994])
+    unknown call_tmp[637001] "expr temp" "maybe param" "maybe type" "temp"
+    (637004 'move' call_tmp[637001](181854 call _unowned _mt[232] ret[181839]))
+    (181858 call = call_tmp[637001] 1)
+    (474255 'move' ret[474250](474254 'deref' ret[181839]))
+    (474252 return ret[474250])
+  }
+  function convertToExternalArray[181874](in arg arr[181871]:_array[133150](?)) : _unknown[43]
+  {
+    unknown ret[474259] "RVV" "temp"
+    unknown call_tmp[637008] "expr temp" "maybe param" "maybe type" "temp"
+    (637011 'move' call_tmp[637008](181886 call eltType _mt[232] arr[181871]))
+    unknown call_tmp[637013] "expr temp" "maybe param" "maybe type" "temp"
+    (637016 'move' call_tmp[637013](181890 call isExternArrEltType call_tmp[637008]))
+    unknown call_tmp[637018] "expr temp" "maybe param" "maybe type" "temp"
+    (637021 'move' call_tmp[637018](181891 call ! call_tmp[637013]))
+    unknown call_tmp[637023] "expr temp" "maybe param" "maybe type" "temp"
+    (637026 'move' call_tmp[637023](181927 call _cond_test call_tmp[637018]))
+    if call_tmp[637023]
+    {
+      unknown call_tmp[637030] "expr temp" "maybe param" "maybe type" "temp"
+      (637033 'move' call_tmp[637030](181916 call eltType _mt[232] arr[181871]))
+      unknown call_tmp[637035] "expr temp" "maybe param" "maybe type" "temp"
+      (637038 'move' call_tmp[637035](181920 call _cast string[24] call_tmp[637030]))
+      unknown call_tmp[637040] "expr temp" "maybe param" "maybe type" "temp"
+      (637043 'move' call_tmp[637040](181922 call + "Cannot build an external array that stores " call_tmp[637035]))
+      (181925 call safeCastCheckHalt call_tmp[637040])
+      (329476 'used modules list'(181895 'use' HaltWrappers[197622]))
+    }
+    unknown call_tmp[637047] "expr temp" "maybe param" "maybe type" "temp"
+    (637050 'move' call_tmp[637047](181934 call _dom _mt[232] arr[181871]))
+    unknown call_tmp[637054] "expr temp" "maybe param" "maybe type" "temp"
+    (637057 'move' call_tmp[637054](181937 call idxType _mt[232] call_tmp[637047]))
+    unknown call_tmp[637059] "expr temp" "maybe param" "maybe type" "temp"
+    (637062 'move' call_tmp[637059](181941 call isIntegralType call_tmp[637054]))
+    unknown call_tmp[637064] "expr temp" "maybe param" "maybe type" "temp"
+    (637067 'move' call_tmp[637064](181942 call ! call_tmp[637059]))
+    unknown call_tmp[637069] "expr temp" "maybe param" "maybe type" "temp"
+    (637072 'move' call_tmp[637069](181983 call _cond_test call_tmp[637064]))
+    if call_tmp[637069]
+    {
+      unknown call_tmp[637074] "expr temp" "maybe param" "maybe type" "temp"
+      (637077 'move' call_tmp[637074](181977 call + "cannot return an array with indices that are not " "integrals"))
+      (181980 call compilerError call_tmp[637074])
+    }
+    unknown call_tmp[637081] "expr temp" "maybe param" "maybe type" "temp"
+    (637084 'move' call_tmp[637081](181988 call _dom _mt[232] arr[181871]))
+    unknown call_tmp[637088] "expr temp" "maybe param" "maybe type" "temp"
+    (637091 'move' call_tmp[637088](181991 call stridable _mt[232] call_tmp[637081]))
+    unknown call_tmp[637093] "expr temp" "maybe param" "maybe type" "temp"
+    (637096 'move' call_tmp[637093](182015 call _cond_test call_tmp[637088]))
+    if call_tmp[637093]
+    {
+      (182012 call compilerError "cannot return a strided array")
+    }
+    unknown call_tmp[637100] "expr temp" "maybe param" "maybe type" "temp"
+    (637103 'move' call_tmp[637100](182020 call _dom _mt[232] arr[181871]))
+    unknown call_tmp[637107] "expr temp" "maybe param" "maybe type" "temp"
+    (637110 'move' call_tmp[637107](182023 call rank _mt[232] call_tmp[637100]))
+    unknown call_tmp[637112] "expr temp" "maybe param" "maybe type" "temp"
+    (637115 'move' call_tmp[637112](182027 call != call_tmp[637107] 1))
+    unknown call_tmp[637117] "expr temp" "maybe param" "maybe type" "temp"
+    (637120 'move' call_tmp[637117](182050 call _cond_test call_tmp[637112]))
+    if call_tmp[637117]
+    {
+      (182047 call compilerError "cannot return an array with rank != 1")
+    }
+    unknown call_tmp[637124] "expr temp" "maybe param" "maybe type" "temp"
+    (637127 'move' call_tmp[637124](182055 call _dom _mt[232] arr[181871]))
+    unknown call_tmp[637131] "expr temp" "maybe param" "maybe type" "temp"
+    (637134 'move' call_tmp[637131](182058 call low _mt[232] call_tmp[637124]))
+    unknown call_tmp[637136] "expr temp" "maybe param" "maybe type" "temp"
+    (637139 'move' call_tmp[637136](182062 call != call_tmp[637131] 0))
+    unknown call_tmp[637141] "expr temp" "maybe param" "maybe type" "temp"
+    (637144 'move' call_tmp[637141](182085 call _cond_test call_tmp[637136]))
+    if call_tmp[637141]
+    {
+      (182082 call halt "cannot return an array when the lower bounds is not 0")
+    }
+    unknown call_tmp[637146] "expr temp" "maybe param" "maybe type" "temp"
+    (637149 'move' call_tmp[637146](182094 call arr[181871] 0))
+    unknown call_tmp[637151] "expr temp" "maybe param" "maybe type" "temp"
+    (637154 'move' call_tmp[637151](182096 call c_ptrTo call_tmp[637146]))
+    unknown call_tmp[637158] "expr temp" "maybe param" "maybe type" "temp"
+    (637161 'move' call_tmp[637158](182099 call size _mt[232] arr[181871]))
+    unknown call_tmp[637163] "expr temp" "maybe param" "maybe type" "temp"
+    (637166 'move' call_tmp[637163](182103 call _cast uint(64)[107] call_tmp[637158]))
+    unknown call_tmp[637168] "maybe param" "maybe type" "temp"
+    (637171 'move' call_tmp[637168](182105 call chpl_make_external_array_ptr_free call_tmp[637151] call_tmp[637163]))
+    unknown externalArr[182106] "insert auto destroy"
+    (493343 'init var' externalArr[182106] call_tmp[637168])
+    unknown call_tmp[637175] "expr temp" "maybe param" "maybe type" "temp"
+    (637178 'move' call_tmp[637175](182112 call externArr _mt[232] arr[181871]))
+    (182116 call = call_tmp[637175] 1)
+    unknown call_tmp[637182] "expr temp" "maybe param" "maybe type" "temp"
+    (637185 'move' call_tmp[637182](182122 call _borrowed _mt[232] arr[181871]))
+    (182126 call = call_tmp[637182] 1)
+    (474265 'move' ret[474259](474264 'coerce' externalArr[182106] chpl_external_array[181551]))
+    (474261 return ret[474259])
+  }
+  where {
+    unknown call_tmp[637187] "expr temp" "maybe param" "maybe type" "temp"
+    (637190 'move' call_tmp[637187](181880 call getExternalArrayType arr[181871]))
+    (181882 call == call_tmp[637187] chpl_external_array[181551])
+  }
+  { scopeless type
+    chpl_external_array[181551]
+  }
+  function convertToExternalArray[182144](arg arr[182141]:_array[133150](?)) : _unknown[43]
+  {
+    unknown ret[474269] "RVV" "temp"
+    unknown ret[182155] "insert auto destroy"
+    (493345 'default init var' ret[182155] chpl_opaque_array[181534])
+    unknown call_tmp[637194] "expr temp" "maybe param" "maybe type" "temp"
+    (637197 'move' call_tmp[637194](182160 call _pid _mt[232] ret[182155]))
+    unknown call_tmp[637201] "expr temp" "maybe param" "maybe type" "temp"
+    (637204 'move' call_tmp[637201](182164 call _pid _mt[232] arr[182141]))
+    (182167 call = call_tmp[637194] call_tmp[637201])
+    unknown call_tmp[637208] "expr temp" "maybe param" "maybe type" "temp"
+    (637211 'move' call_tmp[637208](182171 call _instance _mt[232] ret[182155]))
+    unknown call_tmp[637215] "expr temp" "maybe param" "maybe type" "temp"
+    (637218 'move' call_tmp[637215](182175 call _value _mt[232] arr[182141]))
+    unknown call_tmp[637220] "expr temp" "maybe param" "maybe type" "temp"
+    (637223 'move' call_tmp[637220](182179 call _cast c_void_ptr[141] call_tmp[637215]))
+    (182181 call = call_tmp[637208] call_tmp[637220])
+    unknown call_tmp[637227] "expr temp" "maybe param" "maybe type" "temp"
+    (637230 'move' call_tmp[637227](182185 call _unowned _mt[232] ret[182155]))
+    unknown call_tmp[637234] "expr temp" "maybe param" "maybe type" "temp"
+    (637237 'move' call_tmp[637234](182189 call _unowned _mt[232] arr[182141]))
+    (182192 call = call_tmp[637227] call_tmp[637234])
+    unknown call_tmp[637241] "expr temp" "maybe param" "maybe type" "temp"
+    (637244 'move' call_tmp[637241](182196 call _unowned _mt[232] arr[182141]))
+    unknown call_tmp[637246] "expr temp" "maybe param" "maybe type" "temp"
+    (637249 'move' call_tmp[637246](182199 call ! call_tmp[637241]))
+    unknown call_tmp[637251] "expr temp" "maybe param" "maybe type" "temp"
+    (637254 'move' call_tmp[637251](182210 call _cond_test call_tmp[637246]))
+    if call_tmp[637251]
+    {
+      unknown call_tmp[637258] "expr temp" "maybe param" "maybe type" "temp"
+      (637261 'move' call_tmp[637258](182202 call _unowned _mt[232] arr[182141]))
+      (182206 call = call_tmp[637258] 1)
+    }
+    (474275 'move' ret[474269](474274 'coerce' ret[182155] chpl_opaque_array[181534]))
+    (474271 return ret[474269])
+  }
+  where {
+    unknown call_tmp[637263] "expr temp" "maybe param" "maybe type" "temp"
+    (637266 'move' call_tmp[637263](182150 call getExternalArrayType arr[182141]))
+    (182152 call == call_tmp[637263] chpl_opaque_array[181534])
+  }
+  { scopeless type
+    chpl_opaque_array[181534]
+  }
+  function isExternArrEltType[182225](arg t[182223]:_any[170](?)) param : _unknown[43] "private"
+  {
+    unknown ret[474279] "RVV" "param" "temp"
+    unknown tmp[404667] "maybe param" "temp"
+    (404678 'move' tmp[404667](182230 call isPrimitive t[182223]))
+    unknown call_tmp[637268] "expr temp" "maybe param" "maybe type" "temp"
+    (637271 'move' call_tmp[637268](404680 call _cond_invalid tmp[404667]))
+    if call_tmp[637268]
+    {
+      (404683 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[520236] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[520237] "maybe param" "temp"
+    unknown call_tmp[637273] "expr temp" "maybe param" "maybe type" "temp"
+    (637276 'move' call_tmp[637273](404668 call isTrue tmp[404667]))
+    (520242 'move' tmp[520237](520240 call _cond_test call_tmp[637273]))
+    if tmp[520237]
+    {
+      unknown tmp[520244] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[637278] "expr temp" "maybe param" "maybe type" "temp"
+      (637281 'move' call_tmp[637278](182233 call != t[182223] string[24]))
+      (520246 'move' tmp[520244](404671 call isTrue call_tmp[637278]))
+      (520251 'move' tmp[520236](520248 '_paramFoldLogical' tmp[520237] tmp[520244]))
+    }
+    {
+      (520256 'move' tmp[520236](520253 '_paramFoldLogical' tmp[520237] 0))
+    }
+    unknown call_tmp[637283] "expr temp" "maybe param" "maybe type" "temp"
+    (637286 'move' call_tmp[637283](182285 call _cond_test tmp[520236]))
+    if call_tmp[637283]
+    {
+      (474284 'move' ret[474279](474283 'deref' 1))
+      gotoReturn _end_isExternArrEltType[474277] _end_isExternArrEltType[474277]
+    }
+    {
+      unknown call_tmp[637288] "expr temp" "maybe param" "maybe type" "temp"
+      (637291 'move' call_tmp[637288](182243 call == t[182223] c_string[19]))
+      unknown call_tmp[637293] "expr temp" "maybe param" "maybe type" "temp"
+      (637296 'move' call_tmp[637293](182280 call _cond_test call_tmp[637288]))
+      if call_tmp[637293]
+      {
+        (474289 'move' ret[474279](474288 'deref' 1))
+        gotoReturn _end_isExternArrEltType[474277] _end_isExternArrEltType[474277]
+      }
+      {
+        unknown call_tmp[637298] "expr temp" "maybe param" "maybe type" "temp"
+        (637301 'move' call_tmp[637298](182267 'is extern type' t[182223]))
+        unknown call_tmp[637303] "expr temp" "maybe param" "maybe type" "temp"
+        (637306 'move' call_tmp[637303](182276 call _cond_test call_tmp[637298]))
+        if call_tmp[637303]
+        {
+          (474294 'move' ret[474279](474293 'deref' 1))
+          gotoReturn _end_isExternArrEltType[474277] _end_isExternArrEltType[474277]
+        }
+        {
+          (474299 'move' ret[474279](474298 'deref' 0))
+          gotoReturn _end_isExternArrEltType[474277] _end_isExternArrEltType[474277]
+        }
+      }
+    }
+    label _end_isExternArrEltType[474277]
+    (474281 return ret[474279])
+  }
+  function getExternalArrayType[182297](arg arg[182295]:_any[170](?)) type : _unknown[43]
+  {
+    unknown ret[474305] "RVV" "temp" "type variable"
+    unknown call_tmp[637308] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (637311 'move' call_tmp[637308](182301 'typeof' arg[182295]))
+    unknown call_tmp[637313] "expr temp" "maybe param" "maybe type" "temp"
+    (637316 'move' call_tmp[637313](182303 call isArrayType call_tmp[637308]))
+    unknown call_tmp[637318] "expr temp" "maybe param" "maybe type" "temp"
+    (637321 'move' call_tmp[637318](182304 call ! call_tmp[637313]))
+    unknown call_tmp[637323] "expr temp" "maybe param" "maybe type" "temp"
+    (637326 'move' call_tmp[637323](182349 call _cond_test call_tmp[637318]))
+    if call_tmp[637323]
+    {
+      (182324 call compilerError "must call with an array")
+    }
+    {
+      unknown call_tmp[637330] "expr temp" "maybe param" "maybe type" "temp"
+      (637333 'move' call_tmp[637330](182328 call _value _mt[232] arg[182295]))
+      unknown call_tmp[637337] "expr temp" "maybe param" "maybe type" "temp"
+      (637340 'move' call_tmp[637337](182335 call(182331 call (partial) isDefaultRectangular _mt[232] call_tmp[637330])))
+      unknown call_tmp[637342] "expr temp" "maybe param" "maybe type" "temp"
+      (637345 'move' call_tmp[637342](182344 call _cond_test call_tmp[637337]))
+      if call_tmp[637342]
+      {
+        (474310 'move' ret[474305](474309 'deref' chpl_external_array[181551]))
+        gotoReturn _end_getExternalArrayType[474303] _end_getExternalArrayType[474303]
+      }
+      {
+        (474315 'move' ret[474305](474314 'deref' chpl_opaque_array[181534]))
+        gotoReturn _end_getExternalArrayType[474303] _end_getExternalArrayType[474303]
+      }
+    }
+    label _end_getExternalArrayType[474303]
+    (474307 return ret[474305])
+  }
+  function getExternalArrayType[182360](arg arg[182358]:_any[170](?)) type : _unknown[43]
+  {
+    unknown ret[474321] "RVV" "temp" "type variable"
+    unknown call_tmp[637347] "expr temp" "maybe param" "maybe type" "temp"
+    (637350 'move' call_tmp[637347](182365 call isArrayType arg[182358]))
+    unknown call_tmp[637352] "expr temp" "maybe param" "maybe type" "temp"
+    (637355 'move' call_tmp[637352](182366 call ! call_tmp[637347]))
+    unknown call_tmp[637357] "expr temp" "maybe param" "maybe type" "temp"
+    (637360 'move' call_tmp[637357](182408 call _cond_test call_tmp[637352]))
+    if call_tmp[637357]
+    {
+      (182371 call compilerError "must call with an array")
+    }
+    {
+      unknown _instanceType[182379] "insert auto destroy" "type variable"(182378 'static field type' arg[182358] "_instance")
+      (493350 'move' _instanceType[182379](493347 'static field type' arg[182358] "_instance"))
+      unknown borrowedAlt[182387] "insert auto destroy" "type variable"(182386 call _to_borrowed _instanceType[182379])
+      (493355 'move' borrowedAlt[182387](493353 call _to_borrowed _instanceType[182379]))
+      unknown call_tmp[637364] "expr temp" "maybe param" "maybe type" "temp"
+      (637367 'move' call_tmp[637364](182395 call(182391 call (partial) isDefaultRectangular _mt[232] borrowedAlt[182387])))
+      unknown call_tmp[637369] "expr temp" "maybe param" "maybe type" "temp"
+      (637372 'move' call_tmp[637369](182404 call _cond_test call_tmp[637364]))
+      if call_tmp[637369]
+      {
+        (474326 'move' ret[474321](474325 'deref' chpl_external_array[181551]))
+        gotoReturn _end_getExternalArrayType[474319] _end_getExternalArrayType[474319]
+      }
+      {
+        (474331 'move' ret[474321](474330 'deref' chpl_opaque_array[181534]))
+        gotoReturn _end_getExternalArrayType[474319] _end_getExternalArrayType[474319]
+      }
+    }
+    label _end_getExternalArrayType[474319]
+    (474323 return ret[474321])
+  }
+  function cleanupOpaqueArray[182421](arg arr[182418]:chpl_opaque_array[181534]) : _unknown[43] "export" "local args" "no return value for void"
+  {
+    unknown call_tmp[637376] "expr temp" "maybe param" "maybe type" "temp"
+    (637379 'move' call_tmp[637376](182424 call _instance _mt[232] arr[182418]))
+    unknown call_tmp[637381] "maybe param" "maybe type" "temp"
+    (637384 'move' call_tmp[637381](182430 call _cast unmanaged BaseArr?[390007] call_tmp[637376]))
+    unknown cleanup[182432] "insert auto destroy"
+    (493357 'init var' cleanup[182432] call_tmp[637381])
+    unknown call_tmp[637386] "expr temp" "maybe param" "maybe type" "temp"
+    (637389 'move' call_tmp[637386](182448 call _cond_test cleanup[182432]))
+    if call_tmp[637386]
+    {
+      unknown call_tmp[637393] "expr temp" "maybe param" "maybe type" "temp"
+      (637396 'move' call_tmp[637393](182439 call _unowned _mt[232] arr[182418]))
+      unknown call_tmp[637398] "expr temp" "maybe param" "maybe type" "temp"
+      (637401 'move' call_tmp[637398](182444 call postfix! cleanup[182432]))
+      (182446 call _do_destroy_arr call_tmp[637393] call_tmp[637398])
+    }
+    (474335 return _void[47])
+  }
+  (329474 'used modules list'(181517 'use' ChapelStandard[19734]))
+}

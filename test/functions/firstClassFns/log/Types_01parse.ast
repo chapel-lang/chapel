@@ -1,0 +1,1559 @@
+AST dump for Types after pass parse.
+Module use list: 
+
+{
+  (328308 'use' ChapelStandard)
+  (198033 'use' HaltWrappers 'only' )
+  function isType[198040](arg t[198038]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198043 return 1)
+    }
+  }
+  function isType[198052](arg e[198050]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198055 return 0)
+    }
+  }
+  function isParam[198064](arg t[198062]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198067 return 0)
+    }
+  }
+  function isParam[198076](param arg p[198074]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198079 return 1)
+    }
+  }
+  function isParam[198088](arg e[198086]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198091 return 0)
+    }
+  }
+  function _isPrimitiveType[198100](arg t[198098]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198124 return(198122 call ||(198116 call ||(198110 call ||(198105 call isBoolType t)(198109 call isIntegralType t))(198115 call isRealType t))(198120 call == t c_string)))
+    }
+  }
+  function isPrimitiveType[198133](arg t[198131]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198169 return(198167 call ||(198161 call ||(198155 call ||(198149 call ||(198143 call ||(198138 call isNothingType t)(198142 call isVoidType t))(198148 call isBoolType t))(198154 call isNumericType t))(198160 call isStringType t))(198166 call isBytesType t)))
+    }
+  }
+  function isNumericType[198178](arg t[198176]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198196 return(198194 call ||(198188 call ||(198183 call isIntegralType t)(198187 call isFloatType t))(198193 call isComplexType t)))
+    }
+  }
+  function isIntegralType[198205](arg t[198203]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198217 return(198215 call ||(198210 call isIntType t)(198214 call isUintType t)))
+    }
+  }
+  function isFloatType[198226](arg t[198224]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198238 return(198236 call ||(198231 call isRealType t)(198235 call isImagType t)))
+    }
+  }
+  function isNothingType[198247](arg t[198245]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198253 return(198251 call == t nothing[7]))
+    }
+  }
+  function isVoidType[198262](arg t[198260]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198268 return(198266 call == t void[4]))
+    }
+  }
+  function isBoolType[198277](arg t[198275]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198319 return(198317 call ||(198308 call ||(198299 call ||(198290 call ||(198281 call == t bool[10])(198288 call == t(198287 call bool[10] 8)))(198297 call == t(198296 call bool[10] 16)))(198306 call == t(198305 call bool[10] 32)))(198315 call == t(198314 call bool[10] 64))))
+    }
+  }
+  function isIntType[198328](arg t[198326]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198364 return(198362 call ||(198353 call ||(198344 call ||(198335 call == t(198334 call int[13] 8))(198342 call == t(198341 call int[13] 16)))(198351 call == t(198350 call int[13] 32)))(198360 call == t(198359 call int[13] 64))))
+    }
+  }
+  function isUintType[198373](arg t[198371]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198409 return(198407 call ||(198398 call ||(198389 call ||(198380 call == t(198379 call uint[107] 8))(198387 call == t(198386 call uint[107] 16)))(198396 call == t(198395 call uint[107] 32)))(198405 call == t(198404 call uint[107] 64))))
+    }
+  }
+  function isEnumType[198418](arg t[198416]:_any[170](?)) param : _unknown[43]
+  {
+    function isEnumHelp[198426](arg t[198423] :
+    enumerated) param : _unknown[43]
+    {
+      { scopeless
+        (198429 return 1)
+      }
+    }
+    function isEnumHelp[198439](arg t[198437]:_any[170](?)) param : _unknown[43]
+    {
+      { scopeless
+        (198442 return 0)
+      }
+    }
+    (198451 return(198450 call isEnumHelp t))
+  }
+  function isAbstractEnumType[198459](arg t[198457]:_any[170](?)) param : _unknown[43]
+  {
+    (198480 return(198479 'is abstract enum type' t))
+  }
+  function isComplexType[198489](arg t[198487]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198507 return(198505 call ||(198496 call == t(198495 call complex[132] 64))(198503 call == t(198502 call complex[132] 128))))
+    }
+  }
+  function isRealType[198516](arg t[198514]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198534 return(198532 call ||(198523 call == t(198522 call real[16] 32))(198530 call == t(198529 call real[16] 64))))
+    }
+  }
+  function isImagType[198543](arg t[198541]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198561 return(198559 call ||(198550 call == t(198549 call imag[122] 32))(198557 call == t(198556 call imag[122] 64))))
+    }
+  }
+  function isStringType[198570](arg t[198568]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198576 return(198574 call == t string[24]))
+    }
+  }
+  function isBytesType[198585](arg t[198583]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (198591 return(198589 call == t bytes[22]))
+    }
+  }
+  function isPODType[198600](arg t[198598]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    (198621 return(198620 'is pod type' t))
+  }
+  function chpl__unsignedType[198630](arg t[198628]:_any[170](?)) type : _unknown[43] "no doc"
+  {
+    (198639 return(198638 call uint[107](198636 call numBits t)))
+  }
+  function chpl__signedType[198648](arg t[198646]:_any[170](?)) type : _unknown[43] "no doc"
+  {
+    (198657 return(198656 call int[13](198654 call numBits t)))
+  }
+  function chpl__maxIntTypeSameSign[198666](arg t[198664]:_any[170](?)) type : _unknown[43] "no doc"
+  {
+    if(198698 call _cond_test(198672 call !(198671 call isIntegralType t)))
+    {
+      { scopeless
+        (198696 call compilerError "type t is non-integral: "(198694 call _cast string[24] t))
+      }
+    }
+    if(198720 call _cond_test(198707 call isIntType t))
+    {
+      { scopeless
+        (198712 return(198711 call int[13] 64))
+      }
+    }
+    {
+      { scopeless
+        (198718 return(198717 call uint[107] 64))
+      }
+    }
+  }
+  function isBoolValue[198732](arg e[198730]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198739 return(198738 call isBoolType(198736 'typeof' e)))
+    }
+  }
+  function isIntValue[198748](arg e[198746]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198755 return(198754 call isIntType(198752 'typeof' e)))
+    }
+  }
+  function isUintValue[198764](arg e[198762]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198771 return(198770 call isUintType(198768 'typeof' e)))
+    }
+  }
+  function isRealValue[198780](arg e[198778]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198787 return(198786 call isRealType(198784 'typeof' e)))
+    }
+  }
+  function isImagValue[198796](arg e[198794]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198803 return(198802 call isImagType(198800 'typeof' e)))
+    }
+  }
+  function isComplexValue[198812](arg e[198810]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198819 return(198818 call isComplexType(198816 'typeof' e)))
+    }
+  }
+  function isStringValue[198828](arg e[198826]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198835 return(198834 call isStringType(198832 'typeof' e)))
+    }
+  }
+  function isBytesValue[198844](arg e[198842]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198851 return(198850 call isBytesType(198848 'typeof' e)))
+    }
+  }
+  function isIntegralValue[198860](arg e[198858]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198867 return(198866 call isIntegralType(198864 'typeof' e)))
+    }
+  }
+  function isFloatValue[198876](arg e[198874]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198883 return(198882 call isFloatType(198880 'typeof' e)))
+    }
+  }
+  function isNumericValue[198892](arg e[198890]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198899 return(198898 call isNumericType(198896 'typeof' e)))
+    }
+  }
+  function isPrimitiveValue[198908](arg e[198906]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198915 return(198914 call isPrimitiveType(198912 'typeof' e)))
+    }
+  }
+  function isEnumValue[198924](arg e[198922]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198931 return(198930 call isEnumType(198928 'typeof' e)))
+    }
+  }
+  function isClassValue[198940](arg e[198938]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198947 return(198946 call isClassType(198944 'typeof' e)))
+    }
+  }
+  function isOwnedClassType[198958](arg t[198955] :
+  _owned) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198961 return 1)
+    }
+  }
+  function isOwnedClassType[198970](arg t[198968]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198973 return 0)
+    }
+  }
+  function isSharedClassType[198984](arg t[198981] :
+  _shared) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198987 return 1)
+    }
+  }
+  function isSharedClassType[198996](arg t[198994]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (198999 return 0)
+    }
+  }
+  function isUnmanagedClassType[199010](arg t[199007] :
+  unmanaged[209](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199013 return 1)
+    }
+  }
+  function isUnmanagedClassType[199022](arg t[199020]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199025 return 0)
+    }
+  }
+  function isBorrowedClassType[199036](arg t[199033] :
+  borrowed[200](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199039 return 1)
+    }
+  }
+  function isBorrowedClassType[199048](arg t[199046]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199051 return 0)
+    }
+  }
+  function isOwnedClassValue[199060](arg e[199058]:_any[170](?)) param : _unknown[43] "no borrow convert" "no doc"
+  {
+    { scopeless
+      (199067 return(199066 call isOwnedClassType(199064 'typeof' e)))
+    }
+  }
+  function isSharedClassValue[199076](arg e[199074]:_any[170](?)) param : _unknown[43] "no borrow convert" "no doc"
+  {
+    { scopeless
+      (199083 return(199082 call isSharedClassType(199080 'typeof' e)))
+    }
+  }
+  function isUnmanagedClassValue[199092](arg e[199090]:_any[170](?)) param : _unknown[43] "no borrow convert" "no doc"
+  {
+    { scopeless
+      (199099 return(199098 call isUnmanagedClassType(199096 'typeof' e)))
+    }
+  }
+  function isBorrowedClassValue[199108](arg e[199106]:_any[170](?)) param : _unknown[43] "no borrow convert" "no doc"
+  {
+    { scopeless
+      (199115 return(199114 call isBorrowedClassType(199112 'typeof' e)))
+    }
+  }
+  function isNilableClassValue[199124](arg e[199122]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199131 return(199130 call isNilableClassType(199128 'typeof' e)))
+    }
+  }
+  function isNonNilableClassValue[199140](arg e[199138]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199147 return(199146 call isNonNilableClassType(199144 'typeof' e)))
+    }
+  }
+  function isRecordValue[199156](arg e[199154]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199163 return(199162 call isRecordType(199160 'typeof' e)))
+    }
+  }
+  function isUnionValue[199172](arg e[199170]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199179 return(199178 call isUnionType(199176 'typeof' e)))
+    }
+  }
+  function isAtomicValue[199188](arg e[199186]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199195 return(199194 call isAtomicType(199192 'typeof' e)))
+    }
+  }
+  function isRefIterValue[199204](arg e[199202]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199211 return(199210 call isRefIterType(199208 'typeof' e)))
+    }
+  }
+  function isPODValue[199220](arg e[199218]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199227 return(199226 call isPODType(199224 'typeof' e)))
+    }
+  }
+  function isBool[199236](arg t[199234]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199242 return(199241 call isBoolType t))
+    }
+  }
+  function isInt[199251](arg t[199249]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199257 return(199256 call isIntType t))
+    }
+  }
+  function isUint[199266](arg t[199264]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199272 return(199271 call isUintType t))
+    }
+  }
+  function isReal[199281](arg t[199279]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199287 return(199286 call isRealType t))
+    }
+  }
+  function isImag[199296](arg t[199294]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199302 return(199301 call isImagType t))
+    }
+  }
+  function isComplex[199311](arg t[199309]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199317 return(199316 call isComplexType t))
+    }
+  }
+  function isBytes[199326](arg t[199324]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199332 return(199331 call isBytesType t))
+    }
+  }
+  function isString[199341](arg t[199339]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199347 return(199346 call isStringType t))
+    }
+  }
+  function isIntegral[199356](arg t[199354]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199362 return(199361 call isIntegralType t))
+    }
+  }
+  function isFloat[199371](arg t[199369]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199377 return(199376 call isFloatType t))
+    }
+  }
+  function isNumeric[199386](arg t[199384]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199392 return(199391 call isNumericType t))
+    }
+  }
+  function isPrimitive[199401](arg t[199399]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199407 return(199406 call isPrimitiveType t))
+    }
+  }
+  function isEnum[199416](arg t[199414]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199422 return(199421 call isEnumType t))
+    }
+  }
+  function isTuple[199431](arg t[199429]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199437 return(199436 call isTupleType t))
+    }
+  }
+  function isHomogeneousTuple[199446](arg t[199444]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199452 return(199451 call isHomogeneousTupleType t))
+    }
+  }
+  function isGeneric[199461](arg t[199459]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199467 return(199466 call isGenericType t))
+    }
+  }
+  function isClass[199476](arg t[199474]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199482 return(199481 call isClassType t))
+    }
+  }
+  function isOwnedClass[199491](arg t[199489]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199497 return(199496 call isOwnedClassType t))
+    }
+  }
+  function isSharedClass[199506](arg t[199504]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199512 return(199511 call isSharedClassType t))
+    }
+  }
+  function isUnmanagedClass[199521](arg t[199519]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199527 return(199526 call isUnmanagedClassType t))
+    }
+  }
+  function isBorrowedClass[199536](arg t[199534]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199542 return(199541 call isBorrowedClassType t))
+    }
+  }
+  function isNilableClass[199551](arg t[199549]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199557 return(199556 call isNilableClassType t))
+    }
+  }
+  function isNonNilableClass[199566](arg t[199564]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199572 return(199571 call isNonNilableClassType t))
+    }
+  }
+  function isRecord[199581](arg t[199579]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199587 return(199586 call isRecordType t))
+    }
+  }
+  function isUnion[199596](arg t[199594]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199602 return(199601 call isUnionType t))
+    }
+  }
+  function isRange[199611](arg t[199609]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199617 return(199616 call isRangeType t))
+    }
+  }
+  function isDmap[199626](arg t[199624]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199632 return(199631 call isDmapType t))
+    }
+  }
+  function isDomain[199641](arg t[199639]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199647 return(199646 call isDomainType t))
+    }
+  }
+  function isArray[199656](arg t[199654]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199662 return(199661 call isArrayType t))
+    }
+  }
+  function isSync[199671](arg t[199669]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199677 return(199676 call isSyncType t))
+    }
+  }
+  function isSingle[199686](arg t[199684]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199692 return(199691 call isSingleType t))
+    }
+  }
+  function isAtomic[199701](arg t[199699]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199707 return(199706 call isAtomicType t))
+    }
+  }
+  function isRefIter[199716](arg t[199714]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199722 return(199721 call isRefIterType t))
+    }
+  }
+  function isPOD[199731](arg t[199729]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (199737 return(199736 call isPODType t))
+    }
+  }
+  function isPrimitive[199746](arg e[199744]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199752 return(199751 call isPrimitiveValue e))
+    }
+  }
+  function isNumeric[199761](arg e[199759]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199767 return(199766 call isNumericValue e))
+    }
+  }
+  function isIntegral[199776](arg e[199774]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199782 return(199781 call isIntegralValue e))
+    }
+  }
+  function isFloat[199791](arg e[199789]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199797 return(199796 call isFloatValue e))
+    }
+  }
+  function isBool[199806](arg e[199804]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199812 return(199811 call isBoolValue e))
+    }
+  }
+  function isInt[199821](arg e[199819]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199827 return(199826 call isIntValue e))
+    }
+  }
+  function isUint[199836](arg e[199834]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199842 return(199841 call isUintValue e))
+    }
+  }
+  function isReal[199851](arg e[199849]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199857 return(199856 call isRealValue e))
+    }
+  }
+  function isImag[199866](arg e[199864]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199872 return(199871 call isImagValue e))
+    }
+  }
+  function isComplex[199881](arg e[199879]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199887 return(199886 call isComplexValue e))
+    }
+  }
+  function isBytes[199896](arg e[199894]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199902 return(199901 call isBytesValue e))
+    }
+  }
+  function isString[199911](arg e[199909]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199917 return(199916 call isStringValue e))
+    }
+  }
+  function isEnum[199926](arg e[199924]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199932 return(199931 call isEnumValue e))
+    }
+  }
+  function isTuple[199941](arg e[199939]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199947 return(199946 call isTupleValue e))
+    }
+  }
+  function isHomogeneousTuple[199958](arg e[199955] :
+  _tuple) param : _unknown[43]
+  {
+    { scopeless
+      (199964 return(199963 call isHomogeneousTupleValue e))
+    }
+  }
+  function isClass[199973](arg e[199971]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199979 return(199978 call isClassValue e))
+    }
+  }
+  function isGeneric[199988](arg e[199986]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (199991 return 0)
+    }
+  }
+  function isOwnedClass[200000](arg e[199998]:_any[170](?)) param : _unknown[43] "no borrow convert"
+  {
+    { scopeless
+      (200006 return(200005 call isOwnedClassValue e))
+    }
+  }
+  function isSharedClass[200015](arg e[200013]:_any[170](?)) param : _unknown[43] "no borrow convert"
+  {
+    { scopeless
+      (200021 return(200020 call isSharedClassValue e))
+    }
+  }
+  function isUnmanagedClass[200030](arg e[200028]:_any[170](?)) param : _unknown[43] "no borrow convert"
+  {
+    { scopeless
+      (200036 return(200035 call isUnmanagedClassValue e))
+    }
+  }
+  function isBorrowedClass[200045](arg e[200043]:_any[170](?)) param : _unknown[43] "no borrow convert"
+  {
+    { scopeless
+      (200051 return(200050 call isBorrowedClassValue e))
+    }
+  }
+  function isNilableClass[200060](arg e[200058]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200066 return(200065 call isNilableClassValue e))
+    }
+  }
+  function isNonNilableClass[200075](arg e[200073]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200081 return(200080 call isNonNilableClassValue e))
+    }
+  }
+  function isRecord[200090](arg e[200088]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200096 return(200095 call isRecordValue e))
+    }
+  }
+  function isUnion[200105](arg e[200103]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200111 return(200110 call isUnionValue e))
+    }
+  }
+  function isRange[200120](arg e[200118]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200126 return(200125 call isRangeValue e))
+    }
+  }
+  function isDmap[200135](arg e[200133]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200141 return(200140 call isDmapValue e))
+    }
+  }
+  function isDomain[200150](arg e[200148]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200156 return(200155 call isDomainValue e))
+    }
+  }
+  function isArray[200165](arg e[200163]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200171 return(200170 call isArrayValue e))
+    }
+  }
+  function isSync[200182](arg e[200179] :
+  _syncvar) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200185 return 1)
+    }
+  }
+  function isSync[200194](arg e[200192]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200197 return 0)
+    }
+  }
+  function isSingle[200208](arg e[200205] :
+  _singlevar) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200211 return 1)
+    }
+  }
+  function isSingle[200220](arg e[200218]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200223 return 0)
+    }
+  }
+  function isAtomic[200232](arg e[200230]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (200238 return(200237 call isAtomicValue e))
+    }
+  }
+  function isRefIter[200247](arg e[200245]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200253 return(200252 call isRefIterValue e))
+    }
+  }
+  function isPOD[200262](arg e[200260]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200268 return(200267 call isPODValue e))
+    }
+  }
+  function chpl_isSyncSingleAtomic[200277](arg e[200275]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200280 return 0)
+    }
+  }
+  function chpl_isSyncSingleAtomic[200291](arg e[200288] :
+  _syncvar) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200294 return 1)
+    }
+  }
+  function chpl_isSyncSingleAtomic[200305](arg e[200302] :
+  _singlevar) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200308 return 1)
+    }
+  }
+  function chpl_isSyncSingleAtomic[200317](arg e[200315]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200325 return 1)
+    }
+  }
+  where {
+    (200323 call isAtomicType(200321 'typeof' e))
+  }
+  function chpl__legalIntCoerce[200335](arg t1[200333]:_any[170](?), arg t2[200337]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    if(200404 call _cond_test(200342 call isIntType t2))
+    {
+      if(200373 call _cond_test(200346 call isIntType t1))
+      {
+        (200357 return(200355 call <=(200350 call numBits t1)(200354 call numBits t2)))
+      }
+      {
+        (200370 return(200368 call <(200363 call numBits t1)(200367 call numBits t2)))
+      }
+    }
+    {
+      if(200399 call _cond_test(200381 call isIntType t1))
+      {
+        (200383 return 0)
+      }
+      {
+        (200396 return(200394 call <=(200389 call numBits t1)(200393 call numBits t2)))
+      }
+    }
+  }
+  function chpl__commonType[200415](arg s[200413]:_any[170](?), arg t[200417]:_any[170](?)) type : _unknown[43] "private"
+  {
+    if(200465 call _cond_test(200423 call !(200422 call isIntegralType s)))
+    {
+      { scopeless
+        (200463 call compilerError "Type "(200445 call _cast string[24] s) " is non-integral: ")
+      }
+    }
+    if(200487 call _cond_test(200475 call !(200474 call isIntegralType t)))
+    {
+      { scopeless
+        (200485 call compilerError "Type "(200482 call _cast string[24] t) " is non-integral: ")
+      }
+    }
+    if(200505 call _cond_test(200500 call >(200495 call numBits s)(200499 call numBits t)))
+    {
+      { scopeless
+        (200503 return s)
+      }
+    }
+    if(200523 call _cond_test(200518 call <(200513 call numBits s)(200517 call numBits t)))
+    {
+      { scopeless
+        (200521 return t)
+      }
+    }
+    if(200614 call _cond_test(200552 call ||(200538 call &&(200531 call isIntType s)(200536 call !(200535 call isIntType t)))(200550 call &&(200543 call isIntType t)(200548 call !(200547 call isIntType s)))))
+    {
+      { scopeless
+        (200612 call compilerError "Types "(200574 call _cast string[24] s) " and "(200594 call _cast string[24] t) " are incompatible.")
+      }
+    }
+    (200620 return s)
+  }
+  function numBits[200628](arg t[200626]:_any[170](?)) param : _unknown[43]
+  {
+    (200652 call compilerError "default-width 'bool' does not have a well-defined size")
+  }
+  where {
+    (200632 call == t bool[10])
+  }
+  function numBits[200662](arg t[200660]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200672 return 8)
+    }
+  }
+  where {
+    (200669 call == t(200668 call bool[10] 8))
+  }
+  function numBits[200682](arg t[200680]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200692 return 16)
+    }
+  }
+  where {
+    (200689 call == t(200688 call bool[10] 16))
+  }
+  function numBits[200702](arg t[200700]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200712 return 32)
+    }
+  }
+  where {
+    (200709 call == t(200708 call bool[10] 32))
+  }
+  function numBits[200722](arg t[200720]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200732 return 64)
+    }
+  }
+  where {
+    (200729 call == t(200728 call bool[10] 64))
+  }
+  function numBits[200742](arg t[200740]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200752 return 8)
+    }
+  }
+  where {
+    (200749 call == t(200748 call int[13] 8))
+  }
+  function numBits[200762](arg t[200760]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200772 return 16)
+    }
+  }
+  where {
+    (200769 call == t(200768 call int[13] 16))
+  }
+  function numBits[200782](arg t[200780]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200792 return 32)
+    }
+  }
+  where {
+    (200789 call == t(200788 call int[13] 32))
+  }
+  function numBits[200802](arg t[200800]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200812 return 64)
+    }
+  }
+  where {
+    (200809 call == t(200808 call int[13] 64))
+  }
+  function numBits[200822](arg t[200820]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200832 return 8)
+    }
+  }
+  where {
+    (200829 call == t(200828 call uint[107] 8))
+  }
+  function numBits[200842](arg t[200840]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200852 return 16)
+    }
+  }
+  where {
+    (200849 call == t(200848 call uint[107] 16))
+  }
+  function numBits[200862](arg t[200860]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200872 return 32)
+    }
+  }
+  where {
+    (200869 call == t(200868 call uint[107] 32))
+  }
+  function numBits[200882](arg t[200880]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200892 return 64)
+    }
+  }
+  where {
+    (200889 call == t(200888 call uint[107] 64))
+  }
+  function numBits[200902](arg t[200900]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200912 return 32)
+    }
+  }
+  where {
+    (200909 call == t(200908 call real[16] 32))
+  }
+  function numBits[200922](arg t[200920]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200932 return 64)
+    }
+  }
+  where {
+    (200929 call == t(200928 call real[16] 64))
+  }
+  function numBits[200942](arg t[200940]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200952 return 32)
+    }
+  }
+  where {
+    (200949 call == t(200948 call imag[122] 32))
+  }
+  function numBits[200962](arg t[200960]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200972 return 64)
+    }
+  }
+  where {
+    (200969 call == t(200968 call imag[122] 64))
+  }
+  function numBits[200982](arg t[200980]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (200992 return 64)
+    }
+  }
+  where {
+    (200989 call == t(200988 call complex[132] 64))
+  }
+  function numBits[201002](arg t[201000]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201012 return 128)
+    }
+  }
+  where {
+    (201009 call == t(201008 call complex[132] 128))
+  }
+  unknown bitsPerByte[201019] "no doc" "param" 8
+  function numBytes[201026](arg t[201024]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (201035 return(201033 call /(201031 call numBits t) 8))
+    }
+  }
+  function min[201044](arg t[201042]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (201054 return(201052 call _cast t 0))
+    }
+  }
+  where {
+    (201049 call isBool t)
+  }
+  function min[201064](arg t[201062]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201077 return(201075 call _cast t 128))
+    }
+  }
+  where {
+    (201071 call == t(201070 call int[13] 8))
+  }
+  function min[201087](arg t[201085]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201102 return(201100 call _cast t 32768))
+    }
+  }
+  where {
+    (201094 call == t(201093 call int[13] 16))
+  }
+  function min[201112](arg t[201110]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201127 return(201125 call _cast t 2147483648))
+    }
+  }
+  where {
+    (201119 call == t(201118 call int[13] 32))
+  }
+  function min[201137](arg t[201135]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201152 return(201150 call _cast t 9223372036854775808))
+    }
+  }
+  where {
+    (201144 call == t(201143 call int[13] 64))
+  }
+  function min[201162](arg t[201160]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201172 return(201170 call _cast t 0))
+    }
+  }
+  where {
+    (201167 call isUint t)
+  }
+  function min[201182](arg t[201180]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201207 return(201206 '_min' t))
+    }
+  }
+  where {
+    (201187 call isFloatType t)
+  }
+  function min[201217](arg t[201215]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    unknown floatwidth[201230] "param"(201228 call /(201226 call numBits t) 2)
+    (201254 return(201252 call _cast t(201249 call _build_tuple(201240 call min(201238 call real[16] floatwidth))(201247 call min(201245 call real[16] floatwidth)))))
+  }
+  where {
+    (201222 call isComplexType t)
+  }
+  function max[201263](arg t[201261]:_any[170](?)) param : _unknown[43]
+  {
+    { scopeless
+      (201273 return(201271 call _cast t 1))
+    }
+  }
+  where {
+    (201268 call isBool t)
+  }
+  function max[201283](arg t[201281]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201296 return(201294 call _cast t 127))
+    }
+  }
+  where {
+    (201290 call == t(201289 call int[13] 8))
+  }
+  function max[201306](arg t[201304]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201321 return(201319 call _cast t 32767))
+    }
+  }
+  where {
+    (201313 call == t(201312 call int[13] 16))
+  }
+  function max[201331](arg t[201329]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201346 return(201344 call _cast t 2147483647))
+    }
+  }
+  where {
+    (201338 call == t(201337 call int[13] 32))
+  }
+  function max[201356](arg t[201354]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201371 return(201369 call _cast t 9223372036854775807))
+    }
+  }
+  where {
+    (201363 call == t(201362 call int[13] 64))
+  }
+  function max[201381](arg t[201379]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201396 return(201394 call _cast t 255))
+    }
+  }
+  where {
+    (201388 call == t(201387 call uint[107] 8))
+  }
+  function max[201406](arg t[201404]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201421 return(201419 call _cast t 65535))
+    }
+  }
+  where {
+    (201413 call == t(201412 call uint[107] 16))
+  }
+  function max[201431](arg t[201429]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201446 return(201444 call _cast t 4294967295))
+    }
+  }
+  where {
+    (201438 call == t(201437 call uint[107] 32))
+  }
+  function max[201456](arg t[201454]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201471 return(201469 call _cast t 18446744073709551615))
+    }
+  }
+  where {
+    (201463 call == t(201462 call uint[107] 64))
+  }
+  function max[201481](arg t[201479]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    { scopeless
+      (201506 return(201505 '_max' t))
+    }
+  }
+  where {
+    (201486 call isFloatType t)
+  }
+  function max[201516](arg t[201514]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    unknown floatwidth[201529] "param"(201527 call /(201525 call numBits t) 2)
+    (201553 return(201551 call _cast t(201548 call _build_tuple(201539 call max(201537 call real[16] floatwidth))(201546 call max(201544 call real[16] floatwidth)))))
+  }
+  where {
+    (201521 call isComplexType t)
+  }
+  function chpl_enumerate[201564](arg t[201561] :
+  enumerated) : _unknown[43] "iterator fn" "no doc"
+  {
+    const enumTuple[201570] "const"(201569 call chpl_enum_enumerate t)
+    {
+      unknown _indexOfInterest[201588] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[201589] "expr temp" "temp"
+      (201598 'move' _iterator[201589](201596 call _getIterator(201606 call chpl_direct_range_iter 1(201603 call . enumTuple c"size") 1)))
+      Defer
+      {
+        {
+          (201622 call _freeIterator _iterator[201589])
+        }
+      }
+      { scopeless type
+        (201611 'move' _indexOfInterest[201588](201608 call iteratorIndex _iterator[201589]))
+      }
+      ForLoop
+      {
+        unknown i[201615] "index var" "insert auto destroy"
+        (201617 'move' i[201615] _indexOfInterest[201588])
+        { scopeless
+          (201586 yield(201585 call enumTuple i))
+        }
+        label _continueLabel[201593]
+        _indexOfInterest[201588]
+        _iterator[201589]
+      }
+      label _breakLabel[201594]
+    }
+  }
+  function _unknown[43].these[201634](arg _mt[201639]:_MT[227], arg this[201636] :
+  enumerated) : _unknown[43] "iterator fn" "method" "no doc"
+  {
+    {
+      unknown _indexOfInterest[201649] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[201650] "expr temp" "temp"
+      (201659 'move' _iterator[201650](201657 call _getIterator(201645 call chpl_enumerate this)))
+      Defer
+      {
+        {
+          (201676 call _freeIterator _iterator[201650])
+        }
+      }
+      { scopeless type
+        (201665 'move' _indexOfInterest[201649](201662 call iteratorIndex _iterator[201650]))
+      }
+      ForLoop
+      {
+        unknown i[201669] "index var" "insert auto destroy"
+        (201671 'move' i[201669] _indexOfInterest[201649])
+        { scopeless
+          (201647 yield i)
+        }
+        label _continueLabel[201654]
+        _indexOfInterest[201649]
+        _iterator[201650]
+      }
+      label _breakLabel[201655]
+    }
+  }
+  function chpl_enum_minbits[201692](arg t[201689] :
+  enumerated) param : _unknown[43] "private"
+  {
+    if(201710 call _cond_test(201705 call <=(201695 call . t c"size")(201704 call max(201702 call uint[107] 8))))
+    {
+      { scopeless
+        (201708 return 8)
+      }
+    }
+    if(201732 call _cond_test(201727 call <=(201717 call . t c"size")(201726 call max(201724 call uint[107] 16))))
+    {
+      { scopeless
+        (201730 return 16)
+      }
+    }
+    if(201753 call _cond_test(201748 call <=(201738 call . t c"size")(201747 call max(201745 call uint[107] 32))))
+    {
+      { scopeless
+        (201751 return 32)
+      }
+    }
+    (201759 return 64)
+  }
+  function chpl_enum_mintype[201769](arg t[201766] :
+  enumerated) type : _unknown[43] "no doc"
+  {
+    (201778 return(201777 call uint[107](201775 call chpl_enum_minbits t)))
+  }
+  function _unknown[43].safeCast[201788](arg _mt[201793]:_MT[227], arg this[201790] :
+  integral, arg T[201786]:_any[170](?)) : _unknown[43] "inline" "method"
+  {
+    if(201963 call _cond_test castChecking)
+    {
+      if(201870 call _cond_test(201805 call isIntType(201803 'typeof' this)))
+      {
+        if(201864 call _cond_test(201808 call < this 0))
+        {
+          { scopeless
+            (201862 call(201811 call . HaltWrappers c"safeCastCheckHalt")(201859 call +(201853 call +(201835 call + "casting "(201833 call _cast string[24](201831 'typeof' this))) " less than 0 to ")(201857 call _cast string[24] T)))
+          }
+        }
+      }
+      if(201959 call _cond_test(201890 call >(201881 call _cast uint[107](201879 call max(201877 'typeof' this)))(201888 call _cast uint[107](201886 call max T))))
+      {
+        if(201953 call _cond_test(201903 call >(201894 call _cast uint[107] this)(201901 call _cast uint[107](201899 call max T))))
+        {
+          { scopeless
+            (201951 call(201906 call . HaltWrappers c"safeCastCheckHalt")(201948 call +(201942 call +(201939 call +(201933 call +(201915 call + "casting "(201913 call _cast string[24](201911 'typeof' this))) " with a value greater than the maximum of ")(201937 call _cast string[24] T)) " to ")(201946 call _cast string[24] T)))
+          }
+        }
+      }
+    }
+    (201972 return(201970 call _cast T this))
+  }
+  where {
+    (201799 call isUintType T)
+  }
+  { scopeless type
+    T
+  }
+  function _unknown[43].safeCast[201983](arg _mt[201988]:_MT[227], arg this[201985] :
+  integral, arg T[201981]:_any[170](?)) : _unknown[43] "inline" "method" "no doc"
+  {
+    if(202230 call _cond_test castChecking)
+    {
+      if(202127 call _cond_test(202011 call >(202002 call _cast uint[107](202000 call max(201998 'typeof' this)))(202009 call _cast uint[107](202007 call max T))))
+      {
+        if(202122 call _cond_test(202017 call isUintType(202015 'typeof' this)))
+        {
+          if(202064 call _cond_test(202029 call >(202020 call _cast uint[107] this)(202027 call _cast uint[107](202025 call max T))))
+          {
+            { scopeless
+              (202062 call(202032 call . HaltWrappers c"safeCastCheckHalt")(202059 call +(202053 call +(202050 call +(202044 call +(202041 call + "casting "(202039 call _cast string[24](202037 'typeof' this))) " with a value greater than the maximum of ")(202048 call _cast string[24] T)) " to ")(202057 call _cast string[24] T)))
+            }
+          }
+        }
+        {
+          if(202116 call _cond_test(202081 call >(202072 call _cast int[13] this)(202079 call _cast int[13](202077 call max T))))
+          {
+            { scopeless
+              (202114 call(202084 call . HaltWrappers c"safeCastCheckHalt")(202111 call +(202105 call +(202102 call +(202096 call +(202093 call + "casting "(202091 call _cast string[24](202089 'typeof' this))) " with a value greater than the maximum of ")(202100 call _cast string[24] T)) " to ")(202109 call _cast string[24] T)))
+            }
+          }
+        }
+      }
+      if(202226 call _cond_test(202136 call isIntType(202134 'typeof' this)))
+      {
+        if(202221 call _cond_test(202152 call <(202143 call _cast int[13](202141 call min(202139 'typeof' this)))(202150 call _cast int[13](202148 call min T))))
+        {
+          if(202215 call _cond_test(202165 call <(202156 call _cast int[13] this)(202163 call _cast int[13](202161 call min T))))
+          {
+            { scopeless
+              (202213 call(202168 call . HaltWrappers c"safeCastCheckHalt")(202210 call +(202204 call +(202201 call +(202195 call +(202177 call + "casting "(202175 call _cast string[24](202173 'typeof' this))) " with a value less than the minimum of ")(202199 call _cast string[24] T)) " to ")(202208 call _cast string[24] T)))
+            }
+          }
+        }
+      }
+    }
+    (202239 return(202237 call _cast T this))
+  }
+  where {
+    (201994 call isIntType T)
+  }
+  { scopeless type
+    T
+  }
+  function _unknown[43].safeCast[202250](arg _mt[202255]:_MT[227], arg this[202252] :
+  integral, arg T[202248]:_any[170](?)) : _unknown[43] "method" "no doc"
+  {
+    (202275 call compilerError "safeCast is only supported between integral types")
+  }
+  function _prod_id[202284](arg t[202282]:_any[170](?)) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (202290 return(202288 call _cast t 1))
+    }
+  }
+  function _land_id[202299](arg t[202297]:_any[170](?)) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (202302 return 1)
+    }
+  }
+  function _lor_id[202311](arg t[202309]:_any[170](?)) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (202314 return 0)
+    }
+  }
+  function _lxor_id[202323](arg t[202321]:_any[170](?)) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (202326 return 0)
+    }
+  }
+  function _band_id[202335](arg t[202333]:_any[170](?)) : _unknown[43] "inline" "no doc"
+  {
+    if(202653 call _cond_test(202340 call isBoolType t))
+    {
+      { scopeless
+        (202345 return(202343 call _cast t 1))
+      }
+    }
+    {
+      { scopeless
+        if(202647 call _cond_test(202350 call isIntType t))
+        {
+          { scopeless
+            (202357 return(202355 call -(202353 call _cast t 1)))
+          }
+        }
+        {
+          { scopeless
+            if(202641 call _cond_test(202362 call isUintType t))
+            {
+              { scopeless
+                (202367 return(202366 call max t))
+              }
+            }
+            {
+              { scopeless
+                if(202635 call _cond_test(202374 call == t(202373 call real[16] 32)))
+                {
+                  { scopeless
+                    (202386 return(202384 call _cast t(202382 call max(202380 call uint[107] 32))))
+                  }
+                }
+                {
+                  { scopeless
+                    if(202629 call _cond_test(202393 call == t(202392 call real[16] 64)))
+                    {
+                      { scopeless
+                        (202405 return(202403 call _cast t(202401 call max(202399 call uint[107] 64))))
+                      }
+                    }
+                    {
+                      { scopeless
+                        if(202623 call _cond_test(202412 call == t(202411 call imag[122] 32)))
+                        {
+                          { scopeless
+                            (202424 return(202422 call _cast t(202420 call max(202418 call uint[107] 32))))
+                          }
+                        }
+                        {
+                          { scopeless
+                            if(202617 call _cond_test(202431 call == t(202430 call imag[122] 64)))
+                            {
+                              { scopeless
+                                (202443 return(202441 call _cast t(202439 call max(202437 call uint[107] 64))))
+                              }
+                            }
+                            {
+                              { scopeless
+                                if(202611 call _cond_test(202450 call == t(202449 call complex[132] 64)))
+                                {
+                                  { scopeless
+                                    (202484 return(202482 call _cast t(202479 call _build_tuple(202463 call _cast(202462 call real[16] 32)(202458 call max(202456 call uint[107] 32)))(202476 call _cast(202475 call real[16] 32)(202471 call max(202469 call uint[107] 32))))))
+                                  }
+                                }
+                                {
+                                  { scopeless
+                                    if(202605 call _cond_test(202491 call == t(202490 call complex[132] 128)))
+                                    {
+                                      { scopeless
+                                        (202525 return(202523 call _cast t(202520 call _build_tuple(202504 call _cast(202503 call real[16] 64)(202499 call max(202497 call uint[107] 64)))(202517 call _cast(202516 call real[16] 64)(202512 call max(202510 call uint[107] 64))))))
+                                      }
+                                    }
+                                    {
+                                      { scopeless
+                                        if(202600 call _cond_test(202530 call isArrayType t))
+                                        {
+                                          unknown result[202532] t
+                                          unknown elT[202540] "type variable"(202537 call . result c"eltType")
+                                          Forall {
+                                            induction variables:
+                                              
+                                              unknown elm[202554] "index var" "insert auto destroy"
+                                            iterated expressions:
+                                              result
+                                            shadow variables:
+                                            forall body
+                                            {
+                                              (202550 call = elm(202549 call _band_id elT))
+                                            }
+                                          }
+                                          (202558 return result)
+                                        }
+                                        {
+                                          { scopeless
+                                            (202598 call compilerError "Identity value for & over "(202580 call _cast string[24] t) "is not available")
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  function _bor_id[202666](arg t[202664]:_any[170](?)) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (202672 return(202670 call _cast t 0))
+    }
+  }
+  function _bxor_id[202681](arg t[202679]:_any[170](?)) : _unknown[43] "inline" "no doc"
+  {
+    { scopeless
+      (202687 return(202685 call _cast t 0))
+    }
+  }
+}

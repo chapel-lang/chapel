@@ -1,0 +1,212 @@
+AST dump for ShellSort after pass createTaskFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_ShellSort[390375]() : void[4] "insert line file info" "module init"
+  {
+    (486872 return _void[47])
+  }
+  function shellSort[256583](arg Data[256580]:_array[133150](?), arg comparator[256588]:_any[170](?) :
+  defaultComparator[251428] =
+  defaultComparator[251428], arg start[256596] :
+  unknown call_tmp[692629] "expr temp" "maybe param" "maybe type" "temp" =
+  unknown call_tmp[681639] "expr temp" "maybe param" "maybe type" "temp", arg end[256603] :
+  unknown call_tmp[692642] "expr temp" "maybe param" "maybe type" "temp" =
+  unknown call_tmp[681648] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[681657] "expr temp" "maybe param" "maybe type" "temp"
+    (681660 'move' call_tmp[681657](441381 call eltType _mt[232] Data[256580]))
+    (256610 call chpl_check_comparator comparator[256588] call_tmp[681657])
+    unknown call_tmp[681664] "expr temp" "maybe param" "maybe type" "temp"
+    (681667 'move' call_tmp[681664](441373 call _dom _mt[232] Data[256580]))
+    unknown call_tmp[681671] "expr temp" "maybe param" "maybe type" "temp"
+    (681674 'move' call_tmp[681671](256614 call rank _mt[232] call_tmp[681664]))
+    unknown call_tmp[681676] "expr temp" "maybe param" "maybe type" "temp"
+    (681679 'move' call_tmp[681676](256618 call != call_tmp[681671] 1))
+    unknown call_tmp[681681] "expr temp" "maybe param" "maybe type" "temp"
+    (681684 'move' call_tmp[681681](256640 call _cond_test call_tmp[681676]))
+    if call_tmp[681681]
+    {
+      (256638 call compilerError "shellSort() requires 1-D array")
+    }
+    unknown call_tmp[681688] "expr temp" "maybe param" "maybe type" "temp"
+    (681691 'move' call_tmp[681688](441377 call _dom _mt[232] Data[256580]))
+    unknown call_tmp[681695] "expr temp" "maybe param" "maybe type" "temp"
+    (681698 'move' call_tmp[681695](256646 call stridable _mt[232] call_tmp[681688]))
+    unknown call_tmp[681700] "expr temp" "maybe param" "maybe type" "temp"
+    (681703 'move' call_tmp[681700](256669 call _cond_test call_tmp[681695]))
+    if call_tmp[681700]
+    {
+      (256667 call compilerError "shellSort() requires an array over a non-stridable domain")
+    }
+    unknown call_tmp[681705] "expr temp" "maybe param" "maybe type" "temp"
+    (681708 'move' call_tmp[681705](256676 call + 1 end[256603]))
+    unknown call_tmp[681710] "maybe param" "maybe type" "temp"
+    (681713 'move' call_tmp[681710](256679 call - call_tmp[681705] start[256596]))
+    unknown n[256681] "insert auto destroy"
+    (496180 'init var' n[256681] call_tmp[681710])
+    unknown js[256684] "insert auto destroy"
+    (496182 'default init var' js[256684] int(64)[13])
+    unknown hs[256688] "insert auto destroy"
+    unknown call_tmp[681715] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (681718 'move' call_tmp[681715](256692 'typeof' js[256684]))
+    (496184 'default init var' hs[256688] call_tmp[681715])
+    unknown v[256693] "insert auto destroy"
+    unknown call_tmp[681722] "expr temp" "maybe param" "maybe type" "temp"
+    (681725 'move' call_tmp[681722](256697 call eltType _mt[232] Data[256580]))
+    (496186 'default init var' v[256693] call_tmp[681722])
+    unknown tmp[256700] "insert auto destroy"
+    unknown call_tmp[681727] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (681730 'move' call_tmp[681727](256704 'typeof' v[256693]))
+    (496188 'default init var' tmp[256700] call_tmp[681727])
+    unknown call_tmp[681732] "maybe param" "maybe type" "temp"
+    (681735 'move' call_tmp[681732](256720 call _build_tuple 701 301 132 57 23 10 4 1))
+    const incs[256722] "const" "insert auto destroy"
+    (496190 'init var' incs[256722] call_tmp[681732])
+    {
+      unknown _indexOfInterest[256899] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[256900] "expr temp" "temp"
+      (256909 'move' _iterator[256900](256907 call _getIterator incs[256722]))
+      Defer
+      {
+        {
+          (256925 call _freeIterator _iterator[256900])
+        }
+      }
+      { scopeless type
+        (256914 'move' _indexOfInterest[256899](256911 call iteratorIndex _iterator[256900]))
+      }
+      ForLoop
+      {
+        unknown h[256918] "index var" "insert auto destroy"
+        (256920 'move' h[256918] _indexOfInterest[256899])
+        {
+          unknown call_tmp[681737] "expr temp" "maybe param" "maybe type" "temp"
+          (681740 'move' call_tmp[681737](256730 call + h[256918] start[256596]))
+          (256732 call = hs[256688] call_tmp[681737])
+          {
+            unknown _indexOfInterest[256861] "an _indexOfInterest or chpl__followIdx variable" "temp"
+            unknown _iterator[256862] "expr temp" "temp"
+            unknown call_tmp[681742] "expr temp" "maybe param" "maybe type" "temp"
+            (681745 'move' call_tmp[681742](256876 call chpl_direct_range_iter hs[256688] end[256603] 1))
+            (256871 'move' _iterator[256862](256869 call _getIterator call_tmp[681742]))
+            Defer
+            {
+              {
+                (256892 call _freeIterator _iterator[256862])
+              }
+            }
+            { scopeless type
+              (256881 'move' _indexOfInterest[256861](256878 call iteratorIndex _iterator[256862]))
+            }
+            ForLoop
+            {
+              unknown is[256885] "index var" "insert auto destroy"
+              (256887 'move' is[256885] _indexOfInterest[256861])
+              {
+                unknown call_tmp[681747] "expr temp" "maybe param" "maybe type" "temp"
+                (681750 'move' call_tmp[681747](256745 call Data[256580] is[256885]))
+                (256746 call = v[256693] call_tmp[681747])
+                (256752 call = js[256684] is[256885])
+                {
+                  unknown tmp[256796] "temp"
+                  unknown tmp[408657] "maybe param" "temp"
+                  (408668 'move' tmp[408657](256834 call >= js[256684] hs[256688]))
+                  unknown call_tmp[681752] "expr temp" "maybe param" "maybe type" "temp"
+                  (681755 'move' call_tmp[681752](408670 call _cond_invalid tmp[408657]))
+                  if call_tmp[681752]
+                  {
+                    (408673 call compilerError "cannot promote short-circuiting && operator")
+                  }
+                  unknown tmp[527165] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+                  unknown tmp[527166] "maybe param" "temp"
+                  unknown call_tmp[681757] "expr temp" "maybe param" "maybe type" "temp"
+                  (681760 'move' call_tmp[681757](408658 call isTrue tmp[408657]))
+                  (527171 'move' tmp[527166](527169 call _cond_test call_tmp[681757]))
+                  if tmp[527166]
+                  {
+                    unknown tmp[527173] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                    unknown call_tmp[681762] "expr temp" "maybe param" "maybe type" "temp"
+                    (681765 'move' call_tmp[681762](256845 call - js[256684] h[256918]))
+                    unknown call_tmp[681767] "expr temp" "maybe param" "maybe type" "temp"
+                    (681770 'move' call_tmp[681767](256843 call Data[256580] call_tmp[681762]))
+                    unknown call_tmp[681772] "expr temp" "maybe param" "maybe type" "temp"
+                    (681775 'move' call_tmp[681772](256840 call chpl_compare v[256693] call_tmp[681767] comparator[256588]))
+                    unknown call_tmp[681777] "expr temp" "maybe param" "maybe type" "temp"
+                    (681780 'move' call_tmp[681777](256838 call < call_tmp[681772] 0))
+                    (527175 'move' tmp[527173](408661 call isTrue call_tmp[681777]))
+                    (527180 'move' tmp[527165](527177 '_paramFoldLogical' tmp[527166] tmp[527173]))
+                  }
+                  {
+                    (527185 'move' tmp[527165](527182 '_paramFoldLogical' tmp[527166] 0))
+                  }
+                  (256850 'move' tmp[256796](256830 call _cond_test tmp[527165]))
+                  WhileDo
+                  {
+                    {
+                      unknown call_tmp[681782] "expr temp" "maybe param" "maybe type" "temp"
+                      (681785 'move' call_tmp[681782](256779 call Data[256580] js[256684]))
+                      unknown call_tmp[681787] "expr temp" "maybe param" "maybe type" "temp"
+                      (681790 'move' call_tmp[681787](256783 call - js[256684] h[256918]))
+                      unknown call_tmp[681792] "expr temp" "maybe param" "maybe type" "temp"
+                      (681795 'move' call_tmp[681792](256786 call Data[256580] call_tmp[681787]))
+                      (256787 call = call_tmp[681782] call_tmp[681792])
+                      (256793 call -= js[256684] h[256918])
+                    }
+                    label _continueLabel[256799]
+                    unknown tmp[408636] "maybe param" "temp"
+                    (408647 'move' tmp[408636](256809 call >= js[256684] hs[256688]))
+                    unknown call_tmp[681797] "expr temp" "maybe param" "maybe type" "temp"
+                    (681800 'move' call_tmp[681797](408649 call _cond_invalid tmp[408636]))
+                    if call_tmp[681797]
+                    {
+                      (408652 call compilerError "cannot promote short-circuiting && operator")
+                    }
+                    unknown tmp[527192] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+                    unknown tmp[527193] "maybe param" "temp"
+                    unknown call_tmp[681802] "expr temp" "maybe param" "maybe type" "temp"
+                    (681805 'move' call_tmp[681802](408637 call isTrue tmp[408636]))
+                    (527198 'move' tmp[527193](527196 call _cond_test call_tmp[681802]))
+                    if tmp[527193]
+                    {
+                      unknown tmp[527200] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+                      unknown call_tmp[681807] "expr temp" "maybe param" "maybe type" "temp"
+                      (681810 'move' call_tmp[681807](256820 call - js[256684] h[256918]))
+                      unknown call_tmp[681812] "expr temp" "maybe param" "maybe type" "temp"
+                      (681815 'move' call_tmp[681812](256818 call Data[256580] call_tmp[681807]))
+                      unknown call_tmp[681817] "expr temp" "maybe param" "maybe type" "temp"
+                      (681820 'move' call_tmp[681817](256815 call chpl_compare v[256693] call_tmp[681812] comparator[256588]))
+                      unknown call_tmp[681822] "expr temp" "maybe param" "maybe type" "temp"
+                      (681825 'move' call_tmp[681822](256813 call < call_tmp[681817] 0))
+                      (527202 'move' tmp[527200](408640 call isTrue call_tmp[681822]))
+                      (527207 'move' tmp[527192](527204 '_paramFoldLogical' tmp[527193] tmp[527200]))
+                    }
+                    {
+                      (527212 'move' tmp[527192](527209 '_paramFoldLogical' tmp[527193] 0))
+                    }
+                    (256825 'move' tmp[256796](256805 call _cond_test tmp[527192]))
+                    tmp[256796]
+                  }
+                  label _breakLabel[256800]
+                }
+                unknown call_tmp[681827] "expr temp" "maybe param" "maybe type" "temp"
+                (681830 'move' call_tmp[681827](256856 call Data[256580] js[256684]))
+                (256858 call = call_tmp[681827] v[256693])
+              }
+              label _continueLabel[256866]
+              _indexOfInterest[256861]
+              _iterator[256862]
+            }
+            label _breakLabel[256867]
+          }
+        }
+        label _continueLabel[256904]
+        _indexOfInterest[256899]
+        _iterator[256900]
+      }
+      label _breakLabel[256905]
+    }
+    (486870 return _void[47])
+  }
+  (329627 'used modules list'(328346 'use' ChapelStandard[19734]))
+}

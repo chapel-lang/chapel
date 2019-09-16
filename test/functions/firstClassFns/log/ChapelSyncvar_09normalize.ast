@@ -1,0 +1,1657 @@
+AST dump for ChapelSyncvar after pass normalize.
+Module use list: ChapelStandard AlignedTSupport MemConsistency SyncVarRuntimeSupport 
+
+{
+  function chpl__init_ChapelSyncvar[390186]() : void[4] "insert line file info" "module init"
+  {
+    (490145 'init var' useNativeSyncVar[85346] 1)
+    (464107 return _void[47])
+  }
+  function isSupported[85162](arg t[85160]:_any[170](?)) param : _unknown[43] "private"
+  {
+    unknown ret[463667] "RVV" "param" "temp"
+    unknown tmp[397506] "maybe param" "temp"
+    unknown tmp[397527] "maybe param" "temp"
+    unknown tmp[397548] "maybe param" "temp"
+    unknown tmp[397569] "maybe param" "temp"
+    unknown tmp[397590] "maybe param" "temp"
+    unknown tmp[397611] "maybe param" "temp"
+    unknown tmp[397632] "maybe param" "temp"
+    unknown tmp[397653] "maybe param" "temp"
+    (397664 'move' tmp[397653](85167 call isNothingType t[85160]))
+    unknown call_tmp[578601] "expr temp" "maybe param" "maybe type" "temp"
+    (578604 'move' call_tmp[578601](397666 call _cond_invalid tmp[397653]))
+    if call_tmp[578601]
+    {
+      (397669 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509403] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509404] "maybe param" "temp"
+    unknown call_tmp[578606] "expr temp" "maybe param" "maybe type" "temp"
+    (578609 'move' call_tmp[578606](397654 call isTrue tmp[397653]))
+    (509409 'move' tmp[509404](509407 call _cond_test call_tmp[578606]))
+    if tmp[509404]
+    {
+      (509414 'move' tmp[509403](509411 '_paramFoldLogical' tmp[509404] 1))
+    }
+    {
+      unknown tmp[509416] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578611] "expr temp" "maybe param" "maybe type" "temp"
+      (578614 'move' call_tmp[578611](85171 call isBoolType t[85160]))
+      (509418 'move' tmp[509416](397658 call isTrue call_tmp[578611]))
+      (509423 'move' tmp[509403](509420 '_paramFoldLogical' tmp[509404] tmp[509416]))
+    }
+    (397643 'move' tmp[397632] tmp[509403])
+    unknown call_tmp[578616] "expr temp" "maybe param" "maybe type" "temp"
+    (578619 'move' call_tmp[578616](397645 call _cond_invalid tmp[397632]))
+    if call_tmp[578616]
+    {
+      (397648 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509430] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509431] "maybe param" "temp"
+    unknown call_tmp[578621] "expr temp" "maybe param" "maybe type" "temp"
+    (578624 'move' call_tmp[578621](397633 call isTrue tmp[397632]))
+    (509436 'move' tmp[509431](509434 call _cond_test call_tmp[578621]))
+    if tmp[509431]
+    {
+      (509441 'move' tmp[509430](509438 '_paramFoldLogical' tmp[509431] 1))
+    }
+    {
+      unknown tmp[509443] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578626] "expr temp" "maybe param" "maybe type" "temp"
+      (578629 'move' call_tmp[578626](85177 call isIntegralType t[85160]))
+      (509445 'move' tmp[509443](397637 call isTrue call_tmp[578626]))
+      (509450 'move' tmp[509430](509447 '_paramFoldLogical' tmp[509431] tmp[509443]))
+    }
+    (397622 'move' tmp[397611] tmp[509430])
+    unknown call_tmp[578631] "expr temp" "maybe param" "maybe type" "temp"
+    (578634 'move' call_tmp[578631](397624 call _cond_invalid tmp[397611]))
+    if call_tmp[578631]
+    {
+      (397627 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509457] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509458] "maybe param" "temp"
+    unknown call_tmp[578636] "expr temp" "maybe param" "maybe type" "temp"
+    (578639 'move' call_tmp[578636](397612 call isTrue tmp[397611]))
+    (509463 'move' tmp[509458](509461 call _cond_test call_tmp[578636]))
+    if tmp[509458]
+    {
+      (509468 'move' tmp[509457](509465 '_paramFoldLogical' tmp[509458] 1))
+    }
+    {
+      unknown tmp[509470] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578641] "expr temp" "maybe param" "maybe type" "temp"
+      (578644 'move' call_tmp[578641](85183 call isRealType t[85160]))
+      (509472 'move' tmp[509470](397616 call isTrue call_tmp[578641]))
+      (509477 'move' tmp[509457](509474 '_paramFoldLogical' tmp[509458] tmp[509470]))
+    }
+    (397601 'move' tmp[397590] tmp[509457])
+    unknown call_tmp[578646] "expr temp" "maybe param" "maybe type" "temp"
+    (578649 'move' call_tmp[578646](397603 call _cond_invalid tmp[397590]))
+    if call_tmp[578646]
+    {
+      (397606 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509484] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509485] "maybe param" "temp"
+    unknown call_tmp[578651] "expr temp" "maybe param" "maybe type" "temp"
+    (578654 'move' call_tmp[578651](397591 call isTrue tmp[397590]))
+    (509490 'move' tmp[509485](509488 call _cond_test call_tmp[578651]))
+    if tmp[509485]
+    {
+      (509495 'move' tmp[509484](509492 '_paramFoldLogical' tmp[509485] 1))
+    }
+    {
+      unknown tmp[509497] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578656] "expr temp" "maybe param" "maybe type" "temp"
+      (578659 'move' call_tmp[578656](85189 call isImagType t[85160]))
+      (509499 'move' tmp[509497](397595 call isTrue call_tmp[578656]))
+      (509504 'move' tmp[509484](509501 '_paramFoldLogical' tmp[509485] tmp[509497]))
+    }
+    (397580 'move' tmp[397569] tmp[509484])
+    unknown call_tmp[578661] "expr temp" "maybe param" "maybe type" "temp"
+    (578664 'move' call_tmp[578661](397582 call _cond_invalid tmp[397569]))
+    if call_tmp[578661]
+    {
+      (397585 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509511] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509512] "maybe param" "temp"
+    unknown call_tmp[578666] "expr temp" "maybe param" "maybe type" "temp"
+    (578669 'move' call_tmp[578666](397570 call isTrue tmp[397569]))
+    (509517 'move' tmp[509512](509515 call _cond_test call_tmp[578666]))
+    if tmp[509512]
+    {
+      (509522 'move' tmp[509511](509519 '_paramFoldLogical' tmp[509512] 1))
+    }
+    {
+      unknown tmp[509524] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578671] "expr temp" "maybe param" "maybe type" "temp"
+      (578674 'move' call_tmp[578671](85195 call isEnumType t[85160]))
+      (509526 'move' tmp[509524](397574 call isTrue call_tmp[578671]))
+      (509531 'move' tmp[509511](509528 '_paramFoldLogical' tmp[509512] tmp[509524]))
+    }
+    (397559 'move' tmp[397548] tmp[509511])
+    unknown call_tmp[578676] "expr temp" "maybe param" "maybe type" "temp"
+    (578679 'move' call_tmp[578676](397561 call _cond_invalid tmp[397548]))
+    if call_tmp[578676]
+    {
+      (397564 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509538] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509539] "maybe param" "temp"
+    unknown call_tmp[578681] "expr temp" "maybe param" "maybe type" "temp"
+    (578684 'move' call_tmp[578681](397549 call isTrue tmp[397548]))
+    (509544 'move' tmp[509539](509542 call _cond_test call_tmp[578681]))
+    if tmp[509539]
+    {
+      (509549 'move' tmp[509538](509546 '_paramFoldLogical' tmp[509539] 1))
+    }
+    {
+      unknown tmp[509551] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578686] "expr temp" "maybe param" "maybe type" "temp"
+      (578689 'move' call_tmp[578686](85201 call isClassType t[85160]))
+      (509553 'move' tmp[509551](397553 call isTrue call_tmp[578686]))
+      (509558 'move' tmp[509538](509555 '_paramFoldLogical' tmp[509539] tmp[509551]))
+    }
+    (397538 'move' tmp[397527] tmp[509538])
+    unknown call_tmp[578691] "expr temp" "maybe param" "maybe type" "temp"
+    (578694 'move' call_tmp[578691](397540 call _cond_invalid tmp[397527]))
+    if call_tmp[578691]
+    {
+      (397543 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509565] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509566] "maybe param" "temp"
+    unknown call_tmp[578696] "expr temp" "maybe param" "maybe type" "temp"
+    (578699 'move' call_tmp[578696](397528 call isTrue tmp[397527]))
+    (509571 'move' tmp[509566](509569 call _cond_test call_tmp[578696]))
+    if tmp[509566]
+    {
+      (509576 'move' tmp[509565](509573 '_paramFoldLogical' tmp[509566] 1))
+    }
+    {
+      unknown tmp[509578] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578701] "expr temp" "maybe param" "maybe type" "temp"
+      (578704 'move' call_tmp[578701](85207 call isStringType t[85160]))
+      (509580 'move' tmp[509578](397532 call isTrue call_tmp[578701]))
+      (509585 'move' tmp[509565](509582 '_paramFoldLogical' tmp[509566] tmp[509578]))
+    }
+    (397517 'move' tmp[397506] tmp[509565])
+    unknown call_tmp[578706] "expr temp" "maybe param" "maybe type" "temp"
+    (578709 'move' call_tmp[578706](397519 call _cond_invalid tmp[397506]))
+    if call_tmp[578706]
+    {
+      (397522 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown tmp[509592] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509593] "maybe param" "temp"
+    unknown call_tmp[578711] "expr temp" "maybe param" "maybe type" "temp"
+    (578714 'move' call_tmp[578711](397507 call isTrue tmp[397506]))
+    (509598 'move' tmp[509593](509596 call _cond_test call_tmp[578711]))
+    if tmp[509593]
+    {
+      (509603 'move' tmp[509592](509600 '_paramFoldLogical' tmp[509593] 1))
+    }
+    {
+      unknown tmp[509605] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578716] "expr temp" "maybe param" "maybe type" "temp"
+      (578719 'move' call_tmp[578716](85212 call == t[85160] chpl_taskID_t[155]))
+      (509607 'move' tmp[509605](397511 call isTrue call_tmp[578716]))
+      (509612 'move' tmp[509592](509609 '_paramFoldLogical' tmp[509593] tmp[509605]))
+    }
+    (463672 'move' ret[463667](463671 'deref' tmp[509592]))
+    (463669 return ret[463667])
+  }
+  function ensureFEType[85225](arg t[85223]:_any[170](?)) : _unknown[43] "private" "no return value for void"
+  {
+    unknown call_tmp[578721] "expr temp" "maybe param" "maybe type" "temp"
+    (578724 'move' call_tmp[578721](85230 call isSupported t[85223]))
+    unknown call_tmp[578726] "expr temp" "maybe param" "maybe type" "temp"
+    (578729 'move' call_tmp[578726](85232 call == call_tmp[578721] 0))
+    unknown call_tmp[578731] "expr temp" "maybe param" "maybe type" "temp"
+    (578734 'move' call_tmp[578731](85274 call _cond_test call_tmp[578726]))
+    if call_tmp[578731]
+    {
+      unknown call_tmp[578736] "expr temp" "maybe param" "maybe type" "temp"
+      (578739 'move' call_tmp[578736](85254 call _cast string[24] t[85223]))
+      (85272 call compilerError "sync/single types cannot contain type '" call_tmp[578736] "'")
+    }
+    unknown tmp[397674] "maybe param" "temp"
+    (397685 'move' tmp[397674](85281 call ! 0))
+    unknown call_tmp[578741] "expr temp" "maybe param" "maybe type" "temp"
+    (578744 'move' call_tmp[578741](397687 call _cond_invalid tmp[397674]))
+    if call_tmp[578741]
+    {
+      (397690 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[509619] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509620] "maybe param" "temp"
+    unknown call_tmp[578746] "expr temp" "maybe param" "maybe type" "temp"
+    (578749 'move' call_tmp[578746](397675 call isTrue tmp[397674]))
+    (509625 'move' tmp[509620](509623 call _cond_test call_tmp[578746]))
+    if tmp[509620]
+    {
+      unknown tmp[509627] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578751] "expr temp" "maybe param" "maybe type" "temp"
+      (578754 'move' call_tmp[578751](85286 call isNonNilableClass t[85223]))
+      (509629 'move' tmp[509627](397678 call isTrue call_tmp[578751]))
+      (509634 'move' tmp[509619](509631 '_paramFoldLogical' tmp[509620] tmp[509627]))
+    }
+    {
+      (509639 'move' tmp[509619](509636 '_paramFoldLogical' tmp[509620] 0))
+    }
+    unknown call_tmp[578756] "expr temp" "maybe param" "maybe type" "temp"
+    (578759 'move' call_tmp[578756](85309 call _cond_test tmp[509619]))
+    if call_tmp[578756]
+    {
+      (85307 call compilerError "sync/single types cannot contain non-nilable classes")
+    }
+    unknown call_tmp[578761] "expr temp" "maybe param" "maybe type" "temp"
+    (578764 'move' call_tmp[578761](85317 call isGenericType t[85223]))
+    unknown call_tmp[578766] "expr temp" "maybe param" "maybe type" "temp"
+    (578769 'move' call_tmp[578766](85338 call _cond_test call_tmp[578761]))
+    if call_tmp[578766]
+    {
+      (85336 call compilerError "sync/single types cannot contain generic types")
+    }
+    (463674 return _void[47])
+  }
+  unknown useNativeSyncVar[85346] "config" "no doc" "param"
+  function getSyncClassType[85353](arg valType[85351]:_any[170](?)) type : _unknown[43] "private"
+  {
+    unknown ret[463678] "RVV" "temp" "type variable"
+    unknown tmp[397695] "maybe param" "temp"
+    (397706 'move' tmp[397695] useNativeSyncVar[85346])
+    unknown call_tmp[578771] "expr temp" "maybe param" "maybe type" "temp"
+    (578774 'move' call_tmp[578771](397708 call _cond_invalid tmp[397695]))
+    if call_tmp[578771]
+    {
+      (397711 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[509646] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[509647] "maybe param" "temp"
+    unknown call_tmp[578776] "expr temp" "maybe param" "maybe type" "temp"
+    (578779 'move' call_tmp[578776](397696 call isTrue tmp[397695]))
+    (509652 'move' tmp[509647](509650 call _cond_test call_tmp[578776]))
+    if tmp[509647]
+    {
+      unknown tmp[509654] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[578781] "expr temp" "maybe param" "maybe type" "temp"
+      (578784 'move' call_tmp[578781](85359 call supportsNativeSyncVar valType[85351]))
+      (509656 'move' tmp[509654](397699 call isTrue call_tmp[578781]))
+      (509661 'move' tmp[509646](509658 '_paramFoldLogical' tmp[509647] tmp[509654]))
+    }
+    {
+      (509666 'move' tmp[509646](509663 '_paramFoldLogical' tmp[509647] 0))
+    }
+    unknown call_tmp[578786] "expr temp" "maybe param" "maybe type" "temp"
+    (578789 'move' call_tmp[578786](85378 call _cond_test tmp[509646]))
+    if call_tmp[578786]
+    {
+      unknown call_tmp[578791] "expr temp" "maybe param" "maybe type" "temp"
+      (578794 'move' call_tmp[578791](85365 call anymanaged _qthreads_synccls[344522](?) valType[85351]))
+      unknown call_tmp[578796] "expr temp" "maybe param" "maybe type" "temp"
+      (578799 'move' call_tmp[578796](85366 'to unmanaged class from unknown' call_tmp[578791]))
+      (463683 'move' ret[463678](463682 'deref' call_tmp[578796]))
+      gotoReturn _end_getSyncClassType[463676] _end_getSyncClassType[463676]
+    }
+    {
+      unknown call_tmp[578801] "expr temp" "maybe param" "maybe type" "temp"
+      (578804 'move' call_tmp[578801](85373 call anymanaged _synccls[344527](?) valType[85351]))
+      unknown call_tmp[578806] "expr temp" "maybe param" "maybe type" "temp"
+      (578809 'move' call_tmp[578806](85374 'to unmanaged class from unknown' call_tmp[578801]))
+      (463688 'move' ret[463678](463687 'deref' call_tmp[578806]))
+      gotoReturn _end_getSyncClassType[463676] _end_getSyncClassType[463676]
+    }
+    label _end_getSyncClassType[463676]
+    (463680 return ret[463678])
+  }
+  function chpl__readXX[85389](arg x[85387]:_any[170](?)) : _unknown[43] "no doc"
+  {
+    unknown ret[463694] "RVV" "temp"
+    (463699 'move' ret[463694](463698 'deref' x[85387]))
+    (463696 return ret[463694])
+  }
+  function _syncvar[85613](?).init[85417](arg _mt[85617]:_MT[227], ref arg this[85615]:_syncvar[85613](?), arg valType[85415]:_any[170](?)) : void[4] "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    (85422 call ensureFEType valType[85415])
+    unknown tmp[434963] "temp" "type variable"
+    (434965 'move' tmp[434963] valType[85415])
+    (434967 'init field' this[85615] c"valType" tmp[434963])
+    unknown call_tmp[578811] "expr temp" "maybe param" "maybe type" "temp"
+    (578814 'move' call_tmp[578811](85444 call getSyncClassType valType[85415]))
+    unknown call_tmp[578816] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (578819 'move' call_tmp[578816](691371 'new' call_tmp[578811]))
+    unknown call_tmp[578821] "expr temp" "maybe param" "maybe type" "temp"
+    (578824 'move' call_tmp[578821](434982 '.v' this[85615] c"valType"))
+    unknown call_tmp[578826] "maybe param" "maybe type" "temp"
+    (578829 'move' call_tmp[578826](434974 call getSyncClassType call_tmp[578821]))
+    unknown tmp[434971] "temp"
+    (434976 'init var' tmp[434971] call_tmp[578816] call_tmp[578826])
+    (434978 'init field' this[85615] c"wrapped" tmp[434971])
+    unknown tmp[434987] "temp"
+    (434990 'init var' tmp[434987] 1 bool[10])
+    (434992 'init field' this[85615] c"isOwned" tmp[434987])
+    (463701 return _void[47])
+  }
+  function _syncvar[85613](?).init[85459](arg _mt[85621]:_MT[227], ref arg this[85619]:_syncvar[85613](?), const arg other[85456]:_syncvar[85613](?)) : void[4] "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown tmp[434996] "temp" "type variable"
+    (434998 'move' tmp[434996](85466 call valType _mt[232] other[85456]))
+    (435000 'init field' this[85619] c"valType" tmp[434996])
+    unknown call_tmp[578835] "maybe param" "maybe type" "temp"
+    (578838 'move' call_tmp[578835](85478 call wrapped _mt[232] other[85456]))
+    unknown call_tmp[578840] "expr temp" "maybe param" "maybe type" "temp"
+    (578843 'move' call_tmp[578840](435015 '.v' this[85619] c"valType"))
+    unknown call_tmp[578845] "maybe param" "maybe type" "temp"
+    (578848 'move' call_tmp[578845](435007 call getSyncClassType call_tmp[578840]))
+    unknown tmp[435004] "temp"
+    (435009 'init var' tmp[435004] call_tmp[578835] call_tmp[578845])
+    (435011 'init field' this[85619] c"wrapped" tmp[435004])
+    unknown tmp[435018] "temp"
+    (435021 'init var' tmp[435018] 0 bool[10])
+    (435023 'init field' this[85619] c"isOwned" tmp[435018])
+    (463703 return _void[47])
+  }
+  function _syncvar[85613](?).init=[85505](arg _mt[85625]:_MT[227], ref arg this[85623]:_syncvar[85613](?), const arg other[85502] :
+  (85499 call valType _mt[232] this[85623])) : void[4] "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578854] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (578857 'move' call_tmp[578854](85512 'typeof' other[85502]))
+    (85514 call(85508 call (partial) init _mt[232] this[85623]) call_tmp[578854])
+    (85525 call(85520 call (partial) writeEF _mt[232] this[85623]) other[85502])
+    (463705 return _void[47])
+  }
+  function _syncvar[85613](?).deinit[85531](arg _mt[85629]:_MT[227], arg this[85627]:_syncvar[85613](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[578863] "expr temp" "maybe param" "maybe type" "temp"
+    (578866 'move' call_tmp[578863](344551 call isOwned _mt[232] this[85627]))
+    unknown call_tmp[578868] "expr temp" "maybe param" "maybe type" "temp"
+    (578871 'move' call_tmp[578868](85535 call == call_tmp[578863] 1))
+    unknown call_tmp[578873] "expr temp" "maybe param" "maybe type" "temp"
+    (578876 'move' call_tmp[578873](85542 call _cond_test call_tmp[578868]))
+    if call_tmp[578873]
+    {
+      unknown call_tmp[578880] "expr temp" "maybe param" "maybe type" "temp"
+      (578883 'move' call_tmp[578880](344556 call wrapped _mt[232] this[85627]))
+      (85539 call chpl__delete call_tmp[578880])
+    }
+    (463707 return _void[47])
+  }
+  function _syncvar[85613](?).readThis[85554](arg _mt[85633]:_MT[227], arg this[85631]:_syncvar[85613](?), arg x[85552]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (85576 call compilerError "sync variables cannot currently be read - use writeEF/writeFF instead")
+    (463709 return _void[47])
+  }
+  function _syncvar[85613](?).writeThis[85585](arg _mt[85637]:_MT[227], arg this[85635]:_syncvar[85613](?), arg x[85583]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (85607 call compilerError "sync variables cannot currently be written - apply readFE/readFF() to those variables first")
+    (463711 return _void[47])
+  }
+  sync type _syncvar[85613](?) unknown valType[85398] "type variable" unknown wrapped[85405](85404 call getSyncClassType valType[85398]) val isOwned[85410]:bool[10] 1 bool[10]
+  function isSyncType[85646](arg t[85643]:_syncvar[85613](?)) param : _unknown[43] "no doc"
+  {
+    unknown ret[463715] "RVV" "param" "temp"
+    (463720 'move' ret[463715](463719 'deref' 1))
+    (463717 return ret[463715])
+  }
+  function isSyncType[85658](arg t[85656]:_any[170](?)) param : _unknown[43]
+  {
+    unknown ret[463724] "RVV" "param" "temp"
+    (463729 'move' ret[463724](463728 'deref' 0))
+    (463726 return ret[463724])
+  }
+  function _syncvar[85613](?).readFE[85669](arg _mt[85674]:_MT[227], arg this[85671]:_syncvar[85613](?) :
+  _syncvar[85613](?)) : _unknown[43] "method"
+  {
+    unknown ret[463733] "RVV" "temp"
+    unknown call_tmp[578887] "expr temp" "maybe param" "maybe type" "temp"
+    (578890 'move' call_tmp[578887](344562 call wrapped _mt[232] this[85671]))
+    unknown call_tmp[578894] "expr temp" "maybe param" "maybe type" "temp"
+    (578897 'move' call_tmp[578894](85681 call(85677 call (partial) readFE _mt[232] call_tmp[578887])))
+    (463738 'move' ret[463733](463737 'deref' call_tmp[578894]))
+    (463735 return ret[463733])
+  }
+  function _syncvar[85613](?).readFF[85690](arg _mt[85695]:_MT[227], arg this[85692]:_syncvar[85613](?) :
+  _syncvar[85613](?)) : _unknown[43] "method"
+  {
+    unknown ret[463742] "RVV" "temp"
+    unknown call_tmp[578901] "expr temp" "maybe param" "maybe type" "temp"
+    (578904 'move' call_tmp[578901](344567 call wrapped _mt[232] this[85692]))
+    unknown call_tmp[578908] "expr temp" "maybe param" "maybe type" "temp"
+    (578911 'move' call_tmp[578908](85702 call(85698 call (partial) readFF _mt[232] call_tmp[578901])))
+    (463747 'move' ret[463742](463746 'deref' call_tmp[578908]))
+    (463744 return ret[463742])
+  }
+  function _syncvar[85613](?).readXX[85711](arg _mt[85716]:_MT[227], arg this[85713]:_syncvar[85613](?) :
+  _syncvar[85613](?)) : _unknown[43] "method"
+  {
+    unknown ret[463751] "RVV" "temp"
+    (85720 call chpl_task_yield)
+    unknown call_tmp[578915] "expr temp" "maybe param" "maybe type" "temp"
+    (578918 'move' call_tmp[578915](344572 call wrapped _mt[232] this[85713]))
+    unknown call_tmp[578922] "expr temp" "maybe param" "maybe type" "temp"
+    (578925 'move' call_tmp[578922](85730 call(85726 call (partial) readXX _mt[232] call_tmp[578915])))
+    (463756 'move' ret[463751](463755 'deref' call_tmp[578922]))
+    (463753 return ret[463751])
+  }
+  function _syncvar[85613](?).writeEF[85742](arg _mt[85747]:_MT[227], arg this[85744]:_syncvar[85613](?) :
+  _syncvar[85613](?), arg x[85739] :
+  (344577 call valType _mt[232] this[85744])) : _unknown[43] "method" "no return value for void"
+  {
+    unknown call_tmp[578931] "expr temp" "maybe param" "maybe type" "temp"
+    (578934 'move' call_tmp[578931](344582 call wrapped _mt[232] this[85744]))
+    (85755 call(85750 call (partial) writeEF _mt[232] call_tmp[578931]) x[85739])
+    (463758 return _void[47])
+  }
+  function _syncvar[85613](?).writeFF[85767](arg _mt[85772]:_MT[227], arg this[85769]:_syncvar[85613](?) :
+  _syncvar[85613](?), arg x[85764] :
+  (344588 call valType _mt[232] this[85769])) : _unknown[43] "method" "no return value for void"
+  {
+    unknown call_tmp[578942] "expr temp" "maybe param" "maybe type" "temp"
+    (578945 'move' call_tmp[578942](344593 call wrapped _mt[232] this[85769]))
+    (85782 call(85777 call (partial) writeFF _mt[232] call_tmp[578942]) x[85764])
+    (463760 return _void[47])
+  }
+  function _syncvar[85613](?).writeXF[85794](arg _mt[85799]:_MT[227], arg this[85796]:_syncvar[85613](?) :
+  _syncvar[85613](?), arg x[85791] :
+  (344599 call valType _mt[232] this[85796])) : _unknown[43] "method" "no return value for void"
+  {
+    unknown call_tmp[578953] "expr temp" "maybe param" "maybe type" "temp"
+    (578956 'move' call_tmp[578953](344604 call wrapped _mt[232] this[85796]))
+    (85809 call(85804 call (partial) writeXF _mt[232] call_tmp[578953]) x[85791])
+    (463762 return _void[47])
+  }
+  function _syncvar[85613](?).reset[85817](arg _mt[85822]:_MT[227], arg this[85819]:_syncvar[85613](?) :
+  _syncvar[85613](?)) : _unknown[43] "method" "no return value for void"
+  {
+    unknown call_tmp[578962] "expr temp" "maybe param" "maybe type" "temp"
+    (578965 'move' call_tmp[578962](344610 call wrapped _mt[232] this[85819]))
+    (85831 call(85827 call (partial) reset _mt[232] call_tmp[578962]))
+    (463764 return _void[47])
+  }
+  function _syncvar[85613](?).isFull[85839](arg _mt[85844]:_MT[227], arg this[85841]:_syncvar[85613](?) :
+  _syncvar[85613](?)) : _unknown[43] "method" "no parens"
+  {
+    unknown ret[463768] "RVV" "temp"
+    unknown call_tmp[578971] "expr temp" "maybe param" "maybe type" "temp"
+    (578974 'move' call_tmp[578971](344615 call wrapped _mt[232] this[85841]))
+    unknown call_tmp[578978] "expr temp" "maybe param" "maybe type" "temp"
+    (578981 'move' call_tmp[578978](85849 call isFull _mt[232] call_tmp[578971]))
+    (463773 'move' ret[463768](463772 'deref' call_tmp[578978]))
+    (463770 return ret[463768])
+  }
+  function =[85867](ref arg lhs[85864]:_syncvar[85613](?), arg rhs[85870] :
+  (435032 'query' lhs[85864] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[578985] "expr temp" "maybe param" "maybe type" "temp"
+    (578988 'move' call_tmp[578985](85874 call wrapped _mt[232] lhs[85864]))
+    (85882 call(85877 call (partial) writeEF _mt[232] call_tmp[578985]) rhs[85870])
+    (463775 return _void[47])
+  }
+  function +=[85897](ref arg lhs[85894]:_syncvar[85613](?), arg rhs[85900] :
+  (435041 'query' lhs[85894] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[578994] "expr temp" "maybe param" "maybe type" "temp"
+    (578997 'move' call_tmp[578994](85904 call wrapped _mt[232] lhs[85894]))
+    unknown call_tmp[579003] "expr temp" "maybe param" "maybe type" "temp"
+    (579006 'move' call_tmp[579003](85911 call wrapped _mt[232] lhs[85894]))
+    unknown call_tmp[579010] "expr temp" "maybe param" "maybe type" "temp"
+    (579013 'move' call_tmp[579010](85918 call(85914 call (partial) readFE _mt[232] call_tmp[579003])))
+    unknown call_tmp[579015] "expr temp" "maybe param" "maybe type" "temp"
+    (579018 'move' call_tmp[579015](85920 call + call_tmp[579010] rhs[85900]))
+    (85923 call(85907 call (partial) writeEF _mt[232] call_tmp[578994]) call_tmp[579015])
+    (463777 return _void[47])
+  }
+  function -=[85938](ref arg lhs[85935]:_syncvar[85613](?), arg rhs[85941] :
+  (435050 'query' lhs[85935] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579022] "expr temp" "maybe param" "maybe type" "temp"
+    (579025 'move' call_tmp[579022](85945 call wrapped _mt[232] lhs[85935]))
+    unknown call_tmp[579031] "expr temp" "maybe param" "maybe type" "temp"
+    (579034 'move' call_tmp[579031](85952 call wrapped _mt[232] lhs[85935]))
+    unknown call_tmp[579038] "expr temp" "maybe param" "maybe type" "temp"
+    (579041 'move' call_tmp[579038](85959 call(85955 call (partial) readFE _mt[232] call_tmp[579031])))
+    unknown call_tmp[579043] "expr temp" "maybe param" "maybe type" "temp"
+    (579046 'move' call_tmp[579043](85961 call - call_tmp[579038] rhs[85941]))
+    (85964 call(85948 call (partial) writeEF _mt[232] call_tmp[579022]) call_tmp[579043])
+    (463779 return _void[47])
+  }
+  function *=[85979](ref arg lhs[85976]:_syncvar[85613](?), arg rhs[85982] :
+  (435059 'query' lhs[85976] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579050] "expr temp" "maybe param" "maybe type" "temp"
+    (579053 'move' call_tmp[579050](85986 call wrapped _mt[232] lhs[85976]))
+    unknown call_tmp[579059] "expr temp" "maybe param" "maybe type" "temp"
+    (579062 'move' call_tmp[579059](85993 call wrapped _mt[232] lhs[85976]))
+    unknown call_tmp[579066] "expr temp" "maybe param" "maybe type" "temp"
+    (579069 'move' call_tmp[579066](86000 call(85996 call (partial) readFE _mt[232] call_tmp[579059])))
+    unknown call_tmp[579071] "expr temp" "maybe param" "maybe type" "temp"
+    (579074 'move' call_tmp[579071](86002 call * call_tmp[579066] rhs[85982]))
+    (86005 call(85989 call (partial) writeEF _mt[232] call_tmp[579050]) call_tmp[579071])
+    (463781 return _void[47])
+  }
+  function /=[86020](ref arg lhs[86017]:_syncvar[85613](?), arg rhs[86023] :
+  (435068 'query' lhs[86017] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579078] "expr temp" "maybe param" "maybe type" "temp"
+    (579081 'move' call_tmp[579078](86027 call wrapped _mt[232] lhs[86017]))
+    unknown call_tmp[579087] "expr temp" "maybe param" "maybe type" "temp"
+    (579090 'move' call_tmp[579087](86034 call wrapped _mt[232] lhs[86017]))
+    unknown call_tmp[579094] "expr temp" "maybe param" "maybe type" "temp"
+    (579097 'move' call_tmp[579094](86041 call(86037 call (partial) readFE _mt[232] call_tmp[579087])))
+    unknown call_tmp[579099] "expr temp" "maybe param" "maybe type" "temp"
+    (579102 'move' call_tmp[579099](86043 call / call_tmp[579094] rhs[86023]))
+    (86046 call(86030 call (partial) writeEF _mt[232] call_tmp[579078]) call_tmp[579099])
+    (463783 return _void[47])
+  }
+  function %=[86061](ref arg lhs[86058]:_syncvar[85613](?), arg rhs[86064] :
+  (435077 'query' lhs[86058] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579106] "expr temp" "maybe param" "maybe type" "temp"
+    (579109 'move' call_tmp[579106](86068 call wrapped _mt[232] lhs[86058]))
+    unknown call_tmp[579115] "expr temp" "maybe param" "maybe type" "temp"
+    (579118 'move' call_tmp[579115](86075 call wrapped _mt[232] lhs[86058]))
+    unknown call_tmp[579122] "expr temp" "maybe param" "maybe type" "temp"
+    (579125 'move' call_tmp[579122](86082 call(86078 call (partial) readFE _mt[232] call_tmp[579115])))
+    unknown call_tmp[579127] "expr temp" "maybe param" "maybe type" "temp"
+    (579130 'move' call_tmp[579127](86084 call % call_tmp[579122] rhs[86064]))
+    (86087 call(86071 call (partial) writeEF _mt[232] call_tmp[579106]) call_tmp[579127])
+    (463785 return _void[47])
+  }
+  function **=[86102](ref arg lhs[86099]:_syncvar[85613](?), arg rhs[86105] :
+  (435086 'query' lhs[86099] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579134] "expr temp" "maybe param" "maybe type" "temp"
+    (579137 'move' call_tmp[579134](86109 call wrapped _mt[232] lhs[86099]))
+    unknown call_tmp[579143] "expr temp" "maybe param" "maybe type" "temp"
+    (579146 'move' call_tmp[579143](86116 call wrapped _mt[232] lhs[86099]))
+    unknown call_tmp[579150] "expr temp" "maybe param" "maybe type" "temp"
+    (579153 'move' call_tmp[579150](86123 call(86119 call (partial) readFE _mt[232] call_tmp[579143])))
+    unknown call_tmp[579155] "expr temp" "maybe param" "maybe type" "temp"
+    (579158 'move' call_tmp[579155](86125 call ** call_tmp[579150] rhs[86105]))
+    (86128 call(86112 call (partial) writeEF _mt[232] call_tmp[579134]) call_tmp[579155])
+    (463787 return _void[47])
+  }
+  function &=[86143](ref arg lhs[86140]:_syncvar[85613](?), arg rhs[86146] :
+  (435095 'query' lhs[86140] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579162] "expr temp" "maybe param" "maybe type" "temp"
+    (579165 'move' call_tmp[579162](86150 call wrapped _mt[232] lhs[86140]))
+    unknown call_tmp[579171] "expr temp" "maybe param" "maybe type" "temp"
+    (579174 'move' call_tmp[579171](86157 call wrapped _mt[232] lhs[86140]))
+    unknown call_tmp[579178] "expr temp" "maybe param" "maybe type" "temp"
+    (579181 'move' call_tmp[579178](86164 call(86160 call (partial) readFE _mt[232] call_tmp[579171])))
+    unknown call_tmp[579183] "expr temp" "maybe param" "maybe type" "temp"
+    (579186 'move' call_tmp[579183](86166 call & call_tmp[579178] rhs[86146]))
+    (86169 call(86153 call (partial) writeEF _mt[232] call_tmp[579162]) call_tmp[579183])
+    (463789 return _void[47])
+  }
+  function |=[86184](ref arg lhs[86181]:_syncvar[85613](?), arg rhs[86187] :
+  (435104 'query' lhs[86181] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579190] "expr temp" "maybe param" "maybe type" "temp"
+    (579193 'move' call_tmp[579190](86191 call wrapped _mt[232] lhs[86181]))
+    unknown call_tmp[579199] "expr temp" "maybe param" "maybe type" "temp"
+    (579202 'move' call_tmp[579199](86198 call wrapped _mt[232] lhs[86181]))
+    unknown call_tmp[579206] "expr temp" "maybe param" "maybe type" "temp"
+    (579209 'move' call_tmp[579206](86205 call(86201 call (partial) readFE _mt[232] call_tmp[579199])))
+    unknown call_tmp[579211] "expr temp" "maybe param" "maybe type" "temp"
+    (579214 'move' call_tmp[579211](86207 call | call_tmp[579206] rhs[86187]))
+    (86210 call(86194 call (partial) writeEF _mt[232] call_tmp[579190]) call_tmp[579211])
+    (463791 return _void[47])
+  }
+  function ^=[86225](ref arg lhs[86222]:_syncvar[85613](?), arg rhs[86228] :
+  (435113 'query' lhs[86222] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579218] "expr temp" "maybe param" "maybe type" "temp"
+    (579221 'move' call_tmp[579218](86232 call wrapped _mt[232] lhs[86222]))
+    unknown call_tmp[579227] "expr temp" "maybe param" "maybe type" "temp"
+    (579230 'move' call_tmp[579227](86239 call wrapped _mt[232] lhs[86222]))
+    unknown call_tmp[579234] "expr temp" "maybe param" "maybe type" "temp"
+    (579237 'move' call_tmp[579234](86246 call(86242 call (partial) readFE _mt[232] call_tmp[579227])))
+    unknown call_tmp[579239] "expr temp" "maybe param" "maybe type" "temp"
+    (579242 'move' call_tmp[579239](86248 call ^ call_tmp[579234] rhs[86228]))
+    (86251 call(86235 call (partial) writeEF _mt[232] call_tmp[579218]) call_tmp[579239])
+    (463793 return _void[47])
+  }
+  function >>=[86266](ref arg lhs[86263]:_syncvar[85613](?), arg rhs[86269] :
+  (435122 'query' lhs[86263] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579246] "expr temp" "maybe param" "maybe type" "temp"
+    (579249 'move' call_tmp[579246](86273 call wrapped _mt[232] lhs[86263]))
+    unknown call_tmp[579255] "expr temp" "maybe param" "maybe type" "temp"
+    (579258 'move' call_tmp[579255](86280 call wrapped _mt[232] lhs[86263]))
+    unknown call_tmp[579262] "expr temp" "maybe param" "maybe type" "temp"
+    (579265 'move' call_tmp[579262](86287 call(86283 call (partial) readFE _mt[232] call_tmp[579255])))
+    unknown call_tmp[579267] "expr temp" "maybe param" "maybe type" "temp"
+    (579270 'move' call_tmp[579267](86289 call >> call_tmp[579262] rhs[86269]))
+    (86292 call(86276 call (partial) writeEF _mt[232] call_tmp[579246]) call_tmp[579267])
+    (463795 return _void[47])
+  }
+  function <<=[86307](ref arg lhs[86304]:_syncvar[85613](?), arg rhs[86310] :
+  (435131 'query' lhs[86304] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[579274] "expr temp" "maybe param" "maybe type" "temp"
+    (579277 'move' call_tmp[579274](86314 call wrapped _mt[232] lhs[86304]))
+    unknown call_tmp[579283] "expr temp" "maybe param" "maybe type" "temp"
+    (579286 'move' call_tmp[579283](86321 call wrapped _mt[232] lhs[86304]))
+    unknown call_tmp[579290] "expr temp" "maybe param" "maybe type" "temp"
+    (579293 'move' call_tmp[579290](86328 call(86324 call (partial) readFE _mt[232] call_tmp[579283])))
+    unknown call_tmp[579295] "expr temp" "maybe param" "maybe type" "temp"
+    (579298 'move' call_tmp[579295](86330 call << call_tmp[579290] rhs[86310]))
+    (86333 call(86317 call (partial) writeEF _mt[232] call_tmp[579274]) call_tmp[579295])
+    (463797 return _void[47])
+  }
+  function chpl__initCopy[86348](ref arg sv[86345]:_syncvar[85613](?)) : _unknown[43] "init copy fn"
+  {
+    unknown ret[463801] "RVV" "temp"
+    unknown call_tmp[579302] "expr temp" "maybe param" "maybe type" "temp"
+    (579305 'move' call_tmp[579302](86355 call(86351 call (partial) readFE _mt[232] sv[86345])))
+    (463806 'move' ret[463801](463805 'deref' call_tmp[579302]))
+    (463803 return ret[463801])
+  }
+  function chpl__autoCopy[86367](const  ref arg rhs[86364]:_syncvar[85613](?)) : _unknown[43] "auto copy fn" "no doc"
+  {
+    unknown ret[463810] "RVV" "temp"
+    unknown call_tmp[579307] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (579310 'move' call_tmp[579307](691372 'new' _syncvar[85613](?) rhs[86364]))
+    (463815 'move' ret[463810](463814 'deref' call_tmp[579307]))
+    (463812 return ret[463810])
+  }
+  function chpl__maybeAutoDestroyed[86389](arg x[86386]:_syncvar[85613](?)) param : _unknown[43] "inline"
+  {
+    unknown ret[463819] "RVV" "param" "temp"
+    (463824 'move' ret[463819](463823 'deref' 1))
+    (463821 return ret[463819])
+  }
+  function chpl__autoDestroy[86406](arg x[86403]:_syncvar[85613](?)) : _unknown[43] "inline" "no return value for void"
+  {
+    unknown call_tmp[579314] "expr temp" "maybe param" "maybe type" "temp"
+    (579317 'move' call_tmp[579314](86409 call isOwned _mt[232] x[86403]))
+    unknown call_tmp[579319] "expr temp" "maybe param" "maybe type" "temp"
+    (579322 'move' call_tmp[579319](86413 call == call_tmp[579314] 1))
+    unknown call_tmp[579324] "expr temp" "maybe param" "maybe type" "temp"
+    (579327 'move' call_tmp[579324](86423 call _cond_test call_tmp[579319]))
+    if call_tmp[579324]
+    {
+      unknown call_tmp[579331] "expr temp" "maybe param" "maybe type" "temp"
+      (579334 'move' call_tmp[579331](86416 call wrapped _mt[232] x[86403]))
+      (86420 call chpl__delete call_tmp[579331])
+    }
+    (463826 return _void[47])
+  }
+  function chpl__readXX[86440](const  ref arg x[86437]:_syncvar[85613](?)) : _unknown[43] "no doc"
+  {
+    unknown ret[463830] "RVV" "temp"
+    unknown call_tmp[579338] "expr temp" "maybe param" "maybe type" "temp"
+    (579341 'move' call_tmp[579338](86447 call(86443 call (partial) readXX _mt[232] x[86437])))
+    (463835 'move' ret[463830](463834 'deref' call_tmp[579338]))
+    (463832 return ret[463830])
+  }
+  function <=>[86459](arg lhs[86456]:_syncvar[85613](?), ref arg rhs[86461]:_any[170](?)) : _unknown[43] "no return value for void"
+  {
+    const tmp[86464] "const" "insert auto destroy"
+    (490147 'init var' tmp[86464] lhs[86456])
+    (86470 call = lhs[86456] rhs[86461])
+    (86475 call = rhs[86461] tmp[86464])
+    (463837 return _void[47])
+  }
+  function <=>[86484](ref arg lhs[86482]:_any[170](?), arg rhs[86487]:_syncvar[85613](?)) : _unknown[43] "no return value for void"
+  {
+    const tmp[86491] "const" "insert auto destroy"
+    (490149 'init var' tmp[86491] lhs[86482])
+    (86497 call = lhs[86482] rhs[86487])
+    (86502 call = rhs[86487] tmp[86491])
+    (463839 return _void[47])
+  }
+  function <=>[86513](arg lhs[86510]:_syncvar[85613](?), arg rhs[86516]:_syncvar[85613](?)) : _unknown[43] "no return value for void"
+  {
+    const tmp[86520] "const" "insert auto destroy"
+    (490151 'init var' tmp[86520] lhs[86510])
+    (86526 call = lhs[86510] rhs[86516])
+    (86531 call = rhs[86516] tmp[86520])
+    (463841 return _void[47])
+  }
+  function _synccls[86999](?).init[86552](arg _mt[87003]:_MT[227], arg this[87001]:_synccls[86999](?), arg valType[86550]:_any[170](?)) : void[4] "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown super_tmp[435216] "temporary of super field" "temp"
+    (435224 'move' super_tmp[435216](435217 '.v' this[87001] c"super"))
+    (435220 call init _mt[232] super_tmp[435216])
+    unknown tmp[435169] "temp" "type variable"
+    { scopeless type
+      unknown call_type_tmp[443188] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[579343] "expr temp" "maybe param" "maybe type" "temp"
+      (579346 'move' call_tmp[579343](435171 '.v' this[87001] c"super"))
+      (443192 'move' call_type_tmp[443188](435174 'typeof' call_tmp[579343]))
+    }
+    (435175 'move' tmp[435169] call_type_tmp[443188])
+    unknown call_tmp[579348] "maybe param" "maybe type" "temp"
+    (579351 'move' call_tmp[579348](435180 'cast' tmp[435169] this[87001]))
+    unknown chpl__thisAsParent[435177] "insert auto destroy" "temp"
+    (490153 'init var' chpl__thisAsParent[435177] call_tmp[579348] tmp[435169])
+    (435183 'setcid' chpl__thisAsParent[435177])
+    unknown tmp[435185] "temp" "type variable"
+    (435187 'move' tmp[435185] valType[86550])
+    (435189 'init field' this[87001] c"valType" tmp[435185])
+    unknown tmp[435193] "temp"
+    unknown call_tmp[579353] "expr temp" "maybe param" "maybe type" "temp"
+    (579356 'move' call_tmp[579353](435202 '.v' this[87001] c"valType"))
+    (435196 'default init var' tmp[435193] call_tmp[579353])
+    (435198 '.=' this[87001] c"value" tmp[435193])
+    val tmp[435205]:chpl_sync_aux_t[88400] "temp"
+    (435208 'default init var' tmp[435205] chpl_sync_aux_t[88400])
+    (435210 '.=' this[87001] c"syncAux" tmp[435205])
+    (435215 'setcid' this[87001])
+    unknown call_tmp[579360] "expr temp" "maybe param" "maybe type" "temp"
+    (579363 'move' call_tmp[579360](344716 call syncAux _mt[232] this[87001]))
+    (86573 call chpl_sync_initAux call_tmp[579360])
+    (463843 return _void[47])
+  }
+  function _synccls[86999](?).deinit[86579](arg _mt[87007]:_MT[227], arg this[87005]:_synccls[86999](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[579367] "expr temp" "maybe param" "maybe type" "temp"
+    (579370 'move' call_tmp[579367](344721 call syncAux _mt[232] this[87005]))
+    (86584 call chpl_sync_destroyAux call_tmp[579367])
+    (463845 return _void[47])
+  }
+  function _synccls[86999](?).readFE[86591](arg _mt[87011]:_MT[227], arg this[87009]:_synccls[86999](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463849] "RVV" "temp"
+    unknown ret[86594] "insert auto destroy"
+    unknown call_tmp[579374] "expr temp" "maybe param" "maybe type" "temp"
+    (579377 'move' call_tmp[579374](344726 call valType _mt[232] this[87009]))
+    (490155 'default init var' ret[86594] call_tmp[579374])
+    {
+      const tmp[86635] "const" "temp"
+      unknown call_tmp[579379] "expr temp" "maybe param" "maybe type" "temp"
+      (579382 'move' call_tmp[579379](86632 '_wide_get_locale' this[87009]))
+      (86636 'move' tmp[86635](86633 'deref' call_tmp[579379]))
+      {
+        unknown localRet[86600] "insert auto destroy"
+        unknown call_tmp[579386] "expr temp" "maybe param" "maybe type" "temp"
+        (579389 'move' call_tmp[579386](344732 call valType _mt[232] this[87009]))
+        (490157 'default init var' localRet[86600] call_tmp[579386])
+        (86606 call chpl_rmem_consist_release)
+        unknown call_tmp[579393] "expr temp" "maybe param" "maybe type" "temp"
+        (579396 'move' call_tmp[579393](344737 call syncAux _mt[232] this[87009]))
+        (86611 call chpl_sync_waitFullAndLock call_tmp[579393])
+        unknown call_tmp[579400] "expr temp" "maybe param" "maybe type" "temp"
+        (579403 'move' call_tmp[579400](344743 call value _mt[232] this[87009]))
+        (86615 call = localRet[86600] call_tmp[579400])
+        unknown call_tmp[579407] "expr temp" "maybe param" "maybe type" "temp"
+        (579410 'move' call_tmp[579407](344748 call syncAux _mt[232] this[87009]))
+        (86621 call chpl_sync_markAndSignalEmpty call_tmp[579407])
+        (86625 call chpl_rmem_consist_acquire)
+        (86629 call = ret[86594] localRet[86600])
+      }
+    }
+    (463854 'move' ret[463849](463853 'deref' ret[86594]))
+    (463851 return ret[463849])
+  }
+  function _synccls[86999](?).readFF[86647](arg _mt[87015]:_MT[227], arg this[87013]:_synccls[86999](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463858] "RVV" "temp"
+    unknown ret[86650] "insert auto destroy"
+    unknown call_tmp[579414] "expr temp" "maybe param" "maybe type" "temp"
+    (579417 'move' call_tmp[579414](344756 call valType _mt[232] this[87013]))
+    (490159 'default init var' ret[86650] call_tmp[579414])
+    {
+      const tmp[86691] "const" "temp"
+      unknown call_tmp[579419] "expr temp" "maybe param" "maybe type" "temp"
+      (579422 'move' call_tmp[579419](86688 '_wide_get_locale' this[87013]))
+      (86692 'move' tmp[86691](86689 'deref' call_tmp[579419]))
+      {
+        unknown localRet[86656] "insert auto destroy"
+        unknown call_tmp[579426] "expr temp" "maybe param" "maybe type" "temp"
+        (579429 'move' call_tmp[579426](344762 call valType _mt[232] this[87013]))
+        (490161 'default init var' localRet[86656] call_tmp[579426])
+        (86662 call chpl_rmem_consist_release)
+        unknown call_tmp[579433] "expr temp" "maybe param" "maybe type" "temp"
+        (579436 'move' call_tmp[579433](344767 call syncAux _mt[232] this[87013]))
+        (86667 call chpl_sync_waitFullAndLock call_tmp[579433])
+        unknown call_tmp[579440] "expr temp" "maybe param" "maybe type" "temp"
+        (579443 'move' call_tmp[579440](344773 call value _mt[232] this[87013]))
+        (86671 call = localRet[86656] call_tmp[579440])
+        unknown call_tmp[579447] "expr temp" "maybe param" "maybe type" "temp"
+        (579450 'move' call_tmp[579447](344778 call syncAux _mt[232] this[87013]))
+        (86677 call chpl_sync_markAndSignalFull call_tmp[579447])
+        (86681 call chpl_rmem_consist_acquire)
+        (86685 call = ret[86650] localRet[86656])
+      }
+    }
+    (463863 'move' ret[463858](463862 'deref' ret[86650]))
+    (463860 return ret[463858])
+  }
+  function _synccls[86999](?).readXX[86703](arg _mt[87019]:_MT[227], arg this[87017]:_synccls[86999](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463867] "RVV" "temp"
+    unknown ret[86706] "insert auto destroy"
+    unknown call_tmp[579454] "expr temp" "maybe param" "maybe type" "temp"
+    (579457 'move' call_tmp[579454](344786 call valType _mt[232] this[87017]))
+    (490163 'default init var' ret[86706] call_tmp[579454])
+    {
+      const tmp[86747] "const" "temp"
+      unknown call_tmp[579459] "expr temp" "maybe param" "maybe type" "temp"
+      (579462 'move' call_tmp[579459](86744 '_wide_get_locale' this[87017]))
+      (86748 'move' tmp[86747](86745 'deref' call_tmp[579459]))
+      {
+        unknown localRet[86712] "insert auto destroy"
+        unknown call_tmp[579466] "expr temp" "maybe param" "maybe type" "temp"
+        (579469 'move' call_tmp[579466](344792 call valType _mt[232] this[87017]))
+        (490165 'default init var' localRet[86712] call_tmp[579466])
+        (86718 call chpl_rmem_consist_release)
+        unknown call_tmp[579473] "expr temp" "maybe param" "maybe type" "temp"
+        (579476 'move' call_tmp[579473](344797 call syncAux _mt[232] this[87017]))
+        (86723 call chpl_sync_lock call_tmp[579473])
+        unknown call_tmp[579480] "expr temp" "maybe param" "maybe type" "temp"
+        (579483 'move' call_tmp[579480](344803 call value _mt[232] this[87017]))
+        (86727 call = localRet[86712] call_tmp[579480])
+        unknown call_tmp[579487] "expr temp" "maybe param" "maybe type" "temp"
+        (579490 'move' call_tmp[579487](344808 call syncAux _mt[232] this[87017]))
+        (86733 call chpl_sync_unlock call_tmp[579487])
+        (86737 call chpl_rmem_consist_acquire)
+        (86741 call = ret[86706] localRet[86712])
+      }
+    }
+    (463872 'move' ret[463867](463871 'deref' ret[86706]))
+    (463869 return ret[463867])
+  }
+  function _synccls[86999](?).writeEF[86763](arg _mt[87023]:_MT[227], arg this[87021]:_synccls[86999](?), arg val[86760] :
+  (344816 call valType _mt[232] this[87021])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[86799] "const" "temp"
+      unknown call_tmp[579494] "expr temp" "maybe param" "maybe type" "temp"
+      (579497 'move' call_tmp[579494](86796 '_wide_get_locale' this[87021]))
+      (86800 'move' tmp[86799](86797 'deref' call_tmp[579494]))
+      {
+        (86774 call chpl_rmem_consist_release)
+        unknown call_tmp[579501] "expr temp" "maybe param" "maybe type" "temp"
+        (579504 'move' call_tmp[579501](344824 call syncAux _mt[232] this[87021]))
+        (86780 call chpl_sync_waitEmptyAndLock call_tmp[579501])
+        unknown call_tmp[579508] "expr temp" "maybe param" "maybe type" "temp"
+        (579511 'move' call_tmp[579508](344829 call value _mt[232] this[87021]))
+        (86784 call = call_tmp[579508] val[86760])
+        unknown call_tmp[579515] "expr temp" "maybe param" "maybe type" "temp"
+        (579518 'move' call_tmp[579515](344835 call syncAux _mt[232] this[87021]))
+        (86790 call chpl_sync_markAndSignalFull call_tmp[579515])
+        (86794 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463874 return _void[47])
+  }
+  {
+    (86769 call <(86766 'lifetime_of' this[87021])(86768 'lifetime_of' val[86760]))
+  }
+  function _synccls[86999](?).writeFF[86814](arg _mt[87027]:_MT[227], arg this[87025]:_synccls[86999](?), arg val[86811] :
+  (344840 call valType _mt[232] this[87025])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[86850] "const" "temp"
+      unknown call_tmp[579522] "expr temp" "maybe param" "maybe type" "temp"
+      (579525 'move' call_tmp[579522](86847 '_wide_get_locale' this[87025]))
+      (86851 'move' tmp[86850](86848 'deref' call_tmp[579522]))
+      {
+        (86825 call chpl_rmem_consist_release)
+        unknown call_tmp[579529] "expr temp" "maybe param" "maybe type" "temp"
+        (579532 'move' call_tmp[579529](344848 call syncAux _mt[232] this[87025]))
+        (86831 call chpl_sync_waitFullAndLock call_tmp[579529])
+        unknown call_tmp[579536] "expr temp" "maybe param" "maybe type" "temp"
+        (579539 'move' call_tmp[579536](344853 call value _mt[232] this[87025]))
+        (86835 call = call_tmp[579536] val[86811])
+        unknown call_tmp[579543] "expr temp" "maybe param" "maybe type" "temp"
+        (579546 'move' call_tmp[579543](344859 call syncAux _mt[232] this[87025]))
+        (86841 call chpl_sync_markAndSignalFull call_tmp[579543])
+        (86845 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463876 return _void[47])
+  }
+  {
+    (86820 call <(86817 'lifetime_of' this[87025])(86819 'lifetime_of' val[86811]))
+  }
+  function _synccls[86999](?).writeXF[86865](arg _mt[87031]:_MT[227], arg this[87029]:_synccls[86999](?), arg val[86862] :
+  (344864 call valType _mt[232] this[87029])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[86901] "const" "temp"
+      unknown call_tmp[579550] "expr temp" "maybe param" "maybe type" "temp"
+      (579553 'move' call_tmp[579550](86898 '_wide_get_locale' this[87029]))
+      (86902 'move' tmp[86901](86899 'deref' call_tmp[579550]))
+      {
+        (86876 call chpl_rmem_consist_release)
+        unknown call_tmp[579557] "expr temp" "maybe param" "maybe type" "temp"
+        (579560 'move' call_tmp[579557](344872 call syncAux _mt[232] this[87029]))
+        (86882 call chpl_sync_lock call_tmp[579557])
+        unknown call_tmp[579564] "expr temp" "maybe param" "maybe type" "temp"
+        (579567 'move' call_tmp[579564](344877 call value _mt[232] this[87029]))
+        (86886 call = call_tmp[579564] val[86862])
+        unknown call_tmp[579571] "expr temp" "maybe param" "maybe type" "temp"
+        (579574 'move' call_tmp[579571](344883 call syncAux _mt[232] this[87029]))
+        (86892 call chpl_sync_markAndSignalFull call_tmp[579571])
+        (86896 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463878 return _void[47])
+  }
+  {
+    (86871 call <(86868 'lifetime_of' this[87029])(86870 'lifetime_of' val[86862]))
+  }
+  function _synccls[86999](?).reset[86912](arg _mt[87035]:_MT[227], arg this[87033]:_synccls[86999](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[86946] "const" "temp"
+      unknown call_tmp[579576] "expr temp" "maybe param" "maybe type" "temp"
+      (579579 'move' call_tmp[579576](86943 '_wide_get_locale' this[87033]))
+      (86947 'move' tmp[86946](86944 'deref' call_tmp[579576]))
+      {
+        const defaultValue[86916] "const" "insert auto destroy"
+        unknown call_tmp[579583] "expr temp" "maybe param" "maybe type" "temp"
+        (579586 'move' call_tmp[579583](344889 call valType _mt[232] this[87033]))
+        (490167 'default init var' defaultValue[86916] call_tmp[579583])
+        (86922 call chpl_rmem_consist_release)
+        unknown call_tmp[579590] "expr temp" "maybe param" "maybe type" "temp"
+        (579593 'move' call_tmp[579590](344894 call syncAux _mt[232] this[87033]))
+        (86927 call chpl_sync_lock call_tmp[579590])
+        unknown call_tmp[579597] "expr temp" "maybe param" "maybe type" "temp"
+        (579600 'move' call_tmp[579597](344899 call value _mt[232] this[87033]))
+        (86931 call = call_tmp[579597] defaultValue[86916])
+        unknown call_tmp[579604] "expr temp" "maybe param" "maybe type" "temp"
+        (579607 'move' call_tmp[579604](344905 call syncAux _mt[232] this[87033]))
+        (86937 call chpl_sync_markAndSignalEmpty call_tmp[579604])
+        (86941 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463880 return _void[47])
+  }
+  function _synccls[86999](?).isFull[86956](arg _mt[87039]:_MT[227], arg this[87037]:_synccls[86999](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463884] "RVV" "temp"
+    unknown b[86959] "insert auto destroy"
+    (490169 'default init var' b[86959] bool[10])
+    {
+      const tmp[86988] "const" "temp"
+      unknown call_tmp[579609] "expr temp" "maybe param" "maybe type" "temp"
+      (579612 'move' call_tmp[579609](86985 '_wide_get_locale' this[87037]))
+      (86989 'move' tmp[86988](86986 'deref' call_tmp[579609]))
+      {
+        (86966 call chpl_rmem_consist_release)
+        unknown call_tmp[579616] "expr temp" "maybe param" "maybe type" "temp"
+        (579619 'move' call_tmp[579616](344912 call value _mt[232] this[87037]))
+        unknown call_tmp[579621] "expr temp" "maybe param" "maybe type" "temp"
+        (579624 'move' call_tmp[579621](86974 call c_ptrTo call_tmp[579616]))
+        unknown call_tmp[579628] "expr temp" "maybe param" "maybe type" "temp"
+        (579631 'move' call_tmp[579628](344917 call syncAux _mt[232] this[87037]))
+        unknown call_tmp[579633] "expr temp" "maybe param" "maybe type" "temp"
+        (579636 'move' call_tmp[579633](86977 call chpl_sync_isFull call_tmp[579621] call_tmp[579628]))
+        (86978 call = b[86959] call_tmp[579633])
+        (86983 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463889 'move' ret[463884](463888 'deref' b[86959]))
+    (463886 return ret[463884])
+  }
+  type _synccls[86999](?) val super[330989]:object[253] "super class" unknown valType[86537] "type variable" unknown value[86541] valType[86537] val syncAux[86545]:chpl_sync_aux_t[88400] chpl_sync_aux_t[88400]
+  type anymanaged _synccls[344527](?)
+  function _qthreads_synccls[87458](?).init[87054](arg _mt[87462]:_MT[227], arg this[87460]:_qthreads_synccls[87458](?), arg valType[87052]:_any[170](?)) : void[4] "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown super_tmp[435266] "temporary of super field" "temp"
+    (435274 'move' super_tmp[435266](435267 '.v' this[87460] c"super"))
+    (435270 call init _mt[232] super_tmp[435266])
+    unknown tmp[435231] "temp" "type variable"
+    { scopeless type
+      unknown call_type_tmp[443194] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[579638] "expr temp" "maybe param" "maybe type" "temp"
+      (579641 'move' call_tmp[579638](435233 '.v' this[87460] c"super"))
+      (443198 'move' call_type_tmp[443194](435236 'typeof' call_tmp[579638]))
+    }
+    (435237 'move' tmp[435231] call_type_tmp[443194])
+    unknown call_tmp[579643] "maybe param" "maybe type" "temp"
+    (579646 'move' call_tmp[579643](435242 'cast' tmp[435231] this[87460]))
+    unknown chpl__thisAsParent[435239] "insert auto destroy" "temp"
+    (490171 'init var' chpl__thisAsParent[435239] call_tmp[579643] tmp[435231])
+    (435245 'setcid' chpl__thisAsParent[435239])
+    unknown tmp[435247] "temp" "type variable"
+    (435249 'move' tmp[435247] valType[87052])
+    (435251 'init field' this[87460] c"valType" tmp[435247])
+    val tmp[435255]:aligned_t[88784] "temp"
+    (435258 'default init var' tmp[435255] aligned_t[88784])
+    (435260 '.=' this[87460] c"alignedValue" tmp[435255])
+    (435265 'setcid' this[87460])
+    unknown call_tmp[579650] "expr temp" "maybe param" "maybe type" "temp"
+    (579653 'move' call_tmp[579650](344929 call alignedValue _mt[232] this[87460]))
+    unknown call_tmp[579655] "expr temp" "maybe param" "maybe type" "temp"
+    (579658 'move' call_tmp[579655](87078 call defaultOfAlignedT valType[87052]))
+    (87079 call qthread_purge_to call_tmp[579650] call_tmp[579655])
+    (463891 return _void[47])
+  }
+  function _qthreads_synccls[87458](?).deinit[87085](arg _mt[87466]:_MT[227], arg this[87464]:_qthreads_synccls[87458](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[579662] "expr temp" "maybe param" "maybe type" "temp"
+    (579665 'move' call_tmp[579662](344935 call alignedValue _mt[232] this[87464]))
+    (87090 call qthread_fill call_tmp[579662])
+    (463893 return _void[47])
+  }
+  function _qthreads_synccls[87458](?).readFE[87097](arg _mt[87470]:_MT[227], arg this[87468]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463897] "RVV" "temp"
+    unknown ret[87100] "insert auto destroy"
+    unknown call_tmp[579669] "expr temp" "maybe param" "maybe type" "temp"
+    (579672 'move' call_tmp[579669](344940 call valType _mt[232] this[87468]))
+    (490173 'default init var' ret[87100] call_tmp[579669])
+    {
+      const tmp[87135] "const" "temp"
+      unknown call_tmp[579674] "expr temp" "maybe param" "maybe type" "temp"
+      (579677 'move' call_tmp[579674](87132 '_wide_get_locale' this[87468]))
+      (87136 'move' tmp[87135](87133 'deref' call_tmp[579674]))
+      {
+        unknown alignedLocalRet[87106] "insert auto destroy"
+        (490175 'default init var' alignedLocalRet[87106] aligned_t[88784])
+        (87112 call chpl_rmem_consist_release)
+        unknown call_tmp[579681] "expr temp" "maybe param" "maybe type" "temp"
+        (579684 'move' call_tmp[579681](344948 call alignedValue _mt[232] this[87468]))
+        (87118 call qthread_readFE alignedLocalRet[87106] call_tmp[579681])
+        (87122 call chpl_rmem_consist_acquire)
+        unknown call_tmp[579688] "expr temp" "maybe param" "maybe type" "temp"
+        (579691 'move' call_tmp[579688](344955 call valType _mt[232] this[87468]))
+        unknown call_tmp[579693] "expr temp" "maybe param" "maybe type" "temp"
+        (579696 'move' call_tmp[579693](87127 call _cast call_tmp[579688] alignedLocalRet[87106]))
+        (87129 call = ret[87100] call_tmp[579693])
+      }
+    }
+    (463902 'move' ret[463897](463901 'deref' ret[87100]))
+    (463899 return ret[463897])
+  }
+  function _qthreads_synccls[87458](?).readFF[87147](arg _mt[87474]:_MT[227], arg this[87472]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463906] "RVV" "temp"
+    unknown ret[87150] "insert auto destroy"
+    unknown call_tmp[579700] "expr temp" "maybe param" "maybe type" "temp"
+    (579703 'move' call_tmp[579700](344961 call valType _mt[232] this[87472]))
+    (490177 'default init var' ret[87150] call_tmp[579700])
+    {
+      const tmp[87185] "const" "temp"
+      unknown call_tmp[579705] "expr temp" "maybe param" "maybe type" "temp"
+      (579708 'move' call_tmp[579705](87182 '_wide_get_locale' this[87472]))
+      (87186 'move' tmp[87185](87183 'deref' call_tmp[579705]))
+      {
+        unknown alignedLocalRet[87156] "insert auto destroy"
+        (490179 'default init var' alignedLocalRet[87156] aligned_t[88784])
+        (87162 call chpl_rmem_consist_release)
+        unknown call_tmp[579712] "expr temp" "maybe param" "maybe type" "temp"
+        (579715 'move' call_tmp[579712](344969 call alignedValue _mt[232] this[87472]))
+        (87168 call qthread_readFF alignedLocalRet[87156] call_tmp[579712])
+        (87172 call chpl_rmem_consist_acquire)
+        unknown call_tmp[579719] "expr temp" "maybe param" "maybe type" "temp"
+        (579722 'move' call_tmp[579719](344976 call valType _mt[232] this[87472]))
+        unknown call_tmp[579724] "expr temp" "maybe param" "maybe type" "temp"
+        (579727 'move' call_tmp[579724](87177 call _cast call_tmp[579719] alignedLocalRet[87156]))
+        (87179 call = ret[87150] call_tmp[579724])
+      }
+    }
+    (463911 'move' ret[463906](463910 'deref' ret[87150]))
+    (463908 return ret[463906])
+  }
+  function _qthreads_synccls[87458](?).readXX[87197](arg _mt[87478]:_MT[227], arg this[87476]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[463915] "RVV" "temp"
+    unknown ret[87200] "insert auto destroy"
+    unknown call_tmp[579731] "expr temp" "maybe param" "maybe type" "temp"
+    (579734 'move' call_tmp[579731](344982 call valType _mt[232] this[87476]))
+    (490181 'default init var' ret[87200] call_tmp[579731])
+    {
+      const tmp[87235] "const" "temp"
+      unknown call_tmp[579736] "expr temp" "maybe param" "maybe type" "temp"
+      (579739 'move' call_tmp[579736](87232 '_wide_get_locale' this[87476]))
+      (87236 'move' tmp[87235](87233 'deref' call_tmp[579736]))
+      {
+        unknown alignedLocalRet[87206] "insert auto destroy"
+        (490183 'default init var' alignedLocalRet[87206] aligned_t[88784])
+        (87212 call chpl_rmem_consist_release)
+        unknown call_tmp[579743] "expr temp" "maybe param" "maybe type" "temp"
+        (579746 'move' call_tmp[579743](344990 call alignedValue _mt[232] this[87476]))
+        (87218 call qthread_readXX alignedLocalRet[87206] call_tmp[579743])
+        (87222 call chpl_rmem_consist_acquire)
+        unknown call_tmp[579750] "expr temp" "maybe param" "maybe type" "temp"
+        (579753 'move' call_tmp[579750](344997 call valType _mt[232] this[87476]))
+        unknown call_tmp[579755] "expr temp" "maybe param" "maybe type" "temp"
+        (579758 'move' call_tmp[579755](87227 call _cast call_tmp[579750] alignedLocalRet[87206]))
+        (87229 call = ret[87200] call_tmp[579755])
+      }
+    }
+    (463920 'move' ret[463915](463919 'deref' ret[87200]))
+    (463917 return ret[463915])
+  }
+  function _qthreads_synccls[87458](?).writeEF[87251](arg _mt[87482]:_MT[227], arg this[87480]:_qthreads_synccls[87458](?), arg val[87248] :
+  (345003 call valType _mt[232] this[87480])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[87281] "const" "temp"
+      unknown call_tmp[579762] "expr temp" "maybe param" "maybe type" "temp"
+      (579765 'move' call_tmp[579762](87278 '_wide_get_locale' this[87480]))
+      (87282 'move' tmp[87281](87279 'deref' call_tmp[579762]))
+      {
+        (87262 call chpl_rmem_consist_release)
+        unknown call_tmp[579769] "expr temp" "maybe param" "maybe type" "temp"
+        (579772 'move' call_tmp[579769](345011 call alignedValue _mt[232] this[87480]))
+        unknown call_tmp[579774] "expr temp" "maybe param" "maybe type" "temp"
+        (579777 'move' call_tmp[579774](87270 call _cast aligned_t[88784] val[87248]))
+        (87272 call qthread_writeEF call_tmp[579769] call_tmp[579774])
+        (87276 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463922 return _void[47])
+  }
+  {
+    (87257 call <(87254 'lifetime_of' this[87480])(87256 'lifetime_of' val[87248]))
+  }
+  function _qthreads_synccls[87458](?).writeFF[87296](arg _mt[87486]:_MT[227], arg this[87484]:_qthreads_synccls[87458](?), arg val[87293] :
+  (345018 call valType _mt[232] this[87484])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[87326] "const" "temp"
+      unknown call_tmp[579781] "expr temp" "maybe param" "maybe type" "temp"
+      (579784 'move' call_tmp[579781](87323 '_wide_get_locale' this[87484]))
+      (87327 'move' tmp[87326](87324 'deref' call_tmp[579781]))
+      {
+        (87307 call chpl_rmem_consist_release)
+        unknown call_tmp[579788] "expr temp" "maybe param" "maybe type" "temp"
+        (579791 'move' call_tmp[579788](345026 call alignedValue _mt[232] this[87484]))
+        unknown call_tmp[579793] "expr temp" "maybe param" "maybe type" "temp"
+        (579796 'move' call_tmp[579793](87315 call _cast aligned_t[88784] val[87293]))
+        (87317 call qthread_writeFF call_tmp[579788] call_tmp[579793])
+        (87321 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463924 return _void[47])
+  }
+  {
+    (87302 call <(87299 'lifetime_of' this[87484])(87301 'lifetime_of' val[87293]))
+  }
+  function _qthreads_synccls[87458](?).writeXF[87341](arg _mt[87490]:_MT[227], arg this[87488]:_qthreads_synccls[87458](?), arg val[87338] :
+  (345033 call valType _mt[232] this[87488])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[87371] "const" "temp"
+      unknown call_tmp[579800] "expr temp" "maybe param" "maybe type" "temp"
+      (579803 'move' call_tmp[579800](87368 '_wide_get_locale' this[87488]))
+      (87372 'move' tmp[87371](87369 'deref' call_tmp[579800]))
+      {
+        (87352 call chpl_rmem_consist_release)
+        unknown call_tmp[579807] "expr temp" "maybe param" "maybe type" "temp"
+        (579810 'move' call_tmp[579807](345041 call alignedValue _mt[232] this[87488]))
+        unknown call_tmp[579812] "expr temp" "maybe param" "maybe type" "temp"
+        (579815 'move' call_tmp[579812](87360 call _cast aligned_t[88784] val[87338]))
+        (87362 call qthread_writeF call_tmp[579807] call_tmp[579812])
+        (87366 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463926 return _void[47])
+  }
+  {
+    (87347 call <(87344 'lifetime_of' this[87488])(87346 'lifetime_of' val[87338]))
+  }
+  function _qthreads_synccls[87458](?).reset[87382](arg _mt[87494]:_MT[227], arg this[87492]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[87406] "const" "temp"
+      unknown call_tmp[579817] "expr temp" "maybe param" "maybe type" "temp"
+      (579820 'move' call_tmp[579817](87403 '_wide_get_locale' this[87492]))
+      (87407 'move' tmp[87406](87404 'deref' call_tmp[579817]))
+      {
+        (87387 call chpl_rmem_consist_release)
+        unknown call_tmp[579824] "expr temp" "maybe param" "maybe type" "temp"
+        (579827 'move' call_tmp[579824](345049 call alignedValue _mt[232] this[87492]))
+        unknown call_tmp[579831] "expr temp" "maybe param" "maybe type" "temp"
+        (579834 'move' call_tmp[579831](345054 call valType _mt[232] this[87492]))
+        unknown call_tmp[579836] "expr temp" "maybe param" "maybe type" "temp"
+        (579839 'move' call_tmp[579836](87396 call defaultOfAlignedT call_tmp[579831]))
+        (87397 call qthread_purge_to call_tmp[579824] call_tmp[579836])
+        (87401 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463928 return _void[47])
+  }
+  function _qthreads_synccls[87458](?).isFull[87416](arg _mt[87498]:_MT[227], arg this[87496]:_qthreads_synccls[87458](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[463932] "RVV" "temp"
+    unknown b[87419] "insert auto destroy"
+    (490185 'default init var' b[87419] bool[10])
+    {
+      const tmp[87447] "const" "temp"
+      unknown call_tmp[579841] "expr temp" "maybe param" "maybe type" "temp"
+      (579844 'move' call_tmp[579841](87444 '_wide_get_locale' this[87496]))
+      (87448 'move' tmp[87447](87445 'deref' call_tmp[579841]))
+      {
+        (87426 call chpl_rmem_consist_release)
+        unknown call_tmp[579848] "expr temp" "maybe param" "maybe type" "temp"
+        (579851 'move' call_tmp[579848](345061 call alignedValue _mt[232] this[87496]))
+        unknown call_tmp[579853] "expr temp" "maybe param" "maybe type" "temp"
+        (579856 'move' call_tmp[579853](87433 call qthread_feb_status call_tmp[579848]))
+        unknown call_tmp[579858] "expr temp" "maybe param" "maybe type" "temp"
+        (579861 'move' call_tmp[579858](87435 call _cast bool[10] call_tmp[579853]))
+        (87437 call = b[87419] call_tmp[579858])
+        (87442 call chpl_rmem_consist_acquire)
+      }
+    }
+    (463937 'move' ret[463932](463936 'deref' b[87419]))
+    (463934 return ret[463932])
+  }
+  type _qthreads_synccls[87458](?) val super[330991]:object[253] "super class" unknown valType[87043] "type variable" val alignedValue[87047]:aligned_t[88784] aligned_t[88784]
+  type anymanaged _qthreads_synccls[344522](?)
+  function isSyncValue[87507](arg x[87504]:_syncvar[85613](?)) param : _unknown[43] "no doc"
+  {
+    unknown ret[463941] "RVV" "param" "temp"
+    (463946 'move' ret[463941](463945 'deref' 1))
+    (463943 return ret[463941])
+  }
+  function isSyncValue[87519](arg x[87517]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    unknown ret[463950] "RVV" "param" "temp"
+    (463955 'move' ret[463950](463954 'deref' 0))
+    (463952 return ret[463950])
+  }
+  function _singlevar[87725](?).init[87548](arg _mt[87729]:_MT[227], ref arg this[87727]:_singlevar[87725](?), arg valType[87546]:_any[170](?)) : void[4] "method" "primary method" "no return value for void"
+  {
+    (87553 call ensureFEType valType[87546])
+    unknown tmp[435277] "temp" "type variable"
+    (435279 'move' tmp[435277] valType[87546])
+    (435281 'init field' this[87727] c"valType" tmp[435277])
+    unknown call_tmp[579863] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (579866 'move' call_tmp[579863](691373 'new' anymanaged _singlecls[345067](?) valType[87546](_chpl_manager = unmanaged[209](?))))
+    unknown call_tmp[579868] "expr temp" "maybe param" "maybe type" "temp"
+    (579871 'move' call_tmp[579868](435297 '.v' this[87727] c"valType"))
+    unknown call_tmp[579873] "expr temp" "maybe param" "maybe type" "temp"
+    (579876 'move' call_tmp[579873](435289 call anymanaged _singlecls[345067](?) call_tmp[579868]))
+    unknown call_tmp[579878] "maybe param" "maybe type" "temp"
+    (579881 'move' call_tmp[579878](435287 'to unmanaged class from unknown' call_tmp[579873]))
+    unknown tmp[435285] "temp"
+    (435291 'init var' tmp[435285] call_tmp[579863] call_tmp[579878])
+    (435293 'init field' this[87727] c"wrapped" tmp[435285])
+    unknown tmp[435302] "temp"
+    (435305 'init var' tmp[435302] 1 bool[10])
+    (435307 'init field' this[87727] c"isOwned" tmp[435302])
+    (463957 return _void[47])
+  }
+  function _singlevar[87725](?).init[87582](arg _mt[87733]:_MT[227], ref arg this[87731]:_singlevar[87725](?), const arg other[87579]:_singlevar[87725](?)) : void[4] "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown tmp[435311] "temp" "type variable"
+    (435313 'move' tmp[435311](87589 call valType _mt[232] other[87579]))
+    (435315 'init field' this[87731] c"valType" tmp[435311])
+    unknown call_tmp[579887] "maybe param" "maybe type" "temp"
+    (579890 'move' call_tmp[579887](87598 call wrapped _mt[232] other[87579]))
+    unknown call_tmp[579892] "expr temp" "maybe param" "maybe type" "temp"
+    (579895 'move' call_tmp[579892](435331 '.v' this[87731] c"valType"))
+    unknown call_tmp[579897] "expr temp" "maybe param" "maybe type" "temp"
+    (579900 'move' call_tmp[579897](435323 call anymanaged _singlecls[345067](?) call_tmp[579892]))
+    unknown call_tmp[579902] "maybe param" "maybe type" "temp"
+    (579905 'move' call_tmp[579902](435321 'to unmanaged class from unknown' call_tmp[579897]))
+    unknown tmp[435319] "temp"
+    (435325 'init var' tmp[435319] call_tmp[579887] call_tmp[579902])
+    (435327 'init field' this[87731] c"wrapped" tmp[435319])
+    unknown tmp[435334] "temp"
+    (435337 'init var' tmp[435334] 0 bool[10])
+    (435339 'init field' this[87731] c"isOwned" tmp[435334])
+    (463959 return _void[47])
+  }
+  function _singlevar[87725](?).init=[87621](arg _mt[87737]:_MT[227], ref arg this[87735]:_singlevar[87725](?), const arg other[87618] :
+  unknown call_tmp[579907] "expr temp" "maybe param" "maybe type" "temp" "type variable") : void[4] "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[579916] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (579919 'move' call_tmp[579916](87628 'typeof' other[87618]))
+    (87630 call(87624 call (partial) init _mt[232] this[87735]) call_tmp[579916])
+    (87639 call(87634 call (partial) writeEF _mt[232] this[87735]) other[87618])
+    (463961 return _void[47])
+  }
+  function _singlevar[87725](?).deinit[87645](arg _mt[87741]:_MT[227], arg this[87739]:_singlevar[87725](?)) : _unknown[43] "destructor" "dont disable remote value forwarding" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[579925] "expr temp" "maybe param" "maybe type" "temp"
+    (579928 'move' call_tmp[579925](345102 call isOwned _mt[232] this[87739]))
+    unknown call_tmp[579930] "expr temp" "maybe param" "maybe type" "temp"
+    (579933 'move' call_tmp[579930](87649 call == call_tmp[579925] 1))
+    unknown call_tmp[579935] "expr temp" "maybe param" "maybe type" "temp"
+    (579938 'move' call_tmp[579935](87656 call _cond_test call_tmp[579930]))
+    if call_tmp[579935]
+    {
+      unknown call_tmp[579942] "expr temp" "maybe param" "maybe type" "temp"
+      (579945 'move' call_tmp[579942](345107 call wrapped _mt[232] this[87739]))
+      (87653 call chpl__delete call_tmp[579942])
+    }
+    (463963 return _void[47])
+  }
+  function _singlevar[87725](?).readThis[87668](arg _mt[87745]:_MT[227], arg this[87743]:_singlevar[87725](?), arg x[87666]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (87688 call compilerError "single variables cannot currently be read - use writeEF instead")
+    (463965 return _void[47])
+  }
+  function _singlevar[87725](?).writeThis[87697](arg _mt[87749]:_MT[227], arg this[87747]:_singlevar[87725](?), arg x[87695]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (87719 call compilerError "single variables cannot currently be written - apply readFF() to those variables first")
+    (463967 return _void[47])
+  }
+  single type _singlevar[87725](?) unknown valType[87528] "type variable" unknown wrapped[87536](87535 'to unmanaged class from unknown'(87534 call anymanaged _singlecls[345067](?) valType[87528])) val isOwned[87541]:bool[10] 1 bool[10]
+  function isSingleType[87758](arg t[87755]:_singlevar[87725](?)) param : _unknown[43] "no doc"
+  {
+    unknown ret[463971] "RVV" "param" "temp"
+    (463976 'move' ret[463971](463975 'deref' 1))
+    (463973 return ret[463971])
+  }
+  function isSingleType[87770](arg t[87768]:_any[170](?)) param : _unknown[43]
+  {
+    unknown ret[463980] "RVV" "param" "temp"
+    (463985 'move' ret[463980](463984 'deref' 0))
+    (463982 return ret[463980])
+  }
+  function _singlevar[87725](?).readFF[87781](arg _mt[87786]:_MT[227], arg this[87783]:_singlevar[87725](?) :
+  _singlevar[87725](?)) : _unknown[43] "method"
+  {
+    unknown ret[463989] "RVV" "temp"
+    unknown call_tmp[579949] "expr temp" "maybe param" "maybe type" "temp"
+    (579952 'move' call_tmp[579949](345113 call wrapped _mt[232] this[87783]))
+    unknown call_tmp[579956] "expr temp" "maybe param" "maybe type" "temp"
+    (579959 'move' call_tmp[579956](87793 call(87789 call (partial) readFF _mt[232] call_tmp[579949])))
+    (463994 'move' ret[463989](463993 'deref' call_tmp[579956]))
+    (463991 return ret[463989])
+  }
+  function _singlevar[87725](?).readXX[87802](arg _mt[87807]:_MT[227], arg this[87804]:_singlevar[87725](?) :
+  _singlevar[87725](?)) : _unknown[43] "method"
+  {
+    unknown ret[463998] "RVV" "temp"
+    (87811 call chpl_task_yield)
+    unknown call_tmp[579963] "expr temp" "maybe param" "maybe type" "temp"
+    (579966 'move' call_tmp[579963](345118 call wrapped _mt[232] this[87804]))
+    unknown call_tmp[579970] "expr temp" "maybe param" "maybe type" "temp"
+    (579973 'move' call_tmp[579970](87819 call(87815 call (partial) readXX _mt[232] call_tmp[579963])))
+    (464003 'move' ret[463998](464002 'deref' call_tmp[579970]))
+    (464000 return ret[463998])
+  }
+  function _singlevar[87725](?).writeEF[87831](arg _mt[87836]:_MT[227], arg this[87833]:_singlevar[87725](?) :
+  _singlevar[87725](?), arg x[87828] :
+  (345123 call valType _mt[232] this[87833])) : _unknown[43] "method" "no return value for void"
+  {
+    unknown call_tmp[579979] "expr temp" "maybe param" "maybe type" "temp"
+    (579982 'move' call_tmp[579979](345128 call wrapped _mt[232] this[87833]))
+    (87844 call(87839 call (partial) writeEF _mt[232] call_tmp[579979]) x[87828])
+    (464005 return _void[47])
+  }
+  function _singlevar[87725](?).isFull[87852](arg _mt[87857]:_MT[227], arg this[87854]:_singlevar[87725](?) :
+  _singlevar[87725](?)) : _unknown[43] "method" "no parens"
+  {
+    unknown ret[464009] "RVV" "temp"
+    unknown call_tmp[579988] "expr temp" "maybe param" "maybe type" "temp"
+    (579991 'move' call_tmp[579988](345134 call wrapped _mt[232] this[87854]))
+    unknown call_tmp[579995] "expr temp" "maybe param" "maybe type" "temp"
+    (579998 'move' call_tmp[579995](87860 call isFull _mt[232] call_tmp[579988]))
+    (464014 'move' ret[464009](464013 'deref' call_tmp[579995]))
+    (464011 return ret[464009])
+  }
+  function =[87878](ref arg lhs[87875]:_singlevar[87725](?), arg rhs[87881] :
+  (435348 'query' lhs[87875] 1)) : _unknown[43] "assignop" "no return value for void"
+  {
+    unknown call_tmp[580002] "expr temp" "maybe param" "maybe type" "temp"
+    (580005 'move' call_tmp[580002](87885 call wrapped _mt[232] lhs[87875]))
+    (87893 call(87888 call (partial) writeEF _mt[232] call_tmp[580002]) rhs[87881])
+    (464016 return _void[47])
+  }
+  function chpl__initCopy[87908](ref arg sv[87905]:_singlevar[87725](?)) : _unknown[43] "init copy fn"
+  {
+    unknown ret[464020] "RVV" "temp"
+    unknown call_tmp[580011] "expr temp" "maybe param" "maybe type" "temp"
+    (580014 'move' call_tmp[580011](87915 call(87911 call (partial) readFF _mt[232] sv[87905])))
+    (464025 'move' ret[464020](464024 'deref' call_tmp[580011]))
+    (464022 return ret[464020])
+  }
+  function chpl__autoCopy[87927](const  ref arg rhs[87924]:_singlevar[87725](?)) : _unknown[43] "auto copy fn" "no doc"
+  {
+    unknown ret[464029] "RVV" "temp"
+    unknown call_tmp[580016] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (580019 'move' call_tmp[580016](691374 'new' _singlevar[87725](?) rhs[87924]))
+    (464034 'move' ret[464029](464033 'deref' call_tmp[580016]))
+    (464031 return ret[464029])
+  }
+  function chpl__maybeAutoDestroyed[87949](arg x[87946]:_singlevar[87725](?)) param : _unknown[43] "inline"
+  {
+    unknown ret[464038] "RVV" "param" "temp"
+    (464043 'move' ret[464038](464042 'deref' 1))
+    (464040 return ret[464038])
+  }
+  function chpl__autoDestroy[87966](arg x[87963]:_singlevar[87725](?)) : _unknown[43] "inline" "no return value for void"
+  {
+    unknown call_tmp[580023] "expr temp" "maybe param" "maybe type" "temp"
+    (580026 'move' call_tmp[580023](87969 call isOwned _mt[232] x[87963]))
+    unknown call_tmp[580028] "expr temp" "maybe param" "maybe type" "temp"
+    (580031 'move' call_tmp[580028](87973 call == call_tmp[580023] 1))
+    unknown call_tmp[580033] "expr temp" "maybe param" "maybe type" "temp"
+    (580036 'move' call_tmp[580033](87983 call _cond_test call_tmp[580028]))
+    if call_tmp[580033]
+    {
+      unknown call_tmp[580040] "expr temp" "maybe param" "maybe type" "temp"
+      (580043 'move' call_tmp[580040](87976 call wrapped _mt[232] x[87963]))
+      (87980 call chpl__delete call_tmp[580040])
+    }
+    (464045 return _void[47])
+  }
+  function chpl__readXX[88000](const  ref arg x[87997]:_singlevar[87725](?)) : _unknown[43] "no doc"
+  {
+    unknown ret[464049] "RVV" "temp"
+    unknown call_tmp[580047] "expr temp" "maybe param" "maybe type" "temp"
+    (580050 'move' call_tmp[580047](88007 call(88003 call (partial) readXX _mt[232] x[87997])))
+    (464054 'move' ret[464049](464053 'deref' call_tmp[580047]))
+    (464051 return ret[464049])
+  }
+  function _singlecls[88333](?).init[88029](arg _mt[88337]:_MT[227], arg this[88335]:_singlecls[88333](?), arg valType[88027]:_any[170](?)) : void[4] "method" "primary method" "no return value for void"
+  {
+    unknown super_tmp[435433] "temporary of super field" "temp"
+    (435441 'move' super_tmp[435433](435434 '.v' this[88335] c"super"))
+    (435437 call init _mt[232] super_tmp[435433])
+    unknown tmp[435386] "temp" "type variable"
+    { scopeless type
+      unknown call_type_tmp[443203] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[580052] "expr temp" "maybe param" "maybe type" "temp"
+      (580055 'move' call_tmp[580052](435388 '.v' this[88335] c"super"))
+      (443207 'move' call_type_tmp[443203](435391 'typeof' call_tmp[580052]))
+    }
+    (435392 'move' tmp[435386] call_type_tmp[443203])
+    unknown call_tmp[580057] "maybe param" "maybe type" "temp"
+    (580060 'move' call_tmp[580057](435397 'cast' tmp[435386] this[88335]))
+    unknown chpl__thisAsParent[435394] "insert auto destroy" "temp"
+    (490187 'init var' chpl__thisAsParent[435394] call_tmp[580057] tmp[435386])
+    (435400 'setcid' chpl__thisAsParent[435394])
+    unknown tmp[435402] "temp" "type variable"
+    (435404 'move' tmp[435402] valType[88027])
+    (435406 'init field' this[88335] c"valType" tmp[435402])
+    unknown tmp[435410] "temp"
+    unknown call_tmp[580062] "expr temp" "maybe param" "maybe type" "temp"
+    (580065 'move' call_tmp[580062](435419 '.v' this[88335] c"valType"))
+    (435413 'default init var' tmp[435410] call_tmp[580062])
+    (435415 '.=' this[88335] c"value" tmp[435410])
+    val tmp[435422]:chpl_single_aux_t[88503] "temp"
+    (435425 'default init var' tmp[435422] chpl_single_aux_t[88503])
+    (435427 '.=' this[88335] c"singleAux" tmp[435422])
+    (435432 'setcid' this[88335])
+    unknown call_tmp[580069] "expr temp" "maybe param" "maybe type" "temp"
+    (580072 'move' call_tmp[580069](345161 call singleAux _mt[232] this[88335]))
+    (88050 call chpl_single_initAux call_tmp[580069])
+    (464056 return _void[47])
+  }
+  function _singlecls[88333](?).deinit[88056](arg _mt[88341]:_MT[227], arg this[88339]:_singlecls[88333](?)) : _unknown[43] "destructor" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[580076] "expr temp" "maybe param" "maybe type" "temp"
+    (580079 'move' call_tmp[580076](345166 call singleAux _mt[232] this[88339]))
+    (88061 call chpl_single_destroyAux call_tmp[580076])
+    (464058 return _void[47])
+  }
+  function _singlecls[88333](?).readFF[88068](arg _mt[88345]:_MT[227], arg this[88343]:_singlecls[88333](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[464062] "RVV" "temp"
+    unknown ret[88071] "insert auto destroy"
+    unknown call_tmp[580083] "expr temp" "maybe param" "maybe type" "temp"
+    (580086 'move' call_tmp[580083](345171 call valType _mt[232] this[88343]))
+    (490189 'default init var' ret[88071] call_tmp[580083])
+    {
+      const tmp[88127] "const" "temp"
+      unknown call_tmp[580088] "expr temp" "maybe param" "maybe type" "temp"
+      (580091 'move' call_tmp[580088](88124 '_wide_get_locale' this[88343]))
+      (88128 'move' tmp[88127](88125 'deref' call_tmp[580088]))
+      {
+        unknown localRet[88077] "insert auto destroy"
+        unknown call_tmp[580095] "expr temp" "maybe param" "maybe type" "temp"
+        (580098 'move' call_tmp[580095](345177 call valType _mt[232] this[88343]))
+        (490191 'default init var' localRet[88077] call_tmp[580095])
+        (88083 call chpl_rmem_consist_release)
+        unknown call_tmp[580102] "expr temp" "maybe param" "maybe type" "temp"
+        (580105 'move' call_tmp[580102](88086 call isFull _mt[232] this[88343]))
+        unknown call_tmp[580107] "expr temp" "maybe param" "maybe type" "temp"
+        (580110 'move' call_tmp[580107](88110 call _cond_test call_tmp[580102]))
+        if call_tmp[580107]
+        {
+          unknown call_tmp[580114] "expr temp" "maybe param" "maybe type" "temp"
+          (580117 'move' call_tmp[580114](345184 call value _mt[232] this[88343]))
+          (88091 call = localRet[88077] call_tmp[580114])
+        }
+        {
+          unknown call_tmp[580121] "expr temp" "maybe param" "maybe type" "temp"
+          (580124 'move' call_tmp[580121](345189 call singleAux _mt[232] this[88343]))
+          (88097 call chpl_single_waitFullAndLock call_tmp[580121])
+          unknown call_tmp[580128] "expr temp" "maybe param" "maybe type" "temp"
+          (580131 'move' call_tmp[580128](345195 call value _mt[232] this[88343]))
+          (88102 call = localRet[88077] call_tmp[580128])
+          unknown call_tmp[580135] "expr temp" "maybe param" "maybe type" "temp"
+          (580138 'move' call_tmp[580135](345200 call singleAux _mt[232] this[88343]))
+          (88108 call chpl_single_markAndSignalFull call_tmp[580135])
+        }
+        (88117 call chpl_rmem_consist_acquire)
+        (88121 call = ret[88071] localRet[88077])
+      }
+    }
+    (464067 'move' ret[464062](464066 'deref' ret[88071]))
+    (464064 return ret[464062])
+  }
+  function _singlecls[88333](?).readXX[88139](arg _mt[88349]:_MT[227], arg this[88347]:_singlecls[88333](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[464071] "RVV" "temp"
+    unknown ret[88142] "insert auto destroy"
+    unknown call_tmp[580142] "expr temp" "maybe param" "maybe type" "temp"
+    (580145 'move' call_tmp[580142](345208 call valType _mt[232] this[88347]))
+    (490193 'default init var' ret[88142] call_tmp[580142])
+    {
+      const tmp[88198] "const" "temp"
+      unknown call_tmp[580147] "expr temp" "maybe param" "maybe type" "temp"
+      (580150 'move' call_tmp[580147](88195 '_wide_get_locale' this[88347]))
+      (88199 'move' tmp[88198](88196 'deref' call_tmp[580147]))
+      {
+        unknown localRet[88148] "insert auto destroy"
+        unknown call_tmp[580154] "expr temp" "maybe param" "maybe type" "temp"
+        (580157 'move' call_tmp[580154](345214 call valType _mt[232] this[88347]))
+        (490195 'default init var' localRet[88148] call_tmp[580154])
+        (88154 call chpl_rmem_consist_release)
+        unknown call_tmp[580161] "expr temp" "maybe param" "maybe type" "temp"
+        (580164 'move' call_tmp[580161](88157 call isFull _mt[232] this[88347]))
+        unknown call_tmp[580166] "expr temp" "maybe param" "maybe type" "temp"
+        (580169 'move' call_tmp[580166](88181 call _cond_test call_tmp[580161]))
+        if call_tmp[580166]
+        {
+          unknown call_tmp[580173] "expr temp" "maybe param" "maybe type" "temp"
+          (580176 'move' call_tmp[580173](345221 call value _mt[232] this[88347]))
+          (88162 call = localRet[88148] call_tmp[580173])
+        }
+        {
+          unknown call_tmp[580180] "expr temp" "maybe param" "maybe type" "temp"
+          (580183 'move' call_tmp[580180](345226 call singleAux _mt[232] this[88347]))
+          (88168 call chpl_single_lock call_tmp[580180])
+          unknown call_tmp[580187] "expr temp" "maybe param" "maybe type" "temp"
+          (580190 'move' call_tmp[580187](345232 call value _mt[232] this[88347]))
+          (88173 call = localRet[88148] call_tmp[580187])
+          unknown call_tmp[580194] "expr temp" "maybe param" "maybe type" "temp"
+          (580197 'move' call_tmp[580194](345237 call singleAux _mt[232] this[88347]))
+          (88179 call chpl_single_unlock call_tmp[580194])
+        }
+        (88188 call chpl_rmem_consist_acquire)
+        (88192 call = ret[88142] localRet[88148])
+      }
+    }
+    (464076 'move' ret[464071](464075 'deref' ret[88142]))
+    (464073 return ret[464071])
+  }
+  function _singlecls[88333](?).writeEF[88214](arg _mt[88353]:_MT[227], arg this[88351]:_singlecls[88333](?), arg val[88211] :
+  (345245 call valType _mt[232] this[88351])) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    {
+      const tmp[88279] "const" "temp"
+      unknown call_tmp[580201] "expr temp" "maybe param" "maybe type" "temp"
+      (580204 'move' call_tmp[580201](88276 '_wide_get_locale' this[88351]))
+      (88280 'move' tmp[88279](88277 'deref' call_tmp[580201]))
+      {
+        (88225 call chpl_rmem_consist_release)
+        unknown call_tmp[580208] "expr temp" "maybe param" "maybe type" "temp"
+        (580211 'move' call_tmp[580208](345253 call singleAux _mt[232] this[88351]))
+        (88231 call chpl_single_lock call_tmp[580208])
+        unknown call_tmp[580215] "expr temp" "maybe param" "maybe type" "temp"
+        (580218 'move' call_tmp[580215](88234 call isFull _mt[232] this[88351]))
+        unknown call_tmp[580220] "expr temp" "maybe param" "maybe type" "temp"
+        (580223 'move' call_tmp[580220](88257 call _cond_test call_tmp[580215]))
+        if call_tmp[580220]
+        {
+          (88255 call halt "single var already defined")
+        }
+        unknown call_tmp[580227] "expr temp" "maybe param" "maybe type" "temp"
+        (580230 'move' call_tmp[580227](345259 call value _mt[232] this[88351]))
+        (88264 call = call_tmp[580227] val[88211])
+        unknown call_tmp[580234] "expr temp" "maybe param" "maybe type" "temp"
+        (580237 'move' call_tmp[580234](345265 call singleAux _mt[232] this[88351]))
+        (88270 call chpl_single_markAndSignalFull call_tmp[580234])
+        (88274 call chpl_rmem_consist_acquire)
+      }
+    }
+    (464078 return _void[47])
+  }
+  {
+    (88220 call <(88217 'lifetime_of' this[88351])(88219 'lifetime_of' val[88211]))
+  }
+  function _singlecls[88333](?).isFull[88290](arg _mt[88357]:_MT[227], arg this[88355]:_singlecls[88333](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[464082] "RVV" "temp"
+    unknown b[88293] "insert auto destroy"
+    (490197 'default init var' b[88293] bool[10])
+    {
+      const tmp[88322] "const" "temp"
+      unknown call_tmp[580239] "expr temp" "maybe param" "maybe type" "temp"
+      (580242 'move' call_tmp[580239](88319 '_wide_get_locale' this[88355]))
+      (88323 'move' tmp[88322](88320 'deref' call_tmp[580239]))
+      {
+        (88300 call chpl_rmem_consist_release)
+        unknown call_tmp[580246] "expr temp" "maybe param" "maybe type" "temp"
+        (580249 'move' call_tmp[580246](345272 call value _mt[232] this[88355]))
+        unknown call_tmp[580251] "expr temp" "maybe param" "maybe type" "temp"
+        (580254 'move' call_tmp[580251](88308 call c_ptrTo call_tmp[580246]))
+        unknown call_tmp[580258] "expr temp" "maybe param" "maybe type" "temp"
+        (580261 'move' call_tmp[580258](345277 call singleAux _mt[232] this[88355]))
+        unknown call_tmp[580263] "expr temp" "maybe param" "maybe type" "temp"
+        (580266 'move' call_tmp[580263](88311 call chpl_single_isFull call_tmp[580251] call_tmp[580258]))
+        (88312 call = b[88293] call_tmp[580263])
+        (88317 call chpl_rmem_consist_acquire)
+      }
+    }
+    (464087 'move' ret[464082](464086 'deref' b[88293]))
+    (464084 return ret[464082])
+  }
+  type _singlecls[88333](?) val super[330993]:object[253] "super class" unknown valType[88014] "type variable" unknown value[88018] valType[88014] val singleAux[88022]:chpl_single_aux_t[88503] chpl_single_aux_t[88503]
+  type anymanaged _singlecls[345067](?)
+  function isSingleValue[88366](arg x[88363]:_singlevar[87725](?)) param : _unknown[43] "no doc"
+  {
+    unknown ret[464091] "RVV" "param" "temp"
+    (464096 'move' ret[464091](464095 'deref' 1))
+    (464093 return ret[464091])
+  }
+  function isSingleValue[88378](arg x[88376]:_any[170](?)) param : _unknown[43] "no doc"
+  {
+    unknown ret[464100] "RVV" "param" "temp"
+    (464105 'move' ret[464100](464104 'deref' 0))
+    (464102 return ret[464100])
+  }
+  (329347 'used modules list'(85143 'use' ChapelStandard[19734])(85148 'use' AlignedTSupport[88779])(85152 'use' MemConsistency[179748])(85156 'use' SyncVarRuntimeSupport[88388]))
+}

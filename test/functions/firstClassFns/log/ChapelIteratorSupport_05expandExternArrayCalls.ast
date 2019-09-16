@@ -1,0 +1,1113 @@
+AST dump for ChapelIteratorSupport after pass expandExternArrayCalls.
+Module use list: 
+
+{
+  (54782 'use' ChapelStandard)
+  (54787 'use' Reflection)
+  function iteratorIndex[54795](arg ic[54792] :
+  _iteratorClass) : _unknown[43] "allow ref" "no doc" "fn returns iterator"
+  {
+    (54804 call(54800 call . ic c"advance"))
+    (54815 return(54814 call(54810 call . ic c"getValue")))
+  }
+  function iteratorIndex[54825](arg t[54822] :
+  _tuple) : _unknown[43] "expand tuples with values" "no doc" "fn returns iterator"
+  {
+    function iteratorIndexHelp[54833](arg t[54830] :
+    _tuple, param arg dim[54836] :
+    int[13]) : _unknown[43] "expand tuples with values"
+    {
+      if(54879 call _cond_test(54844 call == dim(54841 call . t c"size")))
+      {
+        { scopeless
+          (54856 return(54855 call _build_tuple_always_allow_ref(54853 call iteratorIndex(54851 call t dim))))
+        }
+      }
+      {
+        { scopeless
+          (54877 return(54876 call _build_tuple_always_allow_ref(54865 call iteratorIndex(54863 call t dim))(54875 'expand_tuple'(54874 call iteratorIndexHelp t(54872 call + dim 1)))))
+        }
+      }
+    }
+    (54894 return(54893 call iteratorIndexHelp t 1))
+  }
+  function iteratorIndexType[54902](arg x[54900]:_any[170](?)) type : _unknown[43] "no doc"
+  {
+    if(54976 call _cond_test(54907 call isArray x))
+    {
+      (54912 return(54909 call . x c"eltType"))
+    }
+    {
+      { scopeless
+        if(54972 call _cond_test(54918 call isDomain x))
+        {
+          (54945 return(54942 IfExpr (54926 call ==(54922 call . x c"rank") 1) then
+          { scopeless
+            (54929 call . x c"idxType")
+          } else
+          { scopeless
+            (54940 call *(54933 call . x c"rank")(54937 call . x c"idxType"))
+          } ))
+        }
+        {
+          unknown ic[54952] "no copy"(54951 call _getIterator x)
+          unknown i[54960] "no copy"(54959 call iteratorIndex ic)
+          (54966 call _freeIterator ic)
+          (54970 return(54969 'typeof' i))
+        }
+      }
+    }
+  }
+  function iteratorIndexTypeZip[54990](arg xs[54987]:_any[170](?) ...) type : _unknown[43] "no doc"
+  {
+    function iteratorIndexTypeZipHelp[54996](param arg dim[54994]:_any[170](?)) type : _unknown[43]
+    {
+      if(55036 call _cond_test(55003 call == dim(55000 call . xs c"size")))
+      {
+        { scopeless
+          (55014 return(55012 call _build_tuple(55011 call iteratorIndexType(55009 call xs dim))))
+        }
+      }
+      {
+        { scopeless
+          (55034 return(55032 call _build_tuple(55022 call iteratorIndexType(55020 call xs dim))(55030 'expand_tuple'(55029 call iteratorIndexTypeZipHelp(55026 call + dim 1)))))
+        }
+      }
+    }
+    (55050 return(55049 call iteratorIndexTypeZipHelp 1))
+  }
+  function iteratorToArrayElementType[55060](arg t[55057] :
+  _iteratorRecord) type : _unknown[43]
+  {
+    (55087 return(55086 call chpl__unref(55084 call chpl_buildStandInRTT(55082 'scalar promotion type' t))))
+  }
+  function chpl_buildStandInRTT[55098](arg domType[55095] :
+  _domain) type : _unknown[43]
+  {
+    unknown instanceObj[55135](55134 'static field type' domType "_instance")
+    (55143 return(55142 call chpl_buildStandInRTT instanceObj))
+  }
+  function chpl_buildStandInRTT[55155](arg arrType[55152] :
+  (55149 call chpl__buildArrayRuntimeType nil[38])) type : _unknown[43]
+  {
+    unknown arrInstType[55162] "type variable"(55161 'static field type' arrType "_instance")
+    unknown domInstType[55186] "type variable"(55185 'static field type' arrInstType "dom")
+    unknown domInstance[55190] domInstType
+    unknown standinDomain[55197] "no auto destroy"(55196 call chpl_buildStandInRTT domInstance)
+    unknown instanceObj[55201] arrInstType
+    unknown instanceEltType[55226] "type variable"(55225 'static typeof'(55222 call . instanceObj c"eltType"))
+    (55237 return(55236 call chpl__buildArrayRuntimeType standinDomain(55235 call chpl_buildStandInRTT instanceEltType)))
+  }
+  function chpl_buildStandInRTT[55247](arg irType[55244] :
+  _iteratorRecord) type : _unknown[43]
+  {
+    unknown shapeType[55253] "type variable"(55252 call chpl_iteratorShapeStaticTypeOrVoid irType)
+    function standinType[55259]() type : _unknown[43]
+    {
+      if(55318 call _cond_test(55263 call == shapeType nothing[7]))
+      {
+        (55270 return(55268 call chpl__buildDomainRuntimeType defaultDist 1))
+      }
+      {
+        { scopeless
+          if(55314 call _cond_test(55276 call isRange shapeType))
+          {
+            (55282 return(55280 call chpl__buildDomainRuntimeType defaultDist 1))
+          }
+          {
+            unknown domInstance[55286] shapeType
+            (55306 call compilerAssert(55303 call &&(55295 call !(55294 call isDomain domInstance))(55301 call !(55300 call isArray domInstance))))
+            (55312 return(55311 call chpl_buildStandInRTT domInstance))
+          }
+        }
+      }
+    }
+    unknown standinDomain[55329] "no auto destroy"(55328 call standinType)
+    (55343 return(55342 call chpl__buildArrayRuntimeType standinDomain(55341 call chpl_buildStandInRTT(55339 'scalar promotion type' irType))))
+  }
+  function chpl_buildStandInRTT[55351](arg nonRTtype[55349]:_any[170](?)) type : _unknown[43]
+  {
+    (55354 return nonRTtype)
+  }
+  function chpl_buildStandInRTT[55363](arg domInst[55361]:_any[170](?)) type : _unknown[43]
+  {
+    (55387 return(55386 call chpl__buildDomainRuntimeType defaultDist(55375 call . domInst c"rank")(55379 call . domInst c"idxType")(55383 call . domInst c"stridable")))
+  }
+  where {
+    (55369 call <=(55366 'typeof' domInst)(55368 'to unmanaged class from unknown' DefaultRectangularDom))
+  }
+  function chpl_buildStandInRTT[55397](arg domInst[55395]:_any[170](?)) type : _unknown[43]
+  {
+    if(55470 call _cond_test(55403 call <=(55400 'typeof' domInst)(55402 'to unmanaged class from unknown' BaseDom)))
+    {
+      { scopeless
+        (55425 call compilerError "for/forall/promoted expressions are not implemented when the elements are or contain non-DefaultRectangular domains or arrays")
+      }
+    }
+    {
+      { scopeless
+        (55468 call compilerError "unexpected argument of type "(55448 call _cast string[24](55446 'typeof' domInst)) " for chpl_buildStandInRTT()")
+      }
+    }
+  }
+  function chpl_trivialLeader[55481]() : _unknown[43] "iterator fn"
+  {
+    (55484 yield 0)
+  }
+  function chpl_computeIteratorShape[55497](arg arg[55494] :
+  (55491 call chpl__buildArrayRuntimeType nil[38])) : _unknown[43] "inline"
+  {
+    (55508 return(55507 call chpl_computeIteratorShape(55503 call . arg c"_dom")))
+  }
+  function chpl_computeIteratorShape[55519](arg arg[55516] :
+  _domain) : _unknown[43] "inline"
+  {
+    (55525 return(55522 call . arg c"_instance"))
+  }
+  function chpl_computeIteratorShape[55539](arg arg[55536] :
+  (55535 call range ?[249])) : _unknown[43] "inline"
+  {
+    (55542 return arg)
+  }
+  function chpl_computeIteratorShape[55553](arg arg[55550] :
+  _iteratorRecord) : _unknown[43] "inline"
+  {
+    if(55575 call _cond_test(55558 call chpl_iteratorHasShape arg))
+    {
+      { scopeless
+        (55565 return(55562 call . arg c"_shape_"))
+      }
+    }
+    {
+      const myvoid[55568] "const" none[49]
+      (55573 return myvoid)
+    }
+  }
+  function chpl_computeIteratorShape[55587](arg arg[55585]:_any[170](?)) : _unknown[43] "inline"
+  {
+    (55590 return none[49])
+  }
+  function chpl_iteratorHasShape[55601](arg ir[55598] :
+  _iteratorRecord) param : _unknown[43]
+  {
+    if(55635 call _cond_test(55621 call hasField(55605 'typeof' ir) "_shape_"))
+    {
+      { scopeless
+        (55630 return(55628 call !=(55626 'typeof'(55623 call . ir c"_shape_")) void[4]))
+      }
+    }
+    {
+      { scopeless
+        (55633 return 0)
+      }
+    }
+  }
+  function chpl_iteratorHasDomainShape[55650](arg ir[55647] :
+  _iteratorRecord) param : _unknown[43] "inline"
+  {
+    if(55672 call _cond_test(55657 call hasField(55654 'typeof' ir) "_shape_"))
+    {
+      { scopeless
+        (55667 return(55666 call isSubtype(55663 'typeof'(55660 call . ir c"_shape_")) BaseDom))
+      }
+    }
+    {
+      { scopeless
+        (55670 return 0)
+      }
+    }
+  }
+  function chpl_iteratorHasRangeShape[55687](arg ir[55684] :
+  _iteratorRecord) param : _unknown[43] "inline"
+  {
+    if(55708 call _cond_test(55694 call hasField(55691 'typeof' ir) "_shape_"))
+    {
+      { scopeless
+        (55703 return(55702 call isRange(55700 'typeof'(55697 call . ir c"_shape_"))))
+      }
+    }
+    {
+      { scopeless
+        (55706 return 0)
+      }
+    }
+  }
+  function chpl_iteratorShapeStaticTypeOrVoid[55723](arg ir[55720] :
+  _iteratorRecord) type : _unknown[43]
+  {
+    if(55740 call _cond_test(55729 call hasField ir "_shape_"))
+    {
+      { scopeless
+        (55735 return(55734 'static field type' ir "_shape_"))
+      }
+    }
+    {
+      { scopeless
+        (55738 return none[49])
+      }
+    }
+  }
+  function chpl_iteratorFromForExpr[55755](arg ir[55752] :
+  _iteratorRecord) param : _unknown[43]
+  {
+    if(55791 call _cond_test(55781 call(55760 call . Reflection c"canResolveMethod") ir "_fromForExpr_"))
+    {
+      { scopeless
+        (55786 return(55783 call . ir c"_fromForExpr_"))
+      }
+    }
+    {
+      { scopeless
+        (55789 return 0)
+      }
+    }
+  }
+  function chpl_iteratorFromForExpr[55804](arg arg[55802]:_any[170](?)) param : _unknown[43]
+  {
+    (55807 return 0)
+  }
+  function _unknown[43].writeThis[55817](arg _mt[55822]:_MT[227], arg this[55819] :
+  _iteratorRecord, arg f[55815]:_any[170](?)) : _unknown[43] "method"
+  {
+    unknown first[55826] 1 bool[10]
+    {
+      unknown _indexOfInterest[55872] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[55873] "expr temp" "temp"
+      (55882 'move' _iterator[55873](55880 call _getIterator this))
+      Defer
+      {
+        {
+          (55898 call _freeIterator _iterator[55873])
+        }
+      }
+      { scopeless type
+        (55887 'move' _indexOfInterest[55872](55884 call iteratorIndex _iterator[55873]))
+      }
+      ForLoop
+      {
+        unknown e[55891] "index var" "insert auto destroy"
+        (55893 'move' e[55891] _indexOfInterest[55872])
+        {
+          if(55860 call _cond_test(55833 call ! first))
+          {
+            { scopeless
+              (55852 call <~> f " ")
+            }
+          }
+          {
+            { scopeless
+              (55857 call = first 0)
+            }
+          }
+          (55869 call <~> f e)
+        }
+        label _continueLabel[55877]
+        _indexOfInterest[55872]
+        _iterator[55873]
+      }
+      label _breakLabel[55878]
+    }
+  }
+  function =[55913](ref arg ic[55910] :
+  _iteratorRecord, arg xs[55915]:_any[170](?)) : _unknown[43] "assignop"
+  {
+    {
+      unknown _indexOfInterest[55931] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[55932] "expr temp" "temp"
+      (55946 'move' _iterator[55932](55925 call _build_tuple(55941 call _getIterator ic)(55944 call _getIterator xs)))
+      Defer
+      {
+        {
+          (55976 call _freeIterator _iterator[55932])
+        }
+      }
+      { scopeless type
+        (55951 'move' _indexOfInterest[55931](55948 call iteratorIndex _iterator[55932]))
+      }
+      ForLoop
+      {
+        (55956 call _check_tuple_var_decl _indexOfInterest[55931] 2)
+        unknown e[55962] "index var" "insert auto destroy"
+        (55964 'move' e[55962](55960 call _indexOfInterest[55931] 1))
+        unknown x[55969] "index var" "insert auto destroy"
+        (55971 'move' x[55969](55967 call _indexOfInterest[55931] 2))
+        { scopeless
+          (55928 call = e x)
+        }
+        label _continueLabel[55936]
+        _indexOfInterest[55931]
+        _iterator[55932]
+      }
+      label _breakLabel[55937]
+    }
+  }
+  function =[55992](ref arg ic[55989] :
+  _iteratorRecord, arg x[55998] :
+  (55997 call iteratorIndexType ic)) : _unknown[43] "assignop" "suppress lvalue error"
+  {
+    {
+      unknown _indexOfInterest[56008] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[56009] "expr temp" "temp"
+      (56018 'move' _iterator[56009](56016 call _getIterator ic))
+      Defer
+      {
+        {
+          (56034 call _freeIterator _iterator[56009])
+        }
+      }
+      { scopeless type
+        (56023 'move' _indexOfInterest[56008](56020 call iteratorIndex _iterator[56009]))
+      }
+      ForLoop
+      {
+        unknown e[56027] "index var" "insert auto destroy"
+        (56029 'move' e[56027] _indexOfInterest[56008])
+        { scopeless
+          (56005 call = e x)
+        }
+        label _continueLabel[56013]
+        _indexOfInterest[56008]
+        _iterator[56009]
+      }
+      label _breakLabel[56014]
+    }
+  }
+  function _getIterator[56048](const  ref arg x[56046]:_any[170](?)) : _unknown[43] "inline" "no borrow convert" "suppress lvalue error"
+  {
+    (56061 return(56060 call _getIterator(56058 call(56054 call . x c"these"))))
+  }
+  function _getIterator[56070](arg t[56068]:_any[170](?)) : _unknown[43]
+  {
+    (56081 return(56080 call _getIterator(56078 call(56074 call . t c"these"))))
+  }
+  function _getIteratorZip[56090](arg x[56088]:_any[170](?)) : _unknown[43] "inline"
+  {
+    (56096 return(56095 call _getIterator x))
+  }
+  function _getIteratorZip[56105](arg t[56103]:_any[170](?)) : _unknown[43] "inline"
+  {
+    (56111 return(56110 call _getIterator t))
+  }
+  function _getIteratorZip[56122](arg x[56119] :
+  _tuple) : _unknown[43] "inline"
+  {
+    function _getIteratorZipInternal[56130](arg x[56127] :
+    _tuple, param arg dim[56133] :
+    int[13]) : _unknown[43] "inline"
+    {
+      if(56175 call _cond_test(56141 call == dim(56138 call . x c"size")))
+      {
+        { scopeless
+          (56152 return(56150 call _build_tuple(56149 call _getIterator(56147 call x dim))))
+        }
+      }
+      {
+        { scopeless
+          (56173 return(56171 call _build_tuple(56160 call _getIterator(56158 call x dim))(56169 'expand_tuple'(56168 call _getIteratorZipInternal x(56166 call + dim 1)))))
+        }
+      }
+    }
+    if(56208 call _cond_test(56190 call ==(56186 call . x c"size") 1))
+    {
+      { scopeless
+        (56199 return(56198 call _getIterator(56196 call x 1)))
+      }
+    }
+    {
+      { scopeless
+        (56206 return(56205 call _getIteratorZipInternal x 1))
+      }
+    }
+  }
+  function _getIteratorZip[56222](arg t[56219] :
+  _tuple) : _unknown[43] "inline"
+  {
+    function _getIteratorZipInternal[56230](arg t[56227] :
+    _tuple, param arg dim[56233] :
+    int[13]) : _unknown[43] "inline"
+    {
+      if(56275 call _cond_test(56241 call == dim(56238 call . t c"size")))
+      {
+        { scopeless
+          (56252 return(56250 call _build_tuple(56249 call _getIterator(56247 call t dim))))
+        }
+      }
+      {
+        { scopeless
+          (56273 return(56271 call _build_tuple(56260 call _getIterator(56258 call t dim))(56269 'expand_tuple'(56268 call _getIteratorZipInternal t(56266 call + dim 1)))))
+        }
+      }
+    }
+    if(56308 call _cond_test(56290 call ==(56286 call . t c"size") 1))
+    {
+      { scopeless
+        (56299 return(56298 call _getIterator(56296 call t 1)))
+      }
+    }
+    {
+      { scopeless
+        (56306 return(56305 call _getIteratorZipInternal t 1))
+      }
+    }
+  }
+  function _freeIterator[56322](arg ic[56319] :
+  _iteratorClass) : _unknown[43] "inline"
+  {
+    (56345 call chpl_here_free(56343 'cast_to_void_star' ic))
+  }
+  function _freeIterator[56356](arg x[56353] :
+  _tuple) : _unknown[43] "inline"
+  {
+    {
+      unknown i[56373] 0
+      unknown tmp[56374] "maybe param" "temp"
+      (56386 'move' tmp[56374](56384 call chpl_compute_low_param_loop_bound 1(56360 call . x c"size")))
+      unknown tmp[56375] "maybe param" "temp"
+      (56396 'move' tmp[56375](56394 call chpl_compute_high_param_loop_bound 1(56391 call . x c"size")))
+      unknown tmp[56376] "maybe param" "temp"
+      (56399 'move' tmp[56376] 1)
+      ParamForLoop
+      { i[56373] tmp[56374] tmp[56375] tmp[56376]
+        { scopeless
+          (56371 call _freeIterator(56369 call x i))
+        }
+      }
+      label _unused_continueLabel[56378]
+      label _breakLabel[56377]
+    }
+  }
+  function _toLeader[56419](arg ir[56416] :
+  _iteratorRecord) : _unknown[43] "inline" "no implicit copy" "fn returns iterator"
+  {
+    { scopeless
+      (56462 return(56461 call chpl__autoCopy(56459 'to leader' ir)))
+    }
+  }
+  where {
+    (56439 'has leader' ir)
+  }
+  function _toLeader[56472](arg x[56470]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator" "suppress lvalue error"
+  {
+    { scopeless
+      (56502 return(56501 call _toLeader(56499 call(56495 call . x c"these"))))
+    }
+  }
+  where {
+    (56491 call &&(56480 call !(56479 call isSubtype(56476 'typeof' x) _iteratorRecord))(56490 'has leader'(56489 call(56485 call . x c"these"))))
+  }
+  function _toLeaderZip[56512](arg x[56510]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator"
+  {
+    { scopeless
+      (56551 return(56550 call _toLeader x))
+    }
+  }
+  where {
+    (56545 call &&(56518 call !(56517 call isTuple x))(56544 call(56523 call . Reflection c"canResolve") "_toLeader" x))
+  }
+  function _toLeaderZip[56563](arg x[56560] :
+  _tuple) : _unknown[43] "inline" "fn returns iterator"
+  {
+    { scopeless
+      (56583 return(56582 call _toLeader(56580 call x 1)))
+    }
+  }
+  where {
+    (56575 call(56566 call . Reflection c"canResolve") "_toLeader"(56574 call x 1))
+  }
+  function _toStandalone[56595](arg iterator[56592] :
+  _iteratorClass) : _unknown[43] "inline" "no implicit copy" "fn returns iterator"
+  {
+    { scopeless
+      (56619 return(56618 call chpl__autoCopy(56616 'to standalone' iterator)))
+    }
+  }
+  function _toStandalone[56630](arg ir[56627] :
+  _iteratorRecord) : _unknown[43] "inline" "fn returns iterator"
+  {
+    unknown ic[56636] "no copy"(56635 call _getIterator ir)
+    unknown standalone[56644] "no copy"(56643 call _toStandalone ic)
+    (56650 call _freeIterator ic)
+    (56653 return standalone)
+  }
+  function _toStandalone[56661](arg x[56659]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator" "suppress lvalue error"
+  {
+    (56672 return(56671 call _toStandalone(56669 call(56665 call . x c"these"))))
+  }
+  function _toLeader[56683](arg ir[56680] :
+  _iteratorRecord, arg args[56686]:_any[170](?) ...) : _unknown[43] "expand tuples with values" "inline" "no implicit copy" "fn returns iterator"
+  {
+    (56698 return(56697 call chpl__autoCopy(56695 'to leader' ir(56694 'expand_tuple' args))))
+  }
+  function _toLeader[56707](arg x[56705]:_any[170](?), arg args[56710]:_any[170](?) ...) : _unknown[43] "expand tuples with values" "inline" "fn returns iterator" "suppress lvalue error"
+  {
+    { scopeless
+      (56724 return(56723 call _toLeader(56719 call(56715 call . x c"these"))(56722 'expand_tuple' args)))
+    }
+  }
+  function _toLeaderZip[56733](arg x[56731]:_any[170](?), arg args[56736]:_any[170](?) ...) : _unknown[43] "expand tuples with values" "inline" "fn returns iterator"
+  {
+    { scopeless
+      (56745 return(56744 call _toLeader x(56743 'expand_tuple' args)))
+    }
+  }
+  function _toLeaderZip[56756](arg x[56753] :
+  _tuple, arg args[56759]:_any[170](?) ...) : _unknown[43] "expand tuples with values" "inline" "fn returns iterator"
+  {
+    { scopeless
+      (56771 return(56770 call _toLeader(56766 call x 1)(56769 'expand_tuple' args)))
+    }
+  }
+  function _toStandalone[56782](arg iterator[56779] :
+  _iteratorClass, arg args[56785]:_any[170](?) ...) : _unknown[43] "expand tuples with values" "inline" "no implicit copy" "fn returns iterator"
+  {
+    { scopeless
+      (56797 return(56796 call chpl__autoCopy(56794 'to standalone' iterator(56793 'expand_tuple' args))))
+    }
+  }
+  function _toStandalone[56808](arg ir[56805] :
+  _iteratorRecord, arg args[56811]:_any[170](?) ...) : _unknown[43] "expand tuples with values" "inline" "fn returns iterator"
+  {
+    unknown ic[56818] "no copy"(56817 call _getIterator ir)
+    unknown standalone[56828] "no copy"(56827 call _toStandalone ic(56826 'expand_tuple' args))
+    (56834 call _freeIterator ic)
+    (56837 return standalone)
+  }
+  function _toStandalone[56845](arg x[56843]:_any[170](?), arg args[56848]:_any[170](?) ...) : _unknown[43] "expand tuples with values" "inline" "fn returns iterator" "suppress lvalue error"
+  {
+    (56862 return(56861 call _toStandalone(56857 call(56853 call . x c"these"))(56860 'expand_tuple' args)))
+  }
+  function chpl__staticFastFollowCheck[56871](arg x[56869]:_any[170](?)) param : _unknown[43]
+  {
+    const lead[56874] "const" "no copy" x
+    if(56898 call _cond_test(56886 call ||(56881 call isDomain lead)(56885 call isArray lead)))
+    {
+      { scopeless
+        (56893 return(56892 call chpl__staticFastFollowCheck x lead))
+      }
+    }
+    {
+      { scopeless
+        (56896 return 0)
+      }
+    }
+  }
+  function chpl__staticFastFollowCheck[56910](arg x[56908]:_any[170](?), arg lead[56912]:_any[170](?)) param : _unknown[43]
+  {
+    (56915 return 0)
+  }
+  function chpl__staticFastFollowCheck[56928](arg x[56925] :
+  (56922 call chpl__buildArrayRuntimeType nil[38]), arg lead[56930]:_any[170](?)) param : _unknown[43]
+  {
+    (56950 return(56949 call(56940 call .(56935 call . x c"_value") c"dsiStaticFastFollowCheck")(56947 'typeof'(56944 call . lead c"_value"))))
+  }
+  function chpl__staticFastFollowCheckZip[56961](arg x[56958] :
+  _tuple) param : _unknown[43]
+  {
+    const lead[56967] "const" "no copy"(56966 call x 1)
+    if(56991 call _cond_test(56979 call ||(56974 call isDomain lead)(56978 call isArray lead)))
+    {
+      { scopeless
+        (56986 return(56985 call chpl__staticFastFollowCheckZip x lead))
+      }
+    }
+    {
+      { scopeless
+        (56989 return 0)
+      }
+    }
+  }
+  function chpl__staticFastFollowCheckZip[57003](arg x[57001]:_any[170](?), arg lead[57005]:_any[170](?)) param : _unknown[43]
+  {
+    (57012 return(57011 call chpl__staticFastFollowCheck x lead))
+  }
+  function chpl__staticFastFollowCheckZip[57023](arg x[57020] :
+  _tuple, arg lead[57025]:_any[170](?), param arg dim[57028] =
+  1) param : _unknown[43]
+  {
+    if(57069 call _cond_test(57036 call ==(57032 call . x c"size") dim))
+    {
+      { scopeless
+        (57046 return(57045 call chpl__staticFastFollowCheckZip(57042 call x dim) lead))
+      }
+    }
+    {
+      { scopeless
+        (57067 return(57065 call ||(57055 call chpl__staticFastFollowCheckZip(57052 call x dim) lead)(57064 call chpl__staticFastFollowCheckZip x lead(57062 call + dim 1))))
+      }
+    }
+  }
+  function chpl__dynamicFastFollowCheck[57082](arg x[57080]:_any[170](?)) : _unknown[43]
+  {
+    (57089 return(57088 call chpl__dynamicFastFollowCheck x x))
+  }
+  function chpl__dynamicFastFollowCheck[57098](arg x[57096]:_any[170](?), arg lead[57100]:_any[170](?)) : _unknown[43]
+  {
+    (57103 return 1)
+  }
+  function chpl__dynamicFastFollowCheck[57116](arg x[57113] :
+  (57110 call chpl__buildArrayRuntimeType nil[38]), arg lead[57118]:_any[170](?)) : _unknown[43]
+  {
+    if(57142 call _cond_test(57124 call chpl__staticFastFollowCheck x lead))
+    {
+      { scopeless
+        (57137 return(57136 call(57131 call .(57126 call . x c"_value") c"dsiDynamicFastFollowCheck") lead))
+      }
+    }
+    {
+      { scopeless
+        (57140 return 0)
+      }
+    }
+  }
+  function chpl__dynamicFastFollowCheckZip[57157](arg x[57154] :
+  _tuple) : _unknown[43]
+  {
+    (57167 return(57166 call chpl__dynamicFastFollowCheckZip x(57165 call x 1)))
+  }
+  function chpl__dynamicFastFollowCheckZip[57176](arg x[57174]:_any[170](?), arg lead[57178]:_any[170](?)) : _unknown[43]
+  {
+    (57185 return(57184 call chpl__dynamicFastFollowCheck x lead))
+  }
+  function chpl__dynamicFastFollowCheckZip[57196](arg x[57193] :
+  _tuple, arg lead[57198]:_any[170](?), param arg dim[57201] =
+  1) : _unknown[43]
+  {
+    if(57242 call _cond_test(57209 call ==(57205 call . x c"size") dim))
+    {
+      { scopeless
+        (57219 return(57218 call chpl__dynamicFastFollowCheckZip(57215 call x dim) lead))
+      }
+    }
+    {
+      { scopeless
+        (57240 return(57238 call &&(57228 call chpl__dynamicFastFollowCheckZip(57225 call x dim) lead)(57237 call chpl__dynamicFastFollowCheckZip x lead(57235 call + dim 1))))
+      }
+    }
+  }
+  function _toFollower[57257](arg iterator[57254] :
+  _iteratorClass, arg leaderIndex[57259]:_any[170](?)) : _unknown[43] "inline" "no implicit copy" "fn returns iterator"
+  {
+    { scopeless
+      (57284 return(57283 call chpl__autoCopy(57281 'to follower' iterator leaderIndex)))
+    }
+  }
+  function _toFollower[57295](arg ir[57292] :
+  _iteratorRecord, arg leaderIndex[57297]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator"
+  {
+    unknown ic[57303] "no copy"(57302 call _getIterator ir)
+    unknown follower[57312] "no copy"(57311 call _toFollower ic leaderIndex)
+    (57318 call _freeIterator ic)
+    (57321 return follower)
+  }
+  function _toFollower[57329](arg x[57327]:_any[170](?), arg leaderIndex[57331]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator" "suppress lvalue error"
+  {
+    (57343 return(57342 call _toFollower(57339 call(57335 call . x c"these")) leaderIndex))
+  }
+  function _toFollowerZip[57352](arg x[57350]:_any[170](?), arg leaderIndex[57354]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator"
+  {
+    (57361 return(57360 call _toFollower x leaderIndex))
+  }
+  function _toFollowerZip[57372](arg x[57369] :
+  _tuple, arg leaderIndex[57374]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator"
+  {
+    (57382 return(57381 call _toFollowerZipInternal x leaderIndex 1))
+  }
+  function _toFollowerZipInternal[57393](arg x[57390] :
+  _tuple, arg leaderIndex[57395]:_any[170](?), param arg dim[57398] :
+  int[13]) : _unknown[43] "inline" "fn returns iterator"
+  {
+    if(57443 call _cond_test(57406 call == dim(57403 call . x c"size")))
+    {
+      { scopeless
+        (57418 return(57416 call _build_tuple(57415 call _toFollower(57412 call x dim) leaderIndex)))
+      }
+    }
+    {
+      { scopeless
+        (57441 return(57439 call _build_tuple(57427 call _toFollower(57424 call x dim) leaderIndex)(57437 'expand_tuple'(57436 call _toFollowerZipInternal x leaderIndex(57434 call + dim 1)))))
+      }
+    }
+  }
+  function _toFastFollower[57458](arg iterator[57455] :
+  _iteratorClass, arg leaderIndex[57460]:_any[170](?), arg fast[57463] :
+  bool[10]) : _unknown[43] "inline" "no implicit copy" "fn returns iterator"
+  {
+    (57475 return(57474 call chpl__autoCopy(57472 'to follower' iterator leaderIndex 1)))
+  }
+  function _toFastFollower[57486](arg ir[57483] :
+  _iteratorRecord, arg leaderIndex[57488]:_any[170](?), arg fast[57491] :
+  bool[10]) : _unknown[43] "inline" "fn returns iterator"
+  {
+    unknown ic[57498] "no copy"(57497 call _getIterator ir)
+    unknown follower[57509] "no copy"(57508 call _toFastFollower ic leaderIndex(fast = 1))
+    (57515 call _freeIterator ic)
+    (57518 return follower)
+  }
+  function _toFastFollower[57526](arg x[57524]:_any[170](?), arg leaderIndex[57528]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator"
+  {
+    if(57556 call _cond_test(57533 call chpl__staticFastFollowCheck x))
+    {
+      { scopeless
+        (57544 return(57543 call _toFastFollower(57538 call _getIterator x) leaderIndex(fast = 1)))
+      }
+    }
+    {
+      { scopeless
+        (57554 return(57553 call _toFollower(57550 call _getIterator x) leaderIndex))
+      }
+    }
+  }
+  function _toFastFollowerZip[57569](arg x[57567]:_any[170](?), arg leaderIndex[57571]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator"
+  {
+    (57578 return(57577 call _toFastFollower x leaderIndex))
+  }
+  function _toFastFollowerZip[57589](arg x[57586] :
+  _tuple, arg leaderIndex[57591]:_any[170](?)) : _unknown[43] "inline" "fn returns iterator"
+  {
+    (57599 return(57598 call _toFastFollowerZip x leaderIndex 1))
+  }
+  function _toFastFollowerZip[57610](arg x[57607] :
+  _tuple, arg leaderIndex[57612]:_any[170](?), param arg dim[57615] :
+  int[13]) : _unknown[43] "inline" "fn returns iterator"
+  {
+    if(57675 call _cond_test(57626 call == dim(57624 call -(57620 call . x c"size") 1)))
+    {
+      { scopeless
+        (57650 return(57648 call _build_tuple(57635 call _toFastFollowerZip(57632 call x dim) leaderIndex)(57646 call _toFastFollowerZip(57643 call x(57640 call + dim 1)) leaderIndex)))
+      }
+    }
+    {
+      { scopeless
+        (57673 return(57671 call _build_tuple(57659 call _toFastFollowerZip(57656 call x dim) leaderIndex)(57669 'expand_tuple'(57668 call _toFastFollowerZip x leaderIndex(57666 call + dim 1)))))
+      }
+    }
+  }
+  function singleValIter[57690](arg iterables[57687] :
+  _tuple) param : _unknown[43] "no doc"
+  {
+    (57713 return(57711 call &&(57697 call ==(57693 call . iterables c"size") 1)(57709 call !(57708 call isRefIter(57706 call _getIterator(57704 call iterables 1))))))
+  }
+  function singleRefIter[57724](arg iterables[57721] :
+  _tuple) param : _unknown[43] "no doc"
+  {
+    (57745 return(57743 call &&(57731 call ==(57727 call . iterables c"size") 1)(57742 call isRefIter(57740 call _getIterator(57738 call iterables 1)))))
+  }
+  function vectorizeOnly[57756](arg iterables[57753]:_any[170](?) ...) : _unknown[43] "iterator fn" "vectorize yielding loops"
+  {
+    {
+      unknown _indexOfInterest[57770] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[57771] "expr temp" "temp"
+      (57780 'move' _iterator[57771](57778 call _getIterator(57766 call iterables 1)))
+      Defer
+      {
+        {
+          (57797 call _freeIterator _iterator[57771])
+        }
+      }
+      { scopeless type
+        (57786 'move' _indexOfInterest[57770](57783 call iteratorIndex _iterator[57771]))
+      }
+      ForLoop
+      {
+        unknown i[57790] "index var" "insert auto destroy"
+        (57792 'move' i[57790] _indexOfInterest[57770])
+        { scopeless
+          (57768 yield i)
+        }
+        label _continueLabel[57775]
+        _indexOfInterest[57770]
+        _iterator[57771]
+      }
+      label _breakLabel[57776]
+    }
+  }
+  where {
+    (57761 call singleValIter iterables)
+  }
+  function vectorizeOnly[57814](arg iterables[57811]:_any[170](?) ...) ref : _unknown[43] "iterator fn" "no doc" "vectorize yielding loops"
+  {
+    {
+      unknown _indexOfInterest[57828] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[57829] "expr temp" "temp"
+      (57838 'move' _iterator[57829](57836 call _getIterator(57824 call iterables 1)))
+      Defer
+      {
+        {
+          (57855 call _freeIterator _iterator[57829])
+        }
+      }
+      { scopeless type
+        (57844 'move' _indexOfInterest[57828](57841 call iteratorIndex _iterator[57829]))
+      }
+      ForLoop
+      {
+        unknown i[57848] "index var" "insert auto destroy"
+        (57850 'move' i[57848] _indexOfInterest[57828])
+        { scopeless
+          (57826 yield i)
+        }
+        label _continueLabel[57833]
+        _indexOfInterest[57828]
+        _iterator[57829]
+      }
+      label _breakLabel[57834]
+    }
+  }
+  where {
+    (57819 call singleRefIter iterables)
+  }
+  function vectorizeOnly[57873](arg iterables[57870]:_any[170](?) ...) : _unknown[43] "iterator fn" "no doc" "vectorize yielding loops"
+  {
+    {
+      unknown _indexOfInterest[57887] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[57888] "expr temp" "temp"
+      (57896 'move' _iterator[57888](57883 call _getIteratorZip iterables))
+      Defer
+      {
+        {
+          (57912 call _freeIterator _iterator[57888])
+        }
+      }
+      { scopeless type
+        (57901 'move' _indexOfInterest[57887](57898 call iteratorIndex _iterator[57888]))
+      }
+      ForLoop
+      {
+        unknown i[57905] "index var" "insert auto destroy"
+        (57907 'move' i[57905] _indexOfInterest[57887])
+        { scopeless
+          (57885 yield i)
+        }
+        label _continueLabel[57892]
+        _indexOfInterest[57887]
+        _iterator[57888]
+      }
+      label _breakLabel[57893]
+    }
+  }
+  where {
+    (57877 call > numiterables 1)
+  }
+  function vectorizeOnly[57929](param arg tag[57926] :
+  iterKind, arg iterables[57932]:_any[170](?) ...) : _unknown[43] "iterator fn" "no doc"
+  {
+    {
+      unknown _indexOfInterest[57958] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[57959] "expr temp" "temp"
+      (57968 'move' _iterator[57959](57966 call _getIterator(57954 call iterables 1)))
+      Defer
+      {
+        {
+          (57985 call _freeIterator _iterator[57959])
+        }
+      }
+      { scopeless type
+        (57974 'move' _indexOfInterest[57958](57971 call iteratorIndex _iterator[57959]))
+      }
+      ForLoop
+      {
+        unknown i[57978] "index var" "insert auto destroy"
+        (57980 'move' i[57978] _indexOfInterest[57958])
+        { scopeless
+          (57956 yield i)
+        }
+        label _continueLabel[57963]
+        _indexOfInterest[57958]
+        _iterator[57959]
+      }
+      label _breakLabel[57964]
+    }
+  }
+  where {
+    (57948 call &&(57942 call == tag(57939 call . iterKind c"standalone"))(57947 call singleValIter iterables))
+  }
+  function vectorizeOnly[58002](param arg tag[57999] :
+  iterKind, arg iterables[58005]:_any[170](?) ...) ref : _unknown[43] "iterator fn" "no doc"
+  {
+    {
+      unknown _indexOfInterest[58029] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[58030] "expr temp" "temp"
+      (58039 'move' _iterator[58030](58037 call _getIterator(58025 call iterables 1)))
+      Defer
+      {
+        {
+          (58056 call _freeIterator _iterator[58030])
+        }
+      }
+      { scopeless type
+        (58045 'move' _indexOfInterest[58029](58042 call iteratorIndex _iterator[58030]))
+      }
+      ForLoop
+      {
+        unknown i[58049] "index var" "insert auto destroy"
+        (58051 'move' i[58049] _indexOfInterest[58029])
+        { scopeless
+          (58027 yield i)
+        }
+        label _continueLabel[58034]
+        _indexOfInterest[58029]
+        _iterator[58030]
+      }
+      label _breakLabel[58035]
+    }
+  }
+  where {
+    (58019 call &&(58013 call == tag(58010 call . iterKind c"standalone"))(58018 call singleRefIter iterables))
+  }
+  function vectorizeOnly[58073](param arg tag[58070] :
+  iterKind, arg iterables[58077]:_any[170](?) ...) : _unknown[43] "iterator fn" "no doc"
+  {
+    {
+      unknown _indexOfInterest[58101] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[58102] "expr temp" "temp"
+      (58110 'move' _iterator[58102](58097 call _getIteratorZip iterables))
+      Defer
+      {
+        {
+          (58126 call _freeIterator _iterator[58102])
+        }
+      }
+      { scopeless type
+        (58115 'move' _indexOfInterest[58101](58112 call iteratorIndex _iterator[58102]))
+      }
+      ForLoop
+      {
+        unknown i[58119] "index var" "insert auto destroy"
+        (58121 'move' i[58119] _indexOfInterest[58101])
+        { scopeless
+          (58099 yield i)
+        }
+        label _continueLabel[58106]
+        _indexOfInterest[58101]
+        _iterator[58102]
+      }
+      label _breakLabel[58107]
+    }
+  }
+  where {
+    (58091 call &&(58085 call == tag(58082 call . iterKind c"standalone"))(58089 call > numiterables 1))
+  }
+  function vectorizeOnly[58143](param arg tag[58140] :
+  iterKind, arg iterables[58146]:_any[170](?) ...) : _unknown[43] "iterator fn" "no doc"
+  {
+    (58168 yield(58167 call iterables 1))
+  }
+  where {
+    (58162 call &&(58156 call == tag(58153 call . iterKind c"leader"))(58161 call singleValIter iterables))
+  }
+  function vectorizeOnly[58180](param arg tag[58177] :
+  iterKind, arg iterables[58183]:_any[170](?) ...) ref : _unknown[43] "iterator fn" "no doc"
+  {
+    (58203 yield(58202 call iterables 1))
+  }
+  where {
+    (58197 call &&(58191 call == tag(58188 call . iterKind c"leader"))(58196 call singleRefIter iterables))
+  }
+  function vectorizeOnly[58215](param arg tag[58212] :
+  iterKind, arg iterables[58219]:_any[170](?) ...) : _unknown[43] "iterator fn" "no doc"
+  {
+    (58236 yield iterables)
+  }
+  where {
+    (58233 call &&(58227 call == tag(58224 call . iterKind c"leader"))(58231 call > numiterables 1))
+  }
+  function vectorizeOnly[58248](param arg tag[58245] :
+  iterKind, arg followThis[58250]:_any[170](?), arg iterables[58253]:_any[170](?) ...) : _unknown[43] "iterator fn" "no doc"
+  {
+    {
+      unknown _indexOfInterest[58279] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[58280] "expr temp" "temp"
+      (58289 'move' _iterator[58280](58287 call _getIterator(58275 call iterables 1)))
+      Defer
+      {
+        {
+          (58306 call _freeIterator _iterator[58280])
+        }
+      }
+      { scopeless type
+        (58295 'move' _indexOfInterest[58279](58292 call iteratorIndex _iterator[58280]))
+      }
+      ForLoop
+      {
+        unknown i[58299] "index var" "insert auto destroy"
+        (58301 'move' i[58299] _indexOfInterest[58279])
+        { scopeless
+          (58277 yield i)
+        }
+        label _continueLabel[58284]
+        _indexOfInterest[58279]
+        _iterator[58280]
+      }
+      label _breakLabel[58285]
+    }
+  }
+  where {
+    (58269 call &&(58263 call == tag(58260 call . iterKind c"follower"))(58268 call singleValIter iterables))
+  }
+  function vectorizeOnly[58323](param arg tag[58320] :
+  iterKind, arg followThis[58325]:_any[170](?), arg iterables[58328]:_any[170](?) ...) ref : _unknown[43] "iterator fn" "no doc"
+  {
+    {
+      unknown _indexOfInterest[58352] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[58353] "expr temp" "temp"
+      (58362 'move' _iterator[58353](58360 call _getIterator(58348 call iterables 1)))
+      Defer
+      {
+        {
+          (58379 call _freeIterator _iterator[58353])
+        }
+      }
+      { scopeless type
+        (58368 'move' _indexOfInterest[58352](58365 call iteratorIndex _iterator[58353]))
+      }
+      ForLoop
+      {
+        unknown i[58372] "index var" "insert auto destroy"
+        (58374 'move' i[58372] _indexOfInterest[58352])
+        { scopeless
+          (58350 yield i)
+        }
+        label _continueLabel[58357]
+        _indexOfInterest[58352]
+        _iterator[58353]
+      }
+      label _breakLabel[58358]
+    }
+  }
+  where {
+    (58342 call &&(58336 call == tag(58333 call . iterKind c"follower"))(58341 call singleRefIter iterables))
+  }
+  function vectorizeOnly[58396](param arg tag[58393] :
+  iterKind, arg followThis[58398]:_any[170](?), arg iterables[58402]:_any[170](?) ...) : _unknown[43] "iterator fn" "no doc"
+  {
+    {
+      unknown _indexOfInterest[58426] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[58427] "expr temp" "temp"
+      (58435 'move' _iterator[58427](58422 call _getIteratorZip iterables))
+      Defer
+      {
+        {
+          (58451 call _freeIterator _iterator[58427])
+        }
+      }
+      { scopeless type
+        (58440 'move' _indexOfInterest[58426](58437 call iteratorIndex _iterator[58427]))
+      }
+      ForLoop
+      {
+        unknown i[58444] "index var" "insert auto destroy"
+        (58446 'move' i[58444] _indexOfInterest[58426])
+        { scopeless
+          (58424 yield i)
+        }
+        label _continueLabel[58431]
+        _indexOfInterest[58426]
+        _iterator[58427]
+      }
+      label _breakLabel[58432]
+    }
+  }
+  where {
+    (58416 call &&(58410 call == tag(58407 call . iterKind c"follower"))(58414 call > numiterables 1))
+  }
+}

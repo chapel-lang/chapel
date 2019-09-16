@@ -1,0 +1,23 @@
+AST dump for Assert after pass scopeResolve.
+Module use list: ChapelStandard 
+
+{
+  function assert[197962](arg test[197959] :
+  bool[10]) : _unknown[43] "always propagate line file info" "insert line file info" "no return value for void"
+  {
+    if(197972 call _cond_test(197965 call ! test[197959]))
+    {
+      (197970 'chpl_error' c"assert failed")
+    }
+  }
+  function assert[197987](arg test[197984] :
+  bool[10], arg args[197991]:_any[170](?) ...) : _unknown[43] "always propagate line file info" "insert line file info" "no return value for void"
+  {
+    if(198019 call _cond_test(197995 call ! test[197984]))
+    {
+      unknown tmpstring[198005](198003 call + "assert failed - "(198002 call stringify(198000 'expand_tuple' args[197991])))
+      (198017 'chpl_error'(198016 call(198012 call . tmpstring[198005] c"c_str")))
+    }
+  }
+  (329505 'used modules list'(328306 'use' ChapelStandard[19734]))
+}

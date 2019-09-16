@@ -1,0 +1,52 @@
+AST dump for ExternalString after pass expandExternArrayCalls.
+Module use list: 
+
+{
+  (170246 'use' CPtr)
+  unknown chpl__exportTypeCharPtr[170253] "type variable"(170252 call c_ptr c_char)
+  function chpl__exportCopyStringBuffer[170262](arg s[170259] :
+  string[24]) : _unknown[43] "private"
+  {
+    const nBytes[170272] "const"(170269 call . s c"numBytes")
+    const src[170285] "const"(170283 call _cast c_void_ptr(170281 call(170277 call . s c"c_str")))
+    unknown result[170302](170300 call _cast(170299 call c_ptr c_char)(170295 call c_malloc c_char(170293 call + nBytes 1)))
+    (170310 call c_memcpy result src nBytes)
+    (170317 call =(170315 call result nBytes) 0)
+    (170321 return result)
+  }
+  { scopeless type
+    (170267 call c_ptr c_char)
+  }
+  function chpl__exportStringToConstCharPtr[170332](arg s[170329] :
+  string[24]) : _unknown[43]
+  {
+    (170342 return(170340 call _cast c_string(170338 call chpl__exportCopyStringBuffer s)))
+  }
+  { scopeless type
+    c_string
+  }
+  function chpl__exportStringToCharPtr[170354](arg s[170351] :
+  string[24]) : _unknown[43]
+  {
+    (170364 return(170363 call chpl__exportCopyStringBuffer s))
+  }
+  { scopeless type
+    (170359 call c_ptr c_char)
+  }
+  function chpl__exportConstCharPtrToString[170376](arg c[170373] :
+  c_string) : _unknown[43]
+  {
+    (170383 return(170382 call createStringWithBorrowedBuffer c))
+  }
+  { scopeless type
+    string[24]
+  }
+  function chpl__exportCharPtrToString[170398](arg c[170395] :
+  (170394 call c_ptr c_char)) : _unknown[43]
+  {
+    (170405 return(170404 call createStringWithBorrowedBuffer c))
+  }
+  { scopeless type
+    string[24]
+  }
+}

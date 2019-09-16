@@ -1,0 +1,2932 @@
+AST dump for ArrayViewReindex after pass createTaskFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_ArrayViewReindex[390294]() : void[4] "insert line file info" "module init"
+  {
+    (476456 return _void[47])
+  }
+  function ArrayViewReindexDist[188900](?).downDist[188694](arg _mt[188904]:_MT[227], arg this[188902]:ArrayViewReindexDist[188900](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    unknown ret[475627] "RVV" "temp"
+    unknown call_tmp[642146] "expr temp" "maybe param" "maybe type" "temp"
+    (642149 'move' call_tmp[642146](363494 call downDistInst _mt[232] this[188902]))
+    unknown call_tmp[642151] "expr temp" "maybe param" "maybe type" "temp"
+    (642154 'move' call_tmp[642151](188699 call _isPrivatized call_tmp[642146]))
+    unknown call_tmp[642156] "expr temp" "maybe param" "maybe type" "temp"
+    (642159 'move' call_tmp[642156](188711 call _cond_test call_tmp[642151]))
+    if call_tmp[642156]
+    {
+      { scopeless type
+        unknown call_type_tmp[444000] "expr temp" "maybe type" "temp" "type variable"
+        unknown call_tmp[642163] "expr temp" "maybe param" "maybe type" "temp"
+        (642166 'move' call_tmp[642163](363499 call downDistInst _mt[232] this[188902]))
+        (444004 'move' call_type_tmp[444000](188702 'typeof' call_tmp[642163]))
+      }
+      unknown call_tmp[642170] "expr temp" "maybe param" "maybe type" "temp"
+      (642173 'move' call_tmp[642170](363504 call downDistPid _mt[232] this[188902]))
+      unknown call_tmp[642175] "expr temp" "maybe param" "maybe type" "temp"
+      (642178 'move' call_tmp[642175](188705 call chpl_getPrivatizedCopy call_type_tmp[444000] call_tmp[642170]))
+      (475632 'move' ret[475627](475631 'deref' call_tmp[642175]))
+      gotoReturn _end_downDist[475625] _end_downDist[475625]
+    }
+    {
+      unknown call_tmp[642182] "expr temp" "maybe param" "maybe type" "temp"
+      (642185 'move' call_tmp[642182](363509 call downDistInst _mt[232] this[188902]))
+      (475637 'move' ret[475627](475636 'deref' call_tmp[642182]))
+      gotoReturn _end_downDist[475625] _end_downDist[475625]
+    }
+    label _end_downDist[475625]
+    (475629 return ret[475627])
+  }
+  function ArrayViewReindexDist[188900](?).dsiNewRectangularDom[188724](arg _mt[188908]:_MT[227], arg this[188906]:ArrayViewReindexDist[188900](?), param arg rank[188722]:_any[170](?), arg idxType[188726]:_any[170](?), param arg stridable[188728]:_any[170](?), arg inds[188730]:_any[170](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    unknown ret[475643] "RVV" "temp"
+    unknown call_tmp[642189] "expr temp" "maybe param" "maybe type" "temp"
+    (642192 'move' call_tmp[642189](363523 call downdomPid _mt[232] this[188906]))
+    unknown call_tmp[642196] "expr temp" "maybe param" "maybe type" "temp"
+    (642199 'move' call_tmp[642196](363528 call downdomInst _mt[232] this[188906]))
+    unknown call_tmp[642203] "expr temp" "maybe param" "maybe type" "temp"
+    (642206 'move' call_tmp[642203](188745 call pid _mt[232] this[188906]))
+    unknown call_tmp[642208] "expr temp" "maybe param" "maybe type" "temp"
+    (642211 'move' call_tmp[642208](188752 call _to_unmanaged this[188906]))
+    unknown call_tmp[642213] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (642216 'move' call_tmp[642213](691556 'new' anymanaged ArrayViewReindexDom[363513](?)(rank = rank[188722])(idxType = idxType[188726])(stridable = stridable[188728])(downdomPid = call_tmp[642189])(downdomInst = call_tmp[642196])(distPid = call_tmp[642203])(distInst = call_tmp[642208])(_chpl_manager = unmanaged[209](?))))
+    unknown newdom[188757] "insert auto destroy"
+    (493491 'init var' newdom[188757] call_tmp[642213])
+    (188767 call(188762 call (partial) dsiSetIndices _mt[232] newdom[188757]) inds[188730])
+    (475648 'move' ret[475643](475647 'deref' newdom[188757]))
+    (475645 return ret[475643])
+  }
+  function ArrayViewReindexDist[188900](?).dsiClone[188776](arg _mt[188912]:_MT[227], arg this[188910]:ArrayViewReindexDist[188900](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475652] "RVV" "temp"
+    unknown call_tmp[642222] "expr temp" "maybe param" "maybe type" "temp"
+    (642225 'move' call_tmp[642222](363539 call downDistPid _mt[232] this[188910]))
+    unknown call_tmp[642229] "expr temp" "maybe param" "maybe type" "temp"
+    (642232 'move' call_tmp[642229](363544 call downDistInst _mt[232] this[188910]))
+    unknown call_tmp[642236] "expr temp" "maybe param" "maybe type" "temp"
+    (642239 'move' call_tmp[642236](363549 call updom _mt[232] this[188910]))
+    unknown call_tmp[642243] "expr temp" "maybe param" "maybe type" "temp"
+    (642246 'move' call_tmp[642243](363554 call downdomPid _mt[232] this[188910]))
+    unknown call_tmp[642250] "expr temp" "maybe param" "maybe type" "temp"
+    (642253 'move' call_tmp[642250](363559 call downdomInst _mt[232] this[188910]))
+    unknown call_tmp[642255] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (642258 'move' call_tmp[642255](691557 'new' anymanaged ArrayViewReindexDist[353311](?)(downDistPid = call_tmp[642222])(downDistInst = call_tmp[642229])(updom = call_tmp[642236])(downdomPid = call_tmp[642243])(downdomInst = call_tmp[642250])(_chpl_manager = unmanaged[209](?))))
+    (475657 'move' ret[475652](475656 'deref' call_tmp[642255]))
+    (475654 return ret[475652])
+  }
+  function ArrayViewReindexDist[188900](?).dsiSupportsPrivatization[188800](arg _mt[188916]:_MT[227], arg this[188914]:ArrayViewReindexDist[188900](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475661] "RVV" "param" "temp"
+    unknown call_tmp[642262] "expr temp" "maybe param" "maybe type" "temp"
+    (642265 'move' call_tmp[642262](363564 call downDistInst _mt[232] this[188914]))
+    unknown call_tmp[642269] "expr temp" "maybe param" "maybe type" "temp"
+    (642272 'move' call_tmp[642269](188807 call(188803 call (partial) dsiSupportsPrivatization _mt[232] call_tmp[642262])))
+    (475666 'move' ret[475661](475665 'deref' call_tmp[642269]))
+    (475663 return ret[475661])
+  }
+  function ArrayViewReindexDist[188900](?).dsiGetPrivatizeData[188815](arg _mt[188920]:_MT[227], arg this[188918]:ArrayViewReindexDist[188900](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475670] "RVV" "temp"
+    unknown call_tmp[642276] "expr temp" "maybe param" "maybe type" "temp"
+    (642279 'move' call_tmp[642276](363569 call downDistPid _mt[232] this[188918]))
+    unknown call_tmp[642283] "expr temp" "maybe param" "maybe type" "temp"
+    (642286 'move' call_tmp[642283](363574 call downDistInst _mt[232] this[188918]))
+    unknown call_tmp[642290] "expr temp" "maybe param" "maybe type" "temp"
+    (642293 'move' call_tmp[642290](363579 call updom _mt[232] this[188918]))
+    unknown call_tmp[642297] "expr temp" "maybe param" "maybe type" "temp"
+    (642300 'move' call_tmp[642297](363584 call downdomPid _mt[232] this[188918]))
+    unknown call_tmp[642304] "expr temp" "maybe param" "maybe type" "temp"
+    (642307 'move' call_tmp[642304](363589 call downdomInst _mt[232] this[188918]))
+    unknown call_tmp[642309] "expr temp" "maybe param" "maybe type" "temp"
+    (642312 'move' call_tmp[642309](188823 call _build_tuple call_tmp[642276] call_tmp[642283] call_tmp[642290] call_tmp[642297] call_tmp[642304]))
+    (475675 'move' ret[475670](475674 'deref' call_tmp[642309]))
+    (475672 return ret[475670])
+  }
+  function ArrayViewReindexDist[188900](?).dsiPrivatize[188834](arg _mt[188924]:_MT[227], arg this[188922]:ArrayViewReindexDist[188900](?), arg privatizeData[188832]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475679] "RVV" "temp"
+    unknown call_tmp[642314] "expr temp" "maybe param" "maybe type" "temp"
+    (642317 'move' call_tmp[642314](188840 call privatizeData[188832] 1))
+    unknown call_tmp[642319] "expr temp" "maybe param" "maybe type" "temp"
+    (642322 'move' call_tmp[642319](188846 call privatizeData[188832] 2))
+    unknown call_tmp[642324] "expr temp" "maybe param" "maybe type" "temp"
+    (642327 'move' call_tmp[642324](188851 call privatizeData[188832] 3))
+    unknown call_tmp[642329] "expr temp" "maybe param" "maybe type" "temp"
+    (642332 'move' call_tmp[642329](188856 call privatizeData[188832] 4))
+    unknown call_tmp[642334] "expr temp" "maybe param" "maybe type" "temp"
+    (642337 'move' call_tmp[642334](188861 call privatizeData[188832] 5))
+    unknown call_tmp[642339] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (642342 'move' call_tmp[642339](691558 'new' anymanaged ArrayViewReindexDist[353311](?)(downDistPid = call_tmp[642314])(downDistInst = call_tmp[642319])(updom = call_tmp[642324])(downdomPid = call_tmp[642329])(downdomInst = call_tmp[642334])(_chpl_manager = unmanaged[209](?))))
+    (475684 'move' ret[475679](475683 'deref' call_tmp[642339]))
+    (475681 return ret[475679])
+  }
+  function ArrayViewReindexDist[188900](?).dsiDestroyDist[188873](arg _mt[188928]:_MT[227], arg this[188926]:ArrayViewReindexDist[188900](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    unknown call_tmp[642346] "expr temp" "maybe param" "maybe type" "temp"
+    (642349 'move' call_tmp[642346](363600 call updom _mt[232] this[188926]))
+    (188879 call _delete_dom call_tmp[642346] 0)
+    (475686 return _void[47])
+  }
+  function ArrayViewReindexDist[188900](?).dsiIsLayout[188886](arg _mt[188932]:_MT[227], arg this[188930]:ArrayViewReindexDist[188900](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475690] "RVV" "param" "temp"
+    unknown call_tmp[642353] "expr temp" "maybe param" "maybe type" "temp"
+    (642356 'move' call_tmp[642353](363605 call downDistInst _mt[232] this[188930]))
+    unknown call_tmp[642360] "expr temp" "maybe param" "maybe type" "temp"
+    (642363 'move' call_tmp[642360](188893 call(188889 call (partial) dsiIsLayout _mt[232] call_tmp[642353])))
+    (475695 'move' ret[475690](475694 'deref' call_tmp[642360]))
+    (475692 return ret[475690])
+  }
+  function ArrayViewReindexDist[188900](?).super[732118](arg _mt[732120]:_MT[227], arg this[732122]:ArrayViewReindexDist[188900](?)) : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[732131] "RVV" "temp"
+    unknown call_tmp[732138] "expr temp" "maybe param" "maybe type" "temp"
+    (732141 'move' call_tmp[732138](732126 '.v' this[732122] c"super"))
+    (732136 'move' ret[732131](732135 'deref' call_tmp[732138]))
+    (732133 return ret[732131])
+  }
+  function ArrayViewReindexDist[188900](?).downDistPid[732143](arg _mt[732145]:_MT[227], arg this[732147]:ArrayViewReindexDist[188900](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732156] "RVV" "temp"
+    unknown call_tmp[732163] "expr temp" "maybe param" "maybe type" "temp"
+    (732166 'move' call_tmp[732163](732151 '.' this[732147] c"downDistPid"))
+    (732161 'move' ret[732156](732160 'addr of' call_tmp[732163]))
+    (732158 return ret[732156])
+  }
+  function ArrayViewReindexDist[188900](?).downDistInst[732168](arg _mt[732170]:_MT[227], arg this[732172]:ArrayViewReindexDist[188900](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732181] "RVV" "temp"
+    unknown call_tmp[732188] "expr temp" "maybe param" "maybe type" "temp"
+    (732191 'move' call_tmp[732188](732176 '.' this[732172] c"downDistInst"))
+    (732186 'move' ret[732181](732185 'addr of' call_tmp[732188]))
+    (732183 return ret[732181])
+  }
+  function ArrayViewReindexDist[188900](?).updom[732193](arg _mt[732195]:_MT[227], arg this[732197]:ArrayViewReindexDist[188900](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732206] "RVV" "temp"
+    unknown call_tmp[732213] "expr temp" "maybe param" "maybe type" "temp"
+    (732216 'move' call_tmp[732213](732201 '.' this[732197] c"updom"))
+    (732211 'move' ret[732206](732210 'addr of' call_tmp[732213]))
+    (732208 return ret[732206])
+  }
+  function ArrayViewReindexDist[188900](?).downdomPid[732218](arg _mt[732220]:_MT[227], arg this[732222]:ArrayViewReindexDist[188900](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732231] "RVV" "temp"
+    unknown call_tmp[732238] "expr temp" "maybe param" "maybe type" "temp"
+    (732241 'move' call_tmp[732238](732226 '.' this[732222] c"downdomPid"))
+    (732236 'move' ret[732231](732235 'addr of' call_tmp[732238]))
+    (732233 return ret[732231])
+  }
+  function ArrayViewReindexDist[188900](?).downdomInst[732243](arg _mt[732245]:_MT[227], arg this[732247]:ArrayViewReindexDist[188900](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732256] "RVV" "temp"
+    unknown call_tmp[732263] "expr temp" "maybe param" "maybe type" "temp"
+    (732266 'move' call_tmp[732263](732251 '.' this[732247] c"downdomInst"))
+    (732261 'move' ret[732256](732260 'addr of' call_tmp[732263]))
+    (732258 return ret[732256])
+  }
+  function ArrayViewReindexDist[188900](?).init[732268](arg _mt[732270]:_MT[227], arg this[732271]:ArrayViewReindexDist[188900](?), in arg _doms[732288] :
+  (732284 call LinkedList[275404](?) unmanaged BaseDom[389803]) =
+  _typeDefaultT[239], in arg _domsLock[732293]:chpl_LocalSpinlock[180469] =
+  _typeDefaultT[239], in arg _free_when_no_doms[732298]:bool[10] =
+  _typeDefaultT[239], in arg pid[732307]:int(64)[13] =
+  (732302 'default init field' "BaseDist" "pid" int(64)[13] nullPid[111825]), in arg downDistPid[732310]:int(64)[13] =
+  _typeDefaultT[239], in arg downDistInst[732323]:_any[170](?), in arg updom[732332]:_any[170](?), in arg downdomPid[732341]:_any[170](?), in arg downdomInst[732350]:_any[170](?)) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    unknown super_tmp[732361] "temporary of super field" "temp"
+    (732363 'move' super_tmp[732361](732360 '.v' this[732271] c"super"))
+    (732281 call(732279 call (partial) init _mt[232] super_tmp[732361]) _doms[732288] _domsLock[732293] _free_when_no_doms[732298] pid[732307])
+    unknown tmp[732366] "temp" "type variable"
+    { scopeless type
+      unknown call_type_tmp[732399] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[732411] "expr temp" "maybe param" "maybe type" "temp"
+      (732414 'move' call_tmp[732411](732368 '.v' this[732271] c"super"))
+      (732403 'move' call_type_tmp[732399](732371 'typeof' call_tmp[732411]))
+    }
+    (732372 'move' tmp[732366] call_type_tmp[732399])
+    unknown call_tmp[732416] "maybe param" "maybe type" "temp"
+    (732419 'move' call_tmp[732416](732377 'cast' tmp[732366] this[732271]))
+    unknown chpl__thisAsParent[732374] "insert auto destroy" "temp"
+    (732407 'init var' chpl__thisAsParent[732374] call_tmp[732416] tmp[732366])
+    (732380 'setcid' chpl__thisAsParent[732374])
+    (732382 'init field' this[732271] c"downDistPid" downDistPid[732310])
+    (732385 'init field' this[732271] c"downDistInst" downDistInst[732323])
+    (732388 'init field' this[732271] c"updom" updom[732332])
+    (732391 'init field' this[732271] c"downdomPid" downdomPid[732341])
+    (732394 'init field' this[732271] c"downdomInst" downdomInst[732350])
+    (732397 'setcid' this[732271])
+    (732405 return _void[47])
+  }
+  function ArrayViewReindexDist[188900](?).deinit[732421](arg _mt[732423]:_MT[227], arg this[732425]:ArrayViewReindexDist[188900](?)) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (732427 return _void[47])
+  }
+  function ArrayViewReindexDist[188900](?).writeThis[732430](arg _mt[732434]:_MT[227], arg this[732432]:ArrayViewReindexDist[188900](?), arg f[732433]:_any[170](?)) : void[4] "compiler generated" "last resort" "method" "primary method" "method overrides"
+  {
+    (732439 call writeThisDefaultImpl f[732433] this[732432])
+    (732443 return _void[47])
+  }
+  function ArrayViewReindexDist[188900](?).readThis[732445](arg _mt[732449]:_MT[227], arg this[732447]:ArrayViewReindexDist[188900](?), arg f[732448]:_any[170](?)) : void[4] "compiler generated" "last resort" "method" "primary method" "method overrides"
+  {
+    (732453 call readThisDefaultImpl f[732448] this[732447])
+    (732458 return _void[47])
+  }
+  type ArrayViewReindexDist[188900](?) val super[331071]:BaseDist[142349] "super class" const-val downDistPid[188677]:int(64)[13] "const" int(64)[13] const downDistInst[188680] "const" const updom[188683] "const" const downdomPid[188686] "const" const downdomInst[188689] "const"
+  type anymanaged ArrayViewReindexDist[353311](?)
+  function ArrayViewReindexDom[190185](?).chpl_forwarding_expr9_updom[188951](arg _mt[190189]:_MT[227], arg this[190187]:ArrayViewReindexDom[190185](?)) : _unknown[43] "compiler generated" "inline" "maybe ref" "method" "primary method" "reference to const when const this"
+  {
+    unknown ret[475699] "RVV" "temp"
+    (475703 'move' ret[475699](363613 call updom _mt[232] this[190187]))
+    (475701 return ret[475699])
+  }
+  function ArrayViewReindexDom[190185](?).dist[188975](arg _mt[190193]:_MT[227], arg this[190191]:ArrayViewReindexDom[190185](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    unknown ret[475707] "RVV" "temp"
+    unknown call_tmp[642369] "expr temp" "maybe param" "maybe type" "temp"
+    (642372 'move' call_tmp[642369](363618 call distInst _mt[232] this[190191]))
+    unknown call_tmp[642374] "expr temp" "maybe param" "maybe type" "temp"
+    (642377 'move' call_tmp[642374](188980 call _isPrivatized call_tmp[642369]))
+    unknown call_tmp[642379] "expr temp" "maybe param" "maybe type" "temp"
+    (642382 'move' call_tmp[642379](188992 call _cond_test call_tmp[642374]))
+    if call_tmp[642379]
+    {
+      { scopeless type
+        unknown call_type_tmp[444015] "expr temp" "maybe type" "temp" "type variable"
+        unknown call_tmp[642386] "expr temp" "maybe param" "maybe type" "temp"
+        (642389 'move' call_tmp[642386](363623 call distInst _mt[232] this[190191]))
+        (444019 'move' call_type_tmp[444015](188983 'typeof' call_tmp[642386]))
+      }
+      unknown call_tmp[642393] "expr temp" "maybe param" "maybe type" "temp"
+      (642396 'move' call_tmp[642393](363628 call distPid _mt[232] this[190191]))
+      unknown call_tmp[642398] "expr temp" "maybe param" "maybe type" "temp"
+      (642401 'move' call_tmp[642398](188986 call chpl_getPrivatizedCopy call_type_tmp[444015] call_tmp[642393]))
+      (475712 'move' ret[475707](475711 'deref' call_tmp[642398]))
+      gotoReturn _end_dist[475705] _end_dist[475705]
+    }
+    {
+      unknown call_tmp[642405] "expr temp" "maybe param" "maybe type" "temp"
+      (642408 'move' call_tmp[642405](363633 call distInst _mt[232] this[190191]))
+      (475717 'move' ret[475707](475716 'deref' call_tmp[642405]))
+      gotoReturn _end_dist[475705] _end_dist[475705]
+    }
+    label _end_dist[475705]
+    (475709 return ret[475707])
+  }
+  function ArrayViewReindexDom[190185](?).updom[189003](arg _mt[190197]:_MT[227], arg this[190195]:ArrayViewReindexDom[190185](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    unknown ret[475723] "RVV" "temp"
+    unknown call_tmp[642412] "expr temp" "maybe param" "maybe type" "temp"
+    (642415 'move' call_tmp[642412](363640 call updomInst _mt[232] this[190195]))
+    unknown call_tmp[642417] "expr temp" "maybe param" "maybe type" "temp"
+    (642420 'move' call_tmp[642417](189006 call postfix! call_tmp[642412]))
+    (475728 'move' ret[475723](475727 'deref' call_tmp[642417]))
+    (475725 return ret[475723])
+  }
+  function ArrayViewReindexDom[190185](?).downdomtype[189019](arg _mt[190201]:_MT[227], arg this[190199]:ArrayViewReindexDom[190185](?), param arg rank[189016]:int(64)[13], arg idxType[189021]:_any[170](?), param arg stridable[189024]:bool[10]) type : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475732] "RVV" "temp" "type variable"
+    unknown ranges[189039] "insert auto destroy"
+    unknown call_tmp[642422] "expr temp" "maybe param" "maybe type" "temp"
+    (642425 'move' call_tmp[642422](189036 call range[66183](?) idxType[189021] bounded[66079] stridable[189024]))
+    unknown call_tmp[642427] "expr temp" "maybe param" "maybe type" "temp"
+    (642430 'move' call_tmp[642427](189037 call * rank[189016] call_tmp[642422]))
+    (493493 'default init var' ranges[189039] call_tmp[642427])
+    unknown call_tmp[642434] "expr temp" "maybe param" "maybe type" "temp"
+    (642437 'move' call_tmp[642434](363649 call dist _mt[232] this[190199]))
+    unknown call_tmp[642441] "expr temp" "maybe param" "maybe type" "temp"
+    (642444 'move' call_tmp[642441](189044 call downDist _mt[232] call_tmp[642434]))
+    unknown call_tmp[642448] "maybe param" "maybe type" "temp"
+    (642451 'move' call_tmp[642448](189058 call(189047 call (partial) dsiNewRectangularDom _mt[232] call_tmp[642441])(rank = rank[189016])(idxType = idxType[189021])(stridable = stridable[189024]) ranges[189039]))
+    unknown a[189059] "insert auto destroy"
+    (493495 'init var' a[189059] call_tmp[642448])
+    unknown call_tmp[642453] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (642456 'move' call_tmp[642453](189063 'typeof' a[189059]))
+    (475737 'move' ret[475732](475736 'deref' call_tmp[642453]))
+    (475734 return ret[475732])
+  }
+  function ArrayViewReindexDom[190185](?).downdom[189070](arg _mt[190205]:_MT[227], arg this[190203]:ArrayViewReindexDom[190185](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    unknown ret[475741] "RVV" "temp"
+    unknown call_tmp[642460] "expr temp" "maybe param" "maybe type" "temp"
+    (642463 'move' call_tmp[642460](363659 call downdomInst _mt[232] this[190203]))
+    unknown call_tmp[642465] "expr temp" "maybe param" "maybe type" "temp"
+    (642468 'move' call_tmp[642465](189075 call _isPrivatized call_tmp[642460]))
+    unknown call_tmp[642470] "expr temp" "maybe param" "maybe type" "temp"
+    (642473 'move' call_tmp[642470](189087 call _cond_test call_tmp[642465]))
+    if call_tmp[642470]
+    {
+      { scopeless type
+        unknown call_type_tmp[444021] "expr temp" "maybe type" "temp" "type variable"
+        unknown call_tmp[642477] "expr temp" "maybe param" "maybe type" "temp"
+        (642480 'move' call_tmp[642477](363664 call downdomInst _mt[232] this[190203]))
+        (444025 'move' call_type_tmp[444021](189078 'typeof' call_tmp[642477]))
+      }
+      unknown call_tmp[642484] "expr temp" "maybe param" "maybe type" "temp"
+      (642487 'move' call_tmp[642484](363669 call downdomPid _mt[232] this[190203]))
+      unknown call_tmp[642489] "expr temp" "maybe param" "maybe type" "temp"
+      (642492 'move' call_tmp[642489](189081 call chpl_getPrivatizedCopy call_type_tmp[444021] call_tmp[642484]))
+      (475746 'move' ret[475741](475745 'deref' call_tmp[642489]))
+      gotoReturn _end_downdom[475739] _end_downdom[475739]
+    }
+    {
+      unknown call_tmp[642496] "expr temp" "maybe param" "maybe type" "temp"
+      (642499 'move' call_tmp[642496](363674 call downdomInst _mt[232] this[190203]))
+      (475751 'move' ret[475741](475750 'deref' call_tmp[642496]))
+      gotoReturn _end_downdom[475739] _end_downdom[475739]
+    }
+    label _end_downdom[475739]
+    (475743 return ret[475741])
+  }
+  function ArrayViewReindexDom[190185](?).dsiBuildArray[189100](arg _mt[190209]:_MT[227], arg this[190207]:ArrayViewReindexDom[190185](?), arg eltType[189098]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475757] "RVV" "temp"
+    unknown call_tmp[642503] "expr temp" "maybe param" "maybe type" "temp"
+    (642506 'move' call_tmp[642503](363678 call downdom _mt[232] this[190207]))
+    unknown call_tmp[642510] "expr temp" "maybe param" "maybe type" "temp"
+    (642513 'move' call_tmp[642510](189109 call(189104 call (partial) dsiBuildArray _mt[232] call_tmp[642503]) eltType[189098]))
+    unknown call_tmp[642515] "maybe param" "maybe type" "temp"
+    (642518 'move' call_tmp[642515](189111 call _newArray call_tmp[642510]))
+    const downarr[189112] "const" "no auto destroy"
+    (493497 'init var' downarr[189112] call_tmp[642515])
+    unknown call_tmp[642522] "expr temp" "maybe param" "maybe type" "temp"
+    (642525 'move' call_tmp[642522](189121 call pid _mt[232] this[190207]))
+    unknown call_tmp[642527] "expr temp" "maybe param" "maybe type" "temp"
+    (642530 'move' call_tmp[642527](189128 call _to_unmanaged this[190207]))
+    unknown call_tmp[642534] "expr temp" "maybe param" "maybe type" "temp"
+    (642537 'move' call_tmp[642534](189131 call _pid _mt[232] downarr[189112]))
+    unknown call_tmp[642541] "expr temp" "maybe param" "maybe type" "temp"
+    (642544 'move' call_tmp[642541](189136 call _instance _mt[232] downarr[189112]))
+    unknown call_tmp[642546] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (642549 'move' call_tmp[642546](691559 'new' anymanaged ArrayViewReindexArr[353334](?)(eltType = eltType[189098])(_DomPid = call_tmp[642522])(dom = call_tmp[642527])(_ArrPid = call_tmp[642534])(_ArrInstance = call_tmp[642541])(ownsArrInstance = 1)(_chpl_manager = unmanaged[209](?))))
+    (475762 'move' ret[475757](475761 'deref' call_tmp[642546]))
+    (475759 return ret[475757])
+  }
+  function ArrayViewReindexDom[190185](?).dsiSetIndices[189153](arg _mt[190213]:_MT[227], arg this[190211]:ArrayViewReindexDom[190185](?), arg inds[189151]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[642551] "maybe param" "maybe type" "temp"
+    (642554 'move' call_tmp[642551](189158 call chpl__buildDomainExpr(189156 'expand_tuple' inds[189151])))
+    unknown updomRec[189160] "no auto destroy"
+    (493499 'init var' updomRec[189160] call_tmp[642551])
+    unknown call_tmp[642558] "expr temp" "maybe param" "maybe type" "temp"
+    (642561 'move' call_tmp[642558](363691 call updomInst _mt[232] this[190211]))
+    unknown call_tmp[642563] "expr temp" "maybe param" "maybe type" "temp"
+    (642566 'move' call_tmp[642563](189166 call != call_tmp[642558] nil[38]))
+    unknown call_tmp[642568] "expr temp" "maybe param" "maybe type" "temp"
+    (642571 'move' call_tmp[642568](189176 call _cond_test call_tmp[642563]))
+    if call_tmp[642568]
+    {
+      unknown call_tmp[642575] "expr temp" "maybe param" "maybe type" "temp"
+      (642578 'move' call_tmp[642575](363696 call updomInst _mt[232] this[190211]))
+      unknown call_tmp[642580] "expr temp" "maybe param" "maybe type" "temp"
+      (642583 'move' call_tmp[642580](189170 call postfix! call_tmp[642575]))
+      (189174 call _delete_dom call_tmp[642580] 0)
+    }
+    unknown call_tmp[642587] "expr temp" "maybe param" "maybe type" "temp"
+    (642590 'move' call_tmp[642587](363701 call updomInst _mt[232] this[190211]))
+    unknown call_tmp[642594] "expr temp" "maybe param" "maybe type" "temp"
+    (642597 'move' call_tmp[642594](189183 call _value _mt[232] updomRec[189160]))
+    (189186 call = call_tmp[642587] call_tmp[642594])
+    unknown ranges[189209] "insert auto destroy"
+    unknown call_tmp[642601] "expr temp" "maybe param" "maybe type" "temp"
+    (642604 'move' call_tmp[642601](363707 call rank _mt[232] this[190211]))
+    unknown call_tmp[642608] "expr temp" "maybe param" "maybe type" "temp"
+    (642611 'move' call_tmp[642608](363713 call idxType _mt[232] this[190211]))
+    unknown call_tmp[642615] "expr temp" "maybe param" "maybe type" "temp"
+    (642618 'move' call_tmp[642615](363718 call dist _mt[232] this[190211]))
+    unknown call_tmp[642622] "expr temp" "maybe param" "maybe type" "temp"
+    (642625 'move' call_tmp[642622](189200 call downdomInst _mt[232] call_tmp[642615]))
+    unknown call_tmp[642629] "expr temp" "maybe param" "maybe type" "temp"
+    (642632 'move' call_tmp[642629](189203 call stridable _mt[232] call_tmp[642622]))
+    unknown call_tmp[642634] "expr temp" "maybe param" "maybe type" "temp"
+    (642637 'move' call_tmp[642634](189206 call range[66183](?) call_tmp[642608] bounded[66079] call_tmp[642629]))
+    unknown call_tmp[642639] "expr temp" "maybe param" "maybe type" "temp"
+    (642642 'move' call_tmp[642639](189207 call * call_tmp[642601] call_tmp[642634]))
+    (493501 'default init var' ranges[189209] call_tmp[642639])
+    unknown call_tmp[642646] "expr temp" "maybe param" "maybe type" "temp"
+    (642649 'move' call_tmp[642646](363722 call dist _mt[232] this[190211]))
+    unknown call_tmp[642653] "expr temp" "maybe param" "maybe type" "temp"
+    (642656 'move' call_tmp[642653](189213 call downDist _mt[232] call_tmp[642646]))
+    unknown call_tmp[642662] "expr temp" "maybe param" "maybe type" "temp"
+    (642665 'move' call_tmp[642662](363727 call rank _mt[232] this[190211]))
+    unknown call_tmp[642669] "expr temp" "maybe param" "maybe type" "temp"
+    (642672 'move' call_tmp[642669](363732 call idxType _mt[232] this[190211]))
+    unknown call_tmp[642676] "expr temp" "maybe param" "maybe type" "temp"
+    (642679 'move' call_tmp[642676](363736 call dist _mt[232] this[190211]))
+    unknown call_tmp[642683] "expr temp" "maybe param" "maybe type" "temp"
+    (642686 'move' call_tmp[642683](189225 call downdomInst _mt[232] call_tmp[642676]))
+    unknown call_tmp[642690] "expr temp" "maybe param" "maybe type" "temp"
+    (642693 'move' call_tmp[642690](189228 call stridable _mt[232] call_tmp[642683]))
+    unknown call_tmp[642695] "maybe param" "maybe type" "temp"
+    (642698 'move' call_tmp[642695](189233 call(189216 call (partial) dsiNewRectangularDom _mt[232] call_tmp[642653])(rank = call_tmp[642662])(idxType = call_tmp[642669])(stridable = call_tmp[642690]) ranges[189209]))
+    unknown downdomclass[189234] "insert auto destroy"
+    (493503 'init var' downdomclass[189234] call_tmp[642695])
+    unknown call_tmp[642700] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (642703 'move' call_tmp[642700](691560 'new' _domain[123390](?) downdomclass[189234]))
+    unknown downdomLoc[189242] "no auto destroy"
+    (493505 'init var' downdomLoc[189242] call_tmp[642700])
+    unknown call_tmp[642707] "expr temp" "maybe param" "maybe type" "temp"
+    (642710 'move' call_tmp[642707](363745 call updom _mt[232] this[190211]))
+    unknown call_tmp[642714] "expr temp" "maybe param" "maybe type" "temp"
+    (642717 'move' call_tmp[642714](363749 call dist _mt[232] this[190211]))
+    unknown call_tmp[642721] "expr temp" "maybe param" "maybe type" "temp"
+    (642724 'move' call_tmp[642721](189251 call downdomInst _mt[232] call_tmp[642714]))
+    unknown call_tmp[642726] "expr temp" "maybe param" "maybe type" "temp"
+    (642729 'move' call_tmp[642726](189254 call chpl_reindexConvertDom inds[189151] call_tmp[642707] call_tmp[642721]))
+    (189255 call = downdomLoc[189242] call_tmp[642726])
+    unknown call_tmp[642733] "expr temp" "maybe param" "maybe type" "temp"
+    (642736 'move' call_tmp[642733](189259 call _value _mt[232] downdomLoc[189242]))
+    unknown call_tmp[642740] "expr temp" "maybe param" "maybe type" "temp"
+    (642743 'move' call_tmp[642740](189262 call _free_when_no_arrs _mt[232] call_tmp[642733]))
+    (189266 call = call_tmp[642740] 1)
+    unknown tmp[405213] "maybe param" "temp"
+    unknown call_tmp[642747] "expr temp" "maybe param" "maybe type" "temp"
+    (642750 'move' call_tmp[642747](363755 call downdomInst _mt[232] this[190211]))
+    (405224 'move' tmp[405213](189271 call != call_tmp[642747] nil[38]))
+    unknown call_tmp[642752] "expr temp" "maybe param" "maybe type" "temp"
+    (642755 'move' call_tmp[642752](405226 call _cond_invalid tmp[405213]))
+    if call_tmp[642752]
+    {
+      (405229 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[520969] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[520970] "maybe param" "temp"
+    unknown call_tmp[642757] "expr temp" "maybe param" "maybe type" "temp"
+    (642760 'move' call_tmp[642757](405214 call isTrue tmp[405213]))
+    (520975 'move' tmp[520970](520973 call _cond_test call_tmp[642757]))
+    if tmp[520970]
+    {
+      unknown tmp[520977] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[642764] "expr temp" "maybe param" "maybe type" "temp"
+      (642767 'move' call_tmp[642764](363762 call ownsDownDomInst _mt[232] this[190211]))
+      (520979 'move' tmp[520977](405217 call isTrue call_tmp[642764]))
+      (520984 'move' tmp[520969](520981 '_paramFoldLogical' tmp[520970] tmp[520977]))
+    }
+    {
+      (520989 'move' tmp[520969](520986 '_paramFoldLogical' tmp[520970] 0))
+    }
+    unknown call_tmp[642769] "expr temp" "maybe param" "maybe type" "temp"
+    (642772 'move' call_tmp[642769](189286 call _cond_test tmp[520969]))
+    if call_tmp[642769]
+    {
+      unknown call_tmp[642776] "expr temp" "maybe param" "maybe type" "temp"
+      (642779 'move' call_tmp[642776](363767 call downdomInst _mt[232] this[190211]))
+      unknown call_tmp[642783] "expr temp" "maybe param" "maybe type" "temp"
+      (642786 'move' call_tmp[642783](363772 call downdomInst _mt[232] this[190211]))
+      unknown call_tmp[642788] "expr temp" "maybe param" "maybe type" "temp"
+      (642791 'move' call_tmp[642788](189282 call _isPrivatized call_tmp[642783]))
+      (189283 call _delete_dom call_tmp[642776] call_tmp[642788])
+    }
+    unknown call_tmp[642795] "expr temp" "maybe param" "maybe type" "temp"
+    (642798 'move' call_tmp[642795](363777 call downdomPid _mt[232] this[190211]))
+    unknown call_tmp[642802] "expr temp" "maybe param" "maybe type" "temp"
+    (642805 'move' call_tmp[642802](189292 call _pid _mt[232] downdomLoc[189242]))
+    (189295 call = call_tmp[642795] call_tmp[642802])
+    unknown call_tmp[642809] "expr temp" "maybe param" "maybe type" "temp"
+    (642812 'move' call_tmp[642809](363783 call downdomInst _mt[232] this[190211]))
+    unknown call_tmp[642816] "expr temp" "maybe param" "maybe type" "temp"
+    (642819 'move' call_tmp[642816](189300 call _instance _mt[232] downdomLoc[189242]))
+    (189303 call = call_tmp[642809] call_tmp[642816])
+    unknown call_tmp[642823] "expr temp" "maybe param" "maybe type" "temp"
+    (642826 'move' call_tmp[642823](363789 call ownsDownDomInst _mt[232] this[190211]))
+    (189308 call = call_tmp[642823] 1)
+    (475764 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).these[189315](arg _mt[190217]:_MT[227], arg this[190215]:ArrayViewReindexDom[190185](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[475768] "RVV" "temp"
+    unknown call_tmp[642830] "expr temp" "maybe param" "maybe type" "temp"
+    (642833 'move' call_tmp[642830](363793 call downdom _mt[232] this[190215]))
+    unknown call_tmp[642835] "expr temp" "maybe param" "maybe type" "temp"
+    (642838 'move' call_tmp[642835](189320 call chpl__isDROrDRView call_tmp[642830]))
+    unknown call_tmp[642840] "expr temp" "maybe param" "maybe type" "temp"
+    (642843 'move' call_tmp[642840](189402 call _cond_test call_tmp[642835]))
+    if call_tmp[642840]
+    {
+      {
+        unknown _indexOfInterest[189326] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[189327] "expr temp" "temp"
+        unknown call_tmp[642847] "expr temp" "maybe param" "maybe type" "temp"
+        (642850 'move' call_tmp[642847](363797 call updom _mt[232] this[190215]))
+        (189336 'move' _iterator[189327](189334 call _getIterator call_tmp[642847]))
+        Defer
+        {
+          {
+            (189352 call _freeIterator _iterator[189327])
+          }
+        }
+        { scopeless type
+          (189341 'move' _indexOfInterest[189326](189338 call iteratorIndex _iterator[189327]))
+        }
+        ForLoop
+        {
+          unknown i[189345] "index var" "insert auto destroy"
+          (189347 'move' i[189345] _indexOfInterest[189326])
+          unknown yret[475772] "YVV" "temp"
+          (475775 'move' yret[475772](475774 'deref' i[189345]))
+          (475777 yield yret[475772])
+          label _continueLabel[189331]
+          _indexOfInterest[189326]
+          _iterator[189327]
+        }
+        label _breakLabel[189332]
+      }
+    }
+    {
+      {
+        unknown _indexOfInterest[189368] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[189369] "expr temp" "temp"
+        unknown call_tmp[642854] "expr temp" "maybe param" "maybe type" "temp"
+        (642857 'move' call_tmp[642854](363802 call downdom _mt[232] this[190215]))
+        (189378 'move' _iterator[189369](189376 call _getIterator call_tmp[642854]))
+        Defer
+        {
+          {
+            (189394 call _freeIterator _iterator[189369])
+          }
+        }
+        { scopeless type
+          (189383 'move' _indexOfInterest[189368](189380 call iteratorIndex _iterator[189369]))
+        }
+        ForLoop
+        {
+          unknown i[189387] "index var" "insert auto destroy"
+          (189389 'move' i[189387] _indexOfInterest[189368])
+          unknown yret[475779] "YVV" "temp"
+          unknown call_tmp[642861] "expr temp" "maybe param" "maybe type" "temp"
+          (642864 'move' call_tmp[642861](189365 call(363806 call (partial) downIdxToUpIdx _mt[232] this[190215]) i[189387]))
+          (475782 'move' yret[475779](475781 'deref' call_tmp[642861]))
+          (475784 yield yret[475779])
+          label _continueLabel[189373]
+          _indexOfInterest[189368]
+          _iterator[189369]
+        }
+        label _breakLabel[189374]
+      }
+    }
+    (475770 return ret[475768])
+  }
+  function ArrayViewReindexDom[190185](?).these[189415](arg _mt[190221]:_MT[227], arg this[190219]:ArrayViewReindexDom[190185](?), param arg tag[189412]:iterKind[697]) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[475788] "RVV" "temp"
+    unknown call_tmp[642868] "expr temp" "maybe param" "maybe type" "temp"
+    (642871 'move' call_tmp[642868](363823 call updom _mt[232] this[190219]))
+    Forall {
+      induction variables:
+        
+        unknown i[189444] "index var" "insert auto destroy"
+      iterated expressions:
+        call_tmp[642868]
+      shadow variables:
+      forall body
+      {
+        unknown yret[475792] "YVV" "temp"
+        (475795 'move' yret[475792](475794 'deref' i[189444]))
+        (475797 yield yret[475792])
+      }
+    }
+    (475790 return ret[475788])
+  }
+  where {
+    unknown tmp[405234] "maybe param" "temp"
+    unknown tmp[405255] "maybe param" "temp"
+    (405266 'move' tmp[405255](189422 call == tag[189412] standalone[695]))
+    unknown call_tmp[642873] "expr temp" "maybe param" "maybe type" "temp"
+    (642876 'move' call_tmp[642873](405268 call _cond_invalid tmp[405255]))
+    if call_tmp[642873]
+    {
+      (405271 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[520996] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[520997] "maybe param" "temp"
+    unknown call_tmp[642878] "expr temp" "maybe param" "maybe type" "temp"
+    (642881 'move' call_tmp[642878](405256 call isTrue tmp[405255]))
+    (521002 'move' tmp[520997](521000 call _cond_test call_tmp[642878]))
+    if tmp[520997]
+    {
+      unknown tmp[521004] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[642885] "expr temp" "maybe param" "maybe type" "temp"
+      (642888 'move' call_tmp[642885](363814 call downdom _mt[232] this[190219]))
+      unknown call_tmp[642890] "expr temp" "maybe param" "maybe type" "temp"
+      (642893 'move' call_tmp[642890](189427 call chpl__isDROrDRView call_tmp[642885]))
+      (521006 'move' tmp[521004](405259 call isTrue call_tmp[642890]))
+      (521011 'move' tmp[520996](521008 '_paramFoldLogical' tmp[520997] tmp[521004]))
+    }
+    {
+      (521016 'move' tmp[520996](521013 '_paramFoldLogical' tmp[520997] 0))
+    }
+    (405245 'move' tmp[405234] tmp[520996])
+    unknown call_tmp[642895] "expr temp" "maybe param" "maybe type" "temp"
+    (642898 'move' call_tmp[642895](405247 call _cond_invalid tmp[405234]))
+    if call_tmp[642895]
+    {
+      (405250 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[521023] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[521024] "maybe param" "temp"
+    unknown call_tmp[642900] "expr temp" "maybe param" "maybe type" "temp"
+    (642903 'move' call_tmp[642900](405235 call isTrue tmp[405234]))
+    (521029 'move' tmp[521024](521027 call _cond_test call_tmp[642900]))
+    if tmp[521024]
+    {
+      unknown tmp[521031] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[642907] "expr temp" "maybe param" "maybe type" "temp"
+      (642910 'move' call_tmp[642907](363818 call updom _mt[232] this[190219]))
+      unknown call_tmp[642912] "expr temp" "maybe param" "maybe type" "temp"
+      (642915 'move' call_tmp[642912](189435 'method call resolves' call_tmp[642907] "these" tag[189412]))
+      (521033 'move' tmp[521031](405238 call isTrue call_tmp[642912]))
+      (521038 'move' tmp[521023](521035 '_paramFoldLogical' tmp[521024] tmp[521031]))
+    }
+    {
+      (521043 'move' tmp[521023](521040 '_paramFoldLogical' tmp[521024] 0))
+    }
+    (691967 call _statementLevelSymbol tmp[521023])
+  }
+  function ArrayViewReindexDom[190185](?).these[189457](arg _mt[190225]:_MT[227], arg this[190223]:ArrayViewReindexDom[190185](?), param arg tag[189454]:iterKind[697]) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[475801] "RVV" "temp"
+    unknown call_tmp[642919] "expr temp" "maybe param" "maybe type" "temp"
+    (642922 'move' call_tmp[642919](363840 call downdom _mt[232] this[190223]))
+    Forall {
+      induction variables:
+        
+        unknown i[189491] "index var" "insert auto destroy"
+      iterated expressions:
+        call_tmp[642919]
+      shadow variables:
+      forall body
+      {
+        unknown yret[475805] "YVV" "temp"
+        unknown call_tmp[642926] "expr temp" "maybe param" "maybe type" "temp"
+        (642929 'move' call_tmp[642926](189487 call(363844 call (partial) downIdxToUpIdx _mt[232] this[190223]) i[189491]))
+        (475808 'move' yret[475805](475807 'deref' call_tmp[642926]))
+        (475810 yield yret[475805])
+      }
+    }
+    (475803 return ret[475801])
+  }
+  where {
+    unknown tmp[405276] "maybe param" "temp"
+    unknown tmp[405297] "maybe param" "temp"
+    (405308 'move' tmp[405297](189464 call == tag[189454] standalone[695]))
+    unknown call_tmp[642931] "expr temp" "maybe param" "maybe type" "temp"
+    (642934 'move' call_tmp[642931](405310 call _cond_invalid tmp[405297]))
+    if call_tmp[642931]
+    {
+      (405313 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[521050] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[521051] "maybe param" "temp"
+    unknown call_tmp[642936] "expr temp" "maybe param" "maybe type" "temp"
+    (642939 'move' call_tmp[642936](405298 call isTrue tmp[405297]))
+    (521056 'move' tmp[521051](521054 call _cond_test call_tmp[642936]))
+    if tmp[521051]
+    {
+      unknown tmp[521058] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[642943] "expr temp" "maybe param" "maybe type" "temp"
+      (642946 'move' call_tmp[642943](363831 call downdom _mt[232] this[190223]))
+      unknown call_tmp[642948] "expr temp" "maybe param" "maybe type" "temp"
+      (642951 'move' call_tmp[642948](189469 call chpl__isDROrDRView call_tmp[642943]))
+      unknown call_tmp[642953] "expr temp" "maybe param" "maybe type" "temp"
+      (642956 'move' call_tmp[642953](189470 call ! call_tmp[642948]))
+      (521060 'move' tmp[521058](405301 call isTrue call_tmp[642953]))
+      (521065 'move' tmp[521050](521062 '_paramFoldLogical' tmp[521051] tmp[521058]))
+    }
+    {
+      (521070 'move' tmp[521050](521067 '_paramFoldLogical' tmp[521051] 0))
+    }
+    (405287 'move' tmp[405276] tmp[521050])
+    unknown call_tmp[642958] "expr temp" "maybe param" "maybe type" "temp"
+    (642961 'move' call_tmp[642958](405289 call _cond_invalid tmp[405276]))
+    if call_tmp[642958]
+    {
+      (405292 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[521077] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[521078] "maybe param" "temp"
+    unknown call_tmp[642963] "expr temp" "maybe param" "maybe type" "temp"
+    (642966 'move' call_tmp[642963](405277 call isTrue tmp[405276]))
+    (521083 'move' tmp[521078](521081 call _cond_test call_tmp[642963]))
+    if tmp[521078]
+    {
+      unknown tmp[521085] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[642970] "expr temp" "maybe param" "maybe type" "temp"
+      (642973 'move' call_tmp[642970](363835 call downdom _mt[232] this[190223]))
+      unknown call_tmp[642975] "expr temp" "maybe param" "maybe type" "temp"
+      (642978 'move' call_tmp[642975](189479 'method call resolves' call_tmp[642970] "these" tag[189454]))
+      (521087 'move' tmp[521085](405280 call isTrue call_tmp[642975]))
+      (521092 'move' tmp[521077](521089 '_paramFoldLogical' tmp[521078] tmp[521085]))
+    }
+    {
+      (521097 'move' tmp[521077](521094 '_paramFoldLogical' tmp[521078] 0))
+    }
+    (691969 call _statementLevelSymbol tmp[521077])
+  }
+  function ArrayViewReindexDom[190185](?).these[189504](arg _mt[190229]:_MT[227], arg this[190227]:ArrayViewReindexDom[190185](?), param arg tag[189501]:iterKind[697]) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[475814] "RVV" "temp"
+    unknown call_tmp[642982] "expr temp" "maybe param" "maybe type" "temp"
+    (642985 'move' call_tmp[642982](363852 call downdom _mt[232] this[190227]))
+    unknown call_tmp[642987] "expr temp" "maybe param" "maybe type" "temp"
+    (642990 'move' call_tmp[642987](189516 call chpl__isDROrDRView call_tmp[642982]))
+    unknown call_tmp[642992] "expr temp" "maybe param" "maybe type" "temp"
+    (642995 'move' call_tmp[642992](189610 call _cond_test call_tmp[642987]))
+    if call_tmp[642992]
+    {
+      {
+        unknown _indexOfInterest[189528] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[189529] "expr temp" "temp"
+        unknown call_tmp[642999] "expr temp" "maybe param" "maybe type" "temp"
+        (643002 'move' call_tmp[642999](363856 call updom _mt[232] this[190227]))
+        unknown call_tmp[643006] "expr temp" "maybe param" "maybe type" "temp"
+        (643009 'move' call_tmp[643006](189524 call(189519 call (partial) these _mt[232] call_tmp[642999]) tag[189501]))
+        (189538 'move' _iterator[189529](189536 call _getIterator call_tmp[643006]))
+        Defer
+        {
+          {
+            (189555 call _freeIterator _iterator[189529])
+          }
+        }
+        { scopeless type
+          (189544 'move' _indexOfInterest[189528](189541 call iteratorIndex _iterator[189529]))
+        }
+        ForLoop
+        {
+          unknown followThis[189548] "index var" "insert auto destroy"
+          (189550 'move' followThis[189548] _indexOfInterest[189528])
+          unknown yret[475818] "YVV" "temp"
+          (475821 'move' yret[475818](475820 'deref' followThis[189548]))
+          (475823 yield yret[475818])
+          label _continueLabel[189533]
+          _indexOfInterest[189528]
+          _iterator[189529]
+        }
+        label _breakLabel[189534]
+      }
+    }
+    {
+      {
+        unknown _indexOfInterest[189575] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[189576] "expr temp" "temp"
+        unknown call_tmp[643013] "expr temp" "maybe param" "maybe type" "temp"
+        (643016 'move' call_tmp[643013](363862 call downdom _mt[232] this[190227]))
+        unknown call_tmp[643020] "expr temp" "maybe param" "maybe type" "temp"
+        (643023 'move' call_tmp[643020](189570 call(189565 call (partial) these _mt[232] call_tmp[643013]) tag[189501]))
+        (189585 'move' _iterator[189576](189583 call _getIterator call_tmp[643020]))
+        Defer
+        {
+          {
+            (189602 call _freeIterator _iterator[189576])
+          }
+        }
+        { scopeless type
+          (189591 'move' _indexOfInterest[189575](189588 call iteratorIndex _iterator[189576]))
+        }
+        ForLoop
+        {
+          unknown followThis[189595] "index var" "insert auto destroy"
+          (189597 'move' followThis[189595] _indexOfInterest[189575])
+          {
+            unknown yret[475825] "YVV" "temp"
+            (475828 'move' yret[475825](475827 'deref' followThis[189595]))
+            (475830 yield yret[475825])
+          }
+          label _continueLabel[189580]
+          _indexOfInterest[189575]
+          _iterator[189576]
+        }
+        label _breakLabel[189581]
+      }
+    }
+    (475816 return ret[475814])
+  }
+  where {
+    (189511 call == tag[189501] leader[691])
+  }
+  function ArrayViewReindexDom[190185](?).these[189624](arg _mt[190233]:_MT[227], arg this[190231]:ArrayViewReindexDom[190185](?), param arg tag[189621]:iterKind[697], arg followThis[189626]:_any[170](?)) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[475834] "RVV" "temp"
+    {
+      unknown _indexOfInterest[189647] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[189648] "expr temp" "temp"
+      unknown call_tmp[643027] "expr temp" "maybe param" "maybe type" "temp"
+      (643030 'move' call_tmp[643027](363871 call updom _mt[232] this[190231]))
+      unknown call_tmp[643034] "expr temp" "maybe param" "maybe type" "temp"
+      (643037 'move' call_tmp[643034](189643 call(189637 call (partial) these _mt[232] call_tmp[643027]) tag[189621] followThis[189626]))
+      (189657 'move' _iterator[189648](189655 call _getIterator call_tmp[643034]))
+      Defer
+      {
+        {
+          (189674 call _freeIterator _iterator[189648])
+        }
+      }
+      { scopeless type
+        (189663 'move' _indexOfInterest[189647](189660 call iteratorIndex _iterator[189648]))
+      }
+      ForLoop
+      {
+        unknown i[189667] "index var" "insert auto destroy"
+        (189669 'move' i[189667] _indexOfInterest[189647])
+        unknown yret[475838] "YVV" "temp"
+        (475841 'move' yret[475838](475840 'deref' i[189667]))
+        (475843 yield yret[475838])
+        label _continueLabel[189652]
+        _indexOfInterest[189647]
+        _iterator[189648]
+      }
+      label _breakLabel[189653]
+    }
+    (475836 return ret[475834])
+  }
+  where {
+    (189633 call == tag[189621] follower[693])
+  }
+  function ArrayViewReindexDom[190185](?).chpl_reindexConvertLoDTupleToHiD[189689](arg _mt[190237]:_MT[227], arg this[190235]:ArrayViewReindexDom[190185](?), arg tup[189687]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (189709 call compilerError "Unimplemented routine")
+    (475845 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).chpl_reindexConvertHiDTupleToLoD[189718](arg _mt[190241]:_MT[227], arg this[190239]:ArrayViewReindexDom[190185](?), arg tup[189716]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (189723 call compilerError "Unimplemented routine")
+    (475847 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).downIdxToUpIdx[189734](arg _mt[190245]:_MT[227], arg this[190243]:ArrayViewReindexDom[190185](?), arg downIdx[189731]:integral[188](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[475851] "RVV" "temp"
+    unknown call_tmp[643041] "expr temp" "maybe param" "maybe type" "temp"
+    (643044 'move' call_tmp[643041](363879 call updom _mt[232] this[190243]))
+    unknown call_tmp[643048] "expr temp" "maybe param" "maybe type" "temp"
+    (643051 'move' call_tmp[643048](189738 call rank _mt[232] call_tmp[643041]))
+    unknown call_tmp[643053] "expr temp" "maybe param" "maybe type" "temp"
+    (643056 'move' call_tmp[643053](189742 call == call_tmp[643048] 1))
+    unknown call_tmp[643060] "expr temp" "maybe param" "maybe type" "temp"
+    (643063 'move' call_tmp[643060](363883 call updom _mt[232] this[190243]))
+    unknown call_tmp[643067] "expr temp" "maybe param" "maybe type" "temp"
+    (643070 'move' call_tmp[643067](189746 call rank _mt[232] call_tmp[643060]))
+    unknown call_tmp[643072] "expr temp" "maybe param" "maybe type" "temp"
+    (643075 'move' call_tmp[643072](189750 call _cast string[24] call_tmp[643067]))
+    (189752 call compilerAssert call_tmp[643053] call_tmp[643072])
+    unknown call_tmp[643079] "expr temp" "maybe param" "maybe type" "temp"
+    (643082 'move' call_tmp[643079](363887 call updom _mt[232] this[190243]))
+    unknown call_tmp[643086] "expr temp" "maybe param" "maybe type" "temp"
+    (643089 'move' call_tmp[643086](189761 call(189756 call (partial) dsiDim _mt[232] call_tmp[643079]) 1))
+    unknown call_tmp[643095] "expr temp" "maybe param" "maybe type" "temp"
+    (643098 'move' call_tmp[643095](363891 call downdom _mt[232] this[190243]))
+    unknown call_tmp[643102] "expr temp" "maybe param" "maybe type" "temp"
+    (643105 'move' call_tmp[643102](189771 call(189766 call (partial) dsiDim _mt[232] call_tmp[643095]) 1))
+    unknown call_tmp[643109] "expr temp" "maybe param" "maybe type" "temp"
+    (643112 'move' call_tmp[643109](189777 call(189772 call (partial) indexOrder _mt[232] call_tmp[643102]) downIdx[189731]))
+    unknown call_tmp[643114] "expr temp" "maybe param" "maybe type" "temp"
+    (643117 'move' call_tmp[643114](189779 call(189762 call (partial) orderToIndex _mt[232] call_tmp[643086]) call_tmp[643109]))
+    (475856 'move' ret[475851](475855 'deref' call_tmp[643114]))
+    (475853 return ret[475851])
+  }
+  function ArrayViewReindexDom[190185](?).downIdxToUpIdx[189788](arg _mt[190249]:_MT[227], arg this[190247]:ArrayViewReindexDom[190185](?), arg i[189786]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[475860] "RVV" "temp"
+    unknown ind[189800] "insert auto destroy"
+    unknown call_tmp[643121] "expr temp" "maybe param" "maybe type" "temp"
+    (643124 'move' call_tmp[643121](363896 call updom _mt[232] this[190247]))
+    unknown call_tmp[643128] "expr temp" "maybe param" "maybe type" "temp"
+    (643131 'move' call_tmp[643128](189791 call rank _mt[232] call_tmp[643121]))
+    unknown call_tmp[643135] "expr temp" "maybe param" "maybe type" "temp"
+    (643138 'move' call_tmp[643135](363900 call updom _mt[232] this[190247]))
+    unknown call_tmp[643142] "expr temp" "maybe param" "maybe type" "temp"
+    (643145 'move' call_tmp[643142](189795 call idxType _mt[232] call_tmp[643135]))
+    unknown call_tmp[643147] "expr temp" "maybe param" "maybe type" "temp"
+    (643150 'move' call_tmp[643147](189798 call * call_tmp[643128] call_tmp[643142]))
+    (493507 'default init var' ind[189800] call_tmp[643147])
+    {
+      unknown d[189847] "insert auto destroy"
+      (493509 'init var' d[189847] 0)
+      unknown tmp[189848] "maybe param" "temp"
+      unknown call_tmp[643154] "expr temp" "maybe param" "maybe type" "temp"
+      (643157 'move' call_tmp[643154](363904 call updom _mt[232] this[190247]))
+      unknown call_tmp[643161] "expr temp" "maybe param" "maybe type" "temp"
+      (643164 'move' call_tmp[643161](189806 call rank _mt[232] call_tmp[643154]))
+      (189860 'move' tmp[189848](189858 call chpl_compute_low_param_loop_bound 1 call_tmp[643161]))
+      unknown tmp[189849] "maybe param" "temp"
+      unknown call_tmp[643168] "expr temp" "maybe param" "maybe type" "temp"
+      (643171 'move' call_tmp[643168](363922 call updom _mt[232] this[190247]))
+      unknown call_tmp[643175] "expr temp" "maybe param" "maybe type" "temp"
+      (643178 'move' call_tmp[643175](189865 call rank _mt[232] call_tmp[643168]))
+      (189870 'move' tmp[189849](189868 call chpl_compute_high_param_loop_bound 1 call_tmp[643175]))
+      unknown tmp[189850] "maybe param" "temp"
+      (189873 'move' tmp[189850] 1)
+      ParamForLoop
+      { d[189847] tmp[189848] tmp[189849] tmp[189850]
+        {
+          unknown call_tmp[643180] "expr temp" "maybe param" "maybe type" "temp"
+          (643183 'move' call_tmp[643180](189814 call ind[189800] d[189847]))
+          unknown call_tmp[643187] "expr temp" "maybe param" "maybe type" "temp"
+          (643190 'move' call_tmp[643187](363910 call updom _mt[232] this[190247]))
+          unknown call_tmp[643194] "expr temp" "maybe param" "maybe type" "temp"
+          (643197 'move' call_tmp[643194](189821 call(189816 call (partial) dsiDim _mt[232] call_tmp[643187]) d[189847]))
+          unknown call_tmp[643203] "expr temp" "maybe param" "maybe type" "temp"
+          (643206 'move' call_tmp[643203](363915 call downdom _mt[232] this[190247]))
+          unknown call_tmp[643210] "expr temp" "maybe param" "maybe type" "temp"
+          (643213 'move' call_tmp[643210](189831 call(189826 call (partial) dsiDim _mt[232] call_tmp[643203]) d[189847]))
+          unknown call_tmp[643217] "expr temp" "maybe param" "maybe type" "temp"
+          (643220 'move' call_tmp[643217](189838 call i[189786] d[189847]))
+          unknown call_tmp[643222] "expr temp" "maybe param" "maybe type" "temp"
+          (643225 'move' call_tmp[643222](189840 call(189832 call (partial) indexOrder _mt[232] call_tmp[643210]) call_tmp[643217]))
+          unknown call_tmp[643227] "expr temp" "maybe param" "maybe type" "temp"
+          (643230 'move' call_tmp[643227](189842 call(189822 call (partial) orderToIndex _mt[232] call_tmp[643194]) call_tmp[643222]))
+          (189843 call = call_tmp[643180] call_tmp[643227])
+        }
+      }
+      label _unused_continueLabel[189852]
+      label _breakLabel[189851]
+    }
+    (475865 'move' ret[475860](475864 'deref' ind[189800]))
+    (475862 return ret[475860])
+  }
+  function ArrayViewReindexDom[190185](?).dsiMyDist[189891](arg _mt[190253]:_MT[227], arg this[190251]:ArrayViewReindexDom[190185](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    unknown ret[475869] "RVV" "temp"
+    unknown call_tmp[643234] "expr temp" "maybe param" "maybe type" "temp"
+    (643237 'move' call_tmp[643234](363927 call dist _mt[232] this[190251]))
+    (475874 'move' ret[475869](475873 'deref' call_tmp[643234]))
+    (475871 return ret[475869])
+  }
+  function ArrayViewReindexDom[190185](?).dsiTargetLocales[189901](arg _mt[190257]:_MT[227], arg this[190255]:ArrayViewReindexDom[190185](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475878] "RVV" "temp"
+    unknown call_tmp[643241] "expr temp" "maybe param" "maybe type" "temp"
+    (643244 'move' call_tmp[643241](363931 call downdom _mt[232] this[190255]))
+    unknown call_tmp[643248] "expr temp" "maybe param" "maybe type" "temp"
+    (643251 'move' call_tmp[643248](189908 call(189904 call (partial) dsiTargetLocales _mt[232] call_tmp[643241])))
+    (475883 'move' ret[475878](475882 'deref' call_tmp[643248]))
+    (475880 return ret[475878])
+  }
+  function ArrayViewReindexDom[190185](?).dsiHasSingleLocalSubdomain[189916](arg _mt[190261]:_MT[227], arg this[190259]:ArrayViewReindexDom[190185](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475887] "RVV" "param" "temp"
+    unknown call_tmp[643255] "expr temp" "maybe param" "maybe type" "temp"
+    (643258 'move' call_tmp[643255](363935 call downdom _mt[232] this[190259]))
+    unknown call_tmp[643262] "expr temp" "maybe param" "maybe type" "temp"
+    (643265 'move' call_tmp[643262](189923 call(189919 call (partial) dsiHasSingleLocalSubdomain _mt[232] call_tmp[643255])))
+    (475892 'move' ret[475887](475891 'deref' call_tmp[643262]))
+    (475889 return ret[475887])
+  }
+  function ArrayViewReindexDom[190185](?).dsiLocalSubdomain[189935](arg _mt[190265]:_MT[227], arg this[190263]:ArrayViewReindexDom[190185](?), arg loc[189932]:locale[26]) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475896] "RVV" "temp"
+    unknown call_tmp[643269] "expr temp" "maybe param" "maybe type" "temp"
+    (643272 'move' call_tmp[643269](363939 call downdom _mt[232] this[190263]))
+    unknown call_tmp[643276] "expr temp" "maybe param" "maybe type" "temp"
+    (643279 'move' call_tmp[643276](189943 call(189938 call (partial) dsiLocalSubdomain _mt[232] call_tmp[643269]) loc[189932]))
+    unknown call_tmp[643283] "maybe param" "maybe type" "temp"
+    (643286 'move' call_tmp[643283](189948 call(189944 call (partial) dims _mt[232] call_tmp[643276])))
+    const dims[189949] "const" "insert auto destroy"
+    (493511 'init var' dims[189949] call_tmp[643283])
+    unknown call_tmp[643290] "expr temp" "maybe param" "maybe type" "temp"
+    (643293 'move' call_tmp[643290](363945 call downdom _mt[232] this[190263]))
+    unknown call_tmp[643297] "expr temp" "maybe param" "maybe type" "temp"
+    (643300 'move' call_tmp[643297](363949 call updom _mt[232] this[190263]))
+    unknown call_tmp[643302] "expr temp" "maybe param" "maybe type" "temp"
+    (643305 'move' call_tmp[643302](189958 call chpl_reindexConvertDom dims[189949] call_tmp[643290] call_tmp[643297]))
+    (475901 'move' ret[475896](475900 'deref' call_tmp[643302]))
+    (475898 return ret[475896])
+  }
+  function ArrayViewReindexDom[190185](?).dsiAssignDomain[189969](arg _mt[190269]:_MT[227], arg this[190267]:ArrayViewReindexDom[190185](?), arg rhs[189966]:_domain[123390](?), arg lhsPrivate[189972]:bool[10]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    (189979 call chpl_assignDomainWithGetSetIndices this[190267] rhs[189966])
+    (475903 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).isReindexDomainView[189986](arg _mt[190273]:_MT[227], arg this[190271]:ArrayViewReindexDom[190185](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475907] "RVV" "param" "temp"
+    (475912 'move' ret[475907](475911 'deref' 1))
+    (475909 return ret[475907])
+  }
+  function ArrayViewReindexDom[190185](?)._getActualDomain[189996](arg _mt[190277]:_MT[227], arg this[190275]:ArrayViewReindexDom[190185](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475916] "RVV" "temp"
+    unknown call_tmp[643309] "expr temp" "maybe param" "maybe type" "temp"
+    (643312 'move' call_tmp[643309](363956 call downdom _mt[232] this[190275]))
+    unknown call_tmp[643314] "expr temp" "maybe param" "maybe type" "temp"
+    (643317 'move' call_tmp[643314](190001 call chpl__isDomainView call_tmp[643309]))
+    unknown call_tmp[643319] "expr temp" "maybe param" "maybe type" "temp"
+    (643322 'move' call_tmp[643319](190015 call _cond_test call_tmp[643314]))
+    if call_tmp[643319]
+    {
+      unknown call_tmp[643326] "expr temp" "maybe param" "maybe type" "temp"
+      (643329 'move' call_tmp[643326](363960 call downdom _mt[232] this[190275]))
+      unknown call_tmp[643333] "expr temp" "maybe param" "maybe type" "temp"
+      (643336 'move' call_tmp[643333](190007 call(190003 call (partial) _getActualDomain _mt[232] call_tmp[643326])))
+      (475921 'move' ret[475916](475920 'deref' call_tmp[643333]))
+      gotoReturn _end__getActualDomain[475914] _end__getActualDomain[475914]
+    }
+    {
+      unknown call_tmp[643340] "expr temp" "maybe param" "maybe type" "temp"
+      (643343 'move' call_tmp[643340](363964 call downdom _mt[232] this[190275]))
+      (475926 'move' ret[475916](475925 'deref' call_tmp[643340]))
+      gotoReturn _end__getActualDomain[475914] _end__getActualDomain[475914]
+    }
+    label _end__getActualDomain[475914]
+    (475918 return ret[475916])
+  }
+  function ArrayViewReindexDom[190185](?).dsiDestroyDom[190024](arg _mt[190281]:_MT[227], arg this[190279]:ArrayViewReindexDom[190185](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    unknown call_tmp[643347] "expr temp" "maybe param" "maybe type" "temp"
+    (643350 'move' call_tmp[643347](363969 call updomInst _mt[232] this[190279]))
+    unknown call_tmp[643352] "expr temp" "maybe param" "maybe type" "temp"
+    (643355 'move' call_tmp[643352](190028 call postfix! call_tmp[643347]))
+    (190032 call _delete_dom call_tmp[643352] 0)
+    unknown call_tmp[643359] "expr temp" "maybe param" "maybe type" "temp"
+    (643362 'move' call_tmp[643359](363974 call downdomInst _mt[232] this[190279]))
+    unknown call_tmp[643366] "expr temp" "maybe param" "maybe type" "temp"
+    (643369 'move' call_tmp[643366](363979 call downdomInst _mt[232] this[190279]))
+    unknown call_tmp[643371] "expr temp" "maybe param" "maybe type" "temp"
+    (643374 'move' call_tmp[643371](190041 call _isPrivatized call_tmp[643366]))
+    (190042 call _delete_dom call_tmp[643359] call_tmp[643371])
+    (475930 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).dsiSupportsPrivatization[190048](arg _mt[190285]:_MT[227], arg this[190283]:ArrayViewReindexDom[190185](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475934] "RVV" "param" "temp"
+    unknown call_tmp[643378] "expr temp" "maybe param" "maybe type" "temp"
+    (643381 'move' call_tmp[643378](363984 call downdomInst _mt[232] this[190283]))
+    unknown call_tmp[643385] "expr temp" "maybe param" "maybe type" "temp"
+    (643388 'move' call_tmp[643385](190055 call(190051 call (partial) dsiSupportsPrivatization _mt[232] call_tmp[643378])))
+    (475939 'move' ret[475934](475938 'deref' call_tmp[643385]))
+    (475936 return ret[475934])
+  }
+  function ArrayViewReindexDom[190185](?).dsiGetPrivatizeData[190063](arg _mt[190289]:_MT[227], arg this[190287]:ArrayViewReindexDom[190185](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475943] "RVV" "temp"
+    unknown call_tmp[643392] "expr temp" "maybe param" "maybe type" "temp"
+    (643395 'move' call_tmp[643392](363989 call updomInst _mt[232] this[190287]))
+    unknown call_tmp[643399] "expr temp" "maybe param" "maybe type" "temp"
+    (643402 'move' call_tmp[643399](363994 call downdomPid _mt[232] this[190287]))
+    unknown call_tmp[643406] "expr temp" "maybe param" "maybe type" "temp"
+    (643409 'move' call_tmp[643406](363999 call downdomInst _mt[232] this[190287]))
+    unknown call_tmp[643413] "expr temp" "maybe param" "maybe type" "temp"
+    (643416 'move' call_tmp[643413](364004 call distPid _mt[232] this[190287]))
+    unknown call_tmp[643420] "expr temp" "maybe param" "maybe type" "temp"
+    (643423 'move' call_tmp[643420](364009 call distInst _mt[232] this[190287]))
+    unknown call_tmp[643425] "expr temp" "maybe param" "maybe type" "temp"
+    (643428 'move' call_tmp[643425](190071 call _build_tuple call_tmp[643392] call_tmp[643399] call_tmp[643406] call_tmp[643413] call_tmp[643420]))
+    (475948 'move' ret[475943](475947 'deref' call_tmp[643425]))
+    (475945 return ret[475943])
+  }
+  function ArrayViewReindexDom[190185](?).dsiPrivatize[190082](arg _mt[190293]:_MT[227], arg this[190291]:ArrayViewReindexDom[190185](?), arg privatizeData[190080]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475952] "RVV" "temp"
+    unknown call_tmp[643432] "expr temp" "maybe param" "maybe type" "temp"
+    (643435 'move' call_tmp[643432](190086 call rank _mt[232] this[190291]))
+    unknown call_tmp[643439] "expr temp" "maybe param" "maybe type" "temp"
+    (643442 'move' call_tmp[643439](190092 call idxType _mt[232] this[190291]))
+    unknown call_tmp[643446] "expr temp" "maybe param" "maybe type" "temp"
+    (643449 'move' call_tmp[643446](190097 call stridable _mt[232] this[190291]))
+    unknown call_tmp[643451] "expr temp" "maybe param" "maybe type" "temp"
+    (643454 'move' call_tmp[643451](190104 call privatizeData[190080] 1))
+    unknown call_tmp[643456] "expr temp" "maybe param" "maybe type" "temp"
+    (643459 'move' call_tmp[643456](190109 call privatizeData[190080] 2))
+    unknown call_tmp[643461] "expr temp" "maybe param" "maybe type" "temp"
+    (643464 'move' call_tmp[643461](190114 call privatizeData[190080] 3))
+    unknown call_tmp[643466] "expr temp" "maybe param" "maybe type" "temp"
+    (643469 'move' call_tmp[643466](190119 call privatizeData[190080] 4))
+    unknown call_tmp[643471] "expr temp" "maybe param" "maybe type" "temp"
+    (643474 'move' call_tmp[643471](190124 call privatizeData[190080] 5))
+    unknown call_tmp[643476] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (643479 'move' call_tmp[643476](691561 'new' anymanaged ArrayViewReindexDom[363513](?)(rank = call_tmp[643432])(idxType = call_tmp[643439])(stridable = call_tmp[643446])(updomInst = call_tmp[643451])(downdomPid = call_tmp[643456])(downdomInst = call_tmp[643461])(distPid = call_tmp[643466])(distInst = call_tmp[643471])(_chpl_manager = unmanaged[209](?))))
+    (475957 'move' ret[475952](475956 'deref' call_tmp[643476]))
+    (475954 return ret[475952])
+  }
+  function ArrayViewReindexDom[190185](?).dsiGetReprivatizeData[190136](arg _mt[190297]:_MT[227], arg this[190295]:ArrayViewReindexDom[190185](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[475961] "RVV" "temp"
+    unknown call_tmp[643483] "expr temp" "maybe param" "maybe type" "temp"
+    (643486 'move' call_tmp[643483](364023 call updomInst _mt[232] this[190295]))
+    unknown call_tmp[643490] "expr temp" "maybe param" "maybe type" "temp"
+    (643493 'move' call_tmp[643490](364028 call downdomPid _mt[232] this[190295]))
+    unknown call_tmp[643497] "expr temp" "maybe param" "maybe type" "temp"
+    (643500 'move' call_tmp[643497](364033 call downdomInst _mt[232] this[190295]))
+    unknown call_tmp[643502] "expr temp" "maybe param" "maybe type" "temp"
+    (643505 'move' call_tmp[643502](190142 call _build_tuple call_tmp[643483] call_tmp[643490] call_tmp[643497]))
+    (475966 'move' ret[475961](475965 'deref' call_tmp[643502]))
+    (475963 return ret[475961])
+  }
+  function ArrayViewReindexDom[190185](?).dsiReprivatize[190153](arg _mt[190301]:_MT[227], arg this[190299]:ArrayViewReindexDom[190185](?), arg other[190151]:_any[170](?), arg reprivatizeData[190155]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[643509] "expr temp" "maybe param" "maybe type" "temp"
+    (643512 'move' call_tmp[643509](364038 call updomInst _mt[232] this[190299]))
+    unknown call_tmp[643514] "expr temp" "maybe param" "maybe type" "temp"
+    (643517 'move' call_tmp[643514](190161 call reprivatizeData[190155] 1))
+    (190162 call = call_tmp[643509] call_tmp[643514])
+    unknown call_tmp[643521] "expr temp" "maybe param" "maybe type" "temp"
+    (643524 'move' call_tmp[643521](364044 call downdomPid _mt[232] this[190299]))
+    unknown call_tmp[643526] "expr temp" "maybe param" "maybe type" "temp"
+    (643529 'move' call_tmp[643526](190170 call reprivatizeData[190155] 2))
+    (190171 call = call_tmp[643521] call_tmp[643526])
+    unknown call_tmp[643533] "expr temp" "maybe param" "maybe type" "temp"
+    (643536 'move' call_tmp[643533](364050 call downdomInst _mt[232] this[190299]))
+    unknown call_tmp[643538] "expr temp" "maybe param" "maybe type" "temp"
+    (643541 'move' call_tmp[643538](190178 call reprivatizeData[190155] 3))
+    (190179 call = call_tmp[643533] call_tmp[643538])
+    (475968 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).super[732460](arg _mt[732462]:_MT[227], arg this[732464]:ArrayViewReindexDom[190185](?)) : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[732473] "RVV" "temp"
+    unknown call_tmp[732480] "expr temp" "maybe param" "maybe type" "temp"
+    (732483 'move' call_tmp[732480](732468 '.v' this[732464] c"super"))
+    (732478 'move' ret[732473](732477 'deref' call_tmp[732480]))
+    (732475 return ret[732473])
+  }
+  function ArrayViewReindexDom[190185](?).updomInst[732485](arg _mt[732487]:_MT[227], arg this[732489]:ArrayViewReindexDom[190185](?)) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[732498] "RVV" "temp"
+    unknown call_tmp[732505] "expr temp" "maybe param" "maybe type" "temp"
+    (732508 'move' call_tmp[732505](732493 '.' this[732489] c"updomInst"))
+    (732503 'move' ret[732498](732502 'addr of' call_tmp[732505]))
+    (732500 return ret[732498])
+  }
+  function ArrayViewReindexDom[190185](?).downdomPid[732510](arg _mt[732512]:_MT[227], arg this[732514]:ArrayViewReindexDom[190185](?)) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[732523] "RVV" "temp"
+    unknown call_tmp[732530] "expr temp" "maybe param" "maybe type" "temp"
+    (732533 'move' call_tmp[732530](732518 '.' this[732514] c"downdomPid"))
+    (732528 'move' ret[732523](732527 'addr of' call_tmp[732530]))
+    (732525 return ret[732523])
+  }
+  function ArrayViewReindexDom[190185](?).downdomInst[732535](arg _mt[732537]:_MT[227], arg this[732539]:ArrayViewReindexDom[190185](?)) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[732548] "RVV" "temp"
+    unknown call_tmp[732555] "expr temp" "maybe param" "maybe type" "temp"
+    (732558 'move' call_tmp[732555](732543 '.' this[732539] c"downdomInst"))
+    (732553 'move' ret[732548](732552 'addr of' call_tmp[732555]))
+    (732550 return ret[732548])
+  }
+  function ArrayViewReindexDom[190185](?).distPid[732560](arg _mt[732562]:_MT[227], arg this[732564]:ArrayViewReindexDom[190185](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732573] "RVV" "temp"
+    unknown call_tmp[732580] "expr temp" "maybe param" "maybe type" "temp"
+    (732583 'move' call_tmp[732580](732568 '.' this[732564] c"distPid"))
+    (732578 'move' ret[732573](732577 'addr of' call_tmp[732580]))
+    (732575 return ret[732573])
+  }
+  function ArrayViewReindexDom[190185](?).distInst[732585](arg _mt[732587]:_MT[227], arg this[732589]:ArrayViewReindexDom[190185](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732598] "RVV" "temp"
+    unknown call_tmp[732605] "expr temp" "maybe param" "maybe type" "temp"
+    (732608 'move' call_tmp[732605](732593 '.' this[732589] c"distInst"))
+    (732603 'move' ret[732598](732602 'addr of' call_tmp[732605]))
+    (732600 return ret[732598])
+  }
+  function ArrayViewReindexDom[190185](?).ownsDownDomInst[732610](arg _mt[732612]:_MT[227], arg this[732614]:ArrayViewReindexDom[190185](?)) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[732623] "RVV" "temp"
+    unknown call_tmp[732630] "expr temp" "maybe param" "maybe type" "temp"
+    (732633 'move' call_tmp[732630](732618 '.' this[732614] c"ownsDownDomInst"))
+    (732628 'move' ret[732623](732627 'addr of' call_tmp[732630]))
+    (732625 return ret[732623])
+  }
+  function ArrayViewReindexDom[190185](?).init[732635](arg _mt[732637]:_MT[227], arg this[732638]:ArrayViewReindexDom[190185](?), param arg rank[732649]:int(64)[13], arg idxType[732652]:_any[170](?), param arg stridable[732655]:bool[10], in arg updomInst[732658] :
+  unknown call_tmp[732779] "expr temp" "maybe param" "maybe type" "temp" =
+  _typeDefaultT[239], in arg downdomPid[732677]:_any[170](?), in arg downdomInst[732686]:_any[170](?), in arg distPid[732695]:_any[170](?), in arg distInst[732704]:_any[170](?), in arg ownsDownDomInst[732713] :
+  0 =
+  0) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    unknown super_tmp[732728] "temporary of super field" "temp"
+    (732730 'move' super_tmp[732728](732727 '.v' this[732638] c"super"))
+    (732648 call(732646 call (partial) init _mt[232] super_tmp[732728]) rank[732649] idxType[732652] stridable[732655])
+    unknown tmp[732733] "temp" "type variable"
+    { scopeless type
+      unknown call_type_tmp[732769] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[732791] "expr temp" "maybe param" "maybe type" "temp"
+      (732794 'move' call_tmp[732791](732735 '.v' this[732638] c"super"))
+      (732773 'move' call_type_tmp[732769](732738 'typeof' call_tmp[732791]))
+    }
+    (732739 'move' tmp[732733] call_type_tmp[732769])
+    unknown call_tmp[732796] "maybe param" "maybe type" "temp"
+    (732799 'move' call_tmp[732796](732744 'cast' tmp[732733] this[732638]))
+    unknown chpl__thisAsParent[732741] "insert auto destroy" "temp"
+    (732777 'init var' chpl__thisAsParent[732741] call_tmp[732796] tmp[732733])
+    (732747 'setcid' chpl__thisAsParent[732741])
+    (732749 'init field' this[732638] c"updomInst" updomInst[732658])
+    (732752 'init field' this[732638] c"downdomPid" downdomPid[732677])
+    (732755 'init field' this[732638] c"downdomInst" downdomInst[732686])
+    (732758 'init field' this[732638] c"distPid" distPid[732695])
+    (732761 'init field' this[732638] c"distInst" distInst[732704])
+    (732764 '.=' this[732638] c"ownsDownDomInst" ownsDownDomInst[732713])
+    (732767 'setcid' this[732638])
+    (732775 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).deinit[732801](arg _mt[732803]:_MT[227], arg this[732805]:ArrayViewReindexDom[190185](?)) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (732807 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).writeThis[732810](arg _mt[732814]:_MT[227], arg this[732812]:ArrayViewReindexDom[190185](?), arg f[732813]:_any[170](?)) : void[4] "compiler generated" "last resort" "method" "primary method" "method overrides"
+  {
+    (732819 call writeThisDefaultImpl f[732813] this[732812])
+    (732823 return _void[47])
+  }
+  function ArrayViewReindexDom[190185](?).readThis[732825](arg _mt[732829]:_MT[227], arg this[732827]:ArrayViewReindexDom[190185](?), arg f[732828]:_any[170](?)) : void[4] "compiler generated" "last resort" "method" "primary method" "method overrides"
+  {
+    (732833 call readThisDefaultImpl f[732828] this[732827])
+    (732838 return _void[47])
+  }
+  type ArrayViewReindexDom[190185](?) val super[331073]:BaseRectangularDom[143416](?) "delay instantiation" "super class" unknown updomInst[188946](188945 'to unmanaged class from unknown'(188944 'to nilable class from type'(188943 call anymanaged DefaultRectangularDom[339767](?) rank[143339] idxType[143342] stridable[143346]))) unknown downdomPid[188957] unknown downdomInst[188960] const distPid[188963] "const" const distInst[188966] "const" val ownsDownDomInst[188970]:bool[10] 0 forwarding ( )
+  type anymanaged ArrayViewReindexDom[363513](?)
+  function buildIndexCacheHelper[190308](arg arr[190306]:_any[170](?), arg dom[190310]:_any[170](?)) : _unknown[43] "private"
+  {
+    unknown ret[475972] "RVV" "temp"
+    unknown call_tmp[643543] "expr temp" "maybe param" "maybe type" "temp"
+    (643546 'move' call_tmp[643543](190315 call chpl__isDROrDRView arr[190306]))
+    unknown call_tmp[643548] "expr temp" "maybe param" "maybe type" "temp"
+    (643551 'move' call_tmp[643548](190409 call _cond_test call_tmp[643543]))
+    if call_tmp[643548]
+    {
+      unknown call_tmp[643553] "expr temp" "maybe param" "maybe type" "temp"
+      (643556 'move' call_tmp[643553](190319 call chpl__isArrayView arr[190306]))
+      unknown call_tmp[643558] "expr temp" "maybe param" "maybe type" "temp"
+      (643561 'move' call_tmp[643558](190400 call _cond_test call_tmp[643553]))
+      if call_tmp[643558]
+      {
+        unknown tmp[405318] "maybe param" "temp"
+        (405329 'move' tmp[405318](190325 call(190321 call (partial) isSliceArrayView _mt[232] arr[190306])))
+        unknown call_tmp[643565] "expr temp" "maybe param" "maybe type" "temp"
+        (643568 'move' call_tmp[643565](405331 call _cond_invalid tmp[405318]))
+        if call_tmp[643565]
+        {
+          (405334 call compilerError "cannot promote short-circuiting && operator")
+        }
+        unknown tmp[521104] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[521105] "maybe param" "temp"
+        unknown call_tmp[643570] "expr temp" "maybe param" "maybe type" "temp"
+        (643573 'move' call_tmp[643570](405319 call isTrue tmp[405318]))
+        (521110 'move' tmp[521105](521108 call _cond_test call_tmp[643570]))
+        if tmp[521105]
+        {
+          unknown tmp[521112] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[643577] "expr temp" "maybe param" "maybe type" "temp"
+          (643580 'move' call_tmp[643577](190331 call(190327 call (partial) _containsRCRE _mt[232] arr[190306])))
+          unknown call_tmp[643582] "expr temp" "maybe param" "maybe type" "temp"
+          (643585 'move' call_tmp[643582](190332 call ! call_tmp[643577]))
+          (521114 'move' tmp[521112](405322 call isTrue call_tmp[643582]))
+          (521119 'move' tmp[521104](521116 '_paramFoldLogical' tmp[521105] tmp[521112]))
+        }
+        {
+          (521124 'move' tmp[521104](521121 '_paramFoldLogical' tmp[521105] 0))
+        }
+        unknown call_tmp[643587] "expr temp" "maybe param" "maybe type" "temp"
+        (643590 'move' call_tmp[643587](190380 call _cond_test tmp[521104]))
+        if call_tmp[643587]
+        {
+          unknown call_tmp[643594] "expr temp" "maybe param" "maybe type" "temp"
+          (643597 'move' call_tmp[643594](190341 call(190337 call (partial) _getActualArray _mt[232] arr[190306])))
+          unknown call_tmp[643601] "expr temp" "maybe param" "maybe type" "temp"
+          (643604 'move' call_tmp[643601](190346 call(190342 call (partial) dsiGetRAD _mt[232] call_tmp[643594])))
+          unknown call_tmp[643610] "expr temp" "maybe param" "maybe type" "temp"
+          (643613 'move' call_tmp[643610](190351 call dom _mt[232] arr[190306]))
+          unknown call_tmp[643615] "expr temp" "maybe param" "maybe type" "temp"
+          (643618 'move' call_tmp[643615](190355 call(190347 call (partial) toSlice _mt[232] call_tmp[643601]) call_tmp[643610]))
+          unknown call_tmp[643622] "expr temp" "maybe param" "maybe type" "temp"
+          (643625 'move' call_tmp[643622](190363 call(190358 call (partial) toReindex _mt[232] call_tmp[643615]) dom[190310]))
+          (475977 'move' ret[475972](475976 'deref' call_tmp[643622]))
+          gotoReturn _end_buildIndexCacheHelper[475970] _end_buildIndexCacheHelper[475970]
+        }
+        {
+          unknown call_tmp[643629] "expr temp" "maybe param" "maybe type" "temp"
+          (643632 'move' call_tmp[643629](190368 call indexCache _mt[232] arr[190306]))
+          unknown call_tmp[643636] "expr temp" "maybe param" "maybe type" "temp"
+          (643639 'move' call_tmp[643636](190376 call(190371 call (partial) toReindex _mt[232] call_tmp[643629]) dom[190310]))
+          (475982 'move' ret[475972](475981 'deref' call_tmp[643636]))
+          gotoReturn _end_buildIndexCacheHelper[475970] _end_buildIndexCacheHelper[475970]
+        }
+      }
+      {
+        unknown call_tmp[643643] "expr temp" "maybe param" "maybe type" "temp"
+        (643646 'move' call_tmp[643643](190390 call(190386 call (partial) dsiGetRAD _mt[232] arr[190306])))
+        unknown call_tmp[643650] "expr temp" "maybe param" "maybe type" "temp"
+        (643653 'move' call_tmp[643650](190396 call(190391 call (partial) toReindex _mt[232] call_tmp[643643]) dom[190310]))
+        (475987 'move' ret[475972](475986 'deref' call_tmp[643650]))
+        gotoReturn _end_buildIndexCacheHelper[475970] _end_buildIndexCacheHelper[475970]
+      }
+    }
+    {
+      (475992 'move' ret[475972](475991 'deref' 0))
+      gotoReturn _end_buildIndexCacheHelper[475970] _end_buildIndexCacheHelper[475970]
+    }
+    label _end_buildIndexCacheHelper[475970]
+    (475974 return ret[475972])
+  }
+  function ArrayViewReindexArr[191880](?).init[190441](arg _mt[191884]:_MT[227], arg this[191882]:ArrayViewReindexArr[191880](?), arg eltType[190439]:_any[170](?), const arg _DomPid[190443]:_any[170](?), const arg dom[190445]:_any[170](?), const arg _ArrPid[190447]:_any[170](?), const arg _ArrInstance[190449]:_any[170](?), const arg ownsArrInstance[190453]:bool[10] =
+  0) : void[4] "method" "primary method" "no return value for void"
+  {
+    unknown super_tmp[437821] "temporary of super field" "temp"
+    (437823 'move' super_tmp[437821](437820 '.v' this[191882] c"super"))
+    (190464 call(190458 call (partial) init _mt[232] super_tmp[437821])(eltType = eltType[190439]))
+    unknown tmp[437826] "temp" "type variable"
+    { scopeless type
+      unknown call_type_tmp[444033] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[643657] "expr temp" "maybe param" "maybe type" "temp"
+      (643660 'move' call_tmp[643657](437828 '.v' this[191882] c"super"))
+      (444037 'move' call_type_tmp[444033](437831 'typeof' call_tmp[643657]))
+    }
+    (437832 'move' tmp[437826] call_type_tmp[444033])
+    unknown call_tmp[643662] "maybe param" "maybe type" "temp"
+    (643665 'move' call_tmp[643662](437837 'cast' tmp[437826] this[191882]))
+    unknown chpl__thisAsParent[437834] "insert auto destroy" "temp"
+    (493513 'init var' chpl__thisAsParent[437834] call_tmp[643662] tmp[437826])
+    (437840 'setcid' chpl__thisAsParent[437834])
+    unknown tmp[437842] "temp"
+    (437844 'init var' tmp[437842] _DomPid[190443])
+    (437846 'init field' this[191882] c"_DomPid" tmp[437842])
+    unknown tmp[437850] "temp"
+    (437852 'init var' tmp[437850] dom[190445])
+    (437854 'init field' this[191882] c"dom" tmp[437850])
+    unknown tmp[437858] "temp"
+    (437860 'init var' tmp[437858] _ArrPid[190447])
+    (437862 'init field' this[191882] c"_ArrPid" tmp[437858])
+    unknown tmp[437866] "temp"
+    (437868 'init var' tmp[437866] _ArrInstance[190449])
+    (437870 'init field' this[191882] c"_ArrInstance" tmp[437866])
+    unknown call_tmp[643667] "maybe param" "maybe type" "temp"
+    (643670 'move' call_tmp[643667](190507 call buildIndexCacheHelper _ArrInstance[190449] dom[190445]))
+    unknown tmp[437874] "temp"
+    (437876 'init var' tmp[437874] call_tmp[643667])
+    (437878 'init field' this[191882] c"indexCache" tmp[437874])
+    unknown tmp[437882] "temp"
+    (437884 'init var' tmp[437882] ownsArrInstance[190453])
+    (437886 'init field' this[191882] c"ownsArrInstance" tmp[437882])
+    (437890 'setcid' this[191882])
+    (475996 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).chpl_forwarding_expr10_arr[190530](arg _mt[191888]:_MT[227], arg this[191886]:ArrayViewReindexArr[191880](?)) : _unknown[43] "compiler generated" "inline" "maybe ref" "method" "primary method" "reference to const when const this"
+  {
+    unknown ret[476000] "RVV" "temp"
+    (476004 'move' ret[476000](364085 call arr _mt[232] this[191886]))
+    (476002 return ret[476000])
+  }
+  function ArrayViewReindexArr[191880](?).downdom[190538](arg _mt[191892]:_MT[227], arg this[191890]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[476008] "RVV" "temp"
+    unknown call_tmp[643676] "expr temp" "maybe param" "maybe type" "temp"
+    (643679 'move' call_tmp[643676](364089 call arr _mt[232] this[191890]))
+    unknown call_tmp[643683] "expr temp" "maybe param" "maybe type" "temp"
+    (643686 'move' call_tmp[643683](190541 call dom _mt[232] call_tmp[643676]))
+    (476013 'move' ret[476008](476012 'deref' call_tmp[643683]))
+    (476010 return ret[476008])
+  }
+  function ArrayViewReindexArr[191880](?).idxType[190551](arg _mt[191896]:_MT[227], arg this[191894]:ArrayViewReindexArr[191880](?)) type : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[476017] "RVV" "temp" "type variable"
+    unknown call_tmp[643690] "expr temp" "maybe param" "maybe type" "temp"
+    (643693 'move' call_tmp[643690](364094 call dom _mt[232] this[191894]))
+    unknown call_tmp[643697] "expr temp" "maybe param" "maybe type" "temp"
+    (643700 'move' call_tmp[643697](190554 call idxType _mt[232] call_tmp[643690]))
+    (476022 'move' ret[476017](476021 'deref' call_tmp[643697]))
+    (476019 return ret[476017])
+  }
+  function ArrayViewReindexArr[191880](?).rank[190564](arg _mt[191900]:_MT[227], arg this[191898]:ArrayViewReindexArr[191880](?)) param : _unknown[43] "method" "primary method" "no parens"
+  {
+    unknown ret[476026] "RVV" "param" "temp"
+    unknown call_tmp[643704] "expr temp" "maybe param" "maybe type" "temp"
+    (643707 'move' call_tmp[643704](364099 call dom _mt[232] this[191898]))
+    unknown call_tmp[643711] "expr temp" "maybe param" "maybe type" "temp"
+    (643714 'move' call_tmp[643711](190567 call rank _mt[232] call_tmp[643704]))
+    (476031 'move' ret[476026](476030 'deref' call_tmp[643711]))
+    (476028 return ret[476026])
+  }
+  function ArrayViewReindexArr[191880](?).isReindexArrayView[190577](arg _mt[191904]:_MT[227], arg this[191902]:ArrayViewReindexArr[191880](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476035] "RVV" "param" "temp"
+    (476040 'move' ret[476035](476039 'deref' 1))
+    (476037 return ret[476035])
+  }
+  function ArrayViewReindexArr[191880](?).these[190587](arg _mt[191908]:_MT[227], arg this[191906]:ArrayViewReindexArr[191880](?)) ref : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[476044] "RVV" "temp"
+    {
+      unknown _indexOfInterest[190598] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[190599] "expr temp" "temp"
+      unknown call_tmp[643718] "expr temp" "maybe param" "maybe type" "temp"
+      (643721 'move' call_tmp[643718](364104 call privDom _mt[232] this[191906]))
+      unknown call_tmp[643723] "expr temp" "maybe param" "maybe type" "temp"
+      (643726 'move' call_tmp[643723](190594 call chpl__serialViewIter this[191906] call_tmp[643718]))
+      (190608 'move' _iterator[190599](190606 call _getIterator call_tmp[643723]))
+      Defer
+      {
+        {
+          (190625 call _freeIterator _iterator[190599])
+        }
+      }
+      { scopeless type
+        (190614 'move' _indexOfInterest[190598](190611 call iteratorIndex _iterator[190599]))
+      }
+      ForLoop
+      {
+        unknown elem[190618] "index var" "insert auto destroy"
+        (190620 'move' elem[190618] _indexOfInterest[190598])
+        unknown yret[476048] "YVV" "temp"
+        (476051 'move' yret[476048](476050 'addr of' elem[190618]))
+        (476053 yield yret[476048])
+        label _continueLabel[190603]
+        _indexOfInterest[190598]
+        _iterator[190599]
+      }
+      label _breakLabel[190604]
+    }
+    (476046 return ret[476044])
+  }
+  function ArrayViewReindexArr[191880](?).these[190641](arg _mt[191912]:_MT[227], arg this[191910]:ArrayViewReindexArr[191880](?), param arg tag[190638]:iterKind[697]) ref : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[476057] "RVV" "temp"
+    unknown call_tmp[643730] "expr temp" "maybe param" "maybe type" "temp"
+    (643733 'move' call_tmp[643730](364118 call privDom _mt[232] this[191910]))
+    Forall {
+      induction variables:
+        
+        unknown i[190709] "index var" "insert auto destroy"
+      iterated expressions:
+        call_tmp[643730]
+      shadow variables:
+      forall body
+      {
+        unknown call_tmp[643737] "expr temp" "maybe param" "maybe type" "temp"
+        (643740 'move' call_tmp[643737](190667 call(364122 call (partial) shouldUseIndexCache _mt[232] this[191910])))
+        unknown call_tmp[643742] "expr temp" "maybe param" "maybe type" "temp"
+        (643745 'move' call_tmp[643742](190703 call _cond_test call_tmp[643737]))
+        if call_tmp[643742]
+        {
+          unknown call_tmp[643749] "expr temp" "maybe param" "maybe type" "temp"
+          (643752 'move' call_tmp[643749](364127 call indexCache _mt[232] this[191910]))
+          unknown call_tmp[643756] "maybe param" "maybe type" "temp"
+          (643759 'move' call_tmp[643756](190674 call(190669 call (partial) getDataIndex _mt[232] call_tmp[643749]) i[190709]))
+          const dataIdx[190675] "const" "insert auto destroy"
+          (493515 'init var' dataIdx[190675] call_tmp[643756])
+          unknown yret[476061] "YVV" "temp"
+          unknown call_tmp[643763] "expr temp" "maybe param" "maybe type" "temp"
+          (643766 'move' call_tmp[643763](364133 call indexCache _mt[232] this[191910]))
+          unknown call_tmp[643770] "expr temp" "maybe param" "maybe type" "temp"
+          (643773 'move' call_tmp[643770](190685 call(190680 call (partial) getDataElem _mt[232] call_tmp[643763]) dataIdx[190675]))
+          (476064 'move' yret[476061](476063 'addr of' call_tmp[643770]))
+          (476066 yield yret[476061])
+        }
+        {
+          unknown yret[476068] "YVV" "temp"
+          unknown call_tmp[643777] "expr temp" "maybe param" "maybe type" "temp"
+          (643780 'move' call_tmp[643777](364138 call arr _mt[232] this[191910]))
+          unknown call_tmp[643786] "expr temp" "maybe param" "maybe type" "temp"
+          (643789 'move' call_tmp[643786](364143 call privDom _mt[232] this[191910]))
+          unknown call_tmp[643793] "expr temp" "maybe param" "maybe type" "temp"
+          (643796 'move' call_tmp[643793](364147 call downdom _mt[232] this[191910]))
+          unknown call_tmp[643798] "expr temp" "maybe param" "maybe type" "temp"
+          (643801 'move' call_tmp[643798](190697 call chpl_reindexConvertIdx i[190709] call_tmp[643786] call_tmp[643793]))
+          unknown call_tmp[643803] "expr temp" "maybe param" "maybe type" "temp"
+          (643806 'move' call_tmp[643803](190699 call(190689 call (partial) dsiAccess _mt[232] call_tmp[643777]) call_tmp[643798]))
+          (476071 'move' yret[476068](476070 'addr of' call_tmp[643803]))
+          (476073 yield yret[476068])
+        }
+      }
+    }
+    (476059 return ret[476057])
+  }
+  where {
+    unknown tmp[405339] "maybe param" "temp"
+    unknown tmp[405360] "maybe param" "temp"
+    (405371 'move' tmp[405360](190648 call == tag[190638] standalone[695]))
+    unknown call_tmp[643808] "expr temp" "maybe param" "maybe type" "temp"
+    (643811 'move' call_tmp[643808](405373 call _cond_invalid tmp[405360]))
+    if call_tmp[643808]
+    {
+      (405376 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[521131] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[521132] "maybe param" "temp"
+    unknown call_tmp[643813] "expr temp" "maybe param" "maybe type" "temp"
+    (643816 'move' call_tmp[643813](405361 call isTrue tmp[405360]))
+    (521137 'move' tmp[521132](521135 call _cond_test call_tmp[643813]))
+    if tmp[521132]
+    {
+      unknown tmp[521139] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[643818] "expr temp" "maybe param" "maybe type" "temp"
+      (643821 'move' call_tmp[643818](190651 call ! localeModelHasSublocales[180486]))
+      (521141 'move' tmp[521139](405364 call isTrue call_tmp[643818]))
+      (521146 'move' tmp[521131](521143 '_paramFoldLogical' tmp[521132] tmp[521139]))
+    }
+    {
+      (521151 'move' tmp[521131](521148 '_paramFoldLogical' tmp[521132] 0))
+    }
+    (405350 'move' tmp[405339] tmp[521131])
+    unknown call_tmp[643823] "expr temp" "maybe param" "maybe type" "temp"
+    (643826 'move' call_tmp[643823](405352 call _cond_invalid tmp[405339]))
+    if call_tmp[643823]
+    {
+      (405355 call compilerError "cannot promote short-circuiting && operator")
+    }
+    unknown tmp[521158] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[521159] "maybe param" "temp"
+    unknown call_tmp[643828] "expr temp" "maybe param" "maybe type" "temp"
+    (643831 'move' call_tmp[643828](405340 call isTrue tmp[405339]))
+    (521164 'move' tmp[521159](521162 call _cond_test call_tmp[643828]))
+    if tmp[521159]
+    {
+      unknown tmp[521166] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[643835] "expr temp" "maybe param" "maybe type" "temp"
+      (643838 'move' call_tmp[643835](364113 call privDom _mt[232] this[191910]))
+      unknown call_tmp[643840] "expr temp" "maybe param" "maybe type" "temp"
+      (643843 'move' call_tmp[643840](190660 'method call resolves' call_tmp[643835] "these" tag[190638]))
+      (521168 'move' tmp[521166](405343 call isTrue call_tmp[643840]))
+      (521173 'move' tmp[521158](521170 '_paramFoldLogical' tmp[521159] tmp[521166]))
+    }
+    {
+      (521178 'move' tmp[521158](521175 '_paramFoldLogical' tmp[521159] 0))
+    }
+    (691971 call _statementLevelSymbol tmp[521158])
+  }
+  function ArrayViewReindexArr[191880](?).these[190722](arg _mt[191916]:_MT[227], arg this[191914]:ArrayViewReindexArr[191880](?), param arg tag[190719]:iterKind[697]) : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[476077] "RVV" "temp"
+    {
+      unknown _indexOfInterest[190743] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[190744] "expr temp" "temp"
+      unknown call_tmp[643847] "expr temp" "maybe param" "maybe type" "temp"
+      (643850 'move' call_tmp[643847](364154 call privDom _mt[232] this[191914]))
+      unknown call_tmp[643854] "expr temp" "maybe param" "maybe type" "temp"
+      (643857 'move' call_tmp[643854](190738 call(190733 call (partial) these _mt[232] call_tmp[643847]) tag[190719]))
+      (190753 'move' _iterator[190744](190751 call _getIterator call_tmp[643854]))
+      Defer
+      {
+        {
+          (190770 call _freeIterator _iterator[190744])
+        }
+      }
+      { scopeless type
+        (190759 'move' _indexOfInterest[190743](190756 call iteratorIndex _iterator[190744]))
+      }
+      ForLoop
+      {
+        unknown followThis[190763] "index var" "insert auto destroy"
+        (190765 'move' followThis[190763] _indexOfInterest[190743])
+        {
+          unknown yret[476081] "YVV" "temp"
+          (476084 'move' yret[476081](476083 'deref' followThis[190763]))
+          (476086 yield yret[476081])
+        }
+        label _continueLabel[190748]
+        _indexOfInterest[190743]
+        _iterator[190744]
+      }
+      label _breakLabel[190749]
+    }
+    (476079 return ret[476077])
+  }
+  where {
+    (190729 call == tag[190719] leader[691])
+  }
+  function ArrayViewReindexArr[191880](?).these[190787](arg _mt[191920]:_MT[227], arg this[191918]:ArrayViewReindexArr[191880](?), param arg tag[190784]:iterKind[697], arg followThis[190789]:_any[170](?)) ref : _unknown[43] "iterator fn" "method" "primary method" "no return value for void"
+  {
+    unknown ret[476090] "RVV" "temp"
+    {
+      unknown _indexOfInterest[190850] "an _indexOfInterest or chpl__followIdx variable" "temp"
+      unknown _iterator[190851] "expr temp" "temp"
+      unknown call_tmp[643861] "expr temp" "maybe param" "maybe type" "temp"
+      (643864 'move' call_tmp[643861](364163 call privDom _mt[232] this[191918]))
+      unknown call_tmp[643868] "expr temp" "maybe param" "maybe type" "temp"
+      (643871 'move' call_tmp[643868](190806 call(190800 call (partial) these _mt[232] call_tmp[643861]) tag[190784] followThis[190789]))
+      (190860 'move' _iterator[190851](190858 call _getIterator call_tmp[643868]))
+      Defer
+      {
+        {
+          (190877 call _freeIterator _iterator[190851])
+        }
+      }
+      { scopeless type
+        (190866 'move' _indexOfInterest[190850](190863 call iteratorIndex _iterator[190851]))
+      }
+      ForLoop
+      {
+        unknown i[190870] "index var" "insert auto destroy"
+        (190872 'move' i[190870] _indexOfInterest[190850])
+        {
+          unknown call_tmp[643875] "expr temp" "maybe param" "maybe type" "temp"
+          (643878 'move' call_tmp[643875](190809 call(364169 call (partial) shouldUseIndexCache _mt[232] this[191918])))
+          unknown call_tmp[643880] "expr temp" "maybe param" "maybe type" "temp"
+          (643883 'move' call_tmp[643880](190845 call _cond_test call_tmp[643875]))
+          if call_tmp[643880]
+          {
+            unknown call_tmp[643887] "expr temp" "maybe param" "maybe type" "temp"
+            (643890 'move' call_tmp[643887](364174 call indexCache _mt[232] this[191918]))
+            unknown call_tmp[643894] "maybe param" "maybe type" "temp"
+            (643897 'move' call_tmp[643894](190816 call(190811 call (partial) getDataIndex _mt[232] call_tmp[643887]) i[190870]))
+            const dataIdx[190817] "const" "insert auto destroy"
+            (493517 'init var' dataIdx[190817] call_tmp[643894])
+            unknown yret[476094] "YVV" "temp"
+            unknown call_tmp[643901] "expr temp" "maybe param" "maybe type" "temp"
+            (643904 'move' call_tmp[643901](364180 call indexCache _mt[232] this[191918]))
+            unknown call_tmp[643908] "expr temp" "maybe param" "maybe type" "temp"
+            (643911 'move' call_tmp[643908](190827 call(190822 call (partial) getDataElem _mt[232] call_tmp[643901]) dataIdx[190817]))
+            (476097 'move' yret[476094](476096 'addr of' call_tmp[643908]))
+            (476099 yield yret[476094])
+          }
+          {
+            unknown yret[476101] "YVV" "temp"
+            unknown call_tmp[643915] "expr temp" "maybe param" "maybe type" "temp"
+            (643918 'move' call_tmp[643915](364185 call arr _mt[232] this[191918]))
+            unknown call_tmp[643924] "expr temp" "maybe param" "maybe type" "temp"
+            (643927 'move' call_tmp[643924](364190 call privDom _mt[232] this[191918]))
+            unknown call_tmp[643931] "expr temp" "maybe param" "maybe type" "temp"
+            (643934 'move' call_tmp[643931](364194 call downdom _mt[232] this[191918]))
+            unknown call_tmp[643936] "expr temp" "maybe param" "maybe type" "temp"
+            (643939 'move' call_tmp[643936](190839 call chpl_reindexConvertIdx i[190870] call_tmp[643924] call_tmp[643931]))
+            unknown call_tmp[643941] "expr temp" "maybe param" "maybe type" "temp"
+            (643944 'move' call_tmp[643941](190841 call(190831 call (partial) dsiAccess _mt[232] call_tmp[643915]) call_tmp[643936]))
+            (476104 'move' yret[476101](476103 'addr of' call_tmp[643941]))
+            (476106 yield yret[476101])
+          }
+        }
+        label _continueLabel[190855]
+        _indexOfInterest[190850]
+        _iterator[190851]
+      }
+      label _breakLabel[190856]
+    }
+    (476092 return ret[476090])
+  }
+  where {
+    (190796 call == tag[190784] follower[693])
+  }
+  function ArrayViewReindexArr[191880](?).dsiSerialWrite[190892](arg _mt[191924]:_MT[227], arg this[191922]:ArrayViewReindexArr[191880](?), arg f[190890]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[643948] "expr temp" "maybe param" "maybe type" "temp"
+    (643951 'move' call_tmp[643948](364200 call privDom _mt[232] this[191922]))
+    unknown call_tmp[643955] "expr temp" "maybe param" "maybe type" "temp"
+    (643958 'move' call_tmp[643955](190901 call updom _mt[232] call_tmp[643948]))
+    (190904 call chpl_serialReadWriteRectangular f[190890] this[191922] call_tmp[643955])
+    (476108 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).dsiSerialRead[190913](arg _mt[191928]:_MT[227], arg this[191926]:ArrayViewReindexArr[191880](?), arg f[190911]:_any[170](?)) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[643962] "expr temp" "maybe param" "maybe type" "temp"
+    (643965 'move' call_tmp[643962](364206 call privDom _mt[232] this[191926]))
+    unknown call_tmp[643969] "expr temp" "maybe param" "maybe type" "temp"
+    (643972 'move' call_tmp[643969](190920 call updom _mt[232] call_tmp[643962]))
+    (190923 call chpl_serialReadWriteRectangular f[190911] this[191926] call_tmp[643969])
+    (476110 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).dsiDisplayRepresentation[190930](arg _mt[191932]:_MT[227], arg this[191930]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    (190950 call writeln "Reindex view")
+    (190971 call writeln "------------")
+    (190976 call writeln "of domain:")
+    unknown call_tmp[643976] "expr temp" "maybe param" "maybe type" "temp"
+    (643979 'move' call_tmp[643976](364210 call privDom _mt[232] this[191930]))
+    (190983 call(190979 call (partial) dsiDisplayRepresentation _mt[232] call_tmp[643976]))
+    (190988 call writeln "on array:")
+    unknown call_tmp[643985] "expr temp" "maybe param" "maybe type" "temp"
+    (643988 'move' call_tmp[643985](364214 call arr _mt[232] this[191930]))
+    (190995 call(190991 call (partial) dsiDisplayRepresentation _mt[232] call_tmp[643985]))
+    (191000 call writeln "------------")
+    (476112 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).dsiAccess[191012](arg _mt[191936]:_MT[227], arg this[191934]:ArrayViewReindexArr[191880](?), arg i[191008] ... :
+  (364218 call idxType _mt[232] this[191934])) ref : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476116] "RVV" "temp"
+    unknown call_tmp[643998] "expr temp" "maybe param" "maybe type" "temp"
+    (644001 'move' call_tmp[643998](191017 call(364226 call (partial) dsiAccess _mt[232] this[191934]) i[191008]))
+    (476121 'move' ret[476116](476120 'addr of' call_tmp[643998]))
+    (476118 return ret[476116])
+  }
+  function ArrayViewReindexArr[191880](?).dsiAccess[191031](arg _mt[191940]:_MT[227], arg this[191938]:ArrayViewReindexArr[191880](?), arg i[191027] ... :
+  (364231 call idxType _mt[232] this[191938])) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476125] "RVV" "temp"
+    unknown call_tmp[644009] "expr temp" "maybe param" "maybe type" "temp"
+    (644012 'move' call_tmp[644009](191040 call(364244 call (partial) dsiAccess _mt[232] this[191938]) i[191027]))
+    (476130 'move' ret[476125](476129 'deref' call_tmp[644009]))
+    (476127 return ret[476125])
+  }
+  where {
+    unknown call_tmp[644016] "expr temp" "maybe param" "maybe type" "temp"
+    (644019 'move' call_tmp[644016](364240 call eltType _mt[232] this[191938]))
+    (191036 call shouldReturnRvalueByValue call_tmp[644016])
+  }
+  function ArrayViewReindexArr[191880](?).dsiAccess[191055](arg _mt[191944]:_MT[227], arg this[191942]:ArrayViewReindexArr[191880](?), arg i[191051] ... :
+  (364249 call idxType _mt[232] this[191942])) const ref : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476134] "RVV" "temp"
+    unknown call_tmp[644027] "expr temp" "maybe param" "maybe type" "temp"
+    (644030 'move' call_tmp[644027](191064 call(364262 call (partial) dsiAccess _mt[232] this[191942]) i[191051]))
+    (476139 'move' ret[476134](476138 'addr of' call_tmp[644027]))
+    (476136 return ret[476134])
+  }
+  where {
+    unknown call_tmp[644034] "expr temp" "maybe param" "maybe type" "temp"
+    (644037 'move' call_tmp[644034](364258 call eltType _mt[232] this[191942]))
+    (191060 call shouldReturnRvalueByConstRef call_tmp[644034])
+  }
+  function ArrayViewReindexArr[191880](?).dsiAccess[191075](arg _mt[191948]:_MT[227], arg this[191946]:ArrayViewReindexArr[191880](?), arg i[191073]:_any[170](?)) ref : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476143] "RVV" "temp"
+    (191080 call(364267 call (partial) checkBounds _mt[232] this[191946]) i[191073])
+    unknown call_tmp[644043] "expr temp" "maybe param" "maybe type" "temp"
+    (644046 'move' call_tmp[644043](191085 call(364272 call (partial) shouldUseIndexCache _mt[232] this[191946])))
+    unknown call_tmp[644048] "expr temp" "maybe param" "maybe type" "temp"
+    (644051 'move' call_tmp[644048](191121 call _cond_test call_tmp[644043]))
+    if call_tmp[644048]
+    {
+      unknown call_tmp[644055] "expr temp" "maybe param" "maybe type" "temp"
+      (644058 'move' call_tmp[644055](364277 call indexCache _mt[232] this[191946]))
+      unknown call_tmp[644062] "maybe param" "maybe type" "temp"
+      (644065 'move' call_tmp[644062](191092 call(191087 call (partial) getDataIndex _mt[232] call_tmp[644055]) i[191073]))
+      const dataIdx[191093] "const" "insert auto destroy"
+      (493519 'init var' dataIdx[191093] call_tmp[644062])
+      unknown call_tmp[644069] "expr temp" "maybe param" "maybe type" "temp"
+      (644072 'move' call_tmp[644069](364283 call indexCache _mt[232] this[191946]))
+      unknown call_tmp[644076] "expr temp" "maybe param" "maybe type" "temp"
+      (644079 'move' call_tmp[644076](191103 call(191098 call (partial) getDataElem _mt[232] call_tmp[644069]) dataIdx[191093]))
+      (476148 'move' ret[476143](476147 'addr of' call_tmp[644076]))
+      gotoReturn _end_dsiAccess[476141] _end_dsiAccess[476141]
+    }
+    {
+      unknown call_tmp[644083] "expr temp" "maybe param" "maybe type" "temp"
+      (644086 'move' call_tmp[644083](364288 call arr _mt[232] this[191946]))
+      unknown call_tmp[644092] "expr temp" "maybe param" "maybe type" "temp"
+      (644095 'move' call_tmp[644092](364293 call privDom _mt[232] this[191946]))
+      unknown call_tmp[644099] "expr temp" "maybe param" "maybe type" "temp"
+      (644102 'move' call_tmp[644099](364297 call downdom _mt[232] this[191946]))
+      unknown call_tmp[644104] "expr temp" "maybe param" "maybe type" "temp"
+      (644107 'move' call_tmp[644104](191115 call chpl_reindexConvertIdx i[191073] call_tmp[644092] call_tmp[644099]))
+      unknown call_tmp[644109] "expr temp" "maybe param" "maybe type" "temp"
+      (644112 'move' call_tmp[644109](191117 call(191107 call (partial) dsiAccess _mt[232] call_tmp[644083]) call_tmp[644104]))
+      (476153 'move' ret[476143](476152 'addr of' call_tmp[644109]))
+      gotoReturn _end_dsiAccess[476141] _end_dsiAccess[476141]
+    }
+    label _end_dsiAccess[476141]
+    (476145 return ret[476143])
+  }
+  function ArrayViewReindexArr[191880](?).dsiAccess[191131](arg _mt[191952]:_MT[227], arg this[191950]:ArrayViewReindexArr[191880](?), arg i[191129]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476159] "RVV" "temp"
+    (191140 call(364306 call (partial) checkBounds _mt[232] this[191950]) i[191129])
+    unknown call_tmp[644118] "expr temp" "maybe param" "maybe type" "temp"
+    (644121 'move' call_tmp[644118](191145 call(364311 call (partial) shouldUseIndexCache _mt[232] this[191950])))
+    unknown call_tmp[644123] "expr temp" "maybe param" "maybe type" "temp"
+    (644126 'move' call_tmp[644123](191181 call _cond_test call_tmp[644118]))
+    if call_tmp[644123]
+    {
+      unknown call_tmp[644130] "expr temp" "maybe param" "maybe type" "temp"
+      (644133 'move' call_tmp[644130](364316 call indexCache _mt[232] this[191950]))
+      unknown call_tmp[644137] "maybe param" "maybe type" "temp"
+      (644140 'move' call_tmp[644137](191152 call(191147 call (partial) getDataIndex _mt[232] call_tmp[644130]) i[191129]))
+      const dataIdx[191153] "const" "insert auto destroy"
+      (493521 'init var' dataIdx[191153] call_tmp[644137])
+      unknown call_tmp[644144] "expr temp" "maybe param" "maybe type" "temp"
+      (644147 'move' call_tmp[644144](364322 call indexCache _mt[232] this[191950]))
+      unknown call_tmp[644151] "expr temp" "maybe param" "maybe type" "temp"
+      (644154 'move' call_tmp[644151](191163 call(191158 call (partial) getDataElem _mt[232] call_tmp[644144]) dataIdx[191153]))
+      (476164 'move' ret[476159](476163 'deref' call_tmp[644151]))
+      gotoReturn _end_dsiAccess[476157] _end_dsiAccess[476157]
+    }
+    {
+      unknown call_tmp[644158] "expr temp" "maybe param" "maybe type" "temp"
+      (644161 'move' call_tmp[644158](364327 call arr _mt[232] this[191950]))
+      unknown call_tmp[644167] "expr temp" "maybe param" "maybe type" "temp"
+      (644170 'move' call_tmp[644167](364332 call privDom _mt[232] this[191950]))
+      unknown call_tmp[644174] "expr temp" "maybe param" "maybe type" "temp"
+      (644177 'move' call_tmp[644174](364336 call downdom _mt[232] this[191950]))
+      unknown call_tmp[644179] "expr temp" "maybe param" "maybe type" "temp"
+      (644182 'move' call_tmp[644179](191175 call chpl_reindexConvertIdx i[191129] call_tmp[644167] call_tmp[644174]))
+      unknown call_tmp[644184] "expr temp" "maybe param" "maybe type" "temp"
+      (644187 'move' call_tmp[644184](191177 call(191167 call (partial) dsiAccess _mt[232] call_tmp[644158]) call_tmp[644179]))
+      (476169 'move' ret[476159](476168 'deref' call_tmp[644184]))
+      gotoReturn _end_dsiAccess[476157] _end_dsiAccess[476157]
+    }
+    label _end_dsiAccess[476157]
+    (476161 return ret[476159])
+  }
+  where {
+    unknown call_tmp[644191] "expr temp" "maybe param" "maybe type" "temp"
+    (644194 'move' call_tmp[644191](364302 call eltType _mt[232] this[191950]))
+    (191136 call shouldReturnRvalueByValue call_tmp[644191])
+  }
+  function ArrayViewReindexArr[191880](?).dsiAccess[191192](arg _mt[191956]:_MT[227], arg this[191954]:ArrayViewReindexArr[191880](?), arg i[191190]:_any[170](?)) const ref : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476175] "RVV" "temp"
+    (191201 call(364345 call (partial) checkBounds _mt[232] this[191954]) i[191190])
+    unknown call_tmp[644200] "expr temp" "maybe param" "maybe type" "temp"
+    (644203 'move' call_tmp[644200](191206 call(364350 call (partial) shouldUseIndexCache _mt[232] this[191954])))
+    unknown call_tmp[644205] "expr temp" "maybe param" "maybe type" "temp"
+    (644208 'move' call_tmp[644205](191242 call _cond_test call_tmp[644200]))
+    if call_tmp[644205]
+    {
+      unknown call_tmp[644212] "expr temp" "maybe param" "maybe type" "temp"
+      (644215 'move' call_tmp[644212](364355 call indexCache _mt[232] this[191954]))
+      unknown call_tmp[644219] "maybe param" "maybe type" "temp"
+      (644222 'move' call_tmp[644219](191213 call(191208 call (partial) getDataIndex _mt[232] call_tmp[644212]) i[191190]))
+      const dataIdx[191214] "const" "insert auto destroy"
+      (493523 'init var' dataIdx[191214] call_tmp[644219])
+      unknown call_tmp[644226] "expr temp" "maybe param" "maybe type" "temp"
+      (644229 'move' call_tmp[644226](364361 call indexCache _mt[232] this[191954]))
+      unknown call_tmp[644233] "expr temp" "maybe param" "maybe type" "temp"
+      (644236 'move' call_tmp[644233](191224 call(191219 call (partial) getDataElem _mt[232] call_tmp[644226]) dataIdx[191214]))
+      (476180 'move' ret[476175](476179 'addr of' call_tmp[644233]))
+      gotoReturn _end_dsiAccess[476173] _end_dsiAccess[476173]
+    }
+    {
+      unknown call_tmp[644240] "expr temp" "maybe param" "maybe type" "temp"
+      (644243 'move' call_tmp[644240](364366 call arr _mt[232] this[191954]))
+      unknown call_tmp[644249] "expr temp" "maybe param" "maybe type" "temp"
+      (644252 'move' call_tmp[644249](364371 call privDom _mt[232] this[191954]))
+      unknown call_tmp[644256] "expr temp" "maybe param" "maybe type" "temp"
+      (644259 'move' call_tmp[644256](364375 call downdom _mt[232] this[191954]))
+      unknown call_tmp[644261] "expr temp" "maybe param" "maybe type" "temp"
+      (644264 'move' call_tmp[644261](191236 call chpl_reindexConvertIdx i[191190] call_tmp[644249] call_tmp[644256]))
+      unknown call_tmp[644266] "expr temp" "maybe param" "maybe type" "temp"
+      (644269 'move' call_tmp[644266](191238 call(191228 call (partial) dsiAccess _mt[232] call_tmp[644240]) call_tmp[644261]))
+      (476185 'move' ret[476175](476184 'addr of' call_tmp[644266]))
+      gotoReturn _end_dsiAccess[476173] _end_dsiAccess[476173]
+    }
+    label _end_dsiAccess[476173]
+    (476177 return ret[476175])
+  }
+  where {
+    unknown call_tmp[644273] "expr temp" "maybe param" "maybe type" "temp"
+    (644276 'move' call_tmp[644273](364341 call eltType _mt[232] this[191954]))
+    (191197 call shouldReturnRvalueByConstRef call_tmp[644273])
+  }
+  function ArrayViewReindexArr[191880](?).dsiLocalAccess[191253](arg _mt[191960]:_MT[227], arg this[191958]:ArrayViewReindexArr[191880](?), arg i[191251]:_any[170](?)) ref : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476191] "RVV" "temp"
+    unknown call_tmp[644280] "expr temp" "maybe param" "maybe type" "temp"
+    (644283 'move' call_tmp[644280](364379 call arr _mt[232] this[191958]))
+    unknown call_tmp[644289] "expr temp" "maybe param" "maybe type" "temp"
+    (644292 'move' call_tmp[644289](364384 call privDom _mt[232] this[191958]))
+    unknown call_tmp[644296] "expr temp" "maybe param" "maybe type" "temp"
+    (644299 'move' call_tmp[644296](364388 call downdom _mt[232] this[191958]))
+    unknown call_tmp[644301] "expr temp" "maybe param" "maybe type" "temp"
+    (644304 'move' call_tmp[644301](191264 call chpl_reindexConvertIdx i[191251] call_tmp[644289] call_tmp[644296]))
+    unknown call_tmp[644306] "expr temp" "maybe param" "maybe type" "temp"
+    (644309 'move' call_tmp[644306](191266 call(191256 call (partial) dsiLocalAccess _mt[232] call_tmp[644280]) call_tmp[644301]))
+    (476196 'move' ret[476191](476195 'addr of' call_tmp[644306]))
+    (476193 return ret[476191])
+  }
+  function ArrayViewReindexArr[191880](?).dsiLocalAccess[191276](arg _mt[191964]:_MT[227], arg this[191962]:ArrayViewReindexArr[191880](?), arg i[191274]:_any[170](?)) : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476200] "RVV" "temp"
+    unknown call_tmp[644313] "expr temp" "maybe param" "maybe type" "temp"
+    (644316 'move' call_tmp[644313](364397 call arr _mt[232] this[191962]))
+    unknown call_tmp[644322] "expr temp" "maybe param" "maybe type" "temp"
+    (644325 'move' call_tmp[644322](364402 call privDom _mt[232] this[191962]))
+    unknown call_tmp[644329] "expr temp" "maybe param" "maybe type" "temp"
+    (644332 'move' call_tmp[644329](364406 call downdom _mt[232] this[191962]))
+    unknown call_tmp[644334] "expr temp" "maybe param" "maybe type" "temp"
+    (644337 'move' call_tmp[644334](191291 call chpl_reindexConvertIdx i[191274] call_tmp[644322] call_tmp[644329]))
+    unknown call_tmp[644339] "expr temp" "maybe param" "maybe type" "temp"
+    (644342 'move' call_tmp[644339](191293 call(191283 call (partial) dsiLocalAccess _mt[232] call_tmp[644313]) call_tmp[644334]))
+    (476205 'move' ret[476200](476204 'deref' call_tmp[644339]))
+    (476202 return ret[476200])
+  }
+  where {
+    unknown call_tmp[644346] "expr temp" "maybe param" "maybe type" "temp"
+    (644349 'move' call_tmp[644346](364393 call eltType _mt[232] this[191962]))
+    (191281 call shouldReturnRvalueByValue call_tmp[644346])
+  }
+  function ArrayViewReindexArr[191880](?).dsiLocalAccess[191304](arg _mt[191968]:_MT[227], arg this[191966]:ArrayViewReindexArr[191880](?), arg i[191302]:_any[170](?)) const ref : _unknown[43] "inline" "method" "primary method"
+  {
+    unknown ret[476209] "RVV" "temp"
+    unknown call_tmp[644353] "expr temp" "maybe param" "maybe type" "temp"
+    (644356 'move' call_tmp[644353](364415 call arr _mt[232] this[191966]))
+    unknown call_tmp[644362] "expr temp" "maybe param" "maybe type" "temp"
+    (644365 'move' call_tmp[644362](364420 call privDom _mt[232] this[191966]))
+    unknown call_tmp[644369] "expr temp" "maybe param" "maybe type" "temp"
+    (644372 'move' call_tmp[644369](364424 call downdom _mt[232] this[191966]))
+    unknown call_tmp[644374] "expr temp" "maybe param" "maybe type" "temp"
+    (644377 'move' call_tmp[644374](191319 call chpl_reindexConvertIdx i[191302] call_tmp[644362] call_tmp[644369]))
+    unknown call_tmp[644379] "expr temp" "maybe param" "maybe type" "temp"
+    (644382 'move' call_tmp[644379](191321 call(191311 call (partial) dsiLocalAccess _mt[232] call_tmp[644353]) call_tmp[644374]))
+    (476214 'move' ret[476209](476213 'addr of' call_tmp[644379]))
+    (476211 return ret[476209])
+  }
+  where {
+    unknown call_tmp[644386] "expr temp" "maybe param" "maybe type" "temp"
+    (644389 'move' call_tmp[644386](364411 call eltType _mt[232] this[191966]))
+    (191309 call shouldReturnRvalueByConstRef call_tmp[644386])
+  }
+  function ArrayViewReindexArr[191880](?).checkBounds[191332](arg _mt[191972]:_MT[227], arg this[191970]:ArrayViewReindexArr[191880](?), arg i[191330]:_any[170](?)) : _unknown[43] "inline" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[644391] "expr temp" "maybe param" "maybe type" "temp"
+    (644394 'move' call_tmp[644391](191355 call _cond_test 1))
+    if call_tmp[644391]
+    {
+      unknown call_tmp[644398] "expr temp" "maybe param" "maybe type" "temp"
+      (644401 'move' call_tmp[644398](364429 call privDom _mt[232] this[191970]))
+      unknown call_tmp[644405] "expr temp" "maybe param" "maybe type" "temp"
+      (644408 'move' call_tmp[644405](191341 call(191336 call (partial) dsiMember _mt[232] call_tmp[644398]) i[191330]))
+      unknown call_tmp[644410] "expr temp" "maybe param" "maybe type" "temp"
+      (644413 'move' call_tmp[644410](191342 call ! call_tmp[644405]))
+      unknown call_tmp[644415] "expr temp" "maybe param" "maybe type" "temp"
+      (644418 'move' call_tmp[644415](191350 call _cond_test call_tmp[644410]))
+      if call_tmp[644415]
+      {
+        (191348 call halt "array index out of bounds: " i[191330])
+      }
+    }
+    (476216 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).dsiHasSingleLocalSubdomain[191365](arg _mt[191976]:_MT[227], arg this[191974]:ArrayViewReindexArr[191880](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476220] "RVV" "param" "temp"
+    unknown call_tmp[644422] "expr temp" "maybe param" "maybe type" "temp"
+    (644425 'move' call_tmp[644422](364435 call privDom _mt[232] this[191974]))
+    unknown call_tmp[644429] "expr temp" "maybe param" "maybe type" "temp"
+    (644432 'move' call_tmp[644429](191372 call(191368 call (partial) dsiHasSingleLocalSubdomain _mt[232] call_tmp[644422])))
+    (476225 'move' ret[476220](476224 'deref' call_tmp[644429]))
+    (476222 return ret[476220])
+  }
+  function ArrayViewReindexArr[191880](?).dsiLocalSubdomain[191384](arg _mt[191980]:_MT[227], arg this[191978]:ArrayViewReindexArr[191880](?), arg loc[191381]:locale[26]) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476229] "RVV" "temp"
+    unknown call_tmp[644436] "expr temp" "maybe param" "maybe type" "temp"
+    (644439 'move' call_tmp[644436](364439 call privDom _mt[232] this[191978]))
+    unknown call_tmp[644443] "expr temp" "maybe param" "maybe type" "temp"
+    (644446 'move' call_tmp[644443](191392 call(191387 call (partial) dsiLocalSubdomain _mt[232] call_tmp[644436]) loc[191381]))
+    (476234 'move' ret[476229](476233 'deref' call_tmp[644443]))
+    (476231 return ret[476229])
+  }
+  function ArrayViewReindexArr[191880](?).dsiSupportsPrivatization[191400](arg _mt[191984]:_MT[227], arg this[191982]:ArrayViewReindexArr[191880](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476238] "RVV" "param" "temp"
+    unknown call_tmp[644450] "expr temp" "maybe param" "maybe type" "temp"
+    (644453 'move' call_tmp[644450](364445 call _ArrInstance _mt[232] this[191982]))
+    unknown call_tmp[644457] "expr temp" "maybe param" "maybe type" "temp"
+    (644460 'move' call_tmp[644457](191407 call(191403 call (partial) dsiSupportsPrivatization _mt[232] call_tmp[644450])))
+    (476243 'move' ret[476238](476242 'deref' call_tmp[644457]))
+    (476240 return ret[476238])
+  }
+  function ArrayViewReindexArr[191880](?).dsiGetPrivatizeData[191415](arg _mt[191988]:_MT[227], arg this[191986]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476247] "RVV" "temp"
+    unknown call_tmp[644464] "expr temp" "maybe param" "maybe type" "temp"
+    (644467 'move' call_tmp[644464](364450 call _DomPid _mt[232] this[191986]))
+    unknown call_tmp[644471] "expr temp" "maybe param" "maybe type" "temp"
+    (644474 'move' call_tmp[644471](364454 call privDom _mt[232] this[191986]))
+    unknown call_tmp[644478] "expr temp" "maybe param" "maybe type" "temp"
+    (644481 'move' call_tmp[644478](364459 call _ArrPid _mt[232] this[191986]))
+    unknown call_tmp[644485] "expr temp" "maybe param" "maybe type" "temp"
+    (644488 'move' call_tmp[644485](364464 call _ArrInstance _mt[232] this[191986]))
+    unknown call_tmp[644490] "expr temp" "maybe param" "maybe type" "temp"
+    (644493 'move' call_tmp[644490](191422 call _build_tuple call_tmp[644464] call_tmp[644471] call_tmp[644478] call_tmp[644485]))
+    (476252 'move' ret[476247](476251 'deref' call_tmp[644490]))
+    (476249 return ret[476247])
+  }
+  function ArrayViewReindexArr[191880](?).dsiPrivatize[191433](arg _mt[191992]:_MT[227], arg this[191990]:ArrayViewReindexArr[191880](?), arg privatizeData[191431]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476256] "RVV" "temp"
+    unknown call_tmp[644497] "expr temp" "maybe param" "maybe type" "temp"
+    (644500 'move' call_tmp[644497](191437 call eltType _mt[232] this[191990]))
+    unknown call_tmp[644502] "expr temp" "maybe param" "maybe type" "temp"
+    (644505 'move' call_tmp[644502](191445 call privatizeData[191431] 1))
+    unknown call_tmp[644507] "expr temp" "maybe param" "maybe type" "temp"
+    (644510 'move' call_tmp[644507](191450 call privatizeData[191431] 2))
+    unknown call_tmp[644512] "expr temp" "maybe param" "maybe type" "temp"
+    (644515 'move' call_tmp[644512](191455 call privatizeData[191431] 3))
+    unknown call_tmp[644517] "expr temp" "maybe param" "maybe type" "temp"
+    (644520 'move' call_tmp[644517](191460 call privatizeData[191431] 4))
+    unknown call_tmp[644522] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (644525 'move' call_tmp[644522](691562 'new' anymanaged ArrayViewReindexArr[353334](?)(eltType = call_tmp[644497])(_DomPid = call_tmp[644502])(dom = call_tmp[644507])(_ArrPid = call_tmp[644512])(_ArrInstance = call_tmp[644517])(_chpl_manager = unmanaged[209](?))))
+    (476261 'move' ret[476256](476260 'deref' call_tmp[644522]))
+    (476258 return ret[476256])
+  }
+  function ArrayViewReindexArr[191880](?).shouldUseIndexCache[191472](arg _mt[191996]:_MT[227], arg this[191994]:ArrayViewReindexArr[191880](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476265] "RVV" "param" "temp"
+    unknown call_tmp[644529] "expr temp" "maybe param" "maybe type" "temp"
+    (644532 'move' call_tmp[644529](364475 call _ArrInstance _mt[232] this[191994]))
+    unknown call_tmp[644534] "expr temp" "maybe param" "maybe type" "temp"
+    (644537 'move' call_tmp[644534](191477 call chpl__isDROrDRView call_tmp[644529]))
+    (476270 'move' ret[476265](476269 'deref' call_tmp[644534]))
+    (476267 return ret[476265])
+  }
+  function ArrayViewReindexArr[191880](?).buildIndexCache[191485](arg _mt[192000]:_MT[227], arg this[191998]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476274] "RVV" "temp"
+    unknown call_tmp[644541] "expr temp" "maybe param" "maybe type" "temp"
+    (644544 'move' call_tmp[644541](191489 call(364479 call (partial) shouldUseIndexCache _mt[232] this[191998])))
+    unknown call_tmp[644546] "expr temp" "maybe param" "maybe type" "temp"
+    (644549 'move' call_tmp[644546](191581 call _cond_test call_tmp[644541]))
+    if call_tmp[644546]
+    {
+      unknown call_tmp[644553] "expr temp" "maybe param" "maybe type" "temp"
+      (644556 'move' call_tmp[644553](364484 call _ArrInstance _mt[232] this[191998]))
+      unknown call_tmp[644558] "expr temp" "maybe param" "maybe type" "temp"
+      (644561 'move' call_tmp[644558](191493 call chpl__isArrayView call_tmp[644553]))
+      unknown call_tmp[644563] "expr temp" "maybe param" "maybe type" "temp"
+      (644566 'move' call_tmp[644563](191572 call _cond_test call_tmp[644558]))
+      if call_tmp[644563]
+      {
+        unknown tmp[405381] "maybe param" "temp"
+        unknown call_tmp[644570] "expr temp" "maybe param" "maybe type" "temp"
+        (644573 'move' call_tmp[644570](364489 call _ArrInstance _mt[232] this[191998]))
+        (405392 'move' tmp[405381](191499 call(191495 call (partial) isSliceArrayView _mt[232] call_tmp[644570])))
+        unknown call_tmp[644577] "expr temp" "maybe param" "maybe type" "temp"
+        (644580 'move' call_tmp[644577](405394 call _cond_invalid tmp[405381]))
+        if call_tmp[644577]
+        {
+          (405397 call compilerError "cannot promote short-circuiting && operator")
+        }
+        unknown tmp[521185] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+        unknown tmp[521186] "maybe param" "temp"
+        unknown call_tmp[644582] "expr temp" "maybe param" "maybe type" "temp"
+        (644585 'move' call_tmp[644582](405382 call isTrue tmp[405381]))
+        (521191 'move' tmp[521186](521189 call _cond_test call_tmp[644582]))
+        if tmp[521186]
+        {
+          unknown tmp[521193] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+          unknown call_tmp[644589] "expr temp" "maybe param" "maybe type" "temp"
+          (644592 'move' call_tmp[644589](364494 call _ArrInstance _mt[232] this[191998]))
+          unknown call_tmp[644596] "expr temp" "maybe param" "maybe type" "temp"
+          (644599 'move' call_tmp[644596](191505 call(191501 call (partial) _containsRCRE _mt[232] call_tmp[644589])))
+          unknown call_tmp[644601] "expr temp" "maybe param" "maybe type" "temp"
+          (644604 'move' call_tmp[644601](191506 call ! call_tmp[644596]))
+          (521195 'move' tmp[521193](405385 call isTrue call_tmp[644601]))
+          (521200 'move' tmp[521185](521197 '_paramFoldLogical' tmp[521186] tmp[521193]))
+        }
+        {
+          (521205 'move' tmp[521185](521202 '_paramFoldLogical' tmp[521186] 0))
+        }
+        unknown call_tmp[644606] "expr temp" "maybe param" "maybe type" "temp"
+        (644609 'move' call_tmp[644606](191552 call _cond_test tmp[521185]))
+        if call_tmp[644606]
+        {
+          unknown call_tmp[644613] "expr temp" "maybe param" "maybe type" "temp"
+          (644616 'move' call_tmp[644613](364499 call _ArrInstance _mt[232] this[191998]))
+          unknown call_tmp[644620] "expr temp" "maybe param" "maybe type" "temp"
+          (644623 'move' call_tmp[644620](191515 call(191511 call (partial) _getActualArray _mt[232] call_tmp[644613])))
+          unknown call_tmp[644627] "expr temp" "maybe param" "maybe type" "temp"
+          (644630 'move' call_tmp[644627](191520 call(191516 call (partial) dsiGetRAD _mt[232] call_tmp[644620])))
+          unknown call_tmp[644636] "expr temp" "maybe param" "maybe type" "temp"
+          (644639 'move' call_tmp[644636](364504 call _ArrInstance _mt[232] this[191998]))
+          unknown call_tmp[644643] "expr temp" "maybe param" "maybe type" "temp"
+          (644646 'move' call_tmp[644643](191525 call dom _mt[232] call_tmp[644636]))
+          unknown call_tmp[644648] "expr temp" "maybe param" "maybe type" "temp"
+          (644651 'move' call_tmp[644648](191529 call(191521 call (partial) toSlice _mt[232] call_tmp[644627]) call_tmp[644643]))
+          unknown call_tmp[644657] "expr temp" "maybe param" "maybe type" "temp"
+          (644660 'move' call_tmp[644657](364509 call dom _mt[232] this[191998]))
+          unknown call_tmp[644662] "expr temp" "maybe param" "maybe type" "temp"
+          (644665 'move' call_tmp[644662](191535 call(191530 call (partial) toReindex _mt[232] call_tmp[644648]) call_tmp[644657]))
+          (476279 'move' ret[476274](476278 'deref' call_tmp[644662]))
+          gotoReturn _end_buildIndexCache[476272] _end_buildIndexCache[476272]
+        }
+        {
+          unknown call_tmp[644669] "expr temp" "maybe param" "maybe type" "temp"
+          (644672 'move' call_tmp[644669](364514 call _ArrInstance _mt[232] this[191998]))
+          unknown call_tmp[644676] "expr temp" "maybe param" "maybe type" "temp"
+          (644679 'move' call_tmp[644676](191540 call indexCache _mt[232] call_tmp[644669]))
+          unknown call_tmp[644685] "expr temp" "maybe param" "maybe type" "temp"
+          (644688 'move' call_tmp[644685](364519 call dom _mt[232] this[191998]))
+          unknown call_tmp[644690] "expr temp" "maybe param" "maybe type" "temp"
+          (644693 'move' call_tmp[644690](191548 call(191543 call (partial) toReindex _mt[232] call_tmp[644676]) call_tmp[644685]))
+          (476284 'move' ret[476274](476283 'deref' call_tmp[644690]))
+          gotoReturn _end_buildIndexCache[476272] _end_buildIndexCache[476272]
+        }
+      }
+      {
+        unknown call_tmp[644697] "expr temp" "maybe param" "maybe type" "temp"
+        (644700 'move' call_tmp[644697](364524 call _ArrInstance _mt[232] this[191998]))
+        unknown call_tmp[644704] "expr temp" "maybe param" "maybe type" "temp"
+        (644707 'move' call_tmp[644704](191562 call(191558 call (partial) dsiGetRAD _mt[232] call_tmp[644697])))
+        unknown call_tmp[644713] "expr temp" "maybe param" "maybe type" "temp"
+        (644716 'move' call_tmp[644713](364529 call dom _mt[232] this[191998]))
+        unknown call_tmp[644718] "expr temp" "maybe param" "maybe type" "temp"
+        (644721 'move' call_tmp[644718](191568 call(191563 call (partial) toReindex _mt[232] call_tmp[644704]) call_tmp[644713]))
+        (476289 'move' ret[476274](476288 'deref' call_tmp[644718]))
+        gotoReturn _end_buildIndexCache[476272] _end_buildIndexCache[476272]
+      }
+    }
+    {
+      (476294 'move' ret[476274](476293 'deref' 0))
+      gotoReturn _end_buildIndexCache[476272] _end_buildIndexCache[476272]
+    }
+    label _end_buildIndexCache[476272]
+    (476276 return ret[476274])
+  }
+  function ArrayViewReindexArr[191880](?).privDom[191590](arg _mt[192004]:_MT[227], arg this[192002]:ArrayViewReindexArr[191880](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    unknown ret[476300] "RVV" "temp"
+    unknown call_tmp[644725] "expr temp" "maybe param" "maybe type" "temp"
+    (644728 'move' call_tmp[644725](364534 call dom _mt[232] this[192002]))
+    unknown call_tmp[644730] "expr temp" "maybe param" "maybe type" "temp"
+    (644733 'move' call_tmp[644730](191595 call _isPrivatized call_tmp[644725]))
+    unknown call_tmp[644735] "expr temp" "maybe param" "maybe type" "temp"
+    (644738 'move' call_tmp[644735](191609 call _cond_test call_tmp[644730]))
+    if call_tmp[644735]
+    {
+      { scopeless type
+        unknown call_type_tmp[444042] "expr temp" "maybe type" "temp" "type variable"
+        unknown call_tmp[644742] "expr temp" "maybe param" "maybe type" "temp"
+        (644745 'move' call_tmp[644742](364539 call dom _mt[232] this[192002]))
+        (444046 'move' call_type_tmp[444042](191598 'typeof' call_tmp[644742]))
+      }
+      unknown call_tmp[644749] "expr temp" "maybe param" "maybe type" "temp"
+      (644752 'move' call_tmp[644749](364544 call _DomPid _mt[232] this[192002]))
+      unknown call_tmp[644754] "expr temp" "maybe param" "maybe type" "temp"
+      (644757 'move' call_tmp[644754](191601 call chpl_getPrivatizedCopy call_type_tmp[444042] call_tmp[644749]))
+      (476305 'move' ret[476300](476304 'deref' call_tmp[644754]))
+      gotoReturn _end_privDom[476298] _end_privDom[476298]
+    }
+    {
+      unknown call_tmp[644761] "expr temp" "maybe param" "maybe type" "temp"
+      (644764 'move' call_tmp[644761](364549 call dom _mt[232] this[192002]))
+      (476310 'move' ret[476300](476309 'deref' call_tmp[644761]))
+      gotoReturn _end_privDom[476298] _end_privDom[476298]
+    }
+    label _end_privDom[476298]
+    (476302 return ret[476300])
+  }
+  function ArrayViewReindexArr[191880](?).arr[191618](arg _mt[192008]:_MT[227], arg this[192006]:ArrayViewReindexArr[191880](?)) : _unknown[43] "inline" "method" "primary method" "no parens"
+  {
+    unknown ret[476316] "RVV" "temp"
+    unknown call_tmp[644768] "expr temp" "maybe param" "maybe type" "temp"
+    (644771 'move' call_tmp[644768](364554 call _ArrInstance _mt[232] this[192006]))
+    unknown call_tmp[644773] "expr temp" "maybe param" "maybe type" "temp"
+    (644776 'move' call_tmp[644773](191623 call _isPrivatized call_tmp[644768]))
+    unknown call_tmp[644778] "expr temp" "maybe param" "maybe type" "temp"
+    (644781 'move' call_tmp[644778](191637 call _cond_test call_tmp[644773]))
+    if call_tmp[644778]
+    {
+      { scopeless type
+        unknown call_type_tmp[444048] "expr temp" "maybe type" "temp" "type variable"
+        unknown call_tmp[644785] "expr temp" "maybe param" "maybe type" "temp"
+        (644788 'move' call_tmp[644785](364559 call _ArrInstance _mt[232] this[192006]))
+        (444052 'move' call_type_tmp[444048](191626 'typeof' call_tmp[644785]))
+      }
+      unknown call_tmp[644792] "expr temp" "maybe param" "maybe type" "temp"
+      (644795 'move' call_tmp[644792](364564 call _ArrPid _mt[232] this[192006]))
+      unknown call_tmp[644797] "expr temp" "maybe param" "maybe type" "temp"
+      (644800 'move' call_tmp[644797](191629 call chpl_getPrivatizedCopy call_type_tmp[444048] call_tmp[644792]))
+      (476321 'move' ret[476316](476320 'deref' call_tmp[644797]))
+      gotoReturn _end_arr[476314] _end_arr[476314]
+    }
+    {
+      unknown call_tmp[644804] "expr temp" "maybe param" "maybe type" "temp"
+      (644807 'move' call_tmp[644804](364569 call _ArrInstance _mt[232] this[192006]))
+      (476326 'move' ret[476316](476325 'deref' call_tmp[644804]))
+      gotoReturn _end_arr[476314] _end_arr[476314]
+    }
+    label _end_arr[476314]
+    (476318 return ret[476316])
+  }
+  function ArrayViewReindexArr[191880](?).dsiGetBaseDom[191646](arg _mt[192012]:_MT[227], arg this[192010]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method" "method overrides"
+  {
+    unknown ret[476332] "RVV" "temp"
+    unknown call_tmp[644811] "expr temp" "maybe param" "maybe type" "temp"
+    (644814 'move' call_tmp[644811](364573 call privDom _mt[232] this[192010]))
+    (476337 'move' ret[476332](476336 'deref' call_tmp[644811]))
+    (476334 return ret[476332])
+  }
+  function ArrayViewReindexArr[191880](?)._getActualArray[191656](arg _mt[192016]:_MT[227], arg this[192014]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476341] "RVV" "temp"
+    unknown call_tmp[644818] "expr temp" "maybe param" "maybe type" "temp"
+    (644821 'move' call_tmp[644818](364577 call arr _mt[232] this[192014]))
+    unknown call_tmp[644823] "expr temp" "maybe param" "maybe type" "temp"
+    (644826 'move' call_tmp[644823](191661 call chpl__isArrayView call_tmp[644818]))
+    unknown call_tmp[644828] "expr temp" "maybe param" "maybe type" "temp"
+    (644831 'move' call_tmp[644828](191675 call _cond_test call_tmp[644823]))
+    if call_tmp[644828]
+    {
+      unknown call_tmp[644835] "expr temp" "maybe param" "maybe type" "temp"
+      (644838 'move' call_tmp[644835](364581 call arr _mt[232] this[192014]))
+      unknown call_tmp[644842] "expr temp" "maybe param" "maybe type" "temp"
+      (644845 'move' call_tmp[644842](191667 call(191663 call (partial) _getActualArray _mt[232] call_tmp[644835])))
+      (476346 'move' ret[476341](476345 'deref' call_tmp[644842]))
+      gotoReturn _end__getActualArray[476339] _end__getActualArray[476339]
+    }
+    {
+      unknown call_tmp[644849] "expr temp" "maybe param" "maybe type" "temp"
+      (644852 'move' call_tmp[644849](364585 call arr _mt[232] this[192014]))
+      (476351 'move' ret[476341](476350 'deref' call_tmp[644849]))
+      gotoReturn _end__getActualArray[476339] _end__getActualArray[476339]
+    }
+    label _end__getActualArray[476339]
+    (476343 return ret[476341])
+  }
+  function ArrayViewReindexArr[191880](?)._containsRCRE[191684](arg _mt[192020]:_MT[227], arg this[192018]:ArrayViewReindexArr[191880](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476357] "RVV" "param" "temp"
+    unknown call_tmp[644856] "expr temp" "maybe param" "maybe type" "temp"
+    (644859 'move' call_tmp[644856](364589 call arr _mt[232] this[192018]))
+    unknown call_tmp[644861] "expr temp" "maybe param" "maybe type" "temp"
+    (644864 'move' call_tmp[644861](191689 call chpl__isArrayView call_tmp[644856]))
+    unknown call_tmp[644866] "expr temp" "maybe param" "maybe type" "temp"
+    (644869 'move' call_tmp[644866](191719 call _cond_test call_tmp[644861]))
+    if call_tmp[644866]
+    {
+      unknown tmp[405402] "maybe param" "temp"
+      unknown tmp[405423] "maybe param" "temp"
+      unknown call_tmp[644873] "expr temp" "maybe param" "maybe type" "temp"
+      (644876 'move' call_tmp[644873](364593 call arr _mt[232] this[192018]))
+      (405434 'move' tmp[405423](191695 call(191691 call (partial) isRankChangeArrayView _mt[232] call_tmp[644873])))
+      unknown call_tmp[644880] "expr temp" "maybe param" "maybe type" "temp"
+      (644883 'move' call_tmp[644880](405436 call _cond_invalid tmp[405423]))
+      if call_tmp[644880]
+      {
+        (405439 call compilerError "cannot promote short-circuiting || operator")
+      }
+      unknown tmp[521212] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[521213] "maybe param" "temp"
+      unknown call_tmp[644885] "expr temp" "maybe param" "maybe type" "temp"
+      (644888 'move' call_tmp[644885](405424 call isTrue tmp[405423]))
+      (521218 'move' tmp[521213](521216 call _cond_test call_tmp[644885]))
+      if tmp[521213]
+      {
+        (521223 'move' tmp[521212](521220 '_paramFoldLogical' tmp[521213] 1))
+      }
+      {
+        unknown tmp[521225] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[644892] "expr temp" "maybe param" "maybe type" "temp"
+        (644895 'move' call_tmp[644892](364597 call arr _mt[232] this[192018]))
+        unknown call_tmp[644899] "expr temp" "maybe param" "maybe type" "temp"
+        (644902 'move' call_tmp[644899](191701 call(191697 call (partial) isReindexArrayView _mt[232] call_tmp[644892])))
+        (521227 'move' tmp[521225](405428 call isTrue call_tmp[644899]))
+        (521232 'move' tmp[521212](521229 '_paramFoldLogical' tmp[521213] tmp[521225]))
+      }
+      (405413 'move' tmp[405402] tmp[521212])
+      unknown call_tmp[644904] "expr temp" "maybe param" "maybe type" "temp"
+      (644907 'move' call_tmp[644904](405415 call _cond_invalid tmp[405402]))
+      if call_tmp[644904]
+      {
+        (405418 call compilerError "cannot promote short-circuiting || operator")
+      }
+      unknown tmp[521239] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[521240] "maybe param" "temp"
+      unknown call_tmp[644909] "expr temp" "maybe param" "maybe type" "temp"
+      (644912 'move' call_tmp[644909](405403 call isTrue tmp[405402]))
+      (521245 'move' tmp[521240](521243 call _cond_test call_tmp[644909]))
+      if tmp[521240]
+      {
+        (521250 'move' tmp[521239](521247 '_paramFoldLogical' tmp[521240] 1))
+      }
+      {
+        unknown tmp[521252] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[644916] "expr temp" "maybe param" "maybe type" "temp"
+        (644919 'move' call_tmp[644916](364601 call arr _mt[232] this[192018]))
+        unknown call_tmp[644923] "expr temp" "maybe param" "maybe type" "temp"
+        (644926 'move' call_tmp[644923](191709 call(191705 call (partial) _containsRCRE _mt[232] call_tmp[644916])))
+        (521254 'move' tmp[521252](405407 call isTrue call_tmp[644923]))
+        (521259 'move' tmp[521239](521256 '_paramFoldLogical' tmp[521240] tmp[521252]))
+      }
+      (476362 'move' ret[476357](476361 'deref' tmp[521239]))
+      gotoReturn _end__containsRCRE[476355] _end__containsRCRE[476355]
+    }
+    {
+      (476367 'move' ret[476357](476366 'deref' 0))
+      gotoReturn _end__containsRCRE[476355] _end__containsRCRE[476355]
+    }
+    label _end__containsRCRE[476355]
+    (476359 return ret[476357])
+  }
+  function ArrayViewReindexArr[191880](?)._getRCREView[191728](arg _mt[192024]:_MT[227], arg this[192022]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476373] "RVV" "temp"
+    (476378 'move' ret[476373](476377 'deref' this[192022]))
+    (476375 return ret[476373])
+  }
+  function ArrayViewReindexArr[191880](?).dsiDestroyArr[191738](arg _mt[192028]:_MT[227], arg this[192026]:ArrayViewReindexArr[191880](?)) : _unknown[43] "method" "primary method" "method overrides" "no return value for void"
+  {
+    unknown call_tmp[644930] "expr temp" "maybe param" "maybe type" "temp"
+    (644933 'move' call_tmp[644930](364607 call ownsArrInstance _mt[232] this[192026]))
+    unknown call_tmp[644935] "expr temp" "maybe param" "maybe type" "temp"
+    (644938 'move' call_tmp[644935](191751 call _cond_test call_tmp[644930]))
+    if call_tmp[644935]
+    {
+      unknown call_tmp[644942] "expr temp" "maybe param" "maybe type" "temp"
+      (644945 'move' call_tmp[644942](364612 call _ArrInstance _mt[232] this[192026]))
+      unknown call_tmp[644949] "expr temp" "maybe param" "maybe type" "temp"
+      (644952 'move' call_tmp[644949](364617 call _ArrInstance _mt[232] this[192026]))
+      unknown call_tmp[644954] "expr temp" "maybe param" "maybe type" "temp"
+      (644957 'move' call_tmp[644954](191747 call _isPrivatized call_tmp[644949]))
+      (191748 call _delete_arr call_tmp[644942] call_tmp[644954])
+    }
+    (476380 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).doiCanBulkTransferRankChange[191760](arg _mt[192032]:_MT[227], arg this[192030]:ArrayViewReindexArr[191880](?)) param : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476384] "RVV" "param" "temp"
+    unknown call_tmp[644961] "expr temp" "maybe param" "maybe type" "temp"
+    (644964 'move' call_tmp[644961](364621 call arr _mt[232] this[192030]))
+    unknown call_tmp[644968] "expr temp" "maybe param" "maybe type" "temp"
+    (644971 'move' call_tmp[644968](191767 call(191763 call (partial) doiCanBulkTransferRankChange _mt[232] call_tmp[644961])))
+    (476389 'move' ret[476384](476388 'deref' call_tmp[644968]))
+    (476386 return ret[476384])
+  }
+  function ArrayViewReindexArr[191880](?).doiBulkTransferFromKnown[191777](arg _mt[192036]:_MT[227], arg this[192034]:ArrayViewReindexArr[191880](?), arg destDom[191775]:_any[170](?), arg srcClass[191779]:_any[170](?), arg srcDom[191781]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476393] "RVV" "temp"
+    unknown call_tmp[644975] "expr temp" "maybe param" "maybe type" "temp"
+    (644978 'move' call_tmp[644975](191790 call(191786 call (partial) dims _mt[232] destDom[191775])))
+    unknown call_tmp[644982] "expr temp" "maybe param" "maybe type" "temp"
+    (644985 'move' call_tmp[644982](364626 call privDom _mt[232] this[192034]))
+    unknown call_tmp[644989] "expr temp" "maybe param" "maybe type" "temp"
+    (644992 'move' call_tmp[644989](191793 call updom _mt[232] call_tmp[644982]))
+    unknown call_tmp[644996] "expr temp" "maybe param" "maybe type" "temp"
+    (644999 'move' call_tmp[644996](191797 call dom _mt[232] this[192034]))
+    unknown call_tmp[645003] "expr temp" "maybe param" "maybe type" "temp"
+    (645006 'move' call_tmp[645003](191800 call dist _mt[232] call_tmp[644996]))
+    unknown call_tmp[645010] "expr temp" "maybe param" "maybe type" "temp"
+    (645013 'move' call_tmp[645010](191803 call downdomInst _mt[232] call_tmp[645003]))
+    unknown call_tmp[645015] "maybe param" "maybe type" "temp"
+    (645018 'move' call_tmp[645015](191806 call chpl_reindexConvertDomMaybeSlice call_tmp[644975] call_tmp[644989] call_tmp[645010]))
+    const shifted[191807] "const" "insert auto destroy"
+    (493525 'init var' shifted[191807] call_tmp[645015])
+    unknown call_tmp[645022] "expr temp" "maybe param" "maybe type" "temp"
+    (645025 'move' call_tmp[645022](191813 call arr _mt[232] this[192034]))
+    unknown call_tmp[645027] "expr temp" "maybe param" "maybe type" "temp"
+    (645030 'move' call_tmp[645027](191820 call chpl__bulkTransferArray call_tmp[645022] shifted[191807] srcClass[191779] srcDom[191781]))
+    (476399 'move' ret[476393](476398 'coerce' call_tmp[645027] bool[10]))
+    (476395 return ret[476393])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function ArrayViewReindexArr[191880](?).doiBulkTransferToKnown[191830](arg _mt[192040]:_MT[227], arg this[192038]:ArrayViewReindexArr[191880](?), arg srcDom[191828]:_any[170](?), arg destClass[191832]:_any[170](?), arg destDom[191834]:_any[170](?)) : _unknown[43] "method" "primary method"
+  {
+    unknown ret[476403] "RVV" "temp"
+    unknown call_tmp[645034] "expr temp" "maybe param" "maybe type" "temp"
+    (645037 'move' call_tmp[645034](191843 call(191839 call (partial) dims _mt[232] srcDom[191828])))
+    unknown call_tmp[645041] "expr temp" "maybe param" "maybe type" "temp"
+    (645044 'move' call_tmp[645041](364636 call privDom _mt[232] this[192038]))
+    unknown call_tmp[645048] "expr temp" "maybe param" "maybe type" "temp"
+    (645051 'move' call_tmp[645048](191846 call updom _mt[232] call_tmp[645041]))
+    unknown call_tmp[645055] "expr temp" "maybe param" "maybe type" "temp"
+    (645058 'move' call_tmp[645055](191850 call dom _mt[232] this[192038]))
+    unknown call_tmp[645062] "expr temp" "maybe param" "maybe type" "temp"
+    (645065 'move' call_tmp[645062](191853 call dist _mt[232] call_tmp[645055]))
+    unknown call_tmp[645069] "expr temp" "maybe param" "maybe type" "temp"
+    (645072 'move' call_tmp[645069](191856 call downdomInst _mt[232] call_tmp[645062]))
+    unknown call_tmp[645074] "maybe param" "maybe type" "temp"
+    (645077 'move' call_tmp[645074](191859 call chpl_reindexConvertDomMaybeSlice call_tmp[645034] call_tmp[645048] call_tmp[645069]))
+    const shifted[191860] "const" "insert auto destroy"
+    (493527 'init var' shifted[191860] call_tmp[645074])
+    unknown call_tmp[645081] "expr temp" "maybe param" "maybe type" "temp"
+    (645084 'move' call_tmp[645081](191869 call arr _mt[232] this[192038]))
+    unknown call_tmp[645086] "expr temp" "maybe param" "maybe type" "temp"
+    (645089 'move' call_tmp[645086](191873 call chpl__bulkTransferArray destClass[191832] destDom[191834] call_tmp[645081] shifted[191860]))
+    (476409 'move' ret[476403](476408 'coerce' call_tmp[645086] bool[10]))
+    (476405 return ret[476403])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function ArrayViewReindexArr[191880](?).super[732840](arg _mt[732842]:_MT[227], arg this[732844]:ArrayViewReindexArr[191880](?)) : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[732853] "RVV" "temp"
+    unknown call_tmp[732860] "expr temp" "maybe param" "maybe type" "temp"
+    (732863 'move' call_tmp[732860](732848 '.v' this[732844] c"super"))
+    (732858 'move' ret[732853](732857 'deref' call_tmp[732860]))
+    (732855 return ret[732853])
+  }
+  function ArrayViewReindexArr[191880](?)._DomPid[732865](arg _mt[732867]:_MT[227], arg this[732869]:ArrayViewReindexArr[191880](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732878] "RVV" "temp"
+    unknown call_tmp[732885] "expr temp" "maybe param" "maybe type" "temp"
+    (732888 'move' call_tmp[732885](732873 '.' this[732869] c"_DomPid"))
+    (732883 'move' ret[732878](732882 'addr of' call_tmp[732885]))
+    (732880 return ret[732878])
+  }
+  function ArrayViewReindexArr[191880](?).dom[732890](arg _mt[732892]:_MT[227], arg this[732894]:ArrayViewReindexArr[191880](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732903] "RVV" "temp"
+    unknown call_tmp[732910] "expr temp" "maybe param" "maybe type" "temp"
+    (732913 'move' call_tmp[732910](732898 '.' this[732894] c"dom"))
+    (732908 'move' ret[732903](732907 'addr of' call_tmp[732910]))
+    (732905 return ret[732903])
+  }
+  function ArrayViewReindexArr[191880](?)._ArrPid[732915](arg _mt[732917]:_MT[227], arg this[732919]:ArrayViewReindexArr[191880](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732928] "RVV" "temp"
+    unknown call_tmp[732935] "expr temp" "maybe param" "maybe type" "temp"
+    (732938 'move' call_tmp[732935](732923 '.' this[732919] c"_ArrPid"))
+    (732933 'move' ret[732928](732932 'addr of' call_tmp[732935]))
+    (732930 return ret[732928])
+  }
+  function ArrayViewReindexArr[191880](?)._ArrInstance[732940](arg _mt[732942]:_MT[227], arg this[732944]:ArrayViewReindexArr[191880](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732953] "RVV" "temp"
+    unknown call_tmp[732960] "expr temp" "maybe param" "maybe type" "temp"
+    (732963 'move' call_tmp[732960](732948 '.' this[732944] c"_ArrInstance"))
+    (732958 'move' ret[732953](732957 'addr of' call_tmp[732960]))
+    (732955 return ret[732953])
+  }
+  function ArrayViewReindexArr[191880](?).indexCache[732965](arg _mt[732967]:_MT[227], arg this[732969]:ArrayViewReindexArr[191880](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[732978] "RVV" "temp"
+    unknown call_tmp[732985] "expr temp" "maybe param" "maybe type" "temp"
+    (732988 'move' call_tmp[732985](732973 '.' this[732969] c"indexCache"))
+    (732983 'move' ret[732978](732982 'addr of' call_tmp[732985]))
+    (732980 return ret[732978])
+  }
+  function ArrayViewReindexArr[191880](?).ownsArrInstance[732990](arg _mt[732992]:_MT[227], arg this[732994]:ArrayViewReindexArr[191880](?)) const ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to a const"
+  {
+    unknown ret[733003] "RVV" "temp"
+    unknown call_tmp[733010] "expr temp" "maybe param" "maybe type" "temp"
+    (733013 'move' call_tmp[733010](732998 '.' this[732994] c"ownsArrInstance"))
+    (733008 'move' ret[733003](733007 'addr of' call_tmp[733010]))
+    (733005 return ret[733003])
+  }
+  function ArrayViewReindexArr[191880](?).deinit[733015](arg _mt[733017]:_MT[227], arg this[733019]:ArrayViewReindexArr[191880](?)) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (733021 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).writeThis[733024](arg _mt[733028]:_MT[227], arg this[733026]:ArrayViewReindexArr[191880](?), arg f[733027]:_any[170](?)) : void[4] "compiler generated" "last resort" "method" "primary method" "method overrides"
+  {
+    (733033 call writeThisDefaultImpl f[733027] this[733026])
+    (733037 return _void[47])
+  }
+  function ArrayViewReindexArr[191880](?).readThis[733039](arg _mt[733043]:_MT[227], arg this[733041]:ArrayViewReindexArr[191880](?), arg f[733042]:_any[170](?)) : void[4] "compiler generated" "last resort" "method" "primary method" "method overrides"
+  {
+    (733047 call readThisDefaultImpl f[733042] this[733041])
+    (733052 return _void[47])
+  }
+  type ArrayViewReindexArr[191880](?) val super[331075]:AbsBaseArr[146070](?) "delay instantiation" "super class" const _DomPid[190419] "const" const dom[190422] "const" const _ArrPid[190425] "const" const _ArrInstance[190428] "const" const indexCache[190431] "const" const ownsArrInstance[190434] "const" forwarding ( )
+  type anymanaged ArrayViewReindexArr[353334](?)
+  function chpl_reindexConvertIdxDim[192047](arg i[192045]:_any[170](?), arg updom[192049]:_any[170](?), arg downdom[192051]:_any[170](?), arg dim[192054]:int(64)[13]) : _unknown[43] "inline"
+  {
+    unknown ret[476413] "RVV" "temp"
+    unknown call_tmp[645093] "expr temp" "maybe param" "maybe type" "temp"
+    (645096 'move' call_tmp[645093](192063 call(192058 call (partial) dsiDim _mt[232] downdom[192051]) dim[192054]))
+    unknown call_tmp[645102] "expr temp" "maybe param" "maybe type" "temp"
+    (645105 'move' call_tmp[645102](192073 call(192068 call (partial) dsiDim _mt[232] updom[192049]) dim[192054]))
+    unknown call_tmp[645109] "expr temp" "maybe param" "maybe type" "temp"
+    (645112 'move' call_tmp[645109](192079 call(192074 call (partial) indexOrder _mt[232] call_tmp[645102]) i[192045]))
+    unknown call_tmp[645114] "expr temp" "maybe param" "maybe type" "temp"
+    (645117 'move' call_tmp[645114](192081 call(192064 call (partial) orderToIndex _mt[232] call_tmp[645093]) call_tmp[645109]))
+    (476418 'move' ret[476413](476417 'deref' call_tmp[645114]))
+    (476415 return ret[476413])
+  }
+  function chpl_reindexConvertIdx[192093](arg i[192090]:integral[188](?), arg updom[192095]:_any[170](?), arg downdom[192097]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[476422] "RVV" "temp"
+    unknown call_tmp[645121] "expr temp" "maybe param" "maybe type" "temp"
+    (645124 'move' call_tmp[645121](192101 call rank _mt[232] downdom[192097]))
+    unknown call_tmp[645126] "expr temp" "maybe param" "maybe type" "temp"
+    (645129 'move' call_tmp[645126](192105 call == call_tmp[645121] 1))
+    unknown call_tmp[645133] "expr temp" "maybe param" "maybe type" "temp"
+    (645136 'move' call_tmp[645133](192109 call rank _mt[232] downdom[192097]))
+    unknown call_tmp[645138] "expr temp" "maybe param" "maybe type" "temp"
+    (645141 'move' call_tmp[645138](192113 call _cast string[24] call_tmp[645133]))
+    (192115 call compilerAssert call_tmp[645126] call_tmp[645138])
+    unknown call_tmp[645143] "expr temp" "maybe param" "maybe type" "temp"
+    (645146 'move' call_tmp[645143](192124 call chpl_reindexConvertIdxDim i[192090] updom[192095] downdom[192097] 1))
+    (476427 'move' ret[476422](476426 'deref' call_tmp[645143]))
+    (476424 return ret[476422])
+  }
+  function chpl_reindexConvertIdx[192133](arg i[192131]:_any[170](?), arg updom[192135]:_any[170](?), arg downdom[192137]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[476431] "RVV" "temp"
+    unknown ind[192149] "insert auto destroy"
+    unknown call_tmp[645150] "expr temp" "maybe param" "maybe type" "temp"
+    (645153 'move' call_tmp[645150](192140 call rank _mt[232] downdom[192137]))
+    unknown call_tmp[645157] "expr temp" "maybe param" "maybe type" "temp"
+    (645160 'move' call_tmp[645157](192144 call idxType _mt[232] downdom[192137]))
+    unknown call_tmp[645162] "expr temp" "maybe param" "maybe type" "temp"
+    (645165 'move' call_tmp[645162](192147 call * call_tmp[645150] call_tmp[645157]))
+    (493529 'default init var' ind[192149] call_tmp[645162])
+    {
+      unknown d[192178] "insert auto destroy"
+      (493531 'init var' d[192178] 0)
+      unknown tmp[192179] "maybe param" "temp"
+      unknown call_tmp[645169] "expr temp" "maybe param" "maybe type" "temp"
+      (645172 'move' call_tmp[645169](192155 call rank _mt[232] downdom[192137]))
+      (192191 'move' tmp[192179](192189 call chpl_compute_low_param_loop_bound 1 call_tmp[645169]))
+      unknown tmp[192180] "maybe param" "temp"
+      unknown call_tmp[645176] "expr temp" "maybe param" "maybe type" "temp"
+      (645179 'move' call_tmp[645176](192196 call rank _mt[232] downdom[192137]))
+      (192201 'move' tmp[192180](192199 call chpl_compute_high_param_loop_bound 1 call_tmp[645176]))
+      unknown tmp[192181] "maybe param" "temp"
+      (192204 'move' tmp[192181] 1)
+      ParamForLoop
+      { d[192178] tmp[192179] tmp[192180] tmp[192181]
+        {
+          unknown call_tmp[645181] "expr temp" "maybe param" "maybe type" "temp"
+          (645184 'move' call_tmp[645181](192163 call ind[192149] d[192178]))
+          unknown call_tmp[645186] "expr temp" "maybe param" "maybe type" "temp"
+          (645189 'move' call_tmp[645186](192168 call i[192131] d[192178]))
+          unknown call_tmp[645191] "expr temp" "maybe param" "maybe type" "temp"
+          (645194 'move' call_tmp[645191](192173 call chpl_reindexConvertIdxDim call_tmp[645186] updom[192135] downdom[192137] d[192178]))
+          (192174 call = call_tmp[645181] call_tmp[645191])
+        }
+      }
+      label _unused_continueLabel[192183]
+      label _breakLabel[192182]
+    }
+    (476436 'move' ret[476431](476435 'deref' ind[192149]))
+    (476433 return ret[476431])
+  }
+  function chpl_reindexConvertDom[192224](arg dims[192222]:_any[170](?), arg updom[192226]:_any[170](?), arg downdom[192228]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[476440] "RVV" "temp"
+    unknown call_tmp[645198] "expr temp" "maybe param" "maybe type" "temp"
+    (645201 'move' call_tmp[645198](192231 call rank _mt[232] updom[192226]))
+    unknown call_tmp[645205] "expr temp" "maybe param" "maybe type" "temp"
+    (645208 'move' call_tmp[645205](192235 call size _mt[232] dims[192222]))
+    unknown call_tmp[645210] "expr temp" "maybe param" "maybe type" "temp"
+    (645213 'move' call_tmp[645210](192238 call != call_tmp[645198] call_tmp[645205]))
+    unknown call_tmp[645215] "expr temp" "maybe param" "maybe type" "temp"
+    (645218 'move' call_tmp[645215](192282 call _cond_test call_tmp[645210]))
+    if call_tmp[645215]
+    {
+      unknown call_tmp[645222] "expr temp" "maybe param" "maybe type" "temp"
+      (645225 'move' call_tmp[645222](192258 call size _mt[232] dims[192222]))
+      unknown call_tmp[645227] "expr temp" "maybe param" "maybe type" "temp"
+      (645230 'move' call_tmp[645227](192262 call _cast string[24] call_tmp[645222]))
+      unknown call_tmp[645232] "expr temp" "maybe param" "maybe type" "temp"
+      (645235 'move' call_tmp[645232](192264 call + "Called chpl_reindexConvertDom with incorrect rank. Got " call_tmp[645227]))
+      unknown call_tmp[645237] "expr temp" "maybe param" "maybe type" "temp"
+      (645240 'move' call_tmp[645237](192267 call + call_tmp[645232] ", expecting "))
+      unknown call_tmp[645244] "expr temp" "maybe param" "maybe type" "temp"
+      (645247 'move' call_tmp[645244](192270 call rank _mt[232] updom[192226]))
+      unknown call_tmp[645249] "expr temp" "maybe param" "maybe type" "temp"
+      (645252 'move' call_tmp[645249](192274 call _cast string[24] call_tmp[645244]))
+      unknown call_tmp[645254] "expr temp" "maybe param" "maybe type" "temp"
+      (645257 'move' call_tmp[645254](192276 call + call_tmp[645237] call_tmp[645249]))
+      (192279 call compilerError call_tmp[645254])
+    }
+    { scopeless type
+      unknown call_type_tmp[444054] "expr temp" "maybe type" "temp" "type variable"
+      unknown call_tmp[645261] "expr temp" "maybe param" "maybe type" "temp"
+      (645264 'move' call_tmp[645261](192292 call(192288 call (partial) dsiDims _mt[232] downdom[192228])))
+      (444058 'move' call_type_tmp[444054](192293 'typeof' call_tmp[645261]))
+    }
+    unknown ranges[192294] "insert auto destroy"
+    (493533 'default init var' ranges[192294] call_type_tmp[444054])
+    unknown actualLow[192297] "insert auto destroy"
+    unknown call_tmp[645268] "expr temp" "maybe param" "maybe type" "temp"
+    (645271 'move' call_tmp[645268](192301 call rank _mt[232] downdom[192228]))
+    unknown call_tmp[645275] "expr temp" "maybe param" "maybe type" "temp"
+    (645278 'move' call_tmp[645275](192305 call idxType _mt[232] downdom[192228]))
+    unknown call_tmp[645280] "expr temp" "maybe param" "maybe type" "temp"
+    (645283 'move' call_tmp[645280](192308 call * call_tmp[645268] call_tmp[645275]))
+    (493535 'default init var' actualLow[192297] call_tmp[645280])
+    unknown actualHigh[192310] "insert auto destroy"
+    unknown call_tmp[645285] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (645288 'move' call_tmp[645285](192314 'typeof' actualLow[192297]))
+    (493537 'default init var' actualHigh[192310] call_tmp[645285])
+    {
+      unknown d[192413] "insert auto destroy"
+      (493539 'init var' d[192413] 0)
+      unknown tmp[192414] "maybe param" "temp"
+      unknown call_tmp[645292] "expr temp" "maybe param" "maybe type" "temp"
+      (645295 'move' call_tmp[645292](192317 call size _mt[232] dims[192222]))
+      (192426 'move' tmp[192414](192424 call chpl_compute_low_param_loop_bound 1 call_tmp[645292]))
+      unknown tmp[192415] "maybe param" "temp"
+      unknown call_tmp[645299] "expr temp" "maybe param" "maybe type" "temp"
+      (645302 'move' call_tmp[645299](192431 call size _mt[232] dims[192222]))
+      (192436 'move' tmp[192415](192434 call chpl_compute_high_param_loop_bound 1 call_tmp[645299]))
+      unknown tmp[192416] "maybe param" "temp"
+      (192439 'move' tmp[192416] 1)
+      ParamForLoop
+      { d[192413] tmp[192414] tmp[192415] tmp[192416]
+        {
+          unknown call_tmp[645304] "expr temp" "maybe param" "maybe type" "temp"
+          (645307 'move' call_tmp[645304](192325 call dims[192222] d[192413]))
+          unknown call_tmp[645311] "expr temp" "maybe param" "maybe type" "temp"
+          (645314 'move' call_tmp[645311](192326 call size _mt[232] call_tmp[645304]))
+          unknown call_tmp[645316] "expr temp" "maybe param" "maybe type" "temp"
+          (645319 'move' call_tmp[645316](192330 call == call_tmp[645311] 0))
+          unknown call_tmp[645321] "expr temp" "maybe param" "maybe type" "temp"
+          (645324 'move' call_tmp[645321](192408 call _cond_test call_tmp[645316]))
+          if call_tmp[645321]
+          {
+            unknown call_tmp[645326] "expr temp" "maybe param" "maybe type" "temp"
+            (645329 'move' call_tmp[645326](192335 call actualLow[192297] d[192413]))
+            unknown call_tmp[645333] "expr temp" "maybe param" "maybe type" "temp"
+            (645336 'move' call_tmp[645333](192342 call(192337 call (partial) dsiDim _mt[232] downdom[192228]) d[192413]))
+            unknown call_tmp[645340] "expr temp" "maybe param" "maybe type" "temp"
+            (645343 'move' call_tmp[645340](192343 call low _mt[232] call_tmp[645333]))
+            (192346 call = call_tmp[645326] call_tmp[645340])
+            unknown call_tmp[645345] "expr temp" "maybe param" "maybe type" "temp"
+            (645348 'move' call_tmp[645345](192353 call actualHigh[192310] d[192413]))
+            unknown call_tmp[645352] "expr temp" "maybe param" "maybe type" "temp"
+            (645355 'move' call_tmp[645352](192360 call(192355 call (partial) dsiDim _mt[232] downdom[192228]) d[192413]))
+            unknown call_tmp[645359] "expr temp" "maybe param" "maybe type" "temp"
+            (645362 'move' call_tmp[645359](192361 call high _mt[232] call_tmp[645352]))
+            (192364 call = call_tmp[645345] call_tmp[645359])
+          }
+          {
+            unknown call_tmp[645364] "expr temp" "maybe param" "maybe type" "temp"
+            (645367 'move' call_tmp[645364](192370 call actualLow[192297] d[192413]))
+            unknown call_tmp[645369] "expr temp" "maybe param" "maybe type" "temp"
+            (645372 'move' call_tmp[645369](192375 call dims[192222] d[192413]))
+            unknown call_tmp[645376] "expr temp" "maybe param" "maybe type" "temp"
+            (645379 'move' call_tmp[645376](192376 call first _mt[232] call_tmp[645369]))
+            unknown call_tmp[645381] "expr temp" "maybe param" "maybe type" "temp"
+            (645384 'move' call_tmp[645381](192383 call chpl_reindexConvertIdxDim call_tmp[645376] updom[192226] downdom[192228] d[192413]))
+            (192384 call = call_tmp[645364] call_tmp[645381])
+            unknown call_tmp[645386] "expr temp" "maybe param" "maybe type" "temp"
+            (645389 'move' call_tmp[645386](192391 call actualHigh[192310] d[192413]))
+            unknown call_tmp[645391] "expr temp" "maybe param" "maybe type" "temp"
+            (645394 'move' call_tmp[645391](192396 call dims[192222] d[192413]))
+            unknown call_tmp[645398] "expr temp" "maybe param" "maybe type" "temp"
+            (645401 'move' call_tmp[645398](192397 call last _mt[232] call_tmp[645391]))
+            unknown call_tmp[645403] "expr temp" "maybe param" "maybe type" "temp"
+            (645406 'move' call_tmp[645403](192404 call chpl_reindexConvertIdxDim call_tmp[645398] updom[192226] downdom[192228] d[192413]))
+            (192405 call = call_tmp[645386] call_tmp[645403])
+          }
+        }
+      }
+      label _unused_continueLabel[192418]
+      label _breakLabel[192417]
+    }
+    {
+      unknown d[192484] "insert auto destroy"
+      (493541 'init var' d[192484] 0)
+      unknown tmp[192485] "maybe param" "temp"
+      unknown call_tmp[645410] "expr temp" "maybe param" "maybe type" "temp"
+      (645413 'move' call_tmp[645410](192452 call rank _mt[232] updom[192226]))
+      (192497 'move' tmp[192485](192495 call chpl_compute_low_param_loop_bound 1 call_tmp[645410]))
+      unknown tmp[192486] "maybe param" "temp"
+      unknown call_tmp[645417] "expr temp" "maybe param" "maybe type" "temp"
+      (645420 'move' call_tmp[645417](192502 call rank _mt[232] updom[192226]))
+      (192507 'move' tmp[192486](192505 call chpl_compute_high_param_loop_bound 1 call_tmp[645417]))
+      unknown tmp[192487] "maybe param" "temp"
+      (192510 'move' tmp[192487] 1)
+      ParamForLoop
+      { d[192484] tmp[192485] tmp[192486] tmp[192487]
+        {
+          unknown call_tmp[645422] "expr temp" "maybe param" "maybe type" "temp"
+          (645425 'move' call_tmp[645422](192460 call ranges[192294] d[192484]))
+          unknown call_tmp[645429] "expr temp" "maybe param" "maybe type" "temp"
+          (645432 'move' call_tmp[645429](192467 call(192462 call (partial) dsiDim _mt[232] downdom[192228]) d[192484]))
+          unknown call_tmp[645434] "expr temp" "maybe param" "maybe type" "temp"
+          (645437 'move' call_tmp[645434](192471 call actualLow[192297] d[192484]))
+          unknown call_tmp[645439] "expr temp" "maybe param" "maybe type" "temp"
+          (645442 'move' call_tmp[645439](192475 call actualHigh[192310] d[192484]))
+          unknown call_tmp[645444] "expr temp" "maybe param" "maybe type" "temp"
+          (645447 'move' call_tmp[645444](192476 call chpl_build_bounded_range call_tmp[645434] call_tmp[645439]))
+          unknown call_tmp[645449] "expr temp" "maybe param" "maybe type" "temp"
+          (645452 'move' call_tmp[645449](192479 call call_tmp[645429] call_tmp[645444]))
+          (192480 call = call_tmp[645422] call_tmp[645449])
+        }
+      }
+      label _unused_continueLabel[192489]
+      label _breakLabel[192488]
+    }
+    unknown call_tmp[645454] "expr temp" "maybe param" "maybe type" "temp"
+    (645457 'move' call_tmp[645454](192524 call chpl__buildDomainExpr(192522 'expand_tuple' ranges[192294])))
+    (476445 'move' ret[476440](476444 'deref' call_tmp[645454]))
+    (476442 return ret[476440])
+  }
+  function chpl_reindexConvertDomMaybeSlice[192534](arg dims[192532]:_any[170](?), arg updom[192536]:_any[170](?), arg downdom[192538]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[476449] "RVV" "temp"
+    unknown call_tmp[645461] "expr temp" "maybe param" "maybe type" "temp"
+    (645464 'move' call_tmp[645461](192541 call rank _mt[232] updom[192536]))
+    unknown call_tmp[645468] "expr temp" "maybe param" "maybe type" "temp"
+    (645471 'move' call_tmp[645468](192545 call size _mt[232] dims[192532]))
+    unknown call_tmp[645473] "expr temp" "maybe param" "maybe type" "temp"
+    (645476 'move' call_tmp[645473](192548 call != call_tmp[645461] call_tmp[645468]))
+    unknown call_tmp[645478] "expr temp" "maybe param" "maybe type" "temp"
+    (645481 'move' call_tmp[645478](192594 call _cond_test call_tmp[645473]))
+    if call_tmp[645478]
+    {
+      unknown call_tmp[645485] "expr temp" "maybe param" "maybe type" "temp"
+      (645488 'move' call_tmp[645485](192570 call size _mt[232] dims[192532]))
+      unknown call_tmp[645490] "expr temp" "maybe param" "maybe type" "temp"
+      (645493 'move' call_tmp[645490](192574 call _cast string[24] call_tmp[645485]))
+      unknown call_tmp[645495] "expr temp" "maybe param" "maybe type" "temp"
+      (645498 'move' call_tmp[645495](192576 call + "Called chpl_reindexConvertDomMaybeSlice with incorrect rank. Got " call_tmp[645490]))
+      unknown call_tmp[645500] "expr temp" "maybe param" "maybe type" "temp"
+      (645503 'move' call_tmp[645500](192579 call + call_tmp[645495] ", expecting "))
+      unknown call_tmp[645507] "expr temp" "maybe param" "maybe type" "temp"
+      (645510 'move' call_tmp[645507](192582 call rank _mt[232] updom[192536]))
+      unknown call_tmp[645512] "expr temp" "maybe param" "maybe type" "temp"
+      (645515 'move' call_tmp[645512](192586 call _cast string[24] call_tmp[645507]))
+      unknown call_tmp[645517] "expr temp" "maybe param" "maybe type" "temp"
+      (645520 'move' call_tmp[645517](192588 call + call_tmp[645500] call_tmp[645512]))
+      (192591 call compilerError call_tmp[645517])
+    }
+    unknown tmp[405444] "maybe param" "temp"
+    (405455 'move' tmp[405444](192610 call stridable _mt[232] downdom[192538]))
+    unknown call_tmp[645524] "expr temp" "maybe param" "maybe type" "temp"
+    (645527 'move' call_tmp[645524](405457 call _cond_invalid tmp[405444]))
+    if call_tmp[645524]
+    {
+      (405460 call compilerError "cannot promote short-circuiting || operator")
+    }
+    unknown ranges[192626] "insert auto destroy"
+    unknown tmp[521266] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[521267] "maybe param" "temp"
+    unknown call_tmp[645529] "expr temp" "maybe param" "maybe type" "temp"
+    (645532 'move' call_tmp[645529](405445 call isTrue tmp[405444]))
+    (521272 'move' tmp[521267](521270 call _cond_test call_tmp[645529]))
+    if tmp[521267]
+    {
+      (521277 'move' tmp[521266](521274 '_paramFoldLogical' tmp[521267] 1))
+    }
+    {
+      unknown tmp[521279] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[645534] "expr temp" "maybe param" "maybe type" "temp"
+      (645537 'move' call_tmp[645534](192616 call dims[192532] 1))
+      unknown call_tmp[645541] "expr temp" "maybe param" "maybe type" "temp"
+      (645544 'move' call_tmp[645541](192617 call stridable _mt[232] call_tmp[645534]))
+      (521281 'move' tmp[521279](405449 call isTrue call_tmp[645541]))
+      (521286 'move' tmp[521266](521283 '_paramFoldLogical' tmp[521267] tmp[521279]))
+    }
+    unknown call_tmp[645548] "expr temp" "maybe param" "maybe type" "temp"
+    (645551 'move' call_tmp[645548](192600 call rank _mt[232] downdom[192538]))
+    unknown call_tmp[645555] "expr temp" "maybe param" "maybe type" "temp"
+    (645558 'move' call_tmp[645555](192605 call idxType _mt[232] downdom[192538]))
+    unknown call_tmp[645560] "expr temp" "maybe param" "maybe type" "temp"
+    (645563 'move' call_tmp[645560](192623 call range[66183](?) call_tmp[645555](stridable = tmp[521266])))
+    unknown call_tmp[645565] "expr temp" "maybe param" "maybe type" "temp"
+    (645568 'move' call_tmp[645565](192624 call * call_tmp[645548] call_tmp[645560]))
+    (493543 'default init var' ranges[192626] call_tmp[645565])
+    unknown actualLow[192629] "insert auto destroy"
+    unknown call_tmp[645572] "expr temp" "maybe param" "maybe type" "temp"
+    (645575 'move' call_tmp[645572](192633 call rank _mt[232] downdom[192538]))
+    unknown call_tmp[645579] "expr temp" "maybe param" "maybe type" "temp"
+    (645582 'move' call_tmp[645579](192637 call idxType _mt[232] downdom[192538]))
+    unknown call_tmp[645584] "expr temp" "maybe param" "maybe type" "temp"
+    (645587 'move' call_tmp[645584](192640 call * call_tmp[645572] call_tmp[645579]))
+    (493545 'default init var' actualLow[192629] call_tmp[645584])
+    unknown actualHigh[192642] "insert auto destroy"
+    unknown call_tmp[645589] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (645592 'move' call_tmp[645589](192646 'typeof' actualLow[192629]))
+    (493547 'default init var' actualHigh[192642] call_tmp[645589])
+    {
+      unknown d[192745] "insert auto destroy"
+      (493549 'init var' d[192745] 0)
+      unknown tmp[192746] "maybe param" "temp"
+      unknown call_tmp[645596] "expr temp" "maybe param" "maybe type" "temp"
+      (645599 'move' call_tmp[645596](192649 call size _mt[232] dims[192532]))
+      (192758 'move' tmp[192746](192756 call chpl_compute_low_param_loop_bound 1 call_tmp[645596]))
+      unknown tmp[192747] "maybe param" "temp"
+      unknown call_tmp[645603] "expr temp" "maybe param" "maybe type" "temp"
+      (645606 'move' call_tmp[645603](192763 call size _mt[232] dims[192532]))
+      (192768 'move' tmp[192747](192766 call chpl_compute_high_param_loop_bound 1 call_tmp[645603]))
+      unknown tmp[192748] "maybe param" "temp"
+      (192771 'move' tmp[192748] 1)
+      ParamForLoop
+      { d[192745] tmp[192746] tmp[192747] tmp[192748]
+        {
+          unknown call_tmp[645608] "expr temp" "maybe param" "maybe type" "temp"
+          (645611 'move' call_tmp[645608](192657 call dims[192532] d[192745]))
+          unknown call_tmp[645615] "expr temp" "maybe param" "maybe type" "temp"
+          (645618 'move' call_tmp[645615](192658 call size _mt[232] call_tmp[645608]))
+          unknown call_tmp[645620] "expr temp" "maybe param" "maybe type" "temp"
+          (645623 'move' call_tmp[645620](192662 call == call_tmp[645615] 0))
+          unknown call_tmp[645625] "expr temp" "maybe param" "maybe type" "temp"
+          (645628 'move' call_tmp[645625](192740 call _cond_test call_tmp[645620]))
+          if call_tmp[645625]
+          {
+            unknown call_tmp[645630] "expr temp" "maybe param" "maybe type" "temp"
+            (645633 'move' call_tmp[645630](192667 call actualLow[192629] d[192745]))
+            unknown call_tmp[645637] "expr temp" "maybe param" "maybe type" "temp"
+            (645640 'move' call_tmp[645637](192674 call(192669 call (partial) dsiDim _mt[232] downdom[192538]) d[192745]))
+            unknown call_tmp[645644] "expr temp" "maybe param" "maybe type" "temp"
+            (645647 'move' call_tmp[645644](192675 call low _mt[232] call_tmp[645637]))
+            (192678 call = call_tmp[645630] call_tmp[645644])
+            unknown call_tmp[645649] "expr temp" "maybe param" "maybe type" "temp"
+            (645652 'move' call_tmp[645649](192685 call actualHigh[192642] d[192745]))
+            unknown call_tmp[645656] "expr temp" "maybe param" "maybe type" "temp"
+            (645659 'move' call_tmp[645656](192692 call(192687 call (partial) dsiDim _mt[232] downdom[192538]) d[192745]))
+            unknown call_tmp[645663] "expr temp" "maybe param" "maybe type" "temp"
+            (645666 'move' call_tmp[645663](192693 call high _mt[232] call_tmp[645656]))
+            (192696 call = call_tmp[645649] call_tmp[645663])
+          }
+          {
+            unknown call_tmp[645668] "expr temp" "maybe param" "maybe type" "temp"
+            (645671 'move' call_tmp[645668](192702 call actualLow[192629] d[192745]))
+            unknown call_tmp[645673] "expr temp" "maybe param" "maybe type" "temp"
+            (645676 'move' call_tmp[645673](192707 call dims[192532] d[192745]))
+            unknown call_tmp[645680] "expr temp" "maybe param" "maybe type" "temp"
+            (645683 'move' call_tmp[645680](192708 call first _mt[232] call_tmp[645673]))
+            unknown call_tmp[645685] "expr temp" "maybe param" "maybe type" "temp"
+            (645688 'move' call_tmp[645685](192715 call chpl_reindexConvertIdxDim call_tmp[645680] updom[192536] downdom[192538] d[192745]))
+            (192716 call = call_tmp[645668] call_tmp[645685])
+            unknown call_tmp[645690] "expr temp" "maybe param" "maybe type" "temp"
+            (645693 'move' call_tmp[645690](192723 call actualHigh[192642] d[192745]))
+            unknown call_tmp[645695] "expr temp" "maybe param" "maybe type" "temp"
+            (645698 'move' call_tmp[645695](192728 call dims[192532] d[192745]))
+            unknown call_tmp[645702] "expr temp" "maybe param" "maybe type" "temp"
+            (645705 'move' call_tmp[645702](192729 call last _mt[232] call_tmp[645695]))
+            unknown call_tmp[645707] "expr temp" "maybe param" "maybe type" "temp"
+            (645710 'move' call_tmp[645707](192736 call chpl_reindexConvertIdxDim call_tmp[645702] updom[192536] downdom[192538] d[192745]))
+            (192737 call = call_tmp[645690] call_tmp[645707])
+          }
+        }
+      }
+      label _unused_continueLabel[192750]
+      label _breakLabel[192749]
+    }
+    {
+      unknown d[192908] "insert auto destroy"
+      (493551 'init var' d[192908] 0)
+      unknown tmp[192909] "maybe param" "temp"
+      unknown call_tmp[645714] "expr temp" "maybe param" "maybe type" "temp"
+      (645717 'move' call_tmp[645714](192784 call rank _mt[232] updom[192536]))
+      (192921 'move' tmp[192909](192919 call chpl_compute_low_param_loop_bound 1 call_tmp[645714]))
+      unknown tmp[192910] "maybe param" "temp"
+      unknown call_tmp[645721] "expr temp" "maybe param" "maybe type" "temp"
+      (645724 'move' call_tmp[645721](192926 call rank _mt[232] updom[192536]))
+      (192931 'move' tmp[192910](192929 call chpl_compute_high_param_loop_bound 1 call_tmp[645721]))
+      unknown tmp[192911] "maybe param" "temp"
+      (192934 'move' tmp[192911] 1)
+      ParamForLoop
+      { d[192908] tmp[192909] tmp[192910] tmp[192911]
+        {
+          unknown tmp[405465] "maybe param" "temp"
+          unknown call_tmp[645728] "expr temp" "maybe param" "maybe type" "temp"
+          (645731 'move' call_tmp[645728](192795 call(192790 call (partial) dsiDim _mt[232] downdom[192538]) d[192908]))
+          (405476 'move' tmp[405465](192796 call stridable _mt[232] call_tmp[645728]))
+          unknown call_tmp[645735] "expr temp" "maybe param" "maybe type" "temp"
+          (645738 'move' call_tmp[645735](405478 call _cond_invalid tmp[405465]))
+          if call_tmp[645735]
+          {
+            (405481 call compilerError "cannot promote short-circuiting || operator")
+          }
+          unknown tmp[521293] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+          unknown tmp[521294] "maybe param" "temp"
+          unknown call_tmp[645740] "expr temp" "maybe param" "maybe type" "temp"
+          (645743 'move' call_tmp[645740](405466 call isTrue tmp[405465]))
+          (521299 'move' tmp[521294](521297 call _cond_test call_tmp[645740]))
+          if tmp[521294]
+          {
+            (521304 'move' tmp[521293](521301 '_paramFoldLogical' tmp[521294] 1))
+          }
+          {
+            unknown tmp[521306] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+            unknown call_tmp[645745] "expr temp" "maybe param" "maybe type" "temp"
+            (645748 'move' call_tmp[645745](192802 call dims[192532] d[192908]))
+            unknown call_tmp[645752] "expr temp" "maybe param" "maybe type" "temp"
+            (645755 'move' call_tmp[645752](192803 call stridable _mt[232] call_tmp[645745]))
+            (521308 'move' tmp[521306](405470 call isTrue call_tmp[645752]))
+            (521313 'move' tmp[521293](521310 '_paramFoldLogical' tmp[521294] tmp[521306]))
+          }
+          unknown call_tmp[645757] "expr temp" "maybe param" "maybe type" "temp"
+          (645760 'move' call_tmp[645757](192903 call _cond_test tmp[521293]))
+          if call_tmp[645757]
+          {
+            unknown call_tmp[645762] "expr temp" "maybe param" "maybe type" "temp"
+            (645765 'move' call_tmp[645762](192814 call dims[192532] d[192908]))
+            unknown call_tmp[645769] "expr temp" "maybe param" "maybe type" "temp"
+            (645772 'move' call_tmp[645769](192815 call stride _mt[232] call_tmp[645762]))
+            unknown call_tmp[645776] "expr temp" "maybe param" "maybe type" "temp"
+            (645779 'move' call_tmp[645776](192824 call(192819 call (partial) dsiDim _mt[232] updom[192536]) d[192908]))
+            unknown call_tmp[645783] "expr temp" "maybe param" "maybe type" "temp"
+            (645786 'move' call_tmp[645783](192825 call stride _mt[232] call_tmp[645776]))
+            unknown call_tmp[645788] "expr temp" "maybe param" "maybe type" "temp"
+            (645791 'move' call_tmp[645788](192828 call / call_tmp[645769] call_tmp[645783]))
+            unknown call_tmp[645795] "expr temp" "maybe param" "maybe type" "temp"
+            (645798 'move' call_tmp[645795](192836 call(192831 call (partial) dsiDim _mt[232] downdom[192538]) d[192908]))
+            unknown call_tmp[645802] "expr temp" "maybe param" "maybe type" "temp"
+            (645805 'move' call_tmp[645802](192837 call stride _mt[232] call_tmp[645795]))
+            unknown call_tmp[645807] "expr temp" "maybe param" "maybe type" "temp"
+            (645810 'move' call_tmp[645807](192840 call * call_tmp[645788] call_tmp[645802]))
+            unknown call_tmp[645812] "maybe param" "maybe type" "temp"
+            (645815 'move' call_tmp[645812](192842 call max 1 call_tmp[645807]))
+            const relStride[192843] "const" "insert auto destroy"
+            (493553 'init var' relStride[192843] call_tmp[645812])
+            unknown call_tmp[645817] "expr temp" "maybe param" "maybe type" "temp"
+            (645820 'move' call_tmp[645817](192850 call ranges[192626] d[192908]))
+            unknown call_tmp[645824] "expr temp" "maybe param" "maybe type" "temp"
+            (645827 'move' call_tmp[645824](192857 call(192852 call (partial) dsiDim _mt[232] downdom[192538]) d[192908]))
+            unknown call_tmp[645829] "expr temp" "maybe param" "maybe type" "temp"
+            (645832 'move' call_tmp[645829](192861 call actualLow[192629] d[192908]))
+            unknown call_tmp[645834] "expr temp" "maybe param" "maybe type" "temp"
+            (645837 'move' call_tmp[645834](192865 call actualHigh[192642] d[192908]))
+            unknown call_tmp[645839] "expr temp" "maybe param" "maybe type" "temp"
+            (645842 'move' call_tmp[645839](192866 call chpl_build_bounded_range call_tmp[645829] call_tmp[645834]))
+            unknown call_tmp[645844] "expr temp" "maybe param" "maybe type" "temp"
+            (645847 'move' call_tmp[645844](192869 call chpl_by call_tmp[645839] relStride[192843]))
+            unknown call_tmp[645849] "expr temp" "maybe param" "maybe type" "temp"
+            (645852 'move' call_tmp[645849](192872 call call_tmp[645824] call_tmp[645844]))
+            (192873 call = call_tmp[645817] call_tmp[645849])
+          }
+          {
+            unknown call_tmp[645854] "expr temp" "maybe param" "maybe type" "temp"
+            (645857 'move' call_tmp[645854](192879 call ranges[192626] d[192908]))
+            unknown call_tmp[645861] "expr temp" "maybe param" "maybe type" "temp"
+            (645864 'move' call_tmp[645861](192886 call(192881 call (partial) dsiDim _mt[232] downdom[192538]) d[192908]))
+            unknown call_tmp[645866] "expr temp" "maybe param" "maybe type" "temp"
+            (645869 'move' call_tmp[645866](192890 call actualLow[192629] d[192908]))
+            unknown call_tmp[645871] "expr temp" "maybe param" "maybe type" "temp"
+            (645874 'move' call_tmp[645871](192894 call actualHigh[192642] d[192908]))
+            unknown call_tmp[645876] "expr temp" "maybe param" "maybe type" "temp"
+            (645879 'move' call_tmp[645876](192895 call chpl_build_bounded_range call_tmp[645866] call_tmp[645871]))
+            unknown call_tmp[645881] "expr temp" "maybe param" "maybe type" "temp"
+            (645884 'move' call_tmp[645881](192898 call call_tmp[645861] call_tmp[645876]))
+            (192899 call = call_tmp[645854] call_tmp[645881])
+          }
+        }
+      }
+      label _unused_continueLabel[192913]
+      label _breakLabel[192912]
+    }
+    unknown call_tmp[645886] "expr temp" "maybe param" "maybe type" "temp"
+    (645889 'move' call_tmp[645886](192948 call chpl__buildDomainExpr(192946 'expand_tuple' ranges[192626])))
+    (476454 'move' ret[476449](476453 'deref' call_tmp[645886]))
+    (476451 return ret[476449])
+  }
+  (329484 'used modules list'(188670 'use' ChapelStandard[19734]))
+}

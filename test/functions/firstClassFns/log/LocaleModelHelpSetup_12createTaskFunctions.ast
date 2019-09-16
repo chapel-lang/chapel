@@ -1,0 +1,894 @@
+AST dump for LocaleModelHelpSetup after pass createTaskFunctions.
+Module use list: ChapelLocale DefaultRectangular ChapelNumLocales ChapelEnv Sys 
+
+{
+  function chpl__init_LocaleModelHelpSetup[390300]() : void[4] "insert line file info" "module init"
+  {
+    (493585 'init var' debugLocaleModel[195924] 0)
+    (493587 'init var' doneCreatingLocales[195929] 0 bool[10])
+    { scopeless type extern
+      (493589 'default init var' chpl_nodeID[195933] chpl_nodeID_t[90205])
+    }
+    (477156 return _void[47])
+  }
+  unknown debugLocaleModel[195924] "config" "param"
+  unknown doneCreatingLocales[195929] "insert auto destroy"
+  unknown chpl_nodeID[195933] "extern" "insert auto destroy"
+  function chpl_root_locale_accum[196119].accum[195973](arg _mt[196123]:_MT[227], arg this[196121]:chpl_root_locale_accum[196119], arg loc[195970]:locale[26]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[647175] "expr temp" "maybe param" "maybe type" "temp"
+    (647178 'move' call_tmp[647175](365248 call nPUsPhysAcc _mt[232] this[196121]))
+    unknown call_tmp[647184] "expr temp" "maybe param" "maybe type" "temp"
+    (647187 'move' call_tmp[647184](195982 call nPUsPhysAcc _mt[232] loc[195970]))
+    (195986 call(195976 call (partial) add _mt[232] call_tmp[647175]) call_tmp[647184])
+    unknown call_tmp[647191] "expr temp" "maybe param" "maybe type" "temp"
+    (647194 'move' call_tmp[647191](365254 call nPUsPhysAll _mt[232] this[196121]))
+    unknown call_tmp[647200] "expr temp" "maybe param" "maybe type" "temp"
+    (647203 'move' call_tmp[647200](195996 call nPUsPhysAll _mt[232] loc[195970]))
+    (196000 call(195990 call (partial) add _mt[232] call_tmp[647191]) call_tmp[647200])
+    unknown call_tmp[647207] "expr temp" "maybe param" "maybe type" "temp"
+    (647210 'move' call_tmp[647207](365260 call nPUsLogAcc _mt[232] this[196121]))
+    unknown call_tmp[647216] "expr temp" "maybe param" "maybe type" "temp"
+    (647219 'move' call_tmp[647216](196009 call nPUsLogAcc _mt[232] loc[195970]))
+    (196013 call(196003 call (partial) add _mt[232] call_tmp[647207]) call_tmp[647216])
+    unknown call_tmp[647223] "expr temp" "maybe param" "maybe type" "temp"
+    (647226 'move' call_tmp[647223](365266 call nPUsLogAll _mt[232] this[196121]))
+    unknown call_tmp[647232] "expr temp" "maybe param" "maybe type" "temp"
+    (647235 'move' call_tmp[647232](196022 call nPUsLogAll _mt[232] loc[195970]))
+    (196026 call(196016 call (partial) add _mt[232] call_tmp[647223]) call_tmp[647232])
+    unknown call_tmp[647239] "expr temp" "maybe param" "maybe type" "temp"
+    (647242 'move' call_tmp[647239](365272 call maxTaskPar _mt[232] this[196121]))
+    unknown call_tmp[647248] "expr temp" "maybe param" "maybe type" "temp"
+    (647251 'move' call_tmp[647248](196033 call maxTaskPar _mt[232] loc[195970]))
+    (196037 call(196029 call (partial) add _mt[232] call_tmp[647239]) call_tmp[647248])
+    (477064 return _void[47])
+  }
+  function chpl_root_locale_accum[196119].setRootLocaleValues[196048](arg _mt[196127]:_MT[227], arg this[196125]:chpl_root_locale_accum[196119], arg dst[196045]:RootLocale[90090]) : _unknown[43] "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[647255] "expr temp" "maybe param" "maybe type" "temp"
+    (647258 'move' call_tmp[647255](196051 call nPUsPhysAcc _mt[232] dst[196045]))
+    unknown call_tmp[647262] "expr temp" "maybe param" "maybe type" "temp"
+    (647265 'move' call_tmp[647262](365280 call nPUsPhysAcc _mt[232] this[196125]))
+    unknown call_tmp[647269] "expr temp" "maybe param" "maybe type" "temp"
+    (647272 'move' call_tmp[647269](196059 call(196055 call (partial) read _mt[232] call_tmp[647262])))
+    (196060 call = call_tmp[647255] call_tmp[647269])
+    unknown call_tmp[647276] "expr temp" "maybe param" "maybe type" "temp"
+    (647279 'move' call_tmp[647276](196065 call nPUsPhysAll _mt[232] dst[196045]))
+    unknown call_tmp[647283] "expr temp" "maybe param" "maybe type" "temp"
+    (647286 'move' call_tmp[647283](365286 call nPUsPhysAll _mt[232] this[196125]))
+    unknown call_tmp[647290] "expr temp" "maybe param" "maybe type" "temp"
+    (647293 'move' call_tmp[647290](196073 call(196069 call (partial) read _mt[232] call_tmp[647283])))
+    (196074 call = call_tmp[647276] call_tmp[647290])
+    unknown call_tmp[647297] "expr temp" "maybe param" "maybe type" "temp"
+    (647300 'move' call_tmp[647297](196078 call nPUsLogAcc _mt[232] dst[196045]))
+    unknown call_tmp[647304] "expr temp" "maybe param" "maybe type" "temp"
+    (647307 'move' call_tmp[647304](365292 call nPUsLogAcc _mt[232] this[196125]))
+    unknown call_tmp[647311] "expr temp" "maybe param" "maybe type" "temp"
+    (647314 'move' call_tmp[647311](196086 call(196082 call (partial) read _mt[232] call_tmp[647304])))
+    (196087 call = call_tmp[647297] call_tmp[647311])
+    unknown call_tmp[647318] "expr temp" "maybe param" "maybe type" "temp"
+    (647321 'move' call_tmp[647318](196091 call nPUsLogAll _mt[232] dst[196045]))
+    unknown call_tmp[647325] "expr temp" "maybe param" "maybe type" "temp"
+    (647328 'move' call_tmp[647325](365298 call nPUsLogAll _mt[232] this[196125]))
+    unknown call_tmp[647332] "expr temp" "maybe param" "maybe type" "temp"
+    (647335 'move' call_tmp[647332](196099 call(196095 call (partial) read _mt[232] call_tmp[647325])))
+    (196100 call = call_tmp[647318] call_tmp[647332])
+    unknown call_tmp[647339] "expr temp" "maybe param" "maybe type" "temp"
+    (647342 'move' call_tmp[647339](196104 call maxTaskPar _mt[232] dst[196045]))
+    unknown call_tmp[647346] "expr temp" "maybe param" "maybe type" "temp"
+    (647349 'move' call_tmp[647346](365304 call maxTaskPar _mt[232] this[196125]))
+    unknown call_tmp[647353] "expr temp" "maybe param" "maybe type" "temp"
+    (647356 'move' call_tmp[647353](196112 call(196108 call (partial) read _mt[232] call_tmp[647346])))
+    (196113 call = call_tmp[647339] call_tmp[647353])
+    (477066 return _void[47])
+  }
+  function chpl_root_locale_accum[196119].nPUsPhysAcc[733680](arg _mt[733682]:_MT[227], ref arg this[733684]:chpl_root_locale_accum[196119]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[733693] "RVV" "temp"
+    unknown call_tmp[733700] "expr temp" "maybe param" "maybe type" "temp"
+    (733703 'move' call_tmp[733700](733688 '.' this[733684] c"nPUsPhysAcc"))
+    (733698 'move' ret[733693](733697 'addr of' call_tmp[733700]))
+    (733695 return ret[733693])
+  }
+  function chpl_root_locale_accum[196119].nPUsPhysAll[733705](arg _mt[733707]:_MT[227], ref arg this[733709]:chpl_root_locale_accum[196119]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[733718] "RVV" "temp"
+    unknown call_tmp[733725] "expr temp" "maybe param" "maybe type" "temp"
+    (733728 'move' call_tmp[733725](733713 '.' this[733709] c"nPUsPhysAll"))
+    (733723 'move' ret[733718](733722 'addr of' call_tmp[733725]))
+    (733720 return ret[733718])
+  }
+  function chpl_root_locale_accum[196119].nPUsLogAcc[733730](arg _mt[733732]:_MT[227], ref arg this[733734]:chpl_root_locale_accum[196119]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[733743] "RVV" "temp"
+    unknown call_tmp[733750] "expr temp" "maybe param" "maybe type" "temp"
+    (733753 'move' call_tmp[733750](733738 '.' this[733734] c"nPUsLogAcc"))
+    (733748 'move' ret[733743](733747 'addr of' call_tmp[733750]))
+    (733745 return ret[733743])
+  }
+  function chpl_root_locale_accum[196119].nPUsLogAll[733755](arg _mt[733757]:_MT[227], ref arg this[733759]:chpl_root_locale_accum[196119]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[733768] "RVV" "temp"
+    unknown call_tmp[733775] "expr temp" "maybe param" "maybe type" "temp"
+    (733778 'move' call_tmp[733775](733763 '.' this[733759] c"nPUsLogAll"))
+    (733773 'move' ret[733768](733772 'addr of' call_tmp[733775]))
+    (733770 return ret[733768])
+  }
+  function chpl_root_locale_accum[196119].maxTaskPar[733780](arg _mt[733782]:_MT[227], ref arg this[733784]:chpl_root_locale_accum[196119]) ref : _unknown[43] "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[733793] "RVV" "temp"
+    unknown call_tmp[733800] "expr temp" "maybe param" "maybe type" "temp"
+    (733803 'move' call_tmp[733800](733788 '.' this[733784] c"maxTaskPar"))
+    (733798 'move' ret[733793](733797 'addr of' call_tmp[733800]))
+    (733795 return ret[733793])
+  }
+  function chpl_root_locale_accum[196119].init[733805](arg _mt[733807]:_MT[227], ref arg this[733808]:chpl_root_locale_accum[196119], in arg nPUsPhysAcc[733811] :
+  (733814 call chpl__atomicType int(64)[13]) =
+  _typeDefaultT[239], in arg nPUsPhysAll[733826] :
+  (733829 call chpl__atomicType int(64)[13]) =
+  _typeDefaultT[239], in arg nPUsLogAcc[733841] :
+  (733844 call chpl__atomicType int(64)[13]) =
+  _typeDefaultT[239], in arg nPUsLogAll[733856] :
+  (733859 call chpl__atomicType int(64)[13]) =
+  _typeDefaultT[239], in arg maxTaskPar[733871] :
+  (733874 call chpl__atomicType int(64)[13]) =
+  _typeDefaultT[239]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (733887 'init field' this[733808] c"nPUsPhysAcc" nPUsPhysAcc[733811])
+    (733890 'init field' this[733808] c"nPUsPhysAll" nPUsPhysAll[733826])
+    (733893 'init field' this[733808] c"nPUsLogAcc" nPUsLogAcc[733841])
+    (733896 'init field' this[733808] c"nPUsLogAll" nPUsLogAll[733856])
+    (733899 'init field' this[733808] c"maxTaskPar" maxTaskPar[733871])
+    (733902 return _void[47])
+  }
+  function chpl_root_locale_accum[196119].init=[733904](arg _mt[733907]:_MT[227], ref arg this[733908]:chpl_root_locale_accum[196119], arg other[733909]:chpl_root_locale_accum[196119]) : void[4] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    unknown call_tmp[734022] "maybe param" "maybe type" "temp"
+    (734025 'move' call_tmp[734022](733917 call nPUsPhysAcc _mt[232] other[733909]))
+    unknown call_tmp[734027] "maybe param" "maybe type" "temp"
+    (734030 'move' call_tmp[734027](733966 call chpl__atomicType int(64)[13]))
+    unknown tmp[733963] "temp"
+    (733968 'init var' tmp[733963] call_tmp[734022] call_tmp[734027])
+    (733970 'init field' this[733908] c"nPUsPhysAcc" tmp[733963])
+    unknown call_tmp[734034] "maybe param" "maybe type" "temp"
+    (734037 'move' call_tmp[734034](733927 call nPUsPhysAll _mt[232] other[733909]))
+    unknown call_tmp[734039] "maybe param" "maybe type" "temp"
+    (734042 'move' call_tmp[734039](733977 call chpl__atomicType int(64)[13]))
+    unknown tmp[733974] "temp"
+    (733979 'init var' tmp[733974] call_tmp[734034] call_tmp[734039])
+    (733981 'init field' this[733908] c"nPUsPhysAll" tmp[733974])
+    unknown call_tmp[734046] "maybe param" "maybe type" "temp"
+    (734049 'move' call_tmp[734046](733937 call nPUsLogAcc _mt[232] other[733909]))
+    unknown call_tmp[734051] "maybe param" "maybe type" "temp"
+    (734054 'move' call_tmp[734051](733988 call chpl__atomicType int(64)[13]))
+    unknown tmp[733985] "temp"
+    (733990 'init var' tmp[733985] call_tmp[734046] call_tmp[734051])
+    (733992 'init field' this[733908] c"nPUsLogAcc" tmp[733985])
+    unknown call_tmp[734058] "maybe param" "maybe type" "temp"
+    (734061 'move' call_tmp[734058](733947 call nPUsLogAll _mt[232] other[733909]))
+    unknown call_tmp[734063] "maybe param" "maybe type" "temp"
+    (734066 'move' call_tmp[734063](733999 call chpl__atomicType int(64)[13]))
+    unknown tmp[733996] "temp"
+    (734001 'init var' tmp[733996] call_tmp[734058] call_tmp[734063])
+    (734003 'init field' this[733908] c"nPUsLogAll" tmp[733996])
+    unknown call_tmp[734070] "maybe param" "maybe type" "temp"
+    (734073 'move' call_tmp[734070](733957 call maxTaskPar _mt[232] other[733909]))
+    unknown call_tmp[734075] "maybe param" "maybe type" "temp"
+    (734078 'move' call_tmp[734075](734010 call chpl__atomicType int(64)[13]))
+    unknown tmp[734007] "temp"
+    (734012 'init var' tmp[734007] call_tmp[734070] call_tmp[734075])
+    (734014 'init field' this[733908] c"maxTaskPar" tmp[734007])
+    (734018 return _void[47])
+  }
+  function chpl_root_locale_accum[196119].deinit[734080](arg _mt[734082]:_MT[227], arg this[734084]:chpl_root_locale_accum[196119]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (734086 return _void[47])
+  }
+  function chpl_root_locale_accum[196119].writeThis[734089](arg _mt[734093]:_MT[227], arg this[734091]:chpl_root_locale_accum[196119], arg f[734092]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (734098 call writeThisDefaultImpl f[734092] this[734091])
+    (734102 return _void[47])
+  }
+  function chpl_root_locale_accum[196119].readThis[734104](arg _mt[734108]:_MT[227], arg this[734106]:chpl_root_locale_accum[196119], arg f[734107]:_any[170](?)) : void[4] "compiler generated" "inline" "last resort" "method" "primary method"
+  {
+    (734112 call readThisDefaultImpl f[734107] this[734106])
+    (734117 return _void[47])
+  }
+  function ==[734119](arg _arg1[734121]:chpl_root_locale_accum[196119], arg _arg2[734122]:chpl_root_locale_accum[196119]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[734207]:bool[10] "RVV" "temp"
+    unknown call_tmp[734239] "expr temp" "maybe param" "maybe type" "temp"
+    (734242 'move' call_tmp[734239](734132 call nPUsPhysAcc _mt[232] _arg1[734121]))
+    unknown call_tmp[734244] "expr temp" "maybe param" "maybe type" "temp"
+    (734247 'move' call_tmp[734244](734136 call nPUsPhysAcc _mt[232] _arg2[734122]))
+    unknown call_tmp[734249] "expr temp" "maybe param" "maybe type" "temp"
+    (734252 'move' call_tmp[734249](734140 call != call_tmp[734239] call_tmp[734244]))
+    if call_tmp[734249]
+    {
+      (734212 'move' ret[734207](734211 'deref' 0))
+      gotoReturn _end_==[734205] _end_==[734205]
+    }
+    unknown call_tmp[734254] "expr temp" "maybe param" "maybe type" "temp"
+    (734257 'move' call_tmp[734254](734146 call nPUsPhysAll _mt[232] _arg1[734121]))
+    unknown call_tmp[734259] "expr temp" "maybe param" "maybe type" "temp"
+    (734262 'move' call_tmp[734259](734150 call nPUsPhysAll _mt[232] _arg2[734122]))
+    unknown call_tmp[734264] "expr temp" "maybe param" "maybe type" "temp"
+    (734267 'move' call_tmp[734264](734154 call != call_tmp[734254] call_tmp[734259]))
+    if call_tmp[734264]
+    {
+      (734217 'move' ret[734207](734216 'deref' 0))
+      gotoReturn _end_==[734205] _end_==[734205]
+    }
+    unknown call_tmp[734269] "expr temp" "maybe param" "maybe type" "temp"
+    (734272 'move' call_tmp[734269](734160 call nPUsLogAcc _mt[232] _arg1[734121]))
+    unknown call_tmp[734274] "expr temp" "maybe param" "maybe type" "temp"
+    (734277 'move' call_tmp[734274](734164 call nPUsLogAcc _mt[232] _arg2[734122]))
+    unknown call_tmp[734279] "expr temp" "maybe param" "maybe type" "temp"
+    (734282 'move' call_tmp[734279](734168 call != call_tmp[734269] call_tmp[734274]))
+    if call_tmp[734279]
+    {
+      (734222 'move' ret[734207](734221 'deref' 0))
+      gotoReturn _end_==[734205] _end_==[734205]
+    }
+    unknown call_tmp[734284] "expr temp" "maybe param" "maybe type" "temp"
+    (734287 'move' call_tmp[734284](734174 call nPUsLogAll _mt[232] _arg1[734121]))
+    unknown call_tmp[734289] "expr temp" "maybe param" "maybe type" "temp"
+    (734292 'move' call_tmp[734289](734178 call nPUsLogAll _mt[232] _arg2[734122]))
+    unknown call_tmp[734294] "expr temp" "maybe param" "maybe type" "temp"
+    (734297 'move' call_tmp[734294](734182 call != call_tmp[734284] call_tmp[734289]))
+    if call_tmp[734294]
+    {
+      (734227 'move' ret[734207](734226 'deref' 0))
+      gotoReturn _end_==[734205] _end_==[734205]
+    }
+    unknown call_tmp[734299] "expr temp" "maybe param" "maybe type" "temp"
+    (734302 'move' call_tmp[734299](734188 call maxTaskPar _mt[232] _arg1[734121]))
+    unknown call_tmp[734304] "expr temp" "maybe param" "maybe type" "temp"
+    (734307 'move' call_tmp[734304](734192 call maxTaskPar _mt[232] _arg2[734122]))
+    unknown call_tmp[734309] "expr temp" "maybe param" "maybe type" "temp"
+    (734312 'move' call_tmp[734309](734196 call != call_tmp[734299] call_tmp[734304]))
+    if call_tmp[734309]
+    {
+      (734232 'move' ret[734207](734231 'deref' 0))
+      gotoReturn _end_==[734205] _end_==[734205]
+    }
+    (734237 'move' ret[734207](734236 'deref' 1))
+    label _end_==[734205]
+    (734209 return ret[734207])
+  }
+  where {
+    unknown call_tmp[734314] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734317 'move' call_tmp[734314](734125 'typeof' _arg1[734121]))
+    unknown call_tmp[734319] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734322 'move' call_tmp[734319](734127 'typeof' _arg2[734122]))
+    (734129 call == call_tmp[734314] call_tmp[734319])
+  }
+  function !=[734324](arg _arg1[734326]:chpl_root_locale_accum[196119], arg _arg2[734327]:chpl_root_locale_accum[196119]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[734412]:bool[10] "RVV" "temp"
+    unknown call_tmp[734444] "expr temp" "maybe param" "maybe type" "temp"
+    (734447 'move' call_tmp[734444](734337 call nPUsPhysAcc _mt[232] _arg1[734326]))
+    unknown call_tmp[734449] "expr temp" "maybe param" "maybe type" "temp"
+    (734452 'move' call_tmp[734449](734341 call nPUsPhysAcc _mt[232] _arg2[734327]))
+    unknown call_tmp[734454] "expr temp" "maybe param" "maybe type" "temp"
+    (734457 'move' call_tmp[734454](734345 call != call_tmp[734444] call_tmp[734449]))
+    if call_tmp[734454]
+    {
+      (734417 'move' ret[734412](734416 'deref' 1))
+      gotoReturn _end_!=[734410] _end_!=[734410]
+    }
+    unknown call_tmp[734459] "expr temp" "maybe param" "maybe type" "temp"
+    (734462 'move' call_tmp[734459](734351 call nPUsPhysAll _mt[232] _arg1[734326]))
+    unknown call_tmp[734464] "expr temp" "maybe param" "maybe type" "temp"
+    (734467 'move' call_tmp[734464](734355 call nPUsPhysAll _mt[232] _arg2[734327]))
+    unknown call_tmp[734469] "expr temp" "maybe param" "maybe type" "temp"
+    (734472 'move' call_tmp[734469](734359 call != call_tmp[734459] call_tmp[734464]))
+    if call_tmp[734469]
+    {
+      (734422 'move' ret[734412](734421 'deref' 1))
+      gotoReturn _end_!=[734410] _end_!=[734410]
+    }
+    unknown call_tmp[734474] "expr temp" "maybe param" "maybe type" "temp"
+    (734477 'move' call_tmp[734474](734365 call nPUsLogAcc _mt[232] _arg1[734326]))
+    unknown call_tmp[734479] "expr temp" "maybe param" "maybe type" "temp"
+    (734482 'move' call_tmp[734479](734369 call nPUsLogAcc _mt[232] _arg2[734327]))
+    unknown call_tmp[734484] "expr temp" "maybe param" "maybe type" "temp"
+    (734487 'move' call_tmp[734484](734373 call != call_tmp[734474] call_tmp[734479]))
+    if call_tmp[734484]
+    {
+      (734427 'move' ret[734412](734426 'deref' 1))
+      gotoReturn _end_!=[734410] _end_!=[734410]
+    }
+    unknown call_tmp[734489] "expr temp" "maybe param" "maybe type" "temp"
+    (734492 'move' call_tmp[734489](734379 call nPUsLogAll _mt[232] _arg1[734326]))
+    unknown call_tmp[734494] "expr temp" "maybe param" "maybe type" "temp"
+    (734497 'move' call_tmp[734494](734383 call nPUsLogAll _mt[232] _arg2[734327]))
+    unknown call_tmp[734499] "expr temp" "maybe param" "maybe type" "temp"
+    (734502 'move' call_tmp[734499](734387 call != call_tmp[734489] call_tmp[734494]))
+    if call_tmp[734499]
+    {
+      (734432 'move' ret[734412](734431 'deref' 1))
+      gotoReturn _end_!=[734410] _end_!=[734410]
+    }
+    unknown call_tmp[734504] "expr temp" "maybe param" "maybe type" "temp"
+    (734507 'move' call_tmp[734504](734393 call maxTaskPar _mt[232] _arg1[734326]))
+    unknown call_tmp[734509] "expr temp" "maybe param" "maybe type" "temp"
+    (734512 'move' call_tmp[734509](734397 call maxTaskPar _mt[232] _arg2[734327]))
+    unknown call_tmp[734514] "expr temp" "maybe param" "maybe type" "temp"
+    (734517 'move' call_tmp[734514](734401 call != call_tmp[734504] call_tmp[734509]))
+    if call_tmp[734514]
+    {
+      (734437 'move' ret[734412](734436 'deref' 1))
+      gotoReturn _end_!=[734410] _end_!=[734410]
+    }
+    (734442 'move' ret[734412](734441 'deref' 0))
+    label _end_!=[734410]
+    (734414 return ret[734412])
+  }
+  where {
+    unknown call_tmp[734519] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734522 'move' call_tmp[734519](734330 'typeof' _arg1[734326]))
+    unknown call_tmp[734524] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734527 'move' call_tmp[734524](734332 'typeof' _arg2[734327]))
+    (734334 call == call_tmp[734519] call_tmp[734524])
+  }
+  function =[734529](ref arg _arg1[734531]:chpl_root_locale_accum[196119], const?  ref arg _arg2[734532]:chpl_root_locale_accum[196119]) : void[4] "assignop" "compiler generated" "last resort"
+  {
+    unknown call_tmp[734597] "expr temp" "maybe param" "maybe type" "temp"
+    (734600 'move' call_tmp[734597](734542 call nPUsPhysAcc _mt[232] _arg1[734531]))
+    unknown call_tmp[734604] "expr temp" "maybe param" "maybe type" "temp"
+    (734607 'move' call_tmp[734604](734546 call nPUsPhysAcc _mt[232] _arg2[734532]))
+    (734550 call = call_tmp[734597] call_tmp[734604])
+    unknown call_tmp[734611] "expr temp" "maybe param" "maybe type" "temp"
+    (734614 'move' call_tmp[734611](734552 call nPUsPhysAll _mt[232] _arg1[734531]))
+    unknown call_tmp[734618] "expr temp" "maybe param" "maybe type" "temp"
+    (734621 'move' call_tmp[734618](734556 call nPUsPhysAll _mt[232] _arg2[734532]))
+    (734560 call = call_tmp[734611] call_tmp[734618])
+    unknown call_tmp[734625] "expr temp" "maybe param" "maybe type" "temp"
+    (734628 'move' call_tmp[734625](734562 call nPUsLogAcc _mt[232] _arg1[734531]))
+    unknown call_tmp[734632] "expr temp" "maybe param" "maybe type" "temp"
+    (734635 'move' call_tmp[734632](734566 call nPUsLogAcc _mt[232] _arg2[734532]))
+    (734570 call = call_tmp[734625] call_tmp[734632])
+    unknown call_tmp[734639] "expr temp" "maybe param" "maybe type" "temp"
+    (734642 'move' call_tmp[734639](734572 call nPUsLogAll _mt[232] _arg1[734531]))
+    unknown call_tmp[734646] "expr temp" "maybe param" "maybe type" "temp"
+    (734649 'move' call_tmp[734646](734576 call nPUsLogAll _mt[232] _arg2[734532]))
+    (734580 call = call_tmp[734639] call_tmp[734646])
+    unknown call_tmp[734653] "expr temp" "maybe param" "maybe type" "temp"
+    (734656 'move' call_tmp[734653](734582 call maxTaskPar _mt[232] _arg1[734531]))
+    unknown call_tmp[734660] "expr temp" "maybe param" "maybe type" "temp"
+    (734663 'move' call_tmp[734660](734586 call maxTaskPar _mt[232] _arg2[734532]))
+    (734590 call = call_tmp[734653] call_tmp[734660])
+    (734593 return _void[47])
+  }
+  where {
+    unknown call_tmp[734665] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734668 'move' call_tmp[734665](734535 'typeof' _arg1[734531]))
+    unknown call_tmp[734670] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (734673 'move' call_tmp[734670](734537 'typeof' _arg2[734532]))
+    (734539 call == call_tmp[734665] call_tmp[734670])
+  }
+  function chpl__defaultHash[734675](arg r[734677]:chpl_root_locale_accum[196119]) : _unknown[43] "compiler generated" "last resort"
+  {
+    unknown ret[734725] "RVV" "temp"
+    unknown call_tmp[734732] "expr temp" "maybe param" "maybe type" "temp"
+    (734735 'move' call_tmp[734732](734712 call maxTaskPar _mt[232] r[734677]))
+    unknown call_tmp[734737] "expr temp" "maybe param" "maybe type" "temp"
+    (734740 'move' call_tmp[734737](734716 call chpl__defaultHash call_tmp[734732]))
+    unknown call_tmp[734742] "expr temp" "maybe param" "maybe type" "temp"
+    (734745 'move' call_tmp[734742](734703 call nPUsLogAll _mt[232] r[734677]))
+    unknown call_tmp[734747] "expr temp" "maybe param" "maybe type" "temp"
+    (734750 'move' call_tmp[734747](734707 call chpl__defaultHash call_tmp[734742]))
+    unknown call_tmp[734752] "expr temp" "maybe param" "maybe type" "temp"
+    (734755 'move' call_tmp[734752](734694 call nPUsLogAcc _mt[232] r[734677]))
+    unknown call_tmp[734757] "expr temp" "maybe param" "maybe type" "temp"
+    (734760 'move' call_tmp[734757](734698 call chpl__defaultHash call_tmp[734752]))
+    unknown call_tmp[734762] "expr temp" "maybe param" "maybe type" "temp"
+    (734765 'move' call_tmp[734762](734685 call nPUsPhysAll _mt[232] r[734677]))
+    unknown call_tmp[734767] "expr temp" "maybe param" "maybe type" "temp"
+    (734770 'move' call_tmp[734767](734689 call chpl__defaultHash call_tmp[734762]))
+    unknown call_tmp[734772] "expr temp" "maybe param" "maybe type" "temp"
+    (734775 'move' call_tmp[734772](734679 call nPUsPhysAcc _mt[232] r[734677]))
+    unknown call_tmp[734777] "expr temp" "maybe param" "maybe type" "temp"
+    (734780 'move' call_tmp[734777](734683 call chpl__defaultHash call_tmp[734772]))
+    unknown call_tmp[734782] "expr temp" "maybe param" "maybe type" "temp"
+    (734785 'move' call_tmp[734782](734691 call chpl__defaultHashCombine call_tmp[734767] call_tmp[734777] 2))
+    unknown call_tmp[734787] "expr temp" "maybe param" "maybe type" "temp"
+    (734790 'move' call_tmp[734787](734700 call chpl__defaultHashCombine call_tmp[734757] call_tmp[734782] 3))
+    unknown call_tmp[734792] "expr temp" "maybe param" "maybe type" "temp"
+    (734795 'move' call_tmp[734792](734709 call chpl__defaultHashCombine call_tmp[734747] call_tmp[734787] 4))
+    unknown call_tmp[734797] "expr temp" "maybe param" "maybe type" "temp"
+    (734800 'move' call_tmp[734797](734718 call chpl__defaultHashCombine call_tmp[734737] call_tmp[734792] 5))
+    (734730 'move' ret[734725](734729 'deref' call_tmp[734797]))
+    (734727 return ret[734725])
+  }
+  type chpl_root_locale_accum[196119] unknown nPUsPhysAcc[195940](195938 call chpl__atomicType int(64)[13]) unknown nPUsPhysAll[195946](195944 call chpl__atomicType int(64)[13]) unknown nPUsLogAcc[195952](195950 call chpl__atomicType int(64)[13]) unknown nPUsLogAll[195958](195956 call chpl__atomicType int(64)[13]) unknown maxTaskPar[195964](195962 call chpl__atomicType int(64)[13])
+  function helpSetupRootLocaleFlat[196137](arg dst[196134]:RootLocale[90090]) : _unknown[43] "no return value for void"
+  {
+    unknown root_accum[196140] "insert auto destroy"
+    (493592 'default init var' root_accum[196140] chpl_root_locale_accum[196119])
+    unknown call_tmp[647360] "expr temp" "maybe param" "maybe type" "temp"
+    (647363 'move' call_tmp[647360](196152 call(196148 call (partial) chpl_initOnLocales _mt[232] dst[196134])))
+    Forall {
+      induction variables:
+        
+        unknown locIdx[196191] "index var" "insert auto destroy"
+      iterated expressions:
+        call_tmp[647360]
+      shadow variables:
+        root_accum[196154] 'ref' intent outer var root_accum[196140]
+          init block
+          {
+          }
+          deinit block
+          {
+          }
+      forall body
+      {
+        unknown call_tmp[647365] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (647368 'move' call_tmp[647365](691568 'new' anymanaged LocaleModel[365311](?) dst[196134](_chpl_manager = unmanaged[209](?))))
+        const node[196165] "const" "insert auto destroy"
+        (493594 'init var' node[196165] call_tmp[647365])
+        unknown call_tmp[647372] "expr temp" "maybe param" "maybe type" "temp"
+        (647375 'move' call_tmp[647372](196175 call(196170 call (partial) myLocales _mt[232] dst[196134]) locIdx[196191]))
+        (196177 call = call_tmp[647372] node[196165])
+        (196188 call(196183 call (partial) accum _mt[232] root_accum[196154]) node[196165])
+      }
+    }
+    (196202 call(196197 call (partial) setRootLocaleValues _mt[232] root_accum[196140]) dst[196134])
+    (477068 return _void[47])
+  }
+  function helpSetupRootLocaleNUMA[196213](arg dst[196210]:RootLocale[90090]) : _unknown[43] "no return value for void"
+  {
+    unknown root_accum[196216] "insert auto destroy"
+    (493596 'default init var' root_accum[196216] chpl_root_locale_accum[196119])
+    unknown call_tmp[647383] "expr temp" "maybe param" "maybe type" "temp"
+    (647386 'move' call_tmp[647383](196226 call(196222 call (partial) chpl_initOnLocales _mt[232] dst[196210])))
+    Forall {
+      induction variables:
+        
+        unknown locIdx[196268] "index var" "insert auto destroy"
+      iterated expressions:
+        call_tmp[647383]
+      shadow variables:
+        root_accum[196228] 'ref' intent outer var root_accum[196216]
+          init block
+          {
+          }
+          deinit block
+          {
+          }
+      forall body
+      {
+        (196236 call chpl_task_setSubloc c_sublocid_any[90220])
+        unknown call_tmp[647388] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (647391 'move' call_tmp[647388](691569 'new' anymanaged LocaleModel[365311](?) dst[196210](_chpl_manager = unmanaged[209](?))))
+        const node[196245] "const" "insert auto destroy"
+        (493598 'init var' node[196245] call_tmp[647388])
+        unknown call_tmp[647395] "expr temp" "maybe param" "maybe type" "temp"
+        (647398 'move' call_tmp[647395](196254 call(196249 call (partial) myLocales _mt[232] dst[196210]) locIdx[196268]))
+        (196256 call = call_tmp[647395] node[196245])
+        (196265 call(196260 call (partial) accum _mt[232] root_accum[196228]) node[196245])
+      }
+    }
+    (196277 call(196272 call (partial) setRootLocaleValues _mt[232] root_accum[196216]) dst[196210])
+    (477070 return _void[47])
+  }
+  function helpSetupRootLocaleAPU[196288](arg dst[196285]:RootLocale[90090]) : _unknown[43] "no return value for void"
+  {
+    unknown root_accum[196291] "insert auto destroy"
+    (493600 'default init var' root_accum[196291] chpl_root_locale_accum[196119])
+    unknown call_tmp[647406] "expr temp" "maybe param" "maybe type" "temp"
+    (647409 'move' call_tmp[647406](196301 call(196297 call (partial) chpl_initOnLocales _mt[232] dst[196285])))
+    Forall {
+      induction variables:
+        
+        unknown locIdx[196343] "index var" "insert auto destroy"
+      iterated expressions:
+        call_tmp[647406]
+      shadow variables:
+        root_accum[196303] 'ref' intent outer var root_accum[196291]
+          init block
+          {
+          }
+          deinit block
+          {
+          }
+      forall body
+      {
+        (196311 call chpl_task_setSubloc c_sublocid_any[90220])
+        unknown call_tmp[647411] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+        (647414 'move' call_tmp[647411](691570 'new' anymanaged LocaleModel[365311](?) dst[196285](_chpl_manager = unmanaged[209](?))))
+        const node[196320] "const" "insert auto destroy"
+        (493602 'init var' node[196320] call_tmp[647411])
+        unknown call_tmp[647418] "expr temp" "maybe param" "maybe type" "temp"
+        (647421 'move' call_tmp[647418](196329 call(196324 call (partial) myLocales _mt[232] dst[196285]) locIdx[196343]))
+        (196331 call = call_tmp[647418] node[196320])
+        (196340 call(196335 call (partial) accum _mt[232] root_accum[196303]) node[196320])
+      }
+    }
+    (196352 call(196347 call (partial) setRootLocaleValues _mt[232] root_accum[196291]) dst[196285])
+    unknown call_tmp[647427] "expr temp" "maybe param" "maybe type" "temp"
+    (647430 'move' call_tmp[647427](365348 call here[92085]))
+    (196360 call(196355 call (partial) runningTaskCntSet _mt[232] call_tmp[647427]) 0)
+    (477072 return _void[47])
+  }
+  function localSpawn[196366]() : _unknown[43] "inline" "private"
+  {
+    unknown ret[477076] "RVV" "temp"
+    unknown call_tmp[647434] "expr temp" "maybe param" "maybe type" "temp"
+    (647437 'move' call_tmp[647434](196385 call == CHPL_COMM[42614] "gasnet"))
+    unknown call_tmp[647439] "expr temp" "maybe param" "maybe type" "temp"
+    (647442 'move' call_tmp[647439](196467 call _cond_test call_tmp[647434]))
+    if call_tmp[647439]
+    {
+      unknown spawnfn[196388] "insert auto destroy"
+      (493604 'default init var' spawnfn[196388] c_string[19])
+      unknown tmp[405591] "maybe param" "temp"
+      unknown tmp[405612] "maybe param" "temp"
+      (405623 'move' tmp[405612](196409 call == CHPL_COMM_SUBSTRATE[42637] "udp"))
+      unknown call_tmp[647444] "expr temp" "maybe param" "maybe type" "temp"
+      (647447 'move' call_tmp[647444](405625 call _cond_invalid tmp[405612]))
+      if call_tmp[647444]
+      {
+        (405628 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[521455] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[521456] "maybe param" "temp"
+      unknown call_tmp[647449] "expr temp" "maybe param" "maybe type" "temp"
+      (647452 'move' call_tmp[647449](405613 call isTrue tmp[405612]))
+      (521461 'move' tmp[521456](521459 call _cond_test call_tmp[647449]))
+      if tmp[521456]
+      {
+        unknown tmp[521463] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[647454] "expr temp" "maybe param" "maybe type" "temp"
+        (647457 'move' call_tmp[647454](196417 call sys_getenv c"GASNET_SPAWNFN" spawnfn[196388]))
+        unknown call_tmp[647459] "expr temp" "maybe param" "maybe type" "temp"
+        (647462 'move' call_tmp[647459](196419 call == call_tmp[647454] 1))
+        (521465 'move' tmp[521463](405616 call isTrue call_tmp[647459]))
+        (521470 'move' tmp[521455](521467 '_paramFoldLogical' tmp[521456] tmp[521463]))
+      }
+      {
+        (521475 'move' tmp[521455](521472 '_paramFoldLogical' tmp[521456] 0))
+      }
+      (405602 'move' tmp[405591] tmp[521455])
+      unknown call_tmp[647464] "expr temp" "maybe param" "maybe type" "temp"
+      (647467 'move' call_tmp[647464](405604 call _cond_invalid tmp[405591]))
+      if call_tmp[647464]
+      {
+        (405607 call compilerError "cannot promote short-circuiting && operator")
+      }
+      unknown tmp[521482] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+      unknown tmp[521483] "maybe param" "temp"
+      unknown call_tmp[647469] "expr temp" "maybe param" "maybe type" "temp"
+      (647472 'move' call_tmp[647469](405592 call isTrue tmp[405591]))
+      (521488 'move' tmp[521483](521486 call _cond_test call_tmp[647469]))
+      if tmp[521483]
+      {
+        unknown tmp[521490] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+        unknown call_tmp[647474] "expr temp" "maybe param" "maybe type" "temp"
+        (647477 'move' call_tmp[647474](196427 call == spawnfn[196388] c"L"))
+        (521492 'move' tmp[521490](405595 call isTrue call_tmp[647474]))
+        (521497 'move' tmp[521482](521494 '_paramFoldLogical' tmp[521483] tmp[521490]))
+      }
+      {
+        (521502 'move' tmp[521482](521499 '_paramFoldLogical' tmp[521483] 0))
+      }
+      unknown call_tmp[647479] "expr temp" "maybe param" "maybe type" "temp"
+      (647482 'move' call_tmp[647479](196462 call _cond_test tmp[521482]))
+      if call_tmp[647479]
+      {
+        (477081 'move' ret[477076](477080 'deref' 1))
+        gotoReturn _end_localSpawn[477074] _end_localSpawn[477074]
+      }
+      {
+        unknown call_tmp[647484] "expr temp" "maybe param" "maybe type" "temp"
+        (647487 'move' call_tmp[647484](196452 call == CHPL_COMM_SUBSTRATE[42637] "smp"))
+        unknown call_tmp[647489] "expr temp" "maybe param" "maybe type" "temp"
+        (647492 'move' call_tmp[647489](196458 call _cond_test call_tmp[647484]))
+        if call_tmp[647489]
+        {
+          (477086 'move' ret[477076](477085 'deref' 1))
+          gotoReturn _end_localSpawn[477074] _end_localSpawn[477074]
+        }
+      }
+    }
+    (477091 'move' ret[477076](477090 'deref' 0))
+    label _end_localSpawn[477074]
+    (477078 return ret[477076])
+  }
+  function getNodeName[196479]() : _unknown[43] "inline" "private"
+  {
+    unknown ret[477101] "RVV" "temp"
+    function chpl_nodeName[196483]() : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477095] "RVV" "temp"
+      (477097 return ret[477095])
+    }
+    { scopeless type
+      c_string[19]
+    }
+    unknown call_tmp[647494] "expr temp" "maybe param" "maybe type" "temp"
+    (647497 'move' call_tmp[647494](196492 call chpl_nodeName))
+    unknown call_tmp[647499] "maybe param" "maybe type" "temp"
+    (647502 'move' call_tmp[647499](196494 call _cast string[24] call_tmp[647494]))
+    const _node_name[196496] "const" "insert auto destroy"
+    (493606 'init var' _node_name[196496] call_tmp[647499])
+    unknown call_tmp[647504] "expr temp" "maybe param" "maybe type" "temp"
+    (647507 'move' call_tmp[647504](196501 call _cast int(64)[13] chpl_nodeID[195933]))
+    unknown call_tmp[647509] "maybe param" "maybe type" "temp"
+    (647512 'move' call_tmp[647509](196504 call _cast string[24] call_tmp[647504]))
+    const _node_id[196506] "const" "insert auto destroy"
+    (493608 'init var' _node_id[196506] call_tmp[647509])
+    unknown tmp[521509] "expr temp" "if-expr result" "insert auto destroy" "maybe type" "temp"
+    unknown tmp[521510] "maybe param" "temp"
+    unknown call_tmp[647514] "expr temp" "maybe param" "maybe type" "temp"
+    (647517 'move' call_tmp[647514](196511 call localSpawn))
+    (521515 'move' tmp[521510](521513 call _cond_test call_tmp[647514]))
+    if tmp[521510]
+    {
+      unknown tmp[521517] "expr temp" "maybe param" "maybe type" "no auto destroy" "temp"
+      unknown call_tmp[647519] "expr temp" "maybe param" "maybe type" "temp"
+      (647522 'move' call_tmp[647519](196514 call + _node_name[196496] "-"))
+      (521519 'move' tmp[521517](196517 call + call_tmp[647519] _node_id[196506]))
+      (521524 'move' tmp[521509](521521 '_paramFoldLogical' tmp[521510] tmp[521517]))
+    }
+    {
+      (521529 'move' tmp[521509](521526 '_paramFoldLogical' tmp[521510] _node_name[196496]))
+    }
+    (477106 'move' ret[477101](477105 'deref' tmp[521509]))
+    (477103 return ret[477101])
+  }
+  function helpSetupLocaleFlat[196534](arg dst[196531]:LocaleModel[89595], out arg local_name[196537]:string[24]) : _unknown[43] "no return value for void"
+  {
+    unknown call_tmp[647524] "expr temp" "maybe param" "maybe type" "temp"
+    (647527 'move' call_tmp[647524](196543 call getNodeName))
+    (196544 call = local_name[196537] call_tmp[647524])
+    function chpl_task_getCallStackSize[196550]() : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477110] "RVV" "temp"
+      (477112 return ret[477110])
+    }
+    { scopeless type
+      size_t[209674]
+    }
+    unknown call_tmp[647531] "expr temp" "maybe param" "maybe type" "temp"
+    (647534 'move' call_tmp[647531](196559 call callStackSize _mt[232] dst[196531]))
+    unknown call_tmp[647536] "expr temp" "maybe param" "maybe type" "temp"
+    (647539 'move' call_tmp[647536](196564 call chpl_task_getCallStackSize))
+    (196565 call = call_tmp[647531] call_tmp[647536])
+    function chpl_topo_getNumCPUsPhysical[196574](arg accessible_only[196571]:bool[10]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477116] "RVV" "temp"
+      (477118 return ret[477116])
+    }
+    { scopeless type
+      c_int[209569]
+    }
+    unknown call_tmp[647543] "expr temp" "maybe param" "maybe type" "temp"
+    (647546 'move' call_tmp[647543](196581 call nPUsPhysAcc _mt[232] dst[196531]))
+    unknown call_tmp[647548] "expr temp" "maybe param" "maybe type" "temp"
+    (647551 'move' call_tmp[647548](196587 call chpl_topo_getNumCPUsPhysical 1))
+    (196588 call = call_tmp[647543] call_tmp[647548])
+    unknown call_tmp[647555] "expr temp" "maybe param" "maybe type" "temp"
+    (647558 'move' call_tmp[647555](196592 call nPUsPhysAll _mt[232] dst[196531]))
+    unknown call_tmp[647560] "expr temp" "maybe param" "maybe type" "temp"
+    (647563 'move' call_tmp[647560](196598 call chpl_topo_getNumCPUsPhysical 0))
+    (196599 call = call_tmp[647555] call_tmp[647560])
+    function chpl_topo_getNumCPUsLogical[196608](arg accessible_only[196605]:bool[10]) : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477122] "RVV" "temp"
+      (477124 return ret[477122])
+    }
+    { scopeless type
+      c_int[209569]
+    }
+    unknown call_tmp[647567] "expr temp" "maybe param" "maybe type" "temp"
+    (647570 'move' call_tmp[647567](196615 call nPUsLogAcc _mt[232] dst[196531]))
+    unknown call_tmp[647572] "expr temp" "maybe param" "maybe type" "temp"
+    (647575 'move' call_tmp[647572](196621 call chpl_topo_getNumCPUsLogical 1))
+    (196622 call = call_tmp[647567] call_tmp[647572])
+    unknown call_tmp[647579] "expr temp" "maybe param" "maybe type" "temp"
+    (647582 'move' call_tmp[647579](196626 call nPUsLogAll _mt[232] dst[196531]))
+    unknown call_tmp[647584] "expr temp" "maybe param" "maybe type" "temp"
+    (647587 'move' call_tmp[647584](196632 call chpl_topo_getNumCPUsLogical 0))
+    (196633 call = call_tmp[647579] call_tmp[647584])
+    function chpl_task_getMaxPar[196638]() : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477128] "RVV" "temp"
+      (477130 return ret[477128])
+    }
+    { scopeless type
+      (196643 call uint(64)[107] 32)
+    }
+    unknown call_tmp[647591] "expr temp" "maybe param" "maybe type" "temp"
+    (647594 'move' call_tmp[647591](196648 call maxTaskPar _mt[232] dst[196531]))
+    unknown call_tmp[647596] "expr temp" "maybe param" "maybe type" "temp"
+    (647599 'move' call_tmp[647596](196653 call chpl_task_getMaxPar))
+    (196654 call = call_tmp[647591] call_tmp[647596])
+    (477132 return _void[47])
+  }
+  function helpSetupLocaleNUMA[196666](arg dst[196663]:LocaleModel[89595], out arg local_name[196669]:string[24], out arg numSublocales[196672]:_any[170](?)) : _unknown[43] "no return value for void"
+  {
+    (196678 call helpSetupLocaleFlat dst[196663] local_name[196669])
+    function chpl_task_getNumSublocales[196683]() : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477136] "RVV" "temp"
+      (477138 return ret[477136])
+    }
+    { scopeless type
+      (196688 call int(64)[13] 32)
+    }
+    unknown call_tmp[647601] "expr temp" "maybe param" "maybe type" "temp"
+    (647604 'move' call_tmp[647601](196695 call chpl_task_getNumSublocales))
+    (196696 call = numSublocales[196672] call_tmp[647601])
+    function chpl_task_getMaxPar[196701]() : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477142] "RVV" "temp"
+      (477144 return ret[477142])
+    }
+    { scopeless type
+      (196706 call uint(64)[107] 32)
+    }
+    unknown call_tmp[647606] "expr temp" "maybe param" "maybe type" "temp"
+    (647609 'move' call_tmp[647606](196712 call >= numSublocales[196672] 1))
+    unknown call_tmp[647611] "expr temp" "maybe param" "maybe type" "temp"
+    (647614 'move' call_tmp[647611](196933 call _cond_test call_tmp[647606]))
+    if call_tmp[647611]
+    {
+      unknown call_tmp[647618] "expr temp" "maybe param" "maybe type" "temp"
+      (647621 'move' call_tmp[647618](196717 call childSpace _mt[232] dst[196663]))
+      unknown call_tmp[647623] "expr temp" "maybe param" "maybe type" "temp"
+      (647626 'move' call_tmp[647623](196721 call chpl_build_low_bounded_range 0))
+      unknown call_tmp[647628] "expr temp" "maybe param" "maybe type" "temp"
+      (647631 'move' call_tmp[647628](196724 call # call_tmp[647623] numSublocales[196672]))
+      unknown call_tmp[647633] "expr temp" "maybe param" "maybe type" "temp"
+      (647636 'move' call_tmp[647633](196727 call chpl__buildDomainExpr call_tmp[647628]))
+      (196729 call = call_tmp[647618] call_tmp[647633])
+      unknown call_tmp[647640] "expr temp" "maybe param" "maybe type" "temp"
+      (647643 'move' call_tmp[647640](196734 call nPUsPhysAcc _mt[232] dst[196663]))
+      unknown call_tmp[647645] "maybe param" "maybe type" "temp"
+      (647648 'move' call_tmp[647645](196738 call / call_tmp[647640] numSublocales[196672]))
+      const nPUsPhysAccPerSubloc[196740] "const" "insert auto destroy"
+      (493610 'init var' nPUsPhysAccPerSubloc[196740] call_tmp[647645])
+      unknown call_tmp[647652] "expr temp" "maybe param" "maybe type" "temp"
+      (647655 'move' call_tmp[647652](196744 call nPUsPhysAll _mt[232] dst[196663]))
+      unknown call_tmp[647657] "maybe param" "maybe type" "temp"
+      (647660 'move' call_tmp[647657](196748 call / call_tmp[647652] numSublocales[196672]))
+      const nPUsPhysAllPerSubloc[196750] "const" "insert auto destroy"
+      (493612 'init var' nPUsPhysAllPerSubloc[196750] call_tmp[647657])
+      unknown call_tmp[647664] "expr temp" "maybe param" "maybe type" "temp"
+      (647667 'move' call_tmp[647664](196754 call nPUsLogAcc _mt[232] dst[196663]))
+      unknown call_tmp[647669] "maybe param" "maybe type" "temp"
+      (647672 'move' call_tmp[647669](196758 call / call_tmp[647664] numSublocales[196672]))
+      const nPUsLogAccPerSubloc[196760] "const" "insert auto destroy"
+      (493614 'init var' nPUsLogAccPerSubloc[196760] call_tmp[647669])
+      unknown call_tmp[647676] "expr temp" "maybe param" "maybe type" "temp"
+      (647679 'move' call_tmp[647676](196764 call nPUsLogAll _mt[232] dst[196663]))
+      unknown call_tmp[647681] "maybe param" "maybe type" "temp"
+      (647684 'move' call_tmp[647681](196768 call / call_tmp[647676] numSublocales[196672]))
+      const nPUsLogAllPerSubloc[196770] "const" "insert auto destroy"
+      (493616 'init var' nPUsLogAllPerSubloc[196770] call_tmp[647681])
+      unknown call_tmp[647686] "expr temp" "maybe param" "maybe type" "temp"
+      (647689 'move' call_tmp[647686](196775 call chpl_task_getMaxPar))
+      unknown call_tmp[647691] "maybe param" "maybe type" "temp"
+      (647694 'move' call_tmp[647691](196777 call / call_tmp[647686] numSublocales[196672]))
+      const maxTaskParPerSubloc[196779] "const" "insert auto destroy"
+      (493618 'init var' maxTaskParPerSubloc[196779] call_tmp[647691])
+      unknown call_tmp[647696] "maybe param" "maybe type" "temp"
+      (647699 'move' call_tmp[647696](196784 call chpl_task_getRequestedSubloc))
+      const origSubloc[196785] "const" "insert auto destroy"
+      (493620 'init var' origSubloc[196785] call_tmp[647696])
+      {
+        unknown _indexOfInterest[196894] "an _indexOfInterest or chpl__followIdx variable" "temp"
+        unknown _iterator[196895] "expr temp" "temp"
+        unknown call_tmp[647703] "expr temp" "maybe param" "maybe type" "temp"
+        (647706 'move' call_tmp[647703](196790 call childSpace _mt[232] dst[196663]))
+        (196904 'move' _iterator[196895](196902 call _getIterator call_tmp[647703]))
+        Defer
+        {
+          {
+            (196921 call _freeIterator _iterator[196895])
+          }
+        }
+        { scopeless type
+          (196910 'move' _indexOfInterest[196894](196907 call iteratorIndex _iterator[196895]))
+        }
+        ForLoop
+        {
+          unknown i[196914] "index var" "insert auto destroy"
+          (196916 'move' i[196914] _indexOfInterest[196894])
+          {
+            unknown call_tmp[647708] "expr temp" "maybe param" "maybe type" "temp"
+            (647711 'move' call_tmp[647708](196796 call _cast chpl_sublocID_t[90212] i[196914]))
+            (196799 call chpl_task_setSubloc call_tmp[647708])
+            unknown call_tmp[647715] "expr temp" "maybe param" "maybe type" "temp"
+            (647718 'move' call_tmp[647715](196810 call(196805 call (partial) childLocales _mt[232] dst[196663]) i[196914]))
+            unknown call_tmp[647720] "expr temp" "maybe param" "maybe type" "temp"
+            (647723 'move' call_tmp[647720](196814 call _cast chpl_sublocID_t[90212] i[196914]))
+            unknown call_tmp[647725] "expr temp" "maybe param" "maybe type" "temp"
+            (647728 'move' call_tmp[647725](196818 call NumaDomain call_tmp[647720] dst[196663]))
+            unknown call_tmp[647730] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+            (647733 'move' call_tmp[647730](196820 'new'(196819 'to unmanaged class from unknown' call_tmp[647725])))
+            (196821 call = call_tmp[647715] call_tmp[647730])
+            unknown call_tmp[647737] "expr temp" "maybe param" "maybe type" "temp"
+            (647740 'move' call_tmp[647737](196830 call(196825 call (partial) childLocales _mt[232] dst[196663]) i[196914]))
+            unknown call_tmp[647744] "expr temp" "maybe param" "maybe type" "temp"
+            (647747 'move' call_tmp[647744](196831 call nPUsPhysAcc _mt[232] call_tmp[647737]))
+            (196835 call = call_tmp[647744] nPUsPhysAccPerSubloc[196740])
+            unknown call_tmp[647751] "expr temp" "maybe param" "maybe type" "temp"
+            (647754 'move' call_tmp[647751](196844 call(196839 call (partial) childLocales _mt[232] dst[196663]) i[196914]))
+            unknown call_tmp[647758] "expr temp" "maybe param" "maybe type" "temp"
+            (647761 'move' call_tmp[647758](196845 call nPUsPhysAll _mt[232] call_tmp[647751]))
+            (196849 call = call_tmp[647758] nPUsPhysAllPerSubloc[196750])
+            unknown call_tmp[647765] "expr temp" "maybe param" "maybe type" "temp"
+            (647768 'move' call_tmp[647765](196858 call(196853 call (partial) childLocales _mt[232] dst[196663]) i[196914]))
+            unknown call_tmp[647772] "expr temp" "maybe param" "maybe type" "temp"
+            (647775 'move' call_tmp[647772](196859 call nPUsLogAcc _mt[232] call_tmp[647765]))
+            (196863 call = call_tmp[647772] nPUsLogAccPerSubloc[196760])
+            unknown call_tmp[647779] "expr temp" "maybe param" "maybe type" "temp"
+            (647782 'move' call_tmp[647779](196872 call(196867 call (partial) childLocales _mt[232] dst[196663]) i[196914]))
+            unknown call_tmp[647786] "expr temp" "maybe param" "maybe type" "temp"
+            (647789 'move' call_tmp[647786](196873 call nPUsLogAll _mt[232] call_tmp[647779]))
+            (196877 call = call_tmp[647786] nPUsLogAllPerSubloc[196770])
+            unknown call_tmp[647793] "expr temp" "maybe param" "maybe type" "temp"
+            (647796 'move' call_tmp[647793](196886 call(196881 call (partial) childLocales _mt[232] dst[196663]) i[196914]))
+            unknown call_tmp[647800] "expr temp" "maybe param" "maybe type" "temp"
+            (647803 'move' call_tmp[647800](196887 call maxTaskPar _mt[232] call_tmp[647793]))
+            (196891 call = call_tmp[647800] maxTaskParPerSubloc[196779])
+          }
+          label _continueLabel[196899]
+          _indexOfInterest[196894]
+          _iterator[196895]
+        }
+        label _breakLabel[196900]
+      }
+      (196931 call chpl_task_setSubloc origSubloc[196785])
+    }
+    (477146 return _void[47])
+  }
+  function helpSetupLocaleAPU[196946](arg dst[196943]:LocaleModel[89595], out arg local_name[196949]:string[24], out arg numSublocales[196952]:_any[170](?)) : _unknown[43] "no return value for void"
+  {
+    (196958 call helpSetupLocaleFlat dst[196943] local_name[196949])
+    function chpl_task_getMaxPar[196963]() : _unknown[43] "extern" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[477150] "RVV" "temp"
+      (477152 return ret[477150])
+    }
+    { scopeless type
+      (196968 call uint(64)[107] 32)
+    }
+    (196974 call = numSublocales[196952] 2)
+    unknown call_tmp[647805] "maybe param" "maybe type" "temp"
+    (647808 'move' call_tmp[647805](196979 call chpl_task_getRequestedSubloc))
+    const origSubloc[196980] "const" "insert auto destroy"
+    (493622 'init var' origSubloc[196980] call_tmp[647805])
+    unknown call_tmp[647810] "expr temp" "maybe param" "maybe type" "temp"
+    (647813 'move' call_tmp[647810](196986 call _cast chpl_sublocID_t[90212] 0))
+    (196989 call chpl_task_setSubloc call_tmp[647810])
+    unknown call_tmp[647817] "expr temp" "maybe param" "maybe type" "temp"
+    (647820 'move' call_tmp[647817](196994 call CPU _mt[232] dst[196943]))
+    unknown call_tmp[647822] "expr temp" "maybe param" "maybe type" "temp"
+    (647825 'move' call_tmp[647822](197000 call _cast chpl_sublocID_t[90212] 0))
+    unknown call_tmp[647827] "expr temp" "maybe param" "maybe type" "temp"
+    (647830 'move' call_tmp[647827](197004 call CPULocale call_tmp[647822] dst[196943]))
+    unknown call_tmp[647832] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (647835 'move' call_tmp[647832](197006 'new'(197005 'to unmanaged class from unknown' call_tmp[647827])))
+    (197007 call = call_tmp[647817] call_tmp[647832])
+    unknown call_tmp[647837] "expr temp" "maybe param" "maybe type" "temp"
+    (647840 'move' call_tmp[647837](197013 call _cast chpl_sublocID_t[90212] 1))
+    (197016 call chpl_task_setSubloc call_tmp[647837])
+    unknown call_tmp[647844] "expr temp" "maybe param" "maybe type" "temp"
+    (647847 'move' call_tmp[647844](197021 call GPU _mt[232] dst[196943]))
+    unknown call_tmp[647849] "expr temp" "maybe param" "maybe type" "temp"
+    (647852 'move' call_tmp[647849](197027 call _cast chpl_sublocID_t[90212] 1))
+    unknown call_tmp[647854] "expr temp" "maybe param" "maybe type" "temp"
+    (647857 'move' call_tmp[647854](197031 call GPULocale call_tmp[647849] dst[196943]))
+    unknown call_tmp[647859] "insert auto destroy for explicit new" "maybe param" "maybe type" "temp"
+    (647862 'move' call_tmp[647859](197033 'new'(197032 'to unmanaged class from unknown' call_tmp[647854])))
+    (197034 call = call_tmp[647844] call_tmp[647859])
+    (197040 call chpl_task_setSubloc origSubloc[196980])
+    (477154 return _void[47])
+  }
+  (329493 'used modules list'(195904 'use' ChapelLocale[90191])(195909 'use' DefaultRectangular[92469])(195913 'use' ChapelNumLocales[197575])(195917 'use' ChapelEnv[42343])(195921 'use' Sys[276447]))
+}

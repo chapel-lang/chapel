@@ -1,0 +1,2303 @@
+AST dump for NetworkAtomics after pass createTaskFunctions.
+Module use list: ChapelStandard 
+
+{
+  function chpl__init_NetworkAtomics[390162]() : void[4] "insert line file info" "module init"
+  {
+    (458188 return _void[47])
+  }
+  function externFunc[49244](param arg s[49241]:string[24], arg T[49246]:_any[170](?)) param : _unknown[43] "private"
+  {
+    unknown ret[457307] "RVV" "param" "temp"
+    unknown call_tmp[556806] "expr temp" "maybe param" "maybe type" "temp"
+    (556809 'move' call_tmp[556806](49251 call isInt T[49246]))
+    unknown call_tmp[556811] "expr temp" "maybe param" "maybe type" "temp"
+    (556814 'move' call_tmp[556811](49300 call _cond_test call_tmp[556806]))
+    if call_tmp[556811]
+    {
+      unknown call_tmp[556816] "expr temp" "maybe param" "maybe type" "temp"
+      (556819 'move' call_tmp[556816](49269 call + "chpl_comm_atomic_" s[49241]))
+      unknown call_tmp[556821] "expr temp" "maybe param" "maybe type" "temp"
+      (556824 'move' call_tmp[556821](49287 call + call_tmp[556816] "_int"))
+      unknown call_tmp[556826] "expr temp" "maybe param" "maybe type" "temp"
+      (556829 'move' call_tmp[556826](49292 call numBits T[49246]))
+      unknown call_tmp[556831] "expr temp" "maybe param" "maybe type" "temp"
+      (556834 'move' call_tmp[556831](49294 call _cast string[24] call_tmp[556826]))
+      unknown call_tmp[556836] "expr temp" "maybe param" "maybe type" "temp"
+      (556839 'move' call_tmp[556836](49296 call + call_tmp[556821] call_tmp[556831]))
+      (457312 'move' ret[457307](457311 'deref' call_tmp[556836]))
+      gotoReturn _end_externFunc[457305] _end_externFunc[457305]
+    }
+    unknown call_tmp[556841] "expr temp" "maybe param" "maybe type" "temp"
+    (556844 'move' call_tmp[556841](49309 call isUint T[49246]))
+    unknown call_tmp[556846] "expr temp" "maybe param" "maybe type" "temp"
+    (556849 'move' call_tmp[556846](49343 call _cond_test call_tmp[556841]))
+    if call_tmp[556846]
+    {
+      unknown call_tmp[556851] "expr temp" "maybe param" "maybe type" "temp"
+      (556854 'move' call_tmp[556851](49312 call + "chpl_comm_atomic_" s[49241]))
+      unknown call_tmp[556856] "expr temp" "maybe param" "maybe type" "temp"
+      (556859 'move' call_tmp[556856](49330 call + call_tmp[556851] "_uint"))
+      unknown call_tmp[556861] "expr temp" "maybe param" "maybe type" "temp"
+      (556864 'move' call_tmp[556861](49335 call numBits T[49246]))
+      unknown call_tmp[556866] "expr temp" "maybe param" "maybe type" "temp"
+      (556869 'move' call_tmp[556866](49337 call _cast string[24] call_tmp[556861]))
+      unknown call_tmp[556871] "expr temp" "maybe param" "maybe type" "temp"
+      (556874 'move' call_tmp[556871](49339 call + call_tmp[556856] call_tmp[556866]))
+      (457317 'move' ret[457307](457316 'deref' call_tmp[556871]))
+      gotoReturn _end_externFunc[457305] _end_externFunc[457305]
+    }
+    unknown call_tmp[556876] "expr temp" "maybe param" "maybe type" "temp"
+    (556879 'move' call_tmp[556876](49351 call isReal T[49246]))
+    unknown call_tmp[556881] "expr temp" "maybe param" "maybe type" "temp"
+    (556884 'move' call_tmp[556881](49370 call _cond_test call_tmp[556876]))
+    if call_tmp[556881]
+    {
+      unknown call_tmp[556886] "expr temp" "maybe param" "maybe type" "temp"
+      (556889 'move' call_tmp[556886](49354 call + "chpl_comm_atomic_" s[49241]))
+      unknown call_tmp[556891] "expr temp" "maybe param" "maybe type" "temp"
+      (556894 'move' call_tmp[556891](49357 call + call_tmp[556886] "_real"))
+      unknown call_tmp[556896] "expr temp" "maybe param" "maybe type" "temp"
+      (556899 'move' call_tmp[556896](49362 call numBits T[49246]))
+      unknown call_tmp[556901] "expr temp" "maybe param" "maybe type" "temp"
+      (556904 'move' call_tmp[556901](49364 call _cast string[24] call_tmp[556896]))
+      unknown call_tmp[556906] "expr temp" "maybe param" "maybe type" "temp"
+      (556909 'move' call_tmp[556906](49366 call + call_tmp[556891] call_tmp[556901]))
+      (457322 'move' ret[457307](457321 'deref' call_tmp[556906]))
+      gotoReturn _end_externFunc[457305] _end_externFunc[457305]
+    }
+    label _end_externFunc[457305]
+    (457309 return ret[457307])
+  }
+  function RAtomicBool[50933].init=[49391](arg _mt[50937]:_MT[227], ref arg this[50935]:RAtomicBool[50933], arg other[49388]:RAtomicBool[50933]) : void[4] "atomic type" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[556911] "expr temp" "maybe param" "maybe type" "temp"
+    (556914 'move' call_tmp[556911](49408 call int(64)[13] 64))
+    unknown call_tmp[556918] "expr temp" "maybe param" "maybe type" "temp"
+    (556921 'move' call_tmp[556918](49404 call(49400 call (partial) read _mt[232] other[49388])))
+    unknown call_tmp[556923] "maybe param" "maybe type" "temp"
+    (556926 'move' call_tmp[556923](49409 call _cast call_tmp[556911] call_tmp[556918]))
+    unknown call_tmp[556928] "maybe param" "maybe type" "temp"
+    (556931 'move' call_tmp[556928](429891 call int(64)[13] 64))
+    unknown tmp[429888] "temp"
+    (429893 'init var' tmp[429888] call_tmp[556923] call_tmp[556928])
+    (429895 'init field' this[50935] c"_v" tmp[429888])
+    (457326 return _void[47])
+  }
+  function RAtomicBool[50933].init=[49423](arg _mt[50941]:_MT[227], ref arg this[50939]:RAtomicBool[50933], arg other[49420]:bool[10]) : void[4] "atomic type" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[556933] "expr temp" "maybe param" "maybe type" "temp"
+    (556936 'move' call_tmp[556933](49433 call int(64)[13] 64))
+    unknown call_tmp[556938] "maybe param" "maybe type" "temp"
+    (556941 'move' call_tmp[556938](49434 call _cast call_tmp[556933] other[49420]))
+    unknown call_tmp[556943] "maybe param" "maybe type" "temp"
+    (556946 'move' call_tmp[556943](429902 call int(64)[13] 64))
+    unknown tmp[429899] "temp"
+    (429904 'init var' tmp[429899] call_tmp[556938] call_tmp[556943])
+    (429906 'init field' this[50939] c"_v" tmp[429899])
+    (457328 return _void[47])
+  }
+  function RAtomicBool[50933]._localeid[49444](arg _mt[50945]:_MT[227], arg this[50943]:RAtomicBool[50933]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457332] "RVV" "temp"
+    unknown call_tmp[556948] "expr temp" "maybe param" "maybe type" "temp"
+    (556951 'move' call_tmp[556948](49458 call int(64)[13] 32))
+    unknown call_tmp[556955] "expr temp" "maybe param" "maybe type" "temp"
+    (556958 'move' call_tmp[556955](338147 call _v _mt[232] this[50943]))
+    unknown call_tmp[556960] "expr temp" "maybe param" "maybe type" "temp"
+    (556963 'move' call_tmp[556960](49454 '_wide_get_node' call_tmp[556955]))
+    unknown call_tmp[556965] "expr temp" "maybe param" "maybe type" "temp"
+    (556968 'move' call_tmp[556965](49459 call _cast call_tmp[556948] call_tmp[556960]))
+    unknown call_tmp[556970] "expr temp" "maybe param" "maybe type" "temp"
+    (556973 'move' call_tmp[556970](457337 call int(64)[13] 32))
+    (457340 'move' ret[457332](457339 'coerce' call_tmp[556965] call_tmp[556970]))
+    (457334 return ret[457332])
+  }
+  { scopeless type
+    (49449 call int(64)[13] 32)
+  }
+  function RAtomicBool[50933]._addr[49469](arg _mt[50949]:_MT[227], arg this[50947]:RAtomicBool[50933]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457344] "RVV" "temp"
+    unknown call_tmp[556977] "expr temp" "maybe param" "maybe type" "temp"
+    (556980 'move' call_tmp[556977](338153 call _v _mt[232] this[50947]))
+    unknown call_tmp[556982] "expr temp" "maybe param" "maybe type" "temp"
+    (556985 'move' call_tmp[556982](49475 '_wide_get_addr' call_tmp[556977]))
+    (457350 'move' ret[457344](457349 'coerce' call_tmp[556982] c_void_ptr[141]))
+    (457346 return ret[457344])
+  }
+  { scopeless type
+    c_void_ptr[141]
+  }
+  function RAtomicBool[50933].read[49493](arg _mt[50953]:_MT[227], const arg this[50951]:RAtomicBool[50933], param arg order[49489]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457360] "RVV" "temp"
+    function atomic_read[49526](ref arg result[49523] :
+    (49522 call int(64)[13] 64), arg l[49532] :
+    (49531 call int(64)[13] 32), const arg obj[49536]:c_void_ptr[141], arg order[49540]:memory_order[179753], arg _chpl_cname[49548]:string[24] =
+    unknown call_tmp[556987] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457354] "RVV" "temp"
+      (457356 return ret[457354])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[49557] "insert auto destroy"
+    unknown call_tmp[556992] "expr temp" "maybe param" "maybe type" "temp"
+    (556995 'move' call_tmp[556992](49556 call int(64)[13] 64))
+    (489250 'default init var' ret[49557] call_tmp[556992])
+    unknown call_tmp[556999] "expr temp" "maybe param" "maybe type" "temp"
+    (557002 'move' call_tmp[556999](49565 call(338164 call (partial) _localeid _mt[232] this[50951])))
+    unknown call_tmp[557006] "expr temp" "maybe param" "maybe type" "temp"
+    (557009 'move' call_tmp[557006](49568 call(338170 call (partial) _addr _mt[232] this[50951])))
+    unknown call_tmp[557011] "expr temp" "maybe param" "maybe type" "temp"
+    (557014 'move' call_tmp[557011](49572 call c_memory_order order[49489]))
+    (49573 call atomic_read ret[49557] call_tmp[556999] call_tmp[557006] call_tmp[557011])
+    unknown call_tmp[557016] "expr temp" "maybe param" "maybe type" "temp"
+    (557019 'move' call_tmp[557016](49577 call _cast bool[10] ret[49557]))
+    (457366 'move' ret[457360](457365 'coerce' call_tmp[557016] bool[10]))
+    (457362 return ret[457360])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].write[49590](arg _mt[50957]:_MT[227], arg this[50955]:RAtomicBool[50933], arg value[49587]:bool[10], param arg order[49597]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457376] "RVV" "temp"
+    function atomic_write[49632](ref arg desired[49629] :
+    (49628 call int(64)[13] 64), arg l[49638] :
+    (49637 call int(64)[13] 32), arg obj[49642]:c_void_ptr[141], arg order[49646]:memory_order[179753], arg _chpl_cname[49654]:string[24] =
+    unknown call_tmp[557021] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457370] "RVV" "temp"
+      (457372 return ret[457370])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown call_tmp[557026] "expr temp" "maybe param" "maybe type" "temp"
+    (557029 'move' call_tmp[557026](49663 call int(64)[13] 64))
+    unknown call_tmp[557031] "maybe param" "maybe type" "temp"
+    (557034 'move' call_tmp[557031](49664 call _cast call_tmp[557026] value[49587]))
+    unknown v[49666] "insert auto destroy"
+    (489252 'init var' v[49666] call_tmp[557031])
+    unknown call_tmp[557038] "expr temp" "maybe param" "maybe type" "temp"
+    (557041 'move' call_tmp[557038](49674 call(338182 call (partial) _localeid _mt[232] this[50955])))
+    unknown call_tmp[557045] "expr temp" "maybe param" "maybe type" "temp"
+    (557048 'move' call_tmp[557045](49677 call(338186 call (partial) _addr _mt[232] this[50955])))
+    unknown call_tmp[557050] "expr temp" "maybe param" "maybe type" "temp"
+    (557053 'move' call_tmp[557050](49681 call c_memory_order order[49597]))
+    (49682 call atomic_write v[49666] call_tmp[557038] call_tmp[557045] call_tmp[557050])
+    (457378 return ret[457376])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicBool[50933].exchange[49693](arg _mt[50961]:_MT[227], arg this[50959]:RAtomicBool[50933], arg value[49690]:bool[10], param arg order[49700]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457388] "RVV" "temp"
+    function atomic_xchg[49737](ref arg desired[49734] :
+    (49733 call int(64)[13] 64), arg l[49743] :
+    (49742 call int(64)[13] 32), arg obj[49747]:c_void_ptr[141], ref arg result[49754] :
+    (49753 call int(64)[13] 64), arg order[49758]:memory_order[179753], arg _chpl_cname[49766]:string[24] =
+    unknown call_tmp[557055] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457382] "RVV" "temp"
+      (457384 return ret[457382])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[49775] "insert auto destroy"
+    unknown call_tmp[557060] "expr temp" "maybe param" "maybe type" "temp"
+    (557063 'move' call_tmp[557060](49774 call int(64)[13] 64))
+    (489254 'default init var' ret[49775] call_tmp[557060])
+    unknown call_tmp[557065] "expr temp" "maybe param" "maybe type" "temp"
+    (557068 'move' call_tmp[557065](49782 call int(64)[13] 64))
+    unknown call_tmp[557070] "maybe param" "maybe type" "temp"
+    (557073 'move' call_tmp[557070](49783 call _cast call_tmp[557065] value[49690]))
+    unknown v[49785] "insert auto destroy"
+    (489256 'init var' v[49785] call_tmp[557070])
+    unknown call_tmp[557077] "expr temp" "maybe param" "maybe type" "temp"
+    (557080 'move' call_tmp[557077](49793 call(338197 call (partial) _localeid _mt[232] this[50959])))
+    unknown call_tmp[557084] "expr temp" "maybe param" "maybe type" "temp"
+    (557087 'move' call_tmp[557084](49796 call(338201 call (partial) _addr _mt[232] this[50959])))
+    unknown call_tmp[557089] "expr temp" "maybe param" "maybe type" "temp"
+    (557092 'move' call_tmp[557089](49801 call c_memory_order order[49700]))
+    (49802 call atomic_xchg v[49785] call_tmp[557077] call_tmp[557084] ret[49775] call_tmp[557089])
+    unknown call_tmp[557094] "expr temp" "maybe param" "maybe type" "temp"
+    (557097 'move' call_tmp[557094](49806 call _cast bool[10] ret[49775]))
+    (457394 'move' ret[457388](457393 'coerce' call_tmp[557094] bool[10]))
+    (457390 return ret[457388])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].compareAndSwap[49819](arg _mt[50965]:_MT[227], arg this[50963]:RAtomicBool[50933], arg expected[49816]:bool[10], arg desired[49822]:bool[10], param arg order[49830]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457404] "RVV" "temp"
+    function atomic_cmpxchg[49867](ref arg expected[49864] :
+    (49863 call int(64)[13] 64), ref arg desired[49873] :
+    (49872 call int(64)[13] 64), arg l[49880] :
+    (49879 call int(64)[13] 32), arg obj[49884]:c_void_ptr[141], ref arg result[49891] :
+    (49890 call bool[10] 32), arg order[49895]:memory_order[179753], arg _chpl_cname[49903]:string[24] =
+    unknown call_tmp[557099] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457398] "RVV" "temp"
+      (457400 return ret[457398])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[49912] "insert auto destroy"
+    unknown call_tmp[557104] "expr temp" "maybe param" "maybe type" "temp"
+    (557107 'move' call_tmp[557104](49911 call bool[10] 32))
+    (489258 'default init var' ret[49912] call_tmp[557104])
+    unknown call_tmp[557109] "expr temp" "maybe param" "maybe type" "temp"
+    (557112 'move' call_tmp[557109](49919 call int(64)[13] 64))
+    unknown call_tmp[557114] "maybe param" "maybe type" "temp"
+    (557117 'move' call_tmp[557114](49920 call _cast call_tmp[557109] expected[49816]))
+    unknown te[49922] "insert auto destroy"
+    (489260 'init var' te[49922] call_tmp[557114])
+    unknown call_tmp[557119] "expr temp" "maybe param" "maybe type" "temp"
+    (557122 'move' call_tmp[557119](49929 call int(64)[13] 64))
+    unknown call_tmp[557124] "maybe param" "maybe type" "temp"
+    (557127 'move' call_tmp[557124](49930 call _cast call_tmp[557119] desired[49822]))
+    unknown td[49932] "insert auto destroy"
+    (489262 'init var' td[49932] call_tmp[557124])
+    unknown call_tmp[557131] "expr temp" "maybe param" "maybe type" "temp"
+    (557134 'move' call_tmp[557131](49941 call(338216 call (partial) _localeid _mt[232] this[50963])))
+    unknown call_tmp[557138] "expr temp" "maybe param" "maybe type" "temp"
+    (557141 'move' call_tmp[557138](49944 call(338220 call (partial) _addr _mt[232] this[50963])))
+    unknown call_tmp[557143] "expr temp" "maybe param" "maybe type" "temp"
+    (557146 'move' call_tmp[557143](49949 call c_memory_order order[49830]))
+    (49950 call atomic_cmpxchg te[49922] td[49932] call_tmp[557131] call_tmp[557138] ret[49912] call_tmp[557143])
+    unknown call_tmp[557148] "expr temp" "maybe param" "maybe type" "temp"
+    (557151 'move' call_tmp[557148](49954 call _cast bool[10] ret[49912]))
+    (457410 'move' ret[457404](457409 'coerce' call_tmp[557148] bool[10]))
+    (457406 return ret[457404])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].testAndSet[49972](arg _mt[50969]:_MT[227], arg this[50967]:RAtomicBool[50933], param arg order[49968]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457414] "RVV" "temp"
+    unknown call_tmp[557155] "expr temp" "maybe param" "maybe type" "temp"
+    (557158 'move' call_tmp[557155](49982 call(49976 call (partial) exchange _mt[232] this[50967]) 1 order[49968]))
+    (457420 'move' ret[457414](457419 'coerce' call_tmp[557155] bool[10]))
+    (457416 return ret[457414])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].clear[50000](arg _mt[50973]:_MT[227], arg this[50971]:RAtomicBool[50933], param arg order[49996]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457424] "RVV" "temp"
+    (50010 call(50004 call (partial) write _mt[232] this[50971]) 0 order[49996])
+    (457426 return ret[457424])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicBool[50933].waitFor[50022](arg _mt[50977]:_MT[227], const arg this[50975]:RAtomicBool[50933], arg value[50019]:bool[10], param arg order[50029]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457430] "RVV" "temp"
+    {
+      const tmp[50111] "const" "temp"
+      unknown call_tmp[557162] "expr temp" "maybe param" "maybe type" "temp"
+      (557165 'move' call_tmp[557162](50108 '_wide_get_locale' this[50975]))
+      (50112 'move' tmp[50111](50109 'deref' call_tmp[557162]))
+      {
+        {
+          unknown tmp[50054] "temp"
+          unknown call_tmp[557169] "expr temp" "maybe param" "maybe type" "temp"
+          (557172 'move' call_tmp[557169](50089 call(50086 call (partial) read _mt[232] this[50975])(order = relaxed[180097])))
+          unknown call_tmp[557174] "expr temp" "maybe param" "maybe type" "temp"
+          (557177 'move' call_tmp[557174](50084 call != call_tmp[557169] value[50019]))
+          (50096 'move' tmp[50054](50082 call _cond_test call_tmp[557174]))
+          WhileDo
+          {
+            {
+              (50051 call chpl_task_yield)
+            }
+            label _continueLabel[50057]
+            unknown call_tmp[557181] "expr temp" "maybe param" "maybe type" "temp"
+            (557184 'move' call_tmp[557181](50070 call(50067 call (partial) read _mt[232] this[50975])(order = relaxed[180097])))
+            unknown call_tmp[557186] "expr temp" "maybe param" "maybe type" "temp"
+            (557189 'move' call_tmp[557186](50065 call != call_tmp[557181] value[50019]))
+            (50077 'move' tmp[50054](50063 call _cond_test call_tmp[557186]))
+            tmp[50054]
+          }
+          label _breakLabel[50058]
+        }
+        unknown call_tmp[557191] "expr temp" "maybe param" "maybe type" "temp"
+        (557194 'move' call_tmp[557191](50104 call c_memory_order order[50029]))
+        (50106 call chpl_atomic_thread_fence call_tmp[557191])
+      }
+    }
+    (457432 return ret[457430])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicBool[50933].writeThis[50124](arg _mt[50981]:_MT[227], const arg this[50979]:RAtomicBool[50933], arg x[50122]:_any[170](?)) : _unknown[43] "atomic type" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[557198] "expr temp" "maybe param" "maybe type" "temp"
+    (557201 'move' call_tmp[557198](50129 call(338246 call (partial) read _mt[232] this[50979])))
+    (50130 call <~> x[50122] call_tmp[557198])
+    (457434 return _void[47])
+  }
+  function RAtomicBool[50933].compareExchange[50142](arg _mt[50985]:_MT[227], arg this[50983]:RAtomicBool[50933], arg expected[50139]:bool[10], arg desired[50145]:bool[10], param arg order[50153]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457438] "RVV" "temp"
+    (50161 call compilerWarning "compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap")
+    unknown call_tmp[557205] "expr temp" "maybe param" "maybe type" "temp"
+    (557208 'move' call_tmp[557205](50172 call(50165 call (partial) compareAndSwap _mt[232] this[50983]) expected[50139] desired[50145] order[50153]))
+    (457444 'move' ret[457438](457443 'coerce' call_tmp[557205] bool[10]))
+    (457440 return ret[457438])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].compareExchangeWeak[50184](arg _mt[50989]:_MT[227], arg this[50987]:RAtomicBool[50933], arg expected[50181]:bool[10], arg desired[50187]:bool[10], param arg order[50195]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457448] "RVV" "temp"
+    (50203 call compilerWarning "compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap")
+    unknown call_tmp[557212] "expr temp" "maybe param" "maybe type" "temp"
+    (557215 'move' call_tmp[557212](50214 call(50207 call (partial) compareAndSwap _mt[232] this[50987]) expected[50181] desired[50187] order[50195]))
+    (457454 'move' ret[457448](457453 'coerce' call_tmp[557212] bool[10]))
+    (457450 return ret[457448])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].compareExchangeStrong[50226](arg _mt[50993]:_MT[227], arg this[50991]:RAtomicBool[50933], arg expected[50223]:bool[10], arg desired[50229]:bool[10], param arg order[50237]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457458] "RVV" "temp"
+    (50245 call compilerWarning "compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap")
+    unknown call_tmp[557219] "expr temp" "maybe param" "maybe type" "temp"
+    (557222 'move' call_tmp[557219](50256 call(50249 call (partial) compareAndSwap _mt[232] this[50991]) expected[50223] desired[50229] order[50237]))
+    (457464 'move' ret[457458](457463 'coerce' call_tmp[557219] bool[10]))
+    (457460 return ret[457458])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].read[50268](arg _mt[50997]:_MT[227], const arg this[50995]:RAtomicBool[50933], arg order[50265]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457474] "RVV" "temp"
+    (50274 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_read[50294](ref arg result[50291] :
+    (50290 call int(64)[13] 64), arg l[50300] :
+    (50299 call int(64)[13] 32), const arg obj[50304]:c_void_ptr[141], arg order[50308]:memory_order[179753], arg _chpl_cname[50316]:string[24] =
+    unknown call_tmp[557224] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457468] "RVV" "temp"
+      (457470 return ret[457468])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[50324] "insert auto destroy"
+    unknown call_tmp[557229] "expr temp" "maybe param" "maybe type" "temp"
+    (557232 'move' call_tmp[557229](50323 call int(64)[13] 64))
+    (489264 'default init var' ret[50324] call_tmp[557229])
+    unknown call_tmp[557236] "expr temp" "maybe param" "maybe type" "temp"
+    (557239 'move' call_tmp[557236](50332 call(338272 call (partial) _localeid _mt[232] this[50995])))
+    unknown call_tmp[557243] "expr temp" "maybe param" "maybe type" "temp"
+    (557246 'move' call_tmp[557243](50335 call(338276 call (partial) _addr _mt[232] this[50995])))
+    (50337 call atomic_read ret[50324] call_tmp[557236] call_tmp[557243] order[50265])
+    unknown call_tmp[557248] "expr temp" "maybe param" "maybe type" "temp"
+    (557251 'move' call_tmp[557248](50341 call _cast bool[10] ret[50324]))
+    (457480 'move' ret[457474](457479 'coerce' call_tmp[557248] bool[10]))
+    (457476 return ret[457474])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].write[50354](arg _mt[51001]:_MT[227], arg this[50999]:RAtomicBool[50933], arg value[50351]:bool[10], arg order[50357]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457490] "RVV" "temp"
+    (50364 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_write[50384](ref arg desired[50381] :
+    (50380 call int(64)[13] 64), arg l[50390] :
+    (50389 call int(64)[13] 32), arg obj[50394]:c_void_ptr[141], arg order[50398]:memory_order[179753], arg _chpl_cname[50406]:string[24] =
+    unknown call_tmp[557253] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457484] "RVV" "temp"
+      (457486 return ret[457484])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown call_tmp[557258] "expr temp" "maybe param" "maybe type" "temp"
+    (557261 'move' call_tmp[557258](50414 call int(64)[13] 64))
+    unknown call_tmp[557263] "maybe param" "maybe type" "temp"
+    (557266 'move' call_tmp[557263](50415 call _cast call_tmp[557258] value[50351]))
+    unknown v[50417] "insert auto destroy"
+    (489266 'init var' v[50417] call_tmp[557263])
+    unknown call_tmp[557270] "expr temp" "maybe param" "maybe type" "temp"
+    (557273 'move' call_tmp[557270](50425 call(338287 call (partial) _localeid _mt[232] this[50999])))
+    unknown call_tmp[557277] "expr temp" "maybe param" "maybe type" "temp"
+    (557280 'move' call_tmp[557277](50428 call(338291 call (partial) _addr _mt[232] this[50999])))
+    (50430 call atomic_write v[50417] call_tmp[557270] call_tmp[557277] order[50357])
+    (457492 return ret[457490])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicBool[50933].exchange[50441](arg _mt[51005]:_MT[227], arg this[51003]:RAtomicBool[50933], arg value[50438]:bool[10], arg order[50444]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457502] "RVV" "temp"
+    (50451 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_xchg[50471](ref arg desired[50468] :
+    (50467 call int(64)[13] 64), arg l[50477] :
+    (50476 call int(64)[13] 32), arg obj[50481]:c_void_ptr[141], ref arg result[50488] :
+    (50487 call int(64)[13] 64), arg order[50492]:memory_order[179753], arg _chpl_cname[50500]:string[24] =
+    unknown call_tmp[557282] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457496] "RVV" "temp"
+      (457498 return ret[457496])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[50508] "insert auto destroy"
+    unknown call_tmp[557287] "expr temp" "maybe param" "maybe type" "temp"
+    (557290 'move' call_tmp[557287](50507 call int(64)[13] 64))
+    (489268 'default init var' ret[50508] call_tmp[557287])
+    unknown call_tmp[557292] "expr temp" "maybe param" "maybe type" "temp"
+    (557295 'move' call_tmp[557292](50515 call int(64)[13] 64))
+    unknown call_tmp[557297] "maybe param" "maybe type" "temp"
+    (557300 'move' call_tmp[557297](50516 call _cast call_tmp[557292] value[50438]))
+    unknown v[50518] "insert auto destroy"
+    (489270 'init var' v[50518] call_tmp[557297])
+    unknown call_tmp[557304] "expr temp" "maybe param" "maybe type" "temp"
+    (557307 'move' call_tmp[557304](50526 call(338301 call (partial) _localeid _mt[232] this[51003])))
+    unknown call_tmp[557311] "expr temp" "maybe param" "maybe type" "temp"
+    (557314 'move' call_tmp[557311](50529 call(338305 call (partial) _addr _mt[232] this[51003])))
+    (50532 call atomic_xchg v[50518] call_tmp[557304] call_tmp[557311] ret[50508] order[50444])
+    unknown call_tmp[557316] "expr temp" "maybe param" "maybe type" "temp"
+    (557319 'move' call_tmp[557316](50536 call _cast bool[10] ret[50508]))
+    (457508 'move' ret[457502](457507 'coerce' call_tmp[557316] bool[10]))
+    (457504 return ret[457502])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].compareExchange[50549](arg _mt[51009]:_MT[227], arg this[51007]:RAtomicBool[50933], arg expected[50546]:bool[10], arg desired[50552]:bool[10], arg order[50556]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457512] "RVV" "temp"
+    unknown call_tmp[557323] "expr temp" "maybe param" "maybe type" "temp"
+    (557326 'move' call_tmp[557323](50568 call(50561 call (partial) compareExchangeStrong _mt[232] this[51007]) expected[50546] desired[50552] order[50556]))
+    (457518 'move' ret[457512](457517 'coerce' call_tmp[557323] bool[10]))
+    (457514 return ret[457512])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].compareExchangeWeak[50581](arg _mt[51013]:_MT[227], arg this[51011]:RAtomicBool[50933], arg expected[50578]:bool[10], arg desired[50584]:bool[10], arg order[50588]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457522] "RVV" "temp"
+    unknown call_tmp[557330] "expr temp" "maybe param" "maybe type" "temp"
+    (557333 'move' call_tmp[557330](50600 call(50593 call (partial) compareExchangeStrong _mt[232] this[51011]) expected[50578] desired[50584] order[50588]))
+    (457528 'move' ret[457522](457527 'coerce' call_tmp[557330] bool[10]))
+    (457524 return ret[457522])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].compareExchangeStrong[50613](arg _mt[51017]:_MT[227], arg this[51015]:RAtomicBool[50933], arg expected[50610]:bool[10], arg desired[50616]:bool[10], arg order[50620]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457538] "RVV" "temp"
+    (50627 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_cmpxchg[50647](ref arg expected[50644] :
+    (50643 call int(64)[13] 64), ref arg desired[50653] :
+    (50652 call int(64)[13] 64), arg l[50660] :
+    (50659 call int(64)[13] 32), arg obj[50664]:c_void_ptr[141], ref arg result[50671] :
+    (50670 call bool[10] 32), arg order[50675]:memory_order[179753], arg _chpl_cname[50683]:string[24] =
+    unknown call_tmp[557335] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457532] "RVV" "temp"
+      (457534 return ret[457532])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[50691] "insert auto destroy"
+    unknown call_tmp[557340] "expr temp" "maybe param" "maybe type" "temp"
+    (557343 'move' call_tmp[557340](50690 call bool[10] 32))
+    (489272 'default init var' ret[50691] call_tmp[557340])
+    unknown call_tmp[557345] "expr temp" "maybe param" "maybe type" "temp"
+    (557348 'move' call_tmp[557345](50698 call int(64)[13] 64))
+    unknown call_tmp[557350] "maybe param" "maybe type" "temp"
+    (557353 'move' call_tmp[557350](50699 call _cast call_tmp[557345] expected[50610]))
+    unknown te[50701] "insert auto destroy"
+    (489274 'init var' te[50701] call_tmp[557350])
+    unknown call_tmp[557355] "expr temp" "maybe param" "maybe type" "temp"
+    (557358 'move' call_tmp[557355](50708 call int(64)[13] 64))
+    unknown call_tmp[557360] "maybe param" "maybe type" "temp"
+    (557363 'move' call_tmp[557360](50709 call _cast call_tmp[557355] desired[50616]))
+    unknown td[50711] "insert auto destroy"
+    (489276 'init var' td[50711] call_tmp[557360])
+    unknown call_tmp[557367] "expr temp" "maybe param" "maybe type" "temp"
+    (557370 'move' call_tmp[557367](50720 call(338329 call (partial) _localeid _mt[232] this[51015])))
+    unknown call_tmp[557374] "expr temp" "maybe param" "maybe type" "temp"
+    (557377 'move' call_tmp[557374](50723 call(338333 call (partial) _addr _mt[232] this[51015])))
+    (50726 call atomic_cmpxchg te[50701] td[50711] call_tmp[557367] call_tmp[557374] ret[50691] order[50620])
+    unknown call_tmp[557379] "expr temp" "maybe param" "maybe type" "temp"
+    (557382 'move' call_tmp[557379](50730 call _cast bool[10] ret[50691]))
+    (457544 'move' ret[457538](457543 'coerce' call_tmp[557379] bool[10]))
+    (457540 return ret[457538])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].testAndSet[50743](arg _mt[51021]:_MT[227], arg this[51019]:RAtomicBool[50933], arg order[50740]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457548] "RVV" "temp"
+    unknown call_tmp[557386] "expr temp" "maybe param" "maybe type" "temp"
+    (557389 'move' call_tmp[557386](50753 call(50747 call (partial) exchange _mt[232] this[51019]) 1 order[50740]))
+    (457554 'move' ret[457548](457553 'coerce' call_tmp[557386] bool[10]))
+    (457550 return ret[457548])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].clear[50766](arg _mt[51025]:_MT[227], arg this[51023]:RAtomicBool[50933], arg order[50763]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457558] "RVV" "temp"
+    (50776 call(50770 call (partial) write _mt[232] this[51023]) 0 order[50763])
+    (457560 return ret[457558])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicBool[50933].waitFor[50788](arg _mt[51029]:_MT[227], const arg this[51027]:RAtomicBool[50933], arg value[50785]:bool[10], arg order[50791]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457564] "RVV" "temp"
+    (50798 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    {
+      const tmp[50875] "const" "temp"
+      unknown call_tmp[557393] "expr temp" "maybe param" "maybe type" "temp"
+      (557396 'move' call_tmp[557393](50872 '_wide_get_locale' this[51027]))
+      (50876 'move' tmp[50875](50873 'deref' call_tmp[557393]))
+      {
+        {
+          unknown tmp[50821] "temp"
+          unknown call_tmp[557400] "expr temp" "maybe param" "maybe type" "temp"
+          (557403 'move' call_tmp[557400](50856 call(50853 call (partial) read _mt[232] this[51027])(order = relaxed[180097])))
+          unknown call_tmp[557405] "expr temp" "maybe param" "maybe type" "temp"
+          (557408 'move' call_tmp[557405](50851 call != call_tmp[557400] value[50785]))
+          (50863 'move' tmp[50821](50849 call _cond_test call_tmp[557405]))
+          WhileDo
+          {
+            {
+              (50818 call chpl_task_yield)
+            }
+            label _continueLabel[50824]
+            unknown call_tmp[557412] "expr temp" "maybe param" "maybe type" "temp"
+            (557415 'move' call_tmp[557412](50837 call(50834 call (partial) read _mt[232] this[51027])(order = relaxed[180097])))
+            unknown call_tmp[557417] "expr temp" "maybe param" "maybe type" "temp"
+            (557420 'move' call_tmp[557417](50832 call != call_tmp[557412] value[50785]))
+            (50844 'move' tmp[50821](50830 call _cond_test call_tmp[557417]))
+            tmp[50821]
+          }
+          label _breakLabel[50825]
+        }
+        (50870 call chpl_atomic_thread_fence order[50791])
+      }
+    }
+    (457566 return ret[457564])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicBool[50933].peek[50885](arg _mt[51033]:_MT[227], const arg this[51031]:RAtomicBool[50933]) : _unknown[43] "atomic type" "inline" "last resort" "method" "primary method"
+  {
+    unknown ret[457570] "RVV" "temp"
+    (50891 call compilerWarning "Default usage of peek() is deprecated, use PeekPoke")
+    unknown call_tmp[557424] "expr temp" "maybe param" "maybe type" "temp"
+    (557427 'move' call_tmp[557424](338356 call _v _mt[232] this[51031]))
+    unknown call_tmp[557429] "expr temp" "maybe param" "maybe type" "temp"
+    (557432 'move' call_tmp[557429](50896 call _cast bool[10] call_tmp[557424]))
+    (457576 'move' ret[457570](457575 'coerce' call_tmp[557429] bool[10]))
+    (457572 return ret[457570])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicBool[50933].poke[50909](arg _mt[51037]:_MT[227], arg this[51035]:RAtomicBool[50933], arg value[50906]:bool[10]) : _unknown[43] "atomic type" "inline" "last resort" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457580] "RVV" "temp"
+    (50915 call compilerWarning "Default usage of poke() is deprecated, use PeekPoke")
+    unknown call_tmp[557436] "expr temp" "maybe param" "maybe type" "temp"
+    (557439 'move' call_tmp[557436](338361 call _v _mt[232] this[51035]))
+    unknown call_tmp[557441] "expr temp" "maybe param" "maybe type" "temp"
+    (557444 'move' call_tmp[557441](50923 call int(64)[13] 64))
+    unknown call_tmp[557446] "expr temp" "maybe param" "maybe type" "temp"
+    (557449 'move' call_tmp[557446](50924 call _cast call_tmp[557441] value[50906]))
+    (50926 call = call_tmp[557436] call_tmp[557446])
+    (457582 return ret[457580])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicBool[50933]._v[700709](arg _mt[700711]:_MT[227], ref arg this[700713]:RAtomicBool[50933]) ref : _unknown[43] "atomic type" "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[700722] "RVV" "temp"
+    unknown call_tmp[700729] "expr temp" "maybe param" "maybe type" "temp"
+    (700732 'move' call_tmp[700729](700717 '.' this[700713] c"_v"))
+    (700727 'move' ret[700722](700726 'addr of' call_tmp[700729]))
+    (700724 return ret[700722])
+  }
+  function RAtomicBool[50933].init[700734](arg _mt[700736]:_MT[227], ref arg this[700737]:RAtomicBool[50933], in arg _v[700740] :
+  (700743 call int(64)[13] 64) =
+  _typeDefaultT[239]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (700756 'init field' this[700737] c"_v" _v[700740])
+    (700759 return _void[47])
+  }
+  function RAtomicBool[50933].init=[700761](arg _mt[700764]:_MT[227], ref arg this[700765]:RAtomicBool[50933], arg other[700766]:RAtomicBool[50933]) : void[4] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    unknown call_tmp[700795] "maybe param" "maybe type" "temp"
+    (700798 'move' call_tmp[700795](700774 call _v _mt[232] other[700766]))
+    unknown call_tmp[700800] "maybe param" "maybe type" "temp"
+    (700803 'move' call_tmp[700800](700783 call int(64)[13] 64))
+    unknown tmp[700780] "temp"
+    (700785 'init var' tmp[700780] call_tmp[700795] call_tmp[700800])
+    (700787 'init field' this[700765] c"_v" tmp[700780])
+    (700791 return _void[47])
+  }
+  function RAtomicBool[50933].deinit[700805](arg _mt[700807]:_MT[227], arg this[700809]:RAtomicBool[50933]) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (700811 return _void[47])
+  }
+  function ==[700814](arg _arg1[700816]:RAtomicBool[50933], arg _arg2[700817]:RAtomicBool[50933]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[700846]:bool[10] "RVV" "temp"
+    unknown call_tmp[700858] "expr temp" "maybe param" "maybe type" "temp"
+    (700861 'move' call_tmp[700858](700827 call _v _mt[232] _arg1[700816]))
+    unknown call_tmp[700863] "expr temp" "maybe param" "maybe type" "temp"
+    (700866 'move' call_tmp[700863](700831 call _v _mt[232] _arg2[700817]))
+    unknown call_tmp[700868] "expr temp" "maybe param" "maybe type" "temp"
+    (700871 'move' call_tmp[700868](700835 call != call_tmp[700858] call_tmp[700863]))
+    if call_tmp[700868]
+    {
+      (700851 'move' ret[700846](700850 'deref' 0))
+      gotoReturn _end_==[700844] _end_==[700844]
+    }
+    (700856 'move' ret[700846](700855 'deref' 1))
+    label _end_==[700844]
+    (700848 return ret[700846])
+  }
+  where {
+    unknown call_tmp[700873] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (700876 'move' call_tmp[700873](700820 'typeof' _arg1[700816]))
+    unknown call_tmp[700878] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (700881 'move' call_tmp[700878](700822 'typeof' _arg2[700817]))
+    (700824 call == call_tmp[700873] call_tmp[700878])
+  }
+  function !=[700883](arg _arg1[700885]:RAtomicBool[50933], arg _arg2[700886]:RAtomicBool[50933]) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[700915]:bool[10] "RVV" "temp"
+    unknown call_tmp[700927] "expr temp" "maybe param" "maybe type" "temp"
+    (700930 'move' call_tmp[700927](700896 call _v _mt[232] _arg1[700885]))
+    unknown call_tmp[700932] "expr temp" "maybe param" "maybe type" "temp"
+    (700935 'move' call_tmp[700932](700900 call _v _mt[232] _arg2[700886]))
+    unknown call_tmp[700937] "expr temp" "maybe param" "maybe type" "temp"
+    (700940 'move' call_tmp[700937](700904 call != call_tmp[700927] call_tmp[700932]))
+    if call_tmp[700937]
+    {
+      (700920 'move' ret[700915](700919 'deref' 1))
+      gotoReturn _end_!=[700913] _end_!=[700913]
+    }
+    (700925 'move' ret[700915](700924 'deref' 0))
+    label _end_!=[700913]
+    (700917 return ret[700915])
+  }
+  where {
+    unknown call_tmp[700942] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (700945 'move' call_tmp[700942](700889 'typeof' _arg1[700885]))
+    unknown call_tmp[700947] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (700950 'move' call_tmp[700947](700891 'typeof' _arg2[700886]))
+    (700893 call == call_tmp[700942] call_tmp[700947])
+  }
+  function chpl__defaultHash[700952](arg r[700954]:RAtomicBool[50933]) : _unknown[43] "compiler generated" "last resort"
+  {
+    unknown ret[700966] "RVV" "temp"
+    unknown call_tmp[700973] "expr temp" "maybe param" "maybe type" "temp"
+    (700976 'move' call_tmp[700973](700956 call _v _mt[232] r[700954]))
+    unknown call_tmp[700978] "expr temp" "maybe param" "maybe type" "temp"
+    (700981 'move' call_tmp[700978](700960 call chpl__defaultHash call_tmp[700973]))
+    (700971 'move' ret[700966](700970 'deref' call_tmp[700978]))
+    (700968 return ret[700966])
+  }
+  type RAtomicBool[50933] val _v[49382]:int(64)[13](49381 call int(64)[13] 64)
+  function RAtomicT[54223](?).init=[51055](arg _mt[54227]:_MT[227], ref arg this[54225]:RAtomicT[54223](?), arg other[51052]:RAtomicT[54223](?)) : void[4] "atomic type" "method" "primary method" "no return value for void"
+  {
+    unknown tmp[429910] "temp" "type variable"
+    (429912 'move' tmp[429910](51062 call T _mt[232] other[51052]))
+    (429914 'init field' this[54225] c"T" tmp[429910])
+    unknown call_tmp[557455] "maybe param" "maybe type" "temp"
+    (557458 'move' call_tmp[557455](51078 call(51074 call (partial) read _mt[232] other[51052])))
+    unknown call_tmp[557460] "maybe param" "maybe type" "temp"
+    (557463 'move' call_tmp[557460](429927 '.v' this[54225] c"T"))
+    unknown tmp[429918] "temp"
+    (429921 'init var' tmp[429918] call_tmp[557455] call_tmp[557460])
+    (429923 'init field' this[54225] c"_v" tmp[429918])
+    (457584 return _void[47])
+  }
+  function RAtomicT[54223](?).init=[51094](arg _mt[54231]:_MT[227], ref arg this[54229]:RAtomicT[54223](?), arg other[51091] :
+  unknown call_tmp[557465] "expr temp" "maybe param" "maybe type" "temp" "type variable") : void[4] "atomic type" "method" "primary method" "no return value for void"
+  {
+    unknown tmp[429930] "temp" "type variable"
+    (429932 'move' tmp[429930](51101 'typeof' other[51091]))
+    (429934 'init field' this[54229] c"T" tmp[429930])
+    unknown call_tmp[557472] "maybe param" "maybe type" "temp"
+    (557475 'move' call_tmp[557472](429947 '.v' this[54229] c"T"))
+    unknown tmp[429938] "temp"
+    (429941 'init var' tmp[429938] other[51091] call_tmp[557472])
+    (429943 'init field' this[54229] c"_v" tmp[429938])
+    (457586 return _void[47])
+  }
+  function RAtomicT[54223](?)._localeid[51118](arg _mt[54235]:_MT[227], arg this[54233]:RAtomicT[54223](?)) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457590] "RVV" "temp"
+    unknown call_tmp[557477] "expr temp" "maybe param" "maybe type" "temp"
+    (557480 'move' call_tmp[557477](51132 call int(64)[13] 32))
+    unknown call_tmp[557484] "expr temp" "maybe param" "maybe type" "temp"
+    (557487 'move' call_tmp[557484](338378 call _v _mt[232] this[54233]))
+    unknown call_tmp[557489] "expr temp" "maybe param" "maybe type" "temp"
+    (557492 'move' call_tmp[557489](51128 '_wide_get_node' call_tmp[557484]))
+    unknown call_tmp[557494] "expr temp" "maybe param" "maybe type" "temp"
+    (557497 'move' call_tmp[557494](51133 call _cast call_tmp[557477] call_tmp[557489]))
+    unknown call_tmp[557499] "expr temp" "maybe param" "maybe type" "temp"
+    (557502 'move' call_tmp[557499](457595 call int(64)[13] 32))
+    (457598 'move' ret[457590](457597 'coerce' call_tmp[557494] call_tmp[557499]))
+    (457592 return ret[457590])
+  }
+  { scopeless type
+    (51123 call int(64)[13] 32)
+  }
+  function RAtomicT[54223](?)._addr[51143](arg _mt[54239]:_MT[227], arg this[54237]:RAtomicT[54223](?)) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457602] "RVV" "temp"
+    unknown call_tmp[557506] "expr temp" "maybe param" "maybe type" "temp"
+    (557509 'move' call_tmp[557506](338384 call _v _mt[232] this[54237]))
+    unknown call_tmp[557511] "expr temp" "maybe param" "maybe type" "temp"
+    (557514 'move' call_tmp[557511](51149 '_wide_get_addr' call_tmp[557506]))
+    (457608 'move' ret[457602](457607 'coerce' call_tmp[557511] c_void_ptr[141]))
+    (457604 return ret[457602])
+  }
+  { scopeless type
+    c_void_ptr[141]
+  }
+  function RAtomicT[54223](?).read[51167](arg _mt[54243]:_MT[227], const arg this[54241]:RAtomicT[54223](?), param arg order[51163]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457618] "RVV" "temp"
+    function atomic_read[51181](ref arg result[51178] :
+    (338401 call T _mt[232] this[54241]), arg l[51187] :
+    (51186 call int(64)[13] 32), const arg obj[51191]:c_void_ptr[141], arg order[51195]:memory_order[179753], arg _chpl_cname[51203]:string[24] =
+    unknown call_tmp[557520] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457612] "RVV" "temp"
+      (457614 return ret[457612])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[51209] "insert auto destroy"
+    unknown call_tmp[557527] "expr temp" "maybe param" "maybe type" "temp"
+    (557530 'move' call_tmp[557527](338408 call T _mt[232] this[54241]))
+    (489278 'default init var' ret[51209] call_tmp[557527])
+    unknown call_tmp[557534] "expr temp" "maybe param" "maybe type" "temp"
+    (557537 'move' call_tmp[557534](51217 call(338413 call (partial) _localeid _mt[232] this[54241])))
+    unknown call_tmp[557541] "expr temp" "maybe param" "maybe type" "temp"
+    (557544 'move' call_tmp[557541](51220 call(338417 call (partial) _addr _mt[232] this[54241])))
+    unknown call_tmp[557546] "expr temp" "maybe param" "maybe type" "temp"
+    (557549 'move' call_tmp[557546](51224 call c_memory_order order[51163]))
+    (51225 call atomic_read ret[51209] call_tmp[557534] call_tmp[557541] call_tmp[557546])
+    unknown call_tmp[557553] "expr temp" "maybe param" "maybe type" "temp"
+    (557556 'move' call_tmp[557553](457623 call T _mt[232] this[54241]))
+    (457627 'move' ret[457618](457626 'coerce' ret[51209] call_tmp[557553]))
+    (457620 return ret[457618])
+  }
+  { scopeless type
+    (338391 call T _mt[232] this[54241])
+  }
+  function RAtomicT[54223](?).write[51239](arg _mt[54247]:_MT[227], arg this[54245]:RAtomicT[54223](?), arg value[51236] :
+  (338424 call T _mt[232] this[54245]), param arg order[51246]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457637] "RVV" "temp"
+    function atomic_write[51262](ref arg desired[51259] :
+    (338436 call T _mt[232] this[54245]), arg l[51268] :
+    (51267 call int(64)[13] 32), arg obj[51272]:c_void_ptr[141], arg order[51276]:memory_order[179753], arg _chpl_cname[51284]:string[24] =
+    unknown call_tmp[557566] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457631] "RVV" "temp"
+      (457633 return ret[457631])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[51290] "insert auto destroy"
+    (489280 'init var' v[51290] value[51236])
+    unknown call_tmp[557573] "expr temp" "maybe param" "maybe type" "temp"
+    (557576 'move' call_tmp[557573](51298 call(338444 call (partial) _localeid _mt[232] this[54245])))
+    unknown call_tmp[557580] "expr temp" "maybe param" "maybe type" "temp"
+    (557583 'move' call_tmp[557580](51301 call(338448 call (partial) _addr _mt[232] this[54245])))
+    unknown call_tmp[557585] "expr temp" "maybe param" "maybe type" "temp"
+    (557588 'move' call_tmp[557585](51305 call c_memory_order order[51246]))
+    (51306 call atomic_write v[51290] call_tmp[557573] call_tmp[557580] call_tmp[557585])
+    (457639 return ret[457637])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).exchange[51317](arg _mt[54251]:_MT[227], arg this[54249]:RAtomicT[54223](?), arg value[51314] :
+  (338454 call T _mt[232] this[54249]), param arg order[51324]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457649] "RVV" "temp"
+    function atomic_xchg[51340](ref arg desired[51337] :
+    (338471 call T _mt[232] this[54249]), arg l[51346] :
+    (51345 call int(64)[13] 32), arg obj[51350]:c_void_ptr[141], ref arg result[51354] :
+    (338477 call T _mt[232] this[54249]), arg order[51358]:memory_order[179753], arg _chpl_cname[51366]:string[24] =
+    unknown call_tmp[557598] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457643] "RVV" "temp"
+      (457645 return ret[457643])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[51372] "insert auto destroy"
+    unknown call_tmp[557605] "expr temp" "maybe param" "maybe type" "temp"
+    (557608 'move' call_tmp[557605](338483 call T _mt[232] this[54249]))
+    (489282 'default init var' ret[51372] call_tmp[557605])
+    unknown v[51376] "insert auto destroy"
+    (489284 'init var' v[51376] value[51314])
+    unknown call_tmp[557612] "expr temp" "maybe param" "maybe type" "temp"
+    (557615 'move' call_tmp[557612](51384 call(338489 call (partial) _localeid _mt[232] this[54249])))
+    unknown call_tmp[557619] "expr temp" "maybe param" "maybe type" "temp"
+    (557622 'move' call_tmp[557619](51387 call(338493 call (partial) _addr _mt[232] this[54249])))
+    unknown call_tmp[557624] "expr temp" "maybe param" "maybe type" "temp"
+    (557627 'move' call_tmp[557624](51392 call c_memory_order order[51324]))
+    (51393 call atomic_xchg v[51376] call_tmp[557612] call_tmp[557619] ret[51372] call_tmp[557624])
+    unknown call_tmp[557631] "expr temp" "maybe param" "maybe type" "temp"
+    (557634 'move' call_tmp[557631](457654 call T _mt[232] this[54249]))
+    (457658 'move' ret[457649](457657 'coerce' ret[51372] call_tmp[557631]))
+    (457651 return ret[457649])
+  }
+  { scopeless type
+    (338461 call T _mt[232] this[54249])
+  }
+  function RAtomicT[54223](?).compareAndSwap[51407](arg _mt[54255]:_MT[227], arg this[54253]:RAtomicT[54223](?), arg expected[51404] :
+  (338501 call T _mt[232] this[54253]), arg desired[51410] :
+  (338506 call T _mt[232] this[54253]), param arg order[51418]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457668] "RVV" "temp"
+    function atomic_cmpxchg[51434](ref arg expected[51431] :
+    (338518 call T _mt[232] this[54253]), ref arg desired[51437] :
+    (338523 call T _mt[232] this[54253]), arg l[51444] :
+    (51443 call int(64)[13] 32), arg obj[51448]:c_void_ptr[141], ref arg result[51455] :
+    (51454 call bool[10] 32), arg order[51459]:memory_order[179753], arg _chpl_cname[51467]:string[24] =
+    unknown call_tmp[557648] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457662] "RVV" "temp"
+      (457664 return ret[457662])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[51476] "insert auto destroy"
+    unknown call_tmp[557653] "expr temp" "maybe param" "maybe type" "temp"
+    (557656 'move' call_tmp[557653](51475 call bool[10] 32))
+    (489286 'default init var' ret[51476] call_tmp[557653])
+    unknown te[51480] "insert auto destroy"
+    (489288 'init var' te[51480] expected[51404])
+    unknown td[51484] "insert auto destroy"
+    (489290 'init var' td[51484] desired[51410])
+    unknown call_tmp[557660] "expr temp" "maybe param" "maybe type" "temp"
+    (557663 'move' call_tmp[557660](51493 call(338533 call (partial) _localeid _mt[232] this[54253])))
+    unknown call_tmp[557667] "expr temp" "maybe param" "maybe type" "temp"
+    (557670 'move' call_tmp[557667](51496 call(338537 call (partial) _addr _mt[232] this[54253])))
+    unknown call_tmp[557672] "expr temp" "maybe param" "maybe type" "temp"
+    (557675 'move' call_tmp[557672](51501 call c_memory_order order[51418]))
+    (51502 call atomic_cmpxchg te[51480] td[51484] call_tmp[557660] call_tmp[557667] ret[51476] call_tmp[557672])
+    unknown call_tmp[557677] "expr temp" "maybe param" "maybe type" "temp"
+    (557680 'move' call_tmp[557677](51506 call _cast bool[10] ret[51476]))
+    (457674 'move' ret[457668](457673 'coerce' call_tmp[557677] bool[10]))
+    (457670 return ret[457668])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicT[54223](?).fetchAdd[51519](arg _mt[54259]:_MT[227], arg this[54257]:RAtomicT[54223](?), arg value[51516] :
+  (338545 call T _mt[232] this[54257]), param arg order[51526]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457684] "RVV" "temp"
+    function atomic_fetch_add[51542](ref arg op[51539] :
+    (338562 call T _mt[232] this[54257]), arg l[51548] :
+    (51547 call int(64)[13] 32), arg obj[51552]:c_void_ptr[141], ref arg result[51556] :
+    (338568 call T _mt[232] this[54257]), arg order[51560]:memory_order[179753], arg _chpl_cname[51568]:string[24] =
+    unknown call_tmp[557690] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457678] "RVV" "temp"
+      (457680 return ret[457678])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[51574] "insert auto destroy"
+    unknown call_tmp[557697] "expr temp" "maybe param" "maybe type" "temp"
+    (557700 'move' call_tmp[557697](338574 call T _mt[232] this[54257]))
+    (489292 'default init var' ret[51574] call_tmp[557697])
+    unknown v[51578] "insert auto destroy"
+    (489294 'init var' v[51578] value[51516])
+    unknown call_tmp[557704] "expr temp" "maybe param" "maybe type" "temp"
+    (557707 'move' call_tmp[557704](51586 call(338580 call (partial) _localeid _mt[232] this[54257])))
+    unknown call_tmp[557711] "expr temp" "maybe param" "maybe type" "temp"
+    (557714 'move' call_tmp[557711](51589 call(338584 call (partial) _addr _mt[232] this[54257])))
+    unknown call_tmp[557716] "expr temp" "maybe param" "maybe type" "temp"
+    (557719 'move' call_tmp[557716](51594 call c_memory_order order[51526]))
+    (51595 call atomic_fetch_add v[51578] call_tmp[557704] call_tmp[557711] ret[51574] call_tmp[557716])
+    unknown call_tmp[557723] "expr temp" "maybe param" "maybe type" "temp"
+    (557726 'move' call_tmp[557723](457689 call T _mt[232] this[54257]))
+    (457693 'move' ret[457684](457692 'coerce' ret[51574] call_tmp[557723]))
+    (457686 return ret[457684])
+  }
+  { scopeless type
+    (338552 call T _mt[232] this[54257])
+  }
+  function RAtomicT[54223](?).add[51609](arg _mt[54263]:_MT[227], arg this[54261]:RAtomicT[54223](?), arg value[51606] :
+  (338592 call T _mt[232] this[54261]), param arg order[51616]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457703] "RVV" "temp"
+    function atomic_add[51645](ref arg op[51642] :
+    (338604 call T _mt[232] this[54261]), arg l[51651] :
+    (51650 call int(64)[13] 32), arg obj[51655]:c_void_ptr[141], arg order[51659]:memory_order[179753], arg _chpl_cname[51667]:string[24] =
+    unknown call_tmp[557736] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457697] "RVV" "temp"
+      (457699 return ret[457697])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[51673] "insert auto destroy"
+    (489296 'init var' v[51673] value[51606])
+    unknown call_tmp[557743] "expr temp" "maybe param" "maybe type" "temp"
+    (557746 'move' call_tmp[557743](51681 call(338612 call (partial) _localeid _mt[232] this[54261])))
+    unknown call_tmp[557750] "expr temp" "maybe param" "maybe type" "temp"
+    (557753 'move' call_tmp[557750](51684 call(338616 call (partial) _addr _mt[232] this[54261])))
+    unknown call_tmp[557755] "expr temp" "maybe param" "maybe type" "temp"
+    (557758 'move' call_tmp[557755](51688 call c_memory_order order[51616]))
+    (51689 call atomic_add v[51673] call_tmp[557743] call_tmp[557750] call_tmp[557755])
+    (457705 return ret[457703])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchSub[51700](arg _mt[54267]:_MT[227], arg this[54265]:RAtomicT[54223](?), arg value[51697] :
+  (338622 call T _mt[232] this[54265]), param arg order[51707]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457715] "RVV" "temp"
+    function atomic_fetch_sub[51723](ref arg op[51720] :
+    (338639 call T _mt[232] this[54265]), arg l[51729] :
+    (51728 call int(64)[13] 32), arg obj[51733]:c_void_ptr[141], ref arg result[51737] :
+    (338645 call T _mt[232] this[54265]), arg order[51741]:memory_order[179753], arg _chpl_cname[51749]:string[24] =
+    unknown call_tmp[557768] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457709] "RVV" "temp"
+      (457711 return ret[457709])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[51755] "insert auto destroy"
+    unknown call_tmp[557775] "expr temp" "maybe param" "maybe type" "temp"
+    (557778 'move' call_tmp[557775](338651 call T _mt[232] this[54265]))
+    (489298 'default init var' ret[51755] call_tmp[557775])
+    unknown v[51759] "insert auto destroy"
+    (489300 'init var' v[51759] value[51697])
+    unknown call_tmp[557782] "expr temp" "maybe param" "maybe type" "temp"
+    (557785 'move' call_tmp[557782](51767 call(338657 call (partial) _localeid _mt[232] this[54265])))
+    unknown call_tmp[557789] "expr temp" "maybe param" "maybe type" "temp"
+    (557792 'move' call_tmp[557789](51770 call(338661 call (partial) _addr _mt[232] this[54265])))
+    unknown call_tmp[557794] "expr temp" "maybe param" "maybe type" "temp"
+    (557797 'move' call_tmp[557794](51775 call c_memory_order order[51707]))
+    (51776 call atomic_fetch_sub v[51759] call_tmp[557782] call_tmp[557789] ret[51755] call_tmp[557794])
+    unknown call_tmp[557801] "expr temp" "maybe param" "maybe type" "temp"
+    (557804 'move' call_tmp[557801](457720 call T _mt[232] this[54265]))
+    (457724 'move' ret[457715](457723 'coerce' ret[51755] call_tmp[557801]))
+    (457717 return ret[457715])
+  }
+  { scopeless type
+    (338629 call T _mt[232] this[54265])
+  }
+  function RAtomicT[54223](?).sub[51790](arg _mt[54271]:_MT[227], arg this[54269]:RAtomicT[54223](?), arg value[51787] :
+  (338669 call T _mt[232] this[54269]), param arg order[51797]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457734] "RVV" "temp"
+    function atomic_sub[51826](ref arg op[51823] :
+    (338681 call T _mt[232] this[54269]), arg l[51832] :
+    (51831 call int(64)[13] 32), arg obj[51836]:c_void_ptr[141], arg order[51840]:memory_order[179753], arg _chpl_cname[51848]:string[24] =
+    unknown call_tmp[557814] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457728] "RVV" "temp"
+      (457730 return ret[457728])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[51854] "insert auto destroy"
+    (489302 'init var' v[51854] value[51787])
+    unknown call_tmp[557821] "expr temp" "maybe param" "maybe type" "temp"
+    (557824 'move' call_tmp[557821](51862 call(338689 call (partial) _localeid _mt[232] this[54269])))
+    unknown call_tmp[557828] "expr temp" "maybe param" "maybe type" "temp"
+    (557831 'move' call_tmp[557828](51865 call(338693 call (partial) _addr _mt[232] this[54269])))
+    unknown call_tmp[557833] "expr temp" "maybe param" "maybe type" "temp"
+    (557836 'move' call_tmp[557833](51869 call c_memory_order order[51797]))
+    (51870 call atomic_sub v[51854] call_tmp[557821] call_tmp[557828] call_tmp[557833])
+    (457736 return ret[457734])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchOr[51881](arg _mt[54275]:_MT[227], arg this[54273]:RAtomicT[54223](?), arg value[51878] :
+  (338699 call T _mt[232] this[54273]), param arg order[51888]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457746] "RVV" "temp"
+    unknown call_tmp[557842] "expr temp" "maybe param" "maybe type" "temp"
+    (557845 'move' call_tmp[557842](338711 call T _mt[232] this[54273]))
+    unknown call_tmp[557847] "expr temp" "maybe param" "maybe type" "temp"
+    (557850 'move' call_tmp[557847](51896 call isIntegral call_tmp[557842]))
+    unknown call_tmp[557852] "expr temp" "maybe param" "maybe type" "temp"
+    (557855 'move' call_tmp[557852](51897 call ! call_tmp[557847]))
+    unknown call_tmp[557857] "expr temp" "maybe param" "maybe type" "temp"
+    (557860 'move' call_tmp[557857](51904 call _cond_test call_tmp[557852]))
+    if call_tmp[557857]
+    {
+      (51902 call compilerError "fetchOr is only defined for integer atomic types")
+    }
+    function atomic_fetch_or[51921](ref arg op[51918] :
+    (338721 call T _mt[232] this[54273]), arg l[51927] :
+    (51926 call int(64)[13] 32), arg obj[51931]:c_void_ptr[141], ref arg result[51935] :
+    (338727 call T _mt[232] this[54273]), arg order[51939]:memory_order[179753], arg _chpl_cname[51947]:string[24] =
+    unknown call_tmp[557868] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457740] "RVV" "temp"
+      (457742 return ret[457740])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[51952] "insert auto destroy"
+    unknown call_tmp[557875] "expr temp" "maybe param" "maybe type" "temp"
+    (557878 'move' call_tmp[557875](338733 call T _mt[232] this[54273]))
+    (489304 'default init var' ret[51952] call_tmp[557875])
+    unknown v[51956] "insert auto destroy"
+    (489306 'init var' v[51956] value[51878])
+    unknown call_tmp[557882] "expr temp" "maybe param" "maybe type" "temp"
+    (557885 'move' call_tmp[557882](51964 call(338739 call (partial) _localeid _mt[232] this[54273])))
+    unknown call_tmp[557889] "expr temp" "maybe param" "maybe type" "temp"
+    (557892 'move' call_tmp[557889](51967 call(338743 call (partial) _addr _mt[232] this[54273])))
+    unknown call_tmp[557894] "expr temp" "maybe param" "maybe type" "temp"
+    (557897 'move' call_tmp[557894](51972 call c_memory_order order[51888]))
+    (51973 call atomic_fetch_or v[51956] call_tmp[557882] call_tmp[557889] ret[51952] call_tmp[557894])
+    unknown call_tmp[557901] "expr temp" "maybe param" "maybe type" "temp"
+    (557904 'move' call_tmp[557901](457751 call T _mt[232] this[54273]))
+    (457755 'move' ret[457746](457754 'coerce' ret[51952] call_tmp[557901]))
+    (457748 return ret[457746])
+  }
+  { scopeless type
+    (338706 call T _mt[232] this[54273])
+  }
+  function RAtomicT[54223](?).or[51987](arg _mt[54279]:_MT[227], arg this[54277]:RAtomicT[54223](?), arg value[51984] :
+  (338751 call T _mt[232] this[54277]), param arg order[51994]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457765] "RVV" "temp"
+    unknown call_tmp[557912] "expr temp" "maybe param" "maybe type" "temp"
+    (557915 'move' call_tmp[557912](338758 call T _mt[232] this[54277]))
+    unknown call_tmp[557917] "expr temp" "maybe param" "maybe type" "temp"
+    (557920 'move' call_tmp[557917](52002 call isIntegral call_tmp[557912]))
+    unknown call_tmp[557922] "expr temp" "maybe param" "maybe type" "temp"
+    (557925 'move' call_tmp[557922](52003 call ! call_tmp[557917]))
+    unknown call_tmp[557927] "expr temp" "maybe param" "maybe type" "temp"
+    (557930 'move' call_tmp[557927](52010 call _cond_test call_tmp[557922]))
+    if call_tmp[557927]
+    {
+      (52008 call compilerError "or is only defined for integer atomic types")
+    }
+    function atomic_or[52042](ref arg op[52039] :
+    (338768 call T _mt[232] this[54277]), arg l[52048] :
+    (52047 call int(64)[13] 32), arg obj[52052]:c_void_ptr[141], arg order[52056]:memory_order[179753], arg _chpl_cname[52064]:string[24] =
+    unknown call_tmp[557936] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457759] "RVV" "temp"
+      (457761 return ret[457759])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[52069] "insert auto destroy"
+    (489308 'init var' v[52069] value[51984])
+    unknown call_tmp[557943] "expr temp" "maybe param" "maybe type" "temp"
+    (557946 'move' call_tmp[557943](52077 call(338776 call (partial) _localeid _mt[232] this[54277])))
+    unknown call_tmp[557950] "expr temp" "maybe param" "maybe type" "temp"
+    (557953 'move' call_tmp[557950](52080 call(338780 call (partial) _addr _mt[232] this[54277])))
+    unknown call_tmp[557955] "expr temp" "maybe param" "maybe type" "temp"
+    (557958 'move' call_tmp[557955](52084 call c_memory_order order[51994]))
+    (52085 call atomic_or v[52069] call_tmp[557943] call_tmp[557950] call_tmp[557955])
+    (457767 return ret[457765])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchAnd[52096](arg _mt[54283]:_MT[227], arg this[54281]:RAtomicT[54223](?), arg value[52093] :
+  (338786 call T _mt[232] this[54281]), param arg order[52103]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457777] "RVV" "temp"
+    unknown call_tmp[557964] "expr temp" "maybe param" "maybe type" "temp"
+    (557967 'move' call_tmp[557964](338798 call T _mt[232] this[54281]))
+    unknown call_tmp[557969] "expr temp" "maybe param" "maybe type" "temp"
+    (557972 'move' call_tmp[557969](52111 call isIntegral call_tmp[557964]))
+    unknown call_tmp[557974] "expr temp" "maybe param" "maybe type" "temp"
+    (557977 'move' call_tmp[557974](52112 call ! call_tmp[557969]))
+    unknown call_tmp[557979] "expr temp" "maybe param" "maybe type" "temp"
+    (557982 'move' call_tmp[557979](52119 call _cond_test call_tmp[557974]))
+    if call_tmp[557979]
+    {
+      (52117 call compilerError "fetchAnd is only defined for integer atomic types")
+    }
+    function atomic_fetch_and[52136](ref arg op[52133] :
+    (338808 call T _mt[232] this[54281]), arg l[52142] :
+    (52141 call int(64)[13] 32), arg obj[52146]:c_void_ptr[141], ref arg result[52150] :
+    (338814 call T _mt[232] this[54281]), arg order[52154]:memory_order[179753], arg _chpl_cname[52162]:string[24] =
+    unknown call_tmp[557990] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457771] "RVV" "temp"
+      (457773 return ret[457771])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[52167] "insert auto destroy"
+    unknown call_tmp[557997] "expr temp" "maybe param" "maybe type" "temp"
+    (558000 'move' call_tmp[557997](338820 call T _mt[232] this[54281]))
+    (489310 'default init var' ret[52167] call_tmp[557997])
+    unknown v[52171] "insert auto destroy"
+    (489312 'init var' v[52171] value[52093])
+    unknown call_tmp[558004] "expr temp" "maybe param" "maybe type" "temp"
+    (558007 'move' call_tmp[558004](52179 call(338826 call (partial) _localeid _mt[232] this[54281])))
+    unknown call_tmp[558011] "expr temp" "maybe param" "maybe type" "temp"
+    (558014 'move' call_tmp[558011](52182 call(338830 call (partial) _addr _mt[232] this[54281])))
+    unknown call_tmp[558016] "expr temp" "maybe param" "maybe type" "temp"
+    (558019 'move' call_tmp[558016](52187 call c_memory_order order[52103]))
+    (52188 call atomic_fetch_and v[52171] call_tmp[558004] call_tmp[558011] ret[52167] call_tmp[558016])
+    unknown call_tmp[558023] "expr temp" "maybe param" "maybe type" "temp"
+    (558026 'move' call_tmp[558023](457782 call T _mt[232] this[54281]))
+    (457786 'move' ret[457777](457785 'coerce' ret[52167] call_tmp[558023]))
+    (457779 return ret[457777])
+  }
+  { scopeless type
+    (338793 call T _mt[232] this[54281])
+  }
+  function RAtomicT[54223](?).and[52202](arg _mt[54287]:_MT[227], arg this[54285]:RAtomicT[54223](?), arg value[52199] :
+  (338838 call T _mt[232] this[54285]), param arg order[52209]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457796] "RVV" "temp"
+    unknown call_tmp[558034] "expr temp" "maybe param" "maybe type" "temp"
+    (558037 'move' call_tmp[558034](338845 call T _mt[232] this[54285]))
+    unknown call_tmp[558039] "expr temp" "maybe param" "maybe type" "temp"
+    (558042 'move' call_tmp[558039](52217 call isIntegral call_tmp[558034]))
+    unknown call_tmp[558044] "expr temp" "maybe param" "maybe type" "temp"
+    (558047 'move' call_tmp[558044](52218 call ! call_tmp[558039]))
+    unknown call_tmp[558049] "expr temp" "maybe param" "maybe type" "temp"
+    (558052 'move' call_tmp[558049](52225 call _cond_test call_tmp[558044]))
+    if call_tmp[558049]
+    {
+      (52223 call compilerError "and is only defined for integer atomic types")
+    }
+    function atomic_and[52257](ref arg op[52254] :
+    (338855 call T _mt[232] this[54285]), arg l[52263] :
+    (52262 call int(64)[13] 32), arg obj[52267]:c_void_ptr[141], arg order[52271]:memory_order[179753], arg _chpl_cname[52279]:string[24] =
+    unknown call_tmp[558058] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457790] "RVV" "temp"
+      (457792 return ret[457790])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[52284] "insert auto destroy"
+    (489314 'init var' v[52284] value[52199])
+    unknown call_tmp[558065] "expr temp" "maybe param" "maybe type" "temp"
+    (558068 'move' call_tmp[558065](52292 call(338863 call (partial) _localeid _mt[232] this[54285])))
+    unknown call_tmp[558072] "expr temp" "maybe param" "maybe type" "temp"
+    (558075 'move' call_tmp[558072](52295 call(338867 call (partial) _addr _mt[232] this[54285])))
+    unknown call_tmp[558077] "expr temp" "maybe param" "maybe type" "temp"
+    (558080 'move' call_tmp[558077](52299 call c_memory_order order[52209]))
+    (52300 call atomic_and v[52284] call_tmp[558065] call_tmp[558072] call_tmp[558077])
+    (457798 return ret[457796])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchXor[52311](arg _mt[54291]:_MT[227], arg this[54289]:RAtomicT[54223](?), arg value[52308] :
+  (338873 call T _mt[232] this[54289]), param arg order[52318]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457808] "RVV" "temp"
+    unknown call_tmp[558086] "expr temp" "maybe param" "maybe type" "temp"
+    (558089 'move' call_tmp[558086](338885 call T _mt[232] this[54289]))
+    unknown call_tmp[558091] "expr temp" "maybe param" "maybe type" "temp"
+    (558094 'move' call_tmp[558091](52326 call isIntegral call_tmp[558086]))
+    unknown call_tmp[558096] "expr temp" "maybe param" "maybe type" "temp"
+    (558099 'move' call_tmp[558096](52327 call ! call_tmp[558091]))
+    unknown call_tmp[558101] "expr temp" "maybe param" "maybe type" "temp"
+    (558104 'move' call_tmp[558101](52334 call _cond_test call_tmp[558096]))
+    if call_tmp[558101]
+    {
+      (52332 call compilerError "fetchXor is only defined for integer atomic types")
+    }
+    function atomic_fetch_xor[52351](ref arg op[52348] :
+    (338895 call T _mt[232] this[54289]), arg l[52357] :
+    (52356 call int(64)[13] 32), arg obj[52361]:c_void_ptr[141], ref arg result[52365] :
+    (338901 call T _mt[232] this[54289]), arg order[52369]:memory_order[179753], arg _chpl_cname[52377]:string[24] =
+    unknown call_tmp[558112] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457802] "RVV" "temp"
+      (457804 return ret[457802])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[52382] "insert auto destroy"
+    unknown call_tmp[558119] "expr temp" "maybe param" "maybe type" "temp"
+    (558122 'move' call_tmp[558119](338907 call T _mt[232] this[54289]))
+    (489316 'default init var' ret[52382] call_tmp[558119])
+    unknown v[52386] "insert auto destroy"
+    (489318 'init var' v[52386] value[52308])
+    unknown call_tmp[558126] "expr temp" "maybe param" "maybe type" "temp"
+    (558129 'move' call_tmp[558126](52394 call(338913 call (partial) _localeid _mt[232] this[54289])))
+    unknown call_tmp[558133] "expr temp" "maybe param" "maybe type" "temp"
+    (558136 'move' call_tmp[558133](52397 call(338917 call (partial) _addr _mt[232] this[54289])))
+    unknown call_tmp[558138] "expr temp" "maybe param" "maybe type" "temp"
+    (558141 'move' call_tmp[558138](52402 call c_memory_order order[52318]))
+    (52403 call atomic_fetch_xor v[52386] call_tmp[558126] call_tmp[558133] ret[52382] call_tmp[558138])
+    unknown call_tmp[558145] "expr temp" "maybe param" "maybe type" "temp"
+    (558148 'move' call_tmp[558145](457813 call T _mt[232] this[54289]))
+    (457817 'move' ret[457808](457816 'coerce' ret[52382] call_tmp[558145]))
+    (457810 return ret[457808])
+  }
+  { scopeless type
+    (338880 call T _mt[232] this[54289])
+  }
+  function RAtomicT[54223](?).xor[52417](arg _mt[54295]:_MT[227], arg this[54293]:RAtomicT[54223](?), arg value[52414] :
+  (338925 call T _mt[232] this[54293]), param arg order[52424]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457827] "RVV" "temp"
+    unknown call_tmp[558156] "expr temp" "maybe param" "maybe type" "temp"
+    (558159 'move' call_tmp[558156](338932 call T _mt[232] this[54293]))
+    unknown call_tmp[558161] "expr temp" "maybe param" "maybe type" "temp"
+    (558164 'move' call_tmp[558161](52432 call isIntegral call_tmp[558156]))
+    unknown call_tmp[558166] "expr temp" "maybe param" "maybe type" "temp"
+    (558169 'move' call_tmp[558166](52433 call ! call_tmp[558161]))
+    unknown call_tmp[558171] "expr temp" "maybe param" "maybe type" "temp"
+    (558174 'move' call_tmp[558171](52440 call _cond_test call_tmp[558166]))
+    if call_tmp[558171]
+    {
+      (52438 call compilerError "xor is only defined for integer atomic types")
+    }
+    function atomic_xor[52472](ref arg op[52469] :
+    (338942 call T _mt[232] this[54293]), arg l[52478] :
+    (52477 call int(64)[13] 32), arg obj[52482]:c_void_ptr[141], arg order[52486]:memory_order[179753], arg _chpl_cname[52494]:string[24] =
+    unknown call_tmp[558180] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457821] "RVV" "temp"
+      (457823 return ret[457821])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[52499] "insert auto destroy"
+    (489320 'init var' v[52499] value[52414])
+    unknown call_tmp[558187] "expr temp" "maybe param" "maybe type" "temp"
+    (558190 'move' call_tmp[558187](52507 call(338950 call (partial) _localeid _mt[232] this[54293])))
+    unknown call_tmp[558194] "expr temp" "maybe param" "maybe type" "temp"
+    (558197 'move' call_tmp[558194](52510 call(338954 call (partial) _addr _mt[232] this[54293])))
+    unknown call_tmp[558199] "expr temp" "maybe param" "maybe type" "temp"
+    (558202 'move' call_tmp[558199](52514 call c_memory_order order[52424]))
+    (52515 call atomic_xor v[52499] call_tmp[558187] call_tmp[558194] call_tmp[558199])
+    (457829 return ret[457827])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).waitFor[52526](arg _mt[54299]:_MT[227], const arg this[54297]:RAtomicT[54223](?), arg value[52523] :
+  (338960 call T _mt[232] this[54297]), param arg order[52533]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457833] "RVV" "temp"
+    {
+      const tmp[52615] "const" "temp"
+      unknown call_tmp[558206] "expr temp" "maybe param" "maybe type" "temp"
+      (558209 'move' call_tmp[558206](52612 '_wide_get_locale' this[54297]))
+      (52616 'move' tmp[52615](52613 'deref' call_tmp[558206]))
+      {
+        {
+          unknown tmp[52558] "temp"
+          unknown call_tmp[558213] "expr temp" "maybe param" "maybe type" "temp"
+          (558216 'move' call_tmp[558213](52593 call(52590 call (partial) read _mt[232] this[54297])(order = relaxed[180097])))
+          unknown call_tmp[558218] "expr temp" "maybe param" "maybe type" "temp"
+          (558221 'move' call_tmp[558218](52588 call != call_tmp[558213] value[52523]))
+          (52600 'move' tmp[52558](52586 call _cond_test call_tmp[558218]))
+          WhileDo
+          {
+            {
+              (52555 call chpl_task_yield)
+            }
+            label _continueLabel[52561]
+            unknown call_tmp[558225] "expr temp" "maybe param" "maybe type" "temp"
+            (558228 'move' call_tmp[558225](52574 call(52571 call (partial) read _mt[232] this[54297])(order = relaxed[180097])))
+            unknown call_tmp[558230] "expr temp" "maybe param" "maybe type" "temp"
+            (558233 'move' call_tmp[558230](52569 call != call_tmp[558225] value[52523]))
+            (52581 'move' tmp[52558](52567 call _cond_test call_tmp[558230]))
+            tmp[52558]
+          }
+          label _breakLabel[52562]
+        }
+        unknown call_tmp[558235] "expr temp" "maybe param" "maybe type" "temp"
+        (558238 'move' call_tmp[558235](52608 call c_memory_order order[52533]))
+        (52610 call chpl_atomic_thread_fence call_tmp[558235])
+      }
+    }
+    (457835 return ret[457833])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).writeThis[52628](arg _mt[54303]:_MT[227], const arg this[54301]:RAtomicT[54223](?), arg x[52626]:_any[170](?)) : _unknown[43] "atomic type" "method" "primary method" "no return value for void"
+  {
+    unknown call_tmp[558242] "expr temp" "maybe param" "maybe type" "temp"
+    (558245 'move' call_tmp[558242](52633 call(338975 call (partial) read _mt[232] this[54301])))
+    (52634 call <~> x[52626] call_tmp[558242])
+    (457837 return _void[47])
+  }
+  function RAtomicT[54223](?).compareExchange[52646](arg _mt[54307]:_MT[227], arg this[54305]:RAtomicT[54223](?), arg expected[52643] :
+  (338980 call T _mt[232] this[54305]), arg desired[52649] :
+  (338985 call T _mt[232] this[54305]), param arg order[52657]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457841] "RVV" "temp"
+    (52665 call compilerWarning "compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap")
+    unknown call_tmp[558253] "expr temp" "maybe param" "maybe type" "temp"
+    (558256 'move' call_tmp[558253](52676 call(52669 call (partial) compareAndSwap _mt[232] this[54305]) expected[52643] desired[52649] order[52657]))
+    (457847 'move' ret[457841](457846 'coerce' call_tmp[558253] bool[10]))
+    (457843 return ret[457841])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicT[54223](?).compareExchangeWeak[52688](arg _mt[54311]:_MT[227], arg this[54309]:RAtomicT[54223](?), arg expected[52685] :
+  (338996 call T _mt[232] this[54309]), arg desired[52691] :
+  (339001 call T _mt[232] this[54309]), param arg order[52699]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457851] "RVV" "temp"
+    (52707 call compilerWarning "compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap")
+    unknown call_tmp[558264] "expr temp" "maybe param" "maybe type" "temp"
+    (558267 'move' call_tmp[558264](52718 call(52711 call (partial) compareAndSwap _mt[232] this[54309]) expected[52685] desired[52691] order[52699]))
+    (457857 'move' ret[457851](457856 'coerce' call_tmp[558264] bool[10]))
+    (457853 return ret[457851])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicT[54223](?).compareExchangeStrong[52730](arg _mt[54315]:_MT[227], arg this[54313]:RAtomicT[54223](?), arg expected[52727] :
+  (339012 call T _mt[232] this[54313]), arg desired[52733] :
+  (339017 call T _mt[232] this[54313]), param arg order[52741]:memoryOrder[180099] =
+  seqCst[180089]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457861] "RVV" "temp"
+    (52749 call compilerWarning "compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap")
+    unknown call_tmp[558275] "expr temp" "maybe param" "maybe type" "temp"
+    (558278 'move' call_tmp[558275](52760 call(52753 call (partial) compareAndSwap _mt[232] this[54313]) expected[52727] desired[52733] order[52741]))
+    (457867 'move' ret[457861](457866 'coerce' call_tmp[558275] bool[10]))
+    (457863 return ret[457861])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicT[54223](?).read[52772](arg _mt[54319]:_MT[227], const arg this[54317]:RAtomicT[54223](?), arg order[52769]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457877] "RVV" "temp"
+    (52778 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_read[52792](ref arg result[52789] :
+    (339039 call T _mt[232] this[54317]), arg l[52798] :
+    (52797 call int(64)[13] 32), const arg obj[52802]:c_void_ptr[141], arg order[52806]:memory_order[179753], arg _chpl_cname[52814]:string[24] =
+    unknown call_tmp[558284] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457871] "RVV" "temp"
+      (457873 return ret[457871])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[52819] "insert auto destroy"
+    unknown call_tmp[558291] "expr temp" "maybe param" "maybe type" "temp"
+    (558294 'move' call_tmp[558291](339046 call T _mt[232] this[54317]))
+    (489322 'default init var' ret[52819] call_tmp[558291])
+    unknown call_tmp[558298] "expr temp" "maybe param" "maybe type" "temp"
+    (558301 'move' call_tmp[558298](52827 call(339051 call (partial) _localeid _mt[232] this[54317])))
+    unknown call_tmp[558305] "expr temp" "maybe param" "maybe type" "temp"
+    (558308 'move' call_tmp[558305](52830 call(339055 call (partial) _addr _mt[232] this[54317])))
+    (52832 call atomic_read ret[52819] call_tmp[558298] call_tmp[558305] order[52769])
+    unknown call_tmp[558312] "expr temp" "maybe param" "maybe type" "temp"
+    (558315 'move' call_tmp[558312](457882 call T _mt[232] this[54317]))
+    (457886 'move' ret[457877](457885 'coerce' ret[52819] call_tmp[558312]))
+    (457879 return ret[457877])
+  }
+  { scopeless type
+    (339029 call T _mt[232] this[54317])
+  }
+  function RAtomicT[54223](?).write[52846](arg _mt[54323]:_MT[227], arg this[54321]:RAtomicT[54223](?), arg value[52843] :
+  (339062 call T _mt[232] this[54321]), arg order[52849]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457896] "RVV" "temp"
+    (52856 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_write[52870](ref arg desired[52867] :
+    (339073 call T _mt[232] this[54321]), arg l[52876] :
+    (52875 call int(64)[13] 32), arg obj[52880]:c_void_ptr[141], arg order[52884]:memory_order[179753], arg _chpl_cname[52892]:string[24] =
+    unknown call_tmp[558325] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457890] "RVV" "temp"
+      (457892 return ret[457890])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[52897] "insert auto destroy"
+    (489324 'init var' v[52897] value[52843])
+    unknown call_tmp[558332] "expr temp" "maybe param" "maybe type" "temp"
+    (558335 'move' call_tmp[558332](52905 call(339081 call (partial) _localeid _mt[232] this[54321])))
+    unknown call_tmp[558339] "expr temp" "maybe param" "maybe type" "temp"
+    (558342 'move' call_tmp[558339](52908 call(339085 call (partial) _addr _mt[232] this[54321])))
+    (52910 call atomic_write v[52897] call_tmp[558332] call_tmp[558339] order[52849])
+    (457898 return ret[457896])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).exchange[52921](arg _mt[54327]:_MT[227], arg this[54325]:RAtomicT[54223](?), arg value[52918] :
+  (339091 call T _mt[232] this[54325]), arg order[52924]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457908] "RVV" "temp"
+    (52931 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_xchg[52945](ref arg desired[52942] :
+    (339107 call T _mt[232] this[54325]), arg l[52951] :
+    (52950 call int(64)[13] 32), arg obj[52955]:c_void_ptr[141], ref arg result[52959] :
+    (339113 call T _mt[232] this[54325]), arg order[52963]:memory_order[179753], arg _chpl_cname[52971]:string[24] =
+    unknown call_tmp[558352] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457902] "RVV" "temp"
+      (457904 return ret[457902])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[52976] "insert auto destroy"
+    unknown call_tmp[558359] "expr temp" "maybe param" "maybe type" "temp"
+    (558362 'move' call_tmp[558359](339119 call T _mt[232] this[54325]))
+    (489326 'default init var' ret[52976] call_tmp[558359])
+    unknown v[52980] "insert auto destroy"
+    (489328 'init var' v[52980] value[52918])
+    unknown call_tmp[558366] "expr temp" "maybe param" "maybe type" "temp"
+    (558369 'move' call_tmp[558366](52988 call(339125 call (partial) _localeid _mt[232] this[54325])))
+    unknown call_tmp[558373] "expr temp" "maybe param" "maybe type" "temp"
+    (558376 'move' call_tmp[558373](52991 call(339129 call (partial) _addr _mt[232] this[54325])))
+    (52994 call atomic_xchg v[52980] call_tmp[558366] call_tmp[558373] ret[52976] order[52924])
+    unknown call_tmp[558380] "expr temp" "maybe param" "maybe type" "temp"
+    (558383 'move' call_tmp[558380](457913 call T _mt[232] this[54325]))
+    (457917 'move' ret[457908](457916 'coerce' ret[52976] call_tmp[558380]))
+    (457910 return ret[457908])
+  }
+  { scopeless type
+    (339097 call T _mt[232] this[54325])
+  }
+  function RAtomicT[54223](?).compareExchange[53008](arg _mt[54331]:_MT[227], arg this[54329]:RAtomicT[54223](?), arg expected[53005] :
+  (339137 call T _mt[232] this[54329]), arg desired[53011] :
+  (339142 call T _mt[232] this[54329]), arg order[53015]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457921] "RVV" "temp"
+    unknown call_tmp[558393] "expr temp" "maybe param" "maybe type" "temp"
+    (558396 'move' call_tmp[558393](53027 call(53020 call (partial) compareExchangeStrong _mt[232] this[54329]) expected[53005] desired[53011] order[53015]))
+    (457927 'move' ret[457921](457926 'coerce' call_tmp[558393] bool[10]))
+    (457923 return ret[457921])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicT[54223](?).compareExchangeWeak[53040](arg _mt[54335]:_MT[227], arg this[54333]:RAtomicT[54223](?), arg expected[53037] :
+  (339152 call T _mt[232] this[54333]), arg desired[53043] :
+  (339157 call T _mt[232] this[54333]), arg order[53047]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457931] "RVV" "temp"
+    unknown call_tmp[558404] "expr temp" "maybe param" "maybe type" "temp"
+    (558407 'move' call_tmp[558404](53059 call(53052 call (partial) compareExchangeStrong _mt[232] this[54333]) expected[53037] desired[53043] order[53047]))
+    (457937 'move' ret[457931](457936 'coerce' call_tmp[558404] bool[10]))
+    (457933 return ret[457931])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicT[54223](?).compareExchangeStrong[53072](arg _mt[54339]:_MT[227], arg this[54337]:RAtomicT[54223](?), arg expected[53069] :
+  (339167 call T _mt[232] this[54337]), arg desired[53075] :
+  (339172 call T _mt[232] this[54337]), arg order[53079]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457947] "RVV" "temp"
+    (53086 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_cmpxchg[53100](ref arg expected[53097] :
+    (339183 call T _mt[232] this[54337]), ref arg desired[53103] :
+    (339188 call T _mt[232] this[54337]), arg l[53110] :
+    (53109 call int(64)[13] 32), arg obj[53114]:c_void_ptr[141], ref arg result[53121] :
+    (53120 call bool[10] 32), arg order[53125]:memory_order[179753], arg _chpl_cname[53133]:string[24] =
+    unknown call_tmp[558419] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457941] "RVV" "temp"
+      (457943 return ret[457941])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[53141] "insert auto destroy"
+    unknown call_tmp[558424] "expr temp" "maybe param" "maybe type" "temp"
+    (558427 'move' call_tmp[558424](53140 call bool[10] 32))
+    (489330 'default init var' ret[53141] call_tmp[558424])
+    unknown te[53145] "insert auto destroy"
+    (489332 'init var' te[53145] expected[53069])
+    unknown td[53149] "insert auto destroy"
+    (489334 'init var' td[53149] desired[53075])
+    unknown call_tmp[558431] "expr temp" "maybe param" "maybe type" "temp"
+    (558434 'move' call_tmp[558431](53158 call(339198 call (partial) _localeid _mt[232] this[54337])))
+    unknown call_tmp[558438] "expr temp" "maybe param" "maybe type" "temp"
+    (558441 'move' call_tmp[558438](53161 call(339202 call (partial) _addr _mt[232] this[54337])))
+    (53164 call atomic_cmpxchg te[53145] td[53149] call_tmp[558431] call_tmp[558438] ret[53141] order[53079])
+    unknown call_tmp[558443] "expr temp" "maybe param" "maybe type" "temp"
+    (558446 'move' call_tmp[558443](53168 call _cast bool[10] ret[53141]))
+    (457953 'move' ret[457947](457952 'coerce' call_tmp[558443] bool[10]))
+    (457949 return ret[457947])
+  }
+  { scopeless type
+    bool[10]
+  }
+  function RAtomicT[54223](?).fetchAdd[53181](arg _mt[54343]:_MT[227], arg this[54341]:RAtomicT[54223](?), arg value[53178] :
+  (339210 call T _mt[232] this[54341]), arg order[53184]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457963] "RVV" "temp"
+    (53191 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_fetch_add[53205](ref arg op[53202] :
+    (339226 call T _mt[232] this[54341]), arg l[53211] :
+    (53210 call int(64)[13] 32), arg obj[53215]:c_void_ptr[141], ref arg result[53219] :
+    (339232 call T _mt[232] this[54341]), arg order[53223]:memory_order[179753], arg _chpl_cname[53231]:string[24] =
+    unknown call_tmp[558456] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457957] "RVV" "temp"
+      (457959 return ret[457957])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[53236] "insert auto destroy"
+    unknown call_tmp[558463] "expr temp" "maybe param" "maybe type" "temp"
+    (558466 'move' call_tmp[558463](339238 call T _mt[232] this[54341]))
+    (489336 'default init var' ret[53236] call_tmp[558463])
+    unknown v[53240] "insert auto destroy"
+    (489338 'init var' v[53240] value[53178])
+    unknown call_tmp[558470] "expr temp" "maybe param" "maybe type" "temp"
+    (558473 'move' call_tmp[558470](53248 call(339244 call (partial) _localeid _mt[232] this[54341])))
+    unknown call_tmp[558477] "expr temp" "maybe param" "maybe type" "temp"
+    (558480 'move' call_tmp[558477](53251 call(339248 call (partial) _addr _mt[232] this[54341])))
+    (53254 call atomic_fetch_add v[53240] call_tmp[558470] call_tmp[558477] ret[53236] order[53184])
+    unknown call_tmp[558484] "expr temp" "maybe param" "maybe type" "temp"
+    (558487 'move' call_tmp[558484](457968 call T _mt[232] this[54341]))
+    (457972 'move' ret[457963](457971 'coerce' ret[53236] call_tmp[558484]))
+    (457965 return ret[457963])
+  }
+  { scopeless type
+    (339216 call T _mt[232] this[54341])
+  }
+  function RAtomicT[54223](?).add[53268](arg _mt[54347]:_MT[227], arg this[54345]:RAtomicT[54223](?), arg value[53265] :
+  (339256 call T _mt[232] this[54345]), arg order[53271]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[457982] "RVV" "temp"
+    (53278 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_add[53292](ref arg op[53289] :
+    (339267 call T _mt[232] this[54345]), arg l[53298] :
+    (53297 call int(64)[13] 32), arg obj[53302]:c_void_ptr[141], arg order[53306]:memory_order[179753], arg _chpl_cname[53314]:string[24] =
+    unknown call_tmp[558497] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457976] "RVV" "temp"
+      (457978 return ret[457976])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[53319] "insert auto destroy"
+    (489340 'init var' v[53319] value[53265])
+    unknown call_tmp[558504] "expr temp" "maybe param" "maybe type" "temp"
+    (558507 'move' call_tmp[558504](53327 call(339275 call (partial) _localeid _mt[232] this[54345])))
+    unknown call_tmp[558511] "expr temp" "maybe param" "maybe type" "temp"
+    (558514 'move' call_tmp[558511](53330 call(339279 call (partial) _addr _mt[232] this[54345])))
+    (53332 call atomic_add v[53319] call_tmp[558504] call_tmp[558511] order[53271])
+    (457984 return ret[457982])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchSub[53343](arg _mt[54351]:_MT[227], arg this[54349]:RAtomicT[54223](?), arg value[53340] :
+  (339285 call T _mt[232] this[54349]), arg order[53346]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[457994] "RVV" "temp"
+    (53353 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_fetch_sub[53367](ref arg op[53364] :
+    (339301 call T _mt[232] this[54349]), arg l[53373] :
+    (53372 call int(64)[13] 32), arg obj[53377]:c_void_ptr[141], ref arg result[53381] :
+    (339307 call T _mt[232] this[54349]), arg order[53385]:memory_order[179753], arg _chpl_cname[53393]:string[24] =
+    unknown call_tmp[558524] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[457988] "RVV" "temp"
+      (457990 return ret[457988])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[53398] "insert auto destroy"
+    unknown call_tmp[558531] "expr temp" "maybe param" "maybe type" "temp"
+    (558534 'move' call_tmp[558531](339313 call T _mt[232] this[54349]))
+    (489342 'default init var' ret[53398] call_tmp[558531])
+    unknown v[53402] "insert auto destroy"
+    (489344 'init var' v[53402] value[53340])
+    unknown call_tmp[558538] "expr temp" "maybe param" "maybe type" "temp"
+    (558541 'move' call_tmp[558538](53410 call(339319 call (partial) _localeid _mt[232] this[54349])))
+    unknown call_tmp[558545] "expr temp" "maybe param" "maybe type" "temp"
+    (558548 'move' call_tmp[558545](53413 call(339323 call (partial) _addr _mt[232] this[54349])))
+    (53416 call atomic_fetch_sub v[53402] call_tmp[558538] call_tmp[558545] ret[53398] order[53346])
+    unknown call_tmp[558552] "expr temp" "maybe param" "maybe type" "temp"
+    (558555 'move' call_tmp[558552](457999 call T _mt[232] this[54349]))
+    (458003 'move' ret[457994](458002 'coerce' ret[53398] call_tmp[558552]))
+    (457996 return ret[457994])
+  }
+  { scopeless type
+    (339291 call T _mt[232] this[54349])
+  }
+  function RAtomicT[54223](?).sub[53430](arg _mt[54355]:_MT[227], arg this[54353]:RAtomicT[54223](?), arg value[53427] :
+  (339331 call T _mt[232] this[54353]), arg order[53433]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[458013] "RVV" "temp"
+    (53440 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    function atomic_sub[53454](ref arg op[53451] :
+    (339342 call T _mt[232] this[54353]), arg l[53460] :
+    (53459 call int(64)[13] 32), arg obj[53464]:c_void_ptr[141], arg order[53468]:memory_order[179753], arg _chpl_cname[53476]:string[24] =
+    unknown call_tmp[558565] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[458007] "RVV" "temp"
+      (458009 return ret[458007])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[53481] "insert auto destroy"
+    (489346 'init var' v[53481] value[53427])
+    unknown call_tmp[558572] "expr temp" "maybe param" "maybe type" "temp"
+    (558575 'move' call_tmp[558572](53489 call(339350 call (partial) _localeid _mt[232] this[54353])))
+    unknown call_tmp[558579] "expr temp" "maybe param" "maybe type" "temp"
+    (558582 'move' call_tmp[558579](53492 call(339354 call (partial) _addr _mt[232] this[54353])))
+    (53494 call atomic_sub v[53481] call_tmp[558572] call_tmp[558579] order[53433])
+    (458015 return ret[458013])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchOr[53505](arg _mt[54359]:_MT[227], arg this[54357]:RAtomicT[54223](?), arg value[53502] :
+  (339360 call T _mt[232] this[54357]), arg order[53508]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[458025] "RVV" "temp"
+    (53515 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    unknown call_tmp[558588] "expr temp" "maybe param" "maybe type" "temp"
+    (558591 'move' call_tmp[558588](339371 call T _mt[232] this[54357]))
+    unknown call_tmp[558593] "expr temp" "maybe param" "maybe type" "temp"
+    (558596 'move' call_tmp[558593](53521 call isIntegral call_tmp[558588]))
+    unknown call_tmp[558598] "expr temp" "maybe param" "maybe type" "temp"
+    (558601 'move' call_tmp[558598](53522 call ! call_tmp[558593]))
+    unknown call_tmp[558603] "expr temp" "maybe param" "maybe type" "temp"
+    (558606 'move' call_tmp[558603](53529 call _cond_test call_tmp[558598]))
+    if call_tmp[558603]
+    {
+      (53527 call compilerError "fetchOr is only defined for integer atomic types")
+    }
+    function atomic_fetch_or[53545](ref arg op[53542] :
+    (339381 call T _mt[232] this[54357]), arg l[53551] :
+    (53550 call int(64)[13] 32), arg obj[53555]:c_void_ptr[141], ref arg result[53559] :
+    (339387 call T _mt[232] this[54357]), arg order[53563]:memory_order[179753], arg _chpl_cname[53571]:string[24] =
+    unknown call_tmp[558614] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[458019] "RVV" "temp"
+      (458021 return ret[458019])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[53576] "insert auto destroy"
+    unknown call_tmp[558621] "expr temp" "maybe param" "maybe type" "temp"
+    (558624 'move' call_tmp[558621](339393 call T _mt[232] this[54357]))
+    (489348 'default init var' ret[53576] call_tmp[558621])
+    unknown v[53580] "insert auto destroy"
+    (489350 'init var' v[53580] value[53502])
+    unknown call_tmp[558628] "expr temp" "maybe param" "maybe type" "temp"
+    (558631 'move' call_tmp[558628](53588 call(339399 call (partial) _localeid _mt[232] this[54357])))
+    unknown call_tmp[558635] "expr temp" "maybe param" "maybe type" "temp"
+    (558638 'move' call_tmp[558635](53591 call(339403 call (partial) _addr _mt[232] this[54357])))
+    (53594 call atomic_fetch_or v[53580] call_tmp[558628] call_tmp[558635] ret[53576] order[53508])
+    unknown call_tmp[558642] "expr temp" "maybe param" "maybe type" "temp"
+    (558645 'move' call_tmp[558642](458030 call T _mt[232] this[54357]))
+    (458034 'move' ret[458025](458033 'coerce' ret[53576] call_tmp[558642]))
+    (458027 return ret[458025])
+  }
+  { scopeless type
+    (339366 call T _mt[232] this[54357])
+  }
+  function RAtomicT[54223](?).or[53608](arg _mt[54363]:_MT[227], arg this[54361]:RAtomicT[54223](?), arg value[53605] :
+  (339411 call T _mt[232] this[54361]), arg order[53611]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[458044] "RVV" "temp"
+    (53618 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    unknown call_tmp[558653] "expr temp" "maybe param" "maybe type" "temp"
+    (558656 'move' call_tmp[558653](339417 call T _mt[232] this[54361]))
+    unknown call_tmp[558658] "expr temp" "maybe param" "maybe type" "temp"
+    (558661 'move' call_tmp[558658](53624 call isIntegral call_tmp[558653]))
+    unknown call_tmp[558663] "expr temp" "maybe param" "maybe type" "temp"
+    (558666 'move' call_tmp[558663](53625 call ! call_tmp[558658]))
+    unknown call_tmp[558668] "expr temp" "maybe param" "maybe type" "temp"
+    (558671 'move' call_tmp[558668](53632 call _cond_test call_tmp[558663]))
+    if call_tmp[558668]
+    {
+      (53630 call compilerError "or is only defined for integer atomic types")
+    }
+    function atomic_or[53648](ref arg op[53645] :
+    (339427 call T _mt[232] this[54361]), arg l[53654] :
+    (53653 call int(64)[13] 32), arg obj[53658]:c_void_ptr[141], arg order[53662]:memory_order[179753], arg _chpl_cname[53670]:string[24] =
+    unknown call_tmp[558677] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[458038] "RVV" "temp"
+      (458040 return ret[458038])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[53675] "insert auto destroy"
+    (489352 'init var' v[53675] value[53605])
+    unknown call_tmp[558684] "expr temp" "maybe param" "maybe type" "temp"
+    (558687 'move' call_tmp[558684](53683 call(339435 call (partial) _localeid _mt[232] this[54361])))
+    unknown call_tmp[558691] "expr temp" "maybe param" "maybe type" "temp"
+    (558694 'move' call_tmp[558691](53686 call(339439 call (partial) _addr _mt[232] this[54361])))
+    (53688 call atomic_or v[53675] call_tmp[558684] call_tmp[558691] order[53611])
+    (458046 return ret[458044])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchAnd[53699](arg _mt[54367]:_MT[227], arg this[54365]:RAtomicT[54223](?), arg value[53696] :
+  (339445 call T _mt[232] this[54365]), arg order[53702]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[458056] "RVV" "temp"
+    (53709 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    unknown call_tmp[558700] "expr temp" "maybe param" "maybe type" "temp"
+    (558703 'move' call_tmp[558700](339456 call T _mt[232] this[54365]))
+    unknown call_tmp[558705] "expr temp" "maybe param" "maybe type" "temp"
+    (558708 'move' call_tmp[558705](53715 call isIntegral call_tmp[558700]))
+    unknown call_tmp[558710] "expr temp" "maybe param" "maybe type" "temp"
+    (558713 'move' call_tmp[558710](53716 call ! call_tmp[558705]))
+    unknown call_tmp[558715] "expr temp" "maybe param" "maybe type" "temp"
+    (558718 'move' call_tmp[558715](53723 call _cond_test call_tmp[558710]))
+    if call_tmp[558715]
+    {
+      (53721 call compilerError "fetchAnd is only defined for integer atomic types")
+    }
+    function atomic_fetch_and[53739](ref arg op[53736] :
+    (339466 call T _mt[232] this[54365]), arg l[53745] :
+    (53744 call int(64)[13] 32), arg obj[53749]:c_void_ptr[141], ref arg result[53753] :
+    (339472 call T _mt[232] this[54365]), arg order[53757]:memory_order[179753], arg _chpl_cname[53765]:string[24] =
+    unknown call_tmp[558726] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[458050] "RVV" "temp"
+      (458052 return ret[458050])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[53770] "insert auto destroy"
+    unknown call_tmp[558733] "expr temp" "maybe param" "maybe type" "temp"
+    (558736 'move' call_tmp[558733](339478 call T _mt[232] this[54365]))
+    (489354 'default init var' ret[53770] call_tmp[558733])
+    unknown v[53774] "insert auto destroy"
+    (489356 'init var' v[53774] value[53696])
+    unknown call_tmp[558740] "expr temp" "maybe param" "maybe type" "temp"
+    (558743 'move' call_tmp[558740](53782 call(339484 call (partial) _localeid _mt[232] this[54365])))
+    unknown call_tmp[558747] "expr temp" "maybe param" "maybe type" "temp"
+    (558750 'move' call_tmp[558747](53785 call(339488 call (partial) _addr _mt[232] this[54365])))
+    (53788 call atomic_fetch_and v[53774] call_tmp[558740] call_tmp[558747] ret[53770] order[53702])
+    unknown call_tmp[558754] "expr temp" "maybe param" "maybe type" "temp"
+    (558757 'move' call_tmp[558754](458061 call T _mt[232] this[54365]))
+    (458065 'move' ret[458056](458064 'coerce' ret[53770] call_tmp[558754]))
+    (458058 return ret[458056])
+  }
+  { scopeless type
+    (339451 call T _mt[232] this[54365])
+  }
+  function RAtomicT[54223](?).and[53802](arg _mt[54371]:_MT[227], arg this[54369]:RAtomicT[54223](?), arg value[53799] :
+  (339496 call T _mt[232] this[54369]), arg order[53805]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[458075] "RVV" "temp"
+    (53812 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    unknown call_tmp[558765] "expr temp" "maybe param" "maybe type" "temp"
+    (558768 'move' call_tmp[558765](339502 call T _mt[232] this[54369]))
+    unknown call_tmp[558770] "expr temp" "maybe param" "maybe type" "temp"
+    (558773 'move' call_tmp[558770](53818 call isIntegral call_tmp[558765]))
+    unknown call_tmp[558775] "expr temp" "maybe param" "maybe type" "temp"
+    (558778 'move' call_tmp[558775](53819 call ! call_tmp[558770]))
+    unknown call_tmp[558780] "expr temp" "maybe param" "maybe type" "temp"
+    (558783 'move' call_tmp[558780](53826 call _cond_test call_tmp[558775]))
+    if call_tmp[558780]
+    {
+      (53824 call compilerError "and is only defined for integer atomic types")
+    }
+    function atomic_and[53842](ref arg op[53839] :
+    (339512 call T _mt[232] this[54369]), arg l[53848] :
+    (53847 call int(64)[13] 32), arg obj[53852]:c_void_ptr[141], arg order[53856]:memory_order[179753], arg _chpl_cname[53864]:string[24] =
+    unknown call_tmp[558789] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[458069] "RVV" "temp"
+      (458071 return ret[458069])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[53869] "insert auto destroy"
+    (489358 'init var' v[53869] value[53799])
+    unknown call_tmp[558796] "expr temp" "maybe param" "maybe type" "temp"
+    (558799 'move' call_tmp[558796](53877 call(339520 call (partial) _localeid _mt[232] this[54369])))
+    unknown call_tmp[558803] "expr temp" "maybe param" "maybe type" "temp"
+    (558806 'move' call_tmp[558803](53880 call(339524 call (partial) _addr _mt[232] this[54369])))
+    (53882 call atomic_and v[53869] call_tmp[558796] call_tmp[558803] order[53805])
+    (458077 return ret[458075])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).fetchXor[53893](arg _mt[54375]:_MT[227], arg this[54373]:RAtomicT[54223](?), arg value[53890] :
+  (339530 call T _mt[232] this[54373]), arg order[53896]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method"
+  {
+    unknown ret[458087] "RVV" "temp"
+    (53903 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    unknown call_tmp[558812] "expr temp" "maybe param" "maybe type" "temp"
+    (558815 'move' call_tmp[558812](339541 call T _mt[232] this[54373]))
+    unknown call_tmp[558817] "expr temp" "maybe param" "maybe type" "temp"
+    (558820 'move' call_tmp[558817](53909 call isIntegral call_tmp[558812]))
+    unknown call_tmp[558822] "expr temp" "maybe param" "maybe type" "temp"
+    (558825 'move' call_tmp[558822](53910 call ! call_tmp[558817]))
+    unknown call_tmp[558827] "expr temp" "maybe param" "maybe type" "temp"
+    (558830 'move' call_tmp[558827](53917 call _cond_test call_tmp[558822]))
+    if call_tmp[558827]
+    {
+      (53915 call compilerError "fetchXor is only defined for integer atomic types")
+    }
+    function atomic_fetch_xor[53933](ref arg op[53930] :
+    (339551 call T _mt[232] this[54373]), arg l[53939] :
+    (53938 call int(64)[13] 32), arg obj[53943]:c_void_ptr[141], ref arg result[53947] :
+    (339557 call T _mt[232] this[54373]), arg order[53951]:memory_order[179753], arg _chpl_cname[53959]:string[24] =
+    unknown call_tmp[558838] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[458081] "RVV" "temp"
+      (458083 return ret[458081])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown ret[53964] "insert auto destroy"
+    unknown call_tmp[558845] "expr temp" "maybe param" "maybe type" "temp"
+    (558848 'move' call_tmp[558845](339563 call T _mt[232] this[54373]))
+    (489360 'default init var' ret[53964] call_tmp[558845])
+    unknown v[53968] "insert auto destroy"
+    (489362 'init var' v[53968] value[53890])
+    unknown call_tmp[558852] "expr temp" "maybe param" "maybe type" "temp"
+    (558855 'move' call_tmp[558852](53976 call(339569 call (partial) _localeid _mt[232] this[54373])))
+    unknown call_tmp[558859] "expr temp" "maybe param" "maybe type" "temp"
+    (558862 'move' call_tmp[558859](53979 call(339573 call (partial) _addr _mt[232] this[54373])))
+    (53982 call atomic_fetch_xor v[53968] call_tmp[558852] call_tmp[558859] ret[53964] order[53896])
+    unknown call_tmp[558866] "expr temp" "maybe param" "maybe type" "temp"
+    (558869 'move' call_tmp[558866](458092 call T _mt[232] this[54373]))
+    (458096 'move' ret[458087](458095 'coerce' ret[53964] call_tmp[558866]))
+    (458089 return ret[458087])
+  }
+  { scopeless type
+    (339536 call T _mt[232] this[54373])
+  }
+  function RAtomicT[54223](?).xor[53996](arg _mt[54379]:_MT[227], arg this[54377]:RAtomicT[54223](?), arg value[53993] :
+  (339581 call T _mt[232] this[54377]), arg order[53999]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[458106] "RVV" "temp"
+    (54006 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    unknown call_tmp[558877] "expr temp" "maybe param" "maybe type" "temp"
+    (558880 'move' call_tmp[558877](339587 call T _mt[232] this[54377]))
+    unknown call_tmp[558882] "expr temp" "maybe param" "maybe type" "temp"
+    (558885 'move' call_tmp[558882](54012 call isIntegral call_tmp[558877]))
+    unknown call_tmp[558887] "expr temp" "maybe param" "maybe type" "temp"
+    (558890 'move' call_tmp[558887](54013 call ! call_tmp[558882]))
+    unknown call_tmp[558892] "expr temp" "maybe param" "maybe type" "temp"
+    (558895 'move' call_tmp[558892](54020 call _cond_test call_tmp[558887]))
+    if call_tmp[558892]
+    {
+      (54018 call compilerError "xor is only defined for integer atomic types")
+    }
+    function atomic_xor[54036](ref arg op[54033] :
+    (339597 call T _mt[232] this[54377]), arg l[54042] :
+    (54041 call int(64)[13] 32), arg obj[54046]:c_void_ptr[141], arg order[54050]:memory_order[179753], arg _chpl_cname[54058]:string[24] =
+    unknown call_tmp[558901] "expr temp" "maybe param" "maybe type" "temp") : _unknown[43] "extern" "insert line file info" "local args" "no fn body" "no return value for void"
+    {
+      unknown ret[458100] "RVV" "temp"
+      (458102 return ret[458100])
+    }
+    { scopeless type
+      void[4]
+    }
+    unknown v[54063] "insert auto destroy"
+    (489364 'init var' v[54063] value[53993])
+    unknown call_tmp[558908] "expr temp" "maybe param" "maybe type" "temp"
+    (558911 'move' call_tmp[558908](54071 call(339605 call (partial) _localeid _mt[232] this[54377])))
+    unknown call_tmp[558915] "expr temp" "maybe param" "maybe type" "temp"
+    (558918 'move' call_tmp[558915](54074 call(339609 call (partial) _addr _mt[232] this[54377])))
+    (54076 call atomic_xor v[54063] call_tmp[558908] call_tmp[558915] order[53999])
+    (458108 return ret[458106])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).waitFor[54087](arg _mt[54383]:_MT[227], const arg this[54381]:RAtomicT[54223](?), arg value[54084] :
+  (339615 call T _mt[232] this[54381]), arg order[54090]:memory_order[179753]) : _unknown[43] "atomic type" "inline" "method" "primary method" "no return value for void"
+  {
+    unknown ret[458112] "RVV" "temp"
+    (54097 call compilerWarning "memory_order is deprecated, use memoryOrder")
+    {
+      const tmp[54174] "const" "temp"
+      unknown call_tmp[558922] "expr temp" "maybe param" "maybe type" "temp"
+      (558925 'move' call_tmp[558922](54171 '_wide_get_locale' this[54381]))
+      (54175 'move' tmp[54174](54172 'deref' call_tmp[558922]))
+      {
+        {
+          unknown tmp[54120] "temp"
+          unknown call_tmp[558929] "expr temp" "maybe param" "maybe type" "temp"
+          (558932 'move' call_tmp[558929](54155 call(54152 call (partial) read _mt[232] this[54381])(order = relaxed[180097])))
+          unknown call_tmp[558934] "expr temp" "maybe param" "maybe type" "temp"
+          (558937 'move' call_tmp[558934](54150 call != call_tmp[558929] value[54084]))
+          (54162 'move' tmp[54120](54148 call _cond_test call_tmp[558934]))
+          WhileDo
+          {
+            {
+              (54117 call chpl_task_yield)
+            }
+            label _continueLabel[54123]
+            unknown call_tmp[558941] "expr temp" "maybe param" "maybe type" "temp"
+            (558944 'move' call_tmp[558941](54136 call(54133 call (partial) read _mt[232] this[54381])(order = relaxed[180097])))
+            unknown call_tmp[558946] "expr temp" "maybe param" "maybe type" "temp"
+            (558949 'move' call_tmp[558946](54131 call != call_tmp[558941] value[54084]))
+            (54143 'move' tmp[54120](54129 call _cond_test call_tmp[558946]))
+            tmp[54120]
+          }
+          label _breakLabel[54124]
+        }
+        (54169 call chpl_atomic_thread_fence order[54090])
+      }
+    }
+    (458114 return ret[458112])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).peek[54184](arg _mt[54387]:_MT[227], const arg this[54385]:RAtomicT[54223](?)) : _unknown[43] "atomic type" "inline" "last resort" "method" "primary method"
+  {
+    unknown ret[458118] "RVV" "temp"
+    (54190 call compilerWarning "Default usage of peek() is deprecated, use PeekPoke")
+    unknown call_tmp[558953] "expr temp" "maybe param" "maybe type" "temp"
+    (558956 'move' call_tmp[558953](339634 call _v _mt[232] this[54385]))
+    unknown call_tmp[558960] "expr temp" "maybe param" "maybe type" "temp"
+    (558963 'move' call_tmp[558960](458123 call T _mt[232] this[54385]))
+    (458127 'move' ret[458118](458126 'coerce' call_tmp[558953] call_tmp[558960]))
+    (458120 return ret[458118])
+  }
+  { scopeless type
+    (339629 call T _mt[232] this[54385])
+  }
+  function RAtomicT[54223](?).poke[54205](arg _mt[54391]:_MT[227], arg this[54389]:RAtomicT[54223](?), arg value[54202] :
+  (339639 call T _mt[232] this[54389])) : _unknown[43] "atomic type" "inline" "last resort" "method" "primary method" "no return value for void"
+  {
+    unknown ret[458131] "RVV" "temp"
+    (54211 call compilerWarning "Default usage of poke() is deprecated, use PeekPoke")
+    unknown call_tmp[558971] "expr temp" "maybe param" "maybe type" "temp"
+    (558974 'move' call_tmp[558971](339644 call _v _mt[232] this[54389]))
+    (54216 call = call_tmp[558971] value[54202])
+    (458133 return ret[458131])
+  }
+  { scopeless type
+    void[4]
+  }
+  function RAtomicT[54223](?).T[700983](arg _mt[700985]:_MT[227], arg this[700987]:RAtomicT[54223](?)) type : _unknown[43] "atomic type" "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[701004] "RVV" "temp" "type variable"
+    unknown call_tmp[701018] "expr temp" "maybe param" "maybe type" "temp"
+    (701021 'move' call_tmp[701018](700992 'is bound' this[700987] c"T"))
+    if call_tmp[701018]
+    {
+      unknown call_tmp[701023] "expr temp" "maybe param" "maybe type" "temp"
+      (701026 'move' call_tmp[701023](700991 '.v' this[700987] c"T"))
+      (701009 'move' ret[701004](701008 'deref' call_tmp[701023]))
+      gotoReturn _end_T[701002] _end_T[701002]
+    }
+    {
+      (701014 'move' ret[701004](701013 'deref' _uninstantiated[247]))
+      gotoReturn _end_T[701002] _end_T[701002]
+    }
+    label _end_T[701002]
+    (701006 return ret[701004])
+  }
+  function RAtomicT[54223](?).T[701028](arg _mt[701030]:_MT[227], arg this[701032]:RAtomicT[54223](?)) type : _unknown[43] "atomic type" "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens"
+  {
+    unknown ret[701049] "RVV" "temp" "type variable"
+    unknown call_tmp[701063] "expr temp" "maybe param" "maybe type" "temp"
+    (701066 'move' call_tmp[701063](701037 'is bound' this[701032] c"T"))
+    if call_tmp[701063]
+    {
+      unknown call_tmp[701068] "expr temp" "maybe param" "maybe type" "temp"
+      (701071 'move' call_tmp[701068](701036 '.v' this[701032] c"T"))
+      (701054 'move' ret[701049](701053 'deref' call_tmp[701068]))
+      gotoReturn _end_T[701047] _end_T[701047]
+    }
+    {
+      (701059 'move' ret[701049](701058 'deref' _uninstantiated[247]))
+      gotoReturn _end_T[701047] _end_T[701047]
+    }
+    label _end_T[701047]
+    (701051 return ret[701049])
+  }
+  function RAtomicT[54223](?)._v[701073](arg _mt[701075]:_MT[227], ref arg this[701077]:RAtomicT[54223](?)) ref : _unknown[43] "atomic type" "field accessor" "inline" "method" "primary method" "no implicit copy" "no parens" "reference to const when const this"
+  {
+    unknown ret[701086] "RVV" "temp"
+    unknown call_tmp[701093] "expr temp" "maybe param" "maybe type" "temp"
+    (701096 'move' call_tmp[701093](701081 '.' this[701077] c"_v"))
+    (701091 'move' ret[701086](701090 'addr of' call_tmp[701093]))
+    (701088 return ret[701086])
+  }
+  function RAtomicT[54223](?).init[701098](arg _mt[701100]:_MT[227], ref arg this[701101]:RAtomicT[54223](?), arg T[701104]:_any[170](?), in arg _v[701113] :
+  T[701104] =
+  _typeDefaultT[239]) : void[4] "compiler generated" "last resort" "method" "primary method" "suppress lvalue error"
+  {
+    (701127 'init field' this[701101] c"T" T[701104])
+    (701130 'init field' this[701101] c"_v" _v[701113])
+    (701133 return _void[47])
+  }
+  function RAtomicT[54223](?).init=[701135](arg _mt[701138]:_MT[227], ref arg this[701139]:RAtomicT[54223](?), arg other[701142] :
+  (701141 'typeof' this[701139])) : void[4] "compiler generated" "copy initializer" "last resort" "method" "primary method"
+  {
+    unknown tmp[701167] "temp" "type variable"
+    (701169 'move' tmp[701167](701151 call T _mt[232] other[701142]))
+    (701171 'init field' this[701139] c"T" tmp[701167])
+    unknown call_tmp[701193] "maybe param" "maybe type" "temp"
+    (701196 'move' call_tmp[701193](701161 call _v _mt[232] other[701142]))
+    unknown call_tmp[701198] "maybe param" "maybe type" "temp"
+    (701201 'move' call_tmp[701198](701184 '.v' this[701139] c"T"))
+    unknown tmp[701175] "temp"
+    (701178 'init var' tmp[701175] call_tmp[701193] call_tmp[701198])
+    (701180 'init field' this[701139] c"_v" tmp[701175])
+    (701187 return _void[47])
+  }
+  function RAtomicT[54223](?).deinit[701203](arg _mt[701205]:_MT[227], arg this[701207]:RAtomicT[54223](?)) : void[4] "compiler generated" "destructor" "inline" "last resort" "method" "primary method"
+  {
+    (701209 return _void[47])
+  }
+  function ==[701212](arg _arg1[701214]:RAtomicT[54223](?), arg _arg2[701215]:RAtomicT[54223](?)) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[701258]:bool[10] "RVV" "temp"
+    unknown call_tmp[701275] "expr temp" "maybe param" "maybe type" "temp"
+    (701278 'move' call_tmp[701275](701225 call T _mt[232] _arg1[701214]))
+    unknown call_tmp[701280] "expr temp" "maybe param" "maybe type" "temp"
+    (701283 'move' call_tmp[701280](701229 call T _mt[232] _arg2[701215]))
+    unknown call_tmp[701285] "expr temp" "maybe param" "maybe type" "temp"
+    (701288 'move' call_tmp[701285](701233 call != call_tmp[701275] call_tmp[701280]))
+    if call_tmp[701285]
+    {
+      (701263 'move' ret[701258](701262 'deref' 0))
+      gotoReturn _end_==[701256] _end_==[701256]
+    }
+    unknown call_tmp[701290] "expr temp" "maybe param" "maybe type" "temp"
+    (701293 'move' call_tmp[701290](701239 call _v _mt[232] _arg1[701214]))
+    unknown call_tmp[701295] "expr temp" "maybe param" "maybe type" "temp"
+    (701298 'move' call_tmp[701295](701243 call _v _mt[232] _arg2[701215]))
+    unknown call_tmp[701300] "expr temp" "maybe param" "maybe type" "temp"
+    (701303 'move' call_tmp[701300](701247 call != call_tmp[701290] call_tmp[701295]))
+    if call_tmp[701300]
+    {
+      (701268 'move' ret[701258](701267 'deref' 0))
+      gotoReturn _end_==[701256] _end_==[701256]
+    }
+    (701273 'move' ret[701258](701272 'deref' 1))
+    label _end_==[701256]
+    (701260 return ret[701258])
+  }
+  where {
+    unknown call_tmp[701305] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701308 'move' call_tmp[701305](701218 'typeof' _arg1[701214]))
+    unknown call_tmp[701310] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701313 'move' call_tmp[701310](701220 'typeof' _arg2[701215]))
+    (701222 call == call_tmp[701305] call_tmp[701310])
+  }
+  function !=[701315](arg _arg1[701317]:RAtomicT[54223](?), arg _arg2[701318]:RAtomicT[54223](?)) : bool[10] "compiler generated" "last resort"
+  {
+    val ret[701361]:bool[10] "RVV" "temp"
+    unknown call_tmp[701378] "expr temp" "maybe param" "maybe type" "temp"
+    (701381 'move' call_tmp[701378](701328 call T _mt[232] _arg1[701317]))
+    unknown call_tmp[701383] "expr temp" "maybe param" "maybe type" "temp"
+    (701386 'move' call_tmp[701383](701332 call T _mt[232] _arg2[701318]))
+    unknown call_tmp[701388] "expr temp" "maybe param" "maybe type" "temp"
+    (701391 'move' call_tmp[701388](701336 call != call_tmp[701378] call_tmp[701383]))
+    if call_tmp[701388]
+    {
+      (701366 'move' ret[701361](701365 'deref' 1))
+      gotoReturn _end_!=[701359] _end_!=[701359]
+    }
+    unknown call_tmp[701393] "expr temp" "maybe param" "maybe type" "temp"
+    (701396 'move' call_tmp[701393](701342 call _v _mt[232] _arg1[701317]))
+    unknown call_tmp[701398] "expr temp" "maybe param" "maybe type" "temp"
+    (701401 'move' call_tmp[701398](701346 call _v _mt[232] _arg2[701318]))
+    unknown call_tmp[701403] "expr temp" "maybe param" "maybe type" "temp"
+    (701406 'move' call_tmp[701403](701350 call != call_tmp[701393] call_tmp[701398]))
+    if call_tmp[701403]
+    {
+      (701371 'move' ret[701361](701370 'deref' 1))
+      gotoReturn _end_!=[701359] _end_!=[701359]
+    }
+    (701376 'move' ret[701361](701375 'deref' 0))
+    label _end_!=[701359]
+    (701363 return ret[701361])
+  }
+  where {
+    unknown call_tmp[701408] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701411 'move' call_tmp[701408](701321 'typeof' _arg1[701317]))
+    unknown call_tmp[701413] "expr temp" "maybe param" "maybe type" "temp" "type variable"
+    (701416 'move' call_tmp[701413](701323 'typeof' _arg2[701318]))
+    (701325 call == call_tmp[701408] call_tmp[701413])
+  }
+  function chpl__defaultHash[701418](arg r[701420]:RAtomicT[54223](?)) : _unknown[43] "compiler generated" "last resort"
+  {
+    unknown ret[701441] "RVV" "temp"
+    unknown call_tmp[701448] "expr temp" "maybe param" "maybe type" "temp"
+    (701451 'move' call_tmp[701448](701428 call _v _mt[232] r[701420]))
+    unknown call_tmp[701453] "expr temp" "maybe param" "maybe type" "temp"
+    (701456 'move' call_tmp[701453](701432 call chpl__defaultHash call_tmp[701448]))
+    unknown call_tmp[701458] "expr temp" "maybe param" "maybe type" "temp"
+    (701461 'move' call_tmp[701458](701422 call T _mt[232] r[701420]))
+    unknown call_tmp[701463] "expr temp" "maybe param" "maybe type" "temp"
+    (701466 'move' call_tmp[701463](701426 call chpl__defaultHash call_tmp[701458]))
+    unknown call_tmp[701468] "expr temp" "maybe param" "maybe type" "temp"
+    (701471 'move' call_tmp[701468](701434 call chpl__defaultHashCombine call_tmp[701453] call_tmp[701463] 2))
+    (701446 'move' ret[701441](701445 'deref' call_tmp[701468]))
+    (701443 return ret[701441])
+  }
+  type RAtomicT[54223](?) unknown T[51041] "type variable" unknown _v[51045] T[51041]
+  function =[54400](ref arg a[54397]:RAtomicBool[50933], const arg b[54403]:RAtomicBool[50933]) : _unknown[43] "assignop" "inline" "no return value for void"
+  {
+    unknown call_tmp[558980] "expr temp" "maybe param" "maybe type" "temp"
+    (558983 'move' call_tmp[558980](54415 call(54411 call (partial) read _mt[232] b[54403])))
+    (54417 call(54407 call (partial) write _mt[232] a[54397]) call_tmp[558980])
+    (458135 return _void[47])
+  }
+  function =[54428](ref arg a[54425]:RAtomicBool[50933], arg b[54430]:_any[170](?)) : _unknown[43] "assignop" "inline" "no return value for void"
+  {
+    (54435 call compilerError "Cannot directly assign atomic variables")
+    (458137 return _void[47])
+  }
+  function =[54446](ref arg a[54443]:RAtomicT[54223](?), const arg b[54449]:RAtomicT[54223](?)) : _unknown[43] "assignop" "inline" "no return value for void"
+  {
+    unknown call_tmp[558989] "expr temp" "maybe param" "maybe type" "temp"
+    (558992 'move' call_tmp[558989](54461 call(54457 call (partial) read _mt[232] b[54449])))
+    (54463 call(54453 call (partial) write _mt[232] a[54443]) call_tmp[558989])
+    (458139 return _void[47])
+  }
+  function =[54474](ref arg a[54471]:RAtomicT[54223](?), arg b[54476]:_any[170](?)) : _unknown[43] "assignop" "inline" "no return value for void"
+  {
+    (54481 call compilerError "Cannot directly assign atomic variables")
+    (458141 return _void[47])
+  }
+  function +[54492](arg a[54489]:RAtomicT[54223](?), arg b[54494]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[458145] "RVV" "temp"
+    (54499 call compilerError "Cannot directly add atomic variables")
+    (458150 'move' ret[458145](458149 'deref' a[54489]))
+    (458147 return ret[458145])
+  }
+  function -[54513](arg a[54510]:RAtomicT[54223](?), arg b[54515]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[458154] "RVV" "temp"
+    (54520 call compilerError "Cannot directly subtract atomic variables")
+    (458159 'move' ret[458154](458158 'deref' a[54510]))
+    (458156 return ret[458154])
+  }
+  function *[54534](arg a[54531]:RAtomicT[54223](?), arg b[54536]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[458163] "RVV" "temp"
+    (54541 call compilerError "Cannot directly multiply atomic variables")
+    (458168 'move' ret[458163](458167 'deref' a[54531]))
+    (458165 return ret[458163])
+  }
+  function /[54555](arg a[54552]:RAtomicT[54223](?), arg b[54557]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[458172] "RVV" "temp"
+    (54562 call compilerError "Cannot directly divide atomic variables")
+    (458177 'move' ret[458172](458176 'deref' a[54552]))
+    (458174 return ret[458172])
+  }
+  function %[54576](arg a[54573]:RAtomicT[54223](?), arg b[54578]:_any[170](?)) : _unknown[43] "inline"
+  {
+    unknown ret[458181] "RVV" "temp"
+    (54583 call compilerError "Cannot directly divide atomic variables")
+    (458186 'move' ret[458181](458185 'deref' a[54573]))
+    (458183 return ret[458181])
+  }
+  (329326 'used modules list'(49235 'use' ChapelStandard[19734]))
+}
