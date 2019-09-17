@@ -794,13 +794,6 @@ Successful tests will not be printed after the line beginning with ``[Test
 Summary`` unless they had a ``.future`` file (see `A Test That Tracks A
 Failure`_ for information about ``.future`` files).
 
-When nightly testing is run, a mail will be sent to
-`chapel-test-results-regressions`_ for every configuration with a new failure,
-warning, passing suppression, and/or passing future.
-
-.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
-
-
 Summary of Testing Files
 ========================
 

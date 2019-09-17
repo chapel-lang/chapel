@@ -1000,7 +1000,6 @@ Reviewer responsibilities
   level.
 
 .. _chapel-developers: chapel-developers@lists.sourceforge.net
-.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
 .. _chapel-users: chapel-users@lists.sourceforge.net
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
 .. _Set up a github account: https://help.github.com/articles/signing-up-for-a-new-github-account
