@@ -1,0 +1,5 @@
+perfkeys: blockDom:, blockArr:, cyclicArr:, cyclicDom:, blockCyclicDom:, blockCyclicArr:
+files: distCreate-large 
+ylabel: Time (seconds)
+graphname: distCreate-small
+graphtitle: Creating domains and arrays (1/4 of available memory)

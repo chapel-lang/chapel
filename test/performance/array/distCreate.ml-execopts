@@ -1,0 +1,2 @@
+--small=true  #distCreate-small
+--small=false  #distCreate-large
