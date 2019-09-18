@@ -618,6 +618,34 @@ Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
 Chapel repository, they will start showing up on the Chapel public
 pages as well.
 
+Multilocale Performance Testing
++++++++++++++++++++++++++++++++
+Writing a performance test for multilocale setting is similar to single locale
+counterpart. However, helper file suffixes must be as follows.
+
+
+===================== ==================== 
+ Single Locale         Multilocale         
+===================== ==================== 
+ ``.numlocales``       ``.ml-numlocales``  
+ ``.perfexecopts``     ``.ml-execopts``    
+ ``.perfcompopts``     ``.ml-compopts``    
+ ``.perfkeys``         ``.ml-keys``        
+ ``.graph``            ``.ml-perf.graph``  
+ ``.execenv``          ``.ml-execenv``     
+===================== ==================== 
+
+Graph files for multilocale performance tests are listed in ``ML-GRAPHFILES``
+instead of ``GRAPHFILES``.
+
+Finally to run a multilocale performance test ``start_test --perflabel ml-``
+must be used.
+
+Multilocale Communication Counts (commcount) Testing
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+Writing a commcount test for multilocale setting is similar to the performance
+counterpart. However, for helper files ``cc-`` label is used instead of ``ml-``
+
 A Test That Tracks A Failure
 ----------------------------
 
@@ -878,7 +906,7 @@ foo.timeout         time in seconds after which start_test should stop this test
                     See `Limiting Time Taken`_ for more information
 ..
 -------------------------------------------------------------------------------
-**performance**
+**performance** (replace "perf" with "ml-" and "cc-" as necessary)
 -------------------------------------------------------------------------------
 foo.perfcompopts    compiler flags, overrides .compopts for --performance
 PERFCOMPOPTS        directory-wide performance compiler flags
