@@ -136,5 +136,5 @@ runtime/configMatters/comm/unordered/many-to-many-getputs.ml-perf.graph
 runtime/configMatters/comm/unordered/one-locale-serial-amos.ml-perf.graph
 runtime/configMatters/comm/unordered/one-locale-parallel-amos.ml-perf.graph
 optimizations/bulkcomm/block/exchange.ml-time.graph
-performance/array/distCreate-small.graph
-performance/array/distCreate-large.graph
+performance/array/distCreate-small.ml-perf.graph
+performance/array/distCreate-large.ml-perf.graph
