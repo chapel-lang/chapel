@@ -2433,9 +2433,44 @@ void AggregateType::buildCopyInitializer() {
         INT_FATAL("extern type is generic");
 
       // Generate a bit-copy for extern records in order to copy unknown fields.
-      if (symbol->hasFlag(FLAG_EXTERN)) {
-        fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
+      fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
+
+    } else if (aggregateTag == AGGREGATE_UNION) {
+      // Copy the set field ID, then copy only the field that is set
+      fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                    fn->_this,
+                                    new CallExpr(PRIM_GET_UNION_ID, other)));
+
+      for_fields(fieldDefExpr, this) {
+        if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+          const char* name       = field->name;
+
+          CallExpr* thisField  = new CallExpr(".",
+                                              fn->_this,
+                                              new_CStringSymbol(name));
+
+          CallExpr* otherField = new CallExpr(".",
+                                              other,
+                                              new_CStringSymbol(name));
+
+          CallExpr* setField = new CallExpr("=", thisField, otherField);
+
+          CallExpr* thisField2  = new CallExpr(".",
+                                               fn->_this,
+                                               new_CStringSymbol(name));
+
+          CallExpr* noSetField = new CallExpr("=", thisField2, gNoInit);
+
+          CallExpr* isField =
+            new CallExpr("==", new CallExpr(PRIM_GET_UNION_ID, fn->_this),
+                               new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                            this->symbol,
+                                            new_CStringSymbol(name)));
+
+          fn->insertAtTail(new CondStmt(isField, setField, noSetField));
+        }
       }
+
     } else {
       // Copy the fields from "other" into our fields
       for_fields(fieldDefExpr, this) {

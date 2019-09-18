@@ -5923,6 +5923,27 @@ static void resolveInitVar(CallExpr* call) {
     INT_FATAL(call, "unexpected number of actuals in variable init call");
   }
 
+  // Handle noinit
+  if (srcExpr && srcExpr->symbol() == gNoInit) {
+    if (call->numActuals() < 3) {
+      // no init needs a type, cannot infer from gNoInit.
+      INT_FATAL(call, "bad no init call");
+    }
+
+    SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
+    targetType = targetTypeExpr->typeInfo();
+
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      // no init needs a concrete type, cannot infer from gNoInit.
+      INT_FATAL(call, "bad no init call");
+    }
+
+    // Since we are not initializing, just set the variable's type
+    dst->type = targetType;
+    call->primitive = primitives[PRIM_NOOP];
+    return;
+  }
+
   if (call->numActuals() == 3) {
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
     targetType = targetTypeExpr->typeInfo();

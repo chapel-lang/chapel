@@ -1354,7 +1354,7 @@ bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   if (fn && fn->retTag == RET_PARAM)
     return false;
 
-  if (isRecord(formal->getValType())) {
+  if (isRecord(formal->getValType()) || isUnion(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
         formal->originalIntent == INTENT_IN ||
