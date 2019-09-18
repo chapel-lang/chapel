@@ -471,10 +471,6 @@ bool isBytes(Symbol* symbol) {
   return isBytes(symbol->type);
 }
 
-bool isUserDefinedRecord(Symbol* symbol) {
-  return isUserDefinedRecord(symbol->type);
-}
-
 /******************************** | *********************************
 *                                                                   *
 * Common base class for ArgSymbol and VarSymbol.                    *

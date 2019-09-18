@@ -193,8 +193,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     else if (fn->hasFlag(FLAG_EXTERN)       == true)
       retval = false;
 
-    // Noakes: 2016/02/24.  Only "user defined records" for now
-    else if (isUserDefinedRecord(type)      == true)
+    else if (typeNeedsCopyInitDeinit(type)  == true)
       retval = true;
 
     else
@@ -206,7 +205,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
   // Reasonable alternative: update insertCopiesForYields to handle
   // yielding a PRIM_DEREF or yielding a reference argument.
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
-    if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
+    if (typeNeedsCopyInitDeinit(fn->iteratorInfo->yieldedType))
       retval = true;
   }
 
@@ -331,8 +330,8 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
               }
             }
             if (rhsIsFormal &&
-                isUserDefinedRecord(symLhs->type) == true &&
-                symRhs->type                      == symLhs->type)
+                typeNeedsCopyInitDeinit(symLhs->type) &&
+                symRhs->type == symLhs->type)
             {
               bool fromInIntent =
                 (symRhs->originalIntent == INTENT_IN ||
@@ -398,7 +397,7 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         if (varLhs != NULL && symRhs != NULL)
         {
           INT_ASSERT(varLhs->isRef() == false && symRhs->isRef());
-          if (isUserDefinedRecord(varLhs->type) == true &&
+          if (typeNeedsCopyInitDeinit(varLhs->type) &&
               !varLhs->hasFlag(FLAG_NO_COPY))
           {
 
@@ -467,9 +466,9 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
 
         if (symLhs != NULL && symRhs != NULL)
         {
-          if (isUserDefinedRecord(symLhs->type) == true &&
-              symLhs->hasFlag(FLAG_NO_COPY)     == false &&
-              symRhs->type                      == symLhs->type)
+          if (typeNeedsCopyInitDeinit(symLhs->type) &&
+              !symLhs->hasFlag(FLAG_NO_COPY) &&
+              symRhs->type == symLhs->type)
           {
             DefExpr* def = symRhs->defPoint;
 
@@ -759,7 +758,7 @@ bool isCallExprTemporary(Expr* initFrom) {
 }
 
 bool doesCopyInitializationRequireCopy(Expr* initFrom) {
-  if (isUserDefinedRecord(initFrom->getValType())) {
+  if (typeNeedsCopyInitDeinit(initFrom->getValType())) {
     // RHS is a reference, need a copy
     if (initFrom->isRef())
       return true;
@@ -778,7 +777,7 @@ bool doesCopyInitializationRequireCopy(Expr* initFrom) {
 }
 
 bool doesValueReturnRequireCopy(Expr* initFrom) {
-  if (isUserDefinedRecord(initFrom->getValType())) {
+  if (typeNeedsCopyInitDeinit(initFrom->getValType())) {
     // RHS is a reference, need a copy
     if (initFrom->isRef())
       return true;
@@ -1040,7 +1039,7 @@ static void insertCopiesForYields()
     // and the yielded value is not an expression temporary
     //  (e.g. for yield someCall(), the result of someCall() doesn't need copy)
     // then we need to copy initialize into the yielded value.
-    if (isUserDefinedRecord(yieldedSym->getValType()) &&
+    if (typeNeedsCopyInitDeinit(yieldedSym->getValType()) &&
         iteratorRetTag == RET_VALUE) {
 
       SymExpr* foundSe = findSourceOfYield(call);
@@ -1195,7 +1194,7 @@ static void adjustCoforallIndexVariables() {
               Symbol* actual = actualSe->symbol();
               if (actual->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
                   actual->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-                  isUserDefinedRecord(actual->type)) {
+                  typeNeedsCopyInitDeinit(actual->type)) {
 
                 // Remove FLAG_INSERT_AUTO_DESTROY so it will not
                 // be destroyed in the loop creating tasks.

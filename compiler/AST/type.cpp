@@ -1342,47 +1342,16 @@ bool isBytes(Type* type) {
   return type == dtBytes;
 }
 
-//
-// Noakes 2016/02/29
-//
-// To support the merge of the string-as-rec branch we defined a
-// function, isString(), which is only true of the record that was
-// defined in the new implementation of String.  This predicate was
-// applied in cullOverReferences and callDestructors to improve
-// memory management for that particular record type.
-//
-// We seek to apply those routines to a wider set of record types but
-// are not ready to apply them to range, tuple, and the reference-counted
-// records.
-//
-// This shorter-term predicate, which has a slightly inelegant name, allows
-// most record-like types to use the new business logic.
-//
-// In the longer term we plan to further broaden the cases that the new
-// logic can handle and reduce the exceptions that are filtered out here.
-//
-//
-//
-// MPF    2016/09/15
-// This function now includes tuples, distributions, domains, and arrays.
-//
-// Noakes 2017/03/02
-// This function now includes range and atomics
-//
-// MPF    2017/08/03
-// This function now includes iterator records
-//
-// TODO: rename this to isMemoryManagedRecord or something along
-//       those lines, since it now applies to some compiler-internal records.
-//
-bool isUserDefinedRecord(Type* type) {
+// Indicates record-like memory management
+bool typeNeedsCopyInitDeinit(Type* type) {
   bool retval = false;
 
   if (AggregateType* aggr = toAggregateType(type)) {
     Symbol*     sym  = aggr->symbol;
 
     // Must be a record type
-    if (aggr->aggregateTag != AGGREGATE_RECORD) {
+    if (aggr->aggregateTag != AGGREGATE_RECORD &&
+        aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;
 
     // Not a RUNTIME_type

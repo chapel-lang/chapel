@@ -465,7 +465,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
   bool       retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
-    if (isUserDefinedRecord(ct) == true && ct->hasInitializers()) {
+    if (typeNeedsCopyInitDeinit(ct) == true && ct->hasInitializers()) {
       // If the user has defined any initializer,
       // initCopy function should call the copy-initializer.
       //

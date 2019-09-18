@@ -799,7 +799,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // call propagateNotPOD to set FLAG_POD/FLAG_NOT_POD
     propagateNotPOD(t);
 
-    bool needsDestroy = isUserDefinedRecord(t) && !isPOD(t);
+    bool needsDestroy = typeNeedsCopyInitDeinit(t) && !isPOD(t);
 
     if (needsDestroy) {
       retval = new SymExpr(gTrue);
@@ -2214,7 +2214,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
           Type* newType = toSe->symbol()->type->getValType();
 
           if (newType == oldType) {
-            if (isUserDefinedRecord(newType) && !getSymbolImmediate(var)) {
+            if (typeNeedsCopyInitDeinit(newType) && !getSymbolImmediate(var)) {
               result = new CallExpr("_removed_cast", var);
               call->replace(result);
             } else {

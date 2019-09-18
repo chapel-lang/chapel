@@ -8612,7 +8612,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 static const char* autoCopyFnForType(AggregateType* at) {
   const char* retval = "chpl__autoCopy";
 
-  if (isUserDefinedRecord(at)                == true  &&
+  if (typeNeedsCopyInitDeinit(at)            == true  &&
       at->symbol->hasFlag(FLAG_TUPLE)        == false &&
       at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
       isRecordWrappedType(at)                == false &&
@@ -8847,7 +8847,7 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr*   def = new DefExpr(tmp);
 
-            if (isUserDefinedRecord(fn->retType) == true)
+            if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
             contextCallOrCall->insertBefore(def);

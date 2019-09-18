@@ -1019,7 +1019,7 @@ void resolveIfExprType(CondStmt* stmt) {
       BlockStmt* refBranch = isReferenceType(thenType) ? stmt->thenStmt : stmt->elseStmt;
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
-      if (isUserDefinedRecord(rhs->getValType())) {
+      if (typeNeedsCopyInitDeinit(rhs->getValType())) {
         CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);

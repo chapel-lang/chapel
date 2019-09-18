@@ -480,7 +480,9 @@ bool isArrayClass(Type* type);
 
 bool isString(Type* type);
 bool isBytes(Type* type);
-bool isUserDefinedRecord(Type* type);
+
+// Does it use record-style memory management?
+bool typeNeedsCopyInitDeinit(Type* type);
 
 bool isPrimitiveScalar(Type* type);
 

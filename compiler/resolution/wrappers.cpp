@@ -1406,7 +1406,7 @@ static void addArgCoercion(FnSymbol*  fn,
     //
     checkAgain = true;
 
-    if (isUserDefinedRecord(at) && propagateNotPOD(at) &&
+    if (typeNeedsCopyInitDeinit(at) && propagateNotPOD(at) &&
         !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
       castCall = new CallExpr("chpl__initCopy", prevActual);

@@ -2752,7 +2752,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
 
     // Now auto-copy it if appropriate
     Symbol* copyResult = fieldValue;
-    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+    if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
       FnSymbol* autoCopy = getAutoCopyForType(field->type);
       Symbol* valueToCopy = fieldValue;
       Type* copyArgType = autoCopy->getFormal(1)->type;
@@ -2784,7 +2784,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+    if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
       if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
         Symbol* tmp = newTemp(field->name, field->type);
         block->insertAtTail(new DefExpr(tmp));
