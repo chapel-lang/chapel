@@ -631,10 +631,11 @@ instead of ``GRAPHFILES``.
 Finally to run a multilocale performance test ``start_test --perflabel ml-``
 must be used.
 
-Multilocale Communication Counts (commcount) Testing
-++++++++++++++++++++++++++++++++++++++++++++++++++++
-Writing a commcount test for multilocale setting is similar to the performance
-counterpart. However, for helper files ``cc-`` label is used instead of ``ml-``
+Multilocale Communication Counts Testing
+++++++++++++++++++++++++++++++++++++++++
+Writing a communication counts test for multilocale setting is similar to the
+performance counterpart. However, for helper files ``cc-`` label is used instead
+of ``ml-``.
 
 Test Your Test Before Submitting
 ++++++++++++++++++++++++++++++++
