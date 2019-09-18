@@ -54,6 +54,8 @@ Outline
        - `Comparing to a C version`_
 
      - `Creating a graph comparing multiple variations`_
+     - `Multilocale Performance Testing`_
+     - `Multilocale Communication Counts Testing`_
      - `Test Your Test Before Submitting`_
 
    - `A Test That Tracks A Failure`_
@@ -606,18 +608,6 @@ suite(s) in which your graph appears, and you should see data for it.
 (Note that for a new graph with only one day of data, it can be hard
 to see the singleton points at first).
 
-Test Your Test Before Submitting
-++++++++++++++++++++++++++++++++
-
-Before submitting your test for review, be sure that it works under
-both ``start_test`` and ``start_test -performance`` modes when running
-within the directory (or directories) in question.  Nothing is more
-embarrassing than committing a test that doesn't work on day one.
-
-Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
-Chapel repository, they will start showing up on the Chapel public
-pages as well.
-
 Multilocale Performance Testing
 +++++++++++++++++++++++++++++++
 Writing a performance test for multilocale setting is similar to single locale
@@ -645,6 +635,17 @@ Multilocale Communication Counts (commcount) Testing
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
 Writing a commcount test for multilocale setting is similar to the performance
 counterpart. However, for helper files ``cc-`` label is used instead of ``ml-``
+
+Test Your Test Before Submitting
+++++++++++++++++++++++++++++++++
+
+Before submitting your test for review, be sure that it works with relevant
+``start_test`` command.  Nothing is more embarrassing than committing a test
+that doesn't work on day one.
+
+Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
+Chapel repository, they will start showing up on the Chapel public
+pages as well.
 
 A Test That Tracks A Failure
 ----------------------------
