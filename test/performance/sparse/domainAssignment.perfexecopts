@@ -1,1 +1,1 @@
---correctness=false --numIndices=100000  #sparseDomainAssignment-1M
+--correctness=false --numIndices=500000  #sparseDomainAssignment-500K
