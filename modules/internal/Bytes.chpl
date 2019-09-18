@@ -154,7 +154,7 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+  proc createBytesWithBorrowedBuffer(s: c_string, length=s.size) {
     //NOTE: This function is heavily used by the compiler to create bytes
     //literals. So, inlining this causes some bloat in the AST that increases
     //the compilation time slightly. Therefore, currently we are keeping this
@@ -200,7 +200,7 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
+  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.size) {
     return createBytesWithOwnedBuffer(s: bufferType, length=length,
                                                       size=length+1);
   }
@@ -250,7 +250,7 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
+  inline proc createBytesWithNewBuffer(s: c_string, length=s.size) {
     return createBytesWithNewBuffer(s: bufferType, length=length,
                                                     size=length+1);
   }
@@ -467,13 +467,13 @@ module Bytes {
 
     /*
       Slices the :record:`bytes`. Halts if r is non-empty and not completely
-      inside the range ``1..bytes.length`` when compiled with `--checks`.
+      inside the range ``1..bytes.size`` when compiled with `--checks`.
       `--fast` disables this check.
 
       :arg r: The range of indices the new :record:`bytes` should be made from
 
       :returns: a new :record:`bytes` that is a slice within
-                ``1..bytes.length``. If the length of `r` is zero, an empty
+                ``1..bytes.size``. If the length of `r` is zero, an empty
                 :record:`bytes` is returned.
      */
     inline proc this(r: range(?)) : bytes {
@@ -546,7 +546,7 @@ module Bytes {
 
       :arg region: an optional range defining the indices to search
                    within, default is the whole. Halts if the range is not
-                   within ``1..bytes.length``
+                   within ``1..bytes.size``
 
       :returns: the index of the first occurrence from the left of `needle`
                 within the :record:`bytes`, or 0 if the `needle` is not in the
@@ -563,7 +563,7 @@ module Bytes {
 
       :arg region: an optional range defining the indices to search within,
                    default is the whole. Halts if the range is not
-                   within ``1..bytes.length``
+                   within ``1..bytes.size``
 
       :returns: the index of the first occurrence from the right of `needle`
                 within the :record:`bytes`, or 0 if the `needle` is not in the
@@ -581,7 +581,7 @@ module Bytes {
 
       :arg region: an optional range defining the substring to search within,
                    default is the whole. Halts if the range is not
-                   within ``1..bytes.length``
+                   within ``1..bytes.size``
 
       :returns: the number of times `needle` occurs in the :record:`bytes`
      */
@@ -673,7 +673,7 @@ module Bytes {
                 `needle` up to `count` times
      */
     // TODO: not ideal - count and single allocation probably faster
-    //                 - can special case on replacement|needle.length (0, 1)
+    //                 - can special case on replacement|needle.size (0, 1)
     inline proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
       return doReplace(this, needle, replacement, count);
     }

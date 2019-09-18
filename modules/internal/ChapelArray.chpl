@@ -2794,7 +2794,7 @@ module ChapelArray {
                       " dimension(s) to " + newDims.size:string);
 
       for param i in 1..rank do
-        if newDims(i).length != _value.dom.dsiDim(i).length then
+        if newDims(i).size != _value.dom.dsiDim(i).size then
           halt("extent in dimension ", i, " does not match actual");
 
       const thisDomClass = this._value.dom;
@@ -2934,7 +2934,7 @@ module ChapelArray {
     }
 
     inline proc chpl__assertSingleArrayDomain(fnName: string) {
-      if this.domain._value._arrs.length != 1 then
+      if this.domain._value._arrs.size != 1 then
         halt("cannot call " + fnName +
              " on an array defined over a domain with multiple arrays");
     }
@@ -3024,7 +3024,7 @@ module ChapelArray {
         if !this._value.dataAllocRange.contains(check) {
           /* The new index is not in the allocated space.  We'll need to
              realloc it. */
-          if this._value.dataAllocRange.length < this.domain.numIndices {
+          if this._value.dataAllocRange.size < this.domain.numIndices {
             /* If dataAllocRange has fewer indices than this.domain it must not
                be set correctly.  Set it to match this.domain to start.
              */
@@ -3130,10 +3130,10 @@ module ChapelArray {
       const ret = this(this.domain.high);
 
       on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
+        if this._value.dataAllocRange.size < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
+        if newRange.size < (this._value.dataAllocRange.size / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
           const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           if debugArrayAsVec then
@@ -3229,10 +3229,10 @@ module ChapelArray {
       const ret = this(this.domain.low);
 
       on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
+        if this._value.dataAllocRange.size < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
+        if newRange.size < (this._value.dataAllocRange.size / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
           const nextAllocRange = resizeAllocRange(newRange, direction=-1, grow=-1);
           if debugArrayAsVec then
@@ -3341,10 +3341,10 @@ module ChapelArray {
         this[i] = this[i+1];
       }
       on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
+        if this._value.dataAllocRange.size < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
+        if newRange.size < (this._value.dataAllocRange.size / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           this._value.dsiReallocate(nextAllocRange, newRange);
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
@@ -3378,10 +3378,10 @@ module ChapelArray {
         this[i] = this[i+count];
       }
       on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
+        if this._value.dataAllocRange.size < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
+        if newRange.size < (this._value.dataAllocRange.size / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           this._value.dsiReallocate(nextAllocRange, newRange);
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
@@ -3920,7 +3920,7 @@ module ChapelArray {
   proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone()));
-    } else if a._value._doms.length == 0 {
+    } else if a._value._doms.size == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
       if a._value == b._value {
@@ -4068,9 +4068,9 @@ module ChapelArray {
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 1..aDims.size {
-        if aDims(i).length != bDims(i).length then
+        if aDims(i).size != bDims(i).size then
           halt("assigning between arrays of different shapes in dimension ",
-               i, ": ", aDims(i).length, " vs. ", bDims(i).length);
+               i, ": ", aDims(i).size, " vs. ", bDims(i).size);
       }
     } else {
       // may not have dsiDims(), so can't check them as above

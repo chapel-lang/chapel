@@ -5431,7 +5431,7 @@ proc _toString(x:?t) where !_isIoPrimitiveType(t)
 private inline
 proc _toStringFromBytesOrString(x:bytes)
 {
-  return (createStringWithBorrowedBuffer(x.buff, length=x.length, size=x._size),
+  return (createStringWithBorrowedBuffer(x.buff, length=x.size, size=x._size),
           true);
 }
 private inline
@@ -6089,7 +6089,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmt.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6241,7 +6241,7 @@ proc channel.writef(fmtStr:string): bool throws {
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmt.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6305,7 +6305,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmt.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6556,7 +6556,7 @@ proc channel.readf(fmtStr:string) throws {
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmt.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
