@@ -1909,7 +1909,12 @@ module ChapelBase {
 
   /* swap operator */
   inline proc <=>(ref lhs, ref rhs) {
-    const tmp = lhs;
+    // it's tempting to make this a `const` tmp, but it causes
+    // problems for cases that self-modify, like records wrapping
+    // owned class pointers.  And it's short-lived enough that making
+    // it `var` doesn't seem likely to thwart optimization
+    // opportunities.
+    var tmp = lhs;
     lhs = rhs;
     rhs = tmp;
   }
