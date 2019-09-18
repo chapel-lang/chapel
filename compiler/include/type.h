@@ -499,7 +499,7 @@ bool isGenericClassWithInitializers (Type* type);
 bool isGenericRecordWithInitializers(Type* type);
 
 bool isClassWithInitializers (Type* type);
-bool isRecordWithInitializers(Type* type);
+bool isRecordOrUnionWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
 

@@ -1629,11 +1629,11 @@ bool isGenericRecordWithInitializers(Type* type) {
   return retval;
 }
 
-bool isRecordWithInitializers(Type* type) {
+bool isRecordOrUnionWithInitializers(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isRecord()                   == true  &&
+    if ((at->isRecord() || at->isUnion()) &&
         (at->hasUserDefinedInit == true ||
          at->wantsDefaultInitializer())) {
       retval = true;
@@ -1654,7 +1654,7 @@ bool needsGenericRecordInitializer(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (isRecordWithInitializers(type)) {
+    if (isRecordOrUnionWithInitializers(type)) {
       if (at->isGeneric() == true ||
           at->symbol->hasFlag(FLAG_GENERIC) == true ||
           at->instantiatedFrom != NULL) {

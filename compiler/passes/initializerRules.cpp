@@ -265,7 +265,7 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void          preNormalizeInitRecord(FnSymbol* fn);
+static void          preNormalizeInitRecordUnion(FnSymbol* fn);
 
 static void          preNormalizeInitClass(FnSymbol* fn);
 
@@ -285,7 +285,7 @@ static void preNormalizeInit(FnSymbol* fn) {
     USR_FATAL(fn, "initializers are not yet allowed to throw errors");
 
   } else if (at->isRecord() == true || at->isUnion()) {
-    preNormalizeInitRecord(fn);
+    preNormalizeInitRecordUnion(fn);
 
   } else if (at->isClass()  == true) {
     preNormalizeInitClass(fn);
@@ -295,7 +295,7 @@ static void preNormalizeInit(FnSymbol* fn) {
   }
 }
 
-static void preNormalizeInitRecord(FnSymbol* fn) {
+static void preNormalizeInitRecordUnion(FnSymbol* fn) {
   InitNormalize  state(fn);
 
   AggregateType* at    = toAggregateType(fn->_this->type);
