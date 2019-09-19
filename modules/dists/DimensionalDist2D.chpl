@@ -840,6 +840,8 @@ proc DimensionalDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 
 // not part of DSI
 proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
+  use IO;
+
   _traceddd(this, ".dsiSetIndices", newRanges);
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
