@@ -87,7 +87,7 @@ if (pagePath == "") {
   pagePath = "index";
 }
 function dropSetup() {
-  var currentRelease = "1.19"; // what does the public have?
+  var currentRelease = "1.20"; // what does the public have?
   var stagedRelease = "1.20";  // is there a release staged but not yet public?
   var nextRelease = "1.21";    // what's the next release? (on docs/master)
   var button = document.getElementById("versionButton");
