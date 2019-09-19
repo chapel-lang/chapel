@@ -4181,21 +4181,6 @@ proc stderrInit() {
   }
 }
 
-/* Equivalent to try! stdout.write. See :proc:`channel.write` */
-proc write(const args ...?n) {
-  try! stdout.write((...args));
-}
-/* Equivalent to try! stdout.writeln. See :proc:`channel.writeln` */
-proc writeln(const args ...?n) {
-  try! stdout.writeln((...args));
-}
-
-// documented in the arguments version.
-pragma "no doc"
-proc writeln() {
-  try! stdout.writeln();
-}
-
 /* Equivalent to stdin.read. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));

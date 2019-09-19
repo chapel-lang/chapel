@@ -209,7 +209,7 @@ module ChapelIO {
     return helper(val);
   }
 
-  use IO;
+  private use IO;
 
     private
     proc isIoField(x, param i) param {
@@ -837,6 +837,22 @@ module ChapelIO {
     // but here it is defined thus for backward compatibility.
     f <~> new ioLiteral("LOCALE") <~> chpl_id();
   }
+
+  /* Equivalent to try! stdout.write. See :proc:`channel.write` */
+  proc write(const args ...?n) {
+    try! stdout.write((...args));
+  }
+  /* Equivalent to try! stdout.writeln. See :proc:`channel.writeln` */
+  proc writeln(const args ...?n) {
+    try! stdout.writeln((...args));
+  }
+
+  // documented in the arguments version.
+  pragma "no doc"
+  proc writeln() {
+    try! stdout.writeln();
+  }
+
 
   //
   // Catch all
