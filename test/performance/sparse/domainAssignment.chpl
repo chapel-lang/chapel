@@ -6,12 +6,12 @@ var t = new Timer();
 
 config const correctness = true;
 config const numIndices = 1000;
-config const sparsity = 0.01;
+config const density = 0.01;
 
-const numIndicesInParentDom = numIndices/sparsity;
+const numIndicesInParentDom = numIndices/density;
 const parentSize = sqrt(numIndicesInParentDom):int;
 const parentDom = {1..parentSize, 1..parentSize};
-const sparseStride = (1/sqrt(sparsity)):int;
+const sparseStride = (1/sqrt(density)):int;
 const sparseIndices = {1..parentSize by sparseStride,
                        1..parentSize by sparseStride};
 
