@@ -42,6 +42,7 @@ class listNode {
       l1.append(i);
   }
 
+  private use IO;
 
 /*
   A singly linked list.
