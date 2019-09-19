@@ -838,11 +838,11 @@ module ChapelIO {
     f <~> new ioLiteral("LOCALE") <~> chpl_id();
   }
 
-  /* Equivalent to try! stdout.write. See :proc:`channel.write` */
+  /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
   proc write(const args ...?n) {
     try! stdout.write((...args));
   }
-  /* Equivalent to try! stdout.writeln. See :proc:`channel.writeln` */
+  /* Equivalent to ``try! stdout.writeln``. See :proc:`IO.channel.writeln` */
   proc writeln(const args ...?n) {
     try! stdout.writeln((...args));
   }
