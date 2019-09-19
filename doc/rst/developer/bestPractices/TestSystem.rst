@@ -611,13 +611,12 @@ to see the singleton points at first).
 Multilocale Performance Testing
 +++++++++++++++++++++++++++++++
 Writing a performance test for multilocale setting is similar to single locale
-counterpart. However, helper file suffixes must be as follows.
+counterpart. However, helper file suffixes must be as follows:
 
 
 ===================== ==================== 
  Single Locale         Multilocale         
 ===================== ==================== 
- ``.numlocales``       ``.ml-numlocales``  
  ``.perfexecopts``     ``.ml-execopts``    
  ``.perfcompopts``     ``.ml-compopts``    
  ``.perfkeys``         ``.ml-keys``        
@@ -633,16 +632,22 @@ must be used.
 
 Multilocale Communication Counts Testing
 ++++++++++++++++++++++++++++++++++++++++
-Writing a communication counts test for multilocale setting is similar to the
-performance counterpart. However, for helper files ``cc-`` label is used instead
-of ``ml-``.
+Communication counts testing is only applicable in a multilocale setting, and it
+is similar to the performance counterpart. However, for helper files ``cc-``
+label is used instead of ``ml-``.
 
 Test Your Test Before Submitting
 ++++++++++++++++++++++++++++++++
 
-Before submitting your test for review, be sure that it works with relevant
-``start_test`` command.  Nothing is more embarrassing than committing a test
-that doesn't work on day one.
+Before submitting your test for review, be sure that it works under
+
+- ``start_test``
+- ``start_test --perfomance``
+- ``start_test --perflabel ml-`` (if applicable)
+- ``start_test --perflabel cc-`` (if applicable)
+
+modes when running within the directory (or directories) in question. Nothing is
+more embarrassing than committing a test that doesn't work on day one.
 
 Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
 Chapel repository, they will start showing up on the Chapel public
