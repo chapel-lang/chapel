@@ -1771,10 +1771,14 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
       lp = lifetimes->lifetimeForActual(iterableSym, usedAsRef, usedAsBorrow);
 
-      if (!isSubjectToRefLifetimeAnalysis(iterableSym))
+      // TODO: fold this in to lifetimeForActual
+      if (symbolHasInfiniteLifetime(iterableSym))
+        lp = infiniteLifetimePair();
+      /*
+      if (!isSubjectToRefLifetimeAnalysis(index))
         lp.referent = unknownLifetime();
-      if (!isSubjectToBorrowLifetimeAnalysis(iterableSym))
-        lp.borrowed = unknownLifetime();
+      if (!isSubjectToBorrowLifetimeAnalysis(index))
+        lp.borrowed = unknownLifetime();*/
 
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
       if (iterableCall->resolvedOrVirtualFunction())
