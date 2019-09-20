@@ -1,3 +1,5 @@
+use IO;
+
 
 var b = stdin.read(bool);
 var i = stdin.read(int);
