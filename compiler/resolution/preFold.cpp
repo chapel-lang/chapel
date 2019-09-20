@@ -36,7 +36,6 @@
 #include "symbol.h"
 #include "typeSpecifier.h"
 #include "visibleFunctions.h"
-#include "view.h"
 #include "wellknown.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -1971,7 +1970,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   //
   // When all we need is a C pointer, we can cut out here, returning
-  // a reference to the function symbol.1095699
+  // a reference to the function symbol.
   //
   if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
     return new SymExpr(captured_fn);
@@ -2122,6 +2121,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   ct->methods.add(thisMethod);
 
   FnSymbol* wrapper = new FnSymbol("wrapper");
+
   wrapper->addFlag(FLAG_INLINE);
   
   // Insert the wrapper into the AST now so we can resolve some things.
