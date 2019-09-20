@@ -610,19 +610,25 @@ to see the singleton points at first).
 
 Multilocale Performance Testing
 +++++++++++++++++++++++++++++++
-Writing a performance test for multilocale setting is similar to single locale
-counterpart. However, helper file suffixes must be as follows:
+Writing a performance test for multilocale setting has similarities to single
+locale performance testing and multilocale correctness testing. However, helper
+file suffixes differ from the previously covered ones as follows:
 
+========================= =======================
+Single Locale Performance Multilocale Performance
+========================= =======================
+ ``.perfexecopts``         ``.ml-execopts``    
+ ``.perfcompopts``         ``.ml-compopts``    
+ ``.perfkeys``             ``.ml-keys``        
+ ``.graph``                ``.ml-perf.graph``  
+ ``.execenv``              ``.ml-execenv``     
+========================= =======================
 
-===================== ==================== 
- Single Locale         Multilocale         
-===================== ==================== 
- ``.perfexecopts``     ``.ml-execopts``    
- ``.perfcompopts``     ``.ml-compopts``    
- ``.perfkeys``         ``.ml-keys``        
- ``.graph``            ``.ml-perf.graph``  
- ``.execenv``          ``.ml-execenv``     
-===================== ==================== 
+======================= =======================
+Multilocale Correctness Multilocale Performance
+======================= =======================
+ ``.numlocales``         ``.ml-numlocales``
+======================= =======================
 
 Graph files for multilocale performance tests are listed in ``ML-GRAPHFILES``
 instead of ``GRAPHFILES``.
@@ -632,8 +638,15 @@ must be used.
 
 Multilocale Communication Counts Testing
 ++++++++++++++++++++++++++++++++++++++++
+Another type of multilocale testing is where the number of communication calls
+(e.g. GETs, PUTs, ONs) generated is tracked. These numbers can be obtained with
+the help of `CommDiagnostics`_ module and be printed out similar to printing out
+the time elapsed or throughput.
+
+.. _`CommDiagnostics`: https://chapel-lang.org/docs/modules/standard/CommDiagnostics.html
+
 Communication counts testing is only applicable in a multilocale setting, and it
-is similar to the performance counterpart. However, for helper files ``cc-``
+is similar to multilocale performance testing. However, for helper files ``cc-``
 label is used instead of ``ml-``.
 
 Test Your Test Before Submitting
@@ -642,7 +655,7 @@ Test Your Test Before Submitting
 Before submitting your test for review, be sure that it works under
 
 - ``start_test``
-- ``start_test --perfomance``
+- ``start_test --performance``
 - ``start_test --perflabel ml-`` (if applicable)
 - ``start_test --perflabel cc-`` (if applicable)
 
