@@ -26,11 +26,9 @@ const MatVectSpace = {1..n, 1..n+1};
 
 const
   rdim1 = new ReplicatedDim(tl1),
-  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1,
-                              name="D1"),
+  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1),
   rdim2 = new ReplicatedDim(tl2),
-  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2,
-                              name="D2");
+  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2);
 
 const AbD: domain(2, indexType)
    dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //BC

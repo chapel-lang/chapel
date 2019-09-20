@@ -49,12 +49,12 @@ const MatVectSpace = {1..n, 1..n+1};
 const
   bdim1 =
 //  new BlockDim(tl1, 1, nbb1), //BD
-    new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //BC
+    new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1), //BC
   rdim1 = new ReplicatedDim(tl1),
 
   bdim2 =
 //  new BlockDim(tl2, 1, nbb2), //BD
-    new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //BC
+    new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2), //BC
   rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)

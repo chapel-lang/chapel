@@ -298,6 +298,7 @@ class BlockCyclic : BaseDist {
   }
 
   proc dsiEqualDMaps(that) param {
+    return false;
   }
 }
 

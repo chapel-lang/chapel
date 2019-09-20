@@ -56,7 +56,6 @@ The ``BlockCyclicDim`` record initializer is defined as follows:
       numLocales:   int,
       lowIdx:       int,
       blockSize:    int,
-      name:         string,
       cycleSizePos: int = // computed by the implementation )
 
 The arguments are as follows:
@@ -67,8 +66,6 @@ The arguments are as follows:
   ``lowIdx``, ``blockSize``
       are the counterparts to ``startIdx`` and ``blocksize``
       in the :class:`~BlockCycDist.BlockCyclic` distribution
-  ``name``
-      may be used for debugging; it is ignored by the implementation
   ``cycleSizePos``
       is used internally by the implementation and
       should not be specified by the user code
@@ -78,9 +75,6 @@ record BlockCyclicDim {
   const numLocales: int;
   const lowIdx:     int;  // we want the most general type here
   const blockSize:  int;
-
-  // for debugging
-  const name:string;
 
   // tell the compiler these are positive
   proc blockSizePos   return blockSize: bcdPosInt;
@@ -92,9 +86,6 @@ record BlockCyclic1dom {
   type idxType;
   type stoIndexT;
   param stridable: bool;
-
-  // for debugging
-  const name:string;
 
   // convenience
   proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
@@ -124,20 +115,19 @@ record BlockCyclic1locdom {
 /////////// privatization - start
 
 proc BlockCyclicDim.dsiGetPrivatizeData1d() {
-  return (lowIdx, blockSize, numLocales, name);
+  return (lowIdx, blockSize, numLocales);
 }
 
 proc type BlockCyclicDim.dsiPrivatize1d(privatizeData) {
   return new BlockCyclicDim(lowIdx = privatizeData(1),
                             blockSize = privatizeData(2),
-                            numLocales = privatizeData(3),
-                            name = privatizeData(4));
+                            numLocales = privatizeData(3));
 }
 
 proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
 
 proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
-  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
+  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx);
 }
 
 proc type BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
@@ -146,7 +136,6 @@ proc type BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
                   idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
-                  name            = privatizeData(5),
                   wholeR          = privatizeData(1),
                   wholeRstrideAbs = privatizeData(2),
                   storagePerCycle = privatizeData(3),
@@ -247,7 +236,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
       if lowIdxDom <= 0 then -lowIdxDom else adjustLowIdx()
     ;
 
-  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, " name=", name, ").dsiNewRectangularDom1d(idxType=", idxType:string, "): adjusted lowIdx = ", adjLowIdx);
+  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, ").dsiNewRectangularDom1d(idxType=", idxType:string, "): adjusted lowIdx = ", adjLowIdx);
 
   _checkFitsWithin(adjLowIdx, idxType);
 
@@ -257,8 +246,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
                   adjLowIdx = adjLowIdx: idxType,
                   blockSizePos  = this.blockSizePos,
                   numLocalesPos = this.numLocalesPos,
-                  cycleSizePos  = this.cycleSizePos,
-                  name = this.name);
+                  cycleSizePos  = this.cycleSizePos);
 
   return result;
 }
@@ -499,9 +487,6 @@ inline proc BlockCyclicDim.dsiIndexToLocale1d(ind: uint(64)): locIdT {
   return dsiIndexToLocale1d(ind:convT);
 }
 
-//var debugD1Shown = false;
-//proc BlockCyclic1dom.debugIsD1() return name == "D1";
-
 proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   // For now, require the user to provide unambiguous ranges only.
   // This requirement could potentially be avoided (as long as no arrays
@@ -525,17 +510,6 @@ proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
     wholeRstrideAbs = 0; // be sure nobody ever reads this
     storagePerCycle = blockSizePos;
   }
-
-//proc writei(i) {
-//  write("(", _dsiCycNo(i), ",", _dsiLocNo_formula(i),
-//        ",", _dsiCycOff(i) % blockSizePos, ")");
-//}
-//writeln();
-//write  ("dsiSetIndices1d(", name, ", ", rangeArg, ") --> ");
-//  write(wholeR, " | ");
-//  writei(wholeR.low); write(" .. "); writei(wholeR.high);
-//  writeln();
-//if debugIsD1() then debugD1Shown = false;
 
   if prevStoragePerCycle != 0 && storagePerCycle != prevStoragePerCycle then
     dsiSetIndicesUnimplementedCase = true;
@@ -592,16 +566,6 @@ inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
 proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
   const stoLow = globDD._dsiStorageLow(locId);
   const stoHigh = globDD._dsiStorageHigh(locId);
-
-//proc debugShowD1() {
-// if debugD1Shown then return false; debugD1Shown = true; return true;
-//}
-//if globDD.debugIsD1() && !debugD1Shown then writeln();
-//if !globDD.debugIsD1() || debugShowD1() {
-//writeln("dsiSetLocalIndices1d ", globDD.name, "  l ", locId,
-//        " -> ", stoLow, "..", stoHigh,
-//        if stoLow <= stoHigh then "" else "  empty");
-//}
 
   return stoLow:stoIndexT .. stoHigh:stoIndexT;
 }

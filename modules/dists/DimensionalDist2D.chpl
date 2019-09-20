@@ -428,7 +428,7 @@ proc newDimensionalDist2D(
 ) {
   if targetLocales.rank != 1 then compilerError("newDimensionalDist2D() is provided only for 1D targetLocales arrays");
   const (nl1, nl2) = (di1.numLocales, di2.numLocales);
-  ref reshapedLocales = reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
+  var reshapedLocales = reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
 
   return new unmanaged DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
    dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
@@ -536,6 +536,16 @@ proc DimensionalDist2D.init(param dummy: int,
 
 
 //== miscellanea
+
+proc DimensionalDist2D.dsiEqualDMaps(that: DimensionalDist2D) {
+  return this.di1 == that.di1   &&
+         this.di2 == that.di2   &&
+         this.targetLocales.equals(that.targetLocales);
+}
+
+proc DimensionalDist2D.dsiEqualDMaps(that) param {
+  return false;
+}
 
 proc DimensionalDist2D.dimSpecifier(param dim: int) {
   if dim == 1 then
