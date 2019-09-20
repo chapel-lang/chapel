@@ -54,6 +54,8 @@ Outline
        - `Comparing to a C version`_
 
      - `Creating a graph comparing multiple variations`_
+     - `Multilocale Performance Testing`_
+     - `Multilocale Communication Counts Testing`_
      - `Test Your Test Before Submitting`_
 
    - `A Test That Tracks A Failure`_
@@ -606,13 +608,59 @@ suite(s) in which your graph appears, and you should see data for it.
 (Note that for a new graph with only one day of data, it can be hard
 to see the singleton points at first).
 
+Multilocale Performance Testing
++++++++++++++++++++++++++++++++
+Writing a performance test for multilocale setting has similarities to single
+locale performance testing and multilocale correctness testing. However, helper
+file suffixes differ from the previously covered ones as follows:
+
+========================= =======================
+Single Locale Performance Multilocale Performance
+========================= =======================
+ ``.perfexecopts``         ``.ml-execopts``    
+ ``.perfcompopts``         ``.ml-compopts``    
+ ``.perfkeys``             ``.ml-keys``        
+ ``.graph``                ``.ml-perf.graph``  
+ ``.execenv``              ``.ml-execenv``     
+========================= =======================
+
+======================= =======================
+Multilocale Correctness Multilocale Performance
+======================= =======================
+ ``.numlocales``         ``.ml-numlocales``
+======================= =======================
+
+Graph files for multilocale performance tests are listed in ``ML-GRAPHFILES``
+instead of ``GRAPHFILES``.
+
+Finally to run a multilocale performance test ``start_test --perflabel ml-``
+must be used.
+
+Multilocale Communication Counts Testing
+++++++++++++++++++++++++++++++++++++++++
+Another type of multilocale testing is where the number of communication calls
+(e.g. GETs, PUTs, ONs) generated is tracked. These numbers can be obtained with
+the help of `CommDiagnostics`_ module and be printed out similar to printing out
+the time elapsed or throughput.
+
+.. _`CommDiagnostics`: https://chapel-lang.org/docs/modules/standard/CommDiagnostics.html
+
+Communication counts testing is only applicable in a multilocale setting, and it
+is similar to multilocale performance testing. However, for helper files ``cc-``
+label is used instead of ``ml-``.
+
 Test Your Test Before Submitting
 ++++++++++++++++++++++++++++++++
 
 Before submitting your test for review, be sure that it works under
-both ``start_test`` and ``start_test -performance`` modes when running
-within the directory (or directories) in question.  Nothing is more
-embarrassing than committing a test that doesn't work on day one.
+
+- ``start_test``
+- ``start_test --performance``
+- ``start_test --perflabel ml-`` (if applicable)
+- ``start_test --perflabel cc-`` (if applicable)
+
+modes when running within the directory (or directories) in question. Nothing is
+more embarrassing than committing a test that doesn't work on day one.
 
 Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
 Chapel repository, they will start showing up on the Chapel public
@@ -878,7 +926,7 @@ foo.timeout         time in seconds after which start_test should stop this test
                     See `Limiting Time Taken`_ for more information
 ..
 -------------------------------------------------------------------------------
-**performance**
+**performance** (replace "perf" with "ml-" and "cc-" as necessary)
 -------------------------------------------------------------------------------
 foo.perfcompopts    compiler flags, overrides .compopts for --performance
 PERFCOMPOPTS        directory-wide performance compiler flags
