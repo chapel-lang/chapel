@@ -438,6 +438,8 @@ module DateTime {
     return str;
   }
 
+  private use IO;
+
   /* Read or write a date value from channel `f` */
   proc date.readWriteThis(f) {
     const dash = new ioLiteral("-");
