@@ -562,6 +562,8 @@ proc string.this(m:reMatch) {
   else return "";
 }
 
+ private use IO;
+
 /*  This class represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
     To create a compiled regular expression, use the compile function.
