@@ -240,6 +240,8 @@ module UnitTest {
   use Reflection;
   use TestError;
   use List, Map;
+  private use IO;
+
   pragma "no doc"
   config const testNames: string = "None";
   pragma "no doc"
