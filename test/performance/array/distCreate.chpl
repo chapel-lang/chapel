@@ -7,14 +7,16 @@ use BlockCycDist;
 
 
 type elemType = int;
-const totalMem = + reduce Locales.physicalMemory();
 
-config param correctness = true;
+// assume homogeneity
+const totMem = here.physicalMemory(unit = MemUnits.Bytes);
+config const memFraction = 4;
+
+config const correctness = false;
 config const nElemsSmall = if correctness then 100 else 1000000;
-config const memRatio = .25;
-config const nElemsLarge = ((totalMem*memRatio)/numBytes(elemType)):int;
-config const small = true;
+config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
 
+config const small = true;
 const nElems = if small then nElemsSmall else nElemsLarge;
 
 var t = new Timer();
