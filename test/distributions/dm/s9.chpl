@@ -21,9 +21,9 @@ setupLocales(tl1, tl2);
 var phase = 0;
 proc leapphase() { phase += 20; fphase(phase); }
 
-const dd1 =new unmanaged BlockDim(numLocales=tl1,
+const dd1 = new BlockDim(numLocales=tl1,
                          boundingBoxLow=start1, boundingBoxHigh=end1);
-const dd2 =new unmanaged BlockDim(numLocales=tl2,
+const dd2 = new BlockDim(numLocales=tl2,
                          boundingBoxLow=start2, boundingBoxHigh=end2);
 
 const space = {1..n, 1..n+1};
@@ -75,6 +75,3 @@ proc test(A, ix1, ix2) {
 
 test(Ab[1..n, 1..3],           (1,1), (2,2));
 test(Ab[1..n by 3, 5..n by 2], (4,5), (7,7));
-
-delete dd1;
-delete dd2;

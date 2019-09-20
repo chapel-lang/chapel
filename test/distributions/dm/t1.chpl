@@ -11,8 +11,8 @@ setupLocales(s1, s2);
 
 /////////// distribution
 
-var vdf = new unmanaged ReplicatedDim(s1);
-var sdf = new unmanaged BlockDim(s2, 1, 3);
+var vdf = new ReplicatedDim(s1);
+var sdf = new BlockDim(s2, 1, 3);
 
 hd("new DimensionalDist2D()");
 var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
@@ -122,6 +122,3 @@ tl();
 //privTest(dmarr, (1,0), (3,1), 0);
 //privTest(dmarr, (1,1), (3,3), 0);
 //tl();
-
-delete vdf;
-delete sdf;
