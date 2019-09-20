@@ -2989,6 +2989,8 @@ void lowerIterators() {
     }
   }
 
+  USR_STOP();
+
   removeUncalledIterators();
 
   fixNumericalGetMemberPrims();
