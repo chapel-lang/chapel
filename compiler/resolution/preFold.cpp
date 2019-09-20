@@ -2132,35 +2132,37 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
 
-  Expr* unmanagedMarker = new NamedExpr(astr_chpl_manager,
-                                       new SymExpr(dtUnmanaged->symbol));
-
-  CallExpr* subClass = new CallExpr(PRIM_NEW,
-                                    unmanagedMarker,
-                                    new SymExpr(undecorated->symbol));
-
-  CallExpr* parClass = new CallExpr(PRIM_CAST,
-                                    new SymExpr(parent->symbol),
-                                    subClass);
-
-  block->insertAtTail(parClass);
-  tryResolveCall(parClass);
-  parClass->remove();
-  //printf("%s\n", parClass->typeInfo()->name());
-
-  CallExpr* getBaseType = new CallExpr(dtShared->symbol, parent->symbol);
-  block->insertAtTail(getBaseType);
-  tryResolveCall(getBaseType);
-  getBaseType->remove();
-
-  VarSymbol* temp = newTemp("sharedBaseClass", getBaseType->typeInfo());
-  block->insertAtTail(new DefExpr(temp));
+  NamedExpr* usym = new NamedExpr(astr_chpl_manager,
+                                  new SymExpr(dtUnmanaged->symbol));
   
-  CallExpr* init = new CallExpr("init", gMethodToken, temp, parClass);
-  block->insertAtTail(init);
+  // Create a new "unmanaged child".
+  CallExpr* init = new CallExpr(PRIM_NEW, usym,
+                                new SymExpr(undecorated->symbol));
 
-  block->insertAtTail(new CallExpr(PRIM_RETURN, temp));
- 
+  // Cast to "unmanaged parent".
+  Type* parUnmanaged = getDecoratedClass(parent, CLASS_TYPE_UNMANAGED);
+  CallExpr* parCast = new CallExpr(PRIM_CAST, parUnmanaged->symbol,
+                                   init);
+
+  // Get a handle to the type "_shared(parent)".
+  CallExpr* getParShared = new CallExpr(dtShared->symbol, parent->symbol);
+  block->insertAtTail(getParShared);
+  tryResolveCall(getParShared);
+  getParShared->remove();
+  Type* parShared = getParShared->typeInfo();
+
+  // Create a new "shared parent" temporary.
+  VarSymbol* temp = newTemp("retval", parShared);
+  block->insertAtTail(new DefExpr(temp));
+
+  // Initialize the temporary with the result of the cast.
+  CallExpr* initTemp = new CallExpr("init", gMethodToken, temp, parCast);
+  block->insertAtTail(initTemp);
+
+  // Return the "shared parent" temporary.
+  CallExpr* ret = new CallExpr(PRIM_RETURN, temp);
+  block->insertAtTail(ret);
+
   normalize(wrapper);
 
   CallExpr* callWrapper = new CallExpr(wrapper);
