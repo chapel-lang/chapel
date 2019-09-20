@@ -1093,13 +1093,17 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
         (theOnlyOneThatMatters != NULL && theOnlyOneThatMatters != formal))
       continue;
 
-    if (returnsRef && formal->isRef() &&
-        (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(actualSym))) {
+    if (returnsRef && formal->isRef()) {
+      if (symbolHasInfiniteLifetime(actualSym))
+        argLifetime.referent = infiniteLifetime();
 
-      // Use the referent part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
-      argLifetime.referent = temp.referent;
+      if (isSubjectToRefLifetimeAnalysis(actualSym) ||
+          isLocalVariable(actualSym)) {
+
+        // Use the referent part of the actual's lifetime
+        LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
+        argLifetime.referent = temp.referent;
+      }
     }
 
     if (returnsBorrow && isSubjectToBorrowLifetimeAnalysis(actualSym)) {
