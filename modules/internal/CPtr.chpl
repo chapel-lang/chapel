@@ -95,6 +95,8 @@ module CPtr {
     }
   }
 
+  private use IO;
+
   /*
   This class represents a C array with fixed size.  A variable of type c_array
   can coerce to a c_ptr with the same element type.  In that event, the
