@@ -52,9 +52,9 @@ const st1=1, st2=1;
 
 // 1-d descriptors for Dimensional
 const
-  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"),
+  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1),
   rdim1 = new ReplicatedDim(tl1),
-  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"),
+  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2),
   rdim2 = new ReplicatedDim(tl2);
 
 const dimdist = new dmap(new unmanaged DimensionalDist2D(tla, bdim1, bdim2, "dim"));
