@@ -2978,6 +2978,7 @@ void lowerIterators() {
   }
 
   fragmentLocalBlocks();
+  gatherPrimIRFieldValByFormal();
 
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator()) {
@@ -3000,6 +3001,7 @@ void lowerIterators() {
 
   cleanupTemporaryVectors();
   cleanupIteratorBreakToken();
+  cleanupPrimIRFieldValByFormal();
 
   iteratorsLowered = true;
 }
