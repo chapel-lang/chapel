@@ -59,7 +59,9 @@ The locale type supports the following methods:
 \index{predefined functions!callStackSize@\chpl{callStackSize}}
 \index{locales!callStackSize@\chpl{callStackSize}}
 \begin{protohead}
+\begin{verbatim}
 proc locale.callStackSize: uint(64);
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the per-task call stack size used when creating tasks on the
@@ -70,7 +72,9 @@ is determined by the system.
 \index{predefined functions!id@\chpl{id}}
 \index{locales!id@\chpl{id}}
 \begin{protohead}
+\begin{verbatim}
 proc locale.id: int;
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a unique integer for each locale, from 0 to the number of
@@ -87,7 +91,9 @@ locales less one.
 \index{predefined functions!maxTaskPar@\chpl{maxTaskPar}}
 \index{locales!maxTaskPar@\chpl{maxTaskPar}}
 \begin{protohead}
+\begin{verbatim}
 proc locale.maxTaskPar: int(32);
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns an estimate of the maximum parallelism available for tasks
@@ -98,7 +104,9 @@ on a given locale.
 \index{predefined functions!name@\chpl{name}}
 \index{locales!name@\chpl{name}}
 \begin{protohead}
+\begin{verbatim}
 proc locale.name: string;
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the name of the locale.
@@ -107,7 +115,9 @@ Returns the name of the locale.
 \index{predefined functions!numPUs@\chpl{numPUs}}
 \index{locales!numPUs@\chpl{numPUs}}
 \begin{protohead}
+\begin{verbatim}
 proc numPUs(logical: bool = false, accessible: bool = true);
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the number of processing unit instances
@@ -127,8 +137,10 @@ Otherwise it includes all processors that seem to be present.
 \index{predefined functions!physicalMemory@\chpl{physicalMemory}}
 \index{locales!physicalMemory@\chpl{physicalMemory}}
 \begin{protohead}
+\begin{verbatim}
 use Memory;
 proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)): retType;
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the amount of physical memory available on a given locale in
@@ -170,9 +182,11 @@ environment} contains definitions for the array of locales on which
 the program is executing (\chpl{Locales}), a domain for that array
 (\chpl{LocaleSpace}), and the number of locales (\chpl{numLocales}).
 \begin{chapel}
+\begin{verbatim}
 config const numLocales: int;
 const LocaleSpace: domain(1) = [0..numLocales-1];
 const Locales: [LocaleSpace] locale;
+\end{verbatim}
 \end{chapel}
 When a Chapel program starts, a single task executes \chpl{main}
 on \chpl{Locales(0)}.
@@ -197,9 +211,11 @@ development on smaller machines.
 \begin{example}
 The code
 \begin{chapel}
+\begin{verbatim}
 const MyLocales: [0..numLocales*4] locale 
                = [loc in 0..numLocales*4] Locales(loc%numLocales);
 on MyLocales[i] ...
+\end{verbatim}
 \end{chapel}
 defines a new array \chpl{MyLocales} that is four times the size of
 the \chpl{Locales} array.  Each locale is added to
@@ -218,9 +234,11 @@ running on.
 \begin{example}
 The code
 \begin{chapel}
+\begin{verbatim}
 on Locales(1) {
   writeln(here.id);
 }
+\end{verbatim}
 \end{chapel}
 results in the output \chpl{1} because the \chpl{writeln} statement is
 executed on locale 1.
@@ -235,8 +253,10 @@ The identifier \chpl{here} is not a keyword and can be overridden.
 The locale associated with an expression (where the expression is
 stored) is queried using the following syntax:
 \begin{syntax}
+\begin{verbatim}
 locale-access-expression:
   expression . `locale'
+\end{verbatim}
 \end{syntax}
 When the expression is a class, the access returns the locale on which
 the class object exists rather than the reference to the class.  If
@@ -247,6 +267,7 @@ returned directly.
 \begin{example}
 Given a class C and a record R, the code
 \begin{chapel}
+\begin{verbatim}
 on Locales(1) {
   var x: int;
   var c: C;
@@ -261,12 +282,15 @@ on Locales(1) {
     writeln(r.locale.id);
   }
 }
+\end{verbatim}
 \end{chapel}
 results in the output
 \begin{chapelprintoutput}
+\begin{verbatim}
 1
 3
 1
+\end{verbatim}
 \end{chapelprintoutput}
 The variable \chpl{x} is declared and exists on \chpl{Locales(1)}.
 The variable \chpl{c} is a class reference.  The reference exists
@@ -285,17 +309,21 @@ For example, the following code:
 % add this test later when we can.
 %
 \begin{chapel}
+\begin{verbatim}
 const c = 10;
 for loc in Locales do on loc do
     writeln(c.locale.id);
+\end{verbatim}
 \end{chapel}
 outputs
 \begin{chapelprintoutput}
+\begin{verbatim}
 0
 1
 2
 3
 4
+\end{verbatim}
 \end{chapelprintoutput}
 when running on 5 locales.
 \end{example}
@@ -310,9 +338,11 @@ The on statement controls on which locale a block of code should be
 executed or data should be placed.  The syntax of the on statement is
 given by
 \begin{syntax}
+\begin{verbatim}
 on-statement:
   `on' expression `do' statement
   `on' expression block-statement
+\end{verbatim}
 \end{syntax}
 The locale of the expression is automatically queried as described
 in~\rsec{Querying_the_Locale_of_a_Variable}.  Execution of the
@@ -335,6 +365,8 @@ the \sntx{on-statement}.  This is accomplished using a similar syntax
 but omitting the \chpl{do} keyword and braces.  The syntax is given
 by:
 \begin{syntax}
+\begin{verbatim}
 remote-variable-declaration-statement:
   `on' expression variable-declaration-statement
+\end{verbatim}
 \end{syntax}

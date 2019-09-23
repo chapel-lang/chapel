@@ -56,8 +56,10 @@ library on the \chpl{chpl} command line.
 
 An external procedure declaration has the following syntax:
 \begin{syntax}
+\begin{verbatim}
 external-procedure-declaration-statement:
   `extern' external-name[OPT] `proc' function-name argument-list return-intent[OPT] return-type[OPT]
+\end{verbatim}
 \end{syntax}
 
 Chapel code will call the external function using the parameter types supplied
@@ -79,7 +81,9 @@ in Chapel as \chpl{c_atoi} but that will actually link with the C
 \chpl{atoi} function.
 
 \begin{chapel}
+\begin{verbatim}
   extern "atoi" proc c_atoi(arg:c_string):c_int;
+\end{verbatim}
 \end{chapel}
 
 At present, external iterators are not supported.  
@@ -125,12 +129,14 @@ compiled.
 
 An exported procedure declaration has the following syntax:
 \begin{syntax}
+\begin{verbatim}
 exported-procedure-declaration-statement:
   `export' external-name[OPT] `proc' function-name argument-list return-intent[OPT] return-type[OPT]
     function-body
 
 external-name:
   expression
+\end{verbatim}
 \end{syntax}
 
 The rest of the procedure declaration is the same as for a non-exported
@@ -145,9 +151,11 @@ linking. For example, the code below declares a function callable in C as
 \chpl{addone}:
 
 \begin{chapel}
+\begin{verbatim}
   export "chapel_addone" proc addone(arg:c_int):c_int {
     return arg+1;
   }
+\end{verbatim}
 \end{chapel}
 
 \begin{future}
@@ -199,16 +207,19 @@ C Type & Chapel Type & C Type & Chapel Type & C Type & Chapel Type \\
 Standard C types are built-in.  Their Chapel equivalents do not have to be
 declared using the \chpl{extern} keyword.
 
-In C, the ``colloquial'' integer type names \chpl{char}, \chpl{signed
-char}, \chpl{unsigned char}, (\chpl{signed}) \chpl{short}
+In C, the ``colloquial'' integer type names
+\chpl{char}, \chpl{signed char}, \chpl{unsigned char},
+(\chpl{signed}) \chpl{short}
 (\chpl{int}), \chpl{unsigned short} (\chpl{int}),
 (\chpl{signed}) \chpl{int}, \chpl{unsigned int},
-(\chpl{signed}) \chpl{long} (\chpl{int}), \chpl{unsigned long} (\chpl{int}), (\chpl{signed}) \chpl{long
-long} (\chpl{int}) and \chpl{unsigned long long} (\chpl{int}) may have an
+(\chpl{signed}) \chpl{long} (\chpl{int}), \chpl{unsigned long}
+(\chpl{int}), (\chpl{signed}) \chpl{long long} (\chpl{int}) and
+\chpl{unsigned long long} (\chpl{int}) may have an
 implementation-defined width.\footnote{However, most implementations have settled
 on using 8, 16, 32, and 64 bits (respectively) to
-represent \chpl{char}, \chpl{short}, \chpl{int} and \chpl{long}, and \chpl{long
-long} types}.  When referring to C types in a Chapel program, the burden of
+represent \chpl{char}, \chpl{short}, \chpl{int} and
+\chpl{long}, and \chpl{long long} types}.
+When referring to C types in a Chapel program, the burden of
 making sure the type sizes agree is on the user.  A Chapel implementation must
 ensure that all of the C equivalents in the above table are defined and have the
 correct representation with respect to the corresponding Chapel type.
@@ -248,23 +259,29 @@ extern type vec = 3*real(64);
 External C struct types can be referred to within Chapel by prefixing
 a Chapel \chpl{record} definition with the \chpl{extern} keyword.
 \begin{syntax}
+\begin{verbatim}
 external-record-declaration-statement:
   `extern' external-name[OPT] simple-record-declaration-statement
+\end{verbatim}
 \end{syntax}
 
 For example, consider an external C structure defined in \chpl{foo.h} called \chpl{fltdbl}.
 \begin{chapel}
+\begin{verbatim}
     typedef struct _fltdbl {
       float x;
       double y;
     } fltdbl;
+\end{verbatim}
 \end{chapel}
 This type could be referred to within a Chapel program using
 \begin{chapel}
+\begin{verbatim}
    extern record fltdbl {
      var x: real(32);
      var y: real(64);
    }
+\end{verbatim}
 \end{chapel}
 \noindent
 and defined by supplying \chpl{foo.h} on the \chpl{chpl} command line.
@@ -290,17 +307,21 @@ As an example of this, given a C declaration of:
 
 % Not a spec test, we would need to be able to provide .c and .h files
 \begin{chapel}
+\begin{verbatim}
   struct Vec3 {
     double x, y, z;
   };
+\end{verbatim}
 \end{chapel}
 
 in Chapel you would refer to this \chpl{struct} via
 
 \begin{chapel}
+\begin{verbatim}
   extern "struct Vec3" record Vec3 {
     var x, y, z: real(64);
   }
+\end{verbatim}
 \end{chapel}
 
 
@@ -317,18 +338,22 @@ For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that can't or won't be described as
 a pointer to an external record) as follows:
 \begin{chapel}
+\begin{verbatim}
     extern proc returnStructPtr(): opaque;
 
     var structPtr: opaque = returnStructPtr();
+\end{verbatim}
 \end{chapel}
 
 However, because the type of \chpl{structPtr} is opaque, it can be used only in
 assignments and the arguments of functions expecting the same underlying type.
 \begin{chapel}
+\begin{verbatim}
     var copyOfStructPtr = structPtr;
 
     extern proc operateOnStructPtr(ptr: opaque);
     operateOnStructPtr(structPtr);
+\end{verbatim}
 \end{chapel}
 \noindent
 Like a \chpl{void*} in C, Chapel's \chpl{opaque} carries no information
@@ -344,13 +369,17 @@ This subsection discusses how to access external variables and constants.
 A C variable or constant can be referred to within Chapel by prefixing
 its declaration with the extern keyword.  For example:
 \begin{chapel}
+\begin{verbatim}
     extern var bar: foo;
+\end{verbatim}
 \end{chapel}
 \noindent
 would tell the Chapel compiler about an external C variable named
 \chpl{bar} of type \chpl{foo}.  Similarly,
 \begin{chapel}
+\begin{verbatim}
    extern const baz: int(32);
+\end{verbatim}
 \end{chapel}
 would refer to an external 32-bit integer constant named \chpl{baz} in the
 C code.  In practice, external consts can be used to provide Chapel
@@ -380,7 +409,9 @@ the Chapel signature of the function preceded by the \chpl{extern} keyword.  For
 example, for a C function foo() that takes no arguments and returns
 nothing, the prototype would be:
 \begin{chapel}
+\begin{verbatim}
        extern proc foo();
+\end{verbatim}
 \end{chapel}
 
 To refer to the return value of a C function, its type must be supplied through
@@ -389,7 +420,9 @@ inferred, since an \chpl{extern} procedure declaration has no body.}
 
 If the above function returns a C \chpl{double}, it would be declared as:
 \begin{chapel}
+\begin{verbatim}
        extern proc foo(): real;
+\end{verbatim}
 \end{chapel}
 Similarly, for external functions that expect arguments, the types of those
 arguments types may be declared in Chapel using explicit argument type specifiers.
@@ -398,9 +431,11 @@ The types of function arguments may be omitted from the external procedure
 declaration, in which case they are inferred based on the Chapel callsite.
 For example, the Chapel code
 \begin{chapel}
+\begin{verbatim}
        extern proc foo(x: int, y): real;
        var a, b: int;
        foo(a, b);
+\end{verbatim}
 \end{chapel}
 \noindent
 would imply that the external function foo takes two 64-bit integer values
@@ -411,8 +446,10 @@ External function arguments can be declared using the \sntx{default-expression}
 syntax.  In this case, the default argument will be supplied by the Chapel
 compiler if the corresponding actual argument is omitted at the callsite.  For example:
 \begin{chapel}
+\begin{verbatim}
        extern proc foo(x: int, y = 1.2): real;
        foo(0);
+\end{verbatim}
 \end{chapel}
 Would cause external function foo() to be invoked with the arguments 0
 and 1.2.
@@ -421,14 +458,18 @@ C varargs functions can be declared using
 Chapel's \sntx{variable-argument-expression} syntax (\chpl{...}).  For example,
 the C \chpl{printf} function can be declared in Chapel as
 \begin{chapel}
+\begin{verbatim}
        extern proc printf(fmt: c_string, vals...?numvals): int;
+\end{verbatim}
 \end{chapel}
 
 External C functions or macros that accept type arguments can also be
 prototyped in Chapel by declaring the argument as a type.  For
 example:
 \begin{chapel}
+\begin{verbatim}
        extern foo(type t);
+\end{verbatim}
 \end{chapel}
 Calling such a routine with a Chapel type will cause the type
 identifier (e.g., 'int') to be passed to the routine.\footnote{In practice,
@@ -443,13 +484,17 @@ To call a Chapel procedure from external code, the procedure name must be
 exported using the \chpl{export} keyword.  An exported procedure taking no
 arguments and returning a 64-bit integer can be declared as:
 \begin{chapel}
+\begin{verbatim}
 export proc foo(): int { ... }
+\end{verbatim}
 \end{chapel}
 
 If the optional \sntx{external-name} is supplied, that is the name used in
 linking with external code.  For example, if we declare
 \begin{chapel}
+\begin{verbatim}
 export "myModule_foo" proc foo(): int { ... }
+\end{verbatim}
 \end{chapel}
 \noindent
 then the name \chpl{foo} is used to refer to the procedure within chapel code,
