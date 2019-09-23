@@ -622,8 +622,7 @@ void ModuleSymbol::addDefaultUses() {
     ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
 
     if (parentModule == NULL) {
-      SET_LINENO(this);
-      USR_FATAL("Modules must be declared at module- or file-scope");
+      USR_FATAL(this, "Modules must be declared at module- or file-scope");
     }
 
     //
