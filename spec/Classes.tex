@@ -143,8 +143,6 @@ proc test() {
 \begin{chapelpost}
 test();
 \end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 The \chpl{.borrow()} method is available on all class types (including
@@ -239,8 +237,6 @@ are available for this purpose (see~\rsec{Explicit_Class_Conversions}).
 class C { }
 var x: borrowed unmanaged C;
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapeloutput}
 duplicate-management.chpl:2: error: Type expression uses multiple class kinds: borrowed unmanaged
 \end{chapeloutput}
@@ -320,8 +316,6 @@ if c != nil {
   c!.method(); // c! converts from 'owned C?' to 'borrowed C'
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 The \chpl{borrow()} method is an exception. Suppose it is invoked on
@@ -371,8 +365,6 @@ c = new D();      // Now c refers to an object of type D.
 \begin{chapelcompopts}
 --no-warnings
 \end{chapelcompopts}
-\begin{chapeloutput}
-\end{chapeloutput}
 When the variable \chpl{c} is declared, it initially has the value of
 \chpl{nil}.  The next statement assigned to it an instance of the class
 \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps
@@ -423,8 +415,6 @@ class Actor {
   var age: uint;
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 defines a new class type called \chpl{Actor} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{chapelexample}
@@ -475,8 +465,6 @@ x!.primaryMethod();   // within the method, this: borrowed C
 x!.secondaryMethod(); // within the method, this: borrowed C
 x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 For type methods on a class, \chpl{this} will accept any management or
@@ -840,7 +828,7 @@ var p = new Point(1.0, 2.0);
 The first statement in the initializer reads the value of uninitialized field
 \chpl{x}, so the compiler will issue an error:
 
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 usedBeforeInitialized.chpl:4: In initializer:
 usedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
 \end{chapelprintoutput}
@@ -1304,7 +1292,7 @@ var D = new Point3D(50.0, 50.0);
 \end{chapelcompopts}
 Each of the \chpl{new} expressions invokes the compiler-generated initializer,
 then invokes the \chpl{verify} method via the \chpl{postinit} method:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 (0.0, 0.0)
 (1.0, 2.0)
 (0.0, 5.0)
@@ -1487,7 +1475,7 @@ Once the parent's initializer is finished, the parent method \chpl{foo} may be
 called. After the \chpl{complete} method is invoked, a call to \chpl{foo}
 resolves to the child's overridden (\rsec{Overriding_Base_Class_Methods})
 implementation:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 Parent.foo
 Child.foo
 {x = 1.0, y = 2.0, z = 3.0}
@@ -1574,7 +1562,7 @@ var c = new Child(1.0, 2.0, 3.0, 4.0);
 The compiler inserts a call to the parent's \chpl{postinit} method in the
 child's \chpl{postinit} method, and invokes the child's \chpl{postinit} method
 after the compiler-generated initializer finishes:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 Parent.postinit: 1.0, 2.0
 Child.postinit: 3.0, 4.0
 \end{chapelprintoutput}
@@ -1809,8 +1797,6 @@ delete c;              // Deletes that object.
 // c.i = 3;      // May overwrite freed memory.
 // delete c;     // May confuse some allocators.
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapelexecopts}
 --memLeaksByType
 \end{chapelexecopts}

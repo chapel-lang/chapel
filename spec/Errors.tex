@@ -48,10 +48,6 @@ proc alwaysThrows():int throws {
   return 1;
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 
@@ -91,10 +87,6 @@ proc haltsOnErrorBlock() {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsection{Handling an error with catch}
@@ -150,10 +142,6 @@ proc catchingErrors() throws {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsubsection{try! with catch}
@@ -174,10 +162,6 @@ proc catchingErrorsHalt() {
   // errors other than FileNotFoundError cause a halt
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsubsection{Nested try}
@@ -211,8 +195,6 @@ proc alwaysThrows():int throws {
   return 1;
 }
 \end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsection{Propagating an error with throws}
@@ -239,10 +221,6 @@ proc catchingErrorsPropagate() throws {
   // errors other than FileNotFoundError propagate
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsubsection{catch-less try}
@@ -271,10 +249,6 @@ proc propagatesError() throws {
   return try canThrow(0);
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsubsection{try expressions}
@@ -293,10 +267,6 @@ proc expressionTry(): int throws {
   return try canThrow(0);
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsection{Complete handling}
@@ -321,10 +291,6 @@ proc warnsOnError(i: int): int {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \item
@@ -342,10 +308,6 @@ proc haltsOnError(i: int): int {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \end{itemize}
@@ -375,10 +337,6 @@ proc deferredDelete(i: int) {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 It is not possible to throw errors out of a \chpl{defer} statement because the
@@ -410,10 +368,6 @@ class SubThrowingObject : ThrowingObject {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 
@@ -435,10 +389,6 @@ proc handleFromOn() {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 
@@ -476,10 +426,6 @@ proc handleFromBegin() {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsection{coforall and cobegin}
@@ -508,10 +454,6 @@ proc handleFromCoforall() {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \begin{chapelexample}{handle-from-cobegin.chpl}
@@ -531,10 +473,6 @@ proc handleFromCobegin() {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsection{forall}
@@ -561,10 +499,6 @@ proc handleFromForall() {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 
@@ -588,10 +522,6 @@ class DemoError : Error { }
 
 class DemoSysError : SystemError { }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 
@@ -647,8 +577,6 @@ proc canThrow(i: int): int throws {
   return i + 1;
 }
 \end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 The following module is explicitly marked as a prototype module,
@@ -678,10 +606,6 @@ prototype module PrototypeModule {
   }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \subsection{Production Mode}
@@ -708,8 +632,4 @@ module ProductionModule {
   // }
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}

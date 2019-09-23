@@ -181,8 +181,6 @@ for param i in 1..3 do
   writeln(myTuple(i));
 \end{chapel}
 uses a param loop to output the components of a tuple.
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapeloutput}
 1
 2.0
@@ -203,8 +201,6 @@ for i in 1..3 do
 uses a serial loop to output the components of a homogeneous tuple.
 Since the index is not a compile-time constant, this would result in
 an error were tuple not homogeneous.
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapeloutput}
 1
 2
@@ -321,8 +317,6 @@ because the tuple is created with array aliases (like a function
 call), the assignment to the second component uses the values just
 overwritten in the assignment to the first component.  Line 4
 outputs \chpl{3 4 3 4}.
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapeloutput}
 1 2 3 4
 3 4 3 4
@@ -453,8 +447,6 @@ for (i,j) in bar() do
 defines a simple iterator that yields two 2-tuples before completing.
 The for-loop uses a tuple notation to group two indices that take
 their values from the iterator.
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapeloutput}
 2
 4
@@ -499,10 +491,6 @@ call may look like the following:
 \begin{chapel}
 f(1, (2, 3));
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 An implicit \chpl{where} clause is created when arguments are grouped using
@@ -554,8 +542,6 @@ f((1, ));
 var y: 1*real;
 f(y);
 \end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 \index{tuples!omitting components}
@@ -632,7 +618,7 @@ writeln(rest((1, 2, 3)));
 \label{Tuple_Unary_Operators}
 \index{operators!tuple!unary}
 
-The unary operators \chpl{\+}, \chpl{\-}, \chpl{\~}, and \chpl{\!} are
+The unary operators \chpl{+}, \chpl{-}, \chpl{\~}, and \chpl{!} are
 overloaded on tuples by applying the operator to each argument component
 and returning the results as a new tuple.
 
@@ -661,8 +647,8 @@ compile-time error will be issued.
 %\index{\<\<@\chpl{\<\<}}
 %\index{\>\>@\chpl{\>\>}}
 
-The binary operators \chpl{\+}, \chpl{\-}, \chpl{\*}, \chpl{\/}, \chpl{\%},
-\chpl{\*\*}, \chpl{\&}, \chpl{\|}, \chpl{\^}, \chpl{\<\<}, and \chpl{\>\>}
+The binary operators \chpl{+}, \chpl{-}, \chpl{*}, \chpl{/}, \chpl{\%},
+\chpl{**}, \chpl{\&}, \chpl{|}, \chpl{^}, \chpl{<<}, and \chpl{>>}
 are overloaded on tuples by applying them to pairs of the respective
 argument components and returning the results as a new tuple.  The
 sizes of the two argument tuples must be the same.  These operators
@@ -705,17 +691,17 @@ writeln(x);
 
 % (\rsec{Relational_Operators})
 
-The relational operators \chpl{\>}, \chpl{\>\=}, \chpl{\<}, \chpl{\<\=},
-\chpl{\=\=}, and \chpl{\!\=} are defined over tuples of matching size.
+The relational operators \chpl{>}, \chpl{>=}, \chpl{<}, \chpl{<=},
+\chpl{==}, and \chpl{!=} are defined over tuples of matching size.
 They return a single boolean value indicating whether the two
 arguments satisfy the corresponding relation.
 
-The operators \chpl{\>}, \chpl{\>\=}, \chpl{\<}, and \chpl{\<\=}
+The operators \chpl{>}, \chpl{>=}, \chpl{<}, and \chpl{<=}
 check the corresponding lexicographical order
 based on pair-wise comparisons between the argument tuples' components.
 %based on comparisons between pairs of the respective
 %components of the arguments.
-The operators \chpl{\=\=} and \chpl{\!\=} check whether
+The operators \chpl{==} and \chpl{!=} check whether
 the two arguments are pair-wise equal or not.
 The relational operators on tuples may be short-circuiting, i.e.
 they may execute only the pair-wise comparisons that are necessary

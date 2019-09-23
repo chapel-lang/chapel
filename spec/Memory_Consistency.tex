@@ -797,7 +797,7 @@ cobegin {
 }
 \end{chapel}
   produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 A[1] = 0.1
 A[2] = 0.2
 A[3] = 0.3
@@ -845,8 +845,6 @@ cobegin {
   x(*\texttt{\$}*).writeXF(1);
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 
 In this code, the first statement in the cobegin statement executes a
 loop until the variable is set to one.  The second statement in the
@@ -865,8 +863,6 @@ cobegin {
   x.write(1);
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 
 \end{chapelexample}
 
@@ -886,8 +882,6 @@ cobegin {
   x.write(1);
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 
 \end{chapelexample}
 

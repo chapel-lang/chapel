@@ -14,7 +14,16 @@
              {[OPT]}{{{\scriptsize $_{opt}$}}}{2}
   }
 
-\lstnewenvironment{syntax}{\lstset{language=syntax,xleftmargin=2pc}}{}
-\lstnewenvironment{syntaxdonotcollect}{\lstset{language=syntax,xleftmargin=2pc}}{}
+\DefineVerbatimEnvironment{syntax}{Verbatim}{}
+\DefineVerbatimEnvironment{syntaxdonotcollect}{Verbatim}{}
 
-\newcommand{\sntx}[1]{\lstinline[language=syntax]!#1!}
+%\newenvironment{syntax}%
+%  {\endgraf\verbatim}%
+%  {\endverbatim}
+
+%\newenvironment{syntaxdonotcollect}%
+%  {\endgraf\verbatim}%
+%  {\endverbatim}
+
+%\newcommand{\sntx}[1]{\lstinline[language=syntax]!#1!}
+\newcommand{\sntx}[1]{\Verb!#1!}

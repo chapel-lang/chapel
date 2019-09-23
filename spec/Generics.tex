@@ -215,7 +215,7 @@ proc sumOfThree(x: ?t, y:t, z:t):t {
 }
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 6
 12.0
 \end{chapelprintoutput}
@@ -316,8 +316,6 @@ var c = new borrowed C(real, int, cc.type);
 f(c);
 g(c);
 \end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 Similarly, a tuple type with query arguments
@@ -329,7 +327,7 @@ proc f(tuple: (?t,real)) {
   // body
 }
 \end{chapel}
-specifies that \chpl{tuple.size == 2 && tuple(2).type == real}.
+specifies that \chpl{tuple.size == 2 \&\& tuple(2).type == real}.
 \end{example}
 
 Homogeneous tuple arguments of generic type are also supported:
@@ -344,8 +342,6 @@ proc f(tuple: 2*Number) {
 \begin{chapelpost}
 f( (new Number(1), new Number(2)) );
 \end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 
 specifies that \chpl{f} accepts a tuple with 2 elements, where each
 element has the same type, and that type is instantiation of
@@ -432,8 +428,6 @@ module M3 {
   }
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 In the function \chpl{main}, the variable \chpl{r} is declared to be
 of type \chpl{R} defined in module \chpl{M1} and a call is made to the
 generic function \chpl{bar} which is defined in module \chpl{M2}.

@@ -26,11 +26,11 @@ followed by a colon.  The next lines before an empty line define the
 alternative productions to define the non-terminal.
 \begin{example}
 The production
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
 bool-literal:
   `true'
   `false'
-\end{syntax_donotcollect}
+\end{syntaxdonotcollect}
 defines \sntx{bool-literal} to be either the symbol \sntx{`true'} or
 \sntx{`false'}.
 \end{example}
@@ -44,34 +44,34 @@ non-terminal may be followed by ``one of'' to indicate that the single
 line in the production defines alternatives for each symbol.
 \begin{example}
 The production
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
 unary-operator: one of
   + $ $ $ $ - $ $ $ $ ~ $ $ $ $ !
-\end{syntax_donotcollect}
+\end{syntaxdonotcollect}
 is equivalent to
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
 unary-operator:
   +
   -
   ~
   !
-\end{syntax_donotcollect}
+\end{syntaxdonotcollect}
 \end{example}
 
 As a short-hand to indicate an optional symbol in the definition of a
 production, the subscript ``opt'' is suffixed to the symbol.
 \begin{example}
 The production
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
 formal:
   formal-tag identifier formal-type[OPT] default-expression[OPT]
-\end{syntax_donotcollect}
+\end{syntaxdonotcollect}
 is equivalent to
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
 formal:
   formal-tag identifier formal-type default-expression
   formal-tag identifier formal-type
   formal-tag identifier default-expression
   formal-tag identifier
-\end{syntax_donotcollect}
+\end{syntaxdonotcollect}
 \end{example}

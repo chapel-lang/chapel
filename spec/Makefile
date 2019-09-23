@@ -6,6 +6,13 @@ all:
 	pdflatex -file-line-error -halt-on-error spec
 	./collect_syntax.pl # again to show errors
 
+html:
+	xhlatex spec "xhtml,uni-html4" " -cunihtf"
+
+rst:
+	xhlatex spec "xhtml,uni-html4" " -cunihtf"
+	pandoc spec.html  -t rst -o spec.rst
+
 usedvi:
 	touch spec.ind
 	./collect_syntax.pl

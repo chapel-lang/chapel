@@ -220,8 +220,6 @@ var c:owned C = new owned C();
 proc f(arg: borrowed C) { }
 f(c); // equivalent to f(c.borrow())
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 Second, an expression of non-nilable class type can be implicitly
@@ -239,8 +237,6 @@ var b:borrowed C = c.borrow();
 proc g(arg: borrowed C?) { }
 g(b); // equivalent to g(b:borrowed C?)
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 Third, an implicit conversion from class type \chpl{D} to another class

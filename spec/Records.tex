@@ -113,8 +113,6 @@ record ActorRecord {
   var age: uint;
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 defines a new record type called \chpl{ActorRecord} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.  The data
 contained by a record of this type is exactly the same as that contained by
@@ -220,7 +218,7 @@ writeln(new UniqueID());  // create and use a record value without a variable
 writeln(new UniqueID());
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 (time = 1/1/1011)
 (time = 2/2/2022)
 (id = 1)
@@ -345,7 +343,7 @@ modifyMyColor(mc2, 7);   // mc2 is affected because of the 'inout' intent
 printMyColor(mc2);
 \end{chapel}
 produces
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 my color is 0
 my color is 0
 my color is 7

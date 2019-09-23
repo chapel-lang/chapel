@@ -520,7 +520,7 @@ for i in zip(1..5, 3..) do
 writeln();
 \end{chapelpost}
 produces the output 
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 (1, 3); (2, 4); (3, 5); (4, 6); (5, 7); 
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -759,10 +759,10 @@ the \chpl{offset} method (\rsec{Range_Offset_Method}).
 \subsection{Count Operator}
 \label{Count_Operator}
 \index{ranges!count operator}
-\index{ranges!#@\chpl{#}}
-\index{operators!# (range)@\chpl{#} (range)}
+\index{ranges!#@\chpl{\#}}
+\index{operators!# (range)@\chpl{\#} (range)}
 
-The \chpl{#} operator takes a range and an integral count and creates a new
+The \chpl{\#} operator takes a range and an integral count and creates a new
 range containing the specified number of indices.  The low or high bound of the
 left operand is preserved, and the other bound adjusted to provide the specified
 number of indices.  If the count is positive, indices are taken from the start
@@ -779,7 +779,7 @@ of the same bit size as the base range's \chpl{idxType}, or an
 implicit conversion must be allowed to that type from the count's
 type.
 
-The type of the result of the \chpl{#} operator is the type of the
+The type of the result of the \chpl{\#} operator is the type of the
 range argument.
 
 Depending on the sign of the count and the stride, the high or low bound is
@@ -1027,7 +1027,7 @@ var r = 0..20 by 3;
 writeln(r.alignedHigh);
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 18
 \end{chapelprintoutput}
 \end{chapelexample}

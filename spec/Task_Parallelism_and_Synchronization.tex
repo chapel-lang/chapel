@@ -706,8 +706,6 @@ begin { stmt2(); s2(*\texttt{\$}*) = true; }
 begin { stmt3(); s3(*\texttt{\$}*) = true; }
 s1(*\texttt{\$}*); s2(*\texttt{\$}*); s3(*\texttt{\$}*);
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 Each begin statement is executed concurrently but control does not
 continue past the final line above until each of the single variables
 is written, thereby ensuring that each of the functions has finished.
@@ -774,8 +772,6 @@ runningCount(*\texttt{\$}*) = tmp-1;
 if tmp == 1 then finished(*\texttt{\$}*) = true;
 finished(*\texttt{\$}*);
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 Each call to \chpl{body()} executes concurrently because it is in a
 begin statement.  The sync
 variable \chpl{runningCount$\mbox{\texttt{\$}}$} is used to keep track
@@ -996,8 +992,6 @@ cobegin {
   stmt2();
 }
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 except that if begin statements are dynamically encountered
 when \chpl{stmt1()} or \chpl{stmt2()} are executed, then the former
 code will wait for these begin statements to complete whereas the
@@ -1050,8 +1044,6 @@ for i in lo..hi {
   f(i);
 }
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapeloutput}
 serial 9
 serial 9

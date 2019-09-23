@@ -254,7 +254,7 @@ for i in D.dim(1) do
 writeln(A);
 \end{chapel}
 produces
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 8 9 10 11 12 13 14
 29 30 31 32 33 34 35
 \end{chapelprintoutput}
@@ -367,7 +367,7 @@ writeln(D);
 --no-warnings
 \end{chapelcompopts}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 {foo, bar}
 \end{chapelprintoutput}
 \end{chapelexample}
@@ -846,13 +846,13 @@ ranges rather than integers.
 \subsection{Count Operator}
 \label{Count_Operator_Domains}
 \index{domains!count operator}
-\index{domains!#@\chpl{#}}
-\index{# (domain)@\chpl{#} (domain)}
-\index{operators!# (domain)@\chpl{#} (domain)}
-The \chpl{#} operator can be applied to dense rectangular domains with
+\index{domains!#@\chpl{\#}}
+\index{# (domain)@\chpl{\#} (domain)}
+\index{operators!# (domain)@\chpl{\#} (domain)}
+The \chpl{\#} operator can be applied to dense rectangular domains with
 a tuple argument whose size matches the rank of the domain (or
 optionally an integer in the case of a 1D domain).  The operator is
-equivalent to applying the \chpl{#} operator to the component ranges
+equivalent to applying the \chpl{\#} operator to the component ranges
 of the domain and then using them to slice the domain as in
 Section~\ref{Range_Based_Slicing}.
 
@@ -920,7 +920,7 @@ D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
 prints out
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 D has 2 indices.
 D has 0 indices.
 \end{chapelprintoutput}
@@ -950,7 +950,7 @@ foo(D);
 \end{chapel}
 \chpl{dist} is used in a where-clause to determine the type of the argument's
 distribution. The output is:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 Block-distributed domain
 \end{chapelprintoutput}
 \end{chapelexample}

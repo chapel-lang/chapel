@@ -1,3 +1,7 @@
+% Why is this hard?
+% see https://github.com/jgm/pandoc/issues/4770
+% https://github.com/jgm/pandoc/issues/4302
+
 \documentclass[10pt,oneside,titlepage]{spec}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath}
@@ -10,10 +14,11 @@
 \usepackage{longtable}
 \usepackage[nottoc]{tocbibind}
 \usepackage{multirow}
+%\usepackage{verbatim}
 \usepackage{fvextra}
 \input{chapel_testing}
-\input{chapel_listing}
-\input{syntax_listing}
+\input{chapel_listing_pandoc}
+\input{syntax_listing_pandoc}
 
 %% High section numbers require different number widths
 \usepackage[titles]{tocloft}
@@ -132,13 +137,13 @@
 \textheight 8.5in
 
 \makeindex
-\title{Chapel Language Specification\\Version 0.988}
+\title{Chapel Language Specification\\Version 0.987}
 
 \author{Cray Inc\\
 901 Fifth Avenue, Suite 1000\\
 Seattle, WA 98164}
 
-\date{September 19, 2019}
+\date{March 21, 2019}
 
 \setcounter{tocdepth}{3}
 
@@ -159,10 +164,6 @@ Seattle, WA 98164}
 \copyright 2019 Cray Inc.
 \end{center}
 
-\cleardoublepage
-\include{tm}
-\cleardoublepage
-
 \pagestyle{myheadings}
 \markboth{Chapel Language Specification}{Chapel Language Specification}
 %\pagenumbering{roman}
@@ -179,6 +180,71 @@ Seattle, WA 98164}
 
 \setlength{\parindent}{0in}
 \setlength{\parskip}{4mm plus2mm minus1mm}
+
+\chpl{hello_there}
+
+\begin{invisible}
+otherwise
+\end{invisible}
+
+\begin{chapel}
+_
+align
+as
+\end{chapel}
+
+\chpl{var_}
+
+\begin{chapel}
+var x;
+\end{chapel}
+
+\begin{chapel}
+proc test() { var x;
+}
+\end{chapel}
+
+\begin{chapel}
+proc g() { writeln("side effect"); return "a string"; }
+var a, b = 1.0, c, d:int, e, f = g();
+\end{chapel}
+\begin{chapelpost}
+writeln((a,b,c,d,e,f));
+\end{chapelpost}
+
+\begin{chapel}
+var myInt = 51;
+ref refInt = myInt;                   // alias of a local or global variable
+myInt = 62;
+writeln("refInt = ", refInt);
+refInt = 73;
+writeln("myInt = ", myInt);
+
+var myArr: [1..3] int = 51;
+proc arrayElement(i) ref  return myArr[i];
+ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
+myArr[3] = 62;
+writeln("refToExpr = ", refToExpr);
+refToExpr = 73;
+writeln("myArr[3] = ", myArr[3]);
+
+const constArr: [1..3] int = 51..53;
+const ref myConstRef = constArr[2];   // would be an error without 'const'
+writeln("myConstRef = ", myConstRef);
+\end{chapel}
+
+
+\begin{tabular}{p{2in}p{2in}}
+\begin{chapel}
+lambda
+pragma
+primitive
+\end{chapel}
+\\
+\begin{invisible}
+otherwise
+\end{invisible}
+\end{tabular}
 
 \input{Scope}
 \cleardoublepage
@@ -246,6 +312,7 @@ Seattle, WA 98164}
 \cleardoublepage
 \appendix
 \input{Syntax}
+\cleardoublepage
 \cleardoublepage
 \markboth{Chapel Language Specification}{Index}
 \input{spec.ind}

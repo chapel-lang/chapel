@@ -461,11 +461,17 @@ module M2 {
 --main-module M2 \# main\_module.M2.good
 \end{chapelcompopts}
 If M1 is specified as the main module, the program will output:
-\begin{chapelprintoutput}{main_module.M1.good}
+\begin{chapeloutputname}
+main_module.M1.good
+\end{chapeloutputname}
+\begin{chapelprintoutput}
 M1's main
 \end{chapelprintoutput}
 If M2 is specified as the main module the program will output:
-\begin{chapelprintoutput}{main_module.M2.good}
+\begin{chapeloutputname}
+main_module.M2.good
+\end{chapeloutputname}
+\begin{chapelprintoutput}
 M1's main
 M2's main
 \end{chapelprintoutput}
@@ -541,7 +547,7 @@ module M4 {
 }
 \end{chapel}
 prints the following
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
 In M4's initializer
 In M2's initializer
 In M3's initializer
