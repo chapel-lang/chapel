@@ -9,8 +9,10 @@ Chapel code is represented with a fixed-width font where keywords are
 bold and comments are italicized.
 \begin{example}
 \begin{chapel}
+\begin{verbatim}
 for i in D do   // iterate over domain D
   writeln(i);   // output indices in D
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -45,16 +47,20 @@ line in the production defines alternatives for each symbol.
 \begin{example}
 The production
 \begin{syntaxdonotcollect}
+\begin{verbatim}
 unary-operator: one of
-  + $ $ $ $ - $ $ $ $ ~ $ $ $ $ !
+  + - ~ !
+\end{verbatim}
 \end{syntaxdonotcollect}
 is equivalent to
 \begin{syntaxdonotcollect}
+\begin{verbatim}
 unary-operator:
   +
   -
   ~
   !
+\end{verbatim}
 \end{syntaxdonotcollect}
 \end{example}
 
@@ -63,15 +69,19 @@ production, the subscript ``opt'' is suffixed to the symbol.
 \begin{example}
 The production
 \begin{syntaxdonotcollect}
+\begin{verbatim}
 formal:
   formal-tag identifier formal-type[OPT] default-expression[OPT]
+\end{verbatim}
 \end{syntaxdonotcollect}
 is equivalent to
 \begin{syntaxdonotcollect}
+\begin{verbatim}
 formal:
   formal-tag identifier formal-type default-expression
   formal-tag identifier formal-type
   formal-tag identifier default-expression
   formal-tag identifier
+\end{verbatim}
 \end{syntaxdonotcollect}
 \end{example}

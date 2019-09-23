@@ -7,6 +7,7 @@ effects.  Statements allow for the sequencing of program execution.
 Chapel provides the following statements:
 
 \begin{syntax}
+\begin{verbatim}
 statement:
   block-statement
   expression-statement
@@ -45,6 +46,7 @@ statement:
   atomic-statement
   forall-statement
   delete-statement
+\end{verbatim}
 \end{syntax}
 
 Individual statements are defined in the remainder of this chapter
@@ -76,12 +78,14 @@ and additionally as follows:
 A block is a statement or a possibly empty list of statements that
 form their own scope.  A block is given by
 \begin{syntax}
+\begin{verbatim}
 block-statement:
   { statements[OPT] }
 
 statements:
   statement
   statement statements
+\end{verbatim}
 \end{syntax}
 
 Variables defined within a block are local
@@ -98,12 +102,14 @@ is in a cobegin statement~(\rsec{Cobegin}).
 The expression statement evaluates an expression solely for side
 effects. The syntax for an expression statement is given by
 \begin{syntax}
+\begin{verbatim}
 expression-statement:
   variable-expression ;
   member-access-expression ;
   call-expression ;
   new-expression ;
   let-expression ;
+\end{verbatim}
 \end{syntax}
 
 \section{Assignment Statements}
@@ -131,11 +137,13 @@ example, a variable.  Assignment statements are given by
 \index{>>=@\chpl{>>=}}
 \index{operators!assignment}
 \begin{syntax}
+\begin{verbatim}
 assignment-statement:
   lvalue-expression assignment-operator expression
 
 assignment-operator: one of
-   = $ $ $ $ += $ $ $ $ -= $ $ $ $ *= $ $ $ $ /= $ $ $ $ %= $ $ $ $ **= $ $ $ $ &= $ $ $ $ |= $ $ $ $ ^= $ $ $ $ &&= $ $ $ $ ||= $ $ $ $ <<= $ $ $ $ >>=
+   = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
+\end{verbatim}
 \end{syntax}
 
 \index{operators!compound assignment}
@@ -180,9 +188,11 @@ For all other compound assignments, Chapel provides a completely generic
 catch-all implementation defined in the obvious way.  For example:
 
 \begin{chapel}
+\begin{verbatim}
 inline proc +=(ref lhs, rhs) {
   lhs = lhs + rhs;
 }
+\end{verbatim}
 \end{chapel}
 
 Thus, compound assignment can be used with operands of arbitrary types,
@@ -215,11 +225,13 @@ to, each must be a valid lvalue expression~(\rsec{LValue_Expressions}).
 The swap operator can be overloaded for different types using operator
 overloading~(\rsec{Function_Overloading}).
 \begin{syntax}
+\begin{verbatim}
 swap-statement:
   lvalue-expression swap-operator lvalue-expression
 
 swap-operator:
   <=>
+\end{verbatim}
 \end{syntax}
 
 To implement the swap operation, the compiler uses temporary variables
@@ -228,15 +240,19 @@ as necessary.
 \begin{example}
 When resolved to the default swap operator, the following swap statement
 \begin{chapel}
+\begin{verbatim}
 var a, b: real;
 
 a <=> b;
+\end{verbatim}
 \end{chapel}
 is semantically equivalent to:
 \begin{chapel}
+\begin{verbatim}
 const t = b;
 b = a;
 a = t;
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -255,6 +271,7 @@ other I/O operator calls.
 The I/O operator can be overloaded for different types using operator
 overloading~(\rsec{Function_Overloading}).
 \begin{syntax}
+\begin{verbatim}
 io-statement:
   io-expression io-operator expression
 
@@ -263,7 +280,8 @@ io-expression:
   io-expression io-operator expression
 
 io-operator:
-  <`(*$\sim$*)'>
+  <~>
+\end{verbatim}
 \end{syntax}
 
 See the module documentation on I/O for details on how to use the
@@ -272,11 +290,13 @@ I/O statement.
 \begin{example}
 In the example below,
 \begin{chapel}
+\begin{verbatim}
 var w = opentmp().writer(); // a channel
 var a: real;
 var b: int;
 
-w <(*$\sim$*)> a <(*$\sim$*)> b;
+w <~> a <~> b;
+\end{verbatim}
 \end{chapel}
 the I/O operator is left-associative and indicates writing \chpl{a}
 and then \chpl{b} to \chpl{w} in this case.
@@ -295,12 +315,14 @@ The conditional statement allows execution to choose between two
 statements based on the evaluation of an expression of \chpl{bool}
 type. The syntax for a conditional statement is given by
 \begin{syntax}
+\begin{verbatim}
 conditional-statement:
   `if' expression `then' statement else-part[OPT]
   `if' expression block-statement else-part[OPT]
 
 else-part:
   `else' statement
+\end{verbatim}
 \end{syntax}
 
 A conditional statement evaluates an expression of bool type. If the
@@ -330,6 +352,7 @@ The statement in the else-clause can be a conditional statement, too.
 The following function prints \chpl{two} when \chpl{x} is \chpl{2}
 and \chpl{B,four} when \chpl{x} is \chpl{4}.
 \begin{chapel}
+\begin{verbatim}
 proc condtest(x:int) {
   if x > 3 then
     if x > 5 then
@@ -344,16 +367,21 @@ proc condtest(x:int) {
   else
     writeln("other");
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 for i in 2..6 do condtest(i);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 two
 other
 B,four
 B,other
 A,other
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -370,6 +398,7 @@ A,other
 The select statement is a multi-way variant of the conditional
 statement.  The syntax is given by:
 \begin{syntax}
+\begin{verbatim}
 select-statement:
   `select' expression { when-statements }
 
@@ -386,6 +415,7 @@ when-statement:
 expression-list:
   expression
   expression , expression-list
+\end{verbatim}
 \end{syntax}
 The expression that follows the keyword \chpl{select}, the select
 expression, is evaluated once and its value is then compared
@@ -413,14 +443,18 @@ whether or not an explicit block surrounds it.
 There are two variants of the while loop in Chapel.  The syntax of the
 while-do loop is given by:
 \begin{syntax}
+\begin{verbatim}
 while-do-statement:
   `while' expression `do' statement
   `while' expression block-statement
+\end{verbatim}
 \end{syntax}
 The syntax of the do-while loop is given by:
 \begin{syntax}
+\begin{verbatim}
 do-while-statement:
   `do' statement `while' expression ;
+\end{verbatim}
 \end{syntax}
 In both variants, the expression evaluates to a value of type \chpl{bool}
 which determines when the loop terminates and control continues with
@@ -456,6 +490,7 @@ the \sntx{do-while-statement} and the \sntx{while-do-statement}.  The body of
 the do-while loop is always executed at least once, even if the loop conditional
 is already false when it is entered.  The code
 \begin{chapel}
+\begin{verbatim}
 var t = 11;
 
 writeln("Scope of do while loop:");
@@ -470,12 +505,15 @@ while (t <= 10) {
   t += 1;
   writeln(t);
 }
+\end{verbatim}
 \end{chapel}
 produces the output
 \begin{chapelprintoutput}
+\begin{verbatim}
 Scope of do while loop:
 12
 Scope of while loop:
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -489,21 +527,25 @@ termination expression.
 The following example demonstrates that the scope of the variable t
 includes the loop termination expression.
 \begin{chapel}
+\begin{verbatim}
 var i = 0;
 do {
   var t = i;
   i += 1;
   writeln(t);
 } while (t != 5);
+\end{verbatim}
 \end{chapel}
 produces the output
 \begin{chapelprintoutput}
+\begin{verbatim}
 0
 1
 2
 3
 4
 5
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -518,6 +560,7 @@ The for loop iterates over ranges, domains, arrays, iterators, or any
 class that implements an iterator named \chpl{these}.  The syntax of
 the for loop is given by:
 \begin{syntax}
+\begin{verbatim}
 for-statement:
   `for' index-var-declaration `in' iteratable-expression `do' statement
   `for' index-var-declaration `in' iteratable-expression block-statement
@@ -531,6 +574,7 @@ index-var-declaration:
 iteratable-expression:
   expression
   `zip' ( expression-list )
+\end{verbatim}
 \end{syntax}
 
 The \sntx{index-var-declaration} declares new variables for the scope
@@ -562,15 +606,21 @@ dimension, must be identical.
 \begin{chapelexample}{zipper.chpl}
 The output of
 \begin{chapel}
+\begin{verbatim}
 for (i, j) in zip(1..3, 4..6) do
   write(i, " ", j, " ");
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln();
+\end{verbatim}
 \end{chapelpost}
 is
 \begin{chapelprintoutput}
+\begin{verbatim}
 1 4 2 5 3 6 
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -585,6 +635,7 @@ Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable.  The syntax for a
 parameter for loop statement is given by:
 \begin{syntax}
+\begin{verbatim}
 param-for-statement:
   `for' `param' identifier `in' param-iteratable-expression `do' statement
   `for' `param' identifier `in' param-iteratable-expression block-statement
@@ -592,6 +643,7 @@ param-for-statement:
 param-iteratable-expression:
   range-literal
   range-literal `by' integer-literal
+\end{verbatim}
 \end{syntax}
 Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
@@ -626,6 +678,7 @@ a compile-time error occurs.
 
 The syntax for label, break, and continue statements is given by:
 \begin{syntax}
+\begin{verbatim}
 break-statement:
   `break' identifier[OPT] ;
 
@@ -634,6 +687,7 @@ continue-statement:
 
 label-statement:
   `label' identifier statement
+\end{verbatim}
 \end{syntax}
 
 A \chpl{break} statement cannot be used to exit a parallel loop \rsec{Forall}.
@@ -655,6 +709,7 @@ In the following code, the index of the first element in each row of
 found, the continue statement is executed causing the outer loop to
 move to the next row.
 \begin{chapel}
+\begin{verbatim}
 label outer for i in 1..n {
   for j in 1..n {
     if A[i, j] == findVal {
@@ -663,6 +718,7 @@ label outer for i in 1..n {
     }
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -682,6 +738,7 @@ that the module symbol itself is visible within the current scope
 The syntax of the use statement is given by:
 
 \begin{syntax}
+\begin{verbatim}
 use-statement:
   privacy-specifier[OPT] `use' module-or-enum-name-list ;
 
@@ -708,11 +765,13 @@ rename-list:
 rename-base:
   identifier `as' identifier
   identifier
+\end{verbatim}
 \end{syntax}
 
 For example, the program
 \begin{chapelexample}{use1.chpl}
 \begin{chapel}
+\begin{verbatim}
 module M1 {
   proc foo() {
     writeln("In M1's foo.");
@@ -726,17 +785,21 @@ module M2 {
     M1.foo();
   }
 }
+\end{verbatim}
 \end{chapel}
 prints out
 \begin{chapelprintoutput}
+\begin{verbatim}
 In M2's main.
 In M1's foo.
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
 This program is equivalent to:
 \begin{chapelexample}{use2.chpl}
 \begin{chapel}
+\begin{verbatim}
 module M1 {
   proc foo() {
     writeln("In M1's foo.");
@@ -751,12 +814,15 @@ module M2 {
     foo();
   }
 }
+\end{verbatim}
 \end{chapel}
 
 which also prints out
 \begin{chapelprintoutput}
+\begin{verbatim}
 In M2's main.
 In M1's foo.
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -812,6 +878,7 @@ instances of the type.  For example:
 
 \begin{chapelexample}{limited-access.chpl}
 \begin{chapel}
+\begin{verbatim}
 module M1 {
   record A {
     var x = 1;
@@ -831,12 +898,15 @@ module M2 {
     a.foo(); // Ditto
   }
 }
+\end{verbatim}
 \end{chapel}
 
 will print out
 \begin{chapelprintoutput}
+\begin{verbatim}
 3
-In A.foo()
+In A.foo() 
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -881,8 +951,10 @@ matter how the block is exited.
 The syntax is:
 
 \begin{syntax}
+\begin{verbatim}
 defer-statement:
   `defer' statement
+\end{verbatim}
 \end{syntax}
 
 At a given place where control flow exits a block, the in-scope
@@ -901,6 +973,7 @@ to create an action to be executed when returning from a function:
 
 \begin{chapelexample}{defer1.chpl}
 \begin{chapel}
+\begin{verbatim}
 class Integer {
   var x:int;
 }
@@ -915,15 +988,20 @@ proc deferInFunction() {
   // The defer action is executed no matter how this function returns.
 }
 deferInFunction();
+\end{verbatim}
 \end{chapel}
 produces the output
 \begin{chapeloutput}
+\begin{verbatim}
 created {x = 1}
 defer action: deleting {x = 1}
+\end{verbatim}
 \end{chapeloutput}
 \begin{commandline}
+\begin{verbatim}
 created {x = 1}
 defer action: deleting {x = 1}
+\end{verbatim}
 \end{commandline}
 \end{chapelexample}
 
@@ -934,6 +1012,7 @@ is handled when exiting the block in which it is contained:
 
 \begin{chapelexample}{defer2.chpl}
 \begin{chapel}
+\begin{verbatim}
 class Integer {
   var x:int;
 }
@@ -953,21 +1032,26 @@ proc deferInNestedBlock() {
   writeln("after inner block");
 }
 deferInNestedBlock();
+\end{verbatim}
 \end{chapel}
 produces the output
 \begin{chapeloutput}
+\begin{verbatim}
 before inner block
 created {x = 1}
 in inner block
 defer action: deleting {x = 1}
 after inner block
+\end{verbatim}
 \end{chapeloutput}
 \begin{commandline}
+\begin{verbatim}
 before inner block
 created {x = 1}
 in inner block
 defer action: deleting {x = 1}
 after inner block
+\end{verbatim}
 \end{commandline}
 
 \end{chapelexample}
@@ -978,6 +1062,7 @@ body is exited early.
 
 \begin{chapelexample}{defer3.chpl}
 \begin{chapel}
+\begin{verbatim}
 class Integer {
   var x:int;
 }
@@ -995,23 +1080,28 @@ proc deferInLoop() {
   }
 }
 deferInLoop();
+\end{verbatim}
 \end{chapel}
 produces the output
 \begin{chapeloutput}
+\begin{verbatim}
 created {x = 1}
 {x = 1}
 defer action: deleting {x = 1}
 created {x = 2}
 {x = 2}
 defer action: deleting {x = 2}
+\end{verbatim}
 \end{chapeloutput}
 \begin{commandline}
+\begin{verbatim}
 created {x = 1}
 {x = 1}
 defer action: deleting {x = 1}
 created {x = 2}
 {x = 2}
 defer action: deleting {x = 2}
+\end{verbatim}
 \end{commandline}
 \end{chapelexample}
 
@@ -1023,6 +1113,8 @@ defer action: deleting {x = 2}
 An empty statement has no effect.  The syntax of an empty statement is
 given by
 \begin{syntax}
+\begin{verbatim}
 empty-statement:
   ;
+\end{verbatim}
 \end{syntax}

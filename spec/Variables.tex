@@ -15,6 +15,7 @@ by its type.
 
 Variables are declared with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 variable-declaration-statement:
   privacy-specifier[OPT] config-or-extern[OPT] variable-kind variable-declaration-list ;
 
@@ -53,6 +54,7 @@ identifier-list:
 
 tuple-grouped-identifier-list:
   ( identifier-list )
+\end{verbatim}
 \end{syntax}
 A \sntx{variable-declaration-statement} is used to define one or more
 variables.  If the statement is a top-level module statement, the
@@ -172,11 +174,15 @@ If the type is omitted from a variable declaration, the type of the
 variable is defined to be the type of the initialization expression.
 With the exception of sync and single expressions, the declaration
 \begin{chapel}
+\begin{verbatim}
 var v = e;
+\end{verbatim}
 \end{chapel}
 is equivalent to
 \begin{chapel}
+\begin{verbatim}
 var v: e.type = e;
+\end{verbatim}
 \end{chapel}
 for an arbitrary expression \chpl{e}.  If \chpl{e} is of sync or
 single type, the type of \chpl{v} is the base type of \chpl{e}.
@@ -193,8 +199,10 @@ initialization expression are evaluated only once.
 \begin{chapelexample}{multiple.chpl}
 In the declaration
 \begin{chapel}
+\begin{verbatim}
 proc g() { writeln("side effect"); return "a string"; }
 var a, b = 1.0, c, d:int, e, f = g();
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
 writeln((a,b,c,d,e,f));
@@ -206,8 +214,10 @@ Variables \chpl{e} and \chpl{f} are of type \chpl{string} with
 value \chpl{"a string"}.  The string \chpl{"side effect"} has been
 written to the display once.  It is not evaluated twice.
 \begin{chapeloutput}
+\begin{verbatim}
 side effect
 (1.0, 1.0, 0, 0, a string, a string)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -217,33 +227,43 @@ follows:
 \item If the variables in the \sntx{identifier-list} are declared
 with a type, but without an initialization expression as in
 \begin{chapel}
+\begin{verbatim}
 var v1, v2, v3: t;
+\end{verbatim}
 \end{chapel}
 for an arbitrary type expression \chpl{t}, then the declarations are
 rewritten so that the first variable is declared to be of
 type \chpl{t} and each later variable is declared to be of the type of
 the first variable as in
 \begin{chapel}
+\begin{verbatim}
 var v1: t; var v2: v1.type; var v3: v1.type;
+\end{verbatim}
 \end{chapel}
 
 \item If the variables in the \sntx{identifier-list} are declared
 without a type, but with an initialization expression as in
 \begin{chapel}
+\begin{verbatim}
 var v1, v2, v3 = e;
+\end{verbatim}
 \end{chapel}
 for an arbitrary expression \chpl{e}, then the declarations are
 rewritten so that the first variable is initialized by
 expression \chpl{e} and each later variable is initialized by the
 first variable as in
 \begin{chapel}
+\begin{verbatim}
 var v1 = e; var v2 = v1; var v3 = v1;
+\end{verbatim}
 \end{chapel}
 
 \item If the variables in the \sntx{identifier-list} are declared
 with both a type and an initialization expression as in
 \begin{chapel}
+\begin{verbatim}
 var v1, v2, v3: t = e;
+\end{verbatim}
 \end{chapel}
 for an arbitrary type expression \chpl{t} and an arbitrary
 expression \chpl{e}, then the declarations are rewritten so that the
@@ -252,13 +272,17 @@ expression \chpl{e}, and each later variable is declared to be of the
 type of the first variable and initialized by the result of calling
 the function \chpl{readXX} on the first variable as in
 \begin{chapel}
+\begin{verbatim}
 var v1: t = e; var v2: v1.type = readXX(v1); var v3: v1.type = readXX(v1);
+\end{verbatim}
 \end{chapel}
 where the function \chpl{readXX} is defined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc readXX(x: sync) return x.readXX();
 proc readXX(x: single) return x.readXX();
 proc readXX(x) return x;
+\end{verbatim}
 \end{chapel}
 Note that the use of the helper function \chpl{readXX()}
 in this code fragment is solely for the purposes of illustration.
@@ -396,13 +420,19 @@ supplied overrides the default value appearing in the Chapel code.
 \begin{chapelexample}{config-param.chpl}
 For example,
 \begin{chapel}
+\begin{verbatim}
 config param rank = 2;
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(rank);
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 2
+\end{verbatim}
 \end{chapeloutput}
 sets an integer parameter \chpl{rank} to \chpl{2}.
 At compile-time, this default value of \chpl{rank} can be overridden
@@ -445,6 +475,7 @@ and making the behavior undefined.
 For example, the following code:
 
 \begin{chapel}
+\begin{verbatim}
 var myInt = 51;
 ref refInt = myInt;                   // alias of a local or global variable
 myInt = 62;
@@ -463,15 +494,18 @@ writeln("myArr[3] = ", myArr[3]);
 const constArr: [1..3] int = 51..53;
 const ref myConstRef = constArr[2];   // would be an error without 'const'
 writeln("myConstRef = ", myConstRef);
+\end{verbatim}
 \end{chapel}
 
 prints out:
 
 \begin{chapelprintoutput}
+\begin{verbatim}
 refInt = 62
 myInt = 73
 refToExpr = 62
 myArr[3] = 73
 myConstRef = 52
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}

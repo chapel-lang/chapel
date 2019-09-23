@@ -11,6 +11,7 @@ types (sync, single, atomic).
 The syntax of a type is as follows:
 
 \begin{syntax}
+\begin{verbatim}
 type-expression:
   primitive-type
   enum-type
@@ -21,6 +22,7 @@ type-expression:
   if-expression
   unary-expression
   binary-expression
+\end{verbatim}
 \end{syntax}
 
 Many expressions are syntactically allowed as a type; however not
@@ -33,12 +35,14 @@ Programmers can define their own enumerated types, classes, records,
 unions, and type aliases using type declaration statements:
 
 \begin{syntax}
+\begin{verbatim}
 type-declaration-statement:
   enum-declaration-statement
   class-declaration-statement
   record-declaration-statement
   union-declaration-statement
   type-alias-declaration-statement
+\end{verbatim}
 \end{syntax}
 
 These statements are defined in Sections \rsec{Enumerated_Types},
@@ -58,6 +62,7 @@ in~\rsec{Built_in_Generic_types}.
 
 The primitive types are summarized by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 primitive-type:
   `void'
   `nothing'
@@ -82,6 +87,7 @@ primitive-type-parameter-part:
 
 integer-parameter-expression:
   expression
+\end{verbatim}
 \end{syntax}
 
 If present, the parenthesized \sntx{integer-parameter-expression} must
@@ -273,6 +279,7 @@ There is an expectation of future support for mutable bytes.
 Enumerated types are declared with the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 enum-declaration-statement:
   `enum' identifier { enum-constant-list }
 
@@ -285,6 +292,7 @@ enum-constant:
 
 init-part:
   = expression
+\end{verbatim}
 \end{syntax}
 
 The enumerated type can then be referenced by its name, as summarized
@@ -325,6 +333,7 @@ enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 \end{chapel}
 defines an abstract enumerated type with four constants.  The function
 \begin{chapel}
+\begin{verbatim}
 proc quote(s: statesman) {
   select s {
     when statesman.Aristotle do
@@ -337,11 +346,14 @@ proc quote(s: statesman) {
        { write("No one will ever win the battle of the sexes; ");
          writeln("there's too much fraternizing with the enemy."); }
   }
-}
+} 
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 for s in statesman do
   quote(s:statesman);
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
 All paid jobs absorb and degrade the mind.
@@ -362,7 +374,9 @@ The following method is also available:
 \index{enumerated types!size@\chpl{size}}
 \index{predefined functions!size (enum)@\chpl{size} (enum)}
 \begin{protohead}
+\begin{verbatim}
 proc $enum$.size: param int
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 The number of constants in the given enumerated type.
@@ -376,11 +390,13 @@ The number of constants in the given enumerated type.
 The structured types are summarized by the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 structured-type:
   class-type
   record-type
   union-type
   tuple-type
+\end{verbatim}
 \end{syntax}
 % todo - firstClassFns.rst: function-type
 
@@ -446,12 +462,14 @@ is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 The data parallel types are summarized by the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 dataparallel-type:
   range-type
   domain-type
   mapped-domain-type
   array-type
   index-type
+\end{verbatim}
 \end{syntax}
 
 Ranges and their index types are discussed in \rsec{Ranges}.
@@ -480,10 +498,12 @@ types are defined in \rsec{Domains} and \rsec{Arrays}.
 The synchronization types are summarized by the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 synchronization-type:
   sync-type
   single-type
   atomic-type
+\end{verbatim}
 \end{syntax}
 
 Sync and single types are discussed in \rsec{Synchronization_Variables}.
@@ -496,6 +516,7 @@ The atomic type is discussed in \rsec{Atomic_Variables}.
 
 Type aliases are declared with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 type-alias-declaration-statement:
   privacy-specifier[OPT] `config'[OPT] `type' type-alias-declaration-list ;
   external-type-alias-declaration-statement
@@ -507,6 +528,7 @@ type-alias-declaration-list:
 type-alias-declaration:
   identifier = type-expression
   identifier
+\end{verbatim}
 \end{syntax}
 A type alias is a symbol that aliases the type specified in the
 \sntx{type-expression}.  A use of a type alias has the same meaning as using

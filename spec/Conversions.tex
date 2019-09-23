@@ -214,11 +214,13 @@ example:
 
 \begin{chapelexample}{implicit-conversion-to-borrow.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C { }
 var c:owned C = new owned C();
 
 proc f(arg: borrowed C) { }
 f(c); // equivalent to f(c.borrow())
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -228,14 +230,18 @@ example:
 
 \begin{chapelexample}{implicit-conversion-to-nilable.chpl}
 \begin{chapelpre}
+\begin{verbatim}
 class C { }
 var c:owned C = new owned C();
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var b:borrowed C = c.borrow();
 
 proc g(arg: borrowed C?) { }
 g(b); // equivalent to g(b:borrowed C?)
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -555,11 +561,15 @@ A type expression can be explicitly converted to a \chpl{string}. The resultant
 \begin{chapelexample}{explicit-type-to-string.chpl}
 For example:
 \begin{chapel}
+\begin{verbatim}
 var x: real(64) = 10.0;
 writeln(x.type:string);
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 real(64)
+\end{verbatim}
 \end{chapeloutput}
 This program will print out the string \chpl{"real(64)"}.
 \end{chapelexample}
