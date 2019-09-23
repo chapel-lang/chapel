@@ -186,7 +186,10 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
-void compute_fn_call_sites(FnSymbol* fn) {
+// Gather into fn->calledBy all direct calls to 'fn'.
+// This is a specialization of computeAllCallSites()
+// for use during resolveDynamicDispatches().
+void computeNonvirtualCallSites(FnSymbol* fn) {
   if (fn->calledBy == NULL) {
     fn->calledBy = new Vec<CallExpr*>();
   }
@@ -195,13 +198,7 @@ void compute_fn_call_sites(FnSymbol* fn) {
 
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isEmpty()) {
-        assert(0); // not possible
-
-      } else if (!isAlive(call)) {
-        assert(0); // not possible
-
-      } else if (fn == call->resolvedFunction()) {
+      if (fn == call->resolvedFunction()) {
         fn->calledBy->add(call);
 
       } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
@@ -218,7 +215,9 @@ void compute_fn_call_sites(FnSymbol* fn) {
   }
 }
 
-void compute_all_fn_call_sites(FnSymbol* fn) {
+// Gather into fn->calledBy all calls to 'fn', regular or virtual,
+// and all virtual calls to all its virtual parents, if any.
+void computeAllCallSites(FnSymbol* fn) {
   Vec<CallExpr*>* calledBy = fn->calledBy;
   if (calledBy == NULL)
     fn->calledBy = calledBy = new Vec<CallExpr*>();
@@ -252,9 +251,10 @@ void compute_all_fn_call_sites(FnSymbol* fn) {
             calledBy->add(pcall);
 }
 
+// computeAllCallSites() for all FnSymbols.
 void compute_call_sites() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
-    compute_all_fn_call_sites(fn);
+    computeAllCallSites(fn);
 }
 
 // builds the def and use maps for every variable/argument

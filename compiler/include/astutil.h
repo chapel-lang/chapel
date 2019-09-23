@@ -64,10 +64,9 @@ void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
 void reset_ast_loc(BaseAST* destNode, astlocT astloc);
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 
-// compute call sites FnSymbol::calls
-void compute_fn_call_sites(FnSymbol* fn);
-void compute_all_fn_call_sites(FnSymbol* fn);
 void compute_call_sites();
+void computeNonvirtualCallSites(FnSymbol* fn);
+void computeAllCallSites(FnSymbol* fn);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to

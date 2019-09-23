@@ -252,7 +252,7 @@ static void collectMethods(FnSymbol*               pfn,
         // if pfn is a filled in vararg function then cfn needs its
         // vararg stamped out here too.
         if (pfn->hasFlag(FLAG_EXPANDED_VARARGS)) {
-          compute_fn_call_sites(pfn);
+          computeNonvirtualCallSites(pfn);
           forv_Vec(CallExpr, call, *pfn->calledBy) {
             CallInfo info;
             if (info.isWellFormed(call)) {
@@ -619,10 +619,8 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 }
 
 static void clearOneMap(Map<FnSymbol*, Vec<FnSymbol*>*>& map) {
-  Vec<Vec<FnSymbol*>*> values;
-  map.get_values(values);
-  forv_Vec(Vec<FnSymbol*>, value, values)
-    delete value;
+  form_Map(VirtualMapElem, el, map)
+    delete el->value;
   map.clear();
 }
 

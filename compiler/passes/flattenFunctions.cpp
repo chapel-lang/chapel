@@ -413,7 +413,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
     forv_Vec(FnSymbol, fn, nestedFunctions) {
       if (!fVerify) deleteCalledby(fn);
-      compute_all_fn_call_sites(fn);
+      computeAllCallSites(fn);
 
       std::vector<BaseAST*> asts;
       collect_top_asts(fn, asts);
