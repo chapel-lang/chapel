@@ -78,6 +78,12 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
       actualNames.add(NULL);
     }
 
+    if (isDefExpr(actual)) {
+      // This implies a '?t' style query expression, which we don't currently
+      // support if we got here
+      return false;
+    }
+
     SymExpr* se = toSymExpr(actual);
 
     INT_ASSERT(se);
@@ -117,6 +123,10 @@ void CallInfo::haltNotWellFormed() const {
 
     if (NamedExpr* named = toNamedExpr(actual)) {
       actual = named->actual;
+    }
+
+    if (isDefExpr(actual)) {
+      USR_FATAL(actual, "Query expressions are not currently supported in this context");
     }
 
     SymExpr* se = toSymExpr(actual);
