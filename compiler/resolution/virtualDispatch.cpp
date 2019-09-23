@@ -41,8 +41,6 @@ static child type could end up calling something in the parent.
 -----------
 */
 
-
-
 #include "virtualDispatch.h"
 
 #include "astutil.h"
@@ -63,12 +61,12 @@ static child type could end up calling something in the parent.
 
 bool                            inDynamicDispatchResolution = false;
 
+typedef MapElem<FnSymbol*, Vec<FnSymbol*>*> VirtualMapElem;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
-
+Map<FnSymbol*, Vec<FnSymbol*>*> virtualParentsMap;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 
 Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
-
 Map<FnSymbol*, int>             virtualMethodMap;
 
 static bool buildVirtualMaps();
@@ -138,9 +136,8 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn);
 static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn);
 
 static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn);
-
 static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn);
-
+static void virtualDispatchUpdateParents(FnSymbol* pfn, FnSymbol* cfn);
 static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn);
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
@@ -255,7 +252,7 @@ static void collectMethods(FnSymbol*               pfn,
         // if pfn is a filled in vararg function then cfn needs its
         // vararg stamped out here too.
         if (pfn->hasFlag(FLAG_EXPANDED_VARARGS)) {
-          compute_fn_call_sites(pfn);
+          computeNonvirtualCallSites(pfn);
           forv_Vec(CallExpr, call, *pfn->calledBy) {
             CallInfo info;
             if (info.isWellFormed(call)) {
@@ -550,6 +547,7 @@ static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
 
   // There is the potential for a data dependency between these
   virtualDispatchUpdateChildren(pfn, cfn);
+  virtualDispatchUpdateParents(pfn, cfn);
   virtualDispatchUpdateRoots(pfn, cfn);
 }
 
@@ -558,11 +556,21 @@ static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn) {
 
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();
+    virtualChildrenMap.put(pfn, fns);
   }
 
   fns->add(cfn);
+}
 
-  virtualChildrenMap.put(pfn, fns);
+static void virtualDispatchUpdateParents(FnSymbol* pfn, FnSymbol* cfn) {
+  Vec<FnSymbol*>* fns = virtualParentsMap.get(cfn);
+
+  if (fns == NULL) {
+    fns = new Vec<FnSymbol*>();
+    virtualParentsMap.put(cfn, fns);
+  }
+
+  fns->add(pfn);
 }
 
 static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
@@ -570,6 +578,7 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
 
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();
+    virtualRootsMap.put(cfn, fns);
 
     fns->add(pfn);
 
@@ -591,8 +600,6 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
       fns->add(pfn);
     }
   }
-
-  virtualRootsMap.put(cfn, fns);
 }
 
 // return true if child overrides parent in dispatch table
@@ -611,23 +618,16 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
   return retval;
 }
 
+static void clearOneMap(Map<FnSymbol*, Vec<FnSymbol*>*>& map) {
+  form_Map(VirtualMapElem, el, map)
+    delete el->value;
+  map.clear();
+}
+
 static void clearRootsAndChildren() {
-  Vec<Vec<FnSymbol*>*> rootValues;
-  Vec<Vec<FnSymbol*>*> childValues;
-
-  virtualRootsMap.get_values(rootValues);
-  virtualChildrenMap.get_values(childValues);
-
-  forv_Vec(Vec<FnSymbol*>, value, rootValues)  {
-    delete value;
-  }
-
-  forv_Vec(Vec<FnSymbol*>, value, childValues) {
-    delete value;
-  }
-
-  virtualRootsMap.clear();
-  virtualChildrenMap.clear();
+  clearOneMap(virtualRootsMap);
+  clearOneMap(virtualParentsMap);
+  clearOneMap(virtualChildrenMap);
 }
 
 /************************************* | **************************************
@@ -811,11 +811,43 @@ static void printDispatchInfo() {
 *                                                                             *
 ************************************** | *************************************/
 
+// Remove from 'toTrim' the FnSymbols not in 'fns_in_vmt'.
+static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
+                           Map<FnSymbol*, Vec<FnSymbol*>*>& toTrim)
+{
+  form_Map(VirtualMapElem, el, toTrim) {
+    if (! fns_in_vmt.count(el->key)) {
+      // We should not even be looking here.
+      delete el->value;
+      el->value = NULL;
+      // Since Map does not remove entries well, keep 'el' there.
+      continue;
+    }
+
+    Vec<FnSymbol*>* oldV = el->value;
+    forv_Vec(FnSymbol, fn1, *oldV) {
+      if (fns_in_vmt.count(fn1)) {
+        // If all entries are in VMT, 'oldV' does not need adjustment.
+      } else {
+        // There is at least one entry in el->value that needs to be removed.
+        // Build a new Vec. Redo the scan from the beginning.
+        Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
+        forv_Vec(FnSymbol, fn2, *oldV) {
+          if (fns_in_vmt.count(fn2))
+            newV->add(fn2);
+        }
+        delete oldV;
+        el->value = newV;
+        break;
+      }
+    }
+  }
+}
+
 // removes entries in virtualChildrenMap that are not in virtualMethodTable.
 // such entries could not be called and should be dead-code eliminated.
 static void filterVirtualChildren() {
   typedef MapElem<Type*,     Vec<FnSymbol*>*> VmtMapElem;
-  typedef MapElem<FnSymbol*, Vec<FnSymbol*>*> ChildMapElem;
 
   std::set<FnSymbol*> fns_in_vmt;
 
@@ -827,20 +859,14 @@ static void filterVirtualChildren() {
     }
   }
 
-  form_Map(ChildMapElem, el, virtualChildrenMap) {
-    if (el->value) {
-      Vec<FnSymbol*>* oldV = el->value;
-      Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
+  trimVirtualMap(fns_in_vmt, virtualChildrenMap);
+  trimVirtualMap(fns_in_vmt, virtualParentsMap);
 
-      forv_Vec(FnSymbol, fn, *oldV) {
-        if (fns_in_vmt.count(fn)) {
-          newV->add(fn);
-        }
-      }
-
-      el->value = newV;
-
-      delete oldV;
+  // Assume all "roots" are to stay, so just trim not-to-be-used Vecs.
+  form_Map(VirtualMapElem, el, virtualRootsMap) {
+    if (! fns_in_vmt.count(el->key)) {
+      delete el->value;
+      el->value = NULL;
     }
   }
 }
