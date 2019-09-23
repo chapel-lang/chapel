@@ -69,7 +69,7 @@
 // the cause of the numerical instability in the nightly tests.  We 
 // really should be using a reduction for these.
 
-use Time;
+use Time, IO;
 
 /* Compile-time constants */
 

@@ -1,4 +1,4 @@
-use NodesEdges, Edges, Nodes, BC_dijkstra, Time;
+use NodesEdges, Edges, Nodes, BC_dijkstra, Time, IO;
 
 config const input_file: string = "RtsGraph_OneOverP.txt";
 config const gen_file: string = "RtsGraph_gen.txt";

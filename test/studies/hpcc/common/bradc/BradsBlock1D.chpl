@@ -5,6 +5,8 @@
 // TODO: Would using nested classes allow me to avoid so much
 // passing around of globIndexType and locIndexType?
 
+private use IO;
+
 config param debugBradsBlock1D = false;
 
 //
