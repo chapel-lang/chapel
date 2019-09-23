@@ -2,7 +2,7 @@ use CoarseningTransfer;
 use RefiningTransfer;
 use BergerRigoutsosClustering;
 
-
+private use IO;
 
 
 //|\"""""""""""""""""""""""""""|\

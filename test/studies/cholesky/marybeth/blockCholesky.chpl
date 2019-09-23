@@ -26,6 +26,7 @@
 // is an interesting exercise to write some blas loops this way and
 // to write a general Cholesky factorization routine that handles
 // both the upper and lower choice in one routine.
+use IO;
 
 config const inputfile = "lehmer10.dat";
 config const upper = true;

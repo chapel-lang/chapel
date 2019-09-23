@@ -1,6 +1,7 @@
 use Level_def;
 use GridVariable_def;
 
+private use IO;
 
 //|\""""""""""""""""""""""""""""|\
 //| >    LevelVariable class    | >

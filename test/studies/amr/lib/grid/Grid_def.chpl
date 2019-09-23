@@ -14,7 +14,7 @@ use SpaceDimension;
 use LanguageExtensions;
 use BasicDataStructures;
 
-
+private use IO;
 
 //-----------------------------------------------------------
 // Define an enum type to describe the relative position of
