@@ -143,7 +143,7 @@ proc runTest() {
     counts0[shrink(hash)] += 1;
     if hashSet.contains(hash) {
       // Error
-      writeln(" SPATIAL ANOMIALY DETECTED: hashSet contains duplicate");
+      writeln(" SPATIAL ANOMALY DETECTED: hashSet contains duplicate");
     }
     hashSet.add(hash);
 
