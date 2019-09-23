@@ -35,7 +35,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
-#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 

@@ -1110,6 +1110,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   Vec<Symbol*> retSymbols;
 
   if (isUnresolvedOrGenericReturnType(retType)) {
+
     computeReturnTypeParamVectors(fn, ret, retTypes, retSymbols);
 
     if (retTypes.n == 1) {
