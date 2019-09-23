@@ -19,7 +19,6 @@ import subprocess
 import sys
 import tempfile
 import time
-from test import py3_compat
 
 # need to be able to find the util and chplenv dir even when start_test
 # doesn't live in $CHPL_HOME/util (such as for the release tarball)
@@ -31,6 +30,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 from chplenv import *
 
 from test import activate_chpl_test_venv
+from test import py3_compat
 from test import re2_supports_valgrind
 import argparse
 try:

@@ -82,8 +82,10 @@ FnSymbol::~FnSymbol() {
   BasicBlock::clear(this);
   delete basicBlocks;
 
-  if (calledBy)
+  if (calledBy) {
     delete calledBy;
+    calledBy = NULL;
+  }
 }
 
 void FnSymbol::verify() {
