@@ -247,9 +247,9 @@
   56   57 507  on 0
   56  dmarr, dmhelp - zippered iteration on 0
   90  
+  90  (numLocales = 1, lowIdx = -100, blockSize = 3, cycleSizePos = 3)
+  90  (numLocales = 3, lowIdx = -10, blockSize = 2, cycleSizePos = 6)
   90  dmarr - dimSpecifier()
-  90  {numLocales = 1, lowIdx = -100, blockSize = 3, name = D1, cycleSizePos = 3}
-  90  {numLocales = 3, lowIdx = -10, blockSize = 2, name = D2, cycleSizePos = 6}
   91  
   91  privatization tests
   91  skipped because of oversubscribing Locales(0)

@@ -98,6 +98,7 @@ private:
   std::string genServerDispatchSwitch(const std::vector<FnSymbol*>& fns);
   std::string genDebugPrintCall(FnSymbol* fn);
   std::string genDebugPrintCall(const char* msg);
+  std::string genDebugPrintCall1Arg(const char* msg, const char* uintArg);
   std::string genFuncNumericID(FnSymbol* fn);
   std::string genServerWrapperCall(FnSymbol* fn);
   std::string genClientsideRPC(FnSymbol* fn);
@@ -330,11 +331,18 @@ std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
   if (out) {
     // Compute and push length of string.
     gen += "bytes = strlen(obj);\n";
+
+    if (this->debugPrint) {
+      gen += this->genDebugPrintCall1Arg("Pushing length: ", "bytes");
+    }
   }
 
   gen += this->genSocketCall("skt", "bytes", out);
 
   if (not out) {
+    if (this->debugPrint) {
+      gen += this->genDebugPrintCall1Arg("Received intended length: ", "bytes");
+    }
     // Attempt to allocate buffer.
     gen += "buffer = mli_malloc(bytes + 1);\n";
 
@@ -569,6 +577,18 @@ std::string MLIContext::genDebugPrintCall(const char* msg) {
   gen += "chpl_mli_debugf(\"%s\\n\", \"";
   gen += msg;
   gen += "\");\n";
+
+  return gen;
+}
+
+std::string MLIContext::genDebugPrintCall1Arg(const char* msg,
+                                              const char* uintArg) {
+  std::string gen;
+  gen += "chpl_mli_debugf(\"%s%llu\\n\", \"";
+  gen += msg;
+  gen += "\", ";
+  gen += uintArg;
+  gen += ");\n";
 
   return gen;
 }

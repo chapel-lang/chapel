@@ -116,14 +116,14 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   // Create individual dimension descriptors
   const
     // block-cyclic for 1st dimension
-    bdim1 = new unmanaged BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl1),
+    bdim1 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl1),
     // replicated for 1st dimension
-    rdim1 = new unmanaged ReplicatedDim(tl1),
+    rdim1 = new ReplicatedDim(tl1),
 
     // block-cyclic for 2nd dimension
-    bdim2 = new unmanaged BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl2),
+    bdim2 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl2),
     // replicated for 2nd dimension
-    rdim2 = new unmanaged ReplicatedDim(tl2);
+    rdim2 = new ReplicatedDim(tl2);
 
   const
     dist1b2b = new unmanaged DimensionalDist2D(targetLocales, bdim1, bdim2, "dist1b2b"),

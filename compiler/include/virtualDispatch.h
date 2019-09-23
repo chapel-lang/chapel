@@ -29,6 +29,9 @@ class Type;
 // Map a method to the set of methods being overridden
 extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
 
+// Map a method to the set of methods that it may override
+extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualParentsMap;
+
 // Map a method to the set of methods that might be invoked
 extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 
