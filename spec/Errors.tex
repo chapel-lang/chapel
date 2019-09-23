@@ -35,6 +35,7 @@ thrown.
 
 \begin{chapelexample}{throwing.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc canThrow(i: int): int throws {
   if i < 0 then
     throw new owned Error();
@@ -47,6 +48,7 @@ proc alwaysThrows():int throws {
   // never reached
   return 1;
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -74,6 +76,7 @@ block or a \chpl{try!} expression prefix, the program halts.
 
 \begin{chapelexample}{try-bang.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc haltsOnError():int {
   // the try! next to the throwing call
   // halts the program if an error occurs.
@@ -86,6 +89,7 @@ proc haltsOnErrorBlock() {
     canThrow(0);
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -125,6 +129,7 @@ next statement after the \chpl{try}-\chpl{catch} blocks.
 
 \begin{chapelexample}{catching-errors.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc catchingErrors() throws {
   try {
     alwaysThrows(0);
@@ -141,6 +146,7 @@ proc catchingErrors() throws {
     writeln("caught an error in a named catchall clause");
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -152,6 +158,7 @@ If an error is thrown within a \chpl{try!} block and none of its
 
 \begin{chapelexample}{catching-errors-halt.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc catchingErrorsHalt() {
   try! {
     var x = alwaysThrows(-1);
@@ -161,6 +168,7 @@ proc catchingErrorsHalt() {
   }
   // errors other than FileNotFoundError cause a halt
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -173,6 +181,7 @@ is directed to the enclosing \chpl{try} block, when present.
 
 \begin{chapelexample}{nested-try.chpl}
 \begin{chapel}
+\begin{verbatim}
 class DemoError : Error { }
 
 proc nestedTry() {
@@ -187,13 +196,16 @@ proc nestedTry() {
     writeln("caught an Error from inner try");
   }
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 proc alwaysThrows():int throws {
   throw new owned Error();
   // never reached
   return 1;
 }
+\end{verbatim}
 \end{chapelpost}
 \end{chapelexample}
 
@@ -211,6 +223,7 @@ error raised in a \chpl{try} block.
 
 \begin{chapelexample}{catching-errors-propagate.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc catchingErrorsPropagate() throws {
   try {
     var x = alwaysThrows(-1);
@@ -220,6 +233,7 @@ proc catchingErrorsPropagate() throws {
   }
   // errors other than FileNotFoundError propagate
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -232,6 +246,7 @@ calls to clarify control flow.
 
 \begin{chapelexample}{propagates-error.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc propagatesError() throws {
   // control flow changes if an error was thrown;
   // could be indicated more clearly with try
@@ -248,6 +263,7 @@ proc propagatesError() throws {
 
   return try canThrow(0);
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -260,12 +276,14 @@ at expression granularity. The expression form may not be used with
 
 \begin{chapelexample}{expression-try.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc expressionTry(): int throws {
   var x = try canThrow(1);
   writeln(x);
 
   return try canThrow(0);
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -283,6 +301,7 @@ propagating the error out of the function as described above.
 
 \begin{chapelexample}{warns-on-error.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc warnsOnError(i: int): int {
   try {
     alwaysThrows(i);
@@ -290,6 +309,7 @@ proc warnsOnError(i: int): int {
     writeln("Warning: caught a error ", e);
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -299,6 +319,7 @@ proc warnsOnError(i: int): int {
 
 \begin{chapelexample}{halts-on-error.chpl}
 \begin{chapel}
+\begin{verbatim}
 class DemoError : Error { }
 proc haltsOnError(i: int): int {
   try! {
@@ -307,6 +328,7 @@ proc haltsOnError(i: int): int {
     writeln("caught a DemoError");
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -322,6 +344,7 @@ scope is exited, regardless of how it is exited.
 
 \begin{chapelexample}{defer.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc deferredDelete(i: int) {
   try {
     var huge = allocateLargeObject();
@@ -336,6 +359,7 @@ proc deferredDelete(i: int) {
     writeln("no memory leaks");
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -355,6 +379,7 @@ or not throw if the overridden method does not throw.
 
 \begin{chapelexample}{throwing-methods.chpl}
 \begin{chapel}
+\begin{verbatim}
 class ThrowingObject {
   proc f() throws {
     throw new owned Error();
@@ -367,6 +392,7 @@ class SubThrowingObject : ThrowingObject {
     writeln("this version doesn't throw");
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -379,6 +405,7 @@ will be propagated out of the \chpl{on} statement.
 
 \begin{chapelexample}{handle-from-on.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc handleFromOn() {
   try {
     on Locales[0] {
@@ -388,6 +415,7 @@ proc handleFromOn() {
     writeln("caught from Locale 0");
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -415,6 +443,7 @@ will be propagated to the \chpl{sync} statement that waits for that task.
 
 \begin{chapelexample}{handle-from-begin.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc handleFromBegin() {
   try! {
     sync {
@@ -425,6 +454,7 @@ proc handleFromBegin() {
     writeln("caught from Locale 0");
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -437,6 +467,7 @@ loops will emit a flattened \chpl{TaskErrors} error.
 
 \begin{chapelexample}{handle-from-coforall.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc handleFromCoforall() {
   try! {
     writeln("before coforall block");
@@ -453,11 +484,13 @@ proc handleFromCoforall() {
     }
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
 \begin{chapelexample}{handle-from-cobegin.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc handleFromCobegin() {
   try! {
     writeln("before cobegin block");
@@ -472,6 +505,7 @@ proc handleFromCobegin() {
     }
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -485,6 +519,7 @@ if error(s) are thrown in the loop body.
 
 \begin{chapelexample}{handle-from-forall.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc handleFromForall() {
   try! {
     writeln("before forall block");
@@ -498,6 +533,7 @@ proc handleFromForall() {
     }
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -516,11 +552,13 @@ accessed with a \chpl{use} statement.  See also
 
 \begin{chapelexample}{defining-errors.chpl}
 \begin{chapel}
+\begin{verbatim}
 use SysError;
 
 class DemoError : Error { }
 
 class DemoSysError : SystemError { }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -557,6 +595,7 @@ It is legal in the prototype mode:
 
 \begin{chapelexample}{fatal-mode.chpl}
 \begin{chapel}
+\begin{verbatim}
 canThrow(1); // handling can be omitted; halts if an error occurs
 
 proc throwsErrorsOn() throws {
@@ -568,14 +607,17 @@ proc doesNotThrowErrorsOn() {
   // causes a halt if called
   alwaysThrows();
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 proc canThrow(i: int): int throws {
   if i < 0 then
     throw new owned Error();
 
   return i + 1;
 }
+\end{verbatim}
 \end{chapelpost}
 \end{chapelexample}
 
@@ -584,6 +626,7 @@ so the prototype mode applies here, too.
 
 \begin{chapelexample}{PrototypeModule.chpl}
 \begin{chapel}
+\begin{verbatim}
 prototype module PrototypeModule {
 
   canThrow(1); // handling can be omitted; halts if an error occurs
@@ -605,6 +648,7 @@ prototype module PrototypeModule {
     return i + 1;
   }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -617,6 +661,7 @@ throw, then the error will be propagated out, as with the prototype mode.
 
 \begin{chapelexample}{ProductionModule.chpl}
 \begin{chapel}
+\begin{verbatim}
 module ProductionModule {
   // This would cause a compilation error since the error is not handled:
   // canThrow(1);
@@ -631,5 +676,6 @@ module ProductionModule {
   //   alwaysThrows();
   // }
 }
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
