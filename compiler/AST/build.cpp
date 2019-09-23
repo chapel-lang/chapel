@@ -588,22 +588,6 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = newTemp();
-  // MPF - without FLAG_NO_COPY, normalize adds an initCopy here,
-  // but that initCopy is unnecessary because each variable will
-  // be initialized with a tuple element (and initCopy called then).
-  // For the case where type==NULL, it was causing type mismatch
-  // errors; but when type!=NULL, normalize will change to
-  // defaultOf/assign anyway and there isn't a type issue
-  if (type == NULL) {
-    tmp->addFlag(FLAG_NO_COPY);
-
-    // additionally, don't auto-destroy tmp if the RHS
-    // is another variable (vs a call).
-    // This does not correctly handle certain no-parens calls. See
-    // tuple-string-bug.chpl and tuple-string-bug-noparens.chpl
-    if (!isCallExpr(init))
-      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
-  }
   int count = 1;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
