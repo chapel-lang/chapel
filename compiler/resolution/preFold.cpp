@@ -35,6 +35,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
+#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -75,7 +76,7 @@ static bool           isInstantiatedField(Symbol* field);
 
 static Expr*          createFunctionAsValue(CallExpr* call);
 
-static AggregateType* createOrFindFunTypeFromAnnotation(AList&    argList,
+static Type*          createOrFindFunTypeFromAnnotation(AList& argList,
                                                         CallExpr* call);
 
 static Expr*          dropUnnecessaryCast(CallExpr* call);
@@ -413,8 +414,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_CREATE_FN_TYPE: {
-    AggregateType* parent = createOrFindFunTypeFromAnnotation(call->argList,
-                                                              call);
+    Type* parent = createOrFindFunTypeFromAnnotation(call->argList, call);
     retval = new SymExpr(parent->symbol);
     call->replace(retval);
     break;
@@ -2190,8 +2190,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   in the signature is the return type, the remainder represent arguments
   to the function.
 */
-static AggregateType* createOrFindFunTypeFromAnnotation(AList&     argList,
-                                                        CallExpr*  call) {
+static Type* createOrFindFunTypeFromAnnotation(AList& argList,
+                                                      CallExpr* call) {
   AggregateType* parent      = NULL;
   SymExpr*       retTail     = toSymExpr(argList.tail);
   Type*          retType     = retTail->symbol()->type;
@@ -2217,7 +2217,17 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList&     argList,
                                              FnSymbol*>(parent, parentMethod);
   }
 
-  return parent;
+  //
+  // TODO: This computation is redundant and would best be cached by mapping
+  // to each parent class type.
+  //
+  CallExpr* getParShared = new CallExpr(dtShared->symbol, parent->symbol);
+  chpl_gen_main->insertAtHead(getParShared);
+  tryResolveCall(getParShared);
+  getParShared->remove();
+  Type* result = getParShared->typeInfo();
+
+  return result;
 }
 
 //

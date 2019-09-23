@@ -3611,10 +3611,12 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         USR_FATAL_CONT(call,
                        "illegal access of iterator or promoted expression");
 
-      } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-        USR_FATAL_CONT(call,
-                       "illegal access of first class function");
-
+        // TODO: Is there a better way to do this besides strcmp?
+      } else if (strcmp(type->name(), "shared")) {
+        Type* t = type->getField("chpl_t")->type;
+        if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+          USR_FATAL_CONT(call, "illegal access of first class function");
+        }
       } else {
         USR_FATAL_CONT(call,
                        "unresolved access of '%s' by '%s'",
