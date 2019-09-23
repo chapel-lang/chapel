@@ -1,2 +1,2 @@
-inFunc.chpl:3: error: Modules must be declared inside modules or at file-scope
+inFunc.chpl:3: error: Modules must be declared at module- or file-scope
 Note: This source location is a guess.

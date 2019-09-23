@@ -623,7 +623,7 @@ void ModuleSymbol::addDefaultUses() {
 
     if (parentModule == NULL) {
       SET_LINENO(this);
-      USR_FATAL("Modules must be declared inside modules or at file-scope");
+      USR_FATAL("Modules must be declared at module- or file-scope");
     }
 
     //
