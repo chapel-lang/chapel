@@ -55,14 +55,20 @@ proc build2Tuple(type t, type tt) {
 This function is instantiated with ``normal'' function call syntax
 where the arguments are types:
 \begin{chapel}
+\begin{verbatim}
 var t2 = build2Tuple(int, string);
 t2 = (1, "hello");
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(t2);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (1, hello)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -74,23 +80,31 @@ accepting type arguments that only apply to a specific group of types.
 Suppose that we'd like to define a function that accepts a type argument
 and returns 1 represented in that type.
 \begin{chapel}
+\begin{verbatim}
 proc getOne(type t:numeric) {
   return 1:t;
 }
+\end{verbatim}
 \end{chapel}
 Now calls to this function will resolve to the appropriate version based
 upon the argument type supplied.
 \begin{chapel}
+\begin{verbatim}
 var anInt8 = getOne(int(8));
 var aReal = getOne(real);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(anInt8.type:string, " ", anInt8);
 writeln(aReal.type:string, " ", aReal);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 int(8) 1
 real(64) 1.0
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -110,18 +124,24 @@ integer type \chpl{x}.  The function returns a homogeneous tuple of
 size \chpl{p} where each component in the tuple has the value of
 \chpl{x}.
 \begin{chapel}
+\begin{verbatim}
 proc fillTuple(param p: int, x: int) {
   var result: p*int;
   for param i in 1..p do
     result(i) = x;
   return result;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(fillTuple(3,3));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (3, 3, 3)
+\end{verbatim}
 \end{chapeloutput}
 The function call \chpl{fillTuple(3, 3)} returns a 3-tuple where each
 component contains the value \chpl{3}.
@@ -143,21 +163,27 @@ the parameter argument can allow any type be passed. The following code
 defines a function that returns a homogeneous tuple of size \chpl{p}
 where each component in the tuple is initialized to \chpl{x}:
 \begin{chapel}
+\begin{verbatim}
 proc fillTuple(param p, x) {
   var result: p*x.type;
   for param i in 1..p do
     result(i) = x;
   return result;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var x = fillTuple(3, 3.14);
 writeln(x);
 writeln(x.type:string);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (3.14, 3.14, 3.14)
 3*real(64)
+\end{verbatim}
 \end{chapeloutput}
 In this function, the type of the tuple is taken to be the type of the
 actual argument.  The call \chpl{fillTuple(3, 3.14)} returns a 3-tuple
@@ -178,21 +204,27 @@ type has the semantics of a type alias.
 The example from the previous section can be rewritten to use a
 queried type for clarity:
 \begin{chapel}
+\begin{verbatim}
 proc fillTuple(param p: int, x: ?t) {
   var result: p*t;
   for param i in 1..p do
     result(i) = x;
   return result;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var x = fillTuple(3, 3.14);
 writeln(x);
 writeln(x.type:string);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (3.14, 3.14, 3.14)
 3*real(64)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -204,6 +236,7 @@ return type.
 
 The code
 \begin{chapel}
+\begin{verbatim}
 writeln(sumOfThree(1,2,3));
 writeln(sumOfThree(4.0,5.0,3.0));
 
@@ -213,11 +246,14 @@ proc sumOfThree(x: ?t, y:t, z:t):t {
    sum = x + y + z;
    return sum;
 }
+\end{verbatim}
 \end{chapel}
 produces the output
 \begin{chapelprintoutput}
+\begin{verbatim}
 6
 12.0
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -236,9 +272,11 @@ actual argument that is a generic stack
 (see~\rsec{Example_Generic_Stack}) and outputs the top element of the
 stack.  The function is generic on the type of its argument.
 \begin{chapel}
+\begin{verbatim}
 proc writeTop(s: Stack) {
   write(s.top.item);
 }
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -258,6 +296,7 @@ this class type where the type field is instantiated to the default.
 Function \chpl{g}, on the other hand, is generic on its argument
 because of the use of the question mark.
 \begin{chapel}
+\begin{verbatim}
 class C {
   type t = int;
 }
@@ -267,6 +306,7 @@ proc f(c: C) {
 proc g(c: C(?)) {
   // c.type may not be int
 }
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -285,6 +325,7 @@ Using concrete types or values in this manner makes the argument
 
 Given the code:
 \begin{chapel}
+\begin{verbatim}
 class C {
   type elementType;
   type indexType;
@@ -296,6 +337,7 @@ class Container {
 proc f(c: C(real,?t,?u)) {
   // ...
 }
+\end{verbatim}
 \end{chapel}
 
 The function \chpl{f} can only apply when the \chpl{c.elementType==real}.
@@ -305,16 +347,20 @@ following function, \chpl{g}, can only apply when \chpl{c.containerType} is
 an instance of \chpl{Container}:
 
 \begin{chapel}
+\begin{verbatim}
 proc g(c: C(?t,?u,Container)) {
   // ...
 }
+\end{verbatim}
 \end{chapel}
 
 \begin{chapelpost}
+\begin{verbatim}
 var cc = new borrowed Container(int);
 var c = new borrowed C(real, int, cc.type);
 f(c);
 g(c);
+\end{verbatim}
 \end{chapelpost}
 \end{chapelexample}
 
@@ -323,9 +369,11 @@ forms a \emph{partially concrete} argument.
 \begin{example}
 The function definition
 \begin{chapel}
+\begin{verbatim}
 proc f(tuple: (?t,real)) {
   // body
 }
+\end{verbatim}
 \end{chapel}
 specifies that \chpl{tuple.size == 2 \&\& tuple(2).type == real}.
 \end{example}
@@ -333,14 +381,18 @@ specifies that \chpl{tuple.size == 2 \&\& tuple(2).type == real}.
 Homogeneous tuple arguments of generic type are also supported:
 \begin{chapelexample}{partially-concrete-star-tuple.chpl}
 \begin{chapel}
+\begin{verbatim}
 record Number {
   var n;
 }
 proc f(tuple: 2*Number) {
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 f( (new Number(1), new Number(2)) );
+\end{verbatim}
 \end{chapelpost}
 
 specifies that \chpl{f} accepts a tuple with 2 elements, where each
@@ -355,15 +407,18 @@ of the tuple is constrained.
 
 The following program results in an ambiguity error:
 \begin{chapel}
+\begin{verbatim}
 proc f(tuple: (?,real)) {
 }
 proc f(tuple: (?,?)) {
 }
 f( (1.0, 2.0) );
+\end{verbatim}
 \end{chapel}
 since the \chpl{tuple} arguments in both versions of \chpl{f} are
 \emph{partially concrete}.
 \begin{chapelprediff}
+\begin{verbatim}
 \#!/usr/bin/env sh
 \# This prediff exists to avoid underscores in the output
 \# which confuse tex
@@ -371,9 +426,12 @@ testname=$1
 outfile=$2
 head -n 1 $outfile > $outfile.2
 mv $outfile.2 $outfile
+\end{verbatim}
 \end{chapelprediff}
 \begin{chapeloutput}
+\begin{verbatim}
 partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -407,6 +465,7 @@ referred to as the \emph{point of instantiation}.
 Consider the following code which defines a generic
 function \chpl{bar}:
 \begin{chapel}
+\begin{verbatim}
 module M1 {
   record R {
     var x: int;
@@ -427,6 +486,7 @@ module M3 {
     bar(r);
   }
 }
+\end{verbatim}
 \end{chapel}
 In the function \chpl{main}, the variable \chpl{r} is declared to be
 of type \chpl{R} defined in module \chpl{M1} and a call is made to the
@@ -619,23 +679,29 @@ The following code defines a class called \chpl{Node} that implements
 a linked list data structure.  It is generic over the type of the
 element contained in the linked list.
 \begin{chapel}
+\begin{verbatim}
 class Node {
   type eltType;
   var data: eltType;
   var next: unmanaged Node(eltType)?;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var n: unmanaged Node(real) = new unmanaged Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
 writeln(n.next.type:string);
 delete n;
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 3.14
 nil
 unmanaged Node(real(64))?
+\end{verbatim}
 \end{chapeloutput}
 The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to
@@ -679,18 +745,24 @@ The following code defines a class called \chpl{IntegerTuple} that is
 generic over an integer parameter which defines the number of
 components in the class.
 \begin{chapel}
+\begin{verbatim}
 class IntegerTuple {
   param size: int;
   var data: size*int;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var x = new unmanaged IntegerTuple(3);
 writeln(x.data);
 delete x;
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (0, 0, 0)
+\end{verbatim}
 \end{chapeloutput}
 The call \chpl{new IntegerTuple(3)} creates an instance of the
 \chpl{IntegerTuple} class that is instantiated over parameter
@@ -730,27 +802,35 @@ of the element contained in the linked list.  This code does not
 specify the element type directly in the class as a type alias but
 rather omits the type from the \chpl{data} field.
 \begin{chapel}
+\begin{verbatim}
 class Node {
   var data;
   var next: unmanaged Node(data.type)? = nil;
 }
+\end{verbatim}
 \end{chapel}
 A node with integer element type can be defined in the call to the
 initializer.  The call \chpl{new Node(1)} defines a node with the
 value \chpl{1}.  The code
 \begin{chapel}
+\begin{verbatim}
 var list = new unmanaged Node(1);
 list.next = new unmanaged Node(2);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(list.data);
 writeln(list.next.data);
 delete list.next;
 delete list;
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 2
+\end{verbatim}
 \end{chapeloutput}
 defines a two-element list with nodes containing the values \chpl{1}
 and \chpl{2}.  The type of each object could be specified
@@ -847,6 +927,7 @@ that field.
 
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class MyGenericClass {
   type t1;
   param p1;
@@ -885,25 +966,32 @@ class MyGenericClass {
 var g1 = new MyGenericClass(11, 111, int, 1);
 var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
                             real, 2, 222, 222.2, 22);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(g1.p1);
 writeln(g1.p5);
 writeln(g1);
 writeln(g2.p1);
 writeln(g2.p5);
 writeln(g2);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 a string
 {c1 = 11, v1 = 111, x1 = 0, c5 = 5.5, v5 = 555, x5 = 0.0}
 2
 this is g2
 {c1 = 222, v1 = 222.2, x1 = 22.0, c5 = 3.3, v5 = 333, x5 = 3333}
+\end{verbatim}
 \end{chapeloutput}
 The initializers are required to initialize fields \chpl{t1}, \chpl{p1},
 \chpl{c1}, and \chpl{v1}. Otherwise, field initializations may be omitted
@@ -935,6 +1023,7 @@ will continue after encountering a \chpl{compilerWarning}.
 The following code shows an example of using user-defined compiler
 diagnostics to generate warnings and errors:
 \begin{chapel}
+\begin{verbatim}
 proc foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ",
@@ -946,15 +1035,19 @@ proc foo(x) {
   compilerWarning("1-argument version of foo called");
   writeln("In generic foo!");
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 foo(3.4);
 foo("hi");
 foo(1, 2);
 foo(1.2, 3.4);
 foo("hi", "bye");
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 compilerDiagnostics.chpl:12: warning: 1-argument version of foo called
 compilerDiagnostics.chpl:13: warning: 1-argument version of foo called
 In generic foo!
@@ -962,6 +1055,7 @@ In generic foo!
 In 2-argument foo...
 In 2-argument foo...
 In 2-argument foo...
+\end{verbatim}
 \end{chapeloutput}
 
 The first routine generates a compiler error whenever the compiler
@@ -973,6 +1067,7 @@ encounters a call to it.
 Thus, if the program foo.chpl contained the following calls:
 
 \begin{numberedchapel}
+\begin{verbatim}
 foo(3.4);
 foo("hi");
 foo(1, 2);
@@ -980,14 +1075,17 @@ foo(1.2, 3.4);
 foo("hi", "bye");
 foo(1, 2.3);
 foo("hi", 2.3);
+\end{verbatim}
 \end{numberedchapel}
 
 \noindent compiling the program would generate output like:
 
 \begin{commandline}
+\begin{verbatim}
 foo.chpl:1: warning: 1-argument version of foo called with type: real
 foo.chpl:2: warning: 1-argument version of foo called with type: string
 foo.chpl:6: error: foo() called with non-matching types: int != real
+\end{verbatim}
 \end{commandline}
 
 \end{chapelexample}
@@ -1012,6 +1110,7 @@ type will cause the concrete function to be used where possible:
 
 \begin{chapelexample}{specializeGenericFunction.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc foo(x) {
   writeln("in generic foo(x)");
 }
@@ -1023,10 +1122,13 @@ var myReal:real;
 foo(myReal); // outputs "in generic foo(x)"
 var myInt:int;
 foo(myInt); // outputs "in specific foo(x:int)"
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 in generic foo(x)
 in specific foo(x:int)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -1042,7 +1144,7 @@ concrete method to be selected when applicable. For example:
 
 \begin{chapelexample}{specializeGenericMethod.chpl}
 \begin{chapel}
-
+\begin{verbatim}
 record MyNode {
   var field;  // since no type is specified here, MyNode is a generic type
 }
@@ -1058,10 +1160,13 @@ var myRealNode = new MyNode(1.0);
 myRealNode.foo(); // outputs "in generic MyNode.foo()"
 var myIntNode = new MyNode(1);
 myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 in generic MyNode.foo()
 in specific MyNode(int).foo()
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -1077,6 +1182,7 @@ implementation can still be a generic function.  See also
 \index{generics!examples!stack}
 \begin{chapelexample}{genericStack.chpl}
 \begin{chapel}
+\begin{verbatim}
 class MyNode {
   type itemType;              // type of item
   var item: itemType;         // item in node
@@ -1103,18 +1209,23 @@ record Stack {
 
   proc isEmpty return top == nil;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var s: Stack(int);
 s.push(1);
 s.push(2);
 s.push(3);
 while !s.isEmpty do
   writeln(s.pop());
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 3
 2
 1
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
