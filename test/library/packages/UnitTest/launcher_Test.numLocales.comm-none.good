@@ -2,7 +2,7 @@
 ======================================================================
 ERROR test_locales.chpl: s10()
 ----------------------------------------------------------------------
-test_locales.chpl:55: error: halt reached - array index out of bounds: (0)
+test_locales.chpl:55: error: halt reached - indexing out of bounds in dimension 1: [0] but array bounds are 1..0
 
 ======================================================================
 FAIL test_locales.chpl: s4()

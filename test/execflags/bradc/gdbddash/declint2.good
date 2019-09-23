@@ -1,1 +1,1 @@
-declint2.chpl:7: error: halt reached - array index out of bounds: (0)
+declint2.chpl:7: error: halt reached - indexing out of bounds in dimension 1: [0] but array bounds are 1..100

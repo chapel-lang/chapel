@@ -1,2 +1,2 @@
 On initial locale: 0
-referToLocaleOne.chpl:2: error: halt reached - array index out of bounds: (1)
+referToLocaleOne.chpl:2: error: halt reached - indexing out of bounds in dimension 1: [1] but array bounds are 0..0

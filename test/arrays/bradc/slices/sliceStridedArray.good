@@ -18,4 +18,4 @@ A[<slice>] is:
 73 75 77 79
 93 95 97 99
 
-sliceStridedArray.chpl:17: error: halt reached - array slice out of bounds in dimension 1: 1..10
+sliceStridedArray.chpl:17: error: halt reached - array slice out of bounds in dimension 1: [1..10] but array bounds are 1..10 by 2
