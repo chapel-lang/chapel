@@ -7,7 +7,7 @@
      and the C version by Kevin Miller
 */
 
-use DynamicIters;
+use DynamicIters, IO;
 
 config const size = 200; // this is just an artifact of directory PERFEXECOPTS
 config const n = size,            // image size in pixels (n x n)
