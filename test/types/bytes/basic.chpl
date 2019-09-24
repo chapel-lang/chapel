@@ -42,6 +42,10 @@ for i in 1..b_from_c_ptr.length do
   writeln(b_from_c_ptr[i], " as ", b_from_c_ptr[i].type:string);
 for i in 1..b_from_c_ptr.length do
   writeln(b_from_c_ptr.byte(i), " as ", b_from_c_ptr[i].type:string);
+
+var singleByteBytes = b"A";
+writeln(singleByteBytes.toByte(), " as ", singleByteBytes.toByte().type:string);
+
 writeln();
 
 //TEST ITERATORS
