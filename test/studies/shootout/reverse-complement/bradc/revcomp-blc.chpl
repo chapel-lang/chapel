@@ -8,7 +8,7 @@
 use IO;
 
 // capture some common ASCII values as integers
-const eol = "\n".toByte(),
+param eol = "\n".toByte(),
       gt  = ">".toByte(),
       up2low = "A".toByte() - "a".toByte();
 
