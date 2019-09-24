@@ -1052,7 +1052,7 @@ module UnitTest {
       :throws DependencyFound: If Called for the first time in a function.
       
     */
-    proc dependsOn(tests: argType ...?n) throws lifetime this < tests {
+    proc dependsOn(tests: argType ...?n) throws {
       if testDependsOn.size == 0 {
         for eachSuperTest in tests {
           this.testDependsOn.append(eachSuperTest);

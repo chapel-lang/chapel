@@ -1,8 +1,0 @@
-tuple-vararg-in-lt-clause.chpl:8: In function 'dependsOn':
-tuple-vararg-in-lt-clause.chpl:9: internal error: AST-EXP-nnnn chpl version mmmm
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-

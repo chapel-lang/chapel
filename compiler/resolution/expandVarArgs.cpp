@@ -284,6 +284,10 @@ static void       expandVarArgsWhere(FnSymbol*      fn,
                                      ArgSymbol*     formal,
                                      const Formals& varargs);
 
+static void       expandVarArgsLifetimeConstraints(FnSymbol* fn,
+                                     ArgSymbol*     formal,
+                                     const Formals& varargs);
+
 static void       expandVarArgsBody(FnSymbol*      fn,
                                     ArgSymbol*     formal,
                                     const Formals& varargs);
@@ -320,6 +324,8 @@ static void expandVarArgsFormal(FnSymbol* fn, ArgSymbol* formal, int n) {
   if (fn->where != NULL) {
     expandVarArgsWhere(fn, formal, formals);
   }
+
+  expandVarArgsLifetimeConstraints(fn, formal, formals);
 
   expandVarArgsBody(fn, formal, formals);
 
@@ -365,6 +371,45 @@ static void expandVarArgsWhere(FnSymbol*      fn,
   } else {
     substituteVarargTupleRefs(fn->where, formal, varargs);
   }
+}
+
+//
+// Replace all constraints like "something < varargs"
+// with "something < vararg1, ..., something < varargN"
+//
+static void expandVarArgsLifetimeConstraints(FnSymbol* fn,
+                                             ArgSymbol* formal,
+                                             const Formals& varargs) {
+  if (! fn->lifetimeConstraints) return; // nothing to do
+
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsFor(fn->lifetimeConstraints, formal, symExprs);
+
+  for_vector(SymExpr, se, symExprs)
+   if (CallExpr* ltof = toCallExpr(se->parentExpr))
+    if (ltof->isPrimitive(PRIM_LIFETIME_OF))
+     if (CallExpr* constraint = toCallExpr(ltof->parentExpr))
+      {
+       // Replace 'constraint' with a copy for each of 'varargs'.
+       CallExpr* replAll = NULL;
+       for_vector(ArgSymbol, newarg, varargs) {
+         SymbolMap map;
+         map.put(formal, newarg);
+         CallExpr* repl1 = constraint->copy(&map);
+         if (replAll)
+           replAll = new CallExpr(",", replAll, repl1);
+         else
+           replAll = repl1;
+       }
+       constraint->replace(replAll);
+      }
+
+  // Are there any references to 'formal' still remaining?
+  // If so, complain, because it will be removed from tree.
+  symExprs.clear();
+  collectSymExprsFor(fn->lifetimeConstraints, formal, symExprs);
+  for_vector(SymExpr, se, symExprs)
+    USR_FATAL_CONT(se, "this use of the varargs formal %s is currently unsupported", formal->name);
 }
 
 static void expandVarArgsBody(FnSymbol*      fn,

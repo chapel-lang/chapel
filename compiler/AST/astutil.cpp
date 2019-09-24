@@ -136,6 +136,14 @@ void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
     symExprs.push_back(symExpr);
 }
 
+// Same as collectSymExprs(), including only SymExprs for 'sym'.
+void collectSymExprsFor(BaseAST* ast, Symbol* sym, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprsFor, sym, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (symExpr->symbol() == sym)
+      symExprs.push_back(symExpr);
+}
+
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
