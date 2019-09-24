@@ -1,3 +1,5 @@
+use IO;
+
 var myInt = 123;
 var f : file;
 
