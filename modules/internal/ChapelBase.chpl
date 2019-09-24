@@ -1909,11 +1909,11 @@ module ChapelBase {
 
   /* swap operator */
   inline proc <=>(ref lhs, ref rhs) {
-    // it's tempting to make this a `const` tmp, but it causes
-    // problems for cases that self-modify, like records wrapping
-    // owned class pointers.  And it's short-lived enough that making
-    // it `var` doesn't seem likely to thwart optimization
-    // opportunities.
+    // It's tempting to make `tmp` a `const`, but it causes problems
+    // for types where the RHS of an assignment is modified, such as a
+    // record with an `owned` class field.  It's a short-lived enough
+    // variable that making it `var` doesn't seem likely to thwart
+    // optimization opportunities.
     var tmp = lhs;
     lhs = rhs;
     rhs = tmp;
