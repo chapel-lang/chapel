@@ -3522,7 +3522,7 @@ static bool isSharedFcfWrapper(Type* t);
 // this out pronto to prevent user types from passing this check.
 //
 static bool isSharedFcfWrapper(Type* t) {
-  if (!strcmp("shared ", t->name()) {
+  if (!strcmp("shared ", t->name())) {
     return t->getField("chpl_t")
             ->type
             ->symbol
