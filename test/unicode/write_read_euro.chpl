@@ -1,4 +1,5 @@
 if unicodeSupported() {
+  use IO;
 
   var f = opentmp();
 
