@@ -73,12 +73,10 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
         if (ce->isPrimitive(PRIM_MOVE)) {
           INT_ASSERT(isSymExpr(ce->get(1)));
           std::vector<SymExpr*> syms;
-          collectSymExprs(exprToMove, syms);
+          collectSymExprsFor(exprToMove, toSymExpr(ce->get(1))->symbol(), syms);
           for_vector(SymExpr, s, syms) {
-            if (s->symbol() == toSymExpr(ce->get(1))->symbol()) {
               safeExprCache[e] = false;
               return false;
-            }
           }
         }
       }

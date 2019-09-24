@@ -57,7 +57,10 @@ void collectMyCallExprs(BaseAST* ast,
                         FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
-void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs);
+void collectSymExprsFor(BaseAST* ast, Symbol* sym, std::vector<SymExpr*>& symExprs);
+void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
+                        std::vector<SymExpr*>& symExprs);
+void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
 
 // utility routines for clearing and resetting lineno and filename
