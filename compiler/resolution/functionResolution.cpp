@@ -3517,12 +3517,14 @@ static void sortExampleCandidates(CallInfo& info,
 static void generateCopyInitErrorMsg();
 static bool isSharedFcfWrapper(Type* t);
 
-//
-// TODO: Is there a better way to do this besides strcmp? We should figure
-// this out pronto to prevent user types from passing this check.
-//
 static bool isSharedFcfWrapper(Type* t) {
-  if (!strcmp("shared ", t->name())) {
+
+  //
+  // TODO: Is there a better way to do this besides strcmp? We should figure
+  // this out pronto to prevent any possibility of user types from passing
+  // this check.
+  //
+  if (!strncmp("shared ", t->name(), 7)) {
     return t->getField("chpl_t")
             ->type
             ->symbol
