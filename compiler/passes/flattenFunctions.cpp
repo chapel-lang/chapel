@@ -124,12 +124,12 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   std::vector<SymExpr*> SEs;
-  collectSymExprs(fn, SEs);
+  collectLcnSymExprs(fn, SEs);
 
   for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
-      if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
+      if (isOuterVar(sym, fn)) {
         uses->put(sym,gNil);
       }
   }
