@@ -3515,6 +3515,21 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
                                   Vec<FnSymbol*>& visibleFns);
 static void generateCopyInitErrorMsg();
+static bool isSharedFcfWrapper(Type* t);
+
+//
+// TODO: Is there a better way to do this besides strcmp? We should figure
+// this out pronto to prevent user types from passing this check.
+//
+static bool isSharedFcfWrapper(Type* t) {
+  if (!strcmp("shared ", t->name()) {
+    return t->getField("chpl_t")
+            ->type
+            ->symbol
+            ->hasFlag(FLAG_FUNCTION_CLASS);
+  }
+  return false;
+}
 
 void printResolutionErrorUnresolved(CallInfo&       info,
                                     Vec<FnSymbol*>& visibleFns) {
@@ -3610,17 +3625,9 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         USR_FATAL_CONT(call,
                        "illegal access of iterator or promoted expression");
-
-        //
-        // TODO: Is there a better way to do this besides strcmp? We should
-        // figure this out pronto to prevent user types from passing this
-        // check.
-        //
-      } else if (!strcmp(type->name(), "shared")) {
-        Type* t = type->getField("chpl_t")->type;
-        if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+      } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS) ||
+                 isSharedFcfWrapper(type)) {
           USR_FATAL_CONT(call, "illegal access of first class function");
-        }
       } else {
         USR_FATAL_CONT(call,
                        "unresolved access of '%s' by '%s'",
