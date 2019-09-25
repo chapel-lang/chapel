@@ -960,7 +960,8 @@ void init_ofiExchangeAvInfo(void) {
     size_t nameLen2;
     nameLen2 = sizeof(nameBuf2);
     (void) fi_av_straddr(tciTab[0].av, my_addr, nameBuf, &nameLen);
-    (void) fi_av_straddr(tciTab[0].av, my_addr + my_addr_len, nameBuf2, &nameLen2);
+    (void) fi_av_straddr(tciTab[0].av, my_addr + my_addr_len, nameBuf2,
+                         &nameLen2);
     DBG_PRINTF(DBG_CFGAV, "my_addrs: %.*s%s, %.*s%s",
                (int) nameLen, nameBuf,
                (nameLen <= sizeof(nameBuf)) ? "" : "[...]",
@@ -1505,24 +1506,20 @@ struct memEntry* getMemEntry(memTab_t* tab, void* addr, size_t size) {
 
 
 static inline
-int mrGetDesc(void** pDesc, int iNode, void* addr, size_t size) {
+int mrGetDesc(void** pDesc, void* addr, size_t size) {
   if ((ofi_info->domain_attr->mr_mode & (FI_MR_BASIC | FI_MR_LOCAL)) == 0) {
-    DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): scalable",
-               (iNode == -1) ? "Local" : "", addr, size);
+    DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): scalable", addr, size);
     if (pDesc != NULL)
       *pDesc = NULL;
     return 0;
   }
 
-  memTab_t* tab = (iNode == -1) ? &memTab : &memTabMap[iNode];
   struct memEntry* mr;
-  if ((mr = getMemEntry(tab, addr, size)) == NULL) {
-    DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): no entry",
-               (iNode == -1) ? "Local" : "", addr, size);
+  if ((mr = getMemEntry(&memTab, addr, size)) == NULL) {
+    DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): no entry", addr, size);
     return -1;
   }
-  DBG_PRINTF(DBG_MRDESC, "mrGet%sDesc(%p, %zd): desc %p",
-             (iNode == -1) ? "Local" : "", addr, size, mr->desc);
+  DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): desc %p", addr, size, mr->desc);
   if (pDesc != NULL)
     *pDesc = mr->desc;
   return 0;
@@ -1530,38 +1527,30 @@ int mrGetDesc(void** pDesc, int iNode, void* addr, size_t size) {
 
 
 static inline
-int mrGetLocalDesc(void** pDesc, void* addr, size_t size) {
-  return mrGetDesc(pDesc, -1, addr, size);
-}
-
-
-static inline
-int mrGetKey(uint64_t* pKey, int iNode, void* addr, size_t size) {
+int mrGetKey(uint64_t* pKey, uint64_t* pOff,
+             int iNode, void* addr, size_t size) {
   struct memEntry* mr;
   if ((mr = getMemEntry(&memTabMap[iNode], addr, size)) == NULL) {
     DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): no entry",
                iNode, addr, size);
     return -1;
   }
-  DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64,
-             iNode, addr, size, mr->key);
-  if (pKey != NULL)
-    *pKey = mr->key;
+
+  const uint64_t key = mr->key;
+  const uint64_t off = (uint64_t) addr - (uint64_t) mr->addr;
+  DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64 ", off %" PRIx64,
+             iNode, addr, size, key, off);
+  if (pKey != NULL) {
+    *pKey = key;
+    *pOff = off;
+  }
   return 0;
 }
 
 
 static inline
-int mrGetLocalKey(uint64_t* pKey, void* addr, size_t size) {
-  if (chpl_numNodes <= 1) {
-    //
-    // It okay that we don't have a local key in this case, but
-    // you'd better not want its value.
-    //
-    CHK_TRUE(pKey == NULL);
-    return 0;
-  }
-  return mrGetKey(pKey, chpl_nodeID, addr, size);
+int mrGetLocalKey(void* addr, size_t size) {
+  return mrGetKey(NULL, NULL, chpl_nodeID, addr, size);
 }
 
 
@@ -1770,10 +1759,10 @@ void amRequestAMO(c_nodeid_t node, void* object,
   void* myResult = result;
   size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
   if (myResult != NULL) {
-    if (mrGetLocalDesc(NULL, myResult, resSize) != 0) {
+    if (mrGetLocalKey(myResult, resSize) != 0) {
       myResult = allocBounceBuf(resSize);
       DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myResult);
-      CHK_TRUE(mrGetLocalDesc(NULL, myResult, resSize) == 0);
+      CHK_TRUE(mrGetLocalKey(myResult, resSize) == 0);
     }
   }
 
@@ -1828,9 +1817,9 @@ void amRequestCommon(c_nodeid_t node,
   chpl_comm_amDone_t* pAmDone = NULL;
   if (ppAmDone != NULL) {
     pAmDone = &amDone;
-    if (mrGetLocalKey(NULL, pAmDone, sizeof(*pAmDone)) != 0) {
+    if (mrGetLocalKey(pAmDone, sizeof(*pAmDone)) != 0) {
       pAmDone = allocBounceBuf(sizeof(*pAmDone));
-      CHK_TRUE(mrGetLocalKey(NULL, pAmDone, sizeof(*pAmDone)) == 0);
+      CHK_TRUE(mrGetLocalKey(pAmDone, sizeof(*pAmDone)) == 0);
     }
     *pAmDone = 0;
     chpl_atomic_thread_fence(memory_order_release);
@@ -1865,10 +1854,10 @@ void amRequestCommon(c_nodeid_t node,
 
   chpl_comm_on_bundle_t* myArg = arg;
   void* mrDesc = NULL;
-  if (mrGetLocalDesc(&mrDesc, myArg, argSize) != 0) {
+  if (mrGetDesc(&mrDesc, myArg, argSize) != 0) {
     myArg = allocBounceBuf(argSize);
     DBG_PRINTF(DBG_AM, "AM arg BB: %p", myArg);
-    CHK_TRUE(mrGetLocalDesc(NULL, myArg, argSize) == 0);
+    CHK_TRUE(mrGetDesc(NULL, myArg, argSize) == 0);
     memcpy(myArg, arg, argSize);
   }
 
@@ -2266,19 +2255,19 @@ void amWrapExecOnLrgBody(void* p) {
 
   chpl_comm_on_bundle_t* reqOnOrig = (chpl_comm_on_bundle_t*) xol->arg;
   size_t remnantSize = xol->argSize - sizeof(*req);
-  CHK_TRUE(mrGetKey(NULL, node, &reqOnOrig[1], remnantSize) == 0);
+  CHK_TRUE(mrGetKey(NULL, NULL, node, &reqOnOrig[1], remnantSize) == 0);
   (void) ofi_get(&req[1], node, &reqOnOrig[1], remnantSize);
 
   if (xol->pAmDone == NULL) {
     static __thread chpl_comm_amDone_t* myGotArg = NULL;
     if (myGotArg == NULL) {
       myGotArg = allocBounceBuf(1);
-      CHK_TRUE(mrGetLocalDesc(NULL, myGotArg, 1) == 0);
+      CHK_TRUE(mrGetDesc(NULL, myGotArg, 1) == 0);
       *myGotArg = 1;
     }
 
     chpl_comm_amDone_t* origGotArg = &reqOnOrig->comm.xol.gotArg;
-    CHK_TRUE(mrGetKey(NULL, node, origGotArg, sizeof(*origGotArg)) == 0);
+    CHK_TRUE(mrGetKey(NULL, NULL, node, origGotArg, sizeof(*origGotArg)) == 0);
     (void) ofi_put(myGotArg, node, origGotArg, sizeof(*origGotArg));
   }
 
@@ -2307,7 +2296,7 @@ void amWrapGet(void* p) {
              (int) rma->b.node, rma->b.seq,
              rma->addr, (int) rma->b.node, rma->raddr, rma->size);
 
-  CHK_TRUE(mrGetKey(NULL, rma->b.node, rma->raddr, rma->size) == 0); // sanity
+  CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size) == 0);
   (void) ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
 
   amSendDone(&rma->b, rma->pAmDone);
@@ -2323,7 +2312,7 @@ void amWrapPut(void* p) {
              (int) rma->b.node, rma->b.seq,
              (int) rma->b.node, rma->raddr, rma->addr, rma->size);
 
-  CHK_TRUE(mrGetKey(NULL, rma->b.node, rma->raddr, rma->size) == 0); // sanity
+  CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size) == 0);
   (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
 
   amSendDone(&rma->b, rma->pAmDone);
@@ -2383,7 +2372,7 @@ void amHandleAMO(struct perTxCtxInfo_t* tcip, chpl_comm_on_bundle_t* req) {
       memcpy(amo->result, &result, resSize);
       chpl_atomic_thread_fence(memory_order_release);
     } else {
-      CHK_TRUE(mrGetKey(NULL, amo->b.node, amo->result, resSize) == 0);
+      CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize) == 0);
       (void) ofi_put(&result, amo->b.node, amo->result, resSize);
 
       //
@@ -2413,11 +2402,11 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
   static __thread chpl_comm_amDone_t* amDone = NULL;
   if (amDone == NULL) {
     amDone = allocBounceBuf(1);
-    CHK_TRUE(mrGetLocalDesc(NULL, amDone, 1) == 0);
+    CHK_TRUE(mrGetDesc(NULL, amDone, 1) == 0);
     *amDone = 1;
   }
 
-  CHK_TRUE(mrGetKey(NULL, b->node, pAmDone, sizeof(*pAmDone)) == 0);
+  CHK_TRUE(mrGetKey(NULL, NULL, b->node, pAmDone, sizeof(*pAmDone)) == 0);
   DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone %p",
              (int) b->node, b->seq, pAmDone);
   (void) ofi_put(amDone, b->node, pAmDone, sizeof(*pAmDone));
@@ -2714,20 +2703,22 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
 
-  void* mrDesc = NULL;
   void* myAddr = (void*) addr;
-  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
-    myAddr = allocBounceBuf(size);
-    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT via BB: %p", myAddr);
-    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
-    memcpy(myAddr, addr, size);
-  }
 
   uint64_t mrKey;
-  if (mrGetKey(&mrKey, node, raddr, size) == 0) {
+  uint64_t mrRaddr;
+  if (mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0) {
     //
     // The remote address is RMA-accessible; PUT directly to it.
     //
+    void* mrDesc = NULL;
+    if (mrGetDesc(&mrDesc, myAddr, size) != 0) {
+      myAddr = allocBounceBuf(size);
+      DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT src BB: %p", myAddr);
+      CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
+      memcpy(myAddr, addr, size);
+    }
+
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
 
@@ -2741,7 +2732,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                (int) node, raddr, myAddr, size, mrKey, ctx);
     OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
-                                 (uint64_t) raddr, mrKey, ctx),
+                                 mrRaddr, mrKey, ctx),
                         checkTxCQ(tcip));
 
     if (tcip->txCQ != NULL) {
@@ -2759,9 +2750,16 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     tciFree(tcip);
   } else {
     //
-    // The remote address is not RMA-accessible.  We have arranged
-    // that the local one is, so go there and do the opposite RMA.
+    // The remote address is not RMA-accessible.  Make sure that the
+    // local one is, then do the opposite RMA from the remote side.
     //
+    if (mrGetLocalKey(myAddr, size) != 0) {
+      myAddr = allocBounceBuf(size);
+      DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "PUT via AM GET tgt BB: %p", myAddr);
+      CHK_TRUE(mrGetLocalKey(myAddr, size) == 0);
+      memcpy(myAddr, addr, size);
+    }
+
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "PUT %d:%p <= %p, size %zd, via AM GET",
                (int) node, raddr, myAddr, size);
@@ -2783,19 +2781,21 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
 
-  void* mrDesc = NULL;
   void* myAddr = addr;
-  if (mrGetLocalDesc(&mrDesc, myAddr, size) != 0) {
-    myAddr = allocBounceBuf(size);
-    DBG_PRINTF(DBG_RMA | DBG_RMAREAD, "GET via BB: %p", myAddr);
-    CHK_TRUE(mrGetLocalDesc(&mrDesc, myAddr, size) == 0);
-  }
 
   uint64_t mrKey;
-  if (mrGetKey(&mrKey, node, raddr, size) == 0) {
+  uint64_t mrRaddr;
+  if (mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0) {
     //
     // The remote address is RMA-accessible; GET directly from it.
     //
+    void* mrDesc = NULL;
+    if (mrGetDesc(&mrDesc, myAddr, size) != 0) {
+      myAddr = allocBounceBuf(size);
+      DBG_PRINTF(DBG_RMA | DBG_RMAREAD, "GET tgt BB: %p", myAddr);
+      CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
+    }
+
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
 
@@ -2804,19 +2804,26 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
-               "tx read: %p <= %d:%p, size %zd, key 0x%" PRIx64 ", ctx %p",
-               myAddr, (int) node, raddr, size, mrKey, ctx);
+               "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
+               ", ctx %p",
+               myAddr, (int) node, raddr, mrRaddr, size, mrKey, ctx);
     OFI_RIDE_OUT_EAGAIN(fi_read(tcip->txCtx, myAddr, size,
                                 mrDesc, rxRmaAddr(tcip, node),
-                                (uint64_t) raddr, mrKey, ctx),
+                                mrRaddr, mrKey, ctx),
                         checkTxCQ(tcip));
     waitForCQThisTxn(tcip, &txnDone);
     tciFree(tcip);
   } else {
     //
-    // The remote address is not RMA-accessible.  We have arranged
-    // that the local one is, so go there and do the opposite RMA.
+    // The remote address is not RMA-accessible.  Make sure that the
+    // local one is, then do the opposite RMA from the remote side.
     //
+    if (mrGetLocalKey(myAddr, size) != 0) {
+      myAddr = allocBounceBuf(size);
+      DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "GET via AM PUT src BB: %p", myAddr);
+      CHK_TRUE(mrGetLocalKey(myAddr, size) == 0);
+    }
+
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "GET %p <= %d:%p, size %zd, via AM PUT",
                myAddr, (int) node, raddr, size);
@@ -2834,7 +2841,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 
 static
 chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
-                              c_nodeid_t node, void* object, uint64_t mrKey,
+                              c_nodeid_t node, uint64_t object, uint64_t mrKey,
                               const void* operand1, const void* operand2,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
@@ -2849,27 +2856,27 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   chpl_amo_datum_t ofiCmpRes;
   void* myRes = (ofiOp == FI_CSWAP) ? &ofiCmpRes : result;
   void* mrDescRes = NULL;
-  if (myRes != NULL && mrGetLocalDesc(&mrDescRes, myRes, size) != 0) {
+  if (myRes != NULL && mrGetDesc(&mrDescRes, myRes, size) != 0) {
     myRes = allocBounceBuf(size);
     DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myRes);
-    CHK_TRUE(mrGetLocalDesc(&mrDescRes, myRes, size) == 0);
+    CHK_TRUE(mrGetDesc(&mrDescRes, myRes, size) == 0);
   }
 
   void* myOpnd1 = (void*) operand1;
   void* mrDescOpnd1 = NULL;
-  if (myOpnd1 != NULL && mrGetLocalDesc(&mrDescOpnd1, myOpnd1, size) != 0) {
+  if (myOpnd1 != NULL && mrGetDesc(&mrDescOpnd1, myOpnd1, size) != 0) {
     myOpnd1 = allocBounceBuf(size);
     DBG_PRINTF(DBG_AMO, "AMO operand1 BB: %p", myOpnd1);
-    CHK_TRUE(mrGetLocalDesc(&mrDescOpnd1, myOpnd1, size) == 0);
+    CHK_TRUE(mrGetDesc(&mrDescOpnd1, myOpnd1, size) == 0);
     memcpy(myOpnd1, operand1, size);
   }
 
   void* myOpnd2 = (void*) operand2;
   void* mrDescOpnd2 = NULL;
-  if (myOpnd2 != NULL && mrGetLocalDesc(&mrDescOpnd2, myOpnd2, size) != 0) {
+  if (myOpnd2 != NULL && mrGetDesc(&mrDescOpnd2, myOpnd2, size) != 0) {
     myOpnd2 = allocBounceBuf(size);
     DBG_PRINTF(DBG_AMO, "AMO operand2 BB: %p", myOpnd2);
-    CHK_TRUE(mrGetLocalDesc(&mrDescOpnd2, myOpnd2, size) == 0);
+    CHK_TRUE(mrGetDesc(&mrDescOpnd2, myOpnd2, size) == 0);
     memcpy(myOpnd2, operand2, size);
   }
 
@@ -2903,7 +2910,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   }
 
   DBG_PRINTF(DBG_AMO,
-             "tx AMO: obj %d:%p, opnd1 <%s>, opnd2 <%s>, "
+             "tx AMO: obj %d:%" PRIx64 ", opnd1 <%s>, opnd2 <%s>, "
              "op %s, typ %s, sz %zd, ctx %p",
              (int) node, object,
              DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType),
@@ -2913,7 +2920,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     OFI_CHK(fi_compare_atomic(tcip->txCtx,
                               myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
                               myRes, mrDescRes,
-                              rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
+                              rxRmaAddr(tcip, node), object, mrKey,
                               ofiType, ofiOp, ctx));
   } else if (result != NULL) {
     void* bufArg = myOpnd1;
@@ -2926,12 +2933,12 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     }
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
                             bufArg, 1, mrDescOpnd1, myRes, mrDescRes,
-                            rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
+                            rxRmaAddr(tcip, node), object, mrKey,
                             ofiType, ofiOp, ctx));
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
                       myOpnd1, 1, mrDescOpnd1,
-                      rxRmaAddr(tcip, node), (uint64_t) object, mrKey,
+                      rxRmaAddr(tcip, node), object, mrKey,
                       ofiType, ofiOp, ctx));
   }
 
@@ -3433,15 +3440,16 @@ void doAMO(c_nodeid_t node, void* object,
   }
 
   uint64_t mrKey;
+  uint64_t mrRaddr;
   if (isAtomicValid(ofiType)
-      && mrGetKey(&mrKey, node, object, size) == 0) {
+      && mrGetKey(&mrKey, &mrRaddr, node, object, size) == 0) {
     //
     // The type is supported for network atomics and the object address
     // is remotely accessible.  Do the AMO natively.
     //
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
-    ofi_amo(tcip, node, object, mrKey, operand1, operand2, result,
+    ofi_amo(tcip, node, mrRaddr, mrKey, operand1, operand2, result,
             ofiOp, ofiType, size);
     tciFree(tcip);
   } else {
