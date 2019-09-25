@@ -3612,8 +3612,8 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        "illegal access of iterator or promoted expression");
 
       } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-          USR_FATAL_CONT(call, 
-                         "illegal access of first class function");
+        USR_FATAL_CONT(call, 
+                       "illegal access of first class function");
 
       } else {
         USR_FATAL_CONT(call,
