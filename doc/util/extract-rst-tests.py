@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import os
 import sys
+import stat
 
 import argparse
 import re
@@ -47,7 +48,7 @@ def get_arguments():
     return parser.parse_args()
 
 
-def save_to(outdir, chapter, name, data):
+def save_to(outdir, chapter, name, data, isexe=False):
     path = outdir + "/" + chapter + "/" + name
     if not os.path.exists(os.path.dirname(path)):
         print('Adding ', os.path.dirname(path))
@@ -56,6 +57,9 @@ def save_to(outdir, chapter, name, data):
     #print('Writing to: ', path)
     with open(path, 'w') as handle:
         handle.write(data)
+
+    if isexe:
+        os.chmod(path, stat.S_IRWXU | stat.S_IRGRP)
 
 def read_block(lines, start):
     indent = -1
@@ -94,7 +98,7 @@ def read_block(lines, start):
         j += 1
 
     # remove multiple trailing newlines
-    block = block.rstrip()
+    block = block.rstrip("\n\r")
     block += "\n"
 
     #print("read_block returning ", (start+1, end+1))
@@ -235,7 +239,9 @@ def extract_tests(rstfile, outdir):
             if compopts != "":
                 save_to(outdir, chapter, testname + ".compopts", compopts)
             if prediff != "":
-                save_to(outdir, chapter, testname + ".prediff", prediff)
+                isexe = prediff.startswith("#!")
+                save_to(outdir, chapter, testname + ".prediff", prediff,
+                        isexe)
 
             global total_tests
             total_tests += 1
