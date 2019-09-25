@@ -57,14 +57,23 @@
 \newcommand{\typename}[1]{\emph{#1}}
 \newcommand{\fnname}[1]{\chpl{#1}}
 
-\DefineVerbatimEnvironment{chapel}{Verbatim}{}
+\newenvironment{chapel}{BLOCK-chapel}{}
+\newenvironment{invisible}{BLOCK-invisible}{}
+\newenvironment{chapel0}{BLOCK-chapel}{}
+\newenvironment{numberedchapel}{BLOCK-numbered-chapel}{}
+\newenvironment{chapelcode}{BLOCK-chapel}{}
+\newenvironment{chapelprintoutput}{BLOCK-chapelprintoutput}{}
+\newenvironment{commandline}{BLOCK-commandline}{}
+\newenvironment{protohead}{BLOCK-protohead}{}
+\newenvironment{protobody}{}{}
 
-\DefineVerbatimEnvironment{invisible}{Verbatim}{}
-\DefineVerbatimEnvironment{chapel0}{Verbatim}{}
-\DefineVerbatimEnvironment{numberedchapel}{Verbatim}{numbers=left}
-\DefineVerbatimEnvironment{chapelcode}{Verbatim}{}
-\DefineVerbatimEnvironment{chapelprintoutput}{Verbatim}{}
-\DefineVerbatimEnvironment{chapeloutputname}{Verbatim}{}
-\DefineVerbatimEnvironment{commandline}{Verbatim}{}
-\DefineVerbatimEnvironment{protohead}{Verbatim}{}
-\DefineVerbatimEnvironment{protobody}{Verbatim}{}
+%\DefineVerbatimEnvironment{chapel}{Verbatim}{}
+%\DefineVerbatimEnvironment{invisible}{Verbatim}{}
+%\DefineVerbatimEnvironment{chapel0}{Verbatim}{}
+%\DefineVerbatimEnvironment{numberedchapel}{Verbatim}{numbers=left}
+%\DefineVerbatimEnvironment{chapelcode}{Verbatim}{}
+%\DefineVerbatimEnvironment{chapelprintoutput}{Verbatim}{}
+%\DefineVerbatimEnvironment{chapeloutputname}{Verbatim}{}
+%\DefineVerbatimEnvironment{commandline}{Verbatim}{}
+%\DefineVerbatimEnvironment{protohead}{Verbatim}{}
+%\DefineVerbatimEnvironment{protobody}{Verbatim}{}

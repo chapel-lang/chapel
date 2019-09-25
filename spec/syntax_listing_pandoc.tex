@@ -14,8 +14,11 @@
              {[OPT]}{{{\scriptsize $_{opt}$}}}{2}
   }
 
-\DefineVerbatimEnvironment{syntax}{Verbatim}{}
-\DefineVerbatimEnvironment{syntaxdonotcollect}{Verbatim}{}
+\newenvironment{syntax}{BLOCK-syntax}{}
+\newenvironment{syntaxdonotcollect}{BLOCK-syntaxdonotcollect}{}
+
+%\DefineVerbatimEnvironment{syntax}{Verbatim}{}
+%\DefineVerbatimEnvironment{syntaxdonotcollect}{Verbatim}{}
 
 %\newenvironment{syntax}%
 %  {\endgraf\verbatim}%

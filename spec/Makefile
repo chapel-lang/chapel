@@ -14,7 +14,7 @@ rst:
 	#pandoc spec.html  -t rst -o spec.rst
 	pandoc spec_pandoc.tex -t rst -o spec_pandoc.rst
 	cat spec_pandoc.rst | perl fix.pl > spec_pandoc_fix.rst
-	cp spec_pandoc_fix.rst ../doc/rst/technotes/spec.rst
+	cp spec_pandoc_fix.rst ../doc/rst/language/spec.rst
 
 usedvi:
 	touch spec.ind

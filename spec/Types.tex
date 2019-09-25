@@ -299,8 +299,10 @@ The enumerated type can then be referenced by its name, as summarized
 by the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 enum-type:
   identifier
+\end{verbatim}
 \end{syntax}
 
 An enumerated type defines a set of named constants that can be
@@ -329,7 +331,9 @@ which are concrete or semi-concrete
 \begin{chapelexample}{enum.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
+\end{verbatim}
 \end{chapel}
 defines an abstract enumerated type with four constants.  The function
 \begin{chapel}

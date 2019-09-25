@@ -232,8 +232,10 @@ correct representation with respect to the corresponding Chapel type.
 An externally-defined type can be referenced using a external type declaration
 with the following syntax.
 \begin{syntax}
+\begin{verbatim}
 external-type-alias-declaration-statement:
   `extern' `type' type-alias-declaration-list ;
+\end{verbatim}
 \end{syntax}
 
 In each \sntx{type-alias-declaration}, if the \sntx{type-expression} part is
@@ -244,11 +246,15 @@ must be supplied by a C header file named on the \chpl{chpl} command line.
 Fixed-size C array types can be described within Chapel using its
 homogeneous tuple type.  For example, the C typedef
 \begin{chapel}
+\begin{verbatim}
 typedef double vec[3];
+\end{verbatim}
 \end{chapel}
 can be described in Chapel using
 \begin{chapel}
+\begin{verbatim}
 extern type vec = 3*real(64);
+\end{verbatim}
 \end{chapel}
 
 

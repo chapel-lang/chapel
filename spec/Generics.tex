@@ -46,11 +46,13 @@ site and returns a 2-tuple where the types of the components of the
 tuple are defined by the two type arguments and the values are
 specified by the types default values.
 \begin{chapel}
+\begin{verbatim}
 proc build2Tuple(type t, type tt) {
   var x1: t;
   var x2: tt;
   return (x1, x2);
 }
+\end{verbatim}
 \end{chapel}
 This function is instantiated with ``normal'' function call syntax
 where the arguments are types:
