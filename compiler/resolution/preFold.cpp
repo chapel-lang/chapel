@@ -36,6 +36,7 @@
 #include "symbol.h"
 #include "typeSpecifier.h"
 #include "visibleFunctions.h"
+#include "wellknown.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -74,7 +75,7 @@ static bool           isInstantiatedField(Symbol* field);
 
 static Expr*          createFunctionAsValue(CallExpr* call);
 
-static AggregateType* createOrFindFunTypeFromAnnotation(AList&    argList,
+static Type*          createOrFindFunTypeFromAnnotation(AList& argList,
                                                         CallExpr* call);
 
 static Expr*          dropUnnecessaryCast(CallExpr* call);
@@ -95,6 +96,8 @@ static FnSymbol*      createAndInsertFunParentMethod(CallExpr*      call,
                                                      bool           isFormal,
                                                      Type*          retType,
                                                      bool           throws);
+
+static Type*          getFcfSharedWrapperType(AggregateType* parent);
 
 /************************************* | **************************************
 *                                                                             *
@@ -412,8 +415,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_CREATE_FN_TYPE: {
-    AggregateType* parent = createOrFindFunTypeFromAnnotation(call->argList,
-                                                              call);
+    Type* parent = createOrFindFunTypeFromAnnotation(call->argList, call);
     retval = new SymExpr(parent->symbol);
     call->replace(retval);
     break;
@@ -2122,20 +2124,41 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   FnSymbol* wrapper = new FnSymbol("wrapper");
 
   wrapper->addFlag(FLAG_INLINE);
+  
+  // Insert the wrapper into the AST now so we can resolve some things.
+  call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
+  
+  BlockStmt* block = new BlockStmt();
+  wrapper->insertAtTail(block);
 
   Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
 
-  CallExpr* n = new CallExpr(PRIM_NEW,
-                             new NamedExpr(astr_chpl_manager,
-                                           new SymExpr(dtUnmanaged->symbol)),
-                             new SymExpr(undecorated->symbol));
+  NamedExpr* usym = new NamedExpr(astr_chpl_manager,
+                                  new SymExpr(dtUnmanaged->symbol));
+  
+  // Create a new "unmanaged child".
+  CallExpr* init = new CallExpr(PRIM_NEW, usym,
+                                new SymExpr(undecorated->symbol));
 
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
-                                     new CallExpr(PRIM_CAST,
-                                                  parent->symbol,
-                                                  n)));
+  // Cast to "unmanaged parent".
+  Type* parUnmanaged = getDecoratedClass(parent, CLASS_TYPE_UNMANAGED);
+  CallExpr* parCast = new CallExpr(PRIM_CAST, parUnmanaged->symbol,
+                                   init);
 
-  call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
+  // Get a handle to the type "_shared(parent)".
+  Type* parShared = getFcfSharedWrapperType(parent);
+
+  // Create a new "shared parent" temporary.
+  VarSymbol* temp = newTemp("retval", parShared);
+  block->insertAtTail(new DefExpr(temp));
+
+  // Initialize the temporary with the result of the cast.
+  CallExpr* initTemp = new CallExpr("init", gMethodToken, temp, parCast);
+  block->insertAtTail(initTemp);
+
+  // Return the "shared parent" temporary.
+  CallExpr* ret = new CallExpr(PRIM_RETURN, temp);
+  block->insertAtTail(ret);
 
   normalize(wrapper);
 
@@ -2158,14 +2181,38 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   return callWrapper;
 }
 
+static Type* getFcfSharedWrapperType(AggregateType* parent) {
+  static std::map<AggregateType*, Type*> sharedWrapperTypes;
+
+  Type* result = NULL;
+
+  if (sharedWrapperTypes.find(parent) != sharedWrapperTypes.end()) {
+    result = sharedWrapperTypes[parent];
+  } else {
+    CallExpr* getParShared = new CallExpr(dtShared->symbol, parent->symbol);
+    chpl_gen_main->insertAtHead(getParShared);
+    tryResolveCall(getParShared);
+    getParShared->remove();
+
+    result = getParShared->typeInfo();
+    result->symbol->addFlag(FLAG_FUNCTION_CLASS);
+
+    sharedWrapperTypes[parent] = result;
+  }
+
+  INT_ASSERT(result != NULL);
+
+  return result;
+}
+
 /*
   Helper function for creating or finding the parent class for a given
   function type specified by the type signature.  The last type given
   in the signature is the return type, the remainder represent arguments
   to the function.
 */
-static AggregateType* createOrFindFunTypeFromAnnotation(AList&     argList,
-                                                        CallExpr*  call) {
+static Type* createOrFindFunTypeFromAnnotation(AList& argList,
+                                                      CallExpr* call) {
   AggregateType* parent      = NULL;
   SymExpr*       retTail     = toSymExpr(argList.tail);
   Type*          retType     = retTail->symbol()->type;
@@ -2191,7 +2238,9 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList&     argList,
                                              FnSymbol*>(parent, parentMethod);
   }
 
-  return parent;
+  Type* result = getFcfSharedWrapperType(parent);
+
+  return result;
 }
 
 //
