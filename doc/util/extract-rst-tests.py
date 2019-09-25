@@ -26,6 +26,7 @@ match_output = re.compile(r"\s*.. BLOCK-test-chapeloutput\s*|" +
 match_compopts = re.compile(r"\s*.. BLOCK-test-chapelcompopts\s*")
 match_execopts = re.compile(r"\s*.. BLOCK-test-chapelexecopts\s*")
 match_prediff = re.compile(r"\s*.. BLOCK-test-chapelprediff\s*")
+total_tests = 0
 
 def get_arguments():
     """
@@ -49,10 +50,10 @@ def get_arguments():
 def save_to(outdir, chapter, name, data):
     path = outdir + "/" + chapter + "/" + name
     if not os.path.exists(os.path.dirname(path)):
-        print('Creating directory: ', os.path.dirname(path))
+        print('Adding ', os.path.dirname(path))
         os.makedirs(os.path.dirname(path))
 
-    print('Writing to: ', path)
+    #print('Writing to: ', path)
     with open(path, 'w') as handle:
         handle.write(data)
 
@@ -79,7 +80,7 @@ def read_block(lines, start):
                     break
         j += 1
 
-    print("indent_text: ", indent_text)
+    #print("indent_text: ", indent_text)
 
     # read the block
     block = ""
@@ -101,7 +102,7 @@ def read_block(lines, start):
     return (end, block)
 
 def extract_tests(rstfile, outdir):
-    print("Reading .rst file: ", rstfile)
+    print("Processing .rst file: ", rstfile)
 
     lines = ( )
     with open(rstfile, 'r') as handle:
@@ -144,8 +145,8 @@ def extract_tests(rstfile, outdir):
             example_end = -1
             (example_end, block) = read_block(lines, example_start)
             
-            print("Processing example: ", chapter + "/" + testname,
-                   (example_start+1, example_end+1))
+            #print("Processing example: ", chapter + "/" + testname,
+            #       (example_start+1, example_end+1))
 
             # Process the lines in the example
             i = example_start + 1
@@ -157,7 +158,7 @@ def extract_tests(rstfile, outdir):
                 #     *Example (enum.chpl)*.
                 if re.match(capture_testname, line):
                     # stop this loop if another example is encountered
-                    print ("Breaking for Example match on line ", i)
+                    #print ("Breaking for Example match on line ", i)
                     i -= 1
                     break
 
@@ -174,7 +175,7 @@ def extract_tests(rstfile, outdir):
 
                         # Then, update the .good name
                         goodname = block.strip()
-                        print ("Read output name", goodname)
+                        #print ("Read output name", goodname)
  
 
                 # Find lines like
@@ -219,7 +220,7 @@ def extract_tests(rstfile, outdir):
                         block = block.replace(":linenos:", "", 1)
 
                     chpl += block
-                    print ("Adding to chpl ", block)
+                    #print ("Adding to chpl ", block)
 
 
             # Now save the data gathered
@@ -236,6 +237,9 @@ def extract_tests(rstfile, outdir):
             if prediff != "":
                 save_to(outdir, chapter, testname + ".prediff", prediff)
 
+            global total_tests
+            total_tests += 1
+
 
 def main(**kwargs):
     """Driver function"""
@@ -246,8 +250,10 @@ def main(**kwargs):
     verbose = kwargs['verbose']
 
     for rstfile in rstfiles:
-
         extract_tests(rstfile, output)
+
+    global total_tests
+    print("DONE - created", total_tests, "tests")
 
 if __name__ == '__main__':
     # Parse arguments and cast them into a dictionary
