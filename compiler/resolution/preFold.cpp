@@ -2146,11 +2146,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
                                    init);
 
   // Get a handle to the type "_shared(parent)".
-  CallExpr* getParShared = new CallExpr(dtShared->symbol, parent->symbol);
-  block->insertAtTail(getParShared);
-  tryResolveCall(getParShared);
-  getParShared->remove();
-  Type* parShared = getParShared->typeInfo();
+  Type* parShared = getFcfSharedWrapperType(parent);
 
   // Create a new "shared parent" temporary.
   VarSymbol* temp = newTemp("retval", parShared);
