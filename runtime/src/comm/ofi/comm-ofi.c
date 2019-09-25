@@ -511,6 +511,7 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->mr_mode = ((getNetworkType() == networkAries)
                                  ? FI_MR_BASIC
                                  : FI_MR_UNSPEC);
+  hints->domain_attr->mr_mode |= FI_MR_ENDPOINT;
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
   //
@@ -1044,6 +1045,10 @@ void init_ofiForMem(void) {
                "[%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
                i, memTab[i].addr, memTab[i].size,
                memTab[i].key);
+    if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
+      OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEpRma->fid, 0));
+      OFI_CHK(fi_mr_enable(ofiMrTab[i]));
+    }
   }
 
   //
