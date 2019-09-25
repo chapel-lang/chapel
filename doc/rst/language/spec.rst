@@ -11490,7 +11490,9 @@ behavior is undefined.
       // c.i = 3;      // May overwrite freed memory.
       // delete c;     // May confuse some allocators.
 
-   
+   .. BLOCK-test-chapelpost
+
+      writeln("DONE");
 
    .. BLOCK-test-chapelexecopts
 
@@ -11500,6 +11502,7 @@ behavior is undefined.
 
    .. BLOCK-test-chapeloutput
 
+      DONE
 
       ====================
       Leaked Memory Report
@@ -12907,50 +12910,60 @@ operand and therefore is not ambiguous.
    *Example (alignedStride.chpl)*.
 
    
+   .. BLOCK-test-chapelnoprint
+      write("|");
 
    .. code-block:: chapel
 
       var r1 = 0 .. 10 by 3 align 0;
       for i in r1 do
-        write(" ", i);			// Produces "0 3 6 9".
+        write(" ", i);			// Produces " 0 3 6 9".
       writeln();
+
+   .. BLOCK-test-chapelnoprint
+      write("|");
+
+   .. code-block:: chapel
 
       var r2 = 0 .. 10 by 3 align 1;
       for i in r2 do
-        write(" ", i);			// Produces "1 4 7 10".
+        write(" ", i);			// Produces " 1 4 7 10".
       writeln();
-
-   
 
    .. BLOCK-test-chapeloutput
 
-       0 3 6 9
-       1 4 7 10
+      | 0 3 6 9
+      | 1 4 7 10
 
 When the stride is negative, the same indices are printed in reverse:
 
    *Example (alignedNegStride.chpl)*.
 
    
+   .. BLOCK-test-chapelnoprint
+      write("|");
 
    .. code-block:: chapel
 
       var r3 = 0 .. 10 by -3 align 0;
       for i in r3 do
-        write(" ", i);			// Produces "9 6 3 0".
+        write(" ", i);			// Produces " 9 6 3 0".
       writeln();
+
+   .. BLOCK-test-chapelnoprint
+      write("|");
+
+   .. code-block:: chapel
 
       var r4 = 0 .. 10 by -3 align 1;
       for i in r4 do
-        write(" ", i);			// Produces "10 7 4 1".
+        write(" ", i);			// Produces " 10 7 4 1".
       writeln();
-
-   
 
    .. BLOCK-test-chapeloutput
 
-       9 6 3 0
-       10 7 4 1
+      | 9 6 3 0
+      | 10 7 4 1
 
 To create a range aligned relative to its ``first`` index, use the
 ``offset`` method (:ref:`Chapter-Range_Offset_Method`).
