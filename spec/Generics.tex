@@ -421,9 +421,9 @@ since the \chpl{tuple} arguments in both versions of \chpl{f} are
 \emph{partially concrete}.
 \begin{chapelprediff}
 \begin{verbatim}
-\#!/usr/bin/env sh
-\# This prediff exists to avoid underscores in the output
-\# which confuse tex
+#!/usr/bin/env sh
+# This prediff exists to avoid underscores in the output
+# which confuse tex
 testname=$1
 outfile=$2
 head -n 1 $outfile > $outfile.2
@@ -1039,26 +1039,6 @@ proc foo(x) {
 }
 \end{verbatim}
 \end{chapel}
-\begin{chapelpost}
-\begin{verbatim}
-foo(3.4);
-foo("hi");
-foo(1, 2);
-foo(1.2, 3.4);
-foo("hi", "bye");
-\end{verbatim}
-\end{chapelpost}
-\begin{chapeloutput}
-\begin{verbatim}
-compilerDiagnostics.chpl:12: warning: 1-argument version of foo called
-compilerDiagnostics.chpl:13: warning: 1-argument version of foo called
-In generic foo!
-In generic foo!
-In 2-argument foo...
-In 2-argument foo...
-In 2-argument foo...
-\end{verbatim}
-\end{chapeloutput}
 
 The first routine generates a compiler error whenever the compiler
 encounters a call to it where the two arguments have different types.
@@ -1089,6 +1069,14 @@ foo.chpl:2: warning: 1-argument version of foo called with type: string
 foo.chpl:6: error: foo() called with non-matching types: int != real
 \end{verbatim}
 \end{commandline}
+
+\begin{chapeloutput}
+\begin{verbatim}
+compilerDiagnostics.chpl:14: warning: 1-argument version of foo called
+compilerDiagnostics.chpl:15: warning: 1-argument version of foo called
+compilerDiagnostics.chpl:19: error: foo() called with non-matching types: int(64) != real(64)
+\end{verbatim}
+\end{chapeloutput}
 
 \end{chapelexample}
 

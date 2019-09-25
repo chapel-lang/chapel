@@ -95,7 +95,7 @@ writeln("output from main task");
 \end{chapel}
 \begin{chapelprediff}
 \begin{verbatim}
-\#!/usr/bin/env sh
+#!/usr/bin/env sh
 testname=$1
 outfile=$2
 sort $outfile > $outfile.2
@@ -212,10 +212,10 @@ class Tree {
     if (isLeaf) then
        return value;
 
-    var x(*\texttt{\$}*): sync int;
-    begin x(*\texttt{\$}*) = left.sum();
+    var x$: sync int;
+    begin x$ = left.sum();
     var y = right.sum();
-    return x(*\texttt{\$}*) + y;
+    return x$ + y;
   }
 }
 \end{verbatim}
@@ -257,17 +257,17 @@ variable guarantees that the reads and writes will be interleaved
 in a manner that makes the updates atomic.  For example, the code:
 \begin{chapel}
 \begin{verbatim}
-var count(*\texttt{\$}*): sync int = 0;
+var count$: sync int = 0;
 cobegin {
-  count(*\texttt{\$}*) += 1;
-  count(*\texttt{\$}*) += 1;
-  count(*\texttt{\$}*) += 1;
+  count$ += 1;
+  count$ += 1;
+  count$ += 1;
 }
 \end{verbatim}
 \end{chapel}
 \begin{chapelpost}
 \begin{verbatim}
-writeln("count is: ", count(*\texttt{\$}*).readFF());
+writeln("count is: ", count$.readFF());
 \end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
@@ -296,19 +296,19 @@ proc work(i) {
 \end{chapelpre}
 \begin{chapel}
 \begin{verbatim}
-var count(*\texttt{\$}*): sync int = n;  // counter which also serves as a lock
-var release(*\texttt{\$}*): single bool; // barrier release
+var count$: sync int = n;  // counter which also serves as a lock
+var release$: single bool; // barrier release
 
 forall t in 1..n do begin {
   work(t);
-  var myc = count(*\texttt{\$}*);  // read the count, set state to empty
+  var myc = count$;  // read the count, set state to empty
   if myc!=1 {
     write(".");
-    count(*\texttt{\$}*) = myc-1;  // update the count, set state to full
+    count$ = myc-1;  // update the count, set state to full
     // we could also do some work here before blocking
-    release(*\texttt{\$}*);
+    release$;
   } else {
-    release(*\texttt{\$}*) = true;  // last one here, release everyone
+    release$ = true;  // last one here, release everyone
     writeln("done");
   }
 }
@@ -481,41 +481,41 @@ Given the following declarations
 \end{chapelpre}
 \begin{chapel}
 \begin{verbatim}
-var x(*\texttt{\$}*): sync int;
-var y(*\texttt{\$}*): single int;
+var x$: sync int;
+var y$: single int;
 var z: int;
 \end{verbatim}
 \end{chapel}
 the code
 \begin{chapel}
 \begin{verbatim}
-x(*\texttt{\$}*) = 5;
-y(*\texttt{\$}*) = 6;
-z = x(*\texttt{\$}*) + y(*\texttt{\$}*);
+x$ = 5;
+y$ = 6;
+z = x$ + y$;
 \end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
 \begin{verbatim}
-writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*).readFF(), z));
+writeln((x$.readXX(), y$.readFF(), z));
 // {
 }
 { // }
-var x(*\texttt{\$}*): sync int;
-var y(*\texttt{\$}*): single int;
+var x$: sync int;
+var y$: single int;
 var z: int;
 \end{verbatim}
 \end{chapelnoprint}
 is equivalent to
 \begin{chapel}
 \begin{verbatim}
-x(*\texttt{\$}*).writeEF(5);
-y(*\texttt{\$}*).writeEF(6);
-z = x(*\texttt{\$}*).readFE() + y(*\texttt{\$}*).readFF();
+x$.writeEF(5);
+y$.writeEF(6);
+z = x$.readFE() + y$.readFF();
 \end{verbatim}
 \end{chapel}
 \begin{chapelpost}
 \begin{verbatim}
-writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*).readFF(), z));
+writeln((x$.readXX(), y$.readFF(), z));
 // {
 }
 \end{verbatim}
@@ -785,11 +785,11 @@ is equivalent to the following code that uses only begin statements
 and single variables to introduce concurrency and synchronize:
 \begin{chapel}
 \begin{verbatim}
-var s1(*\texttt{\$}*), s2(*\texttt{\$}*), s3(*\texttt{\$}*): single bool;
-begin { stmt1(); s1(*\texttt{\$}*) = true; }
-begin { stmt2(); s2(*\texttt{\$}*) = true; }
-begin { stmt3(); s3(*\texttt{\$}*) = true; }
-s1(*\texttt{\$}*); s2(*\texttt{\$}*); s3(*\texttt{\$}*);
+var s1$, s2$, s3$: single bool;
+begin { stmt1(); s1$ = true; }
+begin { stmt2(); s2$ = true; }
+begin { stmt3(); s3$ = true; }
+s1$; s2$; s3$;
 \end{verbatim}
 \end{chapel}
 Each begin statement is executed concurrently but control does not
@@ -849,21 +849,21 @@ and sync and single variables to introduce concurrency and
 synchronize:
 \begin{chapel}
 \begin{verbatim}
-var runningCount(*\texttt{\$}*): sync int = 1;
-var finished(*\texttt{\$}*): single bool;
+var runningCount$: sync int = 1;
+var finished$: single bool;
 for i in iterator() {
-  runningCount(*\texttt{\$}*) += 1;
+  runningCount$ += 1;
   begin {
     body();
-    var tmp = runningCount(*\texttt{\$}*);
-    runningCount(*\texttt{\$}*) = tmp-1;
-    if tmp == 1 then finished(*\texttt{\$}*) = true;
+    var tmp = runningCount$;
+    runningCount$ = tmp-1;
+    if tmp == 1 then finished$ = true;
   }
 }
-var tmp = runningCount(*\texttt{\$}*);
-runningCount(*\texttt{\$}*) = tmp-1;
-if tmp == 1 then finished(*\texttt{\$}*) = true;
-finished(*\texttt{\$}*);
+var tmp = runningCount$;
+runningCount$ = tmp-1;
+if tmp == 1 then finished$ = true;
+finished$;
 \end{verbatim}
 \end{chapel}
 Each call to \chpl{body()} executes concurrently because it is in a
@@ -1143,7 +1143,7 @@ In the code
 config const lo = 9;
 config const hi = 23;
 proc work(i) {
-  if \_\_primitive("task\_get\_serial") then
+  if __primitive("task_get_serial") then
     writeln("serial ", i);
 }
 \end{verbatim}

@@ -692,8 +692,10 @@ proc mywriteln(x ...?k) {
 \end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 mywriteln("hi", "there");
 mywriteln(1, 2.0, 3, 4.0);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
 \begin{verbatim}
@@ -716,6 +718,7 @@ ensure that the actuals all have the same type.
 \end{chapelexample}
 
 \begin{chapelexample}{varargs-with-type.chpl}
+
 Either or both the number of variable arguments and their types can be
 specified.  For example, a basic procedure to sum the values of three
 integers can be written as
@@ -742,7 +745,9 @@ defining a method on a class that is instantiated over a rank
 parameter.
 \end{chapelexample}
 
+
 \begin{chapelexample}{varargs-returns-tuples.chpl}
+
 The code
 \begin{chapel}
 \begin{verbatim}

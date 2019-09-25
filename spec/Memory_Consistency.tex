@@ -855,10 +855,10 @@ In contrast, spinning on a synchronization variable has well-defined
 behavior:
 \begin{chapel}
 \begin{verbatim}
-var x(*\texttt{\$}*): sync int;
+var x$: sync int;
 cobegin {
-  while x(*\texttt{\$}*).readXX() != 1 do ;  // spin wait
-  x(*\texttt{\$}*).writeXF(1);
+  while x$.readXX() != 1 do ;  // spin wait
+  x$.writeXF(1);
 }
 \end{verbatim}
 \end{chapel}

@@ -205,14 +205,18 @@ var a, b = 1.0, c, d:int, e, f = g();
 \end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln((a,b,c,d,e,f));
+\end{verbatim}
 \end{chapelpost}
+
 variables \chpl{a} and \chpl{b} are of type \chpl{real} with
 value \chpl{1.0}.  Variables \chpl{c} and \chpl{d} are of
 type \chpl{int} and are initialized to the default value of \chpl{0}.
 Variables \chpl{e} and \chpl{f} are of type \chpl{string} with
 value \chpl{"a string"}.  The string \chpl{"side effect"} has been
 written to the display once.  It is not evaluated twice.
+
 \begin{chapeloutput}
 \begin{verbatim}
 side effect

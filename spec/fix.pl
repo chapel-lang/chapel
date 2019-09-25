@@ -32,13 +32,13 @@ while(<>) {
     } elsif ($type eq "BLOCK-protohead") {
       $_ = $spacing . ".. code-block:: chapel\n";
     } elsif ($type eq "BLOCK-numbered-chapel") {
-      $_ = $spacing . ".. code-block:: chapel\n   :linenos:\n";
+      $_ = $spacing . ".. code-block:: chapel\n      :linenos:\n";
     } elsif ($type eq "BLOCK-syntax") {
       $_ = $spacing . ".. code-block:: syntax\n";
     } elsif ($type eq "BLOCK-syntaxdonotcollect") {
       $_ = $spacing . ".. code-block:: syntaxdonotcollect\n";
     } elsif ($type eq "BLOCK-chapelprintoutput") {
-      $_ = $spacing . "::\n";
+      $_ = $spacing . ".. code-block:: printoutput\n";
     } elsif ($type eq "BLOCK-commandline") {
       $_ = $spacing . ".. code-block:: bash\n";
     } elsif ($type eq "BLOCK-invisible" or $type =~ /BLOCK-test-/) {
@@ -71,7 +71,7 @@ while(<>) {
   #  ======
   #
   # Transform lines like [Records] into cross reference targets
-  if (/^\[([^\]]+)\]/) {
+  if (/^\[([^\]]+)\]/ and $buffer[-2] =~ /=+/) {
     s/^\[([^\]]+)\]/.. _Chapter-$1:/;
     # Insert label and a blank line before the section header
     # Insert 1 elements into the buffer

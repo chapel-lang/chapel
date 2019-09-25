@@ -179,7 +179,7 @@ The code
 module libsci {
   writeln("Initializing libsci");
   module blas {
-    writeln("\\tInitializing blas");
+    writeln("\tInitializing blas");
   }
 }
 module testmain { // used to avoid warnings
@@ -498,8 +498,8 @@ module M2 {
 \end{chapel}
 \begin{chapelcompopts}
 \begin{verbatim}
---main-module M1 \# main\_module.M1.good
---main-module M2 \# main\_module.M2.good
+--main-module M1 # main_module.M1.good
+--main-module M2 # main_module.M2.good
 \end{verbatim}
 \end{chapelcompopts}
 If M1 is specified as the main module, the program will output:
