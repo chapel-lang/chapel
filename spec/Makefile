@@ -10,8 +10,11 @@ html:
 	xhlatex spec "xhtml,uni-html4" " -cunihtf"
 
 rst:
-	xhlatex spec "xhtml,uni-html4" " -cunihtf"
-	pandoc spec.html  -t rst -o spec.rst
+	#xhlatex spec "xhtml,uni-html4" " -cunihtf"
+	#pandoc spec.html  -t rst -o spec.rst
+	pandoc spec_pandoc.tex -t rst -o spec_pandoc.rst
+	cat spec_pandoc.rst | perl fix.pl > spec_pandoc_fix.rst
+	cp spec_pandoc_fix.rst ../doc/rst/technotes/spec.rst
 
 usedvi:
 	touch spec.ind
