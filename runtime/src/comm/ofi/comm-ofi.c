@@ -95,6 +95,9 @@ static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
 #define rxMsgAddr(tcip, n) ((tcip)->rxAddrs[2 * (n)])
 #define rxRmaAddr(tcip, n) ((tcip)->rxAddrs[2 * (n) + 1])
 
+//
+// Transmit support.
+//
 static int numTxCtxs;
 static int numRxCtxs;
 
@@ -113,6 +116,9 @@ static int tciTabLen;
 static struct perTxCtxInfo_t* tciTab;
 static chpl_bool tciTabFixedAssignments;
 
+//
+// Memory registration support.
+//
 #define MAX_MEM_REGIONS 10
 static int numMemRegions = 0;
 
@@ -130,6 +136,9 @@ typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 static memTab_t memTab;
 static memTab_t* memTabMap;
 
+//
+// Messaging (AM) support.
+//
 #define AM_MAX_MSG_SIZE (sizeof(chpl_comm_on_bundle_t) + 1024)
 
 static int numAmHandlers = 1;
@@ -999,9 +1008,14 @@ void init_ofiForMem(void) {
   // address space here; with non-scalable we register each region
   // individually.
   //
-  uint64_t bufAcc = FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE;
+  chpl_bool heap_only = chpl_env_rt_get_bool("COMM_OFI_MR_HEAP_ONLY", false);
 
-  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0) {
+  uint64_t bufAcc = FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) {
+    bufAcc |= FI_SEND | FI_READ | FI_WRITE;
+  }
+
+  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0 && !heap_only) {
     // scalable MR -- just one memory region, the whole address space
     numMemRegions = 1;
     memTab[0].addr = (void*) 0;
@@ -1014,6 +1028,8 @@ void init_ofiForMem(void) {
       numMemRegions = 1;
       memTab[0].addr = fixedHeapStart;
       memTab[0].size = fixedHeapSize;
+    } else {
+      CHK_TRUE(!heap_only);
     }
   }
 
@@ -1313,9 +1329,13 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 static
 void init_fixedHeap(void) {
   //
-  // We only need a fixed heap if we're multinode on a Cray XC system.
+  // We only need a fixed heap if we're multinode, and either we're
+  // on a Cray XC system or the user has explicitly specified a heap
+  // size.
   //
-  if (chpl_numNodes <= 1 || getNetworkType() != networkAries) {
+  size_t size = chpl_comm_getenvMaxHeapSize();
+  if ( ! (chpl_numNodes > 1
+          && (getNetworkType() == networkAries || size != 0))) {
     return;
   }
 
@@ -1325,7 +1345,6 @@ void init_fixedHeap(void) {
   //
   size_t page_size;
   chpl_bool have_hugepages;
-  size_t size;
   void* start;
 
   if ((page_size = get_hugepageSize()) == 0) {
@@ -1335,7 +1354,7 @@ void init_fixedHeap(void) {
     have_hugepages = true;
   }
 
-  if ((size = chpl_comm_getenvMaxHeapSize()) == 0) {
+  if (size == 0) {
     size = (size_t) 16 << 30;
   }
 
