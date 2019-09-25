@@ -1,0 +1,4 @@
+perfkeys: blockArrDeinit:, cyclicArrDeinit:, blockCyclicArrDeinit:
+repeat-files: distCreate-large.dat
+ylabel: Time (seconds)
+graphtitle: Destroying distributed arrays (1/4 of available memory)

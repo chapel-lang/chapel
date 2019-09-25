@@ -32,6 +32,14 @@ inline proc startDiag() {
   if !correctness then t.start();
 }
 
+inline proc endDiag(name) {
+  if !correctness {
+    t.stop();
+    writeln(name, ": ", t.elapsed());
+    t.clear();
+  }
+}
+
 inline proc endDiag(name, x) {
   if correctness {
     if x.size != nElems {
@@ -50,30 +58,53 @@ const localDom = {1..nElems};
 {
   startDiag();
   const blockDom = localDom dmapped Block(boundingBox=localDom);
-  endDiag("blockDom", blockDom);
+  endDiag("blockDomInit", blockDom);
+  {
+    startDiag();
+    const blockArr: [blockDom] elemType;
+    endDiag("blockArrInit", blockArr);
+
+    startDiag();
+  }
+  endDiag("blockArrDeinit");
 
   startDiag();
-  const blockArr: [blockDom] elemType;
-  endDiag("blockArr", blockArr);
 }
+endDiag("blockDomDeinit");
 
 {
   startDiag();
   const cyclicDom = localDom dmapped Cyclic(startIdx=localDom.first);
-  endDiag("cyclicDom", cyclicDom);
+  endDiag("cyclicDomInit", cyclicDom);
+  {
+
+    startDiag();
+    const cyclicArr: [cyclicDom] elemType;
+    endDiag("cyclicArrInit", cyclicArr);
+
+    startDiag();
+  }
+  endDiag("cyclicArrDeinit");
 
   startDiag();
-  const cyclicArr: [cyclicDom] elemType;
-  endDiag("cyclicArr", cyclicArr);
 }
+endDiag("cyclicDomDeinit");
 
 {
   startDiag();
   const blockCyclicDom = localDom dmapped BlockCyclic(startIdx=localDom.first,
                                                       blocksize=5);
-  endDiag("blockCyclicDom", blockCyclicDom);
+  endDiag("blockCyclicDomInit", blockCyclicDom);
+  {
+
+    startDiag();
+    const blockCyclicArr: [blockCyclicDom] elemType;
+    endDiag("blockCyclicArrInit", blockCyclicArr);
+    
+    startDiag();
+  }
+  endDiag("blockCyclicArrDeinit");
 
   startDiag();
-  const blockCyclicArr: [blockCyclicDom] elemType;
-  endDiag("blockCyclicArr", blockCyclicArr);
 }
+endDiag("blockCyclicDomDeinit");

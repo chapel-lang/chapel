@@ -1,4 +1,0 @@
-perfkeys: blockArr:, cyclicArr:, blockCyclicArr:
-repeat-files: distCreate-large.dat
-ylabel: Time (seconds)
-graphtitle: Creating domains and arrays (1/4 of available memory)
