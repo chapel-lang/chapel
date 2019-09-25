@@ -2195,7 +2195,9 @@ static Type* getFcfSharedWrapperType(AggregateType* parent) {
     getParShared->remove();
 
     result = getParShared->typeInfo();
-    sharedWrapperTypes[parent] = getParShared->typeInfo();
+    result->symbol->addFlag(FLAG_FUNCTION_CLASS);
+
+    sharedWrapperTypes[parent] = result;
   }
 
   INT_ASSERT(result != NULL);
