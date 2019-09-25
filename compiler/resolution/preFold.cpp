@@ -2216,15 +2216,24 @@ static Type* createOrFindFunTypeFromAnnotation(AList& argList,
                                              FnSymbol*>(parent, parentMethod);
   }
 
-  //
-  // TODO: This computation is redundant and would best be cached by mapping
-  // to each parent class type.
-  //
-  CallExpr* getParShared = new CallExpr(dtShared->symbol, parent->symbol);
-  chpl_gen_main->insertAtHead(getParShared);
-  tryResolveCall(getParShared);
-  getParShared->remove();
-  Type* result = getParShared->typeInfo();
+  // Cache resolution of shared wrapper types to avoid repeated work.
+  static std::map<AggregateType*, Type*> sharedWrapperTypes;
+
+  Type* result = NULL;
+
+  if (sharedWrapperTypes.find(parent) != sharedWrapperTypes.end()) {
+    result = sharedWrapperTypes[parent];
+  } else {
+    CallExpr* getParShared = new CallExpr(dtShared->symbol, parent->symbol);
+    chpl_gen_main->insertAtHead(getParShared);
+    tryResolveCall(getParShared);
+    getParShared->remove();
+
+    result = getParShared->typeInfo();
+    sharedWrapperTypes[parent] = getParShared->typeInfo();
+  }
+
+  INT_ASSERT(result != NULL);
 
   return result;
 }
