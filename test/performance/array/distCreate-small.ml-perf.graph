@@ -1,5 +1,4 @@
-perfkeys: blockDom:, blockArr:, cyclicDom:, cyclicArr:, blockCyclicDom:, blockCyclicArr:
+perfkeys: blockArr:, cyclicArr:, blockCyclicArr:
 repeat-files: distCreate-small.dat
 ylabel: Time (seconds)
-graphname: distCreate-small.dat
-graphtitle: Creating domains and arrays (1M elements)
+graphtitle: Creating distributed arrays (1M elements)

@@ -13,11 +13,18 @@ const totMem = here.physicalMemory(unit = MemUnits.Bytes);
 config const memFraction = 4;
 
 config const correctness = false;
+config const nElemsTiny = numLocales;
 config const nElemsSmall = if correctness then 100 else 1000000;
 config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
 
-config const small = true;
-const nElems = if small then nElemsSmall else nElemsLarge;
+enum arraySize { tiny, small, large};
+
+config const size = arraySize.tiny;
+
+const nElems = if size == arraySize.tiny then nElemsTiny else
+               if size == arraySize.small then nElemsSmall else
+               if size == arraySize.large then nElemsLarge else -1;
+
 
 var t = new Timer();
 
