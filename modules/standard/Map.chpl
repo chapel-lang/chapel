@@ -48,8 +48,8 @@ module Map {
   }
 
   record map {
-    param parSafe = false;
     type keyType, valType;
+    param parSafe = false;
 
     var keys: domain(keyType, parSafe=parSafe);
     var vals: [keys] valType;
@@ -78,9 +78,9 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
     proc init(type keyType, type valType, param parSafe=false) {
-      this.parSafe = parSafe;
       this.keyType = keyType;
       this.valType = valType;
+      this.parSafe = parSafe;
     }
 
     /*
@@ -93,10 +93,10 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(const ref other: map(?ps, ?kt, ?vt), param parSafe=ps) {
-      this.parSafe = parSafe;
+    proc init=(const ref other: map(?kt, ?vt, ?ps), param parSafe=ps) {
       this.keyType = kt;
       this.valType = vt;
+      this.parSafe = parSafe;
 
       this.complete();
 
@@ -164,7 +164,7 @@ module Map {
       :arg m: The other map
       :type m: map(keyType, valType)
     */
-    proc update(const ref m: map(parSafe, keyType, valType)) {
+    proc update(const ref m: map(keyType, valType, parSafe)) {
       _enter();
       for key in m {
         if !keys.contains(key) then
@@ -413,7 +413,7 @@ module Map {
     :arg lhs: The map to assign to.
     :arg rhs: The map to assign from. 
   */
-  proc =(ref lhs: map(?ps, ?kt, ?vt), const ref rhs: map(ps, kt, vt)){
+  proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)){
     lhs.clear();
 
     for key in rhs.keys {
@@ -434,7 +434,7 @@ module Map {
     :return: `true` if the contents of two maps are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: map(?ps, ?kt, ?vt), const ref b: map(ps, kt, vt)): bool {
+  proc ==(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
     for key in a {
       if !b.contains(key) || a.vals[key] != b.vals[key] then
         return false;
@@ -458,13 +458,13 @@ module Map {
     :return: `true` if the contents of two maps are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: map(?ps, ?kt, ?vt), const ref b: map(ps, kt, vt)): bool {
+  proc !=(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
     return !(a == b);
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc +(a: map(?parSafe, ?keyType, ?valueType),
-         b: map(parSafe, keyType, valueType)) {
+  proc +(a: map(?keyType, ?valueType, ?parSafe),
+         b: map(keyType, valueType, parSafe)) {
     return a | b;
   }
 
@@ -472,14 +472,14 @@ module Map {
     Sets the left-hand side map to contain the keys and values in either
     a or b.
    */
-  proc +=(ref a: map(?parSafe, ?keyType, ?valueType),
-          b: map(parSafe, keyType, valueType)) {
+  proc +=(ref a: map(?keyType, ?valueType, ?parSafe),
+          b: map(keyType, valueType, parSafe)) {
     a |= b;
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc |(a: map(?parSafe, ?keyType, ?valueType),
-         b: map(parSafe, keyType, valueType)) {
+  proc |(a: map(?keyType, ?valueType, ?parSafe),
+         b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
     newMap.keys = a.keys | b.keys;
 
@@ -491,15 +491,15 @@ module Map {
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
-  proc |=(ref a: map(?parSafe, ?keyType, ?valueType),
-          b: map(parSafe, keyType, valueType)) {
+  proc |=(ref a: map(?keyType, ?valueType, ?parSafe),
+          b: map(keyType, valueType, parSafe)) {
     // add keys/values from b to a if they weren't already in a
     for k in b do a.add(k, b.vals[k]);
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
-  proc &(a: map(?parSafe, ?keyType, ?valueType),
-         b: map(parSafe, keyType, valueType)) {
+  proc &(a: map(?keyType, ?valueType, ?parSafe),
+         b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
     newMap.keys = a.keys & b.keys;
 
@@ -509,16 +509,16 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in both a and b.
    */
-  proc &=(ref a: map(?parSafe, ?keyType, ?valueType),
-          b: map(parSafe, keyType, valueType)) {
+  proc &=(ref a: map(?keyType, ?valueType, ?parSafe),
+          b: map(keyType, valueType, parSafe)) {
     for k in a {
       if !b.contains(k) then a.remove(k);
     }
   }
 
   /* Returns a new map containing the keys that are only in a, but not b. */
-  proc -(a: map(?parSafe, ?keyType, ?valueType),
-         b: map(parSafe, keyType, valueType)) {
+  proc -(a: map(?keyType, ?valueType, ?parSafe),
+         b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
     newMap.keys = a.keys - b.keys;
 
@@ -529,16 +529,16 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in the
      left-hand map, but not the right-hand map. */
-  proc -=(ref a: map(?parSafe, ?keyType, ?valueType),
-          b: map(parSafe, keyType, valueType)) {
+  proc -=(ref a: map(?keyType, ?valueType, ?parSafe),
+          b: map(keyType, valueType, parSafe)) {
     for k in a do
       if b.contains(k) then a.remove(k);
   }
 
   /* Returns a new map containing the keys that are in either a or b, but
      not both. */
-  proc ^(a: map(?parSafe, ?keyType, ?valueType),
-         b: map(parSafe, keyType, valueType)) {
+  proc ^(a: map(?keyType, ?valueType, ?parSafe),
+         b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
     newMap.keys = a.keys ^ b.keys;
 
@@ -551,8 +551,8 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in either the
      left-hand map or the right-hand map, but not both. */
-  proc ^=(ref a: map(?parSafe, ?keyType, ?valueType),
-          b: map(parSafe, keyType, valueType)) {
+  proc ^=(ref a: map(?keyType, ?valueType, ?parSafe),
+          b: map(keyType, valueType, parSafe)) {
     for k in b {
       if a.contains(k) then a.remove(k);
       else a[k] = b.vals[k];
