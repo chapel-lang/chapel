@@ -945,21 +945,6 @@ module DefaultAssociative {
   // Mix the bits, so that e.g. numbers in 0..N generate
   // random-looking data across all the bits even if N is small.
   proc _gen_key(i: uint): uint {
-    // Thomas Wang's 64b mix function - see
-    // https://web.archive.org/web/20060705164341/http://www.concentric.net/~Ttwang/tech/inthash.htm
-    /*
-    var key = i;
-    key += ~(key << 32);
-    key ^= (key >> 22);
-    key += ~(key << 13);
-    key ^= (key >> 8);
-    key += (key << 3);
-    key ^= (key >> 15);
-    key += ~(key << 27);
-    key ^= (key >> 31);
-    return key;
-    */
-
     // Thomas Wang's 64b mix function - 2007 version - see
     // http://web.archive.org/web/20071223173210/http://www.concentric.net/~Ttwang/tech/inthash.htm
     var key = i;
@@ -972,30 +957,8 @@ module DefaultAssociative {
     key = key + (key << 31);
     return key;
 
-    // Splitmix64 by Sebastiano Vigna from
-    // http://xorshift.di.unimi.it/splitmix64.c
-    /*
-    var x:uint = i;
-    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
-    x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
-    x = x ^ (x >> 31);
-    return x;
-    */
-    // Or, consider the mixer in https://dl.acm.org/citation.cfm?id=2660195
-    // "Fast splittable pseudorandom number generators"
-    // which has the same form but uses different constants.
-
-    // rrxmrrxmsx_0 by Pelle Evensen from
-    // http://mostlymangling.blogspot.com/2019/01/better-stronger-mixer-and-test-procedure.html
-    /*
-    extern proc chpl_bitops_rotr_64(x: uint(64), n: uint(64)) : uint(64);
-    var v = i;
-    v ^= chpl_bitops_rotr_64(v, 25) ^ chpl_bitops_rotr_64(v, 50);
-    v *= 0xA24BAED4963EE407;
-    v ^= chpl_bitops_rotr_64(v, 24) ^ chpl_bitops_rotr_64(v, 49);
-    v *= 0x9FB21C651E98DF25;
-    return v ^ (v >> 28);
-    */
+    // See commit history for this comment for some other mixers
+    // worth considering.
   }
   proc _gen_key(i: int): uint {
     return _gen_key(i:uint);
