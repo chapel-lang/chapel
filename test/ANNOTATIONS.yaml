@@ -1620,3 +1620,29 @@ distAdaptativeWS:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+
+# Compiler performance annotations
+compilerAndTestingStats: &compiler-perf-base
+  07/25/19:
+    - Add two-array radix and sample sorts and a distributed sort (#13347)
+  07/30/19:
+    - Undecorated classes have generic management (#13447)
+  07/31/19:
+    - Add record _bytes to the internal modules (#13519)
+  08/25/19:
+    - Enable compile-time nil-checking for internal modules (#13843)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
+  08/31/19:
+    - Require 'use' of top level modules rather than lexical scoping (#13930)
+  09/06/19:
+    - Turn "array-as-vec" deprecation warnings on (#13999)
+allTotalTime:
+  <<: *compiler-perf-base
+allPasses:
+  <<: *compiler-perf-base
+topTotalTime:
+  <<: *compiler-perf-base
+topPasses:
+  <<: *compiler-perf-base
