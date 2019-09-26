@@ -692,6 +692,8 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
+    proc dsiCustomBoundsChecking() param return false;
+
     pragma "unsafe"
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");

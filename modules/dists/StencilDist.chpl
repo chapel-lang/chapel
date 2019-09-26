@@ -1613,6 +1613,8 @@ proc StencilArr.setRADOpt(val=true) {
   if doRADOpt then setupRADOpt();
 }
 
+proc StencilArr.dsiCustomBoundsChecking() param return true;
+
 //
 // the accessor for the local array -- assumes the index is local
 //

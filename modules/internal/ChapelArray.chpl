@@ -2366,7 +2366,7 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkAccess(indices) {
-      if isRectangularDom(this.domain) {
+      if isRectangularDom(this.domain) && !_value.dsiCustomBoundsChecking() {
         for param i in 1..rank do
           if !_value.dom.dsiDim(i).boundsCheck(indices(i)) then
             halt("indexing out of bounds in dimension ", i, ": [", indices(i),
@@ -2378,7 +2378,7 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(d: domain) {
-      if isRectangularDom(this.domain) {
+      if isRectangularDom(this.domain) && !_value.dsiCustomBoundsChecking() {
         for param i in 1..rank do
           if !_value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
@@ -2389,7 +2389,7 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(ranges...rank) where chpl__isTupleOfRanges(ranges) {
-      if isRectangularDom(this.domain) {
+      if isRectangularDom(this.domain) && !_value.dsiCustomBoundsChecking() {
         for param i in 1..rank do
           if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
             halt("array slice out of bounds in dimension ", i, ": [", ranges(i),
