@@ -244,8 +244,8 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
   // and the excluded set.
 
   if (retVar != NULL) {
-    if (isUserDefinedRecord(retVar)    == true ||
-        fn->hasFlag(FLAG_INIT_COPY_FN) == true) {
+    if (typeNeedsCopyInitDeinit(retVar->type) ||
+        fn->hasFlag(FLAG_INIT_COPY_FN)) {
       VarSymbol* needle = retVar;
       Expr*      expr   = refStmt;
 

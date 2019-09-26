@@ -958,7 +958,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
 
       // Compute the result type of copying
       // (but don't apply this to references if !valueOnly)
-      if (copyWith && isUserDefinedRecord(useType) &&
+      if (copyWith && typeNeedsCopyInitDeinit(useType) &&
           (valueOnly || !isReferenceType(field->type))) {
         VarSymbol* var = newTemp("test_copy", useType);
         CallExpr* copy = new CallExpr(copyWith, var);

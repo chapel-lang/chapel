@@ -122,7 +122,7 @@ void normalize() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isClassWithInitializers(at)  == true ||
-        isRecordWithInitializers(at) == true) {
+        isRecordOrUnionWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
 
@@ -749,7 +749,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
         // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isRecordWithInitializers(at) == true) {
+          if (isRecordOrUnionWithInitializers(at) == true) {
             retval = var;
           }
         }

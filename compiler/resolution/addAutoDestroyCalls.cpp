@@ -468,7 +468,7 @@ static void gatherIgnoredVariablesForYield(
   INT_ASSERT(yieldedVar);
   QualifiedType t = yieldedVar->qualType();
 
-  if (isUserDefinedRecord(t.type()) && ! t.isRef()) {
+  if (typeNeedsCopyInitDeinit(t.type()) && ! t.isRef()) {
 
     SymExpr* foundSe = findSourceOfYield(yield);
     VarSymbol* var = toVarSymbol(foundSe->symbol());

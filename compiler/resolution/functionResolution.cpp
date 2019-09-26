@@ -5923,6 +5923,27 @@ static void resolveInitVar(CallExpr* call) {
     INT_FATAL(call, "unexpected number of actuals in variable init call");
   }
 
+  // Handle noinit
+  if (srcExpr && srcExpr->symbol() == gNoInit) {
+    if (call->numActuals() < 3) {
+      // no init needs a type, cannot infer from gNoInit.
+      INT_FATAL(call, "bad no init call");
+    }
+
+    SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
+    targetType = targetTypeExpr->typeInfo();
+
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      // no init needs a concrete type, cannot infer from gNoInit.
+      INT_FATAL(call, "bad no init call");
+    }
+
+    // Since we are not initializing, just set the variable's type
+    dst->type = targetType;
+    call->primitive = primitives[PRIM_NOOP];
+    return;
+  }
+
   if (call->numActuals() == 3) {
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
     targetType = targetTypeExpr->typeInfo();
@@ -6054,8 +6075,8 @@ static void resolveInitVar(CallExpr* call) {
       call->primitive = primitives[PRIM_MOVE];
 
       resolveMove(call);
-    } else if (isRecordWithInitializers(at) == false) {
-      INT_FATAL("Unable to initialize record variable with type '%s'", at->symbol->name);
+    } else if (isRecordOrUnionWithInitializers(at) == false) {
+      INT_FATAL("Unable to initialize record/union variable with type '%s'", at->symbol->name);
     } else if (targetType->getValType() == srcType->getValType() &&
                targetType->getValType()->symbol->hasFlag(FLAG_POD)) {
       dst->type = targetType->getValType();
@@ -8612,7 +8633,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 static const char* autoCopyFnForType(AggregateType* at) {
   const char* retval = "chpl__autoCopy";
 
-  if (isUserDefinedRecord(at)                == true  &&
+  if (typeNeedsCopyInitDeinit(at)            == true  &&
       at->symbol->hasFlag(FLAG_TUPLE)        == false &&
       at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
       isRecordWrappedType(at)                == false &&
@@ -8847,7 +8868,7 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr*   def = new DefExpr(tmp);
 
-            if (isUserDefinedRecord(fn->retType) == true)
+            if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
             contextCallOrCall->insertBefore(def);
