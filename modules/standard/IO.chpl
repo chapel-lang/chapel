@@ -6588,19 +6588,6 @@ proc channel.readf(fmtStr:string) throws {
   }
 }
 
-/* Call ``try! stdout.writef``; see :proc:`channel.writef`. */
-proc writef(fmt:string, const args ...?k):bool {
-  try! {
-    return stdout.writef(fmt, (...args));
-  }
-}
-// documented in string version
-pragma "no doc"
-proc writef(fmt:string):bool {
-  try! {
-    return stdout.writef(fmt);
-  }
-}
 /* Call ``stdin.readf``; see :proc:`channel.readf`. */
 proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));

@@ -853,6 +853,20 @@ module ChapelIO {
     try! stdout.writeln();
   }
 
+  /* Equivalent to ``try! stdout.writef``. See
+     :proc:`FormattedIO.channel.writef`. */
+  proc writef(fmt:string, const args ...?k):bool {
+    try! {
+      return stdout.writef(fmt, (...args));
+    }
+  }
+  // documented in string version
+  pragma "no doc"
+  proc writef(fmt:string):bool {
+    try! {
+      return stdout.writef(fmt);
+    }
+  }
 
   //
   // Catch all
