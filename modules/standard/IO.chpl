@@ -22,9 +22,6 @@
 
 Support for a variety of kinds of input and output.
 
-.. note:: All Chapel programs automatically ``use`` this module by default.
-          An explicit ``use`` statement is not necessary.
-
 Input/output (I/O) facilities in Chapel include the types :record:`file` and
 :record:`channel`; the constants :record:`stdin`, :record:`stdout` and
 :record:`stderr`; the functions :proc:`open`, :proc:`file.close`,
@@ -4181,11 +4178,11 @@ proc stderrInit() {
   }
 }
 
-/* Equivalent to stdin.read. See :proc:`channel.read` */
+/* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
 }
-/* Equivalent to stdin.readln. See :proc:`channel.readln` */
+/* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
 proc readln(ref args ...?n):bool throws {
   return stdin.readln((...args));
 }
@@ -4195,11 +4192,11 @@ proc readln():bool throws {
   return stdin.readln();
 }
 
-/* Equivalent to stdin.readln. See :proc:`channel.readln` for types */
+/* Equivalent to ``stdin.readln``. See :proc:`channel.readln` for types */
 proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
 }
-/* Equivalent to stdin.read. See :proc:`channel.read` for types */
+/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
 proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }

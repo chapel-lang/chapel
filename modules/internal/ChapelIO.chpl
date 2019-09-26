@@ -28,7 +28,7 @@ describes automatically included basic types and routines that support the
 Writing and Reading
 ~~~~~~~~~~~~~~~~~~~
 
-The :proc:`~IO.writeln` function allows for a simple implementation
+The :proc:`writeln` function allows for a simple implementation
 of a Hello World program:
 
 .. code-block:: chapel
@@ -84,7 +84,7 @@ Additionally, performing I/O on a global channel that is the same channel as the
 one ``readThis``, ``writeThis``, or ``readWriteThis`` is operating on can result
 in a deadlock. In particular, these methods should not refer to
 :var:`~IO.stdin`, :var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or
-implicitly (such as by calling the global :proc:`~IO.writeln` function).
+implicitly (such as by calling the global :proc:`writeln` function).
 Instead, these methods should only perform I/O on the channel passed as an
 argument.
 
@@ -831,6 +831,7 @@ module ChapelIO {
     }
   }
 
+  pragma "no doc"
   override proc LocaleModel.writeThis(f) {
     // Most classes will define it like this:
     //      f <~> name;

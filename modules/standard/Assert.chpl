@@ -49,7 +49,7 @@ proc assert(test: bool) {
 /*
   Assert that a boolean condition is true.  If it is false, prints
   'assert failed - ' followed by all subsequent arguments, as though
-  printed using :proc:`~IO.write()`.
+  printed using :proc:`~ChapelIO.write()`.
 
   :arg test: the boolean condition
   :type test: `bool`
