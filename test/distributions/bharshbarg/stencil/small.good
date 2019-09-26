@@ -1,1 +1,1 @@
-./util.chpl:55: error: halt reached - indexing out of bounds in dimension 1: [-1] but array bounds are 0..0
+Success!

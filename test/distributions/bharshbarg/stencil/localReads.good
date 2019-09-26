@@ -1,1 +1,1 @@
-localReads.chpl:18: error: halt reached - indexing out of bounds in dimension 1: [-1] but array bounds are 1..100
+localReads.chpl:18: error: halt

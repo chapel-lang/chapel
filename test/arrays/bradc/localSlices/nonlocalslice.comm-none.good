@@ -1,1 +1,1 @@
-nonlocalslice.chpl:3: error: halt reached - array index out of bounds: (1)
+nonlocalslice.chpl:3: error: halt reached - indexing out of bounds in dimension 1: [1] but array bounds are 0..0
