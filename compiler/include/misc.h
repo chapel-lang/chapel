@@ -107,6 +107,8 @@ void        printCallStackCalls();
 bool        fatalErrorsEncountered();
 void        clearFatalErrors();
 
+bool        printsUserLocation(const BaseAST* ast);
+
 // must be exported to avoid dead-code elimination by C++ compiler
 void        gdbShouldBreakHere();
 
