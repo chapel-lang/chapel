@@ -1,1 +1,2 @@
-knucleotide2.chpl:130: error: attempt to redefine reserved type 'bytes'
+knucleotide2.chpl:14: In function 'main':
+knucleotide2.chpl:18: error: 'ionative' undeclared (first use this function)
