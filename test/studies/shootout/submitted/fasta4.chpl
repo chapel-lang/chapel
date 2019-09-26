@@ -23,11 +23,11 @@ config param IM = 139968,         // parameters for random number generation
 // Nucleotide definitions
 //
 enum nucleotide {
-  A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
-  a = ascii("a"), c = ascii("c"), g = ascii("g"), t = ascii("t"),
-  B = ascii("B"), D = ascii("D"), H = ascii("H"), K = ascii("K"),
-  M = ascii("M"), N = ascii("N"), R = ascii("R"), S = ascii("S"),
-  V = ascii("V"), W = ascii("W"), Y = ascii("Y")
+  A = "A".toByte(), C = "C".toByte(), G = "G".toByte(), T = "T".toByte(),
+  a = "a".toByte(), c = "c".toByte(), g = "g".toByte(), t = "t".toByte(),
+  B = "B".toByte(), D = "D".toByte(), H = "H".toByte(), K = "K".toByte(),
+  M = "M".toByte(), N = "N".toByte(), R = "R".toByte(), S = "S".toByte(),
+  V = "V".toByte(), W = "W".toByte(), Y = "Y".toByte()
 }
 use nucleotide;
 
@@ -81,7 +81,7 @@ proc main() {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n");
+param newline = "\n".toByte();
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
@@ -90,7 +90,7 @@ proc repeatMake(desc, alu, n) {
   stdout.writeln(desc);
 
   const r = alu.size,
-        s = [i in {0..(r+lineLength)}] alu[i % r]: int(8);
+        s = [i in 0..(r+lineLength)] alu[i % r]: int(8);
 
   for i in 0..n by lineLength {
     const lo = i % r,
@@ -128,18 +128,18 @@ proc randomMake(desc, nuclInfo, n) {
 
     // iterate over 0..n-1 in a round-robin fashion across tasks
     for i in tid*chunkSize..n-1 by numTasks*chunkSize {
-      const bytes = min(chunkSize, n-i);
+      const numBytes = min(chunkSize, n-i);
 
-      // Get 'bytes' random numbers in a coordinated manner
+      // Get 'numBytes' random numbers in a coordinated manner
       randGo[tid].waitFor(i);
-      getRands(bytes, myRands);
+      getRands(numBytes, myRands);
       randGo[nextTid].write(i+chunkSize);
 
-      // Compute 'bytes' nucleotides and store in 'myBuff'
+      // Compute 'numBytes' nucleotides and store in 'myBuff'
       var col = 0,
           off = 0;
 
-      for j in 0..#bytes {
+      for j in 0..#numBytes {
         const r = myRands[j];
         var nid = 1;
         for k in 1..numNucls do
