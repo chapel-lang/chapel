@@ -409,18 +409,15 @@ Expr* Symbol::getInitialization() const {
 
   while (stmt != NULL) {
     std::vector<SymExpr*> symExprs;
-    collectSymExprs(stmt, symExprs);
+    collectSymExprsFor(stmt, curSym, refSym, symExprs);
 
     bool isDef = false;
     bool isUse = false;
 
     for_vector(SymExpr, se, symExprs) {
-      Symbol* sym = se->symbol();
-      if (sym == curSym || sym == refSym) {
         int result = isDefAndOrUse(se);
         isDef |= (result & 1);
         isUse |= (result & 2);
-      }
     }
 
     if (isDef) {
@@ -472,10 +469,6 @@ bool isString(Symbol* symbol) {
 
 bool isBytes(Symbol* symbol) {
   return isBytes(symbol->type);
-}
-
-bool isUserDefinedRecord(Symbol* symbol) {
-  return isUserDefinedRecord(symbol->type);
 }
 
 /******************************** | *********************************

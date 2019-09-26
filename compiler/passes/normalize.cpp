@@ -122,7 +122,7 @@ void normalize() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isClassWithInitializers(at)  == true ||
-        isRecordWithInitializers(at) == true) {
+        isRecordOrUnionWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
 
@@ -749,7 +749,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
         // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isRecordWithInitializers(at) == true) {
+          if (isRecordOrUnionWithInitializers(at) == true) {
             retval = var;
           }
         }
@@ -3114,12 +3114,10 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 
     newSym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
 
-    collectSymExprs(newFn, symExprs);
+    collectSymExprsFor(newFn, newSym, symExprs);
 
     for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == newSym) {
         se->setSymbol(new_IntSymbol(width));
-      }
     }
   } else {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
@@ -3226,13 +3224,12 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
   DefExpr*              def      = toDefExpr(typeExpr->body.tail);
   std::vector<SymExpr*> symExprs;
 
-  collectSymExprs(fn, symExprs);
+  collectSymExprsFor(fn, def->sym, symExprs);
 
   if (formal->variableExpr) // varargs argument e.g. proc f(x...)
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, formal));
 
   for_vector(SymExpr, se, symExprs) {
-    if (se->symbol() == def->sym) {
       if (formal->variableExpr)
         // e.g. proc foo(arg:?t ...)
         // formal is a tuple but the query should be of the tuple elements
@@ -3240,7 +3237,6 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
         se->replace(new CallExpr(PRIM_QUERY, formal, new_IntSymbol(2)));
       else
         se->replace(new CallExpr(PRIM_TYPEOF, formal));
-    }
   }
 
   formal->typeExpr->remove();

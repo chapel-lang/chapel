@@ -408,7 +408,10 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
 
     // copy the graphInfo and add the key to the title (stripping the
     // configuration if we have multiple configurations.)
-    var newInfo = $.extend({}, graphInfo);
+    var newInfo = $.extend(true, {}, graphInfo);
+    for (var j = 0; j < newInfo.annotations.length; j++) {
+      newInfo.annotations[j].series = graphLabels[i];
+    }
     newInfo.title += ": " + graphLabels[i].replace(defaultConfiguration, '');
 
     // The new graph cannot be expanded

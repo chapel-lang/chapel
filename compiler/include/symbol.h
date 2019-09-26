@@ -261,7 +261,6 @@ private:
 
 bool isString(Symbol* symbol);
 bool isBytes(Symbol* symbol);
-bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
 *                                                                             *

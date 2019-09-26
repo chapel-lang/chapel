@@ -1489,12 +1489,10 @@ static void passArgsToNestedFns() {
         DefExpr*              localeArg = toDefExpr(fn->formals.get(1));
         std::vector<SymExpr*> symExprs;
 
-        collectSymExprs(fn->body, symExprs);
+        collectSymExprsFor(fn->body, localeArg->sym, symExprs);
 
         for_vector(SymExpr, sym, symExprs) {
-          if (sym->symbol()->defPoint == localeArg) {
             sym->getStmtExpr()->remove();
-          }
         }
 
         localeArg->remove();

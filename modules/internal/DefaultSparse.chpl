@@ -354,7 +354,20 @@ module DefaultSparse {
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+      if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+
+        // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
+        // grow, which has a different heuristic to grow the internal arrays.
+        // That may result in size mismatch in the following internal array
+        // assignments
+        this._nnz = rhs._nnz;
+        this.nnzDom = rhs.nnzDom;
+
+        this.indices = rhs.indices;
+      }
+      else {
+        chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+      }
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;

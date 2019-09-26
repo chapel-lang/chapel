@@ -136,6 +136,32 @@ void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
     symExprs.push_back(symExpr);
 }
 
+// Same as collectSymExprs(), including only SymExprs for 'sym'.
+void collectSymExprsFor(BaseAST* ast, Symbol* sym,
+                        std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprsFor, sym, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (symExpr->symbol() == sym)
+      symExprs.push_back(symExpr);
+}
+
+// Same as collectSymExprs(), including only SymExprs for 'sym1' and 'sym2'.
+void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
+                        std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprsFor, sym1, sym2, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (symExpr->symbol() == sym1 || symExpr->symbol() == sym2)
+      symExprs.push_back(symExpr);
+}
+
+// Same as collectSymExprs(), including only LcnSymbols.
+void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectLcnSymExprs, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (isLcnSymbol(symExpr->symbol()))
+      symExprs.push_back(symExpr);
+}
+
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
