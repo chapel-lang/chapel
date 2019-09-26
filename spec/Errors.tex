@@ -133,6 +133,8 @@ next statement after the \chpl{try}-\chpl{catch} blocks.
 
 \begin{chapelexample}{catching-errors.chpl}
 \begin{chapel}
+use SysError;
+
 proc catchingErrors() throws {
   try {
     alwaysThrows(0);
@@ -164,6 +166,8 @@ If an error is thrown within a \chpl{try!} block and none of its
 
 \begin{chapelexample}{catching-errors-halt.chpl}
 \begin{chapel}
+use SysError;
+
 proc catchingErrorsHalt() {
   try! {
     var x = alwaysThrows(-1);
@@ -229,6 +233,8 @@ error raised in a \chpl{try} block.
 
 \begin{chapelexample}{catching-errors-propagate.chpl}
 \begin{chapel}
+use SysError;
+
 proc catchingErrorsPropagate() throws {
   try {
     var x = alwaysThrows(-1);
