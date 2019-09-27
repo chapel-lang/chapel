@@ -1,0 +1,1 @@
+noAssignClass.chpl:5: error: Can't overload assignments for class types

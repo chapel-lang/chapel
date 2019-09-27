@@ -26,6 +26,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "type.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
 
@@ -59,6 +60,17 @@ checkConstLoops() {
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->getModule()->modTag == MOD_USER) {
+      if (strcmp(fn->name, "=") == 0 &&
+          fn->formals.head) {
+        ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
+        if (isClass(formal->type) ||
+            isOwnedOrSharedOrBorrowed(formal->type) ||
+            isUnmanagedClass(formal->type)) {
+          USR_FATAL(fn, "Can't overload assignments for class types");
+        }
+      }
+    }
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {

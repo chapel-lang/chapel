@@ -1266,13 +1266,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
   }
 }
 
-static bool isUnmanagedClass(Type* t) {
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (dt->isUnmanaged())
-      return true;
-
-  return false;
-}
+// Can this be combined with type.cpp:isBorrowedClass()?  Which is right?
 static bool isBorrowClass(Type* t) {
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     if (dt->isUnmanaged())

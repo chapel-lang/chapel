@@ -1061,6 +1061,39 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
+bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+bool isBorrowedClass(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    return dt->isBorrowed();
+
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
+}
+
 bool isBuiltinGenericClassType(Type* t) {
   return t == dtBorrowed ||
          t == dtBorrowedNonNilable ||
@@ -1174,7 +1207,7 @@ bool isDistImplType(Type* type)
   return isDerivedType(type, FLAG_BASE_DIST);
 }
 
-static bool isDerivedType(Type* type, Flag flag)
+bool isDerivedType(Type* type, Flag flag)
 {
   AggregateType* at     =  NULL;
   bool           retval = false;
