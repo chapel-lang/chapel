@@ -213,6 +213,9 @@ static void print_user_internal_error() {
 static Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
   while (true) {
+    if (cur == NULL || cur->parentSymbol == NULL)
+      return cur;
+
     FnSymbol* curFn = cur->getFunction();
     // If we didn't find a function, or it's not in tree, give up
     if (curFn == NULL || curFn->inTree() == false)
@@ -223,8 +226,7 @@ static Expr* findLocationIgnoringInternalInlining(Expr* cur) {
     if (curFn->getModule()->modTag == MOD_USER)
       return cur;
 
-    bool inlined = curFn->hasFlag(FLAG_INLINE) ||
-                   curFn->hasFlag(FLAG_INLINED_FN);
+    bool inlined = curFn->hasFlag(FLAG_INLINED_FN);
 
     if (inlined == false || preserveInlinedLineNumbers)
       return cur;
@@ -345,8 +347,9 @@ static bool printErrorHeader(BaseAST* ast) {
 
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
-      FnSymbol* fn = expr->getFunction();
-      fn = findNonTaskCaller(fn);
+      FnSymbol* fn = NULL;
+      if (expr && expr->parentSymbol != NULL)
+        fn = findNonTaskCaller(expr->getFunction());
 
       if (fn && fn != err_fn) {
         printInstantiationNoteForLastError();
