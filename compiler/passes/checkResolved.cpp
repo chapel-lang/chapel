@@ -64,9 +64,9 @@ checkResolved() {
       if (strcmp(fn->name, "=") == 0 &&
           fn->formals.head) {
         ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
-        if (isClass(formal->type) ||
-            isOwnedOrSharedOrBorrowed(formal->type) ||
-            isUnmanagedClass(formal->type)) {
+        Type* formalType = formal->type->getValType();
+        if (isOwnedOrSharedOrBorrowed(formalType) ||
+            isUnmanagedClass(formalType)) {
           USR_FATAL(fn, "Can't overload assignments for class types");
         }
       }
