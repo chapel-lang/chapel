@@ -1266,20 +1266,6 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
   }
 }
 
-// Can this be combined with type.cpp:isBorrowedClass()?  Which is right?
-static bool isBorrowClass(Type* t) {
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    if (dt->isUnmanaged())
-      return false;
-    else
-      return true;
-  } else if (isClass(t)) {
-    return true;
-  }
-
-  return false;
-}
-
 
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
 // with the result of the coercion.
@@ -1419,7 +1405,7 @@ static void addArgCoercion(FnSymbol*  fn,
     }
 
   } else if (isUnmanagedClass(ats->typeInfo()) &&
-             isBorrowClass(formal->typeInfo())) {
+             isBorrowedClass(formal->typeInfo())) {
     checkAgain = true;
 
     castCall   = new CallExpr(PRIM_CAST, formal->getValType()->symbol, prevActual);
