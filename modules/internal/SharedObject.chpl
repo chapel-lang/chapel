@@ -100,6 +100,7 @@ See also :ref:`about-owned-intents-and-instantiation` which includes examples.
  */
 module SharedObject {
 
+  private use ChapelError;
   use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for
