@@ -67,7 +67,7 @@ checkResolved() {
         Type* formalType = formal->type->getValType();
         if (isOwnedOrSharedOrBorrowed(formalType) ||
             isUnmanagedClass(formalType)) {
-          USR_FATAL(fn, "Can't overload assignments for class types");
+          USR_FATAL_CONT(fn, "Can't overload assignments for class types");
         }
       }
     }
