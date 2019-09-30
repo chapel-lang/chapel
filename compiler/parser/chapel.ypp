@@ -650,8 +650,8 @@ except_ls:
 ;
 
 use_access_control:
-        { $$ = false; } // public
-| TPUBLIC { $$ = false; } // public
+           { $$ = (currentModuleType == MOD_USER ? true : false); } // private | public
+| TPUBLIC  { $$ = false; } // public
 | TPRIVATE { $$ = true; } // private
 ;
 
