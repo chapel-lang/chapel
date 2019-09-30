@@ -126,6 +126,7 @@ static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
 
 struct memEntry {
   void* addr;
+  size_t base;
   size_t size;
   void* desc;
   uint64_t key;
@@ -508,10 +509,9 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
-  hints->domain_attr->mr_mode = ((getNetworkType() == networkAries)
-                                 ? FI_MR_BASIC
-                                 : FI_MR_UNSPEC);
-  hints->domain_attr->mr_mode |= FI_MR_ENDPOINT;
+  hints->domain_attr->mr_mode = FI_MR_LOCAL | FI_MR_VIRT_ADDR
+                                | FI_MR_ALLOCATED | FI_MR_PROV_KEY /*TODO*/
+                                | FI_MR_ENDPOINT;
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
   //
@@ -1010,29 +1010,33 @@ void init_ofiForMem(void) {
   // address space here; with non-scalable we register each region
   // individually.
   //
-  chpl_bool heap_only = chpl_env_rt_get_bool("COMM_OFI_MR_HEAP_ONLY", false);
+  void* fixedHeapStart;
+  size_t fixedHeapSize;
+  chpl_comm_impl_regMemHeapInfo(&fixedHeapStart, &fixedHeapSize);
+
+  //
+  // At present the user can specify a fixed heap in which case we will
+  // register that and only that, or they'd better be using a provider
+  // which supports scalable registration of the entire address space.
+  //
+  if (fixedHeapStart != NULL && fixedHeapSize != 0) {
+    numMemRegions = 1;
+    memTab[0].addr = fixedHeapStart;
+    memTab[0].base = ((ofi_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR) == 0)
+                     ? (size_t) fixedHeapStart
+                     : (size_t) 0;
+    memTab[0].size = fixedHeapSize;
+  } else {
+    CHK_TRUE((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0);
+    numMemRegions = 1;
+    memTab[0].addr = (void*) 0;
+    memTab[0].base = 0;
+    memTab[0].size = SIZE_MAX;
+  }
 
   uint64_t bufAcc = FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
   if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) {
     bufAcc |= FI_SEND | FI_READ | FI_WRITE;
-  }
-
-  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0 && !heap_only) {
-    // scalable MR -- just one memory region, the whole address space
-    numMemRegions = 1;
-    memTab[0].addr = (void*) 0;
-    memTab[0].size = SIZE_MAX;
-  } else {
-    void* fixedHeapStart;
-    size_t fixedHeapSize;
-    chpl_comm_impl_regMemHeapInfo(&fixedHeapStart, &fixedHeapSize);
-    if (fixedHeapStart != NULL) {
-      numMemRegions = 1;
-      memTab[0].addr = fixedHeapStart;
-      memTab[0].size = fixedHeapSize;
-    } else {
-      CHK_TRUE(!heap_only);
-    }
   }
 
   for (int i = 0; i < numMemRegions; i++) {
@@ -1246,11 +1250,8 @@ void fini_ofi(void) {
   if (chpl_numNodes <= 1)
     return;
 
-  OFI_CHK(fi_close(&ofiMrTab[0]->fid));
-  if ((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) != 0) {
-    for (int i = 1; i < numMemRegions; i++) {
-      OFI_CHK(fi_close(&ofiMrTab[i]->fid));
-    }
+  for (int i = 0; i < numMemRegions; i++) {
+    OFI_CHK(fi_close(&ofiMrTab[i]->fid));
   }
 
   CHPL_FREE(memTabMap);
@@ -1512,13 +1513,6 @@ struct memEntry* getMemEntry(memTab_t* tab, void* addr, size_t size) {
 
 static inline
 int mrGetDesc(void** pDesc, void* addr, size_t size) {
-  if ((ofi_info->domain_attr->mr_mode & (FI_MR_BASIC | FI_MR_LOCAL)) == 0) {
-    DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): scalable", addr, size);
-    if (pDesc != NULL)
-      *pDesc = NULL;
-    return 0;
-  }
-
   struct memEntry* mr;
   if ((mr = getMemEntry(&memTab, addr, size)) == NULL) {
     DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): no entry", addr, size);
@@ -1542,7 +1536,7 @@ int mrGetKey(uint64_t* pKey, uint64_t* pOff,
   }
 
   const uint64_t key = mr->key;
-  const uint64_t off = (uint64_t) addr - (uint64_t) mr->addr;
+  const uint64_t off = (uint64_t) addr - mr->base;
   DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64 ", off %" PRIx64,
              iNode, addr, size, key, off);
   if (pKey != NULL) {
