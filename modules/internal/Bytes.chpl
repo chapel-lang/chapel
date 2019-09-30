@@ -92,7 +92,7 @@ To learn more about handling these errors, see the
 :ref:`Error Handling technical note <readme-errorHandling>`.
  */
 module Bytes {
-  use ChapelStandard;
+  private use ChapelStandard;
   use BytesCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;

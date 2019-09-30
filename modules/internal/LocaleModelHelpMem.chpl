@@ -27,7 +27,7 @@
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpMem {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //////////////////////////////////////////
   //

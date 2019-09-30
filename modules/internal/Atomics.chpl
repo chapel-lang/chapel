@@ -82,6 +82,7 @@
 pragma "atomic module"
 module Atomics {
 
+  private use ChapelBase;
   use MemConsistency;
   use ChapelEnv;
 

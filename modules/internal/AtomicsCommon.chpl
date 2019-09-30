@@ -18,7 +18,7 @@
  */
 
 module AtomicsCommon {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   record atomic_refcnt {
     // The common case seems to be local access to this class, so we
