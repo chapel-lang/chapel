@@ -1207,7 +1207,7 @@ bool isDistImplType(Type* type)
   return isDerivedType(type, FLAG_BASE_DIST);
 }
 
-bool isDerivedType(Type* type, Flag flag)
+static bool isDerivedType(Type* type, Flag flag)
 {
   AggregateType* at     =  NULL;
   bool           retval = false;
