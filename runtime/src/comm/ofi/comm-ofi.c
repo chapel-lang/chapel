@@ -406,7 +406,7 @@ static void init_ofiFabricDomain(void);
 static void init_ofiDoProviderChecks(void);
 static void init_ofiEp(void);
 static void init_ofiEpNumCtxs(void);
-static void init_ofiEpTxCtx(int, struct fi_av_attr*,
+static void init_ofiEpTxCtx(int, chpl_bool,
                             struct fi_cq_attr*, struct fi_cntr_attr*);
 static void init_ofiExchangeAvInfo(void);
 static void init_ofiForMem(void);
@@ -721,7 +721,7 @@ void init_ofiEp(void) {
                .size = 100, // TODO
                .wait_obj = FI_WAIT_NONE, };
     for (int i = 0; i < numWorkerTxCtxs; i++) {
-      init_ofiEpTxCtx(i, &avAttr, &cqAttr, NULL);
+      init_ofiEpTxCtx(i, false /*isAMHandler*/, &cqAttr, NULL);
     }
   }
 
@@ -735,7 +735,7 @@ void init_ofiEp(void) {
                  .wait_obj = ofi_amhWaitObj,
                  .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, &avAttr, NULL, &cntrAttr);
+      init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
     }
   } else {
     cqAttr = (struct fi_cq_attr)
@@ -745,7 +745,7 @@ void init_ofiEp(void) {
                .wait_cond = FI_CQ_COND_NONE,
                .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, &avAttr, &cqAttr, NULL);
+      init_ofiEpTxCtx(i, true /*isAMHandler*/, &cqAttr, NULL);
     }
   }
 
@@ -888,7 +888,7 @@ void init_ofiEpNumCtxs(void) {
 
 
 static
-void init_ofiEpTxCtx(int i, struct fi_av_attr* avAttr,
+void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
                      struct fi_cq_attr* cqAttr,
                      struct fi_cntr_attr* cntrAttr) {
   struct perTxCtxInfo_t* tcip = &tciTab[i];
@@ -907,7 +907,8 @@ void init_ofiEpTxCtx(int i, struct fi_av_attr* avAttr,
   } else {
     OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr, NULL));
     OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCntr->fid,
-                       FI_TRANSMIT | FI_RECV));
+                       (isAMHandler ? FI_WRITE
+                                    : FI_SEND | FI_READ | FI_WRITE)));
   }
   OFI_CHK(fi_enable(tcip->txCtx));
 }
