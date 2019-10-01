@@ -79,8 +79,7 @@ static struct fid_domain* ofi_domain;   // fabric access domain
 static int useScalableTxEp;             // use a scalable tx endpoint?
 static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
 static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
-static enum fi_wait_obj ofi_amhWaitObj; // wait object for above
-
+static bool useWaitset = true;          // should we use the waitset?
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
 // spread the progress load across all the threads when we're doing
@@ -620,6 +619,13 @@ void init_ofiDoProviderChecks(void) {
     // heap on a Cray XC system, say something about that now.
     //
     emit_delayedFixedHeapMsgs();
+
+    //
+    // For now avoid using a waitset with the gni provider, because
+    // although it seems to work properly we get -FI_EBUSY when we
+    // try to close it.
+    //
+    useWaitset = false;
   } else if (isInProviderName("ofi_rxd")) {
     //
     // ofi_rxd (utility provider with tcp, verbs, possibly others)
@@ -648,14 +654,19 @@ void init_ofiEp(void) {
   // on any RMA it initiates but also progress on inbound RMA, if that
   // is needed.  It uses a wait set to organize this.
   //
-  if (chpl_env_rt_get_bool("COMM_OFI_USE_WAIT_SET", true)) {
+  {
     struct fi_wait_attr waitSetAttr = (struct fi_wait_attr)
                                       { .wait_obj = FI_WAIT_UNSPEC, };
-    OFI_CHK(fi_wait_open(ofi_fabric, &waitSetAttr, &ofi_amhWaitSet));
-    ofi_amhWaitObj = FI_WAIT_SET;
-  } else {
-    ofi_amhWaitSet = NULL;
-    ofi_amhWaitObj = FI_WAIT_NONE;
+    int ret;
+    if (useWaitset) {
+      OFI_CHK_2(fi_wait_open(ofi_fabric, &waitSetAttr, &ofi_amhWaitSet),
+                ret, -FI_ENOSYS);
+    } else {
+      ret = -FI_ENOSYS;
+    }
+    if (ret != FI_SUCCESS) {
+      ofi_amhWaitSet = NULL;
+    }
   }
 
   //
@@ -729,10 +740,13 @@ void init_ofiEp(void) {
   // TX contexts for the AM handler(s) can just use counters, if the
   // provider supports them.  Otherwise, they have to use CQs also.
   //
+  const enum fi_wait_obj waitObj = (ofi_amhWaitSet == NULL)
+                                   ? FI_WAIT_NONE
+                                   : FI_WAIT_SET;
   if (ofi_info->domain_attr->cntr_cnt > 0) {
     cntrAttr = (struct fi_cntr_attr)
                { .events = FI_CNTR_EVENTS_COMP,
-                 .wait_obj = ofi_amhWaitObj,
+                 .wait_obj = waitObj,
                  .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
       init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
@@ -741,7 +755,7 @@ void init_ofiEp(void) {
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
                .size = 100, // TODO
-               .wait_obj = ofi_amhWaitObj,
+               .wait_obj = waitObj,
                .wait_cond = FI_CQ_COND_NONE,
                .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
@@ -758,12 +772,12 @@ void init_ofiEp(void) {
   cqAttr = (struct fi_cq_attr)
            { .size = chpl_numNodes * numWorkerTxCtxs,
              .format = FI_CQ_FORMAT_DATA,
-             .wait_obj = ofi_amhWaitObj,
+             .wait_obj = waitObj,
              .wait_cond = FI_CQ_COND_NONE,
              .wait_set = ofi_amhWaitSet, };
   cntrAttr = (struct fi_cntr_attr)
              { .events = FI_CNTR_EVENTS_COMP,
-               .wait_obj = ofi_amhWaitObj,
+               .wait_obj = waitObj,
                .wait_set = ofi_amhWaitSet, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
@@ -1273,7 +1287,7 @@ void fini_ofi(void) {
 
   OFI_CHK(fi_close(&ofi_av->fid));
 
-  if (ofi_amhWaitObj == FI_WAIT_SET) {
+  if (ofi_amhWaitSet != NULL) {
     OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
   }
 
@@ -2009,7 +2023,7 @@ void amHandler(void* argNil) {
   //
   while (!atomic_load_bool(&amHandlersExit)) {
     int ret;
-    if (ofi_amhWaitObj == FI_WAIT_SET) {
+    if (ofi_amhWaitSet != NULL) {
       OFI_CHK_2(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret, -FI_ETIMEDOUT);
     } else {
       sched_yield();
