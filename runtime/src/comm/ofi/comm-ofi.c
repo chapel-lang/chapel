@@ -92,8 +92,11 @@ static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
 static struct fid_cq* ofi_rxCQRma;      // RMA/AMO target endpoint CQ
 static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
 
-#define rxMsgAddr(tcip, n) ((tcip)->rxAddrs[2 * (n)])
-#define rxRmaAddr(tcip, n) ((tcip)->rxAddrs[2 * (n) + 1])
+static struct fid_av* ofi_av;           // address vector
+static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
+
+#define rxMsgAddr(tcip, n) (ofi_rxAddrs[2 * (n)])
+#define rxRmaAddr(tcip, n) (ofi_rxAddrs[2 * (n) + 1])
 
 //
 // Transmit support.
@@ -104,8 +107,6 @@ static int numRxCtxs;
 struct perTxCtxInfo_t {
   atomic_bool allocated;
   chpl_bool bound;
-  struct fid_av* av;
-  fi_addr_t* rxAddrs;
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
@@ -690,6 +691,8 @@ void init_ofiEp(void) {
     avAttr.count *= numTxCtxs;
   }
 
+  OFI_CHK(fi_av_open(ofi_domain, &avAttr, &ofi_av, NULL));
+
   if (useScalableTxEp) {
     //
     // Use a scalable transmit endpoint and multiple tx contexts.  Make
@@ -697,8 +700,7 @@ void init_ofiEp(void) {
     // will be synonyms for that one, to make the references easier.
     //
     OFI_CHK(fi_scalable_ep(ofi_domain, ofi_info, &ofi_txEpScal, NULL));
-    OFI_CHK(fi_av_open(ofi_domain, &avAttr, &tciTab[0].av, NULL));
-    OFI_CHK(fi_scalable_ep_bind(ofi_txEpScal, &tciTab[0].av->fid, 0));
+    OFI_CHK(fi_scalable_ep_bind(ofi_txEpScal, &ofi_av->fid, 0));
   } else {
     //
     // Use regular transmit endpoints; see below.
@@ -765,14 +767,14 @@ void init_ofiEp(void) {
                .wait_set = ofi_amhWaitSet, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEp, &tciTab[0].av->fid, 0));
+  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_av->fid, 0));
   OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid,
                      FI_TRANSMIT | FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &tciTab[0].av->fid, 0));
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
   if (ofi_info->domain_attr->cntr_cnt == 0) {
     OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma, NULL));
     OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCQRma->fid,
@@ -893,12 +895,10 @@ void init_ofiEpTxCtx(int i, struct fi_av_attr* avAttr,
   atomic_init_bool(&tcip->allocated, false);
   tcip->bound = false;
   if (useScalableTxEp) {
-    tcip->av = tciTab[0].av;
     OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tcip->txCtx, NULL));
   } else {
-    OFI_CHK(fi_av_open(ofi_domain, avAttr, &tcip->av, NULL));
     OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &tcip->txCtx, NULL));
-    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->av->fid, 0));
+    OFI_CHK(fi_ep_bind(tcip->txCtx, &ofi_av->fid, 0));
   }
   if (cqAttr != NULL) {
     OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ, NULL));
@@ -960,9 +960,8 @@ void init_ofiExchangeAvInfo(void) {
     char nameBuf2[128];
     size_t nameLen2;
     nameLen2 = sizeof(nameBuf2);
-    (void) fi_av_straddr(tciTab[0].av, my_addr, nameBuf, &nameLen);
-    (void) fi_av_straddr(tciTab[0].av, my_addr + my_addr_len, nameBuf2,
-                         &nameLen2);
+    (void) fi_av_straddr(ofi_av, my_addr, nameBuf, &nameLen);
+    (void) fi_av_straddr(ofi_av, my_addr + my_addr_len, nameBuf2, &nameLen2);
     DBG_PRINTF(DBG_CFGAV, "my_addrs: %.*s%s, %.*s%s",
                (int) nameLen, nameBuf,
                (nameLen <= sizeof(nameBuf)) ? "" : "[...]",
@@ -981,22 +980,9 @@ void init_ofiExchangeAvInfo(void) {
   // Only when the provider cannot support scalable EPs and we have
   // multiple actual endpoints are the AVs individualized to those.
   //
-  CHPL_CALLOC(tciTab[0].rxAddrs, 2 * chpl_numNodes);
-  CHK_TRUE(fi_av_insert(tciTab[0].av, addrs, 2 * chpl_numNodes,
-                        tciTab[0].rxAddrs, 0, NULL)
+  CHPL_CALLOC(ofi_rxAddrs, 2 * chpl_numNodes);
+  CHK_TRUE(fi_av_insert(ofi_av, addrs, 2 * chpl_numNodes, ofi_rxAddrs, 0, NULL)
            == 2 * chpl_numNodes);
-
-  for (int i = 1; i < tciTabLen; i++) {
-    if (useScalableTxEp) {
-      tciTab[i].av = tciTab[0].av;
-      tciTab[i].rxAddrs = tciTab[0].rxAddrs;
-    } else {
-      CHPL_CALLOC(tciTab[i].rxAddrs, 2 * chpl_numNodes);
-      CHK_TRUE(fi_av_insert(tciTab[i].av, addrs, 2 * chpl_numNodes,
-                            tciTab[i].rxAddrs, 0, NULL)
-               == 2 * chpl_numNodes);
-    }
-  }
 
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
@@ -1260,13 +1246,7 @@ void fini_ofi(void) {
 
   CHPL_FREE(amLZs);
 
-  if (useScalableTxEp) {
-    CHPL_FREE(tciTab[0].rxAddrs);
-  } else {
-    for (int i = 0; i < tciTabLen; i++) {
-      CHPL_FREE(tciTab[i].rxAddrs);
-    }
-  }
+  CHPL_FREE(ofi_rxAddrs);
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
@@ -1288,12 +1268,9 @@ void fini_ofi(void) {
 
   if (useScalableTxEp) {
     OFI_CHK(fi_close(&ofi_txEpScal->fid));
-    OFI_CHK(fi_close(&tciTab[0].av->fid));
-  } else {
-    for (int i = 0; i < tciTabLen; i++) {
-      OFI_CHK(fi_close(&tciTab[i].av->fid));
-    }
   }
+
+  OFI_CHK(fi_close(&ofi_av->fid));
 
   if (ofi_amhWaitObj == FI_WAIT_SET) {
     OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
