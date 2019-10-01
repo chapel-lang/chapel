@@ -421,9 +421,11 @@ static void gatherIgnoredVariablesForErrorHandling(
       if (CallExpr* call = toCallExpr(move->get(2))) {
         if (FnSymbol* fn = call->resolvedFunction()) {
           if (fn->throwsError()) {
-            SymExpr *se = toSymExpr(move->get(1));
-            ignore = toVarSymbol(se->symbol());
-            ignoredVariables.insert(ignore);
+            if (!fn->hasFlag(FLAG_INIT_COPY_FN)) {
+              SymExpr *se = toSymExpr(move->get(1));
+              ignore = toVarSymbol(se->symbol());
+              ignoredVariables.insert(ignore);
+            }
           }
         }
       }
