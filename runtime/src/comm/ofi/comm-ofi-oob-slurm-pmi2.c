@@ -42,6 +42,8 @@
 #define PMI2_SUCCESS 0
 #define PMI2_ID_NULL -1
 
+#define PMI2_MAX_VALLEN 1024
+
 extern int PMI2_Initialized(void);
 extern int PMI2_Init(int* spawned, int* size, int* rank, int* appnum);
 extern int PMI2_Finalize(void);
@@ -84,8 +86,8 @@ void chpl_comm_ofi_oob_barrier(void) {
 }
 
 
-static inline void encode_kvs(char* enc, const char* raw, size_t size);
-static inline void decode_kvs(char* raw, const char* enc, size_t size);
+static void allgather_kvs(const char* mine, char* all, size_t size,
+                          size_t chunk_off, size_t chunk_size);
 
 void chpl_comm_ofi_oob_allgather(const void* mine_v, void* all_v,
                                  size_t size) {
@@ -95,12 +97,34 @@ void chpl_comm_ofi_oob_allgather(const void* mine_v, void* all_v,
   char* all = (char*) all_v;
 
   //
+  // There is a limit on the maximum size of a KVS value, so we may
+  // need to do this in multiple chunks.
+  //
+  size_t size_remaining = size;
+  size_t chunk_size_max = (PMI2_MAX_VALLEN - 1) / 2; // unencoded max chunk
+  while (size_remaining > chunk_size_max) {
+    allgather_kvs(mine, all, size, size - size_remaining, chunk_size_max);
+    size_remaining -= chunk_size_max;
+  }
+
+  allgather_kvs(mine, all, size, size - size_remaining, size_remaining);
+}
+
+
+static inline void encode_kvs(char* enc, const char* raw, size_t size);
+static inline void decode_kvs(char* raw, const char* enc, size_t size);
+
+static
+void allgather_kvs(const char* mine, char* all, size_t size,
+                   size_t chunk_off, size_t chunk_size) {
+  //
   // Key values need to be NUL-terminated printable strings.
   //
-  size_t size_enc = 2 * size + 1;
+  size_t chunk_size_enc = 2 * chunk_size + 1;
+
   char* enc;
-  CHK_SYS_MALLOC_SZ(enc, 1, size_enc);
-  encode_kvs(enc, mine, size);
+  CHK_SYS_MALLOC_SZ(enc, 1, chunk_size_enc);
+  encode_kvs(enc, mine + chunk_off, chunk_size);
 
   char key[64];
   const char* key_fmt = "ChplAllgthr%d_N%d";
@@ -118,10 +142,11 @@ void chpl_comm_ofi_oob_allgather(const void* mine_v, void* all_v,
   for (int node = 0; node < chpl_numNodes; node++) {
     CHK_TRUE(snprintf(key, sizeof(key), key_fmt, key_cntr, node)
              < sizeof(key));
-    int size_ret;
-    PMI2_CHK(PMI2_KVS_Get(NULL, PMI2_ID_NULL, key, enc, size_enc, &size_ret));
-    CHK_TRUE(((size_t) size_ret) == size_enc - 1);
-    decode_kvs(all + node * size, enc, size);
+    int chunk_size_ret;
+    PMI2_CHK(PMI2_KVS_Get(NULL, PMI2_ID_NULL, key, enc,
+                          chunk_size_enc, &chunk_size_ret));
+    CHK_TRUE(((size_t) chunk_size_ret) == chunk_size_enc - 1);
+    decode_kvs(all + node * size + chunk_off, enc, chunk_size);
   }
 
   sys_free(enc);
