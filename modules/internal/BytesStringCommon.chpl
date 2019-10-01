@@ -530,4 +530,32 @@ module BytesStringCommon {
     } else { */
     return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) == 0;
   }
+
+  inline proc doLessThan(a: ?t1, b: ?t2) {
+    assertArgType(t1, "doEq");
+    assertArgType(t2, "doEq");
+
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) < 0;
+  }
+
+  inline proc doGreaterThan(a: ?t1, b: ?t2) {
+    assertArgType(t1, "doEq");
+    assertArgType(t2, "doEq");
+
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) > 0;
+  }
+
+  inline proc doLessThanOrEq(a: ?t1, b: ?t2) {
+    assertArgType(t1, "doEq");
+    assertArgType(t2, "doEq");
+
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) <= 0;
+  }
+
+  inline proc doGreaterThanOrEq(a: ?t1, b: ?t2) {
+    assertArgType(t1, "doEq");
+    assertArgType(t2, "doEq");
+
+    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
+  }
 }

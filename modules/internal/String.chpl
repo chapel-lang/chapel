@@ -2232,21 +2232,21 @@ module String {
 
   pragma "no doc"
   inline proc <(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) < 0;
+    return doLessThan(a, b);
   }
 
   pragma "no doc"
   inline proc >(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) > 0;
+    return doGreaterThan(a, b);
   }
 
   pragma "no doc"
   inline proc <=(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) <= 0;
+    return doLessThanOrEq(a, b);
   }
   pragma "no doc"
   inline proc >=(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
+    return doGreaterThanOrEq(a, b);
   }
 
 
