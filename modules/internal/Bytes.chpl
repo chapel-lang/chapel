@@ -432,7 +432,7 @@ module Bytes {
     }
 
     /*
-      :returns: The value of a single-byte bytes as an integer.
+      :returns: The value of a single-byte :record:`bytes` as an integer.
     */
     proc toByte(): uint(8) {
       if this.len != 1 {
