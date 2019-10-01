@@ -23,7 +23,7 @@
 // represent slices of another array via a domain.
 //
 module ArrayViewSlice {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   config param chpl_debugSerializeSlice = false,
                chpl_serializeSlices = false;

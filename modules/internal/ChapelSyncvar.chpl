@@ -889,7 +889,7 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  use ChapelStandard;
+  private use ChapelStandard;
   use AlignedTSupport;
 
   //

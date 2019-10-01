@@ -21,7 +21,7 @@
 //
 module ChapelTaskData {
 
-  use ChapelStandard;
+  private use ChapelStandard;
 
   // Chapel task-local data format:
   // up to 16 bytes of wide pointer for _remoteEndCountType

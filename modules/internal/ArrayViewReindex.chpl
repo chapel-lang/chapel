@@ -23,7 +23,7 @@
 // represent reindexings of another array via a domain.
 //
 module ArrayViewReindex {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //
   // This class represents a distribution that knows how to create

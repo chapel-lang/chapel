@@ -132,7 +132,7 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
 
  */
 module String {
-  use ChapelStandard;
+  private use ChapelStandard;
   use CString;
   use SysCTypes;
   use StringCasts;

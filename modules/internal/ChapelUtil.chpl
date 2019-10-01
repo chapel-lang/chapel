@@ -22,7 +22,7 @@
 // Internal data structures module
 //
 module ChapelUtil {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //
   // safeAdd: If a and b are of type t, return true iff no
