@@ -1,0 +1,4 @@
+perfkeys: blockArrInit:, cyclicArrInit:, blockCyclicArrInit:
+repeat-files: distCreate-large.dat
+ylabel: Time (seconds)
+graphtitle: Creating distributed arrays (1/4 of available memory)

@@ -136,3 +136,11 @@ runtime/configMatters/comm/unordered/many-to-many-getputs.ml-perf.graph
 runtime/configMatters/comm/unordered/one-locale-serial-amos.ml-perf.graph
 runtime/configMatters/comm/unordered/one-locale-parallel-amos.ml-perf.graph
 optimizations/bulkcomm/block/exchange.ml-time.graph
+performance/array/distCreate-domains-init.ml-perf.graph
+performance/array/distCreate-domains-deinit.ml-perf.graph
+performance/array/distCreate-tiny-init.ml-perf.graph
+performance/array/distCreate-tiny-deinit.ml-perf.graph
+performance/array/distCreate-small-init.ml-perf.graph
+performance/array/distCreate-small-deinit.ml-perf.graph
+performance/array/distCreate-large-init.ml-perf.graph
+performance/array/distCreate-large-deinit.ml-perf.graph

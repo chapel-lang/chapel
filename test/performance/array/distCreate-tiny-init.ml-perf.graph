@@ -1,0 +1,4 @@
+perfkeys: blockArrInit:, cyclicArrInit:, blockCyclicArrInit:
+repeat-files: distCreate-tiny.dat
+ylabel: Time (seconds)
+graphtitle: Creating distributed arrays (1 element per locale)
