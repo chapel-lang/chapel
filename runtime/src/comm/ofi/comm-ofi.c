@@ -279,23 +279,24 @@ network_t getNetworkType(void) {
 //
 // Provider name
 //
+static const char* ofi_provNameEnv = "FI_PROVIDER";
 
 static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
 static const char* provName;
 
-static void setProviderName(void);
+static void setProvName(void);
 static const char* getProviderName(void);
 
 
 static
-void setProviderName(void) {
-  provName = chpl_env_rt_get("COMM_OFI_PROVIDER", NULL);
+void setProvName(void) {
+  provName = getenv(ofi_provNameEnv);
 }
 
 
 static
 const char* getProviderName(void) {
-  PTHREAD_CHK(pthread_once(&provNameOnce, setProviderName));
+  PTHREAD_CHK(pthread_once(&provNameOnce, setProvName));
   return provName;
 }
 
@@ -315,14 +316,14 @@ chpl_bool isInProviderName(const char* s) {
     return false;
   }
 
-  char provName[strlen(ofi_info->fabric_attr->prov_name) + 1];
-  strcpy(provName, ofi_info->fabric_attr->prov_name);
+  char pn[strlen(ofi_info->fabric_attr->prov_name) + 1];
+  strcpy(pn, ofi_info->fabric_attr->prov_name);
 
   char* tok;
   char* strSave;
-  for (char* pn = provName;
-       (tok = strtok_r(pn, ";", &strSave)) != NULL;
-       pn = NULL) {
+  for (char* pnPtr = pn;
+       (tok = strtok_r(pnPtr, ";", &strSave)) != NULL;
+       pnPtr = NULL) {
     if (strcmp(s, tok) == 0) {
       return true;
     }
@@ -424,6 +425,19 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_oob_init();
   DBG_INIT();
 
+  //
+  // The user can specify the provider by setting either the Chapel
+  // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
+  // FI_PROVIDER one, with the former overriding the latter if both
+  // are set.
+  //
+  {
+    const char* s = chpl_env_rt_get("COMM_OFI_PROVIDER", NULL);
+    if (s != NULL) {
+      chpl_env_set(ofi_provNameEnv, s, 1 /*overwrite*/);
+    }
+  }
+
   pthread_that_inited = pthread_self();
 }
 
@@ -469,8 +483,6 @@ void init_ofiFabricDomain(void) {
   //
   // Build hints describing what we want from the provider.
   //
-  const char* provider = getProviderName();
-
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
 
@@ -480,9 +492,6 @@ void init_ofiFabricDomain(void) {
   if (getNetworkType() == networkAries) {
       hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
   }
-
-  // The gni provider needs local MR.
-  hints->mode = (getNetworkType() == networkAries) ? FI_LOCAL_MR : 0;
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
@@ -515,15 +524,6 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
   //
-  // fi_freeinfo(hints) will free() hints->fabric_attr->prov_name; this
-  // is documented, though poorly.  So, get that space from malloc().
-  //
-  if (provider != NULL) {
-    CHK_SYS_CALLOC(hints->fabric_attr->prov_name, strlen(provider) + 1);
-    strcpy(hints->fabric_attr->prov_name, provider);
-  }
-
-  //
   // Try to find a provider that can do what we want.  If more than one
   // is found, presume that ones earlier in the list perform better (as
   // documented in 'man fi_getinfo').  We just do error reporting on
@@ -542,6 +542,8 @@ void init_ofiFabricDomain(void) {
 
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
+      const char* provider = getProviderName();
+
       if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
         DBG_PRINTF(DBG_CFGFABSALL,
                    "==================== fi_getinfo() fabrics:");
