@@ -421,7 +421,21 @@ static void gatherIgnoredVariablesForErrorHandling(
       if (CallExpr* call = toCallExpr(move->get(2))) {
         if (FnSymbol* fn = call->resolvedFunction()) {
           if (fn->throwsError()) {
-            if (!fn->hasFlag(FLAG_INIT_COPY_FN)) {
+            // Do not ignore if the call is chpl__initCopy(ir) because not
+            // cleaning after it causes memory leaks. See the test:
+            // test/errhandling/ferguson/loopexprs-caught.chpl
+            bool isInitCopyWithIR = false;
+            if (fn->hasFlag(FLAG_INIT_COPY_FN)) {
+              if (call->numActuals() >= 1) {
+                if (SymExpr *argSE = toSymExpr(call->get(1))) {
+                  if (argSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+                    isInitCopyWithIR = true;
+                  }
+                }
+              }
+            }
+
+            if (!isInitCopyWithIR) {
               SymExpr *se = toSymExpr(move->get(1));
               ignore = toVarSymbol(se->symbol());
               ignoredVariables.insert(ignore);
