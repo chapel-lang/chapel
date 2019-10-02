@@ -21,7 +21,7 @@
 /* A help module for the mason package manager */
 
 use Help;
-use MasonUtils;
+public use MasonUtils;
 
 
 proc masonHelp() {

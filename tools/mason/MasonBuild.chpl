@@ -29,7 +29,7 @@ use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
 use MasonSystem;
-use MasonExample;
+public use MasonExample;
 
 proc masonBuild(args) throws {
   var show = false;

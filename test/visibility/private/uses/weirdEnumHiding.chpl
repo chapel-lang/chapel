@@ -4,7 +4,7 @@ module A {
 }
 
 module B {
-  use A;
+  public use A;
 
   proc checkFoo() {
     writeln(foo.b);
@@ -20,8 +20,8 @@ module C {
 }
 
 module D {
-  use C;
-  use B;
+  public use C;
+  public use B;
 
   proc checkFoo() {
     writeln(foo.b);

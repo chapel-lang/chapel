@@ -1,4 +1,4 @@
-use myrecord;
+public use myrecord;
 
 printcopies = false;
 var GlobalArray:[1..2] R;

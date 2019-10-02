@@ -18,8 +18,8 @@
  */
 
 private use List;
-use MasonUtils;
-use MasonHelp;
+public use MasonUtils;
+public use MasonHelp;
 
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");

@@ -21,7 +21,7 @@ module M2 {
 // a variable is not also defined elsewhere.  Non-transitive uses would prevent
 // the current behavior
 module M3 {
-  use M1;
+  public use M1;
 
   var b = true;
 }

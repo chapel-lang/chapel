@@ -21,6 +21,7 @@ private use List;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
+use MasonUtils only VersionInfo;
 
 use FileSystem;
 use Regexp;

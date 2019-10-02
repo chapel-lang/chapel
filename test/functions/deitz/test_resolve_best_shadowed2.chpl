@@ -5,12 +5,12 @@ proc main() {
     f();
   }
 
-  use M2;
+  public use M2;
   proc g() { } // shadows other g based on call to g
   g();
 
-  use M3;
-  use M4;
+  public use M3;
+  public use M4;
   h();
 }
 
@@ -19,13 +19,13 @@ module M2 {
 }
 
 module M3 {
-  use M5;
+  public use M5;
   proc h() { } // does not shadow other h based on call to h since
   // there is another path (through M4) to the other h
 }
 
 module M4 {
-  use M5;
+  public use M5;
 }
 
 module M5 {

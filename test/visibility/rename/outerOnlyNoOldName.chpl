@@ -1,5 +1,5 @@
 module Foo {
-  use Inner only bar as boop;
+  public use Inner only bar as boop;
   var bar = 42;
 
   var baz = 19.6;

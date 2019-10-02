@@ -2,7 +2,7 @@
 // should
 
 module A {
-  use B except bar;
+  public use B except bar;
 
   var foo: uint;
 
@@ -16,7 +16,7 @@ module B {
 }
 
 module M {
-  use A except foo;
+  public use A except foo;
 
   proc main() {
     writeln(baz); // Visible from A

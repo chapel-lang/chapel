@@ -5,7 +5,7 @@
 // visible.
 
 module A {
-  use B;
+  public use B;
 
   var foo = 15; // Should be hidden
 
@@ -18,7 +18,7 @@ module B {
 }
 
 module C {
-  use D;
+  public use D;
 
   var whatev: uint;
 }

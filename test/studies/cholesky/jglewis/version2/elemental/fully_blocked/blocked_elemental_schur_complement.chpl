@@ -11,7 +11,7 @@ module blocked_elemental_schur_complement {
   // and cyclic distributions.  The domains for the arrays are unstrided 
   // in the standard block cyclic case and strided in the cyclic case.
 
-  use cholesky_execution_config_consts;
+  public use cholesky_execution_config_consts;
  
   proc blocked_elemental_schur_complement ( A : [] , L12 : [], L21 : [] )
 
