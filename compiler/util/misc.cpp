@@ -351,6 +351,11 @@ static bool printErrorHeader(BaseAST* ast) {
       if (expr && expr->parentSymbol != NULL)
         fn = findNonTaskCaller(expr->getFunction());
 
+      // Don't consider functions that aren't in the tree
+      if (fn != NULL)
+        if (fn->defPoint == NULL || !fn->inTree())
+          fn = NULL;
+
       if (fn && fn != err_fn) {
         printInstantiationNoteForLastError();
         err_fn_header_printed = false;
