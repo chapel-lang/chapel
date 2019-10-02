@@ -1,0 +1,8 @@
+bug: lifetime checking problem with promoted !
+
+// transferArray(A, B!)
+// -> B! is promoted and this confuses the compiler
+// -> it is inferring a lifetime != B for the expression B!
+//     (which is an iterator record)
+// TODO: think about the lifetime of iterator records/promoted expressions
+//    - would implementing the promotion differently address this?
