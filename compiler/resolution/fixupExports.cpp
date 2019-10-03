@@ -219,7 +219,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
         }
         return false;
       }
-    } else if (t == dtString) {
+    } else if (fLibraryCompile && t == dtString) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_CONST &&
           tag != INTENT_CONST_REF &&
