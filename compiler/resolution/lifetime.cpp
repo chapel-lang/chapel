@@ -1779,11 +1779,6 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
         if (!isSubjectToBorrowLifetimeAnalysis(index))
           lp.borrowed = unknownLifetime();
       }
-      /*
-      if (!isSubjectToRefLifetimeAnalysis(index))
-        lp.referent = unknownLifetime();
-      if (!isSubjectToBorrowLifetimeAnalysis(index))
-        lp.borrowed = unknownLifetime();*/
 
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
       if (iterableCall->resolvedOrVirtualFunction())
