@@ -1691,11 +1691,15 @@ module ShallowCopy {
   // TODO: move these out of the Sort module and/or consider
   // language support for it.
   inline proc shallowCopy(ref dst:?t, ref src:t) {
-    var size = c_sizeof(t);
-    c_memcpy(c_ptrTo(dst), c_ptrTo(src), size);
-    // The version moved from should never be used again,
-    // but we clear it out just in case.
-    c_memset(c_ptrTo(src), 0, size);
+    if isPODType(t) {
+      dst = src;
+    } else {
+      var size = c_sizeof(t);
+      c_memcpy(c_ptrTo(dst), c_ptrTo(src), size);
+      // The version moved from should never be used again,
+      // but we clear it out just in case.
+      c_memset(c_ptrTo(src), 0, size);
+    }
   }
 
   // returns the result of shallow copying src
@@ -1710,13 +1714,19 @@ module ShallowCopy {
   inline proc shallowSwap(ref lhs:?t, ref rhs:t) {
     pragma "no auto destroy"
     var tmp: t;
-    var size = c_sizeof(t);
-    // tmp = lhs
-    c_memcpy(c_ptrTo(tmp), c_ptrTo(lhs), size);
-    // lhs = rhs
-    c_memcpy(c_ptrTo(lhs), c_ptrTo(rhs), size);
-    // rhs = tmp
-    c_memcpy(c_ptrTo(rhs), c_ptrTo(tmp), size);
+    if isPODType(t) {
+      tmp = lhs;
+      lhs = rhs;
+      rhs = tmp;
+    } else {
+      var size = c_sizeof(t);
+      // tmp = lhs
+      c_memcpy(c_ptrTo(tmp), c_ptrTo(lhs), size);
+      // lhs = rhs
+      c_memcpy(c_ptrTo(lhs), c_ptrTo(rhs), size);
+      // rhs = tmp
+      c_memcpy(c_ptrTo(rhs), c_ptrTo(tmp), size);
+    }
   }
 
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
