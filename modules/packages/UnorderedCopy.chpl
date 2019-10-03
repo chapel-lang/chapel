@@ -22,10 +22,16 @@
      This module represents work in progress. The API is unstable and likely to
      change over time.
 
-   This module provides an unordered version of copy/assign for ``numeric``
-   types. The results from this function are not visible until task or forall
-   termination or an explicit :proc:`unorderedCopyTaskFence()`, but it can
-   provide a significant speedup for bulk assignment operations that do not
+   This module provides an unordered version of copy/assign for trivially
+   copyable types types. Trivially copyable types are types that can be
+   duplicated by copying bits. They include ``numeric`` and ``bool`` types as
+   well as ``numeric``/``bool`` tuples and ``numeric``/``bool`` records
+   provided the record has no user-defined initializers, deinitializers, or
+   assignment overloads.
+
+   The results from :proc:`unorderedCopy()`, are not visible until task or
+   forall termination or an explicit :proc:`unorderedCopyTaskFence()`, but it
+   can provide a significant speedup for bulk assignment operations that do not
    require ordering of operations:
 
    .. code-block:: chapel
@@ -76,33 +82,32 @@
  */
 module UnorderedCopy {
   /*
-     Unordered copy. Only supported for identical numeric and bool types.
+     Unordered copy. Only supported for identical trivially copyable types.
    */
-  inline proc unorderedCopy(ref dst:numeric, const ref src:numeric): void {
+  // Version to provide a clean signature for docs and to provide a clean error
+  // message instead of just "unresolved call". Last resort to avoid thwarting
+  // promotion for POD arrays.
+  pragma "last resort"
+  inline proc unorderedCopy(ref dst, src): void {
+    compilerError("unorderedCopy is only supported between identical trivially copyable types");
+  }
+
+  pragma "no doc"
+  inline proc unorderedCopy(ref dst:chpl_anyPOD, const ref src:chpl_anyPOD): void {
     unorderedCopyPrim(dst, src);
   }
 
   pragma "no doc"
-  inline proc unorderedCopy(ref dst:numeric, param src:numeric): void {
-    const refSrc = src;
-    unorderedCopyPrim(dst, refSrc);
-  }
-
-  inline proc unorderedCopy(ref dst:bool(?), const ref src:bool(?)): void {
-    unorderedCopyPrim(dst, src);
-  }
-
-  pragma "no doc"
-  inline proc unorderedCopy(ref dst:bool(?), param src:bool(?)): void {
+  inline proc unorderedCopy(ref dst:chpl_anyPOD, param src:chpl_anyPOD): void {
     const refSrc = src;
     unorderedCopyPrim(dst, refSrc);
   }
 
   private inline proc unorderedCopyPrim(ref dst, const ref src): void {
     param sameType = dst.type == src.type;
-    param validType = isNumeric(dst) || isBool(dst);
+    param validType = isPOD(dst);
     if !sameType || !validType then
-      compilerError("unorderedCopy is only supported between identical numeric and bool types");
+      compilerError("unorderedCopy is only supported between identical trivially copyable types");
 
     if CHPL_COMM == 'ugni' {
       __primitive("unordered=", dst, src);

@@ -710,17 +710,6 @@ static void transformAtomicStmt(Expr* stmt) {
 
 }
 
-static bool hasAcceptableType(Symbol* sym) {
-  Type* t = sym->getValType();
-  return is_bool_type(t) ||
-         is_int_type(t) ||
-         is_uint_type(t) ||
-         is_real_type(t) ||
-         is_imag_type(t) ||
-         is_complex_type(t) ||
-         is_enum_type(t);
-}
-
 static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
   Symbol* lhs = NULL;
   if (CallExpr* call = toCallExpr(stmt))
@@ -734,11 +723,7 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
         if (CallExpr* marker = findMarkerNear(stmt))
           if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
               hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
-            // This last check can be relaxed in the future if the
-            // runtime unordered code supports more cases.
-            // The earlier part already checked that it's a POD type.
-            if (hasAcceptableType(lhs))
-              return true;
+            return true;
 
   return false;
 }
