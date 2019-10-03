@@ -8307,6 +8307,7 @@ static void resolveSupportForModuleDeinits() {
 
 static void resolveExports() {
   std::vector<FnSymbol*> exps;
+  bool isLibrary = (fLibraryCompile || fMultiLocaleInterop);
 
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -8322,11 +8323,13 @@ static void resolveExports() {
 
       resolveSignatureAndFunction(fn);
 
-      exps.push_back(fn);
+      if (isLibrary) { exps.push_back(fn); }
     }
   }
 
-  fixupExportedFunctions(exps);
+  if (isLibrary) {
+    fixupExportedFunctions(exps);
+  }
 }
 
 /************************************* | **************************************
