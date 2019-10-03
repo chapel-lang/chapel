@@ -969,80 +969,6 @@ module MergeSort {
 pragma "no doc"
 module QuickSort {
 
-  param extraChecks = false; // do costly extra checks that data is sorted
-  param debugPrints = false;
-
-  /*
-    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
-
-    :arg Data: The array to be sorted
-    :type Data: [] `eltType`
-    :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-    :type minlen: `integral`
-    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
-   */
-  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-    compilerError("Quick sort on strided array");
-
-    /*
-    chpl_check_comparator(comparator, eltType);
-    if Dom.rank != 1 {
-      compilerError("quickSort() requires 1-D array");
-    }
-
-    // grab obvious indices
-    const stride = abs(Dom.stride),
-          lo = Dom.alignedLow,
-          hi = Dom.alignedHigh,
-          size = Dom.size,
-          mid = if hi == lo then hi
-                else if size % 2 then lo + ((size - 1)/2) * stride
-                else lo + (size/2 - 1) * stride;
-
-    // base case -- use insertion sort
-    if (hi - lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator);
-      return;
-    }
-
-    // find pivot using median-of-3 method
-    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-      Data(mid) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-      Data(hi) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-      Data(hi) <=> Data(mid);
-
-    // TODO: call partitition
-    const pivotVal = Data(mid);
-    Data(mid) = Data(hi-stride);
-    Data(hi-stride) = pivotVal;
-    // end median-of-3 partitioning
-
-    var loptr = lo,
-        hiptr = hi-stride;
-    while (loptr < hiptr) {
-      do { loptr += stride; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-      do { hiptr -= stride; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-      if (loptr < hiptr) {
-        Data(loptr) <=> Data(hiptr);
-      }
-    }
-
-    Data(hi-stride) = Data(loptr);
-    Data(loptr) = pivotVal;
-
-    // TODO -- Get this cobegin working and tested
-    //  cobegin {
-      quickSort(Data[..loptr-stride by stride align lo], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+stride.. by stride align lo], minlen, comparator);
-    //  }
-
-*/
-  }
-
   /*
    Partition the array Data[lo..hi] using the pivot at Data[mid].
 
@@ -1057,15 +983,6 @@ module QuickSort {
                  lo: int, mid: int, hi: int,
                  comparator)
   {
-    extern proc chpl_task_getId(): chpl_taskID_t;
-
-    var prefix = (chpl_task_getId():string);
-    if debugPrints {
-      writeln(prefix, " partition(", lo, " ", mid, " " , hi, ")");
-      writeln(prefix, " pivot is ", Data[mid]);
-      writeln(prefix, " Before partition, data is: ", Data);
-    }
-
     // The following section categorizes array elements as follows:
     // 
     //   |  =  |  <  |  ?  |  >  |  =   |
@@ -1133,39 +1050,6 @@ module QuickSort {
     // now we are in the state:
     //   |  =  |  <  |  > |  =   |
     //    lo    a   c b  d     hi
- 
-    if debugPrints {
-      writeln(prefix, " After first step, data is ", Data);
-    }
-    if extraChecks {
-      // Check that the partitioning worked as expected.
-      for i in lo..a-1 {
-        if chpl_compare(Data[lo], Data[i], comparator) == 0 {
-        } else {
-          writeln(prefix, " failed1 for element ", i, " ", Data[i]);
-        }
-      }
-      for i in a..c {
-        if chpl_compare(Data[i], Data[lo], comparator) < 0 {
-        } else {
-          writeln(prefix, " failed2 for element ", i, " ", Data[i]);
-        }
-      }
-      assert(c+1 == b);
-      for i in b..d {
-        if chpl_compare(Data[i], Data[lo], comparator) > 0 {
-        } else {
-          writeln(prefix, " failed3 for element ", i, " ", Data[i]);
-        }
-      }
-      for i in d+1..hi {
-        if chpl_compare(Data[lo], Data[i], comparator) == 0 {
-        } else {
-          writeln(prefix, " failed4 for element ", i, " ", Data[i]);
-        }
-      }
-    }
-
 
     // now place the equal regions in the right places
     var s, l, h: int;
@@ -1181,9 +1065,6 @@ module QuickSort {
       s -= 1;
     }
 
-    if debugPrints then
-      writeln(prefix, " After fix1 ", Data);
-
     // Fix the second = region
     var n = hi+1;
     s = min(d-c, hi-d);
@@ -1196,48 +1077,8 @@ module QuickSort {
       s -= 1;
     }
 
-    if debugPrints then
-      writeln(prefix, " After fix2 ", Data);
-
     var eqStart = b-a+lo;
     var eqEnd = hi-(d-c);
-
-    if debugPrints {
-      writeln(prefix, " After partition, data is: ", Data);
-      writeln(prefix, " eq range is ", eqStart, "..", eqEnd);
-    }
-
-    if extraChecks {
-      // Check that the partitioning worked as expected.
-      assert(lo <= eqStart && eqStart <= hi);
-      assert(lo <= eqEnd && eqEnd <= hi);
-      assert(eqStart <= eqEnd);
-      for i in lo..eqStart-1 {
-        if chpl_compare(Data[i], Data[eqStart], comparator) < 0 {
-        } else {
-          writeln(prefix, " failed11 for element ", i, " ", Data[i]);
-        }
-      }
-      for i in eqStart+1..eqEnd {
-        if chpl_compare(Data[eqStart], Data[i], comparator) == 0 {
-        } else {
-          writeln(prefix, " failed12 for element ", i, " ", Data[i]);
-        }
-      }
-      for i in eqEnd+1..hi {
-        if chpl_compare(Data[eqStart], Data[i], comparator) < 0 {
-        } else {
-          writeln(prefix, " failed13 for element ", i, " ", Data[i]);
-        }
-      }
-
-      // TODO: remove this debugging loop
-      /*for i in lo..hi {
-        var empty:eltType;
-        assert(Data[i] != empty);
-      }*/
-    }
-
 
     return (eqStart, eqEnd);
   }
