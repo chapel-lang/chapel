@@ -736,6 +736,9 @@ void initPrimitiveTypes() {
   dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
 
+  dtPOD = createInternalType ("POD", "POD");
+  dtPOD->symbol->addFlag(FLAG_GENERIC);
+
   dtIteratorRecord = createInternalType("_iteratorRecord", "_iteratorRecord");
   dtIteratorRecord->symbol->addFlag(FLAG_GENERIC);
 

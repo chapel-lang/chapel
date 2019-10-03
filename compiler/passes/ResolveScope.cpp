@@ -237,6 +237,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtIntegral->symbol);
   extend(dtNumeric->symbol);
+  extend(dtPOD->symbol);
 
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
