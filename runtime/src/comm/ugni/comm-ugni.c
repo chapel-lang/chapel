@@ -1840,7 +1840,7 @@ typedef struct {
   void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
   void*         src_addr_v[MAX_CHAINED_PUT_LEN];
-  uint64_t      src_v[MAX_CHAINED_PUT_LEN];
+  char          src_v[MAX_CHAINED_PUT_LEN * MAX_UNORDERED_TRANS_SZ];
   size_t        size_v[MAX_CHAINED_PUT_LEN];
   mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
 } put_buff_task_info_t;
@@ -5908,14 +5908,14 @@ void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   remote_mr = mreg_for_remote_addr(tgt_addr, locale);
   info = task_local_buff_acquire(put_buff);
 
-  if (remote_mr == NULL || info == NULL || size > 8) {
+  if (remote_mr == NULL || info == NULL || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_put(src_addr, locale, tgt_addr, size, remote_mr, may_proxy);
     return;
   }
 
   int vi = info->vi;
-  memcpy(&info->src_v[vi], src_addr, size);
-  info->src_addr_v[vi] = &info->src_v[vi];
+  memcpy(&info->src_v[vi*MAX_UNORDERED_TRANS_SZ], src_addr, size);
+  info->src_addr_v[vi] = &info->src_v[vi*MAX_UNORDERED_TRANS_SZ];
   info->locale_v[vi] = locale;
   info->tgt_addr_v[vi] = tgt_addr;
   info->size_v[vi] = size;
@@ -5972,7 +5972,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
-      !IS_ALIGNED_32(size) || size > 8) {
+      !IS_ALIGNED_32(size) || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
