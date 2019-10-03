@@ -1125,7 +1125,7 @@ module QuickSort {
 
     // find pivot using median-of-3 method for small arrays
     // and a "ninther" for bigger arrays
-    if hi - lo < 40 {
+    if hi - lo < 100 {
       order3(Data, lo, mid, hi, comparator);    
     } else {
       // assumes array size > 9 at the very least
@@ -1140,7 +1140,7 @@ module QuickSort {
 
     var (eqStart, eqEnd) = partition(Data, lo, mid, hi, comparator);
 
-    if hi-lo < 30 { //256 {
+    if hi-lo < 300 {
       // stay sequential
       quickSort(Data, minlen, comparator, lo, eqStart-1);
       quickSort(Data, minlen, comparator, eqEnd+1, hi);
