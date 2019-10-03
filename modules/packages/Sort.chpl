@@ -1100,13 +1100,18 @@ module QuickSort {
   proc quickSort(Data: [?Dom] ?eltType,
                  minlen=16,
                  comparator:?rec=defaultComparator,
-                 start:int = Dom.low, end:int = Dom.high)
-    where !Dom.stridable {
+                 start:int = Dom.low, end:int = Dom.high) {
 
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
       compilerError("quickSort() requires 1-D array");
+    }
+
+    if Dom.stridable {
+      ref reindexed = Data.reindex(Dom.alignedLow..#Dom.size);
+      quickSort(reindexed, minlen, comparator);
+      return;
     }
 
     // grab obvious indices
