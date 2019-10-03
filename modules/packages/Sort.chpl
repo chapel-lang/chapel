@@ -968,6 +968,10 @@ module MergeSort {
 
 pragma "no doc"
 module QuickSort {
+
+  param extraChecks = false; // do costly extra checks that data is sorted
+  param debugPrints = false;
+
   /*
     Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
@@ -980,6 +984,9 @@ module QuickSort {
 
    */
   proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+    compilerError("Quick sort on strided array");
+
+    /*
     chpl_check_comparator(comparator, eltType);
     if Dom.rank != 1 {
       compilerError("quickSort() requires 1-D array");
@@ -1008,6 +1015,7 @@ module QuickSort {
     if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
       Data(hi) <=> Data(mid);
 
+    // TODO: call partitition
     const pivotVal = Data(mid);
     Data(mid) = Data(hi-stride);
     Data(hi-stride) = pivotVal;
@@ -1031,10 +1039,227 @@ module QuickSort {
       quickSort(Data[..loptr-stride by stride align lo], minlen, comparator);  // could use unbounded ranges here
       quickSort(Data[loptr+stride.. by stride align lo], minlen, comparator);
     //  }
+
+*/
   }
 
-  /* Non-stridable quickSort */
-  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
+  /*
+   Partition the array Data[lo..hi] using the pivot at Data[mid].
+
+   This is the 3-way symmetric partition described
+   in Engineering a Sort Function (1993) by Jon L. Bentley , M. Douglas Mcilroy 
+
+   Returns the (eqStart,eqEnd) where eqStart..eqEnd elements are
+   equal to the pivot (and elements less are before eqStart and elements
+   greater are after eqEnd).
+   */
+  proc partition(Data: [?Dom] ?eltType,
+                 lo: int, mid: int, hi: int,
+                 comparator)
+  {
+    extern proc chpl_task_getId(): chpl_taskID_t;
+
+    var prefix = (chpl_task_getId():string);
+    if debugPrints {
+      writeln(prefix, " partition(", lo, " ", mid, " " , hi, ")");
+      writeln(prefix, " pivot is ", Data[mid]);
+      writeln(prefix, " Before partition, data is: ", Data);
+    }
+
+    // The following section categorizes array elements as follows:
+    // 
+    //   |  =  |  <  |  ?  |  >  |  =   |
+    //    lo    a     b   c     d     hi
+    //
+    //  lo..a-1 stores equal elements
+    //   a..b-1 stores elements < pivot 
+    //   b..c   store uncategorized elements
+    // c+1..d-1 store elements > pivot
+    // d+1..hi  stores equal elements
+
+    // initally, entire array is in b..c
+    var a = lo;
+    var b = lo;
+    var c = hi;
+    var d = hi;
+
+    // Now put the pivot in Data[lo] so we can
+    // avoid keeping track of its position.
+    Data[lo] <=> Data[mid];
+
+    a += 1;
+    b += 1;
+
+    // Now swap the pivot to a local variable
+    var piv: eltType;
+    piv <=> Data[lo]; // leaves Data[lo] empty
+   
+    while true {
+      while b <= c {
+        // continue while Data[b] <= piv
+        var cmp = chpl_compare(Data[b], piv, comparator);
+        if cmp > 0 then
+          break;
+        if cmp == 0 {
+          Data[a] <=> Data[b];
+          a += 1; // one more equal element (on left)
+        }
+        b += 1; // one more categorized element
+      }
+      while c >= b {
+        // continue while Data[c] >= piv
+        var cmp = chpl_compare(Data[c], piv, comparator);
+        if cmp < 0 then
+          break;
+        if cmp == 0 {
+          Data[d] <=> Data[c];
+          d -= 1; // one more equal element (on right)
+        }
+        c -= 1; // one more categorized element
+      }
+      if b > c then
+        break; // stop here
+
+      // then Data[b] > piv and Data[c] < piv,
+      // so Data[c] < Data[b] and they are an inversion
+      Data[b] <=> Data[c];
+      b += 1;
+      c -= 1;
+    }
+
+    // Now put piv back in Data[lo]
+    Data[lo] <=> piv; // leaves piv empty
+
+    // now we are in the state:
+    //   |  =  |  <  |  > |  =   |
+    //    lo    a   c b  d     hi
+ 
+    if debugPrints {
+      writeln(prefix, " After first step, data is ", Data);
+    }
+    if extraChecks {
+      // Check that the partitioning worked as expected.
+      for i in lo..a-1 {
+        if chpl_compare(Data[lo], Data[i], comparator) == 0 {
+        } else {
+          writeln(prefix, " failed1 for element ", i, " ", Data[i]);
+        }
+      }
+      for i in a..c {
+        if chpl_compare(Data[i], Data[lo], comparator) < 0 {
+        } else {
+          writeln(prefix, " failed2 for element ", i, " ", Data[i]);
+        }
+      }
+      assert(c+1 == b);
+      for i in b..d {
+        if chpl_compare(Data[i], Data[lo], comparator) > 0 {
+        } else {
+          writeln(prefix, " failed3 for element ", i, " ", Data[i]);
+        }
+      }
+      for i in d+1..hi {
+        if chpl_compare(Data[lo], Data[i], comparator) == 0 {
+        } else {
+          writeln(prefix, " failed4 for element ", i, " ", Data[i]);
+        }
+      }
+    }
+
+
+    // now place the equal regions in the right places
+    var s, l, h: int;
+
+    // Fix the first = region
+    s = min(a-lo, b-a); // the number of of elements to swap
+    l = lo;
+    h = b-s;
+    while s > 0 {
+      Data[l] <=> Data[h];
+      l += 1;
+      h += 1;
+      s -= 1;
+    }
+
+    if debugPrints then
+      writeln(prefix, " After fix1 ", Data);
+
+    // Fix the second = region
+    var n = hi+1;
+    s = min(d-c, hi-d);
+    l = b;
+    h = n-s;
+    while s > 0 {
+      Data[l] <=> Data[h];
+      l += 1;
+      h += 1;
+      s -= 1;
+    }
+
+    if debugPrints then
+      writeln(prefix, " After fix2 ", Data);
+
+    var eqStart = b-a+lo;
+    var eqEnd = hi-(d-c);
+
+    if debugPrints {
+      writeln(prefix, " After partition, data is: ", Data);
+      writeln(prefix, " eq range is ", eqStart, "..", eqEnd);
+    }
+
+    if extraChecks {
+      // Check that the partitioning worked as expected.
+      assert(lo <= eqStart && eqStart <= hi);
+      assert(lo <= eqEnd && eqEnd <= hi);
+      assert(eqStart <= eqEnd);
+      for i in lo..eqStart-1 {
+        if chpl_compare(Data[i], Data[eqStart], comparator) < 0 {
+        } else {
+          writeln(prefix, " failed11 for element ", i, " ", Data[i]);
+        }
+      }
+      for i in eqStart+1..eqEnd {
+        if chpl_compare(Data[eqStart], Data[i], comparator) == 0 {
+        } else {
+          writeln(prefix, " failed12 for element ", i, " ", Data[i]);
+        }
+      }
+      for i in eqEnd+1..hi {
+        if chpl_compare(Data[eqStart], Data[i], comparator) < 0 {
+        } else {
+          writeln(prefix, " failed13 for element ", i, " ", Data[i]);
+        }
+      }
+
+      // TODO: remove this debugging loop
+      /*for i in lo..hi {
+        var empty:eltType;
+        assert(Data[i] != empty);
+      }*/
+    }
+
+
+    return (eqStart, eqEnd);
+  }
+
+
+  // Puts lo, mid, and hi in order by swapping.
+  proc order3(Data: [?Dom] ?eltType,
+              lo: int, mid: int, hi: int,
+              comparator) {
+    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
+      Data(mid) <=> Data(lo);
+    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
+      Data(hi) <=> Data(lo);
+    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
+      Data(hi) <=> Data(mid);
+  }
+
+  /* Non-stridable quickSort to sort Data[start..end] */
+  proc quickSort(Data: [?Dom] ?eltType,
+                 minlen=16,
+                 comparator:?rec=defaultComparator,
+                 start:int = Dom.low, end:int = Dom.high)
     where !Dom.stridable {
 
     chpl_check_comparator(comparator, eltType);
@@ -1044,47 +1269,49 @@ module QuickSort {
     }
 
     // grab obvious indices
-    const lo = Dom.low,
-          hi = Dom.high,
+    const lo = start,
+          hi = end,
           mid = lo + (hi-lo+1)/2;
 
-    // base case -- use insertion sort
-    if (hi - lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator);
+    if hi - lo < minlen {
+      // base case -- use insertion sort
+      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
+      return;
+    } else if hi <= lo {
+      // nothing to sort
       return;
     }
 
-    // find pivot using median-of-3 method
-    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-      Data(mid) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-      Data(hi) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-      Data(hi) <=> Data(mid);
+    // find pivot using median-of-3 method for small arrays
+    // and a "ninther" for bigger arrays
+    if hi - lo < 40 {
+      order3(Data, lo, mid, hi, comparator);    
+    } else {
+      // assumes array size > 9 at the very least
 
-    const pivotVal = Data(mid);
-    Data(mid) = Data(hi-1);
-    Data(hi-1) = pivotVal;
-    // end median-of-3 partitioning
-
-    var loptr = lo,
-        hiptr = hi-1;
-    while (loptr < hiptr) {
-      do { loptr += 1; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-      do { hiptr -= 1; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-      if (loptr < hiptr) {
-        Data(loptr) <=> Data(hiptr);
-      }
+      // median of each group of 3
+      order3(Data, lo,    lo+1, lo+2,  comparator);    
+      order3(Data, mid-1, mid,  mid+1, comparator);    
+      order3(Data, hi-2,  hi-1, hi,    comparator);
+      // median of the medians
+      order3(Data, lo+1,  mid,  hi-1,  comparator);
     }
 
-    Data(hi-1) = Data(loptr);
-    Data(loptr) = pivotVal;
+    var (eqStart, eqEnd) = partition(Data, lo, mid, hi, comparator);
 
-    // TODO -- Get this cobegin working and tested
-    //  cobegin {
-      quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+1..], minlen, comparator);
-    //  }
+    if hi-lo < 30 { //256 {
+      // stay sequential
+      quickSort(Data, minlen, comparator, lo, eqStart-1);
+      quickSort(Data, minlen, comparator, eqEnd+1, hi);
+    } else {
+      // do the subproblems in parallel
+      forall i in 1..2 {
+        if i == 1 then
+          quickSort(Data, minlen, comparator, lo, eqStart-1);
+        else
+          quickSort(Data, minlen, comparator, eqEnd+1, hi);
+      }
+    }
   }
 }
 
