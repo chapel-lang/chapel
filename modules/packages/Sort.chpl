@@ -973,7 +973,7 @@ module QuickSort {
    Partition the array Data[lo..hi] using the pivot at Data[mid].
 
    This is the 3-way symmetric partition described
-   in Engineering a Sort Function (1993) by Jon L. Bentley , M. Douglas Mcilroy 
+   in Engineering a Sort Function (1993) by Jon L. Bentley , M. Douglas Mcilroy
 
    Returns the (eqStart,eqEnd) where eqStart..eqEnd elements are
    equal to the pivot (and elements less are before eqStart and elements
@@ -984,12 +984,12 @@ module QuickSort {
                  comparator)
   {
     // The following section categorizes array elements as follows:
-    // 
+    //
     //   |  =  |  <  |  ?  |  >  |  =   |
     //    lo    a     b   c     d     hi
     //
     //  lo..a-1 stores equal elements
-    //   a..b-1 stores elements < pivot 
+    //   a..b-1 stores elements < pivot
     //   b..c   store uncategorized elements
     // c+1..d-1 store elements > pivot
     // d+1..hi  stores equal elements
@@ -1002,15 +1002,15 @@ module QuickSort {
 
     // Now put the pivot in Data[lo] so we can
     // avoid keeping track of its position.
-    Data[lo] <=> Data[mid];
+    ShallowCopy.shallowSwap(Data[lo], Data[mid]);
 
     a += 1;
     b += 1;
 
     // Now swap the pivot to a local variable
-    var piv: eltType;
-    piv <=> Data[lo]; // leaves Data[lo] empty
-   
+    pragma "no auto destroy"
+    var piv: eltType = ShallowCopy.shallowCopyInit(Data[lo]); // leaves Data[lo] empty
+
     while true {
       while b <= c {
         // continue while Data[b] <= piv
@@ -1018,7 +1018,7 @@ module QuickSort {
         if cmp > 0 then
           break;
         if cmp == 0 {
-          Data[a] <=> Data[b];
+          ShallowCopy.shallowSwap(Data[a], Data[b]);
           a += 1; // one more equal element (on left)
         }
         b += 1; // one more categorized element
@@ -1029,7 +1029,7 @@ module QuickSort {
         if cmp < 0 then
           break;
         if cmp == 0 {
-          Data[d] <=> Data[c];
+          ShallowCopy.shallowSwap(Data[d], Data[c]);
           d -= 1; // one more equal element (on right)
         }
         c -= 1; // one more categorized element
@@ -1039,13 +1039,13 @@ module QuickSort {
 
       // then Data[b] > piv and Data[c] < piv,
       // so Data[c] < Data[b] and they are an inversion
-      Data[b] <=> Data[c];
+      ShallowCopy.shallowSwap(Data[b], Data[c]);
       b += 1;
       c -= 1;
     }
 
     // Now put piv back in Data[lo]
-    Data[lo] <=> piv; // leaves piv empty
+    ShallowCopy.shallowCopy(Data[lo], piv); // leaves piv empty
 
     // now we are in the state:
     //   |  =  |  <  |  > |  =   |
@@ -1059,7 +1059,7 @@ module QuickSort {
     l = lo;
     h = b-s;
     while s > 0 {
-      Data[l] <=> Data[h];
+      ShallowCopy.shallowSwap(Data[l], Data[h]);
       l += 1;
       h += 1;
       s -= 1;
@@ -1071,7 +1071,7 @@ module QuickSort {
     l = b;
     h = n-s;
     while s > 0 {
-      Data[l] <=> Data[h];
+      ShallowCopy.shallowSwap(Data[l], Data[h]);
       l += 1;
       h += 1;
       s -= 1;
@@ -1088,12 +1088,12 @@ module QuickSort {
   proc order3(Data: [?Dom] ?eltType,
               lo: int, mid: int, hi: int,
               comparator) {
-    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-      Data(mid) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-      Data(hi) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-      Data(hi) <=> Data(mid);
+    if (chpl_compare(Data[mid], Data[lo], comparator) < 0) then
+      ShallowCopy.shallowSwap(Data[mid], Data[lo]);
+    if (chpl_compare(Data[hi], Data[lo], comparator) < 0) then
+      ShallowCopy.shallowSwap(Data[hi], Data[lo]);
+    if (chpl_compare(Data[hi], Data[mid], comparator) < 0) then
+      ShallowCopy.shallowSwap(Data[hi], Data[mid]);
   }
 
   /* Non-stridable quickSort to sort Data[start..end] */
@@ -1131,13 +1131,13 @@ module QuickSort {
     // find pivot using median-of-3 method for small arrays
     // and a "ninther" for bigger arrays
     if hi - lo < 100 {
-      order3(Data, lo, mid, hi, comparator);    
+      order3(Data, lo, mid, hi, comparator);
     } else {
       // assumes array size > 9 at the very least
 
       // median of each group of 3
-      order3(Data, lo,    lo+1, lo+2,  comparator);    
-      order3(Data, mid-1, mid,  mid+1, comparator);    
+      order3(Data, lo,    lo+1, lo+2,  comparator);
+      order3(Data, mid-1, mid,  mid+1, comparator);
       order3(Data, hi-2,  hi-1, hi,    comparator);
       // median of the medians
       order3(Data, lo+1,  mid,  hi-1,  comparator);
@@ -1690,6 +1690,34 @@ module ShallowCopy {
 
   // TODO: move these out of the Sort module and/or consider
   // language support for it.
+  inline proc shallowCopy(ref dst:?t, ref src:t) {
+    var size = c_sizeof(t);
+    c_memcpy(c_ptrTo(dst), c_ptrTo(src), size);
+    // The version moved from should never be used again,
+    // but we clear it out just in case.
+    c_memset(c_ptrTo(src), 0, size);
+  }
+
+  // returns the result of shallow copying src
+  pragma "unsafe"
+  inline proc shallowCopyInit(ref src:?t) {
+    var dst: t;
+    shallowCopy(dst, src);
+    return dst;
+  }
+
+  pragma "unsafe"
+  inline proc shallowSwap(ref lhs:?t, ref rhs:t) {
+    pragma "no auto destroy"
+    var tmp: t;
+    var size = c_sizeof(t);
+    // tmp = lhs
+    c_memcpy(c_ptrTo(tmp), c_ptrTo(lhs), size);
+    // lhs = rhs
+    c_memcpy(c_ptrTo(lhs), c_ptrTo(rhs), size);
+    // rhs = tmp
+    c_memcpy(c_ptrTo(rhs), c_ptrTo(tmp), size);
+  }
 
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
