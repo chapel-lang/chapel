@@ -5,7 +5,8 @@ use LayoutCS;
 var t = new Timer();
 
 config const correctness = true;
-config const numIndices = 1000;
+
+config const numIndices = 100;
 config const density = 0.01;
 
 const numIndicesInParentDom = numIndices/density;
@@ -27,54 +28,7 @@ proc stopDiag(key, dom) {
     writeln(key, ": ", t.elapsed());
     t.clear();
   }
-  writeln("Num indices: ", dom.numIndices);
-}
-
-// assignment from coo
-{
-  var cooDomBase: sparse subdomain(parentDom);
-  cooDomBase += sparseIndices;
-  var cooDom: sparse subdomain(parentDom);
-  startDiag();
-  cooDom = cooDomBase;
-  stopDiag("COO to COO", cooDom);
-}
-
-{
-  var cooDomBase: sparse subdomain(parentDom);
-  cooDomBase += sparseIndices;
-  var csrDom: sparse subdomain(parentDom) dmapped CS(compressRows=true);
-  startDiag();
-  csrDom = cooDomBase;
-  stopDiag("COO to CSR", csrDom);
-}
-
-{
-  var cooDomBase: sparse subdomain(parentDom);
-  cooDomBase += sparseIndices;
-  var cscDom: sparse subdomain(parentDom) dmapped CS(compressRows=false);
-  startDiag();
-  cscDom = cooDomBase;
-  stopDiag("COO to CSC", cscDom);
-}
-
-// assignment from csr
-{
-  var csrDomBase: sparse subdomain(parentDom) dmapped CS(compressRows=true);
-  csrDomBase += sparseIndices;
-  var cooDom: sparse subdomain(parentDom);
-  startDiag();
-  cooDom = csrDomBase;
-  stopDiag("CSR to COO", cooDom);
-}
-
-{
-  var csrDomBase: sparse subdomain(parentDom) dmapped CS(compressRows=true);
-  csrDomBase += sparseIndices;
-  var csrDom: sparse subdomain(parentDom) dmapped CS(compressRows=true);
-  startDiag();
-  csrDom = csrDomBase;
-  stopDiag("CSR to CSR", csrDom);
+  assert(dom.size == sparseIndices.size);
 }
 
 {
@@ -106,10 +60,10 @@ proc stopDiag(key, dom) {
 }
 
 {
-  var cscDomBase: sparse subdomain(parentDom) dmapped CS(compressRows=false);
-  cscDomBase += sparseIndices;
+  var cooDomBase: sparse subdomain(parentDom);
+  cooDomBase += sparseIndices;
   var cscDom: sparse subdomain(parentDom) dmapped CS(compressRows=false);
   startDiag();
-  cscDom = cscDomBase;
-  stopDiag("CSC to CSC", cscDom);
+  cscDom = cooDomBase;
+  stopDiag("COO to CSC", cscDom);
 }

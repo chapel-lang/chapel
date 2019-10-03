@@ -214,7 +214,8 @@ arrays/ferguson/return-array-8.graph
 arrays/ferguson/return-array-20000000.graph
 arrays/ferguson/return-array-40000000.graph
 domains/ferguson/build-associative.graph
-performance/sparse/domainAssignment.graph
+performance/sparse/domainAssignment-similar.graph
+performance/sparse/domainAssignment-dissimilar.graph
 # suite: Atomic performance
 types/atomic/ferguson/atomictest.graph
 # suite: Dynamic iterators
