@@ -20,14 +20,17 @@
 module ExportWrappers {
   use CPtr;
 
-  //
-  // TODO: By exporting this, I am assuming that C routines will have access
-  // to the unmangled type and its fields?
-  //
+  // Actual definition is in "runtime/include/chpl-export-wrappers.h".
   extern record chpl_bytes {
     var isOwned: c_int;
     var data: c_ptr(c_char);
     var len: size_t;
+  }
+
+  export proc chpl_bytes_free(cb: chpl_bytes) {
+    if cb.isOwned:bool && cb.data != nil then
+      chpl_here_free(cb.data);
+    return;
   }
 
   //
@@ -37,7 +40,15 @@ module ExportWrappers {
   type chpl__exportTypeCharPtr = c_ptr(c_char);
   type chpl__exportTypeChplBytes = chpl_bytes;
 
-  // Helper routine to make a copy of a string's buffer.
+  //
+  // TODO: Currently, we return strings in C as a `char*`. Since there is no
+  // way to encode any additional information about the buffer, we are
+  // forced to always allocate a new string every time. Presently, this takes
+  // the form of always copying the string.
+  // If the string owns its buffer, then we can assume control and set the
+  // string `isowned` to false - however before we do that we have to verify
+  // that `chpl_free` plays nice with buffers allocated by `chpl_here_alloc`.
+  //
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
     const nBytes = s.numBytes;
     const src = s.c_str():c_void_ptr;
@@ -45,10 +56,6 @@ module ExportWrappers {
     c_memcpy(result, src, nBytes);
     result[nBytes] = 0;
     return result;
-  }
-
-  proc chpl__exportConv(val: string, type rt: c_string): rt {
-    return chpl__exportCopyStringBuffer(val):c_string;
   }
 
   proc chpl__exportConv(val: string, type rt: c_ptr(c_char)): rt {
@@ -59,12 +66,18 @@ module ExportWrappers {
     return createStringWithBorrowedBuffer(val);
   }
 
-  proc chpl__exportConv(val: c_ptr(c_char), type rt: string): rt {
-    return createStringWithBorrowedBuffer(val);
-  }
-
-  proc chpl__exportConv(val: bytes, type rt: chpl_bytes): rt {
-    halt("Routine not implemented yet!");
+  //
+  // TODO: For multilocale, we have to make sure to free the `chpl_bytes`
+  // buffer ourselves after we are done beaming it out over the wire.
+  //
+  proc chpl__exportConv(ref val: bytes, type rt: chpl_bytes): rt {
+    var result: chpl_bytes;
+    result.isOwned = val.isowned:c_int;
+    result.data = val.buff:c_ptr(c_char);
+    // Assume ownership of the bytes buffer.
+    val.isowned = false;
+    result.len = val.size:size_t;
+    return result;
   }
 
   proc chpl__exportConv(val: chpl_bytes, type rt: bytes): rt {
