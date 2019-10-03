@@ -17,15 +17,27 @@
  * limitations under the License.
  */
 
-module ExternalString {
+module ExportWrappers {
   use CPtr;
 
   //
-  // TODO: This shouldn't be necessary, and the compiler should figure this
-  // type out on its own.
+  // TODO: By exporting this, I am assuming that C routines will have access
+  // to the unmangled type and its fields?
+  //
+  extern record chpl_bytes {
+    var isOwned: c_int;
+    var data: c_ptr(c_char);
+    var len: size_t;
+  }
+
+  //
+  // TODO: Using type aliases to resolve a type shouldn't be necessary. The
+  // compiler should be able to figure this out on its own.
   //
   type chpl__exportTypeCharPtr = c_ptr(c_char);
+  type chpl__exportTypeChplBytes = chpl_bytes;
 
+  // Helper routine to make a copy of a string's buffer.
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
     const nBytes = s.numBytes;
     const src = s.c_str():c_void_ptr;
@@ -33,6 +45,30 @@ module ExternalString {
     c_memcpy(result, src, nBytes);
     result[nBytes] = 0;
     return result;
+  }
+
+  proc chpl__exportConv(val: string, type rt: c_string): rt {
+    return chpl__exportCopyStringBuffer(val):c_string;
+  }
+
+  proc chpl__exportConv(val: string, type rt: c_ptr(c_char)): rt {
+    return chpl__exportCopyStringBuffer(val);
+  }
+
+  proc chpl__exportConv(val: c_string, type rt: string): rt {
+    return createStringWithBorrowedBuffer(val);
+  }
+
+  proc chpl__exportConv(val: c_ptr(c_char), type rt: string): rt {
+    return createStringWithBorrowedBuffer(val);
+  }
+
+  proc chpl__exportConv(val: bytes, type rt: chpl_bytes): rt {
+    halt("Routine not implemented yet!");
+  }
+
+  proc chpl__exportConv(val: chpl_bytes, type rt: bytes): rt {
+    halt("Routine not implemented yet!");
   }
 
   //

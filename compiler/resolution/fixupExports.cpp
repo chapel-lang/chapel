@@ -50,9 +50,12 @@ static const char* getConversionCallName(Type* srctype, Type* dsttype);
 static FnSymbol* getConversionCall(Type* srctype, Type* dsttype);
 static FnSymbol* resolveConversionCall(Type* srctype, Type* dsttype);
 static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx);
+static VarSymbol* fixupFormalAlter(FnSymbol* wrapper, int idx);
 static void changeRetType(FnSymbol* wrapper);
 static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
                                 const std::vector<VarSymbol*>& tmps);
+static void insertUnwrappedCallAlter(FnSymbol* wrapper, FnSymbol* fn,
+                                     const std::vector<VarSymbol*>& tmps);
 
 //
 // Some type information is lost during this pass (IE, converting `string`
@@ -78,48 +81,66 @@ void fixupExportedFunction(FnSymbol* fn) {
   attemptFixups(fn);
 }
 
-Type* getCharPtrType(void) {
-  static Type* result = NULL;
+Type* getResolveTypeAlias(const char* mod, const char* alias) {
+  ModuleSymbol* msym = NULL;
+  Symbol* asym = NULL;
+  Type* result = NULL;
 
-  if (result != NULL) { return result; }
-
-  const char* modname = "ExternalString";
-  const char* symname = "chpl__exportTypeCharPtr";
-  ModuleSymbol* esm = NULL;
-  Symbol* alias = NULL;
-
-  // Get a handle to the ExternalString module.
   forv_Vec(ModuleSymbol, md, allModules) {
-    if (md->modTag == MOD_INTERNAL && !strcmp(md->name, modname)) {
-      esm = md;
+    if (md->modTag == MOD_INTERNAL && !strcmp(md->name, mod)) {
+      msym = md;
       break;
     }
   }
 
-  INT_ASSERT(esm != NULL);
+  if (msym == NULL) {
+    INT_FATAL("Failed to find module %s in %s", mod, __FUNCTION__);
+  }
 
-  // Get a handle to the c_ptr(c_char) type from our global alias.
-  for_alist(expr, esm->block->body) {
+  for_alist(expr, msym->block->body) {
     DefExpr* de = toDefExpr(expr);
     if (de) {
       Symbol* sym = de->sym;
-      if (!strcmp(sym->name, symname)) {
-        alias = sym;
+      if (!strcmp(sym->name, alias)) {
+        asym = sym;
         break;
       }
     }
   }
 
-  SymExpr* rctx = new SymExpr(alias);
+  if (asym == NULL) {
+    INT_FATAL("Failed to find type alias %s in module %s in %s",
+              alias, mod, __FUNCTION__);
+  }
+
+  SymExpr* rctx = new SymExpr(asym);
 
   // Insert into tree and resolve, just in case.
   chpl_gen_main->insertAtHead(rctx);
   resolveExpr(rctx);
   rctx->remove();
 
-  INT_ASSERT(alias->type != dtUnknown);
-  result = alias->type;
+  INT_ASSERT(asym->type != dtUnknown);
+  result = asym->type;
 
+  return result;
+}
+
+Type* getBytesWrapperType(void) {
+  static Type* result = NULL;
+
+  if (result != NULL) { return result; }
+  result = getResolveTypeAlias("ExportWrappers",
+                               "chpl__exportTypeChplBytes");
+  return result;
+}
+
+Type* getCharPtrType(void) {
+  static Type* result = NULL;
+
+  if (result != NULL) { return result; }
+  result = getResolveTypeAlias("ExportWrappers",
+                               "chpl__exportTypeCharPtr");
   return result;
 }
 
@@ -132,10 +153,16 @@ static void attemptFixups(FnSymbol* fn) {
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
 
-    bool validated = validateFormalIntent(fn, as);
-    if (needsFixup(as->type) && validated) {
+    //
+    // TODO: Originally, only types that required fixups had their formal
+    // intents validated. However I think it might be a better idea to
+    // pull the formal/return type validation out into a separate set of
+    // routines that could occur in a pass before this, for the sake of
+    // clarity.
+    // 
+    if (validateFormalIntent(fn, as) && needsFixup(as->type)) {
       if (wrapper == NULL) { wrapper = createWrapper(fn); }
-      VarSymbol* tmp = fixupFormal(wrapper, i);
+      VarSymbol* tmp = fixupFormalAlter(wrapper, i);
       INT_ASSERT(tmp != NULL);
       tmps.push_back(tmp);
     } else {
@@ -155,7 +182,10 @@ static void attemptFixups(FnSymbol* fn) {
   // If a wrapper hasn't been made yet, there's nothing to do.
   if (wrapper == NULL) { return; }
 
-  insertUnwrappedCall(wrapper, fn, tmps);
+  // Temporarily quiet compiler warnings.
+  if (false) insertUnwrappedCall(wrapper, fn, tmps);
+
+  insertUnwrappedCallAlter(wrapper, fn, tmps);
 
   wrapperMap[wrapper] = fn;
 
@@ -169,11 +199,7 @@ static Type* maybeUnwrapRef(Type* t) {
 
 static bool needsFixup(Type* t) {
   Type* actual = maybeUnwrapRef(t);
-  if (actual == dtString) {
-    return true;
-  }
-
-  return false;
+  return actual == dtString || actual == dtBytes;
 }
 
 static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
@@ -183,7 +209,8 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   // TODO: If we ever add more types to these fixup routines, we really ought
   // to put these conditions in tables.
   //
-  if (t == dtString || t == dtStringC || t == dtExternalArray) {
+  if (t == dtBytes || t == dtString || t == dtStringC
+                   || t == dtExternalArray) {
     IntentTag tag = as->intent;
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
@@ -219,7 +246,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
         }
         return false;
       }
-    } else if (t == dtString) {
+    } else if (t == dtString || t == dtBytes) {
       // TODO: After resolution, have abstract intents been normalized?
       if (tag != INTENT_CONST &&
           tag != INTENT_CONST_REF &&
@@ -241,7 +268,8 @@ static bool validateReturnIntent(FnSymbol* fn) {
   Type* t = maybeUnwrapRef(fn->retType);
   RetTag tag = fn->retTag;
 
-  if (t == dtString && tag != RET_VALUE) {
+  // Both string and bytes must be returned by value.
+  if ((t == dtString || t == dtBytes) && tag != RET_VALUE) {
     SET_LINENO(fn);
     USR_FATAL_CONT(fn,  "Exported routine \'%s\' may only return the \'%s\' "
                         "type by %s",
@@ -268,8 +296,10 @@ static Type* getTypeForFixup(Type* t, bool ret) {
   if (t == dtString) {
     Type* result = ret ? getCharPtrType() : dtStringC;
     return result;
+  } else if (t == dtBytes) {
+    return getBytesWrapperType();
   } else {
-    INT_FATAL("Unsupported type for formal in: %s", __FUNCTION__);
+    INT_FATAL("Type %s is unsupported in %s", t->name(), __FUNCTION__);
   }
 
   // Should never reach here.
@@ -321,16 +351,10 @@ static FnSymbol* getConversionCall(Type* srctype, Type* dsttype) {
   return result;
 }
 
-//
-// This assumes that the names of the conversion calls are unique and
-// _are not_ being overloaded.
-//
 static FnSymbol* resolveConversionCall(Type* srctype, Type* dsttype) {
-  const char* name = getConversionCallName(srctype, dsttype);
-
   BlockStmt* block = new BlockStmt();
   VarSymbol* tmp = newTemp(srctype);
-  CallExpr* call = new CallExpr(name, tmp);
+  CallExpr* call = new CallExpr("chpl__exportConv", tmp, dsttype->symbol);
   FnSymbol* result = NULL;
  
   // Modifications to `chpl_gen_main` are only temporary.
@@ -377,6 +401,34 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   CallExpr* move = new CallExpr(PRIM_MOVE, tmp, call);
   wrapper->body->insertAtTail(move);
   
+  return result;
+}
+
+static VarSymbol* fixupFormalAlter(FnSymbol* wrapper, int idx) {
+  ArgSymbol* as = wrapper->getFormal(idx);
+  Type* origt = as->type;
+  Type* wrapt = getTypeForFixup(origt);
+
+  // Temporarily quiet compiler warnings.
+  if (false) fixupFormal(wrapper, idx);
+
+  // Adjust the formal type for the wrapper routine.
+  as->type = wrapt;
+
+  // Create a temporary to store the converted unwrapped formal.
+  VarSymbol* result = newTemp(origt);
+  wrapper->body->insertAtTail(new DefExpr(result));
+
+  // Make a call to the appropriate conversion call.
+  CallExpr* call = new CallExpr("chpl__exportConv", as, origt->symbol);
+
+  // Unwrap the wrapped formal using the conversion call, store in temp.
+  CallExpr* move = new CallExpr(PRIM_MOVE, result, call);
+  wrapper->body->insertAtTail(move);
+
+  // Since conversion calls are overloaded
+  resolveCallAndCallee(call);
+
   return result;
 }
 
@@ -463,3 +515,78 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
   return;
 }
 
+static void insertUnwrappedCallAlter(FnSymbol* wrapper, FnSymbol* fn,
+                                     const std::vector<VarSymbol*>& tmps) {
+  bool isVoid = (fn->retType == dtVoid);
+
+  VarSymbol* utmp = isVoid ? NULL : newTemp(fn->retType);
+  VarSymbol* rtmp = isVoid ? NULL : newTemp(wrapper->retType);
+
+  CallExpr* call = new CallExpr(fn);
+  BlockStmt* wbody = wrapper->body;
+
+  if (!isVoid) {
+    wbody->insertAtTail(new DefExpr(utmp));
+    wbody->insertAtTail(new DefExpr(rtmp));
+  }
+
+  //
+  // Loop through a list of VarSymbols for formals, supplying the VarSymbol
+  // as the actual to the call, or the original ArgSymbol for that formal if
+  // the slot is NULL.
+  //
+  for (size_t i = 0; i < tmps.size(); i++) {
+    VarSymbol* tmp = tmps[i];
+    if (tmp != NULL) {
+      call->insertAtTail(tmp);
+    } else {
+      int idx = (int) i + 1;
+      ArgSymbol* as = wrapper->getFormal(idx);
+      call->insertAtTail(as);
+    }
+  }
+
+  if (!isVoid) {
+    CallExpr* move = new CallExpr(PRIM_MOVE, utmp, call);
+    wbody->insertAtTail(move);
+  } else {
+    wbody->insertAtTail(call);
+  }
+
+  //
+  // If the call is void, emit a void return statement, then leave.
+  //
+  if (isVoid) {
+    CallExpr* ret = new CallExpr(PRIM_RETURN, gVoid);
+    wbody->insertAtTail(ret);
+    return;
+  }
+
+  //
+  // Possibly perform a conversion call and store the result in `rtmp`. If no
+  // conversion call was needed, then `utmp` and `rtmp` have the same type,
+  // so just move the first into the second.
+  //
+  if (needsFixup(fn->retType)) {
+
+    // Make a call to the appropriate conversion routine.
+    CallExpr* call = new CallExpr("chpl__exportConv", utmp,
+                                  wrapper->retType->symbol);
+
+    // Move the result of the conversion call into the result temp.
+    CallExpr* move = new CallExpr(PRIM_MOVE, rtmp, call);
+    wbody->insertAtTail(move);
+
+    // Resolve conversion call now, since it is overloaded.
+    resolveCallAndCallee(call);
+  } else {
+    CallExpr* move = new CallExpr(PRIM_MOVE, rtmp, utmp);
+    wbody->insertAtTail(move);
+  }
+
+  // Return the result temporary.
+  CallExpr* ret = new CallExpr(PRIM_RETURN, rtmp);
+  wbody->insertAtTail(ret);
+
+  return;
+}
