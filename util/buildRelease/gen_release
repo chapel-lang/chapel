@@ -87,7 +87,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     }
 
     print "[gen_release] Confirm final Git source version used.\n";
-    SystemOrDie("cd $rootdir && git status && git log -1");
+    SystemOrDie("cd $rootdir && git --no-pager status && git --no-pager log -1");
 
     if ($version eq "" or $version eq "developer") {
       print "[gen_release] Create BUILD_VERSION file.\n";
