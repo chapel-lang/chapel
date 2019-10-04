@@ -12,6 +12,7 @@ export CHPL_TEST_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.gasnet-ibv.large"
 
 module load gcc
+module load python/2.7.6
 
 export CHPL_HOST_PLATFORM=cray-cs
 export GASNET_PHYSMEM_MAX=83G
