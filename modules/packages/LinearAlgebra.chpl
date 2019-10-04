@@ -1151,10 +1151,10 @@ private proc _lu (in A: [?Adom] ?eltType) {
   var L, U, LU: [LUDom] eltType;
 
   var ipiv: [{1..n}] int = [i in {1..n}] i;
-  
+
   var numSwap: int = 0;
 
-  for i in 1..n { 
+  for i in 1..n {
 
     var max = A[i,i], swaprow = i;
     for row in (i+1)..n {
@@ -1181,7 +1181,7 @@ private proc _lu (in A: [?Adom] ?eltType) {
       var sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
-  } 
+  }
 
   LU = L + U;
   forall i in 1..n {
@@ -1192,16 +1192,16 @@ private proc _lu (in A: [?Adom] ?eltType) {
 }
 
 /*
-  Compute an LU factorization of square matrix `A` 
+  Compute an LU factorization of square matrix `A`
   using partial pivoting, such that `A = P * L * U` where P
   is a permutation matrix. Return a tuple of size 2 `(LU, ipiv)`.
-  
-  `L` and `U` are stored in the same matrix `LU` where 
+
+  `L` and `U` are stored in the same matrix `LU` where
   the unit diagonal elements of L are not stored.
-  
-  `ipiv` contains the pivot indices such that row i of `A` 
+
+  `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
-  
+
 */
 proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
@@ -1214,13 +1214,13 @@ proc lu (A: [?Adom] ?eltType) {
   return (LU,ipiv);
 }
 
-/* Return a new array as the permuted form of `A` according to 
+/* Return a new array as the permuted form of `A` according to
     permutation array `ipiv`.*/
 private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(1);
-  
+
   var B: [Adom] eltType;
-  
+
   if Adom.rank == 1 {
     if transpose {
       forall (i,pi) in zip(1..n, ipiv) {
@@ -1252,9 +1252,9 @@ private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
 
     .. note::
 
-      This procedure performs LU factorization to compute the 
+      This procedure performs LU factorization to compute the
       determinant. In certain cases, e.g. having a lower/upper
-      triangular matrix, it is more desirable to compute the 
+      triangular matrix, it is more desirable to compute the
       determinant manually.
 */
 
@@ -1268,57 +1268,58 @@ proc det (A: [?Adom] ?eltType) {
   var (LU,ipiv,numSwap) = _lu(A);
   const pdet = if numSwap % 2 == 0 then 1 else -1;
 
-  // L[i,i] always = 1, so we only need to take the 
+  // L[i,i] always = 1, so we only need to take the
   // diagonal product of U
 
   return (* reduce [i in Adom.dim(1)] LU[i,i]) * pdet;
 }
 
-/* Return the solution ``x`` to the linear system `` L * x = b `` 
+/* Return the solution ``x`` to the linear system `` L * x = b ``
     where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
-    will assume the diagonal elements as `1` and will not be referenced 
+    will assume the diagonal elements as `1` and will not be referenced
     within this procedure.
 */
-proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType, 
+proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
                   unit_diag = true) {
   const n = Ldom.shape(1);
   var y = b;
-  
+
   for i in 1..n {
     const sol = if unit_diag then y(i) else y(i) / L(i,i);
     y(i) = sol;
-    
+
     if (i < n) {
       forall j in (i+1)..n {
         y(j) -= L(j,i) * sol;
       }
     }
   }
-  
+
   return y;
 }
 
-/* Return the solution ``x`` to the linear system `` U * x = b `` 
+/* Return the solution ``x`` to the linear system `` U * x = b ``
     where ``U`` is an upper triangular matrix.
 */
 proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   const n = Udom.shape(1);
   var y = b;
-  
+
   for i in 1..n by -1 {
     const sol = y(i) / U(i,i);
     y(i) = sol;
-    
+
     if (i > 1) {
       forall j in 1..(i-1) by -1 {
         y(j) -= U(j,i) * sol;
       }
     }
   }
-  
+
   return y;
 }
 
+//m x n * n => m
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
 proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
@@ -1329,6 +1330,111 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
   return x;
 }
 
+/* Compute least-squares solution to ``A * x = b``.
+
+  Returns a tuple of ``(x, residues, rank)``, where:
+
+  - ``x`` is the the least-squares solution
+  - ``residues`` is the ..
+  - ``rank`` is the ...
+*/
+proc leastSquares(A: [] ?t, b: [] t) throws
+  where A.rank == 2 && b.rank == 1 && usingLAPACK && isLAPACKType(t)
+{
+  // TODO: Support b.rank == 2  -- (m,k)
+  // TODO: checks
+  // Confirm A.shape[2] matches b.shape[1]
+  // Throw error if A and b are empty
+
+  // Special case: if A.shape[1] < A.shape[2]
+  // Need to pad matrix with 0s?
+  const (m, n) = A.shape;
+  var workA = A;
+  var workB: [1..b.size, 1..1] real;
+  workB[.., 1] = b;
+
+  // TODO: Make rcond an argument
+  var rcond = epsilon(t);
+
+  var (x, s, rank) = gelsdWrapper(workA, workB, rcond);
+
+  var residue: t;
+
+  var x1 = x[1..n, 1];
+
+  if rank == n {
+    residue = + reduce (abs(x[n+1.., 1]**2));
+  }
+
+  return (x1, residue, rank, s);
+  //gelsd(lapack_memory_order.row_major, work_A, b?, s?, rcond?);
+  // a is overwritten
+  // *b is overwritten - Overwritten by the n-by-nrhs solution matrix X.
+  // *s is overwritten - f m≥n and rank = n, the residual sum-of-squares for the solution in the i-th column is given by the sum of squares of modulus of elements n+1:m in that column.
+  // *rank is
+  // we compute residues and return those
+  //gelsd(matrix_order: lapack_memory_order, a: [] real(32), b: [] real(32), s: [] real(32), rcond: real(32)): c_int
+  // gelsy(matrix_order: lapack_memory_order, a: [] real(32), b: [] real(32), jpvt: [] c_int, rcond: real(32)): c_int
+  //var info = gels(lapack_memory_order.column_major, 'T', work_A, byMat);
+
+  //lapack_int LAPACKE_sgels (int matrix_layout, char trans, lapack_int m, lapack_int n, lapack_int nrhs, float* a, lapack_int lda, float* b, lapack_int ldb);
+
+}
+
+/* Machine epsilon for real(64) */
+private proc epsilon(type t: real(64)) : real {
+  extern const DBL_EPSILON: real;
+  return DBL_EPSILON;
+}
+
+/* Machine epsilon for real(32) */
+private proc epsilon(type t: real(32)) : real {
+  extern const FLT_EPSILON: real;
+  return FLT_EPSILON;
+}
+
+/* Machine epsilon for non-real */
+private proc epsilon(type t) param : real {
+  return 0.0;
+}
+
+/* Clean wrapper around gelsd which returns rank */
+proc gelsdWrapper(a : [] real(64), b : [] real(64), rcond : real(64)) throws {
+  use LAPACK.ClassicLAPACK only LAPACKE_dgelsd;
+  require LAPACK.header;
+
+  var matrix_order = lapack_memory_order.row_major;
+  var rank = a.domain.dim(1).size: c_int;
+
+  proc minDim(a) {
+    const (m, n) = a.shape;
+    var minD = min(m, n);
+    return max(1, minD);
+  }
+
+  var s: [1..minDim(a)] real(64);
+
+  var m = (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(2).size): c_int;
+  var n = (if matrix_order == lapack_memory_order.row_major then a.domain.dim(2).size else a.domain.dim(1).size): c_int;
+  var nrhs = (if matrix_order == lapack_memory_order.row_major then b.domain.dim(2).size else b.domain.dim(1).size): c_int;
+  var lda = a.domain.dim(2).size : c_int;
+  var ldb = b.domain.dim(2).size : c_int;
+
+  var info = LAPACKE_dgelsd(matrix_order, m, n, nrhs, a, lda, b, ldb, s, rcond, rank);
+//proc LAPACKE_dgelsd(matrix_order : lapack_memory_order, m : c_int, n : c_int,
+//                    nrhs : c_int, a : [] c_double, lda : c_int, b : []
+//                    c_double, ldb : c_int, s :[] c_double, rcond : c_double,
+//                    ref rank : c_int) : c_int;
+
+  // Check for errors
+  if info < 0 then
+    throw new owned IllegalArgumentError('gelsd(): Argument %i incorrect'.format(info));
+  else if info > 0 then
+    throw new owned LinearAlgebraError('gelsd(): SVD failed to converge with %i off-diagonal elements not converged to 0'.format(info));
+
+  return (b, s, rank);
+}
+//proc LstSq(a, b, cond=None, overwrite_a=False, overwrite_b=False, check_finite=True, lapack_driver=None)
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
@@ -1570,19 +1676,19 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
-/* 
+/*
   Compute the approximate solution to ``A * x = b`` using the Jacobi method.
   iteration will stop when ``maxiter`` is reached or error is smaller than
   ``tol``, whichever comes first. Return the number of iterations performed.
-  
+
   .. note::
     ``X`` is passed as a reference, meaning the initial solution guess can be
-    stored in ``X`` before calling the procedure, and the approximate solution 
+    stored in ``X`` before calling the procedure, and the approximate solution
     will be stored in the same array.
-    
+
     Dense and CSR arrays are supported.
 */
-proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
     halt("Wrong shape of input matrix or vector");
@@ -2297,9 +2403,9 @@ module Sparse {
     }
     return A;
   }
-  
+
   pragma "no doc"
-  proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+  proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
       halt("Wrong shape of input matrix or vector");
@@ -2307,11 +2413,11 @@ module Sparse {
       halt("Matrix A is not a square");
     if Adom.shape(1) != Xdom.shape(1) then
       halt("Mismatch shape between matrix side length and vector length");
-  
+
     var itern = 0, err: eltType = 1;
-  
+
     var t: [Xdom] eltType = 0;
-  
+
     while (itern < maxiter) {
       itern = itern + 1;
       forall i in Adom.dim(1) {
