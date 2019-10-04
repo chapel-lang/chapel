@@ -5777,41 +5777,6 @@ static void resolveInitField(CallExpr* call) {
   resolveSetMember(call); // Can we remove some of the above with this?
 }
 
-// Should this be public, like isNilableClassType() ?
-static bool isUnmanagedClass(Type* t) {
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (dt->isUnmanaged())
-      return true;
-  return false;
-}
-
-// Should this be public, like isNilableClassType() ?
-static bool isBorrowedClass(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
-
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    return dt->isBorrowed();
-
-  return false;
-}
-
-// Todo: ideally this would be simply something like:
-//   isChapelManagedType(t) || isChapelBorrowedType(t)
-static bool isOwnedOrSharedOrBorrowed(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
-
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (! dt->isUnmanaged())
-      return true; // anything not unmanaged
-
-  if (isManagedPtrType(t))
-    return true; // owned or shared
-
-  return false;
-}
-
 static bool managementMismatch(Type* lhs, Type* rhs) {
   if (isManagedPtrType(lhs)) {
     if (isManagedPtrType(rhs)) {
