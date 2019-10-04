@@ -86,6 +86,18 @@ proc =(ref lhs: borrowed K?, rhs: K) {
   lhs.x = rhs.x;
 }
 
+proc =(ref lhs: A, rhs: int) {
+  lhs.x = rhs;
+}
+
+proc =(ref lhs: A, rhs: R) {
+  lhs.x = rhs.x;
+}
+
+record R {
+  var x: int;
+}
+         
 var myA = new A(42), myA2 = new A(33);
 myA = myA2;
 writeln(myA, myA2);
@@ -129,3 +141,9 @@ writeln(myJ, myJ2);
 var myK = new K(42), myK2 = new K(33);
 myK = myK2;
 writeln(myK, myK2);
+
+myA = 42;
+writeln(myA);
+
+myA = new R(33);
+writeln(myA);

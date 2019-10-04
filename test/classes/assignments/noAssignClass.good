@@ -9,3 +9,5 @@ noAssignClass.chpl:73: error: Can't overload assignments for class types
 noAssignClass.chpl:77: error: Can't overload assignments for class types
 noAssignClass.chpl:81: error: Can't overload assignments for class types
 noAssignClass.chpl:85: error: Can't overload assignments for class types
+noAssignClass.chpl:89: error: Can't overload assignments for class types
+noAssignClass.chpl:93: error: Can't overload assignments for class types
