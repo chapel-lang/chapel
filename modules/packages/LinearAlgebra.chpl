@@ -1342,12 +1342,12 @@ proc leastSquares(A: [] ?t, b: [] t) throws
   where A.rank == 2 && b.rank == 1 && usingLAPACK && isLAPACKType(t)
 {
   // TODO: Support b.rank == 2  -- (m,k)
-  // TODO: checks
-  // Confirm A.shape[2] matches b.shape[1]
-  // Throw error if A and b are empty
+  // TODO: additional checks:
+  //   - Confirm A.shape[2] matches b.shape[1]
+  //   - Throw error if A and b are empty
+  //   - Special case: if A.shape[1] < A.shape[2]
+  //     - Pad matrix with 0s
 
-  // Special case: if A.shape[1] < A.shape[2]
-  // Need to pad matrix with 0s?
   const (m, n) = A.shape;
   var workA = A;
   var workB: [1..b.size, 1..1] real;
@@ -1367,18 +1367,6 @@ proc leastSquares(A: [] ?t, b: [] t) throws
   }
 
   return (x1, residue, rank, s);
-  //gelsd(lapack_memory_order.row_major, work_A, b?, s?, rcond?);
-  // a is overwritten
-  // *b is overwritten - Overwritten by the n-by-nrhs solution matrix X.
-  // *s is overwritten - f m≥n and rank = n, the residual sum-of-squares for the solution in the i-th column is given by the sum of squares of modulus of elements n+1:m in that column.
-  // *rank is
-  // we compute residues and return those
-  //gelsd(matrix_order: lapack_memory_order, a: [] real(32), b: [] real(32), s: [] real(32), rcond: real(32)): c_int
-  // gelsy(matrix_order: lapack_memory_order, a: [] real(32), b: [] real(32), jpvt: [] c_int, rcond: real(32)): c_int
-  //var info = gels(lapack_memory_order.column_major, 'T', work_A, byMat);
-
-  //lapack_int LAPACKE_sgels (int matrix_layout, char trans, lapack_int m, lapack_int n, lapack_int nrhs, float* a, lapack_int lda, float* b, lapack_int ldb);
-
 }
 
 /* Machine epsilon for real(64) */
@@ -1398,7 +1386,7 @@ private proc epsilon(type t) param : real {
   return 0.0;
 }
 
-/* Clean wrapper around gelsd which returns rank */
+/* Clean wrapper around gelsd, needed b/c LAPACK.gelsd does not return rank */
 proc gelsdWrapper(a : [] real(64), b : [] real(64), rcond : real(64)) throws {
   use LAPACK.ClassicLAPACK only LAPACKE_dgelsd;
   require LAPACK.header;
@@ -1421,10 +1409,6 @@ proc gelsdWrapper(a : [] real(64), b : [] real(64), rcond : real(64)) throws {
   var ldb = b.domain.dim(2).size : c_int;
 
   var info = LAPACKE_dgelsd(matrix_order, m, n, nrhs, a, lda, b, ldb, s, rcond, rank);
-//proc LAPACKE_dgelsd(matrix_order : lapack_memory_order, m : c_int, n : c_int,
-//                    nrhs : c_int, a : [] c_double, lda : c_int, b : []
-//                    c_double, ldb : c_int, s :[] c_double, rcond : c_double,
-//                    ref rank : c_int) : c_int;
 
   // Check for errors
   if info < 0 then
@@ -1434,7 +1418,7 @@ proc gelsdWrapper(a : [] real(64), b : [] real(64), rcond : real(64)) throws {
 
   return (b, s, rank);
 }
-//proc LstSq(a, b, cond=None, overwrite_a=False, overwrite_b=False, check_finite=True, lapack_driver=None)
+
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
