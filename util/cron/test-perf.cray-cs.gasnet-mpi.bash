@@ -13,6 +13,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.gasnet-mpi"
 
 module load gcc
 module load openmpi/gcc
+module load python/2.7.6
 
 export CHPL_HOST_PLATFORM=cray-cs
 export CHPL_COMM_SUBSTRATE=mpi
