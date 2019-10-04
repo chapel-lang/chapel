@@ -2013,11 +2013,11 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   //
   // In the longer term it might be good to generate a warning for this
   if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(new DefExpr(ts));
+    captured_fn->defPoint->insertBefore(new DefExpr(ts));
 
   // The common case in which the reference is within a move/assign/call
   } else {
-    call->parentExpr->insertBefore(new DefExpr(ts));
+    captured_fn->defPoint->insertBefore(new DefExpr(ts));
   }
 
   ct->dispatchParents.add(parent);
