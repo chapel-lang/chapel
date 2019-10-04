@@ -1298,27 +1298,36 @@ module Bytes {
   }
 
   pragma "no doc"
+  inline proc !=(a: bytes, b: bytes) : bool {
+    return !doEq(a,b);
+  }
+
+  proc comparisonDeprWarn() {
+    compilerWarning("Comparison between bytes/string is deprecated. " +
+                    "Cast the string to bytes first");
+  }
+
+  pragma "no doc"
   proc ==(a: bytes, b: string) : bool {
+    comparisonDeprWarn();
     return doEq(a,b);
   }
 
   pragma "no doc"
   proc ==(a: string, b: bytes) : bool {
+    comparisonDeprWarn();
     return doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc !=(a: bytes, b: bytes) : bool {
-    return !doEq(a,b);
-  }
-
-  pragma "no doc"
   inline proc !=(a: bytes, b: string) : bool {
+    comparisonDeprWarn();
     return !doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: bytes) : bool {
+    comparisonDeprWarn();
     return !doEq(a,b);
   }
 
