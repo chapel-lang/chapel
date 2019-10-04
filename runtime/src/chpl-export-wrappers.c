@@ -16,19 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "chplrt.h"
 
-#ifndef _chpl_export_wrappers_h_
-#define _chpl_export_wrappers_h_
+#include "chpl-export-wrappers.h"
+#include "chpl-mem.h"
 
-#include <stdbool.h>
-#include <stdint.h>
+void chpl_bytes_free(chpl_bytes cb) {
+  if (!cb.isOwned) { return; }
 
-typedef struct chpl_bytes {
-  int isOwned;
-  char* data;
-  size_t len;
-} chpl_bytes;
+  if (cb.data != NULL) {
+    chpl_free(cb.data);
+  }
 
-void chpl_bytes_free(chpl_bytes cb);
-
-#endif
+  return;
+}

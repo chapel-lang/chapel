@@ -27,11 +27,8 @@ module ExportWrappers {
     var len: size_t;
   }
 
-  export proc chpl_bytes_free(cb: chpl_bytes) {
-    if cb.isOwned:bool && cb.data != nil then
-      chpl_here_free(cb.data);
-    return;
-  }
+  // May need to call this in one of the conversion routines.
+  extern proc chpl_bytes_free(cb: chpl_bytes);
 
   //
   // TODO: Using type aliases to resolve a type shouldn't be necessary. The
