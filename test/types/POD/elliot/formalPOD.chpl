@@ -1,6 +1,6 @@
-// Check that POD correctly accepts POD types
+// Check that POD correctly accepts POD types and support promotion
 
-proc checkPOD(arg: POD) {
+proc checkPOD(arg: chpl_anyPOD) {
   writeln(arg.type:string, " is POD");
 }
 

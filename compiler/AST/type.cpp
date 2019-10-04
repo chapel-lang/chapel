@@ -729,15 +729,15 @@ void initPrimitiveTypes() {
   dtAnyReal = createInternalType("chpl_anyreal", "real");
   dtAnyReal->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
+  dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
+
   // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
 
   dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
-
-  dtPOD = createInternalType ("POD", "POD");
-  dtPOD->symbol->addFlag(FLAG_GENERIC);
 
   dtIteratorRecord = createInternalType("_iteratorRecord", "_iteratorRecord");
   dtIteratorRecord->symbol->addFlag(FLAG_GENERIC);

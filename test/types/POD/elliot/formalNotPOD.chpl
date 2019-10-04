@@ -1,6 +1,6 @@
 // Check that POD does not trigger for some non POD types
 
-proc checkPOD(arg: POD) {
+proc checkPOD(arg: chpl_anyPOD) {
   writeln("POD");
 }
 

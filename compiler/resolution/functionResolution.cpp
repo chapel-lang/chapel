@@ -705,10 +705,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtPOD && !propagateNotPOD(actualType)) {
-    return true;
-  }
-
   if (formalType == dtAnyBool && is_bool_type(actualType)) {
     return true;
   }
@@ -722,6 +718,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtAnyReal && is_real_type(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyPOD && !propagateNotPOD(actualType)) {
     return true;
   }
 
