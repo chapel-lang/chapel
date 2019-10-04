@@ -1,5 +1,5 @@
 proc doit(type t) {
-  writeln(t:string, " : ", __primitive("is pod type", t));
+  writeln(t:string, " : ", isPODType(t));
 }
 
 class MyClass {
