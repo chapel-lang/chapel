@@ -1405,4 +1405,13 @@ module Bytes {
     return tolower(c: c_int):byteType;
   }
 
+  //
+  // hashing support
+  //
+
+  pragma "no doc"
+  inline proc chpl__defaultHash(x : bytes): uint {
+    return getHash(x);
+  }
+
 } // end of module Bytes
