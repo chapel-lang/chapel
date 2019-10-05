@@ -507,6 +507,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
     iRecord->fields.insertAtTail(new DefExpr(field));
     // An accessor lets us get _shape_ in Chapel code.
     FnSymbol* accessor = build_accessor(iRecord, field, false, false);
+    accessor->setGeneric(false);
     // This sidesteps the visibility issue in the presence of nested
     // LoopExprs. Ex. test/expressions/loop-expr/scoping.chpl
     theProgram->block->insertAtTail(accessor->defPoint->remove());

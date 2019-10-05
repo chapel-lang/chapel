@@ -58,7 +58,11 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 bool ResolutionCandidate::isApplicable(CallInfo& info) {
   bool retval = false;
 
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
+  TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
+  if (tagResult == TGR_TAGGING_ABORTED)
+    return false;
+
+  if (! fn->isGeneric()) {
     retval = isApplicableConcrete(info);
   } else {
     retval = isApplicableGeneric (info);
@@ -183,7 +187,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       while (formal != NULL) {
         if (formal->variableExpr) {
-          return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
+          return fn->isGeneric();
         }
 
         if (formalIdxToActual[j] == NULL) {
@@ -202,7 +206,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       // Fail if there are too many unnamed actuals.
       if (match == false) {
-        if (fn->hasFlag(FLAG_GENERIC) == false) {
+        if (! fn->isGeneric()) {
           failingArgument = info.actuals.v[i];
           reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
           return false;

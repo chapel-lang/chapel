@@ -497,13 +497,9 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   ret.defaultExprFn = wrapper;
 
   //wrapper->addFlag(FLAG_WRAPPER);
-
   wrapper->addFlag(FLAG_INVISIBLE_FN);
-
   wrapper->addFlag(FLAG_INLINE);
-
   wrapper->addFlag(FLAG_LINE_NUMBER_OK);
-
   wrapper->retTag = RET_VALUE;
 
   if (fn->hasFlag(FLAG_METHOD)) {
@@ -528,6 +524,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_MAYBE_PARAM);
   wrapper->addFlag(FLAG_MAYBE_TYPE);
+  wrapper->setGeneric(false); // We are here only when resolving a call.
 
   if (fn->throwsError())
     wrapper->throwsErrorInit();
@@ -2064,7 +2061,7 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   BlockStmt* loop = buildChapelStmt(fs);
 
   liFn->addFlag(FLAG_INLINE_ITERATOR);
-  liFn->addFlag(FLAG_GENERIC);
+  liFn->setGeneric(true);
   liFn->removeFlag(FLAG_INVISIBLE_FN);
 
   liFn->insertFormalAtTail(liFnTag);
@@ -2119,7 +2116,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
   fiFnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
   fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, symFalse);
 
-  fiFn->addFlag(FLAG_GENERIC);
+  fiFn->setGeneric(true);
   fiFn->removeFlag(FLAG_INVISIBLE_FN);
 
   fiFn->insertFormalAtTail(fiFnTag);
@@ -2611,8 +2608,6 @@ static void buildFastFollowerCheck(bool                  isStatic,
 
     forward = new CallExpr(astr(fnName, "Zip"), pTup, lead);
 
-    checkFn->addFlag(FLAG_GENERIC);
-
   } else {
     forward = new CallExpr(astr(fnName, "Zip"), pTup);
 
@@ -2645,6 +2640,8 @@ static void buildFastFollowerCheck(bool                  isStatic,
   theProgram->block->insertAtTail(new DefExpr(checkFn));
 
   normalize(checkFn);
+  checkFn->setGeneric(addLead);
+  INT_ASSERT(! wrapper->isGeneric()); //fyi
 }
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {

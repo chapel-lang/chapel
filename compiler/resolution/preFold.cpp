@@ -257,9 +257,13 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         ModuleSymbol *mod = fn->getModule();
         if (mod->modTag == MOD_USER) {
           if (fn->numFormals() == 1) {
-            if (!fn->hasFlag(FLAG_GENERIC) && fn->instantiatedFrom == NULL) {
+            if (fn->instantiatedFrom == NULL && ! fn->isKnownToBeGeneric()) {
               const char* name = astr(fn->name);
               resolveSignature(fn);
+              TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
+              if (tagResult == TGR_TAGGING_ABORTED ||
+                  (tagResult == TGR_NEWLY_TAGGED && fn->isGeneric()))
+                continue;
               if(isSubtypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
                 totalTest++;
                 CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
@@ -2141,7 +2145,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
                                 new SymExpr(undecorated->symbol));
 
   // Cast to "unmanaged parent".
-  Type* parUnmanaged = getDecoratedClass(parent, CLASS_TYPE_UNMANAGED);
+  Type* parUnmanaged = getDecoratedClass(parent, CLASS_TYPE_UNMANAGED_NONNIL);
   CallExpr* parCast = new CallExpr(PRIM_CAST, parUnmanaged->symbol,
                                    init);
 
@@ -2161,6 +2165,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   block->insertAtTail(ret);
 
   normalize(wrapper);
+  wrapper->setGeneric(false);
 
   CallExpr* callWrapper = new CallExpr(wrapper);
 

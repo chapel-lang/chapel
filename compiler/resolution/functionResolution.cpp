@@ -5116,7 +5116,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
 
     // Even if some formals are (now) types, if 'taskFn' remained generic,
     // gatherCandidates() would not instantiate it, for some reason.
-    taskFn->removeFlag(FLAG_GENERIC);
+    taskFn->setGeneric(false);
   }
 }
 
@@ -8005,23 +8005,6 @@ static void resolveObviousGlobals() {
 }
 
 
-static void markGenericFunctions() {
-  bool changed = true;
-
-  // Iterate until all generic functions have been tagged with FLAG_GENERIC
-  while (changed == true) {
-    changed = false;
-
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      // Returns true if status of fn is changed
-      if (fn->tagIfGeneric() == true) {
-        changed = true;
-      }
-    }
-  }
-}
-
-
 static void
 computeStandardModuleSet() {
   // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
@@ -8067,11 +8050,9 @@ void resolve() {
   // treatment on functions included by default, leading to bugs with qualified
   // access to symbols included in this way.
 
-  markGenericFunctions();
-
   unmarkDefaultedGenerics();
 
-  adjustInternalSymbols(); // must go after tagIfGeneric()
+  adjustInternalSymbols();
 
   resolveExterns();
 
@@ -8735,9 +8716,10 @@ static void resolveOther() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    if (fn->hasFlag(FLAG_GENERIC) == false) {
-      resolveSignatureAndFunction(fn);
-    }
+    resolveSignature(fn);
+    fn->tagIfGeneric();
+    if (! fn->isGeneric())
+      resolveFunction(fn);
   }
 }
 
