@@ -4,12 +4,10 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_TEST_PERF_CONFIG_NAME='16 node CS'
+export CHPL_TEST_PERF_CONFIG_NAME='16-node-cs'
 
 source $CWD/common-perf.bash
-export CHPL_NIGHTLY_LOGDIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-node-cs
-export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
-export CHPL_TEST_PERF_DIR="$CHPL_NIGHTLY_LOGDIR"
+export CHPL_TEST_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-node-cs
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.gasnet-mpi"
 
