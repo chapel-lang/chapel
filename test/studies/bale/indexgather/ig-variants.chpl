@@ -56,16 +56,28 @@ proc testit(mode: Mode, param explicit, printStats) {
   var t: Timer; t.start();
   select mode {
     when Mode.directIndexLocal {
-      forall i in D2 do
-        copy(tmp.localAccess[i], A[rindex.localAccess[i]], explicit);
+      forall i in D2 {
+        if explicit then
+          unorderedCopy(tmp.localAccess[i], A[rindex.localAccess[i]]);
+        else
+          tmp.localAccess[i] = A[rindex.localAccess[i]];
+      }
     }
     when Mode.directIndex {
-      forall i in D2 do
-        copy(tmp[i], A[rindex[i]], explicit);
+      forall i in D2 {
+        if explicit then
+          unorderedCopy(tmp[i], A[rindex[i]]);
+        else
+          tmp[i] = A[rindex[i]];
+      }
     }
     when Mode.zipArray {
-      forall (t, r) in zip(tmp, rindex) do
-        copy(t, A[r], explicit);
+      forall (t, r) in zip(tmp, rindex) {
+        if explicit then
+          unorderedCopy(t, A[r]);
+        else
+          t = A[r];
+      }
     }
     when Mode.promotion {
       if explicit then unorderedCopy(tmp, A[rindex]);
