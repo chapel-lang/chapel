@@ -36,6 +36,8 @@ CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
 # Variables to propagate to the sub-make session.
 TO_PROPAGATE = \
+	CHPL_MAKE_HOST_TARGET="--host" \
+	CHPL_MAKE_HOME="$(CHPL_MAKE_HOME)" \
 	COMP_GEN_MLI_EXTRA_INCLUDES="$(COMP_GEN_MLI_EXTRA_INCLUDES)" \
 	TMPBINNAME="$(TMPBINNAME)" \
 	BINNAME="$(BINNAME)" \
@@ -48,15 +50,34 @@ TO_PROPAGATE = \
 .PHONY: all
 all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
+.PHONY: echoDebug
+echoDebug:
+	echo "SHELL=$(SHELL)"
+	echo "CC=$(CC)"
+	echo "-----"
+	echo "CHPL_MAKE_HOST_TARGET=$(CHPL_MAKE_HOST_TARGET)"
+	echo "CHPL_MAKE_HOME=$(CHPL_MAKE_HOME)"
+	echo "COMP_GEN_MLI_EXTRA_INCLUDES=$(COMP_GEN_MLI_EXTRA_INCLUDES)"
+	echo "TMPBINNAME=$(TMPBINNAME)"
+	echo "BINNAME=$(BINNAME)"
+	echo "TMPSERVERNAME=$(TMPSERVERNAME)"
+	echo "SERVERNAME=$(SERVERNAME)"
+	echo "CHPLSRC=$(CHPLSRC)"
+	echo "CHPLUSEROBJ=$(CHPLUSEROBJ)"
+	echo "LIBS=$(LIBS)"
+	echo "-----"
+	echo "CHPL_CL_OBJS is $(CHPL_CL_OBJS)"
+	echo "TMPDIRNAME is $(TMPDIRNAME)"
+	echo "CHPL_MAKE_IS_MLI is $(CHPL_MAKE_IS_MLI)"
+
 .PHONY: buildServer
 buildServer: buildUserObj $(TMPSERVERNAME)
 
 .PHONY: buildClientAsHost
 buildClientAsHost:
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-static \
-		CHPL_MAKE_HOST_TARGET="--host" \
-		CHPL_MAKE_HOME="$(CHPL_MAKE_HOME)" \
 		$(TO_PROPAGATE) \
+	  echoDebug \
 		buildClient
 
 .PHONY: runTagsCommand
