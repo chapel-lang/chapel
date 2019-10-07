@@ -16,6 +16,9 @@ for the combinations of memory management that are not "ok" in this table:
     | shared    |  ok   |  ok    |          |           |
     | borrowed  |  ok   |  ok    |  ok      |  ok       |
     | unmanaged |       |        |          |  ok       |
+
+This is not a .chpl file to avoid accidental execution, as it would
+modify existing files in place, creating incorrect .good files.
 */
 
 use FileSystem;
