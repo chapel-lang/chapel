@@ -2483,7 +2483,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
   (void) ofi_put(addr, node, raddr, size);
@@ -2515,7 +2515,7 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
   (void) ofi_get(addr, node, raddr, size);
