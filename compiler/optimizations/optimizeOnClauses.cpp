@@ -532,6 +532,7 @@ static CallExpr* findRealOnCall(FnSymbol* wrapperFn) {
 static void addRunningTaskModifiers(void) {
   compute_call_sites();
 
+  std::set<CallExpr*> visited;
   forv_Vec(CallExpr, call, gCallExprs) {
     FnSymbol* fn = call->resolvedFunction();
     if (fn && fn->hasFlag(FLAG_ON_BLOCK)) {
@@ -541,8 +542,11 @@ static void addRunningTaskModifiers(void) {
       if (fn->hasFlag(FLAG_FAST_ON) == false) {
         CallExpr* call = findRealOnCall(fn);
         SET_LINENO(call);
-        call->insertBefore(new CallExpr(gChplIncRunningTask));
-        call->insertAfter(new CallExpr(gChplDecRunningTask));
+        if (visited.count(call) == 0) {
+          visited.insert(call);
+          call->insertBefore(new CallExpr(gChplIncRunningTask));
+          call->insertAfter(new CallExpr(gChplDecRunningTask));
+        }
       }
 
       // For on stmts that aren't fast or non-blocking, decrement the local
