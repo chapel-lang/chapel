@@ -8,10 +8,15 @@ module mymodule {
     var x: int;
   }
 
+  proc makeArray(instance: borrowed MyClass) {
+    var AA = [instance, instance];
+    return AA;
+  }
+
   proc main() {
     var instance = new borrowed MyClass(0);
-    var A = [instance, instance];
-    var B = [instance, instance];
+    var A = makeArray(instance);
+    var B = makeArray(instance);
 
     var sum = 0;
     for k in 1..n {

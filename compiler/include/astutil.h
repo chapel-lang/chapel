@@ -43,7 +43,6 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<CondStmt*>& IBBs);
 
 // collect Stmts and Exprs in the AST and return them in vectors
-// Versions ending in 'STL' use the C++ std::vector class
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, std::vector<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts);

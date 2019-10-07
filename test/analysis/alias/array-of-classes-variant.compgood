@@ -1,3 +1,4 @@
+noAliasSets: no-aliases for function makeArray:
 noAliasSets: no-aliases for function main:
   A no alias B
   A no alias ret

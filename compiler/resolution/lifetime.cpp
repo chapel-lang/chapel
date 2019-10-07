@@ -1093,13 +1093,16 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
         (theOnlyOneThatMatters != NULL && theOnlyOneThatMatters != formal))
       continue;
 
-    if (returnsRef && formal->isRef() &&
-        (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(actualSym))) {
+    if (returnsRef && formal->isRef()) {
+      if (symbolHasInfiniteLifetime(actualSym)) {
+        argLifetime.referent = infiniteLifetime();
+      } else if (isSubjectToRefLifetimeAnalysis(actualSym) ||
+                 isLocalVariable(actualSym)) {
 
-      // Use the referent part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
-      argLifetime.referent = temp.referent;
+        // Use the referent part of the actual's lifetime
+        LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
+        argLifetime.referent = temp.referent;
+      }
     }
 
     if (returnsBorrow && isSubjectToBorrowLifetimeAnalysis(actualSym)) {
@@ -1767,10 +1770,15 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
       lp = lifetimes->lifetimeForActual(iterableSym, usedAsRef, usedAsBorrow);
 
-      if (!isSubjectToRefLifetimeAnalysis(iterableSym))
-        lp.referent = unknownLifetime();
-      if (!isSubjectToBorrowLifetimeAnalysis(iterableSym))
-        lp.borrowed = unknownLifetime();
+      // TODO: fold this in to lifetimeForActual
+      if (symbolHasInfiniteLifetime(iterableSym)) {
+        lp = infiniteLifetimePair();
+      } else {
+        if (!isSubjectToRefLifetimeAnalysis(index))
+          lp.referent = unknownLifetime();
+        if (!isSubjectToBorrowLifetimeAnalysis(index))
+          lp.borrowed = unknownLifetime();
+      }
 
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
       if (iterableCall->resolvedOrVirtualFunction())
