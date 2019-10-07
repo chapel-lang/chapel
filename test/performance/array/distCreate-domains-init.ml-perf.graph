@@ -1,4 +1,5 @@
-perfkeys: blockDomInit:, cyclicDomInit:, blockCyclicDomInit:
-repeat-files: distCreate-tiny.dat
+perfkeys: domInit:, domInit:, domInit:
+graphkeys: blockDomInit:, cyclicDomInit:, blockCyclicDomInit:
+files: distCreate-tiny-block.dat, distCreate-tiny-cyclic.dat, distCreate-tiny-blockCyc.dat,
 ylabel: Time (seconds)
 graphtitle: Creating distributed domains

@@ -18,8 +18,10 @@ config const nElemsSmall = if correctness then 100 else 1000000;
 config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
 
 enum arraySize { tiny, small, large};
+enum distType { block, cyclic, blockCyc};
 
 config const size = arraySize.tiny;
+config const dist = distType.block;
 
 const nElems = if size == arraySize.tiny then nElemsTiny else
                if size == arraySize.small then nElemsSmall else
@@ -55,56 +57,62 @@ inline proc endDiag(name, x) {
 
 const localDom = {1..nElems};
 
-{
-  startDiag();
-  const blockDom = localDom dmapped Block(boundingBox=localDom);
-  endDiag("blockDomInit", blockDom);
-  {
+if !correctness && dist == distType.block {
+  { // weird blocks are necessary to measure deinit performance
     startDiag();
-    const blockArr: [blockDom] elemType;
-    endDiag("blockArrInit", blockArr);
+    const blockDom = localDom dmapped Block(boundingBox=localDom);
+    endDiag("domInit", blockDom);
+    {
+      startDiag();
+      const blockArr: [blockDom] elemType;
+      endDiag("arrInit", blockArr);
 
-    startDiag();
-  }
-  endDiag("blockArrDeinit");
-
-  startDiag();
-}
-endDiag("blockDomDeinit");
-
-{
-  startDiag();
-  const cyclicDom = localDom dmapped Cyclic(startIdx=localDom.first);
-  endDiag("cyclicDomInit", cyclicDom);
-  {
-
-    startDiag();
-    const cyclicArr: [cyclicDom] elemType;
-    endDiag("cyclicArrInit", cyclicArr);
+      startDiag();
+    }
+    endDiag("arrDeinit");
 
     startDiag();
   }
-  endDiag("cyclicArrDeinit");
-
-  startDiag();
+  endDiag("domDeinit");
 }
-endDiag("cyclicDomDeinit");
 
-{
-  startDiag();
-  const blockCyclicDom = localDom dmapped BlockCyclic(startIdx=localDom.first,
-                                                      blocksize=5);
-  endDiag("blockCyclicDomInit", blockCyclicDom);
-  {
-
+if !correctness && dist == distType.cyclic {
+  { // weird blocks are necessary to measure deinit performance
     startDiag();
-    const blockCyclicArr: [blockCyclicDom] elemType;
-    endDiag("blockCyclicArrInit", blockCyclicArr);
-    
+    const cyclicDom = localDom dmapped Cyclic(startIdx=localDom.first);
+    endDiag("domInit", cyclicDom);
+    {
+
+      startDiag();
+      const cyclicArr: [cyclicDom] elemType;
+      endDiag("arrInit", cyclicArr);
+
+      startDiag();
+    }
+    endDiag("arrDeinit");
+
     startDiag();
   }
-  endDiag("blockCyclicArrDeinit");
-
-  startDiag();
+  endDiag("domDeinit");
 }
-endDiag("blockCyclicDomDeinit");
+
+if !correctness && dist == distType.blockCyc {
+  { // weird blocks are necessary to measure deinit performance
+    startDiag();
+    const blockCyclicDom = localDom dmapped BlockCyclic(startIdx=localDom.first,
+                                                        blocksize=5);
+    endDiag("domInit", blockCyclicDom);
+    {
+
+      startDiag();
+      const blockCyclicArr: [blockCyclicDom] elemType;
+      endDiag("arrInit", blockCyclicArr);
+      
+      startDiag();
+    }
+    endDiag("arrDeinit");
+
+    startDiag();
+  }
+  endDiag("domDeinit");
+}
