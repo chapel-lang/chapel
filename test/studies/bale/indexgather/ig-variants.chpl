@@ -45,10 +45,6 @@ for param explicit in false..true {
   }
 }
 
-inline proc copy(ref dst, ref src, param explicit) {
-  if explicit then unorderedCopy(dst, src);
-              else dst = src;
-}
 proc testit(mode: Mode, param explicit, printStats) {
 
   tmp = -1;
@@ -80,8 +76,10 @@ proc testit(mode: Mode, param explicit, printStats) {
       }
     }
     when Mode.promotion {
-      if explicit then unorderedCopy(tmp, A[rindex]);
-                  else tmp = A[rindex];
+      if explicit then
+        unorderedCopy(tmp, A[rindex]);
+      else
+        tmp = A[rindex];
     }
   }
   t.stop();
