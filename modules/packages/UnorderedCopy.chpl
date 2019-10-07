@@ -120,18 +120,4 @@ module UnorderedCopy {
       chpl_comm_getput_unordered_task_fence();
     }
   }
-
-  /*
-   .. warning::
-     This function has been deprecated - please use
-     :proc:`unorderedCopyTaskFence()` instead. Note that this function has
-     been deprecated without a full release of support because the previous
-     global fence semantics imposed expensive implementation requirements and
-     is not expected to be needed now that operations are implicitly fenced at
-     task/forall termination.
-  */
-  inline proc unorderedCopyFence(): void {
-    compilerError("unorderedCopyFence() is no longer supported - please use unorderedCopyTaskFence() instead");
-    unorderedCopyTaskFence();
-  }
 }
