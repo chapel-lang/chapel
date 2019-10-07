@@ -213,11 +213,45 @@ bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
 
   if (fNoOptimizeForallUnordered == false) {
     // If the optimization is enabled, do this
+
+    bool addNoTaskPrivate = forallNoTaskPrivate(forall);
+    std::vector< std::vector<Expr*> > lastStatementsPerBody;
+
+    // Gather the last statements in each loop body
     std::vector<BlockStmt*> bodies = forall->loopBodies();
     for_vector(BlockStmt, block, bodies) {
       std::vector<Expr*> lastStmts;
       getLastStmts(block, lastStmts);
-      for_vector(Expr, stmt, lastStmts) {
+      lastStatementsPerBody.push_back(lastStmts);
+    }
+
+    // Compute the number of last statements
+    // (expecting it matches across fast-follower/follower bodies)
+    int numLastStmts = -1;
+    for (size_t loopNum = 0;
+         loopNum < lastStatementsPerBody.size();
+         loopNum++) {
+      int numThisLoop = (int) lastStatementsPerBody[loopNum].size();
+      if (numLastStmts == -1)
+        numLastStmts = numThisLoop;
+      else
+        INT_ASSERT(numLastStmts == numThisLoop);
+    }
+
+    // Consider the last statements
+    for (int stmtNum = 0; stmtNum < numLastStmts; stmtNum++) {
+
+      int loopNum;
+
+      // For this last statement, compute the lifetime
+      // properties, but do so ignoring the difference between
+      // fast-follower/follower loops.
+      bool addLhsOutlivesForall = false;
+      bool addRhsOutlivesForall = false;
+
+      loopNum = 0;
+      for_vector(BlockStmt, block, bodies) {
+        Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
         if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
           SymExpr* lhs = NULL;
           SymExpr* rhs = NULL;
@@ -228,12 +262,37 @@ bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
               rhs = toSymExpr(call->get(2));
           }
           if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
-            addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
+            addLhsOutlivesForall = true;
           if (rhs && symbolOutlivesLoop(block, rhs->symbol(), lifetimeInfo))
+            addRhsOutlivesForall = true;
+        }
+
+        loopNum++;
+      }
+
+      // Now that we have the lifetime properties, mark all follower
+      // loop bodies with the appropriate optimization info.
+      loopNum = 0;
+      for_vector(BlockStmt, block, bodies) {
+        Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
+        if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
+          SymExpr* lhs = NULL;
+          SymExpr* rhs = NULL;
+          if (CallExpr* call = toCallExpr(stmt)) {
+            if (call->numActuals() >= 1)
+              lhs = toSymExpr(call->get(1));
+            if (call->numActuals() >= 2)
+              rhs = toSymExpr(call->get(2));
+          }
+          if (lhs && addLhsOutlivesForall)
+            addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
+          if (rhs && addRhsOutlivesForall)
             addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
-          if (forallNoTaskPrivate(forall))
+          if (addNoTaskPrivate)
             addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
         }
+
+        loopNum++;
       }
     }
   }
