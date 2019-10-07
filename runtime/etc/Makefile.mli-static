@@ -46,7 +46,7 @@ TO_PROPAGATE = \
 	LIBS="$(LIBS)"
 
 .PHONY: all
-all: buildServer buildClientAsHost runTagsCommand FORCE
+all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
 .PHONY: buildServer
 buildServer: buildUserObj $(TMPSERVERNAME)
@@ -120,7 +120,7 @@ buildUserObj:
 # is difficult if not impossible for us to do a completely static link
 # because of "gethostname", among other things.
 #
-$(TMPSERVERNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
+$(TMPSERVERNAME): $(CHPL_CL_OBJS)
 ifneq ($(SKIP_COMPILE_LINK),skip)
 # Compile the server bundle.
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \

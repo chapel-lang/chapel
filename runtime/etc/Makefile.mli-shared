@@ -40,8 +40,7 @@ TO_PROPAGATE = \
 	SERVERNAME="$(SERVERNAME)" \
 	CHPLSRC="$(CHPLSRC)" \
 	CHPLUSEROBJ="$(CHPLUSEROBJ)" \
-	LIBS="$(LIBS)" \
-	CHPL_MAKE_PLATFORM="$(CHPL_MAKE_PLATFORM)"
+	LIBS="$(LIBS)"
 
 .PHONY: all
 all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
