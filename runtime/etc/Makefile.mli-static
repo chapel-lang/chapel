@@ -45,7 +45,10 @@ TO_PROPAGATE = \
 	SERVERNAME="$(SERVERNAME)" \
 	CHPLSRC="$(CHPLSRC)" \
 	CHPLUSEROBJ="$(CHPLUSEROBJ)" \
-	LIBS="$(LIBS)"
+	LIBS="$(LIBS)" \
+	CHPL_CL_OBJS="$(CHPL_CL_OBJS)" \
+	CHPL_MAKE_IS_MLI="$(CHPL_MAKE_IS_MLI)" \
+	TMPDIRNAME="$(TMPDIRNAME)"
 
 .PHONY: all
 all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
@@ -65,10 +68,9 @@ echoDebug:
 	echo "CHPLSRC=$(CHPLSRC)"
 	echo "CHPLUSEROBJ=$(CHPLUSEROBJ)"
 	echo "LIBS=$(LIBS)"
-	echo "-----"
-	echo "CHPL_CL_OBJS is $(CHPL_CL_OBJS)"
-	echo "TMPDIRNAME is $(TMPDIRNAME)"
-	echo "CHPL_MAKE_IS_MLI is $(CHPL_MAKE_IS_MLI)"
+	echo "CHPL_CL_OBJS=$(CHPL_CL_OBJS)"
+	echo "TMPDIRNAME=$(TMPDIRNAME)"
+	echo "CHPL_MAKE_IS_MLI=$(CHPL_MAKE_IS_MLI)"
 
 .PHONY: buildServer
 buildServer: buildUserObj $(TMPSERVERNAME)
