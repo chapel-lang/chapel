@@ -2,9 +2,13 @@ bool : true
 int(16) : true
 int(64) : true
 complex(128) : true
+string : false
 int(32) : true
 MyClass : true
 borrowed MyClass : true
+unmanaged MyClass : true
+owned MyClass : false
+shared MyClass : false
 RAtomicT(int(64)) : false
 sync int(64) : false
 single int(64) : false
