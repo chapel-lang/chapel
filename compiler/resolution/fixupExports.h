@@ -31,5 +31,6 @@ void fixupExportedFunction(FnSymbol* fn);
 
 // This may only be called _after_ resolution has occurred.
 Type* getCharPtrType(void);
+Type* getBytesWrapperType(void);
 
 #endif
