@@ -1,0 +1,10 @@
+int(64) is POD
+real(64) is POD
+bool is POD
+2*int(64) is POD
+R is POD
+int(64) is POD
+real(64) is POD
+bool is POD
+2*int(64) is POD
+R is POD

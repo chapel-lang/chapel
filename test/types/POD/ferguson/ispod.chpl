@@ -1,5 +1,5 @@
 proc doit(type t) {
-  writeln(t:string, " : ", __primitive("is pod type", t));
+  writeln(t:string, " : ", isPODType(t));
 }
 
 class MyClass {
@@ -81,9 +81,13 @@ doit(bool);
 doit(int(16));
 doit(int);
 doit(complex);
+doit(string);
 doit(c_int);
 doit(MyClass);
 doit(borrowed MyClass);
+doit(unmanaged MyClass);
+doit(owned MyClass);
+doit(shared MyClass);
 doit(atomic int);
 doit(sync int);
 doit(single int);
