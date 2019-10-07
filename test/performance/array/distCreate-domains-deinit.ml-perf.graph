@@ -1,4 +1,5 @@
-perfkeys: blockDomDeinit:, cyclicDomDeinit:, blockCyclicDomDeinit:
-repeat-files: distCreate-tiny.dat
+perfkeys: domDeinit:, domDeinit:, domDeinit:
+graphkeys: blockDomDeinit:, cyclicDomDeinit:, blockCyclicDomDeinit:
+files: distCreate-tiny-block.dat, distCreate-tiny-cyclic.dat, distCreate-tiny-blockCyc.dat,
 ylabel: Time (seconds)
 graphtitle: Destroying distributed domains
