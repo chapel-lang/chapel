@@ -57,7 +57,7 @@ inline proc endDiag(name, x) {
 
 const localDom = {1..nElems};
 
-if !correctness && dist == distType.block {
+if correctness || dist == distType.block {
   { // weird blocks are necessary to measure deinit performance
     startDiag();
     const blockDom = localDom dmapped Block(boundingBox=localDom);
@@ -76,7 +76,7 @@ if !correctness && dist == distType.block {
   endDiag("domDeinit");
 }
 
-if !correctness && dist == distType.cyclic {
+if correctness || dist == distType.cyclic {
   { // weird blocks are necessary to measure deinit performance
     startDiag();
     const cyclicDom = localDom dmapped Cyclic(startIdx=localDom.first);
@@ -96,7 +96,7 @@ if !correctness && dist == distType.cyclic {
   endDiag("domDeinit");
 }
 
-if !correctness && dist == distType.blockCyc {
+if correctness || dist == distType.blockCyc {
   { // weird blocks are necessary to measure deinit performance
     startDiag();
     const blockCyclicDom = localDom dmapped BlockCyclic(startIdx=localDom.first,
