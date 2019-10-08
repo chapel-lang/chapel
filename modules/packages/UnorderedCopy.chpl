@@ -23,16 +23,16 @@
      change over time.
 
    This module provides an unordered version of copy/assign for trivially
-   copyable types types. Trivially copyable types are types that can be
-   duplicated by copying bits. They include ``numeric`` and ``bool`` types as
-   well as ``numeric``/``bool`` tuples and ``numeric``/``bool`` records
-   provided the record has no user-defined initializers, deinitializers, or
-   assignment overloads.
+   copyable types. Trivially copyable types require no special behavior to be
+   copied and merely copying their representation is sufficient. They include
+   ``numeric`` and ``bool`` types as well as tuples or records consisting only
+   of ``numeric``/``bool``. Records cannot have user-defined copy-initializers,
+   deinitializers, or assignment overloads.
 
-   The results from :proc:`unorderedCopy()`, are not visible until task or
-   forall termination or an explicit :proc:`unorderedCopyTaskFence()`, but it
-   can provide a significant speedup for bulk assignment operations that do not
-   require ordering of operations:
+   :proc:`unorderedCopy()` can provide a significant speedup for batch
+   assignment operations that do not require ordering of operations. The
+   results from :proc:`unorderedCopy()` are not visible until task or forall
+   termination or an explicit :proc:`unorderedCopyTaskFence()`:
 
    .. code-block:: chapel
 
