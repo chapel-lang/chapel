@@ -190,14 +190,14 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       INT_ASSERT(var || defer);
 
       if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
-        if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-          SET_LINENO(var);
-
-          INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
-
-          CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-
-          insertBeforeStmt->insertBefore(autoDestroy);
+        if (!var->type->symbol->hasFlag(FLAG_POD)) {
+          // If it's not a variable of POD type, add an auto-destroy
+          if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+            SET_LINENO(var);
+            INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+            CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+            insertBeforeStmt->insertBefore(autoDestroy);
+          }
         }
       }
 
