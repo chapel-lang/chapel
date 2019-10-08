@@ -1303,7 +1303,7 @@ module Bytes {
   }
 
   proc comparisonDeprWarn() {
-    compilerWarning("Comparison between bytes/string is deprecated. " +
+    compilerWarning("Comparison between bytes and string is deprecated. " +
                     "Cast the string to bytes first");
   }
 
