@@ -50,3 +50,11 @@ ifneq (, $(findstring mpi, $(CHPL_MAKE_LAUNCHER) $(CHPL_COMM_OFI_OOB)))
   endif
   LIBS += -l$(MPI_LIB_NAME)
 endif
+
+#
+# If we're using the slurm PMI2 out-of-band support we have to
+# reference that library explicitly.
+#
+ifneq (, $(findstring slurm-pmi2, $(CHPL_COMM_OFI_OOB)))
+  LIBS += -lpmi2
+endif

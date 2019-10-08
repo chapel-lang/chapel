@@ -157,6 +157,16 @@ int chpl_comm_ofi_abort_on_error;
 
 // wish we had typeof() in all target compilers ...
 
+#define CHK_SYS_MALLOC_SZ(p, n, s)                                      \
+    do {                                                                \
+      if ((p = sys_malloc((n) * (s))) == NULL) {                        \
+        INTERNAL_ERROR_V("sys_malloc(%#zx): out of memory",             \
+                         (size_t) (n) * (size_t) (s));                  \
+      }                                                                 \
+    } while (0)
+
+#define CHK_SYS_MALLOC(p, n) CHK_SYS_MALLOC_SZ(p, n, sizeof(*(p)))
+
 #define CHK_SYS_CALLOC_SZ(p, n, s)                                      \
     do {                                                                \
       if ((p = sys_calloc((n), (s))) == NULL) {                         \
