@@ -248,7 +248,7 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
     if (numLastStmts == -1)
       numLastStmts = numThisLoop;
     else if (numLastStmts != numThisLoop)
-      INT_ASSERT(numLastStmts == numThisLoop); // return; // Give up now
+      return; // Give up on optimizing it
   }
 
   // Consider the last statements
