@@ -66,36 +66,29 @@ installed, do the following:
 
      module load chapel
 
+   Note that a side effect of loading the chapel module is that these
+   other modules will either be loaded or swapped to, as needed::
 
-2) Make sure you are using the Cray Gnu-based programming environment.
-   Unload any other PrgEnv first, if necessary. ::
+     PrgEnv-gnu
+     cray-mpich
+     libfabric
 
-     module load PrgEnv-gnu
+   And this module will be unloaded, if it is loaded::
+
+     cray-libsci
 
 
-3) Specify some interim settings.  We expect the need for these will
-   disappear soon, but for now they're required.  First, unload the
-   ``cray-libsci`` module, if it's loaded::
-
-     module unload cray-libsci
-
-   Then, set some environment variables::
-
-     export CHPL_LAUNCHER=slurm-srun
-     export CRAYPE_LINK_TYPE=dynamic
-     export LIBFABRIC_DIR=/opt/cray/libfabric/1.8.0a1-85f6e641a
-
-4) Compile an example program like this::
+2) Compile an example program like this::
 
      chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-5) Execute the resulting executable on 2 locales::
+3) Execute the resulting executable on 2 locales::
 
      ./hello6-taskpar-dist -nl 2
 
 
-Note that currently the number of Chapel configurations available on
+Currently the number of Chapel configurations available on
 Shasta systems is quite limited.  Only the following have been built
 into the module::
 
@@ -122,8 +115,8 @@ You may be able to build Chapel from source on a Shasta system if you do
 not have a module already.  Generally you should be able to follow the
 instructions below for building from source, but be advised that so far
 only the above configurations have been built.  Also, you'll probably
-find that the module and environment settings shown in 3) above will be
-required during the build.
+find that the module settings shown in 1) above will be required during
+the build.
 
 
 ----------------------------------------------
