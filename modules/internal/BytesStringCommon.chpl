@@ -558,4 +558,20 @@ module BytesStringCommon {
 
     return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
   }
+
+  inline proc getHash(x: ?t) {
+    assertArgType(t, "getHash");
+
+    var hash: int(64);
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+      // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
+      var locHash: int(64) = 5381;
+      for c in 0..#(x.numBytes) {
+        locHash = ((locHash << 5) + locHash) ^ x.buff[c];
+      }
+      hash = locHash;
+    }
+    return hash:uint;
+  }
 }
