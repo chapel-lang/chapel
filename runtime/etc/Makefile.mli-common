@@ -53,9 +53,16 @@ buildServer: $(TMPSERVERNAME)
 runTagsCommand:
 	$(TAGS_COMMAND)
 
-# Compile loose source files in CHPLUSEROBJ.
+#
+# This code was introduced to Makefile.exe in 909897ea and our confidence in
+# it is low. For now, don't bother supporting incremental compilation for
+# multilocale libraries at all.
+#
 .PHONY: buildUserObj
 buildUserObj:
+ifneq ($(CHPLUSEROBJ),)
+	$(error Multi-locale libraries do not support incremental compilation)
+endif
 	$(foreach srcFile, $(CHPLUSEROBJ), \
 		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
