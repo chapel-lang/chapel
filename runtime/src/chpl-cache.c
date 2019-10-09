@@ -2834,12 +2834,12 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t size, int ln, int32_t fn)
+                              size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
-  chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, 0);
+  chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, commID);
   // Always use the cache for prefetches.
   //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,

@@ -59,7 +59,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
-                            size_t size, int ln, int32_t fn)
+                            size_t size, int32_t commID, int ln, int32_t fn)
 {
   const size_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   size_t offset;
@@ -74,7 +74,7 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
     }
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_prefetch(node, raddr, size, ln, fn);
+    chpl_cache_comm_prefetch(node, raddr, size, commID, ln, fn);
 #endif
   } else {
     // Can't do anything if we don't have a remote data cache
