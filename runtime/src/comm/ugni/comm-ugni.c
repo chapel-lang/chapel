@@ -1840,7 +1840,7 @@ typedef struct {
   void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
   void*         src_addr_v[MAX_CHAINED_PUT_LEN];
-  char          src_v[MAX_CHAINED_PUT_LEN * MAX_UNORDERED_TRANS_SZ];
+  char          src_v[MAX_CHAINED_PUT_LEN][MAX_UNORDERED_TRANS_SZ];
   size_t        size_v[MAX_CHAINED_PUT_LEN];
   mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
 } put_buff_task_info_t;
@@ -5914,8 +5914,8 @@ void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   }
 
   int vi = info->vi;
-  memcpy(&info->src_v[vi*MAX_UNORDERED_TRANS_SZ], src_addr, size);
-  info->src_addr_v[vi] = &info->src_v[vi*MAX_UNORDERED_TRANS_SZ];
+  memcpy(&info->src_v[vi], src_addr, size);
+  info->src_addr_v[vi] = &info->src_v[vi];
   info->locale_v[vi] = locale;
   info->tgt_addr_v[vi] = tgt_addr;
   info->size_v[vi] = size;
