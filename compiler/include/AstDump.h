@@ -28,6 +28,7 @@ class AggregateType;
 class BaseAST;
 class Expr;
 class FnSymbol;
+class LoopStmt;
 class ModuleSymbol;
 class Symbol;
 
@@ -133,6 +134,7 @@ private:
   void             write(bool spaceBefore, const char* text, bool spaceAfter);
 
   void             printBlockID(Expr* expr);
+  void             printLoopStmtDetails(LoopStmt* loop);
   void             newline();
 
   const char*      mName;           // The name of the file for the log
