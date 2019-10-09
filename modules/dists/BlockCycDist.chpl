@@ -907,6 +907,9 @@ proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
   }
 }
 
+proc BlockCyclicArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.dsiMember(i);
+}
 
 iter BlockCyclicArr.these() ref {
   for i in dom do

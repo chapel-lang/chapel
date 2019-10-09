@@ -1315,6 +1315,10 @@ module DefaultRectangular {
     where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
 
+    inline proc dsiBoundsCheck(i) {
+      return dom.dsiMember(i);
+    }
+
     proc adjustBlkOffStrForNewDomain(d: unmanaged DefaultRectangularDom,
                                      alias: unmanaged DefaultRectangularArr)
     {

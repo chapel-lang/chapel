@@ -974,6 +974,10 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
   return locAdesc.myStorageArr(i1,i2);
 }
 
+proc DimensionalArr.dsiBoundsCheck(i: dom.indexT) {
+  return allocDom.dsiMember(i);
+}
+
 //== writing
 
 proc DimensionalArr.dsiSerialWrite(f): void {

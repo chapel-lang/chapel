@@ -2366,8 +2366,8 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkAccess(indices, value) {
-      if isRectangularArr(this) && !value.dsiCustomBoundsChecking() {
-        if ! value.dom.dsiMember(indices) {
+      if isRectangularArr(this) {
+        if !value.dsiBoundsCheck(indices) {
           for param i in 1..rank {
             if !value.dom.dsiDim(i).boundsCheck(indices(i)) {
               halt("indexing out of bounds in dimension ", i,
@@ -2385,7 +2385,7 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(d: domain, value) {
-      if isRectangularArr(this) && !value.dsiCustomBoundsChecking() {
+      if isRectangularArr(this) {
         for param i in 1..rank {
           if !value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) {
             halt("array slice out of bounds in dimension ", i,
@@ -2399,11 +2399,13 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(ranges...rank, value) where chpl__isTupleOfRanges(ranges) {
-      if isRectangularArr(this) && !value.dsiCustomBoundsChecking() {
-        for param i in 1..rank do
-          if !value.dom.dsiDim(i).boundsCheck(ranges(i)) then
+      if isRectangularArr(this) {
+        for param i in 1..rank {
+          if !value.dom.dsiDim(i).boundsCheck(ranges(i)) {
             halt("array slice out of bounds in dimension ", i, ": [", ranges(i),
                  "] but array bounds are ", value.dom.dsiDim(i));
+          }
+        }
       }
     }
 
@@ -2417,7 +2419,7 @@ module ChapelArray {
     inline proc ref this(i: rank*_value.dom.idxType) ref {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value);
+        checkAccess(i, value=value);
 
       if isRectangularArr(this) || isSparseArr(this) then
         return value.dsiAccess(i);
@@ -2431,7 +2433,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value);
+        checkAccess(i, value=value);
 
       if isRectangularArr(this) || isSparseArr(this) then
         return value.dsiAccess(i);
@@ -2445,7 +2447,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value);
+        checkAccess(i, value=value);
 
       if isRectangularArr(this) || isSparseArr(this) then
         return value.dsiAccess(i);
@@ -2482,7 +2484,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value);
+        checkAccess(i, value=value);
 
       if isRectangularArr(this) || isSparseArr(this) then
         return value.dsiLocalAccess(i);
@@ -2496,7 +2498,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value);
+        checkAccess(i, value=value);
 
       if isRectangularArr(this) || isSparseArr(this) then
         return value.dsiLocalAccess(i);
@@ -2510,7 +2512,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value);
+        checkAccess(i, value=value);
 
       if isRectangularArr(this) || isSparseArr(this) then
         return value.dsiLocalAccess(i);
