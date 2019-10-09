@@ -1,0 +1,1 @@
+array-as-map-add-index.chpl:4: error: halt reached - Cannot implicitly add index: 'hello' to an array's domain. Use 'map' instead.
