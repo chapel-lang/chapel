@@ -41,10 +41,7 @@ TO_PROPAGATE = \
 	COMP_GEN_MLI_EXTRA_INCLUDES="$(COMP_GEN_MLI_EXTRA_INCLUDES)" \
 	TMPBINNAME="$(TMPBINNAME)" \
 	BINNAME="$(BINNAME)" \
-	TMPSERVERNAME="$(TMPSERVERNAME)" \
-	SERVERNAME="$(SERVERNAME)" \
 	CHPLSRC="$(CHPLSRC)" \
-	CHPLUSEROBJ="$(CHPLUSEROBJ)" \
 	LIBS="$(LIBS)" \
 	CHPL_CL_OBJS="$(CHPL_CL_OBJS)" \
 	CHPL_MAKE_IS_MLI="$(CHPL_MAKE_IS_MLI)" \
@@ -53,25 +50,6 @@ TO_PROPAGATE = \
 .PHONY: all
 all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
-.PHONY: echoDebug
-echoDebug:
-	echo "SHELL=$(SHELL)"
-	echo "CC=$(CC)"
-	echo "-----"
-	echo "CHPL_MAKE_HOST_TARGET=$(CHPL_MAKE_HOST_TARGET)"
-	echo "CHPL_MAKE_HOME=$(CHPL_MAKE_HOME)"
-	echo "COMP_GEN_MLI_EXTRA_INCLUDES=$(COMP_GEN_MLI_EXTRA_INCLUDES)"
-	echo "TMPBINNAME=$(TMPBINNAME)"
-	echo "BINNAME=$(BINNAME)"
-	echo "TMPSERVERNAME=$(TMPSERVERNAME)"
-	echo "SERVERNAME=$(SERVERNAME)"
-	echo "CHPLSRC=$(CHPLSRC)"
-	echo "CHPLUSEROBJ=$(CHPLUSEROBJ)"
-	echo "LIBS=$(LIBS)"
-	echo "CHPL_CL_OBJS=$(CHPL_CL_OBJS)"
-	echo "TMPDIRNAME=$(TMPDIRNAME)"
-	echo "CHPL_MAKE_IS_MLI=$(CHPL_MAKE_IS_MLI)"
-
 .PHONY: buildServer
 buildServer: buildUserObj $(TMPSERVERNAME)
 
@@ -79,7 +57,6 @@ buildServer: buildUserObj $(TMPSERVERNAME)
 buildClientAsHost:
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-static \
 		$(TO_PROPAGATE) \
-	  echoDebug \
 		buildClient
 
 .PHONY: runTagsCommand
@@ -88,7 +65,6 @@ runTagsCommand:
 
 .PHONY: buildClient
 buildClient: $(TMPBINNAME)
-	echo "CHPL_MAKE_HOST_TARGET is $(CHPL_MAKE_HOST_TARGET)"
 
 #
 # Invoke the launcher script, but don't actually link up the launcher binary.
