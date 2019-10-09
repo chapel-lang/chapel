@@ -33,9 +33,8 @@ buildClient: $(TMPBINNAME)
 #
 # Invoke the launcher script, but don't actually link up the launcher binary.
 # Do this by setting CHPL_MAKE_IS_MLI=1 when invoking the sub-make. We also
-# need to pass on the $(GEN_CFLAGS) variable, because that contains the -fPIC
-# flag, among other things. If we don't do this, then the launcher object
-# file that is built will have text relocations.
+# need to pass on the $(GEN_CFLAGS) variable, because we're building a shared
+# object and $(GEN_CFLAGS) contains the -fPIC flag.
 #
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \

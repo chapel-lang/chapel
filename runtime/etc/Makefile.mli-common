@@ -21,7 +21,7 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
-# Set the CHPL_ZMQ_HOME variable.
+# If CHPL_ZMQ_HOME is set, use it to configure search paths.
 ifdef CHPL_ZMQ_HOME
 CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
 CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
@@ -31,7 +31,7 @@ endif
 # Get the Chapel launcher library directory.
 CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
-# Variables to propagate to the sub-make session.
+# Variables passed to the sub-make session that builds the client.
 TO_PROPAGATE = \
 	CHPL_MAKE_HOST_TARGET="--host" \
   CHPL_MAKE_HOME="$(CHPL_MAKE_HOME)" \
