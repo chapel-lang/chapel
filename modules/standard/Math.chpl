@@ -1195,7 +1195,16 @@ module Math {
     return a;
   }
 
+  /* Returns true if `x` and `y` are approximately equal, else returns false. */
+  inline proc isclose(x : real(64), y : real(64), rtol : real(64), atol : real(64), either : bool): bool {
+    abs(x - y) <= (atol + rtol * abs(y));
 
+    within_rtol = (abs(x-y) <= rtol*max(abs(x), abs(y)));
+    within_atol = (abs(x-y) <= atol);
+
+    if(either) return within_rtol && within_atol;
+    else return within_rtol || within_atol;
+  }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   inline proc j0(x: real(32)): real(32) {
