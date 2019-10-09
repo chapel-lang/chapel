@@ -1068,7 +1068,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
+    chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
     chpl_comm_diags_incr(put);
 
     // Handle remote address not in remote segment.
@@ -1143,7 +1143,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
+    chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
     chpl_comm_diags_incr(get);
 
     // Handle remote address not in remote segment.
@@ -1285,7 +1285,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   }
   
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
-  chpl_comm_diags_verbose_rdmaStrd("get", srcnode, ln, fn);
+  chpl_comm_diags_verbose_rdmaStrd("get", srcnode, ln, fn, commID);
   if (chpl_nodeID != srcnode) {
     chpl_comm_diags_incr(get);
   }
@@ -1330,7 +1330,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
   }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
-  chpl_comm_diags_verbose_rdmaStrd("put", dstnode, ln, fn);
+  chpl_comm_diags_verbose_rdmaStrd("put", dstnode, ln, fn, commID);
   if (chpl_nodeID != dstnode) {
     chpl_comm_diags_incr(put);
   }
