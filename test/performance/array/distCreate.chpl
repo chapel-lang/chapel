@@ -1,5 +1,6 @@
 use Time;
 use Memory;
+use CommDiagnostics;
 
 use BlockDist;
 use CyclicDist;
@@ -13,6 +14,7 @@ const totMem = here.physicalMemory(unit = MemUnits.Bytes);
 config const memFraction = 4;
 
 config const correctness = false;
+config const commCount = false;
 config const nElemsTiny = numLocales;
 config const nElemsSmall = if correctness then 100 else 1000000;
 config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
@@ -31,14 +33,32 @@ const nElems = if size == arraySize.tiny then nElemsTiny else
 var t = new Timer();
 
 inline proc startDiag() {
-  if !correctness then t.start();
+  if !correctness {
+    if commCount {
+      startCommDiagnostics();
+    }
+    else {
+      t.start();
+    }
+  }
 }
 
 inline proc endDiag(name) {
   if !correctness {
-    t.stop();
-    writeln(name, ": ", t.elapsed());
-    t.clear();
+    if commCount {
+      stopCommDiagnostics();
+      const d = getCommDiagnostics();
+      writeln(name, "-GETS: ", + reduce (d.get + d.get_nb));
+      writeln(name, "-PUTS: ", + reduce (d.put + d.put_nb));
+      writeln(name, "-ONS: ", + reduce (d.execute_on + d.execute_on_fast +
+                                        d.execute_on_nb));
+      resetCommDiagnostics();
+    }
+    else {
+      t.stop();
+      writeln(name, ": ", t.elapsed());
+      t.clear();
+    }
   }
 }
 
@@ -48,11 +68,7 @@ inline proc endDiag(name, x) {
       halt(name , " has unexpected size");
     }
   }
-  else {
-    t.stop();
-    writeln(name, ": ", t.elapsed());
-    t.clear();
-  }
+  endDiag(name);
 }
 
 const localDom = {1..nElems};
