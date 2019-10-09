@@ -1057,6 +1057,7 @@ module DefaultAssociative {
       isComplexType(idxType)     ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
+      idxType == bytes            ||
       idxType == c_string         ||
       isClassType(idxType)        ||
       // these are handled differently

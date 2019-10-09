@@ -3,17 +3,24 @@ use UnorderedCopy;
 config const size = here.maxTaskPar * 100;
 config const printResults = false;
 
+record R {var a, b: int;}
+inline proc toCopyType(val, type copyType) {
+  if isPrimitive(copyType) then return val:copyType;
+  if isTuple(copyType)     then return (val, val);
+  if isRecord(copyType)    then return new R(val, val);
+}
+
 // Test unordered PUT where src is temp stack variable 
 proc testPUT(type copyType) {
   var A: [1..size] copyType;
 
   on Locales[numLocales-1] {
     forall i in 1..size do
-      unorderedCopy(A[i], (i%2):copyType);
+      unorderedCopy(A[i], toCopyType(i%2, copyType));
   }
 
   forall i in 1..size do
-    assert(A[i] == (i%2):copyType);
+    assert(A[i] == toCopyType(i%2, copyType));
 
   if printResults {
     writeln(copyType:string + " unordered PUT local");
@@ -28,14 +35,14 @@ proc testPUTArr(type copyType) {
   on Locales[numLocales-1] {
     var B: [1..size] copyType;
     forall i in 1..size do
-      B[i] = (i%2):copyType;
+      B[i] = toCopyType(i%2, copyType);
 
     forall i in 1..size do
       unorderedCopy(A[i], B[i]);
   }
 
   forall i in 1..size do
-    assert(A[i] == (i%2):copyType);
+    assert(A[i] == toCopyType(i%2, copyType));
 
   if printResults {
     writeln(copyType:string + " unordered PUT array");
@@ -47,7 +54,7 @@ proc testPUTArr(type copyType) {
 proc testGET(type copyType) {
   var A: [1..size] copyType;
   forall i in 1..size do
-    A[i] = (i%2):copyType;
+    A[i] = toCopyType(i%2, copyType);
 
   on Locales[numLocales-1] {
     var B: [1..size] copyType;
@@ -55,7 +62,7 @@ proc testGET(type copyType) {
       unorderedCopy(B[i], A[i]);
 
     forall i in 1..size do
-      assert(B[i] == (i%2):copyType);
+      assert(B[i] == toCopyType(i%2, copyType));
 
     if printResults {
       writeln(copyType:string + " unordered GET");
@@ -71,6 +78,8 @@ proc testPUTComb() {
   var AI:  [1..size] int;
   var AR:  [1..size] real;
   var AC:  [1..size] complex; 
+  var AT:  [1..size] 2*int; 
+  var ARi: [1..size] R;
 
   on Locales[numLocales-1] {
     forall i in 1..size {
@@ -79,6 +88,8 @@ proc testPUTComb() {
       unorderedCopy(AI[i]  , i);
       unorderedCopy(AR[i]  , i:real);
       unorderedCopy(AC[i]  , i:complex);
+      unorderedCopy(AT[i]  , (i, i));
+      unorderedCopy(ARi[i] , new R(i, i));
     }
   }
 
@@ -88,6 +99,8 @@ proc testPUTComb() {
     assert(AI[i]  == i);
     assert(AR[i]  == i:real);
     assert(AC[i]  == i:complex);
+    assert(AT[i]  == (i, i));
+    assert(ARi[i] == new R(i, i));
   }
 
   if printResults {
@@ -97,6 +110,8 @@ proc testPUTComb() {
     writeln(AI);
     writeln(AR);
     writeln(AC);
+    writeln(AT);
+    writeln(ARi);
   }
 }
 
@@ -107,6 +122,8 @@ proc testGETComb() {
   var AI:  [1..size] int;
   var AR:  [1..size] real;
   var AC:  [1..size] complex;
+  var AT:  [1..size] 2*int; 
+  var ARi: [1..size] R;
 
   forall i in 1..size {
     AB[i]  = (i%2):bool;
@@ -114,6 +131,8 @@ proc testGETComb() {
     AI[i]  = i;
     AR[i]  = i:real;
     AC[i]  = i:complex;
+    AT[i]  = (i, i);
+    ARi[i] = new R(i, i);
   }
 
   on Locales[numLocales-1] {
@@ -122,13 +141,17 @@ proc testGETComb() {
     var BI:  [1..size] int;
     var BR:  [1..size] real;
     var BC:  [1..size] complex;
+    var BT:  [1..size] 2*int;
+    var BRi: [1..size] R;
 
     forall i in 1..size {
-      unorderedCopy(BB[i] , AB[i]);
-      unorderedCopy(BI8[i], AI8[i]);
-      unorderedCopy(BI[i] , AI[i]);
-      unorderedCopy(BR[i] , AR[i]);
-      unorderedCopy(BC[i] , AC[i]);
+      unorderedCopy(BB[i]  , AB[i]);
+      unorderedCopy(BI8[i] , AI8[i]);
+      unorderedCopy(BI[i]  , AI[i]);
+      unorderedCopy(BR[i]  , AR[i]);
+      unorderedCopy(BC[i]  , AC[i]);
+      unorderedCopy(BT[i]  , AT[i]);
+      unorderedCopy(BRi[i] , ARi[i]);
     }
 
     forall i in 1..size {
@@ -137,6 +160,8 @@ proc testGETComb() {
       assert(BI[i]  == i);
       assert(BR[i]  == i:real);
       assert(BC[i]  == i:complex);
+      assert(BT[i]  == (i, i));
+      assert(BRi[i] == new R(i, i));
     }
 
     if printResults {
@@ -146,6 +171,8 @@ proc testGETComb() {
       writeln(AI);
       writeln(AR);
       writeln(AC);
+      writeln(AT);
+      writeln(ARi);
     }
   }
 }
@@ -156,6 +183,8 @@ testPUT(int(8));
 testPUT(int);
 testPUT(real);
 testPUT(complex);
+testPUT(2*int);
+testPUT(R);
 if printResults then writeln();
 
 testPUTArr(bool);
@@ -163,6 +192,8 @@ testPUTArr(int(8));
 testPUTArr(int);
 testPUTArr(real);
 testPUTArr(complex);
+testPUTArr(2*int);
+testPUTArr(R);
 if printResults then writeln();
 
 testGET(bool);
@@ -170,6 +201,8 @@ testGET(int(8));
 testGET(int);
 testGET(real);
 testGET(complex);
+testGET(2*int);
+testGET(R);
 if printResults then writeln();
 
 testPUTComb();

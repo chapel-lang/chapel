@@ -4159,7 +4159,7 @@ module ChapelArray {
     return success;
   }
 
-  inline proc chpl__transferArray(ref a: [], const ref b) {
+  inline proc chpl__transferArray(ref a: [], const ref b) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
       forall aa in a do

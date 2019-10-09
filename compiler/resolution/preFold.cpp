@@ -2008,17 +2008,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   TypeSymbol *ts = new TypeSymbol(astr(fcf_name.str().c_str()), ct);
 
-  // Allow a use of a FCF to appear at the statement level i.e.
-  //    nameOfFunc;
-  //
-  // In the longer term it might be good to generate a warning for this
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(new DefExpr(ts));
-
-  // The common case in which the reference is within a move/assign/call
-  } else {
-    call->parentExpr->insertBefore(new DefExpr(ts));
-  }
+  // Add the definition before the definition of the captured function
+  // so that it is visible anywhere the captured function is.
+  captured_fn->defPoint->insertBefore(new DefExpr(ts));
 
   ct->dispatchParents.add(parent);
 

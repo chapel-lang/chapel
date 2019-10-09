@@ -5972,7 +5972,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
-      !IS_ALIGNED_32(size)) {
+      !IS_ALIGNED_32(size) || size > 8) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }

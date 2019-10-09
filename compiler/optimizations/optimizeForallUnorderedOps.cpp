@@ -348,7 +348,7 @@ static bool loopContainsBlocking(BlockStmt* block) {
   MayBlockState state = gather.finalState();
 
   if (fReportBlocking)
-    if (block->getModule()->modTag == MOD_USER || developer)
+    if (developer || printsUserLocation(block))
       USR_PRINT(block, "loopContainsBlocking = %s",
                 blockStateString(state));
 
@@ -420,7 +420,7 @@ static MayBlockState mayBlock(FnSymbol* fn) {
         fnstate |= STATE_MAYBE_BLOCKING;
 
       if (fReportBlocking) {
-        bool user = (fn->defPoint->getModule()->modTag == MOD_USER &&
+        bool user = (printsUserLocation(fn->defPoint) &&
                      !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
                      !isTaskFunOrWrapper(fn));
 
@@ -710,17 +710,6 @@ static void transformAtomicStmt(Expr* stmt) {
 
 }
 
-static bool hasAcceptableType(Symbol* sym) {
-  Type* t = sym->getValType();
-  return is_bool_type(t) ||
-         is_int_type(t) ||
-         is_uint_type(t) ||
-         is_real_type(t) ||
-         is_imag_type(t) ||
-         is_complex_type(t) ||
-         is_enum_type(t);
-}
-
 static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
   Symbol* lhs = NULL;
   if (CallExpr* call = toCallExpr(stmt))
@@ -734,11 +723,7 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
         if (CallExpr* marker = findMarkerNear(stmt))
           if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
               hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
-            // This last check can be relaxed in the future if the
-            // runtime unordered code supports more cases.
-            // The earlier part already checked that it's a POD type.
-            if (hasAcceptableType(lhs))
-              return true;
+            return true;
 
   return false;
 }
@@ -792,9 +777,11 @@ static void transformAssignStmt(Expr* stmt) {
   if (lhs->isRef() && rhs->isRef()) {
     SET_LINENO(call);
     // add the call to getput
-    if (fReportOptimizeForallUnordered)
-      if (call->getModule()->modTag == MOD_USER || developer)
+    if (fReportOptimizeForallUnordered) {
+      if (developer || printsUserLocation(call)) {
         USR_PRINT(call, "Optimized assign to be unordered");
+      }
+    }
 
     call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs));
     call->remove();
@@ -811,7 +798,7 @@ void optimizeForallUnorderedOps() {
     // (analysis will print out result as it is computed)
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       ModuleSymbol* mod = fn->defPoint->getModule();
-      if (mod->modTag == MOD_USER &&
+      if (printsUserLocation(fn->defPoint) &&
           !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
           fn != mod->initFn &&
           fn != mod->deinitFn) {

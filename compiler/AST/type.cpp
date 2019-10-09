@@ -729,6 +729,9 @@ void initPrimitiveTypes() {
   dtAnyReal = createInternalType("chpl_anyreal", "real");
   dtAnyReal->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
+  dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
+
   // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
