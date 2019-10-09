@@ -25,7 +25,10 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
 .PHONY: buildClientAsHost
-buildClientAsHost: $(TMPBINNAME)
+buildClientAsHost:
+	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-shared \
+	$(TO_PROPAGATE) \
+	buildClient
 
 .PHONY: buildClient
 buildClient: $(TMPBINNAME)
