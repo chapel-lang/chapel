@@ -2380,7 +2380,7 @@ module ChapelArray {
                 istr += ", ";
                 bstr += ", ";
               }
-              istr += indices(1):string;
+              istr += indices(i):string;
               bstr += value.dom.dsiDim(i):string;
             }
             var dimstr = "";
@@ -2388,8 +2388,8 @@ module ChapelArray {
               if !value.dom.dsiDim(i).boundsCheck(indices(i)) {
                 if dimstr == "" {
                   dimstr = "out of bounds in dimension " + i:string +
-                         " because index " + indices(i):string +
-                         " is not in " + value.dom.dsiDim(i):string;
+                           " because index " + indices(i):string +
+                           " is not in " + value.dom.dsiDim(i):string;
                 }
               }
             }
@@ -2398,8 +2398,6 @@ module ChapelArray {
                  "but array bounds are (", bstr, ")\n",
                  "note: ", dimstr);
           }
-          // Not expecting it to be possible to reach this, but you never know
-          halt("array index out of bounds");
         }
       }
     }
@@ -2409,11 +2407,15 @@ module ChapelArray {
     pragma "no doc"
     proc checkSlice(d: domain, value) {
       if isRectangularArr(this) {
+        var ok = true;
         for param i in 1..rank {
-          if !value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) {
-            halt("array slice out of bounds in dimension ", i,
-                 ": ", d.dsiDim(i));
-          }
+          ok &&= value.dom.dsiDim(i).boundsCheck(d.dsiDim(i));
+        }
+        if ok == false {
+          // Use the code from the varargs range version for the error
+          checkSlice((...d.getIndices()), value=value);
+          // Not expecting it to be possible to reach this, but you never know
+          halt("array slice out of bounds");
         }
       }
     }
@@ -2423,10 +2425,40 @@ module ChapelArray {
     pragma "no doc"
     proc checkSlice(ranges...rank, value) where chpl__isTupleOfRanges(ranges) {
       if isRectangularArr(this) {
+        var ok = true;
         for param i in 1..rank {
-          if !value.dom.dsiDim(i).boundsCheck(ranges(i)) {
-            halt("array slice out of bounds in dimension ", i, ": [", ranges(i),
-                 "] but array bounds are ", value.dom.dsiDim(i));
+          ok &&= value.dom.dsiDim(i).boundsCheck(ranges(i));
+        }
+        if ok == false {
+          if rank == 1 {
+            halt("array slice out of bounds\n",
+                 "note: slice index was ", ranges(1),
+                 " but array bounds are ", value.dom.dsiDim(1));
+          } else {
+            var istr = "";
+            var bstr = "";
+            for param i in 1..rank {
+              if i != 1 {
+                istr += ", ";
+                bstr += ", ";
+              }
+              istr += ranges(i):string;
+              bstr += value.dom.dsiDim(i):string;
+            }
+            var dimstr = "";
+            for param i in 1..rank {
+              if !value.dom.dsiDim(i).boundsCheck(ranges(i)) {
+                if dimstr == "" {
+                  dimstr = "out of bounds in dimension " + i:string +
+                           " because slice index " + ranges(i):string +
+                           " is not in " + value.dom.dsiDim(i):string;
+                }
+              }
+            }
+            halt("array slice out of bounds\n",
+                 "note: slice index was (", istr, ") ",
+                 "but array bounds are (", bstr, ")\n",
+                 "note: ", dimstr);
           }
         }
       }
