@@ -59,12 +59,11 @@ def main():
     # in case we've changed directories
     os.chdir(invocation_dir)
 
-    cleanup()
-
     finish()
 
 
 def run_tests(tests):
+    set_up_tmpdir()
     set_up_logger()
 
     files = []
@@ -159,6 +158,9 @@ def finish():
 
     logger.write()
     logger.stop()
+
+    # copy log from tmp and remove tmp dir
+    cleanup()
 
     # exit, returning 0 if no failures and 2 if there were some
     if args.clean_only or failures == 0:
@@ -361,7 +363,7 @@ def summarize():
     summary = "[Test Summary - {0}]\n".format(date_str)
 
     # scan line-by-line, logging failures, warnings, etc.. and updating counts
-    with open(log_file, "r") as log:
+    with open(tmp_log_file, "r") as log:
         for line in log:
             if re.search(error_marker, line, flags=re.M):
                 failure_summary += line
@@ -411,9 +413,10 @@ def summarize():
     logger.restart()
     logger.write(summary)
 
-    with open(log_file + ".summary", "w") as log_summary:
+    with open(tmp_summary_file, "w") as log_summary:
         log_summary.write(summary)
 
+    # Note: Log file & summary copied tmp_log_file to log_file in cleanup
 
 def clean(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
@@ -645,6 +648,19 @@ def strip_preprocessing(arg):
     else:
         return arg
 
+def set_up_tmpdir():
+    # create temporary directory
+    global chpl_test_tmp_dir
+    if "CHPL_TEST_TMP_DIR" in os.environ:
+        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
+    else:
+        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
+        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
+
+    # register atexit handler (cleans up temporary directory)
+    atexit.register(cleanup)
+
+
 def set_up_environment():
     # pre-
     if args.preexec:
@@ -676,17 +692,6 @@ def set_up_environment():
             logger.write("[Removing memory leaks log file with duplicate name {0}]"
                          .format(memleaksfile))
             os.remove(memleaksfile)
-
-    # create temporary directory
-    global chpl_test_tmp_dir
-    if "CHPL_TEST_TMP_DIR" in os.environ:
-        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
-    else:
-        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
-        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
-    
-    # register atexit handler (cleans up temporary directory)
-    atexit.register(cleanup)
 
     # performance (linking flags to each other)
     if args.performance or args.performance_description or args.perflabel != "perf":
@@ -728,7 +733,21 @@ def set_up_environment():
 
 def set_up_logger():
     # log_file
+    global tmp_log_file
+    global tmp_summary_file
     global log_file
+    global summary_file
+
+    # Compute the paths needing to be computed
+    if os.path.isdir(chpl_test_tmp_dir):
+        tmp_log_file = os.path.join(chpl_test_tmp_dir, "tmplog.log")
+    else:
+        print("[Warning: tmp dir does not exist]")
+        tmp_log_file = log_file
+
+    tmp_summary_file = tmp_log_file + ".summary"
+    summary_file = log_file + ".summary"
+
     if args.log_file:
         log_file = os.path.abspath(args.log_file)
     log_file_dir = os.path.dirname(log_file)
@@ -736,10 +755,14 @@ def set_up_logger():
         print("[Permission denied for log_file directory: {0}]"
                 .format(log_file_dir))
         sys.exit(1)
+
+    # Remove log file and summary file
     if os.path.isfile(log_file):
         print()
         print("[Removing log file with duplicate name {0}]".format(log_file))
         os.remove(log_file)
+    if os.path.isfile(summary_file):
+        os.remove(summary_file)
 
     ## START LOGGING TO FILE ##
     global logger
@@ -1227,7 +1250,15 @@ def run_and_log(cmd):
 
 def cleanup():
     if os.path.isdir(chpl_test_tmp_dir):
-        print("[Removing {0} directory]".format(chpl_test_tmp_dir))
+        if os.path.isfile(tmp_log_file):
+            if tmp_log_file != log_file:
+                # copy the log out of the tmp dir
+                shutil.copyfile(tmp_log_file, log_file)
+        if os.path.isfile(tmp_summary_file):
+            if tmp_summary_file != summary_file:
+                # copy the summary out of the tmp dir
+                shutil.copyfile(tmp_summary_file, summary_file)
+
         shutil.rmtree(chpl_test_tmp_dir)
 
 
@@ -1452,12 +1483,13 @@ def escape_next_argument(args, index):
 
 class Logger():
     def __init__(self):
+        global tmp_log_file
         self.logger = logging.getLogger("start_test")
         self.logger.setLevel(logging.DEBUG)
         # console stdout handlers
         self.console_out = StreamHandlerWithException(sys.stdout)
         # file handlers
-        self.file_out = FileHandlerWithException(log_file, mode="w")
+        self.file_out = FileHandlerWithException(tmp_log_file, mode="w")
         # add them
         self.logger.addHandler(self.console_out)
         self.logger.addHandler(self.file_out)
@@ -1475,7 +1507,8 @@ class Logger():
         self.logger.removeHandler(self.file_out)
 
     def restart(self):
-        self.file_out = FileHandlerWithException(log_file, mode="a")
+        global tmp_log_file
+        self.file_out = FileHandlerWithException(tmp_log_file, mode="a")
         self.logger.addHandler(self.file_out)
 
 
