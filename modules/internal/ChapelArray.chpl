@@ -2368,12 +2368,35 @@ module ChapelArray {
     proc checkAccess(indices, value) {
       if isRectangularArr(this) {
         if !value.dsiBoundsCheck(indices) {
-          for param i in 1..rank {
-            if !value.dom.dsiDim(i).boundsCheck(indices(i)) {
-              halt("indexing out of bounds in dimension ", i,
-                   ": [", indices(i), "] but array bounds are ",
-                   value.dom.dsiDim(i));
+          if rank == 1 {
+            halt("array index out of bounds\n",
+                 "note: index was ", indices(1),
+                 " but array bounds are ", value.dom.dsiDim(1));
+          } else {
+            var istr = "";
+            var bstr = "";
+            for param i in 1..rank {
+              if i != 1 {
+                istr += ", ";
+                bstr += ", ";
+              }
+              istr += indices(1):string;
+              bstr += value.dom.dsiDim(i):string;
             }
+            var dimstr = "";
+            for param i in 1..rank {
+              if !value.dom.dsiDim(i).boundsCheck(indices(i)) {
+                if dimstr == "" {
+                  dimstr = "out of bounds in dimension " + i:string +
+                         " because index " + indices(i):string +
+                         " is not in " + value.dom.dsiDim(i):string;
+                }
+              }
+            }
+            halt("array index out of bounds\n",
+                 "note: index was (", istr, ") ",
+                 "but array bounds are (", bstr, ")\n",
+                 "note: ", dimstr);
           }
           // Not expecting it to be possible to reach this, but you never know
           halt("array index out of bounds");
