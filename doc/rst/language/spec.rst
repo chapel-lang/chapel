@@ -969,15 +969,15 @@ language:
 **symbols**                                                                                         **use**
 =================================================================================================== =============================
 ``=``                                                                                               assignment
-``+=`` ``-=`` ``*=`` ``/=`` ``**=`` ``\%=`` ``\&=`` ``|=`` ``^=`` ``\&\&=`` ``||=`` ``<<=`` ``>>=`` compound assignment
+``+=`` ``-=`` ``*=`` ``/=`` ``**=`` ``\%=`` ``\&=`` ``|=`` ``^=`` ``&&=`` ``||=`` ``<<=`` ``>>=``   compound assignment
 ``<=>``                                                                                             swap
 ``<~>``                                                                                             I/O
 ``..``                                                                                              range specifier
 ``by``                                                                                              range/domain stride specifier
 ``#``                                                                                               range count operator
 ``...``                                                                                             variable argument lists
-``\&\&`` ``||`` ````! ``\&`` ``|`` ``^`` ``~`` ``<<`` ``>>``                                        logical/bitwise operators
-``==`` ````\ =! ``<=`` ``>=`` ``<`` ``>``                                                           relational operators
+``&&`` ``||`` ``!`` ``&`` ``|`` ``^`` ``~`` ``<<`` ``>>``                                           logical/bitwise operators
+``==`` ``!=`` ``<=`` ``>=`` ``<`` ``>``                                                             relational operators
 ``+`` ``-`` ``*`` ``/`` ``\%`` ``**``                                                               arithmetic operators
 ``:``                                                                                               type specifier
 ``;``                                                                                               statement separator
@@ -2914,55 +2914,94 @@ not all ``call-expression``\ s are lvalues.
 Precedence and Associativity
 ----------------------------
 
-| \|l|l|l\| **Operator** & **Associativity** & **Use**
-| ``.`` & & member access
-| ``()`` & & function call or access
-| ``[]`` & & function call or access
-| ``new`` & right & initializer call
-| ``owned`` & right & apply management strategy to a class
-| ``shared`` & &
-| ``borrowed`` & &
-| ``unmanaged`` & &
-| postfix ``?`` & left & compute a nilable class type
-| postfix ````! & & assert non-nilable and borrow
-| ``:`` & left & cast
-| ``**`` & right & exponentiation
-| ``reduce`` & & reduction
-| ``scan`` & & scan
-| ``dmapped`` & & domain map application
-| prefix ````! & & logical negation
-| ``~`` & & bitwise negation
-| ``*`` & & multiplication
-| ``/`` & & division
-| ``\%`` & & modulus
-| unary ``+`` & & positive identity
-| unary ``-`` & & negation
-| ``<<`` & & left shift
-| ``>>`` & & right shift
-| ``&`` & left & bitwise/logical and
-| ``^`` & left & bitwise/logical xor
-| ``|`` & left & bitwise/logical or
-| ``+`` & & addition
-| ``-`` & & subtraction
-| ``..`` & left & range initialization
-| ``<=`` & & less-than-or-equal-to comparison
-| ``>=`` & & greater-than-or-equal-to comparison
-| ``<`` & & less-than comparison
-| ``>`` & & greater-than comparison
-| ``==`` & & equal-to comparison
-| ````\ =! & & not-equal-to comparison
-| ``&&`` & left & short-circuiting logical and
-| ``||`` & left & short-circuiting logical or
-| ``by`` & & range/domain stride application
-| ``#`` & & range count application
-| ``align`` & & range alignment
-| ``in`` & left & forall expression
-| ``if then else`` & & conditional expression
-| ``forall do`` & & forall expression
-| ``[ ]`` & & forall expression
-| ``for do`` & & for expression
-| ``sync single atomic`` & & sync, single and atomic type
-| ``,`` & left & comma separated expressions
++--------------------+----------------+--------------------------------------+
+| Operator           | Associativity  | Use                                  |
++====================+================+======================================+
+| | ``.``            | left           | | member access                      |
+| | ``()``           |                | | function call or access            |
+| | ``[]``           |                | | function call or access            |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| ``new``            | right          | initializer call                     |
++--------------------+----------------+--------------------------------------+
+| | ``owned``        | right          | apply management strategy to a class |
+| | ``shared``       |                |                                      |
+| | ``borrowed``     |                |                                      |
+| | ``unmanaged``    |                |                                      |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| | postfix ``?``    | left           | | compute a nilable class type       |
+| | postfix ``!``    |                | | assert non-nilable and borrow      |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| ``:``              | left           | cast                                 |
++--------------------+----------------+--------------------------------------+
+| ``**``             | right          | exponentiation                       |
++--------------------+----------------+--------------------------------------+
+| | ``reduce``       | left           | | reduction                          |
+| | ``scan``         | scan           | | scan                               |
+| | ``dmapped``      |                | | domain map application             |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| | prefix ``!``     | right          | | logical negation                   |
+| | ``~``            |                | | bitwise negation                   |
++--------------------+----------------+--------------------------------------+
+| | ``*``            | left           | | multiplication                     |
+| | ``/``            |                | | division                           |
+| | ``%``            |                | | modulus                            |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| | unary ``+``      | right          | | positive identity                  |
+| | unary ``-``      |                | | negation                           |
++--------------------+----------------+--------------------------------------+
+| | ``<<``           | left           | | left shift                         |
+| | ``>>``           |                | | right shift                        |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| ``&``              | left           | bitwise/logical and                  |
++--------------------+----------------+--------------------------------------+
+| ``^``              | left           | bitwise/logical xor                  |
++--------------------+----------------+--------------------------------------+
+| ``|``              | left           | bitwise/logical or                   |
++--------------------+----------------+--------------------------------------+
+| | ``+``            | left           | | addition                           |
+| | ``-``            |                | | subtraction                        |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| ``..``             | left           | range initialization                 |
++--------------------+----------------+--------------------------------------+
+| | ``<=``           | left           | | less-than-or-equal-to comparison   |
+| | ``>=``           |                | | greater-than-or-equal-to comparison|
+| | ``<``            |                | | less-than comparison               |
+| | ``>``            |                | | greater-than comparison            |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| ``==``             | left           | equal-to comparison                  |
+| ``!=``             |                | not-equal-to comparison              |
++--------------------+----------------+--------------------------------------+
+| ``&&``             | left           | short-circuiting logical and         |
++--------------------+----------------+--------------------------------------+
+| ``||``             | left           | short-circuiting logical or          |
++--------------------+----------------+--------------------------------------+
+| | ``by``           | left           | | range/domain stride application    |
+| | ``#``            |                | | range count application            |
+| | ``align``        |                | | range alignment                    |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| ``in``             | left           | forall expression                    |
++--------------------+----------------+--------------------------------------+
+| | ``if then else`` | left           | | conditional expression             |
+| | ``forall do``    |                | | forall expression                  |
+| | ``[ ]``          |                | | forall expression                  |
+| | ``for do``       |                | | for expression                     |
+| | ``sync``         |                | | sync type modifier                 |
+| | ``single``       |                | | single type modifier               |
+| | ``atomic``       |                | | atomic type modifier               |
+|                    |                |                                      |
++--------------------+----------------+--------------------------------------+
+| ``,``              | left           | comma separated expressions          |
++--------------------+----------------+--------------------------------------+
+
 
 The above table summarizes operator and expression precedence and
 associativity. Operators and expressions listed earlier have higher
@@ -3001,10 +3040,9 @@ precedence than those listed later.
    division, and modulus as in Fortran. We have found very few cases
    that distinguish between these cases. An interesting one is:
 
-   ================================
-   ``const minint = min(int(32));``
-   ``...-minint/2...``
-   ================================
+   ::
+     const minint = min(int(32));``
+     ...-minint/2...``
 
    Intuitively, this should result in a positive value, yet C’s
    precedence rules results in a negative value due to asymmetry in
@@ -3941,7 +3979,7 @@ class type. See :ref:`Class_Types`.
 The unary postfix operator ``?`` results in the nilable variant of a
 class type. See :ref:`Nilable_Classes`.
 
-The unary postfix operator ````! asserts that the receiver is not
+The unary postfix operator ``!`` asserts that the receiver is not
 storing ``nil`` and borrows from it.
 See :ref:`Nilable_Classes`.
 
@@ -5317,11 +5355,11 @@ A module is declared with the following syntax:
    module-identifier:
      identifier
 
-A module’s name is specified after the ``module`` keyword. The
-``block-statement`` opens the module’s scope. Symbols defined in this
+A module's name is specified after the ``module`` keyword. The
+``block-statement`` opens the module's scope. Symbols defined in this
 block statement are defined in the module’s scope and are called
 *module-scope symbols*. The visibility of a module is defined by its
-``privacy-specifier`` (:ref:`Visibility_Of_A_Module`).
+``privacy-specifier``  (:ref:`Visibility_Of_A_Module`).
 
 Module declaration statements are only legal as file-scope or
 module-scope statements. For example, module declaration statements may
@@ -9286,7 +9324,7 @@ Tuple Operators
 Unary Operators
 ~~~~~~~~~~~~~~~
 
-The unary operators ``+``, ``-``, ``\~``, and ````! are overloaded on
+The unary operators ``+``, ``-``, ``~``, and ``!`` are overloaded on
 tuples by applying the operator to each argument component and returning
 the results as a new tuple.
 
@@ -9348,13 +9386,13 @@ Relational Operators
 ~~~~~~~~~~~~~~~~~~~~
 
 The relational operators ``>``, ``>=``, ``<``, ``<=``, ``==``, and
-````\ =! are defined over tuples of matching size. They return a single
+``!=`` are defined over tuples of matching size. They return a single
 boolean value indicating whether the two arguments satisfy the
 corresponding relation.
 
 The operators ``>``, ``>=``, ``<``, and ``<=`` check the corresponding
 lexicographical order based on pair-wise comparisons between the
-argument tuples’ components. The operators ``==`` and ````\ =! check
+argument tuples’ components. The operators ``==`` and ``!=`` check
 whether the two arguments are pair-wise equal or not. The relational
 operators on tuples may be short-circuiting, i.e. they may execute only
 the pair-wise comparisons that are necessary to determine the result.
@@ -9717,7 +9755,7 @@ well. For example, ``borrowed C?`` indicates a nilable class using the
 ``borrowed`` memory management strategy. Note that the ``?`` operator
 applies only to types.
 
-The postfix ````! operator applies to a type or a value. When applied to
+The postfix ``!`` operator applies to a type or a value. When applied to
 a ``borrowed`` or ``unmanaged`` type, it returns the non-nilable version
 of that type. When applied to an ``owned`` or ``shared`` type, it
 returns the non-nilable borrowed type. When applied to a value, it
@@ -9725,7 +9763,7 @@ asserts that the value is not ``nil`` and returns that value as a
 non-nilable type. If the value was in fact ``nil``, it halts. It returns
 the borrowed type for ``owned`` or ``shared``.
 
-An alternative to ````! is to use a cast to a non-nilable type. Such a
+An alternative to ``!`` is to use a cast to a non-nilable type. Such a
 cast will throw ``NilClassError`` if the value was in fact ``nil``.
 See :ref:`Explicit_Class_Conversions`.
 
@@ -9742,7 +9780,7 @@ error in two different ways, depending on whether or not the module is a
 For modules that are not prototype modules, the compiler will not
 resolve calls to class methods if the receiver has nilable type. If the
 programmer knows that the receiver cannot store ``nil`` at that moment,
-they can use ````! to assert that the receiver is not ``nil`` and to
+they can use ``!`` to assert that the receiver is not ``nil`` and to
 convert it to the non-nilable borrowed type. For example:
 
    *Example (nilable-classes-bang.chpl)*.
@@ -9773,7 +9811,7 @@ non-nilable ``C`` type (e.g. ``owned C``). It will return
 [Methods_On_Nilable_In_Prototype_Modules]
 
 Within a ``prototype`` module, the compiler will implicitly convert a
-nilable method receiver to the non-nilable type by adding a ````! call.
+nilable method receiver to the non-nilable type by adding a ``!`` call.
 
 .. _Class_Values:
 
@@ -12174,7 +12212,7 @@ Default Comparison Operators
 
 For records, the compiler will supply default comparison operators if
 they are not supplied by the user. In contrast, the user cannot redefine
-``==`` and ````\ =! for classes. The default comparison operators for a
+``==`` and ``!=`` for classes. The default comparison operators for a
 record examine the arguments’ fields, while the comparison operators for
 classes check whether the l.h.s. and r.h.s. refer to the same class
 instance or are both ``nil``.
@@ -19451,7 +19489,7 @@ of data parallelism over ranges, default domains, and default arrays:
 ============================= ======== =============================================================
 **Config Const**              **Type** **Default**
 ============================= ======== =============================================================
-``dataParTasksPerLocale``     ``int``  top level ``.maxTaskPar`` (see :ref:`Locale_Methods`)
+``dataParTasksPerLocale``     ``int``  top level ``.maxTaskPar``   (see :ref:`Locale_Methods`)
 ``dataParIgnoreRunningTasks`` ``bool`` ``true``
 ``dataParMinGranularity``     ``int``  ``1``
 ============================= ======== =============================================================
