@@ -64,14 +64,6 @@ Usage: $( basename "${BASH_SOURCE[0]}" )" '[options]
     By convention, this directory name is "chapel-" plus the Chapel release
     version number defined in version_num.h.
 
-    CHPL_RPM is a working subtree created by this script for use by rpmbuild.
-    CHPL_RPM will be removed without warning if it exists when this script is run.
-    The directory name will be "$CHPL_HOME-" plus the generated version.
-
-    If -C workdir was given, workdir must point to an existing directory, and
-    CHPL_RPM will be created as a subdir.
-    If no -C workdir, CHPL_RPM will be created in the users CWD.
-
     An empty version_tag may be given on the command line (-T "").
     If not, the default version_tag is the local hostname. This is to avoid
     accidentally replacing an official Cray Chapel release with a locally-
