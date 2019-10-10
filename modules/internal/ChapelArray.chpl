@@ -2412,10 +2412,36 @@ module ChapelArray {
           ok &&= value.dom.dsiDim(i).boundsCheck(d.dsiDim(i));
         }
         if ok == false {
-          // Use the code from the varargs range version for the error
-          checkSlice((...d.getIndices()), value=value);
-          // Not expecting it to be possible to reach this, but you never know
-          halt("array slice out of bounds");
+          if rank == 1 {
+            halt("array slice out of bounds\n",
+                 "note: slice index was ", d.dsiDim(1),
+                 " but array bounds are ", value.dom.dsiDim(1));
+          } else {
+            var istr = "";
+            var bstr = "";
+            for param i in 1..rank {
+              if i != 1 {
+                istr += ", ";
+                bstr += ", ";
+              }
+              istr += d.dsiDim(i):string;
+              bstr += value.dom.dsiDim(i):string;
+            }
+            var dimstr = "";
+            for param i in 1..rank {
+              if !value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) {
+                if dimstr == "" {
+                  dimstr = "out of bounds in dimension " + i:string +
+                           " because slice index " + d.dsiDim(i):string +
+                           " is not in " + value.dom.dsiDim(i):string;
+                }
+              }
+            }
+            halt("array slice out of bounds\n",
+                 "note: slice index was (", istr, ") ",
+                 "but array bounds are (", bstr, ")\n",
+                 "note: ", dimstr);
+          }
         }
       }
     }
