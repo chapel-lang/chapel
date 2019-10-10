@@ -1,5 +1,0 @@
-bug: Querying the type of a function (without calling the function) returns unexpected results.
-
-There should be some way to do it (see retType.future), so this test should
-either return the function's return type or be illegal.
-
