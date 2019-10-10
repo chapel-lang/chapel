@@ -159,7 +159,7 @@ def finish():
     logger.write()
     logger.stop()
 
-    # copy log from tmp and remove tmp dir
+    # copy log from per-pid location (if needed) and remove tmp dir
     cleanup()
 
     # exit, returning 0 if no failures and 2 if there were some
@@ -637,8 +637,11 @@ def check_environment_with_args():
             del os.environ["LC_ALL"]
 
     global log_file
+    global tmp_log_file
     log_file = os.path.join(logs_dir, "{0}.{1}.log"
             .format(getpass.getuser(), tgt_platform))
+    tmp_log_file = os.path.join(logs_dir, "{0}.{1}.pid{2}.log"
+            .format(getpass.getuser(), tgt_platform, os.getpid()))
 
 
 # Strip quotes that might have been added by preprocess_options()
@@ -739,17 +742,15 @@ def set_up_logger():
     global summary_file
 
     # Compute the paths needing to be computed
-    if os.path.isdir(chpl_test_tmp_dir):
-        tmp_log_file = os.path.join(chpl_test_tmp_dir, "tmplog.log")
-    else:
-        print("[Warning: tmp dir does not exist]")
-        tmp_log_file = log_file
-
-    tmp_summary_file = tmp_log_file + ".summary"
-    summary_file = log_file + ".summary"
-
+    # Default log_file and tmp_log_file are set in check_environment_with_args
     if args.log_file:
         log_file = os.path.abspath(args.log_file)
+        # Don't use temporary log files if the user specified -logfile
+        tmp_log_file = log_file
+
+    summary_file = log_file + ".summary"
+    tmp_summary_file = tmp_log_file + ".summary"
+
     log_file_dir = os.path.dirname(log_file)
     if not os.access(log_file_dir, os.X_OK):
         print("[Permission denied for log_file directory: {0}]"
@@ -1249,17 +1250,20 @@ def run_and_log(cmd):
     return p.returncode
 
 def cleanup():
-    if os.path.isdir(chpl_test_tmp_dir):
-        if os.path.isfile(tmp_log_file):
-            if tmp_log_file != log_file:
-                # copy the log out of the tmp dir
-                shutil.copyfile(tmp_log_file, log_file)
-        if os.path.isfile(tmp_summary_file):
-            if tmp_summary_file != summary_file:
-                # copy the summary out of the tmp dir
-                shutil.copyfile(tmp_summary_file, summary_file)
+    # move the log from the temp log
+    if os.path.isfile(tmp_log_file):
+        if tmp_log_file != log_file:
+            shutil.copyfile(tmp_log_file, log_file)
+            os.remove(tmp_log_file)
 
-        shutil.rmtree(chpl_test_tmp_dir)
+    # move the summary from the temp summary
+    if os.path.isfile(tmp_summary_file):
+        if tmp_summary_file != summary_file:
+            shutil.copyfile(tmp_summary_file, summary_file)
+            os.remove(tmp_summary_file)
+
+    if os.path.isdir(chpl_test_tmp_dir):
+      shutil.rmtree(chpl_test_tmp_dir)
 
 
 def jUnit():
@@ -1483,7 +1487,6 @@ def escape_next_argument(args, index):
 
 class Logger():
     def __init__(self):
-        global tmp_log_file
         self.logger = logging.getLogger("start_test")
         self.logger.setLevel(logging.DEBUG)
         # console stdout handlers
@@ -1507,7 +1510,6 @@ class Logger():
         self.logger.removeHandler(self.file_out)
 
     def restart(self):
-        global tmp_log_file
         self.file_out = FileHandlerWithException(tmp_log_file, mode="a")
         self.logger.addHandler(self.file_out)
 
