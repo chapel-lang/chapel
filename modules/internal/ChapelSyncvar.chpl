@@ -142,6 +142,19 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
+    proc init=(const other : _syncvar) {
+      // Allow initialization from compatible sync variables, e.g.:
+      //   var x : sync int = 5;
+      //   var y : sync real = x;
+      if isCoercible(other.valType, this.type.valType) == false {
+        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
+        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
+        compilerError("cannot initialize ", theseTypes, " ",  because);
+      }
+      this.init(this.type.valType);
+      this.writeEF(other.readFE());
+    }
+
     pragma "dont disable remote value forwarding"
     proc init=(const other : this.valType) {
       this.init(other.type);
