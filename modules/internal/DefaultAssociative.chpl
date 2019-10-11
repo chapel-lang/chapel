@@ -662,8 +662,6 @@ module DefaultAssociative {
         return data[slotNum];
 
       // if the element didn't exist, then it is an error
-      } else if slotNum != -1 {
-        halt("Cannot implicitly add index: '", idx, "' to an array's domain. Use 'map' instead.");
       } else {
         halt("array index out of bounds: ", idx);
       }
