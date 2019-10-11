@@ -36,6 +36,8 @@ module LocaleModel {
 
   extern proc hbw_check_available():c_int;
   extern proc hbw_malloc(size:size_t):c_void_ptr;
+  extern proc hbw_posix_memalign(out memptr:c_void_ptr,
+                                 alignment:size_t, size:size_t):c_int;
   extern proc hbw_calloc(nmemb:size_t, size:size_t):c_void_ptr;
   extern proc hbw_realloc(ptr:c_void_ptr, size:size_t):c_void_ptr;
   extern proc hbw_free(ptr:c_void_ptr);
@@ -596,6 +598,30 @@ module LocaleModel {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
+  proc chpl_here_aligned_alloc(alignment:integral, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_aligned_alloc(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    if allocatingInHbmSublocale() {
+      var ptr:c_void_ptr = nil;
+      var rc = hbw_posix_memalign(ptr,
+                                  alignment.safeCast(size_t),
+                                  size.safeCast(size_t));
+      if rc != 0 then
+        halt("hbw_posix_memalign allocation call failed");
+      return ptr;
+    } else {
+      return chpl_mem_aligned_alloc(alignment.safeCast(size_t),
+                                    size.safeCast(size_t),
+                                    md + chpl_memhook_md_num());
+    }
+  }
+
+
+  pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_calloc(size:integral, number:int, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
       extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
