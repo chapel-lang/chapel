@@ -590,9 +590,10 @@ module CPtr {
         halt("c_aligned_alloc called with size not a multiple of alignment");
     }
 
-    extern proc chpl_memalign(boundary : size_t, size : size_t) : c_void_ptr;
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
-    return chpl_memalign(alignment.safeCast(size_t), alloc_size):c_ptr(eltType);
+    return chpl_here_aligned_alloc(alignment.safeCast(size_t),
+                                   alloc_size,
+                                   offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
