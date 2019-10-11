@@ -4137,16 +4137,20 @@ module ChapelArray {
     //
     // TODO: should we attempt other bulk transfer methods if one fails?
     //
-    if canResolveMethod(destClass, "doiBulkTransferFromKnown", destDom, srcClass, srcDom) {
+    if Reflection.canResolveMethod(destClass, "doiBulkTransferFromKnown",
+                                   destDom, srcClass, srcDom) {
       bulkTransferDebug("attempting doiBulkTransferFromKnown");
       success = destClass.doiBulkTransferFromKnown(destDom, srcClass, srcDom);
-    } else if canResolveMethod(srcClass, "doiBulkTransferToKnown", srcDom, destClass, destDom) {
+    } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToKnown",
+                                          srcDom, destClass, destDom) {
       bulkTransferDebug("attempting doiBulkTransferToKnown");
       success = srcClass.doiBulkTransferToKnown(srcDom, destClass, destDom);
-    } else if canResolveMethod(destClass, "doiBulkTransferFromAny", destDom, srcClass, srcDom) {
+    } else if Reflection.canResolveMethod(destClass, "doiBulkTransferFromAny",
+                                          destDom, srcClass, srcDom) {
       bulkTransferDebug("attempting doiBulkTransferFromAny");
       success = destClass.doiBulkTransferFromAny(destDom, srcClass, srcDom);
-    } else if canResolveMethod(srcClass, "doiBulkTransferToAny", srcDom, destClass, destDom) {
+    } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToAny",
+                                          srcDom, destClass, destDom) {
       bulkTransferDebug("attempting doiBulkTransferToAny");
       success = srcClass.doiBulkTransferToAny(srcDom, destClass, destDom);
     }
