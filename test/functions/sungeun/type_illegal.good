@@ -1,1 +1,1 @@
-type_illegal.chpl:5: syntax error: near '.type'
+shared chpl__fcf_type_void_int64_t
