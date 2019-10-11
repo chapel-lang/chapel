@@ -548,14 +548,51 @@ module CPtr {
 
     :arg eltType: the type of the elements to allocate
     :arg size: the number of elements to allocate space for
-    :arg alignment: the memory alignment of the allocation (optional)
     :returns: a c_ptr(eltType) to allocated memory
     */
-  inline proc c_malloc(type eltType, size: integral, alignment : integral = 0) : c_ptr(eltType) {
+  inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
+    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
+  }
+
+  /*
+    Allocate aligned memory that is not initialized. This memory
+    should be eventually freed with :proc:`c_free`.
+
+    :arg eltType: the type of the elements to allocate
+    :arg alignment: the memory alignment of the allocation
+                    which must be a power of two
+    :arg size: the number of elements to allocate space for
+               which must be a multiple of alignment
+    :returns: a c_ptr(eltType) to allocated memory
+    */
+  inline proc c_aligned_alloc(type eltType,
+                              alignment : integral,
+                              size: integral) : c_ptr(eltType) {
+    // check alignment, size restriction
+    if boundsChecking {
+      var one:size_t = 1;
+      // Round the alignment up to the nearest power of 2
+      var aln = alignment.safeCast(size_t);
+      var p = log2(aln); // power of 2 rounded down
+      // compute alignment rounded up
+      if (one << p) < aln then
+        p += 1;
+      assert(aln <= (one << p));
+      if aln != (one << p) then
+        halt("c_aligned_alloc called with non-power-of-2 alignment ", aln);
+        // TODO: or just round it up?
+      if aln == 0 then
+        halt("c_aligned_alloc called with alignment of 0");
+
+      var sz = size.safeCast(size_t);
+      if (sz % aln) != 0 then
+        halt("c_aligned_alloc called with size not a multiple of alignment");
+    }
+
     extern proc chpl_memalign(boundary : size_t, size : size_t) : c_void_ptr;
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
-    if alignment != 0 then return chpl_memalign(alignment.safeCast(size_t), alloc_size):c_ptr(eltType);
-    else return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
+    return chpl_memalign(alignment.safeCast(size_t), alloc_size):c_ptr(eltType);
   }
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
