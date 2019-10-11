@@ -22,6 +22,7 @@
 
 module ChapelBase {
   use ChapelStandard;
+  private use ChapelEnv;
 
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
