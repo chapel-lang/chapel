@@ -703,8 +703,6 @@ The following identifiers are keywords reserved for future use:
 Literals
 ~~~~~~~~
 
-[Primitive_Type_Literals]
-
 Bool literals are designated by the following syntax: 
 
 .. code-block:: syntax
@@ -2672,7 +2670,7 @@ Literal expressions are given by the following syntax:
      array-literal
 
 Literal values for primitive types are described in
-:ref:`Chapter-Primitive_Type_Literals`. Literal
+:ref:`Literals`. Literal
 range values are described in :ref:`Range_Literals`. Literal
 tuple values are described in :ref:`Tuple_Values`. Literal
 values for domains are described in
@@ -5384,7 +5382,7 @@ appropriate for libraries. In particular, within a ``prototype`` module:
 
 -  methods on nilable class instances can be called - these will
    implicitly convert to non-nilable class instances
-   (see :ref:`Chapter-Methods_On_Nilable_In_Prototype_Modules`)
+   (see :ref:`Methods on Nilable in Prototype Modules <Methods_on_Nilable_in_Prototype_Modules>`)
 
 .. _Implicit_Modules:
 
@@ -9808,7 +9806,7 @@ expression of a class type ``C``. It will return ``borrowed C`` for any
 non-nilable ``C`` type (e.g. ``owned C``). It will return
 ``borrowed C?`` for any nilable ``C`` type (e.g. ``C?``).
 
-[Methods_On_Nilable_In_Prototype_Modules]
+.. _Methods_on_Nilable_in_Prototype_Modules:
 
 Within a ``prototype`` module, the compiler will implicitly convert a
 nilable method receiver to the non-nilable type by adding a ``!`` call.
@@ -13004,7 +13002,7 @@ When the stride is negative, the same indices are printed in reverse:
       | 10 7 4 1
 
 To create a range aligned relative to its ``first`` index, use the
-``offset`` method (:ref:`Chapter-Range_Offset_Method`).
+``offset`` method (:ref:`Range Offset Method <Range_Offset_Method>`).
 
 .. _Count_Operator:
 
@@ -13580,12 +13578,11 @@ resulting range. If the operand range is ambiguously aligned, then so is
 the resulting range.
 
 
+.. _Range_Offset_Method:
 
 .. code-block:: chapel
 
    proc range.offset(n: idxType)
-
-[Range_Offset_Method]
 
 Returns a new range whose alignment is this range’s first index plus
 ``n``. The new alignment, therefore, is not ambiguous. If the range has
