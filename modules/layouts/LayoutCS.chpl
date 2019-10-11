@@ -163,8 +163,27 @@ class CSDom: BaseSparseDomImpl {
 
       this.startIdx = rhs.startIdx;
       this.idx = rhs.idx;
-    }
-    else {
+    } else if _to_borrowed(rhs._instance.type) < DefaultSparseDom {
+      // Optimized COO -> CSR
+
+      this._nnz = rhs._nnz;
+      this.nnzDom = rhs.nnzDom;
+
+      this.rowRange = rhs.dim(1);
+      this.colRange = rhs.dim(2);
+      this.startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
+
+      var rowSums: [this.startIdxDom] int;
+      rowSums[this.startIdxDom.low] = 1;
+      var k = 1;
+      for (i, j) in rhs {
+        rowSums[i+1] += 1;
+        this.idx[k] = j;
+        k += 1;
+      }
+
+      this.startIdx = + scan rowSums;
+    } else {
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     }
   }
