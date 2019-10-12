@@ -460,7 +460,7 @@ module ChapelArray {
 
     // elements of string literals are assumed to be of type string
     type elemType = _getLiteralType(elems(1).type);
-    var A : [1..k] elemType;  //This is unfortunate, can't use t here...
+    var A : [0..#k] elemType;  //This is unfortunate, can't use t here...
 
     for param i in 1..k {
       type currType = _getLiteralType(elems(i).type);
@@ -471,7 +471,7 @@ module ChapelArray {
                        " but is of type " + currType:string );
       }
 
-      A(i) = elems(i);
+      A(i-1) = elems(i);
     }
 
     return A;
