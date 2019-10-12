@@ -13,8 +13,8 @@ rowFive     50.0
 dtype: real(64)
 
   columnThree   columnOne   columnTwo   
-1        10.0           a           1   
-2        20.0        None        None   
-3        30.0           c           3   
-4        40.0        None        None   
-5        50.0           e           5   
+0        10.0           a           1   
+1        20.0        None        None   
+2        30.0           c           3   
+3        40.0        None        None   
+4        50.0           e           5   

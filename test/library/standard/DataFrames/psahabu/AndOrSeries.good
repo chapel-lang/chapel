@@ -1,19 +1,19 @@
 noTrue:
+0    false
 1    false
 2    false
-3    false
 dtype: bool
 
 oneTrue:
-1    false
-2    true
-3    false
+0    false
+1    true
+2    false
 dtype: bool
 
 allTrue:
+0    true
 1    true
 2    true
-3    true
 dtype: bool
 
 noTrue.and(): false
