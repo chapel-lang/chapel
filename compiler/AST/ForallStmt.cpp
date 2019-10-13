@@ -488,7 +488,7 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
   AList& fIterVars = fs->inductionVariables();
 
   if (numIterables == 1) {
-    fsDestructureIndex(fs, fIterVars, indices, 1);
+    fsDestructureIndex(fs, fIterVars, indices, 0); // TODO: what's right?
     INT_ASSERT(fIterVars.length == 1);
     return;
   }
@@ -503,7 +503,7 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
 
     int idxNum = 0;
     for_actuals(index, indicesCall)
-      fsDestructureIndex(fs, fIterVars, index->remove(), idxNum++);
+      fsDestructureIndex(fs, fIterVars, index->remove(), idxNum++); // TODO: what's right?
 
     // 'indicesCall' itself is dropped on the floor to be gc'ed
 

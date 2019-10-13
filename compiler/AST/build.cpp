@@ -606,7 +606,7 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   // same as the number of variables.  These checks will get inserted in
   // buildVarDecls after it asserts that only DefExprs are in this block.
   //
-  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count-1)));
+  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count)));
   tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
   return tupleBlock;
 }
@@ -782,7 +782,7 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
       // Add checks that the index has tuple type of the right shape.
       CallExpr* checkCall = new CallExpr("_check_tuple_var_decl",
                                          init->copy(),
-                                         new_IntSymbol(call->numActuals()+10));
+                                         new_IntSymbol(call->numActuals()));
       insertAfter->insertAfter(checkCall);
       insertAfter = checkCall;
 
