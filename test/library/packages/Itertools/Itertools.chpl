@@ -178,10 +178,12 @@ module Itertools {
 
     const workingIters = followThis(1);
 
-    if isString(arg) || isArray(arg) || isTuple(arg) then
+    if isString(arg) || isArray(arg) || isTuple(arg) {
+      // once strings, arrays, and tuples are all 0-based this can be simplified
+      const off = if isArray(arg) then 0 else 1;
       for idx in workingIters do
-        yield arg[(idx % arg.size) + 1];
-    else {
+        yield arg[(idx % arg.size) + off];
+    } else {
       var tempObject: [1..#arg.size] arg.low.type;
 
       for (idx, element) in zip(1..#arg.size, arg) do

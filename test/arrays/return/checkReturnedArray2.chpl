@@ -1,4 +1,4 @@
-proc inc(X: [1..3] real): [1..2] real {
+proc inc(X: [0..2] real): [1..2] real {
   return X;
 }
 

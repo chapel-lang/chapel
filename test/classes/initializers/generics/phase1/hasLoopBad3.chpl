@@ -7,7 +7,7 @@
 class InLoop {
   var highestNum;
 
-  proc init(arr: [1..10] int) { // enforcing one's based indexing ...
+  proc init(arr: [0..9] int) { // enforcing zero-based indexing ...
     highestNum = 4;
     for i in arr.domain {
       highestNum = arr[i];

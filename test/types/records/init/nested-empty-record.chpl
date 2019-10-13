@@ -34,7 +34,7 @@ proc plusPR2(FEXPR) { writeln(FEXPR.hi()); }
 
 proc conjGrad2(A) {
   var B = [333, 555, 777];
-  record Empty { proc init(){} proc hi() return B[3]; }
+  record Empty { proc init(){} proc hi() return B[2]; }
   plusPR2(new Empty());
 }
 

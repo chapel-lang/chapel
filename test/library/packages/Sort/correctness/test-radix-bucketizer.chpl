@@ -58,8 +58,8 @@ proc testBucketizer() {
   }
 
   {
-    var i = 1;
-    for (idx,bin) in b.classify(A, 1, A.domain.high, criterion, 0) {
+    var i = 0;
+    for (idx,bin) in b.classify(A, 0, A.domain.high, criterion, 0) {
       assert(idx == i);
       assert(bin == 1+firstBytes[idx]);
       assert(bin == b.bucketForRecord(A[i], criterion, 0));
@@ -72,7 +72,7 @@ proc testBucketizer() {
     var src = A;
     var dst = A;
     dst = 0;
-    var counts = TwoArrayPartitioning.testBucketize(1, A.domain.high, dst, src,
+    var counts = TwoArrayPartitioning.testBucketize(0, A.domain.high, dst, src,
                                                 b, criterion, 0);
 
     var expect = [0x0000000000000000,
@@ -105,7 +105,7 @@ proc testBucketizer() {
   {
     // Check in-place sequential partitioning
     var dst = A;
-    var counts2 = SequentialInPlacePartitioning.bucketize(1, A.domain.high, dst,
+    var counts2 = SequentialInPlacePartitioning.bucketize(0, A.domain.high, dst,
                                                 b, criterion, 0);
 
     var expect = [0x0000000000000000,

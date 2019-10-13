@@ -63,19 +63,19 @@ inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
 
 record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
-  const numbodies = bodies.numElements;
+  const lastBody = bodies.domain.last;
 
   proc postinit() {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;  // TODO: reduce?
-    bodies[1].offsetMomentum(p);
+    bodies[0].offsetMomentum(p);
   }
 
   proc advance(dt) {
     // TODO: Can we use a triangular iterator without hurting performance
-    for i in 1..numbodies {
-      for j in i+1..numbodies {
+    for i in 0..lastBody {
+      for j in i+1..lastBody {
         ref b1 = bodies[i],
                b2 = bodies[j];
 
@@ -98,12 +98,12 @@ record NBodySystem {
 
     // TODO: want to use triangular iterator here too, except that we need
     // code in between the two loops
-    for i in 1..numbodies {
+    for i in 0..lastBody {
       ref b1 = bodies[i];
 
       e += 0.5 * b1.mass * sumOfSquares(b1.v);
 
-      for j in i+1..numbodies {
+      for j in i+1..lastBody {
         ref b2 = bodies[j];
 
         e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));

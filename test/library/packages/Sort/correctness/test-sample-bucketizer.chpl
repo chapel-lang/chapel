@@ -72,8 +72,8 @@ proc testBucketizer(nBuckets:int, equalBuckets:bool) {
     writeln(b);
 
   {
-    var i = 1;
-    for (idx,bin) in b.classify(A, 1, A.domain.high, criterion, 0) {
+    var i = 0;
+    for (idx,bin) in b.classify(A, 0, A.domain.high, criterion, 0) {
       assert(idx == i);
       var bin2 = b.bucketForRecord(A[i], criterion, 0);
       if debug then
@@ -91,7 +91,7 @@ proc testBucketizer(nBuckets:int, equalBuckets:bool) {
     createSplittersFromSample(AA, b, criterion, 1, 1, 1, 2,
                               forceEqualBuckets=equalBuckets);
 
-    for (idx, bin) in b.classify(AUniqSorted, 1, AUniqSorted.domain.high,
+    for (idx, bin) in b.classify(AUniqSorted, 0, AUniqSorted.domain.high,
                                  criterion, 0) {
       var val = AUniqSorted[idx];
       var bin2 = b.bucketForRecord(val, criterion, 0);
@@ -125,7 +125,7 @@ proc testBucketizer(nBuckets:int, equalBuckets:bool) {
   var src = A;
   var dst = A;
   dst = 0;
-  var counts = TwoArrayPartitioning.testBucketize(1, A.domain.high, dst, src,
+  var counts = TwoArrayPartitioning.testBucketize(0, A.domain.high, dst, src,
                                               b, criterion, 0);
 
   assert(src.equals(A)); // src should not have been modified

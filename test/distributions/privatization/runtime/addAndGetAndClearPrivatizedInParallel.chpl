@@ -11,7 +11,7 @@ forall i in classSizes[1]..classSizes[3]-1 {
 
 // concurrently add some additional values, while reading some old ones
 // and while deleting some older ones
-for classNum in 3..classSizes.size-1 {
+for classNum in 2..classSizes.size-2 {
   cobegin {
 
     {

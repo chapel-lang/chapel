@@ -116,17 +116,17 @@ proc main() {
   assert(cscuDom.size == 0);
 
   // dsiBulkAdd when nnz = 0
-  csrsDom += indices[..5];
-  cscsDom += indices[..5];
-  csruDom += indices[..5];
-  cscuDom += indices[..5];
+  csrsDom += indices[..4];
+  cscsDom += indices[..4];
+  csruDom += indices[..4];
+  cscuDom += indices[..4];
 
 
   // dsiRemove
-  cscsDom -= indices[5];
-  csrsDom -= indices[5];
-  cscuDom -= indices[5];
-  csruDom -= indices[5];
+  cscsDom -= indices[4];
+  csrsDom -= indices[4];
+  cscuDom -= indices[4];
+  csruDom -= indices[4];
 
   assert(csrsDom.size == 4);
   assert(cscsDom.size == 4);
@@ -134,10 +134,10 @@ proc main() {
   assert(cscuDom.size == 4);
 
   // dsiRemove, "promoted"
-  csrsDom -= indices[1..4];
-  cscsDom -= indices[1..4];
-  csruDom -= indices[1..4];
-  cscuDom -= indices[1..4];
+  csrsDom -= indices[0..3];
+  cscsDom -= indices[0..3];
+  csruDom -= indices[0..3];
+  cscuDom -= indices[0..3];
 
   assert(csrsDom.size == 0);
   assert(cscsDom.size == 0);
@@ -145,16 +145,16 @@ proc main() {
   assert(cscuDom.size == 0);
 
   // dsiAdd
-  csrsDom += indices[5];
-  cscsDom += indices[5];
-  csruDom += indices[5];
-  cscuDom += indices[5];
-
-  // dsiAdd duplicates
   csrsDom += indices[4];
   cscsDom += indices[4];
   csruDom += indices[4];
   cscuDom += indices[4];
+
+  // dsiAdd duplicates
+  csrsDom += indices[3];
+  cscsDom += indices[3];
+  csruDom += indices[3];
+  cscuDom += indices[3];
 
   // Shuffle indices to test dsiBulkAdd with unsorted data
   shuffle(indices, 231564879);

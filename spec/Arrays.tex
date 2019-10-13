@@ -115,7 +115,7 @@ array-literal:
 \index{arrays!rectangular!literals}
 
 Rectangular array literals are specified by enclosing a comma separated list of 
-expressions representing values in square brackets. A 1-based domain will 
+expressions representing values in square brackets. A 0-based domain will 
 automatically be generated for the given array literal.  The type of the array's 
 values will be the type of the first element listed. A trailing comma is
 allowed.
@@ -132,7 +132,7 @@ containing strings, then subsequently prints each string element to the console.
 \begin{chapel}
 var A = ["1", "2", "3", "4", "5"];
 
-for i in 1..5 do
+for i in 0..#5 do
   writeln(A[i]);
 \end{chapel}
 \begin{chapeloutput}
