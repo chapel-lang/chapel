@@ -950,7 +950,7 @@ void cullOverReferences() {
                   considerAllowRefCall(move, calledFn)) {
                 SymExpr* lhs       = toSymExpr(move->get(1));
                 Symbol*  lhsSymbol = lhs->symbol();
-                int      j         = 1;
+                int      j         = 0;
 
                 for_actuals(actual, call) {
                   if (se == actual) {
@@ -960,12 +960,12 @@ void cullOverReferences() {
                   j++;
                 }
 
-                INT_ASSERT(1 <= j && j <= call->numActuals());
+                INT_ASSERT(0 <= j && j < call->numActuals());
 
                 // What is the field we are interested in?
                 Symbol*        tupleField = NULL;
                 AggregateType* tupleType  = toAggregateType(lhsSymbol->type);
-                int            k          = 1;
+                int            k          = 0;
 
                 for_fields(field, tupleType) {
                   if (j == k) {

@@ -170,9 +170,11 @@ static void      insertDestructureStatements(Expr*     S1,
                                              CallExpr* lhs,
                                              Expr*     rhs);
 
+/*
 static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
 
 static CallExpr* destructureErr();
+*/
 
 static void destructureTupleAssignment(CallExpr* call) {
   CallExpr* parent = toCallExpr(call->parentExpr);
@@ -266,15 +268,14 @@ static void insertDestructureStatements(Expr*     S1,
                                         CallExpr* lhs,
                                         Expr*     rhs) {
   int       index = 0;
-  CallExpr* test  = destructureChk(lhs, rhs);
-  CallExpr* err   = destructureErr();
+  //  CallExpr* test  = destructureChk(lhs, rhs);
+  //  CallExpr* err   = destructureErr();
 
-  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
+  // TODO: restore
+  //  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
 
   for_actuals(expr, lhs) {
     UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
-
-    index = index + 1;
 
     if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
       CallExpr* nextLHS = toCallExpr(expr);
@@ -295,9 +296,12 @@ static void insertDestructureStatements(Expr*     S1,
         S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
       }
     }
+
+    index = index + 1;
   }
 }
 
+/*
 static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
   CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
 
@@ -312,6 +316,7 @@ static CallExpr* destructureErr() {
 
   return new CallExpr("compilerError", new_StringSymbol(msg), zero);
 }
+*/
 
 /************************************* | **************************************
 *                                                                             *

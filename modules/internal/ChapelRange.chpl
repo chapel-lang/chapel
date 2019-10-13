@@ -263,7 +263,7 @@ module ChapelRange {
   }
 
   private proc _isAnyNothing(args...) param : bool {
-    for param i in 1..args.size {
+    for param i in 0..args.size-1 {
       if isNothingType(args(i).type) then return true;
     }
     return false;

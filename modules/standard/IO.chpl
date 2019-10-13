@@ -3399,7 +3399,7 @@ proc _can_stringify_direct(t) param : bool {
       isPrimitiveType(t.type)) {
     return true;
   } else if (isTupleType(t.type)) {
-    for param i in 1..t.size {
+    for param i in 0..t.size-1 {
       if !_can_stringify_direct(t[i]) then
         return false;
     }
@@ -3418,7 +3418,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
 {
   var str = "(";
 
-  for param i in 1..tup.size {
+  for param i in 0..tup.size-1 {
     if i != 1 then str += ", ";
     str += tup[i]:string;
   }
@@ -3446,7 +3446,7 @@ proc stringify(const args ...?k):string {
 
     var str = "";
 
-    for param i in 1..k {
+    for param i in 0..k-1 {
       if args[i].type == string ||
          args[i].type == c_string {
         str += args[i]:string;
@@ -3498,12 +3498,12 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handling so maybe we don't care.
   var err_args: string;
-  for param i in 1..k {
+  for param i in 0..k-1 {
     var name: string;
-    if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
+    if i < _arg_to_proto_names.size then name = _arg_to_proto_names[i];
     else name = "x" + i:string;
     err_args += preArg + name + ":" + args(i).type:string;
-    if i != k then err_args += ", ";
+    if i != k-1 then err_args += ", ";
   }
   return err_args;
 }
@@ -3516,7 +3516,7 @@ inline proc channel.read(ref args ...?k):bool throws {
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    for param i in 1..k {
+    for param i in 0..k-1 {
       if !err {
         if args[i].locale == here {
           err = _read_one_internal(_channel_internal, kind, args[i], origLocale);
@@ -3564,7 +3564,7 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     this._set_style(style);
-    for param i in 1..k {
+    for param i in 0..k-1 {
       if !err {
         err = _read_one_internal(_channel_internal, kind, args[i], origLocale);
       }
@@ -3877,7 +3877,7 @@ proc channel.readln(type t) throws {
  */
 proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
-  for param i in 1..(numTypes-1) do
+  for param i in 0..(numTypes-2) do
     tupleVal(i) = this.read(t(i));
   tupleVal(numTypes) = this.readln(t(numTypes));
   return tupleVal;
@@ -3893,7 +3893,7 @@ proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
  */
 proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
-  for param i in 1..numTypes do
+  for param i in 0..numTypes-1 do
     tupleVal(i) = this.read(t(i));
   return tupleVal;
 }
@@ -3906,7 +3906,7 @@ inline proc channel.write(const args ...?k):bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    for param i in 1..k {
+    for param i in 0..k-1 {
       if !err {
         err = _write_one_internal(_channel_internal, kind, args(i), origLocale);
       }
@@ -3941,7 +3941,7 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     this._set_style(style);
-    for param i in 1..k {
+    for param i in 0..k-1 {
       if !err {
         err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
       }
@@ -6113,7 +6113,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
 
     var j = 1;
 
-    for param i in 1..k {
+    for param i in 0..k-1 {
       // The inside of this loop is a bit crazy because
       // we're writing it all in a param for in order to
       // get generic argument handling.
@@ -6331,7 +6331,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
     if !err {
       var j = 1;
 
-      for param i in 1..k {
+      for param i in 0..k-1 {
         // The inside of this loop is a bit crazy because
         // we're writing it all in a param for in order to
         // get generic argument handling.
@@ -6853,7 +6853,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
                                  nmatches:int,
                                  ref captures, ref error:syserr) {
   assert(nmatches >= captures.size);
-  for param i in 1..captures.size {
+  for param i in 0..captures.size-1 {
     var m = _to_reMatch(matches[i]);
     _extractMatch(m, captures[i], error);
   }
@@ -7140,7 +7140,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
       if !error {
         m = _to_reMatch(matches[0]);
         if m.matched {
-          for param i in 1..nret {
+          for param i in 0..nret-1 {
             m = _to_reMatch(matches[i-1]);
             _extractMatch(m, ret[i], error);
           }
