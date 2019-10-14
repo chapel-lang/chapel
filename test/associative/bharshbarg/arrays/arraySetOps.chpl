@@ -7,9 +7,9 @@ config const n = 100;
 config const numTrials = 1000;
 
 //var ad, bd, cd : domain(int);
-var a : map(false, int, int);
-var b : map(false, int, int);
-var c : map(false, int, int);
+var a : map(int, int, false);
+var b : map(int, int, false);
+var c : map(int, int, false);
 for i in 1..n by 2 {
   a.add(i, 1);
   b.add(i + 1, 2);

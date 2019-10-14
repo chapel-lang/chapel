@@ -38,7 +38,7 @@
 //
 
 module LocalesArray {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   // Initialize the rootLocale
   chpl_init_rootLocale();

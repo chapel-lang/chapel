@@ -21,8 +21,6 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
-UNAME = $(shell uname)
-
 all: $(TMPBINNAME)
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
@@ -46,7 +44,7 @@ endif
 # `dyld` will emit an error of the form "library not loaded because image
 # was not found".
 #
-ifeq ($(UNAME),Darwin)
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
 	install_name_tool $(BINNAME) -id "$(BINNAME)"
 endif
 	$(TAGS_COMMAND)

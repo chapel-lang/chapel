@@ -107,6 +107,11 @@ void        printCallStackCalls();
 bool        fatalErrorsEncountered();
 void        clearFatalErrors();
 
+// Returns true if an error/warning at this location
+// (e.g. with USR_FATAL(ast, ...)) would print out
+// a user line number.
+bool        printsUserLocation(const BaseAST* ast);
+
 // must be exported to avoid dead-code elimination by C++ compiler
 void        gdbShouldBreakHere();
 

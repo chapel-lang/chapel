@@ -721,6 +721,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyPOD && !propagateNotPOD(actualType)) {
+    return true;
+  }
+
   if (formalType == dtString && actualType == dtStringC) {
     return true;
   }
@@ -5116,7 +5120,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
 
     // Even if some formals are (now) types, if 'taskFn' remained generic,
     // gatherCandidates() would not instantiate it, for some reason.
-    taskFn->removeFlag(FLAG_GENERIC);
+    taskFn->setGeneric(false);
   }
 }
 
@@ -5775,41 +5779,6 @@ static void resolveInitField(CallExpr* call) {
   call->primitive = primitives[PRIM_SET_MEMBER];
 
   resolveSetMember(call); // Can we remove some of the above with this?
-}
-
-// Should this be public, like isNilableClassType() ?
-static bool isUnmanagedClass(Type* t) {
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (dt->isUnmanaged())
-      return true;
-  return false;
-}
-
-// Should this be public, like isNilableClassType() ?
-static bool isBorrowedClass(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
-
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    return dt->isBorrowed();
-
-  return false;
-}
-
-// Todo: ideally this would be simply something like:
-//   isChapelManagedType(t) || isChapelBorrowedType(t)
-static bool isOwnedOrSharedOrBorrowed(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
-
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (! dt->isUnmanaged())
-      return true; // anything not unmanaged
-
-  if (isManagedPtrType(t))
-    return true; // owned or shared
-
-  return false;
 }
 
 static bool managementMismatch(Type* lhs, Type* rhs) {
@@ -8040,23 +8009,6 @@ static void resolveObviousGlobals() {
 }
 
 
-static void markGenericFunctions() {
-  bool changed = true;
-
-  // Iterate until all generic functions have been tagged with FLAG_GENERIC
-  while (changed == true) {
-    changed = false;
-
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      // Returns true if status of fn is changed
-      if (fn->tagIfGeneric() == true) {
-        changed = true;
-      }
-    }
-  }
-}
-
-
 static void
 computeStandardModuleSet() {
   // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
@@ -8102,11 +8054,9 @@ void resolve() {
   // treatment on functions included by default, leading to bugs with qualified
   // access to symbols included in this way.
 
-  markGenericFunctions();
-
   unmarkDefaultedGenerics();
 
-  adjustInternalSymbols(); // must go after tagIfGeneric()
+  adjustInternalSymbols();
 
   resolveExterns();
 
@@ -8770,9 +8720,10 @@ static void resolveOther() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    if (fn->hasFlag(FLAG_GENERIC) == false) {
-      resolveSignatureAndFunction(fn);
-    }
+    resolveSignature(fn);
+    fn->tagIfGeneric();
+    if (! fn->isGeneric())
+      resolveFunction(fn);
   }
 }
 

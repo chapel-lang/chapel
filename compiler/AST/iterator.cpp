@@ -507,6 +507,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
     iRecord->fields.insertAtTail(new DefExpr(field));
     // An accessor lets us get _shape_ in Chapel code.
     FnSymbol* accessor = build_accessor(iRecord, field, false, false);
+    accessor->setGeneric(false);
     // This sidesteps the visibility issue in the presence of nested
     // LoopExprs. Ex. test/expressions/loop-expr/scoping.chpl
     theProgram->block->insertAtTail(accessor->defPoint->remove());
@@ -537,6 +538,23 @@ void setIteratorRecordShape(CallExpr* call) {
   call->replace(shapeCall);
 }
 
+// Find the parent block that is either
+//  * a loop
+//  * or, not a BlockStmt
+// Used to ignore non-loop BlockStmts
+// (these come up in particular with local and unlocal blocks).
+static Expr* loopOrNonBlockParent(Expr* expr) {
+  Expr* parent = expr->parentExpr;
+  while (parent != NULL) {
+    if (!isBlockStmt(parent))
+      break;
+    if (isLoopStmt(parent))
+      break;
+
+    parent = parent->parentExpr;
+  }
+  return parent;
+}
 
 //
 // Determines that an iterator has a single loop with a single yield
@@ -568,9 +586,16 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         // Select yield statements whose parent expression is a loop statement
         // (except for dowhile statements, for some reason....
 
+        // Find the parent block that is either
+        //  * a loop
+        //  * or, a conditional
+        // Ignore non-loop BlockStmts
+        // (conditionals could probably be allowed if both sides yielded)
+        Expr* parent = loopOrNonBlockParent(call);
+
         // This test is not logically related to the preceding quick-exit, so
         // putting "else" here would be misleading.
-        if (isLoopStmt(call->parentExpr)) {
+        if (isLoopStmt(parent)) {
           // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
           if (isDoWhileStmt(call->parentExpr))
             return NULL;
@@ -603,8 +628,9 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
       Expr*      expr  = toExpr(ast);
       BlockStmt* block = toBlockStmt(ast);
+      Expr*     parent = loopOrNonBlockParent(expr);
 
-      if (expr->parentExpr == fn->body) {
+      if (parent == NULL && expr->parentSymbol == fn) {
         // This captures the first loop statement, but does not fail if there
         // is more than one.  Compare the test for a single yield above.
         // Is this intentional?

@@ -65,6 +65,9 @@ FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
 }
 
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
+  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
+  if (!isLibraryCompile) { return; }
+
   for_vector(FnSymbol, fn, fns) {
     fixupExportedFunction(fn);
   }

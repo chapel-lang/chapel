@@ -383,6 +383,16 @@ record buffer1 {
   var b: [1..64] int;
   var cnt: int;
 
+  proc init() {
+    b = for i in 1..64 do 0;
+    cnt = 0;
+  }
+  proc init=(other: buffer1) {
+    this.b = for i in 1..16 do other.b[i];
+    this.cnt = other.cnt;
+  }
+
+
   inline proc enqueue(i:int) {
     b[cnt] = i;
     cnt += 1;
@@ -391,6 +401,13 @@ record buffer1 {
       cnt = 0;
     }
   }
+}
+
+proc =(ref lhs:buffer1, rhs:buffer1) {
+  for i in 1..64 do
+    lhs.b[i] = rhs.b[i];
+
+  lhs.cnt = rhs.cnt;
 }
 
 proc tls_hazard_buffer1() {
@@ -407,6 +424,16 @@ record buffer2 {
   var b: [1..64] int;
   var cnt: int;
 
+  proc init() {
+    b = for i in 1..64 do 0;
+    cnt = 0;
+  }
+  proc init=(other: buffer1) {
+    this.b = for i in 1..16 do other.b[i];
+    this.cnt = other.cnt;
+  }
+
+
   inline proc enqueue(i:int) {
     b[cnt] = i;
     if cnt == b.size-1 {
@@ -417,6 +444,12 @@ record buffer2 {
   }
 }
 
+proc =(ref lhs:buffer2, rhs:buffer2) {
+  for i in 1..64 do
+    lhs.b[i] = rhs.b[i];
+
+  lhs.cnt = rhs.cnt;
+}
 proc tls_hazard_buffer2() {
   var taskCounter: atomic int;
   var perTaskBuff: [0..M] buffer2;

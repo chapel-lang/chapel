@@ -256,8 +256,6 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
           INT_ASSERT(!otherScopeInCall && !scopeInOtherCall);
 
         // analysis should be symmetric
-        // MPF: Is this assert right? slight variations in
-        // array-of-classes.chpl cause it to fail.
         INT_ASSERT(otherScopeInCall == scopeInOtherCall);
 
         // symTemp otherSymTemp
@@ -398,7 +396,27 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
         ++it) {
       Symbol* otherSym = it->first;
       if (otherSym != var) {
-        c->insertAtTail(new SymExpr(otherSym));
+        if (ArgSymbol* arg = toArgSymbol(otherSym)) {
+          bool isReturning = arg->originalIntent == INTENT_OUT ||
+                             arg->intent == INTENT_OUT ||
+                             arg->hasFlag(FLAG_RETARG);
+
+          if (isReturning) {
+            // Don't consider this arg
+            //  (returning an array could cause aliasing the ret arg)
+          } else {
+            // Add to both the local variable and to the array
+            // (since the above outer loop only considers local variables)
+            c->insertAtTail(new SymExpr(otherSym));
+            CallExpr* otherC = noAliasCallsForSymbol[otherSym];
+            INT_ASSERT(otherC);
+            otherC->insertAtTail(new SymExpr(var));
+          }
+        } else {
+          // Other is a local variable
+          // Will add the symmetric case when processing it.
+          c->insertAtTail(new SymExpr(otherSym));
+        }
       }
     }
   }

@@ -5,7 +5,7 @@ class C {
 }
 
 proc main() {
-  var obj: C;
+  var obj: unmanaged C?;
 
   if obj then
     writeln(obj.x);
