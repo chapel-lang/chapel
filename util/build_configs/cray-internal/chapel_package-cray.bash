@@ -156,7 +156,7 @@ fi
 
 # Create rpmbuild_dir, the packaging counterpart to CHPL_HOME, in workdir
 
-rpmbuild_dir="$workdir/$pkg_filename"
+rpmbuild_dir="$workdir/$rpm_filename%.$CPU.rpm"
 log_info "Creating rpmbuild_dir='$rpmbuild_dir'"
 
 rm -rf "$rpmbuild_dir"
