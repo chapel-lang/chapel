@@ -517,6 +517,13 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
 
+      if (fn->name == astrInitEquals) {
+        if (fn->numFormals() != 1) {
+          USR_FATAL_CONT(fn, "%s.init= must have exactly one argument",
+                         this->name());
+        }
+      }
+
       fn->_this = arg;
 
       if (fn->thisTag == INTENT_TYPE) {

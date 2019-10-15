@@ -93,10 +93,10 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(const ref other: map(?kt, ?vt, ?ps), param parSafe=ps) {
+    proc init=(const ref other: map(?kt, ?vt, ?ps)) {
       this.keyType = kt;
       this.valType = vt;
-      this.parSafe = parSafe;
+      this.parSafe = ps;
 
       this.complete();
 
