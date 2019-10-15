@@ -8,16 +8,18 @@ module M {
   config const testBracketForAllExpr = false;
    */
 
-  var initCounter = 0;
+  // The counter is atomic so that in the future it can be used with parallel
+  // loop expressions as well.
+  var initCounter: atomic int;
 
   record r {
     var x: int;
 
-    proc init() { initCounter += 1; }
-    proc init=(other: r) { initCounter += 1; this.complete(); this.x = other.x;}
-    proc init(i: int) { initCounter += 1; this.x = i; }
+    proc init() { initCounter.add(1); }
+    proc init=(other: r) { initCounter.add(1); this.complete(); this.x = other.x;}
+    proc init(i: int) { initCounter.add(1); this.x = i; }
 
-    proc deinit() { initCounter -= 1; }
+    proc deinit() { initCounter.sub(1); }
 
   }
 
@@ -51,11 +53,13 @@ module M {
       writeln("Error caught");
     }
 
-    if initCounter == 0 {
+    const finalCount = initCounter.read();
+
+    if finalCount == 0 {
       writeln("Success");
     }
     else {
-      if initCounter > 0 {
+      if finalCount > 0 {
         writeln("Init called more than deinit. Possible leak");
       }
       else {
