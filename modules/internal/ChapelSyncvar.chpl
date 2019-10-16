@@ -681,6 +681,19 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
+    proc init=(const other : _singlevar) {
+      // Allow initialization from compatible single variables, e.g.:
+      //   var x : single int = 5;
+      //   var y : single real = x;
+      if isCoercible(other.valType, this.type.valType) == false {
+        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
+        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
+        compilerError("cannot initialize ", theseTypes, " ",  because);
+      }
+      this.init(this.type.valType);
+      this.writeEF(other.readFF());
+    }
+
     pragma "dont disable remote value forwarding"
     proc init=(const other : this.type.valType) {
       this.init(other.type);
