@@ -4,13 +4,13 @@ class C {
 
 proc test() {
 
-  var c:unmanaged C;
+  var c:unmanaged C?;
   
   on Locales[numLocales-1] {
     c = new unmanaged C(1);
   }
 
-  var cc:unmanaged C = c;
+  var cc:unmanaged C? = c;
 
   var loc = __primitive("_wide_get_locale", cc);
   var adr = __primitive("_wide_get_addr", cc);
@@ -23,15 +23,15 @@ proc test() {
 }
 
 proc test2() {
-  var own:owned C;
-  var c:borrowed C;
+  var own:owned C?;
+  var c:borrowed C?;
   
   on Locales[numLocales-1] {
     own = new owned C(1);
     c = own:borrowed C;
   }
 
-  var cc:borrowed C = c;
+  var cc:borrowed C? = c;
 
   var loc = __primitive("_wide_get_locale", cc);
   var adr = __primitive("_wide_get_addr", cc);

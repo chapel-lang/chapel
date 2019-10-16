@@ -3,7 +3,7 @@ class C {
   }
 }
 
-proc bar(A: [], x: C = nil) {
+proc bar(A: [], x: borrowed C? = nil) {
   forall a in A {
     if x then x.foo(A);
   }

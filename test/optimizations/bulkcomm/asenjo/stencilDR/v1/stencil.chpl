@@ -141,14 +141,14 @@ var i=0;
 proc progress() {
   i=i+1;
   fetch(true);          showfetch(true); 
-  compute(true, delta); showme(true, delta, "After odd phase: "+i);
+  compute(true, delta); showme(true, delta, "After odd phase: "+i:string);
   refcomp(true, refdelta); showref(true);
   verify(true);
   if delta < epsilon then return true;
 
   i=i+1;
   fetch(false);          showfetch(false);
-  compute(false, delta); showme(false, delta, "After even phase: "+i);
+  compute(false, delta); showme(false, delta, "After even phase: "+i:string);
   refcomp(false, refdelta);showref(false);
   verify(false);
   if delta < epsilon then return true;

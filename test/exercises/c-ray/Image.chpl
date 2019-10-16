@@ -29,7 +29,7 @@ if (isIntegral(pixelType)) {
   if (numColors*bitsPerColor > numBits(pixelType)) then
     compilerError("pixelType '" + pixelType:string +
                   "' isn't big enough to store " +
-                  bitsPerColor + " bits per color");
+                  bitsPerColor:string + " bits per color");
 } else {
   compilerError("pixelType must be an integral type");
 }

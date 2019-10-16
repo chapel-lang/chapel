@@ -1,9 +1,0 @@
-#!/bin/bash
-
-#
-# We're only interested in whether or not the test reports an
-# unresolved call, not what the candidates are.  To filter out
-# the latter, just drop all the 'note:' messages.
-#
-grep -v 'note:' < $2 > $2.temp
-mv $2.temp $2

@@ -369,6 +369,11 @@ EOF])
     AC_CHECK_HEADERS([strings.h])
     AC_CHECK_HEADERS([ctype.h])
 
+    AC_CHECK_FUNCS([strcasecmp], [
+      _HWLOC_CHECK_DECL([strcasecmp], [
+	AC_DEFINE([HWLOC_HAVE_DECL_STRCASECMP], [1], [Define to 1 if function `strcasecmp' is declared by system headers])
+      ])
+    ])
     AC_CHECK_FUNCS([strncasecmp], [
       _HWLOC_CHECK_DECL([strncasecmp], [
 	AC_DEFINE([HWLOC_HAVE_DECL_STRNCASECMP], [1], [Define to 1 if function `strncasecmp' is declared by system headers])
@@ -474,7 +479,6 @@ EOF])
     # Needed for Windows in private/misc.h
     AC_CHECK_TYPES([ssize_t])
     AC_CHECK_DECLS([snprintf], [], [], [AC_INCLUDES_DEFAULT])
-    AC_CHECK_DECLS([strcasecmp], [], [], [AC_INCLUDES_DEFAULT])
     # strdup and putenv are declared in windows headers but marked deprecated
     AC_CHECK_DECLS([_strdup], [], [], [AC_INCLUDES_DEFAULT])
     AC_CHECK_DECLS([_putenv], [], [], [AC_INCLUDES_DEFAULT])
@@ -1226,11 +1230,13 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
     AS_IF([test "$hwloc_mode" = "embedded"],
           [HWLOC_EMBEDDED_CFLAGS=$HWLOC_CFLAGS
            HWLOC_EMBEDDED_CPPFLAGS=$HWLOC_CPPFLAGS
+           HWLOC_EMBEDDED_LDFLAGS=$HWLOC_LDFLAGS
            HWLOC_EMBEDDED_LDADD='$(HWLOC_top_builddir)/src/libhwloc_embedded.la'
            HWLOC_EMBEDDED_LIBS=$HWLOC_LIBS
            HWLOC_LIBS=])
     AC_SUBST(HWLOC_EMBEDDED_CFLAGS)
     AC_SUBST(HWLOC_EMBEDDED_CPPFLAGS)
+    AC_SUBST(HWLOC_EMBEDDED_LDFLAGS)
     AC_SUBST(HWLOC_EMBEDDED_LDADD)
     AC_SUBST(HWLOC_EMBEDDED_LIBS)
 

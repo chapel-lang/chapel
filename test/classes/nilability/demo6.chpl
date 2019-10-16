@@ -1,10 +1,10 @@
 module demo {
   class C { var value: int; }
 
-  proc getTheValue(x: C) {
+  proc getTheValue(x: borrowed C) {
    return x.value; // no check needed here
   }
-  proc someComplexFunctionReturningNil(): C? {
+  proc someComplexFunctionReturningNil(): borrowed C? {
     return nil;
   }
 

@@ -293,6 +293,7 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
   isArrayTypeFn->addFlag(FLAG_INLINE);
+  isArrayTypeFn->setGeneric(false);
   fn->insertAtTail(new DefExpr(isArrayTypeFn));
 
   // Result of '_isArrayTypeFn'
@@ -390,6 +391,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
+  sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
@@ -425,6 +427,7 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
   lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  lifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gLeaderTag);
   ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
@@ -458,6 +461,7 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
+  fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
   ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
@@ -491,7 +495,8 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 static bool isGlobalVar(Symbol* sym) {
   Symbol* parent = sym->defPoint->parentSymbol;
 
-  if (sym->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+  if (sym->hasFlag(FLAG_CHAPEL_STRING_LITERAL) ||
+      sym->hasFlag(FLAG_CHAPEL_BYTES_LITERAL)) {
     return true;
   }
 
@@ -546,6 +551,11 @@ static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
 }
 
 static bool considerForOuter(Symbol* sym) {
+  if (isTypeSymbol(sym->defPoint->parentSymbol)) {
+    // Fields are considered 'outer'
+    return true;
+  }
+
   if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
       sym->hasFlag(FLAG_PARAM))
     return false;  // these will be eliminated anyway
@@ -579,7 +589,15 @@ static ArgSymbol* newOuterVarArg(Symbol* ovar) {
   if (argType == dtUnknown)
     argType = dtAny;
 
-  return new ArgSymbol(INTENT_BLANK, ovar->name, argType);
+  ArgSymbol* ret = new ArgSymbol(INTENT_BLANK, ovar->name, argType);
+
+  // An argument might need to be a type variable if the outer variable is
+  // a type field.
+  if (ovar->hasFlag(FLAG_TYPE_VARIABLE)) {
+    ret->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  return ret;
 }
 
 //
@@ -672,7 +690,8 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   // loop-expr functions in the ArgSymbol's scope, we will insert the functions
   // at module scope and pass outer variables to a top-level wrapper (the
   // chpl__loopexpr function).
-  bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol);
+  bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol) ||
+                         isTypeSymbol(loopExpr->parentSymbol);
 
   std::set<Symbol*> outerVars;
   findOuterVars(loopExpr, outerVars);
@@ -692,6 +711,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->setGeneric(true);
   if (forall) fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
 
   if (insideArgSymbol) {

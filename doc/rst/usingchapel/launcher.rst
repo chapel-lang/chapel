@@ -33,7 +33,8 @@ The goals of the launcher binary are:
    I/O.
 
 Executing a Chapel program using the verbose (``-v``) flag will typically
-print out the command(s) used to launch the program.
+print out the command(s) used to launch the program, along with any
+environment variables the launcher set on its behalf.
 
 Executing using the help (``-h``/``--help``) flag will typically print out
 any launcher-specific options in addition to the normal help message for
@@ -55,6 +56,7 @@ mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray X* s
 pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
+slurm-gasnetrun_mpi  GASNet launcher using SLURM over MPI
 slurm-srun           native SLURM launcher                                
 smp                  GASNet launcher for programs running over shared-memory
 none                 do not use a launcher                                
@@ -105,6 +107,33 @@ Chapel launchers generally arrange for environment variables to be
 forwarded to worker processes. However, this strategy is not always
 reliable. The remote system may override some environment variables, and
 some launchers might not correctly forward all environment variables.
+
+.. _chpl-rt-masterip:
+
+CHPL_RT_MASTERIP
+****************
+
+This environment variable is used to specify the IP address which should be used
+to connect.  By default, the node creating the connection will pass the result
+of ``gethostname()`` on to the nodes that need to connect to it, which will
+resolve that to an IP address using ``gethostbyname()``.
+
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
+``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
+https://gasnet.lbl.gov/dist/udp-conduit/README ).
+
+.. _chpl-rt-workerip:
+
+CHPL_RT_WORKERIP
+****************
+
+This environment variable is used to specify the IP address which should be used
+to communicate between worker nodes.  By default, worker nodes will communicate
+among themselves using the same interface used to connect to the master node
+(see :ref:`chpl-rt-masterip`, above).
+
+When ``CHPL_COMM == gasnet``, this will also be used to set the value of
+``GASNET_WORKERIP`` (see https://gasnet.lbl.gov/dist/udp-conduit/README ).
 
 .. _using-slurm:
 

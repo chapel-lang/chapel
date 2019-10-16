@@ -3,7 +3,7 @@ class Foo {
   var x: int;
 };
 
-type Bar = (owned Foo, int); // <-- Error here?
+type Bar = (owned Foo?, int); // <-- Error here?
 
 proc test() {
   var x:Bar;

@@ -124,7 +124,7 @@ enum ForallIntentTag {
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
-ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
+ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
 
 // parser support
 enum ShadowVarPrefix {
@@ -177,6 +177,7 @@ public:
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
+  bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
   bool               noDocGen()                                const;
 
@@ -260,7 +261,7 @@ private:
 
 
 bool isString(Symbol* symbol);
-bool isUserDefinedRecord(Symbol* symbol);
+bool isBytes(Symbol* symbol);
 
 /************************************* | **************************************
 *                                                                             *
@@ -523,10 +524,6 @@ class TypeSymbol : public Symbol {
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
-  void renameInstantiatedSingle(Symbol* sym);
-  void renameInstantiatedFromSuper(TypeSymbol* superSym);
-
   GenRet codegen();
   void codegenDef();
   void codegenPrototype();
@@ -542,10 +539,6 @@ class TypeSymbol : public Symbol {
 
   BlockStmt* instantiationPoint;
 
- private:
-  void renameInstantiatedStart();
-  void renameInstantiatedIndividual(Symbol* sym);
-  void renameInstantiatedEnd();
 };
 
 /************************************* | **************************************
@@ -615,6 +608,9 @@ std::string unescapeString(const char* const str, BaseAST* astForError);
 
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+//
+// Creates a new bytes literal with the given value.
+VarSymbol *new_BytesSymbol(const char *s);
 
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
@@ -676,13 +672,15 @@ VarSymbol* newTempConst(QualifiedType qt);
 const char* intentDescrString(IntentTag intent);
 
 // cache some popular strings
-extern const char* astrSdot;
-extern const char* astrSequals;
-extern const char* astrSgt;
-extern const char* astrSgte;
-extern const char* astrSlt;
-extern const char* astrSlte;
-extern const char* astrSswap;
+extern const char* astrSassign; // =
+extern const char* astrSdot;    // .
+extern const char* astrSeq;     // ==
+extern const char* astrSne;     // !=
+extern const char* astrSgt;     // >
+extern const char* astrSgte;    // >=
+extern const char* astrSlt;     // <
+extern const char* astrSlte;    // <=
+extern const char* astrSswap;   // <=>
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
@@ -698,6 +696,7 @@ extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
 extern const char* astrPostfixBang;
+extern const char* astrBorrow;
 
 void initAstrConsts();
 
@@ -743,7 +742,8 @@ extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
 extern VarSymbol *gNilChecking;
-extern VarSymbol *gLegacyNilClasses;
+extern VarSymbol *gLegacyClasses;
+extern VarSymbol *gOverloadSetsChecks;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
@@ -753,6 +753,7 @@ extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
+extern VarSymbol *gUninstantiated;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

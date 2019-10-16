@@ -36,6 +36,8 @@ int gasnetc_ud_rcvs = 0;
 int gasnetc_ud_snds = 0;
 #endif
 
+#define GASNETC_XRC_HELP_MSG " - please try running with GASNET_USE_XRC=0 in your environment (or configure using '--disable-ibv-xrc' to entirely disable XRC support)"
+
 /* ------------------------------------------------------------------------------------ */
 
 /* Common types */
@@ -208,7 +210,7 @@ gasnetc_xrc_create_qp(gasnetc_cep_t *cep, gex_Rank_t node, int qpi) {
     init_attr.comp_mask = IBV_QP_INIT_ATTR_XRCD;
     init_attr.xrcd = xrc_domain;
     xrc_recv_qp = ibv_create_qp_ex(hca->handle, &init_attr);
-    GASNETC_IBV_CHECK_PTR(xrc_recv_qp, "from ibv_create_qp_ex(xrc_rcv)");
+    GASNETC_IBV_CHECK_PTR(xrc_recv_qp, "from ibv_create_qp_ex(xrc_rcv)" GASNETC_XRC_HELP_MSG);
     gasneti_atomic32_set(rcv_qpn_p, xrc_recv_qp->qp_num, GASNETI_ATOMIC_REL);
   } else {
     struct ibv_qp_open_attr attr;
@@ -220,7 +222,7 @@ gasnetc_xrc_create_qp(gasnetc_cep_t *cep, gex_Rank_t node, int qpi) {
     attr.qp_type = IBV_QPT_XRC_RECV;
     attr.xrcd = xrc_domain;
     xrc_recv_qp = ibv_open_qp(hca->handle, &attr);
-    GASNETC_IBV_CHECK_PTR(xrc_recv_qp, "from ibv_open_qp()");
+    GASNETC_IBV_CHECK_PTR(xrc_recv_qp, "from ibv_open_qp()" GASNETC_XRC_HELP_MSG);
   }
   cep->rcv_qp = xrc_recv_qp;
 #elif GASNETC_IBV_XRC_MLNX
@@ -228,13 +230,13 @@ gasnetc_xrc_create_qp(gasnetc_cep_t *cep, gex_Rank_t node, int qpi) {
     struct ibv_qp_init_attr init_attr;
     init_attr.xrc_domain = xrc_domain;
     ret = ibv_create_xrc_rcv_qp(&init_attr, &rcv_qpn);
-    GASNETC_IBV_CHECK(ret, "from ibv_create_xrc_rcv_qp()");
+    GASNETC_IBV_CHECK(ret, "from ibv_create_xrc_rcv_qp()" GASNETC_XRC_HELP_MSG);
     gasneti_atomic32_set(rcv_qpn_p, rcv_qpn, GASNETI_ATOMIC_REL);
   } else {
     gasneti_waituntil(1 != (rcv_qpn = gasneti_atomic32_read(rcv_qpn_p, 0))); /* includes rmb() */
     if_pf (rcv_qpn == 0) goto retry; /* Should not happen */
     ret = ibv_reg_xrc_rcv_qp(xrc_domain, rcv_qpn);
-    GASNETC_IBV_CHECK(ret, "from ibv_reg_xrc_rcv_qp()");
+    GASNETC_IBV_CHECK(ret, "from ibv_reg_xrc_rcv_qp()" GASNETC_XRC_HELP_MSG);
   }
 #endif
 
@@ -349,19 +351,23 @@ gasnetc_xrc_init(void **shared_mem_p) {
       gasneti_fatalerror("Unable to create an XRC domain.  "
                          "Please see \"Lack of XRC support\" under Known Problems in GASNet's README-ibv.");
     }
-    GASNETC_IBV_CHECK_PTR(hca->xrc_domain, "from ibv_open_xrc_domain()");
+    GASNETC_IBV_CHECK_PTR(hca->xrc_domain, "from ibv_open_xrc_domain()" GASNETC_XRC_HELP_MSG);
     (void) close(fd);
-  }
-
-  /* Clean up once everyone is done w/ all files */
-  gasneti_pshmnet_bootstrapBarrier();
-  GASNETC_FOR_ALL_HCA_INDEX(index) {
-    (void)unlink(filename[index]); gasneti_free(filename[index]);
   }
 
   /* Place RCV QPN table in shared memory */
   gasnetc_xrc_rcv_qpn = (uint32_t *)(*shared_mem_p);
-  *shared_mem_p = (void *)GASNETI_ALIGNUP(gasnetc_xrc_rcv_qpn + gasneti_nodes * gasnetc_alloc_qps, GASNETI_CACHE_LINE_BYTES);
+  size_t count = gasneti_nodes * gasnetc_alloc_qps;
+  if (!gasneti_pshm_mynode) {
+    gasneti_pshm_prefault(gasnetc_xrc_rcv_qpn, count * sizeof(uint32_t));
+  }
+  *shared_mem_p = (void *)GASNETI_ALIGNUP(gasnetc_xrc_rcv_qpn + count, GASNETI_CACHE_LINE_BYTES);
+
+  /* Clean up once everyone is done w/ all files, and RCV QPN table is prefaulted */
+  gasneti_pshmnet_bootstrapBarrier();
+  GASNETC_FOR_ALL_HCA_INDEX(index) {
+    (void)unlink(filename[index]); gasneti_free(filename[index]);
+  }
 
   /* Allocate SND QP table */
   gasnetc_xrc_snd_qp = gasneti_calloc(gasneti_nodemap_global_count * gasnetc_alloc_qps,
@@ -451,7 +457,7 @@ gasnetc_check_inline_limit(int port_num, int send_wr, int send_sge)
   #else
     qp_init_attr.qp_type             = IBV_QPT_RC;
   #endif
-    qp_init_attr.sq_sig_all          = 1; /* XXX: Unless we drop 1-to-1 WQE/CQE relationship */
+    qp_init_attr.sq_sig_all          = !GASNETC_USE_SEND_SIGNALLED;
     qp_init_attr.srq                 = NULL; /* Should not influence inline data */
     qp_init_attr.send_cq             = hca->snd_cq;
     qp_init_attr.recv_cq             = hca->rcv_cq;
@@ -531,7 +537,7 @@ gasnetc_qp_create(gasnetc_conn_info_t *conn_info)
   #else
     qp_init_attr.qp_type             = IBV_QPT_RC;
   #endif
-    qp_init_attr.sq_sig_all          = 1; /* XXX: Unless we drop 1-to-1 WQE/CQE relationship */
+    qp_init_attr.sq_sig_all          = !GASNETC_USE_SEND_SIGNALLED;
     qp_init_attr.srq                 = NULL;
 
     GASNETC_FOR_EACH_QPI(conn_info, qpi, cep) {
@@ -626,29 +632,30 @@ gasnetc_qp_reset2init(gasnetc_conn_info_t *conn_info)
     int qpi;
     int rc;
 
+    const enum ibv_access_flags qp_access_flags =
+         (enum ibv_access_flags)(IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
+
   #if GASNETC_IBV_XRC
     gasnetc_xrc_snd_qp_t *xrc_snd_qp = GASNETC_NODE2SND_QP(node);
   #endif
 
     qp_mask = (enum ibv_qp_attr_mask)(IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_ACCESS_FLAGS);
     qp_attr.qp_state        = IBV_QPS_INIT;
-    qp_attr.pkey_index      = 0;
-    qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ;
+    qp_attr.qp_access_flags = qp_access_flags;
 
     GASNETC_FOR_EACH_QPI(conn_info, qpi, cep) {
       const gasnetc_port_info_t *port = conn_info->port[qpi];
 
     #if GASNETC_IBV_SRQ
-      qp_attr.qp_access_flags = GASNETC_QPI_IS_REQ(qpi)
-                                    ? IBV_ACCESS_REMOTE_WRITE
-                                    : IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ;
+      qp_attr.qp_access_flags = qp_access_flags ^ (GASNETC_QPI_IS_REQ(qpi) ? IBV_ACCESS_REMOTE_READ : 0);
     #endif
       qp_attr.port_num = port->port_num;
+      qp_attr.pkey_index = port->pkey_index;
 
     #if GASNETC_IBV_XRC
       if (gasnetc_use_xrc) {
         rc = gasnetc_xrc_modify_qp(cep, &qp_attr, qp_mask);
-        GASNETC_IBV_CHECK(rc, "from gasnetc_xrc_modify_qp(INIT)");
+        GASNETC_IBV_CHECK(rc, "from gasnetc_xrc_modify_qp(INIT)" GASNETC_XRC_HELP_MSG);
       }
     #endif
 
@@ -693,7 +700,7 @@ gasnetc_qp_init2rtr(gasnetc_conn_info_t *conn_info)
     GASNETC_FOR_EACH_QPI(conn_info, qpi, cep) {
       const gasnetc_port_info_t *port = conn_info->port[qpi];
 
-      qp_attr.max_dest_rd_atomic = GASNETC_QPI_IS_REQ(qpi) ? 0 : port->rd_atom;
+      qp_attr.max_dest_rd_atomic = port->rd_atom;
       qp_attr.path_mtu           = gasnetc_max_mtu
                                        ? MIN(gasnetc_max_mtu, port->port.active_mtu)
                                        : port->port.active_mtu;
@@ -705,7 +712,7 @@ gasnetc_qp_init2rtr(gasnetc_conn_info_t *conn_info)
     #if GASNETC_IBV_XRC
       if (gasnetc_use_xrc) {
         rc = gasnetc_xrc_modify_qp(cep, &qp_attr, qp_mask);
-        GASNETC_IBV_CHECK(rc, "from gasnetc_xrc_modify_qp(RTR)");
+        GASNETC_IBV_CHECK(rc, "from gasnetc_xrc_modify_qp(RTR)" GASNETC_XRC_HELP_MSG);
 
         /* The normal QP will connect, below, to the peer's XRC rcv QP */
         qp_attr.dest_qp_num = conn_info->remote_xrc_qpn[qpi];
@@ -756,7 +763,7 @@ gasnetc_qp_rtr2rts(gasnetc_conn_info_t *conn_info)
         const gasnetc_port_info_t *port = conn_info->port[qpi];
 
         qp_attr.sq_psn           = GASNETC_PSN(gasneti_mynode, qpi);
-        qp_attr.max_rd_atomic    = GASNETC_QPI_IS_REQ(qpi) ? 0 : port->rd_atom;
+        qp_attr.max_rd_atomic    = port->rd_atom;
         rc = ibv_modify_qp(cep->qp_handle, &qp_attr, qp_mask);
         GASNETC_IBV_CHECK(rc, "from ibv_modify_qp(RTS)");
       #if GASNETC_IBV_XRC
@@ -1098,7 +1105,7 @@ conn_get_srq_num(struct ibv_srq *srq)
   uint32_t result = 0;
 #if GASNETC_IBV_XRC_OFED
   int rc = ibv_get_srq_num(srq, &result);
-  GASNETC_IBV_CHECK(rc, "from ibv_get_srq_num()");
+  GASNETC_IBV_CHECK(rc, "from ibv_get_srq_num()" GASNETC_XRC_HELP_MSG);
 #elif GASNETC_IBV_XRC_MLNX
   result = srq->xrc_srq_num;
 #endif
@@ -1308,7 +1315,7 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
     /* RESET -> INIT */
     qp_mask = (enum ibv_qp_attr_mask)(IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_QKEY);
     qp_attr.qp_state        = IBV_QPS_INIT;
-    qp_attr.pkey_index      = 0;
+    qp_attr.pkey_index      = port->pkey_index;
     qp_attr.qkey            = my_qkey;
     qp_attr.port_num        = port->port_num;
     rc = ibv_modify_qp(conn_ud_qp, &qp_attr, qp_mask);

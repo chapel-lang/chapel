@@ -1,0 +1,2 @@
+--overload-sets-checks     # best-shadowed2.with-checks.good
+--no-overload-sets-checks  # best-shadowed2.no-checks.good

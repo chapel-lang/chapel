@@ -155,7 +155,16 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
 ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
                                     Expr* nameExp, Expr* type, Expr* init)
 {
+  if (SymExpr* nameSE = toSymExpr(nameExp)) {
+    checkTypeParamTaskIntent(nameSE);
+    // when can this happen?
+    USR_FATAL(nameSE, "forall and task intents on '%s' are not implemented",
+              nameSE->symbol()->name);
+  }
+
   const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
+  if (nameString == astrThis)
+    USR_FATAL_CONT(nameExp, "cannot currently apply a forall or task intent to 'this'");
 
   if (type == NULL && init == NULL)
     // non-TPV forall intent
@@ -176,6 +185,12 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
 
 void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
   call->insertAtTail(svar->defPoint);
+}
+
+void checkTypeParamTaskIntent(SymExpr* outerSE) {
+  Symbol* outerSym = outerSE->symbol();
+  if (outerSym->hasFlag(FLAG_TYPE_VARIABLE) || outerSym->hasFlag(FLAG_PARAM))
+    USR_FATAL(outerSE, "cannot apply a forall or task intent to a type or a param, here '%s'", outerSym->name);
 }
 
 
@@ -799,6 +814,24 @@ static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
   }
 }
 
+static RetTag iteratorTag(FnSymbol* iterFn) {
+  IteratorInfo* ii = iterFn->iteratorInfo;
+  if (ii == NULL) {
+    // We got an iterator forwarder.
+    INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+    FnSymbol* underlyingIter = getTheIteratorFn(iterFn->retType);
+    ii = underlyingIter->iteratorInfo;
+  }
+  return ii->iteratorRetTag;
+}
+
+static bool defaultIntentYieldsConst(Type* rhsType) {
+  // copied from resolveMoveForRhsSymExpr()
+  return  ! isTupleContainingAnyReferences(rhsType)    &&
+          ! rhsType->symbol->hasFlag(FLAG_ARRAY)       &&
+          ! rhsType->symbol->hasFlag(FLAG_COPY_MUTATES);
+}
+
 static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
 {
   // Set QualifiedType of the index variable.
@@ -812,6 +845,29 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
   // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
   idxVar->addFlag(FLAG_INDEX_OF_INTEREST);
   idxVar->addFlag(FLAG_INDEX_VAR);
+
+  // Adjust the index variable's const-ness and ref-ness.
+  switch (iteratorTag(iterFn)) {
+    case RET_VALUE:
+      if (defaultIntentYieldsConst(idxVar->type)) {
+        idxVar->qual = QualifiedType::qualifierToConst(idxVar->qual);
+        idxVar->addFlag(FLAG_CONST);
+      }
+      break;
+    case RET_REF:
+      INT_ASSERT(idxVar->isRef());
+      idxVar->qual = QUAL_REF;
+      break;
+    case RET_CONST_REF:
+      INT_ASSERT(idxVar->isRef());
+      idxVar->qual = QUAL_CONST_REF;
+      idxVar->addFlag(FLAG_CONST);
+      break;
+    case RET_PARAM:
+    case RET_TYPE:
+      INT_FATAL(iterFn, "unexpected retTag in an iterator");
+      break;
+  }
 }
 
 static Expr* rebuildIterableCall(ForallStmt* pfs,

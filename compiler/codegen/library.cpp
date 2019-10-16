@@ -39,8 +39,6 @@ std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 std::map<TypeSymbol*, std::string> fortranKindNames;
 std::map<TypeSymbol*, std::string> fortranTypeNames;
 
-static bool isFunctionToSkip(FnSymbol* fn);
-
 //
 // Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
@@ -74,13 +72,20 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
         }
       }
 
+      if (fMultiLocaleInterop) {
+        // If we've created a multilocale library, memory that is returned to
+        // the client code wasn't created by chpl_mem_alloc and friends, so
+        // shouldn't be freed using the normal strategies.  But, for
+        // convenience, allow the user to still call `chpl_free`.
+        fprintf(libhdrfile.fptr, "#define chpl_free(ptr) free(ptr)\n");
+      }
       // Maybe need something here to support LLVM extern blocks?
 
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
         if (fn->hasFlag(FLAG_EXPORT) &&
-            !isFunctionToSkip(fn)) {
+            isUserRoutine(fn)) {
           fn->codegenPrototype();
         }
       }
@@ -232,12 +237,15 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
           libname.c_str());
 
   //
-  // The ZMQ library has to be linked against the C++ stdlib. Rather than
-  // package libc++ up as part of our multi-locale library client when
-  // packaging it up, we'll let library-makefile do it for us.
+  // Multi-locale libraries require some extra libraries to be linked in order
+  // to function correctly. For static libraries in particular, rather than
+  // try to link these dependencies at compile time, we shunt responsibility
+  // off to the user via use of `--library-makefile`.
   //
   if (fMultiLocaleInterop) {
-    fprintf(makefile.fptr, " %s", "-lc++");
+    std::string deps = getCompilelineOption("multilocale-lib-deps");
+    removeTrailingNewlines(deps);
+    fprintf(makefile.fptr, " %s", deps.c_str());
   }
 
   if (requires != "") {
@@ -248,9 +256,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, " %s\n", libraries.c_str());
   } else {
     // LLVM requires a bit more work to make the GNU linker happy.
-    if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
-      libraries.erase(libraries.end() -1);
-    }
+    removeTrailingNewlines(libraries);
 
     // Append the Chapel library as the last linker argument.
     fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
@@ -439,7 +445,7 @@ void makeFortranModule(std::vector<FnSymbol*> functions) {
     indent += 2;
     // generate chpl_library_init and chpl_library_finalize here?
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         fn->codegenFortran(indent);
       }
     }
@@ -473,7 +479,7 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
     fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         fn->codegenPython(C_PXD);
       }
     }
@@ -516,7 +522,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     bool first = true;
     // Make import statement at top of .pyx file for exported functions
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         if (fn->hasFlag(FLAG_EXPORT)) {
           if (first) {
             first = false;
@@ -664,6 +670,14 @@ static void makePYFile() {
       fprintf(py.fptr, "\"%s\"", libName);
     }
     std::string libraries = getCompilelineOption("libraries");
+
+    // Erase trailing newline and append multilocale-only dependencies.
+    if (fMultiLocaleInterop) {
+      libraries.erase(libraries.length() - 1);
+      libraries += " ";
+      libraries += getCompilelineOption("multilocale-lib-deps");
+    }
+
     char copyOfLib[libraries.length() + 1];
     libraries.copy(copyOfLib, libraries.length(), 0);
     copyOfLib[libraries.length()] = '\0';
@@ -682,6 +696,8 @@ static void makePYFile() {
       }
       curSection = strtok(NULL, " \n");
     }
+
+    // Fetch addition
     fprintf(py.fptr, "]\n");
 
     // Cythonize me, Captain!
@@ -690,8 +706,9 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
-            libname.c_str());
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
+                     "[\"%s\"])))\n",
+                     libname.c_str(), libname.c_str());
 
     gGenInfo->cfile = save_cfile;
   }
@@ -749,6 +766,15 @@ void codegen_make_python_module() {
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
+  // Snag extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = "$CHPL_HOME/util/config/compileline";
+    cmd += " --multilocale-lib-deps";
+    libraries += " ";
+    libraries += runCommand(cmd);
+    libraries.erase(libraries.length() - 1);
+  }
+
   std::string name = "-l";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
@@ -771,10 +797,8 @@ void codegen_make_python_module() {
   fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
 
-  // We might be using the GNU linker, in which case we need to do this.
-  if (llvmCodegen) {
-    fullCythonCall += " " + name;
-  }
+  // Append library as last link argument to appease GNU linker.
+  fullCythonCall += " " + name;
 
   fullCythonCall +=  "\" " + cythonPortion;
 
@@ -787,7 +811,8 @@ void codegen_make_python_module() {
 
 // Skip this function if it is defined in an internal module, or if it is
 // the generated main function
-static bool isFunctionToSkip(FnSymbol* fn) {
-  return fn->getModule()->modTag == MOD_INTERNAL ||
-    fn->hasFlag(FLAG_GEN_MAIN_FUNC);
+bool isUserRoutine(FnSymbol* fn) {
+  return !(fn->getModule()->modTag == MOD_INTERNAL ||
+           fn->getModule()->modTag == MOD_STANDARD ||
+           fn->hasFlag(FLAG_GEN_MAIN_FUNC));
 }

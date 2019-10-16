@@ -68,11 +68,12 @@ yield-statement:
   `yield' expression ;
 \end{syntax}
 
-When an iterator is executed and a \chpl{yield} is encountered, the value of the yield
-expression is returned.  However, the state of execution of the iterator is
-saved.  On its next invocation, execution resumes from the point immediately
-following that \chpl{yield} statement and with the saved state of execution.
-A yield statement in a variable iterator must contain an lvalue expression.
+When an iterator is executed and a \chpl{yield} is encountered, the
+value of the yield expression is returned to the iterator's callsite.
+However, the state of execution of the iterator is logically saved
+such that its execution continues from the point immediately following
+the \chpl{yield} statement.  A yield statement in an iterator that
+yields references must yield an lvalue expression.
 
 When a \chpl{return} is encountered, the iterator finishes without yielding another
 index value.  The \chpl{return} statements appearing in an iterator are not
@@ -162,7 +163,7 @@ A post-order traversal of a tree data structure could be written like this:
 \begin{chapelnoprint}
 class Tree {
   var data: string;
-  var left, right: unmanaged Tree;
+  var left, right: unmanaged Tree?;
   proc deinit() {
     if left then delete left;
     if right then delete right;
@@ -172,11 +173,11 @@ class Tree {
 var tree = new unmanaged Tree("a", new unmanaged Tree("b"), new unmanaged Tree("c", new unmanaged Tree("d"), new unmanaged Tree("e")));
 \end{chapelnoprint}
 \begin{chapel}
-iter postorder(tree: Tree): string {
+iter postorder(tree: Tree?): string {
   if tree != nil {
-    for child in postorder(tree.left) do
+    for child in postorder(tree!.left) do
       yield child;
-    for child in postorder(tree.right) do
+    for child in postorder(tree!.right) do
       yield child;
     yield tree.data;
   }
@@ -186,7 +187,7 @@ iter postorder(tree: Tree): string {
 proc Tree.writeThis(x)
 {
   var first = true;
-  for node in postorder(tree) {
+  for node in postorder(this) {
     if first then first = false;
       else x.write(" ");
     write(node);

@@ -73,12 +73,10 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
         if (ce->isPrimitive(PRIM_MOVE)) {
           INT_ASSERT(isSymExpr(ce->get(1)));
           std::vector<SymExpr*> syms;
-          collectSymExprs(exprToMove, syms);
+          collectSymExprsFor(exprToMove, toSymExpr(ce->get(1))->symbol(), syms);
           for_vector(SymExpr, s, syms) {
-            if (s->symbol() == toSymExpr(ce->get(1))->symbol()) {
               safeExprCache[e] = false;
               return false;
-            }
           }
         }
       }
@@ -289,7 +287,8 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_COPIES_NO_ALIAS_SET:
       return true;
     case PRIM_UNKNOWN:
-      if(strcmp(prim->name, "string_length") == 0 ||
+      if(strcmp(prim->name, "string_length_bytes") == 0 ||
+          strcmp(prim->name, "string_length_codepoints") == 0 ||
           strcmp(prim->name, "object2int") == 0 ||
           strcmp(prim->name, "real2int") == 0) {
         return true;

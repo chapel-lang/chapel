@@ -1,0 +1,16 @@
+#!/bin/sh
+TESTNAME=$1
+OUTFILE=$2
+
+# This sed command pulled from util/test/diff-ignoring-module-line-numbers
+# Here it just needs to replace line numbers in internal/standard modules.
+command='
+  \|CHPL_HOME/modules|s/:[0-9:]*:/:nnnn:/
+  s/chpl version [0-9]*.*$/chpl version mmmm/
+  s/internal error: \([A-Z][A-Z\-]*\)[0-9][0-9]* chpl version mmmm/internal error: \1nnnn chpl version mmmm/
+'
+
+TMPFILE="$outfile.prediff.tmp"
+mv $OUTFILE $TMPFILE
+sed -e "$command" $TMPFILE > $OUTFILE
+rm $TMPFILE

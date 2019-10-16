@@ -33,6 +33,7 @@
   #define GETPARTNER(token)  gasnet_node_t partner; GASNET_Safe(gasnet_AMGetMsgSource(token, &partner))
   #define EXTRA_S
   #define EXTRA_ML
+  #define ALLAM_DONE(iters) ((int)NUMREP() == (int)(NUMHANDLERS_PER_TYPE*4*(iters)))
 #elif defined(TEST_GASNETEX)
   #include "gasnet_tools.h"
   #include "test.h"
@@ -90,7 +91,7 @@
   #define RequestShort(num,args)                AMSend(0,RequestShort,num,args)
   #define RequestMedium(num,args)               AMSend(1,RequestMedium,num,args)
   #define RequestLong(num,AMargs,GASNETargs)    AMSend(1,RequestLong,num,GASNETargs)
-  #define RequestLongAsync                      RequestLong
+  #define RequestLongAsync(num,AMargs,GASNETargs)  ((void)0)
   #define ReplyShort(num,args)                  AMSend(0,ReplyShort,num,args)
   #define ReplyMedium(num,args)                 AMSend(0,ReplyMedium,num,args)
   #define ReplyLong(num,AMargs,GASNETargs)      AMSend(0,ReplyLong,num,GASNETargs)
@@ -107,6 +108,7 @@
   #define ENDPOINT                 myteam,
   #define EXTRA_S                  ,flags
   #define EXTRA_ML                 ,lc_opt,flags
+  #define ALLAM_DONE(iters) ((int)NUMREP() == (int)(NUMHANDLERS_PER_TYPE*3*(iters)))
 #else
   #include "apputils.h"
   typedef int handlerarg_t;
@@ -122,7 +124,7 @@
   #define RequestMedium(num,args)               AM_Safe(AM_RequestI##num args)
   #define RequestLong(num,AMargs,GASNETargs)    AM_Safe(AM_RequestXfer##num AMargs)
   /* AM_RequestXferAsync generates errors if cannot be sent immediately - don't use it */
-  #define RequestLongAsync(num,AMargs,GASNETargs) AM_Safe(AM_RequestXfer##num AMargs)
+  #define RequestLongAsync(num,AMargs,GASNETargs) ((void)0)
   #define ReplyShort(num,args)                  AM_Safe(AM_Reply##num args)
   #define ReplyMedium(num,args)                 AM_Safe(AM_ReplyI##num args)
   #define ReplyLong(num,AMargs,GASNETargs)      AM_Safe(AM_ReplyXfer##num AMargs)
@@ -137,8 +139,8 @@
   #define FATALERR                  AMX_FatalErr
   #define EXTRA_S
   #define EXTRA_ML
+  #define ALLAM_DONE(iters) ((int)NUMREP() == (int)(NUMHANDLERS_PER_TYPE*3*(iters)))
 #endif
-#define ALLAM_DONE(iters) ((int)NUMREP() == (int)(NUMHANDLERS_PER_TYPE*4*(iters)))
 
 typedef struct {
   double doublevar;

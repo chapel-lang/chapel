@@ -1,7 +1,7 @@
 // This test came from issue #8449
 // At one point it failed to compile.
 
-var global:unmanaged object;
+var global:unmanaged object?;
 
 record ForwardingWrapper {
   type eltType;

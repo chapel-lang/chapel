@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011-2017 Inria.  All rights reserved.
+ * Copyright © 2011-2019 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -108,7 +108,14 @@ int main(int argc, char *argv[])
       else
 	return EXIT_FAILURE;
     }
-    hwloc_topology_load(input);
+    if (hwloc_topology_load(input) < 0) {
+      fprintf(stderr, "Failed to load topology from XML file %s (%s)\n", argv[i], strerror(errno));
+      hwloc_topology_destroy(input);
+      if (force)
+	continue;
+      else
+        return EXIT_FAILURE;
+    }
 
     root = hwloc_get_root_obj(input);
     hwloc_obj_add_info(root, "AssemblerName", name ? name : argv[i]);

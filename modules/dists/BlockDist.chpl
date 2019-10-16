@@ -38,9 +38,12 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
-use DSIUtil;
-use ChapelUtil;
-use CommDiagnostics;
+private use DSIUtil;
+private use ChapelUtil;
+private use CommDiagnostics;
+private use ChapelLocks;
+private use ChapelDebugPrint;
+
 use SparseBlockDist;
 use LayoutCS;
 //
@@ -445,7 +448,7 @@ proc Block.init(boundingBox: domain,
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
-  this.sparseLayoutType = sparseLayoutType;
+  this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
 
   this.complete();
 
@@ -1098,8 +1101,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = myLocArr!;
 
     local {
-      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type;
-      ref myElems = narrowArrSection.myElems;
+      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
+      ref myElems = narrowArrSection!.myElems;
       for i in myFollowThisDom do yield myElems[i];
     }
   } else {
@@ -1604,7 +1607,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // update our state vector with our locale's adjustment value
       for s in state do
-        s += myadjust;
+        myop.accumulateOntoState(s, myadjust);
       if debugBlockScan then
         writeln(locid, ": state = ", state);
 

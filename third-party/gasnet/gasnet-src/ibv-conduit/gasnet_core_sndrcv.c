@@ -62,15 +62,23 @@ int					gasnetc_use_rcv_thread = GASNETC_USE_RCV_THREAD;
 #if GASNETC_IBV_XRC
   int					gasnetc_use_xrc = 1;
 #endif
+#if GASNETC_IBV_ODP
+  int					gasnetc_use_odp = 1;
+#endif
+#if (GASNETC_IB_MAX_HCAS > 1)
+  int                                   gasnetc_use_fenced_puts = 0;
+#endif
 int					gasnetc_am_credits_slack;
 int					gasnetc_am_credits_slack_orig;
 int					gasnetc_alloc_qps;
 int					gasnetc_num_qps;
-int					gasnetc_amrdma_max_peers;
-size_t					gasnetc_amrdma_limit;
-int					gasnetc_amrdma_depth;
-int					gasnetc_amrdma_slot_mask;
-gasnetc_atomic_val_t			gasnetc_amrdma_cycle;
+#if GASNETC_IBV_AMRDMA
+  int                                   gasnetc_amrdma_max_peers;
+  size_t                                gasnetc_amrdma_limit;
+  int                                   gasnetc_amrdma_depth;
+  int                                   gasnetc_amrdma_slot_mask;
+  gasnetc_atomic_val_t                  gasnetc_amrdma_cycle;
+#endif
 gasnetc_cep_t				**gasnetc_node2cep = NULL;
 gex_Rank_t                           gasnetc_remote_nodes = 0;
 
@@ -115,21 +123,31 @@ typedef struct gasnetc_rbuf_s {
 #define rbuf_flags		u.am.flags
 #define rbuf_threadinfo         u.am.threadinfo
 
+#define GASNETC_OP_NEEDS_FENCE 0x1000 // Flag bit
 typedef enum {
 	GASNETC_OP_FREE,
 	GASNETC_OP_AM,
+	GASNETC_OP_ATOMIC,
 	GASNETC_OP_GET_ZEROCP,
 #if GASNETC_PIN_SEGMENT && GASNETC_FH_OPTIONAL
 	GASNETC_OP_GET_BOUNCE,
 #endif
-	GASNETC_OP_PUT_INLINE,
-	GASNETC_OP_PUT_ZEROCP,
-	GASNETC_OP_PUT_BOUNCE,
+#if GASNETC_IB_MAX_HCAS > 1
+	GASNETC_OP_FENCE,
+#endif
 #if !GASNETC_PIN_SEGMENT
 	GASNETC_OP_PUT_INMOVE,
 #endif
+        // Following all have GASNETC_OP_NEEDS_FENCE bit set
+	GASNETC_OP_PUT_INLINE = GASNETC_OP_NEEDS_FENCE,
+	GASNETC_OP_PUT_ZEROCP,
+	GASNETC_OP_PUT_BOUNCE,
 	GASNETC_OP_INVALID
 } gasnetc_sreq_opcode_t;
+
+#if GASNETC_IB_MAX_HCAS > 1
+static int gasnetc_op_needs_fence_mask;
+#endif
 
 /* Description of a send request.
  *
@@ -167,6 +185,11 @@ typedef struct gasnetc_sreq_t_ {
     struct { /* AM buffer */
       gasnetc_buffer_t		*buff;
     } am;
+#if GASNETC_IB_MAX_HCAS > 1
+    struct { // Atomic used to fence a multi-rail Put
+      struct gasnetc_sreq_t_    *sreq;
+    } fence;
+#endif
   } u;
   #define fh_count	u.fh.count
   #define fh_ptr	u.fh.ptr
@@ -174,6 +197,7 @@ typedef struct gasnetc_sreq_t_ {
   #define bb_addr	u.bb.addr
   #define bb_len	u.bb.len
   #define am_buff	u.am.buff
+  #define fence_sreq    u.fence.sreq
 #else
   /* Firehose, and AMs are mutually exclusive. */
   union {
@@ -195,6 +219,11 @@ typedef struct gasnetc_sreq_t_ {
     struct { /* AM buffer */
       gasnetc_buffer_t		*buff;
     } am;
+#if GASNETC_IB_MAX_HCAS > 1
+    struct { // Atomic used to fence a multi-rail Put
+      struct gasnetc_sreq_t_    *sreq;
+    } fence;
+#endif
   } u;
   #define fh_count	u.fh.count
   #define fh_ptr	u.fh.ptr
@@ -208,6 +237,7 @@ typedef struct gasnetc_sreq_t_ {
   #define fh_lc 	u.fh.lc
   #define fh_lc_cb 	u.fh.lc_cb
   #define am_buff	u.am.buff
+  #define fence_sreq    u.fence.sreq
 #endif
 } gasnetc_sreq_t;
 
@@ -235,7 +265,9 @@ typedef struct {
  * ------------------------------------------------------------------------------------ */
 
 static size_t                           gasnetc_am_inline_limit_sndrcv = 0;
-static size_t                           gasnetc_am_inline_limit_rdma = 0;
+#if GASNETC_IBV_AMRDMA
+  static size_t                         gasnetc_am_inline_limit_rdma = 0;
+#endif
 #if !GASNETC_PIN_SEGMENT
   static size_t                         gasnetc_putinmove_limit_adjusted = 0;
 #endif
@@ -246,9 +278,8 @@ static gasnetc_sema_t			*gasnetc_cq_semas = NULL;
 
 /* Shared between gasnetc_sndrcv_{limits,init}() */
 static int gasnetc_op_oust_per_qp;
-static int gasnetc_am_repl_per_qp;
 static int gasnetc_am_rqst_per_qp;
-static int gasnetc_am_rbufs_per_qp;
+static int gasnetc_rbuf_spares;
 
 /* ------------------------------------------------------------------------------------ *
  *  File-scoped completion callbacks
@@ -315,6 +346,38 @@ extern void gasnetc_cb_counter_rel(gasnetc_atomic_val_t *cnt) {
   gasnetc_atomic_increment(&counter->completed, GASNETI_ATOMIC_REL);
 }
 
+
+#if GASNETC_IB_MAX_HCAS > 1
+/* ------------------------------------------------------------------------------------ *
+ * AuxSeg space for dummy Atomic ops used to fence multi-rail Puts
+ * TODO: this use of auxseg is yet another an O(ranks) table we must seek to eliminate
+ * ------------------------------------------------------------------------------------ */
+static gasnet_seginfo_t *gasnetc_fence_auxseg = NULL;
+gasneti_auxseg_request_t gasnetc_fence_auxseg_alloc(gasnet_seginfo_t *auxseg_info) {
+  gasneti_auxseg_request_t retval;
+
+  if (!gasnetc_use_fenced_puts) {
+    // No allocation if fenced puts are not enabled
+    retval.minsz = retval.optimalsz = 0;
+  } else {
+    // One cache line each for use as initiator and target
+    // TODO: distinct cache lines for each HCA (via `cep` argument to macros, below)
+    retval.minsz = retval.optimalsz = 2 * GASNETI_CACHE_LINE_BYTES;
+  }
+
+  if (gasnetc_use_fenced_puts && auxseg_info) { /* auxseg granted */
+    gasneti_assert(!gasnetc_fence_auxseg);
+    gasnetc_fence_auxseg = gasneti_malloc(gasneti_nodes*sizeof(gasnet_seginfo_t));
+    memcpy(gasnetc_fence_auxseg, auxseg_info, gasneti_nodes*sizeof(gasnet_seginfo_t));
+  }
+
+  return retval;
+}
+#define GASNETC_FENCE_ADDR_(jobrank,n) \
+            ((uintptr_t)gasnetc_fence_auxseg[(jobrank)].addr + (n << GASNETI_CACHE_LINE_SHIFT))
+#define GASNETC_FENCE_REM_ADDR(cep) GASNETC_FENCE_ADDR_(gasnetc_epid2node(cep->epid), 0)
+#define GASNETC_FENCE_LOC_ADDR(cep) GASNETC_FENCE_ADDR_(gasneti_mynode, 1)
+#endif
 
 /* ------------------------------------------------------------------------------------ *
  *  File-scoped functions and macros                                                    *
@@ -589,6 +652,8 @@ void gasnetc_rcv_post(gasnetc_cep_t *cep, gasnetc_rbuf_t *rbuf) {
   }
 }
 
+#if GASNETC_IBV_AMRDMA
+
 /* gasnetc_do_select
  * See http://en.wikipedia.org/wiki/Selection_algorithm
  * For an overview of algorithms for the Selection problem.
@@ -758,6 +823,7 @@ void gasnetc_amrdma_eligable(gasnetc_cep_t *cep) {
     }
   }
 }
+#endif // GASNETC_IBV_AMRDMA
 
 /* GASNETI_INLINE(gasnetc_processPacket) */
 void gasnetc_processPacket(gasnetc_cep_t *cep, gasnetc_rbuf_t *rbuf, uint32_t flags GASNETI_THREAD_FARG) {
@@ -807,23 +873,26 @@ void gasnetc_processPacket(gasnetc_cep_t *cep, gasnetc_rbuf_t *rbuf, uint32_t fl
     int credits = 0;
 
     if (full_numargs == GASNETC_MAX_ARGS) {
+    #if GASNETC_IBV_AMRDMA
       int acks = (args[0] >> 8) & 0xff;
+    #endif
       credits = args[0] & 0xff;
       full_numargs = (args[0] >> 16) & 0x1f;
       user_numargs = full_numargs - 1;
 
       gasneti_assert(!gasnetc_use_srq || !credits);
 
+    #if GASNETC_IBV_AMRDMA
       if (acks) {
         gasneti_assert(acks <= gasnetc_amrdma_depth);
         gasneti_assert(acks > 0);
         gasnetc_atomic_add(&cep->amrdma_send->head, acks, 0);
       }
-      if (credits) {
-        gasnetc_sema_up_n(&cep->am_loc, credits);
-      }
 
       GASNETI_TRACE_PRINTF(C,("RCV_AM_CREDITS credits=%d acks=%d\n", credits, acks));
+    #else
+      GASNETI_TRACE_PRINTF(C,("RCV_AM_CREDITS credits=%d\n", credits));
+    #endif
 
       args += 1;
     }
@@ -1029,9 +1098,9 @@ static int gasnetc_snd_reap(int limit) {
         } else
       #endif
         if_pt (sreq) {
-	  gasneti_assert(sreq->opcode != GASNETC_OP_INVALID);
-	  gasnetc_sema_up(GASNETC_CEP_SQ_SEMA(sreq->cep));
 	  gasnetc_sema_up(sreq->cep->snd_cq_sema_p);
+        again:
+	  gasnetc_sema_up(GASNETC_CEP_SQ_SEMA(sreq->cep));
 
 	  switch (sreq->opcode) {
           #if GASNETC_PIN_SEGMENT && GASNETC_FH_OPTIONAL
@@ -1099,8 +1168,29 @@ static int gasnetc_snd_reap(int limit) {
 	    GASNETC_COLLECT_BBUF_IF(sreq->am_buff);
 	    break;
 
+	  case GASNETC_OP_ATOMIC:
+	    gasneti_assert((comp.opcode == IBV_WC_FETCH_ADD) ||
+			   (comp.opcode == IBV_WC_COMP_SWAP));
+	    if (sreq->comp.cb != NULL) {
+              sreq->comp.cb(sreq->comp.data);
+	    }
+	    break;
+
+          #if GASNETC_IB_MAX_HCAS > 1
+          case GASNETC_OP_FENCE:        // Atomic after PUT, with descriptor chaining
+	    gasneti_assert(comp.opcode == IBV_WC_FETCH_ADD);
+            sreq->opcode = GASNETC_OP_FREE;
+            sreq = sreq->fence_sreq;
+            #if GASNET_DEBUG
+              gasneti_assert(sreq);
+              gasneti_assert(sreq->opcode & GASNETC_OP_NEEDS_FENCE);
+              comp.opcode = IBV_WC_RDMA_WRITE;
+            #endif
+            goto again;
+          #endif
+
 	  default:
-	    gasneti_fatalerror("Reaped send with invalid/unknown opcode %d", (int)sreq->opcode);
+            gasneti_unreachable_error(("Reaped send with invalid/unknown opcode %d", (int)sreq->opcode));
 	  }
 
 	  /* Mark sreq free */
@@ -1333,8 +1423,8 @@ void gasnetc_rcv_am(const struct ibv_wc *comp, gasnetc_rbuf_t **spare_p GASNETI_
     /* Now process the packet */
     gasnetc_processPacket(cep, rbuf, flags GASNETI_THREAD_PASS);
 
-    /* Return the rcv buffer to the free list */
-    gasnetc_lifo_push(cep->rbuf_freelist, rbuf);
+    // Repost the rcv buffer
+    gasnetc_rcv_post(cep, rbuf);
   } else {
     /* Post a replacement buffer before processing the request.
      * This ensures that the credit sent with the reply will
@@ -1377,9 +1467,11 @@ void gasnetc_rcv_am(const struct ibv_wc *comp, gasnetc_rbuf_t **spare_p GASNETI_
     }
   }
 
+#if GASNETC_IBV_AMRDMA
   if ((comp->byte_len <= gasnetc_amrdma_limit) && gasneti_attach_done && gasnetc_amrdma_max_peers) {
     gasnetc_amrdma_eligable(cep);
   }
+#endif // GASNETC_IBV_AMRDMA
 }
 
 static int gasnetc_rcv_reap(gasnetc_hca_t *hca, const int limit, gasnetc_rbuf_t **spare_p GASNETI_THREAD_FARG) {
@@ -1433,6 +1525,7 @@ static int gasnetc_rcv_reap(gasnetc_hca_t *hca, const int limit, gasnetc_rbuf_t 
   return count;
 }
 
+#if GASNETC_IBV_AMRDMA
 GASNETI_INLINE(gasnetc_rcv_amrdma)
 int gasnetc_rcv_amrdma(gasnetc_EP_t ep, gasnetc_cep_t *cep GASNETI_THREAD_FARG) {
   gasnetc_amrdma_recv_t *recv_state = cep->amrdma_recv;
@@ -1513,14 +1606,11 @@ int gasnetc_rcv_amrdma(gasnetc_EP_t ep, gasnetc_cep_t *cep GASNETI_THREAD_FARG) 
 
   /* Account for any recv buffer that was reserved for the reply, but not used.
    * Must precede credit processing in gasnetc_processPacket (bug 2359) */
-  if (GASNETC_MSG_ISREPLY(flags)) {
 #if GASNETC_IBV_SRQ
-    if (gasnetc_use_srq) {
-      gasnetc_sema_up(&cep->hca->am_sema);
-    } else
-#endif
-    gasnetc_sema_up(&cep->am_loc);
+  if (GASNETC_MSG_ISREPLY(flags) && gasnetc_use_srq) {
+    gasnetc_sema_up(&cep->hca->am_sema);
   }
+#endif
 
   /* Process the packet, includes running handler and processing credits/acks */
   rbuf.cep = cep;
@@ -1546,7 +1636,8 @@ int gasnetc_rcv_amrdma(gasnetc_EP_t ep, gasnetc_cep_t *cep GASNETI_THREAD_FARG) 
 
     gasneti_assert(bits != 0);
 
-  #if GASNETI_HAVE_CC_BUILTIN_CTZ
+  #if GASNETI_HAVE_CC_BUILTIN_CTZ && \
+      !(PLATFORM_COMPILER_XLC && _ARCH_PWR9) /* bug 3880 */
     if_pt (~bits) {
       count = __builtin_ctz(~bits);
       bits >>= count;
@@ -1584,9 +1675,11 @@ int gasnetc_rcv_amrdma(gasnetc_EP_t ep, gasnetc_cep_t *cep GASNETI_THREAD_FARG) 
 #endif
   return 1;
 }
+#endif // GASNETC_IBV_AMRDMA
 
 GASNETI_INLINE(gasnetc_poll_rcv_hca)
 void gasnetc_poll_rcv_hca(gasnetc_EP_t ep, gasnetc_hca_t *hca, int limit GASNETI_THREAD_FARG) {
+#if GASNETC_IBV_AMRDMA
   int count = gasnetc_atomic_read(&hca->amrdma_rcv.count, 0);
   int limit2 = count + 1;
 
@@ -1616,12 +1709,18 @@ void gasnetc_poll_rcv_hca(gasnetc_EP_t ep, gasnetc_hca_t *hca, int limit GASNETI
       }
     }
   }
+#else
+  // Poll for AM in recv CQ
+  gasnetc_rbuf_t *spare = NULL;
+  (void)gasnetc_rcv_reap(hca, limit, &spare GASNETI_THREAD_PASS);
+  if (spare) {
+    gasnetc_lifo_push(&hca->rbuf_freelist, spare);
+  }
+#endif // GASNETC_IBV_AMRDMA
 }
 
-GASNETI_INLINE(gasnetc_do_poll)
-void gasnetc_do_poll(int poll_rcv, int poll_snd GASNETI_THREAD_FARG) {
-  const gasnetc_EP_t ep = gasnetc_ep0; // TODO-EX: replace this via args
-  if (poll_rcv) {
+GASNETI_INLINE(gasnetc_poll_rcv_all)
+void gasnetc_poll_rcv_all(gasnetc_EP_t ep, int limit GASNETI_THREAD_FARG) {
   #if GASNETC_IB_MAX_HCAS > 1
     /* Simple round-robin (w/ a harmless multi-thread race) */
     /* Note use of casts to volatile are require to work around bug 1586 */
@@ -1636,8 +1735,14 @@ void gasnetc_do_poll(int poll_rcv, int poll_snd GASNETI_THREAD_FARG) {
   #if GASNET_PSHM
     gasneti_AMPSHMPoll(0 GASNETI_THREAD_PASS);
   #endif
-  }
+}
 
+GASNETI_INLINE(gasnetc_do_poll)
+void gasnetc_do_poll(int poll_rcv, int poll_snd GASNETI_THREAD_FARG) {
+  const gasnetc_EP_t ep = gasnetc_ep0; // TODO-EX: replace this via args
+  if (poll_rcv) {
+    gasnetc_poll_rcv_all(ep, GASNETC_RCV_REAP_LIMIT GASNETI_THREAD_PASS);
+  }
   if (poll_snd) {
     (void)gasnetc_snd_reap(GASNETC_SND_REAP_LIMIT);
   }
@@ -1831,10 +1936,44 @@ void gasnetc_snd_validate(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, int
 #endif /* DEBUG || TRACE */
 
 
+GASNETI_COLD GASNETI_NORETURN
+static void gasnetc_snd_post_fail(int rc, int is_inline) {
+  if (GASNETC_IS_EXITING()) {
+    /* disconnected by another thread */
+    gasnetc_exit(0);
+  } else {
+    /* unexpected error */
+    GASNETC_IBV_CHECK(rc, is_inline ? "while posting an inline send work request"
+                                    : "while posting a send work request");
+  }
+  gasneti_fatalerror("unreachable");
+}
+GASNETI_NORETURNP(gasnetc_snd_post_fail)
+
+static void
+gasnetc_snd_post_inner(gasnetc_cep_t * const cep, struct ibv_send_wr *sr_desc, int is_inline GASNETI_THREAD_FARG)
+{
+  // Loop until space is available for 1 new entry on the CQ.
+  // If we hold the last one then threads sending to ANY node will stall.
+  // So this is the last resource to acquire
+  if_pf (!gasnetc_sema_trydown(cep->snd_cq_sema_p)) {
+    GASNETC_TRACE_WAIT_BEGIN();
+    do {
+      GASNETI_WAITHOOK();
+      gasnetc_poll_snd();
+    } while (!gasnetc_sema_trydown(cep->snd_cq_sema_p));
+    GASNETC_TRACE_WAIT_END(POST_SR_STALL_CQ);
+  }
+
+  // Post the operation
+  struct ibv_send_wr *bad_wr;
+  int rc = ibv_post_send(cep->qp_handle, sr_desc, &bad_wr);
+  if_pf (rc) gasnetc_snd_post_fail(rc, is_inline);
+}
+
 GASNETI_INLINE(gasnetc_snd_post_common)
 void gasnetc_snd_post_common(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, int is_inline GASNETI_THREAD_FARG) {
   gasnetc_cep_t * const cep = sreq->cep;
-  int vstat;
 
   /* Must be bound to a qp by now */
   gasneti_assert(cep != NULL );
@@ -1846,19 +1985,19 @@ void gasnetc_snd_post_common(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, 
   /* A valid callback will never take NULL as its data */
   gasneti_assert(sreq->comp.cb == NULL || sreq->comp.data != NULL);
 
-  /* Loop until space is available for 1 new entry on the CQ.
-   * If we hold the last one then threads sending to ANY node will stall. */
-  if_pf (!gasnetc_sema_trydown(cep->snd_cq_sema_p)) {
-    GASNETC_TRACE_WAIT_BEGIN();
-    do {
-      GASNETI_WAITHOOK();
-      gasnetc_poll_snd();
-    } while (!gasnetc_sema_trydown(cep->snd_cq_sema_p));
-    GASNETC_TRACE_WAIT_END(POST_SR_STALL_CQ);
-  }
-
-  /* setup some invariant fields */
-  sr_desc[0].wr_id = (uintptr_t)sreq;
+  // setup some remaining fields
+  const enum ibv_send_flags inline_flag = is_inline ? IBV_SEND_INLINE
+                                                    : (enum ibv_send_flags)0;
+  const enum ibv_send_flags signal_flag = GASNETC_USE_SEND_SIGNALLED ? IBV_SEND_SIGNALED
+                                                                     : (enum ibv_send_flags)0;
+  sr_desc->send_flags = inline_flag | signal_flag;
+  sr_desc->wr_id = (uintptr_t)sreq;
+#if GASNETC_IBV_XRC_OFED
+  sr_desc->qp_type.xrc.remote_srqn = cep->xrc_remote_srq_num; /* Even if unused */
+#elif GASNETC_IBV_XRC_MLNX
+  sr_desc->xrc_remote_srq_num = cep->xrc_remote_srq_num; /* Even if unused */
+#endif
+  sr_desc->next = NULL;
 
   /* Trace and debug */
   if (is_inline) {
@@ -1869,30 +2008,74 @@ void gasnetc_snd_post_common(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, 
     gasnetc_snd_validate(sreq, sr_desc, 1, "POST_SR");
   }
 
-  /* Post it */
-  {
-    struct ibv_send_wr *bad_wr;
-    sr_desc->next = NULL;
-    sr_desc->send_flags = is_inline ? IBV_SEND_INLINE : (enum ibv_send_flags)0;
-  #if GASNETC_IBV_XRC_OFED
-    sr_desc->qp_type.xrc.remote_srqn = cep->xrc_remote_srq_num; /* Even if unused */
-  #elif GASNETC_IBV_XRC_MLNX
-    sr_desc->xrc_remote_srq_num = cep->xrc_remote_srq_num; /* Even if unused */
-  #endif
-    vstat = ibv_post_send(cep->qp_handle, sr_desc, &bad_wr);
-  }
+#if GASNETC_IB_MAX_HCAS > 1
+  // When GASNET_USE_FENCED_PUTS is enabled, we must post both the Put and an
+  // Atomic such that the conduit-level remote completion callback for the Put
+  // will not execute until the ibv-level CQE for the Atomic.
+  GASNETC_DECL_SR_DESC(amo_sr_desc, 1);
+  if (sreq->opcode & gasnetc_op_needs_fence_mask) {
+    gasnetc_sreq_t *amo_sreq = gasnetc_get_sreq(GASNETC_OP_FENCE GASNETI_THREAD_PASS);
+    amo_sreq->cep = cep;
+    amo_sreq->fence_sreq = sreq;
 
-  if_pt (vstat == 0) {
-    /* SUCCESS, the request is posted */
-    return;
-  } else if (GASNETC_IS_EXITING()) {
-    /* disconnected by another thread */
-    gasnetc_exit(0);
-  } else {
-    /* unexpected error */
-    GASNETC_IBV_CHECK(vstat, is_inline ? "while posting an inline send work request"
-    					: "while posting a send work request");
+    // Setup fetch-and-add using dummy auxseg locations reserved for this purpose
+    amo_sr_desc->wr_id = (uintptr_t)amo_sreq;
+    amo_sr_desc->opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
+    amo_sr_desc->wr.atomic.compare_add = 0;
+    amo_sr_desc->wr.atomic.remote_addr = GASNETC_FENCE_REM_ADDR(cep);
+    amo_sr_desc->wr.atomic.rkey = cep->hca->aux_rkeys[gasnetc_epid2node(cep->epid)];
+    amo_sr_desc->num_sge = 1;
+    amo_sr_desc->sg_list[0].length = sizeof(uint64_t);
+    amo_sr_desc->sg_list[0].addr = GASNETC_FENCE_LOC_ADDR(cep);
+    amo_sr_desc->sg_list[0].lkey = cep->hca->aux_reg.handle->lkey;
+  #if GASNETC_IBV_XRC_OFED
+    amo_sr_desc->qp_type.xrc.remote_srqn = sr_desc->qp_type.xrc.remote_srqn;
+  #elif GASNETC_IBV_XRC_MLNX
+    amo_sr_desc->xrc_remote_srq_num = sr_desc->xrc_remote_srq_num;
+  #endif
+
+    // Assume we can obtain resources to make a single ibv_post_send() call,
+    // generating a single CQE for the Atomic (suppressing the one for the Put)
+    amo_sr_desc->send_flags = IBV_SEND_SIGNALED;
+    amo_sr_desc->next = NULL;
+    sr_desc->send_flags = inline_flag; // Strips IBV_SEND_SIGNALED
+    sr_desc->next = amo_sr_desc;
+
+    // Try at most twice (w/ a CQ poll between) to obtain a second CQ slot
+    // Spinning indefinitely while holding one slot could deadlock if
+    // multiple threads in a PAR build are all doing the same.
+    // Even in a SEQ or PARSYNC build, there is an advantage to posting the
+    // Put without unnecessary delay.
+    if_pf (!gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)) &&
+           (gasnetc_snd_reap(1), !gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)))) {
+      // Since we failed to get a second SQ slot we split the two post operations
+      GASNETC_STAT_EVENT(POST_SR_SPLIT);
+      // Move the remote completion callback from the Put to the Atomic
+      amo_sreq->opcode = GASNETC_OP_ATOMIC;
+      amo_sreq->comp.cb   = sreq->comp.cb;
+      amo_sreq->comp.data = sreq->comp.data;
+      sreq->comp.cb = NULL;
+      // Post only the Put, releasing a SQ slot for eventual reclamation
+      sr_desc->next = NULL;
+      sr_desc->send_flags = inline_flag | IBV_SEND_SIGNALED;
+      gasnetc_snd_post_inner(cep, sr_desc, is_inline GASNETI_THREAD_PASS);
+      // Ensure the post call on the normal code path will post the Atomic
+      sr_desc = amo_sr_desc;
+      is_inline = 0;
+      // Now we spin to obtain a SQ slot for just the Atomic operation
+      if_pf (!gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep))) {
+        GASNETC_TRACE_WAIT_BEGIN();
+        do {
+          if (!gasnetc_snd_reap(1)) GASNETI_WAITHOOK();
+        } while (!gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)));
+        GASNETC_TRACE_WAIT_END(POST_SR_STALL_SQ2);
+      }
+    }
   }
+#endif
+
+  /* Post it */
+  gasnetc_snd_post_inner(cep, sr_desc, is_inline GASNETI_THREAD_PASS);
 }
 #define gasnetc_snd_post(x,y)		gasnetc_snd_post_common(x,y,0 GASNETI_THREAD_PASS)
 #define gasnetc_snd_post_inline(x,y)	gasnetc_snd_post_common(x,y,1 GASNETI_THREAD_PASS)
@@ -1931,6 +2114,7 @@ static void gasnetc_rcv_thread(struct ibv_wc *comp_p, void *arg)
 }
 #endif /* GASNETC_USE_RCV_THREAD */
 
+#if GASNETC_IBV_AMRDMA
 /* Try to claim the next slot */
 GASNETI_INLINE(gasnetc_get_amrdma_slot)
 int gasnetc_get_amrdma_slot(gasnetc_cep_t *cep, size_t msg_len) {
@@ -1992,6 +2176,7 @@ size_t gasnetc_encode_amrdma(gasnetc_cep_t *cep, struct ibv_send_wr *sr_desc, in
     return (size_t)(len0 + len1);
   }
 }
+#endif // GASNETC_IBV_AMRDMA
 
 #if GASNETC_PIN_SEGMENT
 GASNETI_INLINE(gasnetc_seg_index) int gasnetc_seg_index(uintptr_t offset);
@@ -2028,7 +2213,6 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
     int fail_type = GASNETC_FAIL_IMM;
     int have_flow;
     int packedlong = 0;
-    int rdma_slot;
     gasnetc_epid_t epid;
     gasnetc_cep_t *cep;
     char tmp_buf[sizeof(gasnetc_am_tmp_buf_t) + 8];
@@ -2086,8 +2270,12 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
      * allow a race where we allocate space for the args, but end up sending
      * pointless zero values in them.
      */
+#if GASNETC_IBV_AMRDMA
     have_flow = (gasnetc_atomic_read(&cep->am_flow.credit, 0) ||
 		 gasnetc_atomic_read(&cep->am_flow.ack, 0));
+#else
+    have_flow = gasnetc_atomic_read(&cep->am_flow.credit, 0);
+#endif
     if (have_flow) numargs += 1;
   
     /* Figure out length so we know if we can use inline or not.
@@ -2195,7 +2383,7 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
           GASNETC_TRACE_WAIT_BEGIN();
           if (immediate) {
           #if GASNETC_IMMEDIATE_AMPOLLS
-            // A *full* Poll, but only once
+            // A full Poll, but only once and only the selected HCA
             gasnetc_poll_rcv_hca(ep, cep->hca, GASNETC_RCV_REAP_LIMIT GASNETI_THREAD_PASS);
             if (!gasnetc_sema_trydown(sema)) {
               // TODO-EX: stats/trace for this as distinct from ..._STALL
@@ -2207,22 +2395,22 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
           } else {
             do {
 	      GASNETI_WAITHOOK();
-              gasnetc_poll_rcv_hca(ep, cep->hca, 1 GASNETI_THREAD_PASS);
+              gasnetc_poll_rcv_all(ep, 1 GASNETI_THREAD_PASS);
             } while (!gasnetc_sema_trydown(sema));
             GASNETC_TRACE_WAIT_END(GET_AMREQ_CREDIT_STALL);
           }
         }
       }
   
-      /* Post or account for the rbuf needed for the Reply */
 #if GASNETC_IBV_SRQ
+      /* Account for the rbuf needed for the Reply */
       if (gasnetc_use_srq) {
         gasnetc_sema_t * const sema = &(cep->hca->am_sema);
         if_pf (!gasnetc_sema_trydown(sema)) {
           GASNETC_TRACE_WAIT_BEGIN();
           if (immediate) {
           #if GASNETC_IMMEDIATE_AMPOLLS
-            // A *full* Poll, but only once
+            // A full Poll, but only once and only the selected HCA
             gasnetc_poll_rcv_hca(ep, cep->hca, GASNETC_RCV_REAP_LIMIT GASNETI_THREAD_PASS);
             if (!gasnetc_sema_trydown(sema)) {
               // TODO-EX: stats/trace for this as distinct from ..._STALL
@@ -2234,68 +2422,42 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
           } else {
             do {
 	      GASNETI_WAITHOOK();
-              gasnetc_poll_rcv_hca(ep, cep->hca, 1 GASNETI_THREAD_PASS);
+              gasnetc_poll_rcv_all(ep, 1 GASNETI_THREAD_PASS);
             } while (!gasnetc_sema_trydown(sema));
           }
           GASNETC_TRACE_WAIT_END(GET_AMREQ_BUFFER_STALL);
         }
-        gasneti_assert(NULL == gasnetc_lifo_pop(cep->rbuf_freelist));
-      } else
-#endif
-      if (gasnetc_sema_trydown(&cep->am_loc)) {
-        /* We'll use one that was left over due to ACK coalescing or reply via rdma */
-      } else {
-        gasnetc_rbuf_t *rbuf = gasnetc_lifo_pop(cep->rbuf_freelist);
-        if_pf (rbuf == NULL) {
-          GASNETC_TRACE_WAIT_BEGIN();
-          if (immediate) {
-          #if GASNETC_IMMEDIATE_AMPOLLS
-            // A *full* Poll, but only once
-            gasnetc_poll_rcv_hca(ep, cep->hca, GASNETC_RCV_REAP_LIMIT GASNETI_THREAD_PASS);
-	    if (!gasnetc_sema_trydown(&cep->am_loc) &&
-	        !(rbuf = gasnetc_lifo_pop(cep->rbuf_freelist))) {
-              // TODO-EX: stats/trace for this as distinct from ..._STALL
-              goto out_no_rbuf;
-            }
-          #else
-            goto out_no_rbuf;
-          #endif
-          } else {
-            do {
-	      GASNETI_WAITHOOK();
-              gasnetc_poll_rcv_hca(ep, cep->hca, 1 GASNETI_THREAD_PASS);
-	      if (gasnetc_sema_trydown(&cep->am_loc)) {
-	        break;
-	      }
-	      rbuf = gasnetc_lifo_pop(cep->rbuf_freelist);
-            } while (rbuf == NULL);
-            GASNETC_TRACE_WAIT_END(GET_AMREQ_BUFFER_STALL);
-          }
-        }
-        if (rbuf) {
-	  gasnetc_rcv_post(cep, rbuf);
-	}
       }
+#endif
     }
   
     // Try to obtain a slot for AM-over-RDM *unless* IMMEDIATE
     // In the IMMEDIATE case we cannot (in general) deallocate the slot
     size_t msg_len = len0 + len1;
-    rdma_slot = immediate ? -1 : gasnetc_get_amrdma_slot(cep, msg_len);
+#if GASNETC_IBV_AMRDMA
+    int rdma_slot = immediate ? -1 : gasnetc_get_amrdma_slot(cep, msg_len);
     if (rdma_slot < 0) {
       GASNETC_STAT_EVENT(SND_AM_SNDRCV);
     } else {
       GASNETC_STAT_EVENT(SND_AM_RDMA);
     }
+#else
+    const int rdma_slot = 0;
+#endif
 
     /* Now get a buffer and start building the message.
      * If we can be certain that the message will be small enough for an inline send/put,
      * then we'll use a buffer on the stack (saving us from accessing the shared pool of
      * bounce buffers, which might block).
      */
+#if GASNETC_IBV_AMRDMA
     const size_t max_inline = (rdma_slot >= 0) ? gasnetc_am_inline_limit_rdma
                                                : gasnetc_am_inline_limit_sndrcv;
     const size_t buf_offset = (rdma_slot >= 0) ? sizeof(gasnetc_amrdma_hdr_t) : 0;
+#else
+    const size_t max_inline = gasnetc_am_inline_limit_sndrcv;
+    const size_t buf_offset = 0;
+#endif
     if (msg_len <= max_inline) {
       buf = (gasnetc_buffer_t *)GASNETI_ALIGNUP(tmp_buf, 8);
     } else if (immediate) {
@@ -2341,16 +2503,23 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
       /* acks and credits travel packed in a "prefixed" argument, remaining args are shifted */
 
       /* "Grab" info w/ atomic load-and-clear operations: */
+    #if GASNETC_IBV_AMRDMA
       const uint32_t acks = gasnetc_atomic_swap(&cep->am_flow.ack, 0, 0);
-      const uint32_t credits = gasnetc_atomic_swap(&cep->am_flow.credit, 0, 0);
-
       gasneti_assert(acks <= 255);
+    #else
+      const uint32_t acks = 0;
+    #endif
+      const uint32_t credits = gasnetc_atomic_swap(&cep->am_flow.credit, 0, 0);
       gasneti_assert(credits <= 255);
 
       args[0] = credits | (acks << 8) | (numargs << 16);
       i = 1;
 
+    #if GASNETC_IBV_AMRDMA
       GASNETI_TRACE_PRINTF(C,("SND_AM_CREDITS credits=%d acks=%d\n", credits, acks));
+    #else
+      GASNETI_TRACE_PRINTF(C,("SND_AM_CREDITS credits=%d\n", credits));
+    #endif
     }
     for (/*EMPTY*/; i < numargs; ++i) {
       args[i] = va_arg(argptr, gex_AM_Arg_t);
@@ -2398,10 +2567,12 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
   
       (void)gasnetc_bind_cep_inner(epid, sreq, IBV_WR_SEND_WITH_IMM, msg_len, token != NULL);
 
+    #if GASNETC_IBV_AMRDMA
       if (rdma_slot >= 0) {
         msg_len = gasnetc_encode_amrdma(sreq->cep, sr_desc, rdma_slot);
         gasneti_assert((msg_len <= gasnetc_inline_limit) || (buf_alloc != NULL));
       }
+    #endif
 
       gasnetc_snd_post_common(sreq, sr_desc, (msg_len <= gasnetc_inline_limit) GASNETI_THREAD_PASS);
     }
@@ -2414,16 +2585,14 @@ int gasnetc_ReqRepGeneric(gasnetc_EP_t ep,
 
   out_no_buffer:
 
-    if (!token) { // Account for the posted-but-not-consumed reply buffer
-    #if GASNETC_IBV_SRQ
-      if (gasnetc_use_srq) {
-        gasnetc_sema_up(&cep->hca->am_sema);
-      } else
-    #endif
-      gasnetc_sema_up(&cep->am_loc);
+#if GASNETC_IBV_SRQ
+    if (!token && gasnetc_use_srq) {
+      // Account for the posted-but-not-consumed reply buffer
+      gasnetc_sema_up(&cep->hca->am_sema);
     }
 
   out_no_rbuf:
+#endif
 
     if (!token) { // Restore the allocated credit, if any
       gasnetc_sema_up(&cep->am_rem);
@@ -2501,8 +2670,8 @@ void gasnetc_bounce_common(gasnetc_epid_t epid, int rkey_index, struct ibv_send_
   sr_desc->wr.rdma.remote_addr += len;
 }
 
-/* Assemble and all-but-post a zero-copy PUT or GET using either the seg_lkeys table or
- * firehose to obtain the lkeys.  Both cases delay the bind to a qp until the
+/* Assemble and all-but-post a zero-copy PUT or GET using either the seg_lkeys table,
+ * ODP, or firehose to obtain the lkeys.  All cases delay the bind to a qp until the
  * total xfer len is known.
  */
 GASNETI_INLINE(gasnetc_zerocp_common)
@@ -2547,6 +2716,17 @@ size_t gasnetc_zerocp_common(gasnetc_epid_t epid, int rkey_index, struct ibv_sen
       /* Xlate index to actual lkey */
       sr_desc->sg_list[seg].lkey = GASNETC_SEG_LKEY(cep, base+seg);
     }
+#if GASNETC_IBV_ODP
+  } else if (gasnetc_use_odp) {
+    // TODO-EX: older implicit ODP emulation had 128MB limit.  May need to chunk here.
+    cep = gasnetc_bind_cep(epid, sreq, op, len);
+    sr_desc->sg_list[0].lkey = cep->hca->implicit_odp.lkey;
+    gasneti_assert_uint(sr_desc->sg_list[0].addr ,==, loc_addr);
+    sr_desc->sg_list[0].length = len;
+    sr_desc->num_sge = 1;
+    sreq->fh_count = 0;
+    remain = 0;
+#endif
   } else {
     const firehose_request_t *fh_loc = gasnetc_fh_aligned_local_pin(loc_addr, len);
     int seg;
@@ -2986,6 +3166,7 @@ size_t gasnetc_get_local_fh(gasnetc_sreq_t *sreq, uintptr_t loc_addr, size_t len
     sreq->fh_count = i;
     len -= remain;
   } else {
+    // TODO-EX: ODP support for segment everything?
     const firehose_request_t *fh_loc = gasnetc_fh_aligned_local_pin(loc_addr, len);
     len = MIN(remain, (fh_loc->addr + fh_loc->len - loc_addr));
     sreq->fh_ptr[1] = fh_loc;
@@ -3193,8 +3374,21 @@ size_t gasnetc_fh_get_helper(gasnetc_epid_t epid, gasnetc_sreq_t *sreq,
 extern int gasnetc_sndrcv_limits(void) {
   gasnetc_hca_t		*hca;
   int 			h;
-  const int 		rcv_spare = (gasnetc_use_rcv_thread ? 1 : 0);
-  const int 		rcv_spares = gasnetc_num_hcas * rcv_spare;
+
+  { // How many threads do we expect may execute handlers concurrently?
+    int rcv_thread = (gasnetc_use_rcv_thread ? 1 : 0); // AM recv thread
+#if GASNET_PAR
+    // Guess based on (cpus / procs), rounded up.
+    int cpus = gasneti_cpu_count();
+    int procs = gasneti_myhost.node_count;
+    int client_threads = (cpus + procs - 1) / procs;
+#else
+    // At most 1 client thread *in GASNet*
+    int client_threads = 1;
+#endif
+    int threads = rcv_thread + client_threads;
+    gasnetc_rbuf_spares = MAX(1,gasneti_getenv_int_withdefault("GASNET_RBUF_SPARES", threads, 0));
+  }
 
   gasnetc_remote_nodes = gasneti_nodes - (GASNET_PSHM ? gasneti_nodemap_local_count : 1);
 
@@ -3237,64 +3431,43 @@ extern int gasnetc_sndrcv_limits(void) {
   gasnetc_op_oust_limit = gasnetc_num_qps * gasnetc_op_oust_per_qp;
   GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_NETWORKDEPTH_TOTAL = %d", gasnetc_op_oust_limit));
 
-  /* AM recv buffer allocation.  There are 5 roles a rcv buffer might fill (counts per HCA):
-   * (1) Either 0 or 1 for use by the AM rcv thread.
-   * (2) Exactly (gasnetc_am_oust_pp * hca->max_qps) used to catch Requests
-   * (3) Upto (gasnetc_am_oust_limit * hca->qps) used to catch Replies
-   * (4) Upto (gasnetc_am_credits_slack * hca->max_qps) that are assocaited with coallesced
-   *     credits and thus with Replies that did not occur.  These get recycled the next time a
-   *     Request is sent on the corresponding QP, but are not free to move to any other QP.
-   * (5) Free
-   * For "accounting" (1) and (2) are exact requirements and (3), (4) and (5) are lumped
-   * together, with the added requirement that (4) < (3) to avoid a deadlock in which
-   * credit coallescing has tied up all the rcv buffers (bug 1418).
-   * Thus we allocate (1) + (2) + (3) buffers (and CQ slots) and adjust gasnetc_am_credits_slack
-   * as needed to ensure (4) < (3)
-   * We also (silently) reduce gasnetc_am_oust_limit to account for the fact that Replies
-   * can never out number Requests.
+  /* AM recv buffer allocation.
+   * There are 3 roles a rcv buffer might fill (counts per HCA):
+   * (1) (gasnetc_num_hcas * gasnetc_rbuf_spares) used in recv path to post before processing
+   * (2) (gasnetc_am_oust_pp * hca->max_qps) used to catch Requests
+   * (3) (gasnetc_am_oust_pp * hca->max_qps) used to catch Replies
+   * However distribution over QPs and SRQ may each reduce the second two.
    *
    * Note that we use (gasneti_nodes - 1) rather than gasnetc_remote_nodes.  This is because
    * gasnetc_remote_nodes may vary among processes, possibly leading to making different
    * gasnet_use_srq decisions across nodes.
+   * TODO: As a result, some rbufs may be allocated for PSHM peers when SRQ is inactive.
    */
   gasnetc_am_oust_pp /= gasnetc_num_qps;
   gasnetc_am_rqst_per_qp = gasnetc_am_oust_pp * (gasneti_nodes - 1);
-  if (gasnetc_am_oust_limit == 0) {
-    /* 0 = automatic limit computations.
-     * Find the largest possible value of (3) within HCA limits */
-    gasnetc_am_repl_per_qp = gasnetc_am_rqst_per_qp; /* Replies never exceed Requests */
-    GASNETC_FOR_ALL_HCA(hca) {
-      int tmp = hca->hca_cap.max_cqe	/* Total CQ space */
-			- rcv_spare /* Rcv thread's spare */
-			- (gasnetc_am_rqst_per_qp * hca->qps); /* To catch Requests */
-      tmp /= hca->qps;
-      gasnetc_am_repl_per_qp = MIN(gasnetc_am_repl_per_qp, tmp);
-    }
+
+  // Compute gasnetc_am_oust_pp (and report GASNET_AM_CREDITS_PP)
+  GASNETC_FOR_ALL_HCA(hca) {
+    int tmp = hca->hca_cap.max_cqe - gasnetc_rbuf_spares;
+    tmp /= 2 * hca->qps; // Remainder to be split between Request and Reply, spread over the qps
+    gasnetc_am_rqst_per_qp = MIN(gasnetc_am_rqst_per_qp, tmp);
+  }
+  gasnetc_am_oust_pp = gasnetc_am_rqst_per_qp / MAX(1, (gasneti_nodes - 1));
+  GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_AM_CREDITS_PP = %d", gasnetc_am_oust_pp * gasnetc_num_qps));
+
+  // Compute gasnetc_am_oust_limit (and report GASNET_AM_CREDITS_TOTAL)
+  if (gasnetc_am_oust_limit == 0) { // automatic limit computations.
+    gasnetc_am_oust_limit = MIN(gasnetc_op_oust_limit, gasnetc_num_qps * gasnetc_am_rqst_per_qp);
   } else {
-    gasnetc_am_repl_per_qp = MIN((gasnetc_am_oust_limit / gasnetc_num_qps), gasnetc_am_rqst_per_qp);
-    if (!gasnetc_am_repl_per_qp) {
-      gasnetc_am_repl_per_qp = 1;	/* Ensure at least 1 */
-    }
-    GASNETC_FOR_ALL_HCA(hca) {
-      int tmp = hca->qps * (gasnetc_am_rqst_per_qp + gasnetc_am_repl_per_qp) + rcv_spare;
-      if (tmp > hca->hca_cap.max_cqe) {
-        GASNETI_RETURN_ERRR(RESOURCE, "GASNET_AM_CREDIT_{PP,TOTAL} exceed HCA capabilities");
-      }
+    gasnetc_am_oust_limit = MIN(gasnetc_am_oust_limit, gasnetc_op_oust_limit);
+    if (gasnetc_am_oust_limit > gasnetc_num_qps * gasnetc_am_rqst_per_qp) {
+      GASNETI_RETURN_ERRR(RESOURCE, "GASNET_AM_CREDIT_{PP,TOTAL} exceed HCA capabilities");
     }
   }
-  gasnetc_am_oust_limit = gasnetc_num_qps * gasnetc_am_repl_per_qp;
   GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_AM_CREDITS_TOTAL = %d", gasnetc_am_oust_limit));
 
-  if (gasnetc_remote_nodes > 0) {
-    gasnetc_am_credits_slack = MIN(gasnetc_am_credits_slack, gasnetc_am_oust_pp - 1);
-    GASNETC_FOR_ALL_HCA(hca) {
-      /* Ensure credit coallescing can't deadlock a Request (bug 1418) */
-      int limit = hca->qps * gasnetc_am_repl_per_qp - gasnetc_remote_nodes; /* might be negative */
-      while (gasnetc_am_credits_slack && (gasnetc_am_credits_slack * hca->max_qps > limit)) {
-	--gasnetc_am_credits_slack; /* easier to loop than get rounded arithmetic right */
-      }
-    }
-  }
+  // Ensure credit coallescing can't deadlock a Request (bug 1418)
+  gasnetc_am_credits_slack = MIN(gasnetc_am_credits_slack, gasnetc_am_oust_pp - 1);
   gasnetc_am_credits_slack = MIN(gasnetc_am_credits_slack, 256);
   GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_AM_CREDITS_SLACK = %d", gasnetc_am_credits_slack));
 
@@ -3315,14 +3488,8 @@ extern int gasnetc_sndrcv_limits(void) {
   }
   /* SRQ may raise this.  So, report is deferred. */
 
-  gasnetc_am_rbufs_per_qp = gasnetc_am_rqst_per_qp + gasnetc_am_repl_per_qp;
+  const int rcv_spares = gasnetc_num_hcas * gasnetc_rbuf_spares;
 #if GASNETC_IBV_SRQ
-  /* TODO: the parameter GASNET_RBUF_LIMIT is *not* being applied as documented
-   * in the README, and the reporting below confuses matters even more by
-   * mixing the definitions.  So, we should fix one or the other so that they
-   * actually match.  Fixing the code is probably preferable, since the
-   * alternative definition (used by the current code) is hard to explain/use.
-   */
   if (gasnetc_use_srq) {
     unsigned int srq_wr_per_qp = (gasnetc_rbuf_limit - rcv_spares) / gasnetc_num_qps;
     int orig = gasnetc_rbuf_limit;
@@ -3357,33 +3524,35 @@ extern int gasnetc_sndrcv_limits(void) {
 
     /* As per README:
        GASNET_USE_SRQ < 0: Use SRQ only if memory savings would result
+       TODO: The "rbuf_spares" may be unused when SRQ is active?
      */
-    tmp = MIN(gasnetc_am_rqst_per_qp, srq_wr_per_qp) + gasnetc_am_repl_per_qp;
+    tmp = MIN(gasnetc_am_rqst_per_qp, srq_wr_per_qp/2);  // Half of non-spares
     gasneti_assert(gasnetc_rbuf_limit != 0);
     GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_RBUF_COUNT = %d (SRQ limit: %d, w/o SRQ: %d)",
-                             tmp * gasnetc_num_qps + rcv_spares,
+                             2 * tmp * gasnetc_num_qps + rcv_spares,
                              gasnetc_rbuf_limit,
-                             gasnetc_am_rbufs_per_qp * gasnetc_num_qps + rcv_spares));
-    if ((gasnetc_use_srq < 0) && (tmp == gasnetc_am_rbufs_per_qp)) {
+                             2 * gasnetc_am_rqst_per_qp * gasnetc_num_qps + rcv_spares));
+    if ((gasnetc_use_srq < 0) && (tmp == gasnetc_am_rqst_per_qp)) {
       GASNETI_TRACE_PRINTF(I, ("SRQ disabled because GASNET_USE_SRQ = -1 and no buffer savings would result"));
       gasnetc_use_srq = 0;
     } else {
       GASNETI_TRACE_PRINTF(I, ("SRQ enabled"));
-      gasnetc_am_rqst_per_qp = tmp - gasnetc_am_repl_per_qp;
-      gasnetc_am_rbufs_per_qp = tmp;
+      gasnetc_am_rqst_per_qp = tmp;
       gasnetc_use_srq = 1;
       gasnetc_am_credits_slack = 0;
       /* Need to ensure some BBUFs avail even if max number of AM Requests are all blocked */
       gasnetc_bbuf_limit = MAX(gasnetc_bbuf_limit, MIN(64, gasnetc_op_oust_limit) + gasnetc_am_oust_limit);
     }
   } else {
-    GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_RBUF_COUNT = %d", gasnetc_am_rbufs_per_qp * gasnetc_num_qps + rcv_spares));
+    GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_RBUF_COUNT = %d",
+                             2 * gasnetc_am_rqst_per_qp * gasnetc_num_qps + rcv_spares));
     GASNETI_TRACE_PRINTF(I, ("SRQ disabled"));
     gasnetc_use_srq = 0;
   }
   /* gasnetc_use_srq is just 0 or 1 from here on */
 #else
-  GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_RBUF_COUNT = %d", gasnetc_am_rbufs_per_qp * gasnetc_num_qps + rcv_spares));
+  GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_RBUF_COUNT = %d",
+                           2 * gasnetc_am_rqst_per_qp * gasnetc_num_qps + rcv_spares));
 #endif
   GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_BBUF_COUNT = %d", gasnetc_bbuf_limit));
   gasnetc_am_credits_slack_orig = gasnetc_am_credits_slack;
@@ -3468,7 +3637,6 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
   gasnetc_buffer_t	*buf;
   gasnetc_rbuf_t	*rbuf;
   int 			padded_size, h, i;
-  const int 		rcv_spare = (gasnetc_use_rcv_thread ? 1 : 0);
   size_t		size;
   int			ud_rcvs = 0;
 
@@ -3495,7 +3663,7 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
 
   /* create one RCV CQ per HCA */
   GASNETC_FOR_ALL_HCA(hca) {
-    const int rcv_count = hca->qps * gasnetc_am_rbufs_per_qp + rcv_spare;
+    const int rcv_count = 2 * gasnetc_am_rqst_per_qp * hca->qps + gasnetc_rbuf_spares;
     const int cqe_count = rcv_count + (!hca->hca_index ? ud_rcvs : 0);
     gasnetc_progress_thread_t *rcv_thread = NULL;
   #if GASNETC_USE_RCV_THREAD
@@ -3507,7 +3675,9 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
     gasneti_assert(act_size >= cqe_count);
     /* We don't set rcv_count = act_size here, as that could nearly double the memory allocated below */
 
+  #if GASNETC_IBV_AMRDMA
     gasnetc_lifo_init(&hca->amrdma_freelist);
+  #endif
 
     if (gasnetc_remote_nodes) {
       /* Allocated pinned memory for receive buffers */
@@ -3529,16 +3699,15 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
 #if GASNETC_IBV_SRQ
       /* create two shared recv queues per HCA */
       if (gasnetc_use_srq) {
-        const int rqst_count = hca->qps * gasnetc_am_rqst_per_qp;
-        const int repl_count = hca->qps * gasnetc_am_repl_per_qp;
+        const int rbuf_count = hca->qps * gasnetc_am_rqst_per_qp;
 
-        hca->rqst_srq = gasnetc_create_srq(hca, rqst_count);
+        hca->rqst_srq = gasnetc_create_srq(hca, rbuf_count);
         GASNETC_IBV_CHECK_PTR(hca->rqst_srq, "from gasnetc_create_srq(Request)");
 
-        hca->repl_srq = gasnetc_create_srq(hca, repl_count);
+        hca->repl_srq = gasnetc_create_srq(hca, rbuf_count);
         GASNETC_IBV_CHECK_PTR(hca->repl_srq, "from gasnetc_create_srq(Reply)");
 
-        gasnetc_sema_init(&hca->am_sema, rqst_count, rqst_count);
+        gasnetc_sema_init(&hca->am_sema, rbuf_count, rbuf_count);
       }
 #endif
   
@@ -3572,6 +3741,7 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
       }
 #endif
       
+#if GASNETC_IBV_AMRDMA
       /* Initialize resources for AM-over-RDMA */
       if (NULL == hca->cep) {
         hca->cep = gasneti_calloc(hca->max_qps, sizeof(gasnetc_cep_t *));
@@ -3617,6 +3787,7 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
           gasneti_leak(hca->amrdma_balance.table);
         }
       }
+#endif // GASNETC_IBV_AMRDMA
     }
   }
 
@@ -3632,7 +3803,7 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
   }
   gasnetc_op_oust_per_qp = MAX(1, gasnetc_op_oust_per_qp); /* Avoid error in single-node case */
   GASNETC_FOR_ALL_HCA(hca) {
-    const int rqst_count = gasnetc_use_srq ? gasnetc_am_repl_per_qp : 0;
+    const int rqst_count = gasnetc_use_srq ? gasnetc_am_rqst_per_qp : 0;
     const int cqe_count = hca->qps * (gasnetc_op_oust_per_qp + rqst_count);
     vstat = gasnetc_create_cq(hca->handle, cqe_count, &hca->snd_cq, &act_size, NULL);
     GASNETC_IBV_CHECK(vstat, "from gasnetc_create_cq(snd_cq)");
@@ -3674,6 +3845,11 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
   }
  }
 
+#if GASNETC_IB_MAX_HCAS > 1
+  // Speed critical path checks
+  gasnetc_op_needs_fence_mask = gasnetc_use_fenced_puts ?  GASNETC_OP_NEEDS_FENCE : 0;
+#endif
+
   /* Init thread-local data */
   gasnetc_per_thread_setup();
 
@@ -3681,10 +3857,9 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
 }
 
 extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep) {
-  int i, j;
-
   if (!GASNETI_NBRHD_JOBRANK_IS_LOCAL(node)) {
-    for (i = 0; i < gasnetc_alloc_qps; ++i, ++cep) {
+    const int first = !cep->hca->num_qps;
+    for (int i = 0; i < gasnetc_alloc_qps; ++i, ++cep) {
       gasnetc_hca_t *hca = cep->hca;
       cep->epid = gasnetc_epid(node, i);
       cep->rbuf_freelist = &hca->rbuf_freelist;
@@ -3695,27 +3870,28 @@ extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep) {
       cep->snd_lkey = hca->snd_reg.handle->lkey;
     #endif
 
+    #if GASNETC_IBV_AMRDMA
       /* Initialize local AM-over-RDMA info */
       gasnetc_atomic_set(&cep->amrdma_eligable, 0, 0);
       cep->amrdma_send = NULL;
       cep->amrdma_recv = NULL;
-      hca->cep[hca->num_qps++] = cep;
+      hca->cep[hca->num_qps] = cep;
+    #endif
+
+      hca->num_qps++;
       gasneti_assert(hca->num_qps <= hca->max_qps);
 
       if (gasnetc_use_srq) {
-        /* Prepost to SRQ for exactly one peer (after which the lifo is empty) */
-        gasnetc_rbuf_t *rbuf = gasnetc_lifo_pop(cep->rbuf_freelist);
-        if (rbuf) {
-          int count = (i < gasnetc_num_qps) ? gasnetc_am_repl_per_qp : gasnetc_am_rqst_per_qp;
-          for (j = 1; j < count; ++j) {
+        // Prepost to SRQ for only one peer on each HCA
+        if (first) {
+          for (int j = 0; j < gasnetc_am_rqst_per_qp; ++j) {
+            gasnetc_rbuf_t *rbuf = gasnetc_lifo_pop(cep->rbuf_freelist);
             gasnetc_rcv_post(cep, rbuf);
-            rbuf = gasnetc_lifo_pop(cep->rbuf_freelist);
           }
-          gasnetc_rcv_post(cep, rbuf);
         }
       } else
-      for (j = 0; j < gasnetc_am_oust_pp; ++j) {
-        /* Prepost one rcv buffer for each possible incomming request */
+      for (int j = 0; j < 2 * gasnetc_am_oust_pp; ++j) {
+        // Prepost one rcv buffer for each possible incomming Request or Reply
         gasnetc_rcv_post(cep, gasnetc_lifo_pop(cep->rbuf_freelist));
       }
 
@@ -3723,19 +3899,19 @@ extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep) {
       /* sq_sema now set when QP is created */
       if (gasnetc_use_srq && (i < gasnetc_num_qps)) {
         gasnetc_sema_init(&cep->am_rem, 0, 0);
-        gasnetc_sema_init(&cep->am_loc, 0, 0);
       } else {
         gasnetc_sema_init(&cep->am_rem, gasnetc_am_oust_pp, gasnetc_am_oust_pp);
-        gasnetc_sema_init(&cep->am_loc, 0, gasnetc_am_oust_pp);
       }
+    #if GASNETC_IBV_AMRDMA
       gasnetc_atomic_set(&cep->am_flow.credit, 0, 0);
       gasnetc_atomic_set(&cep->am_flow.ack, 0, 0);
+    #endif
       cep->snd_cq_sema_p = &gasnetc_cq_semas[GASNETC_HCA_IDX(cep)];
     }
   } else {
     /* Should never use these for loopback or same supernode */
     /* XXX: is this now unreachable with new connect code? */
-    for (i = 0; i < gasnetc_alloc_qps; ++i, ++cep) {
+    for (int i = 0; i < gasnetc_alloc_qps; ++i, ++cep) {
       cep->epid = gasnetc_epid(node, i);
     #if GASNETC_IBV_XRC
       gasneti_assert(GASNETC_CEP_SQ_SEMA(cep) == NULL);
@@ -3743,17 +3919,20 @@ extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep) {
       gasnetc_sema_init(GASNETC_CEP_SQ_SEMA(cep), 0, 0);
     #endif
       gasnetc_sema_init(&cep->am_rem, 0, 0);
-      gasnetc_sema_init(&cep->am_loc, 0, 0);
       gasnetc_atomic_set(&cep->am_flow.credit, 0, 0);
+    #if GASNETC_IBV_AMRDMA
       gasnetc_atomic_set(&cep->am_flow.ack, 0, 0);
       gasnetc_atomic_set(&cep->amrdma_eligable, 0, 0);
+    #endif
     }
   }
 }
 
 extern void gasnetc_sndrcv_init_inline(void) {
   gasnetc_am_inline_limit_sndrcv = MIN(gasnetc_inline_limit, sizeof(gasnetc_am_tmp_buf_t));
+#if GASNETC_IBV_AMRDMA
   gasnetc_am_inline_limit_rdma = MAX(GASNETC_AMRDMA_HDRSZ, gasnetc_am_inline_limit_sndrcv) - GASNETC_AMRDMA_HDRSZ;
+#endif
 #if !GASNETC_PIN_SEGMENT
   gasnetc_putinmove_limit_adjusted = gasnetc_putinmove_limit
 	  				? (gasnetc_putinmove_limit + gasnetc_inline_limit)
@@ -3796,7 +3975,6 @@ void gasnetc_sys_flush_reph(gex_Token_t token, gex_AM_Arg_t credits) {
   gasnetc_am_credits_slack = 0;
 
   if (--credits) { /* Since this is a Reply, one credit has already been posted */
-    gasnetc_sema_up_n(&cep->am_loc, credits);
     gasnetc_sema_up_n(&cep->am_rem, credits);
   }
 }
@@ -3955,7 +4133,9 @@ extern int gasnetc_sndrcv_shutdown(void) {
 
     gasnetc_unpin_unmap(hca, &hca->snd_reg);
     gasnetc_unpin_unmap(hca, &hca->rcv_reg);
+  #if GASNETC_IBV_AMRDMA
     gasnetc_unpin_unmap(hca, &hca->amrdma_reg);
+  #endif
   }
 
   return GASNET_OK;
@@ -3997,6 +4177,7 @@ extern void gasnetc_sndrcv_stop_thread(int block) {
 }
 #endif
 
+#if GASNETC_IBV_AMRDMA
 extern gasnetc_amrdma_send_t *gasnetc_amrdma_send_alloc(uint32_t rkey, void *addr) {
   gasnetc_amrdma_send_t *result = gasneti_malloc(sizeof(gasnetc_amrdma_send_t));
   gasneti_leak(result);
@@ -4040,6 +4221,7 @@ extern gasnetc_amrdma_recv_t *gasnetc_amrdma_recv_alloc(gasnetc_hca_t *hca) {
 
   return result;
 }
+#endif // GASNETC_IBV_AMRDMA
 
 /* Just gasnetc_AMPoll w/o CHECKATTACH when !handler_context */
 extern void gasnetc_sndrcv_poll(int handler_context) {
@@ -4799,6 +4981,7 @@ int gasnetc_AMReplyLong(    gex_Token_t token, gex_AM_Index_t handler,
           gasneti_assert(iop->next); // Within an NBI access region
           local_cnt = &iop->initiated_alc_cnt;
           local_cb = gasnetc_cb_nar_alc;
+          start_cnt = 0; // DEAD STORE: avoid a warning from gcc-7.3.0/aarch64
         } else {
           eop = (gasnete_eop_t*)op;
           gasneti_assert(gasneti_event_idx(*lc_opt) == gasnete_eop_event_alc);
@@ -4818,6 +5001,7 @@ int gasnetc_AMReplyLong(    gex_Token_t token, gex_AM_Index_t handler,
     } else if (lc_opt == GEX_EVENT_NOW) {
       local_cnt = &counter.initiated;
       local_cb = gasnetc_cb_counter;
+      start_cnt = 0; // DEAD STORE: avoid a warning from gcc-7.3.0/aarch64
     } else {
       gasneti_fatalerror("Invalid lc_opt argument to ReplyLong");
     }

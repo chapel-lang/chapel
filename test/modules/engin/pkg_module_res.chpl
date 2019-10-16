@@ -7,10 +7,6 @@ var arr: [{0..10}] int;
 writeln(norm(arr));
 writeln(Norm.norm(arr)); //works 
 
-use Curl;
-var sl: slist;
-var sl2: Curl.slist;
-
 use Sort;
 writeln(isSorted(arr));
 writeln(Sort.isSorted(arr));

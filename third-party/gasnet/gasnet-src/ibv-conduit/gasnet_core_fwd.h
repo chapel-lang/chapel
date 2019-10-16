@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.0
+#define GASNET_CORE_VERSION      2.3
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -123,6 +123,8 @@
 	CNT(C, POST_INLINE_SR, cnt)               \
 	TIME(C, POST_SR_STALL_CQ, stalled time)   \
 	TIME(C, POST_SR_STALL_SQ, stalled time)   \
+	TIME(C, POST_SR_STALL_SQ2, stalled time)  \
+	CNT(C, POST_SR_SPLIT, cnt)                \
 	VAL(C, POST_SR_LIST, requests)            \
 	VAL(C, SND_REAP, reaped)                  \
 	VAL(C, RCV_REAP, reaped)                  \
@@ -151,14 +153,21 @@
 #define GASNETC_FATALSIGNAL_CALLBACK(sig) gasnetc_fatalsignal_callback(sig)
 	extern void gasnetc_fatalsignal_callback(int sig);
 
+#if GASNETC_IBV_ODP
+  #define GASNETC_FATALSIGNAL_CLEANUP_CALLBACK(sig) gasnetc_fatalsignal_cleanup_callback(sig)
+  extern void gasnetc_fatalsignal_cleanup_callback(int sig);
+#endif
+
 #if PLATFORM_OS_DARWIN && !GASNET_SEQ
   #define GASNETC_PTHREAD_CREATE_OVERRIDE(create_fn, thread, attr, start_routine, arg) \
 	gasnetc_pthread_create(create_fn, thread, attr, start_routine, arg)
 #endif
 
+#if GASNETC_IBV_AMRDMA
 extern void gasnetc_amrdma_balance(void);
 #define GASNETC_PROGRESSFNS_LIST(FN) \
   FN(gasnetc_pf_amrdma, COUNTED, gasnetc_amrdma_balance)
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 /* handler table access for PSHM (temporary global impl until PSHM can pass actual ep) */

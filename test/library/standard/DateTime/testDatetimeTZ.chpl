@@ -253,7 +253,7 @@ proc test_tzinfo_fromtimestamp() {
   var tz = new shared FixedOffset(utcoffset, "tz", new timedelta());
   var expected = utcdatetime + utcoffset;
   var got = datetime.fromtimestamp(timestamp, tz);
-  assert(expected == got.replace(tzinfo=new shared(nil:unmanaged TZInfo)));
+  assert(expected == got.replace(tzinfo=new shared(nil:unmanaged TZInfo?)));
 }
 
 proc test_tzinfo_timetuple() {
@@ -422,7 +422,7 @@ proc test_replace() {
 
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
-  var base2 = base.replace(tzinfo=new shared(nil: unmanaged TZInfo));
+  var base2 = base.replace(tzinfo=new shared(nil: unmanaged TZInfo?));
   assert(base2.tzinfo.borrow() == nil);
 
   // Ensure we can add one.
@@ -440,7 +440,7 @@ proc test_more_astimezone() {
   assert(dt.tzinfo == f44m);
 
   // Replacing with same tzinfo makes no change.
-  var x = dt.astimezone(dt.tzinfo);
+  var x = dt.astimezone(dt.tzinfo:shared TZInfo);
   assert(x.tzinfo == f44m);
   assert(x.getdate() == dt.getdate());
   assert(x.gettime() == dt.gettime());
@@ -514,7 +514,7 @@ proc test_mixed_compare() {
   var t1 = new datetime(1, 2, 3, 4, 5, 6, 7);
   var t2 = new datetime(1, 2, 3, 4, 5, 6, 7);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=new shared(nil: unmanaged TZInfo));
+  t2 = t2.replace(tzinfo=new shared(nil: unmanaged TZInfo?));
   assert(t1 == t2);
   t2 = t2.replace(tzinfo=new shared FixedOffset(0, ""));
 

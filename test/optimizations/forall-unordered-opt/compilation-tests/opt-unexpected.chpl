@@ -202,7 +202,7 @@ proc mini_lock() {
 
   forall r in 1..M {
     // Acquire the lock
-    while myLock.compareExchange(0, 1) {
+    while myLock.compareAndSwap(0, 1) {
       //chpl_task_yield();
     }
     // do something meaningful
@@ -214,7 +214,7 @@ proc mini_lock() {
 mini_lock();
 
 proc doCmpXchng(ref myLock: atomic int) {
-  return myLock.compareExchange(0, 1);
+  return myLock.compareAndSwap(0, 1);
 }
 
 
@@ -245,7 +245,7 @@ proc mini_lock3() {
     // Acquire the lock
     var x = 1;
     while x < 10000 {
-      while myLock.compareExchange(0, 1) {
+      while myLock.compareAndSwap(0, 1) {
         //chpl_task_yield();
       }
       x += 1;
@@ -260,7 +260,7 @@ mini_lock3();
 
 
 proc lockRecursive(ref myLock: atomic int) {
-  if myLock.compareExchange(0, 1) then
+  if myLock.compareAndSwap(0, 1) then
     return;
 
   lockRecursive(myLock);
@@ -289,7 +289,7 @@ proc mini_lock5() {
     // This code is wrong and racy, but the analysis
     // should nonetheless detect it as "blocking"
     while myLock == 1 {
-      atomic_fence();
+      atomicFence();
       if myLock == 0 {
         myLock = 1;
         break;
@@ -383,6 +383,16 @@ record buffer1 {
   var b: [1..64] int;
   var cnt: int;
 
+  proc init() {
+    b = for i in 1..64 do 0;
+    cnt = 0;
+  }
+  proc init=(other: buffer1) {
+    this.b = for i in 1..16 do other.b[i];
+    this.cnt = other.cnt;
+  }
+
+
   inline proc enqueue(i:int) {
     b[cnt] = i;
     cnt += 1;
@@ -391,6 +401,13 @@ record buffer1 {
       cnt = 0;
     }
   }
+}
+
+proc =(ref lhs:buffer1, rhs:buffer1) {
+  for i in 1..64 do
+    lhs.b[i] = rhs.b[i];
+
+  lhs.cnt = rhs.cnt;
 }
 
 proc tls_hazard_buffer1() {
@@ -407,6 +424,16 @@ record buffer2 {
   var b: [1..64] int;
   var cnt: int;
 
+  proc init() {
+    b = for i in 1..64 do 0;
+    cnt = 0;
+  }
+  proc init=(other: buffer1) {
+    this.b = for i in 1..16 do other.b[i];
+    this.cnt = other.cnt;
+  }
+
+
   inline proc enqueue(i:int) {
     b[cnt] = i;
     if cnt == b.size-1 {
@@ -417,6 +444,12 @@ record buffer2 {
   }
 }
 
+proc =(ref lhs:buffer2, rhs:buffer2) {
+  for i in 1..64 do
+    lhs.b[i] = rhs.b[i];
+
+  lhs.cnt = rhs.cnt;
+}
 proc tls_hazard_buffer2() {
   var taskCounter: atomic int;
   var perTaskBuff: [0..M] buffer2;
@@ -454,7 +487,7 @@ proc tls_signalling() {
         tls.signal.add(1);
 
       tls.deferredSignal = 1;
-      tls.happensBeforeSignal.add(1, order=memory_order_relaxed);
+      tls.happensBeforeSignal.add(1, order=memoryOrder.relaxed);
     }
 
     // Complete all of the deferred signals

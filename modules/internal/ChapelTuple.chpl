@@ -38,7 +38,7 @@ The following method is also available:
 It returns the number of components of the tuple.
 */
 module ChapelTuple {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   pragma "tuple" record _tuple {
     param size : int;
@@ -100,7 +100,7 @@ module ChapelTuple {
   pragma "no doc"
   proc *(param p: uint, type t) type {
     if p > max(int) then
-      compilerError("Tuples of size >" + max(int) + " are not currently supported");
+      compilerError("Tuples of size >" + max(int):string + " are not currently supported");
     param pAsInt = p: int;
     return pAsInt*t;
   }
@@ -289,44 +289,6 @@ module ChapelTuple {
   //
   // tuple methods
   //
-  pragma "no doc"
-  proc _tuple.readWriteThis(f) {
-    var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
-    var start:ioLiteral;
-    var comma:ioLiteral;
-    var end:ioLiteral;
-    var binary = f.binary();
-
-    if st == QIO_TUPLE_FORMAT_SPACE {
-      start = new ioLiteral("");
-      comma = new ioLiteral(" ");
-      end = new ioLiteral("");
-    } else if st == QIO_TUPLE_FORMAT_JSON {
-      start = new ioLiteral("[");
-      comma = new ioLiteral(", ");
-      end = new ioLiteral("]");
-    } else {
-      start = new ioLiteral("(");
-      comma = new ioLiteral(", ");
-      end = new ioLiteral(")");
-    }
-
-    if !binary {
-      f <~> start;
-    }
-    if size != 0 {
-      f <~> this(1);
-      for param i in 2..size {
-        if !binary {
-          f <~> comma;
-        }
-        f <~> this(i);
-      }
-    }
-    if !binary {
-      f <~> end;
-    }
-  }
 
   //
   // tuple casts to complex(64) and complex(128)

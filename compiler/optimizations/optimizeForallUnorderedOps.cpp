@@ -207,35 +207,13 @@ class MarkOptimizableForallLastStmts : public AstVisitorTraverse {
     LifetimeInformation* lifetimeInfo;
 
     virtual bool enterForallStmt(ForallStmt* forall);
+    void markLoopsInForall(ForallStmt* forall);
 };
 
 bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
-
   if (fNoOptimizeForallUnordered == false) {
     // If the optimization is enabled, do this
-    std::vector<BlockStmt*> bodies = forall->loopBodies();
-    for_vector(BlockStmt, block, bodies) {
-      std::vector<Expr*> lastStmts;
-      getLastStmts(block, lastStmts);
-      for_vector(Expr, stmt, lastStmts) {
-        if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
-          SymExpr* lhs = NULL;
-          SymExpr* rhs = NULL;
-          if (CallExpr* call = toCallExpr(stmt)) {
-            if (call->numActuals() >= 1)
-              lhs = toSymExpr(call->get(1));
-            if (call->numActuals() >= 2)
-              rhs = toSymExpr(call->get(2));
-          }
-          if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
-            addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
-          if (rhs && symbolOutlivesLoop(block, rhs->symbol(), lifetimeInfo))
-            addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
-          if (forallNoTaskPrivate(forall))
-            addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
-        }
-      }
-    }
+    markLoopsInForall(forall);
   }
 
   // Either way, add chpl_comm_unordered_task_fence at the end of
@@ -245,6 +223,91 @@ bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
   forall->insertAfter(new CallExpr(gChplAfterForallFence));
 
   return true;
+}
+
+void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
+
+  bool addNoTaskPrivate = forallNoTaskPrivate(forall);
+  std::vector< std::vector<Expr*> > lastStatementsPerBody;
+
+  // Gather the last statements in each loop body
+  std::vector<BlockStmt*> bodies = forall->loopBodies();
+  for_vector(BlockStmt, block, bodies) {
+    std::vector<Expr*> lastStmts;
+    getLastStmts(block, lastStmts);
+    lastStatementsPerBody.push_back(lastStmts);
+  }
+
+  // Compute the number of last statements
+  // (expecting it matches across fast-follower/follower bodies)
+  int numLastStmts = -1;
+  for (size_t loopNum = 0;
+       loopNum < lastStatementsPerBody.size();
+       loopNum++) {
+    int numThisLoop = (int) lastStatementsPerBody[loopNum].size();
+    if (numLastStmts == -1)
+      numLastStmts = numThisLoop;
+    else if (numLastStmts != numThisLoop)
+      return; // Give up on optimizing it
+  }
+
+  // Consider the last statements
+  for (int stmtNum = 0; stmtNum < numLastStmts; stmtNum++) {
+
+    int loopNum;
+
+    // For this last statement, compute the lifetime
+    // properties, but do so ignoring the difference between
+    // fast-follower/follower loops.
+    bool addLhsOutlivesForall = false;
+    bool addRhsOutlivesForall = false;
+
+    loopNum = 0;
+    for_vector(BlockStmt, block, bodies) {
+      Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
+      if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
+        SymExpr* lhs = NULL;
+        SymExpr* rhs = NULL;
+        if (CallExpr* call = toCallExpr(stmt)) {
+          if (call->numActuals() >= 1)
+            lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2)
+            rhs = toSymExpr(call->get(2));
+        }
+        if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
+          addLhsOutlivesForall = true;
+        if (rhs && symbolOutlivesLoop(block, rhs->symbol(), lifetimeInfo))
+          addRhsOutlivesForall = true;
+      }
+
+      loopNum++;
+    }
+
+    // Now that we have the lifetime properties, mark all follower
+    // loop bodies with the appropriate optimization info.
+    loopNum = 0;
+    for_vector(BlockStmt, block, bodies) {
+      Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
+      if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
+        SymExpr* lhs = NULL;
+        SymExpr* rhs = NULL;
+        if (CallExpr* call = toCallExpr(stmt)) {
+          if (call->numActuals() >= 1)
+            lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2)
+            rhs = toSymExpr(call->get(2));
+        }
+        if (lhs && addLhsOutlivesForall)
+          addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
+        if (rhs && addRhsOutlivesForall)
+          addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
+        if (addNoTaskPrivate)
+          addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
+      }
+
+      loopNum++;
+    }
+  }
 }
 
 void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
@@ -348,7 +411,7 @@ static bool loopContainsBlocking(BlockStmt* block) {
   MayBlockState state = gather.finalState();
 
   if (fReportBlocking)
-    if (block->getModule()->modTag == MOD_USER || developer)
+    if (developer || printsUserLocation(block))
       USR_PRINT(block, "loopContainsBlocking = %s",
                 blockStateString(state));
 
@@ -420,7 +483,7 @@ static MayBlockState mayBlock(FnSymbol* fn) {
         fnstate |= STATE_MAYBE_BLOCKING;
 
       if (fReportBlocking) {
-        bool user = (fn->defPoint->getModule()->modTag == MOD_USER &&
+        bool user = (printsUserLocation(fn->defPoint) &&
                      !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
                      !isTaskFunOrWrapper(fn));
 
@@ -679,7 +742,7 @@ static void transformAtomicStmt(Expr* stmt) {
     // Remove a memory_order argument if present
     ArgSymbol* orderFormal = NULL;
     for_formals(formal, newFn) {
-      if (formal->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE))
+      if (formal->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
         orderFormal = formal;
     }
     INT_ASSERT(orderFormal);
@@ -696,7 +759,7 @@ static void transformAtomicStmt(Expr* stmt) {
   // The loop below finds the last argument that is a memory_order.
   Expr* orderActual = NULL;
   for_actuals(actual, call) {
-    if (actual->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE))
+    if (actual->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
       orderActual = actual;
   }
   INT_ASSERT(orderActual);
@@ -708,17 +771,6 @@ static void transformAtomicStmt(Expr* stmt) {
   INT_ASSERT(se && se->symbol() == oldFn);
   se->setSymbol(newFn);
 
-}
-
-static bool hasAcceptableType(Symbol* sym) {
-  Type* t = sym->getValType();
-  return is_bool_type(t) ||
-         is_int_type(t) ||
-         is_uint_type(t) ||
-         is_real_type(t) ||
-         is_imag_type(t) ||
-         is_complex_type(t) ||
-         is_enum_type(t);
 }
 
 static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
@@ -734,11 +786,7 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
         if (CallExpr* marker = findMarkerNear(stmt))
           if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
               hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
-            // This last check can be relaxed in the future if the
-            // runtime unordered code supports more cases.
-            // The earlier part already checked that it's a POD type.
-            if (hasAcceptableType(lhs))
-              return true;
+            return true;
 
   return false;
 }
@@ -792,9 +840,11 @@ static void transformAssignStmt(Expr* stmt) {
   if (lhs->isRef() && rhs->isRef()) {
     SET_LINENO(call);
     // add the call to getput
-    if (fReportOptimizeForallUnordered)
-      if (call->getModule()->modTag == MOD_USER || developer)
+    if (fReportOptimizeForallUnordered) {
+      if (developer || printsUserLocation(call)) {
         USR_PRINT(call, "Optimized assign to be unordered");
+      }
+    }
 
     call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs));
     call->remove();
@@ -811,7 +861,7 @@ void optimizeForallUnorderedOps() {
     // (analysis will print out result as it is computed)
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       ModuleSymbol* mod = fn->defPoint->getModule();
-      if (mod->modTag == MOD_USER &&
+      if (printsUserLocation(fn->defPoint) &&
           !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
           fn != mod->initFn &&
           fn != mod->deinitFn) {

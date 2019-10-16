@@ -28,6 +28,9 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil, ChapelArray;
+  private use ChapelDistribution, ChapelRange, SysBasic, SysError;
+  private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
+  private use DefaultSparse, DefaultAssociative, DefaultOpaque;
   use ExternalArray;
 
   config param debugDefaultDist = false;
@@ -297,70 +300,46 @@ module DefaultRectangular {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                " ranges(", parDim, ").length=", ranges(parDim).length);
+                           " ranges(", parDim, ").length=", ranges(parDim).length);
       }
-
       if debugDataPar {
-        chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
-                "### ignoreRunning = ", ignoreRunning, "\n" +
-                "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
-                "### nranges = ", ranges);
+        chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
+                           "### ignoreRunning = ", ignoreRunning, "\n",
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n",
+                           "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
+                           "### nranges = ", ranges);
       }
-
       if numChunks <= 1 {
         for i in these_help(1) {
           yield i;
         }
       } else {
-        var locBlock: rank*range(intIdxType);
-        for param i in 1..rank {
-          locBlock(i) = offset(i)..#(ranges(i).length);
-        }
         if debugDefaultDist {
-          chpl_debug_writeln("*** DI: locBlock = ", locBlock);
+          chpl_debug_writeln("*** DI: ranges = ", ranges);
         }
+        // TODO: The following is somewhat of an abuse of what
+        // _computeBlock() was designed for (dense ranges only; I
+        // multiplied by the stride as a white lie to make it work
+        // reasonably.  We should switch to using the RangeChunk
+        // library...
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(intIdxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+          var block = ranges;
+          const len = if (!ranges(parDim).stridable) then ranges(parDim).length
+              else ranges(parDim).length:uint * abs(ranges(parDim).stride):uint;
+          const (lo,hi) = _computeBlock(len,
                                         numChunks, chunk,
-                                        locBlock(parDim)._high,
-                                        locBlock(parDim)._low,
-                                        locBlock(parDim)._low);
-          followMe(parDim) = lo..hi;
+                                        ranges(parDim)._high,
+                                        ranges(parDim)._low,
+                                        ranges(parDim)._low);
+          if block(parDim).stridable then
+            block(parDim) = lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment);
+          else
+            block(parDim) = lo..hi;
           if debugDefaultDist {
-            chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
-          }
-          var block: rank*range(idxType=intIdxType, stridable=stridable);
-          if stridable {
-            type strType = chpl__signedType(intIdxType);
-            for param i in 1..rank {
-              // Note that a range.stride is signed, even if the range is not
-              const rStride = ranges(i).stride;
-              const rSignedStride = rStride:strType;
-              if rStride > 0 {
-                // Since stride is positive, the following line results
-                // in a positive number, so casting it to e.g. uint is OK
-                const riStride = rStride:intIdxType;
-                const low = ranges(i).alignedLowAsInt + followMe(i).low*riStride,
-                      high = ranges(i).alignedLowAsInt + followMe(i).high*riStride,
-                      stride = rSignedStride;
-                block(i) = low..high by stride;
-              } else {
-                // Stride is negative, so the following number is positive.
-                const riStride = (-rStride):intIdxType;
-                const low = ranges(i).alignedHighAsInt - followMe(i).high*riStride,
-                      high = ranges(i).alignedHighAsInt - followMe(i).low*riStride,
-                      stride = rSignedStride;
-                block(i) = low..high by stride;
-              }
-            }
-          } else {
-            for  param i in 1..rank do
-              block(i) = ranges(i)._low+followMe(i).low:intIdxType..ranges(i)._low+followMe(i).high:intIdxType;
+            chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
           }
           for i in these_help(1, block) {
-            yield chpl_intToIdx(i);
+            yield i;
           }
         }
       }
@@ -393,11 +372,11 @@ module DefaultRectangular {
                                                        minIndicesPerTask,
                                                        ranges);
         if debugDataParNuma {
-          chpl_debug_writeln("### numSublocs = ", numSublocs, "\n" +
-                  "### numTasksPerSubloc = ", numSublocTasks, "\n" +
-                  "### ignoreRunning = ", ignoreRunning, "\n" +
-                  "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+          chpl_debug_writeln("### numSublocs = ", numSublocs, "\n",
+                 "### numTasksPerSubloc = ", numSublocTasks, "\n",
+                  "### ignoreRunning = ", ignoreRunning, "\n",
+                  "### minIndicesPerTask = ", minIndicesPerTask, "\n",
+                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                   "### nranges = ", ranges);
         }
 
@@ -415,8 +394,8 @@ module DefaultRectangular {
             local do on here.getChild(chunk) {
               if debugDataParNuma {
                 if chunk!=chpl_getSubloc() then
-                  chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                          ", on "+chpl_getSubloc()+") ***");
+                  chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ", chunk,
+                                     ", on ", chpl_getSubloc(), ") ***");
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
@@ -449,7 +428,7 @@ module DefaultRectangular {
                                               high, low, low);
                 followMe2(parDim2) = lo..hi;
                 if debugDataParNuma {
-                  chpl_debug_writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  " +
+                  chpl_debug_writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  ",
                           "followMe = ", followMe, "  followMe2 = ", followMe2);
                 }
                 yield followMe2;
@@ -479,10 +458,10 @@ module DefaultRectangular {
                   " ranges(", parDim, ").length=", ranges(parDim).length);
 
         if debugDataPar {
-          chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
-                  "### ignoreRunning = ", ignoreRunning, "\n" +
-                  "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
-                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+          chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
+                 "### ignoreRunning = ", ignoreRunning, "\n",
+                 "### minIndicesPerTask = ", minIndicesPerTask, "\n",
+                 "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                   "### nranges = ", ranges);
         }
 
@@ -1083,21 +1062,21 @@ module DefaultRectangular {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
+        var numElts:intIdxType = 0;
         if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
+          // dataAllocRange may be empty or contain a meaningful value
+          if rank == 1 && !stridable then
+            numElts = dataAllocRange.length;
+          if numElts == 0 then
+            numElts = dom.dsiNumIndices;
+
           if needsDestroy {
-            var numElts:intIdxType = 0;
-            // dataAllocRange may be empty or contain a meaningful value
-            if rank == 1 && !stridable then
-              numElts = dataAllocRange.length;
-            if numElts == 0 then
-              numElts = dom.dsiNumIndices;
             dsiDestroyDataHelper(data, numElts);
           }
         }
-        const size = blk(1) * dom.dsiDim(1).length;
-        _ddata_free(data, size);
+        _ddata_free(data, numElts);
       }
     }
 
@@ -1980,10 +1959,10 @@ module DefaultRectangular {
 
     const (LeftActives, RightActives, inferredRank) = bulkCommComputeActiveDims(LeftDims, RightDims);
 
-    var DimSizes : [1..0] LeftDims(1).size.type;
+    var DimSizes: [1..inferredRank] LeftDims(1).size.type;
     for i in 1..inferredRank {
       const dimIdx = LeftActives(i);
-      DimSizes.push_back(LeftDims(dimIdx).size);
+      DimSizes[i] = LeftDims(dimIdx).size;
     }
 
     if debugDefaultDistBulkTransfer {
@@ -2095,12 +2074,12 @@ module DefaultRectangular {
   //
   private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     if debugDefaultDistBulkTransfer {
-      chpl_debug_writeln("BulkTransferStride with values:\n" +
-                         "\tLocale        = " + stringify(here.id) + "\n" +
-                         "\tStride levels = " + stringify(stridelevels) + "\n" +
-                         "\tdstStride     = " + stringify(dstStride) + "\n" +
-                         "\tsrcStride     = " + stringify(srcStride) + "\n" +
-                         "\tcount         = " + stringify(count));
+      chpl_debug_writeln("BulkTransferStride with values:\n",
+                         "\tLocale        = ", stringify(here.id), "\n",
+                         "\tStride levels = ", stringify(stridelevels), "\n",
+                         "\tdstStride     = ", stringify(dstStride), "\n",
+                         "\tsrcStride     = ", stringify(srcStride), "\n",
+                         "\tcount         = ", stringify(count));
     }
 
     const AO = A.getDataIndex(AFirst, getShifted = false);
@@ -2183,6 +2162,7 @@ module DefaultRectangular {
   // broken out into a helper function in order to be made use of by
   // distributed array scans.
   proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
+    use RangeChunk only;
     // Compute who owns what
     const rng = dom.dim(1);
     const numTasks = if __primitive("task_get_serial") then

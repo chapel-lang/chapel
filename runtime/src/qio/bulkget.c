@@ -39,8 +39,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 
   // First, get the length and local pointer to the bytes.
   chpl_gen_comm_get(&tmp, src_locale, src_addr, sizeof(qbytes_t),
-                    CHPL_TYPE_int64_t, CHPL_COMM_UNKNOWN_ID,
-                    -1, CHPL_FILE_IDX_INTERNAL);
+                    CHPL_COMM_UNKNOWN_ID, -1, CHPL_FILE_IDX_INTERNAL);
   src_len = tmp.len;
   src_data = tmp.data;
 
@@ -54,7 +53,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   // Next, get the data itself.
   if( src_data ) {
     chpl_gen_comm_get(ret->data, src_locale, src_data,
-                      sizeof(uint8_t) * src_len, CHPL_TYPE_uint8_t,
+                      sizeof(uint8_t) * src_len,
                       CHPL_COMM_UNKNOWN_ID, -1, CHPL_FILE_IDX_INTERNAL);
   }
 
@@ -91,7 +90,7 @@ qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
     chpl_gen_comm_put( iov[i].iov_base,
                        dst_locale,
                        PTR_ADDBYTES(dst_addr, j),
-                       sizeof(uint8_t)*iov[i].iov_len, CHPL_TYPE_uint8_t,
+                       sizeof(uint8_t)*iov[i].iov_len,
                        CHPL_COMM_UNKNOWN_ID, -1, CHPL_FILE_IDX_INTERNAL);
 
     j += iov[i].iov_len;

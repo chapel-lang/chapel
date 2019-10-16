@@ -1,6 +1,0 @@
-bug: forall loops over ranges, domains yield non-const indices
-
-This test shows that when we're looping over a range or domain with a
-forall loop, we currently permit indices to be modified.  I'm not sure
-why this would be... the iterators themselves don't have `ref` return
-intent.

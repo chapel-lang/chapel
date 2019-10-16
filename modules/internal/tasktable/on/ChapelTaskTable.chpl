@@ -68,7 +68,7 @@ module ChapelTaskTable {
   }
   
   pragma "locale private"
-  var chpldev_taskTable : unmanaged chpldev_taskTable_t;
+  var chpldev_taskTable : unmanaged chpldev_taskTable_t?;
   
   //----------------------------------------------------------------------{
   //- Code to initialize the task table on each locale.
@@ -108,51 +108,51 @@ module ChapelTaskTable {
   {
     if (chpldev_taskTable == nil) then return;
   
-    if (!chpldev_taskTable.dom.contains(taskID)) then
+    if (! chpldev_taskTable!.dom.contains(taskID)) then
       // This must be serial, because if add() results in parallelism
       // (due to _resize), it may lead to deadlock (due to reentry
       // into the runtime tasking layer for task table operations).
       serial true do
-        chpldev_taskTable.dom.add(taskID);
+        chpldev_taskTable!.dom.add(taskID);
   
-    chpldev_taskTable.map[taskID] = new chpldev_Task(taskState.pending,
+    chpldev_taskTable!.map[taskID] = new chpldev_Task(taskState.pending,
                                                  lineno, filename, tl_info);
   }
   
   export proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.contains(taskID)) then return;
+        ! chpldev_taskTable!.dom.contains(taskID)) then return;
   
     // This must be serial, because if remove() results in parallelism
     // (due to _resize), it may lead to deadlock (due to reentry into
     // the runtime tasking layer for task table operations).
     serial true do
-      chpldev_taskTable.dom.remove(taskID);
+      chpldev_taskTable!.dom.remove(taskID);
   }
   
   export proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.contains(taskID)) then return;
+        ! chpldev_taskTable!.dom.contains(taskID)) then return;
   
-    chpldev_taskTable.map[taskID].state = taskState.active;
+    chpldev_taskTable!.map[taskID].state = taskState.active;
   }
   
   export proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.contains(taskID)) then return;
+        ! chpldev_taskTable!.dom.contains(taskID)) then return;
   
-    chpldev_taskTable.map[taskID].state = taskState.suspended;
+    chpldev_taskTable!.map[taskID].state = taskState.suspended;
   }
   
   export proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
   {
     if (chpldev_taskTable == nil ||
-        !chpldev_taskTable.dom.contains(taskID)) then return 0:uint(64);
+        ! chpldev_taskTable!.dom.contains(taskID)) then return 0:uint(64);
   
-    return chpldev_taskTable.map[taskID].tl_info;
+    return chpldev_taskTable!.map[taskID].tl_info;
   }
   
   export proc chpldev_taskTable_print() 
@@ -161,12 +161,12 @@ module ChapelTaskTable {
 
     if (chpldev_taskTable == nil) then return;
   
-    for taskID in chpldev_taskTable.dom {
+    for taskID in chpldev_taskTable!.dom {
       try! stderr.writeln(
              "- ",
-             chpl_lookupFilename(chpldev_taskTable.map[taskID].filename):string,
-             ":",  chpldev_taskTable.map[taskID].lineno,
-             " is ", chpldev_taskTable.map[taskID].state);
+             chpl_lookupFilename(chpldev_taskTable!.map[taskID].filename):string,
+             ":",  chpldev_taskTable!.map[taskID].lineno,
+             " is ", chpldev_taskTable!.map[taskID].state);
     }
   }
   

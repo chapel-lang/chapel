@@ -104,6 +104,9 @@ void deadBlockElimination();
 void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
+// foralls.cpp
+void checkTypeParamTaskIntent(SymExpr* outerSE);
+
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
@@ -132,6 +135,7 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 
 // resolution
 Expr*     resolveExpr(Expr* expr);
+void      resolveBlockStmt(BlockStmt* blockStmt);
 
 // type.cpp
 void initForTaskIntents();

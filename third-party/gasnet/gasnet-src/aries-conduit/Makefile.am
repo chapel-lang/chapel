@@ -28,8 +28,7 @@ CONDUIT_FILELIST =            \
       gasnet_ratomic_fwd.h    \
       gasnet_ratomic_extra.h  \
       gasnet_ratomic.c        \
-      README                  \
-      license.txt
+      README                  
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line

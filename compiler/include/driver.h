@@ -46,7 +46,9 @@ extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
-extern bool fLegacyNilableClasses;
+extern bool fLegacyClasses;
+extern bool fIgnoreNilabilityErrors;
+extern bool fOverloadSetsChecks;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
@@ -152,7 +154,6 @@ extern bool fIgnoreLocalClasses;
 extern bool fLifetimeChecking;
 extern bool fCompileTimeNilChecking;
 extern bool fOverrideChecking;
-extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 

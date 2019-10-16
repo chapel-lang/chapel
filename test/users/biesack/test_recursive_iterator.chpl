@@ -15,11 +15,11 @@ module missing_return_bug {
 
   iter leaves(tree : unmanaged Node) : int {
     select tree.type {
-      when ValueNode do {
+      when unmanaged ValueNode do {
         yield tree.value;
       }
 
-      when Branch do {
+      when unmanaged Branch do {
         if (tree.left != nil) {
           for leaf in leaves(tree.left) do yield leaf;
         }

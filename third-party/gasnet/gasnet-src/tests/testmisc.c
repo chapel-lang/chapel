@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
     BARRIER();                                             \
     if (((const char *)(desc)) && ((char*)(desc))[0])      \
       report((desc), tickcvt(end - start), iters);         \
-    else report(#op, tickcvt(end - start), iters);         \
+    else report("Line " _STRINGIFY(__LINE__), tickcvt(end - start), iters); \
   }
 #define TIME_OPERATION(desc, op) TIME_OPERATION_FULL(desc, {}, op, {})
 

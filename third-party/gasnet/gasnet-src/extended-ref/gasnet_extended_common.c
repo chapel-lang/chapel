@@ -49,7 +49,7 @@ extern uint64_t gasneti_max_threads(void) {
     gasneti_mutex_unlock(&threadtable_lock);
   }
   gasneti_sync_reads();
-  gasneti_assert(val <= GASNETI_MAX_THREADS);
+  gasneti_assert_uint(val ,<=, GASNETI_MAX_THREADS);
   return val;
 }
 
@@ -180,7 +180,7 @@ static int gasnete_free_threaddata(gasneti_threaddata_t *thread) {
         gasneti_free(eopbuf);                    \
         eopbuf = next;                           \
       }                                          \
-      gasneti_assert(num_bufs == 0);             \
+      gasneti_assert_uint(num_bufs ,==, 0);      \
     }                                            \
   }
   #endif
@@ -322,7 +322,7 @@ extern void * gasnete_new_threaddata(void)) {
   gasneti_threaddata_t *threaddata = (gasneti_threaddata_t *)gasneti_calloc(1,sizeof(gasneti_threaddata_t));
   int idx;
   uint64_t maxthreads = gasneti_max_threads();
-  gasneti_assert(maxthreads <= (((uint64_t)1)<<(sizeof(gasnete_threadidx_t)*8)));
+  gasneti_assert_uint(maxthreads ,<=, (((uint64_t)1)<<(sizeof(gasnete_threadidx_t)*8)));
   gasneti_leak(threaddata);
 
   gasneti_mutex_lock(&threadtable_lock);
@@ -338,6 +338,7 @@ extern void * gasnete_new_threaddata(void)) {
     if (gasnete_threadtable[gasnete_numthreads-1] == NULL) idx = gasnete_numthreads-1;
     else { /* keep table somewhat compacted */
       for (idx = 0; idx < maxthreads; idx++) {
+        gasneti_assume(idx < GASNETI_MAX_THREADS); // silence a buggy array-bounds warning from gcc-5
         if (gasnete_threadtable[idx] == NULL) break;
       }
     }

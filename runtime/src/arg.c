@@ -370,7 +370,10 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
             }
             saw_socket_conn = 1;
             // We reached information about the socket in a multilocale library
-            // run, don't do anything further with that information here.
+            // run.  Save it.
+            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc++] =
+              "--chpl-mli-socket-loc";
+            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc++] = currentArg;
             break;
           }
           if (argLength < 3) {

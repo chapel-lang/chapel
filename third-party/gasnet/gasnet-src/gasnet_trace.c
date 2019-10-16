@@ -117,11 +117,11 @@ extern gasneti_memveclist_stats_t gasneti_format_memveclist(char *buf, size_t co
       if (j % 4 == 0) strcat(p,"\n      ");
     }
     p += strlen(p);
-    gasneti_assert(p-buf < bufsz);
+    gasneti_assert_uint(p-buf ,<, bufsz);
   }
   strcat(p,"]");
   p += strlen(p);
-  gasneti_assert(p-buf < bufsz);
+  gasneti_assert_uint(p-buf ,<, bufsz);
   return stats;
 }
 extern size_t gasneti_format_putvgetv_bufsz(size_t dstcount, size_t srccount) {
@@ -139,7 +139,7 @@ extern size_t gasneti_format_putvgetv(char *buf, gex_TM_t tm, gex_Rank_t rank,
               "dst: %s\nsrc: %s",
               dststats._totalsz, GASNETI_TMRANKSTR(tm,rank),
               dstlist_str, srclist_str);    
-  gasneti_assert(strlen(buf) < bufsz);
+  gasneti_assert_uint(strlen(buf) ,<, bufsz);
   gasneti_free(dstlist_str);
   gasneti_free(srclist_str);
   return dststats._totalsz;
@@ -168,11 +168,11 @@ extern gasneti_addrlist_stats_t gasneti_format_addrlist(char *buf, size_t count,
       if (j % 8 == 0) strcat(p,"\n      ");
     }
     p += strlen(p);
-    gasneti_assert(p-buf < bufsz);
+    gasneti_assert_uint(p-buf ,<, bufsz);
   }
   strcat(p,"]");
   p += strlen(p);
-  gasneti_assert(p-buf < bufsz);
+  gasneti_assert_uint(p-buf ,<, bufsz);
   return stats;
 }
 extern size_t gasneti_format_putigeti_bufsz(size_t dstcount, size_t srccount) {
@@ -191,7 +191,7 @@ extern size_t gasneti_format_putigeti(char *buf, gex_TM_t tm, gex_Rank_t rank,
               "dst: %s\nsrc: %s",
               totalsz, GASNETI_TMRANKSTR(tm,rank),
               dstlist_str, srclist_str);    
-  gasneti_assert(len < bufsz);
+  gasneti_assert_uint(len ,<, bufsz);
   gasneti_free(dstlist_str);
   gasneti_free(srclist_str);
   return totalsz;
@@ -208,10 +208,10 @@ extern void gasneti_format_strides(char *buf, size_t count, const ptrdiff_t *lis
     sprintf(p, "%"PRIdPD, list[i]);
     if (i < count-1) strcat(p, ", ");
     p += strlen(p);
-    gasneti_assert(p-buf < bufsz);
+    gasneti_assert_uint(p-buf ,<, bufsz);
   }
   strcat(p,"]"); p++;
-  gasneti_assert(p-buf < bufsz);
+  gasneti_assert_uint(p-buf ,<, bufsz);
 }
 
 extern size_t gasneti_format_putsgets_bufsz(size_t stridelevels) {
@@ -256,7 +256,7 @@ extern size_t gasneti_format_putsgets(char *buf, void *_pstats,
 
   gasneti_format_strides(srcstrides_str, stridelevels, srcstrides);
   gasneti_format_strides(dststrides_str, stridelevels, dststrides);
-  gasneti_assert(sizeof(ptrdiff_t) == sizeof(size_t));
+  gasneti_assert_uint(sizeof(ptrdiff_t) ,==, sizeof(size_t));
   gasneti_format_strides(count_str, stridelevels, (const ptrdiff_t *)count);
   sprintf(buf,"(%"PRIuSZ" data bytes) peer="GASNETI_TMRANKFMT" stridelevels=%"PRIuSZ" elemsz=%"PRIuSZ" count=%s\n"
               "dst: dstaddr="GASNETI_LADDRFMT" dststrides=%s\n"
@@ -270,7 +270,7 @@ extern size_t gasneti_format_putsgets(char *buf, void *_pstats,
               GASNETI_LADDRSTR(srcaddr), srcstrides_str,
               srcextent, GASNETI_LADDRSTR(srcbase), GASNETI_LADDRSTR((uint8_t *)srcbase+srcextent-1)
           );
-  gasneti_assert(strlen(buf) < bufsz);
+  gasneti_assert_uint(strlen(buf) ,<, bufsz);
 
   gasneti_free(srcstrides_str);
   gasneti_free(dststrides_str);
@@ -285,8 +285,8 @@ extern size_t gasneti_format_putsgets(char *buf, void *_pstats,
 // For val==0 the output is "(empty)"
 // For val containing bits not named in the input, the output is "(invalid)"
 static size_t
-gasneti_format_mask(char *buf, uint64_t val, int count, const char **names, const char *prefix) {
-  gasneti_assert(count < 64);
+gasneti_format_mask(char *buf, uint64_t val, size_t count, const char **names, const char *prefix) {
+  gasneti_assert_uint(count ,<, 64);
   if (!val) {
     const char *answer = "(empty)";
     if (buf) strcpy(buf, answer);
@@ -312,7 +312,7 @@ gasneti_format_mask(char *buf, uint64_t val, int count, const char **names, cons
     }
     rc += (rc==1?0:1) + prefixlen + strlen(name);
   }
-  if (buf) gasneti_assert(rc == 1+strlen(buf));
+  if (buf) gasneti_assert_uint(rc ,==, 1+strlen(buf));
   return rc;
 }
 
@@ -392,7 +392,7 @@ size_t gasneti_format_ti(char *buf, gex_TI_t ti) {
     }
     extern void gasneti_trace_unfreezesourceline(void) {
       gasneti_srclineinfo_t *sli = gasneti_mysrclineinfo();
-      gasneti_assert(sli->frozen > 0);
+      gasneti_assert_int(sli->frozen ,>, 0);
       sli->frozen--;
     }
   #else
@@ -934,12 +934,12 @@ static void gasneti_argv_from_sysctl(int **ppargc, char ****ppargv) {
     start = buf + sizeof(int);
     start += strlen(start) + 1;
     while (! *start) start++;
-    gasneti_assert(start - buf < len);
+    gasneti_assert_uint(start - buf ,<, len);
 
     /* Skip over the args to find end */
     for (end = start, i = 0; i < argc; ++i) {
       end += strlen(end) + 1;
-      gasneti_assert(end - buf < len);
+      gasneti_assert_uint(end - buf ,<, len);
     }
 
     /* Keep a copy of only what we need */
@@ -1046,6 +1046,10 @@ extern void gasneti_trace_init(int *pargc, char ***pargv) {
   char *exename = NULL;
 
   gasneti_free(gasneti_malloc(1)); /* touch the malloc system to ensure it's intialized */
+
+  static char procid_str[32]; // init the process identifier used in error reporting
+  sprintf(procid_str, "proc %i", (int)gasneti_mynode);
+  gasneti_procid_str = procid_str;
 
   /* If we didn't receive argc and argv from caller, try to get the full
    * command line from the system.  Some systems may support multiple

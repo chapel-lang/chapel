@@ -10,7 +10,7 @@ class Instance {
 
 record R {
   var x: int = 0;
-  var ptr: unmanaged Instance = nil;
+  var ptr: unmanaged Instance? = nil;
 }
 
 proc R.init() {

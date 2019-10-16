@@ -189,6 +189,17 @@ proc getFieldIndex(type t, param s:string) param : int
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
+/* Returns `true` if the given class or record's field named `s`
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg s: the name of a field
+   :returns: `true` if the field is instantiated
+*/
+proc isFieldBound(type t, param s : string) param : bool {
+  return __primitive("is bound", t, s);
+}
+
 /* Returns true if a function named `fname` taking no arguments
    could be called in the current scope.
    */
@@ -228,5 +239,21 @@ proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool
   return __primitive("method call resolves", t, fname, (...args));
 
 // TODO -- do we need a different version of can resolve with ref this?
+
+/* Returns the line number of the call to this function. */
+pragma "get line number"
+proc getLineNumber() param : int { }
+
+/* Returns the file name this function was called from. */
+pragma "get file name"
+proc getFileName() param : string { }
+
+/* Returns the name of the function this function was called from. */
+pragma "get function name"
+proc getRoutineName() param : string { }
+
+/* Returns the name of the module this function was called from. */
+pragma "get module name"
+proc getModuleName() param : string { }
 
 } // module Reflection

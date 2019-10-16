@@ -57,13 +57,9 @@ COMMON_NOGEN_SRCS = \
 MAIN_SRCS = \
 	main.c
 
-MAIN_MLI_SRCS = \
-	main_mli.c
-
 SVN_SRCS = \
 	$(COMMON_NOGEN_SRCS) \
 	$(MAIN_SRCS) \
-	$(MAIN_MLI_SRCS) \
 	$(RUNTIME_MALLOC_SRCS)
 
 COMMON_SRCS = \

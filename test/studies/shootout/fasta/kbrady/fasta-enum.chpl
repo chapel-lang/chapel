@@ -13,14 +13,14 @@ config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newLine = "\n".byte(1);
+param newLine = "\n".toByte();
 
 enum Ntide {
-  A = "A".byte(1), C = "C".byte(1), G = "G".byte(1), T = "T".byte(1),
-  a = "a".byte(1), c = "c".byte(1), g = "g".byte(1), t = "t".byte(1),
-  B = "B".byte(1), D = "D".byte(1), H = "H".byte(1), K = "K".byte(1),
-  M = "M".byte(1), N = "N".byte(1), R = "R".byte(1), S = "S".byte(1),
-  V = "V".byte(1), W = "W".byte(1), Y = "Y".byte(1)
+  A = "A".toByte(), C = "C".toByte(), G = "G".toByte(), T = "T".toByte(),
+  a = "a".toByte(), c = "c".toByte(), g = "g".toByte(), t = "t".toByte(),
+  B = "B".toByte(), D = "D".toByte(), H = "H".toByte(), K = "K".toByte(),
+  M = "M".toByte(), N = "N".toByte(), R = "R".toByte(), S = "S".toByte(),
+  V = "V".toByte(), W = "W".toByte(), Y = "Y".toByte()
 }
 use Ntide;
 
@@ -105,16 +105,16 @@ proc makeLookup(a) {
 // Add a line of random sequence
 var random = new unmanaged Random();
 var line_buff : [0..LINE_LENGTH] int(8);
-proc addLine(bytes: int) {
-  for (i, r) in random.get(bytes) {
+proc addLine(nBytes: int) {
+  for (i, r) in random.get(nBytes) {
     var ai = r: int;
     while (lookup[ai].p < r) do
       ai = ai + 1;
 
     line_buff[i] = lookup[ai].c: int(8);
   }
-  line_buff[bytes] = 10;
-  stdout.write(line_buff[0..bytes]);
+  line_buff[nBytes] = 10;
+  stdout.write(line_buff[0..nBytes]);
 }
 
 // Output a random sequence of length n using distribution a
@@ -123,9 +123,9 @@ proc randomMake(desc: string, a: [], n: int) {
   makeLookup(a);
   stdout.writef("%s", desc);
   while (len > 0) {
-    var bytes : int = min(LINE_LENGTH, len);
-    addLine(bytes);
-    len = len - bytes;
+    var nBytes : int = min(LINE_LENGTH, len);
+    addLine(nBytes);
+    len = len - nBytes;
   }
 }
 

@@ -36,6 +36,7 @@
 #include "CForLoop.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "LoopStmt.h"
 #include "ParamForLoop.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
@@ -89,6 +90,11 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
 
   if (mFP != 0) {
     fprintf(mFP, "AST dump for %s after pass %s.\n", module->name, passName);
+    fprintf(mFP, "Module use list: ");
+    for_vector(ModuleSymbol, usedMod, module->modUseList) {
+      fprintf(mFP, "%s ", usedMod->name);
+    }
+    fprintf(mFP, "\n");
   }
 
   return (mFP != 0) ? true : false;
@@ -492,6 +498,7 @@ bool AstDump::enterWhileDoStmt(WhileDoStmt* node) {
       write(false, "where ", false);
 
   write("WhileDo");
+  printLoopStmtDetails(node);
   newline();
   write("{");
   printBlockID(node);
@@ -519,6 +526,7 @@ bool AstDump::enterDoWhileStmt(DoWhileStmt* node) {
       write(false, "where ", false);
 
   write("DoWhile");
+  printLoopStmtDetails(node);
   newline();
   write("{");
   printBlockID(node);
@@ -546,6 +554,7 @@ bool AstDump::enterForLoop(ForLoop* node) {
       write(false, "where ", false);
 
   write("ForLoop");
+  printLoopStmtDetails(node);
   newline();
   write("{");
   printBlockID(node);
@@ -573,6 +582,7 @@ bool AstDump::enterCForLoop(CForLoop* node) {
       write(false, "where ", false);
 
   write("CForLoop");
+  printLoopStmtDetails(node);
   newline();
   write("{");
   printBlockID(node);
@@ -600,6 +610,7 @@ bool AstDump::enterParamForLoop(ParamForLoop* node) {
       write(false, "where ", false);
 
   write("ParamForLoop");
+  printLoopStmtDetails(node);
   newline();
   write("{");
   printBlockID(node);
@@ -862,7 +873,7 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
   }
 
   if (sym->hasFlag(FLAG_GENERIC))
-    write(false, "?", false);
+    write(false, "(?)", false);
 
   if (def)
     if (ArgSymbol* arg = toArgSymbol(sym))
@@ -888,6 +899,15 @@ void AstDump::write(bool spaceBefore, const char* text, bool spaceAfter) {
 void AstDump::printBlockID(Expr* expr) {
   if (fdump_html_print_block_IDs)
     fprintf(mFP, " %d", expr->id);
+}
+
+void AstDump::printLoopStmtDetails(LoopStmt* loop) {
+  if (fLogIds)
+    fprintf(mFP, "[%d]", loop->id);
+  if (loop->hasVectorizationHazard())
+    write("hazard");
+  if (loop->isOrderIndependent())
+    write("order-independent");
 }
 
 void AstDump::newline() {

@@ -106,9 +106,9 @@ static gex_RankInfo_t *nbrhdinfo;
 // Update mirror value
 // Also store remotely if (and only if) previous check failed
 #define _TEST_ROP_MIRROR(_tcode, _newval) do { \
-    mirror = _newval;                          \
+    _tcode##_mirror = _newval;                 \
     if_pf (prev_fail) {                        \
-      gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,NULL,peer,peerseg,GEX_OP_SET,mirror,0,0)); \
+      gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,NULL,peer,peerseg,GEX_OP_SET,_tcode##_mirror,0,0)); \
     }                                          \
     prev_fail = 0;                             \
   } while (0)
@@ -122,14 +122,15 @@ static gex_RankInfo_t *nbrhdinfo;
   } while (0)
 #define TEST_ROP_FETCH_NC(_tcode, _opcode, _op1, _op2) do { \
     if (! (_opcode & ops)) break;                        \
-    _TEST_ROP(_tcode, &fetch, _opcode, _op1, _op2);      \
-    prev_fail = (fetch != mirror);                       \
+    _TEST_ROP(_tcode, &_tcode##_fetch, _opcode, _op1, _op2); \
+    prev_fail = (_tcode##_fetch != _tcode##_mirror);     \
     if_pf (prev_fail) {                                  \
       ++failures;                                        \
       static int once = 0;                               \
       if (!once) {                                       \
         ERR("Valued fetched by \"%s\" did not match expected value "  \
-            "(got %d, want %d)\n", subtest, (int)fetch, (int)mirror); \
+            "(got %d, want %d)\n", subtest,              \
+            (int)_tcode##_fetch, (int)_tcode##_mirror);  \
         once = 1;                                        \
       }                                                  \
     }                                                    \
@@ -151,20 +152,15 @@ static gex_RankInfo_t *nbrhdinfo;
 
 /* Randomized testing of atomic ops */
 #define TEST_RAND_DECL(_dtcode) \
-        TEST_RAND_DECL1(_dtcode, _dtcode##_type, _dtcode##_isint)
-#define TEST_RAND_DECL1(_tcode, _type, _isint) \
-        TEST_RAND_DECL2(_tcode, _type, _isint) /* extra pass to expand _isint */
-#define TEST_RAND_DECL2(_tcode, _type, _isint) \
-void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
-  _type mirror = 0;                                           \
-  gex_OP_t ops = gex_AD_QueryOps(ad);                         \
-  MSG0("    Randomized ops test with operation set 0x%x%s",   \
-       (unsigned int)ops, msg);                               \
-  for (int i = 0; i < iters; ++i) {                           \
-    _type unused = (_type)TEST_RAND(lo,hi); /* garbage */     \
-    _type fetch, x, y;                                        \
-    /* first few iterations are NON-random (0, 1, 2) */       \
-    x = (i <= 2) ? (_type)i : (_type)TEST_RAND(lo,hi);        \
+        TEST_RAND_DECL1(_dtcode, _dtcode##_type, _dtcode##_isint, \
+                        _dtcode##_mirror, _dtcode##_unused, _dtcode##_x, _dtcode##_y)
+/* extra pass to expand concatenations: */
+#define TEST_RAND_DECL1(_tcode, _type, _isint, mirror, unused, x, y) \
+        TEST_RAND_DECL2(_tcode, _type, _isint, mirror, unused, x, y)
+#define TEST_RAND_DECL2(_tcode, _type, _isint, mirror, unused, x, y) \
+static _type _tcode##_fetch, mirror, unused, x, y; \
+GASNETT_NEVER_INLINE(test_rand1_##_tcode, \
+void test_rand1_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("SET(x)");                                        \
       TEST_ROP(_tcode, GEX_OP_SET, x, unused, x);             \
     SUBTEST("GET(x)");                                        \
@@ -173,6 +169,9 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
       TEST_ROP(_tcode, GEX_OP_SET, 0, unused, 0);             \
     SUBTEST("GET(0)");                                        \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_GET, unused, unused);  \
+} \
+GASNETT_NEVER_INLINE(test_rand2_##_tcode, \
+void test_rand2_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("FINC()");                                        \
       TEST_ROP_FETCH(_tcode, GEX_OP_FINC, unused, unused, mirror + 1); \
     SUBTEST("INC()");                                         \
@@ -181,6 +180,9 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
       TEST_ROP_FETCH(_tcode, GEX_OP_FADD, (x+1), unused, mirror + x + 1); \
     SUBTEST("ADD(x+1)");                                      \
       TEST_ROP(_tcode, GEX_OP_ADD, (x+1), unused, mirror + x + 1); \
+} \
+GASNETT_NEVER_INLINE(test_rand3_##_tcode, \
+void test_rand3_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("FDEC()");                                        \
       TEST_ROP_FETCH(_tcode, GEX_OP_FDEC, unused, unused, mirror - 1); \
     SUBTEST("DEC()");                                         \
@@ -189,16 +191,25 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
       TEST_ROP_FETCH(_tcode, GEX_OP_FSUB, x, unused, mirror - x); \
     SUBTEST("SUB(x)");                                        \
       TEST_ROP(_tcode, GEX_OP_SUB, x, unused, mirror - x);    \
+} \
+GASNETT_NEVER_INLINE(test_rand4_##_tcode, \
+void test_rand4_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("FMULT(x)");                                      \
       TEST_ROP_FETCH(_tcode, GEX_OP_FMULT, x, unused, mirror * x); \
     SUBTEST("MULT(x)");                                       \
       TEST_ROP(_tcode, GEX_OP_MULT, x, unused, mirror * x);   \
+} \
+GASNETT_NEVER_INLINE(test_rand5_##_tcode, \
+void test_rand5_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("SWAP(x)");                                       \
       TEST_ROP_FETCH(_tcode, GEX_OP_SWAP, x, unused, x);      \
     SUBTEST("FCAS(mirror,mirror) - PASS");                    \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_FCAS, mirror, mirror); \
     SUBTEST("FCAS(mirror+1,0) - FAIL");                       \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_FCAS, mirror+1, 0);    \
+} \
+GASNETT_NEVER_INLINE(test_rand6_##_tcode, \
+void test_rand6_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("FCAS(mirror,random) - PASS");                    \
       y = (_type)TEST_RAND(lo,hi);                            \
       TEST_ROP_FETCH(_tcode, GEX_OP_FCAS, mirror, y, y);      \
@@ -207,6 +218,9 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_FCAS, y, y);           \
     SUBTEST("GET(fcas)");                                     \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_GET, unused, unused);  \
+} \
+GASNETT_NEVER_INLINE(test_rand7_##_tcode, \
+void test_rand7_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("CAS(mirror,mirror) - PASS");                     \
       TEST_ROP_NC(_tcode, GEX_OP_CAS, mirror, mirror);        \
     SUBTEST("GET(cas1)");                                     \
@@ -215,6 +229,9 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
       TEST_ROP_NC(_tcode, GEX_OP_CAS, mirror+1, 0);           \
     SUBTEST("GET(cas2)");                                     \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_GET, unused, unused);  \
+} \
+GASNETT_NEVER_INLINE(test_rand8_##_tcode, \
+void test_rand8_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("CAS(mirror,random) - PASS");                     \
       y = (_type)TEST_RAND(lo,hi);                            \
       TEST_ROP(_tcode, GEX_OP_CAS, mirror, y, y);             \
@@ -225,6 +242,9 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
       TEST_ROP_NC(_tcode, GEX_OP_CAS, y, y);                  \
     SUBTEST("GET(cas4)");                                     \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_GET, unused, unused);  \
+} \
+GASNETT_NEVER_INLINE(test_rand9_##_tcode, \
+void test_rand9_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("MIN(random)");                                   \
       y = (_type)TEST_RAND(lo,hi);                            \
       y = TEST_RAND_ONEIN(2) ? y : ((_type)-1) * y;           \
@@ -241,7 +261,27 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
       y = (_type)TEST_RAND(lo,hi);                            \
       y = TEST_RAND_ONEIN(2) ? y : ((_type)-1) * y;           \
       TEST_ROP_FETCH(_tcode, GEX_OP_FMAX, y, unused, MAX(mirror,y)); \
-    TEST_RAND_BITS##_isint(_tcode,_type)                      \
+} \
+GASNETT_NEVER_INLINE(test_rand_##_tcode, \
+void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg)) {\
+  mirror = 0;                                                 \
+  gex_OP_t ops = gex_AD_QueryOps(ad);                         \
+  MSG0("    Randomized ops test with operation set 0x%x%s",   \
+       (unsigned int)ops, msg);                               \
+  for (int i = 0; i < iters; ++i) {                           \
+    unused = (_type)TEST_RAND(lo,hi); /* garbage */           \
+    /* first few iterations are NON-random (0, 1, 2) */       \
+    x = (i <= 2) ? (_type)i : (_type)TEST_RAND(lo,hi);        \
+    test_rand1_##_tcode(ad, ops, lo, hi);                     \
+    test_rand2_##_tcode(ad, ops, lo, hi);                     \
+    test_rand3_##_tcode(ad, ops, lo, hi);                     \
+    test_rand4_##_tcode(ad, ops, lo, hi);                     \
+    test_rand5_##_tcode(ad, ops, lo, hi);                     \
+    test_rand6_##_tcode(ad, ops, lo, hi);                     \
+    test_rand7_##_tcode(ad, ops, lo, hi);                     \
+    test_rand8_##_tcode(ad, ops, lo, hi);                     \
+    test_rand9_##_tcode(ad, ops, lo, hi);                     \
+    TEST_RAND_BITS##_isint(_tcode,_type,mirror,unused,x,y);   \
     SUBTEST("GET(final)");                                    \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_GET, unused, unused);  \
   }                                                           \
@@ -250,8 +290,8 @@ void test_rand_##_tcode(gex_AD_t ad, int64_t lo, int64_t hi, const char *msg) {\
     failures = 0;                                             \
   }                                                           \
 }
-#define TEST_RAND_BITS0(_tcode,_type) /*empty*/
-#define TEST_RAND_BITS1(_tcode,_type) \
+#define TEST_RAND_BITS0(_tcode,_type,mirror,unused,x,y) /*empty*/
+#define TEST_RAND_BITS1(_tcode,_type,mirror,unused,x,y) \
     SUBTEST("AND(random)");                                   \
       y = (_type)TEST_RAND(lo,hi);                            \
       TEST_ROP(_tcode, GEX_OP_AND, y, unused, mirror & y);    \
@@ -275,7 +315,8 @@ FORALL_DT(TEST_RAND_DECL)
 
 /* Deterministic testing of AD_MY_* flags */
 #define TEST_FLAGS_DECL(_tcode) \
-void test_flags_##_tcode(gex_AD_t ad) {                                      \
+GASNETT_NEVER_INLINE(test_flags_##_tcode, \
+void test_flags_##_tcode(gex_AD_t ad)) {                                     \
   gex_TM_t testtm = gex_AD_QueryTM(ad);                                      \
   gex_Event_t ev;                                                            \
   _tcode##_type result, operand;                                             \
@@ -310,7 +351,8 @@ FORALL_DT(TEST_FLAGS_DECL)
 
 /* (F)ADD/(F)INC race test */
 #define TEST_CNTR_DECL(_tcode) \
-void test_cntr_##_tcode(gex_AD_t ad, int max_goal) {                         \
+GASNETT_NEVER_INLINE(test_cntr_##_tcode, \
+void test_cntr_##_tcode(gex_AD_t ad, int max_goal)) {                        \
   gex_TM_t testtm = gex_AD_QueryTM(ad);                                      \
   MSG0("    Central-counter concurrent updates test (FADD/ADD/FINC/INC)");   \
   _tcode##_type unused = 911; /* garbage */                                  \
@@ -366,7 +408,8 @@ FORALL_DT(TEST_CNTR_DECL)
 
 /* FCAS race test */
 #define TEST_FCAS_DECL(_tcode) \
-void test_fcas_##_tcode(gex_AD_t ad, int max_goal) {                         \
+GASNETT_NEVER_INLINE(test_fcas_##_tcode, \
+void test_fcas_##_tcode(gex_AD_t ad, int max_goal)) {                        \
   gex_TM_t testtm = gex_AD_QueryTM(ad);                                      \
   MSG0("    Central-counter concurrent updates test (FCAS)");                \
   _tcode##_type unused = 911; /* garbage */                                  \
@@ -408,7 +451,8 @@ FORALL_DT(TEST_FCAS_DECL)
 
 /* Producer/consume ring tests */
 #define _TEST_RING_DECL(_tcode,_op) \
-void _test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd) {  \
+GASNETT_NEVER_INLINE(_test_ring_##_op##_##_tcode, \
+void _test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd)) {  \
   gex_TM_t testtm = gex_AD_QueryTM(ad);                                      \
   MSG0("    Producer/consumer %s ring test (" #_op ")",                   \
        (nbrhd ? "multiple" : "single"));                                  \
@@ -451,6 +495,7 @@ void _test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd) {  \
           once = 1;                                                       \
         }                                                                 \
       }                                                                   \
+      test_yield_if_polite();                                             \
       gasnet_AMPoll();                                                    \
     }                                                                     \
     if (readX != expect) {                                                \
@@ -552,7 +597,8 @@ void test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd) { \
 FORALL_DT(TEST_RING_DECL)
 
 
-void doit(gex_TM_t testtm, gex_DT_t dt) {
+GASNETT_NEVER_INLINE(doit,
+void doit(gex_TM_t testtm, gex_DT_t dt)) {
   gex_OP_t all_ops =
         GEX_OP_ADD  | GEX_OP_SUB  | GEX_OP_MULT  |
         GEX_OP_MIN  | GEX_OP_MAX  |
@@ -818,6 +864,7 @@ int main(int argc, char **argv) {
   GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
 
   test_init("testratomic",0,"(iters) (seed0)");
+  TEST_SET_WAITMODE(1);
 
   gex_Rank_t self = gex_TM_QueryRank(myteam);
   if (seedoffset == 0) {
@@ -853,9 +900,15 @@ int main(int argc, char **argv) {
     doall(subtm);
   }
 
-  BARRIER();
-  MSG0("done.");
+  int32_t errs = test_errs;
+  gex_Event_Wait(
+    gex_Coll_ReduceToAllNB(myteam, &errs, &errs,
+                           GEX_DT_I32, sizeof(errs), 1,
+                           GEX_OP_ADD, NULL, NULL, 0));
+  MSG0("done. (detected %i errors)", (int)errs);
 
-  gasnet_exit(0);
-  return 0;
+  BARRIER();
+
+  gasnet_exit(!!errs);
+  return !!errs;
 }

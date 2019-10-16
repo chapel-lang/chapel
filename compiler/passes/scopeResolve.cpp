@@ -67,34 +67,18 @@ static bool                                   enableModuleUsesCache = false;
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
-static void          addToSymbolTable();
-
 static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
 
 static void          scopeResolveExpr(Expr* expr, ResolveScope* scope);
 
-static void          processImportExprs();
-
-static void          resolveGotoLabels();
-
-static void          adjustTypeMethodsOnClasses();
-
 static bool          isStableClassType(Type* t);
 static Expr*         handleUnstableClassType(SymExpr* se);
-
-static void          resolveUnresolvedSymExprs();
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                               Symbol* toSymbol);
-
-static void          setupShadowVars();
-
-static void          resolveEnumeratedTypes();
-
-static void          renameDefaultTypesToReflectWidths();
 
 static bool          lookupThisScopeAndUses(const char*           name,
                                             BaseAST*              context,
@@ -103,25 +87,16 @@ static bool          lookupThisScopeAndUses(const char*           name,
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
-static void          resolveUnmanagedBorrows();
-
-void scopeResolve() {
-  //
-  // add all program asts to the symbol table
-  //
-  addToSymbolTable();
-
-  processImportExprs();
-
-  enableModuleUsesCache = true;
-
+static void computeClassHierarchy() {
   //
   // compute class hierarchy
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     ct->addClassToHierarchy();
   }
+}
 
+static void handleReceiverFormals() {
   //
   // resolve type of this for methods
   //
@@ -144,7 +119,7 @@ void scopeResolve() {
           AggregateType::setCreationStyle(ts, fn);
 
         } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
+          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -158,19 +133,10 @@ void scopeResolve() {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
+}
 
-  resolveGotoLabels();
-
-  resolveUnresolvedSymExprs();
-
-  resolveEnumeratedTypes();
-
-  adjustTypeMethodsOnClasses();
-
-  setupShadowVars();
-
+static void markGenerics() {
   // Figure out which types are generic, in a transitive closure manner
-  {
     bool changed;
     do {
       changed = false;
@@ -198,27 +164,16 @@ void scopeResolve() {
         }
       }
     } while (changed);
-  }
+}
 
+static void processGenericFields() {
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    // Build the type constructor now that we know which fields are generic
+    // Build the type constructor now that we know which types are generic
     if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
       USR_FATAL_CONT(ct, "Extern classes are not supported.");
     }
-    ct->buildTypeConstructor();
+    ct->processGenericFields();
   }
-
-  ResolveScope::destroyAstMap();
-
-  destroyModuleUsesCaches();
-
-  warnedForDotInsideWith.clear();
-
-  renameDefaultTypesToReflectWidths();
-
-  cleanupExternC();
-
-  resolveUnmanagedBorrows();
 }
 
 /************************************* | **************************************
@@ -240,12 +195,12 @@ void scopeResolve() {
 // to handle chpl__Program with little or no special casing.
 
 static void addToSymbolTable() {
-  ResolveScope* rootScope = ResolveScope::getRootModule();
+  rootScope = ResolveScope::getRootModule();
 
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
-      rootScope->extend(def->sym);
+      rootScope->extend(def->sym, /* isTopLevel= */ true);
     }
   }
 
@@ -772,8 +727,10 @@ static bool isStableClassType(Type* t) {
 static bool callSpecifiesClassKind(CallExpr* call) {
   return (call->isNamed("_to_borrowed") ||
           call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
           call->isNamed("_to_unmanaged") ||
           call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
           call->isNamed("_owned") ||
           call->isNamed("_shared") ||
           call->isNamed("Owned") ||
@@ -983,6 +940,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   }
 }
 
+// usymExpr is the UnresolveSymExpr and sym is what we
+// have resolved it to with scope resolution.
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                      Symbol* sym) {
   FnSymbol* fn = toFnSymbol(sym);
@@ -990,16 +949,32 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   if (fn == NULL) {
     SymExpr* symExpr = NULL;
 
-    if (sym->hasFlag(FLAG_MANAGED_POINTER) && isTypeSymbol(sym)) {
-      AggregateType* at = toAggregateType(sym->type);
-      INT_ASSERT(at);
-      Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
-      INT_ASSERT(t);
-      symExpr = new SymExpr(t->symbol);
-    } else {
-      symExpr = new SymExpr(sym);
+    // Adjust class type symbols for generic management / generic nilability
+    if (isTypeSymbol(sym) && isClassLikeOrManaged(sym->type)) {
+      if (isDecoratedClassType(sym->type)) {
+        // Don't adjust already-decorated class types
+      } else if (isManagedPtrType(sym->type)) {
+        // e.g. 'owned' becomes 'owned with any nilability'
+        AggregateType* at = toAggregateType(sym->type);
+        INT_ASSERT(at);
+        Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
+        INT_ASSERT(t);
+        sym = t->symbol;
+      } else if (isClass(sym->type)) {
+        // e.g. 'MyClass' becomes 'MyClass with any management'
+          // make MyClass mean generic-management unless
+          // --legacy-classes is passed.
+          bool defaultIsGenericHere = !fLegacyClasses;
+          if (defaultIsGenericHere) {
+            // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+            ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+            Type* t = getDecoratedClass(sym->type, d);
+            sym = t->symbol;
+          }
+      }
     }
 
+    symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
 
     if (fWarnUnstable)
@@ -1061,7 +1036,7 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
 
   if (sym != NULL) {
     if (TypeSymbol* cts = toTypeSymbol(sym->defPoint->parentSymbol)) {
-      isAggr = isAggregateType(cts->type);
+      isAggr = isAggregateType(canonicalClassType(cts->type));
     }
   }
 
@@ -1135,7 +1110,7 @@ static void insertFieldAccess(FnSymbol*          method,
   }
 
   if (isTypeSymbol(sym) == true) {
-    AggregateType* at = toAggregateType(sym->type);
+    AggregateType* at = toAggregateType(canonicalClassType(sym->type));
     if (at != NULL && at->hasInitializers()) {
       dot = new SymExpr(sym);
     } else {
@@ -1346,6 +1321,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
       // The desired case.
       svar->outerVarSE = new SymExpr(ovar);
       insert_help(svar->outerVarSE, NULL, svar);
+      checkTypeParamTaskIntent(svar->outerVarSE);
     }
   } else {
     USR_FATAL_CONT(svar,
@@ -1413,6 +1389,14 @@ static void resolveModuleCall(CallExpr* call) {
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
+        // Adjust class types to undecorated
+        if (sym && isClass(sym->type) && !fLegacyClasses) {
+          // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+          ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+          Type* t = getDecoratedClass(sym->type, d);
+          sym = t->symbol;
+        }
+
         // Failing that, try looking in an extern block.
 #ifdef HAVE_LLVM
         if (sym == NULL && gExternBlockStmts.size() > 0) {
@@ -1468,7 +1452,7 @@ static void resolveModuleCall(CallExpr* call) {
 // for new SomeModule.SomeType.
 static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
   if (TypeSymbol* ts = toTypeSymbol(sym)) {
-    if (isAggregateType(ts->type)) {
+    if (isAggregateType(canonicalClassType(ts->type))) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
           if (grandParentCall->isPrimitive(PRIM_NEW)) {
@@ -1527,7 +1511,7 @@ static void resolveEnumeratedTypes() {
 ************************************** | *************************************/
 
 //
-// Convert each "proc type C.myProc() ..." to, roughtly:
+// Convert each "proc type C.myProc() ..." to, roughly:
 // "proc type any.myProc() where isSubtype(this.type, C) ..."
 //
 static void adjustTypeMethodsOnClasses() {
@@ -1546,24 +1530,7 @@ static void adjustTypeMethodsOnClasses() {
     }
 
     // Update the type of 'this'.
-    thisArg->type = dtAny;
-
-    // The desired where-expression. Clean up this.type for isSubtype().
-    SET_LINENO(thisArg);
-    Expr* isSubtype = new_Expr(
-     "'is_subtype'(%S,'to borrowed class'('to non nilable class'(%S)))",
-     thisType->symbol, thisArg);
-
-    if (BlockStmt* where = fn->where) {
-      // If a where-clause already exists, augment it.
-      Expr* userWhere = where->body.last()->remove();
-      where->insertAtTail(new CallExpr("&&", isSubtype, userWhere));
-
-    } else {
-      fn->where = new BlockStmt(isSubtype);
-      insert_help(fn->where, NULL, fn);
-      fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
-    }
+    thisArg->type = getDecoratedClass(thisType, CLASS_TYPE_GENERIC);
   }
 }
 
@@ -1708,8 +1675,18 @@ static void lookup(const char*           name,
 
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
-      if (outerScope != NULL)
+      if (outerScope != NULL) {
         lookup(name, context, outerScope, visited, symbols);
+        // As a last ditch effort, see if this module's name happens to match.
+        // This handles the case when we refer to the name of the module in
+        // which we are declared (e.g., `module M { ...M.xyz... }`
+        if (symbols.size() == 0) {
+          ModuleSymbol* thisMod = scope->getModule();
+          if (strcmp(name, thisMod->name) == 0) {
+            symbols.push_back(thisMod);
+          }
+        }
+      }
 
     } else {
       // Otherwise, look in the next scope up.
@@ -1718,7 +1695,8 @@ static void lookup(const char*           name,
       if (fn != NULL && fn->_this) {
         // If currently in a method, the next scope up is anything visible
         // within the aggregate type
-        if (AggregateType* ct = toAggregateType(fn->_this->type)) {
+        if (AggregateType* ct =
+            toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols);
         }
       }
@@ -1857,6 +1835,21 @@ static bool lookupThisScopeAndUses(const char*           name,
                        name);
             }
           }
+        } else {
+          // we haven't found a match yet, so as a last resort, let's
+          // check the names of the modules in the 'use' statements
+          // themselves...  This effectively places the module names at
+          // a scope just a bit further out than the one holding the
+          // symbols that they define.
+          forv_Vec(UseStmt, use, *moduleUses) {
+            if (use != NULL) {
+              if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
+                if (isRepeat(modSym, symbols) == false) {
+                  symbols.push_back(modSym);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -1902,7 +1895,7 @@ static Symbol* inType(const char* name, BaseAST* scope) {
   Symbol* retval = NULL;
 
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
+    if (AggregateType* ct = toAggregateType(canonicalClassType(ts->type))) {
       if (Symbol* sym = ct->getField(name, false)) {
         retval = sym;
 
@@ -2040,7 +2033,8 @@ static void buildBreadthFirstModuleList(
             INT_ASSERT(useSE);
 
             UseStmt* useToAdd = NULL;
-            if (!useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+            if (!use->isPrivate &&
+                !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
               // Uses of private modules are not transitive -
               // the symbols in the private modules are only visible to
               // itself and its immediate parent.  Therefore, if the symbol
@@ -2061,7 +2055,11 @@ static void buildBreadthFirstModuleList(
                 (*alreadySeen)[useSE->symbol()].push_back(useToAdd);
               }
 
-            } else {
+            } else if (!use->isPrivate &&
+                       useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+              // Private uses should be skipped, but should not prevent us from
+              // traversing the module in a later use of it, if that later use
+              // is not private.
               (*alreadySeen)[useSE->symbol()].push_back(use);
             }
           }
@@ -2135,6 +2133,46 @@ bool Symbol::isVisible(BaseAST* scope) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if this use statement is in the provided scope or capable of   *
+* being found in from the provided scope, false if the use statement is       *
+* private and the scope is not in its direct parent.                          *
+*                                                                             *
+************************************** | *************************************/
+bool UseStmt::isVisible(BaseAST* scope) const {
+  if (isPrivate) {
+    BaseAST* parentScope = getScope(this->parentExpr);
+    BaseAST* searchScope = scope;
+
+    INT_ASSERT(parentScope != NULL);
+
+    // We need to walk up scopes until we either find our parent scope (in
+    // which case, we're visible if it "use"s us) or we run out of scope to
+    // check against (in which case we are most certainly *not* visible)
+    while (searchScope != NULL) {
+      if (searchScope == parentScope) {
+        return true;
+      } else if (FnSymbol* fn = toFnSymbol(searchScope)) {
+        // Check instantiation points as well
+        if (BaseAST* inPt = fn->instantiationPoint()) {
+          if (isVisible(inPt)) {
+            return true;
+          }
+        }
+      }
+
+      searchScope = getScope(searchScope);
+    }
+
+    // We got to the top of the scope without finding the parent.
+    return false;
+  }
+
+  // If we got here, it's because the use statement was public
+  return true;
 }
 
 /************************************* | **************************************
@@ -2234,8 +2272,11 @@ static void resolveUnmanagedBorrows() {
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+        call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+        call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
 
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2245,16 +2286,25 @@ static void resolveUnmanagedBorrows() {
           ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
           if (isClassLike(ts->type)) {
             decorator = classTypeDecorator(ts->type);
+            if (ts->type == dtBorrowed || ts->type == dtUnmanaged)
+              USR_WARN(call, "Please use %s class? instead of %s?",
+                              ts->name, ts->name);
           } else if (isManagedPtrType(ts->type) &&
-                     call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+                     (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                      call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
             decorator = CLASS_TYPE_MANAGED;
+            USR_WARN(call, "Please use %s class? instead of %s?",
+                           ts->name, ts->name);
           } else {
             const char* type = NULL;
-            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+                call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
               type = "unmanaged";
-            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS))
+            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
               type = "borrowed";
-            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS))
+            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
               type = "?";
             else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
               type = "nonnil";
@@ -2266,15 +2316,18 @@ static void resolveUnmanagedBorrows() {
           }
 
           // Compute the decorated class type
-          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+          if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_UNMANAGED;
             decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
-            int tmp = decorator & CLASS_TYPE_NILIBILITY_MASK;
+          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
             tmp |= CLASS_TYPE_BORROWED;
             decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS)) {
+          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
             decorator = addNilableToDecorator(decorator);
           } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
             decorator = addNonNilToDecorator(decorator);
@@ -2314,7 +2367,15 @@ static void resolveUnmanagedBorrows() {
               case CLASS_TYPE_MANAGED_NILABLE:
                 INT_FATAL("case not handled");
                 break;
-
+              case CLASS_TYPE_GENERIC:
+                dt = dtAnyManagementAnyNilable;
+                break;
+              case CLASS_TYPE_GENERIC_NONNIL:
+                dt = dtAnyManagementNonNilable;
+                break;
+              case CLASS_TYPE_GENERIC_NILABLE:
+                dt = dtAnyManagementNilable;
+                break;
               // no default intentionally
             }
             INT_ASSERT(dt);
@@ -2323,14 +2384,12 @@ static void resolveUnmanagedBorrows() {
           }
         }
       }
-      // It's tempting to give type constructor calls the same
-      // treatment, but type constructors are so special;
-      // see normalizeCallToTypeConstructor which changes
-      // them to _type_construct_C e.g. and such a function won't
-      // exist for the unmanaged type.
+      // It's tempting to give type constructor calls the same treatment, but
+      // type constructors are handled separately later during resolution.
     }
 
     // fix e.g. unmanaged!
+    // TODO: remove this code
     if (call->isNamedAstr(astrPostfixBang)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -2338,15 +2397,19 @@ static void resolveUnmanagedBorrows() {
 
           if (ts == dtBorrowed->symbol ||
               ts == dtBorrowedNonNilable->symbol ||
-              ts == dtBorrowedNilable->symbol)
+              ts == dtBorrowedNilable->symbol) {
             replace = dtBorrowedNonNilable;
-          else if (ts == dtUnmanaged->symbol ||
+            USR_WARN(call, "Please borrowed class and not borrowed!");
+          } else if (ts == dtUnmanaged->symbol ||
                    ts == dtUnmanagedNonNilable->symbol ||
-                   ts == dtUnmanagedNilable->symbol)
+                   ts == dtUnmanagedNilable->symbol) {
             replace = dtUnmanagedNonNilable;
-          else if (isManagedPtrType(ts->type)) {
+            USR_WARN(call, "Please unmanaged class and not unmanaged!");
+          } else if (isManagedPtrType(ts->type)) {
             AggregateType* at = toAggregateType(ts->type);
             replace = at->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+            USR_WARN(call, "Please use %s class instead of %s!",
+                     at->symbol->name, at->symbol->name);
           }
 
           if (replace) {
@@ -2356,5 +2419,136 @@ static void resolveUnmanagedBorrows() {
         }
       }
     }
+
+    // Fix e.g. call _owned class?
+    if (call->numActuals() == 1) {
+      SymExpr* se1 = toSymExpr(call->baseExpr);
+      SymExpr* se2 = toSymExpr(call->get(1));
+      if (se1 != NULL && se2 != NULL) {
+        TypeSymbol* ts1 = toTypeSymbol(se1->symbol());
+        TypeSymbol* ts2 = toTypeSymbol(se2->symbol());
+        if (ts1 != NULL && ts2 != NULL && isManagedPtrType(ts1->type)) {
+          AggregateType* mgmt = toAggregateType(ts1->type);
+          if (DecoratedClassType* mt = toDecoratedClassType(ts1->type))
+            mgmt = mt->getCanonicalClass();
+
+          Type* t2 = ts2->type;
+          Type* useType = NULL;
+          if (t2 == dtAnyManagementAnyNilable)
+            useType = mgmt; // e.g. just _owned
+          else if (t2 == dtAnyManagementNonNilable)
+            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+          else if (t2 == dtAnyManagementNilable)
+            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
+
+          if (useType != NULL) {
+            SET_LINENO(call);
+            call->replace(new SymExpr(useType->symbol));
+          }
+        }
+      }
+    }
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void markUsedModule(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
+  // Do nothing if it's already in the set.
+  if (set.count(mod) != 0)
+    return;
+
+  // Add it to the set
+  set.insert(mod);
+
+  // Mark each used module as well
+  for_vector(ModuleSymbol, usedMod, mod->modUseList) {
+    markUsedModule(set, usedMod);
+  }
+
+  // Additionally, mark any parent modules
+  while (mod != NULL && mod->defPoint != NULL) {
+    mod = mod->defPoint->getModule();
+    if (mod != NULL)
+      markUsedModule(set, mod);
+  }
+}
+
+// Figure out if there are any modules that are not used at all.
+// If so, completely remove these modules from the tree.
+static void removeUnusedModules() {
+  std::set<ModuleSymbol*> usedModules;
+
+  markUsedModule(usedModules, stringLiteralModule);
+
+  markUsedModule(usedModules, ModuleSymbol::mainModule());
+
+  if (printModuleInitModule)
+    markUsedModule(usedModules, printModuleInitModule);
+
+  // Now remove any module not in the set
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (usedModules.count(mod) == 0) {
+      INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
+      mod->defPoint->remove();
+    }
+  }
+}
+
+static void detectUserDefinedBorrowMethods() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->isMethod() && fn->name == astrBorrow) {
+      Type *thisType = fn->_this->type;
+      if (isClassLike(thisType) && 
+          !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+        USR_FATAL("Classes cannot define a method named \"borrow\"");
+      }
+    }
+  }
+}
+
+void scopeResolve() {
+  addToSymbolTable();
+
+  processImportExprs();
+
+  enableModuleUsesCache = true;
+
+  computeClassHierarchy();
+
+  handleReceiverFormals();
+
+  resolveGotoLabels();
+
+  resolveUnresolvedSymExprs();
+
+  resolveEnumeratedTypes();
+
+  adjustTypeMethodsOnClasses();
+
+  setupShadowVars();
+
+  markGenerics();
+
+  processGenericFields();
+
+  ResolveScope::destroyAstMap();
+
+  destroyModuleUsesCaches();
+
+  warnedForDotInsideWith.clear();
+
+  renameDefaultTypesToReflectWidths();
+
+  cleanupExternC();
+
+  resolveUnmanagedBorrows();
+
+  detectUserDefinedBorrowMethods();
+
+  removeUnusedModules();
 }

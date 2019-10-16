@@ -1,9 +1,0 @@
-semantic: should --local remove on-clauses so early?
-
-This future asks the question whether compiling --local should remove
-on-clauses in the parser as it currently does.  An impact of this is
-that something that would be a semantic error in the --no-local case
-is not flagged as such in the --local case which seems a little
-frustrating or inconsistent.  on the other hand, it's known that the
-on-clause cannot cause a problem in the --local case, so maybe that's
-reasonable.  This future is intended to capture this question.

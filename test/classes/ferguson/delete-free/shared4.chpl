@@ -12,7 +12,7 @@ class Impl {
   }
 }
 
-var globalSharedObject:shared Impl;
+var globalSharedObject:shared Impl?;
 
 proc makeGlobalSharedObject() {
   var x = new shared Impl(1);

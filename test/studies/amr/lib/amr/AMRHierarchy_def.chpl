@@ -564,7 +564,6 @@ proc AMRHierarchy.deleteBoundaryStructures( i: int )
 class PhysicalBoundary
 {
 
-  const level:        unmanaged Level;
   const grids:        domain(unmanaged Grid);
   const multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true);
 
@@ -777,13 +776,13 @@ proc LevelSolution.initialFill ( coarse_solution: unmanaged LevelSolution )
 //----------------------------------------------------------------
 
 proc LevelVariable.initialFill (
-  q_old:     unmanaged LevelVariable,
+  q_old:     unmanaged LevelVariable?,
   q_coarse:  unmanaged LevelVariable)
 {
 
   //---- Safety check ----
 
-  if q_old != nil then assert(this.level.n_cells == q_old.level.n_cells);
+  if q_old != nil then assert(this.level.n_cells == q_old!.level.n_cells);
 
   
   //---- Refinement ratio ----
@@ -810,7 +809,7 @@ proc LevelVariable.initialFill (
     if q_old != nil
     {
 
-      for old_grid in q_old.level.grids
+      for old_grid in q_old!.level.grids
       {
       
         var overlap = grid.cells( old_grid.cells );
@@ -849,14 +848,16 @@ proc LevelVariable.initialFill (
       
       if refined_coarse.numIndices > 0 
       {
-        
+
+       {
         var unfilled_intersection = unfilled_region.copy();
         unfilled_intersection.intersect( refined_coarse );
         
         for D in unfilled_intersection do
           this(grid,D) = q_coarse(coarse_grid).refineValues(D, ref_ratio);
         
-        delete unfilled_intersection;  unfilled_intersection=nil;
+        delete unfilled_intersection;
+       }
         
         unfilled_region.subtract( refined_coarse );
         if unfilled_region.isEmpty() then break;
@@ -876,7 +877,7 @@ proc LevelVariable.initialFill (
       
     }
     
-    delete unfilled_region;  unfilled_region = nil;
+    delete unfilled_region;
     
     //<=== Interpolate from q_coarse everywhere else <===
 
@@ -895,7 +896,7 @@ proc LevelVariable.initialFill (
 
 proc LevelVariable.initialFill ( q_coarse: unmanaged LevelVariable )
 {
-  const q_old: unmanaged LevelVariable;
+  const q_old: unmanaged LevelVariable?;
   initialFill( q_old, q_coarse );
 }
 // /|""""""""""""""""""""""""""""""""""/|

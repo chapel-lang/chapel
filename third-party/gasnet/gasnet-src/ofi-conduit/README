@@ -237,7 +237,7 @@ Known problems:
         * This bug was also present in libfabric v1.4.0
         * This has been fixed in upstream libfabric. The patch that corrects
           this behavior can be found in the link below.
-        * LBNL Bugzilla link: http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3597
+        * LBNL Bugzilla link: https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3597
         * libfabric GitHub issue link: https://github.com/ofiwg/libfabric/issues/3217
         * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3223
     - gni provider segfault
@@ -246,7 +246,7 @@ Known problems:
         * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3208
 
 * See the GASNet Bugzilla server for details on additional known bugs:
-  http://gasnet-bugs.lbl.gov/
+  https://gasnet-bugs.lbl.gov/
 
 * Limits to MPI interoperability
   Depending on the libfabric provider in use, it may not be possible to have both

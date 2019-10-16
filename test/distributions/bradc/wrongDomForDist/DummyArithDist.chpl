@@ -12,7 +12,7 @@ class MyDist : BaseDist {
 }
 
 class MyDom : BaseRectangularDom {
-  const dist: unmanaged MyDist;
+  const dist: unmanaged MyDist?;
 
   proc dsiGetIndices() {
     var r: range;

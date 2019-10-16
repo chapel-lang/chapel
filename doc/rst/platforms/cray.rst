@@ -5,8 +5,8 @@ Using Chapel on Cray Systems
 ============================
 
 The following information is assembled to help Chapel users get up and running
-on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|, XK\
-|trade|, and CS\ |trade| series systems.
+on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|,
+XK\ |trade|, CS\ |trade|, and Shasta\ |trade| series systems.
 
 Support has been added for the Cray XC50\ |trade| system with ARM
 processors. This works the same as other Cray XC\ |trade| systems in
@@ -48,6 +48,75 @@ build Chapel from source, continue on to
 
 For information on obtaining and installing the Chapel module please
 contact your system administrator.
+
+
+--------------------------------------------------
+Getting Started with Chapel on Cray Shasta Systems
+--------------------------------------------------
+
+Chapel is available as a module for Cray Shasta systems.  It should be
+installed on your system already.  If it is not, contact your system
+administrator for information on obtaining and installing the Chapel
+module.
+
+To use Chapel with the default settings and confirm it is correctly
+installed, do the following:
+
+1) Load the Chapel module::
+
+     module load chapel
+
+   Note that a side effect of loading the chapel module is that these
+   other modules will either be loaded or swapped to, as needed::
+
+     PrgEnv-gnu
+     cray-mpich
+     libfabric
+
+   And this module will be unloaded, if it is loaded::
+
+     cray-libsci
+
+
+2) Compile an example program like this::
+
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+
+
+3) Execute the resulting executable on 2 locales::
+
+     ./hello6-taskpar-dist -nl 2
+
+
+Currently the number of Chapel configurations available on
+Shasta systems is quite limited.  Only the following have been built
+into the module::
+
+  CHPL_TARGET_PLATFORM: cray-shasta
+  CHPL_TARGET_COMPILER: cray-prgenv-gnu
+  CHPL_TARGET_ARCH: x86_64
+  CHPL_TARGET_CPU: sandybridge
+  CHPL_LOCALE_MODEL: flat
+  CHPL_COMM: none, ofi
+  CHPL_TASKS: qthreads
+  CHPL_LAUNCHER: none
+  CHPL_TIMERS: generic
+  CHPL_UNWIND: none
+  CHPL_MEM: jemalloc
+  CHPL_ATOMICS: cstdlib
+    CHPL_NETWORK_ATOMICS: none, ofi
+  CHPL_GMP: none
+  CHPL_HWLOC: hwloc
+  CHPL_REGEXP: none
+  CHPL_LLVM: none
+  CHPL_AUX_FILESYS: none
+
+You may be able to build Chapel from source on a Shasta system if you do
+not have a module already.  Generally you should be able to follow the
+instructions below for building from source, but be advised that so far
+only the above configurations have been built.  Also, you'll probably
+find that the module settings shown in 1) above will be required during
+the build.
 
 
 ----------------------------------------------
@@ -414,7 +483,7 @@ following operations on remote atomics are done using the network::
       read()
       write()
       exchange()
-      compareExchange()
+      compareAndSwap()
       add(), fetchAdd()
       sub(), fetchSub()
 

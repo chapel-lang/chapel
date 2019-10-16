@@ -55,7 +55,7 @@ LEGION_URL      ?= https://github.com/$(LEGION_GIT_REPO)/archive/$(LEGION_GIT_CO
 LEGION_ARCHIVE  ?= $(notdir $(LEGION_URL))
 legion-download: force
 	rm -Rf $(LEGION_BLDDIR) $(LEGION_TMPDIR) && mkdir $(LEGION_TMPDIR)
-	cd $(LEGION_TMPDIR) && $(WGET) $(LEGION_URL) 2>&1
+	cd $(LEGION_TMPDIR) && $(WGET) $(LEGION_URL) 2>&1 || ( cat wget-log 2> /dev/null ; exit 3 ) || exit $$?
 	cd $(LEGION_TMPDIR) && cat wget-log 2> /dev/null ; rm -f wget-log ; exit 0
 	@LEGION_TESTDIR=`pwd` && \
 	 cd $(LEGION_TMPDIR) && LEGION_ARCHIVE=`/bin/ls` && LEGION_DOWNLOAD="$(LEGION_DOWNLOAD)" && \
@@ -97,7 +97,7 @@ legion-patch: force
 
 # Either install GASNet (empty LEGION_GASNET) or use in-place
 ifeq ($(LEGION_GASNET),)
-LEGION_GASNET_INST = $(LEGION_BLDDIR)/gasnet
+export LEGION_GASNET_INST = $(LEGION_BLDDIR)/gasnet
 legion-gasnet: force
 	if test -d "$(LEGION_GASNET_INST)"; then \
 	  rm -Rf "$(LEGION_GASNET_INST)";  \
@@ -107,7 +107,7 @@ legion-gasnet: force
 	@echo ======== Installing GASNet at $(LEGION_GASNET_INST) ========
 	$(MAKE) install -C $(TOP_BUILDDIR)/gasnet prefix="$(LEGION_GASNET_INST)"
 else
-LEGION_GASNET_INST = $(LEGION_GASNET)
+export LEGION_GASNET_INST = $(LEGION_GASNET)
 legion-gasnet: force
 	@if test -f "$(LEGION_GASNET_INST)/include/gasnet.h"; then \
 	  echo ======== Using GASNet pre-installed at $(LEGION_GASNET_INST) ========; \
@@ -145,10 +145,10 @@ _legion_clean: force
 	
 _legion: force
 	rm -Rf legion-built launcher $(LOGFILE)
-	$(MAKE) legion-download 2>&1 | tee $(LOGFILE)
-	$(MAKE) legion-patch 2>&1 | tee -a $(LOGFILE)
+	$(call safe_tee_dance, $(MAKE) legion-download)
+	$(call safe_tee_dance, $(MAKE) legion-patch)
 	$(PERL) -pi -e s,mpi_interop,realm_saxpy,g -- $(LEGION_BLDDIR)/test.py # replace bogus test
-	$(MAKE) legion-gasnet 2>&1 | tee -a $(LOGFILE)
+	$(call safe_tee_dance, $(MAKE) legion-gasnet)
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 	$(MAKE) launcher rtlibs
 	@touch legion-built
@@ -189,3 +189,7 @@ $(TESTS): force; $(MAKE) one_test TEST_DIR=test/$@ TEST_EXE=$@
 force:
 
 .PHONY: force one_test $(TESTS_PY)
+
+# Run a command, with output to both stdout and $(LOGFILE), preserving exit code of the command
+# Based on https://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another/70675#70675
+safe_tee_dance = (((($1; echo $$? >&3) 2>&1 | tee -a $(LOGFILE) >&4) 3>&1) | (read rc; exit $$rc)) 4>&1

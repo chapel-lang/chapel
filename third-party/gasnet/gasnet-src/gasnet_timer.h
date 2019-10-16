@@ -57,7 +57,7 @@
   typedef hrtime_t gasneti_tick_t;
   GASNETI_INLINE(gasneti_ticks_to_ns)
   uint64_t gasneti_ticks_to_ns(gasneti_tick_t _st) {
-    gasneti_assert(sizeof(gasneti_tick_t) == 8);
+    gasneti_static_assert(sizeof(gasneti_tick_t) == 8);
     return *(uint64_t*)&_st;
   }
   #define gasneti_ticks_now()      (gethrtime())
@@ -287,7 +287,9 @@
         fclose(_fp);
       }
      #endif
-      gasneti_assert(_freq > 1000000 && _freq < 2000000000); /* ensure it looks reasonable (1MHz to 2Ghz) */
+      // ensure it looks reasonable (1MHz to 2Ghz)
+      gasneti_assert_uint(_freq ,>,    1000000);
+      gasneti_assert_uint(_freq ,<, 2000000000); 
       gasneti_timer_Tick = 1.0e9 / _freq;
       gasneti_sync_writes();
       gasneti_timer_firstTime = 0;

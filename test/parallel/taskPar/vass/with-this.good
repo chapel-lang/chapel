@@ -1,0 +1,1 @@
+with-this.chpl:5: error: cannot currently apply a forall or task intent to 'this'

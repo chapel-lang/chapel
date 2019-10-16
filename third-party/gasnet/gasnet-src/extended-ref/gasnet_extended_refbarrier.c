@@ -197,7 +197,7 @@ typedef struct gasnete_coll_pshmbarrier_s {
 #define PSHM_BSTATE_SIGNAL(_bdata, _result, _two_to_phase) do {                \
     const int _tmp_result = (_result);                                         \
     const gasneti_atomic_sval_t _state = (_tmp_result << PSHM_BSTATE_DONE_BITS) | (_two_to_phase);\
-    gasneti_assert(PSHM_BSTATE_TO_RESULT(_state) == _tmp_result);              \
+    gasneti_assert_int(PSHM_BSTATE_TO_RESULT(_state) ,==, _tmp_result);        \
     gasneti_atomic_set(&(_bdata)->shared->state, _state, GASNETI_ATOMIC_REL);  \
   } while(0)
 
@@ -338,7 +338,7 @@ int gasnete_pshmbarrier_kick(gasnete_pshmbarrier_data_t * const pshm_bdata) {
             const struct gasneti_pshm_barrier_node * node = children[n+i].node;
             const int other_value = node->u.wmb.value;
             const int other_flags = node->u.wmb.flags;
-            gasneti_assert(node->u.wmb.phase == two_to_phase);
+            gasneti_assert_int(node->u.wmb.phase ,==, two_to_phase);
           #endif
 
             if ((flags | other_flags) & GASNET_BARRIERFLAG_MISMATCH) {
@@ -494,7 +494,7 @@ gasnete_pshmbarrier_init_inner(gasnete_coll_team_t team) {
         for (i = radix; i < size; i += radix) {
           pshm_bdata->private.children[j++].node = &shared_data->node[i];
         }
-        gasneti_assert(j == count);
+        gasneti_assert_int(j ,==, count);
       } else if ((rank % radix) == 0) {
         int last  = MIN(size, rank + radix) - 1;
         int count = MAX(0, last - rank);
@@ -1051,29 +1051,6 @@ static int gasnete_amdbarrier_try(gasnete_coll_team_t team, int id, int flags) {
   else return GASNET_ERR_NOT_READY;
 }
 
-#ifdef GASNETI_USE_FCA
-static int gasnete_amdbarrier(gasnete_coll_team_t team, int id, int flags) {
-  int retval;
-  #if GASNETI_STATS_OR_TRACE
-    gasneti_tick_t barrier_start = GASNETI_TICKS_NOW_IFENABLED(B);
-  #endif
-
-  GASNETE_SPLITSTATE_BARRIER(team);
-
-  retval = gasnete_fca_barrier(team, &id, &flags);
-  if (retval != GASNET_ERR_RESOURCE) {
-    gasnete_coll_amdbarrier_t * const barrier_data = team->barrier_data;
-    barrier_data->amdbarrier_value = id;
-    barrier_data->amdbarrier_flags = flags;
-    GASNETI_TRACE_EVENT_TIME(B,BARRIER,GASNETI_TICKS_NOW_IFENABLED(B)-barrier_start);
-    return retval;
-  } else {
-    (team->barrier_notify)(team, id, flags);
-    return gasnete_amdbarrier_wait(team, id, flags);
-  }
-}
-#endif
-
 static int gasnete_amdbarrier_result(gasnete_coll_team_t team, int *id) {
   gasneti_sync_reads(); /* ensure we read only up-to-date values */
   GASNETE_SPLITSTATE_RESULT(team);
@@ -1113,7 +1090,7 @@ static void gasnete_amdbarrier_init(gasnete_coll_team_t team) {
 
   steps = peers->num;
   barrier_data->amdbarrier_size = steps;
-  gasneti_assert(barrier_data->amdbarrier_size <= GASNETE_AMDBARRIER_MAXSTEP);
+  gasneti_assert_uint(barrier_data->amdbarrier_size ,<=, GASNETE_AMDBARRIER_MAXSTEP);
 
   /* list of log(P) peers we will communicate with */
   barrier_data->amdbarrier_peers = peers->fwd;
@@ -1129,9 +1106,6 @@ static void gasnete_amdbarrier_init(gasnete_coll_team_t team) {
   team->barrier_notify = steps ? &gasnete_amdbarrier_notify : &gasnete_amdbarrier_notify_singleton;
   team->barrier_wait =   &gasnete_amdbarrier_wait;
   team->barrier_try =    &gasnete_amdbarrier_try;
-#ifdef GASNETI_USE_FCA
-  team->barrier        = &gasnete_amdbarrier;
-#endif
   team->barrier_result = &gasnete_amdbarrier_result;
   team->barrier_pf =     (team == GASNET_TEAM_ALL) ? &gasnete_amdbarrier_kick_team_all : NULL;
 }
@@ -1359,8 +1333,8 @@ void gasnete_rmdbarrier_kick(gasnete_coll_team_t team) {
     const int step_value = inbox->value;
     const int step_flags = inbox->flags;
 
-    gasneti_assert(inbox->value2 == ~step_value);
-    gasneti_assert(inbox->flags2 == ~step_flags);
+    gasneti_assert_int(inbox->value2 ,==, ~step_value);
+    gasneti_assert_int(inbox->flags2 ,==, ~step_flags);
 
     /* "reset" the inbox
      *
@@ -1585,29 +1559,6 @@ static int gasnete_rmdbarrier_try(gasnete_coll_team_t team, int id, int flags) {
   else return GASNET_ERR_NOT_READY;
 }
 
-#ifdef GASNETI_USE_FCA
-static int gasnete_rmdbarrier(gasnete_coll_team_t team, int id, int flags) {
-  int retval;
-  #if GASNETI_STATS_OR_TRACE
-    gasneti_tick_t barrier_start = GASNETI_TICKS_NOW_IFENABLED(B);
-  #endif
-
-  GASNETE_SPLITSTATE_BARRIER(team);
-
-  retval = gasnete_fca_barrier(team, &id, &flags);
-  if (retval != GASNET_ERR_RESOURCE) {
-    gasnete_coll_rmdbarrier_t * const barrier_data = team->barrier_data;
-    barrier_data->barrier_value = id;
-    barrier_data->barrier_flags = flags;
-    GASNETI_TRACE_EVENT_TIME(B,BARRIER,GASNETI_TICKS_NOW_IFENABLED(B)-barrier_start);
-    return retval;
-  } else {
-    (team->barrier_notify)(team, id, flags);
-    return gasnete_rmdbarrier_wait(team, id, flags);
-  }
-}
-#endif
-
 static int gasnete_rmdbarrier_result(gasnete_coll_team_t team, int *id) {
   gasneti_sync_reads(); /* ensure we read up-to-date values */
   GASNETE_SPLITSTATE_RESULT(team);
@@ -1662,7 +1613,7 @@ static void gasnete_rmdbarrier_init(gasnete_coll_team_t team) {
 #endif
 
     gasneti_assert(gasnete_rdmabarrier_auxseg);
-    gasneti_assert_always(2 * sizeof(gasnete_coll_rmdbarrier_inbox_t) <= GASNETE_RDMABARRIER_INBOX_SZ);
+    gasneti_static_assert(2 * sizeof(gasnete_coll_rmdbarrier_inbox_t) <= GASNETE_RDMABARRIER_INBOX_SZ);
     barrier_data->barrier_inbox = gasnete_rdmabarrier_auxseg[gasneti_mynode].addr;
 
     barrier_data->barrier_peers = gasneti_malloc((1+steps) * sizeof(* barrier_data->barrier_peers));
@@ -1696,9 +1647,6 @@ static void gasnete_rmdbarrier_init(gasnete_coll_team_t team) {
   team->barrier_notify = steps ? &gasnete_rmdbarrier_notify : &gasnete_rmdbarrier_notify_singleton;
   team->barrier_wait =   &gasnete_rmdbarrier_wait;
   team->barrier_try =    &gasnete_rmdbarrier_try;
-#ifdef GASNETI_USE_FCA
-  team->barrier        = &gasnete_rmdbarrier;
-#endif
   team->barrier_result = &gasnete_rmdbarrier_result;
   team->barrier_pf =     (team == GASNET_TEAM_ALL) ? &gasnete_rmdbarrier_kick_team_all : NULL;
 }
@@ -1748,7 +1696,7 @@ static void gasnete_amcbarrier_notify_reqh(gex_Token_t token,
   gasnete_coll_team_t team = gasnete_coll_team_lookup((uint32_t)teamid);
   gasnete_coll_amcbarrier_t *barrier_data = team->barrier_data;
 
-  gasneti_assert(gasneti_mynode == barrier_data->amcbarrier_master);
+  gasneti_assert_uint(gasneti_mynode ,==, barrier_data->amcbarrier_master);
   
   gex_HSL_Lock(&barrier_data->amcbarrier_lock);
   { int count = barrier_data->amcbarrier_count[phase];
@@ -2205,17 +2153,6 @@ int gasnete_barrier_default(gasnete_coll_team_t team, int id, int flags) {
 
   GASNETE_SPLITSTATE_BARRIER(team);
   
-  #ifdef GASNETI_USE_FCA
-  /* Don't have a generic way to implement gasnet_barrier_result() - so only UNNAMED */
-  if (flags & GASNETE_BARRIERFLAG_UNNAMED) {
-    retval = gasnete_fca_barrier(team, &id, &flags);
-    if (retval != GASNET_ERR_RESOURCE) {
-      GASNETI_TRACE_EVENT_TIME(B,BARRIER,GASNETI_TICKS_NOW_IFENABLED(B)-barrier_start);
-      return retval;
-    }
-  }
-  #endif
-
   gasneti_assert(team->barrier_notify);
   (*team->barrier_notify)(team, id, flags);  
 
@@ -2384,9 +2321,6 @@ void gasnete_barrier_init(void) {
 /* Should modify to allocate for other barriers as required */
 
 /* worst case assumption is lg(2^32 peers) * (2 phases) */
-/* spawner hint of our auxseg requirements: */
-GASNETI_IDENT(gasnete_barr_auxseg_IdentString,
-              "$GASNetAuxSeg_barr: 64*" _STRINGIFY(GASNETE_RDMABARRIER_INBOX_SZ) " $");
 
 gasneti_auxseg_request_t gasnete_barr_auxseg_alloc(gasnet_seginfo_t *auxseg_info) {
   const char *barrier = gasneti_getenv_withdefault("GASNET_BARRIER",GASNETE_BARRIER_DEFAULT);

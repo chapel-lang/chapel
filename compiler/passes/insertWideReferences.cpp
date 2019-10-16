@@ -1482,6 +1482,8 @@ static void narrowWideClassesThroughCalls()
           if (narrowType.isRefOrWideRef() == false &&
               narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
 
+            INT_FATAL("dead code"); // extern classes no longer supported
+
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)

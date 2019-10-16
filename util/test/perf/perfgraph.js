@@ -98,6 +98,10 @@ var branchInfo = [
                   { "release" : "1.19",
                     "releaseDate": "2019-03-21",
                     "branchDate" : "2019-03-12",
+                    "revision" : -1},
+                  { "release" : "1.20",
+                    "releaseDate": "2019-09-19",
+                    "branchDate" : "2019-09-11",
                     "revision" : -1}
                   ];
 
@@ -119,8 +123,8 @@ if (!multiConfs) { configurations = ['']; }
 var defaultConfiguration = configurations[0];
 
 // Experimental: used to toggle how stroke pattern and line colors are used for
-// multi-configs. Default to using it for 16 node xc in a hacky way
-var diffColorForEachConfig = pageTitle.indexOf("16 node XC") >= 0;
+// multi-configs. Default to using it for 16 node configs
+var diffColorForEachConfig = pageTitle.indexOf("16 node ") >= 0;
 
 var lastFilterVal = "";
 
@@ -404,7 +408,10 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
 
     // copy the graphInfo and add the key to the title (stripping the
     // configuration if we have multiple configurations.)
-    var newInfo = $.extend({}, graphInfo);
+    var newInfo = $.extend(true, {}, graphInfo);
+    for (var j = 0; j < newInfo.annotations.length; j++) {
+      newInfo.annotations[j].series = graphLabels[i];
+    }
     newInfo.title += ": " + graphLabels[i].replace(defaultConfiguration, '');
 
     // The new graph cannot be expanded

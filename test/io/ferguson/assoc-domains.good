@@ -1,0 +1,24 @@
+in testText 
+Wrote: 1
+Read: 1
+in testBinary 1
+Wrote: 1
+Read: 1
+in testText 1
+Wrote: 1
+Read: 1
+in testBinary 1
+Wrote: 1
+Read: 1
+in testText 1 2
+Wrote: 1 2
+Read: 1 2
+in testBinary 1 2
+Wrote: 1 2
+Read: 1 2
+in testText 1 2 3
+Wrote: 1 2 3
+Read: 1 2 3
+in testBinary 1 2 3
+Wrote: 1 2 3
+Read: 1 2 3

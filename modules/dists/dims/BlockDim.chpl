@@ -21,7 +21,7 @@
 // Block dimension specifier - for use with DimensionalDist2D.
 //
 
-use DimensionalDist2D;
+private use DimensionalDist2D;
 
 
 /*
@@ -33,7 +33,7 @@ that would be produced by a 1D :class:`~BlockDist.Block` distribution.
 
 **Initializer Arguments**
 
-The following ``BlockDim`` class initializers are available:
+The following ``BlockDim`` record initializers are available:
 
   .. code-block:: chapel
 
@@ -59,7 +59,7 @@ The ``idxType``, whether provided or inferred, must match
 the index type of the domains "dmapped" using the corresponding
 ``DimensionalDist2D`` distribution.
 */
-class BlockDim {
+record BlockDim {
   // the type of bbStart, bbLength
   // (also (ab)used as the idxType of the domains created over this dist.)
   // (todo - straighten that out)
@@ -74,7 +74,7 @@ class BlockDim {
   proc boundingBox return bbStart .. (bbStart + bbLength - 1);
 }
 
-class Block1dom {
+record Block1dom {
   type idxType;
   param stridable: bool;
 
@@ -90,7 +90,7 @@ class Block1dom {
   proc dsiSetIndicesUnimplementedCase param return false;
 }
 
-class Block1locdom {
+record Block1locdom {
   var myRange;
 }
 
@@ -111,14 +111,12 @@ proc BlockDim.init(numLocales: int, boundingBox: range(?),
 
 /////////// privatization - start
 
-proc BlockDim.dsiSupportsPrivatization1d() param return true;
-
 proc BlockDim.dsiGetPrivatizeData1d() {
   return (numLocales, bbStart, bbLength);
 }
 
-proc BlockDim.dsiPrivatize1d(privatizeData) {
-  return new unmanaged BlockDim(privatizeData, this.idxType);
+proc type BlockDim.dsiPrivatize1d(privatizeData) {
+  return new BlockDim(privatizeData, this.idxType);
 }
 
 // initializer for privatization
@@ -131,15 +129,13 @@ proc BlockDim.init(privatizeData, type idxType) {
 
 proc BlockDim.dsiUsesLocalLocID1d() param return false;
 
-proc Block1dom.dsiSupportsPrivatization1d() param return true;
-
 proc Block1dom.dsiGetPrivatizeData1d() {
   return (wholeR,);
 }
 
-proc Block1dom.dsiPrivatize1d(privDist, privatizeData) {
+proc type Block1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new unmanaged Block1dom(idxType   = this.idxType,
+  return new Block1dom(idxType   = this.idxType,
                   stridable = this.stridable,
                   wholeR    = privatizeData(1),
                   pdist     = privDist);
@@ -149,11 +145,7 @@ proc Block1dom.dsiGetReprivatizeData1d() {
   return (wholeR,);
 }
 
-proc Block1dom.dsiReprivatize1d(other, reprivatizeData) {
-  if other.idxType   != this.idxType ||
-     other.stridable != this.stridable then
-    compilerError("inconsistent types in privatization");
-
+proc Block1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR = reprivatizeData(1);
 }
 
@@ -180,21 +172,21 @@ proc BlockDim.toString()
   return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
 
 proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
-                                  type stoIndexT)
+                                     type stoIndexT)
 {
   // ignore stoIndexT - all we need is for other places to work out
   if idxType != this.idxType then
     compilerError("The index type ", idxType:string,
                   " does not match the index type ",this.idxType:string,
                   " of the 'BlockDim' 1-d distribution");
-  return new unmanaged Block1dom(idxType = idxType, stridable = stridable, pdist = _to_unmanaged(this));
+  return new Block1dom(idxType = idxType, stridable = stridable, pdist = this);
 }
 
 proc Block1dom.dsiIsReplicated1d() param return false;
 
 proc Block1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
   var defaultVal: range(stoIndexT, stridable=this.stridable);
-  return new unmanaged Block1locdom(myRange = defaultVal);
+  return new Block1locdom(myRange = defaultVal);
 }
 
 proc BlockDim.dsiIndexToLocale1d(indexx): locIdT {

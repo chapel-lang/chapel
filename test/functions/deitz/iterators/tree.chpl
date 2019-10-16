@@ -1,6 +1,6 @@
 class Tree {
   var data: int;
-  var left, right: unmanaged Tree;
+  var left, right: unmanaged Tree?;
 
   proc deinit() {
     if left  != nil then delete left;
@@ -11,10 +11,10 @@ class Tree {
 iter treeNodes(tree: unmanaged Tree): unmanaged Tree {
   yield tree;
   if tree.left then
-    for t in treeNodes(tree.left) do
+    for t in treeNodes(tree.left!) do
       yield t;
   if tree.right then
-    for t in treeNodes(tree.right) do
+    for t in treeNodes(tree.right!) do
       yield t;
 }
 

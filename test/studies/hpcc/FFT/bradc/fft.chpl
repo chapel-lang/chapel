@@ -147,7 +147,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
   maxerr = maxerr / logN / epsilon;
 
   write(if (maxerr < threshold) then "SUCCESS" else "FAILURE");
-  writeln(if (maxerr < threshold) then "" else ", error = " + maxerr);
+  writeln(if (maxerr < threshold) then "" else ", error = " + maxerr:string);
   writeln();
   writeln("N      = ", N);
   if (printTiming) {

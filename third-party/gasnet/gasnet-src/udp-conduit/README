@@ -88,7 +88,7 @@ ability to make TCP connections to the machine that executes the initial spawn
 command (used for bootstrapping) and such that the worker nodes can send UDP 
 packets to each other (used to implement GASNet communication).
 
-See the ssh-agent tutorial here:  http://upc.lbl.gov/docs/user/sshagent.shtml
+See the ssh-agent tutorial here:  https://upc.lbl.gov/docs/user/sshagent.shtml
 or the documentation for your ssh client/daemon for more information on setting
 up secure, password-less authentication for ssh. rsh-based spawning is also
 supported, although not generally recommended due to the inherent security
@@ -279,7 +279,7 @@ Known problems:
   don't allow the user to weaken or disable their calibration.
 
 * See the GASNet Bugzilla server for details on other known bugs:
-  http://gasnet-bugs.lbl.gov/
+  https://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------
@@ -296,7 +296,7 @@ Design Overview:
 
 The core API implementation is a very thin wrapper around the AMUDP
 implementation by Dan Bonachea. See documentation in the other/amudp directory
-or the AMUDP webpage (http://gasnet.lbl.gov/amudp) for details.
+or the AMUDP webpage (https://gasnet.lbl.gov/amudp) for details.
 
 The udp-conduit directly uses the extended-ref implementation for the extended
 API - see the extended-ref directory for details.

@@ -14,7 +14,7 @@ ai.write(-1);
 resetCommDiagnostics();
 startCommDiagnostics();
 coforall l in Locales do on l {
-  var x = ai.compareExchangeStrong(l.id-1, l.id);
+  var x = ai.compareAndSwap(l.id-1, l.id);
 }
 stopCommDiagnostics();
 writeln(getCommDiagnostics());

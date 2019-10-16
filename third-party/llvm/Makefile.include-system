@@ -4,7 +4,13 @@ ifndef LLVM_LLVM_LIBS
   export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
 endif
 
-LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
+ifeq ($(LLVM_MAJOR_VERSION_9PLUS),9)
+  # -lclangASTMatchers needed for LLVM 9 but not earlier
+  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangASTMatchers -lclangAST -lclangLex -lclangBasic
+else
+  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
+endif
+
 
 # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
 # tested on that system after installing

@@ -1,0 +1,1 @@
+non-nilable-sync-error.chpl:2: error: sync/single types cannot contain non-nilable classes

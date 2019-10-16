@@ -48,6 +48,10 @@ externTest.doc
 
 .. function:: proc hasReturnTypeAndArgCommentless(val: int): int
 
+.. function:: proc withExternCNameComment()
+
+   Commenting withExternCNameComment 
+
 .. function:: proc withExternCName()
 
 .. function:: proc getName() param
@@ -55,6 +59,30 @@ externTest.doc
    test param method for withParamExternCName 
 
 .. function:: proc withParamExternCName()
+
+.. record:: externRecordNoComment
+
+.. record:: externRecordComment
+
+   Commenting externRecordComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. record:: externRecordRenamedNoComment
+
+.. record:: externRecordRenamedComment
+
+   Commenting externRecordRenamedComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. function:: proc end()
 
 .. default-domain:: chpl
 

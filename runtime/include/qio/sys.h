@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #ifndef __CYGWIN__
 #include <netinet/tcp.h>
@@ -285,6 +286,20 @@ err_t sys_socket(int domain, int type, int protocol, fd_t* fd_out);
 
 err_t sys_socketpair(int domain, int type, int protocol, fd_t* fd_out_a, fd_t* fd_out_b);
 
+err_t sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout, int* nset);
+
+static inline void sys_fd_clr(int fd, fd_set* set) {
+  FD_CLR(fd, set);
+}
+static inline int sys_fd_isset(int fd, fd_set* set) {
+  return FD_ISSET(fd, set);
+}
+static inline void sys_fd_set(int fd, fd_set* set) {
+  FD_SET(fd, set);
+}
+static inline void sys_fd_zero(fd_set* set) {
+  FD_ZERO(set);
+}
 
 
 err_t sys_unlink(const char* path);

@@ -342,11 +342,7 @@ static void checkFunction(FnSymbol* fn) {
   if (fCompileTimeNilChecking) {
     // Determine cases where the compiler can prove
     // a reference-type variable is 'nil'
-    // TODO: enable this for internal modules as well.
-    // It was initially enabled only for user code
-    // as a convenience during development.
-    if (fn->getModule()->modTag == MOD_USER)
-      findNilDereferences(fn);
+    findNilDereferences(fn);
 
     // TODO:
     // Determine cases where the compiler can prove
@@ -573,6 +569,9 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       if (invalid)
         USR_FATAL(expr, "Conflicting inequality in lifetime clause");
       return res;
+    } else if (call->isPrimitive(PRIM_RETURN)) {
+      // No impact on isLifetimeShorter but could impact inference
+      return CONSTRAINT_UNKNOWN;
     } else {
       Symbol* lhs = NULL;
       Symbol* rhs = NULL;
@@ -581,37 +580,35 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 
       lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
       rhs = getSymbolFromLifetimeClause(call->get(2), lhsRet);
-
       if (rhsRet)
         USR_FATAL(call, "Cannot read lifetime of return in clause");
-
       if (lhsRet) {
         // return lifetime = rhs
         // No impact on isLifetimeShorter but could impact inference
         return CONSTRAINT_UNKNOWN;
-      } else {
-        INT_ASSERT(lhs && rhs);
+      }
 
-        if ((a == lhs && b == rhs) ||
-            (b == lhs && a == rhs)) {
+      INT_ASSERT(lhs && rhs);
 
-          bool invert = false;
-          if (a == rhs && b == lhs)
-            invert = true;
+      if ((a == lhs && b == rhs) ||
+          (b == lhs && a == rhs)) {
 
-          if (call->isNamed("=="))
-            return CONSTRAINT_EQUAL;
-          else if (call->isNamed("<"))
-            return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
-          else if (call->isNamed("<=") || call->isNamed("="))
-            return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
-          else if (call->isNamed(">"))
-            return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
-          else if (call->isNamed(">="))
-            return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
-          else
-            INT_FATAL("Unhandled case");
-        }
+        bool invert = false;
+        if (a == rhs && b == lhs)
+          invert = true;
+
+        if (call->isNamed("=="))
+          return CONSTRAINT_EQUAL;
+        else if (call->isNamed("<"))
+          return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
+        else if (call->isNamed("<=") || call->isNamed("="))
+          return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
+        else if (call->isNamed(">"))
+          return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
+        else if (call->isNamed(">="))
+          return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
+        else
+          INT_FATAL("Unhandled case");
       }
     }
   }
@@ -1096,13 +1093,16 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
         (theOnlyOneThatMatters != NULL && theOnlyOneThatMatters != formal))
       continue;
 
-    if (returnsRef && formal->isRef() &&
-        (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(actualSym))) {
+    if (returnsRef && formal->isRef()) {
+      if (symbolHasInfiniteLifetime(actualSym)) {
+        argLifetime.referent = infiniteLifetime();
+      } else if (isSubjectToRefLifetimeAnalysis(actualSym) ||
+                 isLocalVariable(actualSym)) {
 
-      // Use the referent part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
-      argLifetime.referent = temp.referent;
+        // Use the referent part of the actual's lifetime
+        LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
+        argLifetime.referent = temp.referent;
+      }
     }
 
     if (returnsBorrow && isSubjectToBorrowLifetimeAnalysis(actualSym)) {
@@ -1770,10 +1770,15 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
       lp = lifetimes->lifetimeForActual(iterableSym, usedAsRef, usedAsBorrow);
 
-      if (!isSubjectToRefLifetimeAnalysis(iterableSym))
-        lp.referent = unknownLifetime();
-      if (!isSubjectToBorrowLifetimeAnalysis(iterableSym))
-        lp.borrowed = unknownLifetime();
+      // TODO: fold this in to lifetimeForActual
+      if (symbolHasInfiniteLifetime(iterableSym)) {
+        lp = infiniteLifetimePair();
+      } else {
+        if (!isSubjectToRefLifetimeAnalysis(index))
+          lp.referent = unknownLifetime();
+        if (!isSubjectToBorrowLifetimeAnalysis(index))
+          lp.borrowed = unknownLifetime();
+      }
 
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
       if (iterableCall->resolvedOrVirtualFunction())
@@ -2558,7 +2563,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
   //
   // (we assume that a user supplied = function for a class with owned
   //  pointers handles lifetimes in a reasonable manner)
-  if (calledFn && calledFn->name == astrSequals /* "=" */ ) {
+  if (calledFn && calledFn->name == astrSassign) {
     if (isClassLikeOrNil(call->get(1)->getValType()) &&
         isClassLikeOrNil(call->get(2)->getValType()))
       // Only consider same-type class assignment overloads
@@ -2664,7 +2669,7 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
   if (c != CONSTRAINT_UNKNOWN)
     return false;
   // TODO - make this exception more reasonable
-  if (fn->name == astrSequals)
+  if (fn->name == astrSassign)
     return false;
   if (fn->name == astrSswap)
     return false;

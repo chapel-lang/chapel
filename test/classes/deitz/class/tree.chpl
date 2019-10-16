@@ -1,8 +1,8 @@
 class BinaryTree {
   type eltType;
   var data: eltType;
-  var left: unmanaged BinaryTree(eltType);
-  var right: unmanaged BinaryTree(eltType);
+  var left: unmanaged BinaryTree(eltType)?;
+  var right: unmanaged BinaryTree(eltType)?;
 
   proc deinit() {
     if left  != nil then delete left;
@@ -12,10 +12,10 @@ class BinaryTree {
 
 iter BinaryTree.postOrder(): eltType {
   if left then
-    for e in left.postOrder() do
+    for e in left!.postOrder() do
       yield e;
   if right then
-    for e in right.postOrder() do
+    for e in right!.postOrder() do
       yield e;
   yield data;
 }

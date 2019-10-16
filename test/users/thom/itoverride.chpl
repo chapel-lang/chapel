@@ -38,9 +38,7 @@ class OverridesIt : OverrideMe
 
 proc main()
 {
-  var o : unmanaged OverrideMe;
-
-  o = new unmanaged OverridesIt();
+  var o : unmanaged OverrideMe = new unmanaged OverridesIt();
 
   var t1 = o.getC();
 

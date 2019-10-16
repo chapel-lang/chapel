@@ -24,14 +24,6 @@ assocC.x("one") = 1.1;
 assocC.foo();
 delete assocC;
 
-var opaqueDom: domain(opaque);
-type opaqueArr = [opaqueDom] real;
-var opaqueC = new unmanaged C(opaqueArr);
-const newInd = opaqueDom.create();
-opaqueC.x(newInd) = 1.1;
-opaqueC.foo();
-delete opaqueC;
-
 var sparseDom: sparse subdomain({1..3});
 type sparseArr = [sparseDom] real;
 var sparseC = new unmanaged C(sparseArr);

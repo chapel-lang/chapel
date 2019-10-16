@@ -1,6 +1,6 @@
 class ll {
   type itemType;
-  var  list: unmanaged ll_entry(itemType);
+  var  list: unmanaged ll_entry(itemType)?;
 
   class a_class {
     var a: int;
@@ -120,7 +120,7 @@ class ll {
   }
 
   proc reverse() {
-    var mylist: unmanaged ll_entry(itemType);
+    var mylist: unmanaged ll_entry(itemType)?;
     var e: itemType;
 
     if list == nil then
@@ -169,7 +169,7 @@ class ll_entry {
   // But class nesting is not yet implemented
   type elementType;
   var element: elementType;
-  var next: unmanaged ll_entry(elementType);
+  var next: unmanaged ll_entry(elementType)?;
 }
 
 proc main(){

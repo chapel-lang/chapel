@@ -13,7 +13,7 @@
 
 #include <firehose_trace.h>
 
-#define GASNET_EXTENDED_VERSION      2.0
+#define GASNET_EXTENDED_VERSION      2.3
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         IBV
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
@@ -76,11 +76,6 @@
 // Configure default VIS tuning knobs
 // 12/15/17: Measurements on multiple systems show 256 is a good value
 #define GASNETE_VIS_MAXCHUNK_DEFAULT 256
-
-// Enable inclusion of FCA in support extended-ref/coll/gasnet_coll_internal.h
-#if GASNETI_FCA_ENABLED && GASNET_SEQ
-#define GASNETI_USE_FCA 1
-#endif
 
 #endif
 

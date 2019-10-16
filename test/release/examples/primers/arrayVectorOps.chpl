@@ -1,5 +1,15 @@
 // Array Vector Operations
 
+/*
+  .. warning::
+
+    Vector operations on arrays have been deprecated for the 1.20 release,
+    and will be removed in future releases. The ``list`` type from the 
+    :mod:`List` module has been added to the standard library, and is
+    intended to provide suitable replacements for these deprecated
+    operations.
+*/
+
 //
 // This primer is about vector operations on 1D arrays
 //

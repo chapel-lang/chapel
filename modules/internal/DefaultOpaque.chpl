@@ -20,7 +20,7 @@
 // DefaultOpaque.chpl
 //
 module DefaultOpaque {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   // record _OpaqueIndex is defined in ChapelArray
 
@@ -28,7 +28,7 @@ module DefaultOpaque {
   proc _OpaqueIndexGetNext():uint {
     var n:uint;
     local {
-      n = _OpaqueIndexNext.fetchAdd(1, order=memory_order_relaxed);
+      n = _OpaqueIndexNext.fetchAdd(1, order=memoryOrder.relaxed);
     }
     return n+1;
   }

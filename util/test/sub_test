@@ -228,9 +228,9 @@ def trim_output(output):
     return ''.join(s if s in string.printable else "~" for s in output)
 
 
-# return True if f has .chpl extension
-def IsChplTest(f):
-    if re.match(r'^.+\.(chpl|test\.c)$', f):
+# return True if f has .chpl, .test.c or .ml-test.c extension
+def hasTestableExtension(f):
+    if f.endswith(('.chpl', '.test.c', '.ml-test.c')):
         return True
     else:
         return False
@@ -557,7 +557,7 @@ def translateOutput(output):
               ('Fatal MPP reservation error on create',
                'Jira 329 -- Fatal MPP reservation error for'),
               ('Text file busy',
-               'Jira 333 -- Text file busy for'))
+               'private issue #474 -- Text file busy for'))
 
     known_error = ''
     was_timeout = False
@@ -573,6 +573,60 @@ def translateOutput(output):
             was_timeout = True
 
     return known_error, was_timeout
+
+def filter_compiler_errors(compiler_output):
+    """Identify common errors that occur in compilation.
+    Return message to emit when error found."""
+
+    error_msg = ''
+    err_strings = ['could not checkout FLEXlm license']
+    for s in err_strings:
+        if re.search(s, compiler_output, re.IGNORECASE) != None:
+            error_msg = '(possible private issue #398) '
+            break
+
+    return error_msg
+
+def filter_errors(output, pre_exec_output, execgoodfile, execlog):
+    """Identify common errors that occur in runtime or compiler warnings.
+    Return message to emit when error found."""
+
+    # If the output contains messages consistent with JIRA 154, add a
+    # hint to the error summary and force a text base diff since
+    # sometimes the output contains a null character
+    extra_msg = ''
+    err_strings = ['got exn while reading exit code: connection closed',
+                   'slave got an unknown command on coord socket:',
+                   'Slave got an xSocket: connection closed on recv',
+                   'recursive failure in AMUDP_SPMDShutdown',
+                   'AM_ERR_RESOURCE \(Problem with requested resource\)']
+    for s in err_strings:
+        if re.search(s, output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 154) '
+            DiffBinaryFiles(execgoodfile, execlog)
+            break
+
+    err_strings = ['Master got an xSocket: error in sendAll']
+    for s in err_strings:
+        if re.search(s, output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 274) '
+            break
+
+    err_strings = ['Clock skew detected']
+    for s in err_strings:
+        # NOTE: checking pre_exec (compiler) output
+        if re.search(s, pre_exec_output, re.IGNORECASE) != None:
+            extra_msg = '(possible private issue #482) '
+            break
+
+    err_strings = ['could not checkout FLEXlm license']
+    for s in err_strings:
+        if (re.search(s, output, re.IGNORECASE) != None or
+            re.search(s, pre_exec_output, re.IGNORECASE) != None):
+            extra_msg = '(possible private issue #398) '
+            break
+
+    return extra_msg
 
 
 # Start of sub_test proper
@@ -1026,7 +1080,7 @@ dirlist.sort()
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
-    testsrc=filter(IsChplTest, dirlist)
+    testsrc=filter(hasTestableExtension, dirlist)
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
@@ -1040,16 +1094,14 @@ for testname in testsrc:
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
-    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c)$', testname).group(1)
+    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|ml-test\.c)$', testname).group(1)
     execname = test_filename
     if uniquifyTests:
         execname += '.{0}'.format(os.getpid())
     # print test_filename
 
-    if re.match(r'^.+\.test\.c$', testname):
-      is_c_test = True
-    else:
-      is_c_test = False
+    is_c_test = testname.endswith(".test.c");
+    is_ml_c_test = testname.endswith(".ml-test.c");
 
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
@@ -1274,6 +1326,11 @@ for testname in testsrc:
         sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
         continue
 
+    # .ml-test.c tests should only run when we are in a multilocale setting
+    if is_ml_c_test and chplcomm == 'none':
+        sys.stdout.write('[Skipping multilocale-only c test: %s/%s]\n'%(localdir,test_filename))
+        continue
+
     # Set numlocales
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:
         numlocexecopts = None
@@ -1285,7 +1342,7 @@ for testname in testsrc:
                                  .format(os.path.join(localdir, test_filename),
                                          numlocales, maxLocalesAvailable))
                 continue
-        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1):
+        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1) and not is_ml_c_test:
             sys.stdout.write('[Skipping {0} because it does not '
                              'use more than one locale]\n'
                              .format(os.path.join(localdir, test_filename)))
@@ -1432,7 +1489,7 @@ for testname in testsrc:
             args += envCompopts + shlex.split(compopts)
         args += [testname]
 
-        if is_c_test:
+        if is_c_test or is_ml_c_test:
             # we need to drop envCompopts for C tests as those are options
             # for `chpl` so don't include them here
             args = ['-o', test_filename]+shlex.split(compopts)+[testname]
@@ -1596,6 +1653,14 @@ for testname in testsrc:
 
             goodfile = FindGoodFile(basename)
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
+            error_msg = filter_compiler_errors(origoutput)
+            if error_msg != '':
+                sys.stdout.write('[Error %s for %s]\n'%(error_msg, test_name))
+                sys.stdout.write('[Compiler output was as follows:]\n')
+                sys.stdout.write(origoutput)
+                cleanup(execname)
+                cleanup(printpassesfile)
+                continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
                 if perftest:
@@ -2105,41 +2170,7 @@ for testname in testsrc:
                             os.unlink(execlog)
                             sys.stdout.write('%s[Success '%(futuretest))
                         else:
-                            # If the output contains messages consistent with JIRA 154, add a
-                            # hint to the error summary and force a text base diff since
-                            # sometimes the output contains a null character
-                            extra_msg = ''
-                            err_strings = ['got exn while reading exit code: connection closed',
-                                           'slave got an unknown command on coord socket:',
-                                           'Slave got an xSocket: connection closed on recv',
-                                           'recursive failure in AMUDP_SPMDShutdown',
-                                           'AM_ERR_RESOURCE \(Problem with requested resource\)']
-                            for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 154) '
-                                    DiffBinaryFiles(execgoodfile, execlog)
-                                    break
-
-                            err_strings = ['Master got an xSocket: error in sendAll']
-                            for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 274) '
-                                    break
-
-                            err_strings = ['could not checkout FLEXlm license']
-                            for s in err_strings:
-                                # NOTE: checking pre_exec (compiler) output
-                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 357) '
-                                    break
-
-                            err_strings = ['Clock skew detected']
-                            for s in err_strings:
-                                # NOTE: checking pre_exec (compiler) output
-                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 287) '
-                                    break
-
+                            extra_msg = filter_errors(output, pre_exec_output, execgoodfile, execlog)
                             sys.stdout.write('%s[Error %s'%(futuretest, extra_msg))
 
                         sys.stdout.write('matching program output for %s/%s'%

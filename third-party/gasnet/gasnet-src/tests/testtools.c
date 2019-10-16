@@ -13,7 +13,7 @@
 #error testtools should *not* include gasnetex.h
 #endif
 
-#ifdef HAVE_PTHREAD_H
+#if GASNETT_THREAD_SAFE
   int NUM_THREADS = 0;
   gasnett_atomic_t thread_flag[TEST_MAXTHREADS];
   int valX[TEST_MAXTHREADS];
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
   
   if (argc > 1) iters = atoi(argv[1]);
   if (iters < 1) iters = DEFAULT_ITERS;
-  #ifdef HAVE_PTHREAD_H
+  #if GASNETT_THREAD_SAFE
     if (argc > 2) NUM_THREADS = atoi(argv[2]);
     if (NUM_THREADS < 1) NUM_THREADS = DEFAULT_THREADS;
     NUM_THREADS = test_thread_limit(NUM_THREADS);
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
   if (argc > 4) test_usage();
 
   TEST_GENERICS_WARNING();
-  #ifdef HAVE_PTHREAD_H
+  #if GASNETT_THREAD_SAFE
     MSG("Running testtools with %i iterations and %i threads", iters, NUM_THREADS);
   #else
     MSG("Running testtools with %i iterations", iters);
@@ -161,12 +161,11 @@ int main(int argc, char **argv) {
   }
 
   { char tmp_str[50];
-    int i;
     gasnett_format_number(0, tmp_str, sizeof(tmp_str), 1);
     assert_always(gasnett_parse_int(tmp_str, 1) == 0);
     gasnett_format_number(0, tmp_str, sizeof(tmp_str), 0);
     assert_always(gasnett_parse_int(tmp_str, 0) == 0);
-    for (i=0; i < 62; i++) {
+    for (int i=0; i < 62; i++) {
       int64_t x = (((int64_t)1) << i);
       int64_t y;
       gasnett_format_number(x, tmp_str, sizeof(tmp_str), 1);
@@ -187,9 +186,6 @@ int main(int argc, char **argv) {
 
   TEST_HEADER("Testing high-performance timers and sleep...")
   { /* high performance timers */
-    int i;
-    gasnett_tick_t begin, start, end;
-    uint64_t beginref, startref, endref;
     int timeiters = MAX(1,iters / 10);
     gasnett_tick_t ticktimemin = GASNETT_TICK_MIN;
     gasnett_tick_t ticktimemax = GASNETT_TICK_MAX;
@@ -219,18 +215,20 @@ int main(int argc, char **argv) {
     if (!(gasnett_ticks_now() > ticktimemin)) ERR("!(now > min)");
     if (!(gasnett_ticks_now() < ticktimemax)) ERR("!(now < max)");
 
-    if (granularity <= 0.0 || overhead <= 0.0 ||
-        (granularity+10*slack) < 0.5*overhead)
+    if (granularity <= 0.0 || overhead <= 0.0) {
+        ERR("nonsensical timer overhead/granularity measurements:\n"
+             "  overhead: %.3fus  granularity: %.3fus\n",overhead, granularity);
+    } else if ((granularity+10*slack) < 0.5*overhead) {
         /* allow some leeway for noise at granularities approaching cycle speed */
         // leeway is scaled by slack to allow disabling this test
         // on platforms where timers are unreliable (eg cpu emulator)
-        ERR("nonsensical timer overhead/granularity measurements:\n"
+        MSG("WARNING: suspicious timer overhead/granularity measurements: (this can be caused by high system noise)\n"
              "  overhead: %.3fus  granularity: %.3fus\n",overhead, granularity);
+    }
 
-    begin = gasnett_ticks_now();  /* outer time point */
-    beginref = gasnett_gettimeofday_us();
-    for (i=0; i < timeiters; i++) {
-      int time, timeref;
+    gasnett_tick_t start, begin = gasnett_ticks_now();  /* outer time point */
+    uint64_t startref, beginref = gasnett_gettimeofday_us();
+    for (int i=0; i < timeiters; i++) {
       if (i == timeiters - 1) {
         start = begin; /* use outer time point for base of last iteration */
         startref = beginref;
@@ -257,11 +255,11 @@ int main(int argc, char **argv) {
           last = next;
         } while (gasnett_ticks_to_us(last-start) < us_delay);
       }
-      end = gasnett_ticks_now();
-      endref = gasnett_gettimeofday_us();
+      gasnett_tick_t end = gasnett_ticks_now();
+      uint64_t endref = gasnett_gettimeofday_us();
 
-      time = gasnett_ticks_to_us(end) - gasnett_ticks_to_us(start);
-      timeref = endref - startref;
+      int time = gasnett_ticks_to_us(end) - gasnett_ticks_to_us(start);
+      int timeref = endref - startref;
 
       if (abs(timeref - time) > (int)(slack * 1.e6))
         ERR("timer and reference differ by more than %g sec:\n"
@@ -279,9 +277,9 @@ int main(int argc, char **argv) {
     }
 
     for (uint64_t ns_delay = 10; ns_delay < (uint64_t)2e9; ns_delay *= 14) {
-      start = gasnett_ticks_now();
+      gasnett_tick_t start = gasnett_ticks_now();
       int rc = gasnett_nsleep(ns_delay);
-      end = gasnett_ticks_now();
+      gasnett_tick_t end = gasnett_ticks_now();
       if (rc) ERR("gasnett_nsleep returned non-zero");
       double elapsed_plus = gasnett_ticks_to_ns(end - start)
                             + 0.0005 * ns_delay
@@ -299,15 +297,15 @@ int main(int argc, char **argv) {
                                   'b',  '\0', 'c',  'd', 'e',  'f', 'g',  'h' };
     char dst_guarded[24+16];
     char *dst = dst_guarded+8;
-    int l, i, j, k, z0, z1, z2;
 
-    for (i=0;i<8;++i) { /* src alignment */
-      for (j=0;j<8;++j) { /* dst alignment */
-        for (l=0;l<16;++l) { /* length */
+    for (int i=0;i<8;++i) { /* src alignment */
+      for (int j=0;j<8;++j) { /* dst alignment */
+        for (int l=0;l<16;++l) { /* length */
           memset(dst_guarded, 0, sizeof(dst_guarded));
-	  z0 = gasnett_count0s_copy(dst+j, src+i, l);
+	  int z0 = gasnett_count0s_copy(dst+j, src+i, l);
 	  if (memcmp(dst+j, src+i, l)) ERR("memory mismatch from gasnett_count0s_copy(dst+%i, src+%i, %i)",i,j,l);
-	  z1 = gasnett_count0s(dst+j, l);
+	  int z1 = gasnett_count0s(dst+j, l);
+          int z2,k;
 	  for (z2=0,k=0;k<l;++k) { z2 += !dst[j+k]; }
 	  if (z0 != z2) ERR("incorrect return value from gasnett_count0s_copy(dst+%i, src+%i, %i) (got %i want %i)",i,j,l,z0,z2);
 	  if (z1 != z2) ERR("incorrect return value from gasnett_count0s(dst+%i, %i) src+%i (got %i want %i)",j,l,i,z1,z0);
@@ -321,17 +319,17 @@ int main(int argc, char **argv) {
       #define CNT0SMAX 4096
       char *src = (char *)test_malloc(CNT0SMAX);
       memset(src, 0, CNT0SMAX);
-      for (i=0;i<=CNT0SMAX;++i)
+      for (int i=0;i<=CNT0SMAX;++i)
 	if (gasnett_count0s(src, i) != (unsigned)i)
           ERR("incorrect return from gasnett_count0s(string-of-%i-zeros)", i);
       memset(src, 1, CNT0SMAX);
-      for (i=0;i<=CNT0SMAX;++i)
+      for (int i=0;i<=CNT0SMAX;++i)
 	if (gasnett_count0s(src, i) != 0)
           ERR("incorrect return from gasnett_count0s(string-of-%i-nonzeros)", i);
       test_free(src);
     }
 
-    for (i=0;i<8*(int)sizeof(uintptr_t);++i) {
+    for (int i=0;i<8*(int)sizeof(uintptr_t);++i) {
       uintptr_t val = ((uintptr_t)1) << i;
       if (gasnett_count0s_uintptr_t(val) != (sizeof(uintptr_t) - 1))
         ERR("incorrect return from gasnett_count0s_uintptr_t(1<<%i)", i);
@@ -339,7 +337,7 @@ int main(int argc, char **argv) {
     if (gasnett_count0s_uintptr_t(0) != sizeof(uintptr_t))
       ERR("incorrect return from gasnett_count0s_uintptr_t(0)");
 
-    for (i=0;i<32;++i) {
+    for (int i=0;i<32;++i) {
       uint32_t val = ((uint32_t)1) << i;
       if (gasnett_count0s_uint32_t(val) != 3)
         ERR("incorrect return from gasnett_count0s_uint32_t(1<<%i)", i);
@@ -347,7 +345,7 @@ int main(int argc, char **argv) {
     if (gasnett_count0s_uint32_t(0) != 4)
       ERR("incorrect return from gasnett_count0s_uint32_t(0)");
 
-    for (i=0;i<64;++i) {
+    for (int i=0;i<64;++i) {
       uint64_t val = ((uint64_t)1) << i;
       if (gasnett_count0s_uint64_t(val) != 7)
         ERR("incorrect return from gasnett_count0s_uint64_t(1<<%i)", i);
@@ -358,33 +356,30 @@ int main(int argc, char **argv) {
 
   TEST_HEADER("Testing local membars...")
   { /* local membar */
-    int i;
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_local_mb();
     }
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_weak_mb();
     }
   }
 
   TEST_HEADER("Testing local write membars...")
   { /* local membar */
-    int i;
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_local_wmb();
     }
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_weak_wmb();
     }
   }
 
   TEST_HEADER("Testing local read membars...")
   { /* local membar */
-    int i;
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_local_rmb();
     }
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_weak_rmb();
     }
   }
@@ -397,7 +392,6 @@ int main(int argc, char **argv) {
   TEST_HEADER("Testing atomic ops (sequential)...")
   { /* we can't really test atomicity without spinning threads, 
        but we can at least test simple operations  */
-    int i = 0;
     gasnett_atomic_t var = gasnett_atomic_init(10);
 
     if (gasnett_atomic_read(&var,0) != 10)
@@ -407,26 +401,26 @@ int main(int argc, char **argv) {
     if (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(2*iters))
       ERR("gasnett_atomic_set/gasnett_atomic_read got wrong value");
 
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_atomic_increment(&var,0);
       if (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(2*iters + (i+1)))
         ERR("gasnett_atomic_increment got wrong value");
     }
 
-    for (i=iters-1;i>=0;i--) {
+    for (int i=iters-1;i>=0;i--) {
       gasnett_atomic_decrement(&var,0);
       if (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(2*iters + i))
         ERR("gasnett_atomic_decrement got wrong value");
     }
 
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_atomic_set(&var, i, 0);
       gasnett_atomic_increment(&var,0);
       if (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(i+1))
         ERR("gasnett_atomic_set/gasnett_atomic_increment got wrong value");
     }
 
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_atomic_set(&var, i, 0);
       gasnett_atomic_decrement(&var,0);
       if (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(i-1))
@@ -434,7 +428,7 @@ int main(int argc, char **argv) {
     }
 
     gasnett_atomic_set(&var, iters, 0);
-    for (i=iters-1;i>=1;i--) {
+    for (int i=iters-1;i>=1;i--) {
       if (gasnett_atomic_decrement_and_test(&var,0))
         ERR("gasnett_atomic_decrement_and_test got wrong value");
       if (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(i))
@@ -447,7 +441,7 @@ int main(int argc, char **argv) {
 
     #if defined(GASNETT_HAVE_ATOMIC_CAS)
       gasnett_atomic_set(&var, 0, 0);
-      for (i=0;i<iters;i++) {
+      for (int i=0;i<iters;i++) {
 	if (gasnett_atomic_compare_and_swap(&var, i-1, i-2, 0))
           ERR("gasnett_atomic_compare_and_swap succeeded at i=%i when it should have failed", i);
 	if (gasnett_atomic_compare_and_swap(&var, i+1, i-2, 0))
@@ -461,17 +455,17 @@ int main(int argc, char **argv) {
       }
 
       gasnett_atomic_set(&var, 0, 0);
-      for (i=0;i<iters;i++) {
+      for (int i=0;i<iters;i++) {
         if (gasnett_atomic_swap(&var,i+1,0) != (gasnett_atomic_val_t)(i))
           ERR("gasnett_atomic_swap test failed at iteration %i", i);
       }
       if (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(iters))
-        ERR("gasnett_atomic_swap test failed at iteration %i", i);
+        ERR("gasnett_atomic_swap test failed at iteration %i", iters);
     #endif
 
     #if defined(GASNETT_HAVE_ATOMIC_ADD_SUB)
       gasnett_atomic_set(&var, 1, 0);
-      for (i=1;i<iters;i++) {
+      for (int i=1;i<iters;i++) {
         if ((gasnett_atomic_add(&var, i, 0) != (gasnett_atomic_val_t)(2*i)) ||
             (gasnett_atomic_read(&var,0) != (gasnett_atomic_val_t)(2*i)))
           ERR("gasnett_atomic_add got wrong value");
@@ -572,7 +566,6 @@ int main(int argc, char **argv) {
     {
       gasnett_atomic32_t var32 = gasnett_atomic32_init(~(uint32_t)0);
       const uint32_t one32 = 1;
-      uint32_t tmp32;
 
       if (~gasnett_atomic32_read(&var32,0) != 0)
         ERR("gasnett_atomic32_init/gasnett_atomic32_read got wrong value");
@@ -582,9 +575,9 @@ int main(int argc, char **argv) {
         ERR("gasnett_atomic32_set/gasnett_atomic32_read got wrong value");
 
       /* single bit-marching tests */
-      for (i=0;i<32;i++) {
+      for (int i=0;i<32;i++) {
         gasnett_atomic32_set(&var32, one32<<i, 0);
-	tmp32 = gasnett_atomic32_read(&var32, 0);
+	uint32_t tmp32 = gasnett_atomic32_read(&var32, 0);
 	if (tmp32 != (one32<<i))
           ERR("gasnett_atomic32_set/gasnett_atomic32_read got wrong value on bit %i", i);
 	if (gasnett_atomic32_compare_and_swap(&var32, 0, tmp32, 0))
@@ -594,10 +587,9 @@ int main(int argc, char **argv) {
       }
 
       /* double bit-marching tests */
-      for (i=0;i<32;i++) {
-        int j;
-        for (j=0;j<i;j++) {
-          tmp32 = (one32<<i) | (one32<<j);
+      for (int i=0;i<32;i++) {
+        for (int j=0;j<i;j++) {
+          uint32_t tmp32 = (one32<<i) | (one32<<j);
           gasnett_atomic32_set(&var32, tmp32, 0);
           if (gasnett_atomic32_compare_and_swap(&var32, (one32<<i), tmp32, 0) ||
               gasnett_atomic32_compare_and_swap(&var32, (one32<<j), tmp32, 0))
@@ -606,7 +598,7 @@ int main(int argc, char **argv) {
       }
 
       gasnett_atomic32_set(&var32, 0, 0);
-      for (i=0;i<iters;i++) {
+      for (int i=0;i<iters;i++) {
 	if (gasnett_atomic32_compare_and_swap(&var32, i-1, i-2, 0))
           ERR("gasnett_atomic32_compare_and_swap succeeded at i=%i when it should have failed", i);
 	if (gasnett_atomic32_compare_and_swap(&var32, i+1, i-2, 0))
@@ -621,7 +613,7 @@ int main(int argc, char **argv) {
 
       /* TODO: Want more than this very simple test of SWAP and the arithmetic tests. */
       gasnett_atomic32_set(&var32, 0, 0);
-      for (i=0;i<iters;i++) {
+      for (int i=0;i<iters;i++) {
         gasnett_atomic32_increment(&var32,0);
         if (gasnett_atomic32_read(&var32,0) != (uint32_t)(i+1))
           ERR("gasnett_atomic32_increment wrote wrong value");
@@ -654,7 +646,6 @@ int main(int argc, char **argv) {
     {
       gasnett_atomic64_t var64 = gasnett_atomic64_init(~(uint64_t)0);
       const uint64_t one64 = 1;
-      uint64_t tmp64;
 
       if (~gasnett_atomic64_read(&var64,0) != 0)
         ERR("gasnett_atomic64_init/gasnett_atomic64_read got wrong value");
@@ -664,9 +655,9 @@ int main(int argc, char **argv) {
         ERR("gasnett_atomic64_set/gasnett_atomic64_read got wrong value");
 
       /* single bit-marching tests */
-      for (i=0;i<64;i++) {
+      for (int i=0;i<64;i++) {
         gasnett_atomic64_set(&var64, one64<<i, 0);
-	tmp64 = gasnett_atomic64_read(&var64, 0);
+	uint64_t tmp64 = gasnett_atomic64_read(&var64, 0);
 	if (tmp64 != (one64<<i))
           ERR("gasnett_atomic64_set/gasnett_atomic64_read got wrong value on bit %i", i);
 	if (gasnett_atomic64_compare_and_swap(&var64, 0, tmp64, 0))
@@ -676,10 +667,9 @@ int main(int argc, char **argv) {
       }
 
       /* double bit-marching tests */
-      for (i=0;i<64;i++) {
-        int j;
-        for (j=0;j<i;j++) {
-          tmp64 = (one64<<i) | (one64<<j);
+      for (int i=0;i<64;i++) {
+        for (int j=0;j<i;j++) {
+          uint64_t tmp64 = (one64<<i) | (one64<<j);
           gasnett_atomic64_set(&var64, tmp64, 0);
           if (gasnett_atomic64_compare_and_swap(&var64, (one64<<i), tmp64, 0) ||
               gasnett_atomic64_compare_and_swap(&var64, (one64<<j), tmp64, 0))
@@ -688,7 +678,7 @@ int main(int argc, char **argv) {
       }
 
       gasnett_atomic64_set(&var64, 0, 0);
-      for (i=0;i<iters;i++) {
+      for (int i=0;i<iters;i++) {
 	if (gasnett_atomic64_compare_and_swap(&var64, i-1, i-2, 0))
           ERR("gasnett_atomic64_compare_and_swap succeeded at i=%i when it should have failed", i);
 	if (gasnett_atomic64_compare_and_swap(&var64, i+1, i-2, 0))
@@ -703,7 +693,7 @@ int main(int argc, char **argv) {
 
       /* TODO: Want more than this very simple test of SWAP and the arithmetic tests. */
       gasnett_atomic64_set(&var64, 0, 0);
-      for (i=0;i<iters;i++) { /* Test in lo word */
+      for (int i=0;i<iters;i++) { /* Test in lo word */
         gasnett_atomic64_increment(&var64,0);
         if (gasnett_atomic64_read(&var64,0) != (uint64_t)(i+1))
           ERR("gasnett_atomic64_increment wrote wrong value");
@@ -732,7 +722,7 @@ int main(int argc, char **argv) {
           ERR("gasnett_atomic64_swap wrote wrong value");
       }
       gasnett_atomic64_set(&var64, 0, 0);
-      for (i=0;i<iters;i++) { /* Test in hi word */
+      for (int i=0;i<iters;i++) { /* Test in hi word */
         const uint64_t j = (uint64_t)i << 32;
         const uint64_t c1 = (uint64_t)1 << 32;
         const uint64_t c2 = (uint64_t)2 << 32;
@@ -766,11 +756,10 @@ int main(int argc, char **argv) {
     TEST_BACKTRACE();
   }
 
-#ifdef HAVE_PTHREAD_H
+#if GASNETT_THREAD_SAFE
   MSG("Spawning pthreads...");
   { 
-    int i;
-    for(i=0;i<NUM_THREADS;i++) gasnett_atomic_set(thread_flag+i,1,0);
+    for(int i=0;i<NUM_THREADS;i++) gasnett_atomic_set(thread_flag+i,1,0);
     gasnett_local_mb();
     test_createandjoin_pthreads(NUM_THREADS, &thread_fn, NULL, 0);
   }
@@ -780,7 +769,7 @@ int main(int argc, char **argv) {
   return (test_errs > 0 ? 1 : 0);
 }
 
-#ifdef HAVE_PTHREAD_H
+#if GASNETT_THREAD_SAFE
 
 #undef MSG0
 #undef ERR
@@ -811,17 +800,15 @@ gasnett_atomic_t _thread_barrier = gasnett_atomic_init(0);
 #define TEST_HEADER_PREFIX() THREAD_BARRIER()
 
 void * thread_fn(void *arg) {
-  int id = (int)(uintptr_t)arg;
-  int i;
-  int iters2;
+  const int id = (int)(uintptr_t)arg;
   int barcnt = 0;
   char th_test_section = test_section;
   #define test_section th_test_section
  
   /* Avoid overflow to ensure a sane iters2 value. */
-  iters2 = (iters >= (INT_MAX / 100)) ? INT_MAX : (100 * iters);
+  const int iters2 = (iters >= (INT_MAX / 100)) ? (INT_MAX & ~1) : (100 * iters);
   /* Parallel atomic-op pounding test assumes iters2 is even */
-  iters2 &= ~1;
+  assert_always(iters2 % 2 == 0);
 
   /* sanity check - ensure unique threadids */
   if (!gasnett_atomic_decrement_and_test(thread_flag+id,0)) {
@@ -830,8 +817,7 @@ void * thread_fn(void *arg) {
 
   /* sanity check - ensure thread barriers are working */
   TEST_HEADER("parallel atomic-op barrier test...") {  
-    for (i=0;i<iters;i++) {
-      int tmp;
+    for (int i=0;i<iters;i++) {
       /* simple count-up barrier */
       gasnett_atomic_increment(&up,0);
       while (gasnett_atomic_read(&up,0) < (gasnett_atomic_val_t)NUM_THREADS) gasnett_sched_yield(); 
@@ -843,7 +829,7 @@ void * thread_fn(void *arg) {
       gasnett_atomic_increment(&up, GASNETT_ATOMIC_REL);
       while (gasnett_atomic_read(&up,0) < (gasnett_atomic_val_t)(2*NUM_THREADS)) gasnett_sched_yield(); 
 
-      tmp = gasnett_atomic_read(&up,0);
+      int tmp = gasnett_atomic_read(&up,0);
       if (tmp != 2*NUM_THREADS)
         ERR("count-up post-barrier read: %i != %i", tmp, 2*NUM_THREADS);
 
@@ -870,7 +856,6 @@ void * thread_fn(void *arg) {
   }
 
   TEST_HEADER("parallel atomic-op pounding test...") {
-    int val;
     gasnett_atomic_set(&x1, 5, 0);
     gasnett_atomic_set(&x2, 5+iters2*NUM_THREADS, 0);
     gasnett_atomic_set(&x3, 5, 0);
@@ -878,13 +863,13 @@ void * thread_fn(void *arg) {
 
     THREAD_BARRIER();
 
-    for (i=0;i<iters2;i++) {
+    for (int i=0;i<iters2;i++) {
       gasnett_atomic_increment(&x1,0);
       gasnett_atomic_decrement(&x2,0);
     }
     #if defined(GASNETT_HAVE_ATOMIC_ADD_SUB)
-      for (i=0;i<iters2;i++) {
-	val = (i & 1) << 1; /* Alternate 0 and 2. (iters2=100*iters is always even) */
+      for (int i=0;i<iters2;i++) {
+	int val = (i & 1) << 1; /* Alternate 0 and 2. (iters2=100*iters is always even) */
         gasnett_atomic_add(&x3,val,0);
         gasnett_atomic_subtract(&x4,val,0);
       }
@@ -892,7 +877,7 @@ void * thread_fn(void *arg) {
 
     THREAD_BARRIER();
 
-    val = gasnett_atomic_read(&x1,0);
+    int val = gasnett_atomic_read(&x1,0);
     if (val != 5+iters2*NUM_THREADS)
       ERR("pounding inc test mismatch: %i != %i",val,5+iters2*NUM_THREADS);
 
@@ -920,7 +905,7 @@ void * thread_fn(void *arg) {
 
     THREAD_BARRIER();
 
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       if (gasnett_atomic_decrement_and_test(&x3,0)) { /* I won */
         gasnett_atomic_increment(&x5,0); /* tally win */
         if (gasnett_atomic_read(&x3,0) != 0) ERR("pounding dec-test mismatch x3");
@@ -955,14 +940,13 @@ void * thread_fn(void *arg) {
     if (NUM_THREADS <= 100) {  /* need 2*NUM_THREADS + 1 < 255 to prevent byte overflow */
       uint32_t x = id + 1;
       uint32_t myval = (x << 24) | (x << 16) | (x << 8) | x;
-      for (i=0;i<iters2;i++) {
-        uint32_t v;
+      for (int i=0;i<iters2;i++) {
         gasnett_atomic_set(&x3, myval, 0);
         gasnett_atomic_set(&x4, myval, 0);
         gasnett_atomic_set(&x5, myval, 0);
         gasnett_atomic_increment(&x4,0);
         gasnett_atomic_decrement(&x5,0);
-        v = gasnett_atomic_read(&x3,0);
+        uint32_t v = gasnett_atomic_read(&x3,0);
         if (((v >> 24) & 0xFF) != (v & 0xFF) ||
             ((v >> 16) & 0xFF) != (v & 0xFF) ||
             ((v >>  8) & 0xFF) != (v & 0xFF)) 
@@ -986,11 +970,10 @@ void * thread_fn(void *arg) {
       static gasnett_atomic32_t a2 = gasnett_atomic32_init(0);
       uint32_t x = id + 1;
       uint32_t myval = (x << 24) | (x << 16) | (x << 8) | x;
-      for (i=0;i<iters2;i++) {
-        uint32_t v;
+      for (int i=0;i<iters2;i++) {
         gasnett_atomic32_set(&a1, myval, 0);
         gasnett_atomic32_set(&a2, myval, 0);
-	v = gasnett_atomic32_read(&a2,0);
+	uint32_t v = gasnett_atomic32_read(&a2,0);
         gasnett_atomic32_compare_and_swap(&a2,v,v+1,0);
         v = gasnett_atomic32_read(&a1,0);
         if (((v >> 24) & 0xFF) != (v & 0xFF) ||
@@ -1019,13 +1002,12 @@ void * thread_fn(void *arg) {
       uint64_t x = id + 1;
       uint64_t myval = (x << 48) | (x << 32) | (x << 16) | x;
 
-      for (i=0;i<iters2;i++) {
-        uint64_t v;
+      for (int i=0;i<iters2;i++) {
         gasnett_atomic64_set(&s1.a, myval, 0);
         gasnett_atomic64_set((gasnett_atomic64_t *)(void *)&s2.d, myval, 0); /* (void*) suppresses g++ warning (bug 2158) */
         gasnett_atomic64_set(&a1, myval, 0);
         gasnett_atomic64_set(&a2, myval, 0);
-	v = gasnett_atomic64_read(&a2,0);
+	uint64_t v = gasnett_atomic64_read(&a2,0);
         gasnett_atomic64_compare_and_swap(&a2,v,v+1,0);
 
         v = gasnett_atomic64_read(&s1.a,0);
@@ -1053,8 +1035,7 @@ void * thread_fn(void *arg) {
   }
 
   TEST_HEADER("parallel membar test...") {
-    { int partner = (id + 1) % NUM_THREADS;
-      unsigned int lx, ly;
+    { const int partner = (id + 1) % NUM_THREADS;
       /* Allow for wrap-around/overflow */
       #define BIGGER(_x, _y) ((int)(_y - _x) > 0)
 
@@ -1062,14 +1043,14 @@ void * thread_fn(void *arg) {
       valY[id] = 0;
 
       THREAD_BARRIER();
-      for (i=0;i<iters2;i++) {
+      for (int i=0;i<iters2;i++) {
         valX[id] = i;
         gasnett_local_wmb();
         valY[id] = i;
 
-        ly = valY[partner];
+        unsigned int ly = valY[partner];
         gasnett_local_rmb();
-        lx = valX[partner];
+        unsigned int lx = valX[partner];
         if (BIGGER(lx,ly)) ERR("mismatch in gasnett_local_wmb/gasnett_local_rmb test: lx=%u ly=%u", lx, ly);
       }
       THREAD_BARRIER();
@@ -1078,14 +1059,14 @@ void * thread_fn(void *arg) {
       valY[id] = 0;
 
       THREAD_BARRIER();
-      for (i=0;i<iters2;i++) {
+      for (int i=0;i<iters2;i++) {
         valX[id] = i + iters2;
         gasnett_local_mb();
         valY[id] = i + iters2;
 
-        ly = valY[partner];
+        unsigned int ly = valY[partner];
         gasnett_local_mb();
-        lx = valX[partner];
+        unsigned int lx = valX[partner];
         if (BIGGER(lx,ly)) ERR("mismatch in gasnett_local_mb/gasnett_local_mb test: lx=%u ly=%u", lx, ly);
       }
       THREAD_BARRIER();
@@ -1094,14 +1075,14 @@ void * thread_fn(void *arg) {
       valY[id] = 0;
 
       THREAD_BARRIER();
-      for (i=0;i<iters2;i++) {
+      for (int i=0;i<iters2;i++) {
         valX[id] = i;
         gasnett_weak_wmb();
         valY[id] = i;
 
-        ly = valY[partner];
+        unsigned int ly = valY[partner];
         gasnett_weak_rmb();
-        lx = valX[partner];
+        unsigned int lx = valX[partner];
         if (BIGGER(lx,ly)) ERR("mismatch in gasnett_weak_wmb/gasnett_weak_rmb test: lx=%u ly=%u", lx, ly);
       }
       THREAD_BARRIER();
@@ -1110,14 +1091,14 @@ void * thread_fn(void *arg) {
       valY[id] = 0;
 
       THREAD_BARRIER();
-      for (i=0;i<iters2;i++) {
+      for (int i=0;i<iters2;i++) {
         valX[id] = i + iters2;
         gasnett_weak_mb();
         valY[id] = i + iters2;
 
-        ly = valY[partner];
+        unsigned int ly = valY[partner];
         gasnett_weak_mb();
-        lx = valX[partner];
+        unsigned int lx = valX[partner];
         if (BIGGER(lx,ly)) ERR("mismatch in gasnett_weak_mb/gasnett_weak_mb test: lx=%u ly=%u", lx, ly);
       }
       THREAD_BARRIER();
@@ -1129,9 +1110,10 @@ void * thread_fn(void *arg) {
       static gasnett_atomic_t counter2 = gasnett_atomic_init(0);
       static gasnett_atomic_val_t shared_counter = 0;
       gasnett_atomic_val_t woncnt = 0;
-      gasnett_atomic_val_t share = ((unsigned)iters >= (GASNETT_ATOMIC_MAX / NUM_THREADS)) ? (GASNETT_ATOMIC_MAX / NUM_THREADS) : iters;
-      gasnett_atomic_val_t goal = NUM_THREADS * share;
-      gasnett_atomic_val_t i, oldval;
+      gasnett_atomic_val_t const share = 
+         ((unsigned)iters >= (GASNETT_ATOMIC_MAX / NUM_THREADS)) ? (GASNETT_ATOMIC_MAX / NUM_THREADS) : iters;
+      gasnett_atomic_val_t const goal = NUM_THREADS * share;
+      gasnett_atomic_val_t oldval;
 
       /* Look for missing or doubled updates by taking an equal share of increments */
       while (woncnt < share &&
@@ -1149,7 +1131,7 @@ void * thread_fn(void *arg) {
 
       /* Now try spinlock construct */
       THREAD_BARRIER();
-      for (i=0;i<share;i++) {
+      for (gasnett_atomic_val_t i=0;i<share;i++) {
 	while (!gasnett_atomic_compare_and_swap(&counter2, oldval, ~oldval, 0)) {};
         gasnett_local_rmb(); /* Acquire */
 	shared_counter ++;
@@ -1162,7 +1144,7 @@ void * thread_fn(void *arg) {
 
       /* Now try spinlock construct using mb() */
       THREAD_BARRIER();
-      for (i=0;i<share;i++) {
+      for (gasnett_atomic_val_t i=0;i<share;i++) {
 	while (!gasnett_atomic_compare_and_swap(&counter2, oldval, ~oldval, 0)) {};
         gasnett_local_mb(); /* Acquire */
 	shared_counter --;
@@ -1177,101 +1159,335 @@ void * thread_fn(void *arg) {
     {
       static gasnett_atomic32_t counter32 = gasnett_atomic32_init(0);
       uint32_t woncnt = 0;
-      uint32_t share = ((unsigned)iters >= (0xffffffffU / NUM_THREADS)) ? (0xffffffffU / NUM_THREADS) : iters;
-      uint32_t goal = NUM_THREADS * share;
+      uint32_t const share = MIN((unsigned)iters, (0xffffffffU / NUM_THREADS));
+      uint32_t const goal = NUM_THREADS * share;
       uint32_t oldval;
 
       /* Look for missing or doubled updates by taking an equal share of increments */
-      while (woncnt < share && (oldval = gasnett_atomic32_read(&counter32,0)) != goal) {
+      while (woncnt < share && (oldval = gasnett_atomic32_read(&counter32,0)) < goal) {
         if (gasnett_atomic32_compare_and_swap(&counter32, oldval, (oldval + 1), 0)) {
            woncnt++;
         }
       }
+      if (woncnt != share)
+        ERR("failed 32-bit compare-and-swap test: woncnt=%u share=%u", (unsigned)woncnt, (unsigned)share);
       THREAD_BARRIER();
       oldval = gasnett_atomic32_read(&counter32,0);
       if (oldval != goal) 
         ERR("failed 32-bit compare-and-swap test: counter=%u expecting=%u", (unsigned)oldval, (unsigned)goal);
-      if (woncnt != share) 
-        ERR("failed 32-bit compare-and-swap test: woncnt=%u share=%u", (unsigned)woncnt, (unsigned)share);
     }
 
     {
       static gasnett_atomic64_t counter64 = gasnett_atomic64_init(0);
-      uint64_t woncnt = 0;
-      uint64_t share = iters;
-      uint64_t goal = NUM_THREADS * share; /* Not going to overflow */
-      uint64_t oldval;
+      uint64_t const share = MIN((unsigned)iters, (0xffffffffU / NUM_THREADS));
+      uint64_t const one = 1;
+      uint64_t const incrs[] = { one, one<<32, one + (one<<32) };
+      for (int i = 0; i < sizeof(incrs)/sizeof(incrs[0]); ++i) {
+        uint64_t const incr = incrs[i];
+        uint64_t const goal = NUM_THREADS * share * incr;
+        uint64_t woncnt = 0;
+        uint64_t oldval;
 
-      /* Look for missing or doubled updates by taking an equal share of increments */
-      while (woncnt < share && (oldval = gasnett_atomic64_read(&counter64,0)) != goal) {
-        if (gasnett_atomic64_compare_and_swap(&counter64, oldval, (oldval + 1), 0)) {
-           woncnt++;
+        /* Look for missing or doubled updates by taking an equal share of increments */
+        while (woncnt < share && (oldval = gasnett_atomic64_read(&counter64,0)) < goal) {
+          if (gasnett_atomic64_compare_and_swap(&counter64, oldval, (oldval + incr), 0)) {
+             woncnt++;
+          }
         }
+        if (woncnt != share)
+          ERR("failed 64-bit compare-and-swap test: woncnt=%" PRIu64 " share=%" PRIu64, woncnt, share);
+        THREAD_BARRIER();
+        if (!id) {
+          oldval = gasnett_atomic64_read(&counter64,0);
+          if (oldval != goal)
+            ERR("failed 64-bit compare-and-swap test: counter=%" PRIu64 " expecting=%" PRIu64, oldval, goal);
+          gasnett_atomic64_set(&counter64,0,0);
+        }
+        THREAD_BARRIER();
       }
-      THREAD_BARRIER();
-      oldval = gasnett_atomic64_read(&counter64,0);
-      if (oldval != goal) 
-        ERR("failed 64-bit compare-and-swap test: counter=%" PRIu64 " expecting=%" PRIu64, oldval, goal);
-      if (woncnt != share) 
-        ERR("failed 64-bit compare-and-swap test: woncnt=%" PRIu64 " share=%" PRIu64, woncnt, share);
     }
   }
 
   TEST_HEADER("parallel swap test...") {
-    #if GASNETT_HAVE_STRONGATOMIC_CAS
-      const gasnett_atomic_val_t limit = MIN(GASNETT_ATOMIC_MAX, 8192);
-      static gasnett_atomic_t var;
-      static char *array;
+    const gasnett_atomic_val_t limit = MIN(GASNETT_ATOMIC_MAX, 8192);
+    static char *array;
+    if (!id) {
+      array = (char *)test_calloc(sizeof(char), limit);
+    }
 
-      if (0 == id) {
-        gasnett_atomic_set(&var, GASNETT_ATOMIC_MAX, 0);
-        array = (char *)test_calloc(sizeof(char), limit);
-      }
+    #if GASNETT_HAVE_ATOMIC_CAS
+    {
+      static gasnett_atomic_t var = gasnett_atomic_init(GASNETT_ATOMIC_MAX);
 
       THREAD_BARRIER();
 
-      for (i = 0; i < iters; ++i) {
-        gasnett_atomic_val_t j;
- 
+      for (int i = 0; i < iters; ++i) {
         /* Write all values in [0,limit) with each thread owning a share of the space.
            The 'array' tracks which values have been seen and ensures no duplicates. */
-        for (j = id; j < limit; j += NUM_THREADS) {
+        for (gasnett_atomic_val_t j = id; j < limit; j += NUM_THREADS) {
           gasnett_atomic_val_t idx = gasnett_atomic_swap(&var, j, 0);
           if_pt (idx != GASNETT_ATOMIC_MAX) {
-            if (array[idx] != 0)
-              ERR("gasnett_atomic_swap produced a duplicate value %d", idx);
-            array[idx] = 1;
+            if_pf (idx >= limit) {
+              ERR("gasnett_atomic_swap read an impossible value 0x%x", (unsigned)idx);
+            } else {
+              if_pf (array[idx] != 0)
+                ERR("gasnett_atomic_swap produced a duplicate value %d", (int)idx);
+              array[idx] = 1;
+            }
           }
         }
 
         THREAD_BARRIER();
 
-        if (0 == id) {
+        if (!id) {
           /* One final swap to simplify the validation */
           gasnett_atomic_val_t idx = gasnett_atomic_swap(&var, GASNETT_ATOMIC_MAX, 0);
-          if (array[idx] != 0)
-            ERR("gasnett_atomic_swap produced a duplicate value %d", i);
-          array[idx] = 1;
+          if_pf (idx >= limit) {
+            ERR("gasnett_atomic_swap read an impossible value 0x%x", (unsigned)idx);
+          } else {
+            if_pf (array[idx] != 0)
+              ERR("gasnett_atomic_swap produced a duplicate value %d", (int)idx);
+            array[idx] = 1;
+          }
 
           /* Now scan the array to ensure no values were missed */
           for (idx = 0; idx < limit; ++idx) {
             if (array[idx] != 1)
-              ERR("gasnett_atomic_swap missed an update at %d", idx);
+              ERR("gasnett_atomic_swap missed an update at %d", (int)idx);
             array[idx] = 0; /* reset for next iteration */
           }
         }
 
         THREAD_BARRIER();
       }
-
-      if (0 == id) {
-        test_free(array);
-      }
+    }
+    #else
+      MSG0("  NOTE: gasnett_atomic_swap() is missing");
     #endif
+
+    { // Same for 32-bit fixed-width atomics
+      static gasnett_atomic32_t var = gasnett_atomic32_init(GASNETT_ATOMIC_MAX);
+
+      THREAD_BARRIER();
+
+      for (int i = 0; i < iters; ++i) {
+        for (uint32_t j = id; j < limit; j += NUM_THREADS) {
+          uint32_t idx = gasnett_atomic32_swap(&var, j, 0);
+          if_pt (idx != GASNETT_ATOMIC_MAX) {
+            if_pf (idx >= limit) {
+              ERR("gasnett_atomic32_swap read an impossible value 0x%x", (unsigned)idx);
+            } else {
+              if (array[idx] != 0)
+                ERR("gasnett_atomic32_swap produced a duplicate value %d", (int)idx);
+              array[idx] = 1;
+            }
+          }
+        }
+
+        THREAD_BARRIER();
+
+        if (!id) {
+          uint32_t idx = gasnett_atomic32_swap(&var, GASNETT_ATOMIC_MAX, 0);
+          if (idx >= limit) {
+            ERR("gasnett_atomic32_swap read an impossible value 0x%x", (unsigned)idx);
+          } else {
+            if (array[idx] != 0)
+              ERR("gasnett_atomic32_swap produced a duplicate value %u", (int)idx);
+            array[idx] = 1;
+          }
+
+          for (idx = 0; idx < limit; ++idx) {
+            if (array[idx] != 1)
+              ERR("gasnett_atomic32_swap missed an update at %d", (int)idx);
+            array[idx] = 0;
+          }
+        }
+
+        THREAD_BARRIER();
+      }
+    }
+
+    { // Same for 64-bit fixed-width atomics
+      // There is an extra wrinkle in this case:
+      // We map the updates into both upper and lower halves of a 64-bit word
+      #define FWD(n) ((n)&1 ? (n) : (uint64_t)(n)<<32)
+      #define BWD(n) (((n)&0xFFFFFFFFu) | ((n)>>32))
+
+      static gasnett_atomic64_t var = gasnett_atomic64_init(GASNETT_ATOMIC_MAX);
+
+      THREAD_BARRIER();
+
+      for (int i = 0; i < iters; ++i) {
+        for (uint64_t j = id; j < limit; j += NUM_THREADS) {
+          uint64_t read = gasnett_atomic64_swap(&var, FWD(j), 0);
+          if_pt (read != GASNETT_ATOMIC_MAX) {
+            uint64_t idx = BWD(read);
+            if_pf ((idx >= limit) || ((read & 0xFFFFFFFFu) && (read >> 32))) {
+              ERR("gasnett_atomic64_swap read an impossible value 0x%" PRIx64, read);
+            } else {
+              if_pf (array[idx] != 0)
+                ERR("gasnett_atomic64_swap produced a duplicate value %d", (int)idx);
+              array[idx] = 1;
+            }
+          }
+        }
+
+        THREAD_BARRIER();
+
+        if (!id) {
+          uint64_t read = gasnett_atomic64_swap(&var, GASNETT_ATOMIC_MAX, 0);
+          uint64_t idx = BWD(read);
+          if_pf ((idx >= limit) || ((read & 0xFFFFFFFFu) && (read >> 32))) {
+            ERR("gasnett_atomic64_swap read an impossible value 0x%" PRIx64, read);
+          } else {
+            if_pf (array[idx] != 0)
+              ERR("gasnett_atomic64_swap produced a duplicate value %d", (int)idx);
+            array[idx] = 1;
+          }
+
+          for (idx = 0; idx < limit; ++idx) {
+            if (array[idx] != 1)
+              ERR("gasnett_atomic64_swap missed an update at %d", (int)idx);
+            array[idx] = 0;
+          }
+        }
+
+        THREAD_BARRIER();
+      }
+      #undef FWD
+      #undef BWD
+    }
+
+    if (0 == id) {
+      test_free(array);
+    }
+  }
+
+  TEST_HEADER("parallel add test...") {
+    const gasnett_atomic_val_t limit = MIN(GASNETT_ATOMIC_MAX, 8192);
+    static char *array;
+    if (!id) {
+      array = (char *)test_calloc(sizeof(char), limit);
+    }
+
+    #if GASNETT_HAVE_ATOMIC_ADD_SUB
+    {
+      static gasnett_atomic_t var = gasnett_atomic_init(0);
+
+      THREAD_BARRIER();
+
+      for (int i = 0; i < iters; ++i) {
+        /* Produce all values in [0,limit) with each thread owning a share of the space.
+           The 'array' tracks which values have been seen and ensures no duplicates. */
+        for (gasnett_atomic_val_t j = id; j < limit; j += NUM_THREADS) {
+          gasnett_atomic_val_t idx = gasnett_atomic_add(&var, 1, 0) - 1;
+          if_pf (idx >= limit) {
+            ERR("gasnett_atomic_add read an impossible value 0x%x", (unsigned)idx);
+          } else {
+            if_pf (array[idx] != 0)
+              ERR("gasnett_atomic_add produced a duplicate value %d", (int)idx);
+            array[idx] = 1;
+          }
+        }
+
+        THREAD_BARRIER();
+
+        if (!id) {
+          /* Now scan the array to ensure no values were missed */
+          for (gasnett_atomic_val_t idx = 0; idx < limit; ++idx) {
+            if (array[idx] != 1)
+              ERR("gasnett_atomic_add missed an update at %d", (int)idx);
+            array[idx] = 0; /* reset for next iteration */
+          }
+          gasnett_atomic_set(&var, 0, 0);
+        }
+
+        THREAD_BARRIER();
+      }
+    }
+    #else
+      MSG0("  NOTE: gasnett_atomic_add() is missing");
+    #endif
+
+    { // Same for 32-bit fixed-width atomics
+      static gasnett_atomic32_t var = gasnett_atomic32_init(0);
+
+      THREAD_BARRIER();
+
+      for (int i = 0; i < iters; ++i) {
+        for (uint32_t j = id; j < limit; j += NUM_THREADS) {
+          uint32_t idx = gasnett_atomic32_add(&var, 1, 0) - 1;
+          if_pf (idx >= limit) {
+            ERR("gasnett_atomic32_add read an impossible value 0x%x", (unsigned)idx);
+          } else {
+            if_pf (array[idx] != 0)
+              ERR("gasnett_atomic32_add produced a duplicate value %d", (int)idx);
+            array[idx] = 1;
+          }
+        }
+
+        THREAD_BARRIER();
+
+        if (!id) {
+          for (uint32_t idx = 0; idx < limit; ++idx) {
+            if (array[idx] != 1)
+              ERR("gasnett_atomic32_add missed an update at %d", (int)idx);
+            array[idx] = 0;
+          }
+          gasnett_atomic32_set(&var, 0, 0);
+        }
+
+        THREAD_BARRIER();
+      }
+    }
+
+    { // Same for 64-bit fixed-width atomics
+      // There is an extra wrinkle in this case:
+      // We map the updates into both upper and lower halves of a 64-bit word
+      #define FWD(n) ((n)&1 ? (1) : (uint64_t)1<<32)
+      #define BWD(n) (((n)&0xFFFFFFFFu) + ((n)>>32))
+
+      static gasnett_atomic64_t var = gasnett_atomic64_init(0);
+
+      THREAD_BARRIER();
+
+      for (int i = 0; i < iters; ++i) {
+        for (uint64_t j = id; j < limit; j += NUM_THREADS) {
+          uint64_t read = gasnett_atomic64_add(&var, FWD(j), 0);
+          uint64_t idx = BWD(read) - 1;
+          if_pf (idx >= limit) {
+            ERR("gasnett_atomic64_add read an impossible value 0x%" PRIx64, read);
+          } else {
+            if_pf (array[idx] != 0)
+              ERR("gasnett_atomic64_add produced a duplicate value %d", (int)idx);
+            array[idx] = 1;
+          }
+        }
+
+        THREAD_BARRIER();
+
+        if (!id) {
+          for (uint64_t idx = 0; idx < limit; ++idx) {
+            if (array[idx] != 1)
+              ERR("gasnett_atomic64_add missed an update at %d", (int)idx);
+            array[idx] = 0;
+          }
+          gasnett_atomic64_set(&var, 0, 0);
+        }
+
+        THREAD_BARRIER();
+      }
+      #undef FWD
+      #undef BWD
+    }
+
+    if (0 == id) {
+      test_free(array);
+    }
   }
 
   TEST_HEADER("parallel atomic-op fence test...") {
-    int partner = (id + 1) % NUM_THREADS;
+    int const partner = (id + 1) % NUM_THREADS;
     unsigned int lx, ly;
 
     gasnett_atomic_set(&atomicX[id], 0, 0);
@@ -1284,7 +1500,7 @@ void * thread_fn(void *arg) {
     THREAD_BARRIER();
 
     /* First a pass through w/ WMB and RMB */
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_atomic_set(&atomicX[id], 6*i, GASNETT_ATOMIC_WMB_POST);
       valY[id] = 6*i;
       ly = valY[partner];
@@ -1358,7 +1574,7 @@ void * thread_fn(void *arg) {
 
     THREAD_BARRIER();
 
-    for (i=iters-1;i>=0;i--) {
+    for (int i=iters-1;i>=0;i--) {
       #if defined(GASNETT_HAVE_ATOMIC_ADD_SUB)
       {
         int step = i & 4;
@@ -1408,7 +1624,7 @@ void * thread_fn(void *arg) {
     THREAD_BARRIER();
 
     /* Second pass through w/ MB used for both WMB and RMB */
-    for (i=0;i<iters;i++) {
+    for (int i=0;i<iters;i++) {
       gasnett_atomic_set(&atomicX[id], 6*i, GASNETT_ATOMIC_MB_POST);
       valY[id] = 6*i;
       ly = valY[partner];
@@ -1482,7 +1698,7 @@ void * thread_fn(void *arg) {
 
     THREAD_BARRIER();
 
-    for (i=iters-1;i>=0;i--) {
+    for (int i=iters-1;i>=0;i--) {
       #if defined(GASNETT_HAVE_ATOMIC_ADD_SUB)
       {
         int step = i & 4;

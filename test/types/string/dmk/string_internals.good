@@ -1,0 +1,37 @@
+_cpIndexLen full traversal:
+233, 1, 2
+118, 3, 1
+233, 4, 2
+110, 6, 1
+101, 7, 1
+109, 8, 1
+101, 9, 1
+110, 10, 1
+116, 11, 1
+
+_cpIndexLen starting inside a multibyte char:
+110, 6, 1
+101, 7, 1
+109, 8, 1
+101, 9, 1
+110, 10, 1
+116, 11, 1
+
+_indexLen full traversal:
+1, 2
+3, 1
+4, 2
+6, 1
+7, 1
+8, 1
+9, 1
+10, 1
+11, 1
+
+_indexLen starting inside a multibyte char:
+6, 1
+7, 1
+8, 1
+9, 1
+10, 1
+11, 1

@@ -2,7 +2,7 @@ use ExampleErrors;
 
 proc returnIntOrThrow(i: int) throws {
   if (i < 10) {
-    throw new owned StringError(i + " is less than 10");
+    throw new owned StringError(i:string + " is less than 10");
   }
   return i;
 }
@@ -20,7 +20,7 @@ proc consumeTwoInts(i: int, j: int) {
 proc consumeIntOrThrow(i: int) throws {
   writeln("failed: consuming or throwing int");
   if (i < 20) {
-    throw new owned StringError(i + "is less than 20");
+    throw new owned StringError(i:string + "is less than 20");
   }
   return i;
 }

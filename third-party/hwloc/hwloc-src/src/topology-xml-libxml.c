@@ -447,6 +447,11 @@ hwloc_libxml_export_buffer(hwloc_topology_t topology, char **xmlbuffer, int *buf
   doc = hwloc__libxml2_prepare_export(topology);
   xmlDocDumpFormatMemoryEnc(doc, (xmlChar **)xmlbuffer, buflen, "UTF-8", 1);
   xmlFreeDoc(doc);
+  if (!*xmlbuffer) {
+    *buflen = 0;
+    return -1;
+  }
+  *buflen += 1; /* ending \0 was added but not counted in the length */
   return 0;
 }
 
@@ -514,6 +519,11 @@ hwloc_libxml_export_diff_buffer(hwloc_topology_diff_t diff, const char *refname,
   doc = hwloc__libxml2_prepare_export_diff(diff, refname);
   xmlDocDumpFormatMemoryEnc(doc, (xmlChar **)xmlbuffer, buflen, "UTF-8", 1);
   xmlFreeDoc(doc);
+  if (!*xmlbuffer) {
+    *buflen = 0;
+    return -1;
+  }
+  *buflen += 1; /* ending \0 was added but not counted in the length */
   return 0;
 }
 

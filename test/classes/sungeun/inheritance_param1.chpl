@@ -7,4 +7,4 @@ class B: A {
 }
 
 var a = new borrowed A();
-var b: borrowed B;
+var b: borrowed B?;

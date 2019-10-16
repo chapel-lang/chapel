@@ -26,7 +26,6 @@ import chpl_3p_gmp_configs
 import chpl_3p_hwloc_configs
 import chpl_3p_jemalloc_configs
 import chpl_3p_libunwind_configs
-import chpl_3p_massivethreads_configs
 import chpl_3p_qthreads_configs
 import chpl_3p_re2_configs
 # General purpose helpers

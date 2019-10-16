@@ -308,6 +308,10 @@ Expr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
+Expr* buildBytesLiteral(const char* pch) {
+  return new SymExpr(new_BytesSymbol(pch));
+}
+
 Expr* buildCStringLiteral(const char* pch) {
   return new SymExpr(new_CStringSymbol(pch));
 }
@@ -371,8 +375,9 @@ static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
 }
 
 
-static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
-  UseStmt* newUse = new UseStmt(module);
+static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list,
+                               bool privateUse) {
+  UseStmt* newUse = new UseStmt(module, privateUse);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -430,7 +435,8 @@ static void useListError(Expr* expr, bool except) {
 //
 // Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except) {
+BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
+                        bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
@@ -479,7 +485,8 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
 
   }
 
-  UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap);
+  UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap,
+                                privateUse);
   addModuleToSearchList(newUse, mod);
 
   delete names;
@@ -490,7 +497,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
 //
 // Build a 'use' statement
 //
-BlockStmt* buildUseStmt(CallExpr* args) {
+BlockStmt* buildUseStmt(CallExpr* args, bool privateUse) {
   BlockStmt* list = NULL;
 
   //
@@ -498,7 +505,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   //
   for_actuals(expr, args) {
     Expr* useArg = expr->remove();
-    list = buildUseList(useArg, list);
+    list = buildUseList(useArg, list, privateUse);
   }
 
   //
@@ -581,22 +588,6 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = newTemp();
-  // MPF - without FLAG_NO_COPY, normalize adds an initCopy here,
-  // but that initCopy is unnecessary because each variable will
-  // be initialized with a tuple element (and initCopy called then).
-  // For the case where type==NULL, it was causing type mismatch
-  // errors; but when type!=NULL, normalize will change to
-  // defaultOf/assign anyway and there isn't a type issue
-  if (type == NULL) {
-    tmp->addFlag(FLAG_NO_COPY);
-
-    // additionally, don't auto-destroy tmp if the RHS
-    // is another variable (vs a call).
-    // This does not correctly handle certain no-parens calls. See
-    // tuple-string-bug.chpl and tuple-string-bug-noparens.chpl
-    if (!isCallExpr(init))
-      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
-  }
   int count = 1;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
@@ -920,7 +911,7 @@ void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
     ti->insertAtTail(ri);
     ti->insertAtTail(ovar);
   } else {
-    ArgSymbol* tiMark = tiMarkForForallIntent(svar->intent);
+    ArgSymbol* tiMark = tiMarkForForallIntent(svar);
     INT_ASSERT(tiMark != NULL);
     ti->insertAtTail(tiMark);
     ti->insertAtTail(ovar);
@@ -1492,6 +1483,9 @@ DefExpr* buildClassDefExpr(const char*  name,
   if (strcmp("_string", name) == 0) {
     ct = installInternalType(ct, dtString);
     ts = ct->symbol;
+  } else if (strcmp("_bytes", name) == 0) {
+    ct = installInternalType(ct, dtBytes);
+    ts = ct->symbol;
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
     ts = ct->symbol;
@@ -1636,8 +1630,11 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
-// Creates a dummy function that accumulates flags & cname
-FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef) {
+  DefExpr* def = toDefExpr(blockFnDef->body.tail);
+  INT_ASSERT(def);
+  FnSymbol* fn = toFnSymbol(def->sym);
+  INT_ASSERT(fn);
 
   const char* cname = "";
   // Look for a string literal we can use
@@ -1648,28 +1645,38 @@ FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr) {
     }
   }
 
-  FnSymbol* ret = new FnSymbol(cname);
-
   if (externOrExport == FLAG_EXTERN) {
-    ret->addFlag(FLAG_LOCAL_ARGS);
-    ret->addFlag(FLAG_EXTERN);
+    fn->addFlag(FLAG_LOCAL_ARGS);
+    fn->addFlag(FLAG_EXTERN);
+
+    // extern functions with no declared return type will return void
+    if (fn->retExprType == NULL)
+      fn->retType = dtVoid;
   }
   if (externOrExport == FLAG_EXPORT) {
-    ret->addFlag(FLAG_LOCAL_ARGS);
-    ret->addFlag(FLAG_EXPORT);
+    fn->addFlag(FLAG_LOCAL_ARGS);
+    fn->addFlag(FLAG_EXPORT);
+  }
+  if (fn->isIterator())
+  {
+    USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
   }
 
   // Handle non-trivial param names that need to be resolved,
   // but don't do this under chpldoc
-  if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
+  if (cname[0] != '\0') {
+    // The user explicitly named this function (controls mangling).
+    fn->cname = cname;
+  } else if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
+    // cname should be set based upon param
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
                                       new SymExpr(dtString->symbol),
                                       paramCNameExpr, NULL);
-    ret->insertFormalAtTail(argDef);
+    fn->insertFormalAtTail(argDef);
   }
 
-  return ret;
+  return blockFnDef;
 }
 
 // Replaces the dummy function name "_" with the real name, sets the 'this'
@@ -1724,30 +1731,16 @@ buildFunctionDecl(FnSymbol*   fn,
 {
   fn->retTag = optRetTag;
 
-  if (optRetTag == RET_REF)
-  {
-    if (fn->hasFlag(FLAG_EXTERN))
-      USR_FATAL_CONT(fn, "Extern functions cannot be setters.");
-  }
-
   if (optRetType)
     fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
-  else if (fn->hasFlag(FLAG_EXTERN))
-    fn->retType     = dtVoid;
 
   if (optThrowsError)
   {
-    if (fn->hasFlag(FLAG_EXTERN))
-      USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
-
     fn->throwsErrorInit();
   }
 
   if (optWhere)
   {
-    if (fn->hasFlag(FLAG_EXPORT))
-      USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
-
     fn->where = new BlockStmt(optWhere);
   }
 
@@ -1756,49 +1749,21 @@ buildFunctionDecl(FnSymbol*   fn,
     fn->lifetimeConstraints = new BlockStmt(optLifetimeConstraints);
   }
 
-  if (optFnBody)
-  {
+  if (optFnBody) {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot have a body.");
 
-    if (fn->body->length() == 0)
-    {
+    if (fn->body->length() == 0) {
       // Copy the statements from optFnBody to the function's
       // body to preserve line numbers
-      for_alist(expr, optFnBody->body)
-      {
+      for_alist(expr, optFnBody->body) {
         fn->body->insertAtTail(expr->remove());
       }
-
-    }
-    else
-    {
+    } else {
       fn->insertAtTail(optFnBody);
     }
-
-  }
-  else
-  {
-    if (!fn->hasFlag(FLAG_EXTERN)) {
-      //
-      // Chapel doesn't really support procedures with no-op bodies (a
-      // semicolon only).  Doing so is likely to cause confusion for C
-      // programmers who will think of it as a prototype, but we don't
-      // support prototypes, so require such programmers to type the
-      // empty body instead.  This is consistent with the current draft
-      // of the spec as well.
-      //
-      USR_FATAL(fn, "no-op procedures are only legal for extern functions");
-      //
-      // this is a way to make this branch robust to downstream passes
-      // if we got past this USR_FATAL for any reason or decide we
-      // want to support this case -- it changes the NULL pointer that
-      // is the body the parser created into a no-op body.
-      //
-      //
-      fn->insertAtTail(buildChapelStmt(new BlockStmt()));
-    }
-
+  } else {
+    fn->addFlag(FLAG_NO_FN_BODY);
   }
 
   fn->doc = docs;

@@ -51,8 +51,8 @@ module RangeChunk {
     Pack,
     Mod
   }
-  use RemElems;
-  use BoundedRangeType;
+  private use RemElems;
+  private use BoundedRangeType;
 
   
   /*

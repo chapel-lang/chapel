@@ -27,7 +27,8 @@
 
 #include <algorithm>
 
-UseStmt::UseStmt(BaseAST* source) : Stmt(E_UseStmt) {
+UseStmt::UseStmt(BaseAST* source, bool isPrivate) : Stmt(E_UseStmt) {
+  this->isPrivate = isPrivate;
   src    = NULL;
   except = false;
 
@@ -47,9 +48,11 @@ UseStmt::UseStmt(BaseAST* source) : Stmt(E_UseStmt) {
 UseStmt::UseStmt(BaseAST*                            source,
                  std::vector<const char*>*           args,
                  bool                                exclude,
-                 std::map<const char*, const char*>* renames) :
+                 std::map<const char*, const char*>* renames,
+                 bool isPrivate) :
   Stmt(E_UseStmt) {
 
+  this->isPrivate = isPrivate;
   src    = NULL;
   except = exclude;
 
@@ -88,9 +91,9 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
 
   if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
-    _this = new UseStmt(COPY_INT(src), &named, except, &renamed);
+    _this = new UseStmt(COPY_INT(src), &named, except, &renamed, isPrivate);
   } else {
-    _this = new UseStmt(COPY_INT(src));
+    _this = new UseStmt(COPY_INT(src), isPrivate);
   }
 
   for_vector(const char, sym, methodsAndFields) {
@@ -173,7 +176,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = scope->lookup(src)) {
+    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -474,22 +477,13 @@ void UseStmt::trackMethods() {
       // Note: stores duplicates
       for_vector(AggregateType, t, types) {
         forv_Vec(FnSymbol, method, t->methods) {
-          methodsAndFields.push_back(method->name);
+          if (method != NULL)
+            methodsAndFields.push_back(method->name);
         }
 
         for_fields(sym, t) {
           methodsAndFields.push_back(sym->name);
         }
-
-        unsigned int typeConstrLen = strlen(t->symbol->name) +
-          strlen("_type_construct_") + 1;
-
-        char* typeConstrName = (char*) malloc(typeConstrLen);
-
-        strcpy(typeConstrName, "_type_construct_");
-        strcat(typeConstrName, t->symbol->name);
-
-        functionsToAlwaysCheck.push_back(typeConstrName);
       }
 
       if (types.size() != 0) {
@@ -512,6 +506,22 @@ void UseStmt::trackMethods() {
       }
     }
   }
+}
+
+ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (strcmp(name, se->symbol()->name) == 0) {
+        return modSym;
+      }
+    }
+  } else {
+    // It seems as though we'd need to handle matches against more general
+    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
+    // an example that requires this.  I suppose it could be because we
+    // resolve such cases element-by-element rather than wholesale...
+  }
+  return NULL;
 }
 
 /************************************* | **************************************
@@ -672,7 +682,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
 
-        return new UseStmt(src, &newOnlyList, false, &newRenamed);
+        return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
       }
 
     } else {
@@ -729,7 +739,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // outer 'only' list)
           SET_LINENO(this);
 
-          return new UseStmt(src, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
 
         } else {
           // all the 'only' identifiers were in the 'except'
@@ -785,7 +795,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(src, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
 
         } else {
           // all of the 'only' identifiers in the outer use

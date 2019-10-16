@@ -25,7 +25,9 @@
    See also :ref:`readme-extern`.
  */
 module CPtr {
-  use ChapelStandard;
+  private use ChapelStandard;
+  private use SysBasic, SysError;
+  private use HaltWrappers only;
 
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
@@ -145,8 +147,8 @@ module CPtr {
     inline proc ref this(i: integral) ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
-                                       "(indices are 0.." + (size-1) + ")");
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                       "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
@@ -154,8 +156,8 @@ module CPtr {
     inline proc const ref this(i: integral) const ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i +
-                                       "(indices are 0.." + (size-1) + ")");
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                       "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
@@ -165,16 +167,16 @@ module CPtr {
     */
     inline proc ref this(param i: integral) ref : eltType {
       if i < 0 || i >= size then
-        compilerError("c array index out of bounds " + i +
-                      "(indices are 0.." + (size-1) + ")");
+        compilerError("c array index out of bounds " + i:string +
+                      "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
     pragma "no doc"
     inline proc const ref this(param i: integral) const ref : eltType {
       if i < 0 || i >= size then
-        compilerError("c array index out of bounds " + i +
-                      "(indices are 0.." + (size-1) + ")");
+        compilerError("c array index out of bounds " + i:string +
+                      "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
@@ -246,20 +248,11 @@ module CPtr {
   inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
 
   pragma "no doc"
-  inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, c_nil); }
+  inline proc _cast(type t:c_void_ptr, x:c_fn_ptr) {
+    return __primitive("cast", c_void_ptr, x);
+  }
 
-  pragma "no doc"
-  inline proc _cast(type t:c_ptr, x:_nilType) {
-    return __primitive("cast", t, x);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:_nilType) {
-    return __primitive("cast", c_void_ptr, nil);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_fn_ptr, x:_nilType) {
-    return __primitive("cast", c_fn_ptr, nil);
-  }
+  // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
   pragma "no doc"
   inline proc _cast(type t:c_ptr, x:c_ptr) {
@@ -283,20 +276,36 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_void_ptr) {
-    return new string(__primitive("ref to string", x), needToCopy=false);
+    return createStringWithOwnedBuffer(__primitive("ref to string", x));
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_ptr) {
-    return new string(__primitive("ref to string", x), needToCopy=false);
+    return createStringWithOwnedBuffer(__primitive("ref to string", x));
   }
+  pragma "last resort"
   pragma "no doc"
-  inline proc _cast(type t:borrowed, x:c_void_ptr) {
+  inline proc _cast(type t:_anyManagementAnyNilable, x:c_void_ptr) {
+    if isUnmanagedClass(t) || isBorrowedClass(t) {
+      if !chpl_legacyClasses {
+        compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
+        compilerWarning("cast to "+ _to_nilable(t):string +" instead");
+      }
+      return __primitive("cast", t, x);
+    } else {
+      compilerWarning("invalid cast from c_void_ptr to managed type " +
+                      t:string);
+    }
+  }
+
+  pragma "no doc"
+  inline proc _cast(type t:unmanaged class?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:unmanaged, x:c_void_ptr) {
+  inline proc _cast(type t:borrowed class?, x:c_void_ptr) {
     return __primitive("cast", t, x);
   }
+
   pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:borrowed) {
     return __primitive("cast", t, x);
@@ -345,10 +354,6 @@ module CPtr {
   inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
     return __primitive("cast", t, x);
 
-
-  pragma "no doc"
-  inline proc =(ref a:c_fn_ptr, b:_nilType) { __primitive("=", a, c_nil); }
-
   pragma "no doc"
   inline proc =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
 
@@ -358,6 +363,7 @@ module CPtr {
   inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
+
   pragma "no doc"
   inline proc ==(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);
@@ -366,22 +372,8 @@ module CPtr {
   inline proc ==(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_eq", a, b);
   }
-  pragma "no doc"
-  inline proc ==(a: c_ptr, b: _nilType) {
-    return __primitive("ptr_eq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc ==(a: _nilType, b: c_ptr) {
-    return __primitive("ptr_eq", c_nil, b);
-  }
-  pragma "no doc"
-  inline proc ==(a: c_void_ptr, b: _nilType) {
-    return __primitive("ptr_eq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc ==(a: _nilType, b: c_void_ptr) {
-    return __primitive("ptr_eq", c_nil, b);
-  }
+  // Don't need _nilType versions -
+  // Rely on coercions from nil to c_ptr / c_void_ptr
 
   pragma "no doc"
   inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -394,22 +386,6 @@ module CPtr {
   pragma "no doc"
   inline proc !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
-  }
-  pragma "no doc"
-  inline proc !=(a: c_ptr, b: _nilType) {
-    return __primitive("ptr_neq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc !=(a: _nilType, b: c_ptr) {
-    return __primitive("ptr_neq", c_nil, b);
-  }
-  pragma "no doc"
-  inline proc !=(a: c_void_ptr, b: _nilType) {
-    return __primitive("ptr_neq", a, c_nil);
-  }
-  pragma "no doc"
-  inline proc !=(a: _nilType, b: c_void_ptr) {
-    return __primitive("ptr_neq", c_nil, b);
   }
 
   pragma "no doc"
@@ -489,7 +465,6 @@ module CPtr {
     compilerError("Can't call a C function pointer within Chapel");
   }
 
-
   // Offset the CHPL_RT_MD constant in order to preserve the value through
   // calls to chpl_here_alloc. See comments on offset_STR_* in String.chpl
   // for more.
@@ -534,6 +509,8 @@ module CPtr {
    */
   proc c_offsetof(type t, param fieldname : string): size_t where isRecordType(t) {
     use Reflection;
+    pragma "no auto destroy"
+    pragma "no init"
     var x: t;
 
     return c_ptrTo(getFieldRef(x, fieldname)):size_t - c_ptrTo(x):size_t;

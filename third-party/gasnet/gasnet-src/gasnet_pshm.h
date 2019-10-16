@@ -54,9 +54,18 @@ extern void gasneti_unlink_vnet(void);
 struct gasneti_pshmnet;			/* opaque type */
 typedef struct gasneti_pshmnet gasneti_pshmnet_t;
 
-/* Initialize pshm request and reply networks given a conduit-specific exchange function.
-   Returns pointer to shared memory of length "aux_sz" available for conduit-specific use */
-extern void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t localbcastfn, size_t aux_sz);
+/* Initialize pshm.
+ * This includes allocating the PSHM memory region, initializing PSHM internal
+ * state, and the request and reply networks for AMPSHM.
+ * The first argument must be a conduit-specific exchange function.
+ * The second argument is the amount of shared memory requested by the caller
+ * for conduit-specific use, the address of which is returned.
+ */
+extern void
+*gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t localbcastfn, size_t aux_sz);
+
+/* Provide a write of zero to at least one byte of each page in the given region */
+extern void gasneti_pshm_prefault(void *addr, size_t len);
 
 /*  PSHMnets needed for PSHM active messages.
  *

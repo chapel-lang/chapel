@@ -86,9 +86,9 @@ void * _gasneti_malloc_aligned(size_t alignment, size_t size GASNETI_CURLOCFARG)
   void **result = (void **)GASNETI_ALIGNUP((uintptr_t)base + sizeof(void *), alignment);
   *(result - 1) = base; /* hidden base ptr for free() */
   gasneti_assert(GASNETI_POWEROFTWO(alignment));
-  gasneti_assert(result == (void **)GASNETI_ALIGNUP(result, alignment));
-  gasneti_assert((void *)(result - 1) >= base);
-  gasneti_assert(((uint8_t *)result + size) <= ((uint8_t *)base + alloc_size));
+  gasneti_assert_ptr(result ,==, (void **)GASNETI_ALIGNUP(result, alignment));
+  gasneti_assert_ptr((void *)(result - 1) ,>=, base);
+  gasneti_assert_ptr(((uint8_t *)result + size) ,<=, ((uint8_t *)base + alloc_size));
   return (void *)result;
 }
 GASNETI_MALLOCP(_gasneti_malloc_aligned)
@@ -136,11 +136,22 @@ extern gex_Rank_t gasneti_tm_fwd_lookup(gasneti_TM_t tm, gex_Rank_t rank);
 // Given (tm,jobrank) return the rank of jobrank in tm, or GEX_RANK_INVALID
 extern gex_Rank_t gasneti_tm_rev_lookup(gasneti_TM_t tm, gex_Rank_t jobrank);
 
-#define gasneti_check_tm_rank(tm,rank) gasneti_assert((tm) && ((rank) < gex_TM_QuerySize(tm)))
+#if GASNET_DEBUG
+GASNETI_INLINE(__gasneti_check_tm_rank)
+void __gasneti_check_tm_rank(gex_TM_t _e_tm, gex_Rank_t _rank, int _allownull) {
+  if (!_allownull) gasneti_assert(_e_tm);
+  if (_e_tm) gasneti_assert_uint(_rank ,<, gex_TM_QuerySize(_e_tm));
+}
+#else
+  #define __gasneti_check_tm_rank(tm,rank,allownull) ((void)0)
+#endif
+
+#define gasneti_check_tm_rank(tm,rank) __gasneti_check_tm_rank((tm),(rank),0)
         
 GASNETI_INLINE(gasneti_i_tm_rank_to_jobrank)
 gex_Rank_t gasneti_i_tm_rank_to_jobrank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
-  gasneti_assert(_i_tm && (_rank < _i_tm->_size));
+  gasneti_assert(_i_tm);
+  gasneti_assert_uint(_rank ,<, _i_tm->_size);
   if (gasneti_is_tm0(_i_tm)) return _rank;
   return gasneti_tm_fwd_lookup(_i_tm, _rank);
 }
@@ -152,11 +163,11 @@ gex_Rank_t gasneti_i_tm_rank_to_jobrank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
 // Variants to allow tm=NULL to substitute for TM0
 // TODO-EX: These will necessarily be superceeded when multi-{EP,segment}
 // support is added.  So, avoid creating new callers.
-#define _gasneti_check_tm_rank_allownull(tm,rank) gasneti_assert(!(tm) || ((rank) < gex_TM_QuerySize(tm)))
+#define _gasneti_check_tm_rank_allownull(tm,rank) __gasneti_check_tm_rank(tm,rank,1)
 GASNETI_INLINE(_gasneti_e_tm_rank_to_jobrank_allownull)
 gex_Rank_t _gasneti_e_tm_rank_to_jobrank_allownull(gex_TM_t _e_tm, gex_Rank_t _rank) {
   gasneti_TM_t _i_tm = gasneti_import_tm(_e_tm);
-  gasneti_assert(!_i_tm || (_rank < _i_tm->_size));
+  if (_i_tm) gasneti_assert_uint(_rank ,<, _i_tm->_size);
   if (gasneti_is_tm0(_i_tm)) return _rank; // gasneti_is_tm0(NULL) true by construction
   gasneti_assert(_i_tm);
   return gasneti_tm_fwd_lookup(_i_tm, _rank);
@@ -736,7 +747,7 @@ typedef struct _gasnete_thread_cleanup {
 extern int gasnete_maxthreadidx;
 #define gasnete_assert_valid_threadid(threadidx) do {   \
     int _thid = (threadidx);                            \
-    gasneti_assert(_thid <= gasnete_maxthreadidx);      \
+    gasneti_assert_uint(_thid ,<=, gasnete_maxthreadidx); \
     gasneti_assert(gasnete_threadtable[_thid] != NULL); \
     gasneti_memcheck(gasnete_threadtable[_thid]);       \
 } while (0)
@@ -896,13 +907,13 @@ typedef void (*gasneti_progressfn_t)(void);
     #define gasneti_suspend_spinpollers_check() do {                                        \
       int _mythrottlecnt = (int)(intptr_t)gasneti_threadkey_get(gasneti_throttledebug_key); \
       /* assert this thread hasn't already suspended */                                     \
-      gasneti_assert(_mythrottlecnt == 0);                                                  \
+      gasneti_assert_int(_mythrottlecnt ,==, 0);                                            \
       gasneti_threadkey_set(gasneti_throttledebug_key, (void *)(intptr_t)1);                \
     } while(0)
     #define gasneti_resume_spinpollers_check() do {                                         \
       int _mythrottlecnt = (int)(intptr_t)gasneti_threadkey_get(gasneti_throttledebug_key); \
       /* assert this thread previously suspended */                                         \
-      gasneti_assert(_mythrottlecnt == 1);                                                  \
+      gasneti_assert_int(_mythrottlecnt ,==, 1);                                            \
       gasneti_threadkey_set(gasneti_throttledebug_key, (void *)(intptr_t)0);                \
     } while(0)
   #else
@@ -1090,7 +1101,8 @@ extern int gasneti_wait_mode; /* current waitmode hint */
 // This is not the naturual place for these, but they must follow defn of gex_System_QueryJobSize()
 GASNETI_INLINE(gasneti_i_tm_jobrank_to_rank)
 gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank) {
-  gasneti_assert(_i_tm && (_jobrank < gex_System_QueryJobSize()));
+  gasneti_assert(_i_tm);
+  gasneti_assert_uint(_jobrank ,<, gex_System_QueryJobSize());
   if (gasneti_is_tm0(_i_tm)) return _jobrank;
   return gasneti_tm_rev_lookup(_i_tm, _jobrank);
 }

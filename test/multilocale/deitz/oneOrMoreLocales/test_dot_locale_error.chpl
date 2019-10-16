@@ -1,6 +1,6 @@
 class C {}
 
-var c: unmanaged C;
+var c: unmanaged C?;
 
 proc bar() {
   c = new unmanaged C();

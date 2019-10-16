@@ -1,0 +1,5 @@
+The directory ./publishCheck is created during testing and may end up
+staying around after testing completes. There may be .chpl files in
+../publishCheck/src that paratest will discover and test.
+Paratest-ing will fail because these files are not intended/suited for it.
+Adding this .notest to avoid that.

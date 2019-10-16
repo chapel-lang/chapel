@@ -3,8 +3,8 @@ class MyClass {
 }
 
 proc test() {
-  var a:owned MyClass;
-  var b:owned MyClass;
+  var a:owned MyClass?;
+  var b:owned MyClass?;
 
   assert( (a == b) == true );
   assert( (a == nil) == true );

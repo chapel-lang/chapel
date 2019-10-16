@@ -17,10 +17,6 @@
 #include <gasnet_core_internal.h>
 #endif
 
-#if GASNETI_USE_FCA
-#include <other/fca/gasnet_fca_team.h>
-#endif
-
 #include <coll/gasnet_team.h>
 
 // Upon implementing GASNETI_MEMCPY() (with assertions), it was discovered
@@ -105,8 +101,8 @@ typedef struct gasnete_coll_p2p_t_ gasnete_coll_p2p_t;
 union gasnete_coll_p2p_entry_t_;
 typedef union gasnete_coll_p2p_entry_t_ gasnete_coll_p2p_entry_t;
 
-struct gasnete_coll_p2p_send_struct;
-typedef struct gasnete_coll_p2p_send_struct gasnete_coll_p2p_send_struct_t;
+struct gasnete_tm_p2p_send_struct;
+typedef struct gasnete_tm_p2p_send_struct gasnete_tm_p2p_send_struct_t;
 
 struct gasnete_coll_generic_data_t_;
 typedef struct gasnete_coll_generic_data_t_ gasnete_coll_generic_data_t;
@@ -227,7 +223,7 @@ typedef struct gasnete_coll_consensus_t_* gasnete_coll_consensus_t;
 extern gasnete_coll_consensus_t gasnete_coll_consensus_create(gasnete_coll_team_t team);
 extern void gasnete_coll_consensus_free(gasnete_coll_team_t team, gasnete_coll_consensus_t consensus);
 extern int gasnete_coll_consensus_try(gasnete_coll_team_t team, gasnete_coll_consensus_t id);
-extern int gasnete_coll_consensus_wait(gasnete_coll_team_t team GASNETI_THREAD_FARG);
+extern int gasnete_coll_consensus_barrier(gasnete_coll_team_t team GASNETI_THREAD_FARG);
 
 /*---------------------------------------------------------------------------------*/
 
@@ -317,6 +313,7 @@ struct gasnete_coll_team_t_ {
   
   /*scratch space management*/
   gasnete_coll_scratch_status_t* scratch_status;
+  gasnete_coll_scratch_req_t* scratch_free_list;
   
   /*autotuning info*/
   gasnete_coll_autotune_info_t* autotune_info;
@@ -356,16 +353,14 @@ struct gasnete_coll_team_t_ {
 #ifdef GASNETE_COLL_TEAM_EXTRA
   GASNETE_COLL_TEAM_EXTRA
 #endif
-
-#ifdef GASNETI_USE_FCA
-  fca_comm_data_t fca_comm_data;
-  int use_fca;
-#endif
 };
 
 #define GASNETE_COLL_REL2ACT(TEAM, IDX) ((TEAM) == GASNET_TEAM_ALL ? IDX : (TEAM)->rel2act_map[IDX])
 
 /*---------------------------------------------------------------------------------*/
+
+/* Serialization of polling collective ops: */
+extern gasneti_mutex_t gasnete_coll_poll_lock;
 
 /* Function pointer type for polling collective ops: */
 typedef int (*gasnete_coll_poll_fn)(gasnete_coll_op_t* GASNETI_THREAD_FARG);
@@ -476,14 +471,23 @@ extern void gasnete_coll_p2p_counting_putAsync(gasnete_coll_op_t *op, gex_Rank_t
                                                void *src, size_t nbytes, uint32_t idx);
 extern void gasnete_coll_p2p_eager_put_tree(gasnete_coll_op_t *op, gex_Rank_t dstnode,
                                             void *src, size_t size);
-extern void gasnete_coll_p2p_send_rtr(gasnete_coll_op_t *op, gasnete_coll_p2p_t *p2p,
-                                      uint32_t offset, void *dst,
-                                      gex_Rank_t node, size_t nbytes);
-extern int gasnete_coll_p2p_send_done(gasnete_coll_p2p_t *p2p);
-extern  int gasnete_coll_p2p_send_data(gasnete_coll_op_t *op, gasnete_coll_p2p_t *p2p,
-                                       gex_Rank_t node, uint32_t offset,
-                                       const void *src, size_t nbytes);
-struct gasnete_coll_p2p_send_struct { void *addr; size_t sent; };
+
+extern int gasnete_tm_p2p_send_rtr(
+                        gasnete_coll_op_t *op, gasnete_coll_p2p_t *p2p,
+                        gex_Rank_t rank, uint32_t offset,
+                        void *dst, size_t nbytes,
+                        gex_Flags_t flags GASNETI_THREAD_FARG);
+extern int gasnete_tm_p2p_send_data(
+                        gasnete_coll_op_t *op, gasnete_coll_p2p_t *p2p,
+                        gex_Rank_t rank, uint32_t offset,
+                        const void *src, size_t nbytes,
+                        gex_Flags_t flags GASNETI_THREAD_FARG);
+GASNETI_INLINE(gasnete_tm_p2p_send_done)
+int gasnete_tm_p2p_send_done(gasnete_coll_p2p_t *p2p) {
+  // NOTE: caller is responsible for ACQ, if any
+  return (0 == gasneti_weakatomic_read(&p2p->counter[0], GASNETI_ATOMIC_NONE));
+}
+struct gasnete_tm_p2p_send_struct { void *addr; size_t sent; };
 
 /* Update one or more states w/o delivering any data */
 GASNETI_INLINE(gasnete_tm_p2p_change_states)
@@ -1554,9 +1558,38 @@ extern void gasnete_coll_team_init_conduit(gasnet_team_handle_t team);
 extern void gasnete_coll_team_fini_conduit(gasnet_team_handle_t team);
 
 /*---------------------------------------------------------------------------------*/
-#if GASNETI_USE_FCA
-#include <other/fca/gasnet_fca.h>
+// Helpers for uint32_t sequence numbers (which, by their nature, may wrap-around).
+
+// Assert that absolute difference is less than 2^30 (give or take 1)
+#if GASNET_DEBUG
+  GASNETI_INLINE(gasnete_coll_seq32_safe)
+  void gasnete_coll_seq32_safe(uint32_t _u, uint32_t _v) {
+    if (_u - _v + 0x40000000u >= 0x80000000u) {
+      gasneti_fatalerror("Absolute difference between unsigned 32-bit sequence "
+                         "numbers %u and %u (0x%x and 0x%x) is larger than 2^30",
+                         (unsigned int)_u, (unsigned int)_v,
+                         (unsigned int)_u, (unsigned int)_v);
+    }
+  }
+  #define GASNETE_COLL_SEQ32_SAFE(u,v) gasnete_coll_seq32_safe((u),(v))
+#else
+  #define GASNETE_COLL_SEQ32_SAFE(u,v) ((void)0)
 #endif
+
+// GASNETE_COLL_SEQ32_{LT,LE,GT,GE}(u,v)  true (non-zero) if "u {<,<=,>,>=} v"
+//   In all cases the comparison takes into consideration the wrap around.
+//   Also asserts that the difference remains less than half-way to the
+//   point at which wrap-around would cause ambiguity.
+GASNETI_INLINE(gasnete_coll_seq32_ge)
+int gasnete_coll_seq32_ge(uint32_t _u, uint32_t _v) {
+  GASNETE_COLL_SEQ32_SAFE(_u,_v);
+  return _u - _v < 0x80000000u;
+}
+#define GASNETE_COLL_SEQ32_GE(u,v) gasnete_coll_seq32_ge((u),(v))
+#define GASNETE_COLL_SEQ32_GT(u,v) gasnete_coll_seq32_ge((u),(uint32_t)(v)+1)
+#define GASNETE_COLL_SEQ32_LE(u,v) gasnete_coll_seq32_ge((v),(u))
+#define GASNETE_COLL_SEQ32_LT(u,v) gasnete_coll_seq32_ge((v),(uint32_t)(u)+1)
+
 /*---------------------------------------------------------------------------------*/
 
 #endif

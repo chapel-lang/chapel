@@ -7,7 +7,6 @@
 
     - Arrays primer (:ref:`arrays.chpl <primers-arrays>`)
     - Sparse arrays primer (:ref:`sparse.chpl <primers-sparse>`)
-    - Opaque arrays primer (:ref:`opaque-domains.chpl <primers-opaque-domains>`)
     - Associative arrays primer (:ref:`associative.chpl <primers-associative>`)
 
 */

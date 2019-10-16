@@ -643,6 +643,9 @@ gasnet_fn_split_linker_opts()
         -l* | -L*)
           gasnet_lo_append=$gasnet_lo_libs
         ;;
+	*.so | *.a)
+          gasnet_lo_append=$gasnet_lo_libs
+	;;
         *)
           gasnet_lo_append=$gasnet_lo_ldflags
         ;;
@@ -666,7 +669,7 @@ gasnet_fn_split_linker_opts()
 
 dnl GASNET_FILTER_LINKER_OPTS(LDFLAGS, LIBS)
 dnl Filter the current contents of $LDFLAGS and $LIBS 
-dnl Move all -l/-L options into LIBS and anything else into LDFLAGS
+dnl Move all -l/-L/*.{a,so} options into LIBS and anything else into LDFLAGS
 AC_DEFUN([GASNET_SPLIT_LINKER_OPTS],[
   GASNET_FUN_BEGIN([$0($@)])
   AC_REQUIRE([_GASNET_SPLIT_LINKER_OPTS_HELPER])
@@ -1222,6 +1225,17 @@ case "$enable_[]patsubst([$1], -, _)" in
 esac
 ])
 
+AC_DEFUN([GASNET_IF_DISABLED_NOHELP],[
+case "$enable_[]patsubst([$1], -, _)" in
+  '' | yes) :
+      $3
+  ;;
+  *)  :
+      $2
+  ;;
+esac
+])
+
 AC_DEFUN([GASNET_IF_ENABLED],[
 GASNET_FUN_BEGIN([$0($1,...)])
   ifdef([GASNET_SUPPRESSHELP], [], [
@@ -1236,14 +1250,7 @@ GASNET_FUN_BEGIN([$0($1,...)])
   ifdef([GASNET_SUPPRESSHELP], [], [
     AC_ARG_ENABLE($1,GASNET_OPTION_HELP(disable-$1,[$2]))
   ])
-  case "$enable_[]patsubst([$1], -, _)" in
-    '' | yes) :
-         $4
-    ;;
-    *)   :
-         $3
-    ;;
-  esac
+  GASNET_IF_DISABLED_NOHELP([$1],[$3],[$4])
 GASNET_FUN_END([$0($1,...)])
 ])
 

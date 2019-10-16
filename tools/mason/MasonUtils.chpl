@@ -20,6 +20,9 @@
 
 
 /* A helper file of utilities for Mason */
+private use List;
+private use Map;
+
 use Spawn;
 use FileSystem;
 use TOML;
@@ -52,7 +55,6 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
   const target = joinPath(projectHome, 'target');
   const srcBin = joinPath(target, binLoc);
-  const test = joinPath(target, 'test');
   const example = joinPath(target, 'example');
 
   if !isDir(target) {
@@ -61,11 +63,22 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   if !isDir(srcBin) {
     mkdir(srcBin);
   }
-  if !isDir(test) {
-    mkdir(test);
-  }
   if !isDir(example) {
     mkdir(example);
+  }
+
+  const actualTest = joinPath(projectHome,'test');
+  if isDir(actualTest) {
+    for dir in walkdirs(actualTest) {
+      const internalDir = target+dir.replace(projectHome,"");
+      if !isDir(internalDir) {
+        mkdir(internalDir);
+      }
+    }
+  }
+  const test = joinPath(target, 'test');
+  if(!isDir(test)) {
+    mkdir(test);
   }
 }
 
@@ -120,6 +133,19 @@ proc runWithStatus(command, show=true): int {
   }
   catch {
     return -1;
+  }
+}
+
+proc runWithProcess(command, quiet=false) throws {
+  try {
+    var cmd = command.split();
+    var process = spawn(cmd, stdout=PIPE, stderr=PIPE);
+
+    return process;
+  }
+  catch {
+    throw new owned MasonError("Internal mason error");
+    exit(0);
   }
 }
 
@@ -183,6 +209,21 @@ proc runSpackCommand(command) {
 }
 
 
+proc hasOptions(args: list(string), const opts: string ...) {
+  var ret = false;
+
+  for o in opts {
+    const found = args.count(o) != 0;
+    if found {
+      ret = true;
+      break;
+    }
+  }
+
+  return ret;
+}
+
+
 proc hasOptions(args : [] string, const opts : string ...) {
   var ret = false;
 
@@ -196,6 +237,7 @@ proc hasOptions(args : [] string, const opts : string ...) {
 
   return ret;
 }
+
 
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;
@@ -228,7 +270,7 @@ record VersionInfo {
   }
 
   proc str() {
-    return major + "." + minor + "." + bug;
+    return major:string + "." + minor:string + "." + bug:string;
   }
 
   proc cmp(other:VersionInfo) {
@@ -332,12 +374,12 @@ private var chplVersion = "";
 proc getChapelVersionStr() {
   if chplVersion == "" {
     const version = getChapelVersionInfo();
-    chplVersion = version(1) + "." + version(2) + "." + version(3);
+    chplVersion = version(1):string + "." + version(2):string + "." + version(3):string;
   }
   return chplVersion;
 }
 
-proc gitC(newDir, command, quiet=false) {
+proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
 
   const oldDir = here.cwd();
@@ -442,10 +484,9 @@ proc isIdentifier(name:string) {
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
-  for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
-    if v.tag == fieldToml then
+  for (k,v) in tomlTbl.A.items() {
+    if v.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }
 }
-

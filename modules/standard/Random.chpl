@@ -75,6 +75,7 @@ module Random {
   use RandomSupport;
   use NPBRandom;
   use PCGRandom;
+  private use HaltWrappers only;
 
 
   /* Select between different supported RNG algorithms.
@@ -653,6 +654,7 @@ module Random {
 
     use RandomSupport;
     use PCGRandomLib;
+    private use ChapelLocks;
 
     // How many generators do we need for this type?
     private
@@ -858,7 +860,7 @@ module Random {
       proc getNext(min: eltType, max:eltType): eltType {
         _lock();
         if boundsChecking && min > max then
-          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max +  "]");
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
         _unlock();
@@ -872,7 +874,7 @@ module Random {
                    min: resultType, max:resultType): resultType {
         _lock();
         if boundsChecking && min > max then
-          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min + ", " + max + "]");
+          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string + "]");
 
         const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
         _unlock();
@@ -889,7 +891,7 @@ module Random {
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
-          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -908,7 +910,7 @@ module Random {
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
@@ -971,9 +973,8 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.low,
-              high = D.high,
-              stride = D.stride;
+        const low = D.alignedLow,
+              stride = abs(D.stride);
 
         _lock();
 
@@ -990,9 +991,6 @@ module Random {
           if stride > 1 {
             k *= stride;
             j *= stride;
-          } else if stride < 0 {
-            k *= -stride;
-            j *= -stride;
           }
 
           // Alignment offsets
@@ -1002,7 +1000,7 @@ module Random {
           arr[k] <=> arr[j];
         }
 
-        PCGRandomStreamPrivate_count += high - low;
+        PCGRandomStreamPrivate_count += D.size;
 
         _unlock();
       }
@@ -2264,6 +2262,7 @@ module Random {
   module NPBRandom {
 
     use RandomSupport;
+    private use ChapelLocks;
 
     /*
       Models a stream of pseudorandom numbers.  See the module-level
@@ -2390,7 +2389,7 @@ module Random {
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
-          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
         _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -2409,7 +2408,7 @@ module Random {
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
-          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n);
+          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
         _lock(); 
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();

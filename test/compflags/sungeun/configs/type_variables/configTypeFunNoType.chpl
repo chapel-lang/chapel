@@ -16,7 +16,7 @@ proc f(p) {
   writeln("p = ", p);
 }
 
-var p: myType;
+var p: myType?;
 
 f(p);
 writeln("numBits(myIdxType) = ", numBits(myIdxType));

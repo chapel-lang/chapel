@@ -1,1 +1,1 @@
-foo.chpl:4: error: illegal use of module 'foo'
+foo.chpl:4: error: modules (like 'foo' here) cannot be called like procedures

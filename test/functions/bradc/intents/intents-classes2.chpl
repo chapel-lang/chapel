@@ -16,7 +16,7 @@ proc callin(in x: unmanaged pair) {
 }
 
 
-proc callout(out x: unmanaged pair) {
+proc callout(out x: unmanaged pair?) {
   writeln("in callout, x ought to be nil");
 
   x   = new unmanaged pair();
@@ -62,9 +62,13 @@ proc main() {
 
   delete a;
 
-  callout(a);
-  writeln("back at callsite, a is: ", a.a, " ", a.b);
-  writeln();
+  {
+    var aa: unmanaged pair?;
+    callout(aa);
+    writeln("back at callsite, a is: ", aa.a, " ", aa.b);
+    writeln();
+    a = aa!;
+  }
 
   callinout(a);
   writeln("back at callsite, a is: ", a.a, " ", a.b);

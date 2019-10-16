@@ -49,9 +49,9 @@ coforall loc in Locales {
       for i in rangeOnCpu {
         // If we find the value, tell everyone and quit looking.
         if vals[i] == findVal {
-          if found[here.id].compareExchange(-1, i, memory_order_release) {
+          if found[here.id].compareAndSwap(-1, i, memoryOrder.release) {
             // The cmpxchg on found[here.id] here is a superfluous no-op.
-            [f in found] { f.compareExchange(-1, i, memory_order_release); }
+            [f in found] { f.compareAndSwap(-1, i, memoryOrder.release); }
           }
           break;
         }

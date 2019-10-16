@@ -58,6 +58,8 @@
    implemented and optimized.
 */
 module Barriers {
+  private use HaltWrappers only ;
+
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.
 
@@ -83,7 +85,6 @@ module Barriers {
     proc init(numTasks: int,
               barrierType: BarrierType = BarrierType.Atomic,
               reusable: bool = true) {
-      this.complete();
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
@@ -101,6 +102,7 @@ module Barriers {
         }
         otherwise {
           HaltWrappers.exhaustiveSelectHalt("unknown barrier type");
+          bar = new unmanaged BarrierBaseType(); // dummy
         }
       }
       isowned = true;

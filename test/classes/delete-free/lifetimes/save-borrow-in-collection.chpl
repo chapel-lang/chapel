@@ -11,7 +11,7 @@ proc setA(arg: borrowed MyClass) {
   A[1] = arg;
 }
 
-var global: borrowed MyClass;
+var global: borrowed MyClass?;
 
 proc error1(arg: borrowed MyClass) {
   global = arg;
@@ -28,7 +28,7 @@ proc error3(arg: borrowed MyClass) {
 }
 
 record BorrowedThing {
-  var b: borrowed MyClass;
+  var b: borrowed MyClass?;
 }
 
 var globalB: BorrowedThing;

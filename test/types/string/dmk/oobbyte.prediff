@@ -1,4 +1,0 @@
-#! /bin/bash
-
-sed -e 's/^.*String\.chpl:[0-9]*: //' <$2 >$2.tmp
-mv $2.tmp $2

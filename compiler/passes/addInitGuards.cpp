@@ -82,7 +82,7 @@ void addModuleInitBlocks() {
         initBlock->insertAtTail(new CallExpr(parent->initFn));
 
     // Call the initializer for each module I use.
-    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+    for_vector(ModuleSymbol, usedMod, mod->modUseList) {
       if (usedMod != standardModule) {
         initBlock->insertAtTail(new CallExpr(usedMod->initFn));
       }

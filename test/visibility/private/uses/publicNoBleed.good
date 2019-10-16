@@ -1,0 +1,2 @@
+publicNoBleed.chpl:10: In function 'main':
+publicNoBleed.chpl:13: error: 'b' undeclared (first use this function)

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2018 Inria.  All rights reserved.
+ * Copyright © 2009-2019 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -480,16 +480,18 @@ main (int argc, char *argv[])
   }
 
   if (pid_number > 0) {
-    pid = hwloc_pid_from_number(pid_number, 0);
-    if (hwloc_topology_set_pid(topology, pid)) {
+    if (hwloc_pid_from_number(&pid, pid_number, 0, 1 /* verbose */) < 0
+	|| hwloc_topology_set_pid(topology, pid)) {
       perror("Setting target pid");
       return EXIT_FAILURE;
     }
   }
 
   err = hwloc_topology_load (topology);
-  if (err)
+  if (err) {
+    perror("hwloc_topology_load");
     return EXIT_FAILURE;
+  }
 
   topodepth = hwloc_topology_get_depth(topology);
 

@@ -3,7 +3,7 @@ class MyClass { var x:int; }
 assert(nil == nil);
 assert(!(nil != nil));
 
-var nilable:MyClass?;
+var nilable:borrowed MyClass?;
 writeln(nilable.type:string);
 writeln(nilable);
 

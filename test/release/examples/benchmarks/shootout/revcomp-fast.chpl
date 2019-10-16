@@ -9,21 +9,19 @@ const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
   const stdin = openfd(0),
-        input = stdin.reader(iokind.native, locking=false),
+        input = stdin.reader(iokind.native, locking=false,
+                             hints=QIO_HINT_PARALLEL),
         len = stdin.length();
   var data: [0..#len] uint(8);
 
   // if the file isn't empty, wait for all tasks to complete before continuing
   if len then sync {
     do {
-      // capture the starting offset
-      const descOffset = input.offset();
-
-      // Mark where we start scanning (keep bytes in I/O buffer in input)
-      input.mark();
+      // Mark where we start scanning and capture the starting offset
+      const descOffset = input.mark();
 
       // Scan forward until we get to '\n' (end of description)
-      input.advancePastByte("\n".byte(1));
+      input.advancePastByte("\n".toByte());
       const seqOffset = input.offset();
 
       // Scan forward until we get to '>' (end of sequence) or EOF
@@ -32,7 +30,7 @@ proc main(args: [] string) {
       // look for the next description, returning '(eof, its offset)'
       proc findNextDesc() throws {
         try {
-          input.advancePastByte(">".byte(1));
+          input.advancePastByte(">".toByte());
         } catch (e:EOFError) {
           return (true, len-1);
         }
@@ -71,17 +69,17 @@ proc process(seq: [?inds]) {
   }
 
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while seq[cursor] == "\n".byte(1);
+    do { cursor += dir; } while seq[cursor] == "\n".toByte();
   }
 }
 
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.length by 2 {
+  for i in 1..pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
-    if pairs.byte(i) != "\n".byte(1) then
-      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
+    if pairs.byte(i) != "\n".toByte() then
+      table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);
   }
 
   return table;

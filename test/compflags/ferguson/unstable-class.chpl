@@ -24,7 +24,7 @@ proc errorsInArgs( x: MyClass, y: MyGenericClass, z: MyGenericClass(int) ) {
 }
 
 proc errors() {
-  var x: MyClass;
+  var x: MyClass = new MyClass(1);
   var y: MyGenericClass(int);
   var a: [1..10] MyClass;
   var b: [1..10] MyGenericClass(int);

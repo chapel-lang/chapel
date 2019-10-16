@@ -5,12 +5,12 @@ class MyClass {
   }
 }
 
-proc foo(x:owned MyClass) {
+proc foo(x:owned MyClass?) {
   writeln("In foo, ", x);
 }
 
 proc test() {
-  var x = new owned MyClass(1);
+  var x: owned MyClass? = new owned MyClass(1);
   writeln("In test x=", x.borrow());
   foo(x);
   writeln("In test again, x=", x.borrow());

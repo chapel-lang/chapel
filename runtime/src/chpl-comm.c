@@ -80,8 +80,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     size_t size = chpl_numGlobalsOnHeap * sizeof(*buf);
     buf = (wide_ptr_t*)
           chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-    chpl_comm_get(buf, 0, buf_on_0, size,
-                  -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
+    chpl_comm_get(buf, 0, buf_on_0, size, CHPL_COMM_UNKNOWN_ID, 0, -1);
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       *chpl_globals_registry[i] = buf[i];
     }
@@ -156,4 +155,23 @@ size_t chpl_comm_getenvMaxHeapSize(void)
 
 void* chpl_get_global_serialize_table(int64_t idx) {
   return chpl_global_serialize_table[idx];
+}
+
+static chpl_bool can_shutdown = false;
+static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
+
+void chpl_signal_shutdown(void) {
+  pthread_mutex_lock(&shutdown_mutex);
+  can_shutdown = true;
+  pthread_cond_signal(&shutdown_cond);
+  pthread_mutex_unlock(&shutdown_mutex);
+}
+
+void chpl_wait_for_shutdown(void) {
+  pthread_mutex_lock(&shutdown_mutex);
+  while (!can_shutdown) {
+    pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
+  }
+  pthread_mutex_unlock(&shutdown_mutex);
 }

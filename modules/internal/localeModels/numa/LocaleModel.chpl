@@ -69,7 +69,7 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(_parent);
       sid = _sid;
-      ndName = "ND"+sid;
+      ndName = "ND"+sid:string;
     }
 
     override proc writeThis(f) {
@@ -95,9 +95,11 @@ module LocaleModel {
 
     iter getChildren() : locale {
       halt("No children to iterate over.");
-      yield nil;
     }
   }
+
+  const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
   // The node model
@@ -108,7 +110,7 @@ module LocaleModel {
 
     var numSublocales: int; // should never be modified after first assignment
     var childSpace: domain(1);
-    var childLocales: [childSpace] NumaDomain;
+    var childLocales: [childSpace] unmanaged NumaDomain;
 
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
@@ -166,14 +168,6 @@ module LocaleModel {
       return this;
     }
 
-
-    override proc writeThis(f) {
-      // Most classes will define it like this:
-      //      f <~> name;
-      // but here it is defined thus for backward compatibility.
-      f <~> new ioLiteral("LOCALE") <~> _node_id;
-    }
-
     proc getChildSpace() return childSpace;
 
     override proc getChildCount() return numSublocales;
@@ -209,7 +203,7 @@ module LocaleModel {
 
     proc deinit() {
       for loc in childLocales do
-        delete _to_unmanaged(loc);
+        delete loc;
     }
  }
 

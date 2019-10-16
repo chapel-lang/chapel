@@ -7,8 +7,8 @@ class B: A {
 }
 
 var a = new owned A();
-var b: owned B;
-var c: owned B;
+var b: owned B?;
+var c: owned B?;
 
 writeln(a);
 writeln("{x = ", a.x, "}");

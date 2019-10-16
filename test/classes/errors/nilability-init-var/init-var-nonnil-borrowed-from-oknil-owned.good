@@ -1,0 +1,1 @@
+init-var-nonnil-borrowed-from-oknil-owned.chpl:9: error: cannot initialize variable 'lhs' of non-nilable type 'borrowed MyClass' from a nilable 'owned MyClass?'

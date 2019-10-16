@@ -9,12 +9,12 @@ proc examples() {
 
   writeln("declaring shared1 storing C(1)"); 
   // 'shared1' points to a new C instance
-  var shared1 = new shared C(1);
+  var shared1 = new shared C(1)?;
   writeln("shared1 = ", shared1.borrow());
 
   writeln("declaring shared2 storing nil");
   // it's OK to have shared initially empty. It will point to 'nil'.
-  var shared2: shared C;
+  var shared2: shared C?;
   writeln("shared2 = ", shared2.borrow());
 
   // Assignment is supported. The LHS and RHS will both point

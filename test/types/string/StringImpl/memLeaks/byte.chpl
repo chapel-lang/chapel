@@ -3,9 +3,9 @@ module unitTest {
 
   inline proc f(s, useExpr=false) {
     if useExpr {
-      writeMe(s.byte(1));
+      writeMe(s.toByte());
     } else {
-      const aStr = s.byte(1);
+      const aStr = s.toByte();
       writeMe(aStr);
     }
   }

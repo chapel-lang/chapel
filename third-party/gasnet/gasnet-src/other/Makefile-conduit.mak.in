@@ -100,6 +100,13 @@ testtools testtoolscxx: force
 	@$(MAKE) -f $(top_builddir)/tests/Makefile $@   \
 	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS)
 
+testtool%-seq: force
+	@$(MAKE) `basename $@ -seq` tools_fragment=@TOP_BUILDDIR@/gasnet_tools-seq.mak
+
+testtool%-par: force
+	@$(PTHREADS_ERROR_CHECK)
+	@$(MAKE) `basename $@ -par` tools_fragment=@TOP_BUILDDIR@/gasnet_tools-par.mak
+
 test%: $(top_srcdir)/tests/test%.c force 
 	@$(MAKE) libgasnet-$(CONDUIT_NAME)-$(THREAD_MODEL_LC).a $(CONDUIT_NAME)-$(THREAD_MODEL_LC).mak
 	@echo "*** Building $@ in $(THREAD_MODEL)/$(GASNET_SEGMENT_STR) mode ***"

@@ -4,16 +4,14 @@ class A {
 }
 
 class B {
-  var a: unmanaged A;   // This produces an error
-//var a: A(); // This works
+  var a: unmanaged A?;   // a recursive class
 }
 
 
-var b = new unmanaged B();
+var b = new B();
 
 b.a = new unmanaged A(10);
 
-writeln(b.a.x);
+writeln(b.a!.x);
 
 delete b.a;
-delete b;

@@ -5,7 +5,7 @@ module CannotThrow {
     var x:int;
     var y:int;
     override proc message() {
-      return x + " " + y;
+      return x:string + " " + y:string;
     }
   }
 

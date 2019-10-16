@@ -66,14 +66,17 @@
 
 (c-lang-defconst c-primitive-type-kwds
   chpl '("bool"
+         "bytes"
          "complex"
          "domain"
          "imag" "index" "int"
          "locale"
+         "nothing"
          "opaque"
          "range" "real"
          "string" "subdomain"
-         "uint"))
+         "uint"
+         "void"))
 
 ;; Define chpl type modifiers
 (c-lang-defconst c-type-modifier-kwds
@@ -171,7 +174,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-constant-kwds
   "Keywords for constants."
-  chpl    '("false" "nil" "true"))
+  chpl    '("false" "nil" "none" "true"))
 
 (c-lang-defconst c-primary-expr-kwds
   "Keywords besides constants and operators that start primary expressions."
@@ -180,7 +183,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("align" "atomic" "begin" "borrowed" "by" "catch" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "owned" "prototype" "reduce" "ref" "scan" "serial" "shared" "single" "sparse" "sync" "throw" "throws" "try" "unmanaged" "where" "while" "with" "zip"))
+  chpl '("align" "atomic" "begin" "borrowed" "by" "catch" "cobegin" "coforall" "deinit" "dmapped" "for" "forall" "if" "in" "init" "inout" "lifetime" "local" "noinit" "on" "out" "owned" "prototype" "reduce" "ref" "scan" "serial" "shared" "single" "sparse" "sync" "throw" "throws" "try" "unmanaged" "where" "while" "with" "zip"))
 
 ;;; Chpl.
 

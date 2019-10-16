@@ -26,7 +26,7 @@ var numWrong = 0;
 var idx = 1;
 for i in 1..n {
   for j in 1..line {
-    if data[idx] != ((j%10):string).byte(1) then numWrong += 1;
+    if data[idx] != ((j%10):string).toByte() then numWrong += 1;
     idx += 1;
   }
   if data[idx] != 0x0A then numWrong += 1; // newline character

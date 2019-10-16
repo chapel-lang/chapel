@@ -39,6 +39,7 @@ AggregateType* dtOwned;
 AggregateType* dtShared;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
+AggregateType* dtRef;
 
 
 // The well-known functions
@@ -118,6 +119,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "_shared",               &dtShared,           false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
   { "_tuple",                &dtTuple,            false },
+  { "_ref",                  &dtRef,              true  },
   { "Error",                 &dtError,            true  }
 };
 
@@ -182,6 +184,17 @@ void gatherWellKnownTypes() {
       delete dtString;
 
       dtString = NULL;
+    }
+    if (dtBytes->symbol == NULL || dtBytes->symbol->defPoint == NULL) {
+      // This means there was no declaration of the bytes type.
+      if (dtBytes->symbol)
+        gTypeSymbols.remove(gTypeSymbols.index(dtBytes->symbol));
+
+      gAggregateTypes.remove(gAggregateTypes.index(dtBytes));
+
+      delete dtBytes;
+
+      dtBytes = NULL;
     }
     if (dtLocale->symbol == NULL || dtLocale->symbol->defPoint == NULL) {
       // This means there was no declaration of the locale type.
@@ -394,7 +407,7 @@ void clearGenericWellKnownFunctions()
 
   for (int i = 0; i < nEntries; ++i) {
     WellKnownFn& wkfn = sWellKnownFns[i];
-    if (*wkfn.fn != NULL && (*wkfn.fn)->hasFlag(FLAG_GENERIC))
+    if (*wkfn.fn != NULL && (*wkfn.fn)->isGeneric())
       *wkfn.fn = NULL;
   }
 }

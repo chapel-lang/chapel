@@ -28,8 +28,7 @@ CONDUIT_FILELIST =           \
       gasnet_coll_pami_allto.c \
       gasnet_coll_pami_bcast.c \
       gasnet_coll_pami_gathr.c \
-      gasnet_coll_pami_scatt.c \
-      license.txt
+      gasnet_coll_pami_scatt.c 
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line

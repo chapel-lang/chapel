@@ -8,12 +8,12 @@ AUTOMAKE_OPTIONS = foreign 1.4
 # Use of the MPI/PMI spawning support is optional
 if HAVE_BOOTSTRAP_MPI
 mpi_target_pl = gasnetrun_ibv-mpi.pl
-$(mpi_target_pl): $(top_srcdir)/mpi-conduit/contrib/gasnetrun_mpi.pl
+$(mpi_target_pl): $(top_srcdir)/other/spawner/gasnetrun_mpi.pl
 	cp -f "$?" $@
 else
 if HAVE_BOOTSTRAP_PMI
 mpi_target_pl = gasnetrun_ibv-mpi.pl
-$(mpi_target_pl): $(top_srcdir)/mpi-conduit/contrib/gasnetrun_mpi.pl
+$(mpi_target_pl): $(top_srcdir)/other/spawner/gasnetrun_mpi.pl
 	cp -f "$?" $@
 else
 mpi_target_pl =
@@ -21,6 +21,7 @@ endif
 endif
 
 target = gasnetrun_ibv
+target_pl = $(target).pl
 
 # Need a bin_DATA rule, but automake disallows that.  So, fake it.
 dotpldir = $(bindir)
@@ -32,36 +33,21 @@ $(top_builddir)/other/perlstart: $(top_srcdir)/other/perlstart.in
 $(top_builddir)/other/mpirun_common: $(top_srcdir)/other/mpirun_common.in
 	@cd $(top_builddir)/other && $(MAKE) mpirun_common
 $(target): $(top_builddir)/other/perlstart $(top_builddir)/other/mpirun_common
-all-local: $(target).pl $(target) $(mpi_target_pl)
+all-local: $(target_pl) $(target) $(mpi_target_pl)
 
-# Files to copy from srcdir to builddir if they differ
-if BUILD_IS_SRC
-files_we_copy =
-else
-files_we_copy = $(target).pl
-$(files_we_copy): force
-	@srcfile="$(srcdir)/`basename $@`" ; \
-         if test ! -f "$@" -o "`find $$srcfile -newer '$@' 2>&1`" ; then \
-          echo cp -f "$$srcfile" . ;         \
-          cp -f "$$srcfile" . ;              \
-         fi
-endif
-DISTCLEANFILES = $(files_we_copy) $(mpi_target_pl)
+$(target_pl): $(top_srcdir)/other/spawner/gasnetrun.pl
+	cp -f "$<" $@
 
-# Ensure the .pl is distributed, even if not installed
-EXTRA_DIST = $(target).pl
+DISTCLEANFILES = $(target) $(target_pl) $(mpi_target_pl)
 
 # Conditionally install the .pl and its wrapper
 if USE_IBV_CONDUIT
 scripts = $(target)
-data = $(target).pl $(mpi_target_pl)
+data = $(target_pl) $(mpi_target_pl)
 else
 scripts =
 data =
 endif
 bin_SCRIPTS = $(scripts)
 dotpl_DATA = $(data)
-
-.PHONY: force
-force:
 

@@ -57,7 +57,7 @@ proc getIdx(loc) {
 
 proc doit(D, str) {
   var A: [D] myType;
-  const s = "["+rank+"D "+str+"]";
+  const s = "["+rank:string+"D "+str+"]";
   if debug then [i in D] writeln("A[", i, "] is on ", A[i].locale);
 
   for l in Locales {

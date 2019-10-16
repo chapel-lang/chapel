@@ -28,15 +28,11 @@
 GASNETI_IDENT(gasnetc_IdentString_Version, "$GASNetCoreLibraryVersion: " GASNET_CORE_VERSION_STR " $");
 GASNETI_IDENT(gasnetc_IdentString_Name,    "$GASNetCoreLibraryName: " GASNET_CORE_NAME_STR " $");
 
+static void gasnetc_atexit(int exitcode);
+
 gex_AM_Entry_t const *gasnetc_get_handlertable(void);
 
 gex_AM_Entry_t *gasnetc_handler; // TODO-EX: will be replaced with per-EP tables
-
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int, void*);
-#else
-static void gasnetc_atexit(void);
-#endif
 
 gasneti_spawnerfn_t const *gasneti_spawner = NULL;
 
@@ -567,7 +563,7 @@ extern uintptr_t gasnetc_MaxPinMem(uintptr_t overheads)
    * pinnable memory under CNL without dire consequences.
    * For this platform, we will simply try a large fraction of the physical
    * memory.  If that is too big, then the job will be killed at startup.
-   * The gasneti_mmapLimit() ensures limit is per compute node, not per process.
+   * The gasneti_segmentLimit() ensures limit is per compute node, not per process.
    */
   uintptr_t pm_limit = gasneti_getenv_memsize_withdefault(
                            "GASNET_PHYSMEM_MAX", GASNETC_DEFAULT_PHYSMEM_MAX,
@@ -579,6 +575,9 @@ extern uintptr_t gasnetc_MaxPinMem(uintptr_t overheads)
   pm_limit = MIN(pm_limit, 24UL << 30 /* 24 GB */);
 #endif
 
+  // possibly bound pm_limit
+  pm_limit = MIN(gasneti_sharedLimit(), pm_limit);
+
   /* overheads are allocated and pinned in every proc */
   overheads *= gasneti_nodemap_local_count;
 
@@ -587,7 +586,7 @@ extern uintptr_t gasnetc_MaxPinMem(uintptr_t overheads)
   }
   pm_limit -= overheads;
 
-  limit = gasneti_mmapLimit((uintptr_t)-1, pm_limit,
+  limit = gasneti_segmentLimit((uintptr_t)-1, pm_limit,
                             &gasnetc_bootstrapExchange_gni,
                             &gasnetc_bootstrapBarrier_gni);
 
@@ -653,12 +652,23 @@ static int gasnetc_init( gex_Client_t            *client_p,
     /* If your conduit will support PSHM, you should initialize it here.
      * The 1st argument is normally "&gasnetc_bootstrapSNodeBroadcast" or equivalent
      * The 2nd argument is the amount of shared memory space needed for any
-     * conduit-specific uses.  The return value is a pointer to the space
-     * requested by the 2nd argument.
+     * conduit-specific uses.
+     * The return value is a pointer to the space requested by the 2nd argument.
+     * It is advisable that the conduit ensure pages in this space are touched,
+     * possibly using gasneti_pshm_prefault(), prior to use of gasneti_segmentLimit()
+     * or similar memory probes.
      */
-    gasnetc_exitcodes = gasneti_pshm_init(gasneti_spawner->SNodeBroadcast,
-                                          gasneti_nodemap_local_count * sizeof(gasnetc_exitcode_t));
+    size_t request = gasneti_nodemap_local_count * sizeof(gasnetc_exitcode_t);
+    #if GASNETC_BUILD_GNICE
+      // Append to 'request' (aligned up to cache line)
+      size_t orig_request = GASNETI_ALIGNUP(request, GASNETC_CACHELINE_SIZE);
+      request = orig_request + GASNETC_SIZEOF_CE_GATE_T(gasneti_nodemap_local_count);
+    #endif
+    gasnetc_exitcodes = gasneti_pshm_init(gasneti_spawner->SNodeBroadcast, request);
     gasnetc_exitcodes[gasneti_nodemap_local_rank].present = 0;
+    #if GASNETC_BUILD_GNICE
+      gasnete_ce_gate = (gasnete_ce_gate_t*)((uintptr_t)gasnetc_exitcodes + orig_request);
+    #endif
   #endif
 
   //  Create first Client, EP and TM *here*, for use in subsequent bootstrap collectives
@@ -694,7 +704,7 @@ static int gasnetc_init( gex_Client_t            *client_p,
   uintptr_t max_pin = gasnetc_MaxPinMem(msgspace + gasneti_auxseg_preinit());
 
   /* allocate and attach an aux segment */
-  gasneti_auxsegAttach(max_pin, &gasnetc_bootstrapExchange_gni);
+  gasneti_auxsegAttach((uintptr_t)-1, &gasnetc_bootstrapExchange_gni);
 
   /* register auxseg and setup subsystems using it */
   gasnetc_init_gni(gasneti_seginfo_aux[gasneti_mynode]);
@@ -741,13 +751,11 @@ static int gasnetc_attach_primary(void) {
    *        (e.g. to support interrupt-based messaging)
    */
 
+  // register process exit-time hook
+  gasneti_registerExitHandler(gasnetc_atexit);
+
   /* set the number of seconds we poll until forceful shutdown. */
   gasnetc_shutdown_seconds = gasneti_get_exittimeout(120., 3., 0.125, 0.);
-  #if HAVE_ON_EXIT
-    on_exit(gasnetc_on_exit, NULL);
-  #else
-    atexit(gasnetc_atexit);
-  #endif
 
   /* ------------------------------------------------------------------------------------ */
   /*  primary attach complete */
@@ -938,6 +946,12 @@ extern int gasnetc_Segment_Attach(
   if (once) once = 0;
   else gasneti_fatalerror("gex_Segment_Attach: current implementation can be called at most once");
 
+  #if GASNET_SEGMENT_EVERYTHING
+    *segment_p = GEX_SEGMENT_INVALID;
+    gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+    return GASNET_OK; 
+  #endif
+
   /* create a segment collectively */
   // TODO-EX: this implementation only works *once*
   // TODO-EX: should be using the team's exchange function if possible
@@ -1003,15 +1017,9 @@ extern void gasnetc_fatalsignal_callback(int sig) {
 
 static int gasnetc_remoteShutdown = 0;
 
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int exitcode, void *arg) {
+static void gasnetc_atexit(int exitcode) {
   if (!gasnetc_shutdownInProgress) gasnetc_exit(exitcode);
 }
-#else
-static void gasnetc_atexit(void) {
-  if (!gasnetc_shutdownInProgress) gasnetc_exit(0);
-}
-#endif
 
 static void gasnetc_exit_reqh(gex_Token_t token, gex_AM_Arg_t exitcode) {
   if (!gasnetc_shutdownInProgress) {
@@ -1084,7 +1092,7 @@ extern void gasnetc_exit(int exitcode) {
   #if GASNET_DEBUG && !GASNETC_USE_SPINLOCK
     /* prevent deadlock and assertion failures ONLY if we already hold the lock */
     #define GASNETC_CLOBBER_LOCK(pl) \
-          if ((pl)->owner == GASNETI_THREADIDQUERY()) gasneti_mutex_unlock(pl)
+          if (_gasneti_mutex_heldbyme(pl)) gasneti_mutex_unlock(pl)
   #else
     /* clobber the lock, even if held by another thread! */
     #define GASNETC_CLOBBER_LOCK _GASNETC_CLOBBER_LOCK

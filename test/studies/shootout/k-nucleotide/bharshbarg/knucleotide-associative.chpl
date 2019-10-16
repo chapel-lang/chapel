@@ -1,4 +1,5 @@
 use IO;
+use Map;
 use Sort;
 
 extern proc memcpy(x : [], b:c_string , len:int);
@@ -38,20 +39,20 @@ proc decode(data : uint, size : int) {
 }
 
 proc calculate(data : [] uint(8), size : int) {
-  var freqDom : domain(uint);
-  var freqs : [freqDom] int;
+  //var freqDom : domain(uint);
+  var freqs = new map(uint, int);
 
   var lock : sync bool;
   lock = true;
   const sizeRange = 0..size-1;
-  coforall tid in 1..here.maxTaskPar {
-    var curDom : domain(uint);
-    var curArr : [curDom] int;
+  coforall tid in 1..here.maxTaskPar with (ref freqs) {
+    //var curDom : domain(uint);
+    var curMap = new map(uint, int);
     for i in tid .. data.size-size by here.maxTaskPar {
-      curArr[hash(data, i, sizeRange)] += 1;
+      curMap[hash(data, i, sizeRange)] += 1;
     }
     lock; // acquire lock
-    for (k,v) in zip(curDom, curArr) do freqs[k] += v;
+    for (k,v) in curMap.items() do freqs[k] += v;
     lock = true; // free lock
   }
 
@@ -64,7 +65,7 @@ proc write_frequencies(data : [] uint(8), size : int) {
 
   // sort by frequencies
   var arr : [1..freqs.size] (int, uint);
-  for (a, k, v) in zip(arr, freqs.domain, freqs) do
+  for (a, (k, v)) in zip(arr, freqs.items()) do
     a = (v,k);
   sort(arr, comparator=reverseComparator);
 
@@ -73,14 +74,14 @@ proc write_frequencies(data : [] uint(8), size : int) {
 }
 
 proc write_count(data : [] uint(8), str : string) {
-  var freqs = calculate(data, str.length);
-  var d = hash(str.toBytes(), 1, 0..str.length-1);
-  writeln(freqs[d], "\t", decode(d, str.length));
+  var freqs = calculate(data, str.numBytes);
+  var d = hash(str.toBytes(), 1, 0..str.numBytes-1);
+  writeln(freqs[d], "\t", decode(d, str.numBytes));
 }
 
 proc string.toBytes() {
-   var b : [1..this.length] uint(8);
-   memcpy(b, this.c_str(), this.length);
+   var b : [1..this.numBytes] uint(8);
+   memcpy(b, this.c_str(), this.numBytes);
    return b;
 }
 

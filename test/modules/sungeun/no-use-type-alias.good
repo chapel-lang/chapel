@@ -1,2 +1,3 @@
-[]
-[]
+no-use-type-alias.chpl:6: In function 'main':
+no-use-type-alias.chpl:7: error: 'X' undeclared (first use this function)
+no-use-type-alias.chpl:10: error: 'Z' undeclared (first use this function)

@@ -14,7 +14,7 @@ class MyClass {
 
 record myrecord {
   var c:unmanaged MyClass = new unmanaged MyClass(5);
-  proc deinit() { delete c; c = nil; }
+  proc deinit() { delete c; }
 }
 proc =(ref ret:myrecord, x:myrecord)
 {

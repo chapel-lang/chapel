@@ -5,13 +5,13 @@ class B {
   }
 }
 class C : B {
-  proc method() {
+  override proc method() {
     writeln("C.method");
     return 100;
   }
 }
 
-proc something(foo : owned B, bar = foo.method()) {
+proc something(in foo : owned B, bar = foo.method()) {
   writeln(bar);
 }
 

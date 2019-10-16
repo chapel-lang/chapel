@@ -3,7 +3,7 @@ README file for GASNet tools
 ============================
 Originally by: Dan Bonachea <bonachea@cs.berkeley.edu>
 Currently maintained by: Paul H. Hargrove <PHHargrove@lbl.gov>
-GASNet tools specification version: 1.12
+GASNet tools specification version: 1.13
 
 The GASNet tools are a set of communication-independent utilities that are used
 to implement GASNet, and constitute a useful portability tool for GASNet
@@ -62,7 +62,7 @@ tools).
   Where $prefix is the prefix passed during Step 1. 
   
   Clients which never use pthreads may link the single-threaded version of the
-  tools using -lgasnet_tools-seq and omitting the GASNETT_THREAD_SAFE define.
+  tools using -lgasnet_tools-seq and the GASNETT_THREAD_SINGLE define.
 
   Additionally, client code used to build shared libraries (compiled with
   -fPIC, -KPIC or a similar compiler-dependent flag) should pass
@@ -407,7 +407,8 @@ the section on strong atomics below.
  use mutexes or lack signal-safety, even where gasnett_atomic_t does not.
  Additionally, unlike gasnett_atomic_t, the same set of operations is present
  on all platforms, even if that requires a mutex-based approach to support
- the full range of operations.
+ the full range of operations.  Therefore, there are no GASNETT_HAVE_ defines
+ for the fixed-width atomic operations.
 
   gasnett_atomic32_t
   gasnett_atomic64_t
@@ -496,10 +497,14 @@ the section on strong atomics below.
   under-alignment occurs such casts could result in a fatal SIGBUS when the
   pointer is dereferenced.  To avoid this problem apply this rule-of-thumb:
     Storage to be accessed via both a pointer to a fixed-width atomic
-    type and another pointer type must be declared as the non-atomic type.
+    type and another pointer type must be declared as the non-atomic type,
+    or as a union of both types.
   This will ensure the storage is suitably aligned for accesses via pointers
   to both the atomic and non-atomic types (assuming, of course, that the
-  non-atomic type is one allowed by the previous paragraph.)
+  non-atomic type is one allowed by the previous paragraph.) Note that as a
+  general rule, use of union types may be preferable because they avoid
+  running afowl of pointer-aliasing rules in C/C++ that might otherwise
+  lead to incorrect behavior at high optimization levels.
 
   It is not safe to concurrently access the same memory location as both
   an atomic type and a non-atomic type.  For the purpose of this distinction
@@ -535,6 +540,12 @@ the section on strong atomics below.
   are defined to 1 IFF the implementation of the fixed-width atomics is not signal-safe.
   Note that these two are set independently.
 
+  GASNETT_HAVE_STRONGATOMIC_ADD_SUB will be defined to 1 when gasnett_strongatomic_add()
+  and gasnett_strongatomic_subtract() are available.  GASNETT_HAVE_STRONGATOMIC_CAS will
+  be defined to 1 when gasnett_strongatomic_compare_and_swap() and gasnett_strongatomic_swap()
+  are available.  As with the non-strong case, these operations are always available for
+  the fixed-width types and thus there are no GASNETT_HAVE_ defines for the fixed-width
+  strong atomic operations.
 
 -------------------------
 Portable platform defines
@@ -1106,16 +1117,25 @@ GASNETT_IDENT(identName, identText);
       "$[A-Za-z]+: [A-Za-z0-9_()<>.,|-]+ $"
   Note ident is particularly picky about the part before the initial colon and the final " $".
 
-void gasnett_set_affinity(int rank);
+int gasnett_set_affinity(int rank);
+
+  THIS CALL IS DEPRECATED.  Users are encouraged to use hwloc instead.
+
+  On systems where GASNet Tools lacks cpu-binding support, the preprocessor
+  identifier GASNETT_SET_AFFINITY_SUPPORT will be undefined and this function
+  always returns non-zero.
+
+  On systems where GASNet Tools supports cpu-binding, GASNETT_SET_AFFINITY_SUPPORT
+  will be defined to 1 and the following description applies.
 
   Attempt to "pin" the calling thread to the processor indicated by rank, so that
   this thread will run only on the named processor (does not guarantee exclusive use of the
-  processor, only trys to ensure the thread will not migrate to other processors).
+  processor, only tries to ensure the thread will not migrate to other processors).
   The definition and numbering of "processors" follow those of the system-specific
   underlying API, but typically treat each thread of an HT/SMT/HMT CPU as a distinct
   processor.
-  On systems where no cpu-binding support is avaialable, this function is a NO-OP.
   Rank is interpreted mod the number of processors in the system.
+  This call returns 0 on success and non-zero otherwise.
 
 void gasnett_sched_yield();
 
@@ -1306,8 +1326,8 @@ COMPILER.
 
 --------------------------------------------------------------------------
   The canonical version of this document is located here:
-    http://bitbucket.org/berkeleylab/gasnet/src/master/README-tools
+    https://bitbucket.org/berkeleylab/gasnet/src/master/README-tools
 
   For more information, please email: gasnet-users@lbl.gov
-  or visit the GASNet home page at:   http://gasnet.lbl.gov
+  or visit the GASNet home page at:   https://gasnet.lbl.gov
 --------------------------------------------------------------------------

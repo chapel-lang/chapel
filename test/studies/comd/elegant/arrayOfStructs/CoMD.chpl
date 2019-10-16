@@ -61,7 +61,12 @@ proc printProgress(step : int, elapsed : real) {
 
 proc printSystemInfo() {
   proc uname(cmd : string) {
-    if CHPL_COMM == "ugni" then return "unknown";
+    // Spawn doesn't work correctly under ugni or gn-ibv:
+    //  - https://github.com/chapel-lang/chapel/issues/7550
+    //  - https://github.com/chapel-lang/chapel/issues/13387
+    const ugni = CHPL_COMM == "ugni";
+    const gn_ibv = CHPL_COMM == "gasnet" && CHPL_COMM_SUBSTRATE == "ibv";
+    if ugni || gn_ibv then return "unknown";
 
     use Spawn;
     var sub = spawn(["uname", cmd], stdout=PIPE);

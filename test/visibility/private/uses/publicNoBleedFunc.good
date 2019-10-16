@@ -1,0 +1,3 @@
+publicNoBleedFunc.chpl:14: In function 'main':
+publicNoBleedFunc.chpl:17: error: unresolved call 'b()'
+publicNoBleedFunc.chpl:17: note: because no functions named b found in scope

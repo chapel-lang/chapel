@@ -1,4 +1,4 @@
-var mo = memory_order_seq_cst; // can't have configs of extern types
+param mo = memoryOrder.seqCst;
 
 var ax: atomic bool;
 if ax.testAndSet() then

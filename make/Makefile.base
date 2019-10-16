@@ -170,7 +170,6 @@ else
 endif
 
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
-include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include

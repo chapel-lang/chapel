@@ -307,6 +307,13 @@
       <anchor>ad914eac61c77481e1b7037877bcc5579</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>unsigned char</type>
+      <name>dont_merge</name>
+      <anchorfile>a00216.html</anchorfile>
+      <anchor>afa253d4b70f92e940c226d61f192054f</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>hwloc_obj</name>

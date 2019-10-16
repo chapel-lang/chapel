@@ -27,7 +27,7 @@ proc testa() {
 
 proc testb() {
   writeln("testing generic :owned argument");
-  var x = new owned MyClass(1);
+  var x: owned MyClass? = new owned MyClass(1);
   writeln("In testb x=", x.borrow());
   bar(x);
   writeln("In testb again, x=", x.borrow());
@@ -35,7 +35,7 @@ proc testb() {
 
 proc testc() {
   writeln("testing generic type, arg pattern");
-  var x = new owned MyClass(1);
+  var x: owned MyClass? = new owned MyClass(1);
   writeln("In testc x=", x.borrow());
   baz(x.type, x);
   writeln("In testc again, x=", x.borrow());

@@ -25,7 +25,7 @@ var base = 1;
 var numWrong = 0;
 for i in 1..n {
   for j in 1..#i do
-    if data[base+j-1] != ((j%10):string).byte(1) then numWrong += 1;
+    if data[base+j-1] != ((j%10):string).toByte() then numWrong += 1;
   if data[base+i] != 0x0A then numWrong += 1;
   base += i+1;
 }

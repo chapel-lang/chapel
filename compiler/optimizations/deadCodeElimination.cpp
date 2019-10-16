@@ -255,7 +255,7 @@ static bool isInCForLoopHeader(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isDeadStringLiteral(VarSymbol* string);
+static bool isDeadStringOrBytesLiteral(VarSymbol* string);
 static void removeDeadStringLiteral(DefExpr* defExpr);
 
 static void deadStringLiteralElimination() {
@@ -274,7 +274,7 @@ static void deadStringLiteralElimination() {
 
       if (DefExpr* defExpr = toDefExpr(stmt)) {
         if (VarSymbol* symbol = toVarSymbol(defExpr->sym)) {
-          if (isDeadStringLiteral(symbol) == true) {
+          if (isDeadStringOrBytesLiteral(symbol) == true) {
             removeDeadStringLiteral(defExpr);
 
             numDeadLiteral = numDeadLiteral + 1;
@@ -301,10 +301,11 @@ static void deadStringLiteralElimination() {
 }
 
 // Noakes 2017/03/04: All literals have 1 def. Dead literals have 0 uses.
-static bool isDeadStringLiteral(VarSymbol* string) {
+static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
   bool retval = false;
 
-  if (string->hasFlag(FLAG_CHAPEL_STRING_LITERAL) == true) {
+  if (string->hasFlag(FLAG_CHAPEL_STRING_LITERAL) == true ||
+      string->hasFlag(FLAG_CHAPEL_BYTES_LITERAL) == true) {
     int numDefs = string->countDefs();
     int numUses = string->countUses();
 
@@ -316,14 +317,12 @@ static bool isDeadStringLiteral(VarSymbol* string) {
   return retval;
 }
 
-//
-// Noakes 2017/03/04, updated 2019/05
-//
 // The current pattern to initialize a string literal,
 // a VarSymbol _str_literal_NNN, is approximately
 //
-//   def  new_temp  : string;
-//   call init(new_temp, c"literal string", ...);
+//   def  new_temp  : string; // defTemp
+//
+//   call createStringWithBorrowedBuffer(new_temp,c"literal",...); //factoryCall
 //
 //   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
 //
@@ -331,17 +330,17 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
   SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
 
   // Step backwards from 'defn'
-  Expr* move    = defn->getStmtExpr();
-  Expr* init    = move->prev;
-  Expr* defTemp = init->prev;
+  Expr* lastMove = defn->getStmtExpr();
+  Expr* factoryCall = lastMove->prev;
+  Expr* defTemp = factoryCall->prev;
 
   // Simple sanity checks
-  INT_ASSERT(isDefExpr (defTemp));
-  INT_ASSERT(isCallExpr(init));
-  INT_ASSERT(isCallExpr(move));
+  INT_ASSERT(isDefExpr(defTemp));
+  INT_ASSERT(isCallExpr(factoryCall));
+  INT_ASSERT(isCallExpr(lastMove));
 
-  move->remove();
-  init->remove();
+  lastMove->remove();
+  factoryCall->remove();
   defTemp->remove();
 
   defExpr->remove();
@@ -438,7 +437,7 @@ static void deadModuleElimination() {
       // Inform every module about the dead module
       forv_Vec(ModuleSymbol, modThatMightUse, allModules) {
         if (modThatMightUse != mod) {
-          modThatMightUse->moduleUseRemove(mod);
+          modThatMightUse->deadCodeModuleUseRemove(mod);
         }
       }
     }

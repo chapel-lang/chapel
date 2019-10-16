@@ -22,11 +22,17 @@
      This module represents work in progress. The API is unstable and likely to
      change over time.
 
-   This module provides an unordered version of copy/assign for ``numeric``
-   types. The results from this function are not visible until task or forall
-   termination or an explicit :proc:`unorderedCopyTaskFence()`, but it can
-   provide a significant speedup for bulk assignment operations that do not
-   require ordering of operations:
+   This module provides an unordered version of copy/assign for trivially
+   copyable types. Trivially copyable types require no special behavior to be
+   copied and merely copying their representation is sufficient. They include
+   ``numeric`` and ``bool`` types as well as tuples or records consisting only
+   of ``numeric``/``bool``. Records cannot have user-defined copy-initializers,
+   deinitializers, or assignment overloads.
+
+   :proc:`unorderedCopy()` can provide a significant speedup for batch
+   assignment operations that do not require ordering of operations. The
+   results from :proc:`unorderedCopy()` are not visible until task or forall
+   termination or an explicit :proc:`unorderedCopyTaskFence()`:
 
    .. code-block:: chapel
 
@@ -76,33 +82,32 @@
  */
 module UnorderedCopy {
   /*
-     Unordered copy. Only supported for identical numeric and bool types.
+     Unordered copy. Only supported for identical trivially copyable types.
    */
-  inline proc unorderedCopy(ref dst:numeric, const ref src:numeric): void {
+  // Version to provide a clean signature for docs and to provide a clean error
+  // message instead of just "unresolved call". Last resort to avoid thwarting
+  // promotion for POD arrays.
+  pragma "last resort"
+  inline proc unorderedCopy(ref dst, src): void {
+    compilerError("unorderedCopy is only supported between identical trivially copyable types");
+  }
+
+  pragma "no doc"
+  inline proc unorderedCopy(ref dst:chpl_anyPOD, const ref src:chpl_anyPOD): void {
     unorderedCopyPrim(dst, src);
   }
 
   pragma "no doc"
-  inline proc unorderedCopy(ref dst:numeric, param src:numeric): void {
-    const refSrc = src;
-    unorderedCopyPrim(dst, refSrc);
-  }
-
-  inline proc unorderedCopy(ref dst:bool, const ref src:bool): void {
-    unorderedCopyPrim(dst, src);
-  }
-
-  pragma "no doc"
-  inline proc unorderedCopy(ref dst:bool, param src:bool): void {
+  inline proc unorderedCopy(ref dst:chpl_anyPOD, param src:chpl_anyPOD): void {
     const refSrc = src;
     unorderedCopyPrim(dst, refSrc);
   }
 
   private inline proc unorderedCopyPrim(ref dst, const ref src): void {
     param sameType = dst.type == src.type;
-    param validType = isNumeric(dst) || isBool(dst);
+    param validType = isPOD(dst);
     if !sameType || !validType then
-      compilerError("unorderedCopy is only supported between identical numeric and bool types");
+      compilerError("unorderedCopy is only supported between identical trivially copyable types");
 
     if CHPL_COMM == 'ugni' {
       __primitive("unordered=", dst, src);
@@ -119,19 +124,5 @@ module UnorderedCopy {
       extern proc chpl_comm_getput_unordered_task_fence();
       chpl_comm_getput_unordered_task_fence();
     }
-  }
-
-  /*
-   .. warning::
-     This function has been deprecated - please use
-     :proc:`unorderedCopyTaskFence()` instead. Note that this function has
-     been deprecated without a full release of support because the previous
-     global fence semantics imposed expensive implementation requirements and
-     is not expected to be needed now that operations are implicitly fenced at
-     task/forall termination.
-  */
-  inline proc unorderedCopyFence(): void {
-    compilerError("unorderedCopyFence() is no longer supported - please use unorderedCopyTaskFence() instead");
-    unorderedCopyTaskFence();
   }
 }

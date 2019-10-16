@@ -405,7 +405,7 @@ sub nodes_free {
 }
 
 
-# Return true if a *.chpl or *.test.c exists. Otherwise false.
+# Return true if a *.chpl, *.test.c or *.ml-test.c exists. Otherwise false.
 sub chpl_files {
     local (@fnames) = @_;
     local ($found);
@@ -415,7 +415,8 @@ sub chpl_files {
             return 0;
         }
         if ($fname =~ /\.chpl$/     ||
-	    $fname =~ /\.test\.c$/  ||
+            $fname =~ /\.test\.c$/  ||
+            $fname =~ /\.ml-test\.c$/ ||
 	    $fname eq "sub_test"
 	) {
 	    # still a NOTEST would override
@@ -488,6 +489,11 @@ sub find_files {
 	    } elsif ($filepath =~ /\.test\.c$/) {
 		$futuref = $filepath;
 		$futuref =~ s/\.test\.c$/.future/;
+		next if ((-e $futuref) && $no_futures);
+		push @foundfiles, $filepath;
+	    } elsif ($filepath =~ /\.ml-test\.c$/) {
+		$futuref = $filepath;
+		$futuref =~ s/\.ml-test\.c$/.future/;
 		next if ((-e $futuref) && $no_futures);
 		push @foundfiles, $filepath;
 	    }

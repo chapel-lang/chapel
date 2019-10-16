@@ -41,8 +41,6 @@ static child type could end up calling something in the parent.
 -----------
 */
 
-
-
 #include "virtualDispatch.h"
 
 #include "astutil.h"
@@ -63,12 +61,12 @@ static child type could end up calling something in the parent.
 
 bool                            inDynamicDispatchResolution = false;
 
+typedef MapElem<FnSymbol*, Vec<FnSymbol*>*> VirtualMapElem;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
-
+Map<FnSymbol*, Vec<FnSymbol*>*> virtualParentsMap;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 
 Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
-
 Map<FnSymbol*, int>             virtualMethodMap;
 
 static bool buildVirtualMaps();
@@ -138,9 +136,8 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn);
 static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn);
 
 static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn);
-
 static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn);
-
+static void virtualDispatchUpdateParents(FnSymbol* pfn, FnSymbol* cfn);
 static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn);
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
@@ -171,7 +168,7 @@ static bool buildVirtualMaps() {
 // Add overrides of pfn to virtual maps down the inheritance hierarchy
 static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
   forv_Vec(AggregateType, ct, pct->dispatchChildren) {
-    if (ct->isGeneric() == false) {
+    if (ct && ct->isGeneric() == false) {
       if (ct->mayHaveInstances() == true) {
         std::vector<FnSymbol*> methods;
 
@@ -251,11 +248,11 @@ static void collectMethods(FnSymbol*               pfn,
 
   while (fromType != NULL) {
     forv_Vec(FnSymbol, cfn, fromType->methods) {
-      if (cfn->instantiatedFrom == NULL) {
+      if (cfn && cfn->instantiatedFrom == NULL) {
         // if pfn is a filled in vararg function then cfn needs its
         // vararg stamped out here too.
         if (pfn->hasFlag(FLAG_EXPANDED_VARARGS)) {
-          compute_fn_call_sites(pfn);
+          computeNonvirtualCallSites(pfn);
           forv_Vec(CallExpr, call, *pfn->calledBy) {
             CallInfo info;
             if (info.isWellFormed(call)) {
@@ -313,7 +310,8 @@ static bool checkOverrides(FnSymbol* fn) {
           //     (which we manage and want to keep clean)
           (parentMod && parentMod->modTag != MOD_USER)) &&
           // No override checking for type methods.
-         fn->thisTag != INTENT_TYPE;
+         fn->thisTag != INTENT_TYPE &&
+         !fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION) ;
 }
 
 static bool ignoreOverrides(FnSymbol* fn) {
@@ -371,10 +369,10 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
         !cfn->hasFlag(FLAG_OVERRIDE)) {
       const char* ptype = pfn->_this->type->symbol->name;
       const char* ctype = cfn->_this->type->symbol->name;
-      USR_WARN(cfn, "%s.%s overrides parent class method %s.%s but "
-                    "missing override keyword",
-                    ctype, cfn->name,
-                    ptype, cfn->name);
+      USR_FATAL_CONT(cfn, "%s.%s overrides parent class method %s.%s but "
+                          "missing override keyword",
+                          ctype, cfn->name,
+                          ptype, cfn->name);
       // Add the flag to avoid duplicate errors
       cfn->addFlag(FLAG_OVERRIDE);
     }
@@ -549,6 +547,7 @@ static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
 
   // There is the potential for a data dependency between these
   virtualDispatchUpdateChildren(pfn, cfn);
+  virtualDispatchUpdateParents(pfn, cfn);
   virtualDispatchUpdateRoots(pfn, cfn);
 }
 
@@ -557,11 +556,21 @@ static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn) {
 
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();
+    virtualChildrenMap.put(pfn, fns);
   }
 
   fns->add(cfn);
+}
 
-  virtualChildrenMap.put(pfn, fns);
+static void virtualDispatchUpdateParents(FnSymbol* pfn, FnSymbol* cfn) {
+  Vec<FnSymbol*>* fns = virtualParentsMap.get(cfn);
+
+  if (fns == NULL) {
+    fns = new Vec<FnSymbol*>();
+    virtualParentsMap.put(cfn, fns);
+  }
+
+  fns->add(pfn);
 }
 
 static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
@@ -569,6 +578,7 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
 
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();
+    virtualRootsMap.put(cfn, fns);
 
     fns->add(pfn);
 
@@ -590,8 +600,6 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
       fns->add(pfn);
     }
   }
-
-  virtualRootsMap.put(cfn, fns);
 }
 
 // return true if child overrides parent in dispatch table
@@ -610,23 +618,16 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
   return retval;
 }
 
+static void clearOneMap(Map<FnSymbol*, Vec<FnSymbol*>*>& map) {
+  form_Map(VirtualMapElem, el, map)
+    delete el->value;
+  map.clear();
+}
+
 static void clearRootsAndChildren() {
-  Vec<Vec<FnSymbol*>*> rootValues;
-  Vec<Vec<FnSymbol*>*> childValues;
-
-  virtualRootsMap.get_values(rootValues);
-  virtualChildrenMap.get_values(childValues);
-
-  forv_Vec(Vec<FnSymbol*>, value, rootValues)  {
-    delete value;
-  }
-
-  forv_Vec(Vec<FnSymbol*>, value, childValues) {
-    delete value;
-  }
-
-  virtualRootsMap.clear();
-  virtualChildrenMap.clear();
+  clearOneMap(virtualRootsMap);
+  clearOneMap(virtualParentsMap);
+  clearOneMap(virtualChildrenMap);
 }
 
 /************************************* | **************************************
@@ -679,7 +680,7 @@ static void buildVirtualMethodTable() {
 
         if (AggregateType* at = toAggregateType(t)) {
           forv_Vec(AggregateType, childType, at->dispatchChildren) {
-            if (childSet.set_in(childType) == NULL) {
+            if (childType && childSet.set_in(childType) == NULL) {
               addVirtualMethodTableEntry(childType, pfn, false);
             }
           }
@@ -689,7 +690,8 @@ static void buildVirtualMethodTable() {
 
     if (AggregateType* at = toAggregateType(t)) {
       forv_Vec(AggregateType, child, at->dispatchChildren) {
-        ctq.add(child);
+        if (child)
+          ctq.add(child);
       }
     }
   }
@@ -709,6 +711,8 @@ static void addVirtualMethodTableEntry(Type*     type,
                                        bool      exclusive) {
   Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
   bool            found = false;
+
+  if (type->symbol->hasFlag(FLAG_GENERIC)) return;
 
   if (fns == NULL) {
     fns = new Vec<FnSymbol*>();
@@ -807,11 +811,43 @@ static void printDispatchInfo() {
 *                                                                             *
 ************************************** | *************************************/
 
+// Remove from 'toTrim' the FnSymbols not in 'fns_in_vmt'.
+static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
+                           Map<FnSymbol*, Vec<FnSymbol*>*>& toTrim)
+{
+  form_Map(VirtualMapElem, el, toTrim) {
+    if (! fns_in_vmt.count(el->key)) {
+      // We should not even be looking here.
+      delete el->value;
+      el->value = NULL;
+      // Since Map does not remove entries well, keep 'el' there.
+      continue;
+    }
+
+    Vec<FnSymbol*>* oldV = el->value;
+    forv_Vec(FnSymbol, fn1, *oldV) {
+      if (fns_in_vmt.count(fn1)) {
+        // If all entries are in VMT, 'oldV' does not need adjustment.
+      } else {
+        // There is at least one entry in el->value that needs to be removed.
+        // Build a new Vec. Redo the scan from the beginning.
+        Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
+        forv_Vec(FnSymbol, fn2, *oldV) {
+          if (fns_in_vmt.count(fn2))
+            newV->add(fn2);
+        }
+        delete oldV;
+        el->value = newV;
+        break;
+      }
+    }
+  }
+}
+
 // removes entries in virtualChildrenMap that are not in virtualMethodTable.
 // such entries could not be called and should be dead-code eliminated.
 static void filterVirtualChildren() {
   typedef MapElem<Type*,     Vec<FnSymbol*>*> VmtMapElem;
-  typedef MapElem<FnSymbol*, Vec<FnSymbol*>*> ChildMapElem;
 
   std::set<FnSymbol*> fns_in_vmt;
 
@@ -823,20 +859,14 @@ static void filterVirtualChildren() {
     }
   }
 
-  form_Map(ChildMapElem, el, virtualChildrenMap) {
-    if (el->value) {
-      Vec<FnSymbol*>* oldV = el->value;
-      Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
+  trimVirtualMap(fns_in_vmt, virtualChildrenMap);
+  trimVirtualMap(fns_in_vmt, virtualParentsMap);
 
-      forv_Vec(FnSymbol, fn, *oldV) {
-        if (fns_in_vmt.count(fn)) {
-          newV->add(fn);
-        }
-      }
-
-      el->value = newV;
-
-      delete oldV;
+  // Assume all "roots" are to stay, so just trim not-to-be-used Vecs.
+  form_Map(VirtualMapElem, el, virtualRootsMap) {
+    if (! fns_in_vmt.count(el->key)) {
+      delete el->value;
+      el->value = NULL;
     }
   }
 }
@@ -1036,8 +1066,8 @@ static void checkMethodsOverride() {
               } else if (fn->isResolved() && !pfn->isResolved()) {
                 // pfn generic
                 FnSymbol* pInst = getInstantiatedFunction(fn, ct, pfn);
-                if (signatureMatch(fn, pInst) &&
-                    evaluateWhereClause(pInst)) {
+                resolveSignature(pInst);
+                if (signatureMatch(fn, pInst) && evaluateWhereClause(pInst)) {
                   foundMatch = true;
                 }
               } else if (!fn->isResolved() && pfn->isResolved()) {
@@ -1050,8 +1080,8 @@ static void checkMethodsOverride() {
                   foundUncertainty = true;
                 } else {
                   FnSymbol* fnIns = getInstantiatedFunction(pfn, ct, fn);
-                  if (signatureMatch(pfn, fnIns) &&
-                           evaluateWhereClause(pfn)) {
+                  resolveSignature(fnIns);
+                  if (signatureMatch(pfn, fnIns) && evaluateWhereClause(pfn)) {
                     foundMatch = true;
                   }
                 }
@@ -1088,10 +1118,9 @@ static void checkMethodsOverride() {
                                     "to override",
                                      ct->symbol->name, fn->name);
               } else {
-                gdbShouldBreakHere();
-                USR_WARN(fn, "%s.%s override keyword required for method "
-                             "matching signature of superclass method",
-                             ct->symbol->name, fn->name);
+                USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
+                                   "matching signature of superclass method",
+                                   ct->symbol->name, fn->name);
               }
 
               erroredFunctions.insert(eFn);

@@ -77,7 +77,6 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 void checkAdjustedDataLayout();
 
 extern fileinfo gAllExternCode;
-extern fileinfo gChplCompilationConfig;
 
 #endif // HAVE_LLVM
 

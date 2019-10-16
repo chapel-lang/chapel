@@ -7,7 +7,7 @@ if n < numLocales || n % numLocales != 0 then
 class DistributedArray {
   var ndata: range(int);
   var data: [ndata] int;
-  var others: [0..numLocales-1] DistributedArray;
+  var others: [0..numLocales-1] unmanaged DistributedArray?;
   var otherBases: [0..numLocales-1] _ddata(int);
 }
 
@@ -28,13 +28,13 @@ proc DistributedArray.writeThis(W) {
   }
 }
 
-pragma "locale private" var A: unmanaged DistributedArray;
+pragma "locale private" var A: unmanaged DistributedArray?;
 
 //
 // set up DistributedArray
 //
 {
-  var AS: [0..numLocales-1] unmanaged DistributedArray;
+  var AS: [0..numLocales-1] unmanaged DistributedArray?;
   for loc in Locales do on loc {
     A = new unmanaged DistributedArray(n*here.id/numLocales+1..n*(here.id+1)/numLocales);
     AS[here.id] = A;

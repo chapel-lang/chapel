@@ -19,7 +19,6 @@ import subprocess
 import sys
 import tempfile
 import time
-from test import py3_compat
 
 # need to be able to find the util and chplenv dir even when start_test
 # doesn't live in $CHPL_HOME/util (such as for the release tarball)
@@ -31,6 +30,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 from chplenv import *
 
 from test import activate_chpl_test_venv
+from test import py3_compat
 from test import re2_supports_valgrind
 import argparse
 try:
@@ -283,11 +283,11 @@ def test_directory(test, test_type):
         # run tests in directory
         # don't run if only doing performance graphs
         if not test_type == "graph":
-            # check for .chpl or .test.c files, and for NOTEST
+            # check for .chpl, .test.c, or .ml-test.c files, and for NOTEST
             are_tests = False
             for f in files:
                 if not test_type == "performance":
-                    if f.endswith(".chpl") or f.endswith(".test.c"):
+                    if f.endswith((".chpl", ".test.c", ".ml-test.c")) :
                         are_tests = True
                         break
                 else:
@@ -458,8 +458,9 @@ def run_sub_test(test=False):
 def generate_graphs(test=False):
     if test:
         basedir = os.path.dirname(test)
-        graph_files = [(test.replace(".chpl", "").replace(".test.c", "")
-                + ".graph")]
+        remove_dot = test.replace(".chpl", "").replace(".test.c", "")
+        remove_dot = remove_dot.replace(".ml-test.c", "")
+        graph_files = [(remove_dot + ".graph")]
         # exit if it isn't actually a file
         if not os.path.isfile(graph_files[0]):
             return
@@ -672,8 +673,9 @@ def set_up_environment():
         memleaksfile = os.path.abspath(args.mem_leaks_log)
         args.execopts += " --memLeaksLog=" + memleaksfile
         if os.path.isfile(memleaksfile):
-            logger.write("[Error: mem leaks log file already exists: {0}]"
+            logger.write("[Removing memory leaks log file with duplicate name {0}]"
                          .format(memleaksfile))
+            os.remove(memleaksfile)
 
     # create temporary directory
     global chpl_test_tmp_dir
@@ -736,7 +738,7 @@ def set_up_logger():
         sys.exit(1)
     if os.path.isfile(log_file):
         print()
-        print("[Removing log file with duplicate name {0}".format(log_file))
+        print("[Removing log file with duplicate name {0}]".format(log_file))
         os.remove(log_file)
 
     ## START LOGGING TO FILE ##
@@ -1266,7 +1268,7 @@ def parser_setup():
     # main args
     p = parser.add_argument("tests", nargs="*", help="test files or directories")
     if argcomplete:
-        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c"])
+        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c", ".ml-test.c"])
 
     # executing options
     parser.add_argument("-execopts", "--execopts", action="append", 

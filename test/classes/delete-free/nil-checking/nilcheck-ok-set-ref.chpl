@@ -6,7 +6,7 @@ class MyClass {
 }
 
 proc okSetByRef() {
-  var x: owned MyClass;
+  var x: owned MyClass?;
   ref r = x;
   r = new owned MyClass(1);
   x.method();
@@ -18,7 +18,7 @@ proc returnRefArg(ref arg) ref {
 }
 
 proc okSetByObscuredRef() {
-  var x: owned MyClass;
+  var x: owned MyClass?;
   ref r = returnRefArg(x);
   r = new owned MyClass(1);
   x.method();
@@ -28,8 +28,8 @@ okSetByObscuredRef();
 config const option = true;
 
 proc okSetByUncertainRef() {
-  var x: owned MyClass;
-  var y: owned MyClass = new owned MyClass(1);
+  var x: owned MyClass?;
+  var y: owned MyClass? = new owned MyClass(1);
   ref r = if option then x else y;
   r = new owned MyClass(1);
   x.method();

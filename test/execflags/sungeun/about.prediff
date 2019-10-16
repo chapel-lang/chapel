@@ -10,7 +10,14 @@ import sys, os, subprocess
 
 testname = sys.argv[1]
 outfile = sys.argv[2]
-# compflags = sys.argv[4]
+compflags = sys.argv[4].split(' ')
+genLLVM = False
+for i in range(len(compflags)):
+    if compflags[i] == '--llvm':
+        genLLVM = True
+        os.environ['CHPL_LLVM_CODEGEN'] = 'llvm'
+        break
+
 goodfile = testname+'.good'
 compver = 'Chapel compiler version:'
 chplhomestr = '  CHPL_HOME:'
@@ -31,7 +38,10 @@ with open(outfile, 'w') as ofh:
 
 with open(goodfile, 'w') as gfh:
     # might have to leave this off if too troublesome to maintain
-    gfh.write('Compilation command: chpl -o about --cc-warnings about.chpl \n')
+    if genLLVM:
+        gfh.write('Compilation command: chpl -o about --cc-warnings --llvm about.chpl \n')
+    else:
+        gfh.write('Compilation command: chpl -o about --cc-warnings about.chpl \n')
     gfh.write('Chapel compiler version:\n')
     gfh.write('Chapel environment:\n')
     gfh.write('  CHPL_HOME: %s\n'%(chpl_home))
@@ -44,3 +54,5 @@ with open(goodfile, 'w') as gfh:
     chplenv += "CHPL_THIRD_PARTY="+chpl_home+"/third-party\n"
     for (env, val) in (e.split('=', 1) for e in sorted(chplenv.split('\n')) if e):
         gfh.write('  %s: %s\n'%(env, val))
+        if env == 'CHPL_LLVM' and genLLVM:
+            gfh.write('  CHPL_LLVM_CODEGEN: llvm\n')

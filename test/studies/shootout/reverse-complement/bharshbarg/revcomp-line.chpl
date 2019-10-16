@@ -15,6 +15,8 @@
    read...
 */
 
+private use List;
+
 config param columns = 61;
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
@@ -68,7 +70,7 @@ record buf {
     return -1;
   }
 
-  proc readUntil(term : uint(8), data : [] uint(8)) : int {
+  proc readUntil(term : uint(8), ref data: list(uint(8))) : int {
     var read = 0;
     while true {
       var done = false, used = 0;
@@ -77,10 +79,10 @@ record buf {
         const idx = _memchr(term, avail);
         if idx >= 0 {
           ref x = avail[..idx];
-          data.push_back(x);
+          data.extend(x);
           (done, used) = (true, x.size);
         } else {
-          data.push_back(avail);
+          data.extend(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;
@@ -97,23 +99,26 @@ config const readSize = 16 * 1024;
 proc main(args: [] string) {
   const stdin = openfd(0);
   var input = new buf(stdin, readSize);
-  var data : [1..0] uint(8);
+  var data: list(uint(8));
   
   // Use undocumented internals to fake a request for capacity
+  // We don't expose similar routines for list at the moment...
+  /*
   {
     const r = 1..stdin.length();
     data._value.dataAllocRange = r;
     data._value.dsiReallocate((r,));
     data._value.dsiPostReallocate();
   }
+  */
 
-  input.readUntil("\n".byte(1), data);
+  input.readUntil("\n".toByte(), data);
 
   sync {     // wait for all process() tasks to complete before continuing
     var lineStart = data.size + 1;
     var sectionStart = lineStart;
-    while input.readUntil("\n".byte(1), data) > 0 {
-      if data[lineStart] == ">".byte(1) {
+    while input.readUntil("\n".toByte(), data) > 0 {
+      if data[lineStart] == ">".toByte() {
         begin process(data, sectionStart, lineStart-2);
         sectionStart = data.size+1;
       }
@@ -124,12 +129,16 @@ proc main(args: [] string) {
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
                                      hints=QIO_CH_ALWAYS_UNBUFFERED);
-  stdoutBin.write(data);
+  //
+  // Necessary for now because list `readWriteThis` includes formatting chars,
+  // while arrays do not.
+  //
+  stdoutBin.write(data.toArray());
 }
 
 proc process(data, in start, in end) {
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == "\n".byte(1);
+    do { cursor += dir; } while data[cursor] == "\n".toByte();
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];
@@ -142,10 +151,10 @@ proc process(data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.length by 2 {
+  for i in 1..pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
-    if pairs.byte(i) != "\n".byte(1) then
-      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
+    if pairs.byte(i) != "\n".toByte() then
+      table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);
   }
 
   return table;

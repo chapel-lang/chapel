@@ -5,17 +5,37 @@ module unitTest {
     inline proc fLocal(x) {
       const s: t = "s";
       if useExpr {
-        writeMe(s+x);
-        writeMe(x+s);
+        writeMe(s+x:string);
+        writeMe(x:string+s);
       } else {
-        const sx = s+x;
+        const sx = s+x:string;
         writeMe(sx);
-        const xs = x+s;
+        const xs = x:string+s;
         writeMe(xs);
       }
     }
 
     inline proc fRemote(x) {
+      const s: t = "s";
+      on Locales[numLocales-1] {
+        if useExpr {
+          writeMe(s+x:string);
+          writeMe(x:string+s);
+        } else {
+          const sx = s+x:string;
+          writeMe(sx);
+          const xs = x:string+s;
+          writeMe(xs);
+        }
+      }
+    }
+
+    // Without this string-specific overload, the above version of the
+    // function generates an error: "follower iterators accepting a
+    // non-POD argument by in-intent are not implemented" when strings
+    // are cast to string.
+
+    inline proc fRemote(x:string) {
       const s: t = "s";
       on Locales[numLocales-1] {
         if useExpr {

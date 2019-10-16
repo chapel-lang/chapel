@@ -10,4 +10,4 @@ class B: A {
 }
 
 var a = new shared A();
-var b: shared B;
+var b: shared B?;

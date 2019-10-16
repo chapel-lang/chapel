@@ -1,0 +1,8 @@
+addDep      mason add test@1.2.3            # addDep
+addWithDep  mason add test@1.2.3            # addWithDep
+rmDep       mason rm test@1.2.3             # rmDep
+rmWithDep   mason rm test@1.2.3             # rmWithDep
+addExternal mason add --external test@1.2.3 # addExternal
+rmExternal  mason rm --external test@1.2.3  # rmExternal
+addSystem   mason add --system test@1.2.3   # addSystem
+rmSystem    mason rm --system test@1.2.3    # rmSystem

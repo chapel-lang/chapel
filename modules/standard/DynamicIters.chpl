@@ -28,6 +28,8 @@
 */
 module DynamicIters {
 
+  private use ChapelLocks;
+
 /*
    Toggle debugging output.
 */
@@ -691,7 +693,7 @@ private proc defaultNumTasks(nTasks:int)
       dnTasks = dataParTasksPerLocale;
 
     if nTasks < 0 then
-      warning("'numTasks' < 0, defaulting to numTasks=" + dnTasks);
+      warning("'numTasks' < 0, defaulting to numTasks=", dnTasks);
   }
   return dnTasks;
 }

@@ -8,7 +8,7 @@ record GenericCollection {
     var default:t;
     field = default;
   }
-  proc init(field:owned) {
+  proc init(in field:owned) {
     this.field = field;
   }
   proc init(field:borrowed) {
@@ -34,19 +34,19 @@ record GenericCollection {
 }
 
 {
-  var a:GenericCollection(owned MyClass);
+  var a:GenericCollection(owned MyClass?);
   a.field = new owned MyClass();
   writeln("a ", a.type:string, " has field ", a.field.type:string);
 }
 
 {
-  var b:GenericCollection(owned MyClass);
+  var b:GenericCollection(owned MyClass?);
   b.field = new owned MyClass();
   writeln("b ", b.type:string, " has field ", b.field.type:string);
 }
 
 {
-  var c:GenericCollection(borrowed MyClass);
+  var c:GenericCollection(borrowed MyClass?);
   c.field = new owned MyClass();
   writeln("(borrowed) c ", c.type:string, " has field ", c.field.type:string);
 }

@@ -10,7 +10,7 @@ class MyDist : BaseDist {
 
 class MyDom : BaseAssociativeDom {
   type idxType = int(32);
-  const dist: unmanaged MyDist;
+  const dist: unmanaged MyDist?;
 
   proc dsiGetIndices() {
     var r: range;

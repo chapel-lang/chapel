@@ -1,0 +1,1 @@
+init-var-oknil-owned-from-nonnil-unmanaged.chpl:9: error: cannot create an owned variable from an unmanaged class instance

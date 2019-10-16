@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010-2017 Inria.  All rights reserved.
+ * Copyright © 2010-2018 Inria.  All rights reserved.
  * Copyright © 2011-2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -520,10 +520,13 @@ hwloc_distances__finalize_logical(struct hwloc_topology *topology,
       hwloc_bitmap_asprintf(&a, cpuset);
       hwloc_bitmap_asprintf(&b, nodeset);
       fprintf(stderr, "****************************************************************************\n");
-      fprintf(stderr, "* hwloc %s has encountered an error when adding a distance matrix to the topology.\n", HWLOC_VERSION);
+      fprintf(stderr, "* hwloc %s failed to add a distance matrix to the topology.\n", HWLOC_VERSION);
       fprintf(stderr, "*\n");
       fprintf(stderr, "* hwloc_distances__finalize_logical() could not find any object covering\n");
       fprintf(stderr, "* cpuset %s and nodeset %s\n", a, b);
+      fprintf(stderr, "*\n");
+      fprintf(stderr, "* Please make sure that distances given through the programming API or\n");
+      fprintf(stderr, "* environment variables do not contradict any other topology information.\n");
       fprintf(stderr, "*\n");
       fprintf(stderr, "* Please report this error message to the hwloc user's mailing list,\n");
 #ifdef HWLOC_LINUX_SYS
@@ -531,6 +534,8 @@ hwloc_distances__finalize_logical(struct hwloc_topology *topology,
 #else
       fprintf(stderr, "* along with any relevant topology information from your platform.\n");
 #endif
+      fprintf(stderr, "* \n");
+      fprintf(stderr, "* hwloc will now ignore this invalid topology information and continue.\n");
       fprintf(stderr, "****************************************************************************\n");
       free(a);
       free(b);
@@ -683,20 +688,22 @@ hwloc_clear_object_distances(hwloc_obj_t obj)
 
 static void hwloc_report_user_distance_error(const char *msg, int line)
 {
-    static int reported = 0;
+  static int reported = 0;
 
-    if (!reported && !hwloc_hide_errors()) {
-        fprintf(stderr, "****************************************************************************\n");
-        fprintf(stderr, "* hwloc %s has encountered what looks like an error from user-given distances.\n", HWLOC_VERSION);
-        fprintf(stderr, "*\n");
-        fprintf(stderr, "* %s\n", msg);
-        fprintf(stderr, "* Error occurred in topology.c line %d\n", line);
-        fprintf(stderr, "*\n");
-        fprintf(stderr, "* Please make sure that distances given through the interface or environment\n");
-        fprintf(stderr, "* variables do not contradict any other topology information.\n");
-        fprintf(stderr, "****************************************************************************\n");
-        reported = 1;
-    }
+  if (!reported && !hwloc_hide_errors()) {
+    fprintf(stderr, "****************************************************************************\n");
+    fprintf(stderr, "* hwloc %s was given invalid distances by the user.\n", HWLOC_VERSION);
+    fprintf(stderr, "*\n");
+    fprintf(stderr, "* %s\n", msg);
+    fprintf(stderr, "* Error occurred in topology.c line %d\n", line);
+    fprintf(stderr, "*\n");
+    fprintf(stderr, "* Please make sure that distances given through the programming API or\n");
+    fprintf(stderr, "* environment variables do not contradict any other topology information.\n");
+    fprintf(stderr, "* \n");
+    fprintf(stderr, "* hwloc will now ignore this invalid topology information and continue.\n");
+    fprintf(stderr, "****************************************************************************\n");
+    reported = 1;
+  }
 }
 
 static int hwloc_compare_distances(float a, float b, float accuracy)

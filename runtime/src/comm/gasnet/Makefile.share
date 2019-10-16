@@ -16,13 +16,18 @@
 # limitations under the License.
 
 COMM_LAUNCHER_SRCS = \
-        comm-gasnet-locales.c
+        comm-gasnet-launch.c \
+        comm-gasnet-locales.c \
 
 COMM_SRCS = \
-	$(COMM_LAUNCHER_SRCS) \
-	comm-gasnet.c
+	comm-gasnet.c \
+	comm-gasnet-locales.c \
 
-SVN_SRCS = $(COMM_SRCS)
+SVN_SRCS = \
+  comm-gasnet.c \
+  comm-gasnet-launch.c \
+  comm-gasnet-locales.c \
+
 SRCS = $(SVN_SRCS)
 
 COMM_OBJS = \

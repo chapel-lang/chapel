@@ -1,12 +1,12 @@
 in test1
 in MyClass.init
-in f, x.type is borrowed MyClass
+in f, x.type is owned MyClass
 back in test1
 {x = 0}
 in MyClass.deinit
 in test2
 in MyClass.init
-in f, x.type is borrowed MyClass
+in f, x.type is owned MyClass
 back in test2
 in MyClass.deinit
 in MyClass.init

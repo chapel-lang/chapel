@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.11</span>
+   &#160;<span id="projectnumber">1.11.13</span>
    </div>
   </td>
  </tr>
@@ -71,6 +71,10 @@ $(function() {
 </dd>
 <dt>HWLOC_HIDE_ERRORS=0 </dt>
 <dd><p class="startdd">enables or disables verbose reporting of errors. The hwloc library may issue warnings to the standard error stream when it detects a problem during topology discovery, for instance if the operating system (or user) gives contradictory topology information. Setting this environment variable to 1 removes the actual displaying of these error messages. </p>
+<p class="enddd"></p>
+</dd>
+<dt>HWLOC_DONT_MERGE_DIE_GROUPS=0 </dt>
+<dd><p class="startdd">always keep Group objects that describe CPU Dies. CPU Dies are represented as generic Group objects. By default, Groups are merged with identical children or parent unless they bring some additional structure. Setting this environment variable to 1 ensures these Die Groups will never be merged. </p>
 <p class="enddd"></p>
 </dd>
 <dt>HWLOC_GROUPING=1 </dt>

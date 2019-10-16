@@ -1,5 +1,5 @@
 record R0 {
-  var home: locale;
+  var home: locale = here;
 
   proc init() { }
 }
@@ -10,7 +10,7 @@ proc R0.init(r1:R1) {
 }
 
 record R1 {
-  var home: locale;
+  var home: locale = here;
 }
 proc R1.myR0() {
   var ret: R0;

@@ -25,27 +25,22 @@ Functions related to predefined types.
 
 */
 module Types {
+  private use HaltWrappers only;
 
 pragma "no doc" // joint documentation with the next one
-pragma "no instantiation limit"
 proc isType(type t) param return true;
 /* Returns `true` if the argument is a type. */
-pragma "no instantiation limit"
 proc isType(e) param return false;
 
 pragma "no doc" // joint documentation with the next one
-pragma "no instantiation limit"
 proc isParam(type t)  param return false;
 pragma "no doc" // joint documentation with the next one
-pragma "no instantiation limit"
 proc isParam(param p) param return true;
 /* Returns `true` if the argument is a param. */
-pragma "no instantiation limit"
 proc isParam(e)       param return false;
 
 // TODO eliminate this; beware of isPrimitive()
 pragma "no doc"
-pragma "no instantiation limit"
 proc _isPrimitiveType(type t) param return
   isBoolType(t)  ||
   isIntegralType(t) ||
@@ -58,16 +53,14 @@ proc _isPrimitiveType(type t) param return
 Returns `true` if the type `t` is a primitive type,
 as defined by the language specification.
 */
-pragma "no instantiation limit"
 proc isPrimitiveType(type t) param return
   isNothingType(t) || isVoidType(t) || isBoolType(t) ||
-  isNumericType(t) || isStringType(t);
+  isNumericType(t) || isStringType(t) || isBytesType(t);
 
 /*
 Returns `true` if the type `t` is one the following types, of any width:
 `int`, `uint`, `real`, `imag`, `complex`.
 */
-pragma "no instantiation limit"
 proc isNumericType(type t) param return
   isIntegralType(t) || isFloatType(t) || isComplexType(t);
 
@@ -75,7 +68,6 @@ proc isNumericType(type t) param return
 Returns `true` if the type `t` is one the following types, of any width:
 `int`, `uint`.
 */
-pragma "no instantiation limit"
 proc isIntegralType(type t) param return
   isIntType(t) || isUintType(t);
 
@@ -83,35 +75,28 @@ proc isIntegralType(type t) param return
 Returns `true` if the type `t` is one the following types, of any width:
 `real`, `imag`.
 */
-pragma "no instantiation limit"
 proc isFloatType(type t) param return
   isRealType(t) || isImagType(t);
 
 /* Returns `true` if the type `t` is the `nothing` type. */
-pragma "no instantiation limit"
 proc isNothingType(type t) param return t == nothing;
 
 /* Returns `true` if the type `t` is the `void` type. */
-pragma "no instantiation limit"
 proc isVoidType(type t) param return t == void;
 
 /* Returns `true` if the type `t` is a `bool` type, of any width. */
-pragma "no instantiation limit"
 proc isBoolType(type t) param return
   (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
 
 /* Returns `true` if the type `t` is an `int` type, of any width. */
-pragma "no instantiation limit"
 proc isIntType(type t) param return
   (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
 /* Returns `true` if the type `t` is a `uint` type, of any width. */
-pragma "no instantiation limit"
 proc isUintType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
 /* Returns `true` if the type `t` is an `enum` type. */
-pragma "no instantiation limit"
 proc isEnumType(type t) param {
   proc isEnumHelp(type t: enumerated) param return true;
   proc isEnumHelp(type t) param return false;
@@ -125,24 +110,22 @@ proc isAbstractEnumType(type t) param {
 }
 
 /* Returns `true` if the type `t` is a `complex` type, of any width. */
-pragma "no instantiation limit"
 proc isComplexType(type t) param return
   (t == complex(64)) || (t == complex(128));
 
 /* Returns `true` if the type `t` is a `real` type, of any width. */
-pragma "no instantiation limit"
 proc isRealType(type t) param return
   (t == real(32)) || (t == real(64));
 
 /* Returns `true` if the type `t` is an `imag` type, of any width. */
-pragma "no instantiation limit"
 proc isImagType(type t) param return
   (t == imag(32)) || (t == imag(64));
 
 /* Returns `true` if the type `t` is the `string` type. */
-pragma "no instantiation limit"
 proc isStringType(type t) param return t == string;
 
+/* Returns `true` if the type `t` is the `bytes` type. */
+proc isBytesType(type t) param return t == bytes;
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
 Old Data in C++.
@@ -160,15 +143,14 @@ A record, tuple, or union type in Chapel is a POD type if:
     for POD types)
   * it contains only POD type fields
 
-User class types in Chapel are always considered POD types (because an instance
-of the class is actually a pointer to the class object, and this pointer is
-POD).
+User unmanaged/borrowed class types in Chapel are always considered POD types
+(because an instance of the class is actually a pointer to the class object,
+and this pointer is POD).
 
 c_ptr is a POD type.
 
 Primitive numeric/boolean/enumerated Chapel types are POD types as well.
  */
-pragma "no instantiation limit"
 pragma "no doc" // I don't think we want to make this public yet
 proc isPODType(type t) param {
   return __primitive("is pod type", t);
@@ -223,6 +205,8 @@ proc isComplexValue(e)   param  return isComplexType(e.type);
 pragma "no doc"
 proc isStringValue(e)    param  return isStringType(e.type);
 pragma "no doc"
+proc isBytesValue(e)     param  return isBytesType(e.type);
+pragma "no doc"
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
 pragma "no doc"
 proc isFloatValue(e)     param  return isFloatType(e.type);
@@ -247,11 +231,11 @@ proc isSharedClassType(type t:_shared)       param return true;
 pragma "no doc"
 proc isSharedClassType(type t)               param return false;
 pragma "no doc"
-proc isUnmanagedClassType(type t:_unmanaged) param return true;
+proc isUnmanagedClassType(type t:unmanaged)  param return true;
 pragma "no doc"
 proc isUnmanagedClassType(type t)            param return false;
 pragma "no doc"
-proc isBorrowedClassType(type t:_borrowed)   param return true;
+proc isBorrowedClassType(type t:borrowed)    param return true;
 pragma "no doc"
 proc isBorrowedClassType(type t)             param return false;
 
@@ -267,6 +251,12 @@ proc isUnmanagedClassValue(e) param return isUnmanagedClassType(e.type);
 pragma "no doc"
 pragma "no borrow convert"
 proc isBorrowedClassValue(e)  param return isBorrowedClassType(e.type);
+
+pragma "no doc"
+proc isNilableClassValue(e)   param return isNilableClassType(e.type);
+pragma "no doc"
+proc isNonNilableClassValue(e)   param return isNonNilableClassType(e.type);
+
 
 pragma "no doc"
 proc isRecordValue(e)    param  return isRecordType(e.type);
@@ -306,6 +296,8 @@ proc isImag(type t)      param  return isImagType(t);
 pragma "no doc"
 proc isComplex(type t)   param  return isComplexType(t);
 pragma "no doc"
+proc isBytes(type t)     param  return isBytesType(t);
+pragma "no doc"
 proc isString(type t)    param  return isStringType(t);
 pragma "no doc"
 proc isIntegral(type t)  param  return isIntegralType(t);
@@ -322,6 +314,8 @@ proc isTuple(type t)     param  return isTupleType(t);
 pragma "no doc"
 proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
 pragma "no doc"
+proc isGeneric(type t)   param  return isGenericType(t);
+pragma "no doc"
 proc isClass(type t)     param  return isClassType(t);
 pragma "no doc"
 proc isOwnedClass(type t) param  return isOwnedClassType(t);
@@ -331,6 +325,10 @@ pragma "no doc"
 proc isUnmanagedClass(type t) param  return isUnmanagedClassType(t);
 pragma "no doc"
 proc isBorrowedClass(type t) param  return isBorrowedClassType(t);
+pragma "no doc"
+proc isNilableClass(type t) param  return isNilableClassType(t);
+pragma "no doc"
+proc isNonNilableClass(type t) param  return isNonNilableClassType(t);
 pragma "no doc"
 proc isRecord(type t)    param  return isRecordType(t);
 pragma "no doc"
@@ -388,6 +386,8 @@ proc isReal(e)      param  return isRealValue(e);
 proc isImag(e)      param  return isImagValue(e);
 /* Returns `true` if the argument is a `complex` type or value, of any width. */
 proc isComplex(e)   param  return isComplexValue(e);
+/* Returns `true` if the argument is a bytes or the `bytes` type. */
+proc isBytes(e)     param  return isBytesValue(e);
 /* Returns `true` if the argument is a string or the `string` type. */
 proc isString(e)    param  return isStringValue(e);
 /* Returns `true` if the argument is an `enum` type or value, of any width. */
@@ -400,6 +400,8 @@ proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
 /* Returns `true` if the argument is a class type or value
    that is not an ``extern`` class, or when the argument is ``nil``. */
 proc isClass(e)     param  return isClassValue(e);
+/* Returns `true` if the argument is a generic type, and `false` otherwise. */
+proc isGeneric(e)   param  return false;
 /* Returns `true` if the argument is an ``owned`` class type. */
 pragma "no borrow convert"
 proc isOwnedClass(e)     param  return isOwnedClassValue(e);
@@ -412,6 +414,13 @@ proc isUnmanagedClass(e)     param  return isUnmanagedClassValue(e);
 /* Returns `true` if the argument is a ``borrowed`` class type. */
 pragma "no borrow convert"
 proc isBorrowedClass(e)     param  return isBorrowedClassValue(e);
+
+/* Returns `true` if the argument is a class type that can store ``nil``. */
+proc isNilableClass(e)     param  return isNilableClassValue(e);
+/* Returns `true` if the argument is a class type that cannot store ``nil``. */
+proc isNonNilableClass(e)  param  return isNonNilableClassValue(e);
+
+
 /* Returns `true` if the argument is a record type or value. */
 proc isRecord(e)    param  return isRecordValue(e);
 /* Returns `true` if the argument is a union type or value. */

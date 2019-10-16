@@ -343,12 +343,16 @@ class AbstractJob(object):
 
             exec_start_time = time.time()
             alreadyRunning = False
+            sleep_time = 1
             status = job_status(job_id, output_file)
             while status != 'C':
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
+                    sleep_time = 1
                     exec_start_time = time.time()
-                time.sleep(.5)
+                time.sleep(sleep_time)
+                if sleep_time < 60:
+                    sleep_time *= 1.5
                 status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time

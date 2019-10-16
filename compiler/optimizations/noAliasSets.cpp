@@ -396,7 +396,27 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
         ++it) {
       Symbol* otherSym = it->first;
       if (otherSym != var) {
-        c->insertAtTail(new SymExpr(otherSym));
+        if (ArgSymbol* arg = toArgSymbol(otherSym)) {
+          bool isReturning = arg->originalIntent == INTENT_OUT ||
+                             arg->intent == INTENT_OUT ||
+                             arg->hasFlag(FLAG_RETARG);
+
+          if (isReturning) {
+            // Don't consider this arg
+            //  (returning an array could cause aliasing the ret arg)
+          } else {
+            // Add to both the local variable and to the array
+            // (since the above outer loop only considers local variables)
+            c->insertAtTail(new SymExpr(otherSym));
+            CallExpr* otherC = noAliasCallsForSymbol[otherSym];
+            INT_ASSERT(otherC);
+            otherC->insertAtTail(new SymExpr(var));
+          }
+        } else {
+          // Other is a local variable
+          // Will add the symmetric case when processing it.
+          c->insertAtTail(new SymExpr(otherSym));
+        }
       }
     }
   }
@@ -571,6 +591,8 @@ bool addAlias(std::map<Symbol*, BitVec> &map,
   bool changed = false;
   std::map<Symbol*, BitVec>::iterator it = map.find(sym);
 
+  INT_ASSERT(index < bitVecSize);
+
   if (it == map.end()) {
     it = map.insert(std::make_pair(sym, makeBitVec(bitVecSize))).first;
     changed = true;
@@ -656,6 +678,7 @@ void computeNoAliasSets() {
 
   // Now compute the global alias sets for procedure arguments
   size_t nAddrTakenGlobals = addrTakenGlobalsToIds.size();
+  nAddrTakenGlobals++; // add 1 since we count from 1
 
   // Compute the starting point for the sets,
   // don't worry about transitivity/propagating yet.

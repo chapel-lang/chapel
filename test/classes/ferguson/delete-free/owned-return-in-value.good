@@ -1,0 +1,12 @@
+in foo
+ x={x = 1}
+after returnByValue
+ x=nil
+ y={x = 1} y type owned C?
+Destroying C x=1
+in bar
+ x={x = 1}
+after returnByValue
+ x=nil
+ y={x = 1} y type owned C?
+Destroying C x=1

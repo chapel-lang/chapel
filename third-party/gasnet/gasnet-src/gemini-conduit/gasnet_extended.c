@@ -88,6 +88,11 @@ extern void gasnete_init(void) {
   #endif
   }
 
+#if GASNETC_BUILD_GNICE
+  /* Initialize Aries Collectives Engine */
+  gasnete_init_ce();
+#endif
+
   /* Initialize barrier resources */
   gasnete_barrier_init();
 
@@ -251,6 +256,7 @@ gasnete_put_inner(gex_Rank_t jobrank, void *dest, void *src, size_t nbytes, gex_
                   gasneti_weakatomic_val_t *initiated_p, gasnete_op_t * const op,
                   uint32_t gpd_flags GASNETC_DIDX_FARG)
 {
+  { // Start of scope: 'gpd'
   gasnetc_post_descriptor_t *gpd;
   size_t chunksz;
 
@@ -297,6 +303,8 @@ retry:
   } while (nbytes);
 
   gasneti_resume_spinpollers();
+  } // End of scope: 'gpd'
+
   return 0;
 
 out_immediate:

@@ -1,4 +1,4 @@
-proc getNameFromClass(obj:object) : string
+proc getNameFromClass(obj:borrowed object) : string
 {
   var cid =  __primitive("getcid", obj);
   var cs: c_string = __primitive("class name by id", cid);

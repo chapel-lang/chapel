@@ -17,23 +17,36 @@
   extern "C" { // cannot use GASNETI_BEGIN_EXTERNC here due to a header dependency cycle
 #endif
 
-/* Recognized definitions:
-   GASNETT_THREAD_SAFE - may be defined by client to enable thread-safety. Thread-safety is also
-      auto-enabled by _REENTRANT, _THREAD_SAFE and pthread.h
+/* Recognized (mutually-exclusive) definitions for threading behavior:
+   GASNETT_THREAD_SAFE - may be defined by client to enable thread-safety. 
+     For gasnet.h clients, this is also enabled by GASNET_PAR(SYNC)
+   GASNETT_THREAD_SINGLE - may be defined by client to explcitly disable thread-safety.
+     For gasnet.h clients, this is also enabled by GASNET_SEQ
    GASNETT_LITE_MODE - tools-lite mode, for tools-only clients that want threading neutrality
       only provides the timer and membar interfaces
+   If none of the above definitions are present, then thread-safety defaults to
+     THREAD_SAFE if _REENTRANT or _THREAD_SAFE are defined and/or pthread.h is included, 
+     and THREAD_SINGLE otherwise.
 */
+#if defined(GASNETT_LITE_MODE) + defined(GASNETT_THREAD_SAFE) + defined(GASNETT_THREAD_SINGLE) > 1
+  #error You must define at most one of: GASNETT_THREAD_SAFE, GASNETT_THREAD_SINGLE, GASNETT_LITE_MODE
+#endif
+#if defined(GASNETT_THREAD_SAFE) && defined(GASNET_SEQ)
+  #error Conflicting threading definitions
+#endif
+#if defined(GASNETT_THREAD_SINGLE) && (defined(GASNET_PAR) || defined(GASNET_PARSYNC))
+  #error Conflicting threading definitions
+#endif
 #ifdef GASNETT_LITE_MODE
-  #undef GASNETT_LITE_MODE
+  #undef  GASNETT_LITE_MODE
   #define GASNETT_LITE_MODE 1
-  #undef GASNETT_THREAD_SAFE
   #define GASNETT_THREAD_MODEL LITE
   #ifdef _INCLUDED_GASNETEX_H
     #error GASNETT_LITE_MODE not supported for libgasnet clients
   #endif
 #elif defined(GASNETT_THREAD_SAFE) ||                             \
       defined(GASNET_PARSYNC) || defined(GASNET_PAR) ||           \
-      (!defined(GASNET_SEQ) && !defined(GASNETI_THREAD_SINGLE) && \
+      (!defined(GASNET_SEQ) && !defined(GASNETT_THREAD_SINGLE) && \
        (defined(_REENTRANT) || defined(_THREAD_SAFE) ||           \
         defined(PTHREAD_MUTEX_INITIALIZER)))
   #undef GASNETT_THREAD_SAFE
@@ -44,7 +57,8 @@
   #define GASNETI_THREADS 1
   #endif
 #else
-  #undef GASNETT_THREAD_SAFE
+  #undef  GASNETT_THREAD_SINGLE
+  #define GASNETT_THREAD_SINGLE 1
   #define GASNETT_THREAD_MODEL SEQ
 #endif
 
@@ -430,7 +444,8 @@ typedef struct {
   int threadsupport; /* does backtrace function handle threads correctly? 
                               -ie backtrace the calling thread and optionally others as well */
 } gasnett_backtrace_type_t;
-extern gasnett_backtrace_type_t gasnett_backtrace_user;
+GASNETT_TENTATIVE_EXTERN
+gasnett_backtrace_type_t gasnett_backtrace_user;
 
 /* ------------------------------------------------------------------------------------ */
 /* GASNet tracing/stats support (automatically stubbed out when libgasnet absent) */

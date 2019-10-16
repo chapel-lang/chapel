@@ -1,1 +1,0 @@
-array-as-vec-bounds-checking.chpl:30: error: halt reached - remove at position 8 out of bounds

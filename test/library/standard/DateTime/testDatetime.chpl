@@ -212,7 +212,7 @@ proc test_combine() {
 proc test_replace() {
   var args = (1, 2, 3, 4, 5, 6, 7);
   var base = new datetime((...args));
-  var nilTZ:shared TZInfo;
+  var nilTZ:shared TZInfo?;
 
   assert(base == base.replace(tzinfo=nilTZ));
 

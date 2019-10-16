@@ -290,7 +290,7 @@ typedef struct {
   #define GASNETI_SEMAPHORE_INITIALIZER_PAR(N,L) {_GASNETI_SEMAPHORE_INITIALIZER(N), (L),}
   #define GASNETI_SEMA_CHECK(_s)	do {                    \
       gasneti_atomic_val_t _tmp = _gasneti_semaphore_read(&(_s)->S); \
-      gasneti_assert(_tmp <= GASNETI_SEMAPHORE_MAX);            \
+      gasneti_assert_uint(_tmp ,<=, GASNETI_SEMAPHORE_MAX);     \
       gasneti_assert((_tmp <= (_s)->limit) || !(_s)->limit);    \
     } while (0)
 #else
@@ -301,7 +301,7 @@ typedef struct {
 /* gasneti_semaphore_init */
 GASNETI_INLINE(gasneti_semaphore_init_PAR)
 void gasneti_semaphore_init_PAR(gasneti_semaphore_t_PAR *s, int n, gasneti_atomic_val_t limit) {
-  gasneti_assert(limit <= GASNETI_SEMAPHORE_MAX);
+  gasneti_assert_uint(limit ,<=, GASNETI_SEMAPHORE_MAX);
   _gasneti_semaphore_init(&(s->S), n);
   #if GASNET_DEBUG
     s->limit = limit;
@@ -409,7 +409,7 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial_PAR(gasneti_semaphore_t_P
   } gasneti_semaphore_t_SEQ;
   #define GASNETI_SEMAPHORE_INITIALIZER_SEQ(count,limit) { (count), (limit) }
   #define GASNETI_SEMA_CHECK_SEQ(_s)        do {             \
-    gasneti_assert((_s)->count <= GASNETI_SEMAPHORE_MAX_SEQ);     \
+    gasneti_assert_uint((_s)->count ,<=, GASNETI_SEMAPHORE_MAX_SEQ); \
     gasneti_assert(((_s)->count <= (_s)->limit) || !(_s)->limit); \
   } while (0)
 #else
@@ -901,7 +901,7 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial_SEQ(gasneti_semaphore_t_S
 
     GASNETI_INLINE(_gasneti_lifo_push)
     void _gasneti_lifo_push(gasneti_lifo_head_t_PAR *p, void **newhead, void **tail) {
-    #if (PLATFORM_COMPILER_PGI && PLATFORM_COMPILER_VERSION_GE(16,4,0)) /* XXX: no end version */
+    #if PLATFORM_COMPILER_PGI && PLATFORM_COMPILER_VERSION_GE(16,4,0) && PLATFORM_COMPILER_VERSION_LT(17,1,0)
       volatile uintptr_t tag; /* See GASNet bug #3324 */
     #else
       uintptr_t tag;

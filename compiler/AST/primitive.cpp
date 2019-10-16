@@ -377,8 +377,10 @@ returnInfoGetMemberRef(CallExpr* call) {
       }
     }
     INT_ASSERT(field);
+    makeRefType(field->type);
     retType = field->type->refType ? field->type->refType : field->type;
   } else {
+    makeRefType(var->type);
     retType = var->type->refType ? var->type->refType : var->type;
   }
   Qualifier q = QUAL_REF;
@@ -433,7 +435,10 @@ returnInfoCoerce(CallExpr* call) {
   if (t->symbol->hasFlag(FLAG_GENERIC)) {
     // Try to figure out what instantiation type we would use
     // and return that type.
-    t = getInstantiationType(call->get(1)->getValType(), t);
+    SymExpr* actualOne = toSymExpr(call->get(1));
+    SymExpr* actualTwo = toSymExpr(call->get(2));
+    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+                             t, actualTwo->symbol(), call);
   }
 
   return QualifiedType(t, QUAL_VAL);
@@ -450,13 +455,12 @@ returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-    if (dt->isNilable())
-      decorator = CLASS_TYPE_UNMANAGED_NILABLE;
-  }
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_UNMANAGED_NONNIL;
 
-  if (AggregateType* at = toAggregateType(t)) {
+  if (AggregateType* at = toAggregateType(canonicalClassType(t))) {
     if (isClass(at)) {
       t = at->getDecoratedClass(decorator);
     }
@@ -469,39 +473,60 @@ returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_BORROWED_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_BORROWED_NONNIL;
 
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-    if (dt->isNilable())
-      decorator = CLASS_TYPE_BORROWED_NILABLE;
-  } else if (isManagedPtrType(t)) {
-    t = getManagedPtrBorrowType(t);
-  }
-
-  if (AggregateType* at = toAggregateType(t))
+  if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
       t = at->getDecoratedClass(decorator);
 
-  // Canonical class type is borrow type
   return QualifiedType(t, QUAL_VAL);
 }
+
+static QualifiedType
+returnInfoToUndecorated(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+
+  ClassTypeDecorator decorator = CLASS_TYPE_GENERIC;
+  if (isNilableClassType(t))
+    decorator = CLASS_TYPE_GENERIC_NILABLE;
+  else if (isNonNilableClassType(t))
+    decorator = CLASS_TYPE_GENERIC_NONNIL;
+
+  if (AggregateType* at = toAggregateType(canonicalClassType(t)))
+    if (isClass(at))
+      t = at->getDecoratedClass(decorator);
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
 
 static QualifiedType
 returnInfoToNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NILABLE;
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-    decorator = dt->getDecorator();
+  if (isClassLikeOrManaged(t)) {
+    ClassTypeDecorator decorator = classTypeDecorator(t);
     decorator = addNilableToDecorator(decorator);
-  } else if (isManagedPtrType(t)) {
-    t = getManagedPtrBorrowType(t);
-  }
 
-  if (AggregateType* at = toAggregateType(t))
-    if (isClass(at))
-      t = at->getDecoratedClass(decorator);
+    if (isManagedPtrType(t)) {
+      AggregateType* manager = getManagedPtrManagerType(t);
+      AggregateType* at = toAggregateType(canonicalClassType(t));
+      if (at == NULL) {
+        // e.g. _to_nonnil(owned)
+        t = getDecoratedClass(manager, decorator);
+      } else {
+        // e.g. _to_nonnil(owned C)
+        t = computeDecoratedManagedType(at, decorator, manager, call);
+      }
+    } else {
+      if (AggregateType* at = toAggregateType(canonicalClassType(t)))
+        if (isClass(at))
+          t = at->getDecoratedClass(decorator);
+    }
+  }
 
   return QualifiedType(t, QUAL_VAL);
 }
@@ -510,18 +535,26 @@ static QualifiedType
 returnInfoToNonNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
-  if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    t = dt->getCanonicalClass();
-    decorator = dt->getDecorator();
-    decorator = removeNilableFromDecorator(decorator);
-  } else if (isManagedPtrType(t)) {
-    t = getManagedPtrBorrowType(t);
-  }
+  if (isClassLikeOrManaged(t)) {
+    ClassTypeDecorator decorator = classTypeDecorator(t);
+    decorator = addNonNilToDecorator(decorator);
 
-  if (AggregateType* at = toAggregateType(t))
-    if (isClass(at))
-      t = at->getDecoratedClass(decorator);
+    if (isManagedPtrType(t)) {
+      AggregateType* manager = getManagedPtrManagerType(t);
+      AggregateType* at = toAggregateType(canonicalClassType(t));
+      if (at == NULL) {
+        // e.g. _to_nonnil(owned)
+        t = getDecoratedClass(manager, decorator);
+      } else {
+        // e.g. _to_nonnil(owned C)
+        t = computeDecoratedManagedType(at, decorator, manager, call);
+      }
+    } else {
+      if (AggregateType* at = toAggregateType(canonicalClassType(t)))
+        if (isClass(at))
+          t = at->getDecoratedClass(decorator);
+    }
+  }
 
   return QualifiedType(t, QUAL_VAL);
 }
@@ -619,6 +652,9 @@ initPrimitive() {
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
+
+  // dst, aggregate name, field name, type to default-init, value to init from
+  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
 
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
@@ -769,6 +805,10 @@ initPrimitive() {
   prim_def(PRIM_IS_SUBTYPE_ALLOW_VALUES, "is_subtype_allow_values", returnInfoBool);
   // same as above but excludes same type
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
+  // accepts two arguments: A class/record type expression and a param string for the field name
+  prim_def(PRIM_IS_BOUND, "is bound", returnInfoBool);
+  // PRIM_IS_COERCIBLE arguments are (source type, target type)
+  prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false);
@@ -914,7 +954,8 @@ initPrimitive() {
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoStringC, true, true);
-  prim_def("string_length", returnInfoDefaultInt);
+  prim_def("string_length_bytes", returnInfoDefaultInt);
+  prim_def("string_length_codepoints", returnInfoDefaultInt);
   prim_def("ascii", returnInfoUInt8);
   prim_def("string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
@@ -953,7 +994,10 @@ initPrimitive() {
 
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_ITERATOR_RECORD_SET_SHAPE, "iterator record set shape", returnInfoVoid);
+  prim_def(PRIM_IS_GENERIC_TYPE, "is generic type", returnInfoBool);
   prim_def(PRIM_IS_CLASS_TYPE, "is class type", returnInfoBool);
+  prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
+  prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
@@ -992,10 +1036,19 @@ initPrimitive() {
   // used before error handling is lowered to represent the current error
   prim_def(PRIM_CURRENT_ERROR, "current error", returnInfoError, false, false);
 
+  // return the unmanaged class variant, error if decorated
+  prim_def(PRIM_TO_UNMANAGED_CLASS_CHECKED, "to unmanaged class from unknown", returnInfoToUnmanaged, false, false);
+  // return the borrowed class variant, error if decorated
+  prim_def(PRIM_TO_BORROWED_CLASS_CHECKED, "to borrowed class from unknown", returnInfoToBorrowed, false, false);
+  // return the nilable class variant, error if argument is not a type
+  prim_def(PRIM_TO_NILABLE_CLASS_CHECKED, "to nilable class from type", returnInfoToNilable, false, false);
+
   // These return the (non-nil) class variant
   prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
   // borrowed class type currently == canonical class type
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
+  // return the undecorated class type
+  prim_def(PRIM_TO_UNDECORATED_CLASS, "to undecorated class", returnInfoToUndecorated, false, false);
   // Returns the nilable class type
   prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
@@ -1030,6 +1083,10 @@ initPrimitive() {
   // indicate optimization information.
   // That symbol includes OPT_INFO_... flags.
   prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
+
+  prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
+  prim_def(PRIM_GET_TEST_BY_NAME, "get test by name", returnInfoVoid);
+  prim_def(PRIM_GET_TEST_BY_INDEX, "get test by index", returnInfoVoid);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

@@ -23,7 +23,7 @@ label _1
 }
 */
 
-proc next_foo(c : unmanaged C) : unmanaged C {
+proc next_foo(c : unmanaged C) : unmanaged C? {
   if c.jump == 0 {
     c.i = 1;
     if c.i < 5 {

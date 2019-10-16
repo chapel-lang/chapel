@@ -1,6 +1,6 @@
 class C {
   param rank: int;
-  var x: owned D;
+  var x: owned D?;
 
   class D {
   }

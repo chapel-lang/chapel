@@ -7,6 +7,6 @@ class B: A {
 }
 
 var a = new unmanaged A();
-var b: unmanaged B;
+var b: unmanaged B?;
 
 delete a;

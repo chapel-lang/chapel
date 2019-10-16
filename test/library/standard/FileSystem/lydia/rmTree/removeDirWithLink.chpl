@@ -25,12 +25,12 @@ writeln("Creating a symlink");
 symlink(realPath(linkedSrc), link);
 // Need to provide full path to symlink.  Is this a bug?  Matches behavior of
 // Linux's ln -s call.
-writeln(linkDir + " exists: " + exists(linkDir));
-writeln(link + " exists: " + exists(link));
-writeln(linkedSrc + " exists: " + exists(linkedSrc));
+writeln(linkDir, " exists: ", exists(linkDir));
+writeln(link, " exists: ", exists(link));
+writeln(linkedSrc, " exists: ", exists(linkedSrc));
 
 rmTree(linkDir); // Removal call.
 writeln("Post rmTree call");
-writeln(linkDir + " exists: " + exists(linkDir));
-writeln(link + " exists: " + exists(link));
-writeln(linkedSrc + " exists: " + exists(linkedSrc));
+writeln(linkDir, " exists: ", exists(linkDir));
+writeln(link, " exists: ", exists(link));
+writeln(linkedSrc, " exists: ", exists(linkedSrc));

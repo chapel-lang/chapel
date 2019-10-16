@@ -186,7 +186,7 @@ gasnetc_dflt_coll_alg(pami_geometry_t geom, pami_xfer_type_t op, pami_algorithm_
     break;
 
   default:
-    gasneti_fatalerror("Unknown 'op' value %d in %s", (int)op, __FUNCTION__);
+    gasneti_fatalerror("Unknown 'op' value %d in %s", (int)op, GASNETI_CURRENT_FUNCTION);
     envvar = dfltval = NULL; /* for warning suppression only */
   }
   /* Override the defaults above for the single-task case: */

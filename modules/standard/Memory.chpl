@@ -43,7 +43,7 @@
     leaked memory by invoking :proc:`printMemAllocsByType` implicitly
     when the program terminates normally.
 
-  ``memLeaksLog``: `c_string`:
+  ``memLeaksLog``: `string`:
     Enable memory tracking and append a report to the named file when
     the program terminates normally.
     The report contains the compilation command used to build the
@@ -78,7 +78,7 @@
     If this is set to a value greater than 0 (zero), only allocation
     requests larger than this are tracked and/or reported.
 
-  ``memLog``: `c_string`:
+  ``memLog``: `string`:
     Memory reporting is written to this file.  By default it is the
     ``stdout`` associated with the process (not the Chapel channel
     with the same name).  Setting this config variable to a file path

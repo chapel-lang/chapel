@@ -160,11 +160,13 @@ Some other common optional configurations are:
     # Defaults to current working directory
     GASNET_REMOTE_PATH='~/chapel-projects/'
     # Defaults to gethostname() of the launching node
-    GASNET_MASTERIP='ec2-11-222-33-444.us-west-2.compute.amazonaws.com'
+    CHPL_RT_MASTERIP='ec2-11-222-33-444.us-west-2.compute.amazonaws.com'
     # Defaults to empty, can be used instead of copying config files onto each machine
     SSH_OPTIONS='-i ~/.ssh/foo.pem'
 
-.. _GASNet documentation: http://gasnet.lbl.gov/dist/udp-conduit/README
+See :ref:`chpl-rt-masterip` for details on that environment variable.
+
+.. _GASNet documentation: https://gasnet.lbl.gov/dist/udp-conduit/README
 
 **4. Run the program**
 

@@ -27,6 +27,7 @@ module test {
         writeln("co:borrowed Child");
         var x = co:borrowed Child;
         writeln(x.type:string, " ", x);
+        assert(co != nil);
       } catch e {
         writeln(e);
         halt("fail");
@@ -36,6 +37,7 @@ module test {
         writeln("coq:borrowed Child");
         var x = coq:borrowed Child;
         writeln(x.type:string, " ", x);
+        assert(coq != nil);
       } catch e {
         writeln(e);
         halt("fail");
@@ -45,6 +47,7 @@ module test {
         writeln("cs:borrowed Child");
         var x = cs:borrowed Child;
         writeln(x.type:string, " ", x);
+        assert(cs != nil);
       } catch e {
         writeln(e);
         halt("fail");
@@ -66,6 +69,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(po != nil);
       }
       // from poq
       try {
@@ -75,6 +79,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(poq != nil);
       }
       // from ps
       try {
@@ -84,6 +89,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(ps != nil);
       }
       // from psq
       try {
@@ -93,6 +99,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(psq != nil);
       }
       // from noq
       try {
@@ -125,6 +132,7 @@ module test {
         var x = co:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x != nil);
+        assert(co != nil);
       }
       // from coq
       {
@@ -132,6 +140,7 @@ module test {
         var x = coq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x != nil);
+        assert(coq != nil);
       }
       // from cs
       {
@@ -139,6 +148,7 @@ module test {
         var x = cs:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x != nil);
+        assert(cs != nil);
       }
       // from csq
       {
@@ -146,6 +156,7 @@ module test {
         var x = csq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x != nil);
+        assert(csq != nil);
       }
       // from po
       {
@@ -153,6 +164,7 @@ module test {
         var x = po:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(po != nil);
       }
       // from poq
       {
@@ -160,6 +172,7 @@ module test {
         var x = poq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(poq != nil);
       }
       // from ps
       {
@@ -167,6 +180,7 @@ module test {
         var x = ps:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(ps != nil);
       }
       // from psq
       {
@@ -174,6 +188,7 @@ module test {
         var x = psq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(psq != nil);
       }
       // from noq
       {
@@ -191,9 +206,6 @@ module test {
       }
     }
 
-    // the below are not currently supported
-
-    /*
     // casting to owned Child
     {
       writeln();
@@ -227,6 +239,8 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(po != nil); // should not transfer if cast failed
+        po = new owned Parent(3);
       }
       // from poq
       try {
@@ -236,6 +250,8 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(poq != nil); // should not transfer if cast failed
+        poq = new owned Parent(3);
       }
       // from noq
       try {
@@ -268,7 +284,7 @@ module test {
         var x = coq:owned Child?;
         writeln(x.type:string, " ", x);
         assert(x != nil);
-        co = new owned Child(1,2); // since we did ownership transfer
+        coq = new owned Child(1,2); // since we did ownership transfer
       }
       // from po
       {
@@ -276,6 +292,8 @@ module test {
         var x = po:owned Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(po != nil); // should not transfer if cast failed
+        po = new owned Parent(3);
       }
       // from poq
       {
@@ -283,6 +301,8 @@ module test {
         var x = poq:owned Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
+        assert(poq != nil); // should not transfer if cast failed
+        poq = new owned Parent(3);
       }
       // from noq
       {
@@ -303,6 +323,7 @@ module test {
         writeln("cs:shared Child");
         var x = cs:shared Child;
         writeln(x.type:string, " ", x);
+        assert(cs != nil);
       } catch e {
         writeln(e);
         halt("fail");
@@ -312,6 +333,7 @@ module test {
         writeln("csq:shared Child");
         var x = csq:shared Child;
         writeln(x.type:string, " ", x);
+        assert(csq != nil);
       } catch e {
         writeln(e);
         halt("fail");
@@ -324,6 +346,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(ps != nil);
       }
       // from psq
       try {
@@ -333,6 +356,7 @@ module test {
         halt("fail");
       } catch e {
         writeln(e);
+        assert(psq != nil);
       }
       // from nsq
       try {
@@ -370,14 +394,16 @@ module test {
         writeln("ps:shared Child?");
         var x = ps:shared Child?;
         writeln(x.type:string, " ", x);
-        assert(x != nil);
+        assert(x == nil);
+        assert(ps != nil);
       }
       // from psq
       {
         writeln("psq:shared Child?");
         var x = psq:shared Child?;
         writeln(x.type:string, " ", x);
-        assert(x != nil);
+        assert(x == nil);
+        assert(psq != nil);
       }
       // from nsq
       {
@@ -387,7 +413,5 @@ module test {
         assert(x == nil);
       }
     }
-    */
- 
   }
 }

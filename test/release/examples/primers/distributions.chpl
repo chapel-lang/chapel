@@ -283,8 +283,8 @@ MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
 
 const DimReplicatedBlockcyclicSpace = Space
   dmapped DimensionalDist2D(MyLocales,
-                            new unmanaged ReplicatedDim(numLocales = nl1),
-                            new unmanaged BlockCyclicDim(numLocales = nl2,
+                            new ReplicatedDim(numLocales = nl1),
+                            new BlockCyclicDim(numLocales = nl2,
                                                lowIdx = 1, blockSize = 2));
 
 var DRBA: [DimReplicatedBlockcyclicSpace] int;

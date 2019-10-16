@@ -1,4 +1,0 @@
-#!/bin/bash
-outdir=reference
-mkdir -p ${outdir}
-naturaldocs -i ../include/myth -o html ${outdir} -p p

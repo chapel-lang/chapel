@@ -17,6 +17,7 @@ TARGETS = \
 	genericClasses \
 	iterators \
 	learnChapelInYMinutes \
+	listOps \
 	locales \
 	modules \
 	nothingVariables \

@@ -1,4 +1,0 @@
-standaloneConstChecking.chpl:17: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:22: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:28: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:33: error: illegal lvalue in assignment

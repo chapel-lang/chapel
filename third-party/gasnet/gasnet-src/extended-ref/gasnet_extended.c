@@ -27,7 +27,7 @@ static void gasnete_check_config(void) {
   gasneti_check_config_postattach();
   gasnete_check_config_amref();
 
-  gasneti_assert(sizeof(gasnete_eop_t) >= sizeof(void*));
+  gasneti_static_assert(sizeof(gasnete_eop_t) >= sizeof(void*));
 }
 
 extern void gasnete_init(void) {
@@ -38,7 +38,8 @@ extern void gasnete_init(void) {
 
   gasnete_check_config(); /*  check for sanity */
 
-  gasneti_assert(gasneti_nodes >= 1 && gasneti_mynode < gasneti_nodes);
+  gasneti_assert_uint(gasneti_nodes ,>=, 1);
+  gasneti_assert_uint(gasneti_mynode ,<, gasneti_nodes);
 
   { gasneti_threaddata_t *threaddata = NULL;
   #if GASNETI_MAX_THREADS > 1

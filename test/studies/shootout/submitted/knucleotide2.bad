@@ -1,0 +1,1 @@
+knucleotide2.chpl:130: error: attempt to redefine reserved type 'bytes'

@@ -18,10 +18,10 @@ class C {
 
 record R {
   var x: int = 0;
-  var c: unmanaged C;
+  var c: unmanaged C?;
 }
 
-proc R.init(x : int = 0, c : unmanaged C = nil) {
+proc R.init(x : int = 0, c : unmanaged C? = nil) {
   if debug then writeln("in R.init(", x, ", ", c, ")");
   this.x = x;
   this.c = c;
@@ -50,7 +50,7 @@ proc ref R.setup(x:int, allow_zero:bool=false) {
   this.x = x;
   this.c = new unmanaged C(x = x, id = 1+c_counter.fetchAdd(1));
   
-  extern proc printf(fmt:c_string, arg:C);
+  extern proc printf(fmt:c_string, arg:C?);
   if debug {
     printf("in setup allocated c=%p ", c);
     writeln(c);
@@ -74,7 +74,7 @@ proc ref R.increment() {
 
 
 proc R.deinit() {
-  extern proc printf(fmt:c_string, arg:C);
+  extern proc printf(fmt:c_string, arg:C?);
   if debug {
     printf("in destructor for c=%p ", c);
     writeln("x=", x, " ", c);
@@ -105,8 +105,8 @@ proc R.verify() {
 }
 
 proc =(ref lhs: R, rhs: R) {
-  extern proc printf(fmt:c_string, arg:C);
-  extern proc printf(fmt:c_string, arg:C, arg2:C);
+  extern proc printf(fmt:c_string, arg:C?);
+  extern proc printf(fmt:c_string, arg:C?, arg2:C?);
   if debug {
     printf("in assign lhs = rhs rhs.c is %p ", rhs.c);
     writeln(rhs.c);

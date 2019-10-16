@@ -23,6 +23,10 @@ test_static_assert_file(GEX_AM_INDEX_BASE <= 128);
 /* Define to get one big function that pushes the gcc inliner heursitics */
 #undef TESTGASNET_NO_SPLIT
 
+#if !defined(GASNET_HIDDEN_AM_CONCURRENCY_LEVEL)
+#error Missing GASNET_HIDDEN_AM_CONCURRENCY_LEVEL definition
+#endif
+
 TEST_BACKTRACE_DECLS();
 
 void doit(int partner, int *partnerseg);
@@ -156,7 +160,22 @@ void test_threadinfo(int threadid, int numthreads) {
   #if GASNETI_ARCH_IBMPE
     /* Don't pin threads because system s/w will have already done so */
   #else
-    gasnett_set_affinity(idx);
+    if (gasnett_getenv_yesno_withdefault("GASNET_TEST_SET_AFFINITY",1)) {
+      // We can do little more than test for lack of crash here.
+      // We will warn if the call fails on a platforms we support.
+      // However, it is an ERROR if the call returns success when
+      // GASNETT_SET_AFFINITY_SUPPORT is not defined.
+      int rc = gasnett_set_affinity(idx);
+    #if GASNETT_SET_AFFINITY_SUPPORT
+      if (rc) {
+        MSG("*** WARNING - gasnett_set_affinity() failed unexpectedly, possibly due to running in an environment which has already pinned processes.  One may set GASNET_TEST_SET_AFFINITY=0 to skip this test.");
+      }
+    #else
+      if (!rc) {
+        MSG("*** ERROR - GASNETT_SET_AFFINITY RETURNED SUCCESS UNEXPECTEDLY!!!!!");
+      }
+    #endif
+    }
   #endif
     PTHREAD_LOCALBARRIER(num_threads);
     return NULL;
@@ -1384,38 +1403,6 @@ void doit7(int partner, int *partnerseg) {
     TEST_ATOMICS(uint32_t, strongatomic32);
     TEST_ATOMICS(uint64_t, atomic64);
     TEST_ATOMICS(uint64_t, strongatomic64);
-  }
-  { /* attempt to generate alignment problems: */
-    gasnett_atomic32_t *ptr32;
-    uint32_t tmp32;
-    gasnett_atomic64_t *ptr64;
-    uint64_t tmp64;
-    { struct { char c; gasnett_atomic32_t val32; } s = {0, gasnett_atomic32_init(1)};
-      ptr32 = &s.val32;
-      tmp32 = gasnett_atomic32_read(ptr32, 0);
-      gasnett_atomic32_set(ptr32, tmp32, 0);
-      (void)gasnett_atomic32_compare_and_swap(ptr32, 0, 1, 0);
-    }
-    { struct { char c; gasnett_atomic64_t val64; } s = {0, gasnett_atomic64_init(1)};
-      ptr64 = &s.val64;
-      tmp64 = gasnett_atomic64_read(ptr64, 0);
-      gasnett_atomic64_set(ptr64, tmp64, 0);
-      (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);
-    }
-    { double dbl = 1.0;
-      uintptr_t tmp = (uintptr_t)&dbl;
-      ptr64 = (gasnett_atomic64_t *)tmp; /* conversion suppresses gcc-4 warning (bug 2158) */
-      tmp64 = gasnett_atomic64_read(ptr64, 0);
-      gasnett_atomic64_set(ptr64, tmp64, 0);
-      (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);
-    }
-    { struct { char c; double dbl; } s = {0, 1.0};
-      uintptr_t tmp = (uintptr_t)&s.dbl;
-      ptr64 = (gasnett_atomic64_t *)tmp; /* conversion suppresses gcc-4 warning (bug 2158) */
-      tmp64 = gasnett_atomic64_read(ptr64, 0);
-      gasnett_atomic64_set(ptr64, tmp64, 0);
-      (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);
-    }
   }
 
   /* Serial tests of optional internal 128-bit atomics have

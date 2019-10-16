@@ -4,16 +4,16 @@
 
 class Tree {
   var first: bool;
-  var left: owned Tree;
+  var left: owned Tree?;
 }
 
-iter postorder(tree: borrowed Tree): borrowed Tree {
+iter postorder(tree: borrowed Tree?): borrowed Tree {
   if tree != nil {
 
     for child in postorder(tree.left) do
       yield child;
 
-    yield tree;
+    yield tree!;
   }
 }
 

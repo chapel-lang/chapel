@@ -28,11 +28,6 @@ gex_AM_Entry_t *gasnetc_handler; // TODO-EX: will be replaced with per-EP tables
 #endif
 
 static void gasnetc_traceoutput(int);
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int, void*);
-#else
-static void gasnetc_atexit(void);
-#endif
 
 eb_t gasnetc_bundle;
 ep_t gasnetc_endpoint;
@@ -66,18 +61,18 @@ gasneti_mutex_t gasnetc_AMlock = GASNETI_MUTEX_INITIALIZER; /*  protect access t
 static void gasnetc_check_config(void) {
   gasneti_check_config_preinit();
 
-  gasneti_assert(GASNET_MAXNODES <= AMMPI_MAX_SPMDPROCS);
-  gasneti_assert(AMMPI_MAX_NUMHANDLERS >= 256);
-  gasneti_assert(AMMPI_MAX_SEGLENGTH == (uintptr_t)-1);
+  gasneti_static_assert(GASNET_MAXNODES <= AMMPI_MAX_SPMDPROCS);
+  gasneti_static_assert(AMMPI_MAX_NUMHANDLERS >= 256);
+  gasneti_static_assert(AMMPI_MAX_SEGLENGTH == (uintptr_t)-1);
 
-  gasneti_assert(GASNET_ERR_NOT_INIT == AM_ERR_NOT_INIT);
-  gasneti_assert(GASNET_ERR_RESOURCE == AM_ERR_RESOURCE);
-  gasneti_assert(GASNET_ERR_BAD_ARG  == AM_ERR_BAD_ARG);
+  gasneti_static_assert(GASNET_ERR_NOT_INIT == AM_ERR_NOT_INIT);
+  gasneti_static_assert(GASNET_ERR_RESOURCE == AM_ERR_RESOURCE);
+  gasneti_static_assert(GASNET_ERR_BAD_ARG  == AM_ERR_BAD_ARG);
 
 #if GASNET_PSHM
-  gasneti_assert(gasneti_Short  == (gasneti_category_t) ammpi_Short);
-  gasneti_assert(gasneti_Medium == (gasneti_category_t) ammpi_Medium);
-  gasneti_assert(gasneti_Long   == (gasneti_category_t) ammpi_Long);
+  gasneti_static_assert(gasneti_Short  == (gasneti_category_t) ammpi_Short);
+  gasneti_static_assert(gasneti_Medium == (gasneti_category_t) ammpi_Medium);
+  gasneti_static_assert(gasneti_Long   == (gasneti_category_t) ammpi_Long);
 #endif
 }
 
@@ -94,7 +89,8 @@ void gasnetc_bootstrapExchange(void *src, size_t len, void *dest) {
 }
 void gasnetc_bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode) {
   int retval;
-  gasneti_assert(gasneti_nodes > 0 && gasneti_mynode < gasneti_nodes);
+  gasneti_assert(gasneti_nodes > 0);
+  gasneti_assert_uint(gasneti_mynode ,<, gasneti_nodes);
   if (gasneti_mynode == rootnode) memcpy(dest, src, len);
   GASNETI_AM_SAFE_NORETURN(retval,AMMPI_SPMDBroadcast(dest, len, rootnode));
   if_pf (retval) gasneti_fatalerror("failure in gasnetc_bootstrapBroadcast()");
@@ -152,8 +148,12 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
     { // this scope silences a warning on Cray C about INITERR bypassing this initialization:
       #if GASNETI_THREADS
         int usingthreads = 1;
+        #define GASNETI_THREADMODE_MSG \
+                      "*** WARNING: The thread-safe version of mpi-conduit recommends an MPI implementation\n" \
+                      "*** WARNING: which supports at least MPI_THREAD_SERIALIZED to ensure correct operation.\n"
       #else
         int usingthreads = 0;
+        #define GASNETI_THREADMODE_MSG 
       #endif
       // for verbose documentation only:
       gasnett_getenv_withdefault("GASNET_MPI_THREAD", (usingthreads?"MPI_THREAD_SERIALIZED":"MPI_THREAD_SINGLE"));
@@ -163,10 +163,7 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
         static char tmsg[1024];
         snprintf(tmsg, sizeof(tmsg),
                       "*** WARNING: This MPI implementation reports it can only support %s.\n"
-                    #if GASNETI_THREADS
-                      "*** WARNING: The thread-safe version of mpi-conduit recommends an MPI implementation\n"
-                      "*** WARNING: which supports at least MPI_THREAD_SERIALIZED to ensure correct operation.\n"
-                    #endif
+                      GASNETI_THREADMODE_MSG
                       "*** WARNING: You can override the requested thread mode by setting GASNET_MPI_THREAD.\n"
                       , pstr);
         tmsgstr = tmsg;
@@ -210,9 +207,22 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
 
     uintptr_t mmap_limit;
     #if HAVE_MMAP
-      mmap_limit = gasneti_mmapLimit((uintptr_t)-1, (uint64_t)-1,
+    {
+      // Bound per-host (sharedLimit) argument to gasneti_segmentLimit()
+      // while properly reserving space for aux segments.
+      uint64_t sharedLimit = gasneti_sharedLimit();
+      uint64_t hostAuxSegs = gasneti_myhost.node_count * gasneti_auxseg_preinit();
+      if (sharedLimit <= hostAuxSegs) {
+        gasneti_fatalerror("per-host segment limit %"PRIu64" is too small to accommodate %i aux segments, "
+                           "total size %"PRIu64". You may need to adjust OS shared memory limits.",
+                           sharedLimit, gasneti_myhost.node_count, hostAuxSegs);
+      }
+      sharedLimit -= hostAuxSegs;
+
+      mmap_limit = gasneti_segmentLimit((uintptr_t)-1, sharedLimit,
                                   &gasnetc_bootstrapExchange,
                                   &gasnetc_bootstrapBarrier);
+    }
     #else
       // TODO-EX: we can at least look at rlimits but such logic belongs in conduit-indep code
       mmap_limit = (intptr_t)-1;
@@ -220,7 +230,7 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
 
     /* allocate and attach an aux segment */
 
-    gasneti_auxsegAttach(mmap_limit, &gasnetc_bootstrapExchange);
+    gasneti_auxsegAttach((uintptr_t)-1, &gasnetc_bootstrapExchange);
 
     /* determine Max{Local,GLobal}SegmentSize */
     gasneti_segmentInit(mmap_limit, &gasnetc_bootstrapExchange, flags);
@@ -258,11 +268,8 @@ static int gasnetc_attach_primary(void) {
     /* catch fatal signals and convert to SIGQUIT */
     gasneti_registerSignalHandlers(gasneti_defaultSignalHandler);
 
-#if HAVE_ON_EXIT
-    on_exit(gasnetc_on_exit, NULL);
-#else
-    atexit(gasnetc_atexit);
-#endif
+    // register process exit-time hook
+    gasneti_registerExitHandler(gasnetc_exit);
 
     #if GASNETC_MOCK_EVERYTHING
       retval = AM_SetSeg(gasnetc_endpoint, NULL, (uintptr_t)-1);
@@ -312,8 +319,8 @@ static int gasnetc_attach_segment(gex_Segment_t                 *segment_p,
     void *segbase = gasneti_seginfo[gasneti_mynode].addr;
     segsize = gasneti_seginfo[gasneti_mynode].size;
 
-    gasneti_assert(((uintptr_t)segbase) % GASNET_PAGESIZE == 0);
-    gasneti_assert(segsize % GASNET_PAGESIZE == 0);
+    gasneti_assert_uint(((uintptr_t)segbase) % GASNET_PAGESIZE ,==, 0);
+    gasneti_assert_uint(segsize % GASNET_PAGESIZE ,==, 0);
 
     gasneti_EP_t ep = gasneti_import_tm(tm)->_ep;
     ep->_segment = gasneti_alloc_segment(ep->_client, segbase, segsize, flags, 0);
@@ -487,6 +494,12 @@ extern int gasnetc_Segment_Attach(
   if (once) once = 0;
   else gasneti_fatalerror("gex_Segment_Attach: current implementation can be called at most once");
 
+  #if GASNET_SEGMENT_EVERYTHING
+    *segment_p = GEX_SEGMENT_INVALID;
+    gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+    return GASNET_OK; 
+  #endif
+
   /* create a segment collectively */
   // TODO-EX: this implementation only works *once*
   // TODO-EX: should be using the team's exchange function if possible
@@ -522,7 +535,7 @@ extern int gasnetc_EP_Create(gex_EP_t           *ep_p,
     while (ctable[len].gex_fnptr) len++; /* calc len */
     if (gasneti_amregister(ep->_amtbl, ctable, len, GASNETC_HANDLER_BASE, GASNETE_HANDLER_BASE, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering core API handlers");
-    gasneti_assert(numreg == len);
+    gasneti_assert_int(numreg ,==, len);
   }
 
   { /*  extended API handlers */
@@ -533,7 +546,7 @@ extern int gasnetc_EP_Create(gex_EP_t           *ep_p,
     while (etable[len].gex_fnptr) len++; /* calc len */
     if (gasneti_amregister(ep->_amtbl, etable, len, GASNETE_HANDLER_BASE, GASNETI_CLIENT_HANDLER_BASE, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering extended API handlers");
-    gasneti_assert(numreg == len);
+    gasneti_assert_int(numreg ,==, len);
   }
 
   return GASNET_OK;
@@ -545,15 +558,6 @@ extern int gasnetc_EP_RegisterHandlers(gex_EP_t                ep,
   return gasneti_amregister_client(gasneti_import_ep(ep)->_amtbl, table, numentries);
 }
 /* ------------------------------------------------------------------------------------ */
-#if HAVE_ON_EXIT
-static void gasnetc_on_exit(int exitcode, void *arg) {
-  gasnetc_exit(exitcode);
-}
-#else
-static void gasnetc_atexit(void) {
-  gasnetc_exit(0);
-}
-#endif
 static int gasnetc_exitcalled = 0;
 static void gasnetc_traceoutput(int exitcode) {
   if (!gasnetc_exitcalled) {
@@ -606,10 +610,10 @@ extern void gasnetc_exit(int exitcode) {
    for (i=0; i < 5; i++) {
      #if GASNET_DEBUG
        /* ignore recursive lock attempts */
-       if (gasnetc_AMlock.owner == GASNETI_THREADIDQUERY()) break;
+       if (_gasneti_mutex_heldbyme(&gasnetc_AMlock)) break;
      #endif
      if (!gasneti_mutex_trylock(&gasnetc_AMlock)) break;
-     gasneti_sched_yield();
+     else gasneti_sched_yield();
    }
   }
 
@@ -654,7 +658,7 @@ gex_Rank_t gasnetc_msgsource(gex_Token_t token) {
     gasneti_assert_zeroret(AMMPI_GetSourceId(token, &tmp));
     gasneti_assert(tmp >= 0);
     gex_Rank_t sourceid = tmp;
-    gasneti_assert(sourceid < gasneti_nodes);
+    gasneti_assert_uint(sourceid ,<, gasneti_nodes);
     return sourceid;
 }
 

@@ -197,10 +197,9 @@ void errorOnFieldsInArgList(FnSymbol* fn) {
   for_formals(formal, fn) {
     std::vector<SymExpr*> symExprs;
 
-    collectSymExprs(formal, symExprs);
+    collectSymExprsFor(formal, fn->_this, symExprs);
 
     for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == fn->_this) {
         bool error = true;
         if (fn->isCopyInit()) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -221,9 +220,7 @@ void errorOnFieldsInArgList(FnSymbol* fn) {
                          "invalid access of class member in "
                          "initializer argument list");
         }
-
         break;
-      }
     }
   }
 }
@@ -268,7 +265,7 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void          preNormalizeInitRecord(FnSymbol* fn);
+static void          preNormalizeInitRecordUnion(FnSymbol* fn);
 
 static void          preNormalizeInitClass(FnSymbol* fn);
 
@@ -288,7 +285,7 @@ static void preNormalizeInit(FnSymbol* fn) {
     USR_FATAL(fn, "initializers are not yet allowed to throw errors");
 
   } else if (at->isRecord() == true || at->isUnion()) {
-    preNormalizeInitRecord(fn);
+    preNormalizeInitRecordUnion(fn);
 
   } else if (at->isClass()  == true) {
     preNormalizeInitClass(fn);
@@ -298,7 +295,7 @@ static void preNormalizeInit(FnSymbol* fn) {
   }
 }
 
-static void preNormalizeInitRecord(FnSymbol* fn) {
+static void preNormalizeInitRecordUnion(FnSymbol* fn) {
   InitNormalize  state(fn);
 
   AggregateType* at    = toAggregateType(fn->_this->type);
@@ -981,7 +978,7 @@ static bool isAssignment(CallExpr* callExpr) {
 static bool isSimpleAssignment(CallExpr* callExpr) {
   bool retval = false;
 
-  if (callExpr->isNamedAstr(astrSequals) == true) {
+  if (callExpr->isNamedAstr(astrSassign) == true) {
     retval = true;
   }
 

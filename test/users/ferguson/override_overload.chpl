@@ -26,8 +26,8 @@ class SubWriterTwo : BaseWriter {
 var s1 = new borrowed SubWriterOne();
 var s2 = new borrowed SubWriterTwo();
 
-var s1w = s1:BaseWriter;
-var s2w = s2:BaseWriter;
+var s1w = s1:borrowed BaseWriter;
+var s2w = s2:borrowed BaseWriter;
 
 writeln("Calling from a type BaseWriter");
 s1w.write(5);

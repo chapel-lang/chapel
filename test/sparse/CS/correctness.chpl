@@ -397,7 +397,7 @@ proc writeInternals(A) {
   if row then writeln('Column Index:');
   else writeln('Row Index:');
 
-  for i in 1..A.domain._value.nnz {
+  for i in 1..A.domain._value.getNNZ() {
     write(A.domain._value.idx(i), ' ');
   }
   writeln();

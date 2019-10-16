@@ -113,14 +113,52 @@ void gasnetc_bootstrapBarrier_gni(void);
 void gasnetc_bootstrapExchange_gni(void *src, size_t len, void *dest);
 
 /* ------------------------------------------------------------------------------------ */
-/* AuxSeg setup for registered bounce  and post descriptors*/
+// Aries CE support
+
+// Build Aries CE support by default on Aries hardware
+#if defined(GASNETC_BUILD_GNICE) && !GASNETC_BUILD_GNICE
+  #undef GASNETC_BUILD_GNICE
+#elif defined GASNET_CONDUIT_ARIES
+  #undef GASNETC_BUILD_GNICE
+  #define GASNETC_BUILD_GNICE 1
+#endif
+
+// Hook consensus barrier w/ Aries CE support
+#if GASNETC_BUILD_GNICE
+  #define GASNETE_COLL_CONSENSUS_DEFNS          \
+    extern void gasnete_cebarrier_notify(void); \
+    extern int gasnete_cebarrier_try(void);     \
+    extern int gasnete_ce_available;
+  #define GASNETE_COLL_CONSENSUS_NOTIFY(team) do {           \
+    if ((team) == GASNET_TEAM_ALL && gasnete_ce_available) { \
+      gasnete_cebarrier_notify();                            \
+    } else {                                                 \
+      GASNETE_COLL_CONSENSUS_DEFAULT_NOTIFY(team);           \
+    }                                                        \
+  } while (0)
+  #define GASNETE_COLL_CONSENSUS_TRY(team)                   \
+    (((team) == GASNET_TEAM_ALL && gasnete_ce_available)     \
+        ? gasnete_cebarrier_try()                            \
+        : GASNETE_COLL_CONSENSUS_DEFAULT_TRY(team))
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+/* AuxSeg setup for registered bounce buffers, post descriptors, and Aries CE */
 
 extern gasneti_auxseg_request_t gasnetc_bounce_auxseg_alloc(gasnet_seginfo_t *auxseg_info);
 extern gasneti_auxseg_request_t gasnetc_pd_auxseg_alloc(gasnet_seginfo_t *auxseg_info);
 
+#if GASNETC_BUILD_GNICE
+  extern gasneti_auxseg_request_t gasnetc_ce_auxseg_alloc(gasnet_seginfo_t *auxseg_info);
+  #define GASNETC_CE_AUXSEG_ALLOC gasnetc_ce_auxseg_alloc,
+#else
+  #define GASNETC_CE_AUXSEG_ALLOC /*empty*/
+#endif
+
 #define GASNETC_AUXSEG_FNS() \
     gasnetc_bounce_auxseg_alloc, \
-    gasnetc_pd_auxseg_alloc,
+    gasnetc_pd_auxseg_alloc, \
+    GASNETC_CE_AUXSEG_ALLOC
 
 /* ------------------------------------------------------------------------------------ */
 #endif

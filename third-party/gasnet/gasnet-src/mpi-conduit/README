@@ -144,7 +144,7 @@ GASNet Bugzilla server (URL below) and open a new bug (registration required)
 if you cannot find information on your MPI.
 
 * See the GASNet Bugzilla server for details on other known bugs:
-  http://gasnet-bugs.lbl.gov/
+  https://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------
@@ -156,7 +156,7 @@ Design Overview:
 
 The core API implementation is a very thin wrapper around the AMMPI
 implementation by Dan Bonachea. See documentation in the other/ammpi directory
-or the AMMPI webpage (http://gasnet.lbl.gov/ammpi) for details.
+or the AMMPI webpage (https://gasnet.lbl.gov/ammpi) for details.
 AMMPI requires an MPI 1.1 or newer compliant MPI implementation, and performance 
 varies widely across MPI implementations (based primarily on their performance
 for non-blocking sends and recvs - MPI_ISend/MPI_IRecv).

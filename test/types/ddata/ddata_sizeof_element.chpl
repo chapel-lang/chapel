@@ -15,4 +15,4 @@ class cls_t {
   var i: 20*int;
   proc i(n) return i(n);
 };
-writeln(_ddata_sizeof_element(_ddata(cls_t)));
+writeln(_ddata_sizeof_element(_ddata(unmanaged cls_t)));

@@ -1,1 +1,1 @@
-parRandom2-domblock.chpl:15: error: cannot iterate over values of type borrowed RandomStream(real(64),true)
+parRandom2-domblock.chpl:15: error: cannot iterate over values of type owned RandomStream(real(64),true)

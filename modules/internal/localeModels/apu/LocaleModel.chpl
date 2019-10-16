@@ -65,7 +65,7 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(_parent);
       sid = _sid;
-      name = _parent.chpl_name() + "-CPU" + sid;
+      name = _parent.chpl_name() + "-CPU" + sid:string;
     }
 
     override proc writeThis(f) {
@@ -109,7 +109,7 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(_parent);
       sid = _sid;
-      name = _parent.chpl_name() + "-GPU" + sid;
+      name = _parent.chpl_name() + "-GPU" + sid:string;
     }
 
     override proc writeThis(f) {
@@ -175,14 +175,6 @@ module LocaleModel {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
     override proc chpl_name() return local_name;
-
-
-    override proc writeThis(f) {
-      // Most classes will define it like this:
-      //      f <~> name;
-      // but here it is defined thus for backward compatibility.
-      f <~> new ioLiteral("LOCALE") <~> _node_id;
-    }
 
     proc getChildSpace() {
       halt("error!");

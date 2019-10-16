@@ -20,6 +20,7 @@
 #include "CatchStmt.h"
 
 #include "AstVisitor.h"
+#include "DecoratedClassType.h"
 #include "stringutil.h"
 #include "TryStmt.h"
 #include "wellknown.h"
@@ -67,6 +68,39 @@ BlockStmt* CatchStmt::body() const {
   return _body;
 }
 
+BlockStmt* CatchStmt::bodyWithoutTest() const {
+  if (this->isCatchall()) {
+    // if this is a catch-all, there is no test, so just return the body
+    return body();
+  } else {
+    // otherwise, this is a case that makes the source code for this:
+    //   catch e: errorType { body(); }
+    //
+    // into:
+    //
+    // 'if (e:errorType != nil) { body(); } else { /* nothing */ }
+    //
+    // where that else clause doesn't reflect the true control flow
+    // (eventually the next catch block will be inserted there*), so
+    // let's find this conditional and return the then clause instead.
+    // * = Open Q: Could we just build this control flow outright,
+    // nesting the catch statements within one another's else-clauses?
+
+    // Find the else body in the last CondStmt in the catch block body.
+    // This should always exist after CatchStmt::cleanup
+    // for non-catchall errors.
+    CondStmt* finalCond = NULL;
+    for_alist_backward(node, this->body()->body) {
+      if (CondStmt* cond = toCondStmt(node)) {
+        finalCond = cond;
+        break;
+      }
+    }
+    INT_ASSERT(finalCond != NULL && finalCond->elseStmt != NULL);
+    return finalCond->thenStmt;
+  }
+}
+
 bool CatchStmt::isCatchall() const {
   if (_name == NULL)
     return true;
@@ -75,7 +109,7 @@ bool CatchStmt::isCatchall() const {
     return true;
 
   if (SymExpr* typeSe = toSymExpr(type()))
-    if (typeSe->symbol()->type == dtError)
+    if (canonicalClassType(typeSe->symbol()->type) == dtError)
       return true;
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))

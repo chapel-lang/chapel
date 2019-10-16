@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2018 Inria.  All rights reserved.
+ * Copyright © 2009-2019 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -79,7 +79,7 @@ extern "C" {
 
 /** \brief Indicate at build time which hwloc API version is being used.
  *
- * This number is updated to (X>>16)+(Y>>8)+Z when a new release X.Y.Z
+ * This number is updated to (X<<16)+(Y<<8)+Z when a new release X.Y.Z
  * actually modifies the API.
  *
  * Users may check for available features at build time using this number
@@ -536,6 +536,7 @@ union hwloc_obj_attr_u {
   /** \brief Group-specific Object Attributes */
   struct hwloc_group_attr_s {
     unsigned depth;			  /**< \brief Depth of group object */
+    unsigned char dont_merge;		  /**< \brief Flag preventing groups from being automatically merged with identical parent or children. */
   } group;
   /** \brief PCI Device specific Object Attributes */
   struct hwloc_pcidev_attr_s {
@@ -2300,19 +2301,19 @@ enum hwloc_restrict_flags_e {
    * If this flag is not set, distance matrices are removed.
    * \hideinitializer
    */
-  HWLOC_RESTRICT_FLAG_ADAPT_DISTANCES = (1<<0),
+  HWLOC_RESTRICT_FLAG_ADAPT_DISTANCES = (1UL<<0),
 
   /** \brief Move Misc objects to ancestors if their parents are removed during restriction.
    * If this flag is not set, Misc objects are removed when their parents are removed.
    * \hideinitializer
    */
-  HWLOC_RESTRICT_FLAG_ADAPT_MISC = (1<<1),
+  HWLOC_RESTRICT_FLAG_ADAPT_MISC = (1UL<<1),
 
   /** \brief Move I/O objects to ancestors if their parents are removed during restriction.
    * If this flag is not set, I/O devices and bridges are removed when their parents are removed.
    * \hideinitializer
    */
-  HWLOC_RESTRICT_FLAG_ADAPT_IO = (1<<2)
+  HWLOC_RESTRICT_FLAG_ADAPT_IO = (1UL<<2)
 };
 
 /** \brief Restrict the topology to the given CPU set.
@@ -2429,6 +2430,9 @@ HWLOC_DECLSPEC int hwloc_topology_export_xml(hwloc_topology_t topology, const ch
  * hwloc_free_xmlbuffer() later in the caller.
  *
  * This memory buffer may be loaded later through hwloc_topology_set_xmlbuffer().
+ *
+ * The returned buffer ends with a \0 that is included in the returned
+ * length.
  *
  * \return -1 if a failure occured.
  *

@@ -84,14 +84,14 @@ on Locales[numLocales-1] do
 // Similarly, when reading the array, only the local copy will be
 // accessed.  Thus, when running on more than one locale, the
 // following writeln() will not see the modification performed by the
-// loop above since the two statements executed on distinct locales:
+// loop above since the two statements are executed on distinct locales:
 //
 writeln("Locale 0's copy of RA is:\n", RA);
 
 
 //
 // To access the replicands owned by other locales, we can use the
-// replicand method, which takes a locale as an argument and return the
+// replicand method, which takes a locale as an argument and returns the
 // array local to that locale:
 //
 

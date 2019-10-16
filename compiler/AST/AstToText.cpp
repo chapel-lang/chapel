@@ -68,13 +68,6 @@ void AstToText::appendName(FnSymbol* fn)
     mText += (fn->name + 11);
   }
 
-  else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
-  {
-    INT_ASSERT(strncmp(fn->name, "_type_construct_", 16) == 0);
-
-    mText += (fn->name + 16);
-  }
-
   else if (fn->isMethod() == true)
   {
     appendThisIntent(fn);
@@ -210,9 +203,6 @@ bool AstToText::skipParens(FnSymbol* fn) const
   bool retval = false;
 
   if (fn->hasFlag(FLAG_NO_PARENS))
-    retval = true;
-
-  else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && fn->numFormals() == 0)
     retval = true;
 
   else if (fn->hasFlag(FLAG_MODULE_INIT)      && developer        == false)
@@ -546,11 +536,8 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
         {
           if (VarSymbol* sym = toVarSymbol(sel->sym))
           {
-            if (strncmp(sym->name, "chpl__query", 11) != 0)
-            {
-              mText += "?";
-              mText += sym->name;
-            }
+            mText += "?";
+            mText += sym->name;
           }
           else
           {
@@ -562,7 +549,12 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
 
         else
         {
-          appendExpr(expr, false);
+          SymExpr* se = toSymExpr(expr);
+          bool unnamed = se && se->symbol() == gUninstantiated;
+
+          if (!unnamed) {
+            appendExpr(expr, false);
+          }
         }
       }
       else
@@ -768,6 +760,8 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 
           if (var->immediate->string_kind == STRING_KIND_C_STRING)
             *ptr++ = 'c';
+          else if (var->immediate->string_kind == STRING_KIND_BYTES)
+            *ptr++ = 'b';
           *ptr++ = '"';
           strcpy(ptr, var->immediate->v_string);
           ptr = strchr(ptr, '\0');
@@ -1201,17 +1195,20 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       mText += "new ";
       appendExpr(expr->get(1), printingType);
     }
-    else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS))
+    else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+             expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
     {
       mText += "unmanaged ";
       appendExpr(expr->get(1), printingType);
     }
-    else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS))
+    else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+             expr->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
     {
       mText += "borrowed ";
       appendExpr(expr->get(1), printingType);
     }
-    else if (expr->isPrimitive(PRIM_TO_NILABLE_CLASS))
+    else if (expr->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+             expr->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
     {
       mText += "nilable ";
       appendExpr(expr->get(1), printingType);

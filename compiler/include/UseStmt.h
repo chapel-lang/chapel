@@ -26,12 +26,13 @@ class ResolveScope;
 
 class UseStmt : public Stmt {
 public:
-                  UseStmt(BaseAST* source);
+  UseStmt(BaseAST* source, bool isPrivate);
 
                   UseStmt(BaseAST*                            source,
                           std::vector<const char*>*           args,
                           bool                                exclude,
-                          std::map<const char*, const char*>* renames);
+                          std::map<const char*, const char*>* renames,
+                          bool isPrivate);
 
   DECLARE_COPY(UseStmt);
 
@@ -63,7 +64,11 @@ public:
 
   bool            providesNewSymbols(const UseStmt* other)               const;
 
+  bool            isVisible(BaseAST* scope)                              const;
+
   BaseAST*        getSearchScope()                                       const;
+
+  ModuleSymbol*   checkIfModuleNameMatches(const char* name);
 
   void            writeListPredicate(FILE* mFP)                          const;
 
@@ -92,6 +97,7 @@ public:
   Expr*                              src;
   std::vector<const char*>           named;
   std::map<const char*, const char*> renamed;
+  bool isPrivate;
 
 private:
   bool                               except;

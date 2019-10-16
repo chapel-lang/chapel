@@ -286,8 +286,8 @@ module vertexColoring {
         var outfile = open(outputFile, iomode.cw);
         var writer = outfile.writer();
         for q in D {
-            writer.writeln("Node " + q + ": \t Color " + nodeSet[q].color);
-            writeln("Node " + q + ": \t Color " + nodeSet[q].color);
+            writer.writeln("Node ", q, ": \t Color ", nodeSet[q].color);
+            writeln("Node ", q, ": \t Color ", nodeSet[q].color);
         }
         writer.close();
         outfile.close();

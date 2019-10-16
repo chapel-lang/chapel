@@ -1,0 +1,4 @@
+# this test currently fails with intel compilers. fixing it will take more
+# investigation, until then the test is suppressed with intel compilers
+CHPL_TARGET_COMPILER==cray-prgenv-intel
+CHPL_TARGET_COMPILER==intel

@@ -17,7 +17,7 @@ config const treeHeight: uint = 4;
 //
 class node {
   var id: int;
-  var left, right: unmanaged node;
+  var left, right: unmanaged node?;
   proc deinit() {
     if left then delete left;
     if right then delete right;
@@ -57,7 +57,11 @@ proc buildTree(height: uint = treeHeight, id: int = 1): unmanaged node {
 // sum() walks the tree in parallel using a cobegin, computing the sum
 // of the node IDs using a postorder traversal.
 //
-proc sum(n: unmanaged node): int {
+proc sum(n: unmanaged node?): int {
+  if n == nil {
+    return 0;
+  }
+
   var total = n.id;
 
   if n.left != nil {

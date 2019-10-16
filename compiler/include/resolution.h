@@ -102,8 +102,29 @@ bool explainCallMatch(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 
+bool allowImplicitNilabilityRemoval(Type* actualType,
+                                    Symbol* actualSym,
+                                    Type* formalType,
+                                    Symbol* formalSym);
+
 bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal);
+                         ClassTypeDecorator formal,
+                         bool allowNonSubtypes,
+                         bool implicitBang);
+bool canInstantiateDecorators(ClassTypeDecorator actual,
+                              ClassTypeDecorator formal);
+bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
+                                      ClassTypeDecorator formal,
+                                      bool allowNonSubtypes,
+                                      bool implicitBang);
+
+bool canCoerceAsSubtype(Type*     actualType,
+                        Symbol*   actualSym,
+                        Type*     formalType,
+                        ArgSymbol* formalSym,
+                        FnSymbol* fn,
+                        bool*     promotes = NULL,
+                        bool*     paramNarrows = NULL);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
@@ -133,6 +154,7 @@ FnSymbol* getTheIteratorFn(Type* icType);
 // task intents
 extern Symbol* markPruned;
 bool isReduceOp(Type* type);
+void convertFieldsOfRecordThis(FnSymbol* fn);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
@@ -154,6 +176,7 @@ void      instantiateBody(FnSymbol* fn);
 // generics support
 TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS);
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
+void popInstantiationLimit(FnSymbol* fn);
 void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);
 
 FnSymbol* determineRootFunc(FnSymbol* fn);
@@ -162,13 +185,6 @@ void determineAllSubs(FnSymbol*  fn,
                       FnSymbol*  root,
                       SymbolMap& subs,
                       SymbolMap& allSubs);
-
-FnSymbol* instantiateFunction(FnSymbol*  fn,
-                              FnSymbol*  root,
-                              SymbolMap& allSubs,
-                              CallExpr*  call,
-                              SymbolMap& subs,
-                              SymbolMap& map);
 
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
@@ -190,7 +206,6 @@ disambiguateForInit(CallInfo&                    info,
                     Vec<ResolutionCandidate*>&   candidates);
 
 // Regular resolve functions
-void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 
@@ -218,15 +233,20 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
+
+// This one does not call USR_STOP
 void printResolutionErrorUnresolved(CallInfo&                  info,
                                     Vec<FnSymbol*>&            visibleFns);
 
 void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
+void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 
 void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+
+void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
 void lvalueCheck(CallExpr* call);
 
@@ -234,7 +254,8 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
 bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-bool isSubTypeOrInstantiation(Type* sub, Type* super);
+bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
@@ -278,7 +299,11 @@ void resolveDestructor(AggregateType* at);
 
 void fixTypeNames(AggregateType* at);
 
-Type* getInstantiationType(Type* actualType, Type* formalType);
+Type* getInstantiationType(Type* actualType, Symbol* actualSym,
+                           Type* formalType, Symbol* formalSym,
+                           Expr* ctx,
+                           bool allowCoercion=true,
+                           bool implicitBang=false);
 
 void resolveIfExprType(CondStmt* stmt);
 
@@ -286,8 +311,20 @@ void trimVisibleCandidates(CallInfo& call,
                            Vec<FnSymbol*>& mostApplicable,
                            Vec<FnSymbol*>& visibleFns);
 
-bool isNumericParamDefaultType(Type* type);
-
 void resolveGenericActuals(CallExpr* call);
+
+Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
+                                  ClassTypeDecorator useDec,
+                                  AggregateType* manager,
+                                  Expr* ctx);
+
+void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
+
+// These enable resolution for functions that don't really match
+// according to the language definition in order to get more errors
+// reported at once. E.g. C? can pass to C.
+void startGenerousResolutionForErrors();
+bool inGenerousResolutionForErrors();
+void stopGenerousResolutionForErrors();
 
 #endif

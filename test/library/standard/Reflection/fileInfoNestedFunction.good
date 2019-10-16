@@ -1,0 +1,3 @@
+fileInfoNestedFunction.chpl:13 fileInfoNestedFunction.main
+fileInfoNestedFunction.chpl:8 fileInfoNestedFunction.foo
+fileInfoNestedFunction.chpl:4 fileInfoNestedFunction.bar

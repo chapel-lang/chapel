@@ -1,17 +1,18 @@
 Initializing Modules:
    ChapelStandard
-    CPtr
-     HaltWrappers
     CString
-    String
-     SysCTypes
-     StringCasts
+    Bytes
+     ByteBufferHelpers
+     BytesStringCommon
+      String
+       SysCTypes
+       StringCasts
+       SysBasic
     OwnedObject
-    ChapelDebugPrint
+     HaltWrappers
     ChapelBase
-    MemConsistency
     Atomics
-    ChapelLocks
+     MemConsistency
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -24,6 +25,8 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          Sort
+          List
+           ChapelLocks
           MSBRadixSort
            RadixSortHelp
            ShellSort
@@ -34,30 +37,30 @@ Initializing Modules:
           BinaryInsertionSort
           MergeSort
           SelectionSort
+        ChapelDistribution
+         LinkedLists
+        SysError
+        ChapelDebugPrint
+        IO
+         FormattedIO
+          Regexp
+        DefaultAssociative
         ExternalArray
         RangeChunk
        ChapelNumLocales
        Sys
-        SysBasic
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
-    ChapelDistribution
-     LinkedLists
     ChapelIO
-     IO
-      SysError
-      FormattedIO
-       Regexp
     LocaleTree
-    DefaultAssociative
     ChapelTaskTable
     MemTracking
     ChapelUtil
     ChapelError
-    ChapelDynDispHack
     ChapelTaskData
     Assert
     AlignedTSupport
+    CPtr
    printModuleInitOrder
     moduleInitTest

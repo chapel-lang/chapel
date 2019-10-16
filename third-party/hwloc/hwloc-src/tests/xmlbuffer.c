@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010-2017 Inria.  All rights reserved.
+ * Copyright © 2010-2018 Inria.  All rights reserved.
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
@@ -13,7 +13,7 @@ static int one_test(void)
 {
   hwloc_topology_t topology;
   int size1, size2;
-  char *buf1, *buf2;
+  char *buf1, *copy1, *buf2;
   int err = 0, i;
   char s[129];
   char t[10];
@@ -43,9 +43,16 @@ static int one_test(void)
   hwloc_topology_destroy(topology);
   printf("exported to buffer %p length %d\n", buf1, size1);
 
+  /* copy the returned buffer to a newly malloc'd one
+   * to check that the returned length is correct (contains ending 0, etc).
+   */
+  copy1 = malloc(size1);
+  assert(copy1);
+  memcpy(copy1, buf1, size1);
+
   hwloc_topology_init(&topology);
   hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_IO);
-  assert(!hwloc_topology_set_xmlbuffer(topology, buf1, size1));
+  assert(!hwloc_topology_set_xmlbuffer(topology, copy1, size1));
   hwloc_topology_load(topology);
   assert(!hwloc_topology_is_thissystem(topology));
   if (strcmp(hwloc_obj_get_info_by_name(hwloc_get_root_obj(topology), "UglyString"), s))
@@ -67,40 +74,40 @@ static int one_test(void)
 
   hwloc_free_xmlbuffer(topology, buf1);
   hwloc_free_xmlbuffer(topology, buf2);
+  free(copy1);
 
   hwloc_topology_destroy(topology);
 
   return err;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
   int err;
 
-  printf("using default import and export\n");
-  putenv("HWLOC_LIBXML_IMPORT=1");
-  putenv("HWLOC_LIBXML_EXPORT=1");
-  err = one_test();
-  if (err < 0)
-    return err;
+  if (argc < 3) {
+    fprintf(stderr, "Need 0 or 1 twice as arguments for enabling/disabling libxml import and export\n");
+    fprintf(stderr, "For instance `xmlbuffer 0 1' enables libxml for export only\n");
+    fprintf(stderr, "Those arguments are passed by wrapper.sh during make check\n");
+    exit(EXIT_FAILURE);
+  }
 
-  printf("using minimalistic import and default export\n");
-  putenv("HWLOC_LIBXML_IMPORT=0");
-  putenv("HWLOC_LIBXML_EXPORT=1");
-  err = one_test();
-  if (err < 0)
-    return err;
+  if (atoi(argv[1])) {
+    putenv("HWLOC_LIBXML_IMPORT=1");
+    printf("import=libxml   ");
+  } else {
+    putenv("HWLOC_LIBXML_IMPORT=0");
+    printf("import=nolibxml ");
+  }
 
-  printf("using default import and minimalistic export\n");
-  putenv("HWLOC_LIBXML_IMPORT=1");
-  putenv("HWLOC_LIBXML_EXPORT=0");
-  err = one_test();
-  if (err < 0)
-    return err;
+  if (atoi(argv[2])) {
+    putenv("HWLOC_LIBXML_EXPORT=1");
+    printf("export=libxml\n");
+  } else {
+    putenv("HWLOC_LIBXML_EXPORT=0");
+    printf("export=nolibxml\n");
+  }
 
-  printf("using minimalistic import and export\n");
-  putenv("HWLOC_LIBXML_IMPORT=0");
-  putenv("HWLOC_LIBXML_EXPORT=0");
   err = one_test();
   if (err < 0)
     return err;

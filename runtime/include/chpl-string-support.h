@@ -50,7 +50,7 @@ int8_t ascii(c_string s) {
 }
 
 static inline
-int64_t string_length(c_string x) {
+int64_t string_length_bytes(c_string x) {
   if (x == NULL)
     return 0;
   return strlen(x);

@@ -37,12 +37,12 @@ for (i, first) in zip(A, First) {
     // This load might be less tempting to LICM
     // but tests that we aren't just relying on
     // an outdated copy of chpl_privateObjects.
-    var c:unmanaged C;
+    var c:unmanaged C?;
     if first == 0 || j > 1 {
       c = getPrivatized(i);
     } else {
       c = new unmanaged C(i);
-      insertPrivatized(c, i);
+      insertPrivatized(c!, i);
     }
 
     sum += c.i + one.i;

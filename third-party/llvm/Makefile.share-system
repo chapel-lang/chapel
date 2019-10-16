@@ -1,29 +1,32 @@
 include $(THIRD_PARTY_DIR)/llvm/Makefile.share
 
 ifndef PREFERRED_LLVM_VERS
-  export PREFERRED_LLVM_VERS=$(shell cat $(THIRD_PARTY_DIR)/llvm/LLVM_VERSION)
+  export PREFERRED_LLVM_VERS:=$(shell cat $(THIRD_PARTY_DIR)/llvm/LLVM_VERSION)
 endif
 
 ifndef LLVM_CONFIG
-  export LLVM_CONFIG=$(shell $(THIRD_PARTY_DIR)/llvm/find-llvm-config.sh $(PREFERRED_LLVM_VERS))
+  export LLVM_CONFIG:=$(shell $(THIRD_PARTY_DIR)/llvm/find-llvm-config.sh $(PREFERRED_LLVM_VERS))
 endif
 
 ifndef LLVM_CONFIG_INCLUDE_DIR
-  export LLVM_CONFIG_INCLUDE_DIR=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --includedir)
+  export LLVM_CONFIG_INCLUDE_DIR:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --includedir)
 endif
 
 ifndef LLVM_CONFIG_LIB_DIR
-  export LLVM_CONFIG_LIB_DIR=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --libdir)
+  export LLVM_CONFIG_LIB_DIR:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --libdir)
 endif
 
 # LLVM preprocessor flags (ie -Dbla and -Ibla) 
 ifndef LLVM_CONFIG_CXXFLAGS
-  export LLVM_CONFIG_CXXFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cxxflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
+  export LLVM_CONFIG_CXXFLAGS:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cxxflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
 endif
 
 ifndef LLVM_CONFIG_CFLAGS
-  export LLVM_CONFIG_CFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
+  export LLVM_CONFIG_CFLAGS:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
 endif
+
+# LLVM_VERSION, LLVM_MAJOR_VERSION, etc
+include $(THIRD_PARTY_DIR)/llvm/Makefile.version
 
 # Figure out which clang we are using
 # if LLVM_CONFIG is e.g. llvm-config-3.7, we should use clang-3.7

@@ -2,7 +2,7 @@ class C {
   var x = 10;
 }
 
-var globc: borrowed C = nil;
+var globc: borrowed C? = nil;
 
 class D {
   var y = 20;

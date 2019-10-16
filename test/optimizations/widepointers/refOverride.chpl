@@ -16,7 +16,7 @@ class SubPrinter : SuperPrinter {
 class Foo { var x = 10; }
 
 proc main() {
-  var printer: owned SuperPrinter;
+  var printer: owned SuperPrinter?;
   printer = new owned SubPrinter();
 
   //

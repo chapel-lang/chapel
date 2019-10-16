@@ -9,6 +9,7 @@ config const printStats = true,
 config const oversubscription = 1,
              tasksPerLocale = here.maxTaskPar * oversubscription;
 
+config type copyType = int;
 config param useUnorderedCopy = true;
 config const concurrentFencing = false;
 config param commDiags = false;
@@ -18,7 +19,12 @@ config const sizePerLocale = 10000,
 
 const space = {0..size};
 const D = space dmapped Block(space, dataParTasksPerLocale=tasksPerLocale);
-var A, reversedA: [D] int = D;
+var A, reversedA: [D] copyType;
+
+forall (a, r, d) in zip(A, reversedA, D) {
+  a += d;
+  r += d;
+}
 
 inline proc assign(ref dst, ref src) {
   if useUnorderedCopy then unorderedCopy(dst, src);
@@ -31,7 +37,7 @@ inline proc assign(ref dst, ref src) {
 var t: Timer;
 
 proc start() {
-  reversedA = 0;
+  reversedA -= reversedA;
   if commDiags { resetCommDiagnostics(); startCommDiagnostics(); }
   t.clear(); t.start();
 }
@@ -40,17 +46,20 @@ proc stop(opType: string) {
   t.stop();
   if commDiags { stopCommDiagnostics(); }
   const ordering = if useUnorderedCopy then "Unordered " else "Ordered ";
-  const timing = if printStats then " time: " + t.elapsed() else "";
-  const rate = if printStats then " rate(mOps/sec): " + (size / t.elapsed()) / 1e6 else "";
+  const timing = if printStats then " time: " + t.elapsed():string else "";
+  const rate = if printStats then " rate(mOps/sec): " + ((size / t.elapsed()) / 1e6):string else "";
   const gets = +reduce getCommDiagnostics().get;
   const puts = +reduce getCommDiagnostics().put;
   const diags = if commDiags then " (GETS: " + gets + ", PUTS: " + puts + ")" else "";
 
-  writeln(ordering + opType + timing, " : " + ordering + opType + rate + diags);
+  writeln(ordering, opType, timing, " : ", ordering, opType, rate, diags);
 
   if verify then
-    forall (rA, i) in zip(reversedA, D) do
-      assert(rA == size-i);
+    forall (rA, i) in zip(reversedA, D) {
+      var expected: copyType;
+      expected += size-i;
+      assert(rA == expected);
+    }
 }
 
 

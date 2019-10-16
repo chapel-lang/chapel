@@ -25,6 +25,7 @@
       This module is expected to change in the future.
  */
 module LinkedLists {
+  private use SysBasic;
 
 pragma "no doc"
 class listNode {
@@ -185,6 +186,7 @@ record LinkedList {
      It is an error to call this function on an empty list.
    */
    proc pop_front():eltType {
+     use HaltWrappers only;
      if boundsChecking && length < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
      }

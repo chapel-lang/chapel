@@ -257,6 +257,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (nodeAccessStr != NULL)
       fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
+    // request access to all memory
+    fprintf(slurmFile, "#SBATCH --mem=0\n");
+
     // Set the walltime if it was specified 
     if (walltime) { 
       fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
@@ -371,6 +374,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // request specified node access
     if (nodeAccessStr != NULL)
       len += sprintf(iCom+len, "--%s ", nodeAccessStr);
+
+    // request access to all memory
+    len += sprintf(iCom+len, "--mem=0 ");
 
     // kill the job if any program instance halts with non-zero exit status
     len += sprintf(iCom+len, "--kill-on-bad-exit ");

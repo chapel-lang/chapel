@@ -132,7 +132,7 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "put_bulk throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stput, "PutBlocking throughput", PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
@@ -150,7 +150,7 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && dogets) {
-			print_stat(myproc, &stget, "get_bulk throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stget, "GetBlocking throughput", PRINT_THROUGHPUT);
 		}	
 
 	}
@@ -182,7 +182,7 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "put_nbi throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stput, "PutNBI+DEFER throughput", PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
@@ -201,7 +201,7 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && dogets) {
-			print_stat(myproc, &stget, "get_nbi throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stget, "GetNBI throughput", PRINT_THROUGHPUT);
 		}	
 
 	}
@@ -236,7 +236,7 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
        
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "put_nb_bulk throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stput, "PutNB+DEFER throughput", PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
@@ -255,7 +255,7 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && dogets) {
-			print_stat(myproc, &stget, "get_nb throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stget, "GetNB throughput", PRINT_THROUGHPUT);
 		}	
 
 	}
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
     GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
     test_init("testlarge",1, "[options] (iters) (maxsz) (test_sections)\n"
                "  The '-in' or '-out' option selects whether the initiator-side\n"
-               "   memory is in the GASNet segment or not (default is not).\n"
+               "   memory is in the GASNet segment or not (default is 'in').\n"
                "  The -p/-g option selects puts only or gets only (default is both).\n"
                "  The -s option skips warm-up iterations\n"
                "  The -m option enables MB/sec units for bandwidth output (MB=2^20 bytes).\n"

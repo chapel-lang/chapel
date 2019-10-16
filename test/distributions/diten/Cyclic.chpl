@@ -153,12 +153,6 @@ class Cyclic1DDist {
   // Determine which locale owns a particular index
   //
   proc idxToLocaleInd(ind: glbIdxType) {
-    proc mod(a, b) {
-      if (a >= 0) then
-        return a % b;
-      else
-        return (b + (a % b)) % b;
-    }
     const numlocs = targetLocDom.numIndices;
     return (mod(mod(ind, numlocs) - mod(min(glbIdxType), numlocs),
                numlocs) + targetLocDom.low):index(targetLocs.domain);

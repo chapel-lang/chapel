@@ -98,7 +98,6 @@ const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
-static char moduleSearchPath[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
 // TODO: Should --library automatically generate all supported
@@ -145,7 +144,9 @@ bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
-bool fLegacyNilableClasses = true;
+bool fLegacyClasses = false;
+bool fIgnoreNilabilityErrors = false;
+bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
 bool fNoInferLocalFields = false;
 bool fReplaceArrayAccessesWithRefTemps = false;
@@ -192,7 +193,6 @@ bool fIgnoreLocalClasses = false;
 bool fLifetimeChecking = true;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
-bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
@@ -542,7 +542,11 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     llvmPrintIrStageNum = llvmStageNum::BASIC;
 
-  addNameToPrintLlvmIr(arg);
+  std::vector<std::string> fNames;
+  splitString(std::string(arg), fNames, ",");
+  for (std::size_t i = 0; i < fNames.size(); ++i) {
+    addNameToPrintLlvmIr(fNames[i].c_str());
+  }
 }
 
 static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
@@ -875,7 +879,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", NULL, NULL, ModuleSymbol::mainModuleNameSet },
- {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
+ {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "[Don't] print code size of main modules", "N", &printTokens, "CHPL_PRINT_TOKENS", NULL},
  {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},
  {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
@@ -893,7 +897,7 @@ static ArgumentDescription arg_desc[] = {
  {"cache-remote", ' ', NULL, "[Don't] enable cache for remote data", "N", &fCacheRemote, "CHPL_CACHE_REMOTE", setCacheEnable},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
- {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
+ {"fast", ' ', NULL, "Disable checks; optimize/specialize code", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
  {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
@@ -1056,9 +1060,10 @@ static ArgumentDescription arg_desc[] = {
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
- {"legacy-nilable-classes", ' ', NULL, "Allow all variables of class type to store nil", "N", &fLegacyNilableClasses, NULL, NULL},
+ {"legacy-classes", ' ', NULL, "Class variables match 1.19 - borrowed by default, can store nil", "N", &fLegacyClasses, NULL, NULL},
+ {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
+ {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
- {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -1077,6 +1082,8 @@ static ArgumentDescription arg_desc[] = {
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
+ {"prepend-internal-module-dir", ' ', "<directory>", "Prepend directory to internal module search path", "P", NULL, NULL, addInternalModulePath},
+ {"prepend-standard-module-dir", ' ', "<directory>", "Prepend directory to standard module search path", "P", NULL, NULL, addStandardModulePath},
  {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"print-unused-internal-functions", ' ', NULL, "[Don't] print names and locations of unused internal functions", "N", &fPrintUnusedInternalFns, NULL, NULL},
@@ -1321,14 +1328,6 @@ static void setupChplGlobals(const char* argv0) {
   setChapelEnvs();
 }
 
-static void postStackCheck() {
-  if (!fNoStackChecks && fUserSetStackChecks) {
-    if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
-      USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
-    }
-  }
-}
-
 static void postTaskTracking() {
   if (fEnableTaskTracking) {
     if (strcmp(CHPL_TASKS, "fifo") != 0) {
@@ -1338,10 +1337,19 @@ static void postTaskTracking() {
 }
 
 static void postStaticLink() {
-  if (fLinkStyle == LS_STATIC) {
-    if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
+  if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+    if (fLinkStyle == LS_STATIC) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
       fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
+    }
+
+    //
+    // The default link style translates to static (at least for now), so we
+    // need to account for that when building a multi-locale library or else
+    // we'll get the same errors we do for static linking on `darwin`.
+    //
+    if (fMultiLocaleInterop && fLinkStyle == LS_DEFAULT) {
+      fLinkStyle = LS_DYNAMIC;
     }
   }
 }
@@ -1375,10 +1383,6 @@ static void setMultiLocaleInterop() {
   // We must be compiling a multi-locale library to be eligible for MLI.
   if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
     return;
-  }
-
-  if (strcmp(CHPL_COMM, "gasnet") != 0) {
-    USR_FATAL("Multi-locale libraries are only supported on gasnet");
   }
 
   if (llvmCodegen) {
@@ -1454,8 +1458,6 @@ static void postprocess_args() {
   postVectorize();
 
   postTaskTracking();
-
-  postStackCheck();
 
   setMultiLocaleInterop();
 

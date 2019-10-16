@@ -21,6 +21,7 @@
  *  Prefetch
  */
 module Prefetch {
+  private use Prefetch_internal only ;
   inline proc prefetch(addr:c_ptr) {
     Prefetch_internal.chpl_prefetch(addr:c_void_ptr);
   }

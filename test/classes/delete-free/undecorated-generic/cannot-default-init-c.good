@@ -1,0 +1,5 @@
+cannot-default-init-c.chpl:3: In function 'test':
+cannot-default-init-c.chpl:4: error: Cannot default-initialize a variable with generic type
+cannot-default-init-c.chpl:4: note: 'bb' has generic type 'C'
+cannot-default-init-c.chpl:4: note: 'C' now means non-nilable class with any management
+cannot-default-init-c.chpl:4: note: to migrate old code, change it to 'borrowed C'

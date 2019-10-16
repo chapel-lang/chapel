@@ -58,7 +58,10 @@ bool NormalizeTryExprsVisitor::enterCallExpr(CallExpr* call) {
     parentTag = stack.top();
   }
 
-  if (isTryBang || parentTag == TRY_TAG_IN_TRYBANG) {
+  if (call->tryTag != TRY_TAG_NONE) {
+    // if this expr is already marked with try or try! leave it alone
+    tag = call->tryTag;
+  } else if (isTryBang || parentTag == TRY_TAG_IN_TRYBANG) {
     // try! on this expr or a parent always makes it try!
     tag = TRY_TAG_IN_TRYBANG;
   } else if (isTry || parentTag == TRY_TAG_IN_TRY) {

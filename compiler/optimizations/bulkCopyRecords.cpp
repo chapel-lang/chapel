@@ -37,7 +37,7 @@ static bool isAssignment(FnSymbol* fn)
 {
   if (! fn->hasFlag(FLAG_ASSIGNOP))
     return false;
-  if (fn->name != astrSequals)
+  if (fn->name != astrSassign)
     return false;
 
   return true;

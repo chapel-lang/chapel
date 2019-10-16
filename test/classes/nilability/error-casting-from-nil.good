@@ -1,0 +1,2 @@
+error-casting-from-nil.chpl:3: In function 'main':
+error-casting-from-nil.chpl:4: error: cannot cast nil to unmanaged MyClass

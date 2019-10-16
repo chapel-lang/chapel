@@ -7,10 +7,10 @@
 
 // Used to encode a string into a uint
 var tonum : [0..127] int;
-tonum["A".byte(1)] = 0;
-tonum["C".byte(1)] = 1;
-tonum["T".byte(1)] = 2;
-tonum["G".byte(1)] = 3;
+tonum["A".toByte()] = 0;
+tonum["C".toByte()] = 1;
+tonum["T".toByte()] = 2;
+tonum["G".toByte()] = 3;
 
 // Used to decode a uint back into a string
 var tochar : [0..3] string;
@@ -23,7 +23,7 @@ inline proc hash(data : string) {
   var e : uint = 0;
   for d in data {
     e <<= 2;
-    e |= tonum[d.byte(1)];
+    e |= tonum[d.toByte()];
   }
   return e;
 }
@@ -72,7 +72,7 @@ proc write_frequencies(data : string, size : int) {
 }
 
 proc write_count(data : string, pattern : string) {
-  const size = pattern.length;
+  const size = pattern.numBytes;
   var freqs = calculate(data, size);
   const d = hash(pattern[1:byteIndex..#size]);
   writeln(freqs[d], "\t", decode(d, size));
