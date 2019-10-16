@@ -784,7 +784,7 @@ static void makeActualsVector(const CallInfo&          info,
       }
 
       // Fail if there are too many unnamed actuals.
-      if (!match && !(fn->hasFlag(FLAG_GENERIC) && fn->hasFlag(FLAG_INIT_TUPLE))) {
+      if (!match && !(fn->isGeneric() && fn->hasFlag(FLAG_INIT_TUPLE))) {
         INT_FATAL(call,
                   "Compilation should have verified this action was valid");
       }

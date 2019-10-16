@@ -204,7 +204,6 @@ disambiguateForInit(CallInfo&                    info,
                     Vec<ResolutionCandidate*>&   candidates);
 
 // Regular resolve functions
-void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 

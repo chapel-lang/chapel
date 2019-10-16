@@ -26,10 +26,7 @@ class FnSymbol;
 class Type;
 
 void  resolveSignatureAndFunction(FnSymbol* fn);
-
-// Note: resolveSignature resolves declared return types
 void  resolveSignature(FnSymbol* fn);
-
 void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
 
 bool  isParallelIterator(FnSymbol* fn);

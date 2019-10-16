@@ -59,7 +59,7 @@ static void removeUnusedFunctions() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    INT_ASSERT(fn->hasFlag(FLAG_GENERIC) == false);
+    INT_ASSERT(! fn->isGeneric());
 
     concreteWellKnownFunctionsSet.insert(fn);
   }
