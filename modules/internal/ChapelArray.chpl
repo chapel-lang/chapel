@@ -4168,14 +4168,8 @@ module ChapelArray {
       for (aa,bb) in zip(a,b) do
         aa = bb;
     } else {
-    // TODO: Restore as before
-            //       compilerWarning(a.type:string);
-            //       compilerWarning(b.type:string);
-            for (aaaa,bbbb) in zip(a, b) do aaaa = bbbb;
-    /*
       [ (aa,bb) in zip(a,b) ]
         aa = bb;
-        */
     }
   }
 
