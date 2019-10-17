@@ -15,6 +15,7 @@ config const memFraction = 4;
 
 config const correctness = false;
 config const commCount = false;
+config const verboseComm = false;
 config const nElemsTiny = numLocales;
 config const nElemsSmall = if correctness then 100 else 1000000;
 config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
@@ -37,6 +38,9 @@ inline proc startDiag() {
     if commCount {
       startCommDiagnostics();
     }
+    else if verboseComm {
+      startVerboseComm();
+    }
     else {
       t.start();
     }
@@ -53,6 +57,9 @@ inline proc endDiag(name) {
       writeln(name, "-ONS: ", + reduce (d.execute_on + d.execute_on_fast +
                                         d.execute_on_nb));
       resetCommDiagnostics();
+    }
+    else if verboseComm {
+      stopVerboseComm();
     }
     else {
       t.stop();
