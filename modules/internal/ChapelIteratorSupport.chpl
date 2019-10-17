@@ -65,7 +65,7 @@ module ChapelIteratorSupport {
                                              (...iteratorIndexHelp(t, dim+1)));
     }
 
-    return iteratorIndexHelp(t, 1);
+    return iteratorIndexHelp(t, 0);
   }
 
   pragma "no doc"
@@ -348,7 +348,7 @@ module ChapelIteratorSupport {
     if x.size == 1 then
       return _getIterator(x(0));
     else
-      return _getIteratorZipInternal(x, 1);
+      return _getIteratorZipInternal(x, 0);
   }
 
   inline proc _getIteratorZip(type t: _tuple) {
@@ -361,7 +361,7 @@ module ChapelIteratorSupport {
     if t.size == 1 then
       return _getIterator(t(0));
     else
-      return _getIteratorZipInternal(t, 1);
+      return _getIteratorZipInternal(t, 0);
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {
@@ -533,7 +533,7 @@ module ChapelIteratorSupport {
     return chpl__dynamicFastFollowCheck(x, lead);
   }
 
-  proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 1) {
+  proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 0) {
     if x.size-1 == dim then
       return chpl__dynamicFastFollowCheckZip(x(dim), lead);
     else
@@ -566,7 +566,7 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   inline proc _toFollowerZip(x: _tuple, leaderIndex) {
-    return _toFollowerZipInternal(x, leaderIndex, 1);
+    return _toFollowerZipInternal(x, leaderIndex, 0);
   }
 
   pragma "fn returns iterator"
@@ -607,7 +607,7 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
-    return _toFastFollowerZip(x, leaderIndex, 1);
+    return _toFastFollowerZip(x, leaderIndex, 0);
   }
 
   pragma "fn returns iterator"
