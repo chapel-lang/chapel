@@ -59,12 +59,11 @@ def main():
     # in case we've changed directories
     os.chdir(invocation_dir)
 
-    cleanup()
-
     finish()
 
 
 def run_tests(tests):
+    set_up_tmpdir()
     set_up_logger()
 
     files = []
@@ -159,6 +158,9 @@ def finish():
 
     logger.write()
     logger.stop()
+
+    # copy log from per-pid location (if needed) and remove tmp dir
+    cleanup()
 
     # exit, returning 0 if no failures and 2 if there were some
     if args.clean_only or failures == 0:
@@ -361,7 +363,7 @@ def summarize():
     summary = "[Test Summary - {0}]\n".format(date_str)
 
     # scan line-by-line, logging failures, warnings, etc.. and updating counts
-    with open(log_file, "r") as log:
+    with open(tmp_log_file, "r") as log:
         for line in log:
             if re.search(error_marker, line, flags=re.M):
                 failure_summary += line
@@ -411,9 +413,10 @@ def summarize():
     logger.restart()
     logger.write(summary)
 
-    with open(log_file + ".summary", "w") as log_summary:
+    with open(tmp_summary_file, "w") as log_summary:
         log_summary.write(summary)
 
+    # Note: Log file & summary copied tmp_log_file to log_file in cleanup
 
 def clean(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
@@ -634,8 +637,11 @@ def check_environment_with_args():
             del os.environ["LC_ALL"]
 
     global log_file
+    global tmp_log_file
     log_file = os.path.join(logs_dir, "{0}.{1}.log"
             .format(getpass.getuser(), tgt_platform))
+    tmp_log_file = os.path.join(logs_dir, "{0}.{1}.pid{2}.log"
+            .format(getpass.getuser(), tgt_platform, os.getpid()))
 
 
 # Strip quotes that might have been added by preprocess_options()
@@ -644,6 +650,19 @@ def strip_preprocessing(arg):
         return arg[1:-1]
     else:
         return arg
+
+def set_up_tmpdir():
+    # create temporary directory
+    global chpl_test_tmp_dir
+    if "CHPL_TEST_TMP_DIR" in os.environ:
+        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
+    else:
+        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
+        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
+
+    # register atexit handler (cleans up temporary directory)
+    atexit.register(cleanup)
+
 
 def set_up_environment():
     # pre-
@@ -676,17 +695,6 @@ def set_up_environment():
             logger.write("[Removing memory leaks log file with duplicate name {0}]"
                          .format(memleaksfile))
             os.remove(memleaksfile)
-
-    # create temporary directory
-    global chpl_test_tmp_dir
-    if "CHPL_TEST_TMP_DIR" in os.environ:
-        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
-    else:
-        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
-        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
-    
-    # register atexit handler (cleans up temporary directory)
-    atexit.register(cleanup)
 
     # performance (linking flags to each other)
     if args.performance or args.performance_description or args.perflabel != "perf":
@@ -728,18 +736,34 @@ def set_up_environment():
 
 def set_up_logger():
     # log_file
+    global tmp_log_file
+    global tmp_summary_file
     global log_file
+    global summary_file
+
+    # Compute the paths needing to be computed
+    # Default log_file and tmp_log_file are set in check_environment_with_args
     if args.log_file:
         log_file = os.path.abspath(args.log_file)
+        # Don't use temporary log files if the user specified -logfile
+        tmp_log_file = log_file
+
+    summary_file = log_file + ".summary"
+    tmp_summary_file = tmp_log_file + ".summary"
+
     log_file_dir = os.path.dirname(log_file)
     if not os.access(log_file_dir, os.X_OK):
         print("[Permission denied for log_file directory: {0}]"
                 .format(log_file_dir))
         sys.exit(1)
+
+    # Remove log file and summary file
     if os.path.isfile(log_file):
         print()
         print("[Removing log file with duplicate name {0}]".format(log_file))
         os.remove(log_file)
+    if os.path.isfile(summary_file):
+        os.remove(summary_file)
 
     ## START LOGGING TO FILE ##
     global logger
@@ -1226,9 +1250,20 @@ def run_and_log(cmd):
     return p.returncode
 
 def cleanup():
+    # move the log from the temp log
+    if os.path.isfile(tmp_log_file):
+        if tmp_log_file != log_file:
+            shutil.copyfile(tmp_log_file, log_file)
+            os.remove(tmp_log_file)
+
+    # move the summary from the temp summary
+    if os.path.isfile(tmp_summary_file):
+        if tmp_summary_file != summary_file:
+            shutil.copyfile(tmp_summary_file, summary_file)
+            os.remove(tmp_summary_file)
+
     if os.path.isdir(chpl_test_tmp_dir):
-        print("[Removing {0} directory]".format(chpl_test_tmp_dir))
-        shutil.rmtree(chpl_test_tmp_dir)
+      shutil.rmtree(chpl_test_tmp_dir)
 
 
 def jUnit():
@@ -1457,7 +1492,7 @@ class Logger():
         # console stdout handlers
         self.console_out = StreamHandlerWithException(sys.stdout)
         # file handlers
-        self.file_out = FileHandlerWithException(log_file, mode="w")
+        self.file_out = FileHandlerWithException(tmp_log_file, mode="w")
         # add them
         self.logger.addHandler(self.console_out)
         self.logger.addHandler(self.file_out)
@@ -1475,7 +1510,7 @@ class Logger():
         self.logger.removeHandler(self.file_out)
 
     def restart(self):
-        self.file_out = FileHandlerWithException(log_file, mode="a")
+        self.file_out = FileHandlerWithException(tmp_log_file, mode="a")
         self.logger.addHandler(self.file_out)
 
 
