@@ -563,7 +563,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
 
 
 /* This routine seems to handle the case when the RHS of a tuple
-   declaration is a tuple expression like `(8, 4, 3)`
+   declaration is a tuple expression like `(8, 4, 3)` */
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
   int count = 0;
