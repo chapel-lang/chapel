@@ -1553,7 +1553,7 @@ module DefaultRectangular {
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
     f <~> new ioLiteral("{") <~> ranges(0);
-    for i in 2..rank do
+    for i in 1..rank-1 do
       f <~> new ioLiteral(", ") <~> ranges(i);
     f <~> new ioLiteral("}");
   }
@@ -1601,7 +1601,7 @@ module DefaultRectangular {
       }
     }
 
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
+    proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1612,13 +1612,13 @@ module DefaultRectangular {
       var makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if isjson || ischpl {
-        if dim != rank {
+        if dim != rank-1 {
           f <~> new ioLiteral("[\n");
-          writeSpaces(dim); // space for the next dimension
+          writeSpaces(dim+1); // space for the next dimension
         } else f <~> new ioLiteral("[");
       }
 
-      if dim == rank {
+      if dim == rank-1 {
         var first = true;
         if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
@@ -1634,7 +1634,7 @@ module DefaultRectangular {
           idx(dim) = j;
 
           recursiveArrayWriter(idx, dim=dim+1,
-                               last=(last || dim == 1) && (j == dom.dsiDim(dim).alignedHigh));
+                               last=(last || dim == 0) && (j == dom.dsiDim(dim).alignedHigh));
 
           if isjson || ischpl {
             if j != lastIdx {
@@ -1646,13 +1646,13 @@ module DefaultRectangular {
       }
 
       if isspace {
-        if !last && dim != 1 {
+        if !last && dim != 0 {
           f <~> new ioLiteral("\n");
         }
       } else if isjson || ischpl {
-        if dim != rank {
+        if dim != rank-1 {
           f <~> new ioLiteral("\n");
-          writeSpaces(dim-1); // space for this dimension
+          writeSpaces(dim); // space for this dimension
           f <~> new ioLiteral("]");
         }
         else f <~> new ioLiteral("]");

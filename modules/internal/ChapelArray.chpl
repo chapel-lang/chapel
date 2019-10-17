@@ -1389,7 +1389,7 @@ module ChapelArray {
     proc dim(d : int) return _value.dsiDim(d);
 
     pragma "no doc"
-    proc dim(param d : int) return _value.dsiDim(d);
+    proc dim(param d : int) return _value.dsiDim(d-1);
 
     pragma "no doc"
     iter dimIter(param d, ind) {
@@ -4213,12 +4213,12 @@ module ChapelArray {
 
       if rank == 1 {
         for param i in 0..b.size-1 {
-          j(a.rank-rank+1) = chpl__intToIdx(idxType, start:strType + ((i-1)*stride));
+          j(a.rank-rank) = chpl__intToIdx(idxType, start:strType + (i*stride));
           a(j) = b(i);
         }
       } else {
         for param i in 0..b.size-1 {
-          j(a.rank-rank+1) = chpl__intToIdx(idxType, start:strType + ((i-1)*stride));
+          j(a.rank-rank) = chpl__intToIdx(idxType, start:strType + (i*stride));
           chpl__tupleInit(j, rank-1, b(i));
         }
       }

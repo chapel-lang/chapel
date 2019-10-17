@@ -1,0 +1,2 @@
+error-negone.chpl:3: error: tuple index -1 is out of bounds
+error-negone.chpl:3: note: tuple elements start at index 0
