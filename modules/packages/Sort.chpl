@@ -2028,6 +2028,7 @@ module TwoArrayPartitioning {
         TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
 
     const baseCaseSize:int;
+    const distributedBaseCaseSize:int;
     const endbit:int = max(int);
 
     const countsSize:int = numLocales*maxBuckets;
@@ -2378,10 +2379,10 @@ module TwoArrayPartitioning {
 
   private proc distributedPartitioningSortWithScratchSpaceBaseCase(
           start_n:int, end_n:int, A:[], Scratch:[],
-          ref state: TwoArrayDistributedBucketizerSharedState,
+          ref compat: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
 
-    if startbit > state.endbit then
+    if startbit > compat.endbit then
       return;
 
     const n = end_n - start_n + 1;
@@ -2390,11 +2391,13 @@ module TwoArrayPartitioning {
     const curDomain = {start_n..end_n};
     const intersect = curDomain[localSubdomain];
     if curDomain == intersect {
-      if n > state.baseCaseSize {
-        msbRadixSort(start_n, end_n,
-                     A.localSlice(curDomain), criterion,
-                     startbit, state.endbit,
-                     settings=new MSBRadixSortSettings());
+      if n > compat.baseCaseSize {
+        compat.bigTasks.clear();
+        compat.smallTasks.clear();
+        partitioningSortWithScratchSpace(start_n, end_n,
+                     A.localSlice(curDomain), Scratch.localSlice(curDomain),
+                     compat, criterion,
+                     startbit);
       } else {
         ShellSort.shellSort(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
       }
@@ -2402,13 +2405,16 @@ module TwoArrayPartitioning {
       const size = end_n-start_n+1;
       // Copy it to one locale
       var LocalA:[start_n..end_n] A.eltType;
+      var LocalScratch:[start_n..end_n] A.eltType;
       ShallowCopy.shallowCopy(LocalA, start_n, A, start_n, size);
       // Sort it
-      if n > state.baseCaseSize {
-        msbRadixSort(start_n, end_n,
-                     LocalA, criterion,
-                     startbit, state.endbit,
-                     settings=new MSBRadixSortSettings());
+      if n > compat.baseCaseSize {
+        compat.bigTasks.clear();
+        compat.smallTasks.clear();
+        partitioningSortWithScratchSpace(start_n, end_n,
+                     LocalA, LocalScratch,
+                     compat, criterion,
+                     startbit);
       } else {
         ShellSort.shellSort(LocalA, criterion, start=start_n, end=end_n);
       }
@@ -2497,10 +2503,12 @@ module TwoArrayPartitioning {
     if startbit > state.endbit then
       return;
 
+    // If it's really small, just sort it on Locale 0.
     if end_n - start_n < state.baseCaseSize {
+      ref compat = state.perLocale[0].compat;
       distributedPartitioningSortWithScratchSpaceBaseCase(start_n, end_n,
                                                           A, Scratch,
-                                                          state, criterion,
+                                                          compat, criterion,
                                                           startbit);
       return;
     }
@@ -2519,6 +2527,8 @@ module TwoArrayPartitioning {
       const task = state.distTasks.pop();
       const taskStart = task.start;
       const taskEnd = task.start + task.size - 1;
+
+      //writeln("Distributed sorting task ", task);
 
       assert(task.doSort);
       assert(task.inA);
@@ -2651,19 +2661,26 @@ module TwoArrayPartitioning {
           // could this work for block?
           //var isOnOneLocale = A.domain.dist.idxToLocale(globalStart) ==
           //                    A.domain.dist.idxToLocale(globalEnd)
-          var isOnOneLocale = false;
+          var small = false;
           var theLocaleId = -1;
-          for (loc,tid) in zip(A.targetLocales(),0..) {
-            const localSubdomain = A.localSubdomain(loc)[task.start..taskEnd];
-            const curDomain = {binStart..binEnd};
-            const intersect = curDomain[localSubdomain];
-            if curDomain == intersect { // curDomain.isSubset(localSubdomain)
-              isOnOneLocale = true;
-              theLocaleId = tid;
+          if binSize <= state.distributedBaseCaseSize {
+            small = true;
+            // choose a locale owning some of the array
+            var mid = binStart + binSize / 2;
+            theLocaleId = A[mid].locale.id;
+          } else {
+            for (loc,tid) in zip(A.targetLocales(),0..) {
+              const localSubdomain = A.localSubdomain(loc)[task.start..taskEnd];
+              const curDomain = {binStart..binEnd};
+              const intersect = curDomain[localSubdomain];
+              if curDomain == intersect { // curDomain.isSubset(localSubdomain)
+                small = true;
+                theLocaleId = tid;
+              }
             }
           }
 
-          if isOnOneLocale {
+          if small {
             state.localTasks[theLocaleId].localTasks.append(
                 new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
           } else {
@@ -2686,20 +2703,13 @@ module TwoArrayPartitioning {
           const taskEnd = task.start + task.size - 1;
           const curDomain = {task.start..taskEnd};
 
-          // Great! Just sort it locally.
-          if n > baseCaseSize {
-            compat.bigTasks.clear();
-            compat.smallTasks.clear();
-            partitioningSortWithScratchSpace(
-                task.start, taskEnd,
-                A.localSlice(curDomain), Scratch.localSlice(curDomain),
-                compat, criterion, task.startbit);
-          } else {
-            ShellSort.shellSort(A.localSlice(curDomain), criterion,
-                start=task.start, end=taskEnd);
-          }
+          distributedPartitioningSortWithScratchSpaceBaseCase(
+              task.start, taskEnd,
+              A, Scratch,
+              compat, criterion, task.startbit);
+
           if debug {
-            writef("after recursive sorts, dst is %xt\n", A[task.start..taskEnd]);
+            writef("after recursive sort, dst is %xt\n", A[task.start..taskEnd]);
           }
         }
       }
@@ -2717,6 +2727,7 @@ module TwoArrayRadixSort {
 
     var sequentialSizePerTask=4096;
     var baseCaseSize=16;
+    var distributedBaseCaseSize=1024;
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
@@ -2742,6 +2753,7 @@ module TwoArrayRadixSort {
         bucketizerType=RadixBucketizer,
         numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
+        distributedBaseCaseSize=distributedBaseCaseSize,
         endbit=endbit);
 
 
@@ -2767,6 +2779,7 @@ module TwoArraySampleSort {
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 
     var baseCaseSize=16;
+    var distributedBaseCaseSize=1024;
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
@@ -2790,6 +2803,7 @@ module TwoArraySampleSort {
         bucketizerType=SampleBucketizer(Data.eltType),
         numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
+        distributedBaseCaseSize=distributedBaseCaseSize,
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
