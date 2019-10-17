@@ -162,6 +162,11 @@ def finish():
     # copy log from per-pid location (if needed) and remove tmp dir
     cleanup()
 
+    # produce jUnit XML test output if needed
+    if args.junit_xml:
+        print("[Generating jUnit XML report]")
+        jUnit()
+
     # exit, returning 0 if no failures and 2 if there were some
     if args.clean_only or failures == 0:
         sys.exit(0)
@@ -401,12 +406,6 @@ def summarize():
     summary += ("[Summary: #Passing Suppressions = {0} | "
             "#Passing Futures = {1} ]\n"
             .format(passing_suppressions, passing_futures))
-    # the actual running is done later, but in order to include it in
-    # the summary file we print it out here.  It all happens within
-    # a split second anyway
-    if args.junit_xml:
-        print("[Generating jUnit XML report]")
-        summary += jUnit()
     summary += "[END]\n"
 
     # log summary, and write it to its own .summary file
@@ -1282,10 +1281,11 @@ def jUnit():
             "convert_start_test_log_to_junit_xml.py")]
 
     try:
-        out = run_command(cmd + junit_args)
-        return output
+        run_command(cmd + junit_args)
     except:
-        return ""
+        print("[ERROR generating jUnit XML report]")
+
+    return
 
 
 # PARSER
