@@ -759,8 +759,8 @@ module ChapelIO {
       f <~> start;
     }
     if size != 0 {
-      f <~> this(1);
-      for param i in 2..size {
+      f <~> this(0);
+      for param i in 1..size-1 {
         if !binary {
           f <~> comma;
         }
