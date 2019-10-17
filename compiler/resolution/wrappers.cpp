@@ -2637,7 +2637,7 @@ static void buildFastFollowerCheck(bool                  isStatic,
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));
   checkFn->insertAtTail(new CallExpr(PRIM_RETURN, returnTmp));
 
-  theProgram->block->insertAtTail(new DefExpr(checkFn));
+  wrapper->defPoint->insertBefore(new DefExpr(checkFn));
 
   normalize(checkFn);
   checkFn->setGeneric(addLead);
