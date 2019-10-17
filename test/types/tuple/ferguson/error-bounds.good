@@ -1,2 +1,2 @@
-error-bounds.chpl:3: error: tuple index 3 is out of bounds
-error-bounds.chpl:3: note: this tuple contains elements 1..2 (inclusive)
+error-bounds.chpl:3: error: tuple index 2 is out of bounds
+error-bounds.chpl:3: note: this tuple contains elements 0..1 (inclusive)

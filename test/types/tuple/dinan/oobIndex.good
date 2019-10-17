@@ -1,2 +1,2 @@
 oobIndex.chpl:6: error: tuple index 3 is out of bounds
-oobIndex.chpl:6: note: this tuple contains elements 1..2 (inclusive)
+oobIndex.chpl:6: note: this tuple contains elements 0..1 (inclusive)

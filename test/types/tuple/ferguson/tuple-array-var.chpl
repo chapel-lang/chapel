@@ -1,7 +1,7 @@
 proc t1( tup )
 {
-  tup(1)[1] = 2;
-  writeln(tup(2)[1]);
+  tup(0)[1] = 2;
+  writeln(tup(1)[1]);
 }
 
 proc t2( tup )

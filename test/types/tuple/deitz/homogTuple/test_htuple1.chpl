@@ -1,10 +1,10 @@
 var x : 2*int;
 
-x(1) = 12;
-x(2) = 13;
+x(0) = 12;
+x(1) = 13;
 
 writeln(x);
 
-writeln(x(1));
+writeln(x(0));
 
-writeln(x(2));
+writeln(x(1));

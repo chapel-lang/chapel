@@ -9,7 +9,7 @@ record arr33 {
   }
 
   proc this(xy:2*int) ref {
-    return data(xy(1), xy(2));
+    return data(xy(0), xy(1));
   }
 }
 
@@ -17,5 +17,5 @@ writeln(A((1,1)+(0, 0)));
 
 proc +(a: 2*int, b: 2*int) {
   writeln("Choose the correct +");
-  return (a(1)+b(1), a(2)+b(2));
+  return (a(0)+b(0), a(1)+b(1));
 }
