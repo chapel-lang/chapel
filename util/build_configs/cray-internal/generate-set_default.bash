@@ -22,9 +22,9 @@ source $cwd/common.bash
 # Generate the first part of the file with shell expansion
 
 if [ "$chpl_platform" = cray-shasta ]; then
-    default_prefix=/opt/cray
+    platform_prefix=/opt/cray
 else
-    default_prefix=/opt
+    platform_prefix=/opt
 fi
 
 cat <<PART_1
@@ -32,8 +32,8 @@ cat <<PART_1
 
 export CRAY_product=chapel
 export CRAY_version=$pkg_version
-export CRAY_inst_dir=/opt
-export CRAY_mod_dir=$default_prefix/modulefiles
+export CRAY_inst_dir=$platform_prefix
+export CRAY_mod_dir=$platform_prefix/modulefiles
 export CRAY_mod_names=chapel
 
 PART_1
