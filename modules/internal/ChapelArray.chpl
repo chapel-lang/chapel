@@ -1734,7 +1734,7 @@ module ChapelArray {
     pragma "no doc"
     proc position(i) {
       var ind = _makeIndexTuple(rank, i), pos: rank*intIdxType;
-      for d in 1..rank do
+      for d in 0..rank-1 do
         pos(d) = _value.dsiDim(d).indexOrder(ind(d));
       return pos;
     }
@@ -1760,7 +1760,7 @@ module ChapelArray {
        is negative. */
     proc expand(off: rank*intIdxType) {
       var ranges = dims();
-      for i in 1..rank do {
+      for i in 0..rank-1 do {
         ranges(i) = ranges(i).expand(off(i));
         if (ranges(i).low > ranges(i).high) {
           halt("***Error: Degenerate dimension created in dimension ", i, "***");
@@ -1775,7 +1775,7 @@ module ChapelArray {
        by ``off`` in all dimensions if ``off`` is negative. */
     proc expand(off: intIdxType) where rank > 1 {
       var ranges = dims();
-      for i in 1..rank do
+      for i in 0..rank-1 do
         ranges(i) = dim(i).expand(off);
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
@@ -1802,7 +1802,7 @@ module ChapelArray {
        from the high bound. */
     proc exterior(off: rank*intIdxType) {
       var ranges = dims();
-      for i in 1..rank do
+      for i in 0..rank-1 do
         ranges(i) = dim(i).exterior(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
@@ -1814,7 +1814,7 @@ module ChapelArray {
        from the high bound. */
     proc exterior(off:intIdxType) where rank != 1 {
       var offTup: rank*intIdxType;
-      for i in 1..rank do
+      for i in 0..rank-1 do
         offTup(i) = off;
       return exterior(offTup);
     }
@@ -1841,7 +1841,7 @@ module ChapelArray {
        interior from the high bound. */
     proc interior(off: rank*intIdxType) {
       var ranges = dims();
-      for i in 1..rank do {
+      for i in 0..rank-1 do {
         if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
             (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
           halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
@@ -1858,7 +1858,7 @@ module ChapelArray {
        from the high bound. */
     proc interior(off: intIdxType) where rank != 1 {
       var offTup: rank*intIdxType;
-      for i in 1..rank do
+      for i in 0..rank-1 do
         offTup(i) = off;
       return interior(offTup);
     }
@@ -1891,7 +1891,7 @@ module ChapelArray {
       if off.size != rank then
         compilerError("the domain and offset arguments of translate() must be of the same rank");
       var ranges = dims();
-      for i in 1..rank do
+      for i in 0..rank-1 do
         ranges(i) = _value.dsiDim(i).translate(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
      }
@@ -1900,7 +1900,7 @@ module ChapelArray {
        ``off`` in each dimension. */
      proc translate(off) where rank != 1 && !isTuple(off) {
        var offTup: rank*off.type;
-       for i in 1..rank do
+       for i in 0..rank-1 do
          offTup(i) = off;
        return translate(offTup);
      }
@@ -1916,7 +1916,7 @@ module ChapelArray {
     proc chpl__unTranslate(off: integral ...rank) return chpl__unTranslate(off);
     proc chpl__unTranslate(off: rank*intIdxType) {
       var ranges = dims();
-      for i in 1..rank do
+      for i in 0..rank-1 do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
@@ -4171,7 +4171,7 @@ module ChapelArray {
     // TODO: Restore as before
             //       compilerWarning(a.type:string);
             //       compilerWarning(b.type:string);
-       for (aa,bb) in zip(a, b) do aa = bb;
+            for (aaaa,bbbb) in zip(a, b) do aaaa = bbbb;
     /*
       [ (aa,bb) in zip(a,b) ]
         aa = bb;
