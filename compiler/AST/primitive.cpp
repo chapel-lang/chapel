@@ -327,7 +327,7 @@ static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
-  return ct->getField("x0")->qualType();
+  return ct->getField("x1")->qualType();
 }
 
 static QualifiedType

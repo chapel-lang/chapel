@@ -274,6 +274,8 @@ static void insertDestructureStatements(Expr*     S1,
   for_actuals(expr, lhs) {
     UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
 
+    index = index + 1;
+
     if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
       CallExpr* nextLHS = toCallExpr(expr);
       Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
@@ -293,8 +295,6 @@ static void insertDestructureStatements(Expr*     S1,
         S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
       }
     }
-
-    index = index + 1;
   }
 }
 

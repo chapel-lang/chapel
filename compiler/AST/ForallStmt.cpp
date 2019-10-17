@@ -425,7 +425,7 @@ static void fsDestructureWhenSingleIdxVar(ForallStmt* fs, AList& fIterVars,
 
   CallExpr* bt = new CallExpr("_build_tuple_always_allow_ref"); // to tuple them up
 
-  for (int i = 0; i < numIterables; i++) {
+  for (int i = 1; i <= numIterables; i++) {
     VarSymbol* idx_i = createAndAddIndexVar(fIterVars, i);
     bt->insertAtTail(idx_i);
   }
@@ -488,7 +488,7 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
   AList& fIterVars = fs->inductionVariables();
 
   if (numIterables == 1) {
-    fsDestructureIndex(fs, fIterVars, indices, 0); // TODO: what's right?
+    fsDestructureIndex(fs, fIterVars, indices, 1);
     INT_ASSERT(fIterVars.length == 1);
     return;
   }
@@ -503,7 +503,7 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
 
     int idxNum = 0;
     for_actuals(index, indicesCall)
-      fsDestructureIndex(fs, fIterVars, index->remove(), idxNum++); // TODO: what's right?
+      fsDestructureIndex(fs, fIterVars, index->remove(), ++idxNum);
 
     // 'indicesCall' itself is dropped on the floor to be gc'ed
 

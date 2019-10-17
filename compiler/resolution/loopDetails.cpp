@@ -273,7 +273,7 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
     for(size_t i = 0; i < detailsVector.size(); i++) {
       if (detailsVector[i].index == NULL) {
         detailsVector[i].index = index;
-        detailsVector[i].indexTupleElement = i;
+        detailsVector[i].indexTupleElement = i+1;
       }
     }
   }
@@ -491,7 +491,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
           for_fields(field, tupleItType) {
             IteratorDetails details;
             details.iterable = tupleIterator;
-            details.iterableTupleElement = i;
+            details.iterableTupleElement = i+1;
             detailsVector.push_back(details);
 
             i++;

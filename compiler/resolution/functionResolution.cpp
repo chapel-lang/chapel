@@ -5479,11 +5479,11 @@ static void resolveTupleExpand(CallExpr* call) {
   }
 
   if (parent != NULL && parent->isPrimitive(PRIM_ITERATOR_RECORD_SET_SHAPE))
-    size = 0; // use the first component of the tuple for the shape
+    size = 1; // use the first component of the tuple for the shape
 
   stmt->insertBefore(noop);
 
-  for (int i = 0; i < size; i++) {
+  for (int i = 1; i <= size; i++) {
     VarSymbol* tmp = newTemp(astr("_tuple_expand_tmp_", istr(i)));
     CallExpr*  e   = NULL;
 
