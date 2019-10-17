@@ -167,9 +167,6 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
   else if i == here.id then
     return data;
   else {
-    if boundsChecking then
-      if i < 0 || i >= numLocales then
-        halt("array index out of bounds: ", i);
     var privarr = _to_unmanaged(this);
     on Locales(i) {
       privarr = chpl_getPrivatizedCopy(_to_unmanaged(this.type), this.pid);
@@ -180,6 +177,11 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
 
 proc PrivateArr.dsiAccess(i: 1*idxType) ref
   return dsiAccess(i(1));
+
+proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {
+  var idx = i(1);
+  return 0 <= idx && idx < numLocales;
+}
 
 iter PrivateArr.these() ref {
   for i in dom do

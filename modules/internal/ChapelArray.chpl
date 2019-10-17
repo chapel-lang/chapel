@@ -2361,37 +2361,142 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
+    // bounds checking helpers
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    pragma "no doc"
+    proc checkAccess(indices, value) {
+      if isRectangularArr(this) {
+        if !value.dsiBoundsCheck(indices) {
+          if rank == 1 {
+            halt("array index out of bounds\n",
+                 "note: index was ", indices(1),
+                 " but array bounds are ", value.dom.dsiDim(1));
+          } else {
+            var istr = "";
+            var bstr = "";
+            for param i in 1..rank {
+              if i != 1 {
+                istr += ", ";
+                bstr += ", ";
+              }
+              istr += indices(i):string;
+              bstr += value.dom.dsiDim(i):string;
+            }
+            var dimstr = "";
+            for param i in 1..rank {
+              if !value.dom.dsiDim(i).boundsCheck(indices(i)) {
+                if dimstr == "" {
+                  dimstr = "out of bounds in dimension " + i:string +
+                           " because index " + indices(i):string +
+                           " is not in " + value.dom.dsiDim(i):string;
+                }
+              }
+            }
+            halt("array index out of bounds\n",
+                 "note: index was (", istr, ") ",
+                 "but array bounds are (", bstr, ")\n",
+                 "note: ", dimstr);
+          }
+        }
+      }
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    pragma "no doc"
+    proc checkSlice(d: domain, value) {
+      checkSlice((...d.dsiDims()), value=value);
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    pragma "no doc"
+    proc checkSlice(ranges...rank, value) where chpl__isTupleOfRanges(ranges) {
+      if isRectangularArr(this) {
+        var ok = true;
+        for param i in 1..rank {
+          ok &&= value.dom.dsiDim(i).boundsCheck(ranges(i));
+        }
+        if ok == false {
+          if rank == 1 {
+            halt("array slice out of bounds\n",
+                 "note: slice index was ", ranges(1),
+                 " but array bounds are ", value.dom.dsiDim(1));
+          } else {
+            var istr = "";
+            var bstr = "";
+            for param i in 1..rank {
+              if i != 1 {
+                istr += ", ";
+                bstr += ", ";
+              }
+              istr += ranges(i):string;
+              bstr += value.dom.dsiDim(i):string;
+            }
+            var dimstr = "";
+            for param i in 1..rank {
+              if !value.dom.dsiDim(i).boundsCheck(ranges(i)) {
+                if dimstr == "" {
+                  dimstr = "out of bounds in dimension " + i:string +
+                           " because slice index " + ranges(i):string +
+                           " is not in " + value.dom.dsiDim(i):string;
+                }
+              }
+            }
+            halt("array slice out of bounds\n",
+                 "note: slice index was (", istr, ") ",
+                 "but array bounds are (", bstr, ")\n",
+                 "note: ", dimstr);
+          }
+        }
+      }
+    }
+
     // array element access
     // When 'this' is 'const', so is the returned l-value.
+
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     inline proc ref this(i: rank*_value.dom.idxType) ref {
+      const value = _value;
+      if boundsChecking then
+        checkAccess(i, value=value);
+
       if isRectangularArr(this) || isSparseArr(this) then
-        return _value.dsiAccess(i);
+        return value.dsiAccess(i);
       else
-        return _value.dsiAccess(i(1));
+        return value.dsiAccess(i(1));
     }
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
     inline proc const this(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
+      const value = _value;
+      if boundsChecking then
+        checkAccess(i, value=value);
+
       if isRectangularArr(this) || isSparseArr(this) then
-        return _value.dsiAccess(i);
+        return value.dsiAccess(i);
       else
-        return _value.dsiAccess(i(1));
+        return value.dsiAccess(i(1));
     }
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const this(i: rank*_value.dom.idxType) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
     {
+      const value = _value;
+      if boundsChecking then
+        checkAccess(i, value=value);
+
       if isRectangularArr(this) || isSparseArr(this) then
-        return _value.dsiAccess(i);
+        return value.dsiAccess(i);
       else
-        return _value.dsiAccess(i(1));
+        return value.dsiAccess(i(1));
     }
 
 
@@ -2421,30 +2526,42 @@ module ChapelArray {
     pragma "alias scope from this"
     inline proc ref localAccess(i: rank*_value.dom.idxType) ref
     {
+      const value = _value;
+      if boundsChecking then
+        checkAccess(i, value=value);
+
       if isRectangularArr(this) || isSparseArr(this) then
-        return _value.dsiLocalAccess(i);
+        return value.dsiLocalAccess(i);
       else
-        return _value.dsiLocalAccess(i(1));
+        return value.dsiLocalAccess(i(1));
     }
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
+      const value = _value;
+      if boundsChecking then
+        checkAccess(i, value=value);
+
       if isRectangularArr(this) || isSparseArr(this) then
-        return _value.dsiLocalAccess(i);
+        return value.dsiLocalAccess(i);
       else
-        return _value.dsiLocalAccess(i(1));
+        return value.dsiLocalAccess(i(1));
     }
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: rank*_value.dom.idxType) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
     {
+      const value = _value;
+      if boundsChecking then
+        checkAccess(i, value=value);
+
       if isRectangularArr(this) || isSparseArr(this) then
-        return _value.dsiLocalAccess(i);
+        return value.dsiLocalAccess(i);
       else
-        return _value.dsiLocalAccess(i(1));
+        return value.dsiLocalAccess(i(1));
     }
 
 
@@ -2485,7 +2602,7 @@ module ChapelArray {
         compilerError("slicing an array with a domain of a different rank");
 
       if boundsChecking then
-        checkSlice(d);
+        checkSlice(d, _value);
 
       //
       // If this is already a slice array view, we can short-circuit
@@ -2509,27 +2626,13 @@ module ChapelArray {
       return _newArray(a);
     }
 
-    pragma "no doc"
-    proc checkSlice(d: domain) {
-      for param i in 1.._value.dom.rank do
-        if !_value.dom.dsiDim(i).boundsCheck(d.dsiDim(i)) then
-          halt("array slice out of bounds in dimension ", i, ": ", d.dsiDim(i));
-    }
-
-    pragma "no doc"
-    proc checkSlice(ranges...rank) where chpl__isTupleOfRanges(ranges) {
-      for param i in 1.._value.dom.rank do
-        if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
-          halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
-    }
-
     // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(ranges...rank) where chpl__isTupleOfRanges(ranges) {
       if boundsChecking then
-        checkSlice((... ranges));
+        checkSlice((... ranges), value=_value);
 
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
@@ -2602,7 +2705,7 @@ module ChapelArray {
     where isSubtype(_value.type, DefaultRectangularArr) &&
           chpl__isTupleOfRanges(r) {
       if boundsChecking then
-        checkSlice((...r));
+        checkSlice((...r), value=_value);
       var dom = _dom((...r));
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
@@ -2613,7 +2716,7 @@ module ChapelArray {
     proc localSlice(d: domain)
     where isSubtype(_value.type, DefaultRectangularArr) {
       if boundsChecking then
-        checkSlice((...d.getIndices()));
+        checkSlice((...d.getIndices()), value=_value);
 
       return chpl__localSliceDefaultArithArrHelp(d);
     }
@@ -2632,7 +2735,7 @@ module ChapelArray {
     where chpl__isTupleOfRanges(r) &&
           !isSubtype(_value.type, DefaultRectangularArr) {
       if boundsChecking then
-        checkSlice((...r));
+        checkSlice((...r), value=_value);
       return _value.dsiLocalSlice(r);
     }
 

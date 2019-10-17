@@ -2,7 +2,8 @@
 ======================================================================
 ERROR test_halt.chpl: test2()
 ----------------------------------------------------------------------
-test_halt.chpl:9: error: halt reached - array index out of bounds: (0)
+test_halt.chpl:9: error: halt reached - array index out of bounds
+note: index was 0 but array bounds are 1..0
 
 ======================================================================
 FAIL test_halt.chpl: test3()
