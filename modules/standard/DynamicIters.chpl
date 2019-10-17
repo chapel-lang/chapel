@@ -134,7 +134,7 @@ iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int, foll
 where tag == iterKind.follower
 {
   type rType=c.type;
-  const current:rType=unDensify(followThis(1),c);
+  const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
@@ -300,7 +300,7 @@ where tag == iterKind.follower
 
 {
   type rType=c.type;
-  const current:rType=unDensify(followThis(1),c);
+  const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
@@ -591,7 +591,7 @@ iter adaptive(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 {
   type rType=c.type;
-  var current:rType=unDensify(followThis(1),c);
+  var current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
