@@ -5442,7 +5442,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* This resolves the `(...myTuple)` style of expression form                   *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -5483,7 +5483,7 @@ static void resolveTupleExpand(CallExpr* call) {
 
   stmt->insertBefore(noop);
 
-  for (int i = 1; i <= size; i++) {
+  for (int i = 0; i < size; i++) {
     VarSymbol* tmp = newTemp(astr("_tuple_expand_tmp_", istr(i)));
     CallExpr*  e   = NULL;
 
@@ -5500,7 +5500,7 @@ static void resolveTupleExpand(CallExpr* call) {
     } else {
       e = new CallExpr(PRIM_GET_MEMBER_VALUE,
                        sym->copy(),
-                       new_CStringSymbol(astr("x", istr(i))));
+                       new_CStringSymbol(astr("x", istr(i+1))));
     }
 
     stmt->insertBefore(new DefExpr(tmp));
