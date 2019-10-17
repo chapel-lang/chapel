@@ -471,7 +471,7 @@ module ChapelArray {
                        " but is of type " + currType:string );
       }
 
-      A(i) = elems(i);
+      A(i+1) = elems(i);
     }
 
     return A;
