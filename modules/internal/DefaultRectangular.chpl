@@ -198,12 +198,12 @@ module DefaultRectangular {
     }
 
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
-      if d == rank {
+      if d == rank-1 {
         for i in ranges(d) do
           yield i;
-      } else if d == rank - 1 {
+      } else if d == rank - 2 {
         for i in ranges(d) do
-          for j in these_help(rank-1) do
+          for j in these_help(rank-2) do
             yield (i, j);
       } else {
         for i in ranges(d) do
@@ -230,12 +230,12 @@ module DefaultRectangular {
 */
 
     iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
-      if d == block.size {
+      if d == block.size-1 {
         for i in block(d) do
           yield i;
-      } else if d == block.size - 1 {
+      } else if d == block.size - 2 {
         for i in block(d) do
-          for j in these_help(block.size, block) do
+          for j in these_help(block.size-1, block) do
             yield (i, j);
       } else {
         for i in block(d) do
@@ -338,7 +338,7 @@ module DefaultRectangular {
           if debugDefaultDist {
             chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
           }
-          for i in these_help(1, block) {
+          for i in these_help(0, block) {
             yield i;
           }
         }
@@ -545,7 +545,7 @@ module DefaultRectangular {
           yield chpl_intToIdx(i);
         }
       } else {
-        for i in these_help(1, block) {
+        for i in these_help(0, block) {
           yield chpl_intToIdx(i);
         }
       }
@@ -937,7 +937,7 @@ module DefaultRectangular {
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
     rad.origin      = this.origin:newDom.intIdxType;
 
-    var curDim      = 1;
+    var curDim      = 0;
     for param j in 0..idx.size-1 {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
@@ -1405,6 +1405,7 @@ module DefaultRectangular {
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
+      compilerWarning(bounds.type:string);
       on this {
         const allocD = {(...bounds)};
 
@@ -1802,7 +1803,7 @@ module DefaultRectangular {
 
     if blk(rank-1) != 1 then return false;
 
-    for param dim in 1..(rank-1) by -1 do
+    for param dim in 0..(rank-2) by -1 do
       if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
 
     if debugDefaultDistBulkTransfer then
