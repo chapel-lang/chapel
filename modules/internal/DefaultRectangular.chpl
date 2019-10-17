@@ -203,7 +203,7 @@ module DefaultRectangular {
           yield i;
       } else if d == rank - 2 {
         for i in ranges(d) do
-          for j in these_help(rank-2) do
+          for j in these_help(rank-1) do
             yield (i, j);
       } else {
         for i in ranges(d) do
