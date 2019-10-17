@@ -201,7 +201,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
 
     for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
       //Set the new range based on the tuple the dynamic 1d iterator yields
-      var newRange = i(1);
+      var newRange = i(0);
 
       type dType = c.type;
       //does the same thing as densify, but densify makes a stridable domain,
@@ -364,7 +364,7 @@ where tag == iterKind.leader
 
   for i in guided(tag=iterKind.leader, parDimDim, numTasks) {
     // Set the new range based on the tuple the guided 1-D iterator yields.
-    var newRange = i(1);
+    var newRange = i(0);
 
     type dType = c.type;
     // Does the same thing as densify, but densify makes a stridable domain,
@@ -655,7 +655,7 @@ where tag == iterKind.leader
 
   for i in adaptive(tag=iterKind.leader, parDimDim, numTasks) {
     // Set the new range based on the tuple the guided 1-D iterator yields.
-    var newRange = i(1);
+    var newRange = i(0);
 
     type dType = c.type;
     // Does the same thing as densify, but densify makes a stridable domain,
