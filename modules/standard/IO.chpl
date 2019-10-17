@@ -6107,11 +6107,11 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
       if r then delete r;
     }
 
-    for i in 1..argType.size {
+    for i in 0..argType.size-1 {
       argType(i) = QIO_CONV_UNK;
     }
 
-    var j = 1;
+    var j = 0;
 
     for param i in 0..k-1 {
       // The inside of this loop is a bit crazy because
@@ -6329,7 +6329,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
 
     err = qio_channel_mark(false, _channel_internal);
     if !err {
-      var j = 1;
+      var j = 0;
 
       for param i in 0..k-1 {
         // The inside of this loop is a bit crazy because
