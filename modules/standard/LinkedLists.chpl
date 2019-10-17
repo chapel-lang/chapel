@@ -346,8 +346,8 @@ record LinkedList {
  */
 // TODO: could just be an initializer?
 proc makeList(x ...?k) {
-  var s: LinkedList(x(1).type);
-  for param i in 1..k do
+  var s: LinkedList(x(0).type);
+  for param i in 0..k-1 do
     s.append(x(i));
   return s;
 }
