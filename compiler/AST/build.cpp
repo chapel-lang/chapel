@@ -1570,14 +1570,14 @@ buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init) {
 
 
 //
-// Destructure tuple function arguments.  Add to the function's where
-// clause to match the shape of the tuple being destructured.
+// Destructure tuple function arguments of the form `proc foo((x,y,z), i)`.
+// Add to the function's where clause to match the shape of the tuple
+// being destructured.
 //
 static void
 destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   int i = 0;
   for_alist(expr, tuple->body) {
-    i++;
     if (DefExpr* def = toDefExpr(expr)) {
       def->init = new CallExpr(base->copy(), new_IntSymbol(i));
       if (!strcmp(def->sym->name, "chpl__tuple_blank")) {
@@ -1588,6 +1588,7 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
     } else if (BlockStmt* inner = toBlockStmt(expr)) {
       destructureTupleGroupedArgs(fn, inner, new CallExpr(base->copy(), new_IntSymbol(i)));
     }
+    i++;
   }
 
   Expr* where =
