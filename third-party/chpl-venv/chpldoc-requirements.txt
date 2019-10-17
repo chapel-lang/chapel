@@ -9,5 +9,5 @@ Sphinx==1.8.5
 docutils==0.15.2
 argparse==1.4.0
 sphinx-rtd-theme==0.4.3
-git+https://github.com/chapel-lang/sphinxcontrib-chapeldomain.git@eb2aa4c4791ae1b4d1deca4785c30f2a08d91711#egg=sphinxcontrib-chapeldomain
+./sphinxcontrib-chapeldomain
 babel==2.7.0
