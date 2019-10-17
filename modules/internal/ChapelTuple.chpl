@@ -211,7 +211,7 @@ module ChapelTuple {
     if boundsChecking then
       if i < 0 || i > size-1 then
         halt("tuple access out of bounds: ", i);
-    return __primitive("get svec member", this, i);
+    return __primitive("get svec member", this, i+1);
   }
 
   // This is controlled with --[no-]warn-tuple-iteration
