@@ -241,7 +241,7 @@ module ChapelTuple {
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
-    for i in 0..#this.size {
+    for i in 0..#this.size-1 {
       yield(this(i));
     }
   }
@@ -696,7 +696,7 @@ module ChapelTuple {
   inline proc +(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x + y(d);
     return result;
   }
@@ -711,7 +711,7 @@ module ChapelTuple {
   inline proc -(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x - y(d);
     return result;
   }
@@ -726,7 +726,7 @@ module ChapelTuple {
   inline proc *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x * y(d);
     return result;
   }
@@ -741,7 +741,7 @@ module ChapelTuple {
   inline proc /(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x / y(d);
     return result;
   }
@@ -756,7 +756,7 @@ module ChapelTuple {
   inline proc %(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x % y(d);
     return result;
   }
@@ -771,7 +771,7 @@ module ChapelTuple {
   inline proc **(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                          isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x ** y(d);
     return result;
   }
@@ -786,7 +786,7 @@ module ChapelTuple {
   inline proc &(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x & y(d);
     return result;
   }
@@ -801,7 +801,7 @@ module ChapelTuple {
   inline proc |(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x | y(d);
     return result;
   }
@@ -816,7 +816,7 @@ module ChapelTuple {
   inline proc ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                         isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x ^ y(d);
     return result;
   }
@@ -831,7 +831,7 @@ module ChapelTuple {
   inline proc <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                          isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x << y(d);
     return result;
   }
@@ -846,7 +846,7 @@ module ChapelTuple {
   inline proc >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                          isSubtype(t, (y(0).type)) {
     var result: y.size * y(0).type;
-    for param d in 0..y.size do
+    for param d in 0..y.size-1 do
       result(d) = x >> y(d);
     return result;
   }
