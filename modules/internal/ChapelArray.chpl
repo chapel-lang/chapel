@@ -4169,6 +4169,8 @@ module ChapelArray {
         aa = bb;
     } else {
     // TODO: Restore as before
+            //       compilerWarning(a.type:string);
+            //       compilerWarning(b.type:string);
        for (aa,bb) in zip(a, b) do aa = bb;
     /*
       [ (aa,bb) in zip(a,b) ]

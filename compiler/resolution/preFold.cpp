@@ -1729,14 +1729,14 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   bool error = false;
 
   if (get_int(call->get(3), &index)) {
-    sprintf(field, "x%" PRId64, index);
+    sprintf(field, "x%" PRId64, index+1);
     if (index < 0 || index >= baseType->fields.length) {
       USR_FATAL_CONT(call, "tuple index %ld is out of bounds", index);
       if (index < 0) zero_error = true;
       error = true;
     }
   } else if (get_uint(call->get(3), &uindex)) {
-    sprintf(field, "x%" PRIu64, uindex);
+    sprintf(field, "x%" PRIu64, uindex+1);
     if (uindex >= (unsigned long)baseType->fields.length) {
       USR_FATAL_CONT(call, "tuple index %lu is out of bounds", uindex);
       error = true;
