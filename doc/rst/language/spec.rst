@@ -8372,6 +8372,9 @@ flattened ``TaskErrors`` error.
    *Example (handle-from-coforall.chpl)*.
 
    
+   .. BLOCK-test-chapelpre
+
+     class DemoError : Error { }
 
    .. code-block:: chapel
 
@@ -8396,7 +8399,9 @@ flattened ``TaskErrors`` error.
 
    *Example (handle-from-cobegin.chpl)*.
 
-   
+   .. BLOCK-test-chapelpre
+
+     class DemoError : Error { }
 
    .. code-block:: chapel
 
@@ -8426,7 +8431,9 @@ may execute serially within a single task, it will always throw a
 
    *Example (handle-from-forall.chpl)*.
 
-   
+   .. BLOCK-test-chapelpre
+
+     class DemoError : Error { }
 
    .. code-block:: chapel
 

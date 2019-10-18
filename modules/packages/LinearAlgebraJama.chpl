@@ -2162,9 +2162,9 @@ class Matrix {
       return new unmanaged SingularValueDecomposition(_to_unmanaged(this));
    }
 
-   proc rsvd() {
+   /*proc rsvd() {
       return new unmanaged RandomSingularValueDecomposition(_to_unmanaged(this));
-   }
+   }*/
 
    /* Eigenvalue Decomposition
    return     EigenvalueDecomposition
