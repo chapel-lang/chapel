@@ -454,7 +454,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
   CallExpr* call = NULL;
   bool first = true;
-  for (int i=1; i<ct->fields.length; i++) {
+  for (int i=0; i<ct->fields.length-1; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i));
     if (first) {
       call =  new CallExpr( "chpl__defaultHash", field_access);
