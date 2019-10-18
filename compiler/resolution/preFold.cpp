@@ -2377,10 +2377,7 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
 
   parentTs->addFlag(FLAG_FUNCTION_CLASS);
 
-  // Because this function type needs to be globally visible (because
-  // we don't know the modules it will be passed to), we put it at the
-  // highest scope
-  theProgram->block->body.insertAtTail(new DefExpr(parentTs));
+  call->getModule()->block->insertAtHead(new DefExpr(parentTs));
 
   parent->dispatchParents.add(dtObject);
 
