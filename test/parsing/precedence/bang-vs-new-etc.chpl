@@ -68,7 +68,7 @@ proc main {
   var z05 = new owned (tm())();
   check("z05 = new owned (tm())()", z05, "owned C");
 
-  var z06 = new (/*owned*/ tm())()?; // workaround for #13950
+  var z06 = new (owned tm())()?; // workaround for #13950
   check("z06 = new (owned tm())()?", z06, "owned C?");
 
   var z11 = new owned (tm())()?;
