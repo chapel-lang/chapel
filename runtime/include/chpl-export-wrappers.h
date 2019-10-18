@@ -26,7 +26,7 @@
 typedef struct chpl_bytes {
   int isOwned;
   char* data;
-  size_t len;
+  size_t size;
 } chpl_bytes;
 
 void chpl_bytes_free(chpl_bytes cb);

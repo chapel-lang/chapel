@@ -35,6 +35,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "fixupExports.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "LayeredValueTable.h"
@@ -1104,6 +1105,32 @@ std::string ArgSymbol::getPythonArgTranslation() {
   if (t == dtStringC) {
     std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
     res += "\n";
+    return res;
+  } else if (t->symbol->hasFlag(FLAG_REF) &&
+             t->getValType() == getBytesWrapperType()) {
+    std::string res;
+
+    // First, check to see if the input type is the Python "bytes" type.
+    res += "\tif type(" + strname + ") != bytes:\n";
+    res += "\t\traise TypeError(\"Expected \'bytes\' in conversion to ";
+    res += " \'chpl_bytes\', found \" + type(" + strname + "))\n";
+
+    // Get the size of the bytes buffer and a char* handle to it.
+    res += "\tcdef size_t size = len(" + strname + ")\n";
+    res += "\tcdef char *data = " + strname + "\n";
+
+    // Declare a struct by value on the stack.
+    std::string wrapval = "chpl_" + strname + "_val";
+
+    // Create a chpl_bytes that represents a shallow copy.
+    res += "\tcdef chpl_bytes " + wrapval + "\n";
+    res += "\t" + wrapval + ".isOwned = 0\n";
+    res += "\t" + wrapval + ".data = data\n";
+    res += "\t" + wrapval + ".size = size\n";
+
+    // The final argument wrapper is a reference to the struct.
+    res += "\tcdef chpl_bytes* chpl_" + strname + " = &" + wrapval + "\n";
+
     return res;
   } else if (t->symbol->hasFlag(FLAG_REF) &&
              t->getValType() == dtExternalArray) {

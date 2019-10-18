@@ -18,13 +18,14 @@
  */
 
 module ExportWrappers {
+  use ChapelStandard;
   use CPtr;
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
   extern record chpl_bytes {
     var isOwned: c_int;
     var data: c_ptr(c_char);
-    var len: size_t;
+    var size: size_t;
   }
 
   // May need to call this in one of the conversion routines.
@@ -67,18 +68,30 @@ module ExportWrappers {
   // TODO: For multilocale, we have to make sure to free the `chpl_bytes`
   // buffer ourselves after we are done beaming it out over the wire.
   //
+  // TODO: Seperate set of conversion calls used in multilocale libraries.
+  //
   proc chpl__exportConv(ref val: bytes, type rt: chpl_bytes): rt {
     var result: chpl_bytes;
     result.isOwned = val.isowned:c_int;
     result.data = val.buff:c_ptr(c_char);
     // Assume ownership of the bytes buffer.
     val.isowned = false;
-    result.len = val.size:size_t;
+    result.size = val.size:size_t;
     return result;
   }
 
+  //
+  // In the multilocale conversion call, we would take ownership of the buffer
+  // instead?
+  //
   proc chpl__exportConv(val: chpl_bytes, type rt: bytes): rt {
-    halt("Routine not implemented yet!");
+    use ByteBufferHelpers;
+    var data = val.data:ByteBufferHelpers.bufferType;
+    // TODO: Use safe casts with overflow check?
+    var length = val.size:int(64);
+    var buflen = (val.size + 1):int(64);
+    var result = createBytesWithNewBuffer(data, length=length, size=buflen);
+    return result;
   }
 
 } // End module "ExternalString".

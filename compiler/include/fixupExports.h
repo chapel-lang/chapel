@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _RESOLUTION_FIXUP_EXPORTS_H_
-#define _RESOLUTION_FIXUP_EXPORTS_H_
+#ifndef _FIXUP_EXPORTS_H_
+#define _FIXUP_EXPORTS_H_
 
 #include <vector>
 

@@ -22,3 +22,12 @@ cdef extern from "chpl-external-array.h":
 		bint _unowned
 
 	void cleanupOpaqueArray(chpl_opaque_array* arr)
+
+cdef extern from "chpl-export-wrappers.h":
+	ctypedef struct chpl_bytes:
+		int isOwned
+		char* data
+		size_t size
+
+	void chpl_bytes_free(chpl_bytes cb)
+
