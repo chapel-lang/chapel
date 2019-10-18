@@ -1489,6 +1489,12 @@ DefExpr* buildClassDefExpr(const char*  name,
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
     ts = ct->symbol;
+  } else if (strcmp("_owned", name) == 0) {
+    ct = installInternalType(ct, dtOwned);
+    ts = ct->symbol;
+  } else if (strcmp("_shared", name) == 0) {
+    ct = installInternalType(ct, dtShared);
+    ts = ct->symbol;
   } else {
     ts = new TypeSymbol(name, ct);
   }

@@ -576,16 +576,22 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
+
+  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
+  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
+
+  dtShared                             = new AggregateType(AGGREGATE_RECORD);
+  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");

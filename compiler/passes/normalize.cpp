@@ -1005,6 +1005,20 @@ static void processManagedNew(CallExpr* newCall) {
   bool nilable = false;
 
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
+    // Transform (new _chpl_manager=_ (call _)) into
+    //           (new (call _ _chpl_manager=_))
+    // This also asserts that the call expr exists in this case.
+    if (NamedExpr* ne = toNamedExpr(newCall->get(1))) {
+      if (ne->name == astr_chpl_manager) {
+        CallExpr* subCall = toCallExpr(newCall->get(2));
+        if (subCall == NULL) {
+          USR_FATAL_CONT(newCall,
+                         "type in 'new' expression is missing its argument list");
+        } else {
+          subCall->insertAtTail(ne->remove());
+        }
+      }
+    }
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
       if (callManager->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
           callManager->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {

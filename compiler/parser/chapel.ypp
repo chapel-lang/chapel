@@ -79,6 +79,7 @@
   class EnumType;
   class Expr;
   class FnSymbol;
+  class NamedExpr;
   class Type;
 
   enum   ProcIter {
@@ -220,6 +221,7 @@
   #include "stringutil.h"
   #include "TryStmt.h"
   #include "vec.h"
+  #include "wellknown.h"
   #include "WhileDoStmt.h"
 
   #include <cstdio>
@@ -475,6 +477,7 @@
 %type <pdefexpr> formal enum_item
 %type <pexpr> query_expr
 
+%type <pcallexpr> new_maybe_decorated
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
 %type <pcallexpr> opt_task_intent_ls task_intent_ls task_intent_clause
@@ -1926,9 +1929,31 @@ io_expr:
     { $$ = new CallExpr("<~>", $1, $3); }
 ;
 
+new_maybe_decorated:
+  TNEW         %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW); }
+| TNEW TOWNED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol))); }
+| TNEW TSHARED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol))); }
+| TNEW TUNMANAGED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtUnmanaged->symbol))); }
+| TNEW TBORROWED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtBorrowed->symbol))); }
+;
+
 new_expr:
-  TNEW expr
-    { $$ = new CallExpr(PRIM_NEW, $2); }
+  new_maybe_decorated expr %prec TNEW
+    { $1->insertAtTail($2);
+      $$ = $1; }
 ;
 
 let_expr:
