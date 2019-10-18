@@ -1951,9 +1951,40 @@ new_maybe_decorated:
 ;
 
 new_expr:
+  /* handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
     { $1->insertAtTail($2);
       $$ = $1; }
+
+  /* handles e.g. new (typefn())(initargs) */
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol)),
+                        new CallExpr($4, $7));
+    }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol)),
+                        new CallExpr($4, $7));
+    }
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol)),
+                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
+                                     new CallExpr($4, $7)));
+    }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol)),
+                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
+                                     new CallExpr($4, $7)));
+    }
+
+  /* handles e.g. new owned(myUnmanaged) */
 | TNEW TOWNED TLP expr TRP
     { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
 | TNEW TSHARED TLP expr TRP
