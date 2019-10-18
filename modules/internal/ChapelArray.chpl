@@ -1685,7 +1685,7 @@ module ChapelArray {
 
       if isRectangularDom(this) {
         var contains = true;
-        for i in 1..this.dims().size {
+        for i in 0..this.dims().size-1 {
           contains &&= super.dims()[i].contains(this.dims()[i]);
           if contains == false then break;
         }
@@ -1717,7 +1717,7 @@ module ChapelArray {
 
       if isRectangularDom(this) {
         var contains = true;
-        for i in 1..this.dims().size {
+        for i in 0..this.dims().size-1 {
           contains &&= this.dims()[i].contains(sub.dims()[i]);
           if contains == false then break;
         }
