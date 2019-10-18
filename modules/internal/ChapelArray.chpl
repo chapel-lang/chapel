@@ -1399,8 +1399,8 @@ module ChapelArray {
    /* Return a tuple of :proc:`intIdxType` describing the size of each dimension.
       For a sparse domain, return the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      var s: rank*(dim(0).intIdxType);
-      for (i, r) in zip(1..s.size, dims()) do
+      var s: rank*(dim(1).intIdxType);
+      for (i, r) in zip(0..#s.size, dims()) do
         s(i) = r.size;
       return s;
     }
@@ -1409,7 +1409,7 @@ module ChapelArray {
     /* Associative and Opaque domains assumed to be 1-D. */
     proc shape where isAssociativeDom(this) || isOpaqueDom(this) {
       var s: (size.type,);
-      s[1] = size;
+      s[0] = size;
       return s;
     }
 
@@ -3097,7 +3097,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("push_back");
 
       const thisRange = this.domain.high+1..#vals.size,
-            valsRange = vals.domain.dim(0),
+            valsRange = vals.domain.dim(1),
             newRange = this.domain.low..(this.domain.high + vals.size);
 
       reallocateArray(newRange, debugMsg="push_back reallocate");
@@ -3196,7 +3196,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("push_front");
 
       const thisRange = (this.domain.low-vals.size)..#vals.size,
-            valsRange = vals.domain.dim(0),
+            valsRange = vals.domain.dim(1),
             newRange = (this.domain.low - vals.size)..this.domain.high;
 
       reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
