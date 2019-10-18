@@ -821,7 +821,7 @@ module ArrayViewRankChange {
         j += 1;
       }
     }
-    assert (j == 2);
+    assert (j == 1);
     return ind;
   }
 

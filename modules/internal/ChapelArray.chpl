@@ -3984,9 +3984,9 @@ module ChapelArray {
 
     proc strideSafe(d, rt, param dim: int=1) param {
       return if dim == d.rank then
-               d.dim(dim).stridable || !rt(dim).stridable
+               d.dim(dim).stridable || !rt(dim-1).stridable
              else
-               (d.dim(dim).stridable || !rt(dim).stridable) && strideSafe(d, rt, dim+1);
+               (d.dim(dim).stridable || !rt(dim-1).stridable) && strideSafe(d, rt, dim+1);
     }
     return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
   }
