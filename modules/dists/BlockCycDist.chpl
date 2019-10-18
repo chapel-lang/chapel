@@ -27,6 +27,8 @@
 
 private use DSIUtil;
 
+private use HaltWrappers;
+
 //
 // TODO List
 //
