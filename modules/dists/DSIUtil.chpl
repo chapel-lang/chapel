@@ -486,7 +486,7 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   // recursively invoke array assignment (and therefore bulk-transfer).
   var LeftActives, RightActives : minRank * int;
 
-  var li = 1, ri = 1;
+  var li = 0, ri = 0;
   proc advance() {
     // Advance to positions in each domain where the sizes are equal.
     while LeftDims(li).size == 1 && LeftDims(li).size != RightDims(ri).size do li += 1;
@@ -497,14 +497,14 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
 
   do {
     advance();
-    inferredRank += 1;
 
     LeftActives(inferredRank)  = li;
     RightActives(inferredRank) = ri;
 
+    inferredRank += 1;
     li += 1;
     ri += 1;
-  } while li <= LeftRank && ri <= RightRank;
+  } while li < LeftRank && ri < RightRank;
 
   return (LeftActives, RightActives, inferredRank);
 }

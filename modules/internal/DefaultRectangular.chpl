@@ -1962,7 +1962,7 @@ module DefaultRectangular {
 
     var DimSizes: [1..inferredRank] LeftDims(0).size.type;
     for i in 1..inferredRank {
-      const dimIdx = LeftActives(i);
+      const dimIdx = LeftActives(i-1);
       DimSizes[i] = LeftDims(dimIdx).size;
     }
 
@@ -1978,11 +1978,11 @@ module DefaultRectangular {
       // For each array, compute a valid 'blk' with 'inferredRank' values
       // over the array's original data by skipping over rank-changed dims.
       for idx in 1..inferredRank by -1 {
-        const li = LeftActives(idx);
-        LBlk(idx) = LHS.blk(li) * (LeftDims(li).stride / LHS.dom.dsiDim(li).stride):intIdxType;
+        const li = LeftActives(idx-1);
+        LBlk(idx-1) = LHS.blk(li) * (LeftDims(li).stride / LHS.dom.dsiDim(li).stride):intIdxType;
 
-        const ri = RightActives(idx);
-        RBlk(idx) = RHS.blk(ri) * (RightDims(ri).stride / RHS.dom.dsiDim(ri).stride):intIdxType;
+        const ri = RightActives(idx-1);
+        RBlk(idx-1) = RHS.blk(ri) * (RightDims(ri).stride / RHS.dom.dsiDim(ri).stride):intIdxType;
       }
     }
 
@@ -2020,11 +2020,11 @@ module DefaultRectangular {
     // original domain may have also been strided, like so:
     //   var A : [1..10 by 2, 1..20 by 4] int;
     //
-    if LBlk(inferredRank) > 1 || RBlk(inferredRank) > 1 {
+    if LBlk(inferredRank-1) > 1 || RBlk(inferredRank-1) > 1 {
       stridelevels           += 1;
       count[stridelevels]     = 1;
-      dstStride[stridelevels] = LBlk(inferredRank).safeCast(size_t);
-      srcStride[stridelevels] = RBlk(inferredRank).safeCast(size_t);
+      dstStride[stridelevels] = LBlk(inferredRank-1).safeCast(size_t);
+      srcStride[stridelevels] = RBlk(inferredRank-1).safeCast(size_t);
     }
 
     //
@@ -2043,11 +2043,11 @@ module DefaultRectangular {
 
       if !bothReuse {
         stridelevels += 1;
-        dstStride[stridelevels] = LBlk(i-1).safeCast(size_t);
-        srcStride[stridelevels] = RBlk(i-1).safeCast(size_t);
+        dstStride[stridelevels] = LBlk(i-2).safeCast(size_t);
+        srcStride[stridelevels] = RBlk(i-2).safeCast(size_t);
       }
     }
-    count[stridelevels+1] *= DimSizes(0).safeCast(size_t);
+    count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
 
     assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
     if stridelevels == 0 then assert(count[1] == LViewDom.numIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.numIndices);
@@ -2291,7 +2291,7 @@ module DefaultRectangular {
     const lastIndex = (lastCount-1) * curStride;
     const nextIndex = lastIndex + curStride;
 
-    return blk(curDim-1) == nextIndex;
+    return blk(curDim-2) == nextIndex;
   }
 
 }
