@@ -1819,6 +1819,22 @@ module ShallowCopy {
       }
     }
   }
+  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: size_t) {
+    if dst.locale.id == here.id {
+      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes);
+    } else if src.locale.id == here.id {
+      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes);
+    } else {
+      halt("Remote src and remote dst not yet supported");
+    }
+  }
+
+  // For the case in which we know that the source and dest regions
+  // are contiguous within a locale
+  proc shallowCopyPutGet(ref DstA, dst, ref SrcA, src, nElts) {
+    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    shallowCopyPutGetRefs(DstA[dst], SrcA[src], size);
+  }
 }
 pragma "no doc"
 module SequentialInPlacePartitioning {
@@ -2556,11 +2572,22 @@ module TwoArrayPartitioning {
             }
             assert(total == localDomain.size);
           }
-          // Now store the counts into the global counts array
-          for bin in vectorizeOnly(0..#nBuckets) {
-            state.perLocale[0].globalCounts[bin*nTasks + tid] = localCounts[bin];
+
+          // Do an all-to-all to send the counts to everybody
+          // To make this communication more efficient, temporarily store
+          // in the order
+          //     count for locale 0, bin 0
+          //     count for locale 0, bin 1
+          //     ...
+          // (i.e. the transpose of the order needed for scan)
+          const toIdx = maxBuckets * tid;
+          forall i in 1..#nTasks with (ref state) {
+            const dstTid = (i + tid) % nTasks;
+            // perLocale[dstTid].globalCounts[toIdx..#maxBuckets] = localCounts;
+            ShallowCopy.shallowCopyPutGet(
+                state.perLocale[dstTid].globalCounts, toIdx,
+                localCounts, 0, maxBuckets);
           }
-          //state.globalCounts[tid.. by nTasks] = localCounts;
         }
       }
       // Now the data is in Scratch
@@ -2569,36 +2596,44 @@ module TwoArrayPartitioning {
         writef("after bucketize local portions, Scratch is %xt\n", Scratch[task.start..taskEnd]);
       }
 
-      // Step 2: scan
-      state.perLocale[0].globalEnds = (+ scan state.perLocale[0].globalCounts) + task.start;
-
-      // Store counts on each other locale
-      forall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
-        if tid != 0 {
-          state.perLocale[tid].globalCounts = state.perLocale[0].globalCounts;
-          state.perLocale[tid].globalEnds = state.perLocale[0].globalEnds;
-        }
-      }
-
-      if debug {
-        var total = 0;
-        for i in 0..#state.countsSize {
-          if state.perLocale[0].globalCounts[i] != 0 {
-            total += state.perLocale[0].globalCounts[i];
-            writeln("state.globalCounts[", i, "]=", state.perLocale[0].globalCounts[i]);
-            writeln("state.globalEnds[", i, "]=", state.perLocale[0].globalEnds[i]);
-          }
-        }
-        assert(total == task.size);
-      }
-
-      // Step 3: distribute the keys to the src array according
-      // to the globalEnds.
-      // In particular, bin i from task j should be stored into
-      // globalEnds[i*ntasks+j-1] .. globalEnds[i*ntasks+j] - 1
-      // (because the scan is inclusive)
       coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
         on loc do {
+
+          // Step 2: scan
+          // Note that the globalCounts arrays are stored in transpose
+          // order up until now to optimize communication, so we first
+          // rearrange them.
+
+          // Temporarily use the globalEnds array to reorder
+          {
+            ref globalCounts = state.perLocale[tid].globalCounts;
+            ref globalEnds = state.perLocale[tid].globalEnds;
+            forall (tid,bkt) in {0..#nTasks, 0..#maxBuckets} {
+              globalEnds[bkt*nTasks+tid] = globalCounts[tid*maxBuckets+bkt];
+            }
+            globalCounts = globalEnds;
+
+            globalEnds = (+ scan globalCounts) + task.start;
+          }
+
+          if debug && tid == 0 {
+            var total = 0;
+            for i in 0..#state.countsSize {
+              if state.perLocale[0].globalCounts[i] != 0 {
+                total += state.perLocale[0].globalCounts[i];
+                writeln("state.globalCounts[", i, "]=", state.perLocale[0].globalCounts[i]);
+                writeln("state.globalEnds[", i, "]=", state.perLocale[0].globalEnds[i]);
+              }
+            }
+            assert(total == task.size);
+          }
+
+          // Step 3: distribute the keys to the src array according
+          // to the globalEnds.
+          // In particular, bin i from task j should be stored into
+          // globalEnds[i*ntasks+j-1] .. globalEnds[i*ntasks+j] - 1
+          // (because the scan is inclusive)
+
           const ref globalCounts = state.perLocale[tid].globalCounts;
           const ref globalEnds = state.perLocale[tid].globalEnds;
           const localSubdomain = A.localSubdomain()[task.start..taskEnd];
