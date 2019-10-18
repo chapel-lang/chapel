@@ -1491,11 +1491,11 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal type index expression");
       }
 
-      if (index <= 0 || index > at->fields.length-1) {
+      if (index < 0 || index > at->fields.length-2) {
         USR_FATAL(call, "type index expression '%i' out of bounds", index);
       }
 
-      sprintf(field, "x%" PRId64, index);
+      sprintf(field, "x%" PRId64, index+1);
 
       retval = new SymExpr(sym->type->getField(field)->type->symbol);
       call->replace(retval);
