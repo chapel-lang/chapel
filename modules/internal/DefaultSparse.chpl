@@ -489,7 +489,7 @@ module DefaultSparse {
           yield data[i];
         }
       } else {
-        coforall chunk in chunks(1..numElems, numChunks) {
+        coforall chunk in RangeChunk.chunks(1..numElems, numChunks) {
           for i in chunk do
             yield data[i];
         }
