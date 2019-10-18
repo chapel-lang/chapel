@@ -612,7 +612,7 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 then
+    if dim == x.size-2 then
       return (_toFastFollowerZip(x(dim), leaderIndex),
               _toFastFollowerZip(x(dim+1), leaderIndex));
     else

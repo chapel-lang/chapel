@@ -2165,7 +2165,7 @@ module DefaultRectangular {
   proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
     use RangeChunk only;
     // Compute who owns what
-    const rng = dom.dim(0);
+    const rng = dom.dim(1);
     const numTasks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(rng.size);
     const rngs = RangeChunk.chunks(rng, numTasks);
