@@ -483,27 +483,27 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
 
   // ensure we get a local copy of targetLocales
   // todo - provide the following as utility functions (for domains, arrays)
-  const pdTargetLocales = privatizeData(1);
+  const pdTargetLocales = privatizeData(0);
   const privTargetIds: domain(pdTargetLocales.domain.rank,
                               pdTargetLocales.domain.idxType,
                               pdTargetLocales.domain.stridable
                               ) = pdTargetLocales.domain;
   const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
 
-  var di1new = di1.type.dsiPrivatize1d(privatizeData(6));
-  var di2new = di2.type.dsiPrivatize1d(privatizeData(7));
+  var di1new = di1.type.dsiPrivatize1d(privatizeData(5));
+  var di2new = di2.type.dsiPrivatize1d(privatizeData(6));
   const plliddDummy: privTargetLocales.domain.low.type;
   _passLocalLocIDsDist(di1new, true, di2new, true,
                        privTargetLocales, false, plliddDummy);
 
   return new unmanaged DimensionalDist2D(targetLocales = privTargetLocales,
-                             name          = privatizeData(2),
+                             name          = privatizeData(1),
                              idxType       = this.idxType,
                              di1           = di1new,
                              di2           = di2new,
-                             dataParTasksPerLocale     = privatizeData(3),
-                             dataParIgnoreRunningTasks = privatizeData(4),
-                             dataParMinGranularity     = privatizeData(5),
+                             dataParTasksPerLocale     = privatizeData(2),
+                             dataParIgnoreRunningTasks = privatizeData(3),
+                             dataParMinGranularity     = privatizeData(4),
                              dummy = 0);
 }
 
@@ -665,12 +665,12 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
   _traceddd(this, ".dsiPrivatize on ", here.id);
 
   var privdist = chpl_getPrivatizedCopy(objectType = this.dist.type,
-                                        objectPid  = privatizeData(1));
+                                        objectPid  = privatizeData(0));
 
-    var dom1new = dom1.type.dsiPrivatize1d(privdist.di1, privatizeData(2));
+    var dom1new = dom1.type.dsiPrivatize1d(privdist.di1, privatizeData(1));
     _passLocalLocIDsDom1d(dom1new, privdist.di1);
 
-    var dom2new = dom2.type.dsiPrivatize1d(privdist.di2, privatizeData(3));
+    var dom2new = dom2.type.dsiPrivatize1d(privdist.di2, privatizeData(2));
     _passLocalLocIDsDom1d(dom2new, privdist.di2);
 
   const result = new unmanaged DimensionalDom(rank      = this.rank,
@@ -679,8 +679,8 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
                                     dist = privdist,
                                     dom1 = dom1new,
                                     dom2 = dom2new,
-                                    whole       = {(...privatizeData(4))},
-                                    localDdescs = privatizeData(5));
+                                    whole       = {(...privatizeData(3))},
+                                    localDdescs = privatizeData(4));
 
   // update local-to-global pointers as needed
   param lg1 = dom1new.dsiLocalDescUsesPrivatizedGlobalDesc1d();
@@ -715,10 +715,10 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
                  this.idxType == other.idxType &&
                  this.stridable == other.stridable);
 
-  dom1.dsiReprivatize1d(reprivatizeData(1));
-  dom2.dsiReprivatize1d(reprivatizeData(2));
+  dom1.dsiReprivatize1d(reprivatizeData(0));
+  dom2.dsiReprivatize1d(reprivatizeData(1));
 
-  this.whole = reprivatizeData(3);
+  this.whole = reprivatizeData(2);
 }
 
 
@@ -874,8 +874,8 @@ proc DimensionalArr.dsiGetPrivatizeData() {
 proc DimensionalArr.dsiPrivatize(privatizeData) {
   _traceddd(this, ".dsiPrivatize on ", here.id);
 
-  const idDom = privatizeData(1);
-  const idAllocDom = privatizeData(2);
+  const idDom = privatizeData(0);
+  const idAllocDom = privatizeData(1);
 
   const privDom = chpl_getPrivatizedCopy(objectType = this.dom.type,
                                          objectPid  = idDom);
@@ -893,7 +893,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
                                     dom      = privDom,
                                     allocDom = privAllocDom);
 
-  result.localAdescs = privatizeData(3);
+  result.localAdescs = privatizeData(2);
 
   assert(result.isAlias == this.isAlias);
   return result;

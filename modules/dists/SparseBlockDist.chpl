@@ -753,7 +753,7 @@ proc SparseBlockDom.dsiSupportsPrivatization() param return true;
 proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
-  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
   var c = new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                              sparseLayoutType=sparseLayoutType,
                              stridable=parentDom.stridable, dist=privdist,
@@ -764,7 +764,7 @@ proc SparseBlockDom.dsiPrivatize(privatizeData) {
     if c.locDoms(i).locale.id == here.id then
       c.myLocDom = c.locDoms(i);
   }
-  c.whole = {(...privatizeData(2))};
+  c.whole = {(...privatizeData(1))};
   return c;
 }
 

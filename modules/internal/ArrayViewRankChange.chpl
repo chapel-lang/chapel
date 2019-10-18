@@ -100,10 +100,10 @@ module ArrayViewRankChange {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new unmanaged ArrayViewRankChangeDist(downDistPid = privatizeData(1),
-                                         downDistInst = privatizeData(2),
-                                         collapsedDim = privatizeData(3),
-                                         idx = privatizeData(4));
+      return new unmanaged ArrayViewRankChangeDist(downDistPid = privatizeData(0),
+                                         downDistInst = privatizeData(0),
+                                         collapsedDim = privatizeData(1),
+                                         idx = privatizeData(2));
     }
 
     override proc dsiDestroyDist() {
@@ -395,13 +395,13 @@ module ArrayViewRankChange {
       return new unmanaged ArrayViewRankChangeDom(rank = this.rank,
                                         idxType = this.idxType,
                                         stridable = this.stridable,
-                                        upDomInst = privatizeData(1),
-                                        collapsedDim = privatizeData(2),
-                                        idx = privatizeData(3),
-                                        distPid = privatizeData(4),
-                                        distInst = privatizeData(5),
-                                        downDomPid = privatizeData(6),
-                                        downDomInst = privatizeData(7));
+                                        upDomInst = privatizeData(0),
+                                        collapsedDim = privatizeData(1),
+                                        idx = privatizeData(2),
+                                        distPid = privatizeData(3),
+                                        distInst = privatizeData(4),
+                                        downDomPid = privatizeData(5),
+                                        downDomInst = privatizeData(6));
     }
 
     proc dsiGetReprivatizeData() {
@@ -409,13 +409,13 @@ module ArrayViewRankChange {
     }
 
     proc dsiReprivatize(other, reprivatizeData) {
-      upDomInst = reprivatizeData(1);
+      upDomInst = reprivatizeData(0);
       //      collapsedDim = other.collapsedDim;
       //      idx = other.idx;
       //      distPid = other.distPid;
       //      distInst = other.distInst;
-      downDomPid = reprivatizeData(2);
-      downDomInst = reprivatizeData(3);
+      downDomPid = reprivatizeData(1);
+      downDomInst = reprivatizeData(2);
     }
 
  } // end of class ArrayViewRankChangeDom
@@ -695,12 +695,12 @@ module ArrayViewRankChange {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewRankChangeArr(eltType=this.eltType,
-                                        _DomPid=privatizeData(1),
-                                        dom=privatizeData(2),
-                                        _ArrPid=privatizeData(3),
-                                        _ArrInstance=privatizeData(4),
-                                        collapsedDim=privatizeData(5),
-                                        idx=privatizeData(6));
+                                        _DomPid=privatizeData(0),
+                                        dom=privatizeData(1),
+                                        _ArrPid=privatizeData(2),
+                                        _ArrInstance=privatizeData(3),
+                                        collapsedDim=privatizeData(4),
+                                        idx=privatizeData(5));
     }
 
     //

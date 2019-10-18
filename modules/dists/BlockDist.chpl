@@ -1209,11 +1209,11 @@ proc Block.init(other: Block, privateData,
                 type sparseLayoutType = other.sparseLayoutType) {
   this.rank = rank;
   this.idxType = idxType;
-  boundingBox = {(...privateData(1))};
-  targetLocDom = {(...privateData(2))};
-  dataParTasksPerLocale = privateData(3);
-  dataParIgnoreRunningTasks = privateData(4);
-  dataParMinGranularity = privateData(5);
+  boundingBox = {(...privateData(0))};
+  targetLocDom = {(...privateData(1))};
+  dataParTasksPerLocale = privateData(2);
+  dataParIgnoreRunningTasks = privateData(3);
+  dataParMinGranularity = privateData(4);
   this.sparseLayoutType = sparseLayoutType;
 
   this.complete();

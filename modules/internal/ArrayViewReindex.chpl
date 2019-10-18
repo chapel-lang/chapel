@@ -79,11 +79,11 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new unmanaged ArrayViewReindexDist(downDistPid = privatizeData(1),
-                                      downDistInst = privatizeData(2),
-                                      updom = privatizeData(3),
-                                      downdomPid = privatizeData(4),
-                                      downdomInst = privatizeData(5));
+      return new unmanaged ArrayViewReindexDist(downDistPid = privatizeData(0),
+                                      downDistInst = privatizeData(1),
+                                      updom = privatizeData(2),
+                                      downdomPid = privatizeData(3),
+                                      downdomInst = privatizeData(4));
     }
 
     override proc dsiDestroyDist() {
@@ -313,11 +313,11 @@ module ArrayViewReindex {
       return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
                                      stridable = this.stridable,
-                                     updomInst = privatizeData(1),
-                                     downdomPid = privatizeData(2),
-                                     downdomInst = privatizeData(3),
-                                     distPid = privatizeData(4),
-                                     distInst = privatizeData(5)
+                                     updomInst = privatizeData(0),
+                                     downdomPid = privatizeData(1),
+                                     downdomInst = privatizeData(2),
+                                     distPid = privatizeData(3),
+                                     distInst = privatizeData(4)
                                      );
     }
 
@@ -326,13 +326,13 @@ module ArrayViewReindex {
     }
 
     proc dsiReprivatize(other, reprivatizeData) {
-      updomInst = reprivatizeData(1);
+      updomInst = reprivatizeData(0);
       //      collapsedDim = other.collapsedDim;
       //      idx = other.idx;
       //      distPid = other.distPid;
       //      distInst = other.distInst;
-      downdomPid = reprivatizeData(2);
-      downdomInst = reprivatizeData(3);
+      downdomPid = reprivatizeData(1);
+      downdomInst = reprivatizeData(2);
     }
 
   } // end of class ArrayViewReindexDom
@@ -593,10 +593,10 @@ module ArrayViewReindex {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewReindexArr(eltType=this.eltType,
-                                     _DomPid=privatizeData(1),
-                                     dom=privatizeData(2),
-                                     _ArrPid=privatizeData(3),
-                                     _ArrInstance=privatizeData(4));
+                                     _DomPid=privatizeData(0),
+                                     dom=privatizeData(1),
+                                     _ArrPid=privatizeData(2),
+                                     _ArrInstance=privatizeData(3));
     }
 
     //

@@ -307,10 +307,10 @@ module ArrayViewSlice {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                   _DomPid=privatizeData(1),
-                                   dom=privatizeData(2),
-                                   _ArrPid=privatizeData(3),
-                                   _ArrInstance=privatizeData(4));
+                                   _DomPid=privatizeData(0),
+                                   dom=privatizeData(1),
+                                   _ArrPid=privatizeData(2),
+                                   _ArrInstance=privatizeData(3));
     }
 
     //
