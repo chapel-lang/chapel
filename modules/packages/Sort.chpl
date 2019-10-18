@@ -1430,7 +1430,7 @@ module RadixSortHelp {
   {
     // We have keyPart(element, start):(section:int(8), part:int/uint)
     const testRet: criterion.keyPart(a, 1).type;
-    const testPart = testRet(2);
+    const testPart = testRet(1);
     param bitsPerPart = numBits(testPart.type);
     param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
     if bitsPerPartModRadixBits != 0 then
@@ -2720,7 +2720,7 @@ module MSBRadixSort {
     // 0th bin is for records where we've consumed all the key.
     var offsets:[0..radix] int;
     var end_offsets:[0..radix] int;
-    type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+    type ubitsType = binForRecord(A[start_n], criterion, startbit)(1).type;
     var min_ubits: ubitsType = max(ubitsType);
     var max_ubits: ubitsType = 0;
     var min_bin = radix+1;
@@ -2824,7 +2824,7 @@ module MSBRadixSort {
       while offsets[curbin] < endfast {
         // Now go through the records in buf
         // putting them in their right home.
-        for param j in 1..max_buf {
+        for param j in 0..max_buf-1 {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // prefetch(A[offsets[bin]]) could be here but doesn't help
 
@@ -2837,7 +2837,7 @@ module MSBRadixSort {
       // Now, handle elements in bufstart...end_offsets[cur_bin]
       while offsets[curbin] < end {
         // Put buf[j] into its right home
-        var j = 1;
+        var j = 0;
         while used_buf > 0 && j <= used_buf {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // Swap buf[j] into its appropriate bin.
