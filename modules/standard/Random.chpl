@@ -791,8 +791,8 @@ module Random {
         this.seed = seed;
         this.parSafe = parSafe;
         this.complete();
-        for param i in 1..numGenerators(eltType) {
-          param inc = pcg_getvalid_inc(i);
+        for param i in 0..numGenerators(eltType)-1 {
+          param inc = pcg_getvalid_inc(i+1);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
         }
         PCGRandomStreamPrivate_count = 1;
@@ -1161,11 +1161,11 @@ module Random {
     // These would form the RNG interface.
     private inline
     proc rand32_1(ref states):uint(32) {
-      return states[1].random(pcg_getvalid_inc(1));
+      return states[0].random(pcg_getvalid_inc(1));
     }
     private inline
     proc rand32_2(ref states):uint(32) {
-      return states[2].random(pcg_getvalid_inc(2));
+      return states[1].random(pcg_getvalid_inc(2));
     }
     // returns x with 0 <= x <= bound
     // count is 1-based
@@ -1174,7 +1174,7 @@ module Random {
                          bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_1(states);
-      else return states[1].bounded_random_vary_inc(
+      else return states[0].bounded_random_vary_inc(
           pcg_getvalid_inc(1), bound + 1,
           seed:uint(64), (count - 1):uint(64),
           101, 4);
@@ -1186,7 +1186,7 @@ module Random {
                          bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_2(states);
-      else return states[2].bounded_random_vary_inc(
+      else return states[1].bounded_random_vary_inc(
           pcg_getvalid_inc(2), bound + 1,
           seed:uint(64), (count - 1):uint(64),
           102, 4);
@@ -1195,17 +1195,17 @@ module Random {
     private inline
     proc rand64_1(ref states):uint(64) {
       var ret:uint(64) = 0;
-      ret |= states[1].random(pcg_getvalid_inc(1));
+      ret |= states[0].random(pcg_getvalid_inc(1));
       ret <<= 32;
-      ret |= states[2].random(pcg_getvalid_inc(2));
+      ret |= states[1].random(pcg_getvalid_inc(2));
       return ret;
     }
     private inline
     proc rand64_2(ref states):uint(64) {
       var ret:uint(64) = 0;
-      ret |= states[3].random(pcg_getvalid_inc(3));
+      ret |= states[2].random(pcg_getvalid_inc(3));
       ret <<= 32;
-      ret |= states[4].random(pcg_getvalid_inc(4));
+      ret |= states[3].random(pcg_getvalid_inc(4));
       return ret;
     }
 
@@ -1337,8 +1337,8 @@ module Random {
     private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
       var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
 
-      for param i in 1..states.size {
-        param inc = pcg_getvalid_inc(i);
+      for param i in 0..states.size-1 {
+        param inc = pcg_getvalid_inc(i+1);
         states[i].srandom(seed:uint(64), inc);
         states[i].advance(inc, (n - 1):uint(64));
       }
@@ -1348,11 +1348,11 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    private iter outer(ranges, param dim: int = 1) {
-      if dim + 1 == ranges.size {
+    private iter outer(ranges, param dim: int = 0) {
+      if dim + 2 == ranges.size {
         for i in ranges(dim) do
           yield (i,);
-      } else if dim + 1 < ranges.size {
+      } else if dim + 2 < ranges.size {
         for i in ranges(dim) do
           for j in outer(ranges, dim+1) do
             yield (i, (...j));
@@ -1386,7 +1386,7 @@ module Random {
           where tag == iterKind.follower {
       param multiplier = 1;
       const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank);
+      const innerRange = followThis(ZD.rank-1);
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
@@ -2595,11 +2595,11 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    private iter outer(ranges, param dim: int = 1) {
-      if dim + 1 == ranges.size {
+    private iter outer(ranges, param dim: int = 0) {
+      if dim + 2 == ranges.size {
         for i in ranges(dim) do
           yield (i,);
-      } else if dim + 1 < ranges.size {
+      } else if dim + 2 < ranges.size {
         for i in ranges(dim) do
           for j in outer(ranges, dim+1) do
             yield (i, (...j));
@@ -2634,7 +2634,7 @@ module Random {
           where tag == iterKind.follower {
       param multiplier = if resultType == complex then 2 else 1;
       const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank);
+      const innerRange = followThis(ZD.rank-1);
       var cursor: real;
       for outer in outer(followThis) {
         var myStart = start;
