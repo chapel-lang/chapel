@@ -18,8 +18,7 @@ config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
 
 enum arraySize {tiny, small, large};
 
-config const size = arraySize.tiny;
-config const printStats = true;
+config const size = if correctness then arraySize.tiny else arraySize.large;
 
 const nElems = if size == arraySize.tiny then nElemsTiny else
                if size == arraySize.small then nElemsSmall else
