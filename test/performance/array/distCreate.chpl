@@ -17,6 +17,9 @@ config const correctness = false;
 config const commCount = false;
 config const verboseComm = false;
 config const verboseMem = false;
+
+config const createArrays = true;
+
 config const nElemsTiny = numLocales;
 config const nElemsSmall = if correctness then 100 else 1000000;
 config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
@@ -92,15 +95,16 @@ if correctness || dist == distType.block {
     startDiag();
     const blockDom = localDom dmapped Block(boundingBox=localDom);
     endDiag("domInit", blockDom);
-    {
-      startDiag();
-      const blockArr: [blockDom] elemType;
-      endDiag("arrInit", blockArr);
+    if createArrays {
+      {
+        startDiag();
+        const blockArr: [blockDom] elemType;
+        endDiag("arrInit", blockArr);
 
-      startDiag();
+        startDiag();
+      }
+      endDiag("arrDeinit");
     }
-    endDiag("arrDeinit");
-
     startDiag();
   }
   endDiag("domDeinit");
@@ -111,16 +115,16 @@ if correctness || dist == distType.cyclic {
     startDiag();
     const cyclicDom = localDom dmapped Cyclic(startIdx=localDom.first);
     endDiag("domInit", cyclicDom);
-    {
+    if createArrays {
+      {
+        startDiag();
+        const cyclicArr: [cyclicDom] elemType;
+        endDiag("arrInit", cyclicArr);
 
-      startDiag();
-      const cyclicArr: [cyclicDom] elemType;
-      endDiag("arrInit", cyclicArr);
-
-      startDiag();
+        startDiag();
+      }
+      endDiag("arrDeinit");
     }
-    endDiag("arrDeinit");
-
     startDiag();
   }
   endDiag("domDeinit");
@@ -132,15 +136,16 @@ if correctness || dist == distType.blockCyc {
     const blockCyclicDom = localDom dmapped BlockCyclic(startIdx=localDom.first,
                                                         blocksize=5);
     endDiag("domInit", blockCyclicDom);
-    {
-
-      startDiag();
-      const blockCyclicArr: [blockCyclicDom] elemType;
-      endDiag("arrInit", blockCyclicArr);
-      
-      startDiag();
+    if createArrays {
+      {
+        startDiag();
+        const blockCyclicArr: [blockCyclicDom] elemType;
+        endDiag("arrInit", blockCyclicArr);
+        
+        startDiag();
+      }
+      endDiag("arrDeinit");
     }
-    endDiag("arrDeinit");
 
     startDiag();
   }
