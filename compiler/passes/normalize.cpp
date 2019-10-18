@@ -1080,6 +1080,12 @@ static void processManagedNew(CallExpr* newCall) {
     if (newCall->numActuals() == 1 && !isCallExpr(newCall->get(1))) {
       argListError = true;
     }
+    if (newCall->numActuals() >= 1)
+      if (CallExpr* subCall = toCallExpr(newCall->get(1)))
+        if (subCall->isNamedAstr(astrSdot))
+          USR_FATAL_CONT(newCall,
+                         "Please use parentheses to disambiguate "
+                         "dot expression after new");
   }
 
   if (argListError) {
