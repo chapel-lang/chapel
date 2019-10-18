@@ -626,7 +626,7 @@ static void insertEpilogueTemps(FnSymbol*  fn,
     if (i > 0) {
       VarSymbol* tmp    = newTemp("_varargs_tmp_");
 
-      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i-1));
       CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
 
       CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
