@@ -2861,11 +2861,11 @@ module ChapelArray {
 
     /* Yield the array elements in sorted order. */
     iter sorted(comparator:?t = chpl_defaultComparator()) {
-      if canResolveMethod(_value, "dsiSorted", comparator) {
+      if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
           yield i;
         }
-      } else if canResolveMethod(_value, "dsiSorted") {
+      } else if Reflection.canResolveMethod(_value, "dsiSorted") {
         compilerError(_value.type:string + " does not support dsiSorted(comparator)");
       } else {
         use Sort;
