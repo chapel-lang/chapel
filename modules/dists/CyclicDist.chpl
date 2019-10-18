@@ -234,7 +234,7 @@ class Cyclic: BaseDist {
         compilerError("locales array rank must be one or match distribution rank");
       var ranges: rank*range;
       for param i in 0..rank-1 do {
-        var thisRange = targetLocales.domain.dim(i);
+        var thisRange = targetLocales.domain.dim(i+1);
         ranges(i) = 0..#thisRange.length;
       }
       targetLocDom = {(...ranges)};
@@ -242,7 +242,7 @@ class Cyclic: BaseDist {
     }
 
     for param i in 0..rank-1 do
-      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).length);
+      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i+1).length);
 
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
@@ -392,20 +392,20 @@ proc Cyclic.writeThis(x) {
 proc Cyclic.targetLocsIdx(i: idxType) {
   const numLocs:idxType = targetLocDom.numIndices:idxType;
   // this is wrong if i is less than startIdx
-  //return ((i - startIdx(1)) % numLocs):int;
+  //return ((i - startIdx(0)) % numLocs):int;
   // this works even if i is less than startIdx
-  return chpl__diffMod(i, startIdx(1), numLocs):idxType;
+  return chpl__diffMod(i, startIdx(0), numLocs):idxType;
 }
 
 proc Cyclic.targetLocsIdx(ind: rank*idxType) {
   var x: rank*int;
   for param i in 0..rank-1 {
-    var dimLen = targetLocDom.dim(i).length;
+    var dimLen = targetLocDom.dim(i+1).length;
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
     x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
   if rank == 1 then
-    return x(1);
+    return x(0);
   else
     return x;
 }
@@ -434,7 +434,7 @@ proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
       const lo = chpl__tuplify(startIdx)(i): idxType;
       const myloc = chpl__tuplify(locid)(i): idxType;
       // NOTE: Not checking for overflow here when casting to strType
-      const numlocs = targetLocBox.dim(i).length: strType;
+      const numlocs = targetLocBox.dim(i+1).length: strType;
       inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
     }
     return inds;
@@ -619,7 +619,7 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
       type strType = chpl__signedType(idxType);
       for param i in 0..rank-1 {
         const wholestride = chpl__tuplify(wholeStride)(i);
-        const ref dim = zeroShift.dim(i);
+        const ref dim = zeroShift.dim(i+1);
         result(i) = (dim.first / wholestride:idxType)..(dim.last / wholestride:idxType) by (dim.stride:strType / wholestride);
       }
       yield result;
@@ -637,8 +637,8 @@ private proc chpl__followThisToOrig(type idxType, followThis, whole) {
                      " follower is: ", followThis);
   for param i in 0..rank-1 {
     // NOTE: unsigned idxType with negative stride will not work
-    const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
+    const wholestride = whole.dim(i+1).stride:chpl__signedType(idxType);
+    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i+1).alignedLow;
   }
   return t;
 }
@@ -868,7 +868,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
         var str: rank*strType;
         for param i in 0..rank-1 {
           pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
-          str(i) = whole.dim(i).stride;
+          str(i) = whole.dim(i+1).stride;
         }
         var dataIdx = radata(rlocIdx).getDataIndex(stridable, str, i, startIdx, dimLength);
         return radata(rlocIdx).dataElem(dataIdx);
@@ -908,14 +908,14 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   var t: rank*range(idxType=idxType, stridable=true);
   for param i in 0..rank-1 {
     type strType = chpl__signedType(idxType);
-    const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
+    const wholestride = dom.whole.dim(i+1).stride:chpl__signedType(idxType);
     if wholestride < 0 && idxType != strType then
       halt("negative stride with unsigned idxType not supported");
     const iStride = wholestride:idxType;
     const      lo = (followThis(i).low * iStride):idxType,
                hi = (followThis(i).high * iStride):idxType,
            stride = (followThis(i).stride*wholestride):strType;
-    t(i) = (lo..hi by stride) + dom.whole.dim(i).alignedLow;
+    t(i) = (lo..hi by stride) + dom.whole.dim(i+1).alignedLow;
   }
   const myFollowThis = {(...t)};
   if fast {
@@ -1018,7 +1018,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
     for param i in 0..rank-1 do
       // NOTE: Not bothering to check to see if length can fit into idxType
-      targetLocDomDimLength(i) = targetLocDom.dim(i).length:idxType;
+      targetLocDomDimLength(i) = targetLocDom.dim(i+1).length:idxType;
   }
 }
 
