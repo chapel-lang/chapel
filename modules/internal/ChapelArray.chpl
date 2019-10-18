@@ -3956,7 +3956,7 @@ module ChapelArray {
 
   proc =(ref a: domain, b: _tuple) {
     a.clear();
-    for ind in 1..b.size {
+    for ind in 0..#b.size {
       a.add(b(ind));
     }
   }
