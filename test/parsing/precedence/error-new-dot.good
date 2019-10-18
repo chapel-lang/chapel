@@ -1,0 +1,2 @@
+error-new-dot.chpl:17: error: Dot expressions after new must be parenthesized
+error-new-dot.chpl:19: error: Dot expressions after new must be parenthesized
