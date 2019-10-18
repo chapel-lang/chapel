@@ -10,7 +10,7 @@ use BlockCycDist;
 type elemType = int;
 
 
-enum diagMode { correctness, performance, commCount, verboseComm, verboseMem };
+enum diagMode { performance, correctness, commCount, verboseComm, verboseMem };
 enum arraySize { tiny, small, large };
 enum distType { block, cyclic, blockCyc };
 
@@ -51,6 +51,9 @@ inline proc startDiag(name) {
   if !shouldRunDiag(name) then return;
 
   select(mode) {
+    when diagMode.performance {
+      t.start();
+    }
     when diagMode.correctness { }
     when diagMode.commCount {
       startCommDiagnostics();
@@ -60,9 +63,6 @@ inline proc startDiag(name) {
     }
     when diagMode.verboseMem {
       startVerboseMem();
-    }
-    when diagMode.performance {
-      t.start();
     }
     otherwise {
       halt("Unrecognized diagMode");
