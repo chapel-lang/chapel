@@ -18,8 +18,8 @@
  */
 
 module ExternalString {
-  use CPtr;
-  private use SysCTypes;
+  use CPtr, String;
+  private use SysCTypes, ChapelBase;
 
   //
   // TODO: This shouldn't be necessary, and the compiler should figure this
