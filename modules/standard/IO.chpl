@@ -3419,7 +3419,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
   var str = "(";
 
   for param i in 0..tup.size-1 {
-    if i != 1 then str += ", ";
+    if i != 0 then str += ", ";
     str += tup[i]:string;
   }
 

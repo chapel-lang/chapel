@@ -252,12 +252,12 @@ module ArrayViewReindex {
 
     inline proc downIdxToUpIdx(downIdx: integral) {
       compilerAssert(updom.rank == 1, updom.rank:string);
-      return updom.dsiDim(1).orderToIndex(downdom.dsiDim(1).indexOrder(downIdx));
+      return updom.dsiDim(0).orderToIndex(downdom.dsiDim(0).indexOrder(downIdx));
     }
 
     inline proc downIdxToUpIdx(i) {
       var ind: updom.rank*updom.idxType;
-      for param d in 1..updom.rank {
+      for param d in 0..updom.rank-1 {
         ind(d) = updom.dsiDim(d).orderToIndex(downdom.dsiDim(d).indexOrder(i(d)));
       }
       return ind;
@@ -713,7 +713,7 @@ module ArrayViewReindex {
 
   inline proc chpl_reindexConvertIdx(i, updom, downdom) {
     var ind: downdom.rank*downdom.idxType;
-    for param d in 1..downdom.rank {
+    for param d in 0..downdom.rank-1 {
       ind(d) = chpl_reindexConvertIdxDim(i(d), updom, downdom, d);
     }
     return ind;
@@ -727,7 +727,7 @@ module ArrayViewReindex {
 
     var ranges : downdom.dsiDims().type;
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
-    for param d in 1..dims.size {
+    for param d in 0..dims.size-1 {
       if (dims(d).size == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
@@ -736,7 +736,7 @@ module ArrayViewReindex {
         actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
       }
     }
-    for param d in 1..updom.rank {
+    for param d in 0..updom.rank-1 {
       // Slicing the ranges preserves the stride
       ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
     }
@@ -757,9 +757,9 @@ module ArrayViewReindex {
       compilerError("Called chpl_reindexConvertDomMaybeSlice with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
     }
 
-    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(1).stridable);
+    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(0).stridable);
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
-    for param d in 1..dims.size {
+    for param d in 0..dims.size-1 {
       if (dims(d).size == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
@@ -768,7 +768,7 @@ module ArrayViewReindex {
         actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
       }
     }
-    for param d in 1..updom.rank {
+    for param d in 0..updom.rank-1 {
       if (downdom.dsiDim(d).stridable || dims(d).stridable) {
         const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
         // Slicing the ranges preserves the stride

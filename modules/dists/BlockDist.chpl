@@ -618,12 +618,12 @@ proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
 
 proc Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
-  for param i in 1..rank do
-    result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
-                           (((ind(i) - boundingBox.dim(i).low) *
-                             targetLocDom.dim(i).length:idxType) /
-                            boundingBox.dim(i).length):int));
-  return if rank == 1 then result(1) else result;
+  for param i in 0..rank-1 do
+    result(i) = max(0, min((targetLocDom.dim(i+1).length-1):int,
+                           (((ind(i) - boundingBox.dim(i+1).low) *
+                             targetLocDom.dim(i+1).length:idxType) /
+                            boundingBox.dim(i+1).length):int));
+  return if rank == 1 then result(0) else result;
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
@@ -631,8 +631,8 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
   const high = chpl__tuplify(targetLocsIdx(locSpace.last));
-  var dims : rank*range(low(1).type);
-  for param i in 1..rank {
+  var dims : rank*range(low(0).type);
+  for param i in 0..rank-1 {
     dims(i) = low(i)..high(i);
   }
 
@@ -658,13 +658,13 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
 
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
   param rank = targetLocBox.rank;
-  type idxType = chpl__tuplify(boundingBox)(1).idxType;
+  type idxType = chpl__tuplify(boundingBox)(0).idxType;
   var inds: rank*range(idxType);
-  for param i in 1..rank {
-    const lo = boundingBox.dim(i).low;
-    const hi = boundingBox.dim(i).high;
+  for param i in 0..rank-1 {
+    const lo = boundingBox.dim(i+1).low;
+    const hi = boundingBox.dim(i+1).high;
     const numelems = hi - lo + 1;
-    const numlocs = targetLocBox.dim(i).length;
+    const numlocs = targetLocBox.dim(i+1).length;
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
                                      max(idxType), min(idxType), lo);
     inds(i) = blo..bhi;
@@ -720,7 +720,7 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
         return (rangeType, (... helper(i+1)));
     }
   }
-  return helper(1);
+  return helper(0);
 }
 
 
@@ -757,12 +757,12 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
     type strType = chpl__signedType(idxType);
     const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
-    for param i in 1..tmpBlock.rank {
-      const stride = tmpBlock.dim(i).stride;
+    for param i in 0..tmpBlock.rank-1 {
+      const stride = tmpBlock.dim(i+1).stride;
       if stride < 0 && strType != idxType then
         halt("negative stride not supported with unsigned idxType");
         // (since locOffset is unsigned in that case)
-      locOffset(i) = tmpBlock.dim(i).first / stride:idxType;
+      locOffset(i) = tmpBlock.dim(i+1).first / stride:idxType;
     }
     // Forward to defaultRectangular
     for followThis in tmpBlock.these(iterKind.leader, maxTasks,
@@ -786,8 +786,8 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
 // TODO: Can we just re-use the DefaultRectangularDom follower here?
 //
 iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 1) param
-      return if i == rangeTuple.size then rangeTuple(i).stridable
+  proc anyStridable(rangeTuple, param i: int = 0) param
+      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if chpl__testParFlag then
@@ -795,12 +795,12 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
-  for param i in 1..rank {
-    var stride = whole.dim(i).stride: strType;
+  for param i in 0..rank-1 {
+    var stride = whole.dim(i+1).stride: strType;
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i+1).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -853,7 +853,7 @@ proc BlockDom.dsiSetIndices(x: domain) {
 proc BlockDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
-  if x(1).idxType != idxType then
+  if x(0).idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   //
   // TODO: This seems weird:
@@ -1074,12 +1074,12 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
-  for param i in 1..rank {
-    var stride = dom.whole.dim(i).stride;
+  for param i in 0..rank-1 {
+    var stride = dom.whole.dim(i+1).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i+1).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
@@ -1129,7 +1129,7 @@ proc BlockArr.dsiSerialWrite(f) {
 pragma "no copy return"
 proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     low(i) = ranges(i).low;
   }
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -1139,7 +1139,7 @@ proc _extendTuple(type t, idx: _tuple, args) {
   var tup: args.size*t;
   var j: int = 1;
 
-  for param i in 1..args.size {
+  for param i in 0..args.size-1 {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
     else {
@@ -1155,7 +1155,7 @@ proc _extendTuple(type t, idx, args) {
   var idxTup = (idx,);
   var j: int = 1;
 
-  for param i in 1..args.size {
+  for param i in 0..args.size-1 {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
     else {

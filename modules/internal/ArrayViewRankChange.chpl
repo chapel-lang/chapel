@@ -270,9 +270,9 @@ module ArrayViewRankChange {
     }
 
     proc chpl_rankChangeConvertLoDTupleToHiD(tup) {
-      var tupHiD: downrank*tup(1).type;
-      var i = 1;
-      for param d in 1..downrank do
+      var tupHiD: downrank*tup(0).type;
+      var i = 0;
+      for param d in 0..downrank-1 do
         if collapsedDim(d) then
           tupHiD(d) = 0..0;
         else {
@@ -283,9 +283,9 @@ module ArrayViewRankChange {
     }
 
     proc chpl_rankChangeConvertHiDTupleToLoD(tup) {
-      var tupLoD: rank*tup(1).type;
-      var i = 1;
-      for param d in 1..downrank do
+      var tupLoD: rank*tup(0).type;
+      var i = 0;
+      for param d in 0..downrank-1 do
         if !collapsedDim(d) {
           tupLoD(i) = tup(d);
           i += 1;
@@ -296,15 +296,15 @@ module ArrayViewRankChange {
 
     inline proc downIdxToUpIdx(downIdx) {
       var upIdx: rank*idxType;
-      var upDim = 1;
-      for param downDim in 1..downrank {
+      var upDim = 0;
+      for param downDim in 0..downrank-1 {
         if !collapsedDim(downDim) {
           upIdx(upDim) = downIdx(downDim);
           upDim += 1;
         }
       }
       if rank == 1 then
-        return upIdx(1);
+        return upIdx(0);
       else
         return upIdx;
     }
@@ -312,7 +312,7 @@ module ArrayViewRankChange {
     // TODO: Is there something we can re-use here?
     proc dsiSerialWrite(f) {
       var first = true;
-      for d in 1..downrank do
+      for d in 0..downrank-1 do
         if !collapsedDim(d) {
           if first {
             f <~> "{";
@@ -355,7 +355,7 @@ module ArrayViewRankChange {
       // If the rank-changed dimension's index is not a member of the range
       // in the same dimension of 'dims', then this locale does not have a
       // local subdomain.
-      for param d in 1..dims.size {
+      for param d in 0..dims.size-1 {
         if collapsedDim(d) && dims(d).isEmpty() then
           return empty;
       }
@@ -814,8 +814,8 @@ module ArrayViewRankChange {
   inline proc chpl_rankChangeConvertIdx(i: integral, collapsedDim, idx) {
     param downrank = collapsedDim.size;
     var ind = idx;
-    var j = 1;
-    for param d in 1..downrank {
+    var j = 0;
+    for param d in 0..downrank-1 {
       if !collapsedDim(d) {
         ind(d) = i;
         j += 1;
@@ -828,8 +828,8 @@ module ArrayViewRankChange {
   inline proc chpl_rankChangeConvertIdx(i, collapsedDim, idx) {
     param downrank = collapsedDim.size;
     var ind = idx;
-    var j = 1;
-    for param d in 1..downrank {
+    var j = 0;
+    for param d in 0..downrank-1 {
       if !collapsedDim(d) {
         ind(d) = i(j);
         j += 1;
@@ -840,24 +840,24 @@ module ArrayViewRankChange {
 
   inline proc chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, param rank) {
     param downrank = collapsedDim.size;
-    var ind: rank*i(1).type;
-    var j = 1;
-    for param d in 1..downrank {
+    var ind: rank*i(0).type;
+    var j = 0;
+    for param d in 0..downrank-1 {
       if !collapsedDim(d) {
         ind(j) = i(d);
         j += 1;
       }
     }
     if rank == 1 then
-      return ind(1);
+      return ind(0);
     else
       return ind;
   }
 
   inline proc chpl_rankChangeConvertDownToUp(dims, param uprank, collapsedDim) {
-    var ranges : uprank*dims(1).type;
-    var j = 1;
-    for param d in 1..dims.size {
+    var ranges : uprank*dims(0).type;
+    var j = 0;
+    for param d in 0..dims.size-1 {
       if !collapsedDim(d) {
         ranges(j) = dims(d);
         j += 1;
@@ -871,9 +871,9 @@ module ArrayViewRankChange {
     if uprank != dims.size then
       compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", uprank:string);
 
-    var ranges : downrank*dims(1).type;
-    var j = 1;
-    for param d in 1..downrank {
+    var ranges : downrank*dims(0).type;
+    var j = 0;
+    for param d in 0..downrank-1 {
       if !collapsedDim(d) {
         ranges(d) = dims(j);
         j += 1;

@@ -465,7 +465,7 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
       compilerError("specified target array of locales must equal 1 or distribution rank");
     var ranges: rank*range;
     for param i in 0..rank-1 do
-      ranges(i) = 0..#specifiedLocArr.domain.dim(i).length;
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i+1).length;
     targetLocDom = {(...ranges)};
     targetLocArr = specifiedLocArr;
   }

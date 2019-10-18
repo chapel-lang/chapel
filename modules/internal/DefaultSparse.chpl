@@ -125,7 +125,7 @@ module DefaultSparse {
       // sjd: unfortunate specialization for rank == 1
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
-        return binarySearch(indices, ind(1), lo=1, hi=_nnz);
+        return binarySearch(indices, ind(0), lo=1, hi=_nnz);
       else
         return binarySearch(indices, ind, lo=1, hi=_nnz);
     }
