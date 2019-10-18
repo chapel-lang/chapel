@@ -1059,6 +1059,9 @@ Symbol* getSvecSymbol(CallExpr* call) {
   SymExpr* fieldVal = toSymExpr(call->get(2));
   VarSymbol* fieldSym = toVarSymbol(fieldVal->symbol());
   if (fieldSym) {
+    if (fieldSym->immediate == NULL) {
+      INT_FATAL("Need to make svec primitives not add 1 again");
+    }
     int immediateVal = fieldSym->immediate->int_value();
 
     INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
