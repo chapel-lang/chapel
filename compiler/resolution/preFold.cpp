@@ -2134,7 +2134,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   
   // Create a new "unmanaged child".
   CallExpr* init = new CallExpr(PRIM_NEW, usym,
-                                new SymExpr(undecorated->symbol));
+                                new CallExpr(new SymExpr(undecorated->symbol)));
 
   // Cast to "unmanaged parent".
   Type* parUnmanaged = getDecoratedClass(parent, CLASS_TYPE_UNMANAGED_NONNIL);
