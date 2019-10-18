@@ -9,14 +9,18 @@ use BlockCycDist;
 
 type elemType = int;
 
+
+enum diagMode { correctness, performance, commCount, verboseComm, verboseMem };
+enum arraySize { tiny, small, large };
+enum distType { block, cyclic, blockCyc };
+
+config const size = arraySize.tiny;
+config const dist = distType.block;
+config const mode = diagMode.performance;
+
 // assume homogeneity
 const totMem = here.physicalMemory(unit = MemUnits.Bytes);
 config const memFraction = 4;
-
-config const correctness = false;
-config const commCount = false;
-config const verboseComm = false;
-config const verboseMem = false;
 
 config const createArrays = true;
 
@@ -24,14 +28,8 @@ config const reportInit = true;
 config const reportDeinit = true;
 
 config const nElemsTiny = numLocales;
-config const nElemsSmall = if correctness then 100 else 1000000;
+config const nElemsSmall = if mode==diagMode.correctness then 100 else 1000000;
 config const nElemsLarge = numLocales*((totMem/numBytes(elemType))/memFraction);
-
-enum arraySize { tiny, small, large};
-enum distType { block, cyclic, blockCyc};
-
-config const size = arraySize.tiny;
-config const dist = distType.block;
 
 const nElems = if size == arraySize.tiny then nElemsTiny else
                if size == arraySize.small then nElemsSmall else
@@ -52,18 +50,22 @@ inline proc shouldRunDiag(name) {
 inline proc startDiag(name) {
   if !shouldRunDiag(name) then return;
 
-  if !correctness {
-    if commCount {
+  select(mode) {
+    when diagMode.correctness { }
+    when diagMode.commCount {
       startCommDiagnostics();
     }
-    else if verboseComm {
+    when diagMode.verboseComm {
       startVerboseComm();
     }
-    else if verboseMem {
+    when diagMode.verboseMem {
       startVerboseMem();
     }
-    else {
+    when diagMode.performance {
       t.start();
+    }
+    otherwise {
+      halt("Unrecognized diagMode");
     }
   }
 }
@@ -71,8 +73,14 @@ inline proc startDiag(name) {
 inline proc endDiag(name) {
   if !shouldRunDiag(name) then return;
 
-  if !correctness {
-    if commCount {
+  select(mode) {
+    when diagMode.performance {
+      t.stop();
+      writeln(name, ": ", t.elapsed());
+      t.clear();
+    }
+    when diagMode.correctness { }
+    when diagMode.commCount {
       stopCommDiagnostics();
       const d = getCommDiagnostics();
       writeln(name, "-GETS: ", + reduce (d.get + d.get_nb));
@@ -81,22 +89,20 @@ inline proc endDiag(name) {
                                         d.execute_on_nb));
       resetCommDiagnostics();
     }
-    else if verboseComm {
+    when diagMode.verboseComm {
       stopVerboseComm();
     }
-    else if verboseMem {
+    when diagMode.verboseMem {
       stopVerboseMem();
     }
-    else {
-      t.stop();
-      writeln(name, ": ", t.elapsed());
-      t.clear();
+    otherwise {
+      halt("Unrecognized diagMode");
     }
   }
 }
 
 inline proc endDiag(name, x) {
-  if correctness {
+  if mode == diagMode.correctness {
     if x.size != nElems {
       halt(name , " has unexpected size");
     }
@@ -106,7 +112,7 @@ inline proc endDiag(name, x) {
 
 const localDom = {1..nElems};
 
-if correctness || dist == distType.block {
+if mode == diagMode.correctness || dist == distType.block {
   { // weird blocks are necessary to measure deinit performance
     startDiag("domInit");
     const blockDom = localDom dmapped Block(boundingBox=localDom);
@@ -126,7 +132,7 @@ if correctness || dist == distType.block {
   endDiag("domDeinit");
 }
 
-if correctness || dist == distType.cyclic {
+if mode == diagMode.correctness || dist == distType.cyclic {
   { // weird blocks are necessary to measure deinit performance
     startDiag("domInit");
     const cyclicDom = localDom dmapped Cyclic(startIdx=localDom.first);
@@ -146,7 +152,7 @@ if correctness || dist == distType.cyclic {
   endDiag("domDeinit");
 }
 
-if correctness || dist == distType.blockCyc {
+if mode == diagMode.correctness || dist == distType.blockCyc {
   { // weird blocks are necessary to measure deinit performance
     startDiag("domInit");
     const blockCyclicDom = localDom dmapped BlockCyclic(startIdx=localDom.first,
