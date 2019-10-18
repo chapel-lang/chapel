@@ -215,7 +215,7 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      helpSetupLocaleAPU(this, local_name, numSublocales);
+      helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
     }
     //------------------------------------------------------------------------}
 

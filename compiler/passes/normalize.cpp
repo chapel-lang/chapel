@@ -1080,12 +1080,23 @@ static void processManagedNew(CallExpr* newCall) {
     if (newCall->numActuals() == 1 && !isCallExpr(newCall->get(1))) {
       argListError = true;
     }
-    if (newCall->numActuals() >= 1)
-      if (CallExpr* subCall = toCallExpr(newCall->get(1)))
-        if (subCall->isNamedAstr(astrSdot))
+    if (newCall->numActuals() >= 1) {
+      if (CallExpr* subCall = toCallExpr(newCall->get(1))) {
+        if (subCall->isNamedAstr(astrSdot)) {
           USR_FATAL_CONT(newCall,
                          "Please use parentheses to disambiguate "
                          "dot expression after new");
+        }
+
+        UnresolvedSymExpr* baseSe = toUnresolvedSymExpr(subCall->baseExpr);
+        if (baseSe != NULL) {
+          // We should have SymExprs for types by now
+          // A call that is not resolved, as in new (t())(),
+          //  would appear as a nested CallExpr.
+          USR_FATAL_CONT(newCall,
+                         "Attempt to 'new' a function or undefined symbol"); }
+      }
+    }
   }
 
   if (argListError) {

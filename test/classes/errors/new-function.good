@@ -1,0 +1,2 @@
+new-function.chpl:7: error: Attempt to 'new' a function
+new-function.chpl:8: error: Attempt to 'new' a function
