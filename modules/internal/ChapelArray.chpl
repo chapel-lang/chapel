@@ -167,6 +167,7 @@ module ChapelArray {
   use ArrayViewRankChange;
   use ArrayViewReindex;
   private use Reflection only;
+  private use ChapelDebugPrint;
 
   pragma "no doc"
   config param showArrayAsVecWarnings = true;
