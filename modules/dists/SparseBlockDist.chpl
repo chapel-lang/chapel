@@ -34,6 +34,8 @@
 private use DSIUtil;
 private use ChapelUtil;
 private use BlockDist;
+private use RangeChunk;
+
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
