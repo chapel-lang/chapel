@@ -1086,15 +1086,16 @@ static void processManagedNew(CallExpr* newCall) {
           USR_FATAL_CONT(newCall,
                          "Please use parentheses to disambiguate "
                          "dot expression after new");
+        } else {
+          UnresolvedSymExpr* baseSe = toUnresolvedSymExpr(subCall->baseExpr);
+          if (baseSe != NULL) {
+            // We should have SymExprs for types by now
+            // A call that is not resolved, as in new (t())(),
+            //  would appear as a nested CallExpr.
+            USR_FATAL_CONT(newCall,
+                           "Attempt to 'new' a function or undefined symbol");
+          }
         }
-
-        UnresolvedSymExpr* baseSe = toUnresolvedSymExpr(subCall->baseExpr);
-        if (baseSe != NULL) {
-          // We should have SymExprs for types by now
-          // A call that is not resolved, as in new (t())(),
-          //  would appear as a nested CallExpr.
-          USR_FATAL_CONT(newCall,
-                         "Attempt to 'new' a function or undefined symbol"); }
       }
     }
   }
