@@ -345,7 +345,7 @@ module DefaultAssociative {
     }
   
     proc dsiMember(idx: idxType): bool {
-      return _findFilledSlot(idx)(1);
+      return _findFilledSlot(idx)(0);
     }
   
     override proc dsiAdd(idx) {
@@ -362,7 +362,7 @@ module DefaultAssociative {
       // I checked the C code and couldn't see any call to _addWrapper.
       // I tried to replicate the issue with generic classes but it always
       // worked smoothly.
-      const numInds = _addWrapper(idx)[2];
+      const numInds = _addWrapper(idx)[1];
       return numInds;
     }
 
