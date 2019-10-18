@@ -543,11 +543,11 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   var rngs : targetDom.rank*range(targetDom.idxType, stridable=needsStridable);
   rngs = targetDom.dims();
 
-  for i in 1..inferredRank {
+  for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);
     const TD    = TargetActives(i);
-    const dense = densify(srcSlice.dim(SD), srcDom.dim(SD));
-    rngs(TD)    = unDensify(dense, targetDom.dim(TD));
+    const dense = densify(srcSlice.dim(SD+1), srcDom.dim(SD+1));
+    rngs(TD)    = unDensify(dense, targetDom.dim(TD+1));
   }
 
   return {(...rngs)};
