@@ -970,7 +970,9 @@ static void processSyntacticDistributions(CallExpr* call) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
           if (isDistClass(canonicalClassType(ts->type)) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall->remove()));
+                new NamedExpr(astr_chpl_manager,
+                              new SymExpr(dtUnmanaged->symbol)),
+                distCall->remove());
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
