@@ -694,7 +694,7 @@ override proc BlockDom.dsiDisplayRepresentation() {
 
 proc BlockDom.dsiDims() return whole.dims();
 
-proc BlockDom.dsiDim(d: int) return whole.dim(d);
+proc BlockDom.dsiDim(d: int) return whole.dim(d+1);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);

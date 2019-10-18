@@ -532,7 +532,7 @@ proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
 proc CyclicDom.dsiDims() return whole.dims();
 
-proc CyclicDom.dsiDim(d: int) return whole.dim(d);
+proc CyclicDom.dsiDim(d: int) return whole.dim(d+1);
 
 proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
