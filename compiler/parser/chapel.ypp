@@ -1954,6 +1954,10 @@ new_expr:
   new_maybe_decorated expr %prec TNEW
     { $1->insertAtTail($2);
       $$ = $1; }
+| TNEW TOWNED TLP expr TRP
+    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
+| TNEW TSHARED TLP expr TRP
+    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:
