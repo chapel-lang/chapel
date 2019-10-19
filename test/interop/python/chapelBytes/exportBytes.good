@@ -1,0 +1,4 @@
+From Python: b'foo'
+From Chapel: Some long bytes string with  a nasty embedded null!
+Found embedded null at: 29
+From Python: b'Sick Cray you got there, yo'

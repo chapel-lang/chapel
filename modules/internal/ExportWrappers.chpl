@@ -81,13 +81,17 @@ module ExportWrappers {
   }
 
   //
-  // In the multilocale conversion call, we would take ownership of the buffer
-  // instead?
+  // For now, all copies passed from Python to the C bridge code are SHALLOW,
+  // and then Chapel makes a deep copy from the shallow buffer.
+  //
+  // TODO: In the multilocale conversion call, we would take ownership of the
+  // buffer instead? We would have to allocated a piece of tracked memory on
+  // the Chapel heap.
   //
   proc chpl__exportConv(val: chpl_bytes, type rt: bytes): rt {
     use ByteBufferHelpers;
     var data = val.data:ByteBufferHelpers.bufferType;
-    // TODO: Use safe casts with overflow check?
+    // TODO: Are these casts safe casts?
     var length = val.size:int(64);
     var buflen = (val.size + 1):int(64);
     var result = createBytesWithNewBuffer(data, length=length, size=buflen);

@@ -1115,20 +1115,24 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += "\t\traise TypeError(\"Expected \'bytes\' in conversion to ";
     res += " \'chpl_bytes\', found \" + type(" + strname + "))\n";
 
-    // Get the size of the bytes buffer and a char* handle to it.
-    res += "\tcdef size_t size = len(" + strname + ")\n";
-    res += "\tcdef char *data = " + strname + "\n";
+    // Get the size of the bytes buffer.
+    std::string argsize = "size_" + strname;
+    res += "\tcdef size_t " + argsize + " = len(" + strname + ")\n";
+
+    // Get a handle to the bytes buffer.
+    std::string argdata = "data_" + strname;
+    res += "\tcdef char* " + argdata + " = " + strname + "\n";
 
     // Declare a struct by value on the stack.
     std::string wrapval = "chpl_" + strname + "_val";
 
-    // Create a chpl_bytes that represents a shallow copy.
+    // Create a chpl_bytes wrapper that represents a shallow copy.
     res += "\tcdef chpl_bytes " + wrapval + "\n";
     res += "\t" + wrapval + ".isOwned = 0\n";
-    res += "\t" + wrapval + ".data = data\n";
-    res += "\t" + wrapval + ".size = size\n";
+    res += "\t" + wrapval + ".data = " + argdata + "\n";
+    res += "\t" + wrapval + ".size = " + argsize + "\n";
 
-    // The final argument wrapper is a reference to the struct.
+    // The final result is a reference to the stack allocated struct.
     res += "\tcdef chpl_bytes* chpl_" + strname + " = &" + wrapval + "\n";
 
     return res;
@@ -2214,8 +2218,19 @@ GenRet FnSymbol::codegenPYXType() {
   // Return statement, if applicable
   std::string returnStmt = "";
   if (retType != dtVoid) {
-    if (retType == dtExternalArray &&
-        exportedArrayElementType[this] != NULL) {
+    if (retType == getBytesWrapperType()) {
+      // The raw result of the routine call, a "chpl_bytes" wrapper.
+      funcCall += "cdef chpl_bytes rdat = ";
+      // Convert the "chpl_bytes" struct to a Python bytes.
+      returnStmt += "\tcdef char* rdata = rdat.data\n";
+      returnStmt += "\tcdef Py_ssize_t rsize = rdat.size\n";
+      returnStmt += "\tcdef char* v = rdat.data\n";
+      // Create a new Python bytes that is a copy of the Chapel string.
+      returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
+      // This will free the "chpl_bytes" buffer if required.
+      returnStmt += "\tchpl_bytes_free(rdat)\n";
+    } else if (retType == dtExternalArray &&
+             exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";
       returnStmt += getPythonArrayReturnStmts();
     } else if (retType == dtOpaqueArray) {

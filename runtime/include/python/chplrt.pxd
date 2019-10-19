@@ -1,5 +1,8 @@
 from libc.stdint cimport *
 
+cdef extern from "Python.h":
+	object PyBytes_FromStringAndSize(char*, Py_ssize_t)
+
 cdef extern from "chpltypes.h":
 	ctypedef void* c_fn_ptr
 
