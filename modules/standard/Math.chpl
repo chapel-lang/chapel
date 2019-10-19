@@ -1320,6 +1320,22 @@ module Math {
     extern proc chpl_macro_double_signbit(x: real(64)): c_int;
     return chpl_macro_double_signbit(x): bool;
   }
+  
+  /* Return the value of the Gaussian probability function with mean mu
+     and standard deviation sigma at the given x value. */
+  inline proc gpf(in x : real(64), mu:real(64)=0.0, sigma:real(64)=1.0):real(64) {
+    x = (x-mu) / sigma;
+    if sigma==0.0 then halt("Sigma can not be 0.0");
+    return (exp(-x*x/2.0)):real(64) / (sqrt(2.0*pi)):real(64) / sigma;
+  }
+
+  /* Return the value of the Gaussian probability function with mean mu
+     and standard deviation sigma at the given x value. */
+  inline proc gpf(in x : real(32), mu:real(32)=0.0, sigma:real(32)=1.0):real(32) {
+    x = (x-mu) / sigma;
+    if sigma==0.0 then halt("Sigma can not be 0.0");
+    return (exp(-x*x/2.0)):real(32) / (sqrt(2.0*pi)):real(32) / sigma;
+  }
 
 } // end of module Math
 
