@@ -1197,6 +1197,8 @@ module Math {
 
   /* Returns true if `x` and `y` are approximately equal, else returns false. */
   inline proc isclose(x, y, rtol = 1e-5, atol = 1e-8): bool {
+    if boundsChecking && (rtol <= 0 || atol < 0) then
+      HaltWrappers.boundsCheckHalt("Input value for rtol must be positive and input value for atol must be non-negative");
     return (abs(x-y) <= atol + rtol*max(abs(x), abs(y)));
   }
 
