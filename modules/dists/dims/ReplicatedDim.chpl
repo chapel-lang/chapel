@@ -152,7 +152,7 @@ proc Replicated1dom.dsiGetReprivatizeData1d() {
 
 // REQ - same purpose as dsiReprivatize()
 proc Replicated1dom.dsiReprivatize1d(reprivatizeData) {
-  this.wholeR = reprivatizeData(1);
+  this.wholeR = reprivatizeData(0);
 }
 
 // REQ does this class need the localLocID?
