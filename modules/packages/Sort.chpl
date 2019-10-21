@@ -2407,15 +2407,17 @@ module TwoArrayPartitioning {
     const curDomain = {start_n..end_n};
     const intersect = curDomain[localSubdomain];
     if curDomain == intersect {
-      if n > compat.baseCaseSize {
-        compat.bigTasks.clear();
-        compat.smallTasks.clear();
-        partitioningSortWithScratchSpace(start_n, end_n,
-                     A.localSlice(curDomain), Scratch.localSlice(curDomain),
-                     compat, criterion,
-                     startbit);
-      } else {
-        ShellSort.shellSort(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
+      local {
+        if n > compat.baseCaseSize {
+          compat.bigTasks.clear();
+          compat.smallTasks.clear();
+          partitioningSortWithScratchSpace(start_n, end_n,
+                       A.localSlice(curDomain), Scratch.localSlice(curDomain),
+                       compat, criterion,
+                       startbit);
+        } else {
+          ShellSort.shellSort(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
+        }
       }
     } else {
       const size = end_n-start_n+1;
@@ -2693,27 +2695,41 @@ module TwoArrayPartitioning {
         const binSize = binEnd - binStart + 1;
         const binStartBit = state.perLocale[0].compat.bucketizer.getNextStartBit(task.startbit);
         if binSize > 1 {
-          // could this work for block?
-          //var isOnOneLocale = A.domain.dist.idxToLocale(globalStart) ==
-          //                    A.domain.dist.idxToLocale(globalEnd)
           var small = false;
           var theLocaleId = -1;
-          if binSize <= state.distributedBaseCaseSize {
+
+          // Compute the regions on the same locale as the first, last
+          // elements in the bin.
+          const firstLoc = A.domain.dist.idxToLocale(binStart);
+          const lastLoc = A.domain.dist.idxToLocale(binEnd);
+          const onFirstLoc = A.localSubdomain(firstLoc)[binStart..binEnd];
+          const onLastLoc = A.localSubdomain(lastLoc)[binStart..binEnd];
+          var theLocale = firstLoc;
+          if onFirstLoc.size == binSize {
+            // case 1: all elements are on firstLoc
             small = true;
-            // choose a locale owning some of the array
-            var mid = binStart + binSize / 2;
-            theLocaleId = A[mid].locale.id;
-          } else {
-            for (loc,tid) in zip(A.targetLocales(),0..) {
-              const localSubdomain = A.localSubdomain(loc)[task.start..taskEnd];
-              const curDomain = {binStart..binEnd};
-              const intersect = curDomain[localSubdomain];
-              if curDomain == intersect { // curDomain.isSubset(localSubdomain)
-                small = true;
-                theLocaleId = tid;
-              }
-            }
+          } else if binSize == onFirstLoc.size + onLastLoc.size ||
+                    binSize <= state.distributedBaseCaseSize {
+            // case 2: elements are split between at least 2 locales
+            // either:
+            //   only 2 locales store the elements in the region, or
+            //   the size is small enough to do on 1 locale
+            //
+            // Choose the locale with more elements.
+            small = true;
+            if onFirstLoc.size < onLastLoc.size then
+              theLocale = lastLoc;
           }
+
+          theLocaleId = theLocale.id;
+          assert(A.targetLocales()[theLocaleId] == theLocale);
+
+          /*
+          writeln("Recursive bin ", bin,
+                  " start = ", binStart,
+                  " size = ", binSize,
+                  " startbit = ", binStartBit,
+                  " small = ", small);*/
 
           if small {
             state.localTasks[theLocaleId].localTasks.append(
@@ -2731,12 +2747,10 @@ module TwoArrayPartitioning {
       on loc do {
         // Copy the tasks to do from locale 0
         var myTasks = state.localTasks[tid].localTasks;
-        var baseCaseSize = state.baseCaseSize;
         ref compat = state.perLocale[tid].compat;
 
         for task in myTasks {
           const taskEnd = task.start + task.size - 1;
-          const curDomain = {task.start..taskEnd};
 
           distributedPartitioningSortWithScratchSpaceBaseCase(
               task.start, taskEnd,
