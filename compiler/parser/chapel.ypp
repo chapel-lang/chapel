@@ -221,7 +221,6 @@
   #include "stringutil.h"
   #include "TryStmt.h"
   #include "vec.h"
-  #include "wellknown.h"
   #include "WhileDoStmt.h"
 
   #include <cstdio>
