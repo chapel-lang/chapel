@@ -5103,7 +5103,7 @@ still be accessible on instances of the type. For example:
    .. code-block:: printoutput
 
       3
-      In A.foo() 
+      In A.foo()
 
 Within an ``only`` list, a visible symbol from that module may
 optionally be given a new name using the ``as`` keyword. This new name
@@ -5194,8 +5194,6 @@ an action to be executed when returning from a function:
       created {x = 1}
       defer action: deleting {x = 1}
 
-   
-
    .. code-block:: bash
 
       created {x = 1}
@@ -5239,8 +5237,6 @@ is handled when exiting the block in which it is contained:
       in inner block
       defer action: deleting {x = 1}
       after inner block
-
-   
 
    .. code-block:: bash
 
@@ -5288,8 +5284,6 @@ body is exited early.
       created {x = 2}
       {x = 2}
       defer action: deleting {x = 2}
-
-   
 
    .. code-block:: bash
 
@@ -11895,8 +11889,6 @@ out of scope and before its memory is reclaimed.
 
       foo();
 
-   
-
    .. BLOCK-test-chapeloutput
 
       (c = {x = 0})
@@ -11909,8 +11901,6 @@ out of scope and before its memory is reclaimed.
                             Description of allocation
       ==============================================================
       ==============================================================
-
-   
 
    .. BLOCK-test-chapelexecopts
 
@@ -15678,14 +15668,10 @@ element type by assigning to a pseudo-field named ``IRV`` in the array.
    everywhere else. The final statement is an error since it attempts to
    assign to ``SpsA`` at an index not described by its domain, ``SpsD``.
 
-   
-
    .. BLOCK-test-chapelpre
 
       config const n = 5;
       const D = {1..n, 1..n};
-
-   
 
    .. code-block:: chapel
 
@@ -15696,8 +15682,6 @@ element type by assigning to a pseudo-field named ``IRV`` in the array.
       SpsA(n,n) = 9.9;
       SpsA.IRV = 5.5;
       SpsA(1,n) = 0.0;  // ERROR!
-
-   
 
    .. BLOCK-test-chapeloutput
 
