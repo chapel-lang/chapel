@@ -41,6 +41,7 @@ std::set<FnSymbol*> exportedStrRets;
 
 static void attemptFixups(FnSymbol* fn);
 static Type* maybeUnwrapRef(Type* t);
+static Type* getResolveTypeAlias(const char* mod, const char* alias);
 static bool needsFixup(Type* t);
 static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as);
 static bool validateReturnIntent(FnSymbol* fn);
