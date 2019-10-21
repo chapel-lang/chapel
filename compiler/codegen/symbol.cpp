@@ -1113,7 +1113,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     // First, check to see if the input type is the Python "bytes" type.
     res += "\tif type(" + strname + ") != bytes:\n";
     res += "\t\traise TypeError(\"Expected \'bytes\' in conversion to ";
-    res += " \'chpl_bytes\', found \" + type(" + strname + "))\n";
+    res += " \'chpl_bytes\', found \" + str(type(" + strname + ")))\n";
 
     // Get the size of the bytes buffer.
     std::string argsize = "size_" + strname;
