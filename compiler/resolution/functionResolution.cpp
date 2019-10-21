@@ -4550,6 +4550,14 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       } else {
         EXPLAIN("X: Fn %d is a as good a match as Fn %d\n\n\n", i, j);
         singleMostSpecific = false;
+        if (notBest[j]) {
+          // Inherit the notBest status of what we are comparing against
+          //
+          // If this candidate is equally as good as something that wasn't
+          // the best, then it is also not the best (or else there is something
+          // terribly wrong with our compareSpecificity function).
+          notBest[i] = true;
+        }
         break;
       }
     }
