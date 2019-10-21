@@ -83,6 +83,7 @@ extern int yydebug;
   class EnumType;
   class Expr;
   class FnSymbol;
+  class NamedExpr;
   class Type;
 
   enum   ProcIter {
@@ -142,7 +143,7 @@ extern int yydebug;
   #endif
 
 /* Line 2058 of yacc.c  */
-#line 145 "chapel.ypp"
+#line 146 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -162,7 +163,7 @@ extern int yydebug;
   #endif
 
 /* Line 2058 of yacc.c  */
-#line 168 "chapel.ypp"
+#line 169 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -192,7 +193,7 @@ extern int yydebug;
 
 
 /* Line 2058 of yacc.c  */
-#line 196 "../include/bison-chapel.h"
+#line 197 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -417,7 +418,7 @@ void yypstate_delete ();
 #endif
 /* "%code provides" blocks.  */
 /* Line 2058 of yacc.c  */
-#line 199 "chapel.ypp"
+#line 200 "chapel.ypp"
 
   extern int yydebug;
 
@@ -427,6 +428,6 @@ void yypstate_delete ();
 
 
 /* Line 2058 of yacc.c  */
-#line 431 "../include/bison-chapel.h"
+#line 432 "../include/bison-chapel.h"
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */
