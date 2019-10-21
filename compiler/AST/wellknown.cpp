@@ -35,8 +35,6 @@ AggregateType* dtLocaleID;
 AggregateType* dtMainArgument;
 AggregateType* dtOnBundleRecord;
 AggregateType* dtOpaqueArray;
-AggregateType* dtOwned;
-AggregateType* dtShared;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
 AggregateType* dtRef;
@@ -115,13 +113,25 @@ static WellKnownType sWellKnownTypes[] = {
   { "chpl_main_argument",    &dtMainArgument,     false },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_opaque_array",     &dtOpaqueArray,      false },
-  { "_owned",                &dtOwned,            false },
-  { "_shared",               &dtShared,           false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
   { "_tuple",                &dtTuple,            false },
   { "_ref",                  &dtRef,              true  },
   { "Error",                 &dtError,            true  }
 };
+
+static void removeIfUndefinedGlobalType(AggregateType*& t) {
+  if (t->symbol == NULL || t->symbol->defPoint == NULL) {
+    // This means there was no declaration of this type
+    if (t->symbol)
+      gTypeSymbols.remove(gTypeSymbols.index(t->symbol));
+
+    gAggregateTypes.remove(gAggregateTypes.index(t));
+
+    delete t;
+
+    t = NULL;
+  }
+}
 
 // Gather well-known types from among types known at this point.
 void gatherWellKnownTypes() {
@@ -174,39 +184,11 @@ void gatherWellKnownTypes() {
     USR_STOP();
 
   } else {
-    if (dtString->symbol == NULL || dtString->symbol->defPoint == NULL) {
-      // This means there was no declaration of the string type.
-      if (dtString->symbol)
-        gTypeSymbols.remove(gTypeSymbols.index(dtString->symbol));
-
-      gAggregateTypes.remove(gAggregateTypes.index(dtString));
-
-      delete dtString;
-
-      dtString = NULL;
-    }
-    if (dtBytes->symbol == NULL || dtBytes->symbol->defPoint == NULL) {
-      // This means there was no declaration of the bytes type.
-      if (dtBytes->symbol)
-        gTypeSymbols.remove(gTypeSymbols.index(dtBytes->symbol));
-
-      gAggregateTypes.remove(gAggregateTypes.index(dtBytes));
-
-      delete dtBytes;
-
-      dtBytes = NULL;
-    }
-    if (dtLocale->symbol == NULL || dtLocale->symbol->defPoint == NULL) {
-      // This means there was no declaration of the locale type.
-      if (dtLocale->symbol)
-        gTypeSymbols.remove(gTypeSymbols.index(dtLocale->symbol));
-
-      gAggregateTypes.remove(gAggregateTypes.index(dtLocale));
-
-      delete dtLocale;
-
-      dtLocale = NULL;
-    }
+    removeIfUndefinedGlobalType(dtString);
+    removeIfUndefinedGlobalType(dtBytes);
+    removeIfUndefinedGlobalType(dtLocale);
+    removeIfUndefinedGlobalType(dtOwned);
+    removeIfUndefinedGlobalType(dtShared);
   }
 }
 

@@ -171,7 +171,7 @@ proc consumeArgs(ref args : list(string)) {
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
   const openFile = openreader(tomlFile);
-  const toml = new owned parseToml(openFile);
+  const toml = new owned(parseToml(openFile));
   writeln(toml);
   openFile.close();
 }
