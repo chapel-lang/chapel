@@ -220,7 +220,9 @@ The type of a range is characterized by three parameters:
 \chpl{boundedType} is one of the constants of the following type:
 
 \begin{chapel}
+\begin{verbatim}
 enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+\end{verbatim}
 \end{chapel}
 
 The value of \chpl{boundedType} determines which bounds of the range
@@ -272,17 +274,21 @@ cases and the specialized code more aggressively.
 % gotta specify syntax for 'range-type' because it's referenced in Types.tex
 A range type has the following syntax:
 \begin{syntax}
+\begin{verbatim}
 range-type:
   `range' ( named-expression-list )
+\end{verbatim}
 \end{syntax}
 
 That is, a range type is obtained as if by invoking the range type constructor
 (\rsec{Type_Constructors}) that has the following header:
 
 \begin{chapel}
+\begin{verbatim}
   proc range(type idxType = int,
              param boundedType = BoundedRangeType.bounded,
              param stridable = false) type
+\end{verbatim}
 \end{chapel}
 
 As a special case, the keyword \chpl{range} without a parenthesized
@@ -296,17 +302,23 @@ that can represent ranges of 32-bit integers,
 with both high and low bounds specified,
 and the ability to have a stride other than 1.
 \begin{chapel}
+\begin{verbatim}
 var r: range(int(32), BoundedRangeType.bounded, stridable=true);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(r);
 var i32: int(32) = 3;
 r = i32..13 by 3 align 1;
 writeln(r);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1..0
 3..13 by 3 align 1
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -326,11 +338,13 @@ low bound, high bound, stride and alignment.
 Range literals are specified with the following syntax.
 
 \begin{syntax}
+\begin{verbatim}
 range-literal:
   expression .. expression
   expression ..
   .. expression
   ..
+\end{verbatim}
 \end{syntax}
 
 The expressions to the left and to the right of \chpl{..}, when given,
@@ -475,7 +489,9 @@ Range assignment is legal when:
 Ranges can be compared using equality and inequality.
 
 \begin{protohead}
+\begin{verbatim}
 proc ==(r1: range(?), r2: range(?)): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns \chpl{true} if the two ranges have the same represented sequence
@@ -513,15 +529,21 @@ to match the other iterator(s).
 \begin{chapelexample}{zipWithUnbounded.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 for i in zip(1..5, 3..) do
   write(i, "; ");
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln();
+\end{verbatim}
 \end{chapelpost}
 produces the output 
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 (1, 3); (2, 4); (3, 5); (4, 6); (5, 7); 
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -541,25 +563,33 @@ a range \chpl{1..10}, the function \chpl{addOne()} can be called with
 being invoked for each value in the range.
 
 \begin{chapel}
+\begin{verbatim}
 proc addOne(x:int) {
   return x + 1;
 }
 var A:[1..10] int;
 A = addOne(1..10);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 2 3 4 5 6 7 8 9 10 11
+\end{verbatim}
 \end{chapeloutput}
 
 \end{chapelexample}
 
 The last statement is equivalent to:
 \begin{chapel}
+\begin{verbatim}
 forall (a,i) in zip(A,1..10) do
   a = addOne(i);
+\end{verbatim}
 \end{chapel}
 
 
@@ -580,12 +610,14 @@ Chapel also defines a set of functions that operate on ranges.
 They are described in \rsec{Predefined_Range_Functions}.
 
 \begin{syntax}
+\begin{verbatim}
 range-expression:
   expression
   strided-range-expression
   counted-range-expression
   aligned-range-expression
   sliced-range-expression
+\end{verbatim}
 \end{syntax}
 
 \subsection{By Operator}
@@ -614,11 +646,13 @@ the resulting sequence is undefined, too.
 
 The syntax of the \chpl{by} operator is:
 \begin{syntax}
+\begin{verbatim}
 strided-range-expression:
   range-expression `by' step-expression
 
 step-expression:
   expression
+\end{verbatim}
 \end{syntax}
 
 The type of the step must be a signed or unsigned integer of the same
@@ -665,27 +699,33 @@ In the following declarations, range \chpl{r1} represents the odd integers
 between 1 and 20. Range \chpl{r2} strides \chpl{r1} by two and represents
 every other odd integer between 1 and 20: 1, 5, 9, 13 and 17.
 \begin{chapel}
+\begin{verbatim}
 var r1 = 1..20 by 2;
 var r2 = r1 by 2;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(r1);
 writeln(r2);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1..20 by 2
 1..20 by 4
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
 %REVIEW we were not happy with this rationale at 7/19/2011 spec review
 \begin{rationale}
-{\it Why isn't the high bound specified first if the stride is
-negative?}  The reason for this choice is that the \chpl{by} operator
+{\it Why isn't the high bound specified first if the stride is negative?}
+The reason for this choice is that the \chpl{by} operator
 is binary, not ternary.  Given a range \chpl{R} initialized
 to \chpl{1..3}, we want \chpl{R by -1} to contain the ordered sequence
-$3,2,1$.  But then \chpl{R by -1} would be different from \chpl{3..1
-by -1} even though it should be identical by substituting the value in
+$3,2,1$.  But then \chpl{R by -1} would be different from \chpl{3..1 by -1}
+even though it should be identical by substituting the value in
 R into the expression.
 \end{rationale}
 
@@ -702,8 +742,10 @@ with the given alignment.
 
 The syntax for the \chpl{align} operator is:
 \begin{syntax}
+\begin{verbatim}
 aligned-range-expression:
   range-expression `align' expression
+\end{verbatim}
 \end{syntax}
 \noindent The type of the resulting range expression is the same as that of the
 range appearing as the left operand, but with the \chpl{stridable} parameter
@@ -717,6 +759,7 @@ and therefore is not ambiguous.
 
 \begin{chapelexample}{alignedStride.chpl}
 \begin{chapel}
+\begin{verbatim}
 var r1 = 0 .. 10 by 3 align 0;
 for i in r1 do
   write(" ", i);			// Produces "0 3 6 9".
@@ -726,16 +769,20 @@ var r2 = 0 .. 10 by 3 align 1;
 for i in r2 do
   write(" ", i);			// Produces "1 4 7 10".
 writeln();
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
  0 3 6 9
  1 4 7 10
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
 When the stride is negative, the same indices are printed in reverse:
 \begin{chapelexample}{alignedNegStride.chpl}
 \begin{chapel}
+\begin{verbatim}
 var r3 = 0 .. 10 by -3 align 0;
 for i in r3 do
   write(" ", i);			// Produces "9 6 3 0".
@@ -745,10 +792,13 @@ var r4 = 0 .. 10 by -3 align 1;
 for i in r4 do
   write(" ", i);			// Produces "10 7 4 1".
 writeln();
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
  9 6 3 0
  10 7 4 1
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -759,10 +809,10 @@ the \chpl{offset} method (\rsec{Range_Offset_Method}).
 \subsection{Count Operator}
 \label{Count_Operator}
 \index{ranges!count operator}
-\index{ranges!#@\chpl{#}}
-\index{operators!# (range)@\chpl{#} (range)}
+\index{ranges!#@\chpl{\#}}
+\index{operators!# (range)@\chpl{\#} (range)}
 
-The \chpl{#} operator takes a range and an integral count and creates a new
+The \chpl{\#} operator takes a range and an integral count and creates a new
 range containing the specified number of indices.  The low or high bound of the
 left operand is preserved, and the other bound adjusted to provide the specified
 number of indices.  If the count is positive, indices are taken from the start
@@ -770,8 +820,10 @@ of the range; if the count is negative, indices are taken from the end of the
 range.  The count must be less than or equal to the \chpl{length} of the range.
 
 \begin{syntax}
+\begin{verbatim}
 counted-range-expression:
   range-expression # expression
+\end{verbatim}
 \end{syntax}
 
 The type of the count expression must be a signed or unsigned integer
@@ -779,7 +831,7 @@ of the same bit size as the base range's \chpl{idxType}, or an
 implicit conversion must be allowed to that type from the count's
 type.
 
-The type of the result of the \chpl{#} operator is the type of the
+The type of the result of the \chpl{\#} operator is the type of the
 range argument.
 
 Depending on the sign of the count and the stride, the high or low bound is
@@ -805,10 +857,12 @@ This choice also has the nice symmetry that the alignment can be adjusted
 without knowing the bounds of the original range, and the same number of indices
 will be produced:
 \begin{chapel}
+\begin{verbatim}
 r # 4 align 0   // Contains four indices.
 r # 4 align 1   // Contains four indices.
 r # 4 align 2   // Contains four indices.
 r # 4 align 3   // Contains four indices.
+\end{verbatim}
 \end{chapel}
 \end{rationale}
 
@@ -822,18 +876,24 @@ It is an error to apply the count operator to a range that is ambiguously aligne
 \begin{chapelexample}{rangeCountOperator.chpl}
 The following declarations result in equivalent ranges.
 \begin{chapel}
+\begin{verbatim}
 var r1 = 1..10 by -2 # -3;
 var r2 = ..6 by -2 # 3;
 var r3 = -6..6 by -2 # 3;
 var r4 = 1..#6 by -2;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
-writeln(r1 == r2 \&\& r2 == r3 \&\& r3 == r4);
+\begin{verbatim}
+writeln(r1 == r2 && r2 == r3 && r3 == r4);
 writeln((r1, r2, r3, r4));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 true
 (1..6 by -2, 1..6 by -2, 1..6 by -2, 1..6 by -2)
+\end{verbatim}
 \end{chapeloutput}
 Each of these ranges represents the ordered set of three indices: 6, 4, 2.
 \end{chapelexample}
@@ -847,9 +907,11 @@ The following arithmetic operators are defined on ranges and integral
 types:
 
 \begin{chapel}
+\begin{verbatim}
 proc +(r: range, s: integral): range
 proc +(s: integral, r: range): range
 proc -(r: range, s: integral): range
+\end{verbatim}
 \end{chapel}
 
 The \chpl{+} and \chpl{-} operators apply the scalar via the operator
@@ -875,14 +937,20 @@ representing the indices ${1, 2, 3, 4}$.  The \chpl{r2} range is bounded,
 non-stridable, and is represented by indices of type \chpl{int}.
 % REVIEW: bradc: More interesting example?
 \begin{chapel}
+\begin{verbatim}
 var r = 0..3;
 var r2 = r + 1;    // 1..4
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln((r, r2));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (0..3, 1..4)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -900,9 +968,11 @@ by the first operand.
 
 Range slicing is specified by the syntax:
 \begin{syntax}
+\begin{verbatim}
 sliced-range-expression:
   range-expression ( range-expression )
   range-expression [ range-expression ]
+\end{verbatim}
 \end{syntax}
 
 If either of the operand ranges is ambiguously aligned, then the resulting range
@@ -937,16 +1007,22 @@ between 1 and 20 respectively. Range \chpl{r4} represents the odd
 integers between 1 and 20 that are also divisible by 3.
 %REVIEW: bradc: Give <l,h,s,a> values?
 \begin{chapel}
+\begin{verbatim}
 var r = 1..20;
 var r2 = r[3..];
 var r3 = r[1.. by 2];
 var r4 = r3[0.. by 3];
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln((r, r2, r3, r4));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (1..20, 3..20, 1..20 by 2, 1..20 by 6 align 3)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -962,7 +1038,9 @@ writeln((r, r2, r3, r4));
 \index{ranges!boundedType@\chpl{boundedType}}
 \index{predefined functions!boundedType@\chpl{boundedType}}
 \begin{protohead}
-proc $range$.boundedType : BoundedRangeType
+\begin{verbatim}
+proc range.boundedType : BoundedRangeType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the \chpl{boundedType} parameter of the range's type.
@@ -971,7 +1049,9 @@ Returns the \chpl{boundedType} parameter of the range's type.
 \index{ranges!idxType@\chpl{idxType}}
 \index{predefined functions!idxType@\chpl{idxType}}
 \begin{protohead}
-proc $range$.idxType : type
+\begin{verbatim}
+proc range.idxType : type
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the \chpl{idxType} parameter of the range's type.
@@ -980,7 +1060,9 @@ Returns the \chpl{idxType} parameter of the range's type.
 \index{ranges!stridable@\chpl{stridable}}
 \index{predefined functions!stridable@\chpl{stridable}}
 \begin{protohead}
-proc $range$.stridable : bool
+\begin{verbatim}
+proc range.stridable : bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the \chpl{stridable} parameter of the range's type.
@@ -1003,7 +1085,9 @@ undefined, $\infty$, or ambiguous, may change.
 \index{ranges!aligned@\chpl{aligned}}
 \index{predefined functions!aligned@\chpl{aligned}}
 \begin{protohead}
-proc $range$.aligned : bool
+\begin{verbatim}
+proc range.aligned : bool
+\end{verbatim}
 \end{protohead}
 %REVIEW: better name?
 \begin{protobody}
@@ -1013,7 +1097,9 @@ Reports whether the range's alignment is unambiguous.
 \index{ranges!alignedHigh@\chpl{alignedHigh}}
 \index{predefined functions!alignedHigh@\chpl{alignedHigh}}
 \begin{protohead}
-proc $range$.alignedHigh : idxType
+\begin{verbatim}
+proc range.alignedHigh : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's aligned high bound.
@@ -1023,19 +1109,25 @@ the behavior is undefined.
 \begin{chapelexample}{alignedHigh.chpl}
 The following code:
 \begin{chapel}
+\begin{verbatim}
 var r = 0..20 by 3;
 writeln(r.alignedHigh);
+\end{verbatim}
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 18
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
 \index{ranges!alignedLow@\chpl{alignedLow}}
 \index{predefined functions!alignedLow@\chpl{alignedLow}}
 \begin{protohead}
-proc $range$.alignedLow : idxType
+\begin{verbatim}
+proc range.alignedLow : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's aligned low bound.
@@ -1046,7 +1138,9 @@ the behavior is undefined.
 \index{ranges!alignment@\chpl{alignment}}
 \index{predefined functions!alignment@\chpl{alignment}}
 \begin{protohead}
-proc $range$.alignment : idxType
+\begin{verbatim}
+proc range.alignment : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's alignment.
@@ -1057,7 +1151,9 @@ See also \chpl{aligned}.
 \index{ranges!first@\chpl{first}}
 \index{predefined functions!first@\chpl{first}}
 \begin{protohead}
-proc $range$.first : idxType
+\begin{verbatim}
+proc range.first : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's first index.
@@ -1068,7 +1164,9 @@ See also \chpl{hasFirst}.
 \index{ranges!hasFirst@\chpl{hasFirst}}
 \index{predefined functions!hasFirst@\chpl{hasFirst}}
 \begin{protohead}
-proc $range$.hasFirst(): bool
+\begin{verbatim}
+proc range.hasFirst(): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Reports whether the range has the first index.
@@ -1077,7 +1175,9 @@ Reports whether the range has the first index.
 \index{ranges!hasHighBound@\chpl{hasHighBound}}
 \index{predefined functions!hasHighBound@\chpl{hasHighBound}}
 \begin{protohead}
-proc $range$.hasHighBound() param: bool
+\begin{verbatim}
+proc range.hasHighBound() param: bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Reports whether the range's high bound is \emph{not} +$\infty$.
@@ -1086,7 +1186,9 @@ Reports whether the range's high bound is \emph{not} +$\infty$.
 \index{ranges!hasLast@\chpl{hasLast}}
 \index{predefined functions!hasLast@\chpl{hasLast}}
 \begin{protohead}
-proc $range$.hasLast(): bool
+\begin{verbatim}
+proc range.hasLast(): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Reports whether the range has the last index.
@@ -1095,7 +1197,9 @@ Reports whether the range has the last index.
 \index{ranges!hasLowBound@\chpl{hasLowBound}}
 \index{predefined functions!hasLowBound@\chpl{hasLowBound}}
 \begin{protohead}
-proc $range$.hasLowBound() param: bool
+\begin{verbatim}
+proc range.hasLowBound() param: bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Reports whether the range's low bound is \emph{not} -$\infty$.
@@ -1104,7 +1208,9 @@ Reports whether the range's low bound is \emph{not} -$\infty$.
 \index{ranges!high@\chpl{high}}
 \index{predefined functions!high@\chpl{high}}
 \begin{protohead}
-proc $range$.high : idxType
+\begin{verbatim}
+proc range.high : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's high bound.
@@ -1123,7 +1229,9 @@ See also \chpl{hasHighBound}.
 \index{ranges!isAmbiguous@\chpl{isAmbiguous}}
 \index{predefined functions!isAmbiguous@\chpl{isAmbiguous}}
 \begin{protohead}
-proc $range$.isAmbiguous(): bool
+\begin{verbatim}
+proc range.isAmbiguous(): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Reports whether the range is ambiguously aligned.
@@ -1132,7 +1240,9 @@ Reports whether the range is ambiguously aligned.
 \index{ranges!last@\chpl{last}}
 \index{predefined functions!last@\chpl{last}}
 \begin{protohead}
-proc $range$.last : idxType
+\begin{verbatim}
+proc range.last : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's last index.
@@ -1143,7 +1253,9 @@ See also \chpl{hasLast}.
 \index{ranges!length@\chpl{length}}
 \index{predefined functions!length@\chpl{length}}
 \begin{protohead}
-proc $range$.length : idxType
+\begin{verbatim}
+proc range.length : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the number of indices in the range's represented sequence.
@@ -1154,7 +1266,9 @@ an error is generated.
 \index{ranges!low@\chpl{low}}
 \index{predefined functions!low@\chpl{low}}
 \begin{protohead}
-proc $range$.low : idxType
+\begin{verbatim}
+proc range.low : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's low bound.
@@ -1165,7 +1279,9 @@ See also \chpl{hasLowBound}.
 \index{ranges!size@\chpl{size}}
 \index{predefined functions!size@\chpl{size}}
 \begin{protohead}
-proc $range$.size : idxType
+\begin{verbatim}
+proc range.size : idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Same as $range$.length.
@@ -1174,7 +1290,9 @@ Same as $range$.length.
 \index{ranges!stride@\chpl{stride}}
 \index{predefined functions!stride@\chpl{stride}}
 \begin{protohead}
-proc $range$.stride : int(numBits(idxType))
+\begin{verbatim}
+proc range.stride : int(numBits(idxType))
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range's stride. This will never return 0.
@@ -1188,7 +1306,9 @@ If the range is not stridable, this will always return 1.
 \index{ranges!boundsCheck@\chpl{boundsCheck}}
 \index{predefined functions!boundsCheck@\chpl{boundsCheck}}
 \begin{protohead}
-proc $range$.boundsCheck(r2: range(?)): bool
+\begin{verbatim}
+proc range.boundsCheck(r2: range(?)): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns \chpl{false} if either range is ambiguously aligned.
@@ -1199,7 +1319,9 @@ and \chpl{false} otherwise.
 \index{ranges!ident@\chpl{ident}}
 \index{predefined functions!ident@\chpl{ident}}
 \begin{protohead}
+\begin{verbatim}
 proc ident(r1: range(?), r2: range(?)): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns \chpl{true} if the two ranges are the same in every respect: i.e. the
@@ -1213,7 +1335,9 @@ two ranges have the same \chpl{idxType},
 \index{ranges!indexOrder@\chpl{indexOrder}}
 \index{predefined functions!indexOrder@\chpl{indexOrder}}
 \begin{protohead}
-proc $range$.indexOrder(i: idxType): idxType
+\begin{verbatim}
+proc range.indexOrder(i: idxType): idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 If \chpl{i} is a member of the range's represented sequence, returns an integer giving
@@ -1227,18 +1351,22 @@ is not defined or the range does not have the first index.
 The following calls show the order of index 4 in each of the given
 ranges:
 \begin{chapel}
+\begin{verbatim}
 (0..10).indexOrder(4) == 4
 (1..10).indexOrder(4) == 3
 (3..5).indexOrder(4) == 1
 (0..10 by 2).indexOrder(4) == 2
 (3..5 by 2).indexOrder(4) == -1
+\end{verbatim}
 \end{chapel}
 \end{example}
 
 \index{ranges!member@\chpl{member}}
 \index{predefined functions!member@\chpl{member}}
 \begin{protohead}
-proc $range$.member(i: idxType): bool
+\begin{verbatim}
+proc range.member(i: idxType): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns \chpl{true} if the range's represented sequence
@@ -1250,7 +1378,9 @@ is not defined.
 \index{ranges!member@\chpl{member}}
 \index{predefined functions!member@\chpl{member}}
 \begin{protohead}
-proc $range$.member(other: range): bool
+\begin{verbatim}
+proc range.member(other: range): bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Reports whether \chpl{other} is a subrange of the receiver. That is,
@@ -1267,7 +1397,9 @@ are defined and the receiver's sequence contains all members of the
 \index{ranges!alignHigh@\chpl{alignHigh}}
 \index{predefined functions!alignHigh (range)@\chpl{alignHigh} (range)}
 \begin{protohead}
-proc $range$.alignHigh()
+\begin{verbatim}
+proc range.alignHigh()
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Sets the high bound of this range to its aligned high bound, if it is defined.
@@ -1277,7 +1409,9 @@ Generates an error otherwise.
 \index{ranges!alignLow@\chpl{alignLow}}
 \index{predefined functions!alignLow (range)@\chpl{alignLow} (range)}
 \begin{protohead}
-proc $range$.alignLow()
+\begin{verbatim}
+proc range.alignLow()
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Sets the low bound of this range to its aligned low bound, if it is defined.
@@ -1287,7 +1421,9 @@ Generates an error otherwise.
 \index{ranges!expand@\chpl{expand}}
 \index{predefined functions!expand (range)@\chpl{expand}}
 \begin{protohead}
-proc $range$.expand(i: idxType)
+\begin{verbatim}
+proc range.expand(i: idxType)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new range whose bounds are extended by $i$ units on each end.  If $i <
@@ -1300,7 +1436,9 @@ If the operand range is ambiguously aligned, then so is the resulting range.
 \index{ranges!exterior@\chpl{exterior}}
 \index{predefined functions!exterior (range)@\chpl{exterior} (range)}
 \begin{protohead}
-proc $range$.exterior(i: idxType)
+\begin{verbatim}
+proc range.exterior(i: idxType)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new range containing the indices just outside the low or high bound of
@@ -1318,7 +1456,9 @@ If the operand range is ambiguously aligned, then so is the resulting range.
 \index{ranges!interior@\chpl{interior}}
 \index{predefined functions!interior (range)@\chpl{interior} (range)}
 \begin{protohead}
-proc $range$.interior(i: idxType)
+\begin{verbatim}
+proc range.interior(i: idxType)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new range containing the indices just inside the low or high bound of
@@ -1339,7 +1479,9 @@ If the operand range is ambiguously aligned, then so is the resulting range.
 \index{ranges!offset@\chpl{offset}}
 \index{predefined functions!offset (range)@\chpl{offset} (range)}
 \begin{protohead}
-proc $range$.offset(n: idxType)
+\begin{verbatim}
+proc range.offset(n: idxType)
+\end{verbatim}
 \end{protohead}
 \label{Range_Offset_Method}
 \begin{protobody}
@@ -1351,7 +1493,9 @@ If the range has no first index, a run-time error is generated.
 \index{ranges!translate@\chpl{translate}}
 \index{predefined functions!translate (range)@\chpl{translate} (range)}
 \begin{protohead}
-proc $range$.translate(i: integral)
+\begin{verbatim}
+proc range.translate(i: integral)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new range with its \chpl{low}, \chpl{high} and \chpl{alignment} values

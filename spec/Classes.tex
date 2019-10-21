@@ -32,6 +32,7 @@ are discussed in~\rsec{Generic_Types}.
 
 A class is defined with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 class-declaration-statement:
   `class' identifier class-inherit[OPT] { class-statement-list[OPT] }
 
@@ -47,6 +48,7 @@ class-statement:
   method-declaration-statement
   type-declaration-statement
   empty-statement
+\end{verbatim}
 \end{syntax}
 
 A \sntx{class-declaration-statement} defines a new class type symbol
@@ -80,8 +82,9 @@ The lifetime of a class instance is the time between its creation and its
 deletion. It is legal to access the class fields or methods only during
 its lifetime.
 
-Each allocation of a class instance specifies a \emph{memory management
-strategy} . Four memory management strategies are available:
+Each allocation of a class instance specifies a
+\emph{memory management strategy}.
+Four memory management strategies are available:
 \chpl{owned}, \chpl{shared}, \chpl{borrowed}, and \chpl{unmanaged}.
 
 \chpl{owned} and \chpl{shared} class instances always have their lifetime
@@ -120,6 +123,7 @@ Additionally, coercions are available that are equivalent to calling the
 
 \begin{chapelexample}{borrowing.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C { }
 proc test() {
   var own = new owned C();   // 'own' manages the memory of the instance
@@ -139,12 +143,13 @@ proc test() {
                              // deleted here, at the end of the containing
                              // block.
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 test();
+\end{verbatim}
 \end{chapelpost}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 The \chpl{.borrow()} method is available on all class types (including
@@ -173,12 +178,14 @@ A class type is formed by the combination of a basic class type and a
 memory management strategy.
 
 \begin{syntax}
+\begin{verbatim}
 class-type:
   basic-class-type
   `owned' basic-class-type
   `shared' basic-class-type
   `borrowed' basic-class-type
   `unmanaged' basic-class-type
+\end{verbatim}
 \end{syntax}
 
 A basic class type is given simply by the class name for non-generic classes.
@@ -187,9 +194,11 @@ type, for example to declare a variable.  This is done with
 type constructors, which are defined in Section~\ref{Type_Constructors}.
 
 \begin{syntax}
+\begin{verbatim}
 basic-class-type:
   identifier
   identifier ( named-expression-list )
+\end{verbatim}
 \end{syntax}
 
 A basic class type, including a generic class type that is not
@@ -236,29 +245,37 @@ are available for this purpose (see~\rsec{Explicit_Class_Conversions}).
 
 \begin{chapelexample}{duplicate-management.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C { }
 var x: borrowed unmanaged C;
+\end{verbatim}
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 duplicate-management.chpl:2: error: Type expression uses multiple class kinds: borrowed unmanaged
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
 \begin{chapelexample}{changing-management.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C { }
 type borrowedC = borrowed C;
 type ownedC = (borrowedC:owned);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(borrowedC:string);
 writeln(ownedC:string);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 borrowed C
 owned C
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -306,6 +323,7 @@ example:
 
 \begin{chapelexample}{nilable-classes-bang.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C {
   proc method() { }
 }
@@ -319,9 +337,8 @@ c.method();
 if c != nil {
   c!.method(); // c! converts from 'owned C?' to 'borrowed C'
 }
+\end{verbatim}
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 The \chpl{borrow()} method is an exception. Suppose it is invoked on
@@ -355,6 +372,7 @@ class types and non-nilable class types do not have a default value.
 
 \begin{chapelexample}{declaration.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C { }
 var c : owned C?;    // c has class type owned C?, meaning
                      // the instance can be nil and is deleted automatically
@@ -367,12 +385,13 @@ c = new D();      // Now c refers to an object of type D.
                   // Since c is owned, the previous is deleted.
 // the C and D instances allocated above will be reclaimed
 // at the end of this block.
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
-\begin{chapeloutput}
-\end{chapeloutput}
 When the variable \chpl{c} is declared, it initially has the value of
 \chpl{nil}.  The next statement assigned to it an instance of the class
 \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps
@@ -398,8 +417,10 @@ when the declared type of the formal/variable/field is non-nilable
 or generic, including generic memory management.
 
 \begin{syntax}
+\begin{verbatim}
 nil-expression:
   `nil'
+\end{verbatim}
 \end{syntax}
 
 \subsection{Class Fields}
@@ -415,16 +436,18 @@ Each class instance consists of one variable per each
 \begin{chapelexample}{defineActor.chpl}
 The code
 \begin{chapelpre}
+\begin{verbatim}
 config param cleanUp = false;
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 class Actor {
   var name: string;
   var age: uint;
 }
+\end{verbatim}
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 defines a new class type called \chpl{Actor} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{chapelexample}
@@ -458,6 +481,7 @@ For example:
 
 \begin{chapelexample}{class-method-this-type.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C {
   proc primaryMethod() {
     assert(this.type == borrowed C);
@@ -474,9 +498,8 @@ var x:owned C? = new owned C();
 x!.primaryMethod();   // within the method, this: borrowed C
 x!.secondaryMethod(); // within the method, this: borrowed C
 x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
+\end{verbatim}
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 \end{chapelexample}
 
 For type methods on a class, \chpl{this} will accept any management or
@@ -485,6 +508,7 @@ the body of the method. For example:
 
 \begin{chapelexample}{class-type-method-this.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C {
   proc type typeMethod() {
     writeln(this:string); // print out the type of 'this'
@@ -493,11 +517,14 @@ class C {
 (C).typeMethod(); // prints 'C'
 (owned C).typeMethod(); // prints 'owned C'
 (borrowed C?).typeMethod(); // prints 'borrowed C?'
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 C
 owned C
 borrowed C?
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -506,6 +533,7 @@ the corresponding variant of the parent class. For example:
 
 \begin{chapelexample}{class-type-method-inherit.chpl}
 \begin{chapel}
+\begin{verbatim}
 class Parent { }
 class Child : Parent { }
 proc type Parent.typeMethod() {
@@ -514,10 +542,13 @@ proc type Parent.typeMethod() {
 
 Child.typeMethod(); // prints 'Parent'
 (borrowed Child?).typeMethod(); // prints 'borrowed Parent?'
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 Parent
 borrowed Parent?
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -638,21 +669,27 @@ example:
 
 \begin{chapelexample}{class-new.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C {
   var x: int;
 }
 var instance = new C(1);
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \end{chapelexample}
 
 The new expression can be defined by the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 new-expression:
   `new' type-expression ( argument-list )
+\end{verbatim}
 \end{syntax}
 
 An initializer for a given class is called by placing the \chpl{new}
@@ -680,11 +717,13 @@ important consequences for class new expressions. In particular, suppose
   \item \chpl{new borrowed C()} allocates and initializes an instance
     that will be automatically deleted at the end of the current block.
     This process is managed by an \chpl{owned} temporary.  Unlike
-    \chpl{new owned C()}, this results in a value of type \chpl{borrowed
-    C} and ownership of the instance cannot be transferred out of the
+    \chpl{new owned C()}, this results in a value of type \chpl{borrowed C}
+    and ownership of the instance cannot be transferred out of the
     block. In other words, \chpl{new borrowed C()} is equivalent to
     \begin{chapel}
+      \begin{verbatim}
       (new owned C()).borrow()
+      \end{verbatim}
     \end{chapel}
 
   \item \chpl{new unmanaged C()} allocates and initializes an instance
@@ -735,6 +774,7 @@ requirements.  See Section~\ref{Generic_User_Initializers} for details.
 \begin{chapelexample}{simpleInitializers.chpl}
 The following example shows a class with two initializers:
 \begin{chapel}
+\begin{verbatim}
 class MessagePoint {
   var x, y: real;
   var message: string;
@@ -755,17 +795,24 @@ class MessagePoint {
 // create two objects
 var mp1 = new MessagePoint(1.0, 2.0);
 var mp2 = new MessagePoint("point mp2");
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(mp1);
 writeln(mp2);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 1.0, y = 2.0, message = a point}
 {x = 0.0, y = 0.0, message = point mp2}
+\end{verbatim}
 \end{chapeloutput}
 The first initializer lets the user specify the initial coordinates
 and the second initializer lets the user specify the initial message
@@ -785,6 +832,7 @@ defined by the language.
 The following example documents the difference between field initialization
 and field assignment.
 \begin{chapel}
+\begin{verbatim}
 class PointDoubleX {
   var x, y : real;
 
@@ -798,16 +846,23 @@ class PointDoubleX {
 }
 
 var p = new PointDoubleX(1.0, 2.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(p);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 x = 1.0
 {x = 2.0, y = 2.0}
+\end{verbatim}
 \end{chapeloutput}
 The first statement in the initializer initializes field \chpl{x} to the value
 of the formal \chpl{x}. The second statement simply reads the value of the
@@ -821,6 +876,7 @@ issued.
 \begin{chapelexample}{usedBeforeInitialized.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Point {
   var x, y : real;
 
@@ -832,17 +888,22 @@ class Point {
   }
 }
 var p = new Point(1.0, 2.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 
 The first statement in the initializer reads the value of uninitialized field
 \chpl{x}, so the compiler will issue an error:
 
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 usedBeforeInitialized.chpl:4: In initializer:
 usedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
+\end{verbatim}
 \end{chapelprintoutput}
 
 \end{chapelexample}
@@ -859,6 +920,7 @@ statements for such fields based on their types and default values.
 \begin{chapelexample}{fieldInitOmitted.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class LabeledPoint {
   var x : real;
   var y : real;
@@ -879,17 +941,24 @@ class LabeledPoint {
 
 var A = new LabeledPoint(2.0, 3.0);
 var B = new LabeledPoint("Origin");
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
 writeln(B);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 2.0, y = 3.0, msg = Unlabeled}
 {x = 0.0, y = 0.0, msg = Origin}
+\end{verbatim}
 \end{chapeloutput}
 The first initializer initializes the values of fields \chpl{x} and \chpl{y},
 and the compiler inserts initialization for the \chpl{msg} field by using
@@ -907,6 +976,7 @@ compile-time error will be issued.
 \begin{chapelexample}{fieldsOutOfOrder.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Point3D {
   var x = 1.0;
   var y = 1.0;
@@ -927,14 +997,19 @@ class Point3D {
 
 var A = new Point3D(1.0);
 var B = new Point3D(1.0, 2.0, 3.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 fieldsOutOfOrder.chpl:12: In initializer:
 fieldsOutOfOrder.chpl:15: error: Field "y" initialized out of order
 fieldsOutOfOrder.chpl:15: note: initialization of fields before .init() call must be in field declaration order
+\end{verbatim}
 \end{chapeloutput}
 
 The first initializer leverages the well-defined order of omitted field
@@ -1000,6 +1075,7 @@ is still required to invoke other methods.
 \begin{chapelexample}{thisDotComplete.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class LabeledPoint {
   var x, y : real;
   var max = 10.0;
@@ -1032,16 +1108,23 @@ class LabeledPoint {
 
 var A = new LabeledPoint(1.0, 2.0);
 var B = new LabeledPoint("Origin");
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(B);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 1.0, y = 2.0, max = 10.0, msg = Unlabeled}
 {x = 0.0, y = 0.0, max = 10.0, msg = Origin}
+\end{verbatim}
 \end{chapeloutput}
 
 The first initializer leverages the \chpl{complete} method to initialize the
@@ -1071,6 +1154,7 @@ and methods may be used after such a call to \chpl{init}.
 \begin{chapelexample}{thisDotInit.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Point3D {
   var x, y, z : real;
 
@@ -1088,12 +1172,17 @@ class Point3D {
 }
 
 var A = new Point3D(1.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 1.0, y = 1.0, z = 1.0}
+\end{verbatim}
 \end{chapeloutput}
 The second initializer leverages the first initializer to initialize all fields
 with the same value. After the \chpl{init} call the type is fully initialized,
@@ -1116,6 +1205,7 @@ insert field initialization statements as needed.
 \begin{chapelexample}{initFieldConditional.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Point {
   var x, y : real;
   var r, theta : real;
@@ -1135,17 +1225,24 @@ class Point {
 
 var A = new Point(true, 5.0);
 var B = new Point(false, 1.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
 writeln(B);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 0.0, y = 0.0, r = 5.0, theta = 0.0}
 {x = 1.0, y = 1.0, r = 0.0, theta = 0.0}
+\end{verbatim}
 \end{chapeloutput}
 
 The compiler identifies field \chpl{r} as the latest field in both branches,
@@ -1162,6 +1259,7 @@ conditional statement.
 \begin{chapelexample}{thisDotInitConditional.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Parent {
   var x, y : real;
 }
@@ -1186,15 +1284,22 @@ class Child : Parent {
 }
 
 var c = new Child(true, 5.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(c);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 5.0, y = 5.0, z = 5.0}
+\end{verbatim}
 \end{chapeloutput}
 The first initializer must invoke the \chpl{complete} method at the end of
 the if-branch in order to match the state at the end of the else-branch.
@@ -1225,25 +1330,33 @@ the corresponding actual argument.
 \begin{chapelexample}{defaultInitializer.chpl}
 Given the class
 \begin{chapel}
+\begin{verbatim}
 class C {
   var x: int;
   var y: real = 3.14;
   var z: string = "Hello, World!";
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var c1 = new C();
 var c2 = new C(2);
 var c3 = new C(z="");
 var c4 = new C(2, z="");
 var c5 = new C(0, 0.0, "");
 writeln((c1, c2, c3, c4, c5));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 ({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
+\end{verbatim}
 \end{chapeloutput}
 there are no user-defined initializers for \chpl{C}, so \chpl{new} expressions
 will invoke \chpl{C}'s compiler-generated initializer. The \chpl{x} argument
@@ -1279,6 +1392,7 @@ anything. Otherwise, this method behaves like any other method.
 \begin{chapelexample}{postinit.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Point3D {
   var x, y : real;
   var max = 10.0;
@@ -1298,18 +1412,23 @@ var A = new Point3D();
 var B = new Point3D(1.0, 2.0);
 var C = new Point3D(y=5.0);
 var D = new Point3D(50.0, 50.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 Each of the \chpl{new} expressions invokes the compiler-generated initializer,
 then invokes the \chpl{verify} method via the \chpl{postinit} method:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 (0.0, 0.0)
 (1.0, 2.0)
 (0.0, 5.0)
 (50.0, 50.0)
   Point out of bounds!
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -1336,6 +1455,7 @@ of the initializer.
 \begin{chapelexample}{simpleSuperInit.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class A {
   var a, b : real;
 
@@ -1367,17 +1487,24 @@ class B : A {
 
 var b1 = new B(4.0, 1.0, 2.0);
 var b2 = new B();
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(b1);
 writeln(b2);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {a = 4.0, b = 8.0, x = 1.0, y = 2.0}
 {a = 1.0, b = 2.0, x = 2.0, y = 4.0}
+\end{verbatim}
 \end{chapeloutput}
 The first initializer explicitly calls an initializer for class \chpl{A}. Once
 the parent's initializer is complete, fields of class \chpl{B} may be
@@ -1399,6 +1526,7 @@ accessed before explicit calls to \chpl{init}.
 \begin{chapelexample}{superInitThisInit.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Parent {
   var x, y: real;
 }
@@ -1417,15 +1545,22 @@ class Child : Parent {
 }
 
 var c = new Child(5.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(c);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 0.0, y = 0.0, z = 5.0}
+\end{verbatim}
 \end{chapeloutput}
 The second initializer does not contain an implicit call to the parent's
 initializer because it explicitly invokes another initializer.
@@ -1451,6 +1586,7 @@ the parent allows for additional functionality and flexibility for users.
 \begin{chapelexample}{dynamicThisInit.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Parent {
   var x, y : real;
 
@@ -1476,21 +1612,28 @@ class Child : Parent {
 }
 
 var c = new Child(1.0, 2.0, 3.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(c);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 Once the parent's initializer is finished, the parent method \chpl{foo} may be
 called. After the \chpl{complete} method is invoked, a call to \chpl{foo}
 resolves to the child's overridden (\rsec{Overriding_Base_Class_Methods})
 implementation:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 Parent.foo
 Child.foo
 {x = 1.0, y = 2.0, z = 3.0}
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -1506,6 +1649,7 @@ child type.
 \begin{chapelexample}{compilerGeneratedInheritanceInit.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Parent {
   var x, y: real;
 }
@@ -1517,19 +1661,26 @@ class Child : Parent {
 var A = new Child();
 var B = new Child(1.0, 2.0, 3.0); // x=1.0, y=2.0, z=3.0
 var C = new Child(y=10.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
 writeln(B);
 writeln(C);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 {x = 0.0, y = 0.0, z = 0.0}
 {x = 1.0, y = 2.0, z = 3.0}
 {x = 0.0, y = 10.0, z = 0.0}
+\end{verbatim}
 \end{chapeloutput}
 Any \chpl{new} expressions using the \chpl{Child} type can invoke an
 initializer with three formals named \chpl{x}, \chpl{y}, and \chpl{z} that all
@@ -1551,6 +1702,7 @@ parent's \chpl{postinit} method.
 \begin{chapelexample}{inheritancePostinit.chpl}
 In the following code:
 \begin{chapel}
+\begin{verbatim}
 class Parent {
   var a, b : real;
   proc postinit() {
@@ -1567,16 +1719,21 @@ class Child : Parent {
 }
 
 var c = new Child(1.0, 2.0, 3.0, 4.0);
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 The compiler inserts a call to the parent's \chpl{postinit} method in the
 child's \chpl{postinit} method, and invokes the child's \chpl{postinit} method
 after the compiler-generated initializer finishes:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 Parent.postinit: 1.0, 2.0
 Child.postinit: 3.0, 4.0
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -1588,11 +1745,13 @@ Child.postinit: 3.0, 4.0
 The field in a class is accessed via a field access expression.
 
 \begin{syntax}
+\begin{verbatim}
 field-access-expression:
   receiver-clause[OPT] identifier
 
 receiver-clause:
   expression .
+\end{verbatim}
 \end{syntax}
 
 \index{classes!receiver}
@@ -1624,22 +1783,32 @@ instantiated class type itself.
 Given a variable \chpl{anActor} of type \chpl{Actor} as defined above,
 the code
 \begin{chapelpre}
+\begin{verbatim}
 use defineActor;
 var anActor = new unmanaged Actor(name="Tommy", age=26);
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var s: string = anActor.name;
 anActor.age = 27;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln((s, anActor));
 if (cleanUp) then delete anActor;
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 -scleanUp=true
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 (Tommy, {name = Tommy, age = 27})
+\end{verbatim}
 \end{chapeloutput}
 reads the field \chpl{name} and assigns the value to the variable
 \chpl{s}, and assigns the field \chpl{age} in the object
@@ -1661,6 +1830,7 @@ provided.
 \begin{chapelexample}{getterSetter.chpl}
 In the code
 \begin{chapel}
+\begin{verbatim}
 class C {
   var setCount: int;
   var x: int;
@@ -1673,8 +1843,10 @@ class C {
   }
 
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var c = new C();
 c.x = 1;
 writeln(c.x);
@@ -1683,15 +1855,20 @@ writeln(c.x);
 c.x = 3;
 writeln(c.x);
 writeln(c.setCount);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 2
 3
 3
+\end{verbatim}
 \end{chapeloutput}
 an explicit variable getter method is defined for field \chpl{x}.  It
 returns the field \chpl{x} and increments another field that records
@@ -1728,17 +1905,23 @@ ownership, leaving the source variable empty i.e. storing \chpl{nil}.
 
 \begin{chapelexample}{owned-assignment.chpl}
 \begin{chapelpre}
+\begin{verbatim}
 class C { }
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 // assume that C is a class
 var a:owned C? = new owned C();
 var b:owned C?; // default initialized to store `nil`
 b = a; // transfers ownership from a to b
 writeln(a); // a is left storing `nil`
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 nil
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -1774,8 +1957,10 @@ Memory associated with \chpl{unmanaged} class instances can be reclaimed
 with the \chpl{delete} statement:
 
 \begin{syntax}
+\begin{verbatim}
 delete-statement:
   `delete' expression-list ;
+\end{verbatim}
 \end{syntax}
 
 where the expression-list specifies the class objects whose memory
@@ -1792,11 +1977,14 @@ the behavior is undefined.
 The following example allocates a new object \chpl{c} of class type \chpl{C}
 and then deletes it.
 \begin{chapelpre}
+\begin{verbatim}
 class C {
   var i,j,k: int;
 }
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var c : unmanaged C? = nil;
 delete c;              // Does nothing: c is nil.
 
@@ -1808,13 +1996,15 @@ delete c;              // Deletes that object.
 // writeln(c.i); // May read from freed memory.
 // c.i = 3;      // May overwrite freed memory.
 // delete c;     // May confuse some allocators.
+\end{verbatim}
 \end{chapel}
-\begin{chapelpost}
-\end{chapelpost}
 \begin{chapelexecopts}
+\begin{verbatim}
 --memLeaksByType
+\end{verbatim}
 \end{chapelexecopts}
 \begin{chapeloutput}
+\begin{verbatim}
 
 ====================
 Leaked Memory Report
@@ -1824,6 +2014,7 @@ Number of leaked allocations
                       Description of allocation
 ==============================================================
 ==============================================================
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -1845,6 +2036,7 @@ run the deinitializer and then reclaim the memory.
 
 \begin{chapelexample}{classDeinitializer.chpl}
 \begin{chapel}
+\begin{verbatim}
 class C {
   var i: int;
   proc deinit() { writeln("Bye, bye ", i); }
@@ -1862,9 +2054,12 @@ delete c;               // Deletes that instance: Writes out "Bye, bye 1"
                             // the end of this block, so "Bye, bye 2" is
                             // output and then the memory is reclaimed.
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 Bye, bye 1
 Bye, bye 2
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}

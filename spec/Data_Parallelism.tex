@@ -42,6 +42,7 @@ described in~\rsec{The_For_Loop}.
 
 The syntax of the forall statement is given by
 \begin{syntax}
+\begin{verbatim}
 forall-statement:
   `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
   `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
@@ -49,6 +50,7 @@ forall-statement:
   `forall' iteratable-expression task-intent-clause[OPT] block-statement
   [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] statement
   [ iteratable-expression task-intent-clause[OPT] ] statement
+\end{verbatim}
 \end{syntax}
 As with the for statement, the indices may be omitted if they are
 unnecessary and the \chpl{do} keyword may be omitted before a block
@@ -112,13 +114,17 @@ of the forall loop.
 \begin{chapelexample}{forallStmt.chpl}
 In the code
 \begin{chapelpre}
+\begin{verbatim}
 config const N = 5;
 var a: [1..N] int;
 var b = [i in 1..N] i;
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 forall i in 1..N do
   a(i) = b(i);
+\end{verbatim}
 \end{chapel}
 the user has stated that the element-wise assignments can execute
 concurrently.  This loop may be executed serially with a single task,
@@ -126,13 +132,19 @@ or by using a distinct task for every iteration, or by using a number
 of tasks where each task executes a number of iterations.  This loop
 can also be written as
 \begin{chapel}
+\begin{verbatim}
 [i in 1..N] a(i) = b(i);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(a);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1 2 3 4 5
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -160,11 +172,13 @@ described in~\rsec{For_Expressions}.
 
 The syntax of a forall expression is given by
 \begin{syntax}
+\begin{verbatim}
 forall-expression:
   `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' expression
   `forall' iteratable-expression task-intent-clause[OPT] `do' expression
   [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] expression
   [ iteratable-expression task-intent-clause[OPT] ] expression
+\end{verbatim}
 \end{syntax}
 As with the for expression, the indices may be omitted if they are
 unnecessary.  The \chpl{do} keyword is always required in the
@@ -188,7 +202,9 @@ and yields each resulting value.
 
 When a forall expression is used to initialize a variable, such as
 \begin{chapel}
+\begin{verbatim}
 var X = forall iterableExpression() do computeValue();
+\end{verbatim}
 \end{chapel}
 the variable will be inferred to have an array type.
 The array's domain is defined by the \sntx{iterable-expression}
@@ -198,10 +214,14 @@ case \rsec{Promotion} and in the zipper case \rsec{Zipper_Promotion}.
 \begin{chapelexample}{forallExpr.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 writeln(+ reduce [i in 1..10] i**2);
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 385
+\end{verbatim}
 \end{chapeloutput}
 applies a reduction to a forall-expression that evaluates the square
 of the indices in the range \chpl{1..10}.
@@ -234,18 +254,26 @@ a variable, the resulting array has a 1-based one-dimensional domain.
 The following expression returns every other element starting with the
 first:
 \begin{chapelpre}
+\begin{verbatim}
 var s: [1..10] int = [i in 1..10] i;
 var result =
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 [i in 1..s.numElements] if i % 2 == 1 then s(i)
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 ;
 writeln(result);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1 3 5 7 9
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -341,6 +369,7 @@ The syntax of a task-private variable declaration in a forall statement's
 with-clause is:
 
 \begin{syntax}
+\begin{verbatim}
 task-private-var-decl:
   task-private-var-kind identifier type-part[OPT] initialization-part[OPT]
 
@@ -348,6 +377,7 @@ task-private-var-kind:
   `const'
   `var'
   `ref'
+\end{verbatim}
 \end{syntax}
 
 The declaration of a \chpl{const} or \chpl{var} task-private variable must
@@ -371,6 +401,7 @@ the first shadow variable 4 times: twice each for the yields
 An additional shadow variable will be created and observed twice
 for each of the three \chpl{coforall} tasks.
 \begin{chapel}
+\begin{verbatim}
 var cnt: atomic int;                     // count our shadow variables
 record R { var id = cnt.fetchAdd(1); }
 
@@ -390,15 +421,19 @@ forall str in myIter()
   with (var tpv: R)                      // declare a task-private variable
 do
   writeln("shadow var: ", tpv.id, "  yield: ", str);
+\end{verbatim}
 \end{chapel}
 \begin{chapelprediff}
-\#!/usr/bin/env sh
+\begin{verbatim}
+#!/usr/bin/env sh
 testname=$1
 outfile=$2
 sort $outfile > $outfile.2
 mv $outfile.2 $outfile
+\end{verbatim}
 \end{chapelprediff}
 \begin{chapeloutput}
+\begin{verbatim}
 shadow var: 0  yield: after coforall
 shadow var: 0  yield: after coforall
 shadow var: 0  yield: before coforall
@@ -409,6 +444,7 @@ shadow var: 2  yield: inside coforall
 shadow var: 2  yield: inside coforall
 shadow var: 3  yield: inside coforall
 shadow var: 3  yield: inside coforall
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -457,7 +493,9 @@ We would like to allow the iterator author to specify the shape
 of the iterator, i.e. the domain of the array that would capture
 the result of the corresponding promoted expression, such as
 \begin{chapel}
+\begin{verbatim}
 var myArray = myScalarFunction(myIterator());
+\end{verbatim}
 \end{chapel}
 This will be helpful, for example, when the iterator yields
 one value per an array or domain element that it iterates over
@@ -467,55 +505,73 @@ internally.
 \begin{chapelexample}{promotion.chpl}
 Given the array
 \begin{chapel}
+\begin{verbatim}
 var A: [1..5] int = [i in 1..5] i;
+\end{verbatim}
 \end{chapel}
 and the function
 \begin{chapel}
+\begin{verbatim}
 proc square(x: int) return x**2;
+\end{verbatim}
 \end{chapel}
 then the call \chpl{square(A)} results in the promotion of
 the \chpl{square} function over the values in the array \chpl{A}.  The
 result is an iterator that returns the
 values \chpl{1}, \chpl{4}, \chpl{9}, \chpl{16}, and \chpl{25}.
 \begin{chapelnoprint}
+\begin{verbatim}
 for s in square(A) do writeln(s);
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 4
 9
 16
 25
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
 \begin{chapelexample}{field-promotion.chpl}
 Given an array of points, such as \chpl{A} defined below:
 \begin{chapel}
+\begin{verbatim}
 record Point {
   var x: real;
   var y: real;
 }
 var A: [1..5] Point = [i in 1..5] new Point(x=i, y=i);
+\end{verbatim}
 \end{chapel}
 the following statement will create a new array consisting of
 the \chpl{x} field value for each value in A:
 \begin{chapel}
+\begin{verbatim}
 var X = A.x;
+\end{verbatim}
 \end{chapel}
 and the following call will set the \chpl{y} field values for each
 element in A to 1.0:
 \begin{chapel}
+\begin{verbatim}
 A.y = 1.0;
+\end{verbatim}
 \end{chapel}
 
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(X);
 writeln(A);
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 1.0 2.0 3.0 4.0 5.0
 (x = 1.0, y = 1.0) (x = 2.0, y = 1.0) (x = 3.0, y = 1.0) (x = 4.0, y = 1.0) (x = 5.0, y = 1.0)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -530,6 +586,7 @@ be evaluated many times. For example:
 
 \begin{chapelexample}{promotes-default.chpl}
 \begin{chapel}
+\begin{verbatim}
   var counter: atomic int;
 
   proc nextCounterValue():int {
@@ -540,14 +597,17 @@ be evaluated many times. For example:
   proc assignCounter(ref x:int, counter=nextCounterValue()) {
     x = counter;
   }
+\end{verbatim}
 \end{chapel}
 
 Here the function assignCounter has a default argument
 providing the next value from an atomic counter as the value to set.
 
 \begin{chapel}
+\begin{verbatim}
   var A: [1..5] int;
   assignCounter(A);
+\end{verbatim}
 \end{chapel}
 
 The assignCounter call uses both the default argument for counter as well
@@ -556,10 +616,14 @@ will be evaluated once per promoted element. As a result, after this
 command, A will contain the elements 0 1 2 3 4 in some order.
 
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(A.sorted());
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 0 1 2 3 4
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -576,11 +640,15 @@ Consider a function \chpl{f} with formal
 arguments \chpl{s1}, \chpl{s2},~... that are promoted and formal
 arguments \chpl{a1}, \chpl{a2},~... that are not promoted.  The call
 \begin{chapel}
+\begin{verbatim}
 f(s1, s2, ..., a1, a2, ...)
+\end{verbatim}
 \end{chapel}
 is equivalent to
 \begin{chapel}
+\begin{verbatim}
 [(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
+\end{verbatim}
 \end{chapel}
 The usual constraints of zipper iteration apply to zipper promotion so
 the promoted actuals must have the same shape.
@@ -594,17 +662,23 @@ that causes promotion. The rules are the same as in the non-zipper case.
 \begin{chapelexample}{zipper-promotion.chpl}
 Given a function defined as
 \begin{chapel}
+\begin{verbatim}
 proc foo(i: int, j: int) {
   return (i,j);
 }
+\end{verbatim}
 \end{chapel}
 and a call to this function written
 \begin{chapel}
+\begin{verbatim}
 writeln(foo(1..3, 4..6));
+\end{verbatim}
 \end{chapel}
 then the output is
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 (1, 4) (2, 5) (3, 6)
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -623,12 +697,16 @@ rather than functions.
 Whole array assignment is one example. It is is implicitly parallel.
 The array assignment statement:
 \begin{chapel}
+\begin{verbatim}
 LHS = RHS;
+\end{verbatim}
 \end{chapel}
 is equivalent to
 \begin{chapel}
+\begin{verbatim}
 forall (e1,e2) in zip(LHS,RHS) do
   e1 = e2;
+\end{verbatim}
 \end{chapel}
 
 The semantics of whole array assignment and promotion are different
@@ -644,12 +722,16 @@ right-hand side array expressions alias the left-hand side expression.
 If \chpl{A} is an array declared over the indices \chpl{1..5}, then
 the following codes are not equivalent:
 \begin{chapel}
+\begin{verbatim}
 A[2..4] = A[1..3] + A[3..5];
+\end{verbatim}
 \end{chapel}
 and
 \begin{chapel}
+\begin{verbatim}
 var T = A[1..3] + A[3..5];
 A[2..4] = T;
+\end{verbatim}
 \end{chapel}
 This follows because, in the former code, some of the new values that
 are assigned to \chpl{A} may be read to compute the sum depending on
@@ -688,12 +770,14 @@ the sum of all the elements in the input aggregate expression.
 
 The syntax for a reduction expression is given by:
 \begin{syntax}
+\begin{verbatim}
 reduce-expression:
   reduce-scan-operator `reduce' iteratable-expression
   class-type `reduce' iteratable-expression
 
 reduce-scan-operator: one of
-  + $ $ $ $ * $ $ $ $ && $ $ $ $ || $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ `min' $ $ $ $ `max' $ $ $ $ `minloc' $ $ $ $ `maxloc'
+  + * && || & | ^ `min' `max' `minloc' `maxloc'
+\end{verbatim}
 \end{syntax}
 
 Chapel's predefined reduction operators are defined
@@ -734,22 +818,30 @@ The first line below computes the smallest element in an array
 a forall expression making calls to a function \chpl{foo()}, storing
 the value and its number in \chpl{maxVal} and \chpl{maxValNum}.
 \begin{chapelnoprint}
+\begin{verbatim}
 config const n = 10;
 const D = {1..n};
 var A: [D] int = [i in D] i % 7;
 proc foo(x) return x % 7;
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapel}
+\begin{verbatim}
 var (minA, minALoc) = minloc reduce zip(A, A.domain); 
 var (maxVal, maxValNum) = maxloc reduce zip([i in 1..n] foo(i), 1..n);
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln((minA, minALoc));
 writeln((maxVal, maxValNum));
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 (0, 7)
 (6, 6)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -769,9 +861,11 @@ elements up to and including the corresponding element in the input.
 
 The syntax for a scan expression is given by:
 \begin{syntax}
+\begin{verbatim}
 scan-expression:
   reduce-scan-operator `scan' iteratable-expression
   class-type `scan' iteratable-expression
+\end{verbatim}
 \end{syntax}
 
 The predefined scans are defined by \sntx{reduce-scan-operator}.  These
@@ -788,16 +882,22 @@ that can be iterated over and to which the operator can be applied.
 \begin{example}
 Given an array
 \begin{chapel}
+\begin{verbatim}
 var A: [1..3] int = 1;
+\end{verbatim}
 \end{chapel}
 that is initialized such that each element contains one, then the code
 \begin{chapel}
+\begin{verbatim}
 writeln(+ scan A);
+\end{verbatim}
 \end{chapel}
 outputs the results of scanning the array with the sum operator.  The
 output is
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 1 2 3
+\end{verbatim}
 \end{chapelprintoutput}
 \end{example}
 

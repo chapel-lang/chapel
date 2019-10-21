@@ -1,3 +1,7 @@
+% Why is this hard?
+% see https://github.com/jgm/pandoc/issues/4770
+% https://github.com/jgm/pandoc/issues/4302
+
 \documentclass[10pt,oneside,titlepage]{spec}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath}
@@ -10,10 +14,11 @@
 \usepackage{longtable}
 \usepackage[nottoc]{tocbibind}
 \usepackage{multirow}
+%\usepackage{verbatim}
 \usepackage{fvextra}
 \input{chapel_testing}
-\input{chapel_listing}
-\input{syntax_listing}
+\input{chapel_listing_pandoc}
+\input{syntax_listing_pandoc}
 
 %% High section numbers require different number widths
 \usepackage[titles]{tocloft}
@@ -132,13 +137,13 @@
 \textheight 8.5in
 
 \makeindex
-\title{Chapel Language Specification\\Version 0.988}
+\title{Chapel Language Specification\\Version 0.987}
 
 \author{Cray Inc\\
 901 Fifth Avenue, Suite 1000\\
 Seattle, WA 98164}
 
-\date{September 19, 2019}
+\date{March 21, 2019}
 
 \setcounter{tocdepth}{3}
 
@@ -158,10 +163,6 @@ Seattle, WA 98164}
 \begin{center}
 \copyright 2019 Cray Inc.
 \end{center}
-
-\cleardoublepage
-\include{tm}
-\cleardoublepage
 
 \pagestyle{myheadings}
 \markboth{Chapel Language Specification}{Chapel Language Specification}
@@ -244,9 +245,10 @@ Seattle, WA 98164}
 \cleardoublepage
 \input{Interoperation}
 \cleardoublepage
-\appendix
-\input{Syntax}
-\cleardoublepage
-\markboth{Chapel Language Specification}{Index}
-\input{spec.ind}
+%\appendix
+%\input{Syntax}
+%\cleardoublepage
+%\cleardoublepage
+%\markboth{Chapel Language Specification}{Index}
+%\input{spec.ind}
 \end{document}

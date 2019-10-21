@@ -21,6 +21,7 @@ in~\rsec{Program_Execution}.
 
 A module is declared with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 module-declaration-statement:
   privacy-specifier[OPT] prototype-specifier[OPT] `module' module-identifier block-statement
 
@@ -33,6 +34,7 @@ prototype-specifier:
 
 module-identifier:
   identifier
+\end{verbatim}
 \end{syntax}
 
 A module's name is specified after the \chpl{module} keyword.
@@ -80,6 +82,7 @@ relation to the file in terms of their names.
 \begin{chapelexample}{two-modules.chpl}
 The following file contains two explicitly named modules, MX and MY.
 \begin{chapel}
+\begin{verbatim}
 module MX {
   var x: string = "Module MX";
   proc printX() {
@@ -93,14 +96,19 @@ module MY {
     writeln(y);
   }
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 MX.printX();
 MY.printY();
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 Module MX
 Module MY
+\end{verbatim}
 \end{chapeloutput}
 Module MX defines module-scope symbols x and printX, while MY
 defines module-scope symbols y and printY.
@@ -122,6 +130,7 @@ identifier, it cannot be referenced in a use statement.
 The following file, named implicit.chpl, defines an implicitly named
 module called implicit.
 \begin{chapel}
+\begin{verbatim}
 var x: int = 0;
 var y: int = 1;
 
@@ -131,14 +140,19 @@ proc printX() {
 proc printY() {
   writeln(y);
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 printX();
 printY();
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 0
 1
+\end{verbatim}
 \end{chapeloutput}
 Module implicit defines the module-scope symbols x, y, printX, and
 printY.
@@ -161,21 +175,27 @@ explicitly naming the outer module in the use statement.
 \begin{chapelexample}{nested-use.chpl}
 The code
 \begin{chapelpre}
+\begin{verbatim}
 module libsci {
   writeln("Initializing libsci");
   module blas {
-    writeln("\\tInitializing blas");
+    writeln("\tInitializing blas");
   }
 }
 module testmain { // used to avoid warnings
 }
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 use libsci.blas;
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 Initializing libsci
 	Initializing blas
+\end{verbatim}
 \end{chapeloutput}
 uses a module named \chpl{blas} that is nested inside a module
 named \chpl{libsci}.
@@ -189,6 +209,7 @@ The following file, named nested.chpl, defines an
 implicitly named module called nested, with nested modules
 MX and MY.
 \begin{chapel}
+\begin{verbatim}
 module MX {
   var x: int = 0;
 }
@@ -206,14 +227,19 @@ proc printX() {
 proc printY() {
   writeln(y);
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 printX();
 printY();
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 0
 0
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -278,6 +304,7 @@ When a module's symbol is visible---via a use statement, or lexically
 for nested modules---its public symbols can be referred to via
 qualified naming with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 module-access-expression:
   module-identifier-list . identifier
 
@@ -285,6 +312,7 @@ module-identifier-list:
   module-identifier
   module-identifier . module-identifier-list
 
+\end{verbatim}
 \end{syntax}
 This allows two symbols that have the same name to be distinguished
 based on the name of their module.  Using qualified naming in a
@@ -298,6 +326,7 @@ disambiguate the symbols in this case.
 \begin{chapelexample}{ambiguity.chpl}
 In the following example,
 \begin{chapel}
+\begin{verbatim}
 module M1 {
   var x: int = 1;
   var y: int = -1;
@@ -335,12 +364,15 @@ module M3 {
     writeln("M3's y is: ", y);
   }
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 ambiguity.chpl:22: In function 'main':
 ambiguity.chpl:27: error: ambiguous call 'printY()'
 ambiguity.chpl:34: note: candidates are: printY()
 ambiguity.chpl:7: note:                 printY()
+\end{verbatim}
 \end{chapeloutput}
 The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
@@ -362,19 +394,25 @@ including both top-level modules and sub-modules, will not be initialized.
 \begin{chapelexample}{init.chpl}
 In the code,
 \begin{chapelpre}
+\begin{verbatim}
 proc foo() {
     return 1;
 }
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var x = foo();       // executed at module initialization
 writeln("Hi!");      // executed at module initialization
 proc sayGoodbye {
   writeln("Bye!");   // not executed at module initialization
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 Hi!
+\end{verbatim}
 \end{chapeloutput}
 The function foo() will be invoked and its result assigned to x.  Then
 ``Hi!'' will be printed.
@@ -439,6 +477,7 @@ main function definition will be used.
 Because it defines two \chpl{main} functions, the following code will yield an
 error unless a main module is specified on the command line.
 \begin{chapel}
+\begin{verbatim}
 module M1 {
   const x = 1;
   proc main() {
@@ -455,19 +494,36 @@ module M2 {
     writeln("M", x, "'s main");
   }
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
---main-module M1 \# main\_module.M1.good
---main-module M2 \# main\_module.M2.good
+\begin{verbatim}
+--main-module M1 # main_module.M1.good
+--main-module M2 # main_module.M2.good
+\end{verbatim}
 \end{chapelcompopts}
 If M1 is specified as the main module, the program will output:
-\begin{chapelprintoutput}{main_module.M1.good}
+\begin{chapeloutputname}
+\begin{verbatim}
+main_module.M1.good
+\end{verbatim}
+\end{chapeloutputname}
+\begin{chapelprintoutput}
+\begin{verbatim}
 M1's main
+\end{verbatim}
 \end{chapelprintoutput}
 If M2 is specified as the main module the program will output:
-\begin{chapelprintoutput}{main_module.M2.good}
+\begin{chapeloutputname}
+\begin{verbatim}
+main_module.M2.good
+\end{verbatim}
+\end{chapeloutputname}
+\begin{chapelprintoutput}
+\begin{verbatim}
 M1's main
 M2's main
+\end{verbatim}
 \end{chapelprintoutput}
 Notice that main is treated like just another function if it is not in
 the main module and can be called as such.
@@ -482,16 +538,23 @@ To aid in exploratory programming, a default main function is
 created if the program does not contain a user-defined main function.  The
 default main function is equivalent to
 \begin{chapel}
+\begin{verbatim}
 proc main() {}
+\end{verbatim}
 \end{chapel}
 
 \begin{chapelexample}{no-main.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 writeln("hello, world");
+
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 hello, world
+\end{verbatim}
 \end{chapeloutput}
 is a legal and complete Chapel program.  The startup code for a Chapel program
 first calls the module initialization code for the main module and then
@@ -519,6 +582,7 @@ parent module and its uses are initialized before the nested module and its uses
 \begin{chapelexample}{init-order.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 module M1 {
   use M2.M3;
   use M2;
@@ -539,14 +603,17 @@ module M2 {
 module M4 {
   writeln("In M4's initializer");
 }
+\end{verbatim}
 \end{chapel}
 prints the following
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 In M4's initializer
 In M2's initializer
 In M3's initializer
 In M1's initializer
 In main
+\end{verbatim}
 \end{chapelprintoutput}
 M1, the main module, uses M2.M3 and then M2, thus M2.M3 must be
 initialized.  Because M2.M3 is a nested module, M4 (which is used by
