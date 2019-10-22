@@ -170,6 +170,9 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
 chdir "$archive_dir";
 
+print "[gen_release] Creating the spec tests...\n";
+SystemOrDie("make spectests");
+
 # Docs/man page must be built first so we can get rid of any extra files
 # (chpldoc) with a clobber
 print "[gen_release] Building the docs...\n";
@@ -203,7 +206,6 @@ print "[gen_release] Creating the examples directory...\n";
 SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
-SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
 print "[gen_release] Removing Makefiles that are not intended for release...\n";
 SystemOrDie("cd make/platform && rm Makefile.sunos_old");
