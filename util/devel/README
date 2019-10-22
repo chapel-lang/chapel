@@ -13,7 +13,5 @@ For example:
   chplspell        : helper script for spell checking the Chapel repo
   test/
     cat_futures    : prints all the futures to the console with name/lineno
-                     (Sung says could be written much more efficiently)
     compileTest    : compiles a single test using appropriate COMPOPTS/.compopts
-    extract_tests  : used to extract tests from the language spec sources
     list_futures   : lists all the futures by printing the first line in .future
