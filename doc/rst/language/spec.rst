@@ -480,10 +480,11 @@ Comments
 --------
 
 Two forms of comments are supported. All text following the consecutive
-characters // and before the end of the line is in a comment. All text
-following the consecutive characters /\* and before the consecutive
-characters / is in a comment. A comment delimited by /\* and / can be
-nested in another comment delimited by /\* and /
+characters ``//`` and before the end of the line is in a comment. All
+text following the consecutive characters ``/*`` and before the
+consecutive characters ``*/`` is in a comment. A comment delimited by
+``/*`` and ``*/`` can be nested in another comment delimited by ``/*``
+and ``*/``
 
 Comments, including the characters that delimit them, do not affect the
 behavior of the program (except in delimiting tokens). If the delimiters
@@ -555,7 +556,7 @@ following syntax:
    legal-identifier-char:
      letter-or-underscore
      digit
-     `(*\texttt{\$}*)'
+     `$'
 
    letter-or-underscore:
      letter
@@ -884,10 +885,10 @@ Interpreted string literals are designated by the following syntax:
      hexadecimal-escape-character
 
    simple-escape-character: one of
-     `$\backslash\mbox{\bf '}\hspace{5pt}$' `$\backslash$"$\hspace{5pt}$' `$\backslash$?$\hspace{5pt}$' `$\backslash$$\backslash$$\hspace{5pt}$' `$\backslash$a$\hspace{5pt}$' `$\backslash$b$\hspace{5pt}$' `$\backslash$f$\hspace{5pt}$' `$\backslash$n$\hspace{5pt}$' `$\backslash$r$\hspace{5pt}$' `$\backslash$t$\hspace{5pt}$' `$\backslash$v$\hspace{5pt}$'
+     \' \" \? \\ \a \b \f \n \r \t \v
 
    hexadecimal-escape-character:
-     `$\backslash$x' hexadecimal-digits
+     `\x' hexadecimal-digits
    \end{syntax}
 
    Uninterpreted string literals are designated by the following syntax:
@@ -909,8 +910,8 @@ Interpreted string literals are designated by the following syntax:
      `any character except three single quotes in a row'
 
 Uninterpreted string literals do not interpret their contents, so for
-example ``"""$\backslash$n"""`` is not a newline, but rather two
-characters ‘:math:`\backslash`’ and ‘n’. Uninterpreted string literals
+example ``"""\n"""`` is not a newline, but rather two
+characters ``\`` and ``n``. Uninterpreted string literals
 may span multiple lines and the literal newline characters will be
 included in the string.
 
@@ -942,8 +943,8 @@ Uninterpreted bytes literals are designated by the following syntax:
      b''' uninterpreted-single-quote-delimited-characters '''
 
 Uninterpreted bytes literals do not interpret their contents, so for
-example ``b"""$\backslash$n"""`` is not a newline, but rather two
-characters ‘:math:`\backslash`’ and ‘n’. Uninterpreted bytes literals
+example ``b"""\n"""`` is not a newline, but rather two
+characters ``\`` and ``n``. Uninterpreted bytes literals
 may span multiple lines and the literal newline characters will be
 included in the bytes.
 
@@ -967,7 +968,7 @@ language:
 **symbols**                                                                                         **use**
 =================================================================================================== =============================
 ``=``                                                                                               assignment
-``+=`` ``-=`` ``*=`` ``/=`` ``**=`` ``\%=`` ``\&=`` ``|=`` ``^=`` ``&&=`` ``||=`` ``<<=`` ``>>=``   compound assignment
+``+=`` ``-=`` ``*=`` ``/=`` ``**=`` ``%=`` ``&=`` ``|=`` ``^=`` ``&&=`` ``||=`` ``<<=`` ``>>=``     compound assignment
 ``<=>``                                                                                             swap
 ``<~>``                                                                                             I/O
 ``..``                                                                                              range specifier
@@ -976,7 +977,7 @@ language:
 ``...``                                                                                             variable argument lists
 ``&&`` ``||`` ``!`` ``&`` ``|`` ``^`` ``~`` ``<<`` ``>>``                                           logical/bitwise operators
 ``==`` ``!=`` ``<=`` ``>=`` ``<`` ``>``                                                             relational operators
-``+`` ``-`` ``*`` ``/`` ``\%`` ``**``                                                               arithmetic operators
+``+`` ``-`` ``*`` ``/`` ``%`` ``**``                                                                arithmetic operators
 ``:``                                                                                               type specifier
 ``;``                                                                                               statement separator
 ``,``                                                                                               expression separator
@@ -1918,21 +1919,24 @@ Parameter expressions are restricted to the following constructs:
 
 -  Casts of parameter expressions to primitive or enumerated types.
 
--  Applications of the unary operators +@, -@, !@, and  @ on operands
+-  Applications of the unary operators ``+ ``-``, ``!``, and ``~`` on operands
    that are bool or integral parameter expressions.
 
--  Applications of the unary operators +@ and -@ on operands that are
+-  Applications of the unary operators ``+`` and ``-`` on operands that are
    real, imaginary or complex parameter expressions.
 
--  Applications of the binary operators +@, -@, @, /@,
+-  Applications of the binary operators ``+``, ``-``, ``*``, ``/``,
+   ``%``, ``**``, ``&&``, ``||``, ``&``, ``|``, ``^``, ``<<``, ``>>``,
+   ``==``, ``!=``, ``<=``, ``>=``, ``<``, and ``>`` on operands that are
+   bool or integral parameter expressions.
 
--  Applications of the binary operators +@, -@, @, /@, \*@, ==@, !=@,
-   <=@, >=@, <@, and >@ on operands that are real, imaginary or complex
-   parameter expressions.
+-  Applications of the binary operators ``+``, ``-``, ``*``, ``/``,
+   ``**``, ``==``, ``!=``, ``<=``, ``>=``, ``<``, and ``>`` on operands
+   that are real, imaginary or complex parameter expressions.
 
--  Applications of the string concatenation operator +@, string
-   comparison operators ==@, !=@, <=@, >=@, <@, >@, and the string
-   length and byte methods on parameter string expressions.
+-  Applications of the string concatenation operator ``+``, string
+   comparison operators ``==``, ``!=``, ``<=``, ``>=``, ``<``, ``>``, and
+   the string length and byte methods on parameter string expressions.
 
 -  The conditional expression where the condition is a parameter and the
    then- and else-expressions are parameters.
@@ -2411,12 +2415,12 @@ smaller than ``int`` are first converted to ``int``. Then, the closest
 representation of the converted value in the target type is chosen. The
 exact behavior of this conversion is implementation-defined.
 
-When converting from ``real($k$)`` to ``complex($2k$)``, the original
+When converting from ``real(k)`` to ``complex(2k)``, the original
 value is copied into the real part of the result, and the imaginary part
-of the result is set to zero. When converting from a ``real($k$)`` to a
-``complex($\ell$)`` such that :math:`\ell > 2k`, the conversion is
+of the result is set to zero. When converting from a ``real(k)`` to a
+``complex(j)`` such that ``j > 2k``, the conversion is
 performed as if the original value is first converted to
-``real($\ell/2$)`` and then to ``$\ell$``.
+``real(j/2)`` and then to ``j``.
 
 The rules for converting from ``imag`` to ``complex`` are the same as
 for converting from real, except that the imaginary part of the result
@@ -3068,7 +3072,7 @@ precedence than those listed later.
    field:
 
    ======================= == =====================
-   ``(x \& MASK) == MASK`` as ``x \& MASK == MASK``
+   ``(x & MASK) == MASK``  as ``x & MASK == MASK``
    ``a + b * pow(2,y)``    as ``a * b << y``
    ======================= == =====================
 
@@ -3454,7 +3458,7 @@ remainder when the first operand is divided by the second operand.
 
 The sign of the result is the same as the sign of the dividend ``a``,
 and the magnitude of the result is always smaller than that of the
-divisor ``b``. For integer operands, the ``\%`` and ``/`` operators are
+divisor ``b``. For integer operands, the ``%`` and ``/`` operators are
 related by the following identity: 
 
 .. code-block:: chapel
@@ -3883,7 +3887,7 @@ to the string’s characters in order.
 Equality Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The equality comparison operators ``==`` and ``\``\ =! are predefined
+The equality comparison operators ``==`` and ``!=`` are predefined
 over bool and the numeric types as follows: 
 
 .. code-block:: chapel
@@ -3933,8 +3937,8 @@ over bool and the numeric types as follows:
    proc !=(a: complex(128), b: complex(128)): bool
 
 The result of ``a == b`` is true if ``a`` and ``b`` contain the same
-value; otherwise the result is false. The result of ``a \``\ = b! is
-equivalent to ``\``\ (a == b)!.
+value; otherwise the result is false. The result of ``a != b`` is
+equivalent to ``!(a == b)``.
 
 The equality comparison operators are predefined over classes as
 follows: 
@@ -3946,7 +3950,7 @@ follows:
 
 The result of ``a == b`` is true if ``a`` and ``b`` reference the same
 storage location; otherwise the result is false. The result of
-``a \``\ = b! is equivalent to ``\``\ (a == b)!.
+``a != b`` is equivalent to ``!(a == b)``.
 
 Default equality comparison operators are generated for records if the
 user does not define them. These operators are described
@@ -3962,8 +3966,7 @@ follows:
 
 The result of ``a == b`` is true if the sequence of characters in ``a``
 matches exactly the sequence of characters in ``b``; otherwise the
-result is false. The result of ``a \``\ = b! is equivalent to ``\``\ (a
-== b)!.
+result is false. The result of ``a != b`` is equivalent to ``!(a == b)``.
 
 .. _Class_Operators:
 
@@ -4055,7 +4058,7 @@ and :ref:`Domain_Alignment` for domains.
 The Range Count Operator
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The operator ``\#`` is predefined on ranges. It is described in
+The operator ``#`` is predefined on ranges. It is described in
  :ref:`Count_Operator`.
 
 .. _Let_Expressions:
@@ -7064,9 +7067,14 @@ Operator overloading is achieved by defining a function with a name
 specified by that operator. The operators that may be overloaded are
 listed in the following table:
 
-| \|l|l\| **arity** & **operators**
-| unary & + - !  @
-| binary & + - \* / & = += -= \*= /=
+arity    operators
+======== ===============================
+unary    ``&`` ``+`` ``-`` ``!`` ``~``
+binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**``
+binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
+binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``by``
+binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
+binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
 
 The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
@@ -9342,7 +9350,7 @@ error will be issued.
 Binary Operators
 ~~~~~~~~~~~~~~~~
 
-The binary operators ``+``, ``-``, ``*``, ``/``, ``\%``, ``**``, ``\&``,
+The binary operators ``+``, ``-``, ``*``, ``/``, ``%``, ``**``, ``&``,
 ``|``, ``^``, ``<<``, and ``>>`` are overloaded on tuples by applying
 them to pairs of the respective argument components and returning the
 results as a new tuple. The sizes of the two argument tuples must be the
@@ -10862,16 +10870,16 @@ value of the corresponding actual argument.
    expressions will invoke ``C``\ ’s compiler-generated initializer. The
    ``x`` argument of the compiler-generated initializer has the default
    value ``0``. The ``y`` and ``z`` arguments have the default values
-   ``3.14`` and ``"Hello, World\``"!, respectively.
+   ``3.14`` and ``"Hello, World!``", respectively.
 
    ``C`` instances can be created by calling the compiler-generated
    initializer as follows:
 
    -  The call ``new C()`` is equivalent to
-      ``new C(0,3.14,"Hello, World\``")!.
+      ``new C(0,3.14,"Hello, World!")``.
 
    -  The call ``new C(2)`` is equivalent to
-      ``new C(2,3.14,"Hello, World\``")!.
+      ``new C(2,3.14,"Hello, World!")``.
 
    -  The call ``new C(z="")`` is equivalent to ``new C(0,3.14,"")``.
 
@@ -12107,7 +12115,7 @@ The following example demonstrates record assignment.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default functions to overload ``==`` and ``\``\ =! are defined for
+Default functions to overload ``==`` and ``!=`` are defined for
 records if none are explicitly defined. These functions have the
 following signatures for a record ``R``:
 
@@ -12805,7 +12813,7 @@ Range Operators
 
 The following operators can be applied to range expressions and are
 described in this section: stride (``by``), alignment (``align``), count
-(``\#``) and slicing (``\(\)`` or ``\[\]``). Chapel also defines a set
+(``#``) and slicing (``()`` or ``[]``). Chapel also defines a set
 of functions that operate on ranges. They are described in
 :ref:`Predefined_Range_Functions`.
 
@@ -13006,7 +13014,7 @@ To create a range aligned relative to its ``first`` index, use the
 Count Operator
 ~~~~~~~~~~~~~~
 
-The ``\#`` operator takes a range and an integral count and creates a
+The ``#`` operator takes a range and an integral count and creates a
 new range containing the specified number of indices. The low or high
 bound of the left operand is preserved, and the other bound adjusted to
 provide the specified number of indices. If the count is positive,
@@ -13025,7 +13033,7 @@ The type of the count expression must be a signed or unsigned integer of
 the same bit size as the base range’s ``idxType``, or an implicit
 conversion must be allowed to that type from the count’s type.
 
-The type of the result of the ``\#`` operator is the type of the range
+The type of the result of the ``#`` operator is the type of the range
 argument.
 
 Depending on the sign of the count and the stride, the high or low bound
@@ -13810,7 +13818,7 @@ the domain literal is invalid.
 
    *Example*.
 
-   The expression ``\{1..5, 1..5\}`` defines a rectangular domain with
+   The expression ``{1..5, 1..5}`` defines a rectangular domain with
    type ``domain(rank=2,`` ``idxType=int,`` ``stridable=false)``. It is
    a :math:`5 \times 5` domain with the indices:
 
@@ -14436,10 +14444,10 @@ that were sliced by ranges rather than integers.
 Count Operator
 ~~~~~~~~~~~~~~
 
-The ``\#`` operator can be applied to dense rectangular domains with a
+The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
 an integer in the case of a 1D domain). The operator is equivalent to
-applying the ``\#`` operator to the component ranges of the domain and
+applying the ``#`` operator to the component ranges of the domain and
 then using them to slice the domain as in
 Section \ `21.8.4.2 <#Range_Based_Slicing>`__.
 
@@ -15556,10 +15564,10 @@ passed in to take the slice.
 Count Operator
 --------------
 
-The ``\#`` operator can be applied to dense rectangular arrays with a
+The ``#`` operator can be applied to dense rectangular arrays with a
 tuple argument whose size matches the rank of the array (or optionally
 an integer in the case of a 1D array). The operator is equivalent to
-applying the ``\#`` operator to the array’s domain and using the result
+applying the ``#`` operator to the array’s domain and using the result
 to slice the array as described in
 Section \ `22.6.1 <#Rectangular_Array_Slicing>`__.
 
@@ -16512,7 +16520,7 @@ concrete* argument.
         // body
       }
 
-   specifies that ``tuple.size == 2 \&\& tuple(2).type == real``.
+   specifies that ``tuple.size == 2 && tuple(2).type == real``.
 
 Homogeneous tuple arguments of generic type are also supported:
 
@@ -17572,9 +17580,9 @@ initially empty.
 
       4
 
-   the sync variable ``x$\mbox{\texttt{\$}}$`` is assigned by an
+   the sync variable ``x$`` is assigned by an
    asynchronous task created with the begin statement. The task
-   returning the sum waits on the reading of ``x$\mbox{\texttt{\$}}$``
+   returning the sum waits on the reading of ``x$``
    until it has been assigned. By convention, synchronization variables
    end in ``$`` to provide a visual cue to the programmer indicating
    that the task may block.
@@ -17612,8 +17620,8 @@ initially empty.
 
       count is: 3
 
-   creates three tasks that increment ``count$\mbox{\texttt{\$}}$``. If
-   ``count$\mbox{\texttt{\$}}$`` were not a sync variable, this code
+   creates three tasks that increment ``count$``. If
+   ``count$`` were not a sync variable, this code
    would be unsafe because two tasks could then read the same value
    before either had written its updated value, causing one of the
    increments to be lost.
@@ -17658,11 +17666,11 @@ initially empty.
       ...........................................done
 
    In each iteration of the forall loop after the work is completed, the
-   task reads the ``count$\mbox{\texttt{\$}}$`` variable, which is used
+   task reads the ``count$`` variable, which is used
    to tally the number of tasks that have arrived. All tasks except the
    last task to arrive will block while trying to read the variable
-   ``release$\mbox{\texttt{\$}}$``. The last task to arrive will write
-   to ``release$\mbox{\texttt{\$}}$``, setting its state to full at
+   ``release$``. The last task to arrive will write
+   to ``release$``, setting its state to full at
    which time all the other tasks can be unblocked and run.
 
 If a formal argument with a default intent either has a synchronization
@@ -17943,15 +17951,15 @@ otherwise. Defined for all atomic types.
    proc (atomic T).and(v: T, order:memoryOrder = memoryOrder.seqCst)
    proc (atomic T).xor(v: T, order:memoryOrder = memoryOrder.seqCst)
 
-Applies the appropriate operator (+@, -@, \|@, &@, ^@) to the original
-value and ``v`` and stores the result. All of the methods are defined
-for integral atomic types. Only add and sub (+@, -@) are defined for
-``real`` atomic types. None of the methods are defined for the ``bool``
-atomic type.
+Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
+the original value and ``v`` and stores the result. All of the methods
+are defined for integral atomic types. Only add and sub (``+``, ``-``)
+are defined for ``real`` atomic types. None of the methods are defined
+for the ``bool`` atomic type.
 
    *Future*.
 
-   In the future we may overload certain operations such as +=@ to call
+   In the future we may overload certain operations such as ``+=`` to call
    the above methods automatically for atomic variables.
 
 
@@ -17964,11 +17972,11 @@ atomic type.
    proc (atomic T).fetchAnd(v: T, order:memoryOrder = memoryOrder.seqCst): T
    proc (atomic T).fetchXor(v: T, order:memoryOrder = memoryOrder.seqCst): T
 
-Applies the appropriate operator (+@, -@, \|@, &@, ^@) to the original
-value and ``v``, stores the result, and returns the original value. All
-of the methods are defined for integral atomic types. Only add and sub
-(+@, -@) are defined for ``real`` atomic types. None of the methods are
-defined for the ``bool`` atomic type.
+Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
+the original value and ``v``, stores the result, and returns the original
+value. All of the methods are defined for integral atomic types. Only add
+and sub (``+``, ``-``) are defined for ``real`` atomic types. None of the
+methods are defined for the ``bool`` atomic type.
 
 
 
@@ -18130,10 +18138,10 @@ statements may not be used to exit a coforall block.
 
    Each call to ``body()`` executes concurrently because it is in a
    begin statement. The sync variable
-   ``runningCount$\mbox{\texttt{\$}}$`` is used to keep track of the
+   ``runningCount$`` is used to keep track of the
    number of executing tasks plus one for the main task. When this
    variable reaches zero, the single variable
-   ``finished$\mbox{\texttt{\$}}$`` is used to signal that all of the
+   ``finished$`` is used to signal that all of the
    tasks have completed. Thus control does not continue past the last
    line until all of the tasks have completed.
 
@@ -19348,12 +19356,12 @@ Chapel’s predefined reduction operators are defined by
 ``reduce-scan-operator`` above. In order, they are: sum, product,
 logical-and, logical-or, bitwise-and, bitwise-or, bitwise-exclusive-or,
 minimum, maximum, minimum-with-location, and maximum-with-location. The
-minimum reduction returns the minimum value as defined by the <@
+minimum reduction returns the minimum value as defined by the ``<``
 operator. The maximum reduction returns the maximum value as defined by
-the >@ operator. The minimum-with-location reduction returns the lowest
-index position with the minimum value (as defined by the <@ operator).
+the ``>`` operator. The minimum-with-location reduction returns the lowest
+index position with the minimum value (as defined by the ``<`` operator).
 The maximum-with-location reduction returns the lowest index position
-with the maximum value (as defined by the >@ operator). When a minimum,
+with the maximum value (as defined by the ``>`` operator). When a minimum,
 maximum, minimum-with-location, or maximum-with-location reduction
 encounters a NaN, the result is a NaN.
 
@@ -19919,7 +19927,7 @@ record with a single generic field, which holds the domain map instance.
       var MyBlockDist: dmap(Block(rank=2)) = new dmap(new Block({1..5,1..6}));
 
    creates a dmap value wrapping a two-dimensional Block distribution
-   with a bounding box of ``\{1..5, 1..6\}`` over all of the locales.
+   with a bounding box of ``{1..5, 1..6}`` over all of the locales.
 
    *Example*.
 
@@ -20191,7 +20199,7 @@ We will use the following notation:
 -  :math:`X <_m Y` indicates that :math:`X` precedes :math:`Y` in memory
    order
 
--  ``t = begin\{X\}`` starts a new task named :math:`t` to execute
+-  ``t = begin{X}`` starts a new task named :math:`t` to execute
    :math:`X`
 
 -  ``waitFor($t_1$..$t_n$)`` waits for tasks :math:`t_1..t_n` to
@@ -20223,27 +20231,27 @@ of starting a task (``begin``) and waiting for some number of tasks
 -  ``forall`` (including promotion) creates some number of tasks
    :math:`m` to execute the :math:`n` iterations of the loop
 
-   (``$t_i$ = begin\{some-loop-bodies\}`` for each task
+   (``$t_i$ = begin{some-loop-bodies}`` for each task
    :math:`i=1`..\ :math:`m`) and waits for them to complete
-   (``waitFor($t_1$..$t_m$)``). The number of tasks :math:`m` is defined
+   (``waitFor(t_1..t_m)``). The number of tasks :math:`m` is defined
    by the implementation of the parallel iterator (See
    Section \ `[Iterators] <#Iterators>`__ for details on iterators).
 
 -  ``coforall`` creates one task per loop iteration
-   (``$t_i$ = begin\{loop-body\}`` for all loop iterations
+   (``t_i = begin{loop-body}`` for all loop iterations
    :math:`i=1..n`) and then waits for them all to complete
-   (``waitFor($t_1$..$t_n$)``).
+   (``waitFor(t_1..t_n)``).
 
 -  ``cobegin`` creates one task per enclosed statement
-   (``$t_i$ = begin\{$X_i$\}`` for statements
+   (``t_i = begin{X_i}`` for statements
    :math:`X_1`..\ :math:`X_n`) and then waits for them all to complete
-   (``waitFor($t_1$..$t_n$)``).
+   (``waitFor(t_1..t_n)``).
 
 -  ``begin`` creates a task to execute the enclosed statement
-   (``t = begin\{X\}``). The ``sync`` statement waits for all tasks
+   (``t = begin{X}``). The ``sync`` statement waits for all tasks
    :math:`t_i` created by a ``begin`` statement in the dynamic scope of
    the ``sync`` statement that are not within other, nested ``sync``
-   statements (``waitFor($t_1$..$t_n$)`` for all :math:`n` such tasks).
+   statements (``waitFor(t_1..t_n)`` for all :math:`n` such tasks).
 
 .. _program_order:
 
@@ -20260,11 +20268,11 @@ operations*.
 -  If we have a program snippet without tasks, such as ``X; Y;``, where
    :math:`X` and :math:`Y` are memory operations, then :math:`X <_p Y`.
 
--  The program ``X; begin\{Y\}; Z;`` implies :math:`X` :math:`<_p`
+-  The program ``X; begin{Y}; Z;`` implies :math:`X` :math:`<_p`
    :math:`Y`. However, there is no particular relationship between
    :math:`Y` and :math:`Z` in program order.
 
--  The program ``t = begin\{Y\}; waitFor(t); Z;`` implies :math:`Y`
+-  The program ``t = begin{Y}; waitFor(t); Z;`` implies :math:`Y`
    :math:`<_p` :math:`Z`
 
 -  :math:`X` :math:`<_p` :math:`Y` and :math:`Y` :math:`<_p` :math:`Z`
@@ -20338,7 +20346,7 @@ information on the memory order types.
 Relaxed Atomic Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Although Chapel’s relaxed atomic operations (``memory\_order\_relaxed``)
+Although Chapel’s relaxed atomic operations (``memory_order_relaxed``)
 do not complete in a total order by themselves and might contribute to
 non-deterministic programs, relaxed atomic operations cannot contribute
 to a data race that would prevent sequential consistency.
@@ -20487,10 +20495,10 @@ Examples
    .. code-block:: chapel
 
       var A: [1..100] real;
-      var done(*\texttt{\$}*): sync int;           // initially empty
+      var done$: sync int;           // initially empty
       cobegin {
         { // Reader task
-          const numToRead = done(*\texttt{\$}*);   // block until writes are complete
+          const numToRead = done$;   // block until writes are complete
           for i in 1..numToRead do
             writeln("A[", i, "] = ", A[i]);
         }
@@ -20498,7 +20506,7 @@ Examples
           const numToWrite = 14;     // an arbitrary number
           for i in 1..numToWrite do
             A[i] = i/10.0;
-          done(*\texttt{\$}*) = numToWrite;        // fence writes to A and signal done
+          done$ = numToWrite;        // fence writes to A and signal done
         }
       }
 
