@@ -231,7 +231,7 @@ module DefaultSparse {
 
     proc dsiAdd(ind: rank*idxType) {
       if (rank == 1) {
-        return add_help(ind(1));
+        return add_help(ind(0));
       } else {
         return add_help(ind);
       }
@@ -239,7 +239,7 @@ module DefaultSparse {
 
     proc dsiRemove(ind: rank*idxType) {
       if (rank == 1) {
-        return rem_help(ind(1));
+        return rem_help(ind(0));
       } else {
         return rem_help(ind);
       }
@@ -350,7 +350,7 @@ module DefaultSparse {
         compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
       }
       halt("dimIter() not yet implemented for sparse domains");
-      yield indices(1);
+      yield indices(0);
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
@@ -552,7 +552,7 @@ module DefaultSparse {
         var prevInd = indices(1);
         f <~> " " <~> prevInd;
         for i in 2.._nnz {
-          if (prevInd(1) != indices(i)(1)) {
+          if (prevInd(0) != indices(i)(0)) {
             f <~> "\n";
           }
           prevInd = indices(i);
@@ -578,7 +578,7 @@ module DefaultSparse {
         var prevInd = dom.indices(1);
         f <~> data(1);
         for i in 2..dom._nnz {
-          if (prevInd(1) != dom.indices(i)(1)) {
+          if (prevInd(0) != dom.indices(i)(0)) {
             f <~> "\n";
           } else {
             f <~> " ";
