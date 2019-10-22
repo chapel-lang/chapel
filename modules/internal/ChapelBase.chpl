@@ -76,6 +76,12 @@ module ChapelBase {
   { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
 
 
+  pragma "object class"
+  pragma "global type symbol"
+  pragma "no object"
+  class _object { }
+
+
   enum iterKind {leader, follower, standalone};
 
 

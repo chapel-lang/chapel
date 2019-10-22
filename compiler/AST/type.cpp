@@ -577,6 +577,9 @@ void initPrimitiveTypes() {
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
+  dtObject                             = new AggregateType(AGGREGATE_CLASS);
+  dtObject->symbol                     = new TypeSymbol("object", dtObject);
+
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
 
@@ -833,7 +836,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 *                                                                             *
 ************************************** | *************************************/
 
-void initChplProgram(DefExpr* objectDef) {
+void initChplProgram() {
   theProgram           = new ModuleSymbol("chpl__Program",
                                           MOD_INTERNAL,
                                           new BlockStmt());
@@ -841,8 +844,6 @@ void initChplProgram(DefExpr* objectDef) {
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
-
-  theProgram->block->insertAtHead(objectDef);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }

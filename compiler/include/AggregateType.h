@@ -281,6 +281,4 @@ extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
 
-DefExpr* defineObjectClass();
-
 #endif

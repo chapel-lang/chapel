@@ -2759,47 +2759,6 @@ void AggregateType::addRootType() {
   }
 }
 
-DefExpr* defineObjectClass() {
-  // The base object class looks like this:
-  //
-  //   class object {
-  //     chpl__class_id chpl__cid;
-  //   }
-  //
-  // chpl__class_id is an int32_t field identifying the classes
-  //  in the program.  We never create the actual field within the
-  //  IR (it is directly generated in the C code).  It might
-  //  be the right thing to do, so I made an attempt at adding the
-  //  field.  Unfortunately, we would need some significant changes
-  //  throughout compilation, and it seemed to me that the it might result
-  //  in possibly more special case code.
-  //
-  // Because we never create the actual field, we have a special case
-  //  for it in TypeSymbol::codegenAggMetadata().  Remember to change
-  //  that special case if we ever change the contents of object or
-  //  if we start creating the field.
-  //
-  DefExpr* retval = buildClassDefExpr("object",
-                                      NULL,
-                                      AGGREGATE_CLASS,
-                                      NULL,
-                                      new BlockStmt(),
-                                      FLAG_UNKNOWN,
-                                      NULL);
-
-  retval->sym->addFlag(FLAG_OBJECT_CLASS);
-
-  // Prevents removal in pruneResolvedTree().
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
-  retval->sym->addFlag(FLAG_NO_OBJECT);
-
-  dtObject = toAggregateType(retval->sym->type);
-
-  INT_ASSERT(isAggregateType(dtObject));
-
-  return retval;
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
