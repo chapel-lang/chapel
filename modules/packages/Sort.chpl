@@ -2816,7 +2816,7 @@ module MSBRadixSort {
 
       // Fill buf with up to max_buf records from the end of this bin.
       while i < end {
-        buf[used_buf+1] <=> A[i];
+        buf[used_buf] <=> A[i];
         used_buf += 1;
         i += 1;
       }
@@ -2838,7 +2838,7 @@ module MSBRadixSort {
       while offsets[curbin] < end {
         // Put buf[j] into its right home
         var j = 0;
-        while used_buf > 0 && j <= used_buf {
+        while used_buf >= 0 && j < used_buf {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // Swap buf[j] into its appropriate bin.
           var offset = offsets[bin];
@@ -2847,8 +2847,8 @@ module MSBRadixSort {
           // Leave buf[j] with the next unsorted item.
           // But offsets[bin] might be in the region we already read.
           if bin == curbin && offset >= bufstart {
-            buf[j] <=> buf[used_buf];
             used_buf -= 1;
+            buf[j] <=> buf[used_buf];
           }
           j += 1;
         }
