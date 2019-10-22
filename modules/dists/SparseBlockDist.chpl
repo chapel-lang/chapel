@@ -281,7 +281,7 @@ class SparseBlockDom: BaseSparseDomImpl {
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
-    for i in locFollowThis(1).these(tag, locFollowThis) do
+    for i in locFollowThis(0).these(tag, locFollowThis) do
       yield i;
   }
 
@@ -442,7 +442,7 @@ class SparseBlockArr: BaseSparseArr {
 
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
-    for i in locFollowThis(1).these(tag, locFollowThis) {
+    for i in locFollowThis(0).these(tag, locFollowThis) {
       yield locArr[localeIndex].dsiAccess(i);
     }
   }
