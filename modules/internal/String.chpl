@@ -1562,19 +1562,30 @@ module String {
     }
 
     /*
-      :args listToJoin: list contaning elements whose string values will be concatenated
+      Same as the varargs version, but with all the strings in a list.
+
+      :arg listToJoin: list contaning elements whose string values will be concatenated
+
+      :returns: A new string, which is the concatenation of all of the strings
+      passed in with the receiving string inserted between them.
+
       .. code-block:: chapel
-      var x = "|".join([1,2,3])
-      writeln(x); //prints "a|10|d"
+
+          var someList = new list(string);
+          someList.append("a");
+          someList.append("10");
+          someList.append("d");
+          var x = "|".join(someList);
+          writeln(x); //prints "a|10|d"
     
     */
 
-    proc join(listToJoin: list) : string {
+    proc join(listToJoin: list(string)) : string {
       return _join(listToJoin);
     }
 
     pragma "no doc"
-    proc _join(listToJoin: list) : string where isArray(listToJoin) {
+    proc _join(listToJoin: list(string)) : string where isList(listToJoin) {
       var s: string;
       var fistFlag: bool = true;
       for el in listToJoin{
