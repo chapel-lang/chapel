@@ -38,15 +38,6 @@ module ExportWrappers {
   type chpl__exportTypeCharPtr = c_ptr(c_char);
   type chpl__exportTypeChplBytes = chpl_bytes;
 
-  //
-  // TODO: Currently, we return strings in C as a `char*`. Since there is no
-  // way to encode any additional information about the buffer, we are
-  // forced to always allocate a new string every time. Presently, this takes
-  // the form of always copying the string.
-  // If the string owns its buffer, then we can assume control and set the
-  // string `isowned` to false - however before we do that we have to verify
-  // that `chpl_free` plays nice with buffers allocated by `chpl_here_alloc`.
-  //
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
     const nBytes = s.numBytes;
     const src = s.c_str():c_void_ptr;
@@ -98,5 +89,5 @@ module ExportWrappers {
     return result;
   }
 
-} // End module "ExternalString".
+} // End module "ExportWrappers".
 

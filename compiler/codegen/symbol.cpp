@@ -2219,16 +2219,21 @@ GenRet FnSymbol::codegenPYXType() {
   std::string returnStmt = "";
   if (retType != dtVoid) {
     if (retType == getBytesWrapperType()) {
+
       // The raw result of the routine call, a "chpl_bytes" wrapper.
       funcCall += "cdef chpl_bytes rdat = ";
+
       // Convert the "chpl_bytes" struct to a Python bytes.
       returnStmt += "\tcdef char* rdata = rdat.data\n";
       returnStmt += "\tcdef Py_ssize_t rsize = rdat.size\n";
       returnStmt += "\tcdef char* v = rdat.data\n";
+
       // Create a new Python bytes that is a copy of the Chapel string.
       returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
+
       // This will free the "chpl_bytes" buffer if required.
       returnStmt += "\tchpl_bytes_free(rdat)\n";
+
     } else if (retType == dtExternalArray &&
              exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";

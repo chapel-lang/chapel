@@ -320,7 +320,7 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   CallExpr* move = new CallExpr(PRIM_MOVE, result, call);
   wrapper->body->insertAtTail(move);
 
-  // Since conversion calls are overloaded
+  // Since conversion calls are overloaded.
   resolveCallAndCallee(call);
 
   return result;
