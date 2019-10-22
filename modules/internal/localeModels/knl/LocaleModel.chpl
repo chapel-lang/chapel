@@ -434,7 +434,7 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      helpSetupLocaleNUMA(this, local_name, numSublocales);
+      helpSetupLocaleNUMA(this, local_name, numSublocales, NumaDomain);
 
       ddr = new unmanaged MemoryLocale(c_sublocid_any, this);
 
