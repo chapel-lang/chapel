@@ -1104,47 +1104,7 @@ def auto_generate_tests():
     path = os.getcwd()
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
-            if args.performance:
-                # track the number of examples being tested
-                logger.write("[Generating tests from the Chapel spec in "
-                        "{0}/spec]".format(home))
-                tmp_file_path = os.path.join(home, "test", 
-                        "spectests.exec.out.tmp")
-                with open(tmp_file_path, "w") as tmp_file:
-                    try:
-                        out = run_command(["make", "spectests"])
-                        tmp_file.write(out)
-                    except:
-                        logger.write("[Error: Failed to generate Spec tests.  "
-                            "Log file: {0}]".format(tmp_file_path))
-                        finish()
-
-                dat_dir = os.path.join(perf_dir, args.performance_description)
-                with cd(test_dir):
-                    if not os.path.isdir(dat_dir):
-                        py3_compat.makedirs(dat_dir, exist_ok=True)
-
-                    logger.write("[Computing stats for spec examples]")
-                    temp_perf_path = os.path.join(home,
-                        "test", "spectests.perfStats.out.tmp")
-                    with open(temp_perf_path, "w") as temp_perf_file:
-                        try:
-                            cmd = os.path.join(util_dir, "test", 
-                                    "computePerfStats")
-                            out = run_command([cmd, "spectests",
-                                dat_dir, os.path.join(home, "test",
-                                "spectests.perfkeys"), tmp_file_path])
-                            temp_perf_file.write(out)
-                        except:
-                            logger.write("[Error: Failed to compute perf stats "
-                                    "for Spectests. Log file: {0}]"
-                                    .format(temp_perf_path))
-                            finish()
-
-                    os.remove(tmp_file_path)
-                    os.remove(temp_perf_path)
-
-            elif not args.gen_graphs:
+            if not args.gen_graphs:
                 logger.write("[Generating tests from the Chapel Spec in "
                         "{0}/spec".format(home))
                 returncode = subprocess.call(["make", "spectests"])
