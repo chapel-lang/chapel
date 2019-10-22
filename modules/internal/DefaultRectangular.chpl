@@ -1405,7 +1405,6 @@ module DefaultRectangular {
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
-      compilerWarning(bounds.type:string);
       on this {
         const allocD = {(...bounds)};
 
