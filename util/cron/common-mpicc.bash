@@ -9,10 +9,14 @@ source $CWD/common.bash
 export CHPL_TASKS=fifo
 export CHPL_TARGET_COMPILER=mpi-gnu
 
-# Load MPI environment module and confirm it has loaded
-echo >&2 module load mpi
-module load mpi
+# Load OpenMPI environment module and confirm it has loaded
+echo >&2 module load gnu-openmpi
+module load gnu-openmpi
 
 set -x
 : confirm mpi module is loaded
-module list -l 2>&1 | grep -E '\bmpi/mpich\b' || exit $?
+module list -l 2>&1 | grep -E -q '\bgnu-openmpi\b' || exit $?
+
+if [[ ${CHPL_RT_OVERSUBSCRIBED:-n} == [1tTyY]* && -z $MPIRUN_CMD ]] ; then
+  export MPIRUN_CMD='mpirun -np %N -map-by node:oversubscribe %C'
+fi
