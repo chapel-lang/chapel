@@ -753,7 +753,7 @@ proc LocBlockCyclicDom.enumerateBlocks() {
   for i in myStarts {
     write(here.id, ": {");
     for param j in 0..rank-1 {
-      if (j != 1) {
+      if (j != 0) {
         write(", ");
       }
       // TODO: support a tuple-oriented iteration of vectors to avoid this?
