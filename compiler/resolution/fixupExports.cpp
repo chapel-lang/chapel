@@ -410,3 +410,4 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
 
   return;
 }
+
