@@ -30,7 +30,7 @@ config param LayoutCSDefaultToSorted = true;
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
-  proc key(idx: _tuple) { return (idx(2), idx(1));}
+  proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
 pragma "no doc"
@@ -486,9 +486,9 @@ class CSDom: BaseSparseDomImpl {
       else if newIndIdx >= indsDom.low && i == newLoc {
         // Put the new guy in
         if this.compressRows {
-          idx[i] = inds[newIndIdx][2];
-        } else {
           idx[i] = inds[newIndIdx][1];
+        } else {
+          idx[i] = inds[newIndIdx][0];
         }
         newIndIdx -= 1;
         if newIndIdx >= indsDom.low then
@@ -511,9 +511,9 @@ class CSDom: BaseSparseDomImpl {
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
       if this.compressRows {
-        cursor = ind[1];
+        cursor = ind[0];
       } else {
-        cursor = ind[2];
+        cursor = ind[1];
       }
       if cursor == prevCursor then cursorCnt += 1;
       else {
