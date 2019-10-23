@@ -8,6 +8,7 @@
 // problems, but see failures with 3 entries where no resizing should
 // be done).
 //
+use IO;
 
 config const ENTRIES = 15,
              debug = false;

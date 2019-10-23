@@ -1,3 +1,5 @@
+use IO;
+
 var s: string;
 
 write("Enter a roman numeral: ");

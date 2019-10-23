@@ -1,3 +1,5 @@
+use IO;
+
 proc test(param expect, args ...)
 {
   param isPrim = _can_stringify_direct(args);

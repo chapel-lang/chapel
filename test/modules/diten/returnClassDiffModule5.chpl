@@ -1,5 +1,7 @@
 pragma "error mode fatal"
 module M1 {
+  private use IO;
+
   var a = 1;
   class C {
     var b = 2;
