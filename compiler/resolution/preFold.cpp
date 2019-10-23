@@ -2384,7 +2384,7 @@ static AggregateType* createAndInsertFunParentClass(FnSymbol* fn,
   if (fn == NULL) {
     call->getModule()->block->insertAtHead(new DefExpr(parentTs));
   } else {
-    fn->defPoint->insertBefore(new DefExpr(parentTs));
+    fn->getModule()->block->insertAtHead(new DefExpr(parentTs));
   }
 
   parent->dispatchParents.add(dtObject);
