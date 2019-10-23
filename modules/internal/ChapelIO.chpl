@@ -844,6 +844,16 @@ module ChapelIO {
     f <~> new ioLiteral("LOCALE") <~> chpl_id();
   }
 
+  /* Errors can be printed out. In that event, they will
+     show information about the error including the result
+     of calling :proc:`Error.message`.
+  */
+  pragma "no doc"
+  override proc Error.writeThis(f) {
+    var description = chpl_describe_error(this);
+    f <~> description;
+  }
+
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
   proc write(const args ...?n) {
     try! stdout.write((...args));

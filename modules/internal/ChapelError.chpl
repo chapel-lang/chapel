@@ -51,15 +51,6 @@ module ChapelError {
     proc message() {
       return "";
     }
-
-    /* Errors can be printed out. In that event, they will
-       show information about the error including the result
-       of calling :proc:`Error.message`.
-     */
-    override proc writeThis(f) {
-      var description = chpl_describe_error(this);
-      f <~> description;
-    }
   }
 
   /*
