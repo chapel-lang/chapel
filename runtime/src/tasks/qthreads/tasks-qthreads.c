@@ -1018,14 +1018,6 @@ uint32_t chpl_task_getMaxPar(void) {
     return (uint32_t) qthread_num_workers();
 }
 
-c_sublocid_t chpl_task_getNumSublocales(void)
-{
-    // FIXME: What we really want here is the number of NUMA
-    // sublocales we are supporting.  For now we use the number of
-    // shepherds as a proxy for that.
-    return (c_sublocid_t) qthread_num_shepherds();
-}
-
 size_t chpl_task_getCallStackSize(void)
 {
     PROFILE_INCR(profile_task_getCallStackSize,1);

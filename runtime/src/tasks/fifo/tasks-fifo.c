@@ -829,10 +829,6 @@ uint32_t chpl_task_getMaxPar(void) {
   return max;
 }
 
-c_sublocid_t chpl_task_getNumSublocales(void) {
-  return 0;
-}
-
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
   return & get_current_ptask()->chpl_data.prvdata;
 }
