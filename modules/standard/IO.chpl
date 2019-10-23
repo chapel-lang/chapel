@@ -6323,7 +6323,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
       if r then delete r;
     }
 
-    for i in 1..argType.size {
+    for i in 0..argType.size-1 {
       argType(i) = QIO_CONV_UNK;
     }
 
