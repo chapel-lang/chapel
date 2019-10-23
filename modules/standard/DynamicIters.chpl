@@ -183,7 +183,7 @@ iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=1)
 
 //Leader
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 1)
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 0)
   where tag == iterKind.leader
   {
     //caller's responsibility to use a valid chunk size
@@ -196,8 +196,8 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
     assert(parDim <= c.rank, "parDim must be a dimension of the domain");
     assert(parDim > 0, "parDim must be a positive integer");
 
-    var parDimDim = c.dim(parDim);
-    var parDimOffset = c.dim(parDim).low;
+    var parDimDim = c.dim(parDim+1);
+    var parDimOffset = c.dim(parDim+1).low;
 
     for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
       //Set the new range based on the tuple the dynamic 1d iterator yields
