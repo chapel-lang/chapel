@@ -1,4 +1,5 @@
 // taken from test/domains/methods/shape.chpl
+use IO;
 
 // OpaqueDom
 var opaqueDom: domain(opaque);
