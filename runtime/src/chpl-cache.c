@@ -2725,20 +2725,6 @@ void chpl_cache_do_init(void)
 
 void chpl_cache_init(void) {
 
-  // Take default CHPL_CACHE_REMOTE value from the environment if it is set.
-  /*char* p;
-  if ((p = getenv("CHPL_CACHE_REMOTE")) != NULL) {
-    if( p[0] == 'y' || p[0] == 'Y' || p[0] == '1' ) CHPL_CACHE_REMOTE = 1;
-    else if( p[0] == 'n' || p[0] == 'N' || p[0] == '0' ) CHPL_CACHE_REMOTE = 0;
-    else chpl_warning("unknown setting for CHPL_CACHE_REMOTE, try 0 or 1", 0, NULL);
-  }
-
-  // Don't enable the cache for 1-locale runs.
-  if( chpl_numNodes <= 1 ) {
-    CHPL_CACHE_REMOTE = 0;
-  }*/
-
-  // Don't initialize TLS if the cache is not enabled.
   if( ! chpl_cache_enabled() ) {
     return;
   }
