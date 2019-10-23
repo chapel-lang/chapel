@@ -282,8 +282,8 @@ module DateTime {
   /* A `date` object representing the current day */
   proc type date.today() {
     const timeSinceEpoch = getTimeOfDay();
-    const td = new timedelta(seconds=timeSinceEpoch(1),
-                             microseconds=timeSinceEpoch(2));
+    const td = new timedelta(seconds=timeSinceEpoch(0),
+                             microseconds=timeSinceEpoch(1));
 
     return unixEpoch.getdate() + td;
   }
@@ -922,11 +922,11 @@ module DateTime {
       return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=timeSinceEpoch(2));
+                          microsecond=timeSinceEpoch(1));
     } else {
       const timeSinceEpoch = getTimeOfDay();
-      const td = new timedelta(seconds=timeSinceEpoch(1),
-                               microseconds=timeSinceEpoch(2));
+      const td = new timedelta(seconds=timeSinceEpoch(0),
+                               microseconds=timeSinceEpoch(1));
       const utcNow = unixEpoch + td;
 
       return (utcNow + tz!.utcoffset(utcNow)).replace(tzinfo=tz);
@@ -936,8 +936,8 @@ module DateTime {
   /* Return a `datetime` value representing the current time and date in UTC */
   proc type datetime.utcnow() {
     const timeSinceEpoch = getTimeOfDay();
-    const td = new timedelta(seconds=timeSinceEpoch(1),
-                             microseconds=timeSinceEpoch(2));
+    const td = new timedelta(seconds=timeSinceEpoch(0),
+                             microseconds=timeSinceEpoch(1));
     return unixEpoch + td;
   }
 
