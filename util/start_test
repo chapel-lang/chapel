@@ -935,7 +935,7 @@ def set_up_performance_testing_B():
 
         compperf_test_name += args.comp_performance_description
 
-        temp_dat_dir = os.path.join(comp_perf_dir, "tempCompPerfDatFiles", "")
+        temp_dat_dir = os.path.join(chpl_test_tmp_dir, "tempCompPerfDatFiles", "")
         os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_dir
         #remove it if it wasn't cleaned up last time
         if os.path.isdir(temp_dat_dir):
