@@ -958,6 +958,20 @@ module Bytes {
             thisIdx += nbytes; //skip over the malformed bytes
             continue;
           }
+          else if errors == decodePolicy.replace {
+            // Replacement can cause the string to be larger than initially
+            // expected. The UTF8 replacement character is 0xfffd. If it is used
+            // in place of a single byte, we may overflow
+            (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
+                                                     decodedIdx+2);
+
+            ret.buff[decodedIdx] = 0xff:byteType;
+            ret.buff[decodedIdx+1] = 0xfd:byteType;
+
+            thisIdx += nbytes;
+            decodedIdx += 2;
+            continue;
+          }
         }
 
         // do a naive copy
