@@ -2603,10 +2603,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
   if (throws)
     parent_method->throwsErrorInit();
 
-  // Because this function type needs to be globally visible
-  // (because we don't know the modules it will be passed to), we put
-  // it at the highest scope
-  theProgram->block->body.insertAtTail(new DefExpr(parent_method));
+  parent->symbol->getModule()->block->insertAtHead(new DefExpr(parent_method));
 
   normalize(parent_method);
 
