@@ -1107,7 +1107,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += "\n";
     return res;
   } else if (t->symbol->hasFlag(FLAG_REF) &&
-             t->getValType() == getBytesWrapperType()) {
+             t->getValType() == exportTypeChplBytes) {
     std::string res;
 
     // First, check to see if the input type is the Python "bytes" type.
@@ -2218,7 +2218,7 @@ GenRet FnSymbol::codegenPYXType() {
   // Return statement, if applicable
   std::string returnStmt = "";
   if (retType != dtVoid) {
-    if (retType == getBytesWrapperType()) {
+    if (retType == exportTypeChplBytes) {
 
       // The raw result of the routine call, a "chpl_bytes" wrapper.
       funcCall += "cdef chpl_bytes rdat = ";

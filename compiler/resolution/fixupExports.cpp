@@ -32,13 +32,18 @@
 #include "wellknown.h"
 
 #include <map>
+#include <utility>
 #include <vector>
 
 static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<const char*, FnSymbol*> conversionCallMap;
 
+Type* exportTypeCharPtr = NULL;
+Type* exportTypeChplBytes = NULL;
+
 std::set<FnSymbol*> exportedStrRets;
 
+static void resolveExportWrapperTypeAliases(void);
 static void attemptFixups(FnSymbol* fn);
 static Type* maybeUnwrapRef(Type* t);
 static Type* getResolveTypeAlias(const char* mod, const char* alias);
@@ -65,9 +70,45 @@ FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
   return NULL;
 }
 
+static void resolveExportWrapperTypeAliases(void) {
+  static bool resolved = false;
+  if (resolved) { return; }
+  resolved = true;
+
+  const char* module = "ExportWrappers";
+
+  typedef std::pair<Type**, const char*> AliasPair;
+  const std::vector<AliasPair> aliases = {
+    { &exportTypeCharPtr, "chpl__exportTypeCharPtr" },
+    { &exportTypeChplBytes, "chpl__exportTypeChplBytes" }
+  };
+
+  //
+  // Loop through all of the currently existing export wrapper types and
+  // resolve their type aliases stored in the "ExportWrappers" internal
+  // module.
+  //
+  std::vector<AliasPair>::const_iterator it;
+  for (it = aliases.begin(); it != aliases.end(); ++it) {
+    *(it->first) = getResolveTypeAlias(module, it->second);
+  }
+
+  return;
+}
+
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
+
+  //
+  // We have to resolve type aliases for export wrapper types even if we
+  // don't need to perform any fixups. This is because some of these
+  // wrapper types might be used at code generation.
+  //
+  resolveExportWrapperTypeAliases();
+
   const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
   if (!isLibraryCompile) { return; }
+
+  resolveExportWrapperTypeAliases();
 
   for_vector(FnSymbol, fn, fns) {
     fixupExportedFunction(fn);
@@ -79,6 +120,11 @@ void fixupExportedFunction(FnSymbol* fn) {
   attemptFixups(fn);
 }
 
+//
+// Note that this is only valid to call at the same point in resolution where
+// the "fixupExports" routine is being called. At any time after, all
+// type aliases have already been resolved.
+//
 Type* getResolveTypeAlias(const char* mod, const char* alias) {
   ModuleSymbol* msym = NULL;
   Symbol* asym = NULL;
@@ -111,6 +157,8 @@ Type* getResolveTypeAlias(const char* mod, const char* alias) {
               alias, mod, __FUNCTION__);
   }
 
+  SET_LINENO(asym);
+
   SymExpr* rctx = new SymExpr(asym);
 
   // Insert into tree and resolve, just in case.
@@ -121,24 +169,6 @@ Type* getResolveTypeAlias(const char* mod, const char* alias) {
   INT_ASSERT(asym->type != dtUnknown);
   result = asym->type;
 
-  return result;
-}
-
-Type* getBytesWrapperType(void) {
-  static Type* result = NULL;
-
-  if (result != NULL) { return result; }
-  result = getResolveTypeAlias("ExportWrappers",
-                               "chpl__exportTypeChplBytes");
-  return result;
-}
-
-Type* getCharPtrType(void) {
-  static Type* result = NULL;
-
-  if (result != NULL) { return result; }
-  result = getResolveTypeAlias("ExportWrappers",
-                               "chpl__exportTypeCharPtr");
   return result;
 }
 
@@ -289,10 +319,10 @@ static FnSymbol* createWrapper(FnSymbol* fn) {
 //
 static Type* getTypeForFixup(Type* t, bool ret) {
   if (t == dtString) {
-    Type* result = ret ? getCharPtrType() : dtStringC;
+    Type* result = ret ? exportTypeCharPtr : dtStringC;
     return result;
   } else if (t == dtBytes) {
-    return getBytesWrapperType();
+    return exportTypeChplBytes;
   } else {
     INT_FATAL("Type %s is unsupported in %s", t->name(), __FUNCTION__);
   }

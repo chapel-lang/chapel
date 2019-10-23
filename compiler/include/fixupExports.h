@@ -25,12 +25,15 @@
 class FnSymbol;
 class Type;
 
+//
+// These are only initialized _after_ "fixupExportedFunctions" has been called
+// during resolution.
+//
+extern Type* exportTypeCharPtr;
+extern Type* exportTypeChplBytes;
+
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
 void fixupExportedFunction(FnSymbol* fn);
-
-// This may only be called _after_ resolution has occurred.
-Type* getCharPtrType(void);
-Type* getBytesWrapperType(void);
 
 #endif
