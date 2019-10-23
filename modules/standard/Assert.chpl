@@ -30,6 +30,7 @@
 */
 module Assert {
 
+  private use IO;
 
 /*
   Assert that a boolean condition is true.  If it is false, prints
