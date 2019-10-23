@@ -710,6 +710,11 @@ module ChapelIO {
   }
 
   pragma "no doc"
+  override proc locale.writeThis(f) {
+    f <~> name;
+  }
+
+  pragma "no doc"
   proc _ddata.writeThis(f) {
     compilerWarning("printing _ddata class");
     f <~> "<_ddata class cannot be printed>";
