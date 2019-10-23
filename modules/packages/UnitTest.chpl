@@ -411,7 +411,8 @@ module UnitTest {
         else {
           tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
         }
-        for i in 1..min(len1,len2) {
+        const low = if (seq_type_name == "Array" || seq_type_name == "String") then 1 else 0;
+        for i in low..#min(len1,len2) {
           var item1 = seq1[i],
               item2 = seq2[i];
           if item1 != item2 {
