@@ -183,7 +183,7 @@ iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=1)
 
 //Leader
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 0)
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 1)
   where tag == iterKind.leader
   {
     //caller's responsibility to use a valid chunk size
@@ -196,8 +196,8 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
     assert(parDim <= c.rank, "parDim must be a dimension of the domain");
     assert(parDim > 0, "parDim must be a positive integer");
 
-    var parDimDim = c.dim(parDim+1);
-    var parDimOffset = c.dim(parDim+1).low;
+    var parDimDim = c.dim(parDim);
+    var parDimOffset = c.dim(parDim).low;
 
     for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
       //Set the new range based on the tuple the dynamic 1d iterator yields
@@ -211,7 +211,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
       //rank-change slice the domain along parDim
       var tempTup = tempDom.dims();
       //change the value of the parDim elem of the tuple to the new range
-      tempTup(parDim) = newRange;
+      tempTup(parDim-1) = newRange;
 
       yield tempTup;
     }
@@ -374,7 +374,7 @@ where tag == iterKind.leader
     // Rank-change slice the domain along parDim
     var tempTup = tempDom.dims();
     // Change the value of the parDim elem of the tuple to the new range
-    tempTup(parDim) = newRange;
+    tempTup(parDim-1) = newRange;
 
     yield tempTup;
   }
@@ -665,7 +665,7 @@ where tag == iterKind.leader
     // Rank-change slice the domain along parDim
     var tempTup = tempDom.dims();
     // Change the value of the parDim elem of the tuple to the new range
-    tempTup(parDim) = newRange;
+    tempTup(parDim-1) = newRange;
 
     yield tempTup;
   }
