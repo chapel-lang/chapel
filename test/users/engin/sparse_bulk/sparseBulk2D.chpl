@@ -4,9 +4,19 @@ config const N = 8;
 
 const ParentDom = {0..#N, 0..#N};
 
-config type layoutType = DefaultDist;
-var layout = new unmanaged layoutType();
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
+enum layoutTypes {coo, csr, csc};
+config param layoutType = layoutTypes.coo;
+
+var csrDom: sparse subdomain(ParentDom) dmapped CS(compressRows=true);
+var cscDom: sparse subdomain(ParentDom) dmapped CS(compressRows=false);
+var cooDom: sparse subdomain(ParentDom);
+
+var SparseDom = if layoutType == layoutTypes.csr then 
+                  csrDom
+               else if layoutType == layoutTypes.csc then
+                  cscDom
+               else
+                  cooDom;
 
 var SparseMat: [SparseDom] int;
 

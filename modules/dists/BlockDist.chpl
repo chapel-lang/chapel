@@ -990,13 +990,14 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
+inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.dsiMember(i);
+}
+
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
-      if boundsChecking then
-        if !dom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableBlockLazyRAD {
         if myLocArr!.locRAD == nil {

@@ -6784,6 +6784,7 @@ static void resolveNew(CallExpr* newExpr) {
   //  dtUnmanaged for 'new unmanaged'
   //  owned record for 'new owned'
   //  shared record for 'new shared'
+  //  dtAnyManagementNilable to request nilable variant
   Type* manager = NULL;
 
   resolveNewSetupManaged(newExpr, manager);
@@ -6838,7 +6839,8 @@ static void checkManagerType(Type* t) {
   //  - unmanaged or unmanagedNilable
   //  - owned or DecoratedClassType(owned,?)  (or other management type)
   if (t == dtBorrowed || t == dtBorrowedNilable ||
-      t == dtUnmanaged || t == dtUnmanagedNilable) {
+      t == dtUnmanaged || t == dtUnmanagedNilable ||
+      t == dtAnyManagementNilable) {
     return; // OK
   }
 
@@ -6868,26 +6870,20 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
 
+      bool makeNilable = (manager == dtAnyManagementNilable ||
+                          isNilableClassType(type));
+
       // set manager for new t(1,2,3)
       // where t is e.g Owned(MyClass)
       // or for t is unmanaged(MyClass)
-      if (manager == NULL) {
+      if (manager == NULL || manager == dtAnyManagementNilable) {
         if (isManagedPtrType(type)) {
           manager = getManagedPtrManagerType(type);
-          if (isNilableClassType(type))
-            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
-
         } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
           if (dt->isUnmanaged()) {
-            if (isNilableClassType(dt))
-              manager = dtUnmanagedNilable;
-            else
-              manager = dtUnmanaged;
+            manager = dtUnmanaged;
           } else {
-            if (isNilableClassType(dt))
-              manager = getDecoratedClass(dtOwned, CLASS_TYPE_MANAGED_NILABLE);
-            else
-              manager = dtOwned;
+            manager = dtOwned;
           }
         } else if (isClass(type) && !fLegacyClasses) {
           manager = dtBorrowed;
@@ -6905,6 +6901,18 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // only the canonical class types.
       if (manager) {
         AggregateType* at = toAggregateType(type);
+
+        // if needed, make the manager nilable
+        if (makeNilable) {
+          if (isManagedPtrType(manager))
+            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
+          else if (manager == dtUnmanaged)
+            manager = dtUnmanagedNilable;
+          else if (manager == dtBorrowed)
+            manager = dtBorrowedNilable;
+          else
+            INT_FATAL("case not handled");
+        }
 
         checkManagerType(manager);
 

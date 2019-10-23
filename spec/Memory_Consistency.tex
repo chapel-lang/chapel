@@ -167,8 +167,8 @@ number of tasks (\chpl{waitFor($t_1$..$t_n$)}). In particular:
   \item \chpl{forall} (including promotion) creates some number of
 tasks $m$ to execute the $n$ iterations of the loop
 
-(\chpl{$t_i$ =
-begin\{some-loop-bodies\}} for each task $i=1$..$m$) and waits for
+(\chpl{$t_i$ = begin\{some-loop-bodies\}} for each task $i=1$..$m$) 
+and waits for
 them to complete (\chpl{waitFor($t_1$..$t_m$)}).  The number of tasks $m$
 is defined by the implementation of the parallel iterator (See
 Section~\ref{Iterators} for details on iterators).
@@ -235,14 +235,15 @@ Every SC atomic operation gets its value from the last SC atomic
 operation before it to the same address in the total order $<_m$:
 %% sungeun: Brad didn't like max, but I couldn't think of anything better
 \begin{itemize}
-  \item Value of $A_{sc}(a)$ = Value of $max_{<_m} (
-  A_{sc}'(a)|A_{sc}'(a) <_m A_{sc}(a) ) $
+  \item Value of $A_{sc}(a)$ = Value of
+    $max_{<_m} ( A_{sc}'(a)|A_{sc}'(a) <_m A_{sc}(a) ) $
 \end{itemize}
 
 For data-race-free programs, every load gets its value from the last
 store before it to the same address in the total order $<_m$:
 \begin{itemize}
-  \item Value of $L(a)$ = Value of $max_{<_m}$ $( S(a)|S(a)$ $<_m$ $L(a)$ or $S(a)$ $<_p$ $L(a) )$
+  \item Value of $L(a)$ = Value of
+        $max_{<_m}$ $( S(a)|S(a)$ $<_m$ $L(a)$ or $S(a)$ $<_p$ $L(a) )$
 \end{itemize}
 
 For data-race-free programs, loads and stores are ordered with SC
@@ -639,10 +640,12 @@ unordered operations. This follows from our original definition of
 data race.
 
 \begin{chapel}
+\begin{verbatim}
 var x: int = 0;
 unordered_store(x, 10);
 unordered_store(x, 20);
 writeln(x);
+\end{verbatim}
 \end{chapel}
 
 The value of \textit{x} at the end of this program could be 0, 10, or 20. As a
@@ -663,6 +666,7 @@ optimization. For example, a program computing a permutation on an array might
 want to move data between two arrays without requiring any ordering:
 
 \begin{chapel}
+\begin{verbatim}
 const n = 10;
 // P is a permutation on 1..n, in this case reversing its input
 var P = for i in 1..n by -1 do i;
@@ -674,6 +678,7 @@ var B:[1..n] int;
 for i in 1..n {
   unordered_store(B[P[i]], A[i]);
 }
+\end{verbatim}
 \end{chapel}
 
 
@@ -780,6 +785,7 @@ for i in 1..n {
 
   The program
 \begin{chapel}
+\begin{verbatim}
 var A: [1..100] real;
 var done(*\texttt{\$}*): sync int;           // initially empty
 cobegin {
@@ -795,9 +801,11 @@ cobegin {
     done(*\texttt{\$}*) = numToWrite;        // fence writes to A and signal done
   }
 }
+\end{verbatim}
 \end{chapel}
   produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 A[1] = 0.1
 A[2] = 0.2
 A[3] = 0.3
@@ -812,6 +820,7 @@ A[11] = 1.1
 A[12] = 1.2
 A[13] = 1.3
 A[14] = 1.4
+\end{verbatim}
 \end{chapelprintoutput}
 %\end{chapelexample}
 \end{example}
@@ -823,30 +832,36 @@ normal variable waiting for another task to write to that variable.  The behavio
 the following code is undefined:
 
 \begin{chapelpre}
+\begin{verbatim}
 if false { // }
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var x: int;
 cobegin with (ref x) {
   while x != 1 do ;  // INCORRECT spin wait
   x = 1;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 // {
 }
+\end{verbatim}
 \end{chapelnoprint}
 In contrast, spinning on a synchronization variable has well-defined
 behavior:
 \begin{chapel}
-var x(*\texttt{\$}*): sync int;
+\begin{verbatim}
+var x$: sync int;
 cobegin {
-  while x(*\texttt{\$}*).readXX() != 1 do ;  // spin wait
-  x(*\texttt{\$}*).writeXF(1);
+  while x$.readXX() != 1 do ;  // spin wait
+  x$.writeXF(1);
 }
+\end{verbatim}
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 
 In this code, the first statement in the cobegin statement executes a
 loop until the variable is set to one.  The second statement in the
@@ -859,14 +874,14 @@ Atomic variables provide an alternative means to spin-wait.
 For example:
 
 \begin{chapel}
+\begin{verbatim}
 var x: atomic int;
 cobegin {
   while x.read() != 1 do ;  // spin wait - monopolizes processor
   x.write(1);
 }
+\end{verbatim}
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 
 \end{chapelexample}
 
@@ -880,14 +895,14 @@ wait loop above, waitFor will allow other tasks to be scheduled. For
 example:
 
 \begin{chapel}
+\begin{verbatim}
 var x: atomic int;
 cobegin {
   x.waitFor(1);
   x.write(1);
 }
+\end{verbatim}
 \end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
 
 \end{chapelexample}
 

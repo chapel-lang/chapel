@@ -113,7 +113,7 @@ studies/bale/histogram/histo-atomics.ml-time.graph
 studies/bale/indexgather/ig.ml-time.graph
 
 # suite: <empty>
-# suite: Studies (time)
+# suite: Studies
 studies/nbody/md.ml-time.graph
 reductions/vass/reductions-perf.ml-time.graph
 parallel/taskCompare/elliot/taskSpawn.ml-time.graph
@@ -144,3 +144,4 @@ performance/array/distCreate-small-init.ml-perf.graph
 performance/array/distCreate-small-deinit.ml-perf.graph
 performance/array/distCreate-large-init.ml-perf.graph
 performance/array/distCreate-large-deinit.ml-perf.graph
+library/packages/Sort/performance/dist-performance.ml-perf.graph

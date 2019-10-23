@@ -90,11 +90,13 @@ A domain map can be specified explicitly by
 providing a \emph{dmap value} in a \chpl{dmapped} clause:
 
 \begin{syntax}
+\begin{verbatim}
 mapped-domain-type:
   domain-type `dmapped' dmap-value
 
 dmap-value:
   expression
+\end{verbatim}
 \end{syntax}
 
 A dmap value consists of an instance of a domain map class
@@ -108,8 +110,10 @@ which holds the domain map instance.
 \begin{example}
 The code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var MyBlockDist: dmap(Block(rank=2));
+\end{verbatim}
 \end{chapel}
 declares a variable capable of storing dmap values
 for a two-dimensional Block distribution.
@@ -124,8 +128,10 @@ in the standard library documentation. See:
 \begin{example}
 The code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var MyBlockDist: dmap(Block(rank=2)) = new dmap(new Block({1..5,1..6}));
+\end{verbatim}
 \end{chapel}
 creates a dmap value wrapping a two-dimensional Block distribution with a
 bounding box of \chpl{\{1..5, 1..6\}} over all of the locales.
@@ -134,9 +140,11 @@ bounding box of \chpl{\{1..5, 1..6\}} over all of the locales.
 \begin{example}
 The code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var MyBlockDist = new dmap(new Block({1..5,1..6}));
 type MyBlockedDom = domain(2) dmapped MyBlockDist;
+\end{verbatim}
 \end{chapel}
 defines a two-dimensional rectangular domain type
 that is mapped using a Block distribution.
@@ -151,13 +159,17 @@ instance of \chpl{dmap} implicitly.
 \begin{example}
 The code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 type BlockDom = domain(2) dmapped Block({1..5,1..6});
+\end{verbatim}
 \end{chapel}
 is equivalent to
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 type BlockDom = domain(2) dmapped new dmap(new Block({1..5,1..6}));
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -174,9 +186,11 @@ has a default domain map.
 \begin{example}
 In the following code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var MyDomLiteral = {1..2,1..3};
 var MyBlockedDom: domain(2) dmapped Block({1..5,1..6}) = MyDomLiteral;
+\end{verbatim}
 \end{chapel}
 \chpl{MyDomLiteral} is given the inferred type of the domain literal
 and so will be mapped using a default map.
@@ -188,16 +202,20 @@ A domain value's map can be changed explicitly with a \chpl{dmapped} clause,
 in the same way as a domain type's map.
 
 \begin{syntax}
+\begin{verbatim}
 mapped-domain-expression:
   domain-expression `dmapped' dmap-value
+\end{verbatim}
 \end{syntax}
 
 \begin{example}
 In the following code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var MyBlockedDomLiteral1 = {1..2,1..3} dmapped new dmap(new Block({1..5,1..6}));
 var MyBlockedDomLiteral2 = {1..2,1..3} dmapped Block({1..5,1..6});
+\end{verbatim}
 \end{chapel}
 both \chpl{MyBlockedDomLiteral1} and \chpl{MyBlockedDomLiteral2}
 will be mapped using a Block distribution.
@@ -215,9 +233,11 @@ over which the array was declared.
 \begin{example}
 In the code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var Dom: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
 var MyArray: [Dom] real;
+\end{verbatim}
 \end{chapel}
 the domain map used for \chpl{MyArray} is the Block
 distribution from the type of \chpl{Dom}.
@@ -237,9 +257,11 @@ determined by its type and so does not change upon a domain assignment.
 \begin{example}
 In the code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var Dom1: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
 var Dom2: domain(2) = Dom1;
+\end{verbatim}
 \end{chapel}
 \chpl{Dom2} is mapped using the default distribution, despite
 \chpl{Dom1} having a Block distribution.
@@ -248,9 +270,11 @@ var Dom2: domain(2) = Dom1;
 \begin{example}
 In the code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 var Dom1: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
 var Dom2 = Dom1;
+\end{verbatim}
 \end{chapel}
 \chpl{Dom2} is mapped using the same distribution as \chpl{Dom1}.
 This is because the declaration of \chpl{Dom2} lacks an explicit
