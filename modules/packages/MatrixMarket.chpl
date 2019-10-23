@@ -174,8 +174,8 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
    var (nrows, poslast) = (-1,-1);
    var n_cols = -1;
 
-   const DmatHighRow = high(Dmat)(1);
-   const DmatHighCol = high(Dmat)(2);
+   const DmatHighRow = high(Dmat)(0);
+   const DmatHighCol = high(Dmat)(1);
 
    for r in 1..DmatHighRow {
      const dom = 1..DmatHighCol;
