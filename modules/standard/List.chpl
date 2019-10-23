@@ -1229,7 +1229,7 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
-    proc sort(comparator=Sort.defaultComparator) {
+    proc sort(comparator:?t=Sort.defaultComparator) {
       on this {
         _enter();
 
