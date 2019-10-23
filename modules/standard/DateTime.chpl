@@ -950,7 +950,7 @@ module DateTime {
       return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=t(2));
+                          microsecond=t(1));
     } else {
       var dt = datetime.utcfromtimestamp(timestamp);
       return (dt + tz!.utcoffset(dt)).replace(tzinfo=tz);
