@@ -608,7 +608,7 @@ module ChapelDistribution {
     }
 
     //basic DSI functions
-    proc dsiDim(d: int) { return parentDom.dim(d); }
+    proc dsiDim(d: int) { return parentDom.dim(d+1); }
     proc dsiDims() { return parentDom.dims(); }
     proc dsiNumIndices { return getNNZ(); }
     proc dsiSize { return getNNZ(); }
