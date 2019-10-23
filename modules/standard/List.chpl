@@ -1305,7 +1305,7 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(1) do
+        for i in chunk(0) do
           yield this[i + 1];
       }
     }
