@@ -25,7 +25,7 @@
 #endif
 
 #include "resolution.h"
-#include "view.h"
+
 #include "AstCount.h"
 #include "astutil.h"
 #include "build.h"
@@ -6279,10 +6279,6 @@ static void moveHaltMoveIsUnacceptable(CallExpr* call) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
       if (fn->getReturnSymbol() != lhsSym) {
-        printf("%s\n", "Displaying LHS");
-        nprint_view(lhsSym);
-        printf("%s\n", "Displaying RHS");
-        nprint_view(rhs);
         USR_FATAL(call, "illegal assignment of value to type");
 
       } else if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) == false) {
