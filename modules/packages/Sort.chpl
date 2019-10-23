@@ -1825,6 +1825,12 @@ module TwoArrayPartitioning {
     }
   }
 
+  record TwoArrayDistSortPerBucketTaskStartComparator {
+    proc key(arg: TwoArrayDistSortPerBucketTask) {
+      return arg.start;
+    }
+  }
+
   record TwoArrayDistSortPerBucketTask {
     var start: int;
     var size: int;
@@ -1885,74 +1891,36 @@ module TwoArrayPartitioning {
   }
 
   record TwoArrayDistSortTask {
-    var perBucket: c_array(TwoArrayDistSortPerBucketTask, maxBuckets);
-    var firstBucket: int;
-    var lastBucket: int;
+    var tasks: list(TwoArrayDistSortPerBucketTask);
 
-    // Create one with empty tasks
-    proc init() {
-      this.firstBucket = max(int);
-      this.lastBucket = -1;
-    }
+    // Create an empty one
+    proc init() { }
     // Create one with just 1 bucket
     proc init(start:int, size:int, startbit:int,
               firstLocaleId:int, lastLocaleId:int) {
       var t = new TwoArrayDistSortPerBucketTask(start, size, startbit,
                                                 firstLocaleId, lastLocaleId,
                                                 false);
+      assert(!t.isEmpty());
       this.complete();
-      this.firstBucket = 0;
-      this.lastBucket = 0;
-      this.perBucket[0] = t;
+      tasks.append(t);
     }
-    proc addTaskForBucket(bkt:int,
-                          start:int, size:int, startbit:int,
-                          firstLocaleId:int, lastLocaleId:int,
-                          useSecondState:bool) {
-
-      var t = new TwoArrayDistSortPerBucketTask(start, size, startbit,
-                                                firstLocaleId, lastLocaleId,
-                                                useSecondState);
-      this.perBucket[bkt] = t;
-      if this.firstBucket > bkt then
-        this.firstBucket = bkt;
-      if this.lastBucket < bkt then
-        this.lastBucket = bkt;
-
-    }
-
     proc writeThis(f) {
       f <~> "TwoArrayDistSortTask";
-      f <~> " firstBucket=" <~> firstBucket;
-      f <~> " lastBucket=" <~> lastBucket;
-      for i in 0..#maxBuckets {
-        if !perBucket[i].isEmpty() {
-          f <~> " bin=";
-          f <~> i;
-          f <~> " ";
-          f <~> perBucket[i];
-        }
+      for t in tasks {
+        f <~> " ";
+        f <~> t;
       }
     }
     proc isEmpty() {
-      if firstBucket > lastBucket {
-        return true;
-      }
-      for bktId in firstBucket..lastBucket {
-        if !perBucket[bktId].isEmpty() {
-          return false;
-        }
-      }
-      return true;
+      return tasks.isEmpty();
     }
-    // yield (loc, locId, bktId) for each non-empty bucket
+    // yield (loc, locId, task) for each non-empty bucket
     // loc is the locale "owning" the bucket.
-    iter bucketLocalesAndIds(A) {
-      for bktId in firstBucket..lastBucket {
-        if !perBucket[bktId].isEmpty() {
-          const locId = perBucket[bktId].firstLocaleId;
-          yield (A.targetLocales()[locId], locId, bktId);
-        }
+    iter localesAndTasks(A) {
+      for t in tasks {
+        const locId = t.firstLocaleId;
+        yield (A.targetLocales()[locId], locId, t);
       }
     }
   }
@@ -2514,41 +2482,40 @@ module TwoArrayPartitioning {
     }
 
     // TODO: use something more like distributed bag for these
-    var distTasks: list(TwoArrayDistSortTask, parSafe=true);
-    var smallTasksPerLocale: [0..#numLocales] list(TwoArraySortTask,
-                                                   parSafe=true);
+    var distTask: TwoArrayDistSortTask =
+      new TwoArrayDistSortTask(start_n, end_n - start_n + 1,
+                               startbit,
+                               0, state1.numLocales-1);
+    var nextDistTaskElts: list(TwoArrayDistSortPerBucketTask, parSafe=true);
+    var smallTasksPerLocale = newBlockArr(0..#numLocales,
+                                          list(TwoArraySortTask, parSafe=true));
 
-    const n = (end_n - start_n + 1);
-    distTasks.append(
-        new TwoArrayDistSortTask(start_n, n, startbit, 0, state1.numLocales-1));
-    assert(distTasks.size == 1);
+    assert(!distTask.isEmpty());
 
     const nBuckets = state1.perLocale[0].compat.bucketizer.getNumBuckets();
     const nLocalesTotal = state1.numLocales;
 
     // Part A: Handle the "big" subproblems
     while true {
-      if distTasks.isEmpty() then break;
-      const distTask = distTasks.pop();
+      if distTask.isEmpty() then break;
 
-      if debugDist then
+      //if debugDist then
         writeln("Doing big task ", distTask);
 
       if debugDist {
         var usedLocales1:[0..#nLocalesTotal] bool;
         var usedLocales2:[0..#nLocalesTotal] bool;
         // check: non-overlapping locales are used by each bucket in distTask
-        for i in 0..#maxBuckets {
-          if !distTask.perBucket[i].isEmpty() {
-            assert(distTask.firstBucket <= i && i <= distTask.lastBucket);
-            if distTask.perBucket[i].useSecondState {
-              for (loc, tid) in distTask.perBucket[i].localeAndIds(A) {
+        for t in distTask.tasks {
+          if !t.isEmpty() {
+            if t.useSecondState {
+              for (loc, tid) in t.localeAndIds(A) {
                 assert(!usedLocales2[tid]); // means race condition would occur
                 usedLocales2[tid] = true;
               }
 
             } else {
-              for (loc, tid) in distTask.perBucket[i].localeAndIds(A) {
+              for (loc, tid) in t.localeAndIds(A) {
                 assert(!usedLocales1[tid]); // means race condition would occur
                 usedLocales1[tid] = true;
               }
@@ -2565,13 +2532,11 @@ module TwoArrayPartitioning {
       //       task.start, taskEnd, A, Scratch,
       //       state, criterion, task.startbit);
 
-      coforall (bktLoc, bktLocId, bktId) in distTask.bucketLocalesAndIds(A)
-      with (ref state1, ref state2, ref distTasks) do
+      coforall (bktLoc, bktLocId, bktTask) in distTask.localesAndTasks(A)
+      with (ref state1, ref state2, ref nextDistTaskElts) do
       on bktLoc do {
         // Each bucket can run in parallel - this allows each
         // bucket to use nested coforalls to barrier.
-
-        const bktTask = distTask.perBucket[bktId];
         assert(!bktTask.isEmpty());
         const nLocalesBucket = bktTask.nLocales();
         ref state = if bktTask.useSecondState then state2 else state1;
@@ -2740,9 +2705,6 @@ module TwoArrayPartitioning {
         // Step 4: Add sub-tasks depending on if the bin is local or distributed
         // still.
         ref bktOwnerState = state.perLocale[bktLocId];
-        var big:TwoArrayDistSortTask;
-        var lastBig1LocaleId = -1;
-        var anyBig = false;
 
         for bin in bktOwnerState.compat.bucketizer.getBinsToRecursivelySort() {
           const binStart = if bin*nLocalesTotal > 0
@@ -2789,8 +2751,6 @@ module TwoArrayPartitioning {
 
               smallTasksPerLocale[theLocaleId].append(small);
             } else {
-              anyBig = true;
-
               // Create one or more distributed sorting tasks
 
               // Distributed sorting tasks need to use the per-locale data
@@ -2816,52 +2776,42 @@ module TwoArrayPartitioning {
                 }
               }
 
-              if lastBig1LocaleId < firstLocId {
-                if debugDist then
-                  writeln(bktLocId, " Adding big subtask",
-                          " bin=", bin,
-                          " binStart=", binStart,
-                          " binSize=", binSize,
-                          " binStartBit=", binStartBit,
-                          " firstLocId=", firstLocId,
-                          " lastLocId=", lastLocId,
-                          " useSecondState=", false);
-                // no overlap, so it can go in big1
-                big.addTaskForBucket(bin, binStart, binSize, binStartBit,
+              var t = new TwoArrayDistSortPerBucketTask(
+                                     binStart, binSize, binStartBit,
                                      firstLocId, lastLocId,
                                      useSecondState=false);
-                lastBig1LocaleId = lastLocId;
-              } else {
-                if debugDist then
-                  writeln(bktLocId, " Adding big subtask",
-                          " bin=", bin,
-                          " binStart=", binStart,
-                          " binSize=", binSize,
-                          " binStartBit=", binStartBit,
-                          " firstLocId=", firstLocId,
-                          " lastLocId=", lastLocId,
-                          " useSecondState=", false);
 
-                // There is overlap with the last part added to big1,
-                // so put this one in big2
-                big.addTaskForBucket(bin, binStart, binSize, binStartBit,
-                                     firstLocId, lastLocId,
-                                     useSecondState=true);
-              }
               if debugDist then
-                writeln(bktLocId, " big=", big);
+                writeln(bktLocId, " Adding big subtask", t);
+
+              nextDistTaskElts.append(t);
             }
           }
         }
-        if big.isEmpty() {
-          assert(!anyBig);
-        } else {
-          if debugDist then
-            writeln(bktLocId, " Adding big task ", big);
+      }
 
-          distTasks.append(big);
+      // Update distTasks based on nextDistTaskElts
+      nextDistTaskElts.sort(
+          comparator=new TwoArrayDistSortPerBucketTaskStartComparator());
+
+      // For each of those tasks, decide if they should use
+      // counts1 or counts2
+      var lastLocaleIdIn1 = -1;
+      var lastLocaleIdIn2 = -1;
+      for t in nextDistTaskElts {
+        if lastLocaleIdIn1 < t.firstLocaleId {
+          t.useSecondState = false;
+          lastLocaleIdIn1 = t.lastLocaleId;
+        } else if lastLocaleIdIn2 < t.firstLocaleId {
+          t.useSecondState = true;
+          lastLocaleIdIn2 = t.lastLocaleId;
+        } else {
+          halt("Algorithm Problem!");
         }
       }
+
+      distTask.tasks = nextDistTaskElts;
+      nextDistTaskElts.clear();
     }
 
     // Part B: Handle the "small" subproblems
