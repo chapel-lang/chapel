@@ -128,7 +128,7 @@ record LinkedList {
   //TODO: merge the append overloads
   proc append(e: eltType, es: eltType ...?k) {
     append(e);
-    for param i in 1..k do
+    for param i in 0..k-1 do
       append(es(i));
   }
 
