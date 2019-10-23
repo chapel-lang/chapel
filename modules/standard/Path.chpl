@@ -152,7 +152,7 @@ proc file.absPath(): string throws {
    :type name: `string`
 */
 proc basename(name: string): string {
-   return splitPath(name)[2];
+   return splitPath(name)[1];
 }
 
 /* Determines and returns the longest common path prefix of
