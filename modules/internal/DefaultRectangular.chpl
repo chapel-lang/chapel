@@ -1638,7 +1638,7 @@ module DefaultRectangular {
           if isjson || ischpl {
             if j != lastIdx {
               f <~> new ioLiteral(",\n");
-              writeSpaces(dim);
+              writeSpaces(dim+1);
             }
           }
         }
