@@ -213,9 +213,9 @@ module ChapelIO {
 
     private
     proc isIoField(x, param i) param {
-      if isType(__primitive("field by num", x, i)) ||
-         isParam(__primitive("field by num", x, i)) ||
-         __primitive("field by num", x, i).type == nothing {
+      if isType(__primitive("field by num", x, i+1)) ||
+         isParam(__primitive("field by num", x, i+1)) ||
+         __primitive("field by num", x, i+1).type == nothing {
         // I/O should ignore type or param fields
         return false;
       } else {
@@ -231,10 +231,10 @@ module ChapelIO {
       var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       if st == QIO_AGGREGATE_FORMAT_JSON {
         return new ioLiteral('"' +
-                             __primitive("field num to name", t, i) +
+                             __primitive("field num to name", t, i+1) +
                              '":');
       } else {
-        return new ioLiteral(__primitive("field num to name", t, i) + " = ");
+        return new ioLiteral(__primitive("field num to name", t, i+1) + " = ");
       }
     }
     private
@@ -242,10 +242,10 @@ module ChapelIO {
       var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       if st == QIO_AGGREGATE_FORMAT_JSON {
         return new ioLiteral('"' +
-                             __primitive("field num to name", t, i) +
+                             __primitive("field num to name", t, i+1) +
                              '"');
       } else {
-        return new ioLiteral(__primitive("field num to name", t, i));
+        return new ioLiteral(__primitive("field num to name", t, i+1));
       }
     }
 
@@ -267,7 +267,7 @@ module ChapelIO {
 
       if !isUnionType(t) {
         // print out all fields for classes and records
-        for param i in 1..num_fields {
+        for param i in 0..num_fields-1 {
           if isIoField(x, i) {
             if !isBinary {
               var comma = new ioLiteral(", ");
@@ -277,7 +277,7 @@ module ChapelIO {
               writer.readwrite(eq);
             }
 
-            writer.readwrite(__primitive("field by num", x, i));
+            writer.readwrite(__primitive("field by num", x, i+1));
 
             first = false;
           }
@@ -286,7 +286,7 @@ module ChapelIO {
         // Handle unions.
         // print out just the set field for a union.
         var id = __primitive("get_union_id", x);
-        for param i in 1..num_fields {
+        for param i in 0..num_fields-1 {
           if isIoField(x, i) && i == id {
             if isBinary {
               // store the union ID
@@ -295,7 +295,7 @@ module ChapelIO {
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.readwrite(eq);
             }
-            writer.readwrite(__primitive("field by num", x, i));
+            writer.readwrite(__primitive("field by num", x, i+1));
           }
         }
       }
@@ -417,9 +417,9 @@ module ChapelIO {
       if !isUnionType(t) {
         // read all fields for classes and records
         if isBinary {
-          for param i in 1..num_fields {
+          for param i in 0..num_fields-1 {
             if isIoField(x, i) {
-              reader.readwrite(__primitive("field by num", x, i));
+              reader.readwrite(__primitive("field by num", x, i+1));
             }
           }
         } else if num_fields > 0 {
@@ -429,7 +429,7 @@ module ChapelIO {
           // these two help us know if we've read all the fields.
           var num_to_read = 0;
           var num_read = 0;
-          for param i in 1..num_fields {
+          for param i in 0..num_fields-1 {
             if isIoField(x, i) {
               num_to_read += 1;
             }
@@ -466,7 +466,7 @@ module ChapelIO {
 
             var read_field_name = false;
 
-            for param i in 1..num_fields {
+            for param i in 0..num_fields-1 {
               if isIoField(x, i) {
 
                 if !read_field_name && !read_field[i] {
@@ -489,7 +489,7 @@ module ChapelIO {
                     }
                     reader.readwrite(eq);
 
-                    reader.readwrite(__primitive("field by num", x, i));
+                    reader.readwrite(__primitive("field by num", x, i+1));
                     if !reader.error() {
                       read_field[i] = true;
                       num_read += 1;
@@ -537,15 +537,15 @@ module ChapelIO {
           var id = __primitive("get_union_id", x);
           // Read the ID
           reader.readwrite(id);
-          for param i in 1..num_fields {
+          for param i in 0..num_fields-1 {
             if isIoField(x, i) && i == id {
-              reader.readwrite(__primitive("field by num", x, i));
+              reader.readwrite(__primitive("field by num", x, i+1));
             }
           }
         } else {
           // Read the field name = part until we get one that worked.
           var found_field = false;
-          for param i in 1..num_fields {
+          for param i in 0..num_fields-1 {
             if isIoField(x, i) {
               var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
 
@@ -569,7 +569,7 @@ module ChapelIO {
                 readIt(eq);
 
                 // We read the 'name = ', so now read the value!
-                reader.readwrite(__primitive("field by num", x, i));
+                reader.readwrite(__primitive("field by num", x, i+1));
               }
             }
           }
