@@ -1152,7 +1152,7 @@ module GMP {
 
   /* Return the number of limbs used in the number */
   proc chpl_gmp_mpz_nlimbs(const ref from: mpz_t) : uint(64) {
-    var x = chpl_gmp_mpz_struct_sign_size(from[1]);
+    var x = chpl_gmp_mpz_struct_sign_size(from[0]);
     return (abs(x)):uint(64);
   }
 
