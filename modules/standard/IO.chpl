@@ -3879,7 +3879,7 @@ proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   for param i in 0..(numTypes-2) do
     tupleVal(i) = this.read(t(i));
-  tupleVal(numTypes) = this.readln(t(numTypes));
+  tupleVal(numTypes-1) = this.readln(t(numTypes-1));
   return tupleVal;
 }
 
