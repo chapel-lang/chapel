@@ -1,4 +1,4 @@
 F1
 F1
 F1
-writeSemiAbstractEnumAsValue.chpl:4: error: halt reached - illegal cast: G.F1 has no integer value
+writeSemiAbstractEnumAsValue.chpl:6: error: halt reached - illegal cast: G.F1 has no integer value
