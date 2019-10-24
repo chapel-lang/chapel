@@ -67,6 +67,8 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
   llvmDISubprogram   = NULL;
   mIsNormalized      = false;
   _throwsError       = false;
+  mIsGeneric         = false;
+  mIsGenericIsValid  = false;
 
   substitutions.clear();
 
@@ -82,8 +84,10 @@ FnSymbol::~FnSymbol() {
   BasicBlock::clear(this);
   delete basicBlocks;
 
-  if (calledBy)
+  if (calledBy) {
     delete calledBy;
+    calledBy = NULL;
+  }
 }
 
 void FnSymbol::verify() {
@@ -191,8 +195,10 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->thisTag            = this->thisTag;
   newFn->cname              = this->cname;
   newFn->retTag             = this->retTag;
-  newFn->instantiatedFrom   = this->instantiatedFrom;
-  newFn->_instantiationPoint = this->_instantiationPoint;
+  newFn->mIsGeneric         = this->mIsGeneric;
+  newFn->mIsGenericIsValid  = this->mIsGenericIsValid;
+  newFn->instantiatedFrom          = this->instantiatedFrom;
+  newFn->_instantiationPoint       = this->_instantiationPoint;
   newFn->_backupInstantiationPoint = this->_backupInstantiationPoint;
 
   return newFn;
@@ -717,26 +723,32 @@ CallExpr* FnSymbol::singleInvocation() const {
 
 
 //
-// If the function is not currently marked as generic
-//    then if it is generic
-//      1) Update some flags
-//      2) Return true to indicate the status has been modified
+// Labels this function as generic or non-generic.
+// Returns:
+// * TGR_NEWLY_TAGGED - if this function has not been labeled before,
+// * TGR_ALREADY_TAGGED - otherwise,
+// * TGR_TAGGING_ABORTED - if this invocation is recursive and so is aborted.
 //
-bool FnSymbol::tagIfGeneric(SymbolMap* map) {
-  bool retval = false;
+TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
+  if (isGenericIsValid()) {
+    // generic-ness has already been established
+    return TGR_ALREADY_TAGGED;
 
-  if (hasFlag(FLAG_GENERIC) == false) {
-    int result = hasGenericFormals(map);
-
-    // If this function has at least 1 generic formal
-    if (result > 0) {
-      addFlag(FLAG_GENERIC);
-
-      retval = true;
+  } else {
+    // avoid recursing for the function.
+    static std::set<Symbol*> seen;
+    if (seen.count(this)) {
+      INT_ASSERT(abortOK);
+      return TGR_TAGGING_ABORTED;
     }
-  }
+    seen.insert(this);
 
-  return retval;
+    // compute and set this function's genericity
+    bool generic = hasGenericFormals(map);
+    setGeneric(generic);
+    seen.erase(this);
+    return TGR_NEWLY_TAGGED;
+  }
 }
 
 
@@ -751,13 +763,14 @@ bool FnSymbol::tagIfGeneric(SymbolMap* map) {
 //
 // 'map' is expected to be non-NULL if this function has been instantiated.
 //
-int FnSymbol::hasGenericFormals(SymbolMap* map) const {
-  bool hasGenericFormal   = false;
-  bool hasGenericDefaults =  true;
-  int  retval             =     0;
-
+bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
   for_formals(formal, this) {
     bool isGeneric = false;
+
+    if (formal->type == dtUnknown && formal->typeExpr != NULL) {
+      resolveBlockStmt(formal->typeExpr);
+      formal->type = formal->typeExpr->body.tail->getValType();
+    }
 
     if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
@@ -797,35 +810,16 @@ int FnSymbol::hasGenericFormals(SymbolMap* map) const {
 
     if (isGeneric == true) {
       if (hasFlag(FLAG_EXPORT)) {
-        if (!hasGenericFormal) {
-          USR_FATAL_CONT(this,
+        USR_FATAL_CONT(this,
                          "exported function `%s` can't be generic", name);
-        }
         USR_PRINT(this,
                   "   formal argument '%s' causes it to be", formal->name);
       }
-      hasGenericFormal = true;
-
-      if (formal->defaultExpr == NULL) {
-        hasGenericDefaults = false;
-      }
+      return true; // no need to examine the remaining formals
     }
   }
 
-  if (hasGenericFormal == false) {
-    retval = 0;
-
-  } else if (hasGenericDefaults == false) {
-    retval = 1;
-
-  } else if (hasGenericDefaults ==  true) {
-    retval = 2;
-
-  } else {
-    INT_ASSERT(false);
-  }
-
-  return retval;
+  return false;
 }
 
 bool FnSymbol::isNormalized() const {
@@ -1075,6 +1069,24 @@ void FnSymbol::throwsErrorInit() {
 
 bool FnSymbol::throwsError() const {
   return _throwsError;
+}
+
+bool FnSymbol::isGeneric() {
+  INT_ASSERT(mIsGenericIsValid);
+  return mIsGeneric;
+}
+
+bool FnSymbol::isGenericIsValid() {
+  return mIsGenericIsValid;
+}
+
+void FnSymbol::setGeneric(bool generic) {
+  mIsGeneric = generic;
+  mIsGenericIsValid = true;
+}
+
+void FnSymbol::clearGeneric() {
+  mIsGeneric = mIsGenericIsValid = false;
 }
 
 bool FnSymbol::retExprDefinesNonVoid() const {

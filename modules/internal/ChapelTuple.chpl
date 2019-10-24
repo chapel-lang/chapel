@@ -38,7 +38,7 @@ The following method is also available:
 It returns the number of components of the tuple.
 */
 module ChapelTuple {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   pragma "tuple" record _tuple {
     param size : int;

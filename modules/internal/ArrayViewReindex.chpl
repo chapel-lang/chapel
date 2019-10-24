@@ -23,7 +23,7 @@
 // represent reindexings of another array via a domain.
 //
 module ArrayViewReindex {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //
   // This class represents a distribution that knows how to create
@@ -518,7 +518,6 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i) ref {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -529,7 +528,6 @@ module ArrayViewReindex {
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -540,7 +538,6 @@ module ArrayViewReindex {
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -560,12 +557,9 @@ module ArrayViewReindex {
       where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !privDom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
+    inline proc dsiBoundsCheck(i) {
+      return privDom.dsiMember(i);
     }
-
 
     //
     // locality-oriented queries

@@ -22,7 +22,7 @@ use nightlysubs;
 # Mailing lists.
 $failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
-$replymail = "chapel-developers\@lists.sourceforge.net";
+$replymail = "";
 
 $valgrind = 0;
 $interpret = 0;
@@ -289,7 +289,7 @@ if ($perfConfigName eq "") {
 
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/data/sea/chapel/NightlyPerformance/$perfConfigName";
+        $cronlogdir = "/cray/css/users/chapelu/NightlyPerformance/$perfConfigName";
     } else {
         $cronlogdir = "/data/sea/chapel/Nightly";
     }
@@ -328,7 +328,7 @@ if ($memleaks ne "") {
     if ($debug == 1 && $memleaksdir eq "") {
         $memleaksdir = $logdir;
     } elsif ($memleaksdir eq "") {
-        $memleaksdir = "/data/sea/chapel/NightlyMemLeaks";
+        $memleaksdir = "/cray/css/users/chapelu/NightlyMemLeaks";
     }
 
     unless(-d $memleaksdir) {
@@ -389,7 +389,12 @@ if ($mailer eq "") {
     $chplsendemail = "$chplhomedir/util/test/send_email.py";
     `$chplsendemail --help >/dev/null 2>&1`;
     if ($? == 0) {
-        $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
+        $header = "";
+        if ($replymail ne "") {
+          $header = "Reply-To=$replymail,";
+        }
+        $header .= "Precedence=bulk";
+        $mailer = "$chplsendemail --header=$header";
     } else {
         print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
         $mailer = "mail";

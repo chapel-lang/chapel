@@ -4,9 +4,9 @@ class C {
   param c: int = 3;
 }
 
-proc foo(c: borrowed C(?)) {
+proc foo(c: borrowed C(?)?) {
   writeln(c.b);
 }
 
-var c: borrowed C(b = 1);
+var c: borrowed C(b = 1)?;
 foo(c);

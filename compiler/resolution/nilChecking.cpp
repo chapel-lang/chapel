@@ -764,10 +764,9 @@ static void gatherVariablesToCheck(FnSymbol* fn,
 
   int index = 0;
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(fn, symExprs);
+  collectLcnSymExprs(fn, symExprs);
   for_vector(SymExpr, se, symExprs) {
-    Symbol* sym = se->symbol();
-    if (isArgSymbol(sym) || isVarSymbol(sym)) {
+      Symbol* sym = se->symbol();
       if (isSymbolAnalyzed(sym)) {
         if (symToIdx.count(sym) == 0) {
           // Add it to the map/array
@@ -780,7 +779,6 @@ static void gatherVariablesToCheck(FnSymbol* fn,
           }
         }
       }
-    }
   }
 }
 

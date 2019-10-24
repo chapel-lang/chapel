@@ -721,6 +721,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyPOD && !propagateNotPOD(actualType)) {
+    return true;
+  }
+
   if (formalType == dtString && actualType == dtStringC) {
     return true;
   }
@@ -5116,7 +5120,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
 
     // Even if some formals are (now) types, if 'taskFn' remained generic,
     // gatherCandidates() would not instantiate it, for some reason.
-    taskFn->removeFlag(FLAG_GENERIC);
+    taskFn->setGeneric(false);
   }
 }
 
@@ -5777,41 +5781,6 @@ static void resolveInitField(CallExpr* call) {
   resolveSetMember(call); // Can we remove some of the above with this?
 }
 
-// Should this be public, like isNilableClassType() ?
-static bool isUnmanagedClass(Type* t) {
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (dt->isUnmanaged())
-      return true;
-  return false;
-}
-
-// Should this be public, like isNilableClassType() ?
-static bool isBorrowedClass(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
-
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    return dt->isBorrowed();
-
-  return false;
-}
-
-// Todo: ideally this would be simply something like:
-//   isChapelManagedType(t) || isChapelBorrowedType(t)
-static bool isOwnedOrSharedOrBorrowed(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
-
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (! dt->isUnmanaged())
-      return true; // anything not unmanaged
-
-  if (isManagedPtrType(t))
-    return true; // owned or shared
-
-  return false;
-}
-
 static bool managementMismatch(Type* lhs, Type* rhs) {
   if (isManagedPtrType(lhs)) {
     if (isManagedPtrType(rhs)) {
@@ -5921,6 +5890,27 @@ static void resolveInitVar(CallExpr* call) {
 
   if (call->numActuals() > 3) {
     INT_FATAL(call, "unexpected number of actuals in variable init call");
+  }
+
+  // Handle noinit
+  if (srcExpr && srcExpr->symbol() == gNoInit) {
+    if (call->numActuals() < 3) {
+      // no init needs a type, cannot infer from gNoInit.
+      INT_FATAL(call, "bad no init call");
+    }
+
+    SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
+    targetType = targetTypeExpr->typeInfo();
+
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      // no init needs a concrete type, cannot infer from gNoInit.
+      INT_FATAL(call, "bad no init call");
+    }
+
+    // Since we are not initializing, just set the variable's type
+    dst->type = targetType;
+    call->primitive = primitives[PRIM_NOOP];
+    return;
   }
 
   if (call->numActuals() == 3) {
@@ -6054,8 +6044,8 @@ static void resolveInitVar(CallExpr* call) {
       call->primitive = primitives[PRIM_MOVE];
 
       resolveMove(call);
-    } else if (isRecordWithInitializers(at) == false) {
-      INT_FATAL("Unable to initialize record variable with type '%s'", at->symbol->name);
+    } else if (isRecordOrUnionWithInitializers(at) == false) {
+      INT_FATAL("Unable to initialize record/union variable with type '%s'", at->symbol->name);
     } else if (targetType->getValType() == srcType->getValType() &&
                targetType->getValType()->symbol->hasFlag(FLAG_POD)) {
       dst->type = targetType->getValType();
@@ -6789,6 +6779,7 @@ static void resolveNew(CallExpr* newExpr) {
   //  dtUnmanaged for 'new unmanaged'
   //  owned record for 'new owned'
   //  shared record for 'new shared'
+  //  dtAnyManagementNilable to request nilable variant
   Type* manager = NULL;
 
   resolveNewSetupManaged(newExpr, manager);
@@ -6843,7 +6834,8 @@ static void checkManagerType(Type* t) {
   //  - unmanaged or unmanagedNilable
   //  - owned or DecoratedClassType(owned,?)  (or other management type)
   if (t == dtBorrowed || t == dtBorrowedNilable ||
-      t == dtUnmanaged || t == dtUnmanagedNilable) {
+      t == dtUnmanaged || t == dtUnmanagedNilable ||
+      t == dtAnyManagementNilable) {
     return; // OK
   }
 
@@ -6873,26 +6865,20 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
 
+      bool makeNilable = (manager == dtAnyManagementNilable ||
+                          isNilableClassType(type));
+
       // set manager for new t(1,2,3)
       // where t is e.g Owned(MyClass)
       // or for t is unmanaged(MyClass)
-      if (manager == NULL) {
+      if (manager == NULL || manager == dtAnyManagementNilable) {
         if (isManagedPtrType(type)) {
           manager = getManagedPtrManagerType(type);
-          if (isNilableClassType(type))
-            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
-
         } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
           if (dt->isUnmanaged()) {
-            if (isNilableClassType(dt))
-              manager = dtUnmanagedNilable;
-            else
-              manager = dtUnmanaged;
+            manager = dtUnmanaged;
           } else {
-            if (isNilableClassType(dt))
-              manager = getDecoratedClass(dtOwned, CLASS_TYPE_MANAGED_NILABLE);
-            else
-              manager = dtOwned;
+            manager = dtOwned;
           }
         } else if (isClass(type) && !fLegacyClasses) {
           manager = dtBorrowed;
@@ -6910,6 +6896,18 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // only the canonical class types.
       if (manager) {
         AggregateType* at = toAggregateType(type);
+
+        // if needed, make the manager nilable
+        if (makeNilable) {
+          if (isManagedPtrType(manager))
+            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
+          else if (manager == dtUnmanaged)
+            manager = dtUnmanagedNilable;
+          else if (manager == dtBorrowed)
+            manager = dtBorrowedNilable;
+          else
+            INT_FATAL("case not handled");
+        }
 
         checkManagerType(manager);
 
@@ -8019,23 +8017,6 @@ static void resolveObviousGlobals() {
 }
 
 
-static void markGenericFunctions() {
-  bool changed = true;
-
-  // Iterate until all generic functions have been tagged with FLAG_GENERIC
-  while (changed == true) {
-    changed = false;
-
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      // Returns true if status of fn is changed
-      if (fn->tagIfGeneric() == true) {
-        changed = true;
-      }
-    }
-  }
-}
-
-
 static void
 computeStandardModuleSet() {
   // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
@@ -8081,11 +8062,9 @@ void resolve() {
   // treatment on functions included by default, leading to bugs with qualified
   // access to symbols included in this way.
 
-  markGenericFunctions();
-
   unmarkDefaultedGenerics();
 
-  adjustInternalSymbols(); // must go after tagIfGeneric()
+  adjustInternalSymbols();
 
   resolveExterns();
 
@@ -8612,7 +8591,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 static const char* autoCopyFnForType(AggregateType* at) {
   const char* retval = "chpl__autoCopy";
 
-  if (isUserDefinedRecord(at)                == true  &&
+  if (typeNeedsCopyInitDeinit(at)            == true  &&
       at->symbol->hasFlag(FLAG_TUPLE)        == false &&
       at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
       isRecordWrappedType(at)                == false &&
@@ -8749,9 +8728,10 @@ static void resolveOther() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    if (fn->hasFlag(FLAG_GENERIC) == false) {
-      resolveSignatureAndFunction(fn);
-    }
+    resolveSignature(fn);
+    fn->tagIfGeneric();
+    if (! fn->isGeneric())
+      resolveFunction(fn);
   }
 }
 
@@ -8847,7 +8827,7 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr*   def = new DefExpr(tmp);
 
-            if (isUserDefinedRecord(fn->retType) == true)
+            if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
             contextCallOrCall->insertBefore(def);

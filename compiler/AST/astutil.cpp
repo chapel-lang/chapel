@@ -136,6 +136,32 @@ void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
     symExprs.push_back(symExpr);
 }
 
+// Same as collectSymExprs(), including only SymExprs for 'sym'.
+void collectSymExprsFor(BaseAST* ast, Symbol* sym,
+                        std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprsFor, sym, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (symExpr->symbol() == sym)
+      symExprs.push_back(symExpr);
+}
+
+// Same as collectSymExprs(), including only SymExprs for 'sym1' and 'sym2'.
+void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
+                        std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprsFor, sym1, sym2, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (symExpr->symbol() == sym1 || symExpr->symbol() == sym2)
+      symExprs.push_back(symExpr);
+}
+
+// Same as collectSymExprs(), including only LcnSymbols.
+void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectLcnSymExprs, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (isLcnSymbol(symExpr->symbol()))
+      symExprs.push_back(symExpr);
+}
+
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
@@ -186,25 +212,19 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
-void compute_fn_call_sites(FnSymbol* fn, bool allowVirtual) {
-/* If present, fn->calledBy needs to be set up in advance.
-   See the comment in compute_call_sites() */
-
+// Gather into fn->calledBy all direct calls to 'fn'.
+// This is a specialization of computeAllCallSites()
+// for use during resolveDynamicDispatches().
+void computeNonvirtualCallSites(FnSymbol* fn) {
   if (fn->calledBy == NULL) {
     fn->calledBy = new Vec<CallExpr*>();
   }
 
-  INT_ASSERT(allowVirtual || virtualRootsMap.get(fn) == NULL);
+  INT_ASSERT(virtualRootsMap.get(fn) == NULL);
 
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isEmpty()) {
-        assert(0); // not possible
-
-      } else if (!isAlive(call)) {
-        assert(0); // not possible
-
-      } else if (fn == call->resolvedFunction()) {
+      if (fn == call->resolvedFunction()) {
         fn->calledBy->add(call);
 
       } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
@@ -214,41 +234,53 @@ void compute_fn_call_sites(FnSymbol* fn, bool allowVirtual) {
       } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
         if (vFn == fn) {
-          Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
-
-          fn->calledBy->add(call);
-          INT_ASSERT(allowVirtual);
-
-          forv_Vec(FnSymbol, child, *children) {
-            if (!child->calledBy)
-              child->calledBy = new Vec<CallExpr*>();
-
-            child->calledBy->add(call);
-          }
+          INT_FATAL(call, "unexpected case calling %d", fn->name);
         }
       }
     }
   }
 }
 
-void compute_call_sites() {
-  /* Set up and clear the calledBy vector for all functions.  This cannot
-     be done one function at a time in compute_fn_call_sites(fn) because
-     compute_fn_call_sites(fn) can add calls to the calledBy vector of
-     other functions besides its argument. In particular a virtual method
-     call is considered to be calledBy all of the virtual methods in the
-     inheritance chain.
-   */
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->calledBy)
-      fn->calledBy->clear();
-    else
-      fn->calledBy = new Vec<CallExpr*>();
+// Gather into fn->calledBy all calls to 'fn', regular or virtual,
+// and all virtual calls to all its virtual parents, if any.
+void computeAllCallSites(FnSymbol* fn) {
+  Vec<CallExpr*>* calledBy = fn->calledBy;
+  if (calledBy == NULL)
+    fn->calledBy = calledBy = new Vec<CallExpr*>();
+  else 
+    calledBy->clear();
+  
+  for_SymbolSymExprs(se, fn) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (fn == call->resolvedFunction()) {
+        calledBy->add(call);
+
+      } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+        // sjd: do we have to do anything special here?
+        //      should this call be added to some function's calledBy list?
+
+      } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
+        if (vFn == fn)
+          calledBy->add(call);
+      }
+    }
   }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    compute_fn_call_sites(fn);
-  }
+  // Add all virtual calls on parents.
+  if (Vec<FnSymbol*>* parents = virtualParentsMap.get(fn))
+    forv_Vec(FnSymbol, pfn, *parents)
+      for_SymbolSymExprs(pse, pfn)
+        if (CallExpr* pcall = toCallExpr(pse->parentExpr))
+          if (pcall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) &&
+              pfn == toFnSymbol(toSymExpr(pcall->get(1))->symbol()))
+            calledBy->add(pcall);
+}
+
+// computeAllCallSites() for all FnSymbols.
+void compute_call_sites() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
+    computeAllCallSites(fn);
 }
 
 // builds the def and use maps for every variable/argument

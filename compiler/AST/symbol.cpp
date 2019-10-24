@@ -260,6 +260,13 @@ bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
   return hasFlag(aflag) || hasFlag(bflag);
 }
 
+bool Symbol::isKnownToBeGeneric() {
+  if (FnSymbol* fn = toFnSymbol(this))
+    return fn->isGenericIsValid() && fn->isGeneric();
+  else
+    return hasFlag(FLAG_GENERIC);
+}
+
 // Don't generate documentation for this symbol, either because it is private,
 // or because the symbol should not be documented independent of privacy
 bool Symbol::noDocGen() const {
@@ -409,18 +416,15 @@ Expr* Symbol::getInitialization() const {
 
   while (stmt != NULL) {
     std::vector<SymExpr*> symExprs;
-    collectSymExprs(stmt, symExprs);
+    collectSymExprsFor(stmt, curSym, refSym, symExprs);
 
     bool isDef = false;
     bool isUse = false;
 
     for_vector(SymExpr, se, symExprs) {
-      Symbol* sym = se->symbol();
-      if (sym == curSym || sym == refSym) {
         int result = isDefAndOrUse(se);
         isDef |= (result & 1);
         isUse |= (result & 2);
-      }
     }
 
     if (isDef) {
@@ -472,10 +476,6 @@ bool isString(Symbol* symbol) {
 
 bool isBytes(Symbol* symbol) {
   return isBytes(symbol->type);
-}
-
-bool isUserDefinedRecord(Symbol* symbol) {
-  return isUserDefinedRecord(symbol->type);
 }
 
 /******************************** | *********************************

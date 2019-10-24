@@ -42,13 +42,13 @@ proc test(message, sel, dd1, dd2) {
   }
 }
 
-test("ReplicatedDim,ReplicatedDim", 1, new unmanaged ReplicatedDim(s1), new unmanaged ReplicatedDim(s2));
-test("BlockDim,BlockDim", 2, new unmanaged BlockDim(s1, 1, 4), new unmanaged BlockDim(s2, 1, 4));
-test("BlockCyclicDim,BlockCyclicDim", 3, new unmanaged BlockCyclicDim(s1, 0, 2), new unmanaged BlockCyclicDim(s2, 2, 3));
+test("ReplicatedDim,ReplicatedDim", 1, new ReplicatedDim(s1), new ReplicatedDim(s2));
+test("BlockDim,BlockDim", 2, new BlockDim(s1, 1, 4), new BlockDim(s2, 1, 4));
+test("BlockCyclicDim,BlockCyclicDim", 3, new BlockCyclicDim(s1, 0, 2), new BlockCyclicDim(s2, 2, 3));
 
-test("ReplicatedDim,BlockDim", 4, new unmanaged ReplicatedDim(s1),       new unmanaged BlockDim(s2, 1, 4));
-test("ReplicatedDim,BlockCyclicDim", 5, new unmanaged ReplicatedDim(s1), new unmanaged BlockCyclicDim(s2, 2, 3));
-test("BlockDim,ReplicatedDim", 6, new unmanaged BlockDim(s1, 1, 4), new unmanaged ReplicatedDim(s2));
-test("BlockDim,BlockCyclicDim", 7, new unmanaged BlockDim(s1, 1, 4), new unmanaged BlockCyclicDim(s2, 2, 3));
-test("BlockCyclicDim,ReplicatedDim", 8, new unmanaged BlockCyclicDim(s1, 0, 2), new unmanaged ReplicatedDim(s2));
-test("BlockCyclicDim,BlockDim", 9, new unmanaged BlockCyclicDim(s1, 0, 2), new unmanaged BlockDim(s2, 1, 4));
+test("ReplicatedDim,BlockDim", 4, new ReplicatedDim(s1),       new BlockDim(s2, 1, 4));
+test("ReplicatedDim,BlockCyclicDim", 5, new ReplicatedDim(s1), new BlockCyclicDim(s2, 2, 3));
+test("BlockDim,ReplicatedDim", 6, new BlockDim(s1, 1, 4), new ReplicatedDim(s2));
+test("BlockDim,BlockCyclicDim", 7, new BlockDim(s1, 1, 4), new BlockCyclicDim(s2, 2, 3));
+test("BlockCyclicDim,ReplicatedDim", 8, new BlockCyclicDim(s1, 0, 2), new ReplicatedDim(s2));
+test("BlockCyclicDim,BlockDim", 9, new BlockCyclicDim(s1, 0, 2), new BlockDim(s2, 1, 4));

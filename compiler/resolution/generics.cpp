@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "PartialCopyData.h"
+#include "passes.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stmt.h"
@@ -465,7 +466,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
   bool       retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
-    if (isUserDefinedRecord(ct) == true && ct->hasInitializers()) {
+    if (typeNeedsCopyInitDeinit(ct) == true && ct->hasInitializers()) {
       // If the user has defined any initializer,
       // initCopy function should call the copy-initializer.
       //
@@ -590,7 +591,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
                               SymbolMap& allSubsBeforeDefaultExprs) {
   FnSymbol* newFn = fn->partialCopy(&map);
 
-  newFn->removeFlag(FLAG_GENERIC);
+  newFn->clearGeneric();
   newFn->addFlag(FLAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
   newFn->substitutions.map_union(allSubs);
@@ -758,7 +759,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
                      &explainInstantiationModule);
   }
 
-  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
+  if (!newFn->isGeneric() && explainInstantiationLine) {
     explainInstantiation(newFn);
   }
 

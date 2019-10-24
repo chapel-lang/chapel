@@ -59,7 +59,7 @@ static void removeUnusedFunctions() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    INT_ASSERT(fn->hasFlag(FLAG_GENERIC) == false);
+    INT_ASSERT(! fn->isGeneric());
 
     concreteWellKnownFunctionsSet.insert(fn);
   }
@@ -227,16 +227,10 @@ static void removeRandomPrimitives() {
 static void replaceTypeArgsWithFormalTypeTemps() {
   compute_call_sites();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (! fn->isResolved())
       // Don't bother with unresolved functions.
       // They will be removed from the tree.
-      continue;
-
-    // Skip this function if it is not in the tree.
-    if (! fn->defPoint)
-      continue;
-    if (! fn->defPoint->parentSymbol)
       continue;
 
     // We do not remove type args from extern functions so that e.g.:
@@ -314,7 +308,7 @@ static void replaceTypeArgsWithFormalTypeTemps() {
 static void removeParamArgs() {
   compute_call_sites();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     if (! fn->isResolved())
       // Don't bother with unresolved functions.
@@ -802,8 +796,7 @@ static void cleanupVoidVarsAndFields() {
 
   // Remove void formal arguments from functions.
   // Change functions that return ref(void) to just return void.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->inTree()) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       for_formals(formal, fn) {
         if (isVoidOrVoidTupleType(formal->type)) {
           if (formal == fn->_this) {
@@ -816,12 +809,11 @@ static void cleanupVoidVarsAndFields() {
           isVoidOrVoidTupleType(fn->retType)) {
         fn->retType = dtNothing;
       }
-    }
-    if (fn->_this) {
-      if (isVoidOrVoidTupleType(fn->_this->type)) {
-        fn->_this = NULL;
+      if (fn->_this) {
+        if (isVoidOrVoidTupleType(fn->_this->type)) {
+          fn->_this = NULL;
+        }
       }
-    }
   }
 
   // Set for loop index variables that are void to the global void value

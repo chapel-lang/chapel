@@ -43,7 +43,6 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<CondStmt*>& IBBs);
 
 // collect Stmts and Exprs in the AST and return them in vectors
-// Versions ending in 'STL' use the C++ std::vector class
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, std::vector<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
@@ -57,16 +56,19 @@ void collectMyCallExprs(BaseAST* ast,
                         FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
-void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs);
+void collectSymExprsFor(BaseAST* ast, Symbol* sym, std::vector<SymExpr*>& symExprs);
+void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
+                        std::vector<SymExpr*>& symExprs);
+void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
 
 // utility routines for clearing and resetting lineno and filename
 void reset_ast_loc(BaseAST* destNode, astlocT astloc);
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 
-// compute call sites FnSymbol::calls
-void compute_fn_call_sites(FnSymbol* fn, bool allowVirtual = true);
 void compute_call_sites();
+void computeNonvirtualCallSites(FnSymbol* fn);
+void computeAllCallSites(FnSymbol* fn);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to

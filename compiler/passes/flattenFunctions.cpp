@@ -48,7 +48,7 @@ void flattenNestedFunction(FnSymbol* nestedFunction) {
 
     nestedFunctions.add(nestedFunction);
 
-    flattenNestedFunctions(nestedFunctions, true);
+    flattenNestedFunctions(nestedFunctions);
   }
 }
 
@@ -124,12 +124,12 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   std::vector<SymExpr*> SEs;
-  collectSymExprs(fn, SEs);
+  collectLcnSymExprs(fn, SEs);
 
   for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
-      if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
+      if (isOuterVar(sym, fn)) {
         uses->put(sym,gNil);
       }
   }
@@ -383,11 +383,8 @@ static void deleteAllCalledby() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols)  deleteCalledby(fn);
 }
 
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool fastCCS) {
-  if (fastCCS)
-    { if (fVerify) deleteAllCalledby(); }
-  else
-    compute_call_sites();
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
+  if (fVerify) deleteAllCalledby();
 
   Vec<FnSymbol*> outerFunctionSet;
   Vec<FnSymbol*> nestedFunctionSet;
@@ -415,10 +412,8 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool fastCCS) {
     change = false;
 
     forv_Vec(FnSymbol, fn, nestedFunctions) {
-      if (fastCCS) {
-        if (!fVerify) deleteCalledby(fn);
-        compute_fn_call_sites(fn, false);
-      }
+      if (!fVerify) deleteCalledby(fn);
+      computeAllCallSites(fn);
 
       std::vector<BaseAST*> asts;
       collect_top_asts(fn, asts);

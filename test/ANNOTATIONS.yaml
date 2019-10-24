@@ -400,6 +400,9 @@ all:
   08/08/19:
     - text: Machine upgraded to CLE7
       config: 16 node XC
+  10/02/19:
+    - text: system update
+      config: 16 node XC
 
 
 AllCompTime:
@@ -611,17 +614,15 @@ dgemm.64:
   09/06/13:
     - LICM bug fixes
 
-ep:
+ep: &ep-base
   11/18/14:
     - added -E to tests which would benefit from it
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
-
+  08/25/19:
+    - Min/max with NaNs and imag inequalities (#13824)
 ep-b:
-  11/18/14:
-    - added -E to tests which would benefit from it
-  11/22/14:
-    - revert -E use for nightly on 21st (which failed, unrelatedly)
+  <<: *ep-base
 
 ep.ml-perf: &ep-ml-base
   07/26/17:
@@ -632,6 +633,8 @@ ep.ml-perf: &ep-ml-base
     - Make associative domains of enums more standard (#9978)
   1/28/19:
     - Represent reduce expressions using ForallStmt (#12131)
+  08/25/19:
+    - Min/max with NaNs and imag inequalities (#13824)
 ep.ml-time:
   <<: *ep-ml-base
 
@@ -824,7 +827,7 @@ jacobi:
   04/23/19:
     - Denormalize the test in CondStmts (#12867)
 
-knucleotide:
+knucleotide: &knucleotide-base
   10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
@@ -836,6 +839,10 @@ knucleotide:
     - Clear associative array elements when created by dsiAdd (#7828)
   09/05/19:
     - Deprecate adding to associative domain by assigning to array (#13945)
+  09/11/19:
+    - Optimize the method map.this(k) (#14065)
+knucleotide-submitted:
+  <<: *knucleotide-base
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -847,6 +854,10 @@ LCALS-raw-short: &lcals-base
     - Throw --no-ieee-float for LCALS (#5001)
   10/24/17:
     - Fix LCALS inner_prod kernel (#7632)
+  08/25/19:
+    - Task intents to operate on fields of 'this' (#13840)
+  09/10/19:
+    - Restrict applicability of field intents (#14057)
 LCALS-raw-medium:
   <<: *lcals-base
 LCALS-raw-long:
@@ -1111,6 +1122,8 @@ memleaksfull:
     - Close memory leaks in bytes type and tests (#13660)
   08/09/19:
     - fix another deletion size mismatch error (introduced leaks) (#13671)
+  09/26/19:
+    - Fix memory leak caused by use of first class functions (#14163)
 
 meteor:
   12/18/13:
@@ -1314,6 +1327,8 @@ regexdna: &regexdna-base
     - Update RE2 (#6024)
   06/22/17:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+  08/09/19:
+    - Change string.length to measure in codepoints (#13675)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1341,7 +1356,7 @@ return-array-20000000:
 return-array-40000000:
   <<: *return-array-base
 
-revcomp:
+revcomp: &revcomp-base
   05/12/15:
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
@@ -1364,6 +1379,12 @@ revcomp:
     - Make stdout, stderr ordering predictable in test output (#12236)
   08/30/19:
     - Add channel seek and default to pread (#13862)
+  09/06/19:
+    - Turn "array-as-vec" deprecation warnings on (#13999)
+  09/10/19:
+    - Restore reverse-complement performance with qio hint (#14045)
+revcomp-submitted:
+  <<: *revcomp-base
 
 sad:
   05/03/16:
@@ -1604,3 +1625,29 @@ distAdaptativeWS:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+
+# Compiler performance annotations
+compilerAndTestingStats: &compiler-perf-base
+  07/25/19:
+    - Add two-array radix and sample sorts and a distributed sort (#13347)
+  07/30/19:
+    - Undecorated classes have generic management (#13447)
+  07/31/19:
+    - Add record _bytes to the internal modules (#13519)
+  08/25/19:
+    - Enable compile-time nil-checking for internal modules (#13843)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
+  08/31/19:
+    - Require 'use' of top level modules rather than lexical scoping (#13930)
+  09/06/19:
+    - Turn "array-as-vec" deprecation warnings on (#13999)
+allTotalTime:
+  <<: *compiler-perf-base
+allPasses:
+  <<: *compiler-perf-base
+topTotalTime:
+  <<: *compiler-perf-base
+topPasses:
+  <<: *compiler-perf-base

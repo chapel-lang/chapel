@@ -77,7 +77,6 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveSignature(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
     // Don't resolve formals for concrete functions
     // more often than necessary.
     static std::set<FnSymbol*> done;
@@ -87,7 +86,6 @@ void resolveSignature(FnSymbol* fn) {
 
       resolveFormals(fn);
     }
-  }
 }
 
 /************************************* | **************************************
@@ -478,6 +476,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     }
 
     fn->addFlag(FLAG_RESOLVED);
+
+    fn->tagIfGeneric();
 
     if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());
@@ -1019,7 +1019,7 @@ void resolveIfExprType(CondStmt* stmt) {
       BlockStmt* refBranch = isReferenceType(thenType) ? stmt->thenStmt : stmt->elseStmt;
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
-      if (isUserDefinedRecord(rhs->getValType())) {
+      if (typeNeedsCopyInitDeinit(rhs->getValType())) {
         CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
@@ -1354,7 +1354,7 @@ bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   if (fn && fn->retTag == RET_PARAM)
     return false;
 
-  if (isRecord(formal->getValType())) {
+  if (isRecord(formal->getValType()) || isUnion(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
         formal->originalIntent == INTENT_IN ||

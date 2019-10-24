@@ -1,2 +1,3 @@
 LOCALE0
-idxToLocale.chpl:3: error: halt reached - array index out of bounds: (1)
+idxToLocale.chpl:3: error: halt reached - array index out of bounds
+note: index was 1 but array bounds are 0..0

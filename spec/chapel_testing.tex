@@ -72,39 +72,57 @@
 % Any additional lines needed for the code snippet to run/compile
 % (before and after the chapel code segment)
 %
-\newenvironment{chapelpre} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapelpre} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
 
-\newenvironment{chapelnoprint} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\DefineVerbatimEnvironment{chapelpre}{Verbatim}{}
+\newenvironment{chapelpre}{BLOCK-test-chapelpre}{}
 
-\newenvironment{chapelpost} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapelnoprint} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+%\DefineVerbatimEnvironment{chapelnoprint}{Verbatim}{}
+\newenvironment{chapelnoprint}{BLOCK-test-chapelnoprint}{}
+
+%\newenvironment{chapelpost} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+%\DefineVerbatimEnvironment{chapelpost}{Verbatim}{}
+\newenvironment{chapelpost}{BLOCK-test-chapelpost}{}
 
 
 %
 % .future file
 %
-\newenvironment{chapelfuture} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapelfuture} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+%\DefineVerbatimEnvironment{chapelfuture}{Verbatim}{}
+\newenvironment{chapelfuture}{BLOCK-test-chapelfuture}{}
 
 %
 % .compopts file
 %
-\newenvironment{chapelcompopts} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapelcompopts} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+%\DefineVerbatimEnvironment{chapelcompopts}{Verbatim}{}
+\newenvironment{chapelcompopts}{BLOCK-test-chapelcompopts}{}
 
 %
 % .execopts file
 %
-\newenvironment{chapelexecopts} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapelexecopts} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+\DefineVerbatimEnvironment{chapelexecopts}{Verbatim}{}
+\newenvironment{chapelexecopts}{BLOCK-test-chapelexecopts}{}
 
 
 %
@@ -112,25 +130,34 @@
 % To get more than one file, use a LaTeX style comment to name the
 % .good file
 %
-\newenvironment{chapeloutput} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapeloutput} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+\DefineVerbatimEnvironment{chapeloutput}{Verbatim}{}
+\newenvironment{chapeloutput}{BLOCK-test-chapeloutput}{}
 
 %
 % .no-local.good file
 % (The naming feature mentioned above does not yet work, so this
 % environment is a Q&D way to get a .no-local.good file.)
 %
-\newenvironment{chapelwideoutput} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapelwideoutput} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+%\DefineVerbatimEnvironment{chapelwideoutput}{Verbatim}{}
+\newenvironment{chapelwideoutput}{BLOCK-test-chapelwideoutput}{}
 
 %
 % .prediff file
 %
-\newenvironment{chapelprediff} {\begin{lrbox}{\teststuff}
-\begin{minipage}{6in}}
-{\end{minipage}\end{lrbox}}
+%\newenvironment{chapelprediff} {\begin{lrbox}{\teststuff}
+%\begin{minipage}{6in}}
+%{\end{minipage}\end{lrbox}}
+
+%\DefineVerbatimEnvironment{chapelprediff}{Verbatim}{}
+\newenvironment{chapelprediff}{BLOCK-test-chapelprediff}{}
 
 %
 % .good file that is printed in the text of the Spec
@@ -139,3 +166,6 @@
 %
 %\lstnewenvironment{chapelprintoutput} 
 % (See chapel_listing.tex for the implementation.)
+
+%\DefineVerbatimEnvironment{chapeloutputname}{Verbatim}{}
+\newenvironment{chapeloutputname}{BLOCK-test-chapeloutputname}{}

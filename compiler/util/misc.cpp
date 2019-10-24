@@ -205,42 +205,84 @@ static void print_user_internal_error() {
 }
 
 
-// find a caller (direct or not) that is not in a task function,
-// for line number reporting
-static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
-  FnSymbol* retval = NULL;
+// find an AST location that is:
+//   not in an inlined function or a task function in an inlined function
+//     in non-user modules
+//     (assuming preserveInlinedLineNumbers==false)
+// to use for line number reporting.
+static Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
-  if (fn == NULL || fn->inTree() == false) {
-    retval = fn;
+  while (true) {
+    if (cur == NULL || cur->parentSymbol == NULL)
+      return cur;
 
-  } else {
-    while (retval == NULL) {
-      if (isTaskFun(fn) == false) {
-        retval = fn;
-      } else {
-        FnSymbol* caller = NULL;
+    FnSymbol* curFn = cur->getFunction();
+    // If we didn't find a function, or it's not in tree, give up
+    if (curFn == NULL || curFn->inTree() == false)
+      return cur;
 
-        forv_Vec(CallExpr, call, gCallExprs) {
-          if (call->inTree() == true) {
-            if (FnSymbol* cfn = call->resolvedFunction()) {
-              if (cfn == fn) {
-                caller = toFnSymbol(call->parentSymbol);
-                break;
-              }
-            }
-          }
-        }
+    // If it's already in user code, use that, because
+    // the line number is probably better
+    if (curFn->getModule()->modTag == MOD_USER)
+      return cur;
 
-        if (caller == NULL) {
-          retval = fn;
-        } else {
-          fn     = caller;
-        }
+    bool inlined = curFn->hasFlag(FLAG_INLINED_FN);
+
+    if (inlined == false || preserveInlinedLineNumbers)
+      return cur;
+
+    // Look for a call to that function
+    for_SymbolSymExprs(se, curFn) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      if (se == call->baseExpr) {
+        // Switch to considering that call point
+        cur = call;
+        break;
       }
     }
   }
 
-  return retval;
+  return cur; // never reached
+}
+
+bool printsUserLocation(const BaseAST* astIn) {
+  BaseAST* ast = const_cast<BaseAST*>(astIn);
+
+  if (Expr* expr = toExpr(ast)) {
+    Expr* foundExpr = findLocationIgnoringInternalInlining(expr);
+    if (foundExpr != NULL)
+      ast = foundExpr;
+  }
+
+  return (ast && ast->getModule()->modTag == MOD_USER);
+}
+
+// find a caller (direct or not) that is not in a task function,
+// for line number reporting
+static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
+
+  FnSymbol* lastFn = fn;
+  while (true) {
+    // If we ran out of functions in tree, use the last one
+    if (fn == NULL || fn->inTree() == false)
+      return lastFn;
+
+    // If it's not a task function, we are done
+    if (isTaskFun(fn) == false)
+      return fn;
+
+    // Otherwise, find the call site, and continue the search.
+    for_SymbolSymExprs(se, fn) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      if (se == call->baseExpr) {
+        lastFn = fn;
+        fn = call->getFunction();
+        break;
+      }
+    }
+  }
+
+  return lastFn; // never reached
 }
 
 // Print instantiation information for err_fn.
@@ -295,17 +337,24 @@ static void printInstantiationNoteForLastError() {
   }
 }
 
-static bool printErrorHeader(const BaseAST* ast) {
+static bool printErrorHeader(BaseAST* ast) {
+
+  if (Expr* expr = toExpr(ast)) {
+    Expr* use = findLocationIgnoringInternalInlining(expr);
+    if (use != NULL)
+      ast = use;
+  }
+
   if (!err_print) {
-    if (const Expr* expr = toConstExpr(ast)) {
-      Symbol* parent = expr->parentSymbol;
+    if (Expr* expr = toExpr(ast)) {
+      FnSymbol* fn = NULL;
+      if (expr && expr->parentSymbol != NULL)
+        fn = findNonTaskCaller(expr->getFunction());
 
-      if (isArgSymbol(parent))
-        parent = parent->defPoint->parentSymbol;
-
-      FnSymbol* fn = toFnSymbol(parent);
-
-      fn = findNonTaskCaller(fn);
+      // Don't consider functions that aren't in the tree
+      if (fn != NULL)
+        if (fn->defPoint == NULL || !fn->inTree())
+          fn = NULL;
 
       if (fn && fn != err_fn) {
         printInstantiationNoteForLastError();
@@ -591,7 +640,7 @@ static void vhandleError(FILE*          file,
   bool guess = false;
 
   if (file == stderr) {
-    guess = printErrorHeader(ast);
+    guess = printErrorHeader(const_cast<BaseAST*>(ast));
   }
 
   if (err_user || developer) {

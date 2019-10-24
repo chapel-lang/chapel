@@ -431,7 +431,7 @@ module DistributedBag {
       // Phase 2: Concurrently redistribute elements from segments which contain
       // more than the computed average.
       coforall segmentIdx in 0 .. #here.maxTaskPar {
-        var nSegmentElems : [localThis.targetLocales.size] int;
+        var nSegmentElems : [0..#localThis.targetLocales.size] int;
         var locIdx = 0;
         for loc in localThis.targetLocales do on loc {
           var nElems = getPrivatizedThis.bag!.segments[segmentIdx].nElems.read() : int;

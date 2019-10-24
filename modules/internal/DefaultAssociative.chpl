@@ -661,31 +661,9 @@ module DefaultAssociative {
       if found {
         return data[slotNum];
 
-      // if the element didn't exist, then this is either:
-      //
-      // - an error if the array does not own the domain (it's
-      //   trying to get a reference to an element that doesn't exist)
-      //
-      // - an indication that we should grow the domain + array to
-      //   include the element
-      } else if slotNum != -1 {
-
-        const arrOwnsDom = dom._arrs.length == 1;
-        if !arrOwnsDom {
-          // here's the error case
-          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
-          return data(0);
-        } else {
-          // grow the table
-          warning("growing associative domains by assigning to an array is deprecated");
-          const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
-
-          // and return the element
-          return data[newSlot];
-        }
+      // if the element didn't exist, then it is an error
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -942,19 +920,23 @@ module DefaultAssociative {
   }
   
   
-  // Thomas Wang's 64b mix function - see
-  // https://web.archive.org/web/20060705164341/http://www.concentric.net/~Ttwang/tech/inthash.htm
+  // Mix the bits, so that e.g. numbers in 0..N generate
+  // random-looking data across all the bits even if N is small.
   proc _gen_key(i: uint): uint {
+    // Thomas Wang's 64b mix function - 2007 version - see
+    // http://web.archive.org/web/20071223173210/http://www.concentric.net/~Ttwang/tech/inthash.htm
     var key = i;
-    key += ~(key << 32);
-    key ^= (key >> 22);
-    key += ~(key << 13);
-    key ^= (key >> 8);
-    key += (key << 3);
-    key ^= (key >> 15);
-    key += ~(key << 27);
-    key ^= (key >> 31);
+    key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+    key = key ^ (key >> 24);
+    key = (key + (key << 3)) + (key << 8); // key * 265
+    key = key ^ (key >> 14);
+    key = (key + (key << 2)) + (key << 4); // key * 21
+    key = key ^ (key >> 28);
+    key = key + (key << 31);
     return key;
+
+    // See commit history for this comment for some other mixers
+    // worth considering.
   }
   proc _gen_key(i: int): uint {
     return _gen_key(i:uint);
@@ -963,7 +945,7 @@ module DefaultAssociative {
   inline proc chpl__defaultHashCombine(a:uint, b:uint, fieldnum:int): uint {
     extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
     var n:uint = (17 + fieldnum):uint;
-    return a ^ chpl_bitops_rotl_64(b, n);
+    return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
   }
 
   inline proc chpl__defaultHash(b: bool): uint {
@@ -1053,6 +1035,7 @@ module DefaultAssociative {
       isComplexType(idxType)     ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
+      idxType == bytes            ||
       idxType == c_string         ||
       isClassType(idxType)        ||
       // these are handled differently

@@ -1840,7 +1840,7 @@ typedef struct {
   void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
   void*         src_addr_v[MAX_CHAINED_PUT_LEN];
-  uint64_t      src_v[MAX_CHAINED_PUT_LEN];
+  char          src_v[MAX_CHAINED_PUT_LEN][MAX_UNORDERED_TRANS_SZ];
   size_t        size_v[MAX_CHAINED_PUT_LEN];
   mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
 } put_buff_task_info_t;
@@ -5285,7 +5285,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("put", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("put", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
@@ -5805,7 +5805,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("unordered get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("unordered get", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
@@ -5836,7 +5836,7 @@ void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
   do_remote_put_buff(addr, locale, raddr, size, may_proxy_true);
@@ -5871,7 +5871,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("get", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
@@ -5908,7 +5908,7 @@ void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   remote_mr = mreg_for_remote_addr(tgt_addr, locale);
   info = task_local_buff_acquire(put_buff);
 
-  if (remote_mr == NULL || info == NULL || size > 8) {
+  if (remote_mr == NULL || info == NULL || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_put(src_addr, locale, tgt_addr, size, remote_mr, may_proxy);
     return;
   }
@@ -5972,7 +5972,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
-      !IS_ALIGNED_32(size)) {
+      !IS_ALIGNED_32(size) || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
@@ -6323,7 +6323,8 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("non-blocking get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("non-blocking get", locale, size,
+                               ln, fn, commID);
   chpl_comm_diags_incr(get_nb);
 
   //

@@ -6,6 +6,8 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-gasnet.bash
 source $CWD/common-numa.bash
 
+export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl localeModels"
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.numa"
 
 # TODO: Do we need/want this? (thomasvandoren, 2014-07-01)

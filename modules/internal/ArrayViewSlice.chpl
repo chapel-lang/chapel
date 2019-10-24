@@ -23,7 +23,7 @@
 // represent slices of another array via a domain.
 //
 module ArrayViewSlice {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   config param chpl_debugSerializeSlice = false,
                chpl_serializeSlices = false;
@@ -237,7 +237,6 @@ module ArrayViewSlice {
     }
 
     inline proc dsiAccess(i) ref {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -248,7 +247,6 @@ module ArrayViewSlice {
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -259,7 +257,6 @@ module ArrayViewSlice {
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -268,12 +265,9 @@ module ArrayViewSlice {
       }
     }
 
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !privDom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
+    inline proc dsiBoundsCheck(i) {
+      return privDom.dsiMember(i);
     }
-
 
     //
     // locality-oriented queries

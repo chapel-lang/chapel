@@ -50,7 +50,7 @@ chomp($user);
 $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
 $archive_dir = "$tmpdir/$reldir";
 SystemOrDie("rm -rf $tmpdir");
-SystemOrDie("mkdir -pv $tmpdir");
+SystemOrDie("mkdir -pv $archive_dir");
 $rootdir = "$tmpdir/chpl_home";
 
 # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo
@@ -59,12 +59,11 @@ $rootdir = "$tmpdir/chpl_home";
 if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
     # copy the current CHPL_HOME into the directory where chapel will be built
-    print "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with cp --archive ...\n";
-    SystemOrDie("cp --archive $chplhome $archive_dir");
+    print "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...\n";
+    SystemOrDie("cd $chplhome && tar -cf - . | (cd $archive_dir && tar -xf -)");
 
     $resultdir = "$chplhome/tar";
 } else {
-    SystemOrDie("mkdir -pv $archive_dir");
 
     # check out a clean copy of the sources into the directory where chapel will be built
     $git_url = $ENV{'CHPL_HOME_REPOSITORY'};
@@ -87,7 +86,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     }
 
     print "[gen_release] Confirm final Git source version used.\n";
-    SystemOrDie("cd $rootdir && git status && git log -1");
+    SystemOrDie("cd $rootdir && git --no-pager status && git --no-pager log -1");
 
     if ($version eq "" or $version eq "developer") {
       print "[gen_release] Create BUILD_VERSION file.\n";
@@ -171,6 +170,9 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
 chdir "$archive_dir";
 
+print "[gen_release] Creating the spec tests...\n";
+SystemOrDie("make spectests");
+
 # Docs/man page must be built first so we can get rid of any extra files
 # (chpldoc) with a clobber
 print "[gen_release] Building the docs...\n";
@@ -204,7 +206,6 @@ print "[gen_release] Creating the examples directory...\n";
 SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
-SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
 print "[gen_release] Removing Makefiles that are not intended for release...\n";
 SystemOrDie("cd make/platform && rm Makefile.sunos_old");

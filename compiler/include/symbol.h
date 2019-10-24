@@ -177,6 +177,7 @@ public:
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
+  bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
   bool               noDocGen()                                const;
 
@@ -261,7 +262,6 @@ private:
 
 bool isString(Symbol* symbol);
 bool isBytes(Symbol* symbol);
-bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
 *                                                                             *

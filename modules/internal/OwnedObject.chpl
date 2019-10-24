@@ -174,7 +174,7 @@ supplied. For example:
 
  */
 module OwnedObject {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   /*
      :record:`owned` manages the deletion of a class instance assuming
@@ -400,17 +400,16 @@ module OwnedObject {
 
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
-      // Add check for lhs non-nilable rhs nilable
-      if _to_nonnil(lhs.chpl_t) == lhs.chpl_t {
-        if _to_nilable(rhs.chpl_t) == rhs.chpl_t {
+      // Add check for lhs non-nilable.
+      // Do it even if rhs non-nilable, as for now static checking has holes.
+      if isNonNilableClass(lhs.chpl_t) {
           if rhs.chpl_p == nil {
-            HaltWrappers.nilCheckHalt("argument to owned = is nil");
+            HaltWrappers.nilCheckHalt("assigning nil to non-nilable owned");
           }
-        }
       }
     }
 
-    lhs.retain(rhs.release()!);
+    lhs.retain(rhs.release());
   }
 
   pragma "no doc"

@@ -122,7 +122,7 @@ void normalize() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isClassWithInitializers(at)  == true ||
-        isRecordWithInitializers(at) == true) {
+        isRecordOrUnionWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
 
@@ -749,7 +749,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
         // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isRecordWithInitializers(at) == true) {
+          if (isRecordOrUnionWithInitializers(at) == true) {
             retval = var;
           }
         }
@@ -970,7 +970,9 @@ static void processSyntacticDistributions(CallExpr* call) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
           if (isDistClass(canonicalClassType(ts->type)) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall->remove()));
+                new NamedExpr(astr_chpl_manager,
+                              new SymExpr(dtUnmanaged->symbol)),
+                distCall->remove());
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
@@ -983,11 +985,13 @@ static void processSyntacticDistributions(CallExpr* call) {
 }
 
 /* Find patterns like
-     (new (call <manager> (call ClassType <init-args>)))
-     ... where <manager> might be _owned _to_unmanaged _shared
+     (new _chpl_manager=<manager> (call ClassType <init-args>))
+     ... where <manager> might be dtOwned, dtBorrowed, etc
 
    and replace them with
-     (new (call ClassType init-args _chpl_manager=<manager>)))
+     (new (call ClassType <init-args> _chpl_manager=<manager>)))
+
+   Also handles some patterns involving ? / PRIM_TO_NILABLE_CLASS.
 
    Here the "manager" indicates to function resolution whether
    the new pointer should be:
@@ -1002,108 +1006,96 @@ static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
   bool argListError = false;
 
-  bool nilable = false;
+  bool makeNilable = false;
+  NamedExpr* managerArg = NULL;
 
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
-    if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
-      if (callManager->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-          callManager->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
-        if (CallExpr* sub = toCallExpr(callManager->get(1))) {
-          nilable = true;
-          sub->remove();
-          CallExpr* c = new CallExpr(dtOwned->symbol, sub);
-          callManager->replace(c);
-          callManager = c;
+    // Transform (new _chpl_manager=_ (call _)) into
+    //           (new (call _ _chpl_manager=_))
+    // This also asserts that the call expr exists in this case.
+    if (NamedExpr* ne = toNamedExpr(newCall->get(1))) {
+      if (ne->name == astr_chpl_manager) {
+        managerArg = ne;
+
+        CallExpr* subCall = toCallExpr(newCall->get(2));
+        // Find inner call in the event of a to-nilable e.g. for
+        //   new owned C()?
+        if (subCall != NULL) {
+          CallExpr* callClass = NULL;
+          if (subCall->numActuals() >= 1)
+            callClass = toCallExpr(subCall->get(1));
+          if (subCall->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+              subCall->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+            makeNilable = true;
+            subCall->replace(callClass->remove());
+            subCall = callClass;
+          }
+        }
+
+        if (subCall != NULL) {
+          subCall->insertAtTail(ne->remove());
+        } else {
+          USR_FATAL_CONT(newCall,
+                         "type in 'new' expression is missing its argument list");
         }
       }
+    }
 
-      if (callManager->numActuals() == 1) {
-        if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
-          if (callClass->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-              callClass->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
-            if (CallExpr* sub = toCallExpr(callClass->get(1))) {
-              nilable = true;
-              sub->remove();
-              callClass->replace(sub);
-              callClass = sub;
-            }
-          }
-          if (!callClass->isPrimitive() &&
-              !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS)
-              || callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED);
-            bool isborrowed = callManager->isPrimitive(PRIM_TO_BORROWED_CLASS)
-              || callManager->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED);
-            bool isowned = false;
-            bool isshared = false;
-            if (SymExpr* se = toSymExpr(callManager->baseExpr)) {
-              if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-                Type* ct = canonicalDecoratedClassType(ts->type);
-                if (ct == dtOwned)
-                  isowned = true;
-                else if (ct == dtShared)
-                  isshared = true;
-                else
-                  INT_ASSERT(!callManager->isNamed("_owned"));
-              }
-            }
-
-            if (SymExpr* baseSe = toSymExpr(callClass->baseExpr))
-              if (TypeSymbol* ts = toTypeSymbol(baseSe->symbol()))
-                if (isNilableClassType(ts->type))
-                  nilable = true;
-
-            if (isunmanaged || isborrowed || isowned || isshared) {
-              callClass->remove();
-              callManager->remove();
-
-              Expr* replace = new CallExpr(PRIM_NEW, callClass);
-
-              Expr* manager = NULL;
-              if (isunmanaged) {
-                manager = new SymExpr(dtUnmanaged->symbol);
-              } else if (isborrowed) {
-                manager = new SymExpr(dtBorrowed->symbol);
-              } else {
-                manager = callManager->baseExpr->copy();
-              }
-              // Adjust the manager type for nilable
-              if (nilable) {
-                if (SymExpr* managerSe = toSymExpr(manager)) {
-                  if (TypeSymbol* ts = toTypeSymbol(managerSe->symbol())) {
-                    Type* t = ts->type;
-                    if (isManagedPtrType(t))
-                      t = getDecoratedClass(t, CLASS_TYPE_MANAGED_NILABLE);
-                    else if (t == dtBorrowed)
-                      t = dtBorrowedNilable;
-                    else if (t == dtUnmanaged)
-                      t = dtUnmanagedNilable;
-                    manager = new SymExpr(t->symbol);
-                  }
-                }
-              }
-
-              callClass->insertAtTail(new NamedExpr(astr_chpl_manager, manager));
-
-              newCall->replace(replace);
-            }
-          }
-        } else if (isSymExpr(callManager->get(1)) &&
-                   (callManager->isNamed("_owned") ||
-                    callManager->isNamed("_shared") ||
-                    callManager->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-                    callManager->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
-                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))) {
-          SymExpr* se = toSymExpr(callManager->get(1));
-          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-            argListError = true;
+    // Handle the case of e.g. new C(int)? aka (new (call to-nilable (call C)))
+    // In that event, we need to indicate to resolution to create
+    // a nilable class.
+    if (managerArg == NULL) {
+      if (CallExpr* callPrim = toCallExpr(newCall->get(1))) {
+        if (callPrim->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+            callPrim->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+          if (CallExpr* sub = toCallExpr(callPrim->get(1))) {
+            makeNilable = true;
+            sub->remove();
+            TypeSymbol* ts = dtAnyManagementNilable->symbol;
+            managerArg = new NamedExpr(astr_chpl_manager, new SymExpr(ts));
+            callPrim->replace(sub);
+            sub->insertAtTail(managerArg);
           }
         }
       }
-    } else {
-      if (newCall->numActuals() == 1) {
-        argListError = true;
+    }
+
+    if (makeNilable) {
+      INT_ASSERT(managerArg != NULL);
+      // Adjust the manager to the nilable variant
+      SymExpr* managerSe = toSymExpr(managerArg->actual);
+      INT_ASSERT(managerSe);
+      TypeSymbol* ts = toTypeSymbol(managerSe->symbol());
+      INT_ASSERT(ts);
+      Type* t = ts->type;
+      if (isManagedPtrType(t))
+        t = getDecoratedClass(t, CLASS_TYPE_MANAGED_NILABLE);
+      else if (t == dtBorrowed)
+        t = dtBorrowedNilable;
+      else if (t == dtUnmanaged)
+        t = dtUnmanagedNilable;
+      managerSe->setSymbol(t->symbol);
+    }
+
+    if (newCall->numActuals() == 1 && !isCallExpr(newCall->get(1))) {
+      argListError = true;
+    }
+    if (newCall->numActuals() >= 1) {
+      if (CallExpr* subCall = toCallExpr(newCall->get(1))) {
+        if (subCall->isNamedAstr(astrSdot)) {
+          USR_FATAL_CONT(newCall,
+                         "Please use parentheses to disambiguate "
+                         "dot expression after new");
+        } else {
+          UnresolvedSymExpr* baseSe = toUnresolvedSymExpr(subCall->baseExpr);
+          if (baseSe != NULL) {
+            // We should have SymExprs for types by now
+            // A call that is not resolved, as in new (t())(),
+            //  would appear as a nested CallExpr.
+            USR_FATAL_CONT(newCall,
+                           "Attempt to 'new' a function or undefined symbol");
+          }
+        }
       }
     }
   }
@@ -3114,12 +3106,10 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 
     newSym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
 
-    collectSymExprs(newFn, symExprs);
+    collectSymExprsFor(newFn, newSym, symExprs);
 
     for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == newSym) {
         se->setSymbol(new_IntSymbol(width));
-      }
     }
   } else {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
@@ -3226,13 +3216,12 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
   DefExpr*              def      = toDefExpr(typeExpr->body.tail);
   std::vector<SymExpr*> symExprs;
 
-  collectSymExprs(fn, symExprs);
+  collectSymExprsFor(fn, def->sym, symExprs);
 
   if (formal->variableExpr) // varargs argument e.g. proc f(x...)
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, formal));
 
   for_vector(SymExpr, se, symExprs) {
-    if (se->symbol() == def->sym) {
       if (formal->variableExpr)
         // e.g. proc foo(arg:?t ...)
         // formal is a tuple but the query should be of the tuple elements
@@ -3240,7 +3229,6 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
         se->replace(new CallExpr(PRIM_QUERY, formal, new_IntSymbol(2)));
       else
         se->replace(new CallExpr(PRIM_TYPEOF, formal));
-    }
   }
 
   formal->typeExpr->remove();

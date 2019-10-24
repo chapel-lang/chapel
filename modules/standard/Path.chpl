@@ -164,9 +164,7 @@ proc basename(name: string): string {
    :return: The longest common path prefix.
    :rtype: `string`
 */
-// NOTE: Add in intent here to temporarily fix compiler memory leak related
-// to use of varargs.
-proc commonPath(in paths: string ...?n): string {
+proc commonPath(paths: string ...?n): string {
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
   var firstPath = paths(1);
@@ -470,9 +468,7 @@ private proc joinPathComponent(comp: string, ref result: string) {
             present.
    :rtype: `string`
 */
-// NOTE: Add in intent here to temporarily fix compiler memory leak related
-// to use of varargs.
-proc joinPath(in paths: string ...?n): string {
+proc joinPath(paths: string ...?n): string {
   var result: string;
 
   for path in paths do

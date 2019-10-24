@@ -132,7 +132,7 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
 
  */
 module String {
-  use ChapelStandard;
+  private use ChapelStandard;
   use CString;
   use SysCTypes;
   use StringCasts;
@@ -2232,21 +2232,21 @@ module String {
 
   pragma "no doc"
   inline proc <(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) < 0;
+    return doLessThan(a, b);
   }
 
   pragma "no doc"
   inline proc >(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) > 0;
+    return doGreaterThan(a, b);
   }
 
   pragma "no doc"
   inline proc <=(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) <= 0;
+    return doLessThanOrEq(a, b);
   }
   pragma "no doc"
   inline proc >=(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
+    return doGreaterThanOrEq(a, b);
   }
 
 
@@ -2422,16 +2422,6 @@ module String {
 
   pragma "no doc"
   inline proc chpl__defaultHash(x : string): uint {
-    var hash: int(64);
-    on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
-      // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
-      var locHash: int(64) = 5381;
-      for c in 0..#(x.numBytes) {
-        locHash = ((locHash << 5) + locHash) ^ x.buff[c];
-      }
-      hash = locHash;
-    }
-    return hash:uint;
+    return getHash(x);
   }
 }

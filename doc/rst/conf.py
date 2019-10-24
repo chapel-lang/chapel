@@ -68,12 +68,12 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '1.20'                  # TODO -- parse from `chpl --version`
+chplversion = '1.21'                  # TODO -- parse from `chpl --version`
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '1.20.0'
+release = '1.21.0 (pre-release)'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -315,3 +315,25 @@ def allow_nonlocal_image_warn_node(self, msg, node):
         original_warn_mode(self, msg, node)
 
 sphinx.environment.BuildEnvironment.warn_node = allow_nonlocal_image_warn_node
+
+
+### Custom lexers for syntax listings
+from pygments.lexer import RegexLexer
+from pygments import token
+from sphinx.highlighting import lexers
+
+class TrivialLexer(RegexLexer):
+    name = 'trivial'
+
+    tokens = {
+        'root': [
+            (r'.*\n', token.Text)
+            #(r'MyKeyword', token.Keyword),
+            #(r'[a-zA-Z]', token.Name),
+            #(r'\s', token.Text)
+        ]
+    }
+
+lexers['syntax'] = TrivialLexer(startinline=True)
+lexers['syntaxdonotcollect'] = TrivialLexer(startinline=True)
+lexers['printoutput'] = TrivialLexer(startinline=True)

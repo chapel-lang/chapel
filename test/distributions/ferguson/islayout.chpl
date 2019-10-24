@@ -7,6 +7,9 @@ proc main() {
   // to keep up to date. But, check one to be sure.
   var blk = new unmanaged Block(boundingBox={1..10});
   assert(!blk.dsiIsLayout());
+  
+  //properly cleanup the distribution
+  blk.dsiDestroyDist();
   delete blk;
 
   var cs = new unmanaged CS();
@@ -31,4 +34,8 @@ proc main() {
   var ptr:c_ptr(int) = c_calloc(int, 1);
   var B = makeArrayFromPtr(ptr, 1);
   assert(B.domain.dist.dsiIsLayout());
+
+  //make array from ptr creates an array that borrows the buffer. So, the
+  //allocation needs to be cleaned up using the pointer.
+  c_free(ptr);
 }
