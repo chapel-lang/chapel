@@ -23,6 +23,7 @@
 #include "chplrt.h"
 
 #include "chpl-align.h"
+#include "chpl-env.h"
 #include "chpl-env-gen.h"
 #include "chplcgfns.h"
 #include "chplsys.h"
@@ -172,9 +173,29 @@ void chpl_topo_init(void) {
   //
   // Find the NUMA nodes, that is, the objects at numaLevel that also
   // have CPUs.  This is as opposed to things like Xeon Phi HBM, which
-  // is memory-only, no CPUs.
+  // is memory-only, no CPUs.  Allow for overriding this through the
+  // environment.
   //
-  {
+  if (strcmp(CHPL_LOCALE_MODEL, "flat") != 0) {
+    //
+    // The number of NUMA domains only matters for locale models other
+    // than 'flat'.
+    //
+    numNumaDomains = (int) chpl_env_rt_get_uint("NUM_NUMA_DOMAINS", 0);
+    if (numNumaDomains != 0) {
+      //
+      // If you're using Qthreads tasking, forcing the number of NUMA
+      // domains also forces the number of Qthreads shepherds.  (If we
+      // don't do this we can find ourselves trying to queue tasks on
+      // nonexistent shepherds.)
+      //
+      if (strcmp(CHPL_TASKS, "qthreads") == 0) {
+        chpl_env_set_uint("CHPL_RT_NUM_THREADS_PER_LOCALE", numNumaDomains, 1);
+      }
+    }
+  }
+
+  if (numNumaDomains == 0) {
     const hwloc_cpuset_t cpusetAll = hwloc_get_root_obj(topology)->cpuset;
     numNumaDomains =
       hwloc_get_nbobjs_inside_cpuset_by_depth(topology, cpusetAll, numaLevel);
