@@ -855,7 +855,7 @@ record regexp {
 
       if got {
         // Yield capture groups
-        for i in 0..#ncaptures {
+        for i in 1..ncaptures {
           yield text[new reMatch(
                 !qio_regexp_string_piece_isnull(matches[i]),
                 matches[i].offset:byteIndex,
