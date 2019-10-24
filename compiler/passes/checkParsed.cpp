@@ -66,7 +66,7 @@ checkParsed() {
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (toVarSymbol(def->sym)) {
+    /*if (toVarSymbol(def->sym)) {
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -77,7 +77,7 @@ checkParsed() {
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
                              def->sym->name);
-    }
+    }*/
 
     //
     // This test checks to see if query domains (e.g., '[?D]') are
