@@ -169,15 +169,15 @@ the same order as in the tuple.
 \index{tuples!indexing}
 
 A tuple component may be accessed by an integral parameter (a compile-time
-constant) as if the tuple were an array.  Indexing is 1-based, so the
-first component in the tuple is accessed by the index \chpl{1}, and so
+constant) as if the tuple were an array.  Indexing is 0-based, so the
+first component in the tuple is accessed by the index \chpl{0}, and so
 forth.
 
 \begin{chapelexample}{access.chpl}
 The loop
 \begin{chapel}
 var myTuple = (1, 2.0, "three");
-for param i in 1..3 do
+for param i in 0..2 do
   writeln(myTuple(i));
 \end{chapel}
 uses a param loop to output the components of a tuple.
@@ -197,7 +197,7 @@ necessarily compile-time constants.
 The loop
 \begin{chapel}
 var myHTuple = (1, 2, 3);
-for i in 1..3 do
+for i in 0..2 do
   writeln(myHTuple(i));
 \end{chapel}
 uses a serial loop to output the components of a homogeneous tuple.
@@ -239,7 +239,7 @@ equivalent to:
 
 % This is difficult to capture in a test program
 \begin{chapel}
-[for|forall|coforall] i in 1..n do
+[for|forall|coforall] i in 0..n-1 do
   ...t(i)...
 \end{chapel}
 
@@ -255,7 +255,7 @@ semantics.
 In tuple assignment, the components of the tuple on the left-hand side
 of the assignment operator are each assigned the components of the
 tuple on the right-hand side of the assignment.  These assignments
-occur in component order (component one followed by component two,
+occur in component order (component zero followed by component one,
 etc.).
 
 \section{Tuple Destructuring}
@@ -526,8 +526,8 @@ proc f((x, (y, z))) {
 \end{chapel}
 is equivalent to the function \chpl{g} defined as
 \begin{chapel}
-proc g(t) where isTuple(t) && t.size == 2 && isTuple(t(2)) && t(2).size == 2 {
-  writeln((t(1), t(2)(1), t(2)(2)));
+proc g(t) where isTuple(t) && t.size == 2 && isTuple(t(1)) && t(1).size == 2 {
+  writeln((t(0), t(1)(0), t(1)(1)));
 }
 \end{chapel}
 except without the definition of the argument name \chpl{t}.
@@ -606,7 +606,7 @@ returns a tuple containing all of the components of a tuple except for
 the first:
 \begin{chapel}
 proc first(t) where isTuple(t) {
-  return t(1);
+  return t(0);
 }
 proc rest(t) where isTuple(t) {
   proc helper(first, rest...)

@@ -112,7 +112,7 @@ size \chpl{p} where each component in the tuple has the value of
 \begin{chapel}
 proc fillTuple(param p: int, x: int) {
   var result: p*int;
-  for param i in 1..p do
+  for param i in 0..p-1 do
     result(i) = x;
   return result;
 }
@@ -145,7 +145,7 @@ where each component in the tuple is initialized to \chpl{x}:
 \begin{chapel}
 proc fillTuple(param p, x) {
   var result: p*x.type;
-  for param i in 1..p do
+  for param i in 0..p-1 do
     result(i) = x;
   return result;
 }
@@ -180,7 +180,7 @@ queried type for clarity:
 \begin{chapel}
 proc fillTuple(param p: int, x: ?t) {
   var result: p*t;
-  for param i in 1..p do
+  for param i in 0..p-1 do
     result(i) = x;
   return result;
 }
