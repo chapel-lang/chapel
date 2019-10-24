@@ -534,10 +534,17 @@ static void normalizeBase(BaseAST* base) {
         if (fn == stringLiteralModule->initFn) {
           fixStringLiteralInit(fn);
         } else if (fn->isNormalized() == false) {
-          Expr* type = defExpr->exprType;
-          Expr* init = defExpr->init;
-
-          if (type != NULL || init != NULL) {
+          if (defExpr->exprType == NULL &&
+              defExpr->init == NULL &&
+              (isShadowVarSymbol(var) ||
+               var->hasFlag(FLAG_TEMP) ||
+               var->hasFlag(FLAG_INDEX_VAR) ||
+               defExpr->parentExpr == rootModule->block ||
+               defExpr->parentExpr == stringLiteralModule->block ||
+               fn->hasFlag(FLAG_COMPILER_GENERATED))) {
+            // Don't try to normalize compiler temporary initialization
+            // with split initialization.
+          } else {
             if (var->isType() == true) {
               normalizeTypeAlias(defExpr);
 
@@ -685,9 +692,10 @@ static void checkUseBeforeDefs() {
 
 // guard against "var a:int = a;"
 static void checkSelfDef(CallExpr* call, Symbol* sym) {
-  if (SymExpr* se2 = toSymExpr(call->get(2)))
-    if (se2->symbol() == sym)
-      USR_FATAL_CONT(se2, "'%s' is used to define itself", sym->name);
+  if (call->numActuals() >= 2)
+    if (SymExpr* se2 = toSymExpr(call->get(2)))
+      if (se2->symbol() == sym)
+        USR_FATAL_CONT(se2, "'%s' is used to define itself", sym->name);
 }
 
 // If the AST node defines a symbol, then return that symbol.

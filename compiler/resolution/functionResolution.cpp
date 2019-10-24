@@ -9382,6 +9382,13 @@ void resolvePrimInit(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT));
 
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT) &&
+      call->numActuals() == 1) {
+    // Without type information, PRIM_INIT_VAR_SPLIT does nothing.
+    call->convertToNoop();
+    return;
+  }
+
   valExpr = call->get(1);
   fieldNameExpr = NULL;
   typeExpr = call->get(2);
