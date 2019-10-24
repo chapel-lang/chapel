@@ -630,7 +630,7 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           }
 
         } else if (isLcnSymbol(sym) == true) {
-          if (sym->defPoint->parentExpr != rootModule->block) {
+          if (sym->defPoint && sym->defPoint->parentExpr != rootModule->block) {
             Symbol* parent = sym->defPoint->parentSymbol;
 
             if (parent == fn || (parent == mod && mod->initFn == fn)) {
@@ -709,7 +709,8 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
       if (call->isPrimitive(PRIM_MOVE)      ||
           call->isPrimitive(PRIM_ASSIGN)    ||
           call->isPrimitive(PRIM_INIT_VAR)  ||
-          call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+          call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT)) {
         if (call->get(1) == se) {
           retval = se->symbol();
           checkSelfDef(call, se->symbol());
@@ -2026,6 +2027,14 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   Expr*   type = defExpr->exprType;
   Expr*   init = defExpr->init;
 
+  if (type == NULL && init == NULL) {
+    // Don't worry about compiler temporaries
+    INT_ASSERT(var->hasFlag(FLAG_TEMP));
+    return;
+  }
+
+  // TODO: call findInitPoints
+
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
 
@@ -2095,6 +2104,8 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
   VarSymbol* var  = toVarSymbol(defExpr->sym);
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
+
+  INT_ASSERT(type != NULL || init != NULL);
 
   // Noakes: Feb 17, 2017
   //   config ref / const ref can be overridden at compile time.
