@@ -97,6 +97,8 @@ static void resolveExportWrapperTypeAliases(void) {
 }
 
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
+  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
+  if (!isLibraryCompile) { return; }
 
   //
   // We have to resolve type aliases for export wrapper types even if we
@@ -105,14 +107,11 @@ void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
   //
   resolveExportWrapperTypeAliases();
 
-  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
-  if (!isLibraryCompile) { return; }
-
-  resolveExportWrapperTypeAliases();
-
   for_vector(FnSymbol, fn, fns) {
     fixupExportedFunction(fn);
   }
+
+  return;
 }
 
 void fixupExportedFunction(FnSymbol* fn) {
