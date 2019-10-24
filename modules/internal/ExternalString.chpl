@@ -19,6 +19,7 @@
 
 module ExternalString {
   use CPtr;
+  private use SysCTypes;
 
   //
   // TODO: This shouldn't be necessary, and the compiler should figure this

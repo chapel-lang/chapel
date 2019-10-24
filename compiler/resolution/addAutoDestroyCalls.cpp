@@ -421,9 +421,33 @@ static void gatherIgnoredVariablesForErrorHandling(
       if (CallExpr* call = toCallExpr(move->get(2))) {
         if (FnSymbol* fn = call->resolvedFunction()) {
           if (fn->throwsError()) {
-            SymExpr *se = toSymExpr(move->get(1));
-            ignore = toVarSymbol(se->symbol());
-            ignoredVariables.insert(ignore);
+            // The following block is a workaround to close a memory leak in
+            // code similar to:
+            //
+            //   try {
+            //     var a = for i in 0..3 throwingFunc(i)
+            //   }
+            //   catch { ... }
+            //
+            // Do not ignore if the call is chpl__initCopy(ir) because not
+            // cleaning after it causes memory leaks. See the test:
+            // test/errhandling/ferguson/loopexprs-caught.chpl and PR #14192
+            bool isInitCopyWithIR = false;
+            if (fn->hasFlag(FLAG_INIT_COPY_FN)) {
+              if (call->numActuals() >= 1) {
+                if (SymExpr *argSE = toSymExpr(call->get(1))) {
+                  if (argSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+                    isInitCopyWithIR = true;
+                  }
+                }
+              }
+            }
+
+            if (!isInitCopyWithIR) {
+              SymExpr *se = toSymExpr(move->get(1));
+              ignore = toVarSymbol(se->symbol());
+              ignoredVariables.insert(ignore);
+            }
           }
         }
       }

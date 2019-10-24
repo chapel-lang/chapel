@@ -5,4 +5,6 @@
 
 # --report-optimized-forall-unordered-ops reports when the opt fires
 
--sPODValAccess=false --no-codegen --optimize-forall-unordered-ops --report-optimized-forall-unordered-ops
+# --no-checks because we probably don't care if checks interfere with the opt
+
+-sPODValAccess=false --no-codegen --optimize-forall-unordered-ops --report-optimized-forall-unordered-ops --no-checks

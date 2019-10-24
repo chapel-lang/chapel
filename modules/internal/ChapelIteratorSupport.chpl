@@ -38,7 +38,7 @@
 pragma "error mode fatal" // avoid compiler errors here
 pragma "unsafe"
 module ChapelIteratorSupport {
-  use ChapelStandard;
+  private use ChapelStandard;
   private use Reflection;
 
   //

@@ -15,8 +15,10 @@ in an unset state so that no field contains data.
 
 The syntax of a union type is summarized as follows:
 \begin{syntax}
+\begin{verbatim}
 union-type:
   identifier
+\end{verbatim}
 \end{syntax}
 The union type is specified by the name of the union type.  This
 simplification from class and record types is possible because generic
@@ -29,6 +31,7 @@ unions are not supported.
 
 A union is defined with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 union-declaration-statement:
   `extern'[OPT] `union' identifier { union-statement-list }
 
@@ -42,6 +45,7 @@ union-statement:
   iterator-declaration-statement
   variable-declaration-statement
   empty-statement
+\end{verbatim}
 \end{syntax}
 
 If the \chpl{extern} keyword appears before the \chpl{union} keyword, then an

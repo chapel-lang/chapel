@@ -135,6 +135,7 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 
 // resolution
 Expr*     resolveExpr(Expr* expr);
+void      resolveBlockStmt(BlockStmt* blockStmt);
 
 // type.cpp
 void initForTaskIntents();

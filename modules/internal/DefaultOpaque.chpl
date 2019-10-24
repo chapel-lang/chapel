@@ -20,7 +20,7 @@
 // DefaultOpaque.chpl
 //
 module DefaultOpaque {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   // record _OpaqueIndex is defined in ChapelArray
 

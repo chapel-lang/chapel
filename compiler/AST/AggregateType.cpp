@@ -46,6 +46,8 @@ AggregateType* dtObject = NULL;
 AggregateType* dtBytes  = NULL;
 AggregateType* dtString = NULL;
 AggregateType* dtLocale = NULL;
+AggregateType* dtOwned  = NULL;
+AggregateType* dtShared = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
@@ -516,6 +518,13 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
 
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
+
+      if (fn->name == astrInitEquals) {
+        if (fn->numFormals() != 1) {
+          USR_FATAL_CONT(fn, "%s.init= must have exactly one argument",
+                         this->name());
+        }
+      }
 
       fn->_this = arg;
 

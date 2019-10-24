@@ -380,6 +380,7 @@ TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtAnyEnumerated;
 TYPE_EXTERN Type*             dtAnyImag;
 TYPE_EXTERN Type*             dtAnyReal;
+TYPE_EXTERN Type*             dtAnyPOD;
 
 TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
@@ -449,6 +450,9 @@ int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
+bool isUnmanagedClass(Type* t);
+bool isBorrowedClass(Type* t);
+bool isOwnedOrSharedOrBorrowed(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref

@@ -23,7 +23,7 @@
 // In terms of how they are used, c_strings are a "close to the metal"
 // representation, being in essence the common NUL-terminated C string.
 module CString {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //inline proc c_string.c_str() return this;
 

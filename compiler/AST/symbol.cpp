@@ -260,6 +260,13 @@ bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
   return hasFlag(aflag) || hasFlag(bflag);
 }
 
+bool Symbol::isKnownToBeGeneric() {
+  if (FnSymbol* fn = toFnSymbol(this))
+    return fn->isGenericIsValid() && fn->isGeneric();
+  else
+    return hasFlag(FLAG_GENERIC);
+}
+
 // Don't generate documentation for this symbol, either because it is private,
 // or because the symbol should not be documented independent of privacy
 bool Symbol::noDocGen() const {

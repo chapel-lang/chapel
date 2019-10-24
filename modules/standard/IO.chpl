@@ -3390,6 +3390,7 @@ iter channel.lines() {
 pragma "no doc"
 proc _can_stringify_direct(t) param : bool {
   if (t.type == string ||
+      t.type == bytes ||
       t.type == c_string ||
       isRangeType(t.type) ||
       isPrimitiveType(t.type)) {
@@ -3446,6 +3447,11 @@ proc stringify(const args ...?k):string {
       if args[i].type == string ||
          args[i].type == c_string {
         str += args[i]:string;
+      } else if args[i].type == bytes {
+        //decodePolicy.replace never throws
+        try! {
+          str += args[i].decode(decodePolicy.replace);
+        }
       } else if isRangeType(args[i].type) ||
                 isPrimitiveType(args[i].type) {
         str += args[i]:string;

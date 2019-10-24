@@ -25,7 +25,7 @@
    See also :ref:`readme-extern`.
  */
 module CPtr {
-  use ChapelStandard;
+  private use ChapelStandard;
   private use SysBasic, SysError;
   private use HaltWrappers only;
 

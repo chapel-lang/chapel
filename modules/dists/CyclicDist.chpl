@@ -835,9 +835,6 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   }
   if doRADOpt && !stridable {
     if myLocArr {
-      if boundsChecking then
-        if !dom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
         if myLocArr!.locRAD == nil {
@@ -881,6 +878,11 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
 
 proc CyclicArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
+
+proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.dsiMember(i);
+}
+
 
 iter CyclicArr.these() ref {
   for i in dom do

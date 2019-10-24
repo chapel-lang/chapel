@@ -8,12 +8,9 @@ use IO;
 
 use IO;
 
-// capture some common ASCII values as integers
-param eol = "\n".toByte(),
-      gt  = ">".toByte(),
-      up2low = "A".toByte() - "a".toByte();
+param eol = "\n".toByte();    // end-of-line, as an integer
 
-const table = initTable(b"ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN");
+const table = createTable();  // create the table of code complements
 
 proc main(args: [] string) {
   const stdin = openfd(0),
@@ -35,8 +32,10 @@ proc main(args: [] string) {
       // Scan forward until we get to '>' (end of sequence) or EOF
       const (eof, nextDescOffset) = findNextDesc();
 
-      // look for the next description, returning '(eof?, its offset)'
+      // look for the next description, returning '(eof, its offset)'
       proc findNextDesc() {
+        param gt  = ">".toByte();
+
         try {
           input.advancePastByte(gt);
         } catch {
@@ -88,7 +87,13 @@ proc process(seq: [?inds]) {
   }
 }
 
-proc initTable(pairs) {
+proc createTable() {
+  // `pairs` compactly represents the table we're creating, where the
+  // first byte of each pair (in either case) maps to the second:
+  //   A|a -> T, C|c -> G, G|g -> C, T|t -> A, etc.
+  param pairs = b"ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN",
+        upperToLower = "a".toByte() - "A".toByte();
+
   var table: [1..128] uint(8);
 
   table[eol] = eol;
@@ -97,7 +102,7 @@ proc initTable(pairs) {
           dst = pairs.byte[i+1];
 
     table[src] = dst;
-    table[src-up2low] = dst;
+    table[src+upperToLower] = dst;
   }
 
   return table;

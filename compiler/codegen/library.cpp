@@ -252,15 +252,12 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
 
-  if (!llvmCodegen) {
-    fprintf(makefile.fptr, " %s\n", libraries.c_str());
-  } else {
-    // LLVM requires a bit more work to make the GNU linker happy.
-    removeTrailingNewlines(libraries);
-
-    // Append the Chapel library as the last linker argument.
-    fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
-  }
+  //
+  // Append the Chapel library as the last linker argument. We do this as a
+  // stopgap to make the GNU linker happy.
+  //
+  removeTrailingNewlines(libraries);
+  fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
 }
 
 const char* getLibraryExtension() {
