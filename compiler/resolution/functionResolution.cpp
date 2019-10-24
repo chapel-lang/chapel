@@ -2430,10 +2430,6 @@ void resolveCall(CallExpr* call) {
       resolvePrimInit(call);
       break;
 
-    case PRIM_TYPE_INIT:
-      resolveGenericActuals(call);
-      break;
-
     case PRIM_INIT_FIELD:
       resolveInitField(call);
       break;

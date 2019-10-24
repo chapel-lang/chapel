@@ -665,11 +665,6 @@ initPrimitive() {
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
 
-  // Used in a context where only a type is needed.
-  // Establishes the type of the result without
-  // generating code.
-  prim_def(PRIM_TYPE_INIT,  "type init",  returnInfoFirstDeref);
-
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_THROW, "throw", returnInfoFirst, true, true);
