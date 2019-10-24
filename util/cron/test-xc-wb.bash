@@ -21,6 +21,10 @@ if [ "${COMPILER}" == "cray" ] ; then
   oversub=6
 fi
 
+if [ "${COMPILER}" == "intel" ] ; then
+  oversub=3
+fi
+
 # Run the tests!
 nightly_args="${nightly_args} -cron $(get_nightly_paratest_args $oversub)"
 log_info "Calling nightly with args: ${nightly_args}"
