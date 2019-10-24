@@ -87,8 +87,7 @@ static std::string    buildParentName(AList& argList,
                                       Type*  retType,
                                       bool   throws);
 
-static AggregateType* createAndInsertFunParentClass(FnSymbol* fn,
-                                                    CallExpr*   call,
+static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
                                                     const char* name);
 
 static FnSymbol*      createAndInsertFunParentMethod(CallExpr*      call,
@@ -1964,7 +1963,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
       USR_FATAL_CONT(call, "'%s' cannot be captured as a value because it is a generic function", captured_fn->name);
       if (dummyFcfError == NULL) {
-        AggregateType* parent = createAndInsertFunParentClass(captured_fn, call,
+        AggregateType* parent = createAndInsertFunParentClass(call,
                                                               "_fcf_error");
         dummyFcfError = newTemp(parent);
         theProgram->block->body.insertAtTail(new DefExpr(dummyFcfError));
@@ -2000,8 +1999,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     thisParentMethod = ctfs.second;
 
   } else {
-    parent = createAndInsertFunParentClass(captured_fn, call,
-                                           parent_name.c_str());
+    parent = createAndInsertFunParentClass(call, parent_name.c_str());
     thisParentMethod = createAndInsertFunParentMethod(call, parent,
         captured_fn->formals, true, captured_fn->retType,
         captured_fn->throwsError());
@@ -2225,8 +2223,7 @@ static Type* createOrFindFunTypeFromAnnotation(AList& argList,
   } else {
     FnSymbol* parentMethod = NULL;
 
-    parent       = createAndInsertFunParentClass(NULL, call,
-                                                 parent_name.c_str());
+    parent       = createAndInsertFunParentClass(call, parent_name.c_str());
     parentMethod = createAndInsertFunParentMethod(call,
                                                   parent,
                                                   argList,
@@ -2373,19 +2370,16 @@ static std::string buildParentName(AList& arg_list,
   we can assign new values onto variable that match the function type
   but may currently be pointing at a different function.
 */
-static AggregateType* createAndInsertFunParentClass(FnSymbol* fn,
-                                                    CallExpr*   call,
+static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
                                                     const char* name) {
   AggregateType* parent   = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol*    parentTs = new TypeSymbol(name, parent);
 
   parentTs->addFlag(FLAG_FUNCTION_CLASS);
 
-  if (fn == NULL) {
-    call->getModule()->block->insertAtHead(new DefExpr(parentTs));
-  } else {
-    fn->getModule()->block->insertAtHead(new DefExpr(parentTs));
-  }
+  // Because the general function type is potentially usable by other modules,
+  // insert it into ChapelBase.
+  baseModule->block->insertAtHead(new DefExpr(parentTs));
 
   parent->dispatchParents.add(dtObject);
 
@@ -2603,7 +2597,9 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
   if (throws)
     parent_method->throwsErrorInit();
 
-  parent->symbol->getModule()->block->insertAtHead(new DefExpr(parent_method));
+  // Because the parent method might be used by other modules, put it into
+  // ChapelBase.
+  baseModule->block->insertAtHead(new DefExpr(parent_method));
 
   normalize(parent_method);
 
