@@ -335,6 +335,10 @@ static void printInstantiationNoteForLastError() {
       }
     }
   }
+
+  // Clear these variables in case e.g. err_fn is deleted in a future pass
+  err_fn = NULL;
+  err_fn_header_printed = false;
 }
 
 static bool printErrorHeader(BaseAST* ast) {
