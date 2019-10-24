@@ -1248,7 +1248,7 @@ module Random {
 
       // Step each RNG that is not involved in the output.
       for i in numGenForResultType+1..numGen {
-        states[i].random(pcg_getvalid_inc(i:uint));
+        states[i-1].random(pcg_getvalid_inc(i:uint));
       }
     }
 
