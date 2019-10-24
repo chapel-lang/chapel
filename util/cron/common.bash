@@ -98,7 +98,7 @@ else
     log_info "Using default dir for chapel logs. These are not permanent! Location: ${LOGDIR_PREFIX}"
 fi
 export LOGDIR_PREFIX
-export PERF_LOGDIR_PREFIX=/cray/css/users/chapelu
+export PERF_LOGDIR_PREFIX=${CHPL_NIGHTLY_PERF_LOG_PREFIX:-/cray/css/users/chapelu}
 
 export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-$LOGDIR_PREFIX/Nightly}
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
