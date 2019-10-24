@@ -40,7 +40,6 @@
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h" // mem layer not initialized in init, need sys alloc
-#include "chpl-cache.h" // to call chpl_cache_init()
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -898,9 +897,6 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 void chpl_comm_post_task_init(void) {
   start_polling();
-
-  // Initialize the caching layer, if it is active.
-  chpl_cache_init();
 }
 
 void chpl_comm_rollcall(void) {

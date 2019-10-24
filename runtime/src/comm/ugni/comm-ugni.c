@@ -51,7 +51,6 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chplrt.h"
-#include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
@@ -2167,11 +2166,6 @@ void chpl_comm_post_task_init(void)
   //
   while (polling_task_running == false)
     sched_yield();
-
-  //
-  // Initialize the caching layer, if it is active.
-  //
-  chpl_cache_init();
 }
 
 
