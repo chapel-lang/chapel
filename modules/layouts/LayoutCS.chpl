@@ -153,6 +153,7 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+      // Optimized CSC->CSC / CSR->CSR
 
       // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
       // grow, which has a different heuristic to grow the internal arrays.
@@ -164,26 +165,10 @@ class CSDom: BaseSparseDomImpl {
       this.startIdx = rhs.startIdx;
       this.idx = rhs.idx;
     } else if _to_borrowed(rhs._instance.type) < DefaultSparseDom {
-      // Optimized COO -> CSR
-
-      this._nnz = rhs._nnz;
-      this.nnzDom = rhs.nnzDom;
-
-      this.rowRange = rhs.dim(1);
-      this.colRange = rhs.dim(2);
-      this.startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
-
-      var rowSums: [this.startIdxDom] int;
-      rowSums[this.startIdxDom.low] = 1;
-      var k = 1;
-      for (i, j) in rhs {
-        rowSums[i+1] += 1;
-        this.idx[k] = j;
-        k += 1;
-      }
-
-      this.startIdx = + scan rowSums;
+      // Optimized COO -> CSR/CSC
+      this.dsiBulkAdd(rhs._instance.indices[rhs.nnzDom.low..#rhs._nnz], dataSorted=true, isUnique=true);
     } else {
+      // Unoptimized generic case
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     }
   }
