@@ -2206,6 +2206,10 @@ static Symbol* varModuleName(VarSymbol* var) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool findInitPoints(DefExpr* def,
+                           Expr* start,
+                           std::vector<CallExpr*>& initAssigns);
+
 static void           normVarTypeInference(DefExpr* expr);
 static void           normVarTypeWoutInit(DefExpr* expr);
 static void           normVarTypeWithInit(DefExpr* expr);
@@ -2221,35 +2225,258 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
   Expr*  svarMark = prepareShadowVarForNormalize(defExpr, var);
+  std::vector<CallExpr*> initAssign;
 
-  // handle ref variables
-  if (var->hasFlag(FLAG_REF_VAR)) {
-    normRefVar(defExpr);
+  // if there is no init expression, search for initialization
+  // points written using '='
+  bool foundSplitInit = false;
 
-  } else if (type == NULL && init != NULL) {
-    normVarTypeInference(defExpr);
+  // For now, disable split init on non-user code
+  if (defExpr->getModule()->modTag == MOD_USER)
+    foundSplitInit = findInitPoints(defExpr, defExpr, initAssign);
 
-  } else if (type != NULL && init == NULL) {
-    normVarTypeWoutInit(defExpr);
+  if (foundSplitInit) {
+    USR_WARN(defExpr, "Found split init for '%s'", defExpr->sym->name);
+    if (developer)
+      USR_PRINT(defExpr, "for sym id %i", defExpr->sym->id);
+    for_vector(CallExpr, call, initAssign) {
+      USR_WARN(call, "init stmt here");
+    }
+  }
 
-  } else if (type != NULL && init != NULL) {
-    if (var->hasFlag(FLAG_PARAM) == true) {
-      CallExpr* cast = createCast(init->remove(), type->remove());
+  if (init != NULL || foundSplitInit == false ||
+      // Future: enable ref vars, params
+      var->hasFlag(FLAG_REF_VAR) || var->hasFlag(FLAG_PARAM)) {
+    // handle non-split initialization
 
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
+    // handle ref variables
+    if (var->hasFlag(FLAG_REF_VAR)) {
+      normRefVar(defExpr);
 
-    } else if (init->isNoInitExpr() == true) {
-      normVarNoinit(defExpr);
+    } else if (type == NULL && init != NULL) {
+      normVarTypeInference(defExpr);
+
+    } else if (type != NULL && init == NULL) {
+      normVarTypeWoutInit(defExpr);
+
+    } else if (type != NULL && init != NULL) {
+      if (var->hasFlag(FLAG_PARAM) == true) {
+        CallExpr* cast = createCast(init->remove(), type->remove());
+
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
+
+      } else if (init->isNoInitExpr() == true) {
+        normVarNoinit(defExpr);
+
+      } else {
+        normVarTypeWithInit(defExpr);
+      }
 
     } else {
-      normVarTypeWithInit(defExpr);
+      INT_ASSERT(false);
     }
-
   } else {
-    INT_ASSERT(false);
+    // handle split initialization
+
+    // Emit PRIM_INIT_VAR_SPLIT.
+    // It sets the type, if we have a type expression.
+    if (type == NULL)
+      defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT, var));
+    else
+      defExpr->insertAfter(
+          new CallExpr(PRIM_INIT_VAR_SPLIT, var, defExpr->exprType->remove()));
+
+    for_vector(CallExpr, call, initAssign) {
+      // Consider the RHS of the '=' call to be the init expr.
+      Expr* rhs = call->get(2)->remove();
+
+      if (var->hasFlag(FLAG_REF_VAR)) {
+        //       ref x = <value>;
+        // const ref y : <type> = <value>;
+        INT_FATAL("not implemented yet");
+
+      } else if (var->hasFlag(FLAG_PARAM)) {
+        INT_FATAL("not implemented yet");
+
+      } else {
+        // var x;
+        // x = <value>;
+        // const y: int;
+        // y = <value>
+
+        // The type will be inferred from the type of <value>
+        call->replace(new CallExpr(PRIM_INIT_VAR, var, rhs));
+      }
+    }
   }
+
   restoreShadowVarForNormalize(defExpr, svarMark);
 }
+
+static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
+
+typedef enum {
+  FOUND_NOTHING = 0,
+  FOUND_USE,
+  FOUND_INIT
+} found_init_t;
+
+static found_init_t doFindInitPoints(DefExpr* def,
+                                     Expr* start,
+                                     std::vector<CallExpr*>& initAssigns);
+
+static bool findInitPoints(DefExpr* def,
+                           Expr* start,
+                           std::vector<CallExpr*>& initAssigns) {
+  // split initialization doesn't make sense to try for e.g.
+  //  var x = 25;
+  if (def->init != NULL)
+    return false;
+
+  found_init_t found = doFindInitPoints(def, start, initAssigns);
+  return (found == FOUND_INIT);
+}
+
+static found_init_t doFindInitPoints(DefExpr* def,
+                                     Expr* start,
+                                     std::vector<CallExpr*>& initAssigns) {
+  // Regular initialization is not split initialization
+  if (def->init != NULL)
+    return FOUND_NOTHING;
+
+  // Scroll forward in the block containing DefExpr for x.
+  // Find 'x = ' before any use of 'x'.
+  // Consider also { x = ... } and
+  //               if _ { x = ... } else { x = ... }
+
+  for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
+    // x = ...
+    if (CallExpr* call = toCallExpr(cur)) {
+      if (call->isNamedAstr(astrSassign)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (se->symbol() == def->sym) {
+            if (containsSymExprFor(call->get(2), def->sym) == false) {
+              // careful with e.g.
+              //  x = x + 1;  or y = 1:y.type;
+              initAssigns.push_back(call);
+              return FOUND_INIT;
+            }
+          }
+        }
+      }
+
+      if (containsSymExprFor(cur, def->sym)) {
+        return FOUND_USE;
+      }
+
+    // { x = ... }
+    } else if (BlockStmt* block = toBlockStmt(cur)) {
+      if (isLoopStmt(block)) {
+        // Loop - just check for uses
+        if (containsSymExprFor(cur, def->sym)) {
+          return FOUND_USE;
+        }
+      } else {
+        // non-loop block
+        Expr* start = block->body.first();
+        found_init_t found = doFindInitPoints(def, start, initAssigns);
+        if (found == FOUND_INIT)
+          return FOUND_INIT;
+        else if (found == FOUND_USE)
+          return FOUND_USE;
+      }
+
+    // if _ { x = ... } else { x = ... }
+    } else if (CondStmt* cond = toCondStmt(cur)) {
+      if (containsSymExprFor(cond->condExpr, def->sym))
+        return FOUND_USE;
+
+      Expr* ifStart = cond->thenStmt->body.first();
+      Expr* elseStart = cond->elseStmt ? cond->elseStmt->body.first() : NULL;
+      std::vector<CallExpr*> ifAssigns;
+      std::vector<CallExpr*> elseAssigns;
+      found_init_t foundIf = doFindInitPoints(def, ifStart, ifAssigns);
+      found_init_t foundElse = FOUND_NOTHING;
+      if (elseStart != NULL)
+        foundElse = doFindInitPoints(def, elseStart, elseAssigns);
+
+      if (foundIf == FOUND_INIT && foundElse == FOUND_INIT) {
+        for_vector(CallExpr, call, ifAssigns) {
+          initAssigns.push_back(call);
+        }
+        for_vector(CallExpr, call, elseAssigns) {
+          initAssigns.push_back(call);
+        }
+        return FOUND_INIT;
+      } else if (foundIf != FOUND_NOTHING || foundElse != FOUND_NOTHING) {
+        return FOUND_USE;
+      }
+
+    } else {
+      // Look for uses of 'x' before the first assignment
+      if (containsSymExprFor(cur, def->sym)) {
+        // In that case, can't convert '=' to initialization
+
+        // Emit an error if split initialization is required
+        errorIfSplitInitializationRequired(def, cur);
+
+        return FOUND_USE;
+      }
+    }
+
+    if (developer) {
+      // Redundantly check for uses
+      if (containsSymExprFor(cur, def->sym))
+        INT_FATAL("use not found above");
+    }
+  }
+
+  return FOUND_NOTHING;
+}
+
+static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
+  // Don't worry about compiler temporaries or index variables
+  // or reduction variables
+  if (def->sym->hasFlag(FLAG_TEMP) ||
+      def->sym->hasFlag(FLAG_INDEX_VAR) ||
+      isShadowVarSymbol(def->sym))
+    return;
+
+  bool canDefaultInit = true;
+  // No type or init expr, so can't default init
+  if (def->exprType == NULL && def->init == NULL)
+    canDefaultInit = false;
+  // Can't default init a ref ever
+  if (def->sym->hasFlag(FLAG_REF_VAR))
+    canDefaultInit = false;
+  // Check for a few other cases to give better errors now
+  // (this will not catch all patterns)
+  if (SymExpr* typeSe = toSymExpr(def->exprType)) {
+    if (TypeSymbol* ts = toTypeSymbol(typeSe->symbol())) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        // can't default init a generic type without defaults
+        if (at->isGeneric() && !at->isGenericWithDefaults())
+          canDefaultInit = false;
+        // TODO: check for a record without a default init
+      }
+      // can't default init a generic type
+      if (ts->hasFlag(FLAG_GENERIC))
+        canDefaultInit = false;
+      // can't default init a non-nilable class type
+      if (isNonNilableClassType(ts->type))
+        canDefaultInit = false;
+    }
+  }
+
+  if (canDefaultInit == false) {
+    const char* name = def->sym->name;
+    USR_FATAL_CONT(def, "'%s' cannot be default initialized", name);
+    USR_PRINT(cur, "'%s' is before being initialized here", name);
+  }
+}
+
+
+
 
 static void normRefVar(DefExpr* defExpr) {
   VarSymbol* var         = toVarSymbol(defExpr->sym);
