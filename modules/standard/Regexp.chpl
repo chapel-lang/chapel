@@ -613,7 +613,7 @@ record regexp {
   proc _handle_captures(text: string, matches:_ddata(qio_regexp_string_piece_t), nmatches:int, ref captures) {
     assert(nmatches >= captures.size);
     for param i in 0..captures.size-1 {
-      var m = _to_reMatch(matches[i]);
+      var m = _to_reMatch(matches[i+1]);
       if captures[i].type == reMatch {
         captures[i] = m;
       } else {
@@ -855,7 +855,7 @@ record regexp {
 
       if got {
         // Yield capture groups
-        for i in 1..ncaptures {
+        for i in 0..#ncaptures {
           yield text[new reMatch(
                 !qio_regexp_string_piece_isnull(matches[i]),
                 matches[i].offset:byteIndex,
