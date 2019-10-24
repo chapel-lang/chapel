@@ -38,6 +38,14 @@ extensions = [
     'util.disguise',
 ]
 
+nitpick_ignore = []
+for line in open('../util/nitpick_ignore'):
+    if line.strip() == "" or line.startswith("#"):
+        continue
+    dtype, target = line.split(None, 1)
+    target = target.strip()
+    nitpick_ignore.append((dtype, target))
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['meta/templates']
 
