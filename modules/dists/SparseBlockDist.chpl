@@ -55,9 +55,9 @@ record TargetLocaleComparator {
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
       if sparseLayoutType == unmanaged CS(compressRows=false) then
-        return (dist.targetLocsIdx(a), a[2], a[1]);
+        return (dist.targetLocsIdx(a), a[1], a[0]);
       else
-        return (dist.targetLocsIdx(a), a[1], a[2]);
+        return (dist.targetLocsIdx(a), a[0], a[1]);
     }
     else {
       return (dist.targetLocsIdx(a), a);
