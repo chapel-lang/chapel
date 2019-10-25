@@ -2384,7 +2384,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
 
     // { x = ... }
     } else if (BlockStmt* block = toBlockStmt(cur)) {
-      if (block->isRealBlockStmt() == false) {
+      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
         // Loop / on / begin / etc - just check for uses
         if (containsSymExprFor(cur, def->sym)) {
           return FOUND_USE;

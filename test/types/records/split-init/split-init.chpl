@@ -3,7 +3,7 @@ config const cond = false;
 class C { }
 record R {
   var x: int = 0;
-  var ptr: owned C = new owned C(); 
+  var ptr: owned C = new owned C();
   proc init() {
     this.x = 0;
     writeln("init");
@@ -63,7 +63,7 @@ proc testInts() {
     var tmp = no2;
     no2 = 57;
   }
-  
+
   {
     var no3:int;
     var tmp:no3.type;
@@ -131,28 +131,72 @@ proc testRecs() {
 
 
   writeln("no1");
-  var no1 = new R(4);
-  no1 = new R(5);
+  var no1 = new R(1000);
+  no1 = new R(1001);
 
   writeln("no2");
   {
     var no2:R;
     var tmp = no2;
-    no2 = new R(57);
+    no2 = new R(2000);
   }
-  
+
   writeln("no3");
   {
     var no3:R;
     var tmp:no3.type;
-    no3 = new R(57);
+    no3 = new R(3000);
   }
 
   writeln("no4");
   {
     var no4:R;
     on Locales[numLocales-1] {
-      no4 = new R(66);
+      no4 = new R(4000);
+    }
+  }
+
+  writeln("no5");
+  sync {
+    var no5:R;
+    begin with (ref no5) {
+      no5 = new R(5000);
+    }
+  }
+
+  writeln("no6");
+  {
+    var no6:R;
+    for i in 1..3 {
+      no6 = new R(6000);
+    }
+  }
+
+  writeln("no7");
+  {
+    var no7:R;
+    var i = 1;
+    while i < 3 {
+      no7 = new R(7000);
+      i += 1;
+    }
+  }
+
+  writeln("no8");
+  {
+    var no8:R;
+    var i = 1;
+    do {
+      no8 = new R(8000);
+      i += 1;
+    } while i < 3;
+  }
+
+  writeln("no9");
+  {
+    var no9:R;
+    forall i in 1..1 with (ref no9) {
+      no9 = new R(9000);
     }
   }
 }
