@@ -147,9 +147,9 @@ module LocaleModel {
   export
   proc chpl_localeModel_sublocToExecutionSubloc(full_subloc:chpl_sublocID_t)
   {
-    extern proc chpl_task_getNumSublocales(): int(32);
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
     const (whichNuma, memoryKind) =
-      unpackSublocID(chpl_task_getNumSublocales(),
+      unpackSublocID(chpl_topo_getNumNumaDomains(),
                      full_subloc:chpl_sublocID_t);
     return whichNuma:chpl_sublocID_t;
   }
@@ -158,8 +158,8 @@ module LocaleModel {
   proc chpl_localeModel_sublocMerge(full_subloc:chpl_sublocID_t,
                            execution_subloc:chpl_sublocID_t): chpl_sublocID_t
   {
-    extern proc chpl_task_getNumSublocales(): int(32);
-    var nNumaDomains:int = chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    var nNumaDomains:int = chpl_topo_getNumNumaDomains();
     var memoryKind:int;
     //
     // Strip the memory kind out of the full_subloc and attach it
@@ -207,13 +207,13 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
-      extern proc chpl_task_getNumSublocales(): int(32);
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
 
       super.init(_parent);
 
       sid = _sid: chpl_sublocID_t;
       const (whichNuma, kind) =
-        unpackSublocID(chpl_task_getNumSublocales(), sid);
+        unpackSublocID(chpl_topo_getNumNumaDomains(), sid);
       var kindstr:string;
       if kind == memoryKindDDR() then
         kindstr = "DDR";
@@ -274,8 +274,8 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
-      extern proc chpl_task_getNumSublocales(): int(32);
-      var numSublocales = chpl_task_getNumSublocales();
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      var numSublocales = chpl_topo_getNumNumaDomains();
 
       super.init(_parent);
 
@@ -553,15 +553,15 @@ module LocaleModel {
   //
   private inline
   proc allocatingInHbmSublocale(): bool {
-    extern proc chpl_task_getNumSublocales(): int(32);
-    return chpl_task_getRequestedSubloc() >= chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    return chpl_task_getRequestedSubloc() >= chpl_topo_getNumNumaDomains();
   }
 
   private inline
   proc addrIsInHbm(addr:c_void_ptr): bool {
     extern proc chpl_topo_getMemLocality(p:c_void_ptr): chpl_sublocID_t;
-    extern proc chpl_task_getNumSublocales(): int(32);
-    return chpl_topo_getMemLocality(addr) >= chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    return chpl_topo_getMemLocality(addr) >= chpl_topo_getNumNumaDomains();
   }
 
   export

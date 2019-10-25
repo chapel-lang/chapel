@@ -497,6 +497,24 @@ static void setupAvailableParallelism(int32_t maxThreads) {
             hwpar = maxThreads;
         }
 
+        //
+        // If we have NUMA sublocales we have to have at least that many
+        // shepherds, or we'll get internal errors when the module code
+        // tries to fire tasks on those sublocales.
+        //
+        {
+            int numNumaDomains = chpl_topo_getNumNumaDomains();
+            if (hwpar < numNumaDomains
+                && strcmp(CHPL_LOCALE_MODEL, "flat") != 0) {
+                char msg[100];
+                snprintf(msg, sizeof(msg),
+                         "%d NUMA domains but only %d Qthreads shepherds; "
+                         "may get internal errors",
+                         numNumaDomains, (int) hwpar);
+                chpl_warning(msg, 0, 0);
+            }
+        }
+
         // If there is more parallelism requested than the number of cores, set the
         // worker unit to pu, otherwise core.
         if (hwpar > chpl_topo_getNumCPUsPhysical(true)) {
@@ -1016,14 +1034,6 @@ uint32_t chpl_task_getMaxPar(void) {
     // within sublocales, if there are any.
     //
     return (uint32_t) qthread_num_workers();
-}
-
-c_sublocid_t chpl_task_getNumSublocales(void)
-{
-    // FIXME: What we really want here is the number of NUMA
-    // sublocales we are supporting.  For now we use the number of
-    // shepherds as a proxy for that.
-    return (c_sublocid_t) qthread_num_shepherds();
 }
 
 size_t chpl_task_getCallStackSize(void)
