@@ -1,5 +1,5 @@
-/*   $Source: bitbucket.org:berkeleylab/gasnet.git/gemini-conduit/gasnet_core_internal.h $
- * Description: GASNet <conduitname> conduit header for internal definitions in Core API
+/*   $Source: bitbucket.org:berkeleylab/gasnet.git/aries-conduit/gasnet_core_internal.h $
+ * Description: GASNet aries conduit header for internal definitions in Core API
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
  * Terms of use are as specified in license.txt
  */
@@ -115,10 +115,10 @@ void gasnetc_bootstrapExchange_gni(void *src, size_t len, void *dest);
 /* ------------------------------------------------------------------------------------ */
 // Aries CE support
 
-// Build Aries CE support by default on Aries hardware
+// Build Aries CE support by default
 #if defined(GASNETC_BUILD_GNICE) && !GASNETC_BUILD_GNICE
   #undef GASNETC_BUILD_GNICE
-#elif defined GASNET_CONDUIT_ARIES
+#else
   #undef GASNETC_BUILD_GNICE
   #define GASNETC_BUILD_GNICE 1
 #endif

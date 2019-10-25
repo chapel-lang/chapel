@@ -1,5 +1,5 @@
-/*   $Source: bitbucket.org:berkeleylab/gasnet.git/gemini-conduit/gasnet_core_help.h $
- * Description: GASNet gemini conduit core Header Helpers (Internal code, not for client use)
+/*   $Source: bitbucket.org:berkeleylab/gasnet.git/template-conduit/gasnet_core_help.h $
+ * Description: GASNet ucx conduit core Header Helpers (Internal code, not for client use)
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
  * Terms of use are as specified in license.txt
  */

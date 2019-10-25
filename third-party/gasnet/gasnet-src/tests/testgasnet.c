@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
 
     // No segments have been created/bound yet.
     // Local and remote bound-segment queries must return non-zero and preserve output locations.
-    gex_Rank_t peer = (myrank == numranks-1) ? myrank : (myrank ^ 1);
+    gex_Rank_t peer = (myrank + 1) % numranks;
     if (!gex_Segment_QueryBound(myteam, myrank, &owneraddr, &localaddr, &size) ||
         !gex_Segment_QueryBound(myteam, peer,   &owneraddr, &localaddr, &size) ||
         owneraddr != (void*)&size || localaddr != (void*)&size || size != (uintptr_t)-5) {
@@ -442,8 +442,8 @@ void doit(int partner, int *partnerseg) {
       MSG("*** ERROR - FAILED LOCAL BOUND SEGMENT TEST!!!!!");
     }
 
-    gex_Rank_t peer = myrank ^ 1;
-    if (peer != numranks) {
+    {
+      gex_Rank_t peer = (myrank + 1) % numranks;
       size = 0;
       owneraddr = NULL;
       localaddr = (void*)&size;

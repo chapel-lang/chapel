@@ -1,5 +1,5 @@
-/*   $Source: bitbucket.org:berkeleylab/gasnet.git/gemini-conduit/gasnet_extended.c $
- * Description: GASNet Extended API over Gemini Implementation
+/*   $Source: bitbucket.org:berkeleylab/gasnet.git/aries-conduit/gasnet_extended.c $
+ * Description: GASNet Extended API over Aries Implementation
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
  * Terms of use are as specified in license.txt
  */
@@ -7,7 +7,7 @@
 #include <gasnet_coll_internal.h> // for refbarrier.c
 #include <gasnet_internal.h>
 #include <gasnet_extended_internal.h>
-#include <gasnet_gemini.h>
+#include <gasnet_aries.h>
 
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -27,11 +27,7 @@
    These should be no smaller than AMMaxLong{Request,Reply}().
  */
 #ifndef GC_MAXRDMA_OUT 
-  #ifdef GASNET_CONDUIT_ARIES
-    #define GC_MAXRDMA_OUT 0x800000
-  #else
-    #define GC_MAXRDMA_OUT 0x100000
-  #endif
+#define GC_MAXRDMA_OUT 0x800000
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -121,9 +117,9 @@ extern void gasnete_init(void) {
 
 /* ------------------------------------------------------------------------------------ */
 
-/* Gemini requires 4-byte alignment of local address, while Aries doesn't.
-   However, intial testing shows that Aries performance is poor w/o alignment */
-#if defined(GASNET_CONDUIT_GEMINI) || 1
+// While Aries does not require 4-byte alignment of local address (_dest),
+// intial testing shows that performance is poor without it.
+#if 1
   #define GASNETE_GET_IS_UNALIGNED(_nbytes, _src, _dest) \
       (3 & ((uintptr_t)(_nbytes) | (uintptr_t)(_src) | (uintptr_t)(_dest)))
 #else
@@ -190,13 +186,8 @@ gasnete_get_bulk_unaligned(void *dest, gex_Rank_t jobrank, void *src, size_t nby
   gasnetc_post_descriptor_t *gpd;
   const size_t max_chunk = gasnetc_max_get_unaligned;
 
-#ifdef GASNET_CONDUIT_GEMINI
-  /* Upto 1300 bytes or so, larger alignment helps */
-  const size_t mask = (nbytes <= 1300) ? 63 : 3;
-#else
   /* Larger alignment always helps */
   const size_t mask = 63;
-#endif
   const size_t src_offset = mask & (uintptr_t) src;
 
   /* first chunk achieves alignment to as much as 64-bytes if necessary */
@@ -704,12 +695,7 @@ extern gex_RMA_Value_t gasnete_get_val(
   "gd" = GNI Dissemination
 */
 
-#if defined(GASNET_CONDUIT_GEMINI) && PLATFORM_COMPILER_CRAY
-/* Don't trust GNIDISSEM barrier with CCE - see bug 3191 */
-#define GASNETE_BARRIER_DEFAULT "RDMADISSEM"
-#else
 #define GASNETE_BARRIER_DEFAULT "GNIDISSEM"
-#endif
 
 /* Forward decls for init function(s): */
 static void gasnete_gdbarrier_init(gasnete_coll_team_t team);

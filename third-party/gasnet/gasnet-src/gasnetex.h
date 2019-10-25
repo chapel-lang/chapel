@@ -545,8 +545,9 @@ extern void gex_System_QueryMyPosition(
 
   /*  the largest unsigned integer type that can fit entirely in a single CPU register for the current architecture and ABI.  */
   /*  SIZEOF_GEX_RMA_VALUE_T is a preprocess-time literal integer constant (i.e. not "sizeof()")indicating the size of this type in bytes */
-typedef uintptr_t gex_RMA_Value_t;
-#define SIZEOF_GEX_RMA_VALUE_T  SIZEOF_VOID_P
+  // Bug 3953: Our implementation guarantees a 64-bit gex_RMA_Value_t, although this is not currently required by the GASNet spec
+typedef uint64_t gex_RMA_Value_t;
+#define SIZEOF_GEX_RMA_VALUE_T  8
 
 #ifndef _GEX_MEMVEC_T
 #define _GEX_MEMVEC_T
