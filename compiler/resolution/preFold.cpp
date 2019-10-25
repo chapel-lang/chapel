@@ -2169,6 +2169,11 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
     // when printing out a FCF, print out the function's name
+    if (ioModule == NULL) {
+      INT_FATAL("never parsed IO module, this shouldn't be possible");
+    }
+    fn->body->useListAdd(new UseStmt(ioModule, false));
+    fn->getModule()->moduleUseAdd(ioModule);
     fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
                                                new_StringSymbol("writeIt")),
                                   new_StringSymbol(astr(flname, "()"))));
