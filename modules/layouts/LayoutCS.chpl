@@ -166,7 +166,10 @@ class CSDom: BaseSparseDomImpl {
       this.idx = rhs.idx;
     } else if _to_borrowed(rhs._instance.type) < DefaultSparseDom {
       // Optimized COO -> CSR/CSC
-      this.dsiBulkAdd(rhs._instance.indices[rhs.nnzDom.low..#rhs._nnz], dataSorted=true, isUnique=true);
+
+      // Note: only COO->CSR can take advantage of COO having sorted indices
+      this.dsiBulkAdd(rhs._instance.indices[rhs.nnzDom.low..#rhs._nnz],
+                      dataSorted=this.compressRows, isUnique=true);
     } else {
       // Unoptimized generic case
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
