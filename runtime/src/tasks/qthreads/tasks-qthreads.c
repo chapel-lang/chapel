@@ -497,6 +497,18 @@ static void setupAvailableParallelism(int32_t maxThreads) {
             hwpar = maxThreads;
         }
 
+        //
+        // If we have NUMA sublocales we have to have at least that many
+        // shepherds, or we'll get internal errors when the module code
+        // tries to fire tasks on those sublocales.
+        //
+        {
+            int numNumaDomains = chpl_topo_getNumNumaDomains();
+            if (numNumaDomains > hwpar) {
+                hwpar = numNumaDomains;
+            }
+        }
+
         // If there is more parallelism requested than the number of cores, set the
         // worker unit to pu, otherwise core.
         if (hwpar > chpl_topo_getNumCPUsPhysical(true)) {

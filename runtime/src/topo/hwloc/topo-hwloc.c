@@ -182,17 +182,6 @@ void chpl_topo_init(void) {
     // than 'flat'.
     //
     numNumaDomains = (int) chpl_env_rt_get_uint("NUM_NUMA_DOMAINS", 0);
-    if (numNumaDomains != 0) {
-      //
-      // If you're using Qthreads tasking, forcing the number of NUMA
-      // domains also forces the number of Qthreads shepherds.  (If we
-      // don't do this we can find ourselves trying to queue tasks on
-      // nonexistent shepherds.)
-      //
-      if (strcmp(CHPL_TASKS, "qthreads") == 0) {
-        chpl_env_set_uint("CHPL_RT_NUM_THREADS_PER_LOCALE", numNumaDomains, 1);
-      }
-    }
   }
 
   if (numNumaDomains == 0) {
