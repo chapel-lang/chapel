@@ -636,8 +636,43 @@ module ChapelBase {
   //
   // left and right shift on primitive types
   //
-  inline proc <<(a: int(?w), b: integral) return __primitive("<<", a, b);
-  inline proc <<(a: uint(?w), b: integral) return __primitive("<<", a, b);
+
+  inline proc bitshiftChecks(a: uint(?w), b: integral) {
+    if b < 0 then
+      halt("Attempt to bitshift by value less than zero");
+    if b >= BITWIDTH(a) then
+      halt("Attempt to bitshift by value greater than width of left operand");
+  }
+
+  inline proc bitshiftChecks(param a: uint(?w), param b: integral) {
+    if b < 0 then
+      compilerError("Cannot bitshift by value less than zero");
+    if b >= BITWIDTH(a) then
+      compilerError("Cannot bitshift by value greater than width of left operand");
+  }
+
+  inline proc checkedLShift(a: uint(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive("<<", a, b);
+  }
+
+  inline proc checkedRShift(a: uint(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a, b);
+  }
+
+  inline proc checkedLShift(param a: uint(?w), b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive("<<", a, b);
+  }
+
+  inline proc checkedRShift(param a: uint(?w), b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a, b);
+  }
+
+  inline proc <<(a: int(?w), b: integral) return checkedLShift(a:uint(w), b):int(w);
+  inline proc <<(a: uint(?w), b: integral) return checkedLShift(a, b);
 
   inline proc >>(a: int(?w), b: integral) return __primitive(">>", a, b);
   inline proc >>(a: uint(?w), b: integral) return __primitive(">>", a, b);
