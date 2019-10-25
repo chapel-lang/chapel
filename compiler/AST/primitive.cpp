@@ -896,6 +896,8 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   // BlockStmt::blockInfo - on block
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
+  // BlockStmt::blockInfo - elided on block
+  prim_def(PRIM_BLOCK_ELIDED_ON, "elided on block", returnInfoVoid);
   // BlockStmt::blockInfo - begin on block
   prim_def(PRIM_BLOCK_BEGIN_ON, "begin on block", returnInfoVoid);
   // BlockStmt::blockInfo - cobegin on block

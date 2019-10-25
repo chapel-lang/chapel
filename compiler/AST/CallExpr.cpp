@@ -243,6 +243,7 @@ void CallExpr::verify() {
     case PRIM_BLOCK_COBEGIN:
     case PRIM_BLOCK_COFORALL:
     case PRIM_BLOCK_ON:
+    case PRIM_BLOCK_ELIDED_ON:
     case PRIM_BLOCK_BEGIN_ON:
     case PRIM_BLOCK_COBEGIN_ON:
     case PRIM_BLOCK_COFORALL_ON:
