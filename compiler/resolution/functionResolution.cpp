@@ -5912,6 +5912,17 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
+    // If it has runtime type, turn this back into assignment
+    if (dst->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      call->primitive = primitives[PRIM_NOOP];
+      CallExpr* assign = new CallExpr("=", dst, src);
+      call->getStmtExpr()->insertAfter(assign);
+      resolveExpr(assign);
+      return;
+    }
+  }
+
   Type* targetType = NULL;
   bool addedCoerce = false;
 
@@ -9336,7 +9347,8 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
         continue;
       }
 
-      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         replaceRuntimeTypeDefaultInit(call);
       } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
         replaceRuntimeTypeGetField(call);
@@ -9386,6 +9398,8 @@ void resolvePrimInit(CallExpr* call) {
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) &&
       call->numActuals() == 1) {
     // Without type information, PRIM_INIT_VAR_SPLIT_DECL does nothing.
+    // Except if it's an array... then we need to use default init for now
+    // and that is handled already in replaceRuntimeTypePrims
     call->convertToNoop();
     return;
   }
