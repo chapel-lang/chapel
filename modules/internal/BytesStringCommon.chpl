@@ -323,7 +323,7 @@ module BytesStringCommon {
       if (isArray(S)) {
         ret = S[S.domain.first];
       } else {
-        ret = S[1];
+        ret = S[0];
       }
       return ret;
     } else {
