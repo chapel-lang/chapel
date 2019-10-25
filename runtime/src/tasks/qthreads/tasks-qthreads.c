@@ -504,7 +504,8 @@ static void setupAvailableParallelism(int32_t maxThreads) {
         //
         {
             int numNumaDomains = chpl_topo_getNumNumaDomains();
-            if (hwpar < numNumaDomains) {
+            if (hwpar < numNumaDomains
+                && strcmp(CHPL_LOCALE_MODEL, "flat") != 0) {
                 char msg[100];
                 snprintf(msg, sizeof(msg),
                          "%d NUMA domains but only %d Qthreads shepherds; "
