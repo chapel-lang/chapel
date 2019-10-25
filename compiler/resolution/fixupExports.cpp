@@ -46,7 +46,7 @@ std::set<FnSymbol*> exportedStrRets;
 static void resolveExportWrapperTypeAliases(void);
 static void attemptFixups(FnSymbol* fn);
 static Type* maybeUnwrapRef(Type* t);
-static Type* getResolveTypeAlias(const char* mod, const char* alias);
+static Type* resolveTypeAlias(const char* mod, const char* alias);
 static bool needsFixup(Type* t);
 static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as);
 static bool validateReturnIntent(FnSymbol* fn);
@@ -75,23 +75,10 @@ static void resolveExportWrapperTypeAliases(void) {
   if (resolved) { return; }
   resolved = true;
 
-  const char* module = "ExportWrappers";
+  const char* mod = "ExportWrappers";
 
-  typedef std::pair<Type**, const char*> AliasPair;
-  const std::vector<AliasPair> aliases = {
-    { &exportTypeCharPtr, "chpl__exportTypeCharPtr" },
-    { &exportTypeChplBytes, "chpl__exportTypeChplBytes" }
-  };
-
-  //
-  // Loop through all of the currently existing export wrapper types and
-  // resolve their type aliases stored in the "ExportWrappers" internal
-  // module.
-  //
-  std::vector<AliasPair>::const_iterator it;
-  for (it = aliases.begin(); it != aliases.end(); ++it) {
-    *(it->first) = getResolveTypeAlias(module, it->second);
-  }
+  exportTypeCharPtr = resolveTypeAlias(mod, "chpl__exportTypeCharPtr");
+  exportTypeChplBytes = resolveTypeAlias(mod, "chpl__exportTypeChplBytes");
 
   return;
 }
@@ -124,7 +111,7 @@ void fixupExportedFunction(FnSymbol* fn) {
 // the "fixupExports" routine is being called. At any time after, all
 // type aliases have already been resolved.
 //
-Type* getResolveTypeAlias(const char* mod, const char* alias) {
+Type* resolveTypeAlias(const char* mod, const char* alias) {
   ModuleSymbol* msym = NULL;
   Symbol* asym = NULL;
   Type* result = NULL;
