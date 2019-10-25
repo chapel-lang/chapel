@@ -11,4 +11,4 @@ export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl library/packages/MPI
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="mpicc"
 
-$CWD/nightly -cron -no-buildcheck
+$CWD/nightly -cron -no-buildcheck $mpicc_nightly_opts

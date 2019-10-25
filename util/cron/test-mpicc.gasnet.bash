@@ -14,4 +14,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="mpicc.gasnet"
 
 export GASNET_QUIET=Y
 
-$CWD/nightly -cron -no-buildcheck
+$CWD/nightly -cron -no-buildcheck $mpicc_nightly_opts

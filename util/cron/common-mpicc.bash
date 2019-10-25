@@ -12,11 +12,17 @@ export CHPL_TARGET_COMPILER=mpi-gnu
 # Load OpenMPI environment module and confirm it has loaded
 echo >&2 module load gnu-openmpi
 module load gnu-openmpi
+set mpiType=openmpi
 
 set -x
 : confirm mpi module is loaded
 module list -l 2>&1 | grep -E -q '\bgnu-openmpi\b' || exit $?
 
-if [[ ${CHPL_RT_OVERSUBSCRIBED:-n} == [1tTyY]* && -z $MPIRUN_CMD ]] ; then
-  export MPIRUN_CMD='mpirun -np %N -map-by node:oversubscribe %C'
+if [[ $mpiType == openmpi ]] ; then
+  mpicc_nightly_opts='-compopts -srequireThreadedMPI=false'
+
+  if [[ ${CHPL_RT_OVERSUBSCRIBED:-n} == [1tTyY]* && -z $MPIRUN_CMD ]] ; then
+    export MPIRUN_CMD='mpirun -np %N -map-by node:oversubscribe %C'
+  fi
 fi
+
