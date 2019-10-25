@@ -2426,7 +2426,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_DEFAULT_INIT_VAR:
-    case PRIM_INIT_VAR_SPLIT:
+    case PRIM_INIT_VAR_SPLIT_DECL:
       resolveGenericActuals(call);
       resolvePrimInit(call);
       break;
@@ -2436,6 +2436,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_INIT_VAR:
+    case PRIM_INIT_VAR_SPLIT_INIT:
       resolveInitVar(call);
       break;
 
@@ -9380,11 +9381,11 @@ void resolvePrimInit(CallExpr* call) {
   Expr* typeExpr = NULL;
 
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
-             call->isPrimitive(PRIM_INIT_VAR_SPLIT));
+             call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
 
-  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT) &&
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) &&
       call->numActuals() == 1) {
-    // Without type information, PRIM_INIT_VAR_SPLIT does nothing.
+    // Without type information, PRIM_INIT_VAR_SPLIT_DECL does nothing.
     call->convertToNoop();
     return;
   }
@@ -9627,7 +9628,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
     errorInvalidParamInit(call, val, at);
     if (!val->hasFlag(FLAG_NO_INIT) &&
-        !call->isPrimitive(PRIM_INIT_VAR_SPLIT))
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
       resolvePrimInitNonGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized
@@ -9649,7 +9650,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
       errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at);
 
     if (!val->hasFlag(FLAG_NO_INIT) &&
-        !call->isPrimitive(PRIM_INIT_VAR_SPLIT))
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
       resolvePrimInitGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized

@@ -717,8 +717,9 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
       if (call->isPrimitive(PRIM_MOVE)      ||
           call->isPrimitive(PRIM_ASSIGN)    ||
           call->isPrimitive(PRIM_INIT_VAR)  ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)  ||
           call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
-          call->isPrimitive(PRIM_INIT_VAR_SPLIT)) {
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         if (call->get(1) == se) {
           retval = se->symbol();
           checkSelfDef(call, se->symbol());
@@ -2243,6 +2244,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   if (defExpr->getModule()->modTag == MOD_USER)
     foundSplitInit = findInitPoints(defExpr, defExpr, initAssign);
 
+  /*
   if (foundSplitInit) {
     USR_WARN(defExpr, "Found split init for '%s'", defExpr->sym->name);
     if (developer)
@@ -2250,7 +2252,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     for_vector(CallExpr, call, initAssign) {
       USR_WARN(call, "init stmt here");
     }
-  }
+  }*/
 
   if (init != NULL || foundSplitInit == false ||
       // Future: enable ref vars, params
@@ -2289,10 +2291,10 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     // Emit PRIM_INIT_VAR_SPLIT.
     // It sets the type, if we have a type expression.
     if (type == NULL)
-      defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT, var));
+      defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
     else
       defExpr->insertAfter(
-          new CallExpr(PRIM_INIT_VAR_SPLIT, var, defExpr->exprType->remove()));
+          new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, defExpr->exprType->remove()));
 
     for_vector(CallExpr, call, initAssign) {
       // Consider the RHS of the '=' call to be the init expr.
@@ -2313,7 +2315,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         // y = <value>
 
         // The type will be inferred from the type of <value>
-        call->replace(new CallExpr(PRIM_INIT_VAR, var, rhs));
+        call->replace(new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs));
       }
     }
   }
@@ -2379,8 +2381,8 @@ static found_init_t doFindInitPoints(DefExpr* def,
 
     // { x = ... }
     } else if (BlockStmt* block = toBlockStmt(cur)) {
-      if (isLoopStmt(block)) {
-        // Loop - just check for uses
+      if (block->isRealBlockStmt() == false) {
+        // Loop / on / begin / etc - just check for uses
         if (containsSymExprFor(cur, def->sym)) {
           return FOUND_USE;
         }

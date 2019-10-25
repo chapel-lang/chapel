@@ -2601,6 +2601,8 @@ static void buildFastFollowerCheck(bool                  isStatic,
     checkFn->retTag = RET_VALUE;
   }
 
+  checkFn->addFlag(FLAG_COMPILER_GENERATED);
+
   checkFn->insertFormalAtTail(x);
 
   if (addLead == true) {

@@ -659,18 +659,21 @@ initPrimitive() {
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
-  // indicates split initialization
+  // indicates split initialization point of declaration
   // If the type is provided, apply that to the value immediately
   // The value may not be used until a later PRIM_INIT_VAR.
   //
   // dst, optional type to default-init
-  prim_def(PRIM_INIT_VAR_SPLIT, "init var split", returnInfoVoid, false);
+  prim_def(PRIM_INIT_VAR_SPLIT_DECL, "init var split decl", returnInfoVoid, false);
 
   // fn->_this, the name of the field, value/type, optional declared type
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
 
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
+  // indicates split initialization point of initialization
+  // dst, init-expr
+  prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
