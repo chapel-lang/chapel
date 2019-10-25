@@ -6,6 +6,8 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 source $CWD/common-numa.bash
 
+export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl localeModels"
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="numa"
 
 $CWD/nightly -cron

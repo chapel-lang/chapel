@@ -24,7 +24,6 @@
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 
-// #include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
@@ -461,8 +460,6 @@ void chpl_comm_post_task_init(void) {
     return;
   init_ofi();
   init_bar();
-
-  // chpl_cache_init();
 }
 
 
