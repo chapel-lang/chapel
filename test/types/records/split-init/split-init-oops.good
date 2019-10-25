@@ -1,0 +1,7 @@
+split-init-oops.chpl:5: In function 'test':
+split-init-oops.chpl:7: error: 'a' cannot be default initialized
+split-init-oops.chpl:15: error: 'b' cannot be default initialized
+split-init-oops.chpl:9: error: 'a' used before defined
+split-init-oops.chpl:7: note: defined here
+split-init-oops.chpl:17: error: 'b' used before defined
+split-init-oops.chpl:15: note: defined here

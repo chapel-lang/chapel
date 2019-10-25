@@ -2281,9 +2281,6 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       } else {
         normVarTypeWithInit(defExpr);
       }
-
-    } else {
-      INT_ASSERT(false);
     }
   } else {
     // handle split initialization
@@ -2314,8 +2311,14 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         // const y: int;
         // y = <value>
 
-        // The type will be inferred from the type of <value>
-        call->replace(new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs));
+        CallExpr* init2 = NULL;
+        if (type == NULL)
+          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs);
+        else
+          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs,
+                               new CallExpr(PRIM_TYPEOF, var));
+
+        call->replace(init2);
       }
     }
   }
@@ -2441,6 +2444,8 @@ static found_init_t doFindInitPoints(DefExpr* def,
     }
   }
 
+  errorIfSplitInitializationRequired(def, NULL);
+
   return FOUND_NOTHING;
 }
 
@@ -2481,7 +2486,8 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   if (canDefaultInit == false) {
     const char* name = def->sym->name;
     USR_FATAL_CONT(def, "'%s' cannot be default initialized", name);
-    USR_PRINT(cur, "'%s' is before being initialized here", name);
+    if (cur)
+      USR_PRINT(cur, "'%s' is before being initialized here", name);
   }
 }
 

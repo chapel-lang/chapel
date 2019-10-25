@@ -5921,6 +5921,16 @@ static void resolveInitVar(CallExpr* call) {
       resolveExpr(assign);
       return;
     }
+    // Also, check that the types are compatible for split initialization
+    // with type inference.
+    if (call->numActuals() < 3)
+      if (dst->type != dtUnknown)
+        if (dst->type != srcType)
+          USR_FATAL_CONT(call, "Split initialization uses multiple types; "
+                               "another initialization has type %s "
+                               "but this initialization has type %s",
+                               toString(dst->type),
+                               toString(srcType));
   }
 
   Type* targetType = NULL;
