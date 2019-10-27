@@ -638,50 +638,48 @@ module ChapelBase {
   //
 
   inline proc bitshiftChecks(a: uint(?w), b: integral) {
-    if b < 0 then
-      halt("Attempt to bitshift by value less than zero");
-    if b >= BITWIDTH(a) then
-      halt("Attempt to bitshift by value greater than width of left operand");
+    if b < 0 {
+      param msg = "Attempt to bitshift by value less than zero";
+      halt(msg);
+    } else if b >= numBits(a.type) {
+      param msg = "Attempt to bitshift by value greater than or equal to the number of bits in the left operand";
+      halt(msg);
+    }
   }
 
   inline proc bitshiftChecks(param a: uint(?w), param b: integral) {
-    if b < 0 then
-      compilerError("Cannot bitshift by value less than zero");
-    if b >= BITWIDTH(a) then
-      compilerError("Cannot bitshift by value greater than width of left operand");
+    if b < 0 {
+      param msg = "Cannot bitshift by a value less than zero";
+      compilerError(msg);
+    } else if b >= numBits(a.type) {
+      param msg = "Cannot bitshift by value greater than or equal to the number of bits in the left operand";
+      compilerError(msg);
+    }
   }
 
-  inline proc checkedLShift(a: uint(?w), b: integral) {
+  inline proc <<(a: int(?w), b: integral) return ((a:uint(w)) << b):int(w);
+  inline proc <<(a: uint(?w), b: integral) {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive("<<", a, b);
   }
 
-  inline proc checkedRShift(a: uint(?w), b: integral) {
+  inline proc >>(a: int(?w), b: integral) return ((a:uint(w)) >> b):int(w);
+  inline proc >>(a: uint(?w), b: integral) {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive(">>", a, b);
   }
 
-  inline proc checkedLShift(param a: uint(?w), b: integral) param {
+  inline proc <<(param a: int(?w), param b: integral) param return ((a:uint(w)) << b):int(w);
+  inline proc <<(param a: uint(?w), param b: integral) param {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive("<<", a, b);
   }
 
-  inline proc checkedRShift(param a: uint(?w), b: integral) param {
+  inline proc >>(param a: int(?w), param b: integral) param return ((a:uint(w)) >> b):int(w);
+  inline proc >>(param a: uint(?w), param b: integral) param {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive(">>", a, b);
   }
-
-  inline proc <<(a: int(?w), b: integral) return checkedLShift(a:uint(w), b):int(w);
-  inline proc <<(a: uint(?w), b: integral) return checkedLShift(a, b);
-
-  inline proc >>(a: int(?w), b: integral) return __primitive(">>", a, b);
-  inline proc >>(a: uint(?w), b: integral) return __primitive(">>", a, b);
-
-  inline proc <<(param a: int(?w), param b: integral) param return __primitive("<<", a, b);
-  inline proc <<(param a: uint(?w), param b: integral) param return __primitive("<<", a, b);
-
-  inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
-  inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
