@@ -8,13 +8,13 @@
 int main(int argc, char** argv) {
   chpl_library_init(argc, argv);
   
-  chpl_bytes msg = noArgsRetBytes();
+  chpl_bytes_wrapper msg = noArgsRetBytes();
 
   printf("cb.isOwned: %s\n", (msg.isOwned ? "true" : "false"));
   printf("cb.data: %s\n", msg.data);
   printf("cb.size: %zu\n", msg.size);
 
-  chpl_bytes_free(msg);
+  chpl_bytes_wrapper_free(msg);
 
   chpl_library_finalize();
 
