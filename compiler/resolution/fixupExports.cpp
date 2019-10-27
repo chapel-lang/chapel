@@ -39,7 +39,7 @@ static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<const char*, FnSymbol*> conversionCallMap;
 
 Type* exportTypeCharPtr = NULL;
-Type* exportTypeChplBytes = NULL;
+Type* exportTypeChplBytesWrapper = NULL;
 
 std::set<FnSymbol*> exportedStrRets;
 
@@ -78,7 +78,8 @@ static void resolveExportWrapperTypeAliases(void) {
   const char* mod = "ExportWrappers";
 
   exportTypeCharPtr = resolveTypeAlias(mod, "chpl__exportTypeCharPtr");
-  exportTypeChplBytes = resolveTypeAlias(mod, "chpl__exportTypeChplBytes");
+  exportTypeChplBytesWrapper =
+    resolveTypeAlias(mod, "chpl__exportTypeChplBytesWrapper");
 
   return;
 }
@@ -308,7 +309,7 @@ static Type* getTypeForFixup(Type* t, bool ret) {
     Type* result = ret ? exportTypeCharPtr : dtStringC;
     return result;
   } else if (t == dtBytes) {
-    return exportTypeChplBytes;
+    return exportTypeChplBytesWrapper;
   } else {
     INT_FATAL("Type %s is unsupported in %s", t->name(), __FUNCTION__);
   }

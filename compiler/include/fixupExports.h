@@ -30,7 +30,7 @@ class Type;
 // during resolution.
 //
 extern Type* exportTypeCharPtr;
-extern Type* exportTypeChplBytes;
+extern Type* exportTypeChplBytesWrapper;
 
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
