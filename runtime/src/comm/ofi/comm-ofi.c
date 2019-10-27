@@ -2546,6 +2546,54 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                   commID, ln, fn);
 }
 
+#define MAX_UNORDERED_TRANS_SZ 1024
+void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                c_nodeid_t srcnode, void* srcaddr,
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn) {
+  assert(dstaddr != NULL);
+  assert(srcaddr != NULL);
+
+  if (size == 0)
+    return;
+
+  if (dstnode == chpl_nodeID && srcnode == chpl_nodeID) {
+    memmove(dstaddr, srcaddr, size);
+    return;
+  }
+
+  if (dstnode == chpl_nodeID) {
+    chpl_comm_get(dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+  } else if (srcnode == chpl_nodeID) {
+    chpl_comm_put(srcaddr, dstnode, dstaddr, size, commID, ln, fn);
+  } else {
+    if (size <= MAX_UNORDERED_TRANS_SZ) {
+      char buf[MAX_UNORDERED_TRANS_SZ];
+      chpl_comm_get(buf, srcnode, srcaddr, size, commID, ln, fn);
+      chpl_comm_put(buf, dstnode, dstaddr, size, commID, ln, fn);
+    } else {
+      // Note, we do not expect this case to trigger, but if it does we may
+      // want to do on-stmt to src node and then transfer
+      char* buf = chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+      chpl_comm_get(buf, srcnode, srcaddr, size, commID, ln, fn);
+      chpl_comm_put(buf, dstnode, dstaddr, size, commID, ln, fn);
+      chpl_mem_free(buf, 0, 0);
+    }
+  }
+}
+
+void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn) {
+  chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+}
+
+void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn) {
+  chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+}
+
+void chpl_comm_getput_unordered_task_fence(void) { }
+
 
 ////////////////////////////////////////
 //
