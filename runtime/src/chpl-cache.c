@@ -2586,7 +2586,6 @@ void cache_get(struct rdcache_s* cache,
 }
 
 
-#if 0
 static
 void cache_invalidate(struct rdcache_s* cache,
                        c_nodeid_t node, raddr_t raddr, size_t size)
@@ -2634,7 +2633,6 @@ void cache_invalidate(struct rdcache_s* cache,
     }
   }
 }
-#endif
 
 static
 void cache_clean_dirty(struct rdcache_s* cache)
@@ -2773,11 +2771,24 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   // Do nothing if cache is not enabled.
 }
 
+// If a transfer is large enough we should directly initiate it to avoid
+// overheads of going through the cache
+static inline
+int size_merits_direct_comm(struct rdcache_s* cache, size_t size)
+{
+  return size > (cache->max_pages* CACHEPAGE_SIZE / 4);
+}
+
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t commID, int ln, int32_t fn)
 {
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  if (size_merits_direct_comm(cache, size)) {
+    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+    return;
+  }
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
                "from %p\n",
@@ -2801,6 +2812,11 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  if (size_merits_direct_comm(cache, size)) {
+    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+    return;
+  }
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
                "%d:%p to %p\n",
