@@ -60,7 +60,7 @@ module ChapelStandard {
   use ChapelError;
   use ChapelTaskData;
   use ChapelSerializedBroadcast;
-  use ExternalString;
+  use ExportWrappers;
 
   // Standard modules.
   use Assert;

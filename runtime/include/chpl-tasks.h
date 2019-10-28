@@ -305,12 +305,6 @@ chpl_task_ChapelData_t* chpl_task_getChapelData(void)
 uint32_t chpl_task_getMaxPar(void);
 
 //
-// Returns the number of sublocales the tasking layer knows about,
-// within the span of hardware it is managing tasks on.
-//
-c_sublocid_t chpl_task_getNumSublocales(void);
-
-//
 // returns the value of the call stack size limit being used in
 // practice; the value returned may potentially differ from one locale
 // to the next

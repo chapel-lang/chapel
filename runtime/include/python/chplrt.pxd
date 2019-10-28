@@ -1,5 +1,8 @@
 from libc.stdint cimport *
 
+cdef extern from "Python.h":
+	object PyBytes_FromStringAndSize(char*, Py_ssize_t)
+
 cdef extern from "chpltypes.h":
 	ctypedef void* c_fn_ptr
 
@@ -22,3 +25,12 @@ cdef extern from "chpl-external-array.h":
 		bint _unowned
 
 	void cleanupOpaqueArray(chpl_opaque_array* arr)
+
+cdef extern from "chpl-export-wrappers.h":
+	ctypedef struct chpl_bytes_wrapper:
+		int isOwned
+		char* data
+		size_t size
+
+	void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb)
+
