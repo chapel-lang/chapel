@@ -176,11 +176,7 @@ static inline void qt_feb_schedule(qthread_t          *waiter,
     qthread_debug(FEB_DETAILS, "waiter(%p:%i), shep(%p:%i): setting waiter to 'RUNNING'\n", waiter, (int)waiter->thread_id, shep, (int)shep->shepherd_id);
     waiter->thread_state = QTHREAD_STATE_RUNNING;
     QTPERF_QTHREAD_ENTER_STATE(waiter->rdata->performance_data, QTHREAD_STATE_RUNNING);
-    // Chapel hack -- we either use schedulers that don't support work stealing
-    // (nemesis), or we run with stealing disabled (distrib w/ STEAL_RATIO=0).
-    // Spawning to the current shepherd below serializes execution and relies
-    // on work stealing to redistribute, so just always spawn to the orig shep
-    if (1) { //(waiter->flags & QTHREAD_UNSTEALABLE) && (waiter->rdata->shepherd_ptr != shep)) {
+    if ((waiter->flags & QTHREAD_UNSTEALABLE) && (waiter->rdata->shepherd_ptr != shep)) {
         qthread_debug(FEB_DETAILS, "waiter(%p:%i), shep(%p:%i): enqueueing waiter in target_shep's ready queue (%p:%i)\n", waiter, (int)waiter->thread_id, shep, (int)shep->shepherd_id, waiter->rdata->shepherd_ptr, waiter->rdata->shepherd_ptr->shepherd_id);
         qt_threadqueue_enqueue(waiter->rdata->shepherd_ptr->ready, waiter);
     } else
@@ -1034,7 +1030,7 @@ int API_FUNC qthread_writeEF_const(aligned_t *dest,
     return qthread_writeEF(dest, &src);
 }                      /*}}} */
 
-int INTERNAL qthread_writeEF_nb(aligned_t *restrict       dest,
+int API_FUNC qthread_writeEF_nb(aligned_t *restrict       dest,
                                 const aligned_t *restrict src)
 {                      /*{{{ */
     aligned_t *alignedaddr;
@@ -1095,7 +1091,7 @@ int INTERNAL qthread_writeEF_nb(aligned_t *restrict       dest,
     return QTHREAD_SUCCESS;
 }                      /*}}} */
 
-int INTERNAL qthread_writeEF_const_nb(aligned_t *dest,
+int API_FUNC qthread_writeEF_const_nb(aligned_t *dest,
                                       aligned_t  src)
 {                      /*{{{ */
     return qthread_writeEF_nb(dest, &src);
@@ -1292,7 +1288,7 @@ int API_FUNC qthread_readFF(aligned_t *restrict       dest,
     return QTHREAD_SUCCESS;
 }                      /*}}} */
 
-int INTERNAL qthread_readFF_nb(aligned_t *restrict       dest,
+int API_FUNC qthread_readFF_nb(aligned_t *restrict       dest,
                                const aligned_t *restrict src)
 {                      /*{{{ */
     const aligned_t *alignedaddr;
@@ -1493,7 +1489,7 @@ int API_FUNC qthread_readXX(aligned_t *restrict       dest,
 }                      /*}}} */
 
 /* This is the non-blocking version of the previous one */
-int INTERNAL qthread_readFE_nb(aligned_t *restrict       dest,
+int API_FUNC qthread_readFE_nb(aligned_t *restrict       dest,
                                const aligned_t *restrict src)
 {                      /*{{{ */
     const aligned_t *alignedaddr;
