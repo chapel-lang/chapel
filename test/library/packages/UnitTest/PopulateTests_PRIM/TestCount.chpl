@@ -10,5 +10,5 @@ proc dummy_test(test) throws {
 proc test_square(test: borrowed Test) throws {
     // This is a test function
 }
-var test: owned Test;
+var test: owned Test = new owned Test();
 writeln(__primitive("gather tests", test.borrow()));

@@ -157,6 +157,22 @@ static const char* getClassKindSpecifier(CallExpr* call) {
   if (call->isNamed("_shared"))
     return "shared";
 
+  if (call->isPrimitive(PRIM_NEW) && call->numActuals() >= 1) {
+    if (NamedExpr* ne = toNamedExpr(call->get(1))) {
+      if (ne->name == astr_chpl_manager) {
+        Type* t = ne->actual->typeInfo();
+        if (t == dtBorrowed)
+          return "borrowed";
+        if (t == dtUnmanaged)
+          return "unmanaged";
+        if (t == dtOwned)
+          return "owned";
+        if (t == dtShared)
+          return "shared";
+      }
+    }
+  }
+
   return NULL;
 }
 
@@ -164,7 +180,13 @@ static void checkManagedClassKinds(CallExpr* call) {
   const char* outer = getClassKindSpecifier(call);
 
   if (outer != NULL) {
-    CallExpr* innerCall = toCallExpr(call->get(1));
+    Expr* inner = call->get(1);
+    // skip management decorator if present
+    if (NamedExpr* ne = toNamedExpr(inner))
+      if (ne->name == astr_chpl_manager)
+        inner = call->get(2);
+
+    CallExpr* innerCall = toCallExpr(inner);
     if (innerCall) {
       const char* inner = getClassKindSpecifier(innerCall);
       if (inner != NULL) {

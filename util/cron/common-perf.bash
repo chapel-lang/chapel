@@ -12,7 +12,7 @@ source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common-fast.bash
 if [ -z "${CHPL_TEST_PERF_CONFIG_NAME}" ] ; then
   export CHPL_TEST_PERF_CONFIG_NAME="$(hostname -s)"
 fi
-export CHPL_NIGHTLY_LOGDIR="$logdir_prefix/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME"
+export CHPL_NIGHTLY_LOGDIR="$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME"
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 export CHPL_TEST_PERF_DIR="$CHPL_NIGHTLY_LOGDIR"

@@ -148,11 +148,11 @@ module LocaleModelHelpSetup {
     dst.maxTaskPar = chpl_task_getMaxPar();
   }
 
-  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales, type NumaDomain) {
     helpSetupLocaleFlat(dst, local_name);
 
-    extern proc chpl_task_getNumSublocales(): int(32);
-    numSublocales = chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    numSublocales = chpl_topo_getNumNumaDomains();
 
     extern proc chpl_task_getMaxPar(): uint(32);
 
@@ -180,7 +180,8 @@ module LocaleModelHelpSetup {
     }
   }
 
-  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out
+      numSublocales, type CPULocale, type GPULocale) {
     helpSetupLocaleFlat(dst, local_name);
 
     extern proc chpl_task_getMaxPar(): uint(32);

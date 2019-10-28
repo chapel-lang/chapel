@@ -92,7 +92,7 @@ class LocalData {
 
   // pointers to slices of neighbor data
   // from which we will fetch into our neighbor cache
-  var cnorth, csouth, cwest, ceast: cacheType;
+  var cnorth, csouth, cwest, ceast: cacheType?;
 }
 
 // A class for all node-local data.

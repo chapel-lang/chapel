@@ -4,4 +4,4 @@
 --sorts='i' --M=12 --correctness=false            # insertionSort
 --sorts='s' --M=12 --correctness=false            # selectionSort
 --sorts='b' --M=12 --correctness=false            # bubbleSort
---sorts='r' --M=12 --correctness=false            # binary insertion sort
+--sorts='r' --M=12 --correctness=false            # binaryInsertionSort

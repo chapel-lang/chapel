@@ -576,16 +576,22 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
+
+  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
+  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
+
+  dtShared                             = new AggregateType(AGGREGATE_RECORD);
+  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -728,6 +734,9 @@ void initPrimitiveTypes() {
 
   dtAnyReal = createInternalType("chpl_anyreal", "real");
   dtAnyReal->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
+  dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
 
   // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
@@ -1059,6 +1068,39 @@ bool isClass(Type* t) {
 bool isClassOrNil(Type* t) {
   if (t == dtNil) return true;
   return isClass(t);
+}
+
+bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+bool isBorrowedClass(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    return dt->isBorrowed();
+
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
 }
 
 bool isBuiltinGenericClassType(Type* t) {

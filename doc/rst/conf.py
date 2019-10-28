@@ -38,6 +38,14 @@ extensions = [
     'util.disguise',
 ]
 
+nitpick_ignore = []
+for line in open('../util/nitpick_ignore'):
+    if line.strip() == "" or line.startswith("#"):
+        continue
+    dtype, target = line.split(None, 1)
+    target = target.strip()
+    nitpick_ignore.append((dtype, target))
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['meta/templates']
 
@@ -307,3 +315,25 @@ def allow_nonlocal_image_warn_node(self, msg, node):
         original_warn_mode(self, msg, node)
 
 sphinx.environment.BuildEnvironment.warn_node = allow_nonlocal_image_warn_node
+
+
+### Custom lexers for syntax listings
+from pygments.lexer import RegexLexer
+from pygments import token
+from sphinx.highlighting import lexers
+
+class TrivialLexer(RegexLexer):
+    name = 'trivial'
+
+    tokens = {
+        'root': [
+            (r'.*\n', token.Text)
+            #(r'MyKeyword', token.Keyword),
+            #(r'[a-zA-Z]', token.Name),
+            #(r'\s', token.Text)
+        ]
+    }
+
+lexers['syntax'] = TrivialLexer(startinline=True)
+lexers['syntaxdonotcollect'] = TrivialLexer(startinline=True)
+lexers['printoutput'] = TrivialLexer(startinline=True)

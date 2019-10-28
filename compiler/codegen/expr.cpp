@@ -101,7 +101,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 //static void codegenCallNotValues(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
-//static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
+static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
@@ -2802,7 +2802,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCall(fnName, args);
 }
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
@@ -2816,7 +2816,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a6);
   codegenCall(fnName, args);
 }
-*/
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7)
@@ -4250,17 +4250,7 @@ DEFINE_PRIM(PRIM_ASSIGN) {
 
 static bool commUnorderedOpsAvailable(Type* elementType) {
   if (0 == strcmp(CHPL_COMM, "ugni")) {
-    // the ugni layer only supports unordered gets for up to 8 bytes
-    // and we use numeric type as a stand-in for that
-    if (is_bool_type(elementType) ||
-        is_int_type(elementType) ||
-        is_uint_type(elementType) ||
-        is_real_type(elementType) ||
-        is_imag_type(elementType) ||
-        elementType == dtComplex[COMPLEX_SIZE_64] ||
-        // note: default sized complex is too big at present
-        is_enum_type(elementType))
-      return true;
+    return true;
   }
   return false;
 }
@@ -4784,6 +4774,7 @@ DEFINE_PRIM(PRIM_CHPL_COMM_REMOTE_PREFETCH) {
                 locale,
                 remoteAddr,
                 len,
+                genCommID(gGenInfo),
                 call->get(4),
                 call->get(5));
 }

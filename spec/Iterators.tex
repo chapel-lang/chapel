@@ -17,6 +17,7 @@ the specification will be expanded regarding parallel iterators soon.
 The syntax to declare an iterator is given
 by:
 \begin{syntax}
+\begin{verbatim}
 iterator-declaration-statement:
   privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
   iterator-body
@@ -37,6 +38,7 @@ yield-type:
 iterator-body:
   block-statement
   yield-statement
+\end{verbatim}
 \end{syntax}
 
 The syntax of an iterator declaration is similar to a procedure declaration, with
@@ -64,8 +66,10 @@ Iterators that yield types or params are not currently supported.
 The yield statement can only appear in iterators.  The syntax of the
 yield statement is given by
 \begin{syntax}
+\begin{verbatim}
 yield-statement:
   `yield' expression ;
+\end{verbatim}
 \end{syntax}
 
 When an iterator is executed and a \chpl{yield} is encountered, the
@@ -91,8 +95,10 @@ An iterator need not contain any yield statements.
 
 Iterators are invoked using regular call expressions:
 \begin{syntax}
+\begin{verbatim}
 iteratable-call-expression:
   call-expression
+\end{verbatim}
 \end{syntax}
 
 All details of iterator calls, including argument passing, function
@@ -122,18 +128,24 @@ contains the values returned by the iterator on each iteration.
 \begin{chapelexample}{as-arrays.chpl}
 Given this iterator
 \begin{chapel}
+\begin{verbatim}
 iter squares(n: int): int {
   for i in 1..n do
     yield i * i;
 }
 var A = squares(5);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 then the variable A will be an array storing:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 1 4 9 16 25
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -161,6 +173,7 @@ typically made by iterating over it in a loop.
 \begin{chapelexample}{recursive.chpl}
 A post-order traversal of a tree data structure could be written like this:
 \begin{chapelnoprint}
+\begin{verbatim}
 class Tree {
   var data: string;
   var left, right: unmanaged Tree?;
@@ -171,8 +184,10 @@ class Tree {
 }
 
 var tree = new unmanaged Tree("a", new unmanaged Tree("b"), new unmanaged Tree("c", new unmanaged Tree("d"), new unmanaged Tree("e")));
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapel}
+\begin{verbatim}
 iter postorder(tree: Tree?): string {
   if tree != nil {
     for child in postorder(tree!.left) do
@@ -182,8 +197,10 @@ iter postorder(tree: Tree?): string {
     yield tree.data;
   }
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 proc Tree.writeThis(x)
 {
   var first = true;
@@ -196,14 +213,17 @@ proc Tree.writeThis(x)
 writeln("Tree Data");
 writeln(tree);
 delete tree;
+\end{verbatim}
 \end{chapelnoprint}
 By contrast, using calls \chpl{postorder(tree.left)}
 and \chpl{postorder(tree.right)} as stand-alone statements would
 result in generating temporary arrays containing the outcomes of these
 recursive calls, which would then be discarded.
 \begin{chapeloutput}
+\begin{verbatim}
 Tree Data
 b d e c a
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -224,6 +244,7 @@ This pattern creates a new iterator that yields the result of applying
 \chpl{addOne()} to each value yielded by \chpl{firstN()}.
 
 \begin{chapel}
+\begin{verbatim}
 proc addOne(x:int) {
   return x + 1;
 }
@@ -235,8 +256,10 @@ iter firstN(n:int) {
 for number in addOne(firstN(10)) {
   writeln(number);
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 2
 3
 4
@@ -247,6 +270,7 @@ for number in addOne(firstN(10)) {
 9
 10
 11
+\end{verbatim}
 \end{chapeloutput}
 
 \end{chapelexample}

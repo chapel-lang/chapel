@@ -536,6 +536,10 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
   return chpl_myLocArr().arrLocalRep[indexx];
 }
 
+proc ReplicatedArr.dsiBoundsCheck(indexx) {
+  return dom.dist.targetLocDom.contains(here.id);
+}
+
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
   localArrs[f.readWriteThisFromLocale()!.id].arrLocalRep._value.dsiSerialWrite(f);

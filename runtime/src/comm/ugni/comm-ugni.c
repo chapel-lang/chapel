@@ -51,7 +51,6 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chplrt.h"
-#include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
@@ -815,29 +814,7 @@ static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
 // for that transaction.  So in order to match postings with their
 // later completions, we need the post descriptor to exist from the
 // time the transaction is posted until when the initiating task sees
-// it complete.  Here we define pools of post descriptors to use for
-// these non-blocking PUTs and GETs.  Each pool entry contains the
-// post descriptor itself, a "done" flag, and free list link.  We put
-// the address of the "done" flag in the post_id member of the post
-// descriptor so that we can set it when we receive the completion.
-//
-// We allocate these up front, with a fixed size.  There are
-// NB_DESC_NUM_POOLS pools, with NB_DESC_NUM_PER_POOL in each one.
-// The requirements/constraints on these values are as follows.
-//   - We don't need to acquire one of these unless we're holding a
-//     comm domain, so we don't need more pools than we have comm
-//     domains.  An Aries NIC supports 128 comm domains (FMA windows),
-//     so that is our maximum.
-//   - We cannot have more than CD_ACTIVE_TRANS_MAX NB transactions
-//     outstanding at the same time, per comm domain, so we don't need
-//     more that per pool.
-//   - We emulate an unsigned mod by NB_DESC_NUM_POOLS by means of
-//     & (NB_DESC_NUM_POOLS - 1), so that has to be a power of 2.
-//   - The code does divides and mods with NB_DESC_NUM_PER_POOL, so
-//     for performance that should be a power of 2.
-//
-#define NB_DESC_NUM_POOLS 128
-#define NB_DESC_NUM_PER_POOL CD_ACTIVE_TRANS_MAX
+// it complete.
 
 typedef struct {
   gni_post_descriptor_t post_desc;  // POST descriptor for an NB transaction
@@ -845,20 +822,6 @@ typedef struct {
   int cdi;                          // index of comm domain used for post
   mpool_idx_base_t next;            // free list index
 } nb_desc_t;
-
-static nb_desc_t nb_desc_pool[NB_DESC_NUM_POOLS][NB_DESC_NUM_PER_POOL];
-static mpool_idx_t nb_desc_pool_head[NB_DESC_NUM_POOLS];
-static atomic_bool nb_desc_pool_lock[NB_DESC_NUM_POOLS];
-
-static mpool_idx_t nb_desc_pool_i;
-
-static inline
-mpool_idx_base_t nb_desc_next_pool_i(void) 
-{
-  return mpool_idx_finc(&nb_desc_pool_i) & (NB_DESC_NUM_POOLS - 1);
-}
-
-typedef uint16_t nb_desc_idx_t;
 
 
 //
@@ -1497,14 +1460,6 @@ static void      indicate_done(fork_base_info_t* b);
 static void      indicate_done2(int, rf_done_t *);
 static void      send_polling_response(void*, c_nodeid_t, void*, size_t,
                                        mem_region_t*);
-static nb_desc_idx_t nb_desc_idx_encode(int, int);
-static void      nb_desc_idx_decode(int*, int*, nb_desc_idx_t);
-static nb_desc_t* nb_desc_idx_2_ptr(nb_desc_idx_t);
-static chpl_comm_nb_handle_t nb_desc_idx_2_handle(nb_desc_idx_t);
-static nb_desc_idx_t nb_desc_handle_2_idx(chpl_comm_nb_handle_t);
-static void      nb_desc_init(void);
-static nb_desc_idx_t nb_desc_alloc(void);
-static void      nb_desc_free(nb_desc_idx_t);
 static void      rf_done_pre_init(void);
 static void      rf_done_init(void);
 static rf_done_t* rf_done_alloc(void);
@@ -1840,7 +1795,7 @@ typedef struct {
   void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
   void*         src_addr_v[MAX_CHAINED_PUT_LEN];
-  uint64_t      src_v[MAX_CHAINED_PUT_LEN];
+  char          src_v[MAX_CHAINED_PUT_LEN][MAX_UNORDERED_TRANS_SZ];
   size_t        size_v[MAX_CHAINED_PUT_LEN];
   mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
 } put_buff_task_info_t;
@@ -2170,7 +2125,6 @@ void chpl_comm_post_task_init(void)
   chpl_comm_mem_reg_init();
 
   get_buf_init();
-  nb_desc_init();
   rf_done_init();
   amo_res_init();
 
@@ -2212,11 +2166,6 @@ void chpl_comm_post_task_init(void)
   //
   while (polling_task_running == false)
     sched_yield();
-
-  //
-  // Initialize the caching layer, if it is active.
-  //
-  chpl_cache_init();
 }
 
 
@@ -4722,131 +4671,6 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
 }
 
 
-//
-// Non-blocking PUT/GET descriptor management
-//
-
-static
-inline
-nb_desc_idx_t nb_desc_idx_encode(int i, int j)
-{
-  return (nb_desc_idx_t) (i << 8 | j);
-}
-
-
-static
-inline
-void nb_desc_idx_decode(int* ip, int* jp, nb_desc_idx_t nbdi)
-{
-  *ip = nbdi >> 8;
-  *jp = nbdi & 0xff;
-}
-
-
-static
-inline
-nb_desc_t* nb_desc_idx_2_ptr(nb_desc_idx_t nbdi)
-{
-  int i, j;
-  nb_desc_idx_decode(&i, &j, nbdi);
-  return &nb_desc_pool[i][j];
-}
-
-
-static
-inline
-chpl_comm_nb_handle_t nb_desc_idx_2_handle(nb_desc_idx_t nbdi)
-{
-  //
-  // We offset j by 1 in the external handle so that when i==0, j==0
-  // it doesn't end up producing a NULL handle pointer.
-  //
-  return (chpl_comm_nb_handle_t) ((intptr_t) nbdi + 1);
-}
-
-
-static
-inline
-nb_desc_idx_t nb_desc_handle_2_idx(chpl_comm_nb_handle_t h)
-{
-  //
-  // We offset j by 1 in the external handle so that when i==0, j==0
-  // it doesn't end up producing a NULL handle pointer.
-  //
-  return (nb_desc_idx_t) ((intptr_t) h - 1);
-}
-
-
-static
-void nb_desc_init(void)
-{
-  int i, j;
-
-  if (NB_DESC_NUM_POOLS < comm_dom_cnt)
-    chpl_warning("(NB_DESC_NUM_POOLS < comm_dom_cnt) may lead to hangs", 0, 0);
-
-  for (i = 0; i < NB_DESC_NUM_POOLS; i++) {
-    for (j = 0; j < NB_DESC_NUM_PER_POOL - 1; j++) {
-      atomic_init_bool(&nb_desc_pool[i][j].done, false);
-      nb_desc_pool[i][j].next = j + 1;
-    }
-    nb_desc_pool[i][j].next = -1;
-
-    mpool_idx_init(&nb_desc_pool_head[i], 0);
-
-    atomic_init_bool(&nb_desc_pool_lock[i], false);
-  }
-
-  mpool_idx_init(&nb_desc_pool_i, 0);
-}
-
-
-static
-inline
-nb_desc_idx_t nb_desc_alloc(void)
-{
-  int i, j;
-  nb_desc_idx_t nbdi = 0;
-
-  //
-  // Cycle through the pools and find one that contains a free nb_desc
-  // flag we can use.  Just keep trying until we find one.
-  //
-  for (i = nb_desc_next_pool_i(), j = -1;
-       j < 0;
-       i = (i + 1) % NB_DESC_NUM_POOLS) {
-    if (mpool_idx_load(&nb_desc_pool_head[i]) >= 0 &&
-        !atomic_exchange_bool(&nb_desc_pool_lock[i], true)) {
-      if ((j = mpool_idx_load(&nb_desc_pool_head[i])) >= 0) {
-        nbdi = nb_desc_idx_encode(i, j);
-        mpool_idx_store(&nb_desc_pool_head[i], nb_desc_pool[i][j].next);
-      }
-
-      atomic_store_bool(&nb_desc_pool_lock[i], false);
-    }
-  }
-
-  return nbdi;
-}
-
-
-static
-inline
-void nb_desc_free(nb_desc_idx_t nbdi)
-{
-  int i, j;
-
-  //
-  // Add this flag back to its pool.
-  //
-  nb_desc_idx_decode(&i, &j, nbdi);
-  while (atomic_exchange_bool(&nb_desc_pool_lock[i], true))
-    ;
-  nb_desc_pool[i][j].next = mpool_idx_exchange(&nb_desc_pool_head[i], j);
-  atomic_store_bool(&nb_desc_pool_lock[i], false);
-}
-
-
 static
 void rf_done_pre_init(void)
 {
@@ -5285,7 +5109,7 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("put", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("put", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
@@ -5805,7 +5629,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("unordered get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("unordered get", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
@@ -5836,7 +5660,7 @@ void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
   do_remote_put_buff(addr, locale, raddr, size, may_proxy_true);
@@ -5871,7 +5695,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("get", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
@@ -5908,7 +5732,7 @@ void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   remote_mr = mreg_for_remote_addr(tgt_addr, locale);
   info = task_local_buff_acquire(put_buff);
 
-  if (remote_mr == NULL || info == NULL || size > 8) {
+  if (remote_mr == NULL || info == NULL || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_put(src_addr, locale, tgt_addr, size, remote_mr, may_proxy);
     return;
   }
@@ -5972,7 +5796,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
-      !IS_ALIGNED_32(size)) {
+      !IS_ALIGNED_32(size) || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
@@ -6293,100 +6117,12 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
                                        int32_t commID, int ln, int32_t fn)
 {
-  mem_region_t*          local_mr;
-  mem_region_t*          remote_mr;
-  nb_desc_idx_t          nbdi;
-  nb_desc_t*             nbdp;
-  gni_post_descriptor_t* post_desc;
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
 
-  assert(addr != NULL);
-  assert(raddr != NULL);
-  if (size == 0)
-    return NULL;
-
-  if (locale < 0 || locale >= chpl_numNodes)
-    CHPL_INTERNAL_ERROR("chpl_comm_get_nb(): remote locale out of range");
-
-  if (locale == chpl_nodeID) {
-    memmove(addr, raddr, size);
-    return NULL;
-  }
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
-    chpl_comm_cb_info_t cb_data = 
-      {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_rdma("non-blocking get", locale, size, ln, fn);
-  chpl_comm_diags_incr(get_nb);
-
-  //
-  // For now, if the local address isn't in a memory region known to the
-  // NIC, or if they give us an unaligned address or length, or if the
-  // remote address isn't in NIC-registered memory, or if the size is
-  // larger than the rdma_threshold, do a blocking GET.
-  // Eventually it might be worthwhile to do a nonblocking solution if
-  // we can.
-  //
-  if ((local_mr = mreg_for_local_addr(addr)) == NULL
-      || !IS_ALIGNED_32((size_t) (intptr_t) addr)
-      || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
-      || !IS_ALIGNED_32(size)
-      || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
-      || size >= rdma_threshold) {
-    PERFSTATS_INC(get_nb_b_cnt);
-    do_remote_get(addr, locale, raddr, size, may_proxy_true);
-    return NULL;
-  }
-
-  //
-  // Get a nonblocking completion descriptor, and fill in the POST
-  // descriptor within it.
-  //
-  // When we initiate a non-blocking GET the post_id of the reference
-  // is the address of the "done" flag in the NB descriptor.  When the
-  // reference completes we use that post_id to set the flag.  The
-  // POST descriptor has to exist all the way from the time the POST
-  // is done until the matching GNI_CqGetCompleted() call, so that we
-  // can pull the post_id out of it in order to record the completion.
-  // Therefore it, too, is stored in the NB descriptor.  The returned
-  // handle is a pointer to the descriptor itself, so that we can poll
-  // the right CQ when testing for the completion event.
-  //
-  nbdi = nb_desc_alloc();
-  nbdp = nb_desc_idx_2_ptr(nbdi);
-  post_desc = &nbdp->post_desc;
-  atomic_store_bool(&nbdp->done, false);
-
-  post_desc->post_id         = (uint64_t) (intptr_t) &nbdp->done;
-  post_desc->type            = GNI_POST_FMA_GET;
-  post_desc->cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-  post_desc->dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc->rdma_mode       = 0;
-  post_desc->src_cq_hndl     = 0;
-
-  post_desc->local_addr      = (uint64_t) (intptr_t) addr;
-  post_desc->local_mem_hndl  = local_mr->mdh;
-  post_desc->remote_addr     = (uint64_t) (intptr_t) raddr;
-  post_desc->remote_mem_hndl = remote_mr->mdh;
-  post_desc->length          = size;
-
-
-  //
-  // Initiate the transaction.  Don't wait for it to complete.
-  //
-  PERFSTATS_INC(get_nb_cnt);
-  PERFSTATS_ADD(get_byte_cnt, size);
-
-  nbdp->cdi = post_fma(locale, post_desc);
-
-  return nb_desc_idx_2_handle(nbdi);
+  chpl_comm_get(addr, locale, raddr, size, commID, ln, fn);
+  return NULL;
 }
 
 
@@ -6397,28 +6133,8 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
 
-  //
-  // For now, just do a blocking PUT.  At some point it will be worth
-  // it do a real nonblocking implementation, but right now we don't
-  // have time.
-  //
   chpl_comm_put(addr, locale, raddr, size, commID, ln, fn);
   return NULL;
-
-#if 0
-  // When non blocking PUT is implemented, this is the code to
-  // enable for communication callbacks, don't enable while using
-  // blocking puts as it will log two communications
-  
-  // Communication callbacks
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
-    chpl_comm_cb_info_t cb_data = 
-      {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-#endif
-
 }
 
 
@@ -6437,63 +6153,16 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   chpl_comm_diags_incr(wait_nb);
 
   PERFSTATS_INC(wait_nb_cnt);
-
-  for (int i = 0; i < (int) nhandles; i++) {
-    nb_desc_idx_t nbdi;
-    nb_desc_t* nbdp;
-
-    if (h[i] == NULL)
-      continue;
-
-    nbdi = nb_desc_handle_2_idx(h[i]);
-    nbdp = nb_desc_idx_2_ptr(nbdi);
-
-    //
-    // Wait for the transaction to complete.  Don't yield initially
-    // as we do in some other cases, because we've presumably done
-    // all the other work we could already.
-    //
-    consume_all_outstanding_cq_events(nbdp->cdi);
-    while (!atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
-      local_yield();
-      consume_all_outstanding_cq_events(nbdp->cdi);
-    }
-
-    nb_desc_free(nbdi);
-  }
 }
 
 
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
-  int rv = 0;
-
   chpl_comm_diags_incr(try_nb);
 
   PERFSTATS_INC(try_nb_cnt);
 
-  for (int i = 0; i < (int) nhandles; i++) {
-    nb_desc_idx_t nbdi;
-    nb_desc_t* nbdp;
-
-    if (h[i] == NULL)
-      continue;
-
-    nbdi = nb_desc_handle_2_idx(h[i]);
-    nbdp = nb_desc_idx_2_ptr(nbdi);
-
-    //
-    // If the transaction is not already done, try to complete it.
-    //
-    consume_all_outstanding_cq_events(nbdp->cdi);
-    if (atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
-      h[i] = NULL;
-      rv = 1;
-      nb_desc_free(nbdi);
-    }
-  }
-
-  return rv;
+  return 0;
 }
 
 

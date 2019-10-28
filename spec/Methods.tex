@@ -11,6 +11,7 @@ expression known as the \emph{receiver}.
 
 Methods are declared with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 method-declaration-statement:
   procedure-kind[OPT] proc-or-iter this-intent[OPT] type-binding[OPT] function-name argument-list[OPT]
     return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
@@ -29,7 +30,7 @@ this-intent:
 type-binding:
   identifier .
   `(' expr `)' .
-
+\end{verbatim}
 \end{syntax}
 
 % Note: at the time `const ref` and `const` this intents were
@@ -73,10 +74,12 @@ When calling a method from another method, or from within a class or
 record declaration, the receiver clause can be omitted.
 
 \begin{syntax}
+\begin{verbatim}
 method-call-expression:
   receiver-clause[OPT] expression ( named-expression-list )
   receiver-clause[OPT] expression [ named-expression-list ]
   receiver-clause[OPT] parenthesesless-function-identifier
+\end{verbatim}
 \end{syntax}
 
 The receiver-clause (or its absence) specifies the method's receiver
@@ -86,24 +89,32 @@ The receiver-clause (or its absence) specifies the method's receiver
 A method to output information about an instance of the \chpl{Actor}
 class can be defined as follows:
 \begin{chapelpre}
+\begin{verbatim}
 class Actor {
   var name: string;
   var age: uint;
 }
 var anActor = new owned Actor(name="Tommy", age=27);
 writeln(anActor);
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 proc Actor.print() {
   writeln("Actor ", name, " is ", age, " years old");
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 anActor.print();
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 {name = Tommy, age = 27}
 Actor Tommy is 27 years old
+\end{verbatim}
 \end{chapeloutput}
 This method can be called on an instance of the \chpl{Actor}
 class, \chpl{anActor}, with the call expression \chpl{anActor.print()}.
@@ -137,19 +148,25 @@ in \rsec{Method_Calls}.
 Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
 defined as
 \begin{chapel}
+\begin{verbatim}
 class C {
   proc foo() {
     bar(this);
   }
 }
 proc bar(c: C) { writeln(c); }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var c1: C = new owned C();
 c1.foo();
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 {}
+\end{verbatim}
 \end{chapeloutput}
 Then given an instance of \chpl{C} called \chpl{c1}, the method
 call \chpl{c1.foo()} results in a call to \chpl{bar} where the
@@ -194,6 +211,7 @@ params only.  The \chpl{size} method is defined with
 a \sntx{this-intent} of \chpl{type}, requiring it to be called on
 the \chpl{int} type itself, not on integer values.
 \begin{chapel}
+\begin{verbatim}
 proc param int.isOdd() param {
   return this & 0x1 == 0x1;
 }
@@ -212,12 +230,15 @@ writeln((42+three).isOdd());  // prints true
 
 writeln(int.size());          // prints 64
 // writeln(42.size());        // illegal since 'size()' is a type method
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 false
 true
 true
 64
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -227,6 +248,7 @@ Type methods can also be iterators.
 In the following code, the class \chpl{C} defines a type method
 iterator which can be invoked on the type itself:
 \begin{chapel}
+\begin{verbatim}
 class C {
   var x: int;
   var y: string;
@@ -241,12 +263,15 @@ class C {
 
 for i in C.myIter() do
   writeln(i);
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 3
 5
 7
 11
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -267,15 +292,21 @@ In the following code, the \chpl{doubleMe} function is defined with a
 \sntx{this-intent} of \chpl{ref}, allowing variables of type \chpl{int} to
 double themselves.
 \begin{chapel}
+\begin{verbatim}
 proc ref int.doubleMe() { this *= 2; }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var x: int = 2;
 x.doubleMe();
 writeln(x);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 4
+\end{verbatim}
 \end{chapeloutput}
 Given a variable \chpl{x = 2}, a call to \chpl{x.doubleMe()} will set \chpl{x}
 to \chpl{4}.
@@ -299,6 +330,7 @@ In the following code, the \chpl{this} method is used to create a
 class that acts like a simple array that contains three integers
 indexed by 1, 2, and 3.
 \begin{chapel}
+\begin{verbatim}
 class ThreeArray {
   var x1, x2, x3: int;
   proc this(i: int) ref {
@@ -310,8 +342,10 @@ class ThreeArray {
     halt("ThreeArray index out of bounds: ", i);
   }
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var ta = new borrowed ThreeArray();
 ta(1) = 1;
 ta(2) = 2;
@@ -319,12 +353,15 @@ ta(3) = 3;
 for i in 1..3 do
   writeln(ta(i));
 ta(4) = 4;
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 2
 3
 thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -345,6 +382,7 @@ In the following code, the \chpl{these} method is used to create a
 class that acts like a simple array that can be iterated over and
 contains three integers.
 \begin{chapel}
+\begin{verbatim}
 class ThreeArray {
   var x1, x2, x3: int;
   iter these() ref {
@@ -353,19 +391,24 @@ class ThreeArray {
     yield x3;
   }
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var ta = new owned ThreeArray();
 for (i, j) in zip(ta, 1..) do
   i = j;
 
 for i in ta do
   writeln(i);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 2
 3
+\end{verbatim}
 \end{chapeloutput}
 
 \end{chapelexample}
@@ -377,6 +420,7 @@ over the class type itself.
 In the following code, the class \chpl{C} defines a type method
 iterator named \chpl{these}, supporting direct iteration over the type:
 \begin{chapel}
+\begin{verbatim}
 class C {
   var x: int;
   var y: string;
@@ -391,11 +435,14 @@ class C {
 
 for i in C do
   writeln(i);
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 2
 4
 8
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}

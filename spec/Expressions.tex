@@ -5,6 +5,7 @@
 Chapel provides the following expressions:
 
 \begin{syntax}
+\begin{verbatim}
 expression:
   literal-expression
   nil-expression
@@ -32,6 +33,7 @@ expression:
   tuple-expand-expression
   locale-access-expression
   mapped-domain-expression
+\end{verbatim}
 \end{syntax}
 % in firstClassFns.rst: lambda-declaration-expression
 
@@ -57,6 +59,7 @@ A literal value for any of the predefined types is a literal expression.
 
 Literal expressions are given by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 literal-expression:
   bool-literal
   integer-literal
@@ -67,6 +70,7 @@ literal-expression:
   range-literal
   domain-literal
   array-literal
+\end{verbatim}
 \end{syntax}
 
 Literal values for primitive types are described in
@@ -87,8 +91,10 @@ A use of a variable, constant, parameter, or formal argument, is
 itself an expression.  The syntax of a variable expression is given
 by:
 \begin{syntax}
+\begin{verbatim}
 variable-expression:
-  identifier
+  identifier 
+\end{verbatim}
 \end{syntax}
 
 \section{Enumeration Constant Expression}
@@ -99,8 +105,10 @@ A use of an enumeration constant is itself an expression.  Such a
 constant must be preceded by the enumeration type name.  The syntax of
 an enumeration constant expression is given by:
 \begin{syntax}
+\begin{verbatim}
 enum-constant-expression:
   enum-type . identifier
+\end{verbatim}
 \end{syntax}
 
 For an example of using enumeration constants,
@@ -113,8 +121,10 @@ see~\rsec{Enumerated_Types}.
 A \sntx{parenthesized-expression} is an expression that is delimited
 by parentheses as given by:
 \begin{syntax}
+\begin{verbatim}
 parenthesized-expression:
   ( expression )
+\end{verbatim}
 \end{syntax}
 Such an expression evaluates to the expression.  The parentheses are
 ignored and have only a syntactical effect.
@@ -149,9 +159,11 @@ They are defined in \rsec{Class_Field_Accesses} and
 \rsec{Class_Method_Calls}, respectively.
 
 \begin{syntax}
+\begin{verbatim}
 member-access-expression:
   field-access-expression
   method-call-expression
+\end{verbatim}
 \end{syntax}
 
 \section{The Query Expression}
@@ -164,8 +176,10 @@ A query expression is used to query a type or value within a formal
 argument type expression.  The syntax of a query expression is given
 by:
 \begin{syntax}
+\begin{verbatim}
 query-expression:
   ? identifier[OPT]
+\end{verbatim}
 \end{syntax}
 Querying is restricted to querying the type of a formal argument, the
 element type of a formal argument that is an array, the domain of a
@@ -183,46 +197,60 @@ first argument is queried and stored in the type alias \chpl{t} and
 the domain of the second argument is queried and stored in the
 variable \chpl{D}:
 \begin{chapelnoprint}
+\begin{verbatim}
 { // }
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapel}
+\begin{verbatim}
 proc foo(x: ?t, y: [?D] t) {
   for i in D do
     y[i] = x;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 // {
 var x = 1.5;
 var y: [1..4] x.type;
 foo(x, y);
 writeln(y);
 }
+\end{verbatim}
 \end{chapelnoprint}
 This allows a generic specification of assigning a
 particular value to all elements of an array.  The value and the
 elements of the array are constrained to be the same type.  This
 function can be rewritten without query expression as follows:
 \begin{chapelnoprint}
+\begin{verbatim}
 { // }
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapel}
+\begin{verbatim}
 proc foo(x, y: [] x.type) {
   for i in y.domain do
     y[i] = x;
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 // {
 var x = 1.5;
 var y: [1..4] x.type;
 foo(x, y);
 writeln(y);
 }
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 1.5 1.5 1.5 1.5
 1.5 1.5 1.5 1.5
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -238,8 +266,10 @@ places in the future.
 
 A cast is specified with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 cast-expression:
   expression : type-expression
+\end{verbatim}
 \end{syntax}
 The expression is converted to the specified type.  A cast expression invokes
 the corresponding explicit conversion~(\rsec{Explicit_Conversions}).  A
@@ -269,11 +299,13 @@ lvalue expressions include the following:
 
 LValue expressions are given by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 lvalue-expression:
   variable-expression
   member-access-expression
   call-expression
   parenthesized-expression
+\end{verbatim}
 \end{syntax}
 The syntax is less restrictive than the definition above.  For
 example, not all \sntx{call-expression}s are lvalues.
@@ -290,77 +322,77 @@ example, not all \sntx{call-expression}s are lvalues.
 \hline
 {\bf Operator} & {\bf Associativity} & {\bf Use} \\
 \hline
-\verb@.@ & \multirow{3}{*}{left} & member access \\
-\verb@()@ & & function call or access \\
-\verb@[]@ & & function call or access \\
+\chpl{.} & \multirow{3}{*}{left} & member access \\
+\chpl{()} & & function call or access \\
+\chpl{[]} & & function call or access \\
 \hline
-\verb@new@ & right & initializer call \\
+\chpl{new} & right & initializer call \\
 \hline
-\verb@owned@ & right & apply management strategy to a class \\
-\verb@shared@ &   & \\
-\verb@borrowed@ &   & \\
-\verb@unmanaged@ &   & \\
+\chpl{owned} & right & apply management strategy to a class \\
+\chpl{shared} &   & \\
+\chpl{borrowed} &   & \\
+\chpl{unmanaged} &   & \\
 \hline
-postfix \verb@?@ & left & compute a nilable class type \\
-postfix \verb@!@ &   & assert non-nilable and borrow \\
+postfix \chpl{?} & left & compute a nilable class type \\
+postfix \chpl{!} &   & assert non-nilable and borrow \\
 \hline
-\verb@:@ & left & cast \\
+\chpl{:} & left & cast \\
 \hline
-\verb@**@ & right & exponentiation \\
+\chpl{**} & right & exponentiation \\
 \hline
-\verb@reduce@ & \multirow{3}{*}{left} & reduction \\
-\verb@scan@ & & scan \\
-\verb@dmapped@ & & domain map application \\
+\chpl{reduce} & \multirow{3}{*}{left} & reduction \\
+\chpl{scan} & & scan \\
+\chpl{dmapped} & & domain map application \\
 \hline
-prefix \verb@!@ & \multirow{2}{*}{right} & logical negation \\
-\verb@~@ & & bitwise negation \\
+prefix \chpl{!} & \multirow{2}{*}{right} & logical negation \\
+\chpl{~} & & bitwise negation \\
 \hline
-\verb@*@ & \multirow{3}{*}{left} & multiplication \\
-\verb@/@ & & division \\
-\verb@%@ & & modulus \\
+\chpl{*} & \multirow{3}{*}{left} & multiplication \\
+\chpl{/} & & division \\
+\chpl{\%} & & modulus \\
 \hline
-unary \verb@+@ & \multirow{2}{*}{right} & positive identity \\
-unary \verb@-@ & & negation \\
+unary \chpl{+} & \multirow{2}{*}{right} & positive identity \\
+unary \chpl{-} & & negation \\
 \hline
-\verb@<<@ & \multirow{2}{*}{left} & left shift \\
-\verb@>>@ & & right shift \\
+\chpl{<<} & \multirow{2}{*}{left} & left shift \\
+\chpl{>>} & & right shift \\
 \hline
-\verb@&@ & left & bitwise/logical and \\
+\chpl{&} & left & bitwise/logical and \\
 \hline
-\verb@^@ & left & bitwise/logical xor \\
+\chpl{^} & left & bitwise/logical xor \\
 \hline
-\verb@|@ & left & bitwise/logical or \\
+\chpl{|} & left & bitwise/logical or \\
 \hline
-\verb@+@ & \multirow{2}{*}{left} & addition \\
-\verb@-@ & & subtraction \\
+\chpl{+} & \multirow{2}{*}{left} & addition \\
+\chpl{-} & & subtraction \\
 \hline
-\verb@..@ & left & range initialization \\
+\chpl{..} & left & range initialization \\
 \hline
-\verb@<=@ & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
-\verb@>=@ & & greater-than-or-equal-to comparison \\
-\verb@<@ & & less-than comparison \\
-\verb@>@ & & greater-than comparison \\
+\chpl{<=} & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
+\chpl{>=} & & greater-than-or-equal-to comparison \\
+\chpl{<} & & less-than comparison \\
+\chpl{>} & & greater-than comparison \\
 \hline
-\verb@==@ & \multirow{2}{*}{left} & equal-to comparison \\
-\verb@!=@ & & not-equal-to comparison \\
+\chpl{==} & \multirow{2}{*}{left} & equal-to comparison \\
+\chpl{!=} & & not-equal-to comparison \\
 \hline
-\verb@&&@ & left & short-circuiting logical and \\
+\chpl{&&} & left & short-circuiting logical and \\
 \hline
-\verb@||@ & left & short-circuiting logical or \\
+\chpl{||} & left & short-circuiting logical or \\
 \hline
-\verb@by@ & \multirow{3}{*}{left} & range/domain stride application \\
-\verb@#@ & & range count application \\
-\verb@align@ & & range alignment \\
+\chpl{by} & \multirow{3}{*}{left} & range/domain stride application \\
+\chpl{#} & & range count application \\
+\chpl{align} & & range alignment \\
 \hline
-\verb@in@ & left & forall expression \\
+\chpl{in} & left & forall expression \\
 \hline
-\verb@if then else@ & \multirow{5}{*}{left} & conditional expression \\
-\verb@forall do@ & & forall expression \\
-\verb@[ ]@ & & forall expression \\
-\verb@for do@ & & for expression \\
-\verb@sync single atomic@ & & sync, single and atomic type \\
+\chpl{if then else} & \multirow{5}{*}{left} & conditional expression \\
+\chpl{forall do} & & forall expression \\
+\chpl{[ ]} & & forall expression \\
+\chpl{for do} & & for expression \\
+\chpl{sync single atomic} & & sync, single and atomic type \\
 \hline
-\verb@,@ & left & comma separated expressions \\
+\chpl{,} & left & comma separated expressions \\
 \hline
 \end{tabular}
 \end{center}
@@ -396,7 +428,8 @@ above:
 
 \begin{center}
 \begin{tabular}{lcl}
-\chpl{-2:uint} & requires & \chpl{(-2):uint} \\
+\chpl{-2:uint} & requires & \chpl{(-2):uint}
+\\
 \end{tabular}
 \end{center}
 
@@ -407,7 +440,8 @@ distinguish between these cases.  An interesting one is:
 
 \begin{center}
 \begin{tabular}{l}
-\chpl{const minint = min(int(32));}\\
+\chpl{const minint = min(int(32));}
+\\
 \chpl{...-minint/2...}
 \end{tabular}
 \end{center}
@@ -488,22 +522,26 @@ expression is not a scalar as expected.
 The application of operators to expressions is itself an expression.
 The syntax of a unary expression is given by:
 \begin{syntax}
+\begin{verbatim}
 unary-expression:
   unary-operator expression
 
 unary-operator: one of
-  + $ $ $ $ - $ $ $ $ ~ $ $ $ $ !
+  + - ~ !
+\end{verbatim}
 \end{syntax}
 
 \index{operators!binary}
 \index{expressions!binary operator}
 The syntax of a binary expression is given by:
 \begin{syntax}
+\begin{verbatim}
 binary-expression:
   expression binary-operator expression
 
 binary-operator: one of
-  + $ $ $ $ - $ $ $ $ * $ $ $ $ / $ $ $ $ % $ $ $ $ ** $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ << $ $ $ $ >> $ $ $ $ && $ $ $ $ || $ $ $ $ == $ $ $ $ != $ $ $ $ <= $ $ $ $ >= $ $ $ $ < $ $ $ $ > $ $ $ $ `by' $ $ $ $ #
+  + - * / % ** & | ^ << >> && || == != <= >= < > `by' #
+\end{verbatim}
 \end{syntax}
 
 The operators are defined in subsequent sections.
@@ -530,6 +568,7 @@ compile-time error occurs.  In these cases, an explicit cast is required.
 
 The unary plus operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc +(a: int(8)): int(8)
 proc +(a: int(16)): int(16)
 proc +(a: int(32)): int(32)
@@ -548,6 +587,7 @@ proc +(a: imag(64)): imag(64)
 
 proc +(a: complex(64)): complex(64)
 proc +(a: complex(128)): complex(128)
+\end{verbatim}
 \end{chapel}
 For each of these definitions, the result is the value of the operand.
 
@@ -559,6 +599,7 @@ For each of these definitions, the result is the value of the operand.
 
 The unary minus operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc -(a: int(8)): int(8)
 proc -(a: int(16)): int(16)
 proc -(a: int(32)): int(32)
@@ -572,6 +613,7 @@ proc -(a: imag(64)): imag(64)
 
 proc -(a: complex(64)): complex(64)
 proc -(a: complex(128)): complex(128)
+\end{verbatim}
 \end{chapel}
 For each of these definitions that return a value, the result is the
 negation of the value of the operand.  For integral types, this
@@ -593,6 +635,7 @@ to \chpl{int(64)} using an implicit conversion.
 
 The addition operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc +(a: int(8), b: int(8)): int(8)
 proc +(a: int(16), b: int(16)): int(16)
 proc +(a: int(32), b: int(32)): int(32)
@@ -626,6 +669,7 @@ proc +(a: imag(32), b: complex(64)): complex(64)
 proc +(a: complex(64), b: imag(32)): complex(64)
 proc +(a: imag(64), b: complex(128)): complex(128)
 proc +(a: complex(128), b: imag(64)): complex(128)
+\end{verbatim}
 \end{chapel}
 For each of these definitions that return a value, the result is the
 sum of the two operands.
@@ -647,6 +691,7 @@ type.
 
 The subtraction operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc -(a: int(8), b: int(8)): int(8)
 proc -(a: int(16), b: int(16)): int(16)
 proc -(a: int(32), b: int(32)): int(32)
@@ -680,6 +725,7 @@ proc -(a: imag(32), b: complex(64)): complex(64)
 proc -(a: complex(64), b: imag(32)): complex(64)
 proc -(a: imag(64), b: complex(128)): complex(128)
 proc -(a: complex(128), b: imag(64)): complex(128)
+\end{verbatim}
 \end{chapel}
 For each of these definitions that return a value, the result is the
 value obtained by subtracting the second operand from the first
@@ -702,6 +748,7 @@ versa, also produces a value of complex type.
 
 The multiplication operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc *(a: int(8), b: int(8)): int(8)
 proc *(a: int(16), b: int(16)): int(16)
 proc *(a: int(32), b: int(32)): int(32)
@@ -735,6 +782,7 @@ proc *(a: imag(32), b: complex(64)): complex(64)
 proc *(a: complex(64), b: imag(32)): complex(64)
 proc *(a: imag(64), b: complex(128)): complex(128)
 proc *(a: complex(128), b: imag(64)): complex(128)
+\end{verbatim}
 \end{chapel}
 For each of these definitions that return a value, the result is the
 product of the two operands.
@@ -757,6 +805,7 @@ value of complex type.
 
 The division operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc /(a: int(8), b: int(8)): int(8)
 proc /(a: int(16), b: int(16)): int(16)
 proc /(a: int(32), b: int(32)): int(32)
@@ -790,6 +839,7 @@ proc /(a: imag(32), b: complex(64)): complex(64)
 proc /(a: complex(64), b: imag(32)): complex(64)
 proc /(a: imag(64), b: complex(128)): complex(128)
 proc /(a: complex(128), b: imag(64)): complex(128)
+\end{verbatim}
 \end{chapel}
 For each of these definitions that return a value, the result is the
 quotient of the two operands.
@@ -817,6 +867,7 @@ The integer result $q$ is the candidate quotient which lies closest to zero.
 
 The modulus operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc %(a: int(8), b: int(8)): int(8)
 proc %(a: int(16), b: int(16)): int(16)
 proc %(a: int(32), b: int(32)): int(32)
@@ -826,6 +877,7 @@ proc %(a: uint(8), b: uint(8)): uint(8)
 proc %(a: uint(16), b: uint(16)): uint(16)
 proc %(a: uint(32), b: uint(32)): uint(32)
 proc %(a: uint(64), b: uint(64)): uint(64)
+\end{verbatim}
 \end{chapel}
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
@@ -835,9 +887,11 @@ magnitude of the result is always smaller than that of the divisor \chpl{b}.
 For integer operands, the \chpl{\%} and \chpl{/} operators are related by the
 following identity:
 \begin{chapel}
+\begin{verbatim}
 var q = a / b;
 var r = a % b;
 writeln(q * b + r == a);    // true
+\end{verbatim}
 \end{chapel}
 
 It is a compile-time error to take the remainder of a value of
@@ -855,6 +909,7 @@ extended to handle real, imaginary, and complex types in the future.
 
 The exponentiation operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc **(a: int(8), b: int(8)): int(8)
 proc **(a: int(16), b: int(16)): int(16)
 proc **(a: int(32), b: int(32)): int(32)
@@ -867,6 +922,7 @@ proc **(a: uint(64), b: uint(64)): uint(64)
 
 proc **(a: real(32), b: real(32)): real(32)
 proc **(a: real(64), b: real(64)): real(64)
+\end{verbatim}
 \end{chapel}
 For each of these definitions that return a value, the result is the
 value of the first operand raised to the power of the second operand.
@@ -894,6 +950,7 @@ overloading~(\rsec{Function_Overloading}).
 
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc ~(a: int(8)): int(8)
 proc ~(a: int(16)): int(16)
 proc ~(a: int(32)): int(32)
@@ -903,6 +960,7 @@ proc ~(a: uint(8)): uint(8)
 proc ~(a: uint(16)): uint(16)
 proc ~(a: uint(32)): uint(32)
 proc ~(a: uint(64)): uint(64)
+\end{verbatim}
 \end{chapel}
 For each of these definitions, the result is the bitwise complement of
 the operand.
@@ -915,6 +973,7 @@ the operand.
 
 The bitwise and operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc &(a: bool, b: bool): bool
 
 proc &(a: int(?w), b: int(w)): int(w)
@@ -922,6 +981,7 @@ proc &(a: uint(?w), b: uint(w)): uint(w)
 
 proc &(a: int(?w), b: uint(w)): uint(w)
 proc &(a: uint(?w), b: int(w)): uint(w)
+\end{verbatim}
 \end{chapel}
 For each of these definitions, the result is
 computed by applying the logical and operation to the bits of the
@@ -952,6 +1012,7 @@ reflects the semantics of standard C.
 
 The bitwise or operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc |(a: bool, b: bool): bool
 
 proc |(a: int(?w), b: int(w)): int(w)
@@ -959,6 +1020,7 @@ proc |(a: uint(?w), b: uint(w)): uint(w)
 
 proc |(a: int(?w), b: uint(w)): uint(w)
 proc |(a: uint(?w), b: int(w)): uint(w)
+\end{verbatim}
 \end{chapel}
 
 For each of these definitions, the result is
@@ -981,6 +1043,7 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 
 The bitwise xor operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc ^(a: bool, b: bool): bool
 
 proc ^(a: int(?w), b: int(w)): int(w)
@@ -988,6 +1051,7 @@ proc ^(a: uint(?w), b: uint(w)): uint(w)
 
 proc ^(a: int(?w), b: uint(w)): uint(w)
 proc ^(a: uint(?w), b: int(w)): uint(w)
+\end{verbatim}
 \end{chapel}
 
 For each of these definitions, the result is
@@ -1016,6 +1080,7 @@ overloading~(\rsec{Function_Overloading}).
 
 The shift operators are predefined as follows:
 \begin{chapel}
+\begin{verbatim}
 proc <<(a: int(8), b): int(8)
 proc <<(a: int(16), b): int(16)
 proc <<(a: int(32), b): int(32)
@@ -1035,6 +1100,7 @@ proc >>(a: uint(8), b): uint(8)
 proc >>(a: uint(16), b): uint(16)
 proc >>(a: uint(32), b): uint(32)
 proc >>(a: uint(64), b): uint(64)
+\end{verbatim}
 \end{chapel}
 The type of the second actual argument must be any integral type.
 
@@ -1065,9 +1131,11 @@ The logical negation operator is predefined for booleans and integers
 as follows:
 
 \begin{chapel}
+\begin{verbatim}
 proc !(a: bool): bool
 proc !(a: int(?w)): bool
 proc !(a: uint(?w)): bool
+\end{verbatim}
 \end{chapel}
 For the boolean form, the result is the logical negation of the
 operand.  For the integer forms, the result is true if the operand is
@@ -1093,16 +1161,22 @@ evaluated and the result is false.
 The logical and operator over expressions \chpl{a} and \chpl{b} given
 by
 \begin{chapel}
-a && b
+\begin{verbatim}
+a && b 
+\end{verbatim}
 \end{chapel}
 is evaluated as the expression
 \begin{chapel}
+\begin{verbatim}
 if isTrue(a) then isTrue(b) else false
+\end{verbatim}
 \end{chapel}
 
 The function \chpl{isTrue} is predefined over bool type as follows:
 \begin{chapel}
-proc isTrue(a:bool) return a;
+\begin{verbatim}
+proc isTrue(a:bool) return a; 
+\end{verbatim}
 \end{chapel}
 Overloading the logical and operator over other types is accomplished
 by overloading the \chpl{isTrue} function over other types.
@@ -1122,11 +1196,15 @@ evaluated and the result is true.
 The logical or operator over expressions \chpl{a} and \chpl{b} given
 by
 \begin{chapel}
+\begin{verbatim}
 a || b
+\end{verbatim}
 \end{chapel}
 is evaluated as the expression
 \begin{chapel}
+\begin{verbatim}
 if isTrue(a) then true else isTrue(b)
+\end{verbatim}
 \end{chapel}
 
 The function \chpl{isTrue} is predefined over bool type as described
@@ -1152,6 +1230,7 @@ overloading~(\rsec{Function_Overloading}).
 The ``less than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
+\begin{verbatim}
 proc <(a: int(8), b: int(8)): bool
 proc <(a: int(16), b: int(16)): bool
 proc <(a: int(32), b: int(32)): bool
@@ -1167,6 +1246,7 @@ proc <(a: uint(64), b: int(64)): bool
 
 proc <(a: real(32), b: real(32)): bool
 proc <(a: real(64), b: real(64)): bool
+\end{verbatim}
 \end{chapel}
 The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
@@ -1177,6 +1257,7 @@ otherwise the result is false.
 The ``greater than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
+\begin{verbatim}
 proc >(a: int(8), b: int(8)): bool
 proc >(a: int(16), b: int(16)): bool
 proc >(a: int(32), b: int(32)): bool
@@ -1192,6 +1273,7 @@ proc >(a: uint(64), b: int(64)): bool
 
 proc >(a: real(32), b: real(32)): bool
 proc >(a: real(64), b: real(64)): bool
+\end{verbatim}
 \end{chapel}
 The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
@@ -1202,6 +1284,7 @@ than \chpl{b}; otherwise the result is false.
 The ``less than or equal to'' comparison operators are predefined over
 numeric types as follows:
 \begin{chapel}
+\begin{verbatim}
 proc <=(a: int(8), b: int(8)): bool
 proc <=(a: int(16), b: int(16)): bool
 proc <=(a: int(32), b: int(32)): bool
@@ -1217,6 +1300,7 @@ proc <=(a: uint(64), b: int(64)): bool
 
 proc <=(a: real(32), b: real(32)): bool
 proc <=(a: real(64), b: real(64)): bool
+\end{verbatim}
 \end{chapel}
 The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
@@ -1227,6 +1311,7 @@ to \chpl{b}; otherwise the result is false.
 The ``greater than or equal to'' comparison operators are predefined
 over numeric types as follows:
 \begin{chapel}
+\begin{verbatim}
 proc >=(a: int(8), b: int(8)): bool
 proc >=(a: int(16), b: int(16)): bool
 proc >=(a: int(32), b: int(32)): bool
@@ -1242,16 +1327,19 @@ proc >=(a: uint(64), b: int(64)): bool
 
 proc >=(a: real(32), b: real(32)): bool
 proc >=(a: real(64), b: real(64)): bool
+\end{verbatim}
 \end{chapel}
 The result of \chpl{a >= b} is true if \chpl{a} is greater than or
 equal to \chpl{b}; otherwise the result is false.
 
 The ordered comparison operators are predefined over strings as follows:
 \begin{chapel}
+\begin{verbatim}
 proc <(a: string, b: string): bool
 proc >(a: string, b: string): bool
 proc <=(a: string, b: string): bool
 proc >=(a: string, b: string): bool
+\end{verbatim}
 \end{chapel}
 Comparisons between strings are defined based on the ordering of the
 character set used to represent the string, which is applied
@@ -1269,6 +1357,7 @@ elementwise to the string's characters in order.
 The equality comparison operators \chpl{==} and \chpl{\!=} are predefined over bool and the
 numeric types as follows:
 \begin{chapel}
+\begin{verbatim}
 proc ==(a: int(8), b: int(8)): bool
 proc ==(a: int(16), b: int(16)): bool
 proc ==(a: int(32), b: int(32)): bool
@@ -1312,16 +1401,19 @@ proc !=(a: imag(64), b: imag(64)): bool
 
 proc !=(a: complex(64), b: complex(64)): bool
 proc !=(a: complex(128), b: complex(128)): bool
+\end{verbatim}
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} contain
-the same value; otherwise the result is false.  The result of \chpl{a
-\!= b} is equivalent to \chpl{\!(a == b)}.
+the same value; otherwise the result is false.  The result of
+\chpl{a \!= b} is equivalent to \chpl{\!(a == b)}.
 
 The equality comparison operators are predefined over classes as
 follows:
 \begin{chapel}
+\begin{verbatim}
 proc ==(a: object, b: object): bool
 proc !=(a: object, b: object): bool
+\end{verbatim}
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} reference
 the same storage location; otherwise the result is false.  The result
@@ -1338,8 +1430,10 @@ in~\rsec{Record_Comparison_Operators}.
 The equality comparison operators are predefined over strings as
 follows:
 \begin{chapel}
+\begin{verbatim}
 proc ==(a: string, b: string): bool
 proc !=(a: string, b: string): bool
+\end{verbatim}
 \end{chapel}
 The result of \chpl{a == b} is true if the sequence of characters
 in \chpl{a} matches exactly the sequence of characters in \chpl{b};
@@ -1377,24 +1471,32 @@ arguments and returns a new string that is the concatenation of its
 arguments:
 
 \begin{chapel}
-proc +(s0: string, s1: string): string
+\begin{verbatim}
+proc +(s0: string, s1: string): string 
+\end{verbatim}
 \end{chapel}
 
 \begin{chapelexample}{string-concat.chpl}
 The code:
 \begin{chapel}
+\begin{verbatim}
 var x: string = "hi";
 var y: string = " there";
 var z = x + y;
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(z);
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 hi there
+\end{verbatim}
 \end{chapeloutput}
-will cause \chpl{z} to be a new string containing the value \chpl{"hi
-there"}.
+will cause \chpl{z} to be a new string containing the value
+\chpl{"hi there"}.
 \end{chapelexample}
 
 \subsection{The By Operator}
@@ -1418,10 +1520,10 @@ and~\rsec{Domain_Alignment} for domains.
 \subsection{The Range Count Operator}
 \label{The_Range_Count_Operator}
 \index{operators!range!count}
-\index{#@\chpl{#}}
-\index{operators!#@\chpl{#}}
+\index{#@\chpl{\#}}
+\index{operators!#@\chpl{\#}}
 
-The operator \chpl{#} is predefined on ranges. It is described
+The operator \chpl{\#} is predefined on ranges. It is described
 in ~\rsec{Count_Operator}.
 
 \section{Let Expressions}
@@ -1433,31 +1535,41 @@ A let expression allows variables to be declared at the expression
 level and used within that expression.  The syntax of a let expression
 is given by:
 \begin{syntax}
+\begin{verbatim}
 let-expression:
   `let' variable-declaration-list `in' expression
+\end{verbatim}
 \end{syntax}
 The scope of the variables is the let-expression.
 \begin{chapelexample}{let.chpl}
 Let expressions are useful for defining variables in the context of
 an expression.  In the code
 \begin{chapelnoprint}
+\begin{verbatim}
   var a = 4;
   var b = 5;
   var l =
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapel}
+\begin{verbatim}
   let x: real = a*b, y = x*x in 1/y
+\end{verbatim}
 \end{chapel}
 the value determined by \chpl{a*b} is computed and converted to type
 real if it is not already a real.  The square of the real is then
 stored in \chpl{y} and the result of the expression is the reciprocal
 of that value.
 \begin{chapelnoprint}
+\begin{verbatim}
   ;
   writeln(l);
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapeloutput}
+\begin{verbatim}
 0.0025
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -1472,9 +1584,11 @@ of that value.
 
 A conditional expression is given by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 if-expression:
   `if' expression `then' expression `else' expression
   `if' expression `then' expression
+\end{verbatim}
 \end{syntax}
 The conditional expression is evaluated in two steps.  First, the
 expression following the \chpl{if} keyword is evaluated.  Then, if the
@@ -1494,6 +1608,7 @@ respectively.
 This example shows how if-then-else can be used in a context in which an
 expression is expected.  The code
 \begin{chapel}
+\begin{verbatim}
 writehalf(8);
 writehalf(21);
 writehalf(1000);
@@ -1502,12 +1617,15 @@ proc writehalf(i: int) {
   var half = if (i % 2) then i/2 +1 else i/2;
   writeln("Half of ",i," is ",half); 
 }
+\end{verbatim}
 \end{chapel}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 Half of 8 is 4
 Half of 21 is 11
 Half of 1000 is 500
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -1518,9 +1636,11 @@ Half of 1000 is 500
 
 A for expression is given by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 for-expression:
   `for' index-var-declaration `in' iteratable-expression `do' expression
   `for' iteratable-expression `do' expression
+\end{verbatim}
 \end{syntax}
 A for expression is an iterator that executes a for loop (\rsec{The_For_Loop}),
 evaluates the body expression on each iteration of the loop,
@@ -1528,7 +1648,9 @@ and yields each resulting value.
 
 When a for expression is used to initialize a variable, such as
 \begin{chapel}
+\begin{verbatim}
 var X = for iterableExpression() do computeValue();
+\end{verbatim}
 \end{chapel}
 the variable will be inferred to have an array type.
 The array's domain is defined by the \sntx{iterable-expression}
@@ -1552,13 +1674,19 @@ a variable, the resulting array has a 1-based one-dimensional domain.
 \begin{chapelexample}{yieldPredicates.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 var A = for i in 1..10 do if i % 3 != 0 then i;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 1 2 4 5 7 8 10
+\end{verbatim}
 \end{chapeloutput}
 declares an array A that is initialized to the integers between
 1 and 10 that are not divisible by 3.

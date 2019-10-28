@@ -121,6 +121,8 @@ static void viewSymbolFlags(Symbol* sym) {
         printf("a TypeSymbol\n");
 
       } else if (FnSymbol* fs = toFnSymbol(sym)) {
+        printf("isGeneric %s\n", fs->isGenericIsValid() ?
+               (fs->isGeneric() ? "yes" : "no") : "unset");
         printf("fn %s(%d args) %s\n",
                fs->_this ? intentDescrString(fs->thisTag) : "",
                fs->numFormals(),

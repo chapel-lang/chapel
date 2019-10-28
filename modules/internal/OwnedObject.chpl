@@ -174,7 +174,7 @@ supplied. For example:
 
  */
 module OwnedObject {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   /*
      :record:`owned` manages the deletion of a class instance assuming

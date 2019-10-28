@@ -24,7 +24,7 @@
 
  */
 module ChapelError {
-  use ChapelStandard;
+  private use ChapelStandard;
   private use ChapelLocks;
 
   // Base class for errors

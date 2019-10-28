@@ -1,14 +1,10 @@
 bang-vs-new-etc.chpl:46: In function 'main':
-bang-vs-new-etc.chpl:51: warning: z01b = new owned C()?!  expected: borrowed C  actual: owned C
-bang-vs-new-etc.chpl:53: error: duplicate decorators - unmanaged borrowed C
 bang-vs-new-etc.chpl:63: warning: z03 = new C?()?  expected: owned C?  actual: owned C?
 bang-vs-new-etc.chpl:72: warning: z06 = new (owned tm())()?  expected: owned C?  actual: owned C?
 bang-vs-new-etc.chpl:75: warning: z11 = new owned (tm())()?  expected: owned C?  actual: owned C?
-bang-vs-new-etc.chpl:78: warning: z07 = new owned (tm())()?!  expected: borrowed C  actual: owned C
 bang-vs-new-etc.chpl:81: warning: z08 = new (owned tm())?()  expected: owned C?  actual: owned C?
 bang-vs-new-etc.chpl:84: warning: z12 = new (tm())?()  expected: owned C?  actual: owned C?
-bang-vs-new-etc.chpl:87: warning: z09 = new owned (tm())?()!  expected: borrowed C  actual: owned C
-bang-vs-new-etc.chpl:90: warning: z10 = new owned (tm())?()?  expected: owned C?  actual: owned C?
+bang-vs-new-etc.chpl:90: warning: z10 = new owned (tm()?)()?  expected: owned C?  actual: owned C?
 bang-vs-new-etc.chpl:109: warning: z15b = xx: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
 bang-vs-new-etc.chpl:111: error: duplicate decorators - unmanaged borrowed C
 bang-vs-new-etc.chpl:118: warning: z16b = xx!: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?

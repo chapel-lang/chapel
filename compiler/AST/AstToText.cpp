@@ -19,6 +19,7 @@
 
 #include "AstToText.h"
 
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "stmt.h"
@@ -1193,7 +1194,46 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     else if (expr->isPrimitive(PRIM_NEW))
     {
       mText += "new ";
-      appendExpr(expr->get(1), printingType);
+
+      bool addQ = false;
+      Expr* inner = expr->get(1);
+      // skip management decorator if present
+      if (NamedExpr* ne = toNamedExpr(inner)) {
+        if (ne->name == astr_chpl_manager) {
+          inner = expr->get(2);
+          Type* t = ne->actual->typeInfo();
+          const char* n = "";
+          if (t == dtBorrowed)
+            n = "borrowed ";
+          if (t == dtUnmanaged)
+            n = "unmanaged ";
+          if (t == dtShared)
+            n = "shared ";
+          if (t == dtOwned)
+            n = "owned ";
+          if (isNilableClassType(t))
+            addQ = true;
+
+          mText += n;
+        }
+      }
+      // skip to-nilable if present
+      while (inner) {
+        CallExpr* call = toCallExpr(inner);
+        if (call == NULL)
+          break;
+        if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) == false &&
+            call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) == false)
+          break;
+        // it's a PRIM_TO_NILABLE_CLASS etc
+        inner = call->get(1);
+        addQ = true;
+      }
+
+      appendExpr(inner, printingType);
+
+      if (addQ)
+        mText += "?";
     }
     else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
              expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))

@@ -2725,20 +2725,6 @@ void chpl_cache_do_init(void)
 
 void chpl_cache_init(void) {
 
-  // Take default CHPL_CACHE_REMOTE value from the environment if it is set.
-  /*char* p;
-  if ((p = getenv("CHPL_CACHE_REMOTE")) != NULL) {
-    if( p[0] == 'y' || p[0] == 'Y' || p[0] == '1' ) CHPL_CACHE_REMOTE = 1;
-    else if( p[0] == 'n' || p[0] == 'N' || p[0] == '0' ) CHPL_CACHE_REMOTE = 0;
-    else chpl_warning("unknown setting for CHPL_CACHE_REMOTE, try 0 or 1", 0, NULL);
-  }
-
-  // Don't enable the cache for 1-locale runs.
-  if( chpl_numNodes <= 1 ) {
-    CHPL_CACHE_REMOTE = 0;
-  }*/
-
-  // Don't initialize TLS if the cache is not enabled.
   if( ! chpl_cache_enabled() ) {
     return;
   }
@@ -2797,7 +2783,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2820,7 +2806,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2834,12 +2820,12 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t size, int ln, int32_t fn)
+                              size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
-  chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, commID);
   // Always use the cache for prefetches.
   //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,

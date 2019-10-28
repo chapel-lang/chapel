@@ -20,7 +20,7 @@
 // ChapelReduce.chpl
 //
 module ChapelReduce {
-  use ChapelStandard;
+  private use ChapelStandard;
   private use ChapelLocks;
 
   config param enableParScan = false;

@@ -400,6 +400,9 @@ all:
   08/08/19:
     - text: Machine upgraded to CLE7
       config: 16 node XC
+  10/02/19:
+    - text: system update
+      config: 16 node XC
 
 
 AllCompTime:
@@ -1119,6 +1122,8 @@ memleaksfull:
     - Close memory leaks in bytes type and tests (#13660)
   08/09/19:
     - fix another deletion size mismatch error (introduced leaks) (#13671)
+  09/26/19:
+    - Fix memory leak caused by use of first class functions (#14163)
 
 meteor:
   12/18/13:
