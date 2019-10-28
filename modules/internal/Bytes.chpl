@@ -97,6 +97,9 @@ module Bytes {
   private use ByteBufferHelpers;
   private use BytesStringCommon;
 
+  extern proc printf(std: c_string);
+  extern proc printf(std: c_string, val: c_int);
+
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
      when decoding a :record:`bytes` into a UTF-8 :record:`String.string`.
@@ -970,15 +973,15 @@ module Bytes {
 
             thisIdx += nbytes;
             decodedIdx += 2;
-            continue;
           }
         }
-
-        // do a naive copy
-        bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
-                          dst_off=decodedIdx);
-        thisIdx += nbytes;
-        decodedIdx += nbytes;
+        else {  // we got valid characters
+          // do a naive copy
+          bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
+                            dst_off=decodedIdx);
+          thisIdx += nbytes;
+          decodedIdx += nbytes;
+        }
       }
 
       ret.len = decodedIdx;
