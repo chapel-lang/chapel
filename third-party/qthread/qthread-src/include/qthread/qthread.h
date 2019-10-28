@@ -300,6 +300,9 @@ int qthread_spawn(qthread_f             f,
 /* This is a function to move a thread from one shepherd to another. */
 int qthread_migrate_to(const qthread_shepherd_id_t shepherd);
 
+/* Resets the default shepherd spawn order for tasks that use NO_SHEPHERD */
+void qthread_reset_target_shep(void);
+
 /* This function sets the debug level if debugging has been enabled */
 int qthread_debuglevel(int);
 
