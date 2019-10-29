@@ -3094,7 +3094,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     x.readThis(reader);
   } catch err {
     //
-    // TODO: What to be done with caught error? Propagate back up?
+    // TODO: What to do with the caught error? Propagate back up?
     //
   }
 
@@ -3126,32 +3126,32 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop writing if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
-    if x == nil {
-      // future - write class IDs, have serialization format
-      var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-      var iolit:ioLiteral;
-      if st == QIO_AGGREGATE_FORMAT_JSON {
-        iolit = new ioLiteral("null");
+  try {
+    if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
+      if x == nil {
+        // future - write class IDs, have serialization format
+        var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var iolit:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_JSON {
+          iolit = new ioLiteral("null");
+        } else {
+          iolit = new ioLiteral("nil");
+        }
+        _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
+      } else if isClassType(t) {
+        var notNilX = x!;
+        notNilX.writeThis(writer);
       } else {
-        iolit = new ioLiteral("nil");
+        // ddata / cptr
+        x.writeThis(writer);
       }
-      _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
-    } else if isClassType(t) {
-      var notNilX = x!;
-      notNilX.writeThis(writer);
     } else {
-      // ddata / cptr
       x.writeThis(writer);
     }
-  } else {
-    try {
-      x.writeThis(writer);
-    } catch err {
-      //
-      // TODO: What to do with the caught error? Propagate back up?
-      //
-    }
+  } catch err {
+    //
+    // TODO: What to do with the caught error? Propagate back up?
+    //
   }
 
   // Set the channel pointer to NULL to make the
