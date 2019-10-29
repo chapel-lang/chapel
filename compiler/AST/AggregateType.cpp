@@ -2661,6 +2661,9 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
+    if (sym == NULL) {
+      USR_FATAL(se, "Unknown super class: %s", se->unresolved);
+    }
     // Use AggregateType in class hierarchy rather than generic-management
     if (isDecoratedClassType(sym->type)) {
       sym = canonicalClassType(sym->type)->symbol;
