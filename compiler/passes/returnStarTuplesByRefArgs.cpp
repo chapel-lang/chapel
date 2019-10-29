@@ -103,8 +103,8 @@ void returnStarTuplesByRefArgs() {
         SET_LINENO(call);
         AggregateType* ct = toAggregateType(type);
         SymExpr* se = toSymExpr(call->get(2));
-        int i = atoi(se->symbol()->name+1);
-        INT_ASSERT(i >= 1 && i <= ct->fields.length);
+        int i = atoi(se->symbol()->name);
+        INT_ASSERT(i >= 0 && i < ct->fields.length);
         if (call->isPrimitive(PRIM_SET_MEMBER))
           call->primitive = primitives[PRIM_SET_SVEC_MEMBER];
         else if (call->isPrimitive(PRIM_GET_MEMBER))
