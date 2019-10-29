@@ -3094,7 +3094,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     x.readThis(reader);
   } catch err {
     //
-    // TODO: What to be done with thrown error?
+    // TODO: What to be done with caught error? Propagate back up?
     //
   }
 
