@@ -50,6 +50,7 @@ Usage: $( basename "${BASH_SOURCE[0]}" )" '[options]
                             package version string to be generated in this script.
                           Alphanumeric/underscore chars only.
                           Default value: current hostname. See NOTES below.
+    -R rel_name         : Shasta RPM release name, synthesized if not given
     -r rc_number        : Release candidate number (0,1,2,...9)
                           Default: 0
     -o outputs  : Where to deliver the Chapel RPM file created by this script.
@@ -79,6 +80,7 @@ setenv=
 
 chpl_platform=cray-xc
 release_type=
+rel_name=
 rc_number=0
 version_tag=$( hostname | sed -e 's,[^0-9a-zA-Z_],,g' )
 src_version=
@@ -89,7 +91,7 @@ keepdir=
 verbose=
 dry_run=
 
-while getopts :vnkC:t:s:T:o:b:p:r:h opt; do
+while getopts :vnkC:t:s:T:o:b:p:R:r:h opt; do
     case $opt in
     ( C ) workdir=$OPTARG ;;
     ( t ) tarball=$OPTARG ;;
@@ -101,6 +103,7 @@ while getopts :vnkC:t:s:T:o:b:p:r:h opt; do
     ( o ) outputs=$OPTARG ;;
     ( b ) release_type=$OPTARG ;;
     ( p ) chpl_platform=$OPTARG ;;
+    ( R ) rel_name=$OPTARG ;;
     ( r ) rc_number=$OPTARG ;;
 
     ( v ) verbose=-v ;;
@@ -153,6 +156,11 @@ bash "$setenv" $verbose $dry_run
 
 # Create the Chapel package
 
-"$cwd/chapel_package-cray.bash" $verbose $dry_run $keepdir -C "$workdir" -T "$version_tag" -o "$outputs" -b "$release_type" -p "$chpl_platform" -r "$rc_number"
+if [ "$chpl_platform" = cray-shasta ]; then
+    rpm_id_option="-R $rel_name"
+else
+    rpm_id_option="-r $rc_number"
+fi
+"$cwd/chapel_package-cray.bash" $verbose $dry_run $keepdir -C "$workdir" -T "$version_tag" -o "$outputs" -b "$release_type" -p "$chpl_platform" $rpm_id_option
 
 log_info "End $( basename "${BASH_SOURCE[0]}" )"
