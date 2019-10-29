@@ -2,5 +2,12 @@ Base unicode string : Türkçe (length=8)
 Print as bytes: Türkçe
 Decoded string: Türkçe
 String with the ignore policy: Türkçe (length=8)
-String with the replace policy: Tü��rkçe (length=10)
+String with the replace policy: Tü�rkçe (length=11)
+Should be 15: 15
+𐍈
+Hwair tests
+Should be 9: 9
+Should be 7: 7
+Should be 4: 4
+End Hwair tests
 DecodeError: Invalid UTF-8 character encountered.

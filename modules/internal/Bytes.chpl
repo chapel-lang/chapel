@@ -931,8 +931,16 @@ module Bytes {
       pragma "fn synchronization free"
       extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
                                       buf:c_string, buflen:ssize_t):syserr;
+      extern proc qio_encode_char_buf(ref dst: c_char, chr: int(32)): syserr;
+      extern proc qio_nbytes_char(chr: int(32)): c_int;
 
       var localThis: bytes = this.localize();
+
+      // create the encoded replacement character just in case
+      param replChar: int(32) = 0xfffd;
+      const nbytesRepl = qio_nbytes_char(replChar);
+      const encodedReplChar = c_malloc(c_char, nbytesRepl);
+      qio_encode_char_buf(encodedReplChar[0], replChar);
 
       // allocate buffer the same size as this buffer assuming that the string
       // is in fact perfectly decodable. In the worst case, the user wants the
@@ -957,22 +965,32 @@ module Bytes {
           if errors == decodePolicy.strict {
             throw new owned DecodeError();
           }
-          else if errors == decodePolicy.ignore {
-            thisIdx += nbytes; //skip over the malformed bytes
-            continue;
-          }
-          else if errors == decodePolicy.replace {
-            // Replacement can cause the string to be larger than initially
-            // expected. The UTF8 replacement character is 0xfffd. If it is used
-            // in place of a single byte, we may overflow
-            (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                     decodedIdx+2);
+          else if errors == decodePolicy.ignore || 
+                  errors == decodePolicy.replace {
 
-            ret.buff[decodedIdx] = 0xff:byteType;
-            ret.buff[decodedIdx+1] = 0xfd:byteType;
+            // if nbytes is 1, then we must have read a single byte and found
+            // that it was invalid, if nbytes is >1 then we must have read
+            // multible bytes where the last one broke the sequence. But it can
+            // be a valid byte itself. So we rewind by 1 in that case
+            if nbytes == 1 then
+              thisIdx += nbytes;
+            else
+              thisIdx += nbytes-1;
 
-            thisIdx += nbytes;
-            decodedIdx += 2;
+            if errors == decodePolicy.replace {
+              // Replacement can cause the string to be larger than initially
+              // expected. The Unicode replacement character has codepoint
+              // 0xfffd. It is encoded in `encodedReplChar` and its encoded
+              // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
+              // in place of a single byte, we may overflow
+              (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
+                                                       decodedIdx+nbytesRepl);
+
+              bufferMemcpyLocal(dst=ret.buff, src=encodedReplChar,
+                                len=nbytesRepl, dst_off=decodedIdx);
+
+              decodedIdx += nbytesRepl;  // replacement character is 2 bytes
+            }
           }
         }
         else {  // we got valid characters
