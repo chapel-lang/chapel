@@ -3139,7 +3139,11 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
       x.writeThis(writer);
     }
   } else {
-    x.writeThis(writer);
+    try {
+      x.writeThis(writer);
+    } catch err {
+      // TODO: What to do with the caught error? Propagate back up?
+    }
   }
 
   // Set the channel pointer to NULL to make the
