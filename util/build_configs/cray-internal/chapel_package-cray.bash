@@ -30,6 +30,7 @@ Usage $( basename "${BASH_SOURCE[0]}" )" '[options]
                             package version string to be generated in this script.
                           Alphanumeric/underscore chars only.
                           Default value: current hostname. See NOTES below.
+    -R rel_name         : Shasta RPM release name, synthesized if not given
     -r rc_number        : Release candidate number (0,1,2,...9)
                           Default: 0
     -o outputs  : Where to deliver the Chapel RPM file created by this script.
@@ -62,6 +63,7 @@ Usage $( basename "${BASH_SOURCE[0]}" )" '[options]
 
 chpl_platform=cray-xc
 release_type=
+rel_name=
 rc_number=0
 version_tag=$( hostname | sed -e 's,[^0-9a-zA-Z_],,g' )
 src_version=
@@ -75,7 +77,7 @@ dry_run=
 date_ymd=$( date '+%Y%m%d' )
 date_hms=$( date '+%H%M%S' )
 
-while getopts :vnkC:T:o:b:p:r:h opt; do
+while getopts :vnkC:T:o:b:p:R:r:h opt; do
     case $opt in
     ( k ) keepdir=-k ;;
     ( C ) workdir=$OPTARG ;;
@@ -83,6 +85,7 @@ while getopts :vnkC:T:o:b:p:r:h opt; do
     ( o ) outputs=$OPTARG ;;
     ( b ) release_type=$OPTARG ;;
     ( p ) chpl_platform=$OPTARG ;;
+    ( R ) rel_name=$OPTARG ;;
     ( r ) rc_number=$OPTARG ;;
     ( v ) verbose=-v ;;
     ( n ) dry_run=-n ;;
