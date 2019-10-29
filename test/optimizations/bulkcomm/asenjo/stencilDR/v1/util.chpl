@@ -1,6 +1,6 @@
 //Helper functions for stencil.chpl
 
-use stencil;
+public use stencil;
 
 // verboseness
 config const v1 = true, v2 = true;

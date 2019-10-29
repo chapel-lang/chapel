@@ -4,7 +4,7 @@ use Time;
 use thermo;
 use forces;
 use neighbor;
-use StencilDist;
+public use StencilDist;
 use BlockDist;
 
 // used in testing system

@@ -5,7 +5,7 @@ Halo communications are implemented a la MPI:
 explicit Data[localeA].DR[sliceHalo]=Data[localeB].DR[sliceSource]
 */
 
-use BlockDist;
+public use BlockDist;
 use util;
 
 config const n=2, m=3: int;
