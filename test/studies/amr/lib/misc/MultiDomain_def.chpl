@@ -1,5 +1,5 @@
 
-use BasicDataStructures;
+public use BasicDataStructures;
 
 
 proc main {
