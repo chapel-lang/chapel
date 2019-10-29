@@ -15,11 +15,11 @@
     Harrison <harrisonrj@ornl.gov>, et al.
  */
 
-public use Math;
-public use Tensor;
+use Math;
+use Tensor;
 public use FTree;
-public use Quadrature;
-public use TwoScale;
+use Quadrature;
+use TwoScale;
 public use AnalyticFcn;
 
 config const verbose = false;
