@@ -585,7 +585,7 @@ module ChapelIO {
     // happens now with buildDefaultWriteFunction
     // since it has the concrete type and then calls this method.
     pragma "no doc"
-    proc readThisDefaultImpl(reader, x:?t) where isClassType(t) throws {
+    proc readThisDefaultImpl(reader, x:?t) throws where isClassType(t) {
       if !reader.binary() {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var start:ioLiteral;
@@ -621,7 +621,7 @@ module ChapelIO {
       }
     }
     pragma "no doc"
-    proc readThisDefaultImpl(reader, ref x:?t) where !isClassType(t) throws {
+    proc readThisDefaultImpl(reader, ref x:?t) throws where !isClassType(t) {
       if !reader.binary() {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var start:ioLiteral;

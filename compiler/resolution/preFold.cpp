@@ -2168,6 +2168,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
+
+    // All compiler generated writeThis routines now throw.
+    fn->throwsErrorInit();
+
     // when printing out a FCF, print out the function's name
     fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
                                                new_StringSymbol("writeIt")),

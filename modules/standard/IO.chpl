@@ -3090,7 +3090,13 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop reading if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  x.readThis(reader);
+  try {
+    x.readThis(reader);
+  } catch err {
+    //
+    // TODO: What to be done with thrown error?
+    //
+  }
 
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
@@ -3142,7 +3148,9 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     try {
       x.writeThis(writer);
     } catch err {
+      //
       // TODO: What to do with the caught error? Propagate back up?
+      //
     }
   }
 
