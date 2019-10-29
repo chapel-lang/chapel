@@ -97,9 +97,6 @@ module Bytes {
   private use ByteBufferHelpers;
   private use BytesStringCommon;
 
-  extern proc printf(std: c_string);
-  extern proc printf(std: c_string, val: c_int);
-
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
      when decoding a :record:`bytes` into a UTF-8 :record:`String.string`.
