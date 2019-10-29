@@ -1,0 +1,5 @@
+bug: child type method is not called when child calls type method that only exists on parent
+
+See #13154. When type method `foo` calls another type method `bar`, if the
+Child only overloads/overrides `bar` but calls Child.foo, the Parent's `bar` is
+incorrectly called.

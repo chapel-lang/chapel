@@ -1,0 +1,45 @@
+open question: enable use of `super` in inheritance + type methods?
+
+Issue #14356
+
+In regular inheritance, if a child calls a parent's method that then calls
+`super.method`, the `super` will resolve to the grandparent because the method
+is defined and called from the parent.
+
+With type methods, the same should be true *even though we have chosen to
+instantiate the type methods onto the child*. `super.<type method>` should
+still resolve to the grandparent even though the type method is in the child!
+
+This sounds confusing, but because it is a type method that is, for all intents
+and purposes, exactly the same as the parent's type method that it was
+instantiated from, there isn't a reason to call the parent's version of the
+type method from the child's `super.<type method>`.
+Doing so would be duplicative work (e.g., reinitialize the same variables with
+the same values). The exception, of course, is if the parent's type method is
+overridden in the child.
+
+```
+DIFF OUTPUT / ACTUAL
+==== ===============
+     Grandparent
+     Parent
+       Grandparent
+  *  Parent
+       Grandparent
+
+     EXPECTED
+     ========
+     Grandparent
+     Parent
+       Grandparent
+  ~  Child         <- This result is a consequence of type-method-dispatch
+       Grandparent <- Parent.foo is not called because it's the same as Child.foo!
+
+ Legend:
+  x  This result is different between OUTPUT and EXPECTED
+  ~  This result is different between type-method-super and instance-method-super
+```
+
+Or Chapel could simply not allow `super` inside a type method. This is fine
+too. Users working with type-method inheritance would need to know more about
+the hierarchy to explicitly call an ancestor's type method without super.

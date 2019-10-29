@@ -1,0 +1,5 @@
+borrowed Grandparent.foo
+borrowed Parent.foo
+  borrowed Parent.bar
+borrowed Parent.foo
+  borrowed Child.bar
