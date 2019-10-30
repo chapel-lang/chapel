@@ -296,7 +296,7 @@ module ChapelIteratorSupport {
     return false;
   }
 
-  proc _iteratorRecord.writeThis(f) {
+  proc _iteratorRecord.writeThis(f) throws {
     var first: bool = true;
     for e in this {
       if !first then

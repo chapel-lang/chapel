@@ -56,7 +56,7 @@ module DefaultOpaque {
   inline proc !=(a:_nilType, b:_OpaqueIndex) {
     return b.i != 0;
   }
-  proc _OpaqueIndex.writeThis(writer) {
+  proc _OpaqueIndex.writeThis(writer) throws {
     writer <~> "{}";
   }
 

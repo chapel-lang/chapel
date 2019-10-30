@@ -381,7 +381,7 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(1);
 }
 
-proc Cyclic.writeThis(x) {
+proc Cyclic.writeThis(x) throws {
   x <~> this.type:string <~> "\n";
   x <~> "------\n";
   for locid in targetLocDom do

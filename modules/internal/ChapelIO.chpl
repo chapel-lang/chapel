@@ -710,13 +710,13 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc _ddata.writeThis(f) {
+  proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
     f <~> "<_ddata class cannot be printed>";
   }
 
   pragma "no doc"
-  proc chpl_taskID_t.writeThis(f) {
+  proc chpl_taskID_t.writeThis(f) throws {
     var tmp : uint(64) = this : uint(64);
     f <~> (tmp);
   }
@@ -729,7 +729,7 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc nothing.writeThis(f) {
+  proc nothing.writeThis(f) throws {
   }
 
   // Moved here to avoid circular dependencies in ChapelTuple.
@@ -775,7 +775,7 @@ module ChapelIO {
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
   pragma "no doc"
-  proc range.writeThis(f)
+  proc range.writeThis(f) throws
   {
     // a range with a more normalized alignment
     // a separate variable so 'this' can be const
@@ -831,7 +831,7 @@ module ChapelIO {
     }
   }
 
-  override proc LocaleModel.writeThis(f) {
+  override proc LocaleModel.writeThis(f) throws {
     // Most classes will define it like this:
     //      f <~> name;
     // but here it is defined thus for backward compatibility.

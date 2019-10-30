@@ -355,7 +355,7 @@ module Set {
 
       :arg ch: A channel to write to.
     */
-    proc const writeThis(ch: channel) {
+    proc const writeThis(ch: channel) throws {
       on this {
         _enter();
         var count = 1;

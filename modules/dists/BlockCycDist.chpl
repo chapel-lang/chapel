@@ -330,7 +330,7 @@ override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockCyclic.writeThis(x) {
+proc BlockCyclic.writeThis(x) throws {
   x <~> "BlockCyclic\n";
   x <~> "-------\n";
   x <~> "distributes: " <~> lowIdx <~> "..." <~> "\n";
@@ -474,7 +474,7 @@ class LocBlockCyclic {
 }
 
 
-proc LocBlockCyclic.writeThis(x) {
+proc LocBlockCyclic.writeThis(x) throws {
   var localeid: int;
   on this {
     localeid = here.id;
@@ -745,7 +745,7 @@ proc LocBlockCyclicDom.computeFlatInds() {
 //
 // output local domain piece
 //
-proc LocBlockCyclicDom.writeThis(x) {
+proc LocBlockCyclicDom.writeThis(x) throws {
   x <~> myStarts;
 }
 
@@ -1116,7 +1116,7 @@ proc LocBlockCyclicArr.this(i) ref {
 //
 // output local array piece
 //
-proc LocBlockCyclicArr.writeThis(x) {
+proc LocBlockCyclicArr.writeThis(x) throws {
   // note on this fails; see writeThisUsingOn.chpl
   x <~> myElems;
 }
