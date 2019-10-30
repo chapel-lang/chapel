@@ -156,7 +156,7 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of sync vars.
-    proc readThis(x) {
+    proc readThis(x) throws {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
@@ -681,7 +681,7 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of single vars.
-    proc readThis(x) {
+    proc readThis(x) throws {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
@@ -1003,11 +1003,11 @@ private module AlignedTSupport {
   }
 
   // read/write support
-  proc aligned_t.writeThis(f) {
+  proc aligned_t.writeThis(f) throws {
     var tmp : uint(64) = this : uint(64);
     f <~> tmp;
   }
-  proc aligned_t.readThis(f) {
+  proc aligned_t.readThis(f) throws {
     var tmp : uint(64);
     f <~> tmp;
     this = tmp : aligned_t;

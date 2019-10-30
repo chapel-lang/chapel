@@ -257,7 +257,7 @@ record LinkedList {
   }
 
   pragma "no doc"
-  proc readThis(f) {
+  proc readThis(f) throws {
     // Special handling for reading in order to handle
     // reading an arbitrary length.
     var binary = f.binary();

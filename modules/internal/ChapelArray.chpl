@@ -1939,7 +1939,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       _value.dsiSerialRead(f);
     }
 
@@ -2947,7 +2947,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       _value.dsiSerialRead(f);
     }
 

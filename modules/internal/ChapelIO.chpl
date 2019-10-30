@@ -722,7 +722,7 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc chpl_taskID_t.readThis(f) {
+  proc chpl_taskID_t.readThis(f) throws {
     var tmp : uint(64);
     f <~> tmp;
     this = tmp : chpl_taskID_t;
@@ -799,7 +799,7 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc ref range.readThis(f)
+  proc ref range.readThis(f) throws
   {
     if hasLowBound() then
       f <~> _low;
