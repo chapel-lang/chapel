@@ -128,11 +128,11 @@ Dependencies:
 Installation instructions:
 --------------------------
 
-    Copy the appropriate Chapel RPM file to the current directory and execute
-    one of the following commands:
+    Copy the Chapel RPM file to the current directory and execute
+    the appropriate one of the following commands:
 
       #On Cray Shasta systems (x86_64):
-      rpm -ivh chapel-$pkg_version-crayshasta$rc_number.x86_64.rpm
+      rpm -ivh chapel-$pkg_version-$rpm_release.x86_64.rpm
 
       #On Cray XC systems (x86_64):
       rpm -ivh chapel-$pkg_version-crayxc$rc_number.x86_64.rpm
