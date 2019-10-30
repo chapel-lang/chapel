@@ -161,7 +161,7 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit writes of sync vars.
-    proc writeThis(x) {
+    proc writeThis(x) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
      }
   }
@@ -686,7 +686,7 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit writes of single vars.
-    proc writeThis(x) {
+    proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
      }
   }

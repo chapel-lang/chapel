@@ -2042,7 +2042,7 @@ record ioChar {
   /* The codepoint value */
   var ch:int(32);
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // ioChar.writeThis should not be called;
     // I/O routines should handle ioChar directly
     assert(false);
@@ -2078,7 +2078,7 @@ record ioNewline {
    */
   var skipWhitespaceOnly: bool = false;
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f <~> "\n";
   }
@@ -2107,7 +2107,7 @@ record ioLiteral {
      whitespace before the literal?
    */
   var ignoreWhiteSpace: bool = true;
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f <~> val;
   }
@@ -2130,7 +2130,7 @@ record ioBits {
   /* How many of the low-order bits of ``v`` should we read or write? */
   var nbits:int(8);
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f <~> v;
   }
@@ -5594,7 +5594,7 @@ class _channel_regexp_info {
   proc deinit() {
     clear();
   }
-  override proc writeThis(f) {
+  override proc writeThis(f) throws {
     f <~> "{hasRegexp = " + hasRegexp: string;
     f <~> ", matchedRegexp = " + matchedRegexp: string;
     f <~> ", releaseRegexp = " + releaseRegexp: string;

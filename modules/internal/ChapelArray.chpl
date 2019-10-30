@@ -1934,7 +1934,7 @@ module ChapelArray {
       return _value.dsiGetIndices();
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
 
@@ -2942,7 +2942,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
 

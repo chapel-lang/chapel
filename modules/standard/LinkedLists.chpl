@@ -224,7 +224,7 @@ record LinkedList {
   }
 
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     var binary = f.binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;

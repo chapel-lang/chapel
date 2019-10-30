@@ -2258,7 +2258,7 @@ module ChapelBase {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
+    proc writeThis(ch) throws {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
 

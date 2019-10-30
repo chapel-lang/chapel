@@ -410,7 +410,7 @@ module BigInteger {
       return ret;
     }
 
-    proc writeThis(writer) {
+    proc writeThis(writer) throws {
       var s: string;
 
       if _local {

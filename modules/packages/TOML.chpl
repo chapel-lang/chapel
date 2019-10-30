@@ -804,7 +804,7 @@ used to recursively hold tables and respective values
 
 
     /* Write a Table to channel f in TOML format */
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       writeTOML(f);
     }
 

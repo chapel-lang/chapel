@@ -289,7 +289,7 @@ module ChapelLocale {
 
     // A useful default definition is provided (not pure virtual).
     pragma "no doc"
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 
