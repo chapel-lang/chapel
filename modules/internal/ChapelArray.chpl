@@ -1022,7 +1022,7 @@ module ChapelArray {
 
     proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> _value;
     }
 
