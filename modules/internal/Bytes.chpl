@@ -934,6 +934,8 @@ module Bytes {
       var localThis: bytes = this.localize();
 
       // create the encoded replacement character just in case
+      // TODO: maybe this can be moved to runtime to avoid running this
+      // everytime we call decode?
       param replChar: int(32) = 0xfffd;
       const nbytesRepl = qio_nbytes_char(replChar);
       const encodedReplChar = c_malloc(c_char, nbytesRepl);
