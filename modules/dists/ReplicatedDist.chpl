@@ -635,3 +635,7 @@ proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
     return d;
   }
 }
+
+proc ReplicatedArr.dsiLocalSlice(ranges) {
+  return chpl_myLocArr().arrLocalRep((...ranges));
+}
