@@ -505,7 +505,9 @@ class GraphStuff:
             elif key == 'repeat-files' :
                 dFiles = [ s.strip() for s in rest.split(',') ]
                 if len(graphs[currgraph].perfkeys) % len(dFiles) != 0:
-                    sys.stdout.write('[Warning: num .dat files did not evenly divide into num perfkeys for %s. Ignoring.]\n'%(fullFname))
+                    sys.stdout.write('[Warning: num .dat files (%d) did not evenly divide into num perfkeys (%d) for %s.  Ignoring.]\n'%(len(dFiles), len(graphs[currgraph].perfkeys), fullFname))
+                    for k in graphs[currgraph].perfkeys:
+                        sys.stdout.write(k)
                     return
                 keysRange = range(0, (len(graphs[currgraph].perfkeys) // len(dFiles)))
                 for dFile in dFiles:
