@@ -114,6 +114,7 @@ Dependencies:
 -------------
 
     Chapel $major.$minor is supported on the following Cray systems:
+    * Cray Shasta systems with CLE based on SLES15 or later
     * Cray XC systems with CLE 5.2UP04 or later
     * Cray XE and XK systems with CLE 5.2UP04 or later
     * Cray CS systems running Red Hat, CentOS, or SuSE Linux
