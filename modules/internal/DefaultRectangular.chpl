@@ -820,7 +820,7 @@ module DefaultRectangular {
             }
             sum += chpl__idxToInt(ind(rank-1));
           } else {
-            for param i in 2..rank {
+            for param i in 1..rank-1 {
               sum += chpl__idxToInt(ind(i)) * blk(i);
             }
             sum += chpl__idxToInt(ind(0));
@@ -1257,7 +1257,7 @@ module DefaultRectangular {
               }
               sum += chpl__idxToInt(ind(rank-1));
             } else {
-              for param i in 0..rank-2 {
+              for param i in 1..rank-1 {
                 sum += chpl__idxToInt(ind(i)) * blk(i);
               }
               sum += chpl__idxToInt(ind(0));
