@@ -235,7 +235,7 @@ class RecordReader {
         var tmp = getField(rec, n);
         var s: string;
         ref dst = getFieldRef(rec, n);
-        myReader.extractMatch(m(n-1), s);
+        myReader.extractMatch(m(n), s);
         if s == "" then
           dst = tmp;
         else if tmp.type == string then
