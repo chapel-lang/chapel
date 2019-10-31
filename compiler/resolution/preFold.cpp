@@ -1492,7 +1492,7 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
 
       if (index < 0 || index > at->fields.length-2) {
-        USR_FATAL(call, "type index expression '%i' out of bounds", index);
+        USR_FATAL(call, "type index expression '%i' out of bounds (0..%d)", index, at->fields.length-2);
       }
 
       sprintf(field, "x%" PRId64, index+1);
