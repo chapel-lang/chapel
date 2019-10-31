@@ -7141,7 +7141,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
         m = _to_reMatch(matches[0]);
         if m.matched {
           for param i in 0..nret-1 {
-            m = _to_reMatch(matches[i-1]);
+            m = _to_reMatch(matches[i]);
             _extractMatch(m, ret[i], error);
           }
           // Advance to the start of the match.
