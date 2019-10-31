@@ -729,8 +729,7 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc nothing.writeThis(f) throws {
-  }
+  proc nothing.writeThis(f) {}
 
   // Moved here to avoid circular dependencies in ChapelTuple.
   pragma "no doc"
