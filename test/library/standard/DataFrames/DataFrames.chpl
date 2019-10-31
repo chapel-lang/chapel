@@ -712,7 +712,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       if idx {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {
