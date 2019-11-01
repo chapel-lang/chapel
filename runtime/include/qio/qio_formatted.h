@@ -39,6 +39,7 @@
 #define HAS_WCTYPE_H
 
 #include "qio_style.h"
+#include "encoding-support.h"
 
 extern int qio_glocale_utf8; // for testing use.
 #define QIO_GLOCALE_UTF8 1
@@ -583,78 +584,37 @@ c_string qio_encode_to_string(int32_t chr);
 static inline
 qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const char* buf, ssize_t buflen)
 {
-  const char* start = buf;
-  const char* end = start + buflen;
-  uint32_t codepoint=0, state;
-
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.
   if( qio_glocale_utf8 > 0 ) {
     if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      state = 0;
-      while( buf != end ) {
-        qio_utf8_decode(&state,
-                        &codepoint,
-                        *(const unsigned char*)buf);
-        buf++;
-        if (state <= 1) {
-          break;
-        }
-      }
-      if( state == UTF8_ACCEPT ) {
-        *chr = codepoint;
-        *nbytes = qio_ptr_diff((void*) buf, (void*) start);
+      const int ret = decode_char_buf_utf8(chr, nbytes, buf, buflen);
+      if (ret == 0) {
         return 0;
-      } else {
-        *chr = 0xfffd; // replacement character
-        *nbytes = qio_ptr_diff((void*) buf, (void*) start);
+      }
+      else {
         QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
       }
     } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
-      // character == byte.
-      if( buf != end ) {
-        *chr = (unsigned char) *buf;
-        *nbytes = 1;
+      const int ret = decode_char_buf_ascii(chr, nbytes, buf, buflen);
+      if (ret == 0) {
         return 0;
-      } else {
-        *chr = -1;
-        *nbytes = 0;
+      }
+      else {
         QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
       }
     }
   } else {
-#ifdef HAS_WCTYPE_H
-    mbstate_t ps;
-    size_t got;
-    wchar_t wch = 0;
-    memset(&ps, 0, sizeof(mbstate_t));
-    got = mbrtowc(&wch, buf, buflen, &ps);
-    if( got == 0 ) {
-      // We read a NUL.
-      *chr = 0;
-      *nbytes = 1;
-      return 0;
-    } else if( got == (size_t) -1 ) {
-      // it contains an invalid multibyte sequence.
-      // errno should be EILSEQ.
-      *chr = -3; // invalid character... think 0xfffd for unicode
-      *nbytes = 1;
-      QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
-    } else if( got == (size_t) -2 ) {
-      // continue as long as we have an incomplete char.
-      *chr = -3; // invalid character... think 0xfffd for unicode
-      *nbytes = 1;
-      QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
-    } else {
-      // OK!
-      // mbrtowc already set the character.
-      *chr = wch;
-      *nbytes = got;
+    const int ret = decode_char_buf_wctype(chr, nbytes, buf, buflen);
+    if (ret == 0) {
       return 0;
     }
-#else
-    QIO_GET_CONSTANT_ERROR(err, ENOSYS, "missing wctype.h");
-#endif
+    else if (ret == -1) {
+      QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
+    }
+    else {  // -2
+      QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing wctype.h");
+    }
   }
   *chr = 0; // Makes GCC stop complaining about *chr not being set in other locations
   chpl_internal_error("qio_decode_char_buf");
