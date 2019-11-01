@@ -448,6 +448,29 @@ module String {
     return x != 0;
   // End index arithmetic support
 
+  private proc validateEncoding(buf, len) throws {
+    var thisIdx = 0;
+    while thisIdx < len {
+      var cp: int(32);
+      var nbytes: c_int;
+      var bufToDecode = (buf + thisIdx): c_string;
+      var maxbytes = (len - thisIdx): ssize_t;
+      qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
+
+      if cp == 0xfffd {  //decoder returns the replacement character
+        throw new DecodeError();
+      }
+
+      thisIdx += nbytes;
+    }
+  }
+
+  // this calls the throwing one and halts if an error is thrown. We may
+  // consider making the throwing one a user facing function
+  private proc validateHelper(buf, len) {
+    try! validateEncoding(buf, len);
+  }
+
   //
   // createString* functions
   //
@@ -464,6 +487,7 @@ module String {
   */
   inline proc createStringWithBorrowedBuffer(s: string) {
     var ret: string;
+    validateHelper(s.buff, s.len);
     initWithBorrowedBuffer(ret, s);
     return ret;
   }
@@ -514,6 +538,7 @@ module String {
   */
   inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
     var ret: string;
+    validateHelper(s, length);
     initWithBorrowedBuffer(ret, s, length,size);
     return ret;
   }
@@ -560,6 +585,7 @@ module String {
   */
   inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
     var ret: string;
+    validateHelper(s, length);
     initWithOwnedBuffer(ret, s, length, size);
     return ret;
   }
@@ -574,6 +600,7 @@ module String {
   */
   inline proc createStringWithNewBuffer(s: string) {
     var ret: string;
+    validateHelper(s.buff, s.len);
     initWithNewBuffer(ret, s);
     return ret;
   }
@@ -612,6 +639,7 @@ module String {
   */
   inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
     var ret: string;
+    validateHelper(s, length);
     initWithNewBuffer(ret, s, length, size);
     return ret;
   }
