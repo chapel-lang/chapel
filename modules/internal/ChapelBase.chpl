@@ -638,7 +638,8 @@ module ChapelBase {
   //
 
   inline proc bitshiftChecks(a: uint(?w), b: integral) {
-    const hdr = "Cannot bitshift " + a:string + " by " + b:string + ": ";
+    const hdr = "Cannot bitshift " + a:string + " by " + b:string +
+                " because ";
     if b < 0 {
       var msg = hdr + b:string + " is less than 0";
       halt(msg);
@@ -649,7 +650,8 @@ module ChapelBase {
   }
 
   inline proc bitshiftChecks(param a: uint(?w), param b: integral) {
-    param hdr = "Cannot bitshift " + a:string + " by " + b:string + ": ";
+    param hdr = "Cannot bitshift " + a:string + " by " + b:string +
+                " because ";
     if b < 0 {
       param msg = hdr + b:string + " is less than 0";
       compilerError(msg);
