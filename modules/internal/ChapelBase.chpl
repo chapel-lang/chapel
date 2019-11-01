@@ -638,23 +638,23 @@ module ChapelBase {
   //
 
   inline proc bitshiftChecks(a: uint(?w), b: integral) {
+    const hdr = "Cannot bitshift " + a:string + " by " + b:string + ": ";
     if b < 0 {
-      param msg = "Attempt to bitshift by value less than zero";
+      var msg = hdr + b:string + " is less than 0";
       halt(msg);
     } else if b >= numBits(a.type) {
-      param msg = "Attempt to bitshift by value greater than or equal to " +
-                  "the number of bits in the left operand";
+      var msg = hdr + b:string + " is >= the bitwidth of " + a.type:string;
       halt(msg);
     }
   }
 
   inline proc bitshiftChecks(param a: uint(?w), param b: integral) {
+    param hdr = "Cannot bitshift " + a:string + " by " + b:string + ": ";
     if b < 0 {
-      param msg = "Cannot bitshift by a value less than zero";
+      param msg = hdr + b:string + " is less than 0";
       compilerError(msg);
     } else if b >= numBits(a.type) {
-      param msg = "Cannot bitshift by value greater than or equal to the " +
-                  "number of bits in the left operand";
+      param msg = hdr + b:string + " is >= the bitwidth of " + a.type:string;
       compilerError(msg);
     }
   }
