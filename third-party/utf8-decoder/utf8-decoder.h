@@ -1,13 +1,12 @@
-#ifndef _utf8_decoder_H_
-#define _utf8_decoder_H_
 
 /* BEGIN UTF-8 decoder from http://bjoern.hoehrmann.de/utf-8/decoder/dfa */
 // Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
 // See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
+
 #define UTF8_ACCEPT 0
 #define UTF8_REJECT 1
 
-static const uint8_t utf8d[] = {
+static const uint8_t qio_utf8d[] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 00..1f
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 20..3f
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 40..5f
@@ -24,22 +23,19 @@ static const uint8_t utf8d[] = {
   1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
 };
 
-// TODO this function still appears in qio code, so the name remains the same,
-// Once QIO is clear of all encoding decoding nuts-and-bilts this function
-// should be renamed
 static inline
 uint32_t qio_utf8_decode(uint32_t* restrict state,
                      uint32_t* restrict codep,
                      uint32_t byte) {
-  uint32_t type = utf8d[byte & 0xff];
+  uint32_t type = qio_utf8d[byte & 0xff];
 
   *codep = (*state != UTF8_ACCEPT) ?
     (byte & 0x3fu) | (*codep << 6) :
     (0xff >> type) & (byte);
 
-  *state = utf8d[256 + *state*16 + type];
+  *state = qio_utf8d[256 + *state*16 + type];
   return *state;
 }
 /* END UTF-8 decoder from http://bjoern.hoehrmann.de/utf-8/decoder/dfa */
 
-#endif
+

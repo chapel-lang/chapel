@@ -428,7 +428,6 @@ qioerr qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict c
 
 // These methods read or write UTF-8 characters (codepoints).
 
-#include "utf8-decoder.h"
 
 qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr);
 

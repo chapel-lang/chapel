@@ -21,6 +21,7 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "../../runtime/include/encoding-support.h"
 #include "symbol.h"
 
 #include "AstToText.h"
@@ -1450,10 +1451,33 @@ void createInitStringLiterals() {
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
 }
 
+bool isValidString(std::string str) {
+  return validate_buf(str.c_str(), str.length()) == 0;
+}
+
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
 VarSymbol *new_StringSymbol(const char *str) {
+
+  // String (as record) literals are inserted from the very beginning on the
+  // parser all the way through resolution (postFold). Since resolution happens
+  // after normalization we need to insert everything in normalized form. We
+  // also need to disable parts of normalize from running on literals inserted
+  // at parse time.
+
+  // these are created first so that we can unescape string early for validation
+  VarSymbol* cstrTemp = newTemp("call_tmp");
+  CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
+
+  std::string unescapedString = unescapeString(str, cstrMove);
+
+  if (!isValidString(unescapedString)) {
+    USR_FATAL("Invalid string literal");
+  }
+  else {
+    // TODO: somehow flag that the buffer is validated to avoid revalidation
+  }
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
@@ -1470,16 +1494,7 @@ VarSymbol *new_StringSymbol(const char *str) {
     INT_FATAL("new_StringSymbol called after function resolution.");
   }
 
-  // String (as record) literals are inserted from the very beginning on the
-  // parser all the way through resolution (postFold). Since resolution happens
-  // after normalization we need to insert everything in normalized form. We
-  // also need to disable parts of normalize from running on literals inserted
-  // at parse time.
-
-  VarSymbol* cstrTemp = newTemp("call_tmp");
-  CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
-
-  int strLength = unescapeString(str, cstrMove).length();
+  int strLength = unescapedString.length();
 
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
