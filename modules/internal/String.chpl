@@ -519,6 +519,18 @@ module String {
                                                             size=length+1);
   }
 
+  // TODO: how do we mark this function so that it can only be called by the
+  // compiler?
+  pragma "no doc"
+  proc createStringWithBorrowedBuffer_noval(s: c_string, length=s.length) {
+    //NOTE: This function is heavily used by the compiler to create string
+    //literals. So, inlining this causes some bloat in the AST that increases
+    //the compilation time slightly. Therefore, currently we are keeping this
+    //one non-inlined.
+    return createStringWithBorrowedBuffer_noval(s:c_ptr(uint(8)), length=length,
+                                                                  size=length+1);
+  }
+
   /*
      Creates a new string which borrows the memory allocated for a
      `c_ptr(uint(8))`. If the buffer is freed before the string returned from
@@ -539,6 +551,15 @@ module String {
   inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
     var ret: string;
     validateHelper(s, length);
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  pragma "no doc"
+  private inline proc createStringWithBorrowedBuffer_noval(s: bufferType,
+                                                           length: int,
+                                                           size: int) {
+    var ret: string;
     initWithBorrowedBuffer(ret, s, length,size);
     return ret;
   }
