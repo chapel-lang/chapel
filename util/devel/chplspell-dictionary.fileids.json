@@ -36,6 +36,9 @@
   "d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/AST/LoopExpr.cpp"
   ],
+  "93ca6f88-fd34-11e9-98b5-10ddb1d4c3d5": [
+    "compiler/AST/astutil.cpp"
+  ],
   "77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/baseAST.cpp"
   ],
@@ -351,6 +354,9 @@
   "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/hdfs_and_chapel/intro.tex"
   ],
+  "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
+    "doc/rst/language/spec.rst"
+  ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
   ],
@@ -664,6 +670,9 @@
   "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
   ],
+  "38c20924-fd35-11e9-98b5-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-oob-slurm-pmi2.c"
+  ],
   "c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni-launch.c"
   ],
@@ -895,6 +904,9 @@
   ],
   "9b2d18d4-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/learnChapelInYMinutes.chpl"
+  ],
+  "5b81c0c6-fd35-11e9-98b5-10ddb1d4c3d5": [
+    "test/release/examples/primers/listOps.chpl"
   ],
   "e8974bb8-8068-11e6-ab60-00a0cc3ee663": [
     "test/release/examples/primers/ranges.chpl"
