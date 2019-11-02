@@ -15,7 +15,7 @@
 // check the correct syntax for restrict pointer arguments in C++11
 #if defined(__cplusplus)
   #if __cplusplus >= 201103L
-    #define RESTRICT
+    #define RESTRICT __restrict
   #endif
 #else
     #define RESTRICT restrict
