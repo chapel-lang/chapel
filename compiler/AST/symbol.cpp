@@ -1473,7 +1473,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   std::string unescapedString = unescapeString(str, cstrMove);
 
   if (!isValidString(unescapedString)) {
-    USR_FATAL("Invalid string literal");
+    USR_FATAL_CONT("Invalid string literal");
   }
   else {
     // TODO: somehow flag that the buffer is validated to avoid revalidation
