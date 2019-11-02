@@ -5,7 +5,7 @@ use thermo;
 use forces;
 use neighbor;
 public use StencilDist;
-use BlockDist;
+public use BlockDist;
 
 // used in testing system
 config param printOriginal = false;
