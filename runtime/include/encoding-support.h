@@ -12,7 +12,6 @@
 #define UTF8_REJECT 1
 
 // FIXME: this check is probably too naive
-// check the correct syntax for restrict pointer arguments in C++11
 #if defined(__cplusplus)
   #if __cplusplus >= 201103L
     #define RESTRICT __restrict
@@ -49,9 +48,6 @@ uint32_t qio_utf8_decode(uint32_t* RESTRICT state,
     (0xff >> type) & (byte);
 
   *state = utf8d[256 + *state*16 + type];
-  if (*state == UTF8_REJECT) {
-    printf("State machine is in reject state\n");
-  }
   return *state;
 }
 /* END UTF-8 decoder from http://bjoern.hoehrmann.de/utf-8/decoder/dfa */
@@ -88,7 +84,6 @@ int decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
   } else {
     *chr = 0xfffd; // replacement character
     *nbytes = ptr_diff((void*) buf, (void*) start);
-    //QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
     return -1; // -1: EILSEQ
   }
 }
@@ -106,7 +101,6 @@ int decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
   } else {
     *chr = -1;
     *nbytes = 0;
-    //QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
     return -1;  // -1:EILSEQ
   }
 }
@@ -131,16 +125,12 @@ int decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
     // errno should be EILSEQ.
     *chr = -3; // invalid character... think 0xfffd for unicode
     *nbytes = 1;
-    //QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
-    //return EILSEQ;
-    return -1;
+    return -1;  // -1:EILSEQ
   } else if( got == (size_t) -2 ) {
     // continue as long as we have an incomplete char.
     *chr = -3; // invalid character... think 0xfffd for unicode
     *nbytes = 1;
-    //QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
-    //return EILSEQ;
-    return -1;
+    return -1;  // -1:EILSEQ
   } else {
     // OK!
     // mbrtowc already set the character.
@@ -149,7 +139,6 @@ int decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
     return 0;
   }
 #else
-  //QIO_GET_CONSTANT_ERROR(err, ENOSYS, "missing wctype.h");
   return -2; // -2: ENOSYS
 #endif
 }
@@ -163,7 +152,7 @@ int validate_buf(const char *buf, ssize_t buflen) {
 
   while (offset<buflen) {
     if (decode_char_buf_utf8(&cp, &nbytes, buf+offset, buflen-offset) != 0) {
-      return 1;  // invalid
+      return 1;  // invalid : probably return EILSEQ
     }
     offset += nbytes;
   }
