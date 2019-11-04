@@ -673,7 +673,7 @@ module ChapelBase {
 
   inline proc >>(a: int(?w), b: integral) {
     if boundsChecking then bitshiftChecks(a, b);
-    return __primitive(">>", a:uint(w), b):int(w);
+    return __primitive(">>", a, b);
   }
 
   inline proc >>(a: uint(?w), b: integral) {
@@ -693,7 +693,7 @@ module ChapelBase {
 
   inline proc >>(param a: int(?w), param b: integral) param {
     if boundsChecking then bitshiftChecks(a, b);
-    return __primitive(">>", a:uint(w), b):int(w);
+    return __primitive(">>", a, b);
   }
 
   inline proc >>(param a: uint(?w), param b: integral) param {
