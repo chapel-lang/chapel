@@ -637,7 +637,7 @@ module ChapelBase {
   // left and right shift on primitive types
   //
 
-  inline proc bitshiftChecks(a: uint(?w), b: integral) {
+  inline proc bitshiftChecks(a, b: integral) {
     const hdr = "Cannot bitshift " + a:string + " by " + b:string +
                 " because ";
     if b < 0 {
@@ -649,7 +649,7 @@ module ChapelBase {
     }
   }
 
-  inline proc bitshiftChecks(param a: uint(?w), param b: integral) {
+  inline proc bitshiftChecks(param a, param b: integral) {
     param hdr = "Cannot bitshift " + a:string + " by " + b:string +
                 " because ";
     if b < 0 {
@@ -661,25 +661,41 @@ module ChapelBase {
     }
   }
 
-  inline proc <<(a: int(?w), b: integral) return ((a:uint(w)) << b):int(w);
+  inline proc <<(a: int(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive("<<", a:uint(w), b):int(w);
+  }
+
   inline proc <<(a: uint(?w), b: integral) {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive("<<", a, b);
   }
 
-  inline proc >>(a: int(?w), b: integral) return ((a:uint(w)) >> b):int(w);
+  inline proc >>(a: int(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a:uint(w), b):int(w);
+  }
+
   inline proc >>(a: uint(?w), b: integral) {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive(">>", a, b);
   }
 
-  inline proc <<(param a: int(?w), param b: integral) param return ((a:uint(w)) << b):int(w);
+  inline proc <<(param a: int(?w), param b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive("<<", a:uint(w), b):int(w);
+  }
+
   inline proc <<(param a: uint(?w), param b: integral) param {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive("<<", a, b);
   }
 
-  inline proc >>(param a: int(?w), param b: integral) param return ((a:uint(w)) >> b):int(w);
+  inline proc >>(param a: int(?w), param b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a:uint(w), b):int(w);
+  }
+
   inline proc >>(param a: uint(?w), param b: integral) param {
     if boundsChecking then bitshiftChecks(a, b);
     return __primitive(">>", a, b);
