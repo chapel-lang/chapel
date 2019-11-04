@@ -958,9 +958,10 @@ module Bytes {
         var nbytes: c_int;
         var bufToDecode = (localThis.buff + thisIdx): c_string;
         var maxbytes = (localThis.len - thisIdx): ssize_t;
-        qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
+        const decodeRet = qio_decode_char_buf(cp, nbytes,
+                                              bufToDecode, maxbytes);
 
-        if cp == 0xfffd {  //decoder returns the replacement character
+        if decodeRet != 0 {  //decoder returns error
           if errors == decodePolicy.strict {
             throw new owned DecodeError();
           }

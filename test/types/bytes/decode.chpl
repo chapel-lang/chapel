@@ -44,6 +44,10 @@ var almostHwairToStringRepl = almostHwairFlippedBit.decode(decodePolicy.replace)
 // valid bytes
 writeln("Should be 9: ", almostHwairToStringRepl.numBytes);
 
+//make sure the decoded buffer is actually valid (i.e. can be re-decoded with
+//decodePolicy.strict)
+writeln((almostHwairToStringRepl:bytes).decode());
+
 
 //now create another almost equal one where the fourth byte is replaced with a
 //valid ASCII character. All continuation bytes must be in form 0b10xxxxxx in
@@ -57,9 +61,17 @@ almostHwairToStringRepl = almostHwairValidAscii.decode(decodePolicy.replace);
 // valid bytes
 writeln("Should be 7: ", almostHwairToStringRepl.numBytes);
 
+//make sure the decoded buffer is actually valid (i.e. can be re-decoded with
+//decodePolicy.strict)
+writeln((almostHwairToStringRepl:bytes).decode());
+
 var almostHwairToStringIgnr = almostHwairValidAscii.decode(decodePolicy.ignore);
 // number of bytes should be 4 -- only the last four must be in the string
 writeln("Should be 4: ", almostHwairToStringIgnr.numBytes);
+
+//make sure the decoded buffer is actually valid (i.e. can be re-decoded with
+//decodePolicy.strict)
+writeln((almostHwairToStringIgnr:bytes).decode());
 writeln("End Hwair tests");
 
 //finally make sure that the strict error policy is actually strict

@@ -7,7 +7,10 @@ Should be 15: 15
 𐍈
 Hwair tests
 Should be 9: 9
+��ABC
 Should be 7: 7
+�AABC
 Should be 4: 4
+AABC
 End Hwair tests
 DecodeError: Invalid UTF-8 character encountered.
