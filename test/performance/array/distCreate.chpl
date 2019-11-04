@@ -5,6 +5,7 @@ use CommDiagnostics;
 use BlockDist;
 use CyclicDist;
 use BlockCycDist;
+use StencilDist;
 
 
 type elemType = int;
@@ -12,7 +13,7 @@ type elemType = int;
 
 enum diagMode { performance, correctness, commCount, verboseComm, verboseMem };
 enum arraySize { tiny, small, large };
-enum distType { block, cyclic, blockCyc };
+enum distType { block, cyclic, blockCyc, stencil };
 
 config const size = arraySize.tiny;
 config const dist = distType.block;
@@ -169,6 +170,27 @@ if mode == diagMode.correctness || dist == distType.blockCyc {
       endDiag("arrDeinit");
     }
 
+    startDiag("domDeinit");
+  }
+  endDiag("domDeinit");
+}
+
+if mode == diagMode.correctness || dist == distType.stencil {
+  { // weird blocks are necessary to measure deinit performance
+    startDiag("domInit");
+    const blockDom = localDom dmapped Stencil(boundingBox=localDom,
+                                              fluff=(1,));
+    endDiag("domInit", blockDom);
+    if createArrays {
+      {
+        startDiag("arrInit");
+        const blockArr: [blockDom] elemType;
+        endDiag("arrInit", blockArr);
+
+        startDiag("arrDeinit");
+      }
+      endDiag("arrDeinit");
+    }
     startDiag("domDeinit");
   }
   endDiag("domDeinit");
