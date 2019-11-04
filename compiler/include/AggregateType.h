@@ -283,6 +283,4 @@ extern AggregateType* dtLocale;
 extern AggregateType* dtOwned;
 extern AggregateType* dtShared;
 
-DefExpr* defineObjectClass();
-
 #endif

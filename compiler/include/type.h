@@ -432,7 +432,7 @@ TYPE_EXTERN Map<Type*, Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*, Type*> wideRefMap;   // reference -> wide reference
 
 void     initPrimitiveTypes();
-void     initChplProgram(DefExpr* objectDef);
+void     initChplProgram();
 void     initCompilerGlobals();
 
 bool is_nothing_type(Type*);

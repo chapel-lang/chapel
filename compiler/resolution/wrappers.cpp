@@ -1721,7 +1721,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
                                      CallInfo&  info,
                                      bool       fastFollowerChecks);
 
-static void       buildLeaderIterator(FnSymbol* wrapFn,
+static void       buildLeaderIterator(PromotionInfo& promotion,
                                       BlockStmt* instantiationPt,
                                       Expr*     iterator,
                                       bool      zippered);
@@ -1997,7 +1997,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
  {
   promotion.hasLeaderFollowers = true;
 
-  buildLeaderIterator(wrapFn, instantiationPt, iterator, zippered);
+  buildLeaderIterator(promotion, instantiationPt, iterator, zippered);
 
   buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall);
 
@@ -2020,12 +2020,12 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
 }
 
-static void buildLeaderIterator(FnSymbol* wrapFn,
+static void buildLeaderIterator(PromotionInfo& promotion,
                                 BlockStmt* instantiationPt,
                                 Expr*     iterator,
                                 bool      zippered) {
   SymbolMap   leaderMap;
-  FnSymbol*   liFn       = wrapFn->copy(&leaderMap);
+  FnSymbol*   liFn       = promotion.wrapperFn->copy(&leaderMap);
 
   Type*       tagType    = gLeaderTag->type;
   ArgSymbol*  liFnTag    = new ArgSymbol(INTENT_PARAM, "tag", tagType);
@@ -2076,7 +2076,7 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
 
   liFn->insertAtTail(loop);
 
-  theProgram->block->insertAtTail(new DefExpr(liFn));
+  promotion.fn->defPoint->getModule()->block->insertAtHead(new DefExpr(liFn));
 
   normalize(liFn);
 
@@ -2140,7 +2140,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
                                      followerMap,
                                      wrapCall));
 
-  theProgram->block->insertAtTail(new DefExpr(fiFn));
+  fn->defPoint->getModule()->block->insertAtHead(new DefExpr(fiFn));
 
   normalize(fiFn);
 
@@ -2637,7 +2637,7 @@ static void buildFastFollowerCheck(bool                  isStatic,
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));
   checkFn->insertAtTail(new CallExpr(PRIM_RETURN, returnTmp));
 
-  theProgram->block->insertAtTail(new DefExpr(checkFn));
+  wrapper->defPoint->getModule()->block->insertAtHead(new DefExpr(checkFn));
 
   normalize(checkFn);
   checkFn->setGeneric(addLead);

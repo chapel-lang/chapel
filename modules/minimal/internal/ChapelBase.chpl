@@ -22,6 +22,11 @@
 
 module ChapelBase {
 
+  pragma "object class"
+  pragma "global type symbol"
+  pragma "no object"
+  class _object { }
+
   //
   // internal reference type
   //
