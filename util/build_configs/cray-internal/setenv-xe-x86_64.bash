@@ -128,7 +128,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         compilers=gnu,cray,intel
         comms=gasnet,none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
-        substrates=gemini,mpi,none
+        substrates=mpi,none
         auxfs=none,lustre
 
         log_info "Start build_configs $dry_run $verbose # no make target"

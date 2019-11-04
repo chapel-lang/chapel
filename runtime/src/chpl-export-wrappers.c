@@ -21,7 +21,7 @@
 #include "chpl-export-wrappers.h"
 #include "chpl-mem.h"
 
-void chpl_bytes_free(chpl_bytes cb) {
+void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb) {
   if (!cb.isOwned) { return; }
 
   if (cb.data != NULL) {

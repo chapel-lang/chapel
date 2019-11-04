@@ -889,10 +889,11 @@ Interpreted string literals are designated by the following syntax:
 
    hexadecimal-escape-character:
      `\x' hexadecimal-digits
-   \end{syntax}
 
-   Uninterpreted string literals are designated by the following syntax:
-   \begin{syntax}
+Uninterpreted string literals are designated by the following syntax:
+
+.. code-block:: syntax
+
    uninterpreted-string-literal:
      """ uninterpreted-double-quote-delimited-characters """
      ''' uninterpreted-single-quote-delimited-characters '''

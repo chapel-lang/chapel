@@ -76,8 +76,8 @@
      communication layers fall back to regular operations. Under ugni, GETs are
      internally buffered. When the buffers are flushed, the operations are
      performed all at once. Cray Linux Environment (CLE) 5.2.UP04 or newer is
-     required for best performance. In our experience, buffered gets can
-     achieve up to a 5X performance improvement over non-buffered gets for CLE
+     required for best performance. In our experience, unordered copies can
+     achieve up to a 5X performance improvement over ordered copies for CLE
      5.2UP04 or newer.
  */
 module UnorderedCopy {
@@ -109,20 +109,14 @@ module UnorderedCopy {
     if !sameType || !validType then
       compilerError("unorderedCopy is only supported between identical trivially copyable types");
 
-    if CHPL_COMM == 'ugni' {
-      __primitive("unordered=", dst, src);
-    } else {
-      __primitive("=", dst, src);
-    }
+    __primitive("unordered=", dst, src);
   }
 
   /*
      Fence any pending unordered copies issued by the current task.
    */
   inline proc unorderedCopyTaskFence(): void {
-    if CHPL_COMM == 'ugni' {
-      extern proc chpl_comm_getput_unordered_task_fence();
-      chpl_comm_getput_unordered_task_fence();
-    }
+    extern proc chpl_gen_comm_getput_unordered_task_fence();
+    chpl_gen_comm_getput_unordered_task_fence();
   }
 }

@@ -1131,8 +1131,9 @@ pragma "no copy return"
 proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).alignedLow;
   }
+
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 

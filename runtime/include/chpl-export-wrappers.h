@@ -23,12 +23,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct chpl_bytes {
+typedef struct chpl_bytes_wrapper {
   int isOwned;
   char* data;
   size_t size;
-} chpl_bytes;
+} chpl_bytes_wrapper;
 
-void chpl_bytes_free(chpl_bytes cb);
+void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb);
 
 #endif

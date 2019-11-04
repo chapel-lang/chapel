@@ -22,21 +22,21 @@ module ExportWrappers {
   use CPtr;
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
-  extern record chpl_bytes {
+  extern record chpl_bytes_wrapper {
     var isOwned: c_int;
     var data: c_ptr(c_char);
     var size: size_t;
   }
 
   // May need to call this in one of the conversion routines.
-  extern proc chpl_bytes_free(cb: chpl_bytes);
+  extern proc chpl_bytes_wrapper_free(cb: chpl_bytes_wrapper);
 
   //
   // TODO: Using type aliases to resolve a type shouldn't be necessary. The
   // compiler should be able to figure this out on its own.
   //
   type chpl__exportTypeCharPtr = c_ptr(c_char);
-  type chpl__exportTypeChplBytes = chpl_bytes;
+  type chpl__exportTypeChplBytesWrapper = chpl_bytes_wrapper;
 
   private proc chpl__exportCopyStringBuffer(s: string): c_ptr(c_char) {
     const nBytes = s.numBytes;
@@ -56,13 +56,13 @@ module ExportWrappers {
   }
 
   //
-  // TODO: For multilocale, we have to make sure to free the `chpl_bytes`
-  // buffer ourselves after we are done beaming it out over the wire.
+  // TODO: For multilocale, we have to make sure to free the wrapper buffer
+  // ourselves after we are done beaming it out over the wire.
   //
   // TODO: Seperate set of conversion calls used in multilocale libraries.
   //
-  proc chpl__exportConv(ref val: bytes, type rt: chpl_bytes): rt {
-    var result: chpl_bytes;
+  proc chpl__exportConv(ref val: bytes, type rt: chpl_bytes_wrapper): rt {
+    var result: chpl_bytes_wrapper;
     result.isOwned = val.isowned:c_int;
     result.data = val.buff:c_ptr(c_char);
     // Assume ownership of the bytes buffer.
@@ -79,14 +79,8 @@ module ExportWrappers {
   // buffer instead? We would have to allocated a piece of tracked memory on
   // the Chapel heap.
   //
-  proc chpl__exportConv(val: chpl_bytes, type rt: bytes): rt {
-    use ByteBufferHelpers;
-    var data = val.data:ByteBufferHelpers.bufferType;
-    // TODO: Are these casts safe casts?
-    var length = val.size:int(64);
-    var buflen = (val.size + 1):int(64);
-    var result = createBytesWithNewBuffer(data, length=length, size=buflen);
-    return result;
+  proc chpl__exportConv(val: chpl_bytes_wrapper, type rt: bytes): rt {
+    return createBytesWithNewBuffer(val.data:c_string, val.size.safeCast(int));
   }
 
 } // End module "ExportWrappers".
