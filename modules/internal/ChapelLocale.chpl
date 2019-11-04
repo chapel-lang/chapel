@@ -193,8 +193,11 @@ module ChapelLocale {
     */
     proc hostname: string {
       extern proc chpl_nodeName(): c_string;
-      var name = chpl_nodeName():string;
-      return name;
+      var hname: string;
+      on this {
+        hname = chpl_nodeName():string;
+      }
+      return hname;
     }
 
     /*
