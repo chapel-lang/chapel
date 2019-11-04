@@ -23,6 +23,7 @@
 // and teardown.  See that module (or its chpldocs) for details.
 //
 module startInitCommDiags {
+  private use ChapelBase;
   use CommDiagnostics;
 
   if printInitVerboseComm {

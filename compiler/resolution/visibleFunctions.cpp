@@ -86,11 +86,6 @@ void findVisibleFunctions(CallInfo&       info,
   INT_ASSERT(call->isResolved() == false);
 
   if (BlockStmt* block = info.scope) {
-    // all functions in standard modules are stored in a single block
-    if (standardModuleSet.set_in(block) != NULL) {
-      block = theProgram->block;
-    }
-
     if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
       if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
         visibleFns.append(*fns);
@@ -134,11 +129,6 @@ static void buildVisibleFunctionMap() {
         block = theProgram->block;
       } else {
         block = getVisibilityScope(fn->defPoint);
-        //
-        // add all functions in standard modules to theProgram
-        //
-        if (standardModuleSet.set_in(block))
-          block = theProgram->block;
       }
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
@@ -184,13 +174,6 @@ static void getVisibleFunctions(const char*           name,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
                                 Vec<FnSymbol*>&       visibleFns) {
-
-  //
-  // all functions in standard modules are stored in a single block
-  //
-  if (standardModuleSet.set_in(block)) {
-    block = theProgram->block;
-  }
 
   //
   // avoid infinite recursion due to modules with mutual uses

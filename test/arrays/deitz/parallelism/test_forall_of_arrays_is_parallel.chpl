@@ -1,3 +1,5 @@
+use ChapelDebugPrint;
+
 config const n: int = 20;
 
 var A, B, C: [1..n] real;

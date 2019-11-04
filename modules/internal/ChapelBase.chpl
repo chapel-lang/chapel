@@ -22,6 +22,7 @@
 
 module ChapelBase {
   use ChapelStandard;
+  private use ChapelEnv;
 
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
@@ -73,6 +74,12 @@ module ChapelBase {
 
   proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
   { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
+
+
+  pragma "object class"
+  pragma "global type symbol"
+  pragma "no object"
+  class _object { }
 
 
   enum iterKind {leader, follower, standalone};

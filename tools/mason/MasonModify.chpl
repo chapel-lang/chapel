@@ -92,6 +92,7 @@ proc masonModify(args) throws {
 
     const result = modifyToml(add, dep, external, system, projectHome);
     generateToml(result[1], result[2]);
+    delete result[1];
   }
   catch e: MasonError {
     writeln(e.message());

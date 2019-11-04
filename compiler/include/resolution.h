@@ -43,8 +43,6 @@ extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
 
-extern Vec<BlockStmt*>                  standardModuleSet;
-
 extern char                             arrayUnrefName[];
 extern char                             primCoerceTmpName[];
 

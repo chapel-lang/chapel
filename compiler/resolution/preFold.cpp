@@ -1963,7 +1963,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
       USR_FATAL_CONT(call, "'%s' cannot be captured as a value because it is a generic function", captured_fn->name);
       if (dummyFcfError == NULL) {
-        AggregateType* parent = createAndInsertFunParentClass(call, "_fcf_error");
+        AggregateType* parent = createAndInsertFunParentClass(call,
+                                                              "_fcf_error");
         dummyFcfError = newTemp(parent);
         theProgram->block->body.insertAtTail(new DefExpr(dummyFcfError));
       }
@@ -2227,8 +2228,7 @@ static Type* createOrFindFunTypeFromAnnotation(AList& argList,
   } else {
     FnSymbol* parentMethod = NULL;
 
-    parent       = createAndInsertFunParentClass(call,
-                                                 parent_name.c_str());
+    parent       = createAndInsertFunParentClass(call, parent_name.c_str());
     parentMethod = createAndInsertFunParentMethod(call,
                                                   parent,
                                                   argList,
@@ -2382,10 +2382,9 @@ static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
 
   parentTs->addFlag(FLAG_FUNCTION_CLASS);
 
-  // Because this function type needs to be globally visible (because
-  // we don't know the modules it will be passed to), we put it at the
-  // highest scope
-  theProgram->block->body.insertAtTail(new DefExpr(parentTs));
+  // Because the general function type is potentially usable by other modules,
+  // insert it into ChapelBase.
+  baseModule->block->insertAtHead(new DefExpr(parentTs));
 
   parent->dispatchParents.add(dtObject);
 
@@ -2603,10 +2602,9 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
   if (throws)
     parent_method->throwsErrorInit();
 
-  // Because this function type needs to be globally visible
-  // (because we don't know the modules it will be passed to), we put
-  // it at the highest scope
-  theProgram->block->body.insertAtTail(new DefExpr(parent_method));
+  // Because the parent method might be used by other modules, put it into
+  // ChapelBase.
+  baseModule->block->insertAtHead(new DefExpr(parent_method));
 
   normalize(parent_method);
 

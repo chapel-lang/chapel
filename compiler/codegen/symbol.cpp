@@ -1107,13 +1107,14 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += "\n";
     return res;
   } else if (t->symbol->hasFlag(FLAG_REF) &&
-             t->getValType() == exportTypeChplBytes) {
+             t->getValType() == exportTypeChplBytesWrapper) {
     std::string res;
 
     // First, check to see if the input type is the Python "bytes" type.
     res += "\tif type(" + strname + ") != bytes:\n";
     res += "\t\traise TypeError(\"Expected \'bytes\' in conversion to ";
-    res += " \'chpl_bytes\', found \" + str(type(" + strname + ")))\n";
+    res += " \'chpl_bytes_wrapper\', ";
+    res += "found \" + str(type(" + strname + ")))\n";
 
     // Get the size of the bytes buffer.
     std::string argsize = "size_" + strname;
@@ -1126,14 +1127,15 @@ std::string ArgSymbol::getPythonArgTranslation() {
     // Declare a struct by value on the stack.
     std::string wrapval = "chpl_" + strname + "_val";
 
-    // Create a chpl_bytes wrapper that represents a shallow copy.
-    res += "\tcdef chpl_bytes " + wrapval + "\n";
+    // Create a chpl_bytes_wrapper struct that represents a shallow copy.
+    res += "\tcdef chpl_bytes_wrapper " + wrapval + "\n";
     res += "\t" + wrapval + ".isOwned = 0\n";
     res += "\t" + wrapval + ".data = " + argdata + "\n";
     res += "\t" + wrapval + ".size = " + argsize + "\n";
 
     // The final result is a reference to the stack allocated struct.
-    res += "\tcdef chpl_bytes* chpl_" + strname + " = &" + wrapval + "\n";
+    res += "\tcdef chpl_bytes_wrapper* chpl_" + strname;
+    res += " = &" + wrapval + "\n";
 
     return res;
   } else if (t->symbol->hasFlag(FLAG_REF) &&
@@ -2218,12 +2220,12 @@ GenRet FnSymbol::codegenPYXType() {
   // Return statement, if applicable
   std::string returnStmt = "";
   if (retType != dtVoid) {
-    if (retType == exportTypeChplBytes) {
+    if (retType == exportTypeChplBytesWrapper) {
 
-      // The raw result of the routine call, a "chpl_bytes" wrapper.
-      funcCall += "cdef chpl_bytes rdat = ";
+      // The raw result of the routine call, a "chpl_bytes_wrapper".
+      funcCall += "cdef chpl_bytes_wrapper rdat = ";
 
-      // Convert the "chpl_bytes" struct to a Python bytes.
+      // Convert the "chpl_bytes_wrapper" struct to a Python bytes.
       returnStmt += "\tcdef char* rdata = rdat.data\n";
       returnStmt += "\tcdef Py_ssize_t rsize = rdat.size\n";
       returnStmt += "\tcdef char* v = rdat.data\n";
@@ -2231,8 +2233,8 @@ GenRet FnSymbol::codegenPYXType() {
       // Create a new Python bytes that is a copy of the Chapel string.
       returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
 
-      // This will free the "chpl_bytes" buffer if required.
-      returnStmt += "\tchpl_bytes_free(rdat)\n";
+      // This will free the "chpl_bytes_wrapper" buffer if required.
+      returnStmt += "\tchpl_bytes_wrapper_free(rdat)\n";
 
     } else if (retType == dtExternalArray &&
              exportedArrayElementType[this] != NULL) {
