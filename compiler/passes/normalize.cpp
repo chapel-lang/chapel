@@ -534,17 +534,10 @@ static void normalizeBase(BaseAST* base) {
         if (fn == stringLiteralModule->initFn) {
           fixStringLiteralInit(fn);
         } else if (fn->isNormalized() == false) {
-          if (defExpr->exprType == NULL &&
-              defExpr->init == NULL &&
-              (isShadowVarSymbol(var) ||
-               var->hasFlag(FLAG_TEMP) ||
-               var->hasFlag(FLAG_INDEX_VAR) ||
-               defExpr->parentExpr == rootModule->block ||
-               defExpr->parentExpr == stringLiteralModule->block ||
-               fn->hasFlag(FLAG_COMPILER_GENERATED))) {
-            // Don't try to normalize compiler temporary initialization
-            // with split initialization.
-          } else {
+          if (defExpr->exprType != NULL || defExpr->init != NULL) {
+            // MPF 2019-11 - the above condition allows code generated
+            // by the compiler to rely on type inference upon a PRIM_MOVE.
+
             if (var->isType() == true) {
               normalizeTypeAlias(defExpr);
 
@@ -2215,8 +2208,8 @@ static Symbol* varModuleName(VarSymbol* var) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isSplitInitExpr(Expr* e);
 static bool findInitPoints(DefExpr* def,
-                           Expr* start,
                            std::vector<CallExpr*>& initAssigns);
 
 static void           normVarTypeInference(DefExpr* expr);
@@ -2240,12 +2233,13 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   // points written using '='
   bool foundSplitInit = false;
 
-  // For now, disable split init on non-user code
-  if (defExpr->getModule()->modTag == MOD_USER)
-    foundSplitInit = findInitPoints(defExpr, defExpr, initAssign);
+  bool requestedSplitInit = isSplitInitExpr(init);
 
-  /*
-  if (foundSplitInit) {
+  // For now, disable automatic split init on non-user code
+  if (defExpr->getModule()->modTag == MOD_USER || requestedSplitInit)
+    foundSplitInit = findInitPoints(defExpr, initAssign);
+
+  /*if (foundSplitInit) {
     USR_WARN(defExpr, "Found split init for '%s'", defExpr->sym->name);
     if (developer)
       USR_PRINT(defExpr, "for sym id %i", defExpr->sym->id);
@@ -2254,7 +2248,8 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     }
   }*/
 
-  if (init != NULL || foundSplitInit == false ||
+  if ((init != NULL && !requestedSplitInit) ||
+      foundSplitInit == false ||
       // Future: enable ref vars, params
       var->hasFlag(FLAG_REF_VAR) || var->hasFlag(FLAG_PARAM)) {
     // handle non-split initialization
@@ -2326,6 +2321,14 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   restoreShadowVarForNormalize(defExpr, svarMark);
 }
 
+static bool isSplitInitExpr(Expr* e) {
+  if (SymExpr* se = toSymExpr(e))
+    if (se->symbol() == gSplitInit)
+      return true;
+
+  return false;
+}
+
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
 
 typedef enum {
@@ -2339,13 +2342,13 @@ static found_init_t doFindInitPoints(DefExpr* def,
                                      std::vector<CallExpr*>& initAssigns);
 
 static bool findInitPoints(DefExpr* def,
-                           Expr* start,
                            std::vector<CallExpr*>& initAssigns) {
   // split initialization doesn't make sense to try for e.g.
   //  var x = 25;
-  if (def->init != NULL)
+  if (def->init != NULL && !isSplitInitExpr(def->init))
     return false;
 
+  Expr* start = def->getStmtExpr()->next;
   found_init_t found = doFindInitPoints(def, start, initAssigns);
   return (found == FOUND_INIT);
 }
@@ -2354,7 +2357,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
                                      Expr* start,
                                      std::vector<CallExpr*>& initAssigns) {
   // Regular initialization is not split initialization
-  if (def->init != NULL)
+  if (def->init != NULL && !isSplitInitExpr(def->init))
     return FOUND_NOTHING;
 
   // Scroll forward in the block containing DefExpr for x.
@@ -2459,7 +2462,8 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
   bool canDefaultInit = true;
   // No type or init expr, so can't default init
-  if (def->exprType == NULL && def->init == NULL)
+  if (def->exprType == NULL &&
+      (def->init == NULL || isSplitInitExpr(def->init)))
     canDefaultInit = false;
   // Can't default init a ref ever
   if (def->sym->hasFlag(FLAG_REF_VAR))
