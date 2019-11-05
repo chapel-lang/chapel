@@ -1,11 +1,13 @@
-config param doRightShift = false;
+config param op = 0;
 
-proc main() {
-  if doRightShiftShift then
-    var foo = 128 >> -4;
-  else
-    var bar = 128 << -8;
-  return;
+param shift: int(64) = 128;
+param unsignedShift: uint(64) = 128;
+param shiftBy: int = -8;
+
+select op {
+  when 0 do param foo = shift << shiftBy;
+  when 1 do param foo = shift >> shiftBy;
+  when 2 do param foo = unsignedShift << shiftBy;
+  when 3 do param foo = unsignedShift >> shiftBy;
 }
 
-main();
