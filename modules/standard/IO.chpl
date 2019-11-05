@@ -5434,22 +5434,6 @@ proc _toString(x:?t) where !_isIoPrimitiveType(t)
 {
   return ("", false);
 }
-private inline
-proc _toStringFromBytesOrString(x:bytes)
-{
-  return (createStringWithBorrowedBuffer(x.buff, length=x.length, size=x._size),
-          true);
-}
-private inline
-proc _toStringFromBytesOrString(x:string)
-{
-  return (x, true);
-}
-private inline
-proc _toStringFromBytesOrString(x)
-{
-  return ("", false);
-}
 
 private inline
 proc _toChar(x:?t) where isIntegralType(t)
@@ -6194,7 +6178,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
               err = qio_format_error_arg_mismatch(i);
             } else err = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t), origLocale);
           } when QIO_CONV_ARG_TYPE_BINARY_STRING {
-            var (t,ok) = _toStringFromBytesOrString(args(i));
+            var (t,ok) = _toBytes(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
             } else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
@@ -6444,7 +6428,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
               } else err = _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
               if ! err then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_BINARY_STRING {
-              var (t,ok) = _toStringFromBytesOrString(args(i));
+              var (t,ok) = _toBytes(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               }
