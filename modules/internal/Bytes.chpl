@@ -928,18 +928,10 @@ module Bytes {
       pragma "fn synchronization free"
       extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
                                       buf:c_string, buflen:ssize_t):syserr;
-      extern proc qio_encode_char_buf(ref dst: c_char, chr: int(32)): syserr;
+      extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
       extern proc qio_nbytes_char(chr: int(32)): c_int;
 
       var localThis: bytes = this.localize();
-
-      // create the encoded replacement character just in case
-      // TODO: maybe this can be moved to runtime to avoid running this
-      // everytime we call decode?
-      param replChar: int(32) = 0xfffd;
-      const nbytesRepl = qio_nbytes_char(replChar);
-      const encodedReplChar = c_malloc(c_char, nbytesRepl);
-      qio_encode_char_buf(encodedReplChar[0], replChar);
 
       // allocate buffer the same size as this buffer assuming that the string
       // is in fact perfectly decodable. In the worst case, the user wants the
@@ -978,18 +970,18 @@ module Bytes {
               thisIdx += nbytes-1;
 
             if errors == decodePolicy.replace {
+              param replChar: int(32) = 0xfffd;
+
               // Replacement can cause the string to be larger than initially
               // expected. The Unicode replacement character has codepoint
               // 0xfffd. It is encoded in `encodedReplChar` and its encoded
               // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
               // in place of a single byte, we may overflow
               (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                       decodedIdx+nbytesRepl);
+                                                       decodedIdx+3);
+              qio_encode_char_buf(ret.buff+decodedIdx, replChar);
 
-              bufferMemcpyLocal(dst=ret.buff, src=encodedReplChar,
-                                len=nbytesRepl, dst_off=decodedIdx);
-
-              decodedIdx += nbytesRepl;  // replacement character is 2 bytes
+              decodedIdx += 3;  // replacement character is 3 bytes in UTF8
             }
           }
         }
