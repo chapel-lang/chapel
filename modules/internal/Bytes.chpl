@@ -964,10 +964,10 @@ module Bytes {
             // that it was invalid, if nbytes is >1 then we must have read
             // multible bytes where the last one broke the sequence. But it can
             // be a valid byte itself. So we rewind by 1 in that case
-            if nbytes == 1 then
-              thisIdx += nbytes;
-            else
-              thisIdx += nbytes-1;
+            // we use nInvalidBytes to store how many bytes we are ignoring or
+            // replacing
+            const nInvalidBytes = if nbytes==1 then nbytes else nbytes-1;
+            thisIdx += nInvalidBytes;
 
             if errors == decodePolicy.replace {
               param replChar: int(32) = 0xfffd;
@@ -977,8 +977,10 @@ module Bytes {
               // 0xfffd. It is encoded in `encodedReplChar` and its encoded
               // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
               // in place of a single byte, we may overflow
+              const sizeChange = 3-nInvalidBytes;
               (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                       decodedIdx+3);
+                                                       ret._size+sizeChange);
+
               qio_encode_char_buf(ret.buff+decodedIdx, replChar);
 
               decodedIdx += 3;  // replacement character is 3 bytes in UTF8
