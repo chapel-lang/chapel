@@ -448,6 +448,13 @@ module String {
     return x != 0;
   // End index arithmetic support
 
+  private proc factoryDeprWarning() {
+    if showStringBytesInitDeprWarnings {
+      compilerWarning("createStringWith* functions are deprecated - "+
+                      "please use string.createWith* instead");
+    }
+  }
+
   //
   // createString* functions
   //
@@ -462,10 +469,16 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: string) {
+  inline proc type string.createWithBorrowedBuffer(s: string) {
     var ret: string;
     initWithBorrowedBuffer(ret, s);
     return ret;
+  }
+
+  pragma "no doc"
+  inline proc createStringWithBorrowedBuffer(s: string) {
+    factoryDeprWarning();
+    return string.createWithBorrowedBuffer(s);
   }
 
   /*
@@ -482,12 +495,23 @@ module String {
 
     :returns: A new `string`
   */
-  proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+  proc type string.createWithBorrowedBuffer(s: c_string, length=s.length) {
     //NOTE: This function is heavily used by the compiler to create string
     //literals. So, inlining this causes some bloat in the AST that increases
     //the compilation time slightly. Therefore, currently we are keeping this
     //one non-inlined.
-    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+    return string.createWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  pragma "no doc"
+  proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+    factoryDeprWarning();
+    //NOTE: This function is heavily used by the compiler to create string
+    //literals. So, inlining this causes some bloat in the AST that increases
+    //the compilation time slightly. Therefore, currently we are keeping this
+    //one non-inlined.
+    return string.createWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
 
@@ -508,10 +532,17 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+  inline proc type string.createWithBorrowedBuffer(s: bufferType, length: int,
+                                                   size: int) {
     var ret: string;
-    initWithBorrowedBuffer(ret, s, length,size);
+    initWithBorrowedBuffer(ret, s, length, size);
     return ret;
+  }
+
+  pragma "no doc"
+  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    factoryDeprWarning();
+    return string.createWithBorrowedBuffer(s, length, size);
   }
 
   pragma "no doc"
@@ -533,8 +564,15 @@ module String {
 
     :returns: A new `string`
   */
+  inline proc type string.createWithOwnedBuffer(s: c_string, length=s.length) {
+    return string.createWithOwnedBuffer(s: bufferType, length=length,
+                                                      size=length+1);
+  }
+
+  pragma "no doc"
   inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
-    return createStringWithOwnedBuffer(s: bufferType, length=length,
+    factoryDeprWarning();
+    return string.createWithOwnedBuffer(s: bufferType, length=length,
                                                       size=length+1);
   }
 
@@ -554,10 +592,17 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+  inline proc type string.createWithOwnedBuffer(s: bufferType, length: int,
+                                                size: int) {
     var ret: string;
     initWithOwnedBuffer(ret, s, length, size);
     return ret;
+  }
+
+  pragma "no doc"
+  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    factoryDeprWarning();
+    return string.createWithOwnedBuffer(s, length, size);
   }
 
   /*
@@ -568,10 +613,16 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: string) {
+  inline proc type string.createWithNewBuffer(s: string) {
     var ret: string;
     initWithNewBuffer(ret, s);
     return ret;
+  }
+
+  pragma "no doc"
+  inline proc createStringWithNewBuffer(s: string) {
+    factoryDeprWarning();
+    return string.createWithNewBuffer(s);
   }
 
   /*
@@ -586,8 +637,15 @@ module String {
 
     :returns: A new `string`
   */
+  inline proc type string.createWithNewBuffer(s: c_string, length=s.length) {
+    return string.createWithNewBuffer(s: bufferType, length=length,
+                                                    size=length+1);
+  }
+
+  pragma "no doc"
   inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
-    return createStringWithNewBuffer(s: bufferType, length=length,
+    factoryDeprWarning();
+    return string.createWithNewBuffer(s: bufferType, length=length,
                                                     size=length+1);
   }
 
@@ -606,10 +664,17 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+  inline proc type string.createWithNewBuffer(s: bufferType, length: int,
+                                              size: int) {
     var ret: string;
     initWithNewBuffer(ret, s, length, size);
     return ret;
+  }
+
+  pragma "no doc"
+  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+    factoryDeprWarning();
+    return string.createWithNewBuffer(s, length, size);
   }
 
   //
@@ -675,15 +740,15 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return createStringWithNewBuffer(
+          return string.createWithNewBuffer(
                   chpl__getInPlaceBufferData(data.shortData), data.len,
                   data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return createStringWithOwnedBuffer(localBuff, data.len, data.size);
+          return string.createWithOwnedBuffer(localBuff, data.len, data.size);
         }
       } else {
-        return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
+        return string.createWithBorrowedBuffer(data.buff, data.len, data.size);
       }
     }
 
@@ -777,7 +842,7 @@ module String {
     */
     inline proc localize() : string {
       if _local || this.locale_id == chpl_nodeID {
-        return createStringWithBorrowedBuffer(this);
+        return string.createWithBorrowedBuffer(this);
       } else {
         const x:string = this; // assignment makes it local
         return x;
@@ -2248,7 +2313,7 @@ module String {
     var buffer = bufferAllocExact(2);
     buffer[0] = i;
     buffer[1] = 0;
-    var s = createStringWithOwnedBuffer(buffer, 1, 2);
+    var s = string.createWithOwnedBuffer(buffer, 1, 2);
     return s;
   }
 
@@ -2261,7 +2326,7 @@ module String {
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
-    var s = createStringWithOwnedBuffer(buffer, mblength, mbsize);
+    var s = string.createWithOwnedBuffer(buffer, mblength, mbsize);
     return s;
   }
 

@@ -26,6 +26,7 @@
 #include "AstToText.h"
 #include "AstVisitor.h"
 #include "astutil.h"
+#include "build.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "ForallStmt.h"
@@ -1479,7 +1480,8 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  CallExpr *initCall = new CallExpr(astr("createStringWithBorrowedBuffer"),
+  CallExpr *initCall = new CallExpr(buildDotExpr(dtString->symbol,
+                                                 "createWithBorrowedBuffer"),
                                     cstrTemp,
                                     new_IntSymbol(strLength));
 
@@ -1495,6 +1497,8 @@ VarSymbol *new_StringSymbol(const char *str) {
   insertPt->insertBefore(new DefExpr(cstrTemp));
   insertPt->insertBefore(cstrMove);
   insertPt->insertBefore(moveCall);
+
+  normalize(moveCall);
 
   s->immediate = new Immediate;
   *s->immediate = imm;
