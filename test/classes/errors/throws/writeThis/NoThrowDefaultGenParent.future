@@ -1,0 +1,5 @@
+#14360
+
+The compiler default generates throwing versions of `writeThis`, thus
+this code should emit some sort of `override` error or dispatch
+successfully (one of the two).
