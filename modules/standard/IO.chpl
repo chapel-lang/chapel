@@ -3096,6 +3096,8 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     //
     // TODO: What to do with the caught error? Propagate back up?
     //
+    const chError: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, chError);
   }
 
   // Set the channel pointer to NULL to make the
@@ -3152,6 +3154,8 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     //
     // TODO: What to do with the caught error? Propagate back up?
     //
+    const chError: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, chError);
   }
 
   // Set the channel pointer to NULL to make the
