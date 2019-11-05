@@ -3640,7 +3640,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 
   :throws SystemError: Thrown if a string could not be read from the channel.
 */
-proc channel.readline(ref arg:string):bool throws {
+proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -3661,7 +3661,7 @@ proc channel.readline(ref arg:string):bool throws {
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(err, "in channel.readline(ref arg:string)");
+    try this._ch_ioerror(err, "in channel.readline(ref arg)");
   }
   return false;
 }
