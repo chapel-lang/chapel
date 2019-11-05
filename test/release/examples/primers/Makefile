@@ -21,7 +21,6 @@ TARGETS = \
 	locales \
 	modules \
 	nothingVariables \
-	opaque-domains \
 	parIters \
 	procedures \
 	randomNumbers \

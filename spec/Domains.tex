@@ -302,26 +302,14 @@ type of the indices that it stores.  The syntax is as follows:
 \begin{verbatim}
 associative-domain-type:
   `domain' ( associative-index-type )
-  `domain' ( `opaque' )
 
 associative-index-type:
   type-expression
 \end{verbatim}
 \end{syntax}
 
-\index{types!opaque domains}
-\index{opaque domains!types}
-\index{domains!opaque}
-The three expansions of \sntx{associative-domain-type} correspond to the three
-kinds of associative domain listed below.
-\begin{enumerate} 
-\item In general, \sntx{associative-index-type} determines \chpl{idxType}
+The \sntx{associative-index-type} determines the \chpl{idxType}
 of the associative domain type.
-\item Opaque domains are a special case, indicated by the type \chpl{opaque}.
-Anonymous values of the type \chpl{opaque} are used as index values
-in this case.
-% TODO: need to define and explain the 'opaque' type elsewhere.
-\end{enumerate}
 
 When an associative domain is used as the index set of an array, the relation
 between the indices and the array elements can be thought of as a map between
@@ -1057,17 +1045,6 @@ proc isIrregularDom(d: domain) param
 \end{protohead}
 \begin{protobody}
 Returns a param \chpl{true} if the given domain is irregular, false otherwise.
-\end{protobody}
-
-\index{domains!isOpaqueDom@\chpl{isOpaqueDom}}
-\index{predefined functions!isOpaqueDom@\chpl{isOpaqueDom}}
-\begin{protohead}
-\begin{verbatim}
-proc isOpaqueDom(d: domain) param
-\end{verbatim}
-\end{protohead}
-\begin{protobody}
-Returns a param \chpl{true} if the given domain is opaque, false otherwise.
 \end{protobody}
 
 \index{domains!isRectangularDom@\chpl{isRectangularDom}}
