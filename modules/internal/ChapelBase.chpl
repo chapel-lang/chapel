@@ -638,15 +638,17 @@ module ChapelBase {
   //
 
   inline proc bitshiftChecks(a, b: integral) {
+    use HaltWrappers;
+
     if b < 0 {
       var msg = "Cannot bitshift " + a:string + " by " + b:string +
                 " because " + b:string + " is less than 0";
-      halt(msg);
+      HaltWrappers.boundsCheckHalt(msg);
     } else if b >= numBits(a.type) {
       var msg = "Cannot bitshift " + a:string + " by " + b:string +
                 " because " + b:string + " is >= the bitwidth of " +
                 a.type:string;
-      halt(msg);
+      HaltWrappers.boundsCheckHalt(msg);
     }
   }
 
