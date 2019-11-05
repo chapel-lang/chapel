@@ -171,7 +171,7 @@ int validate_buf(const char *buf, ssize_t buflen) {
 
   while (offset<buflen) {
     if (decode_char_buf_utf8(&cp, &nbytes, buf+offset, buflen-offset) != 0) {
-      return 1;  // invalid : probably return EILSEQ
+      return -1;  // invalid : return EILSEQ
     }
     offset += nbytes;
   }
