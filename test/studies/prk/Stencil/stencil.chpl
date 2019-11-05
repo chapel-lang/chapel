@@ -42,9 +42,7 @@ config const iterations: int = 10,
 config var tileSize: int = 0;
 
 /* Weight matrix dimensions are 'Wsize' x 'Wsize' */
-param Wsize = 2*R + 1,
-      /* Frequently used constant for tuple index bookkeeping*/
-      R1 = R + 1;
+param Wsize = 2*R + 1;
 
 
 /* Number of elements that will be updated in Output matrix */
@@ -123,23 +121,23 @@ proc main() {
   if !compact {
     for i in 1..R {
       const element : dtype = 1 / (2*i*R) : dtype;
-      weight[R1][R1+i]  =  element;
-      weight[R1+i][R1]  =  element;
-      weight[R1-i][R1] = -element;
-      weight[R1][R1-i] = -element;
+      weight[R][R+i] =  element;
+      weight[R+i][R] =  element;
+      weight[R-i][R] = -element;
+      weight[R][R-i] = -element;
     }
   }
   else {
     for jj in 1..R {
       const element = (1.0/(4.0*jj*(2.0*jj-1)*R)):dtype;
-      for ii in R1+(-jj+1)..R1+jj-1 {
-        weight[ ii][R1+jj] = element;
-        weight[ ii][R1-jj] = -element;
-        weight[R1+jj][ ii] = element;
-        weight[R1-jj][ ii] = -element;
+      for ii in R+(-jj+1)..R+jj-1 {
+        weight[ ii][R+jj] = element;
+        weight[ ii][R-jj] = -element;
+        weight[R+jj][ ii] = element;
+        weight[R-jj][ ii] = -element;
       }
-      weight[R1+jj][R1+jj] = (1.0/(4.0*jj*R));
-      weight[R1-jj][R1-jj] = -(1.0/(4.0*jj*R));
+      weight[R+jj][R+jj] = (1.0/(4.0*jj*R));
+      weight[R-jj][R-jj] = -(1.0/(4.0*jj*R));
     }
   }
 
@@ -189,14 +187,14 @@ proc main() {
       forall (i,j) in innerDom with (const in weight) {
         var tmpout: dtype = 0.0;
         if (!compact) {
-          for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-          for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-          for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
-          for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+          for param jj in -R..-1 do tmpout += weight[R][R+jj] * input[i, j+jj];
+          for param jj in 1..R   do tmpout += weight[R][R+jj] * input[i, j+jj];
+          for param ii in -R..-1 do tmpout += weight[R+ii][R] * input[i+ii, j];
+          for param ii in 1..R   do tmpout += weight[R+ii][R] * input[i+ii, j];
         } else {
           for param ii in -R..R do
             for param jj in -R..R do
-              tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+              tmpout += weight[R+ii][R+jj] * input[i+ii, j+jj];
         }
         output[i, j] += tmpout;
       }
@@ -206,14 +204,14 @@ proc main() {
           for j in jt .. # min(order - R - jt, tileSize) {
             var tmpout: dtype = 0.0;
             if (!compact) {
-              for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-              for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-              for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
-              for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+              for param jj in -R..-1 do tmpout += weight[R][R+jj] * input[i, j+jj];
+              for param jj in 1..R   do tmpout += weight[R][R+jj] * input[i, j+jj];
+              for param ii in -R..-1 do tmpout += weight[R+ii][R] * input[i+ii, j];
+              for param ii in 1..R   do tmpout += weight[R+ii][R] * input[i+ii, j];
             } else {
               for param ii in -R..R do
                 for param jj in -R..R do
-                  tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+                  tmpout += weight[R+ii][R+jj] * input[i+ii, j+jj];
             }
             output[i, j] += tmpout;
           }

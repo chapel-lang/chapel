@@ -167,7 +167,7 @@ writeln("Matches 1");
   var re = compile("\\w+");
   var str = "Words, words, word.";
   for s in re.matches(str, 0) {
-    writeln(str[s[1]]);
+    writeln(str[s[0]]);
   }
 }
 writeln("Matches 2");
@@ -175,9 +175,9 @@ writeln("Matches 2");
   var re = compile("(w)(\\w+)");
   var str = "Words, words, word.";
   for s in re.matches(str, 2) {
+    writeln(str[s[0]]);
     writeln(str[s[1]]);
     writeln(str[s[2]]);
-    writeln(str[s[3]]);
   }
 }
 

@@ -93,7 +93,7 @@ proc findBestCenter(loc: coord, centers: [] coord) {
 // helper function to compute the distance between two coordinates
 //
 proc dist(x: coord, y:coord) {
-  return sqrt(+ reduce [d in 1..numdims] ((x(d) - y(d))**2));
+  return sqrt(+ reduce [d in 0..#numdims] ((x(d) - y(d))**2));
 }
 
 
@@ -169,7 +169,7 @@ class kmeans: ReduceScanOp {
 //
 proc initData(i) {
   var loc: coord;
-  loc(1) = i;
+  loc(0) = i;
   return loc;
 }
 
@@ -187,7 +187,7 @@ proc initCenters(data) {
 //
 proc /(x: coord, y: real) {
   var result: coord;
-  for param d in 1..numdims do
+  for param d in 0..numdims-1 do
     result(d) = x(d) / y;
   return result;
 }

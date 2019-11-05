@@ -300,7 +300,7 @@ writeln();
 //
 proc writeList(x ...?k) {
   var first = true;
-  for param i in 1..k {
+  for param i in 0..k-1 {
     if first then first = false; else write(" ");
     write(x(i));
   }

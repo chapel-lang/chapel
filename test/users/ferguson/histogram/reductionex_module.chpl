@@ -15,7 +15,7 @@
       }
 
       proc accumulateOntoState(ref counts, x:eltType) {
-        counts[1 + x/PER] += 1;
+        counts[x/PER] += 1;
       }
 
       proc accumulate(x:eltType) {
@@ -23,7 +23,7 @@
       }
 
       proc accumulate(other:NBUCKETS*int) {
-        for i in 1..NBUCKETS {
+        for i in 0..#NBUCKETS {
           counts[i] += other[i];
         }
       }

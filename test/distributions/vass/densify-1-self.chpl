@@ -23,7 +23,7 @@ proc t2(arg) {
     if result != doublecheck then
       writeln("  ERROR on doublecheck");
   } else if isTuple(arg) {
-    for param i in 1..arg.size do
+    for param i in 0..arg.size-1 do
       if result(i) != shouldbe(arg(i)) then
         writeln("  ERROR on tuple/", i);
   } else if isRange(arg) {

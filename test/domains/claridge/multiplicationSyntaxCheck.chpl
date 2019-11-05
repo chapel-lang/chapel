@@ -4,10 +4,10 @@ proc *(D1: domain, D2: domain)
   param rank = D1.rank + D2.rank;
 
   var ranges: rank*range(stridable=stridable);
-  for i in 1..D1.rank do
-    ranges(i) = D1.dim(i);
-  for i in 1..D2.rank do
-    ranges(D1.rank+i) = D2.dim(i);
+  for i in 0..#D1.rank do
+    ranges(i) = D1.dim(i+1);
+  for i in 0..#D2.rank do
+    ranges(D1.rank+i) = D2.dim(i+1);
 
   var D_new: domain(rank,stridable=stridable) = ranges;
   return D_new;

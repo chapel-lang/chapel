@@ -56,8 +56,8 @@ for jblk in 1..n by blk {
       }
     }
     for ind in D22 {
-      var i = ind(1);
-      var j = ind(2);
+      var i = ind(0);
+      var j = ind(1);
       for k in low..hi {
         A(i,j) -= A(i,k)*A(k,j);
       }

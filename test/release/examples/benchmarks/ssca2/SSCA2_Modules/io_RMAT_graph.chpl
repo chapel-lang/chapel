@@ -284,7 +284,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   compilerAssert(followThis.type ==
                  1*range(VType, BoundedRangeType.bounded, false));
 
-  const myIDs = unDensify(followThis(1), uxIDs);
+  const myIDs = unDensify(followThis(0), uxIDs);
 
   // Redirect to graphReaderReal() iterator.
   for dummy in graphReaderReal(GRow, uxIDs, VType, vCount, eCount, repfiles,

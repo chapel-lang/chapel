@@ -14,7 +14,7 @@ class D : C {
   var ranges: rank*range(dim_type, BoundedRangeType.bounded, stridable);
 
   override proc bbox(d: int) {
-    const r: range(dim_type, BoundedRangeType.bounded, false) = ranges(d);
+    const r: range(dim_type, BoundedRangeType.bounded, false) = ranges(d-1);
     return r;
   }
 }
@@ -30,8 +30,8 @@ class E : C {
 
 var myD = new unmanaged D(2, int, false);
 
-myD.ranges(1) = 1..10;
-myD.ranges(2) = 1..20;
+myD.ranges(0) = 1..10;
+myD.ranges(1) = 1..20;
 
 var r1 = myD.bbox(1);
 var r2 = myD.bbox(2);

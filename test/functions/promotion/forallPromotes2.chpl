@@ -25,7 +25,7 @@ class C {
   }
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
-    for i in followThis(1) do
+    for i in followThis(0) do
       yield i+x;
   }
 }
@@ -39,7 +39,7 @@ proc foo(x: real) {
 }
 
 proc foo(xy:(int, real)) {
-  writeln(xy(1), " ", xy(2));
+  writeln(xy(0), " ", xy(1));
 }
 
 var myC = new borrowed C();

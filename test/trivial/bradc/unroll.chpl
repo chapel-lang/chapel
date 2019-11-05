@@ -12,7 +12,7 @@ proc foo(x: string) {
 }
 
 proc unrollme(x ...?numargs) {
-  for param i in 1..numargs {
+  for param i in 0..numargs-1 {
     foo(x(i));
   }
   writeln();

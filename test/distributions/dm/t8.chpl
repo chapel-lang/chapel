@@ -58,7 +58,7 @@ proc test(d) {
 
   hd("initializing the array with explicit indexing");
   for ix in d do
-    a[ix] = ( ix(1)*1000 + ix(2) ): a.eltType;
+    a[ix] = ( ix(0)*1000 + ix(1) ): a.eltType;
   tl();
 
   hd("serial iterator over the array");

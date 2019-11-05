@@ -22,7 +22,7 @@ class BarrierWF {
   // how many tasks are barriering
   const tasks: int;
 
-  // which of the counts below is active: 1 or 2
+  // which of the counts below is active: 0 or 1
   var active: int;
 
   // the alternating counts
@@ -35,7 +35,7 @@ class BarrierWF {
                                " but received ", numTasks);
     tasks = numTasks;
     this.complete();
-    setup(1);
+    setup(0);
   }
 
   // set up for the next barrier
@@ -45,7 +45,7 @@ class BarrierWF {
   }
 
   // what would be the other "active"
-  proc nextActive(act) return 3-act;
+  proc nextActive(act) return 1-act;
 
   // To be invoked by each task to barrier.
   // After everyone reaches the barrier, it can be used again.

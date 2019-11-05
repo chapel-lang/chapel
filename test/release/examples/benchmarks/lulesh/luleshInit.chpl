@@ -87,7 +87,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
     for nodelist in elemToNode do 
-      for i in 1..nodesPerElem do
+      for i in 0..#nodesPerElem do
         reader.read(nodelist[i]);
     
     if debugInit {
@@ -98,20 +98,20 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
   } else {
     forall (num, nodelist) in zip(elemToNode.domain, elemToNode) {
       const (i,j,k) = elemIdxTo3D(num);
-      nodelist[1] = node3DToIdx(D.rank, i,   j,   k  );
-      nodelist[2] = node3DToIdx(D.rank, i,   j,   k+1);
-      nodelist[3] = node3DToIdx(D.rank, i,   j+1, k+1);
-      nodelist[4] = node3DToIdx(D.rank, i,   j+1, k  );
-      nodelist[5] = node3DToIdx(D.rank, i+1, j,   k  );
-      nodelist[6] = node3DToIdx(D.rank, i+1, j,   k+1);
-      nodelist[7] = node3DToIdx(D.rank, i+1, j+1, k+1);
-      nodelist[8] = node3DToIdx(D.rank, i+1, j+1, k  );
+      nodelist[0] = node3DToIdx(D.rank, i,   j,   k  );
+      nodelist[1] = node3DToIdx(D.rank, i,   j,   k+1);
+      nodelist[2] = node3DToIdx(D.rank, i,   j+1, k+1);
+      nodelist[3] = node3DToIdx(D.rank, i,   j+1, k  );
+      nodelist[4] = node3DToIdx(D.rank, i+1, j,   k  );
+      nodelist[5] = node3DToIdx(D.rank, i+1, j,   k+1);
+      nodelist[6] = node3DToIdx(D.rank, i+1, j+1, k+1);
+      nodelist[7] = node3DToIdx(D.rank, i+1, j+1, k  );
     }
   }
 
   if debugInit then
     for nodelist in elemToNode {
-      for i in 1..nodelist.size do
+      for i in 0..#nodelist.size do
         write(nodelist(i), " ");
       writeln();
     }
@@ -162,9 +162,9 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
 
 // read/compute the X, Y, Z symmetry planes
 
-param X = 3,
-      Y = 2,
-      Z = 1;
+param X = 2,
+      Y = 1,
+      Z = 0;
 
 inline proc initSyms(ref Sym, dir) {
   if (initFromFile) {
@@ -292,7 +292,7 @@ inline proc elemIdxTo3D(ind) {
 
 inline proc node2DToIdx(param rank, ij, newdim, newval) {
   var ijk: 3*int;
-  for i in 1..numDims do
+  for i in 0..numDims-1 do
     ijk[i] = if (i==newdim) then newval else ij[i - (i>newdim):int];
   return node3DToIdx(rank, (...ijk));
 }

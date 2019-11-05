@@ -14,13 +14,13 @@ var A: [BigDom] real,
 forall (i,j) in ProbDom {
   A(i,j) = (i-1)*n + j;
   forall (x,y) in StencDom {
-    W(i,j)(x+2)(y+2) = if (x == y) then 0.0 else 1.0;
+    W(i,j)(x+1)(y+1) = if (x == y) then 0.0 else 1.0;
   }
 }
 
 writeln("A is:\n", A, "\n");
 
 forall ij in ProbDom do
-  B(ij) = (+ reduce [(x,y) in StencDom] W(ij)(x+2)(y+2)*A(ij+(x,y))) / 6;
+  B(ij) = (+ reduce [(x,y) in StencDom] W(ij)(x+1)(y+1)*A(ij+(x,y))) / 6;
 
 writeln("B is:\n", B, "\n");

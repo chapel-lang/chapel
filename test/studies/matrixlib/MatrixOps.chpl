@@ -170,7 +170,7 @@ iter MMIterator(D1, D2) {
 
 proc computePivotRow(A:[?D]) {
    const (_, ind) = maxloc reduce zip(abs(A), D);
-   return ind(1);
+   return ind(0);
 }
 
 proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {

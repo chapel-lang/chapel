@@ -9,13 +9,13 @@ forall i in vectorizeOnly(1..10) with (ref x) {
 writeln(x);
 
 forall i in vectorizeOnly(1..10, 11..20) with (ref x) {
-  x = i(2);
+  x = i(1);
   writeln((i, x));
 }
 writeln(x);
 
 forall i in zip(vectorizeOnly(11..20, 21..30)) with (ref x) {
-  x = i(2);
+  x = i(1);
   writeln((i, x));
 }
 writeln(x);

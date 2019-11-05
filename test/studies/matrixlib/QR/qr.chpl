@@ -83,7 +83,7 @@ proc norm(x...?n) {
   const zero = 0.0:x(1).type;
 
   sum = one;
-  for i in 1..n {
+  for i in 0..#n {
     if (x(i) != zero) {
       absXi = abs(x(i));
       if (scale < absXi) {

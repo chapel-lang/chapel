@@ -7,7 +7,7 @@ config const maxFluff = 2;
 proc test(dom : domain) {
   for i in 1..maxFluff {
     var halo : dom.rank * int;
-    for j in 1..dom.rank do halo(j) = i;
+    for j in 0..dom.rank-1 do halo(j) = i;
     test(dom, halo);
   }
 }
@@ -22,7 +22,7 @@ proc test(dom : domain, halo : dom.rank * int) {
   const n = dom.dim(1).size;
   forall idx in Space {
     var val = 0;
-    for i in 1..rank do val += n*idx(i);
+    for i in 0..rank-1 do val += n*idx(i);
     A[idx] = val;
   }
 

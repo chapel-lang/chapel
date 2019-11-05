@@ -137,7 +137,7 @@ proc populate (size : int) {
   const colorsDefault10  = (color.blue, color.red, color.yellow, color.red,
                             color.yellow, color.blue, color.red, color.yellow,
                             color.red, color.blue);
-  const D : domain(1) = {1..size};
+  const D : domain(1) = {0..#size};
   var population : [D] unmanaged Chameneos;
 
   if (size == 10) {
@@ -146,7 +146,7 @@ proc populate (size : int) {
     }
   } else {
     for i in D {
-      population(i) = new unmanaged Chameneos(i, ((i-1) % 3):color);
+      population(i) = new unmanaged Chameneos(i, (i % 3):color);
     }
   }
   return population;

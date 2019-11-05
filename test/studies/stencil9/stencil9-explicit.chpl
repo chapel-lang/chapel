@@ -200,9 +200,9 @@ coforall (lr,lc) in LocaleGridDom {
           // make sure that neighbor exists; skip if they don't
           // miniMD would need to wrap around; I didn't want to do that
           //
-          if (neighbor(1) < 0 || neighbor(2) < 0 ||
-              neighbor(1) > LocaleGridDom.high(1) ||
-              neighbor(2) > LocaleGridDom.high(2)) then
+          if (neighbor(0) < 0 || neighbor(1) < 0 ||
+              neighbor(0) > LocaleGridDom.high(0) ||
+              neighbor(1) > LocaleGridDom.high(1)) then
             // out of bounds
             continue;
 

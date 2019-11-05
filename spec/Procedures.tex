@@ -694,7 +694,7 @@ Either or both the number of variable arguments and their types can be
 specified.  For example, a basic procedure to sum the values of three
 integers can be written as
 \begin{chapel}
-proc sum(x: int...3) return x(1) + x(2) + x(3);
+proc sum(x: int...3) return x(0) + x(1) + x(2);
 \end{chapel}
 \begin{chapelpost}
 writeln(sum(1, 2, 3));

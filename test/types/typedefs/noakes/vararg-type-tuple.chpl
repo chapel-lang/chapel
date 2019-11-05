@@ -38,7 +38,7 @@ proc makeTuple(arg0s ... ?N) {
   type retTypes              = tupleType((...arg0s));
   var  retval   : retTypes;
 
-  for param i in 1 .. N {
+  for param i in 0 .. N-1 {
     retval(i) = arg0s(i).val;
   }
 

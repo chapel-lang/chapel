@@ -3,8 +3,8 @@ param-detuple.chpl:9: warning: param proc
 param-detuple.chpl:12: Function 'p2' instantiated here
 param-detuple.chpl:8: In function 'p2':
 param-detuple.chpl:9: warning: param proc
-param-detuple.chpl:13: Function 'p2' instantiated as: p2(param args(1): string = "a", param args(2): string = "b")
+param-detuple.chpl:13: Function 'p2' instantiated as: p2(param args(0): string = "a", param args(1): string = "b")
 $CHPL_HOME/modules/internal/ChapelBase.chpl: In function 'compilerError':
 $CHPL_HOME/modules/internal/ChapelBase.chpl: warning: compiler diagnostic depth value exceeds call stack depth
-$CHPL_HOME/modules/internal/ChapelBase.chpl: Function 'compilerError' instantiated as: compilerError(param msg(1): string = "assert failed - ", param msg(2): string = "done", param errorDepth = 3)
+$CHPL_HOME/modules/internal/ChapelBase.chpl: Function 'compilerError' instantiated as: compilerError(param msg(0): string = "assert failed - ", param msg(1): string = "done", param errorDepth = 3)
 param-detuple.chpl:14: error: assert failed - done

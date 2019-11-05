@@ -101,7 +101,7 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 
       // Compute the k-th elimination step: 
       //   store multipliers...
-      if k+1 <= A1.domain.high(1) then
+      if k+1 <= A1.domain.high(0) then
         A1[k+1.., k] /= pivot;
 
       //   ..and subtract scaled kth row from remaining 
@@ -215,7 +215,7 @@ iter blkIter2D(rowRange, colRange, blksize) {
 
 proc computePivotRow(A:[?D]) {
    const (_, ind) = maxloc reduce zip(abs(A), D);
-   return ind(1);
+   return ind(0);
 }
 
 //  The LU solve routine takes A = [L U y] and solves for x.

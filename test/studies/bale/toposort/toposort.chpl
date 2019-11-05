@@ -409,11 +409,11 @@ class PermutationMap {
   }
 
   inline proc map( idx : rank*idxType ) : rank*idxType {
-    return (rowMap[idx[1]], columnMap[idx[2]]);
+    return (rowMap[idx[0]], columnMap[idx[1]]);
   }
 
   inline proc inverseMap( idx : rank*idxType ) : rank*idxType {
-    return ( linearSearch(rowMap, idx[1]), linearSearch(rowMap, idx[1]) );
+    return ( linearSearch(rowMap, idx[0]), linearSearch(rowMap, idx[0]) );
   }
 
   inline proc this( idx : rank*idxType ) : rank*idxType {

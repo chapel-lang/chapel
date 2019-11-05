@@ -147,7 +147,7 @@ proc test_more_compare() {
   //assert(cmp(t1, t2), 0);
   //assert(cmp(t2, t1), 0);
 
-  for i in 1..args.size {
+  for i in 0..#args.size {
     var newargs = args;
     newargs[i] = args[i] + 1;
     t2 = new datetime((...newargs));   // this is larger than t1
@@ -216,7 +216,7 @@ proc test_replace() {
 
   assert(base == base.replace(tzinfo=nilTZ));
 
-  var i = 1;
+  var i = 0;
   for (name, newval) in (("year", 2),
                          ("month", 3),
                          ("day", 4),

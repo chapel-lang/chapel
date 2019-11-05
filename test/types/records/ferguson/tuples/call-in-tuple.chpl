@@ -1,12 +1,12 @@
 use myrecord;
 
 proc foo(in rec: (R,R)) {
+  rec(0).verify();
+  rec(0).increment();
+  rec(0).verify();
   rec(1).verify();
   rec(1).increment();
   rec(1).verify();
-  rec(2).verify();
-  rec(2).increment();
-  rec(2).verify();
 
 }
 

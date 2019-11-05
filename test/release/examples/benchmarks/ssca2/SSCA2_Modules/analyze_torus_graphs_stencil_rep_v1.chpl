@@ -208,8 +208,8 @@ module analyze_torus_graphs {
     writeln ();
 
     const extended_domain = vertex_domain.expand(1);
-    const h1 = G.vertices.high (1), l1 = G.vertices.low (1);
-    const h2 = G.vertices.high (2), l2 = G.vertices.low (2);
+    const h1 = G.vertices.high (0), l1 = G.vertices.low (0);
+    const h2 = G.vertices.high (1), l2 = G.vertices.low (1);
     var   torus_vertex : [extended_domain] vertex = extended_domain;
 
     if DEBUG_GRAPH_GENERATOR then {
@@ -294,9 +294,9 @@ module analyze_torus_graphs {
     writeln ();
 
     const extended_domain = vertex_domain.expand(1);
-    const h1 = G.vertices.high (1), l1 = G.vertices.low (1);
-    const h2 = G.vertices.high (2), l2 = G.vertices.low (2);
-    const h3 = G.vertices.high (3), l3 = G.vertices.low (3);
+    const h1 = G.vertices.high (0), l1 = G.vertices.low (0);
+    const h2 = G.vertices.high (1), l2 = G.vertices.low (1);
+    const h3 = G.vertices.high (2), l3 = G.vertices.low (2);
     var   torus_vertex : [extended_domain] vertex = extended_domain;
   
     if DEBUG_GRAPH_GENERATOR then {
@@ -389,10 +389,10 @@ module analyze_torus_graphs {
     writeln ();
 
     const extended_domain = vertex_domain.expand(1);
-    const h1 = G.vertices.high (1), l1 = G.vertices.low (1);
-    const h2 = G.vertices.high (2), l2 = G.vertices.low (2);
-    const h3 = G.vertices.high (3), l3 = G.vertices.low (3);
-    const h4 = G.vertices.high (4), l4 = G.vertices.low (4);
+    const h1 = G.vertices.high (0), l1 = G.vertices.low (0);
+    const h2 = G.vertices.high (1), l2 = G.vertices.low (1);
+    const h3 = G.vertices.high (2), l3 = G.vertices.low (2);
+    const h4 = G.vertices.high (3), l4 = G.vertices.low (3);
     var   torus_vertex : [extended_domain] vertex = extended_domain;
 
       if DEBUG_GRAPH_GENERATOR then {

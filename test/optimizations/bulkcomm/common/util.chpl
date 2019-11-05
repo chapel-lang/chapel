@@ -35,7 +35,7 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=debugDefault) {
         return memberDom.contains(idx);
       } else {
         var ret = true;
-        for param i in 1..sa.size {
+        for param i in 0..sa.size-1 {
           if isRange(sa(i)) then ret &&= sa(i).contains(idx(i));
           else ret &&= (idx(i) == sa(i));
         }

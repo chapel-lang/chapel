@@ -12,11 +12,11 @@ proc checkit(d1, d2) {
 }
 
 var init_range: rank*range;
-var myIdx: [1..rank] rank*int;
-for param i in 1..rank {
-  init_range(i) = 1..n*i;
-  for j in 1..rank do
-    myIdx[j](i) = if i==j then n else n*i-1;
+var myIdx: [0..rank-1] rank*int;
+for param i in 0..rank-1 {
+  init_range(i) = 1..n*(i+1);
+  for j in 0..rank-1 do
+    myIdx[j](i) = if i==j then n else n*(i+1);
 }
 
 const DD1: domain(rank) = init_range;
@@ -26,7 +26,7 @@ var D2: sparse subdomain(DD2);
 
 checkit(D1, D2);
 
-for i in 1..rank {
+for i in 0..rank-1 {
   if rank > 1 then // this bites
     D1 += myIdx[i];
   else
@@ -34,7 +34,7 @@ for i in 1..rank {
 }
 checkit(D1, D2);
 
-for i in 1..rank by -1 {
+for i in 0..rank-1 by -1 {
   if rank > 1 then // this bites
     D2 += myIdx[i];
   else

@@ -151,7 +151,7 @@ proc testReindex(param rank : int, Dom) {
 
 proc makeDom(param rank : int, low : int, str = 1) {
   var r : rank*range(stridable=true);
-  for param i in 1..rank do r(i) = low.. by str # n;
+  for param i in 0..rank-1 do r(i) = low.. by str # n;
   return r;
 }
 

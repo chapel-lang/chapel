@@ -102,7 +102,7 @@ proc stringToHash(s:string): Hash {
   var r = f.reader();
   var hash:Hash;
   // Use Formatted I/O to read hex values into integers
-  r.readf("%xu%xu%xu", hash(1), hash(2), hash(3));
+  r.readf("%xu%xu%xu", hash(0), hash(1), hash(2));
   r.close();
   return hash;
 }

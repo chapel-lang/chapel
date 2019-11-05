@@ -65,7 +65,7 @@ proc assign(left, right, param rank:int) {
   }
 
   proc fillSlice(ref slice, A, B) {
-    for param i in 1..A.rank {
+    for param i in 0..A.rank-1 {
       slice(i) = if isRange(slice(i)) then A.dim(1)[B.dim(1)]
                  else A.dim(1).first;
     }

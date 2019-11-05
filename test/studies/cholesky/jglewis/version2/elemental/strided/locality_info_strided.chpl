@@ -5,11 +5,10 @@ module locality_info_strided {
 
     // general code, for arbitrary (unrelated) row and column index ranges 
 
-    const r                = A_grid_domain.high (1) + 1;
-    const c                = A_grid_domain.high (2) + 1;
+    const (r, c)           = A_grid_domain.high + (1, 1);
 
-    const my_processor_row = processor (1);
-    const my_processor_col = processor (2);
+    const my_processor_row = processor (0);
+    const my_processor_col = processor (1);
 
     const row_stride       = A_domain.dim (1).stride;
     const col_stride       = A_domain.dim (2).stride;

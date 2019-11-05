@@ -93,12 +93,11 @@ module elemental_cholesky_symmetric_index_ranges_alt {
     const A_locale_grid = A.domain.dist.targetLocales();
     const A_grid_domain = A_locale_grid.domain;
 
-    assert ( A_grid_domain.low(1) == 0 && A_grid_domain.low(2) == 0 );
+    assert ( A_grid_domain.low == (0,0) );
 
     assert ( A (A.domain.low).locale.id == 0 );
 	     
-    const r             = A_grid_domain.high (1) + 1;
-    const c             = A_grid_domain.high (2) + 1;
+    const (r, c)        = A_grid_domain.high + (1,1);
     const n_processors  = r * c;
 
     // initialize a tasking barrier

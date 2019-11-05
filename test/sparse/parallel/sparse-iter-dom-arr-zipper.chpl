@@ -109,9 +109,9 @@ proc populateDomain(param dim, ref sd) where dim == 1 {
 proc populateDomain(param dim, ref sd) where dim > 1 {
   for i in 1..n-1 {
     var member: index(sd);
-    for param dm in 1..dim do member(dm) =
+    for param dm in 0..dim-1 do member(dm) =
       // feeble attempt at something more sophisticated than just a diagonal
-      if dm % 2 == 0 then i else i + 1;
+      if dm % 2 == 1 then i else i + 1;
     sd += member;
   }
 }
@@ -130,11 +130,11 @@ proc show(A, msg...) {
 }
 
 //proc firstComp(arg:int) { return arg; }
-//proc firstComp(arg) where isTuple(arg) { return arg(1); }
+//proc firstComp(arg) where isTuple(arg) { return arg(0); }
 
 proc sumComps(arg:int) { return arg; }
 proc sumComps(arg) where isTuple(arg) {
-  var result: arg(1).type = 0;
-  for param ix in 1..arg.size do result += arg(ix);
+  var result: arg(0).type = 0;
+  for param ix in 0..arg.size-1 do result += arg(ix);
   return result;
 }

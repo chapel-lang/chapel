@@ -7,7 +7,7 @@ proc foo(x: real) {
 }
 
 proc foo(xy:(int, real)) {
-  writeln(xy(1), " ", xy(2));
+  writeln(xy(0), " ", xy(1));
 }
 
 var A = [4, 5, 6];

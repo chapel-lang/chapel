@@ -41,11 +41,11 @@ proc main() {
 
 //     Factor A = [Asquare | b].
        rightBlockLU(A, nb);   
-       timeData(1) = testTimer.elapsed();
+       timeData(0) = testTimer.elapsed();
 
 //     Solve for x.
        LUSolve(A, x);
-       timeData(2) = testTimer.elapsed();
+       timeData(1) = testTimer.elapsed();
        testTimer.stop();
 
 //     Write info about current test.
@@ -73,12 +73,12 @@ proc testResults(ofile, n, nb) {
 }
 
 proc timingResults(ofile, n, timeData) {
-   var GFlops = ((n:real/1.0e+9) * (n:real/timeData(2)))*
+   var GFlops = ((n:real/1.0e+9) * (n:real/timeData(1)))*
                 ((2.0/3.0) * n:real + (3.0/2.0));
    ofile.writeln("GFlops             = ", GFlops);
-   ofile.writeln("Total elapsed time = ", timeData(2));
-   ofile.writeln("  Factor time      = ", timeData(1));
-   ofile.writeln("  Solve time       = ", (timeData(2) - timeData(1)));
+   ofile.writeln("Total elapsed time = ", timeData(1));
+   ofile.writeln("  Factor time      = ", timeData(0));
+   ofile.writeln("  Solve time       = ", (timeData(1) - timeData(0)));
 }
 
 proc testSolution(A: [?ADom], x: [?xDom], in eps: real, 
@@ -104,9 +104,9 @@ proc testSolution(A: [?ADom], x: [?xDom], in eps: real,
   var xNorm1 = + reduce abs(x);
   var xNormInf = max reduce abs(x);
 
-  resid(1) = errNorm/(eps*ANorm1*n);
-  resid(2) = errNorm/(eps*ANorm1*xNorm1);
-  resid(3) = errNorm/(eps*ANormInf*xNormInf*n);
+  resid(0) = errNorm/(eps*ANorm1*n);
+  resid(1) = errNorm/(eps*ANorm1*xNorm1);
+  resid(2) = errNorm/(eps*ANormInf*xNormInf*n);
 
   norms = (errNorm, ANormInf, ANorm1, xNormInf, xNorm1);
 }
@@ -119,24 +119,24 @@ proc errorResults(ofile, in TEST, resid: 3*real, norms: 5*real) {
     else TEST.kfail += 1;
 
   if writeAccuracyInfo {
-    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)             = ", resid(1),
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)             = ", resid(0),
+     ".....", if (resid(0) < thresh) then "PASSED" else "FAILED");
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * ||x||_1)       = ", resid(1),
      ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
-    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * ||x||_1)       = ", resid(2),
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_oo * ||x||_oo * N) = ", resid(2),
      ".....", if (resid(2) < thresh) then "PASSED" else "FAILED");
-    ofile.writeln("||Ax-b||_oo / (eps * ||A||_oo * ||x||_oo * N) = ", resid(3),
-     ".....", if (resid(3) < thresh) then "PASSED" else "FAILED");
 
-    ofile.writeln("||Ax-b||_oo                                   = ", norms(1));
-    ofile.writeln("||A||_oo                                      = ", norms(2));
-    ofile.writeln("||A||_1                                       = ", norms(3));
-    ofile.writeln("||x||_oo                                      = ", norms(4));
-    ofile.writeln("||x||_1                                       = ", norms(5));
+    ofile.writeln("||Ax-b||_oo                                   = ", norms(0));
+    ofile.writeln("||A||_oo                                      = ", norms(1));
+    ofile.writeln("||A||_1                                       = ", norms(2));
+    ofile.writeln("||x||_oo                                      = ", norms(3));
+    ofile.writeln("||x||_1                                       = ", norms(4));
   } else {
     ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)              ",
-     ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
+     ".....", if (resid(0) < thresh) then "PASSED" else "FAILED");
     ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * ||x||_1)        ",
-     ".....", if (resid(2) < thresh) then "PASSED" else "FAILED");
-    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)              ", 
      ".....", if (resid(1) < thresh) then "PASSED" else "FAILED");
+    ofile.writeln("||Ax-b||_oo / (eps * ||A||_1 * N)              ", 
+     ".....", if (resid(2) < thresh) then "PASSED" else "FAILED");
   }
 }

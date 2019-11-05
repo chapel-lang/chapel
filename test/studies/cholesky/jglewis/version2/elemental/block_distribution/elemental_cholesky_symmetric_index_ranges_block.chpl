@@ -98,7 +98,7 @@ module elemental_cholesky_symmetric_index_ranges_block {
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.numIndices;
 
-    assert ( A_grid_domain.low(1) == 0 && A_grid_domain.low(2) == 0 );
+    assert ( A_grid_domain.low == (0,0) );
 
     assert ( A (A.domain.low).locale.id == 0 );
 	     

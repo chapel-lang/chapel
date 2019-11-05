@@ -6,5 +6,5 @@ proc main() {
     taskCounts[loc.id] = (loc.id, rt);
   }
   for taskCount in taskCounts do
-    writeln("TASK ", taskCount(1), ": running = ", taskCount(2));
+    writeln("TASK ", taskCount(0), ": running = ", taskCount(1));
 }
