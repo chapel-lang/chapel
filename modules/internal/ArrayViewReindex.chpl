@@ -708,7 +708,7 @@ module ArrayViewReindex {
 
   inline proc chpl_reindexConvertIdx(i: integral, updom, downdom) {
     compilerAssert(downdom.rank == 1, downdom.rank:string);
-    return chpl_reindexConvertIdxDim(i, updom, downdom, 1);
+    return chpl_reindexConvertIdxDim(i, updom, downdom, 0);
   }
 
   inline proc chpl_reindexConvertIdx(i, updom, downdom) {
