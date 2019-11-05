@@ -3737,18 +3737,10 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
     var byteorder:uint(8) = qio_channel_byteorder(ch._channel_internal);
 
     if binary {
-      if t == string {
-        err = qio_channel_read_string(false, byteorder,
-                                      iostringstyle.data_toeof:int(64),
-                                      ch._channel_internal, tx,
-                                      lenread, uselen);
-      }
-      else {
-        err = qio_channel_read_bytes(false, byteorder,
-                                     iostringstyle.data_toeof:int(64),
-                                     ch._channel_internal, tx,
-                                     lenread, uselen);
-      }
+      err = qio_channel_read_string(false, byteorder,
+                                    iostringstyle.data_toeof:int(64),
+                                    ch._channel_internal, tx,
+                                    lenread, uselen);
     } else {
       var save_style = ch._style();
       var style = ch._style();
