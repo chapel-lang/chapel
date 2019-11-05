@@ -1,7 +1,7 @@
 //
 // In this case, the compiler should resolve `writeThis` calls to class A's
 // overload of `writeThis` in all three instances, because compiler
-// generated `writeThis` routines are marked as "last resort".
+// generated `writeThis` routines are marked as "last resort" (?).
 //
 
 class A {
