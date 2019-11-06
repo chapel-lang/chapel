@@ -439,7 +439,7 @@ module DateTime {
   }
 
   /* Read or write a date value from channel `f` */
-  proc date.readWriteThis(f) {
+  proc date.readWriteThis(f) throws {
     const dash = new ioLiteral("-");
 
     if f.writing {
@@ -685,7 +685,7 @@ module DateTime {
   }
 
   /* Read or write a time value from channel `f` */
-  proc time.readWriteThis(f) {
+  proc time.readWriteThis(f) throws {
     const colon = new ioLiteral(":");
     if f.writing {
       try! {
@@ -1201,7 +1201,7 @@ module DateTime {
   }
 
   /* Read or write a datetime value from channel `f` */
-  proc datetime.readWriteThis(f) {
+  proc datetime.readWriteThis(f) throws {
     const dash  = new ioLiteral("-"),
           colon = new ioLiteral(":");
 

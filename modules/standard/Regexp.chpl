@@ -970,7 +970,7 @@ record regexp {
   }
 
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     var pattern:string;
     on this.home {
       var patternTemp:c_string;
@@ -983,7 +983,7 @@ record regexp {
   }
 
   pragma "no doc"
-  proc readThis(f) {
+  proc readThis(f) throws {
     var pattern:string;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
