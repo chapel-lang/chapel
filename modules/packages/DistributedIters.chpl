@@ -256,7 +256,7 @@ where tag == iterKind.leader
                                                           chunkSize,
                                                           numTasks)
           {
-            const taskRange:cType = unDensify(denseTaskRangeTuple(1),
+            const taskRange:cType = unDensify(denseTaskRangeTuple(0),
                                               localeRange);
             if debugDistributedIters
             then writeln("DistributedIters: Dynamic iterator (leader): ",
@@ -514,7 +514,7 @@ where tag == iterKind.leader
                                                          localeRange,
                                                          numTasks)
           {
-            const taskRange:cType = unDensify(denseTaskRangeTuple(1),
+            const taskRange:cType = unDensify(denseTaskRangeTuple(0),
                                               localeRange);
             if debugDistributedIters
             then writeln("DistributedIters: Guided iterator (leader): ",
