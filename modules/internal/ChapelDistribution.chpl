@@ -608,7 +608,7 @@ module ChapelDistribution {
     }
 
     //basic DSI functions
-    proc dsiDim(d: int) { return parentDom.dim(d+1); }
+    proc dsiDim(d: int) { return parentDom.dim(d); }
     proc dsiDims() { return parentDom.dims(); }
     proc dsiNumIndices { return getNNZ(); }
     proc dsiSize { return getNNZ(); }
@@ -930,7 +930,7 @@ module ChapelDistribution {
       // fill all new indices i s.t. i > indices[oldnnz]
       forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
 
-      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(0) by -1) {
         newIdx = shiftMap[_newIdx];
         data[newIdx] = data[i];
 

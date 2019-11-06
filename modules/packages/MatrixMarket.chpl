@@ -292,8 +292,8 @@ class MMReader {
       if T == complex {
         tfmt = "%r %r";
         // double-loop to ensure correct ordering
-        for col in toret.domain.dim(2) {
-          for row in toret.domain.dim(1) {
+        for col in toret.domain.dim(1) {
+          for row in toret.domain.dim(0) {
             var wr:real;
             var wi:real;
             fin.readf(tfmt, wr, wi);
@@ -313,8 +313,8 @@ class MMReader {
         }
 
         // double-loop to ensure correct ordering
-        for col in toret.domain.dim(2) {
-          for row in toret.domain.dim(1) {
+        for col in toret.domain.dim(1) {
+          for row in toret.domain.dim(0) {
             var w:T;
             fin.readf(tfmt, w);
             if isSparse then

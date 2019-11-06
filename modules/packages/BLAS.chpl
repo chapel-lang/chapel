@@ -251,11 +251,11 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var m = Cdom.dim(1).size : c_int,
-        n = Cdom.dim(2).size : c_int,
+    var m = Cdom.dim(0).size : c_int,
+        n = Cdom.dim(1).size : c_int,
         k : c_int;
-    if opA > Op.N then k = Adom.dim(1).size : c_int;
-                  else k = Adom.dim(2).size : c_int;
+    if opA > Op.N then k = Adom.dim(0).size : c_int;
+                  else k = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -316,8 +316,8 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var m = Cdom.dim(1).size : c_int,
-        n = Cdom.dim(2).size : c_int;
+    var m = Cdom.dim(0).size : c_int,
+        n = Cdom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -378,8 +378,8 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var m = Cdom.dim(1).size : c_int,
-        n = Cdom.dim(2).size : c_int;
+    var m = Cdom.dim(0).size : c_int,
+        n = Cdom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -431,10 +431,10 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var n = Cdom.dim(1).size : c_int;
+    var n = Cdom.dim(0).size : c_int;
     var k : c_int;
-    if trans == Op.N then k = Adom.dim(2).size : c_int;
-                     else k = Adom.dim(1).size : c_int;
+    if trans == Op.N then k = Adom.dim(1).size : c_int;
+                     else k = Adom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -495,10 +495,10 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var n = Cdom.dim(1).size : c_int;
+    var n = Cdom.dim(0).size : c_int;
     var k : c_int;
-    if trans == Op.N then k = Adom.dim(2).size : c_int;
-                     else k = Adom.dim(1).size : c_int;
+    if trans == Op.N then k = Adom.dim(1).size : c_int;
+                     else k = Adom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -550,10 +550,10 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var n = Cdom.dim(1).size : c_int;
+    var n = Cdom.dim(0).size : c_int;
     var k : c_int;
-    if trans == Op.N then k = Adom.dim(2).size : c_int;
-                     else k = Adom.dim(1).size : c_int;
+    if trans == Op.N then k = Adom.dim(1).size : c_int;
+                     else k = Adom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -615,10 +615,10 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var n = Cdom.dim(1).size : c_int;
+    var n = Cdom.dim(0).size : c_int;
     var k : c_int;
-    if trans == Op.N then k = Adom.dim(2).size : c_int;
-                     else k = Adom.dim(1).size : c_int;
+    if trans == Op.N then k = Adom.dim(1).size : c_int;
+                     else k = Adom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -669,8 +669,8 @@ module BLAS {
 
 
     // Determine sizes
-    var m = Bdom.dim(1).size : c_int,
-        n = Bdom.dim(2).size : c_int;
+    var m = Bdom.dim(0).size : c_int,
+        n = Bdom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trmm".format(m, n));
@@ -730,8 +730,8 @@ module BLAS {
     type eltType = A.eltType;
 
     // Determine sizes
-    var m = Bdom.dim(1).size : c_int,
-        n = Bdom.dim(2).size : c_int;
+    var m = Bdom.dim(0).size : c_int,
+        n = Bdom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trsm".format(m, n));
@@ -790,8 +790,8 @@ module BLAS {
   {
     require header;
     // Determine sizes
-    var m = Ydom.dim(1).size : c_int,
-        n = Xdom.dim(1).size : c_int;
+    var m = Ydom.dim(0).size : c_int,
+        n = Xdom.dim(0).size : c_int;
 
     // TODO -- 'order' may need to be swapped for banded matrices
     var _ldA = getLeadingDim(A, order);
@@ -838,8 +838,8 @@ module BLAS {
   {
     require header;
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -884,8 +884,8 @@ module BLAS {
     require header;
 
     // Determine sizes
-    var m = Xdom.dim(1).size : c_int,
-        n = Ydom.dim(1).size : c_int;
+    var m = Xdom.dim(0).size : c_int,
+        n = Ydom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -916,8 +916,8 @@ module BLAS {
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
     require header;
-    var m = Xdom.dim(1).size : c_int,
-        n = Ydom.dim(1).size : c_int;
+    var m = Xdom.dim(0).size : c_int,
+        n = Ydom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -948,8 +948,8 @@ module BLAS {
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
     require header;
-    var m = Xdom.dim(1).size : c_int,
-        n = Ydom.dim(1).size : c_int;
+    var m = Xdom.dim(0).size : c_int,
+        n = Ydom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -985,8 +985,8 @@ module BLAS {
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1020,8 +1020,8 @@ module BLAS {
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to hemv".format(m, n));
@@ -1055,8 +1055,8 @@ module BLAS {
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her".format(m, n));
@@ -1092,8 +1092,8 @@ module BLAS {
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her2".format(m, n));
@@ -1133,8 +1133,8 @@ module BLAS {
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     select eltType {
       when complex(64) {
@@ -1166,8 +1166,8 @@ module BLAS {
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     select eltType {
       when complex(64) {
@@ -1202,8 +1202,8 @@ module BLAS {
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     select eltType {
       when complex(64) {
@@ -1237,8 +1237,8 @@ module BLAS {
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1275,8 +1275,8 @@ module BLAS {
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     select eltType {
       when real(32) {
@@ -1308,8 +1308,8 @@ module BLAS {
   {
     require header;
 
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     select eltType {
       when real(32) {
@@ -1340,8 +1340,8 @@ module BLAS {
             where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     select eltType {
       when real(32) {
@@ -1371,8 +1371,8 @@ module BLAS {
             throws where (Adom.rank == 2) && (vDom.rank == 1)
   {
     require header;
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to symv".format(m, n));
@@ -1408,8 +1408,8 @@ module BLAS {
   {
     require header;
 
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr".format(m, n));
@@ -1445,8 +1445,8 @@ module BLAS {
   {
     require header;
 
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr2".format(m, n));
@@ -1488,8 +1488,8 @@ module BLAS {
   {
     require header;
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1535,12 +1535,12 @@ module BLAS {
     require header;
 
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int,
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int,
         k : c_int;
 
-    if trans > Op.N then k = Adom.dim(2).size : c_int;
-                    else k = Adom.dim(1).size : c_int;
+    if trans > Op.N then k = Adom.dim(1).size : c_int;
+                    else k = Adom.dim(0).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1586,8 +1586,8 @@ module BLAS {
     require header;
 
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     select eltType {
       when real(32) {
@@ -1627,8 +1627,8 @@ module BLAS {
     require header;
 
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
     // TODO -- check if m == n
 
     select eltType {
@@ -1668,8 +1668,8 @@ module BLAS {
     require header;
 
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trmv".format(m, n));
@@ -1714,8 +1714,8 @@ module BLAS {
     require header;
 
     // Determine sizes
-    var m = Adom.dim(1).size : c_int,
-        n = Adom.dim(2).size : c_int;
+    var m = Adom.dim(0).size : c_int,
+        n = Adom.dim(1).size : c_int;
 
     if m != n then
       throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trsv".format(m, n));
@@ -2420,7 +2420,7 @@ module BLAS {
 
     const N = D.size: c_int;
 
-    const r = D.dim(1);
+    const r = D.dim(0);
 
     select eltType {
      when real(32) do{
@@ -2449,9 +2449,9 @@ module BLAS {
   inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
     require header;
     if order==Order.Row then
-      return Adom.dim(2).size : c_int;
-    else
       return Adom.dim(1).size : c_int;
+    else
+      return Adom.dim(0).size : c_int;
   }
 
   pragma "no doc"

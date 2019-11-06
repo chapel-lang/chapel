@@ -259,8 +259,8 @@ class DimensionalDist2D : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(1).length: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(2).length: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(0).length: locCntT;
+  proc numLocs2: locCntT  return targetIds.dim(1).length: locCntT;
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -727,8 +727,8 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 override proc DimensionalDom.dsiMyDist() return dist;
 
 proc DimensionalDom.dsiDims()             return whole.dims();
-proc DimensionalDom.dsiDim(d)             return whole.dim(d+1);
-proc DimensionalDom.dsiDim(param d)       return whole.dim(d+1);
+proc DimensionalDom.dsiDim(d)             return whole.dim(d);
+proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
@@ -987,7 +987,7 @@ proc DimensionalArr.dsiSerialWrite(f): void {
        // giving the alias's entire domain as the index set to follow.
        // (NB dsiFollowerArrayIterator1d's argument is not densified.)
       const dom1d = if d == 0 then this.allocDom.dom1 else this.allocDom.dom2;
-      for l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d+1)) do
+      for l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
         yield l_i;
 
     } else {
@@ -1033,10 +1033,10 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
         l2 = dist.di2.dsiIndexToLocale1d(sliceDim2.low),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
-             then dom.whole.dim(1)(sliceDim1)
+             then dom.whole.dim(0)(sliceDim1)
              else locAdesc.locDom.doml1.dsiLocalSliceStorageIndices1d(dom.dom1, sliceDim1),
         r2 = if dom.dom2.dsiStorageUsesUserIndices()
-             then dom.whole.dim(2)(sliceDim2)
+             then dom.whole.dim(1)(sliceDim2)
              else locAdesc.locDom.doml2.dsiLocalSliceStorageIndices1d(dom.dom2, sliceDim2);
 
   return locAdesc.myStorageArr[r1, r2];
@@ -1094,7 +1094,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       assert(legit);
       return ix..ix;
     } else
-      return targetIds.dim(dd+1);
+      return targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated1d() || dom2.dsiIsReplicated1d()
     then {helpTargetIds(dom1,0), helpTargetIds(dom2,1)}
@@ -1200,7 +1200,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
               // ensure we got a subset, if applicable
               if dom1d.dsiStorageUsesUserIndices() then
-                assert(densify(myDim, whole.dim(dd+1))(myPiece) == myPiece);
+                assert(densify(myDim, whole.dim(dd))(myPiece) == myPiece);
 
               // Similar to the assert 'lo <= hi' in BlockDom leader.
               // Upon a second thought, if there is a legitimate reason
@@ -1308,8 +1308,8 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
   assert(this.rank == 2);
 
   // Convert the followThis ranges to user index space.
-  const f1 = unDensify(followThis(0), this.dom.whole.dim(1));
-  const f2 = unDensify(followThis(1), this.dom.whole.dim(2));
+  const f1 = unDensify(followThis(0), this.dom.whole.dim(0));
+  const f2 = unDensify(followThis(1), this.dom.whole.dim(1));
 
   // If this is an alias, we will invoke dsiFollowerArrayIterator1d
   // on the original array's domain descriptors.

@@ -368,7 +368,7 @@ proc ReplicatedDom.dsiDims(): rank * range(idxType,
 proc ReplicatedDom.dsiDim(dim: int): range(idxType,
                                            BoundedRangeType.bounded,
                                            stridable)
-  return redirectee().dim(dim+1);
+  return redirectee().dim(dim);
 
 proc ReplicatedDom.dsiLow
   return redirectee().low;

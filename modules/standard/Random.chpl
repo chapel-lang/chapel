@@ -1010,12 +1010,12 @@ module Random {
          exactly once, where low and high refer to the array's domain.
          */
       proc permutation(arr: [] eltType) {
-        var low = arr.domain.dim(1).low;
-        var high = arr.domain.dim(1).high;
+        var low = arr.domain.dim(0).low;
+        var high = arr.domain.dim(0).high;
 
         if arr.domain.rank != 1 then
           compilerError("Permutation requires 1-D array");
-        //if arr.domain.dim(1).stridable then
+        //if arr.domain.dim(0).stridable then
         //  compilerError("Permutation requires non-stridable 1-D array");
 
         _lock();

@@ -121,7 +121,7 @@ iter distributedDynamic(param tag:iterKind,
                         c,
                         chunkSize:int=1,
                         numTasks:int=0,
-                        parDim:int=1,
+                        parDim:int=0,
                         localeChunkSize:int=0,
                         coordinated:bool=false,
                         workerLocales=Locales)
@@ -144,9 +144,9 @@ where tag == iterKind.leader
   {
     assert(c.rank > 0, ("DistributedIters: Dynamic iterator (leader): "
                         + "Must use a valid domain"));
-    assert(parDim > 0, ("DistributedIters: Dynamic iterator (leader): "
-                        + "parDim must be a positive integer"));
-    assert(parDim <= c.rank, ("DistributedIters: Dynamic iterator (leader): "
+    assert(parDim >= 0, ("DistributedIters: Dynamic iterator (leader): "
+                        + "parDim must be a non-negative integer"));
+    assert(parDim < c.rank, ("DistributedIters: Dynamic iterator (leader): "
                               + "parDim must be a dimension of the domain"));
     var parDimDim = c.dim(parDim);
     for t in distributedDynamic(tag=iterKind.leader,
@@ -404,9 +404,9 @@ where tag == iterKind.leader
   {
     assert(c.rank > 0, ("DistributedIters: Guided iterator (leader): Must "
                         + "use a valid domain"));
-    assert(parDim > 0, ("DistributedIters: Guided iterator (leader): parDim "
-                        + "must be a positive integer"));
-    assert(parDim <= c.rank, ("DistributedIters: Guided iterator (leader): "
+    assert(parDim >= 0, ("DistributedIters: Guided iterator (leader): parDim "
+                        + "must be a non-negative integer"));
+    assert(parDim < c.rank, ("DistributedIters: Guided iterator (leader): "
                               + "parDim must be a dimension of the domain"));
 
     var parDimDim = c.dim(parDim);

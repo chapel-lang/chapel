@@ -465,7 +465,7 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
       compilerError("specified target array of locales must equal 1 or distribution rank");
     var ranges: rank*range;
     for param i in 0..rank-1 do
-      ranges(i) = 0..#specifiedLocArr.domain.dim(i+1).length;
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).length;
     targetLocDom = {(...ranges)};
     targetLocArr = specifiedLocArr;
   }
@@ -546,8 +546,8 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);
     const TD    = TargetActives(i);
-    const dense = densify(srcSlice.dim(SD+1), srcDom.dim(SD+1));
-    rngs(TD)    = unDensify(dense, targetDom.dim(TD+1));
+    const dense = densify(srcSlice.dim(SD), srcDom.dim(SD));
+    rngs(TD)    = unDensify(dense, targetDom.dim(TD));
   }
 
   return {(...rngs)};

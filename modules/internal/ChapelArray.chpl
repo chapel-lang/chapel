@@ -1326,7 +1326,7 @@ module ChapelArray {
       for param i in 0..rank-1 {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
-          idx(i) = dim(i+1).alignedLow;
+          idx(i) = dim(i).alignedLow;
           upranges(updim) = this._value.dsiDim(i)[args(i)]; // intersect ranges
           updim += 1;
         } else {
@@ -1386,10 +1386,20 @@ module ChapelArray {
        Return a range representing the boundary of this
        domain in a particular dimension.
      */
-    proc dim(d : int) return _value.dsiDim(d-1);
+    proc dim(d : int) {
+      use HaltWrappers;
+      if boundsChecking then
+        if (d < 0 || d >= rank) then
+          HaltWrappers.boundsCheckHalt("dim(" + d:string + ") is out-of-bounds; must be 0.." + (rank-1):string);
+      return _value.dsiDim(d);
+    }
 
     pragma "no doc"
-    proc dim(param d : int) return _value.dsiDim(d-1);
+    proc dim(param d : int) {
+      if (d < 0 || d > rank-1) then
+        compilerError("dim() must take a value from 0..", rank-1);
+      return _value.dsiDim(d);
+    }
 
     pragma "no doc"
     iter dimIter(param d, ind) {
@@ -1399,7 +1409,7 @@ module ChapelArray {
    /* Return a tuple of :proc:`intIdxType` describing the size of each dimension.
       For a sparse domain, return the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      var s: rank*(dim(1).intIdxType);
+      var s: rank*(dim(0).intIdxType);
       for (i, r) in zip(0..#s.size, dims()) do
         s(i) = r.size;
       return s;
@@ -1776,7 +1786,7 @@ module ChapelArray {
     proc expand(off: intIdxType) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do
-        ranges(i) = dim(i+1).expand(off);
+        ranges(i) = dim(i).expand(off);
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
@@ -1803,7 +1813,7 @@ module ChapelArray {
     proc exterior(off: rank*intIdxType) {
       var ranges = dims();
       for i in 0..rank-1 do
-        ranges(i) = dim(i+1).exterior(off(i));
+        ranges(i) = dim(i).exterior(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
@@ -1842,8 +1852,8 @@ module ChapelArray {
     proc interior(off: rank*intIdxType) {
       var ranges = dims();
       for i in 0..rank-1 do {
-        if ((off(i) > 0) && (dim(i+1)._high+1-off(i) < dim(i+1)._low) ||
-            (off(i) < 0) && (dim(i+1)._low-1-off(i) > dim(i+1)._high)) {
+        if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
+            (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
           halt("***Error: Argument to 'interior' function out of range in dimension ", i+1, "***");
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
@@ -1917,7 +1927,7 @@ module ChapelArray {
     proc chpl__unTranslate(off: rank*intIdxType) {
       var ranges = dims();
       for i in 0..rank-1 do
-        ranges(i) = dim(i+1).chpl__unTranslate(off(i));
+        ranges(i) = dim(i).chpl__unTranslate(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
     }
 
@@ -2220,7 +2230,7 @@ module ChapelArray {
       return true;
     } else {
       for param i in 0..d1._value.rank-1 do
-        if (d1.dim(i+1) != d2.dim(i+1)) then return false;
+        if (d1.dim(i) != d2.dim(i)) then return false;
       return true;
     }
   }
@@ -2233,7 +2243,7 @@ module ChapelArray {
       return false;
     } else {
       for param i in 0..d1._value.rank-1 do
-        if (d1.dim(i+1) != d2.dim(i+1)) then return true;
+        if (d1.dim(i) != d2.dim(i)) then return true;
       return false;
     }
   }
@@ -3097,7 +3107,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("push_back");
 
       const thisRange = this.domain.high+1..#vals.size,
-            valsRange = vals.domain.dim(1),
+            valsRange = vals.domain.dim(0),
             newRange = this.domain.low..(this.domain.high + vals.size);
 
       reallocateArray(newRange, debugMsg="push_back reallocate");
@@ -3196,7 +3206,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("push_front");
 
       const thisRange = (this.domain.low-vals.size)..#vals.size,
-            valsRange = vals.domain.dim(1),
+            valsRange = vals.domain.dim(0),
             newRange = (this.domain.low - vals.size)..this.domain.high;
 
       reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
@@ -3536,7 +3546,7 @@ module ChapelArray {
     // check that size/shape are the same to permit legal zippering
     //
     if isRectangularDom(this.domain) && isRectangularDom(that.domain) {
-      for d in 1..this.rank do
+      for d in 0..#this.rank do
         if this.domain.dim(d).size != that.domain.dim(d).size then
           return false;
     }
@@ -3982,11 +3992,11 @@ module ChapelArray {
       return if !isTuple(a) then false else peelArgs((...a));
     }
 
-    proc strideSafe(d, rt, param dim: int=1) param {
-      return if dim == d.rank then
-               d.dim(dim).stridable || !rt(dim-1).stridable
+    proc strideSafe(d, rt, param dim: int=0) param {
+      return if dim == d.rank-1 then
+               d.dim(dim).stridable || !rt(dim).stridable
              else
-               (d.dim(dim).stridable || !rt(dim-1).stridable) && strideSafe(d, rt, dim+1);
+               (d.dim(dim).stridable || !rt(dim).stridable) && strideSafe(d, rt, dim+1);
     }
     return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
   }
@@ -4208,8 +4218,8 @@ module ChapelArray {
       type idxType = a.domain.idxType,
            strType = chpl__signedType(a.domain.intIdxType);
 
-      const stride = a.domain.dim(a.rank-rank+1).stride,
-      start = a.domain.dim(a.rank-rank+1).firstAsInt;
+      const stride = a.domain.dim(a.rank-rank).stride,
+      start = a.domain.dim(a.rank-rank).firstAsInt;
 
       if rank == 1 {
         for param i in 0..b.size-1 {
@@ -4319,7 +4329,7 @@ module ChapelArray {
                       true);
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 0..a.rank-1 do
-      r(i) = a.dim(i+1) by t(i);
+      r(i) = a.dim(i) by t(i);
     return new _domain(a.dist, a.rank, a._value.idxType, true, r);
   }
 
@@ -4336,7 +4346,7 @@ module ChapelArray {
                       a.stridable);
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 0..a.rank-1 do
-      r(i) = a.dim(i+1) align t(i);
+      r(i) = a.dim(i) align t(i);
     return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
   }
 

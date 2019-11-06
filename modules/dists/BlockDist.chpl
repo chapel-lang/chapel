@@ -619,10 +619,10 @@ proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
 proc Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
-    result(i) = max(0, min((targetLocDom.dim(i+1).length-1):int,
-                           (((ind(i) - boundingBox.dim(i+1).low) *
-                             targetLocDom.dim(i+1).length:idxType) /
-                            boundingBox.dim(i+1).length):int));
+    result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
+                           (((ind(i) - boundingBox.dim(i).low) *
+                             targetLocDom.dim(i).length:idxType) /
+                            boundingBox.dim(i).length):int));
   return if rank == 1 then result(0) else result;
 }
 
@@ -661,10 +661,10 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
   type idxType = chpl__tuplify(boundingBox)(0).idxType;
   var inds: rank*range(idxType);
   for param i in 0..rank-1 {
-    const lo = boundingBox.dim(i+1).low;
-    const hi = boundingBox.dim(i+1).high;
+    const lo = boundingBox.dim(i).low;
+    const hi = boundingBox.dim(i).high;
     const numelems = hi - lo + 1;
-    const numlocs = targetLocBox.dim(i+1).length;
+    const numlocs = targetLocBox.dim(i).length;
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
                                      max(idxType), min(idxType), lo);
     inds(i) = blo..bhi;
@@ -694,7 +694,7 @@ override proc BlockDom.dsiDisplayRepresentation() {
 
 proc BlockDom.dsiDims() return whole.dims();
 
-proc BlockDom.dsiDim(d: int) return whole.dim(d+1);
+proc BlockDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
@@ -758,11 +758,11 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
     const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
     for param i in 0..tmpBlock.rank-1 {
-      const stride = tmpBlock.dim(i+1).stride;
+      const stride = tmpBlock.dim(i).stride;
       if stride < 0 && strType != idxType then
         halt("negative stride not supported with unsigned idxType");
         // (since locOffset is unsigned in that case)
-      locOffset(i) = tmpBlock.dim(i+1).first / stride:idxType;
+      locOffset(i) = tmpBlock.dim(i).first / stride:idxType;
     }
     // Forward to defaultRectangular
     for followThis in tmpBlock.these(iterKind.leader, maxTasks,
@@ -796,11 +796,11 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
   for param i in 0..rank-1 {
-    var stride = whole.dim(i+1).stride: strType;
+    var stride = whole.dim(i).stride: strType;
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i+1).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -1075,11 +1075,11 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
-    var stride = dom.whole.dim(i+1).stride;
+    var stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i+1).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
@@ -1378,12 +1378,12 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank).length - 1) then
-    bhi=viewDom.dim(rank).high;
+  if rid==(dist.targetLocDom.dim(rank-1).length - 1) then
+    bhi=viewDom.dim(rank-1).high;
   else {
-      bhi = dist.boundingBox.dim(rank).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1):idxType,
-                       dist.targetLocDom.dim(rank).length:idxType) - 1:idxType;
+      bhi = dist.boundingBox.dim(rank-1).low +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
+                       dist.targetLocDom.dim(rank-1).length:idxType) - 1:idxType;
   }
 
   return (bhi - (rlo - 1):idxType);

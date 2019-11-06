@@ -231,7 +231,7 @@ class BlockCyclic : BaseDist {
 
       var ranges: rank*range;
       for param i in 0..rank-1 do {
-        var thisRange = targetLocales.domain.dim(i+1);
+        var thisRange = targetLocales.domain.dim(i);
         ranges(i) = 0..#thisRange.length;
       }
       
@@ -305,7 +305,7 @@ class BlockCyclic : BaseDist {
 proc BlockCyclic._locsize {
   var ret : rank*int;
   for param i in 0..rank-1 {
-    ret(i) = targetLocDom.dim(i+1).length;
+    ret(i) = targetLocDom.dim(i).length;
   }
   return ret;
 }
@@ -369,8 +369,8 @@ proc BlockCyclic.getStarts(inds, locid) {
   var R: rank*range(idxType, stridable=true);
   for i in 0..rank-1 {
     var lo, hi: idxType;
-    const domlo = inds.dim(i+1).low, 
-          domhi = inds.dim(i+1).high;
+    const domlo = inds.dim(i).low, 
+          domhi = inds.dim(i).high;
     const mylo = locDist(locid).myStarts(i).low;
     const mystr = locDist(locid).myStarts(i).stride;
     if (domlo != lowIdx(i)) {
@@ -414,8 +414,8 @@ proc BlockCyclic.getStarts(inds, locid) {
 //
 proc BlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(0);
-  //  compilerError((ind0/blocksize(0)%targetLocDom.dim(1).type:string);
-  return (ind0 / blocksize(0)) % targetLocDom.dim(1).length;
+  //  compilerError((ind0/blocksize(0)%targetLocDom.dim(0).type:string);
+  return (ind0 / blocksize(0)) % targetLocDom.dim(0).length;
 }
 
 proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank == 1 {
@@ -426,7 +426,7 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 0..rank-1 {
     const ind0 = ind(i) - lowIdx(i);
-    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i+1).length): int; 
+    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).length): int; 
   }
   return locInd;
 }
@@ -466,7 +466,7 @@ class LocBlockCyclic {
     } else {
       for param i in 0..rank-1 {
         const lo = dist.lowIdx(i) + (locid(i) * dist.blocksize(i));
-        const str = dist.blocksize(i) * dist.targetLocDom.dim(i+1).length;
+        const str = dist.blocksize(i) * dist.targetLocDom.dim(i).length;
         myStarts(i) = lo.. by str;
       }
     }
@@ -506,7 +506,7 @@ class BlockCyclicDom: BaseRectangularDom {
 
 proc BlockCyclicDom.dsiDims() return whole.dims();
 
-proc BlockCyclicDom.dsiDim(d: int) return whole.dim(d+1);
+proc BlockCyclicDom.dsiDim(d: int) return whole.dim(d);
 
 iter BlockCyclicDom.these() {
   for i in whole do
@@ -528,7 +528,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
         var retblock: rank*range(idxType);
         for param j in 0..rank-1 {
           const lo     = if rank == 1 then i else i(j);
-          const dim    = whole.dim(j+1);
+          const dim    = whole.dim(j);
           const dimLow = dim.low;
 
           var temp : range(idxType, stridable=stridable);
@@ -563,7 +563,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
 
   for param i in 0..rank-1 {
     const curFollow = followThis(i);
-    const dim       = whole.dim(i+1);
+    const dim       = whole.dim(i);
     const stride    = dim.stride: idxType;
     const low       = stride * curFollow.low;
     const high      = stride * curFollow.high;
@@ -736,7 +736,7 @@ proc LocBlockCyclicDom.postinit() {
 //
 proc LocBlockCyclicDom.computeFlatInds() {
   //  writeln("myStarts = ", myStarts);
-  const numBlocks = * reduce [d in 0..rank-1] (myStarts.dim(d+1).length),
+  const numBlocks = * reduce [d in 0..rank-1] (myStarts.dim(d).length),
     indsPerBlk = * reduce [d in 0..rank-1] (globDom.dist.blocksize(d));
   //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
   return numBlocks * indsPerBlk;
@@ -763,7 +763,7 @@ proc LocBlockCyclicDom.enumerateBlocks() {
       else
         lo = i(j);
       write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
-                          globDom.whole.dim(j+1).high));
+                          globDom.whole.dim(j).high));
     }
     writeln("}");
   } 
@@ -791,7 +791,7 @@ proc LocBlockCyclicDom.high {
 proc LocBlockCyclicDom._lens {
   var ret : rank*int;
   for param i in 0..rank-1 {
-    ret(i) = myStarts.dim(i+1).length;
+    ret(i) = myStarts.dim(i).length;
   }
   return ret;
 }
@@ -805,7 +805,7 @@ proc LocBlockCyclicDom._sizes {
     var sizes : (rank+1)*int;
     sizes(rank) = 1;
     for i in 0..rank-1 by -1 do
-      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i+1).length);
+      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).length);
     return sizes;
 }
 
@@ -923,7 +923,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
 
   for param i in 0..rank-1 {
     const curFollow = followThis(i);
-    const dim       = dom.whole.dim(i+1);
+    const dim       = dom.whole.dim(i);
     const stride    = dim.stride;
     const low       = curFollow.low * stride;
     const high      = curFollow.high * stride;
