@@ -72,7 +72,7 @@ module LocaleModel {
       ndName = "ND"+sid:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       if parent then
         parent!.writeThis(f);
       f <~> '.'+ndName;
@@ -246,7 +246,7 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 

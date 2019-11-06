@@ -987,7 +987,7 @@ module ChapelArray {
 
     proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> _value;
     }
 
@@ -1865,12 +1865,12 @@ module ChapelArray {
       return _value.dsiGetIndices();
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       _value.dsiSerialRead(f);
     }
 
@@ -2873,12 +2873,12 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       _value.dsiSerialRead(f);
     }
 

@@ -2042,7 +2042,7 @@ record ioChar {
   /* The codepoint value */
   var ch:int(32);
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // ioChar.writeThis should not be called;
     // I/O routines should handle ioChar directly
     assert(false);
@@ -2078,7 +2078,7 @@ record ioNewline {
    */
   var skipWhitespaceOnly: bool = false;
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f <~> "\n";
   }
@@ -2107,7 +2107,7 @@ record ioLiteral {
      whitespace before the literal?
    */
   var ignoreWhiteSpace: bool = true;
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f <~> val;
   }
@@ -2130,7 +2130,7 @@ record ioBits {
   /* How many of the low-order bits of ``v`` should we read or write? */
   var nbits:int(8);
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f <~> v;
   }
@@ -3090,7 +3090,15 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop reading if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  x.readThis(reader);
+  try {
+    x.readThis(reader);
+  } catch err {
+    //
+    // TODO: What to do with the caught error? Propagate back up?
+    //
+    const chError: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, chError);
+  }
 
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
@@ -3120,26 +3128,34 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop writing if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
-    if x == nil {
-      // future - write class IDs, have serialization format
-      var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-      var iolit:ioLiteral;
-      if st == QIO_AGGREGATE_FORMAT_JSON {
-        iolit = new ioLiteral("null");
+  try {
+    if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
+      if x == nil {
+        // future - write class IDs, have serialization format
+        var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var iolit:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_JSON {
+          iolit = new ioLiteral("null");
+        } else {
+          iolit = new ioLiteral("nil");
+        }
+        _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
+      } else if isClassType(t) {
+        var notNilX = x!;
+        notNilX.writeThis(writer);
       } else {
-        iolit = new ioLiteral("nil");
+        // ddata / cptr
+        x.writeThis(writer);
       }
-      _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
-    } else if isClassType(t) {
-      var notNilX = x!;
-      notNilX.writeThis(writer);
     } else {
-      // ddata / cptr
       x.writeThis(writer);
     }
-  } else {
-    x.writeThis(writer);
+  } catch err {
+    //
+    // TODO: What to do with the caught error? Propagate back up?
+    //
+    const chError: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, chError);
   }
 
   // Set the channel pointer to NULL to make the
@@ -5434,22 +5450,6 @@ proc _toString(x:?t) where !_isIoPrimitiveType(t)
 {
   return ("", false);
 }
-private inline
-proc _toStringFromBytesOrString(x:bytes)
-{
-  return (createStringWithBorrowedBuffer(x.buff, length=x.length, size=x._size),
-          true);
-}
-private inline
-proc _toStringFromBytesOrString(x:string)
-{
-  return (x, true);
-}
-private inline
-proc _toStringFromBytesOrString(x)
-{
-  return ("", false);
-}
 
 private inline
 proc _toChar(x:?t) where isIntegralType(t)
@@ -5582,7 +5582,7 @@ class _channel_regexp_info {
   proc deinit() {
     clear();
   }
-  override proc writeThis(f) {
+  override proc writeThis(f) throws {
     f <~> "{hasRegexp = " + hasRegexp: string;
     f <~> ", matchedRegexp = " + matchedRegexp: string;
     f <~> ", releaseRegexp = " + releaseRegexp: string;
@@ -6194,7 +6194,7 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
               err = qio_format_error_arg_mismatch(i);
             } else err = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t), origLocale);
           } when QIO_CONV_ARG_TYPE_BINARY_STRING {
-            var (t,ok) = _toStringFromBytesOrString(args(i));
+            var (t,ok) = _toBytes(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
             } else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
@@ -6444,7 +6444,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
               } else err = _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
               if ! err then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_BINARY_STRING {
-              var (t,ok) = _toStringFromBytesOrString(args(i));
+              var (t,ok) = _toBytes(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               }

@@ -6,7 +6,7 @@ module M1 {
     proc foo() {
       return a+b;
     }
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f.writeln("How does this get found?");
       f.write("{a = ", a, ", b = ", b, "}");
     }

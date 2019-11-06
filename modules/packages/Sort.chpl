@@ -1213,7 +1213,7 @@ module SampleSortHelp {
     var numBuckets: int;
     var equalBuckets: bool;
 
-    proc writeThis(ch) {
+    proc writeThis(ch) throws {
       ch <~> "SampleBucketizer(";
       ch <~> "\n logBuckets=" <~> logBuckets;
       ch <~> "\n numBuckets=" <~> numBuckets;

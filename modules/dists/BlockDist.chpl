@@ -564,7 +564,7 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Block.writeThis(x) {
+proc Block.writeThis(x) throws {
   x <~> "Block" <~> "\n";
   x <~> "-------" <~> "\n";
   x <~> "distributes: " <~> boundingBox <~> "\n";

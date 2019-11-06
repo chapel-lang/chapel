@@ -686,6 +686,7 @@ static InitNormalize preNormalize(AggregateType* at,
       stmt = stmt->next;
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      preNormalize(at, block, state, forall->iteratedExpressions().head);
       preNormalize(at,
                    forall->loopBody(),
                    InitNormalize(forall, state));

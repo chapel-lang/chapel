@@ -803,7 +803,7 @@ unlock:
   return err;
 }
 
-// allocates and returns a string.
+// allocates and returns a string without checking for valid encoding
 qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes)
 {
   qioerr err;

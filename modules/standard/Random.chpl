@@ -561,7 +561,7 @@ module Random {
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> "RandomStreamInterface(eltType=";
       f <~> eltType:string;
       f <~> ", parSafe=";
@@ -1080,7 +1080,7 @@ module Random {
       }
 
       pragma "no doc"
-      override proc writeThis(f) {
+      override proc writeThis(f) throws {
         f <~> "PCGRandomStream(eltType=";
         f <~> eltType:string;
         f <~> ", parSafe=";
@@ -2483,7 +2483,7 @@ module Random {
       }
 
       pragma "no doc"
-      override proc writeThis(f) {
+      override proc writeThis(f) throws {
         f <~> "NPBRandomStream(eltType=";
         f <~> eltType:string;
         f <~> ", parSafe=";

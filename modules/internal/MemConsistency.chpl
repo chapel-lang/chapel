@@ -47,7 +47,7 @@ module MemConsistency {
     __primitive("=", lhs, rhs);
   }
 
-  proc memory_order.writeThis(ch) {
+  proc memory_order.writeThis(ch) throws {
     if this == memory_order_relaxed then
       ch <~> "memory_order_relaxed";
     else if this == memory_order_consume then

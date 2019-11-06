@@ -257,7 +257,7 @@ module Map {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) {
+    proc readWriteThis(ch: channel) throws {
       _enter();
       var first = true;
       //try! {
