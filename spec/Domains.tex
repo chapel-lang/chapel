@@ -314,8 +314,6 @@ of the associative domain type.
 When an associative domain is used as the index set of an array, the relation
 between the indices and the array elements can be thought of as a map between
 the values of the index set and the elements stored in the array.
-Opaque domains can be used to build unstructured arrays that are similar to
-pointer-based data structures in conventional languages.
 
 \subsubsection{Associative Domain Values}
 \label{Associative_Domain_Values}
@@ -922,10 +920,6 @@ As with normal domain assignments, arrays declared in terms of a
 domain being modified in this way will be reallocated as discussed
 in~\rsec{Association_of_Arrays_to_Domains}.
 
-% TODO: describe operations on opaque domains, esp. domain.create().
-% Note that domain.add() (should) work as defined above on
-% opaque domains, taking values of the opaque type for its argument.
-
 
 \section{Predefined Methods on Domains}
 \index{domains!predefined functions}
@@ -1018,7 +1012,6 @@ proc domain.idxType type
 \end{protohead}
 \begin{protobody}
 Returns the domain type's \chpl{idxType}.
-This function is not available on opaque domains.
 \end{protobody}
 
 \begin{protohead}
