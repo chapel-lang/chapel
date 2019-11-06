@@ -461,6 +461,14 @@ module Bytes {
       return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
     }
 
+    pragma "no doc"
+    inline proc param toByte() param : uint(8) {
+      if this.numBytes != 1 then
+        compilerError("bytes.toByte() only accepts single-byte bytes");
+      return __primitive("ascii", this);
+    }
+
+
     /*
       Gets a byte from the :record:`bytes`
 
@@ -472,6 +480,13 @@ module Bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
+    }
+
+    pragma "no doc"
+    inline proc param byte(param i: int) param : uint(8) {
+      if i < 1 || i > this.numBytes then
+        compilerError("index out of bounds of bytes: " + i:string);
+      return __primitive("ascii", this, i);
     }
 
     /*
