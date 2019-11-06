@@ -1395,6 +1395,36 @@ module Bytes {
     return doGreaterThanOrEq(a, b);
   }
 
+  pragma "no doc"
+  inline proc ==(param s0: bytes, param s1: bytes) param  {
+    return __primitive("string_compare", s0, s1) == 0;
+  }
+
+  pragma "no doc"
+  inline proc !=(param s0: bytes, param s1: bytes) param {
+    return __primitive("string_compare", s0, s1) != 0;
+  }
+
+  pragma "no doc"
+  inline proc <=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) <= 0);
+  }
+
+  pragma "no doc"
+  inline proc >=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) >= 0);
+  }
+
+  pragma "no doc"
+  inline proc <(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) < 0);
+  }
+
+  pragma "no doc"
+  inline proc >(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) > 0);
+  }
+
   // character-wise operation helpers
 
   require "ctype.h";
