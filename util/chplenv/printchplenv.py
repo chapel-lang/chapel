@@ -77,6 +77,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
+    ChapelEnv('  CHPL_LIBFABRIC', INTERNAL),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
@@ -103,6 +104,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
+    ChapelEnv('  CHPL_LIBFABRIC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
@@ -150,6 +152,7 @@ def compute_all_values():
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
+    ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
@@ -197,6 +200,10 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_3p_jemalloc_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args(chpl_jemalloc.get()))
+
+    ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_3p_libfabric_configs.get_uniq_cfg_path()
+    if chpl_comm.get() == 'ofi':
+      link_args_3p.extend(chpl_3p_libfabric_configs.get_link_args(chpl_libfabric.get()))
 
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_3p_libunwind_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(chpl_unwind.get()))

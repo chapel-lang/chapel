@@ -15,10 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifneq ($(LIBFABRIC_DIR),)
-RUNTIME_INCLS += -I$(LIBFABRIC_DIR)/include
+ifeq ($(CHPL_MAKE_LIBFABRIC),system)
+  RUNTIME_INCLS += $(shell which pkg-config >& /dev/null && \
+                           pkg-config --exists libfabric && \
+                           pkg-config --cflags libfabric)
 endif
 
 ifneq (, $(findstring mpi, $(CHPL_MAKE_LAUNCHER) $(CHPL_COMM_OFI_OOB)))
-RUNTIME_INCLS += -I$(MPI_DIR)/include
+  RUNTIME_INCLS += -I$(MPI_DIR)/include
 endif
