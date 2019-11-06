@@ -1567,7 +1567,9 @@ static Expr* preFoldNamed(CallExpr* call) {
           Type* newType = toSE->symbol()->type;
 
           bool fromEnum = is_enum_type(oldType);
-          bool fromString = (oldType == dtString || oldType == dtStringC);
+          bool fromString = (oldType == dtString || 
+                             oldType == dtBytes  || 
+                             oldType == dtStringC);
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
           bool fromRealEtc = is_real_type(oldType) ||
@@ -1576,7 +1578,9 @@ static Expr* preFoldNamed(CallExpr* call) {
           bool fromIntEtc = fromIntUint || fromRealEtc || is_bool_type(oldType);
 
           bool toEnum = is_enum_type(newType);
-          bool toString = (newType == dtString || newType == dtStringC);
+          bool toString = (newType == dtString ||
+                           newType == dtBytes  ||
+                           newType == dtStringC);
           bool toIntUint = is_int_type(newType) ||
                            is_uint_type(newType);
           bool toRealEtc = is_real_type(newType) ||
