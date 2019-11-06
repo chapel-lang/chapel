@@ -389,6 +389,18 @@ module Bytes {
       */
     inline proc numBytes return len;
 
+    pragma "no doc"
+    inline proc param length param
+      return __primitive("string_length_bytes", this);
+
+    pragma "no doc"
+    inline proc param size param
+      return length;
+
+    pragma "no doc"
+    inline proc param numBytes param
+      return __primitive("string_length_bytes", this);
+
     /*
        Gets a version of the :record:`bytes` that is on the currently
        executing locale.
@@ -1311,6 +1323,10 @@ module Bytes {
   proc +(s0: bytes, s1: bytes) {
     return doConcat(s0, s1);
   }
+
+  pragma "no doc"
+  inline proc +(param s0: bytes, param s1: bytes) param
+    return __primitive("string_concat", s0, s1);
 
   /*
      :returns: A new :record:`bytes` which is the result of repeating `s` `n`

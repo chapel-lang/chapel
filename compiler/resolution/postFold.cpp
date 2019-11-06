@@ -397,6 +397,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
       if (lhs->symbol()->type == dtString) {
         retval = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+      } else if (lhs->symbol()->type == dtBytes) {
+        retval = new SymExpr(new_BytesSymbol(astr(lstr, rstr)));
       } else {
         retval = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
       }
