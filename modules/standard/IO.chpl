@@ -3224,14 +3224,14 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
      :returns: ch
    */
-  inline proc <~>(const ref ch: channel, x) const ref
+  inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
     ch.writeIt(x);
     return ch;
   }
   // documented in the writing version.
   pragma "no doc"
-  inline proc <~>(const ref ch: channel, ref x) const ref
+  inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
     ch.readIt(x);
     return ch;
@@ -3252,7 +3252,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
-  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref
+  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref throws
   where !r.writing {
     var litCopy = lit;
     r.readwrite(litCopy);
@@ -3269,7 +3269,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
-  inline proc <~>(const ref r: channel, nl:ioNewline) const ref
+  inline proc <~>(const ref r: channel, nl:ioNewline) const ref throws
   where !r.writing {
     var nlCopy = nl;
     r.readwrite(nlCopy);
