@@ -76,9 +76,9 @@ local {
       ref temps2 = MyDom.temps2;
       ref pbc = MyDom.pbc;
       {
-        const size0 = halo.dim(2).size * halo.dim(3).size;
-        const size1 = halo.dim(1).size * halo.dim(3).size;
-        const size2 = halo.dim(1).size * halo.dim(2).size;
+        const size0 = halo.dim(1).size * halo.dim(2).size;
+        const size1 = halo.dim(0).size * halo.dim(2).size;
+        const size2 = halo.dim(0).size * halo.dim(1).size;
         const maxSize = max(size0, size1, size2);
         MyDom.bufDom = {1..maxSize*2*MAXATOMS};
       }
@@ -450,7 +450,7 @@ tArray[timerEnum.ATOMHALO].start();
   for i in 1..6 by 2 {
     coforall ijk in locDom {
       on locGrid[ijk] {
-        if Grid[ijk].localDom.dim((i/2):int+1).size > 1 {
+        if Grid[ijk].localDom.dim((i/2):int).size > 1 {
           exchangeDataTwo(Grid[ijk], i);
         } else {
           exchangeData(Grid[ijk], i);

@@ -418,7 +418,7 @@ var realArray2: [1..5,1..7] real;   // equivalent
 var realArray3: [{1..5,1..7}] real; // equivalent
 
 for i in 1..5 {
-  for j in realDomain.dim(2) {   // Only use the 2nd dimension of the domain
+  for j in realDomain.dim(1) {   // Only use the 2nd dimension of the domain
     realArray[i,j] = -1.61803 * i + 0.5 * j;  // Access using index list
     var idx: 2*int = (i,j);                   // Note: 'index' is a keyword
     realArray[idx] = - realArray[(i,j)];      // Index using tuples

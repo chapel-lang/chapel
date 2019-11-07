@@ -84,12 +84,12 @@ proc timingResults(ofile, n, timeData) {
 proc testSolution(A: [?ADom], x: [?xDom], in eps: real, 
      out resid: 3*real, out norms: 5*real) {
  
-  var n = ADom.dim(1).length;
+  var n = ADom.dim(0).length;
   ref b = A(..,n+1);
   var bHat: [xDom] real;
 
-  for (i1, i2) in zip(ADom.dim(1), xDom) {
-    for (j1, j2) in zip(ADom.dim(1), xDom) {
+  for (i1, i2) in zip(ADom.dim(0), xDom) {
+    for (j1, j2) in zip(ADom.dim(0), xDom) {
        bHat(i1) += A(i1,j1)*x(j2);
     }
   }
@@ -97,10 +97,10 @@ proc testSolution(A: [?ADom], x: [?xDom], in eps: real,
 // Look at distributions when implementing these norms.
 // Should these norm computations be put into functions?
   var errNorm = max reduce (abs(bHat - b));
-  var ANorm1 = max reduce [j in ADom.dim(1)] 
-               (+ reduce abs(A[ADom.dim(1), j]));
-  var ANormInf = max reduce [i in ADom.dim(1)] 
-                 (+ reduce abs(A[i, ADom.dim(1)]));
+  var ANorm1 = max reduce [j in ADom.dim(0)] 
+               (+ reduce abs(A[ADom.dim(0), j]));
+  var ANormInf = max reduce [i in ADom.dim(0)] 
+                 (+ reduce abs(A[i, ADom.dim(0)]));
   var xNorm1 = + reduce abs(x);
   var xNormInf = max reduce abs(x);
 

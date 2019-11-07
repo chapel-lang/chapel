@@ -5,9 +5,9 @@ proc *(D1: domain, D2: domain)
 
   var ranges: rank*range(stridable=stridable);
   for i in 0..#D1.rank do
-    ranges(i) = D1.dim(i+1);
+    ranges(i) = D1.dim(i);
   for i in 0..#D2.rank do
-    ranges(D1.rank+i) = D2.dim(i+1);
+    ranges(D1.rank+i) = D2.dim(i);
 
   var D_new: domain(rank,stridable=stridable) = ranges;
   return D_new;

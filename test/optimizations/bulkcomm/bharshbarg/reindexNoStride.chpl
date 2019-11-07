@@ -5,7 +5,7 @@ iter halves(dom) {
   var ret : dom.rank*range;
   for i in 0..#2**dom.rank {
     for j in 0..#dom.rank {
-      const r = dom.dim(j+1);
+      const r = dom.dim(j);
       if i & 1<<j then ret(j) = r[r.low + r.size/2..];
       else ret(j) = r[..r.high - r.size/2];
     }

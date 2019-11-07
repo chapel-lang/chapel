@@ -93,7 +93,7 @@ class Function {
 
         this.complete();
 
-        for i in quad_phiDom.dim(1) {
+        for i in quad_phiDom.dim(0) {
             const p = phi(quad_x[i], k);
             quad_phi [i, ..] = p;
             quad_phiw[i, ..] = quad_w[i] * p;
@@ -101,10 +101,10 @@ class Function {
         }
 
         var iphase = 1.0;
-        for i in dcDom.dim(1) {
+        for i in dcDom.dim(0) {
             var jphase = 1.0;
 
-            for j in dcDom.dim(2) {
+            for j in dcDom.dim(1) {
                 var gammaij = sqrt((2*i+1) * (2*j+1));
                 var Kij = if (i-j) > 0 && ((i-j) % 2) == 1 then
                         2.0 else 0.0;
@@ -163,10 +163,10 @@ class Function {
         var scale = sqrt(h);
         var s  : [quadDom] real;
 
-        for mu in quad_phiDom.dim(1) {
+        for mu in quad_phiDom.dim(0) {
             var x  = (l + quad_x[mu]) * h;
             var fx = f(x);
-            for i in quad_phiDom.dim(2) do
+            for i in quad_phiDom.dim(1) do
                 s[i] += scale * fx * quad_phiw[mu, i];
         }
 

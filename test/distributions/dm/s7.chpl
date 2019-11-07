@@ -56,12 +56,12 @@ var replA: [replAD] elemType,
     replB: [replBD] elemType;
 
 // initialize some arrays
-for (iloc,l) in zip(tla.domain.dim(2), tla[0,..]) do
+for (iloc,l) in zip(tla.domain.dim(1), tla[0,..]) do
   on l do
     forall (iarr, a) in zip(replAD, replA) do
       a = (iloc*1000 + iarr(0) * 10 + iarr(1)) * 1000000;
 //
-for (iloc,l) in zip(tla.domain.dim(1), tla[..,0]) do
+for (iloc,l) in zip(tla.domain.dim(0), tla[..,0]) do
   on l do
     forall (iarr, a) in zip(replBD, replB) do
       a = iloc*1000 + iarr(0)*100 + iarr(1);

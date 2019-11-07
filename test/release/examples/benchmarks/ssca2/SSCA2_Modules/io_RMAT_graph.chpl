@@ -157,7 +157,7 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     reportNumVerticesError(G, snapshot_prefix, vCount);
 
   ref GRow = G.Row;
-  const uxIDs = GRow.domain.dim(1);
+  const uxIDs = GRow.domain.dim(0);
   type VType = uxIDs.idxType;
   compilerAssert(!uxIDs.stridable); // for efficiency
 
@@ -212,7 +212,7 @@ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
 
    if DISTRIBUTION_TYPE == "BLOCK" && IOsingleTaskPerLocale {
       coforall loc in GRow.targetLocales() do on loc {
-        const myIDs = GRow.localSubdomain().dim(1);
+        const myIDs = GRow.localSubdomain().dim(0);
 
         // All work is done in graphReaderReal() iterator.
         for graphReaderReal(GRow, uxIDs, VType, vCount, eCount, repfiles,

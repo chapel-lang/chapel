@@ -18,8 +18,8 @@ config const inputfile = "prolate5.dat";
 //
 proc QR(A: [?D]) where (D.rank == 2) {
 
-  const m = D.dim(1).length,
-        n = D.dim(2).length,
+  const m = D.dim(0).length,
+        n = D.dim(1).length,
         minDim = min(m,n),
         zero: A.eltType,
         one = 1.0: A.eltType,

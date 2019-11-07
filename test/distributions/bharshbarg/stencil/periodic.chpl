@@ -19,7 +19,7 @@ proc test(dom : domain, halo : dom.rank * int) {
   var Space = dom dmapped Stencil(dom, fluff=halo, periodic=true);
 
   var A : [Space] int;
-  const n = dom.dim(1).size;
+  const n = dom.dim(0).size;
   forall idx in Space {
     var val = 0;
     for i in 0..rank-1 do val += n*idx(i);

@@ -12,9 +12,9 @@ for (i,j,k) in ParentDom {
   arr[i,j,k] = i*(N**2) + j*(N**1) + k*(N**0);
 }
 
-for i in ParentDom.dim(1) {
-  for j in ParentDom.dim(2) {
-    for k in ParentDom.dim(3) {
+for i in ParentDom.dim(0) {
+  for j in ParentDom.dim(1) {
+    for k in ParentDom.dim(2) {
       writeln((i,j,k), " expect: ", 16*i + 4*j + k, " got ", arr[i,j,k]);
     }
   }

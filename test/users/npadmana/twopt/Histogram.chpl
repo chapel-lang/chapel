@@ -63,8 +63,8 @@ module Histogram {
     ff.writeln();
     for xx in hh.bins(1) do ff.writef("%12.4dr",xx); 
     ff.writeln("\n##");
-    for ii in hh.Dhist.dim(1) {
-      for jj in hh.Dhist.dim(2) {
+    for ii in hh.Dhist.dim(0) {
+      for jj in hh.Dhist.dim(1) {
         ff.writef(fmt, hh[(ii,jj)]);
       }
       ff.writeln();

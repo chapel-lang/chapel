@@ -15,13 +15,13 @@ proc test(dom : domain) {
 
   var Space = dom dmapped Stencil(dom, fluff=fluff, periodic=true);
   var abstr : rank*int;
-  for i in 0..#rank do abstr(i) = abs(dom.dim(i+1).stride);
+  for i in 0..#rank do abstr(i) = abs(dom.dim(i).stride);
 
   {
     // Create a tuple of ranges where the first dimension is halved
-    var rs : rank*Space.dim(1).type;
-    rs(0) = dom.dim(1)[dom.dim(1).low..dom.dim(1).high/2];
-    for param i in 1..rank-1 do rs(i) = dom.dim(i+1);
+    var rs : rank*Space.dim(0).type;
+    rs(0) = dom.dim(0)[dom.dim(0).low..dom.dim(0).high/2];
+    for param i in 1..rank-1 do rs(i) = dom.dim(i);
 
     var HalfDom = Space[(...rs)];
 
@@ -55,8 +55,8 @@ proc test(dom : domain) {
       // Translate our index if needed
       if !Space.contains(idx) {
         for param i in 0..rank-1 {
-          if idx(i) < Space.dim(i+1).low then idx(i) += Space.dim(i+1).size * abstr(i);
-          else if idx(i) > Space.dim(i+1).high then idx(i) -= Space.dim(i+1).size * abstr(i);
+          if idx(i) < Space.dim(i).low then idx(i) += Space.dim(i).size * abstr(i);
+          else if idx(i) > Space.dim(i).high then idx(i) -= Space.dim(i).size * abstr(i);
         }
       }
 

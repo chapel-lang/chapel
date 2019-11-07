@@ -115,10 +115,10 @@ module TestHelpers {
 
         }
       } else {
-        var array_leading = if arrayIsRowMajor then 1 else 2;
-        var array_following = 3-array_leading;
-        var trans = ( d.dim(array_leading).low - this.matrix_domain.dim(1).low,
-                      d.dim(array_following).low - this.matrix_domain.dim(2).low );
+        var array_leading = if arrayIsRowMajor then 0 else 1;
+        var array_following = 1-array_leading;
+        var trans = ( d.dim(array_leading).low - this.matrix_domain.dim(0).low,
+                      d.dim(array_following).low - this.matrix_domain.dim(1).low );
                       
         for (i,j) in this.matrix_domain {
           this[i,j] = if arrayIsRowMajor then array[i+trans[1],j+trans[2]] 
@@ -143,11 +143,11 @@ module TestHelpers {
     }
     
     proc rowRange : range {
-      return matrix_domain.dim(1);
+      return matrix_domain.dim(0);
     }
     
     proc columnRange : range {
-      return matrix_domain.dim(2);
+      return matrix_domain.dim(1);
     }
     
     proc toString(): string {
@@ -177,7 +177,7 @@ module TestHelpers {
     }
     
     proc leadingDimension: int {
-      return this.data_domain.dim(2).size;
+      return this.data_domain.dim(1).size;
     }
     
     proc order: int {

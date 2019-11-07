@@ -74,8 +74,8 @@ proc plotToFilePPM(NumSteps: [?Dom], outfile) {
   //
   // Capture the number of rows and columns in the array to be plotted
   //
-  const rows = Dom.dim(1).length,
-        cols = Dom.dim(2).length;
+  const rows = Dom.dim(0).length,
+        cols = Dom.dim(1).length;
 
   //
   // Write the image header corresponding to the file type
@@ -103,8 +103,8 @@ proc plotToFilePPM(NumSteps: [?Dom], outfile) {
   //
   select (imgType) {
     when imageType.bw {
-      for i in Dom.dim(1) {
-        for j in Dom.dim(2) {
+      for i in Dom.dim(0) {
+        for j in Dom.dim(1) {
           outfile.write(if NumSteps[i,j] then 0 else 1, " ");
         }
         outfile.writeln();
@@ -112,8 +112,8 @@ proc plotToFilePPM(NumSteps: [?Dom], outfile) {
     }
 
     when imageType.grey {
-      for i in Dom.dim(1) {
-        for j in Dom.dim(2) {
+      for i in Dom.dim(0) {
+        for j in Dom.dim(1) {
           outfile.write((maxColor*NumSteps[i,j])/maxSteps, " ");
         }
         outfile.writeln();
@@ -121,8 +121,8 @@ proc plotToFilePPM(NumSteps: [?Dom], outfile) {
     }
 
     when imageType.color {
-      for i in Dom.dim(1) {
-        for j in Dom.dim(2) {
+      for i in Dom.dim(0) {
+        for j in Dom.dim(1) {
           outfile.write((maxColor*NumSteps[i,j])/maxSteps, " ", 0, " ", 0, " ");
         }
         outfile.writeln();
@@ -140,8 +140,8 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
   //
   // Capture the number of rows and columns in the array to be plotted
   //
-  const rows = Dom.dim(1).length,
-        cols = Dom.dim(2).length;
+  const rows = Dom.dim(0).length,
+        cols = Dom.dim(1).length;
 
   const header_size = 14;
   const dib_header_size = 40;  // always use old BITMAPINFOHEADER
@@ -187,9 +187,9 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
   //
   select (imgType) {
     when imageType.bw {
-      for i in Dom.dim(1) {
+      for i in Dom.dim(0) {
         var nbits = 0;
-        for j in Dom.dim(2) {
+        for j in Dom.dim(1) {
           var bit = (if NumSteps[i,j] then 255 else 0):uint;
           outfile.writebits(bit, 8);
           outfile.writebits(bit, 8);
@@ -204,9 +204,9 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
     }
 
     when imageType.grey {
-      for i in Dom.dim(1) {
+      for i in Dom.dim(0) {
         var nbits = 0;
-        for j in Dom.dim(2) {
+        for j in Dom.dim(1) {
           var grey = ((255*NumSteps[i,j])/maxSteps):uint;
           // write 24-bit color value by repeating grey
           outfile.writebits(grey, 8);
@@ -222,9 +222,9 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
     }
 
     when imageType.color {
-      for i in Dom.dim(1) {
+      for i in Dom.dim(0) {
         var nbits = 0;
-        for j in Dom.dim(2) {
+        for j in Dom.dim(1) {
           var green:uint = 0;
           var blue:uint = 0;
           var red = ((255*NumSteps[i,j])/maxSteps):uint;

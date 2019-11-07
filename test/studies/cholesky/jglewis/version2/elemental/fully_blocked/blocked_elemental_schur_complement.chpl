@@ -19,9 +19,9 @@ module blocked_elemental_schur_complement {
 	    L12.domain.rank == 2 && 
 	    L21.domain.rank == 2) {
 
-    const schur_complement_rows = A.domain.dim (1);
-    const schur_complement_cols = A.domain.dim (2);
-    const Lx1_cols              = L21.domain.dim (2);
+    const schur_complement_rows = A.domain.dim (0);
+    const schur_complement_cols = A.domain.dim (1);
+    const Lx1_cols              = L21.domain.dim (1);
  
     //    const my_locale = Lx1_cols.locale;
     //    forall i in L12 do

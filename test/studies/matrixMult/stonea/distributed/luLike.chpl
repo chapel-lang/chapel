@@ -65,7 +65,7 @@ proc luLikeMultiply(
     // broadcast rows
     forall (locRow, locCol) in aLocales do on myLocales[locRow,locCol] {
         // broadcast a region to other locales on the same row
-        forall col in solLocales.dim(2) {
+        forall col in solLocales.dim(1) {
             rowCopies[locRow, col].data[A[locRow, locCol].dom] =
                 A[locRow,locCol].data;
         }
@@ -73,7 +73,7 @@ proc luLikeMultiply(
     // broadcast rows
     forall (locRow, locCol) in bLocales do on myLocales[locRow,locCol] {
         // broadcast b region to other locales on the same col
-        forall row in solLocales.dim(1) {
+        forall row in solLocales.dim(0) {
             colCopies[row, locCol].data[A[locRow, locCol].dom] =
                 A[locRow,locCol].data;
         }
@@ -85,10 +85,10 @@ proc luLikeMultiply(
         ref localB   = colCopies[locRow,locCol].data;
         ref localSol = A[locRow,locCol].data;
 
-        forall i in localSol.domain.dim(1) {
-            forall j in localSol.domain.dim(2) {
+        forall i in localSol.domain.dim(0) {
+            forall j in localSol.domain.dim(1) {
                 localSol[i,j] = 0;
-                for k in localA.domain.dim(2) {
+                for k in localA.domain.dim(1) {
                     localSol[i,j] += localA[i,k] * localB[k,j];
                 }
             }

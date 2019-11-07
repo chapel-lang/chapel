@@ -18,7 +18,7 @@ module symmetric_blas {
     // L and A are submatrices of a common larger matrix.
     // ------------------------------------------------------
 
-    const diag_block_cols = L_diag.domain.dim(1);
+    const diag_block_cols = L_diag.domain.dim(0);
 
     // next loop is embarassingly parallel when we get a parallel iterator
 
@@ -47,11 +47,11 @@ module symmetric_blas {
     // L and A are submatrices of a common larger matrix.
     // ------------------------------------------------------
 
-    const diag_block_cols = L_diag.domain.dim(1);
+    const diag_block_cols = L_diag.domain.dim(0);
 
     // next loop is embarassingly parallel when we get a parallel iterator
 
-    for block_rows in vector_block_partition ( L_offdiag.domain.dim (1) ) do
+    for block_rows in vector_block_partition ( L_offdiag.domain.dim (0) ) do
 
       for (i,j) in {block_rows, diag_block_cols} do {
 	L_offdiag (i,j) -= 
@@ -77,8 +77,8 @@ module symmetric_blas {
     // L and A are submatrices of a common larger matrix.
     // ----------------------------------------------------------
 
-    const active_rows = A.domain.dim (1),
-          prev_rows   = A.domain.dim(2);
+    const active_rows = A.domain.dim (0),
+          prev_rows   = A.domain.dim(1);
 
     // The block solve proceeds blockwise over the block triangular
     // coefficent matrix.  We use a right-looking (outer-product) form of 
@@ -118,8 +118,8 @@ module symmetric_blas {
     // L and A are submatrices of a common larger matrix.
     // ----------------------------------------------------------
 
-    const active_rows = A.domain.dim (1),
-          prev_rows   = A.domain.dim(2);
+    const active_rows = A.domain.dim (0),
+          prev_rows   = A.domain.dim(1);
 
     // The block solve proceeds blockwise over the block triangular
     // coefficent matrix.  We use a right-looking (outer-product) form of 
@@ -157,7 +157,7 @@ module symmetric_blas {
 
     {
       for ( reduced_mtx_rows, leading_rows, trailing_rows ) in 
-	symmetric_reduced_matrix_2_by_2_block_partition (L.domain.dim (1)) do {
+	symmetric_reduced_matrix_2_by_2_block_partition (L.domain.dim (0)) do {
 
 	// should be forall once iterator is made parallel
 
@@ -183,7 +183,7 @@ module symmetric_blas {
 
     {
       for ( reduced_mtx_rows, leading_rows, trailing_rows ) in 
-	symmetric_reduced_matrix_2_by_2_block_partition (L.domain.dim (1)) do {
+	symmetric_reduced_matrix_2_by_2_block_partition (L.domain.dim (0)) do {
 
 	// should be forall once iterator is made parallel
 
@@ -212,11 +212,11 @@ module symmetric_blas {
     // are submatrices of a single larger matrix.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) &&
-	     A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) &&
+	     A.domain.dim (0) == L.domain.dim (0) );
 
-    const A_diag_rows   = A.domain.dim (1),
-      L_active_cols = L.domain.dim (2);
+    const A_diag_rows   = A.domain.dim (0),
+      L_active_cols = L.domain.dim (1);
 
     forall i in A_diag_rows do 
       forall j in A_diag_rows (..i) do
@@ -238,7 +238,7 @@ module symmetric_blas {
     // where L and A are submatrices of a common larger matrix.
     // -------------------------------------------------------------
 
-    const L_active_cols  = L.domain.dim (2);
+    const L_active_cols  = L.domain.dim (1);
 
     forall (i,j) in A.domain do 
       A (i,j) -= + reduce [k in L_active_cols] L (i,k) * L (j,k);
@@ -261,13 +261,13 @@ module symmetric_blas {
     // are submatrices of a single larger matrix.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == L.domain.dim (0) );
 
-    const row_range = A.domain.dim (1);
+    const row_range = A.domain.dim (0);
 
-    const diag_block_cols        = A.domain.dim (2),
+    const diag_block_cols        = A.domain.dim (1),
           subdiagonal_block_rows = row_range (diag_block_cols.high + 1 ..),
-          L_prev_cols            = L.domain.dim (2);
+          L_prev_cols            = L.domain.dim (1);
 
     //  Symmetric modification to diagonal block
 
@@ -301,13 +301,13 @@ module symmetric_blas {
     // are submatrices of a single larger matrix.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == L.domain.dim (0) );
 
-    const row_range = A.domain.dim (1);
+    const row_range = A.domain.dim (0);
 
-    const diag_block_cols        = A.domain.dim (2),
+    const diag_block_cols        = A.domain.dim (1),
           subdiagonal_block_rows = row_range (diag_block_cols.high + 1 ..),
-          L_prev_cols            = L.domain.dim (2);
+          L_prev_cols            = L.domain.dim (1);
 
     //  Symmetric modification to diagonal block
 

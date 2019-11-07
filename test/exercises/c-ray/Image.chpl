@@ -88,7 +88,7 @@ proc writeImage(image, format, pixels: [] pixelType) {
 //
 proc writeImagePPM(outfile, pixels) {
   outfile.writeln("P6");
-  outfile.writeln(pixels.domain.dim(2).size, " ", pixels.domain.dim(1).size);
+  outfile.writeln(pixels.domain.dim(1).size, " ", pixels.domain.dim(0).size);
   outfile.writeln(255);
   for p in pixels do
     for param c in 0..numColors-1 do
@@ -100,8 +100,8 @@ proc writeImagePPM(outfile, pixels) {
 // more portable)
 //
 proc writeImageBMP(outfile, pixels) {
-  const rows = pixels.domain.dim(1).length,
-        cols = pixels.domain.dim(2).length,
+  const rows = pixels.domain.dim(0).length,
+        cols = pixels.domain.dim(1).length,
 
         headerSize = 14,
         dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
@@ -134,9 +134,9 @@ proc writeImageBMP(outfile, pixels) {
                  0 /* colors in palette */,
                  0 /* "important" colors */);
 
-  for i in pixels.domain.dim(1) {
+  for i in pixels.domain.dim(0) {
     var nbits = 0;
-    for j in pixels.domain.dim(2) {
+    for j in pixels.domain.dim(1) {
       var p = pixels[i,j];
       var redv = (p >> colorOffset(red)) & colorMask;
       var greenv = (p >> colorOffset(green)) & colorMask;

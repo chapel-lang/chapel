@@ -85,9 +85,9 @@ module elemental_cholesky_symmetric_index_ranges_block {
     // argument checking -- would like to be able to check that A is
     // a cyclically distributed array
 
-    const A_idx_range = A.domain.dim (1);  // indices of either row or column
+    const A_idx_range = A.domain.dim (0);  // indices of either row or column
 
-    assert ( A_idx_range == A.domain.dim (2) );
+    assert ( A_idx_range == A.domain.dim (1) );
 
     // --------------------------------------------
     // Acquire the specifications of the underlying 

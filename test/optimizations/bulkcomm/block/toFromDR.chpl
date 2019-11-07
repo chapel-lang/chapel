@@ -20,7 +20,7 @@ proc printDebug(msg: string...) {
 proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
   const retStride = MakeStride by stride;
   var rngs = MakeDense.dims();
-  for i in 1..MakeDense.rank {
+  for i in 0..#MakeDense.rank {
     rngs(i) = rngs(i) # retStride.dim(i).size;
   }
   const retDense = {(...rngs)};
@@ -28,13 +28,13 @@ proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
 }
 
 proc buildRankChange(Dom : domain, param first : bool) {
-  var r : (Dom.rank-1) * Dom.dim(1).type;
+  var r : (Dom.rank-1) * Dom.dim(0).type;
   if first {
-    for param i in 2..Dom.rank do r(i-1) = Dom.dim(i);
-    return (Dom.dim(1), (...r));
-  } else {
     for param i in 1..Dom.rank-1 do r(i) = Dom.dim(i);
-    return ((...r), Dom.dim(Dom.rank));
+    return (Dom.dim(0), (...r));
+  } else {
+    for param i in 0..Dom.rank-2 do r(i) = Dom.dim(i);
+    return ((...r), Dom.dim(Dom.rank-1));
   }
 }
 

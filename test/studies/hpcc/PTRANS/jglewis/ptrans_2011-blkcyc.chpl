@@ -173,8 +173,8 @@ module HPCC_PTRANS {
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
 
-    if ( ( A_domain.dim(1) != C_domain.dim(2)) ||
-              ( A_domain.dim(2) != C_domain.dim(1))  ) then
+    if ( ( A_domain.dim(0) != C_domain.dim(1)) ||
+              ( A_domain.dim(1) != C_domain.dim(0))  ) then
       return false;
     else
       {
@@ -214,31 +214,31 @@ module HPCC_PTRANS {
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
 
-    if ( ( A_domain.dim(1) != C_domain.dim(2)) ||
-              ( A_domain.dim(2) != C_domain.dim(1))  ) then
+    if ( ( A_domain.dim(0) != C_domain.dim(1)) ||
+              ( A_domain.dim(1) != C_domain.dim(0))  ) then
       return false;
     else
 {
         if ( beta == 1.0 ) then
 
-          for c_rows in block_partitioning (C_domain, 1) do
-            for c_cols in block_partitioning (C_domain, 2) do
+          for c_rows in block_partitioning (C_domain, 0) do
+            for c_cols in block_partitioning (C_domain, 1) do
               forall i in c_rows do
                 for j in c_cols do
                   C [i,j] += A [j,i];
     
         else if ( beta == 0.0 ) then
       
-          for c_rows in block_partitioning (C_domain, 1) do
-            for c_cols in block_partitioning (C_domain, 2) do 
+          for c_rows in block_partitioning (C_domain, 0) do
+            for c_cols in block_partitioning (C_domain, 1) do 
               forall i in c_rows do
                 for j in c_cols do
                   C [i,j] = A [j,i];
     
         else
       
-          for c_rows in block_partitioning (C_domain, 1) do
-            for c_cols in block_partitioning (C_domain, 2) do 
+          for c_rows in block_partitioning (C_domain, 0) do
+            for c_cols in block_partitioning (C_domain, 1) do 
               forall i in c_rows do
                 for j in c_cols do
                   C [i,j] = beta * C [i,j]  +  A [j,i];
@@ -263,8 +263,8 @@ module HPCC_PTRANS {
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
 
-    if ( ( A_domain.dim(1) != C_domain.dim(2)) ||
-              ( A_domain.dim(2) != C_domain.dim(1))  ) then
+    if ( ( A_domain.dim(0) != C_domain.dim(1)) ||
+              ( A_domain.dim(1) != C_domain.dim(0))  ) then
       return false;
     else {
     
@@ -338,7 +338,7 @@ module HPCC_PTRANS {
     // in which the block size were obtained from a blocking distribution.
     // -------------------------------------------------------------------
 
-    const block_size = if dimen == 1 then row_block_size else col_block_size;
+    const block_size = if dimen == 0 then row_block_size else col_block_size;
     for block_low in C_domain.dim (dimen) by block_size do
       yield block_low .. min ( block_low + block_size - 1, 
       C_domain.dim(dimen).high );
@@ -358,10 +358,10 @@ module HPCC_PTRANS {
     // -------------------------------------------------------------------
 
     const block_size = if dimen == 0 then row_block_size else col_block_size;
-    for block_low in C_domain.dim (dimen+1) + block_size*processor (dimen) 
-    by block_size*(grid.dim (dimen+1).high+1) do
+    for block_low in C_domain.dim (dimen) + block_size*processor (dimen) 
+    by block_size*(grid.dim (dimen).high+1) do
       yield block_low .. min ( block_low + block_size - 1, 
-                               C_domain.dim(dimen+1).high );
+                               C_domain.dim(dimen).high );
   }
 
   proc verify(C:[?transpose_domain], C_plus_A_transpose, 

@@ -23,11 +23,11 @@
 proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
-  if (blk <= 0) || (blk > D.dim(1).length) then
+  if (blk <= 0) || (blk > D.dim(0).length) then
     halt(blk," is an invalid block size passed to blockLU");
 
-  var piv: [D.dim(1)] int;
-  [i in D.dim(1)] piv(i) = i;    // initialize the pivot vector
+  var piv: [D.dim(0)] int;
+  [i in D.dim(0)] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute four sets of
   // index ranges -- those that are unfactored, divided into those
@@ -177,10 +177,10 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 // not necessary.
 
 iter generateBlockLURanges(D:domain(2), blksize) {
-  const stop = D.dim(1).high;
-  const endcol = D.dim(2).high;
+  const stop = D.dim(0).high;
+  const endcol = D.dim(1).high;
 
-  for i in D.dim(1) by blksize {
+  for i in D.dim(0) by blksize {
     const hi = min(i + blksize-1, stop);
     yield (i..stop, i..hi, hi+1..stop, hi+1..endcol); 
   }
@@ -221,8 +221,8 @@ proc computePivotRow(A:[?D]) {
 //  The LU solve routine takes A = [L U y] and solves for x.
 proc LUSolve (A: [?ADom], x: [?xDom]) {
 
-   var n = ADom.dim(1).length;
-   var AD1 = ADom.dim(1);
+   var n = ADom.dim(0).length;
+   var AD1 = ADom.dim(0);
    ref b = A(.., n+1);
 
    x = b;

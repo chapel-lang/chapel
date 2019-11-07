@@ -360,10 +360,10 @@ proc AccumStencil.targetLocsIdx(ind: idxType) where rank == 1 {
 proc AccumStencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
-    result(i) = max(0, min((targetLocDom.dim(i+1).length-1):int,
-                           (((ind(i) - boundingBox.dim(i+1).low) *
-                             targetLocDom.dim(i+1).length:idxType) /
-                            boundingBox.dim(i+1).length):int));
+    result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
+                           (((ind(i) - boundingBox.dim(i).low) *
+                             targetLocDom.dim(i).length:idxType) /
+                            boundingBox.dim(i).length):int));
   return if rank == 1 then result(1) else result;
 }
 
@@ -500,7 +500,7 @@ proc AccumStencilDom.dsiDisplayRepresentation() {
 
 proc AccumStencilDom.dsiDims() return whole.dims();
 
-proc AccumStencilDom.dsiDim(d: int) return whole.dim(d+1);
+proc AccumStencilDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc AccumStencilDom.getLocDom(localeIdx) return locDoms(localeIdx);
@@ -564,7 +564,7 @@ iter AccumStencilDom.these(param tag: iterKind) where tag == iterKind.leader {
     const tmpAccumStencil = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
     for param i in 0..tmpAccumStencil.rank-1 do
-      locOffset(i) = tmpAccumStencil.dim(i+1).first/tmpAccumStencil.dim(i+1).stride:strType;
+      locOffset(i) = tmpAccumStencil.dim(i).first/tmpAccumStencil.dim(i).stride:strType;
     // Forward to defaultRectangular
     for followThis in tmpAccumStencil.these(iterKind.leader, maxTasks,
                                             myIgnoreRunning, minSize,
@@ -596,11 +596,11 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
   for param i in 0..rank-1 {
-    var stride = whole.dim(i+1).stride: strType;
+    var stride = whole.dim(i).stride: strType;
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i+1).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -641,7 +641,7 @@ proc AccumStencilDom.dsiSetIndices(x: domain) {
   if whole.size > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
-      absFluff(i) = abs(fluff(i) * x.dim(i+1).stride);
+      absFluff(i) = abs(fluff(i) * x.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
   }
@@ -664,7 +664,7 @@ proc AccumStencilDom.dsiSetIndices(x) {
   if whole.size > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
-      absFluff(i) = abs(fluff(i) * whole.dim(i+1).stride);
+      absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
   }
@@ -693,9 +693,9 @@ proc AccumStencilDom.setup() {
     on dist.targetLocales(localeIdx) {
       ref myLocDom = locDoms(localeIdx);
 
-      var abstr : rank*whole.dim(1).stride.type;
+      var abstr : rank*whole.dim(0).stride.type;
       for param i in 0..rank-1 {
-        abstr(i) = abs(whole.dim(i+1).stride);
+        abstr(i) = abs(whole.dim(i).stride);
       }
 
       if myLocDom == nil {
@@ -714,7 +714,7 @@ proc AccumStencilDom.setup() {
       proc faceSize(dim) {
         var ret = 1;
         for i in 0..rank-1 do
-          if i != dim then ret *= myLocDom.myFluff.dim(i+1).size;
+          if i != dim then ret *= myLocDom.myFluff.dim(i).size;
         return ret;
       }
 
@@ -959,11 +959,11 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
-    var stride = dom.whole.dim(i+1).stride;
+    var stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i+1).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
@@ -1131,10 +1131,10 @@ iter AccumStencilArr.dsiBoundaries() {
     }
 
     proc chunkSlice(LD, neighIdx) {
-      var r : rank*LD.myFluff.dim(1).type;
+      var r : rank*LD.myFluff.dim(0).type;
       for i in 0..#rank {
-        const F = LD.myFluff.dim(i+1);
-        const B = LD.myBlock.dim(i+1);
+        const F = LD.myFluff.dim(i);
+        const B = LD.myBlock.dim(i);
 
         if neighIdx(i) == -1 then r(i) = F.first..B.first # fluff(i);
         else if neighIdx(i) == 1 then r(i) = B.last..F.last # -fluff(i);
@@ -1184,10 +1184,10 @@ iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.s
     }
 
     proc chunkSlice(LD, neighIdx) {
-      var r : rank*LD.myFluff.dim(1).type;
+      var r : rank*LD.myFluff.dim(0).type;
       for i in 0..#rank {
-        const F = LD.myFluff.dim(i+1);
-        const B = LD.myBlock.dim(i+1);
+        const F = LD.myFluff.dim(i);
+        const B = LD.myBlock.dim(i);
 
         if neighIdx(i) == -1 then r(i) = F.first..B.first # fluff(i);
         else if neighIdx(i) == 1 then r(i) = B.last..F.last # -fluff(i);
@@ -1255,7 +1255,7 @@ proc _array.updateFluff() {
 
 proc AccumStencilArr._getNeighborIdx(curIdx, dim, direction) {
   var offsetIdx = curIdx;
-  const locDim = dom.dist.targetLocDom.dim(dim+1);
+  const locDim = dom.dist.targetLocDom.dim(dim);
   var off = direction;
   const next = curIdx(dim) + direction;
   if dom.dist.periodic {
@@ -1270,9 +1270,9 @@ proc AccumStencilArr._getNeighborIdx(curIdx, dim, direction) {
 
 proc AccumStencilArr._getSendDom(sourceArr, dim, direction) {
   var locDom = sourceArr.locDom;
-  var r : rank * locDom.myFluff.dim(1).type;
+  var r : rank * locDom.myFluff.dim(0).type;
   for i in 0..rank-1 {
-    const cd = locDom.myFluff.dim(i+1);
+    const cd = locDom.myFluff.dim(i);
     if i == dim {
       const outerBound = if direction == -1 then cd.first else cd.last;
       const ord        = cd.indexOrder(outerBound);
@@ -1292,11 +1292,11 @@ proc AccumStencilArr._getSendDom(sourceArr, dim, direction) {
 private proc chopDim(D:domain, dim) {
   compilerAssert(D.rank > 1, "Cannot call 'chopDim' on one-dimensional domain");
   param newRank = D.rank - 1;
-  var r : newRank * D.dim(1).type;
+  var r : newRank * D.dim(0).type;
   var cur = 0;
   for i in 0..D.rank-1 {
     if i != dim {
-      r(cur) = D.dim(i+1);
+      r(cur) = D.dim(i);
       cur += 1;
     }
   }
@@ -1319,7 +1319,7 @@ proc AccumStencilArr._sendElements(destBuf, sourceArr, dim, direction) {
     destBuf[1..sendDom.size] = sourceArr.myElems[sendDom];
   } else {
     const chopped = chopDim(sendDom, rank-1);
-    const lastDim = sendDom.dim(rank);
+    const lastDim = sendDom.dim(rank-1);
     const len = lastDim.size;
     forall (idx, dense) in zip(chopped, densify(chopped, chopped)) {
       const low = 1 + denseTo1D(chpl__tuplify(dense), sendDom.dims());
@@ -1339,7 +1339,7 @@ proc AccumStencilArr._unpackElements(srcBuf, destArr, dim, direction) {
     }
   } else {
     const chopped = chopDim(destDom, rank-1);
-    const lastDim = destDom.dim(rank);
+    const lastDim = destDom.dim(rank-1);
     const len = lastDim.size;
     forall (idx, dense) in zip(chopped, densify(chopped, chopped)) {
       const low = 1 + denseTo1D(chpl__tuplify(dense), destDom.dims());
@@ -1496,7 +1496,7 @@ proc AccumStencilDom.dsiPrivatize(privatizeData) {
   if c.whole.size > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
-      absFluff(i) = abs(fluff(i) * c.whole.dim(i+1).stride);
+      absFluff(i) = abs(fluff(i) * c.whole.dim(i).stride);
     }
     c.wholeFluff = c.whole.expand(absFluff);
   }
@@ -1512,7 +1512,7 @@ proc AccumStencilDom.dsiReprivatize(other, reprivatizeData) {
   if whole.size > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
-      absFluff(i) = abs(fluff(i) * whole.dim(i+1).stride);
+      absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
   }

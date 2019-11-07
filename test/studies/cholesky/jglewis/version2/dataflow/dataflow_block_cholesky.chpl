@@ -69,9 +69,9 @@ module dataflow_block_cholesky {
     // This procedure expects as input a square matrix with the same ranges
     // (set of indices) for both rows and columns
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices for A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices for A
     var   pos_def : bool;
 
     // --------------------------------------------------------------------

@@ -3,7 +3,7 @@ var errorIfMismatch = false;
 var debugDefault = false;
 
 proc checkShape(A : [?ad], B : [?bd]) {
-  for param i in 1..ad.rank {
+  for param i in 0..ad.rank-1 {
     if ad.dim(i).length != bd.dim(i).length then return false;
   }
   return true;
