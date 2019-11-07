@@ -1084,7 +1084,8 @@ class SlurmJob(AbstractJob):
                 else:
                     job_id = id_parts[3].strip()
                     return job_id
-        raise ValueError('Could not parse output from sbatch submission: {0}'.format(stdout))
+
+        raise ValueError('Did not see expected output from sbatch submission: {0}'.format(stdout))
 
 
 @contextlib.contextmanager
