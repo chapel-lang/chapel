@@ -410,11 +410,11 @@ proc copyFile(src: string, dest: string) throws {
   }
 
   // read in, write out.
-  var buf: string;
+  var buf: bytes;
   var numRead: int = 0;
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
-  while (try srcChnl.readstring(buf, len=4096)) {
+  while (try srcChnl.readbytes(buf, len=4096)) {
     try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing

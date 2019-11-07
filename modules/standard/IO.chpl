@@ -3648,15 +3648,15 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 }
 
 /*
-  Read a line into a Chapel string. Reads until a ``\n`` is reached.
-  The ``\n`` is included in the resulting string.
+  Read a line into a Chapel string or bytes. Reads until a ``\n`` is reached.
+  The ``\n`` is included in the resulting value.
 
-  :arg arg: a string to receive the line
+  :arg arg: a string or bytes to receive the line
   :returns: `true` if a line was read without error, `false` upon EOF
 
-  :throws SystemError: Thrown if a string could not be read from the channel.
+  :throws SystemError: Thrown if data could not be read from the channel.
 */
-proc channel.readline(ref arg:string):bool throws {
+proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -3677,7 +3677,7 @@ proc channel.readline(ref arg:string):bool throws {
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(err, "in channel.readline(ref arg:string)");
+    try this._ch_ioerror(err, "in channel.readline(ref arg)");
   }
   return false;
 }
@@ -3694,8 +3694,47 @@ proc channel.readline(ref arg:string):bool throws {
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
+  var err = readBytesOrString(this, str_out, len);
+
+  if !err {
+    return true;
+  } else if err == EEOF {
+    return false;
+  } else {
+    try this._ch_ioerror(err, "in channel.readstring(ref str_out:string, len:int(64))");
+  }
+  return false;
+}
+
+/* read a given number of bytes from a channel
+
+   :arg bytes_out: The bytes to be read into
+   :arg len: Read up to len bytes from the channel, up until EOF
+             (or some kind of I/O error). If the default value of -1
+             is provided, read until EOF starting from the channel's
+             current offset.
+   :returns: `true` if we read something, `false` upon EOF
+
+   :throws SystemError: Thrown if the bytes could not be read from the channel.
+ */
+proc channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
+  var err = readBytesOrString(this, bytes_out, len);
+
+  if !err {
+    return true;
+  } else if err == EEOF {
+    return false;
+  } else {
+    try this._ch_ioerror(err, "in channel.readbytes(ref str_out:bytes, len:int(64))");
+  }
+  return false;
+}
+
+private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64)) 
+    throws {
+
   var err:syserr = ENOERR;
-  on this.home {
+  on ch.home {
     var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
@@ -3708,39 +3747,45 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
       if ssize_t != int(64) then assert( len == uselen );
     }
 
-    try this.lock(); defer { this.unlock(); }
+    try ch.lock(); defer { ch.unlock(); }
 
-    var binary:uint(8) = qio_channel_binary(_channel_internal);
-    var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
+    var binary:uint(8) = qio_channel_binary(ch._channel_internal);
+    var byteorder:uint(8) = qio_channel_byteorder(ch._channel_internal);
 
     if binary {
       err = qio_channel_read_string(false, byteorder,
                                     iostringstyle.data_toeof:int(64),
-                                    this._channel_internal, tx,
+                                    ch._channel_internal, tx,
                                     lenread, uselen);
     } else {
-      var save_style = this._style();
-      var style = this._style();
+      var save_style = ch._style();
+      var style = ch._style();
       style.string_format = QIO_STRING_FORMAT_TOEOF;
-      this._set_style(style);
+      ch._set_style(style);
 
-      err = qio_channel_scan_string(false,
-                                    this._channel_internal, tx,
-                                    lenread, uselen);
-      this._set_style(save_style);
+      if t == string {
+        err = qio_channel_scan_string(false,
+                                      ch._channel_internal, tx,
+                                      lenread, uselen);
+      }
+      else {
+        err = qio_channel_scan_bytes(false,
+                                     ch._channel_internal, tx,
+                                     lenread, uselen);
+      }
+      ch._set_style(save_style);
     }
 
-    str_out = createStringWithOwnedBuffer(tx, length=lenread);
+    if t == string {
+      out_var = createStringWithOwnedBuffer(tx, length=lenread);
+    }
+    else {
+      out_var = createBytesWithOwnedBuffer(tx, length=lenread);
+    }
   }
 
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in channel.readstring(ref str_out:string, len:int(64))");
-  }
-  return false;
+  return err;
+
 }
 
 /*
