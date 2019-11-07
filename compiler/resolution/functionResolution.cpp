@@ -874,8 +874,7 @@ static bool canParamCoerce(Type*   actualType,
 
   // param bytes can coerce between string and c_string
   // ENGIN: This allows `proc +` on param bytes to be chained
-  if ((formalType == dtBytes || formalType == dtStringC) &&
-      (actualType == dtBytes || actualType == dtStringC)) {
+  if (formalType == dtBytes && actualType == dtStringC) {
     if (actualSym && actualSym->isImmediate()) {
       return true;
     }

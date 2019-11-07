@@ -1625,6 +1625,8 @@ static Expr* preFoldNamed(CallExpr* call) {
             if (enumSym) {
               if (newType == dtStringC)
                 retval = new SymExpr(new_CStringSymbol(enumSym->name));
+              else if (newType == dtBytes)
+                retval = new SymExpr(new_BytesSymbol(enumSym->name));
               else
                 retval = new SymExpr(new_StringSymbol(enumSym->name));
 
@@ -1638,6 +1640,8 @@ static Expr* preFoldNamed(CallExpr* call) {
 
             if (newType == dtStringC)
               retval = new SymExpr(new_CStringSymbol(imm->v_string));
+            else if (newType == dtBytes)
+              retval = new SymExpr(new_BytesSymbol(imm->v_string));
             else
               retval = new SymExpr(new_StringSymbol(imm->v_string));
 
@@ -1658,6 +1662,8 @@ static Expr* preFoldNamed(CallExpr* call) {
 
             if (newType == dtStringC)
               retval = new SymExpr(new_CStringSymbol(coerce.v_string));
+            else if (newType == dtBytes)
+              retval = new SymExpr(new_BytesSymbol(coerce.v_string));
             else
               retval = new SymExpr(new_StringSymbol(coerce.v_string));
 
