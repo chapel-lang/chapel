@@ -3632,13 +3632,13 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
 }
 
 /*
-  Read a line into a Chapel string. Reads until a ``\n`` is reached.
-  The ``\n`` is included in the resulting string.
+  Read a line into a Chapel string or bytes. Reads until a ``\n`` is reached.
+  The ``\n`` is included in the resulting value.
 
-  :arg arg: a string to receive the line
+  :arg arg: a string or bytes to receive the line
   :returns: `true` if a line was read without error, `false` upon EOF
 
-  :throws SystemError: Thrown if a string could not be read from the channel.
+  :throws SystemError: Thrown if data could not be read from the channel.
 */
 proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
