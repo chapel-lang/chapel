@@ -19,6 +19,7 @@
 
 #include "mli.h"
 
+#include "fixupExports.h"
 #include "library.h"
 #include "ModuleSymbol.h"
 #include "FnSymbol.h"
@@ -86,7 +87,8 @@ private:
   bool typeRequiresAllocation(Type* t);
 
   std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
-  std::string genMarshalBodyString(Type* t, bool out);
+  std::string genMarshalBodyStringC(Type* t, bool out);
+  std::string genMarshalBodyChplBytesWrapper(Type* t, bool out);
   std::string genComment(const char* msg, const char* pfx="");
   std::string genNote(const char* msg);
   std::string genTodo(const char* msg);
@@ -324,7 +326,7 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
 // This will help us later down the line when we have to support other types
 // that push variable width buffers (arrays).
 //
-std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
+std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
   const char* target = out ? "obj" : "buffer";
   std::string gen;
 
@@ -378,10 +380,17 @@ std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
       gen += underlyingTypeName;
       gen += "*) buffer);\n";
     } else {
-      INT_FATAL("Unknown type passed to genMarshalBodyString, %s",
+      INT_FATAL("Unknown type passed to genMarshalBodyStringC, %s",
                 t->symbol->name);
     }
   }
+
+  return gen;
+}
+
+std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
+  std::string gen;
+
 
   return gen;
 }
@@ -447,12 +456,12 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
   } else if (t == dtStringC) {
-    gen += this->genMarshalBodyString(t, out);
+    gen += this->genMarshalBodyStringC(t, out);
   } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
              getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
     // A different strategy will be needed if we ever intend to support
     // c_ptr(int8)s that weren't originally Chapel strings.
-    gen += this->genMarshalBodyString(t, out);
+    gen += this->genMarshalBodyStringC(t, out);
   } else {
     USR_FATAL(t, "Multi-locale libraries do not support type: %s",
               t->name());
@@ -651,7 +660,8 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 bool MLIContext::isSupportedType(Type* t) {
   return (
       isPrimitiveScalar(t) ||
-      t == dtStringC
+      t == dtStringC ||
+      t == exportTypeChplBytesWrapper
   );
 }
 
