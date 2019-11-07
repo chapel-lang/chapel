@@ -216,7 +216,7 @@ module String {
     proc init(i: int) { _bindex = i; }
     proc init=(i: int) { _bindex = i; }
 
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> _bindex;
     }
   }
@@ -255,7 +255,7 @@ module String {
     proc init(i: int) { _cpindex = i; }
     proc init=(i: int) { _cpindex = i; }
 
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> _cpindex;
     }
   }
@@ -1253,11 +1253,11 @@ module String {
 
     // These should never be called (but are default functions for records)
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
 

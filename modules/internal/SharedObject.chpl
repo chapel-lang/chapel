@@ -100,7 +100,7 @@ See also :ref:`about-owned-intents-and-instantiation` which includes examples.
  */
 module SharedObject {
 
-  private use ChapelError;
+  private use ChapelError, Atomics, ChapelBase;
   use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for
@@ -456,7 +456,7 @@ module SharedObject {
 
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer
   pragma "no doc"
-  proc _shared.readWriteThis(f) {
+  proc _shared.readWriteThis(f) throws {
     f <~> this.chpl_p;
   }
 

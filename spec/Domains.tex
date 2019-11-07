@@ -302,32 +302,18 @@ type of the indices that it stores.  The syntax is as follows:
 \begin{verbatim}
 associative-domain-type:
   `domain' ( associative-index-type )
-  `domain' ( `opaque' )
 
 associative-index-type:
   type-expression
 \end{verbatim}
 \end{syntax}
 
-\index{types!opaque domains}
-\index{opaque domains!types}
-\index{domains!opaque}
-The three expansions of \sntx{associative-domain-type} correspond to the three
-kinds of associative domain listed below.
-\begin{enumerate} 
-\item In general, \sntx{associative-index-type} determines \chpl{idxType}
+The \sntx{associative-index-type} determines the \chpl{idxType}
 of the associative domain type.
-\item Opaque domains are a special case, indicated by the type \chpl{opaque}.
-Anonymous values of the type \chpl{opaque} are used as index values
-in this case.
-% TODO: need to define and explain the 'opaque' type elsewhere.
-\end{enumerate}
 
 When an associative domain is used as the index set of an array, the relation
 between the indices and the array elements can be thought of as a map between
 the values of the index set and the elements stored in the array.
-Opaque domains can be used to build unstructured arrays that are similar to
-pointer-based data structures in conventional languages.
 
 \subsubsection{Associative Domain Values}
 \label{Associative_Domain_Values}
@@ -934,10 +920,6 @@ As with normal domain assignments, arrays declared in terms of a
 domain being modified in this way will be reallocated as discussed
 in~\rsec{Association_of_Arrays_to_Domains}.
 
-% TODO: describe operations on opaque domains, esp. domain.create().
-% Note that domain.add() (should) work as defined above on
-% opaque domains, taking values of the opaque type for its argument.
-
 
 \section{Predefined Methods on Domains}
 \index{domains!predefined functions}
@@ -1030,7 +1012,6 @@ proc domain.idxType type
 \end{protohead}
 \begin{protobody}
 Returns the domain type's \chpl{idxType}.
-This function is not available on opaque domains.
 \end{protobody}
 
 \begin{protohead}
@@ -1057,17 +1038,6 @@ proc isIrregularDom(d: domain) param
 \end{protohead}
 \begin{protobody}
 Returns a param \chpl{true} if the given domain is irregular, false otherwise.
-\end{protobody}
-
-\index{domains!isOpaqueDom@\chpl{isOpaqueDom}}
-\index{predefined functions!isOpaqueDom@\chpl{isOpaqueDom}}
-\begin{protohead}
-\begin{verbatim}
-proc isOpaqueDom(d: domain) param
-\end{verbatim}
-\end{protohead}
-\begin{protobody}
-Returns a param \chpl{true} if the given domain is opaque, false otherwise.
 \end{protobody}
 
 \index{domains!isRectangularDom@\chpl{isRectangularDom}}

@@ -29,6 +29,7 @@ fi
 #                   e.g. "1.17.1.20181016" for a nightly build
 # release_type  : nightly or release or developer
 # chpl_platform : linux64, cray-xc, etc             # as in, $CHPL_HOME/bin/$chpl_platform
+# rel_name      : Shasta RPM release name, synthesized if not given
 # rc_number     : Release candidate number (0,1,2..); something to distinguish different instances of
 #                 otherwise-identical packages. May be applied in different ways dep. on package-format.
 # date_ymd,
@@ -108,17 +109,13 @@ log_debug "Using src_version='$src_version'"
 log_debug "Using version_tag='$version_tag'"
 log_debug "Using pkg_version='$pkg_version'"
 log_debug "Using release_type='$release_type'"
+log_debug "Using rel_name='$rel_name'"
 log_debug "Using rc_number='$rc_number'"
-log_debug "Using date_ymd='$date_ymd'"
-log_debug "Using date_hms='$date_hms'"
 
 export chpl_platform
 export src_version major minor update
-export version_tag
 export pkg_version
-export release_type
+export rel_name
 export rc_number
-export date_ymd
-export date_hms
 
 log_debug "End $( basename "${BASH_SOURCE[0]}" )"

@@ -381,7 +381,7 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(1);
 }
 
-proc Cyclic.writeThis(x) {
+proc Cyclic.writeThis(x) throws {
   x <~> this.type:string <~> "\n";
   x <~> "------\n";
   for locid in targetLocDom do
@@ -719,7 +719,7 @@ pragma "no copy return"
 proc CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).alignedLow;
   }
 
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));

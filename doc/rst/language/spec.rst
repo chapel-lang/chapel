@@ -889,10 +889,11 @@ Interpreted string literals are designated by the following syntax:
 
    hexadecimal-escape-character:
      `\x' hexadecimal-digits
-   \end{syntax}
 
-   Uninterpreted string literals are designated by the following syntax:
-   \begin{syntax}
+Uninterpreted string literals are designated by the following syntax:
+
+.. code-block:: syntax
+
    uninterpreted-string-literal:
      """ uninterpreted-double-quote-delimited-characters """
      ''' uninterpreted-single-quote-delimited-characters '''
@@ -13895,26 +13896,17 @@ the indices that it stores. The syntax is as follows:
 
    associative-domain-type:
      `domain' ( associative-index-type )
-     `domain' ( `opaque' )
 
    associative-index-type:
      type-expression
 
-The three expansions of ``associative-domain-type`` correspond to the
-three kinds of associative domain listed below.
-
-#. In general, ``associative-index-type`` determines ``idxType`` of the
-   associative domain type.
-
-#. Opaque domains are a special case, indicated by the type ``opaque``.
-   Anonymous values of the type ``opaque`` are used as index values in
-   this case.
+The ``associative-index-type`` determines the ``idxType`` of the
+associative domain type.
 
 When an associative domain is used as the index set of an array, the
 relation between the indices and the array elements can be thought of as
 a map between the values of the index set and the elements stored in the
-array. Opaque domains can be used to build unstructured arrays that are
-similar to pointer-based data structures in conventional languages.
+array.
 
 .. _Associative_Domain_Values:
 
@@ -14553,8 +14545,7 @@ Returns the domain map that implements this domain
 
    proc domain.idxType type
 
-Returns the domain type’s ``idxType``. This function is not available on
-opaque domains.
+Returns the domain type’s ``idxType``.
 
 
 
@@ -14577,14 +14568,6 @@ indices are added and removed from the domain.
 
 Returns a param ``true`` if the given domain is irregular, false
 otherwise.
-
-
-
-.. code-block:: chapel
-
-   proc isOpaqueDom(d: domain) param
-
-Returns a param ``true`` if the given domain is opaque, false otherwise.
 
 
 

@@ -1514,9 +1514,7 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    DefExpr* objectClass = defineObjectClass();
-
-    initChplProgram(objectClass);
+    initChplProgram();
 
     initStringLiteralModule();
 

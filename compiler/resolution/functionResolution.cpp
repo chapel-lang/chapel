@@ -113,8 +113,6 @@ SymbolMap                          paramMap;
 
 Vec<CallExpr*>                     callStack;
 
-Vec<BlockStmt*>                    standardModuleSet;
-
 std::map<Type*,     FnSymbol*>     autoCopyMap;
 std::map<Type*,     Serializers>   serializeMap;
 
@@ -179,7 +177,6 @@ static void resolveAutoCopyEtc(AggregateType* at);
 
 static Expr* foldTryCond(Expr* expr);
 
-static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
 static void resolveSupportForModuleDeinits();
@@ -4553,6 +4550,14 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
       } else {
         EXPLAIN("X: Fn %d is a as good a match as Fn %d\n\n\n", i, j);
         singleMostSpecific = false;
+        if (notBest[j]) {
+          // Inherit the notBest status of what we are comparing against
+          //
+          // If this candidate is equally as good as something that wasn't
+          // the best, then it is also not the best (or else there is something
+          // terribly wrong with our compareSpecificity function).
+          notBest[i] = true;
+        }
         break;
       }
     }
@@ -5888,6 +5893,8 @@ static void resolveInitVar(CallExpr* call) {
   Type* targetType = NULL;
   bool addedCoerce = false;
 
+  bool inferType = call->numActuals() == 2;
+
   if (call->numActuals() > 3) {
     INT_FATAL(call, "unexpected number of actuals in variable init call");
   }
@@ -5943,8 +5950,6 @@ static void resolveInitVar(CallExpr* call) {
     // Insert a coercion if the types are different. Some internal types use a
     // coercion because their initCopy returns a different type.
     if (targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-        isSyncType(src->getValType()) ||
-        isSingleType(src->getValType()) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
 
@@ -5979,6 +5984,7 @@ static void resolveInitVar(CallExpr* call) {
   // which is handled in the 'init=' branch.
   bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
                             src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
+  bool initCopySyncSingle = inferType && (isSyncType(srcType->getValType()) || isSingleType(srcType->getValType()));
 
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
@@ -5996,10 +6002,9 @@ static void resolveInitVar(CallExpr* call) {
 
   } else if (isRecord(targetType->getValType()) == false ||
              isParamString ||
-             isSyncType(srcType->getValType()) ||
-             isSingleType(srcType->getValType()) ||
              targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
              isDomainWithoutNew ||
+             initCopySyncSingle ||
              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
              srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization
@@ -8017,50 +8022,8 @@ static void resolveObviousGlobals() {
 }
 
 
-static void
-computeStandardModuleSet() {
-  // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
-  // to add the standard module set to the root module's block, so misses some
-  // cases, causing qualified access to functions from certain modules (List,
-  // Search, Sort, at the time of this writing) to fail to resolve.  We
-  // should take the time to time this optimization to the code path it wishes
-  // to follow - however, I am not sure where that is occurring right now.
-
-  // Private uses will also help avoid the bug, but it is sweeping the bug under
-  // the rug rather than solving the problem at hand, and it is hard to say
-  // when the next time this code will bite us will be.
-  standardModuleSet.set_add(rootModule->block);
-  standardModuleSet.set_add(theProgram->block);
-
-  Vec<ModuleSymbol*> stack;
-  stack.add(standardModule);
-
-  while (ModuleSymbol* mod = stack.pop()) {
-    if (mod->block->useList) {
-      for_actuals(expr, mod->block->useList) {
-        UseStmt* use = toUseStmt(expr);
-        INT_ASSERT(use);
-        SymExpr* se = toSymExpr(use->src);
-        INT_ASSERT(se);
-        if (ModuleSymbol* usedMod = toModuleSymbol(se->symbol())) {
-          INT_ASSERT(usedMod);
-          if (!standardModuleSet.set_in(usedMod->block)) {
-            stack.add(usedMod);
-            standardModuleSet.set_add(usedMod->block);
-          }
-        }
-      }
-    }
-  }
-}
-
-
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
-
-  computeStandardModuleSet(); // Lydia NOTE 09/12/16: is not linked to our
-  // treatment on functions included by default, leading to bugs with qualified
-  // access to symbols included in this way.
 
   unmarkDefaultedGenerics();
 

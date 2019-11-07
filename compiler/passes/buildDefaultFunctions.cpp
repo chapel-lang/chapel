@@ -1494,6 +1494,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
 
+    // Compiler generated versions of readThis/writeThis now throw.
+    fn->throwsErrorInit();
+
     if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
 
@@ -1511,6 +1514,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // Make readThis when appropriate
   if (makeReadThisAndWriteThis == true && hasReadThis == false) {
     FnSymbol* fn = new FnSymbol("readThis");
+
+    // Compiler generated versions of readThis/writeThis now throw.
+    fn->throwsErrorInit();
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);

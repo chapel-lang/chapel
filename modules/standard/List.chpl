@@ -1357,7 +1357,7 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) {
+    proc readWriteThis(ch: channel) throws {
       _enter();
       
       ch <~> "[";

@@ -564,7 +564,7 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Block.writeThis(x) {
+proc Block.writeThis(x) throws {
   x <~> "Block" <~> "\n";
   x <~> "-------" <~> "\n";
   x <~> "distributes: " <~> boundingBox <~> "\n";
@@ -1131,8 +1131,9 @@ pragma "no copy return"
 proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).alignedLow;
   }
+
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 

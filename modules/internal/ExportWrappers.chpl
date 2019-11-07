@@ -80,13 +80,7 @@ module ExportWrappers {
   // the Chapel heap.
   //
   proc chpl__exportConv(val: chpl_bytes_wrapper, type rt: bytes): rt {
-    use ByteBufferHelpers;
-    var data = val.data:ByteBufferHelpers.bufferType;
-    // TODO: Are these casts safe casts?
-    var length = val.size:int(64);
-    var buflen = (val.size + 1):int(64);
-    var result = createBytesWithNewBuffer(data, length=length, size=buflen);
-    return result;
+    return createBytesWithNewBuffer(val.data:c_string, val.size.safeCast(int));
   }
 
 } // End module "ExportWrappers".

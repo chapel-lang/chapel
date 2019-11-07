@@ -74,7 +74,7 @@ class Private: BaseDist {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=_to_unmanaged(this));
   }
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x <~> "Private Distribution\n";
   }
   // acts like a singleton

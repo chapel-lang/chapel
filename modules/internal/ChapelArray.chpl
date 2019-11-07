@@ -135,7 +135,7 @@
    another task is not simultaneously modifying the domain's index
    set.
 
-   By default, associative (and opaque) domains permit multiple tasks
+   By default, associative domains permit multiple tasks
    to modify their index sets concurrently.  This adds some amount of
    overhead to these operations.  If the user knows that all such
    modifications will be done serially or in a parallel-safe context,
@@ -167,6 +167,7 @@ module ChapelArray {
   use ArrayViewRankChange;
   use ArrayViewReindex;
   private use Reflection only;
+  private use ChapelDebugPrint;
 
   pragma "no doc"
   config param showArrayAsVecWarnings = true;
@@ -388,20 +389,6 @@ module ChapelArray {
     return new _domain(d, idxType, parSafe);
 
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:_OpaqueIndex,
-                                    param parSafe: bool = true)
-    return new _domain(d, idxType, parSafe);
-
-  // This function has no 'runtime type init fn' pragma since the idxType of
-  // opaque domains is _OpaqueIndex, not opaque.  This function is
-  // essentially a wrapper around the function that actually builds up
-  // the runtime type.
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType:opaque) type {
-      compilerWarning("Opaque domains are deprecated - please switch to another domain type");
-    return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
-  }
-
-  pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
     return new _domain(d, dom);
 
@@ -415,15 +402,11 @@ module ChapelArray {
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(dom._value.type, BaseOpaqueDom)
-    return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
-
-  proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(_to_borrowed(dom._value.type), BaseSparseDom)
     return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
-    compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
+    compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, or BaseSparseDom", 0);
     return 0; // dummy
   }
 
@@ -790,9 +773,6 @@ module ChapelArray {
   proc chpl__buildIndexType(d: domain) type
     return chpl__buildIndexType(d.rank, d._value.idxType);
 
-  proc chpl__buildIndexType(type idxType:opaque) type
-    return _OpaqueIndex;
-
   /* Return true if the argument ``d`` is a rectangular domain.
      Otherwise return false.  */
   proc isRectangularDom(d: domain) param {
@@ -806,7 +786,7 @@ module ChapelArray {
   /* Return true if ``d`` is an irregular domain; e.g. is not rectangular.
      Otherwise return false. */
   proc isIrregularDom(d: domain) param {
-    return isSparseDom(d) || isAssociativeDom(d) || isOpaqueDom(d);
+    return isSparseDom(d) || isAssociativeDom(d);
   }
 
   /* Return true if ``a`` is an array with an irregular domain; e.g. not
@@ -823,13 +803,6 @@ module ChapelArray {
   /* Return true if ``a`` is an array with an associative domain. Otherwise
      return false. */
   proc isAssociativeArr(a: []) param return isAssociativeDom(a.domain);
-
-  /* Return true if ``d`` is an opaque domain. Otherwise return false. */
-  proc isOpaqueDom(d: domain) param {
-    proc isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
-    proc isOpaqueDomClass(dc) param return false;
-    return isOpaqueDomClass(_to_borrowed(d._value));
-  }
 
   /* Return true if ``d`` is a sparse domain. Otherwise return false. */
   proc isSparseDom(d: domain) param {
@@ -1004,14 +977,6 @@ module ChapelArray {
       return x;
     }
 
-    proc newOpaqueDom(type idxType, param parSafe: bool=true) {
-      var x = _value.dsiNewOpaqueDom(idxType, parSafe);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
     proc newSparseDom(param rank: int, type idxType, dom: domain) {
       var x = _value.dsiNewSparseDom(rank, idxType, dom);
       if x.linksDistribution() {
@@ -1022,7 +987,7 @@ module ChapelArray {
 
     proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> _value;
     }
 
@@ -1112,12 +1077,6 @@ module ChapelArray {
     }
 
     proc init(d: _distribution,
-              type idxType:_OpaqueIndex,
-              param parSafe: bool = true) {
-      this.init(d.newOpaqueDom(idxType, parSafe));
-    }
-
-    proc init(d: _distribution,
               dom: domain) {
       this.init(d.newSparseDom(dom.rank, dom._value.idxType, dom));
     }
@@ -1132,8 +1091,6 @@ module ChapelArray {
     proc init=(const ref other : domain) {
       if isAssociativeDom(other) {
         this.init(other.dist, other.idxType, other.parSafe);
-      } else if isOpaqueDom(other) {
-        this.init(other.dist, _OpaqueIndex, other.parSafe);
       } else if isSparseDom(other) {
         this.init(other.dist, other.parentDom);
       } else {
@@ -1211,8 +1168,6 @@ module ChapelArray {
 
     /* Return the type of the indices of this domain */
     proc idxType type {
-      if isOpaqueDom(this) then
-        compilerError("opaque domains do not currently support .idxType");
       return _value.idxType;
     }
 
@@ -1231,11 +1186,6 @@ module ChapelArray {
     pragma "no doc"
     proc stridable param where isSparseDom(this) {
       return _value.parentDom.stridable;
-    }
-
-    pragma "no doc"
-    proc stridable param where isOpaqueDom(this) {
-      compilerError("opaque domains do not support .stridable");
     }
 
     pragma "no doc"
@@ -1406,8 +1356,8 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    /* Associative and Opaque domains assumed to be 1-D. */
-    proc shape where isAssociativeDom(this) || isOpaqueDom(this) {
+    /* Associative domains assumed to be 1-D. */
+    proc shape where isAssociativeDom(this) {
       var s: (size.type,);
       s[1] = size;
       return s;
@@ -1479,13 +1429,6 @@ module ChapelArray {
     pragma "no doc"
     proc clear() {
       _value.dsiClear();
-    }
-
-    pragma "no doc"
-    proc create() {
-      if _value.idxType != _OpaqueIndex then
-        compilerError("domain.create() only applies to opaque domains");
-      return _value.dsiCreate();
     }
 
     /* Add index ``i`` to this domain. This method is also available
@@ -1667,9 +1610,7 @@ module ChapelArray {
        returns false. */
     proc isSubset(super : domain) {
       if !(isAssociativeDom(this) || isRectangularDom(this)) {
-        if isOpaqueDom(this) then
-          compilerError("isSubset not supported on opaque domains");
-        else if isSparseDom(this) then
+        if isSparseDom(this) then
           compilerError("isSubset not supported on sparse domains");
         else
           compilerError("isSubset not supported on this domain type");
@@ -1699,9 +1640,7 @@ module ChapelArray {
        returns false. */
     proc isSuper(sub : domain) {
       if !(isAssociativeDom(this) || isRectangularDom(this)) {
-        if isOpaqueDom(this) then
-          compilerError("isSuper not supported on opaque domains");
-        else if isSparseDom(this) then
+        if isSparseDom(this) then
           compilerError("isSuper not supported on sparse domains");
         else
           compilerError("isSuper not supported on the domain type ", this.type);
@@ -1743,8 +1682,6 @@ module ChapelArray {
     proc expand(off: rank*intIdxType) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("expand not supported on associative domains");
-      else if isOpaqueDom(this) then
-        compilerError("expand not supported on opaque domains");
       else if isSparseDom(this) then
         compilerError("expand not supported on sparse domains");
       else
@@ -1784,8 +1721,6 @@ module ChapelArray {
     proc exterior(off: rank*intIdxType) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("exterior not supported on associative domains");
-      else if isOpaqueDom(this) then
-        compilerError("exterior not supported on opaque domains");
       else if isSparseDom(this) then
         compilerError("exterior not supported on sparse domains");
       else
@@ -1823,8 +1758,6 @@ module ChapelArray {
     proc interior(off: rank*intIdxType) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("interior not supported on associative domains");
-      else if isOpaqueDom(this) then
-        compilerError("interior not supported on opaque domains");
       else if isSparseDom(this) then
         compilerError("interior not supported on sparse domains");
       else
@@ -1870,8 +1803,6 @@ module ChapelArray {
     proc translate(off) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("translate not supported on associative domains");
-      else if isOpaqueDom(this) then
-        compilerError("translate not supported on opaque domains");
       else if isSparseDom(this) then
         compilerError("translate not supported on sparse domains");
       else
@@ -1934,12 +1865,12 @@ module ChapelArray {
       return _value.dsiGetIndices();
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       _value.dsiSerialRead(f);
     }
 
@@ -2197,7 +2128,7 @@ module ChapelArray {
 
   proc -(d1: domain, d2: domain) where
                                    (d1.type == d2.type) &&
-                                   (isSparseDom(d1) || isOpaqueDom(d1)) {
+                                   (isSparseDom(d1)) {
     var d3: d1.type;
     // These should eventually become forall loops
     for e in d1 do d3.add(e);
@@ -2942,12 +2873,12 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       _value.dsiSerialRead(f);
     }
 
@@ -2964,11 +2895,11 @@ module ChapelArray {
 
     /* Yield the array elements in sorted order. */
     iter sorted(comparator:?t = chpl_defaultComparator()) {
-      if canResolveMethod(_value, "dsiSorted", comparator) {
+      if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
           yield i;
         }
-      } else if canResolveMethod(_value, "dsiSorted") {
+      } else if Reflection.canResolveMethod(_value, "dsiSorted") {
         compilerError(_value.type:string + " does not support dsiSorted(comparator)");
       } else {
         use Sort;
@@ -4041,10 +3972,8 @@ module ChapelArray {
     if a.rank != b.rank then
       compilerError("rank mismatch in domain assignment");
 
-    if !isOpaqueDom(a) && !isOpaqueDom(b) then
-      // Do not check the .idxType on opaque domains, it isn't allowed.
-      if a.idxType != b.idxType then
-        compilerError("index type mismatch in domain assignment");
+    if a.idxType != b.idxType then
+      compilerError("index type mismatch in domain assignment");
 
     if isRectangularDom(a) && isRectangularDom(b) then
       if !a.stridable && b.stridable then
@@ -4111,7 +4040,7 @@ module ChapelArray {
     if a.rank != 1 && isRange(b) then
       return true;
 
-    // Sparse and Opaque arrays do not yet support parallel iteration.  We
+    // Sparse arrays do not yet support parallel iteration.  We
     // could let them fall through, but then we get multiple warnings for a
     // single assignment statement which feels like overkill
     //
@@ -4240,16 +4169,20 @@ module ChapelArray {
     //
     // TODO: should we attempt other bulk transfer methods if one fails?
     //
-    if canResolveMethod(destClass, "doiBulkTransferFromKnown", destDom, srcClass, srcDom) {
+    if Reflection.canResolveMethod(destClass, "doiBulkTransferFromKnown",
+                                   destDom, srcClass, srcDom) {
       bulkTransferDebug("attempting doiBulkTransferFromKnown");
       success = destClass.doiBulkTransferFromKnown(destDom, srcClass, srcDom);
-    } else if canResolveMethod(srcClass, "doiBulkTransferToKnown", srcDom, destClass, destDom) {
+    } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToKnown",
+                                          srcDom, destClass, destDom) {
       bulkTransferDebug("attempting doiBulkTransferToKnown");
       success = srcClass.doiBulkTransferToKnown(srcDom, destClass, destDom);
-    } else if canResolveMethod(destClass, "doiBulkTransferFromAny", destDom, srcClass, srcDom) {
+    } else if Reflection.canResolveMethod(destClass, "doiBulkTransferFromAny",
+                                          destDom, srcClass, srcDom) {
       bulkTransferDebug("attempting doiBulkTransferFromAny");
       success = destClass.doiBulkTransferFromAny(destDom, srcClass, srcDom);
-    } else if canResolveMethod(srcClass, "doiBulkTransferToAny", srcDom, destClass, destDom) {
+    } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToAny",
+                                          srcDom, destClass, destDom) {
       bulkTransferDebug("attempting doiBulkTransferToAny");
       success = srcClass.doiBulkTransferToAny(srcDom, destClass, destDom);
     }
@@ -4442,18 +4375,6 @@ module ChapelArray {
       r(i) = a.dim(i) align t(i);
     return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
   }
-
-  //
-  // index for all opaque domains
-  //
-  pragma "no doc"
-  record _OpaqueIndex {
-    var node:int = 0;
-    var i:uint = 0;
-  }
-  pragma "no doc"
-  pragma "locale private"
-  var _OpaqueIndexNext: atomic uint;
 
   //
   // Swap operator for arrays

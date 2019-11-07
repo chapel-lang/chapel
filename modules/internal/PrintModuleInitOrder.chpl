@@ -27,6 +27,8 @@
 //
 pragma "export init"
 module PrintModuleInitOrder {
+  private use ChapelBase;
+
   config const printModuleInitOrder = false;
   pragma "print module init indent level" var moduleInitLevel = 2:int(32);
 

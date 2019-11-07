@@ -294,7 +294,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc const writeThis(x) {
+    proc const writeThis(x) throws {
       x <~> read();
     }
 
@@ -698,7 +698,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc const writeThis(x) {
+    proc const writeThis(x) throws {
       x <~> read();
     }
 
