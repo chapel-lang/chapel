@@ -160,6 +160,22 @@ proc (IO.file).home ref: locale {
 }
 
 pragma "last resort"
+proc (IO.file).length():int(64) throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.length();
+}
+
+pragma "last resort"
+proc (IO.file).reader(param kind=IO.iokind.dynamic, param locking=true, start:int(64) = 0,
+                 end:int(64) = max(int(64)), hints:IO.iohints = IO.IOHINT_NONE,
+                 style:IO.iostyle = this._style): IO.channel(false, kind, locking) throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.reader(kind, locking, start, end, hints, style);
+}
+
+pragma "last resort"
 proc open(path:string, mode:IO.iomode, hints:IO.iohints=IO.IOHINT_NONE,
           style:IO.iostyle = defaultIOStyle()): IO.file throws {
   compilerWarning("open will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
@@ -198,6 +214,15 @@ proc openmem(style:IO.iostyle = defaultIOStyle()):IO.file throws {
 }
 
 // TODO: channel record
+pragma "last resort"
+proc (IO.channel).readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
+                      amount = arg.domain.high - start + 1) : bool throws
+                      where arg.rank == 1 && isRectangularArr(arg) {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.readline(arg, numRead, start, amount);
+}
+
 // TODO: ioChar record
 // TODO: ioNewline record
 // TODO: ioLiteral record
