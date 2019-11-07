@@ -64,9 +64,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const col_indices = A.domain.dim (1);  // indices of either row or column
+    const col_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 
@@ -120,9 +120,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const col_indices = A.domain.dim (1);  // indices of either row or column
+    const col_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 
@@ -184,9 +184,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const row_indices = A.domain.dim (1);  // indices of either row or column
+    const row_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 
