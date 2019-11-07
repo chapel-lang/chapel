@@ -1,1 +1,1 @@
-Not sure what compiler output for this will look like yet!
+NoThrowDefaultGenParent.chpl:8: error: A1.writeThis override keyword required for method matching signature of superclass method

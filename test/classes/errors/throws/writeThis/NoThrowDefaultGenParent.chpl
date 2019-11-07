@@ -5,7 +5,7 @@ class A {
 class A1: A {
   var y: int = 0;
 
-  override proc writeThis(ch) throws {
+  proc writeThis(ch) throws {
     ch <~> "Hello from class A1!";
   }
 }
