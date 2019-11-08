@@ -652,7 +652,7 @@ except_ls:
 ;
 
 use_access_control:
-           { $$ = (currentModuleType == MOD_USER ? true : false); } // private | public
+           { $$ = (currentModuleType != MOD_INTERNAL ? true : false); } // private | public
 | TPUBLIC  { $$ = false; } // public
 | TPRIVATE { $$ = true; } // private
 ;
