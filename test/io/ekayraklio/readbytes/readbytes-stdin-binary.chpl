@@ -1,3 +1,5 @@
+use IO;
+
 var str:bytes;
 
 // set stdin to binary mode
