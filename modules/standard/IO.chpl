@@ -22,6 +22,9 @@
 
 Support for a variety of kinds of input and output.
 
+.. note:: All Chapel programs automatically include :proc:`~ChapelIO.write`,
+          :proc:`~ChapelIO.writeln` and :proc:`~ChapelIO.writef`.
+
 Input/output (I/O) facilities in Chapel include the types :record:`file` and
 :record:`channel`; the constants :record:`stdin`, :record:`stdout` and
 :record:`stderr`; the functions :proc:`open`, :proc:`file.close`,
