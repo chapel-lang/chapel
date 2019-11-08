@@ -853,14 +853,14 @@ prototype module ConcurrentMap {
     // var map = new ConcurrentMap(int, int);
     // var dist : [0..#DEFAULT_NUM_BUCKETS] int;
     // for i in 1..N {
-    // 	map.insert(i, i**2);
+    // map.insert(i, i**2);
     // }
 
     // visit(map.root);
     // for (x,y) in zip(hist, histDom) do writeln("[" + y:string + "]: " + x:string);
     // var count = 0;
     // for i in map {
-    // 	count += 1;
+    // count += 1;
     // }
     // writeln("Iterated elements: " + count:string);
     // writeln("Total elements in map: " + map.size:string);
