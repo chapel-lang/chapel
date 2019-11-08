@@ -1568,7 +1568,6 @@ static Expr* preFoldNamed(CallExpr* call) {
 
           bool fromEnum = is_enum_type(oldType);
           bool fromString = (oldType == dtString || 
-                             oldType == dtBytes  || 
                              oldType == dtStringC);
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
@@ -1579,8 +1578,8 @@ static Expr* preFoldNamed(CallExpr* call) {
 
           bool toEnum = is_enum_type(newType);
           bool toString = (newType == dtString ||
-                           newType == dtBytes  ||
                            newType == dtStringC);
+          bool toBytes = newType == dtBytes;
           bool toIntUint = is_int_type(newType) ||
                            is_uint_type(newType);
           bool toRealEtc = is_real_type(newType) ||
@@ -1625,8 +1624,6 @@ static Expr* preFoldNamed(CallExpr* call) {
             if (enumSym) {
               if (newType == dtStringC)
                 retval = new SymExpr(new_CStringSymbol(enumSym->name));
-              else if (newType == dtBytes)
-                retval = new SymExpr(new_BytesSymbol(enumSym->name));
               else
                 retval = new SymExpr(new_StringSymbol(enumSym->name));
 
@@ -1640,10 +1637,15 @@ static Expr* preFoldNamed(CallExpr* call) {
 
             if (newType == dtStringC)
               retval = new SymExpr(new_CStringSymbol(imm->v_string));
-            else if (newType == dtBytes)
-              retval = new SymExpr(new_BytesSymbol(imm->v_string));
             else
               retval = new SymExpr(new_StringSymbol(imm->v_string));
+
+            call->replace(retval);
+
+          // Handle string:bytes and c_string:bytes casts
+          } else if (imm != NULL && fromString && toBytes) {
+
+            retval = new SymExpr(new_BytesSymbol(imm->v_string));
 
             call->replace(retval);
 
