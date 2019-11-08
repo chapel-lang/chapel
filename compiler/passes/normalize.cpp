@@ -2498,13 +2498,15 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
     if (TypeSymbol* ts = toTypeSymbol(typeSe->symbol())) {
 
       AggregateType* at = toAggregateType(canonicalClassType(ts->type));
-      if (at && at->isGenericWithDefaults()) {
+      if (at && at->hasUserDefinedInit) {
+        // OK, in the event user supplied an init() function
+        // (if not, expect an error later)
+      } else if (at && at->isGenericWithDefaults()) {
         // OK, this can still be default-inited
       } else if (ts->hasFlag(FLAG_GENERIC) || (at && at->isGeneric())) {
         // can't default init a generic type
         canDefaultInit = false;
       }
-      // TODO: check for a record without a default init
  
       // can't default init a generic management/nilability
       if (isClassLikeOrManaged(ts->type)) {
