@@ -16,12 +16,12 @@ writeln(IOHINT_PARALLEL);
 writeln(defaultIOStyle());
 writeln(iohints: string);
 
-{
-  use IO only iomode;
+//{
+//  use IO only iomode;
 
-  var f = open("foo.txt", iomode.r);
-  writeln(f.home);
-}
+//  var f = open("foo.txt", iomode.r);
+//  writeln(f.home);
+//}
 //openplugin?
 var f1 = openfd(0);
 writeln(f1.home);

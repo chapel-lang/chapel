@@ -191,12 +191,15 @@ proc (IO.file).close() throws {
   this.close();
 }
 
+/* Relies on symbols that already generate an error to function.  Will not be
+   possible to access without, thus not worth adding an error for
 pragma "last resort"
 proc open(path:string, mode:IO.iomode, hints:IO.iohints=IO.IOHINT_NONE,
           style:IO.iostyle = defaultIOStyle()): IO.file throws {
   compilerWarning("open will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return open(path, mode, hints, style);
 }
+*/
 /* not yet tested
 pragma "last resort"
 proc openplugin(pluginFile: QioPluginFile, mode:IO.iomode,
