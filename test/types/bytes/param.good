@@ -18,3 +18,5 @@ false
 true
 false
 true
+some string as bytes
+some C string as bytes

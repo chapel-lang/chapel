@@ -84,3 +84,11 @@ writeln(b1.byte(3));
   writeln(flag);  // true
 }
 
+// check casts
+param s1 = "some string";
+param bFromS = s1:bytes;
+writeln(bFromS , " as ", bFromS.type:string);
+
+param c1 = c"some C string";
+param bFromC = c1:bytes;
+writeln(bFromC , " as ", bFromC.type:string);
