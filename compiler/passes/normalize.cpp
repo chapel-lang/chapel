@@ -2236,7 +2236,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
   // Error for global variables using split init
   FnSymbol* initFn = defExpr->getModule()->initFn;
-  bool global = defExpr->getFunction() == initFn;
+  bool global = (initFn && defExpr->parentExpr == initFn->body);
 
   if (requestedSplitInit && global)
     USR_FATAL(defExpr, "split initialization not supported for globals");
