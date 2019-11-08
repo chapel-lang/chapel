@@ -872,14 +872,6 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
-  // param bytes can coerce between string and c_string
-  // ENGIN: This allows `proc +` on param bytes to be chained
-  if (formalType == dtBytes && actualType == dtStringC) {
-    if (actualSym && actualSym->isImmediate()) {
-      return true;
-    }
-  }
-
   // coerce fully representable integers into real / real part of complex
   if (is_real_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
