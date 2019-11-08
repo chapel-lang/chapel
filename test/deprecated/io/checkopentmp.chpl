@@ -1,4 +1,4 @@
-use IO except opentmp; // Used to verify opentmp generates a warning message
+// Used to verify opentmp generates a warning message
 // was originally test/io/ferguson/writef_readf.chpl
 config const noisy = false;
 

@@ -167,12 +167,28 @@ proc (IO.file).length():int(64) throws {
 }
 
 pragma "last resort"
+proc (IO.file).writer(param kind=IO.iokind.dynamic, param locking=true, start:int(64) = 0,
+                 end:int(64) = max(int(64)), hints:c_int = 0, style:IO.iostyle = this._style):
+                 IO.channel(true,kind,locking) throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.writer(kind, locking, start, end, hints, style);
+}
+
+pragma "last resort"
 proc (IO.file).reader(param kind=IO.iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:IO.iohints = IO.IOHINT_NONE,
                  style:IO.iostyle = this._style): IO.channel(false, kind, locking) throws {
   // No deprecation warnings for methods and fields, we'll get them when we get
   // the type itself.
   return this.reader(kind, locking, start, end, hints, style);
+}
+
+pragma "last resort"
+proc (IO.file).close() throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  this.close();
 }
 
 pragma "last resort"
@@ -214,6 +230,43 @@ proc openmem(style:IO.iostyle = defaultIOStyle()):IO.file throws {
 }
 
 // TODO: channel record
+/* Currently causes channel methods to fail to compile, likely due to ChapelIO
+needing the channel class and having the use of this module at the same scope
+as the use of IO.
+pragma "last resort"
+proc channel type {
+  compilerWarning("file will no longer be available by default, please\ninsert a use of the IO module to access it.");
+  return IO.channel;
+}
+*/
+pragma "last resort"
+proc (IO.channel).write(const args ...?k, style:IO.iostyle):bool throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.write((... args), style);
+}
+
+pragma "last resort"
+proc (IO.channel).write(const args ...?k):bool throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.write((... args));
+}
+
+pragma "last resort"
+proc (IO.channel).writef(fmtStr: string, const args ...?k): bool throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.writef(fmtStr, (... args));
+}
+
+pragma "last resort"
+proc (IO.channel).writef(fmtStr: string): bool throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.writef(fmtStr);
+}
+
 pragma "last resort"
 proc (IO.channel).readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
                       amount = arg.domain.high - start + 1) : bool throws
@@ -221,6 +274,27 @@ proc (IO.channel).readline(arg: [] uint(8), out numRead : int, start = arg.domai
   // No deprecation warnings for methods and fields, we'll get them when we get
   // the type itself.
   return this.readline(arg, numRead, start, amount);
+}
+
+pragma "last resort"
+proc (IO.channel).close() throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  this.close();
+}
+
+pragma "last resort"
+proc (IO.channel).readf(fmtStr:string, ref args ...?k): bool throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.readf(fmtStr, (...args));
+}
+
+pragma "last resort"
+proc (IO.channel).readf(fmtStr:string): bool throws {
+  // No deprecation warnings for methods and fields, we'll get them when we get
+  // the type itself.
+  return this.readf(fmtStr);
 }
 
 // TODO: ioChar record
