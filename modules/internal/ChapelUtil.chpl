@@ -136,7 +136,7 @@ module ChapelUtil {
     if (flag != "--chpl-mli-socket-loc") {
       halt("chpl_get_mli_connection called with unexpected arguments, missing "
            + "'--chpl-mli-socket-loc <connection>', instead got " +
-           flag: string);
+           createStringWithNewBuffer(flag));
     }
     var result: c_string = chpl_get_argument_i(local_arg,
                                                (local_arg.argc-1): int(32));
