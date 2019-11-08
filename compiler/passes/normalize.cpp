@@ -2361,7 +2361,12 @@ static bool findInitPoints(DefExpr* def,
   if (def->sym->hasFlag(FLAG_EXTERN))
     return false;
 
-  Expr* start = def->getStmtExpr()->next;
+  Expr* start = NULL;
+  if (def && def->getStmtExpr())
+    start = def->getStmtExpr()->next;
+  if (start == NULL)
+    return false;
+
   found_init_t found = doFindInitPoints(def, start, initAssigns);
   return (found == FOUND_INIT);
 }
