@@ -107,7 +107,7 @@ module DefaultAssociative {
                                        parSafeDom=parSafe, dom=_to_unmanaged(this));
     }
   
-    proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+    proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
 
       var binary = f.binary();
 
@@ -184,8 +184,8 @@ module DefaultAssociative {
         }
       }
     }
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface

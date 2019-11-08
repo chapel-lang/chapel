@@ -3246,6 +3246,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
       // that includes path and offset information.
       //
       // TODO: Stop stealing code private to channels.
+      // TODO: Refactor the `channel.read` routine so that both it and this
+      //       can call common code.
       //
       try ch._ch_ioerror(EEOF:syserr, "in channel.read(" +
                                       _args_to_proto((x), preArg="ref ") + ")");
