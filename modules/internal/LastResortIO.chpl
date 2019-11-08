@@ -297,6 +297,14 @@ proc (IO.channel).readf(fmtStr:string): bool throws {
   return this.readf(fmtStr);
 }
 
+pragma "last resort"
+iter (IO.channel).lines() {
+  // No deprecation warnings for iterator methods, we'll get them when we get
+  // the type itself.
+  for i in this.lines() do
+    yield i;
+}
+
 // TODO: ioChar record
 // TODO: ioNewline record
 // TODO: ioLiteral record
