@@ -3218,22 +3218,39 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
      The _`<~> operator`
 
-     This `<~>` operator is the same as calling :proc:`channel.readwrite`,
-     except that it returns the channel so that multiple operator
-     calls can be chained together.
+     This `<~>` operator is the same as calling :proc:`channel.read` or
+     :proc:`channel.write` (depending on channel direction) except that it
+     returns the channel so that multiple operator calls can be chained
+     together.
 
      :returns: ch
+     :throws SystemError: When an IO error has occurred.
    */
   inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
-    ch.writeIt(x);
+    try ch.write(x);
     return ch;
   }
+
   // documented in the writing version.
   pragma "no doc"
   inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    ch.readIt(x);
+    const success = try ch.read(x);
+    if !success {
+      //
+      // The `channel.read` routine does not throw on EEOF, opting to return
+      // false instead. In lieu of rewriting `channel.writeIt` or duplicating
+      // code, duplicate only the relevant part used to create an IO error.
+      // The `channel._ch_ioerror` routine creates a well formatted error
+      // that includes path and offset information.
+      //
+      // TODO: Stop stealing code private to channels.
+      //
+      try ch._ch_ioerror(EEOF:syserr, "in channel.read(" +
+                                      _args_to_proto((x), preArg="ref ") + ")");
+    }
+
     return ch;
   }
 
@@ -3255,7 +3272,13 @@ inline proc channel.readwrite(ref x) where !this.writing {
   inline proc <~>(const ref r: channel, lit:ioLiteral) const ref throws
   where !r.writing {
     var litCopy = lit;
-    r.readwrite(litCopy);
+    const success = try r.read(litCopy);
+    if !success {
+      // TODO: Stop stealing code private to channels.
+      try r._ch_ioerror(EEOF:syserr, "in channel.read(" +
+                                     _args_to_proto((lit), preArg="ref ") + ")");
+    }
+
     return r;
   }
 
@@ -3272,7 +3295,13 @@ inline proc channel.readwrite(ref x) where !this.writing {
   inline proc <~>(const ref r: channel, nl:ioNewline) const ref throws
   where !r.writing {
     var nlCopy = nl;
-    r.readwrite(nlCopy);
+    const success = try r.read(nlCopy);
+    if !success {
+      // TODO: Stop stealing code private to channels.
+      try r._ch_ioerror(EEOF:syserr, "in channel.read(" +
+                                     _args_to_proto((nl), preArg="ref ") + ")");
+    }
+
     return r;
   }
 
