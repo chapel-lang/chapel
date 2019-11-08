@@ -1,5 +1,5 @@
 // Ensures that the addition of the 'only' keyword doesn't cause infinite
-// recursion when two modules use each other with an 'only' list.
+// recursion when two modules publicly use each other with an 'only' list.
 module A {
   public use B only b;
 

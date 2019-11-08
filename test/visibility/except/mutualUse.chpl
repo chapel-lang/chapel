@@ -1,5 +1,5 @@
 // Ensures that the addition of the 'except' keyword doesn't cause infinite
-// recursion when two modules use each other with an 'except' list.
+// recursion when two modules publicly use each other with an 'except' list.
 module A {
   public use B except b;
 

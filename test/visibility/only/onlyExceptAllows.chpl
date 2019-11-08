@@ -1,5 +1,5 @@
-// Verifies the behavior of use chains that start with an 'only' and have
-// an 'except' in them
+// Verifies the behavior of public use chains that start with an 'only' and
+// have an 'except' in them
 module Outer {
   public use Inner except a;
 

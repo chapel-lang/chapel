@@ -1,5 +1,5 @@
-// Ensures that infinite recursion doesn't occur when two modules use each
-// other, one with an 'only' list and the other with an 'except' list.
+// Ensures that infinite recursion doesn't occur when two modules publicly use
+// each other, one with an 'only' list and the other with an 'except' list.
 module A {
   public use B only b;
 
