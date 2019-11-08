@@ -275,6 +275,7 @@ module OwnedObject {
     }
 
     pragma "no doc"
+    pragma "leaves this nil"
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 
