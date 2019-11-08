@@ -8,6 +8,8 @@ proc =(ref a: myExternRecord, b: int) {
 
 var ex0: myExternRecord;
 var ex1: myExternRecord;
+ex0;
+ex1; // avoiding copy-init
 ex0 = 1;
 writeln(ex0);
 ex1 = ex0;
