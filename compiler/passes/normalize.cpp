@@ -2234,8 +2234,16 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   bool foundSplitInit = false;
   bool requestedSplitInit = isSplitInitExpr(init);
 
+  // Error for global variables using split init
+  FnSymbol* initFn = defExpr->getModule()->initFn;
+  bool global = defExpr->getFunction() == initFn;
+
+  if (requestedSplitInit && global)
+    USR_FATAL(defExpr, "split initialization not supported for globals");
+
   // For now, disable automatic split init on non-user code
-  if (defExpr->getModule()->modTag == MOD_USER || requestedSplitInit)
+  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
+      global == false)
     foundSplitInit = findInitPoints(defExpr, initAssign);
 
   /*if (foundSplitInit) {
