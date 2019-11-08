@@ -1021,7 +1021,7 @@ module DefaultAssociative {
   
   // Is 'idxType' legal to create a default associative domain with?
   // Currently based on the availability of chpl__defaultHash().
-  // Enumerated, opaque, and sparse domains are handled separately.
+  // Enumerated and sparse domains are handled separately.
   // Tuples and records also work, somehow.
   proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
   

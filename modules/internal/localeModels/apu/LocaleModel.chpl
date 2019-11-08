@@ -70,7 +70,7 @@ module LocaleModel {
       name = _parent.chpl_name() + "-CPU" + sid:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent.writeThis(f);
       f <~> '.'+name;
     }
@@ -114,7 +114,7 @@ module LocaleModel {
       name = _parent.chpl_name() + "-GPU" + sid:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent.writeThis(f);
       f <~> '.'+name;
     }
@@ -269,7 +269,7 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 

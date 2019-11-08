@@ -32,7 +32,7 @@ The following aspects are not documented yet:
 * a summary of the six descriptor classes
 
 * the requirements for a domain map to support
-  associative, opaque, or sparse domains;
+  associative or sparse domains;
 
 * the significance of dsiClone();
 
@@ -155,7 +155,6 @@ class ``GlobalDomain``
     ===========   ========================    ===================
     rectangular   ``dsiNewRectangularDom``    ``BaseRectangularDom``
     associative   ``dsiNewAssociativeDom``    ``BaseAssociativeDom``
-    opaque        ``dsiNewOpaqueDom``         ``BaseOpaqueDom``
     sparse        ``dsiNewSparseDom``         ``BaseSparseDom``
     ===========   ========================    ===================
 

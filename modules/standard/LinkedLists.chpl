@@ -225,7 +225,7 @@ record LinkedList {
   }
 
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     var binary = f.binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -258,7 +258,7 @@ record LinkedList {
   }
 
   pragma "no doc"
-  proc readThis(f) {
+  proc readThis(f) throws {
     // Special handling for reading in order to handle
     // reading an arbitrary length.
     var binary = f.binary();

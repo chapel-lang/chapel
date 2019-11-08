@@ -495,7 +495,7 @@ prototype module EpochManager {
       return arr;
       }
 
-      proc readWriteThis(f) {
+      proc readWriteThis(f) throws {
         f <~> "(Vector) {" <~> this.toArray() <~> "}";
       }
     }

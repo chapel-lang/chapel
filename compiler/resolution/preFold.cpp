@@ -2169,6 +2169,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
+
+    // All compiler generated writeThis routines now throw.
+    fn->throwsErrorInit();
+
     // when printing out a FCF, print out the function's name
     if (ioModule == NULL) {
       INT_FATAL("never parsed IO module, this shouldn't be possible");

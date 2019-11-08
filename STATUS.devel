@@ -619,7 +619,6 @@ Data Parallelism
   1. Scans are always serialized.
   # arrays/deitz/parallelism/test_scan_is_parallel.future
   2. Assignments from ranges to multidimensional arrays are always serialized.
-  3. Parallel iteration over opaque domains and arrays are always serialized.
 - Array promotion/forall/for/scan expressions always evaluate to 1D arrays.
   E.g., f(A) where A promotes f() should result in an array of type:
     [A.domain] f(A(i)).type but instead results in a 1D array

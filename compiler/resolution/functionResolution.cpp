@@ -5893,6 +5893,8 @@ static void resolveInitVar(CallExpr* call) {
   Type* targetType = NULL;
   bool addedCoerce = false;
 
+  bool inferType = call->numActuals() == 2;
+
   if (call->numActuals() > 3) {
     INT_FATAL(call, "unexpected number of actuals in variable init call");
   }
@@ -5948,8 +5950,6 @@ static void resolveInitVar(CallExpr* call) {
     // Insert a coercion if the types are different. Some internal types use a
     // coercion because their initCopy returns a different type.
     if (targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-        isSyncType(src->getValType()) ||
-        isSingleType(src->getValType()) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
 
@@ -5984,6 +5984,7 @@ static void resolveInitVar(CallExpr* call) {
   // which is handled in the 'init=' branch.
   bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
                             src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
+  bool initCopySyncSingle = inferType && (isSyncType(srcType->getValType()) || isSingleType(srcType->getValType()));
 
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
@@ -6001,10 +6002,9 @@ static void resolveInitVar(CallExpr* call) {
 
   } else if (isRecord(targetType->getValType()) == false ||
              isParamString ||
-             isSyncType(srcType->getValType()) ||
-             isSingleType(srcType->getValType()) ||
              targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
              isDomainWithoutNew ||
+             initCopySyncSingle ||
              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
              srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // These cases require an initCopy to implement special initialization

@@ -224,7 +224,7 @@ module LocaleModel {
       mlName = kindstr+whichNuma:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent!.writeThis(f);
       f <~> '.'+mlName;
     }
@@ -310,7 +310,7 @@ module LocaleModel {
       delete hbm;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent!.writeThis(f);
       f <~> '.'+ndName;
     }
@@ -500,7 +500,7 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 

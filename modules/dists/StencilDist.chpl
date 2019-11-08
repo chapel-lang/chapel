@@ -505,7 +505,7 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Stencil.writeThis(x) {
+proc Stencil.writeThis(x) throws {
   x <~> "Stencil\n";
   x <~> "-------\n";
   x <~> "distributes: " <~> boundingBox <~> "\n";
