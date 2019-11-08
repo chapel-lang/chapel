@@ -2232,7 +2232,6 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   // if there is no init expression, search for initialization
   // points written using '='
   bool foundSplitInit = false;
-
   bool requestedSplitInit = isSplitInitExpr(init);
 
   // For now, disable automatic split init on non-user code
@@ -2241,8 +2240,8 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
   /*if (foundSplitInit) {
     USR_WARN(defExpr, "Found split init for '%s'", defExpr->sym->name);
-    if (developer)
-      USR_PRINT(defExpr, "for sym id %i", defExpr->sym->id);
+    //if (developer)
+    //  USR_PRINT(defExpr, "for sym id %i", defExpr->sym->id);
     for_vector(CallExpr, call, initAssign) {
       USR_WARN(call, "init stmt here");
     }
@@ -2289,6 +2288,8 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
           new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, defExpr->exprType->remove()));
 
     for_vector(CallExpr, call, initAssign) {
+      SET_LINENO(call);
+
       // Consider the RHS of the '=' call to be the init expr.
       Expr* rhs = call->get(2)->remove();
 
@@ -2348,6 +2349,10 @@ static bool findInitPoints(DefExpr* def,
   if (def->init != NULL && !isSplitInitExpr(def->init))
     return false;
 
+  // and it doesn't make sense for extern variables
+  if (def->sym->hasFlag(FLAG_EXTERN))
+    return false;
+
   Expr* start = def->getStmtExpr()->next;
   found_init_t found = doFindInitPoints(def, start, initAssigns);
   return (found == FOUND_INIT);
@@ -2382,6 +2387,8 @@ static found_init_t doFindInitPoints(DefExpr* def,
       }
 
       if (containsSymExprFor(cur, def->sym)) {
+        // Emit an error if split initialization is required
+        errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
       }
 
@@ -2390,22 +2397,27 @@ static found_init_t doFindInitPoints(DefExpr* def,
       if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
         // Loop / on / begin / etc - just check for uses
         if (containsSymExprFor(cur, def->sym)) {
+          errorIfSplitInitializationRequired(def, cur);
           return FOUND_USE;
         }
       } else {
         // non-loop block
         Expr* start = block->body.first();
         found_init_t found = doFindInitPoints(def, start, initAssigns);
-        if (found == FOUND_INIT)
+        if (found == FOUND_INIT) {
           return FOUND_INIT;
-        else if (found == FOUND_USE)
+        } else if (found == FOUND_USE) {
+          errorIfSplitInitializationRequired(def, cur);
           return FOUND_USE;
+        }
       }
 
     // if _ { x = ... } else { x = ... }
     } else if (CondStmt* cond = toCondStmt(cur)) {
-      if (containsSymExprFor(cond->condExpr, def->sym))
+      if (containsSymExprFor(cond->condExpr, def->sym)) {
+        errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
+      }
 
       Expr* ifStart = cond->thenStmt->body.first();
       Expr* elseStart = cond->elseStmt ? cond->elseStmt->body.first() : NULL;
@@ -2425,6 +2437,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
         }
         return FOUND_INIT;
       } else if (foundIf != FOUND_NOTHING || foundElse != FOUND_NOTHING) {
+        errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
       }
 
@@ -2432,10 +2445,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
       // Look for uses of 'x' before the first assignment
       if (containsSymExprFor(cur, def->sym)) {
         // In that case, can't convert '=' to initialization
-
-        // Emit an error if split initialization is required
         errorIfSplitInitializationRequired(def, cur);
-
         return FOUND_USE;
       }
     }
@@ -2461,6 +2471,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
     return;
 
   bool canDefaultInit = true;
+  Type* nonNilableType = NULL;
   // No type or init expr, so can't default init
   if (def->exprType == NULL &&
       (def->init == NULL || isSplitInitExpr(def->init)))
@@ -2472,26 +2483,47 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   // (this will not catch all patterns)
   if (SymExpr* typeSe = toSymExpr(def->exprType)) {
     if (TypeSymbol* ts = toTypeSymbol(typeSe->symbol())) {
-      if (AggregateType* at = toAggregateType(ts->type)) {
-        // can't default init a generic type without defaults
-        if (at->isGeneric() && !at->isGenericWithDefaults())
-          canDefaultInit = false;
-        // TODO: check for a record without a default init
+
+      AggregateType* at = toAggregateType(canonicalClassType(ts->type));
+      if (at && at->isGenericWithDefaults()) {
+        // OK, this can still be default-inited
+      } else if (ts->hasFlag(FLAG_GENERIC) || (at && at->isGeneric())) {
+        // can't default init a generic type
+        canDefaultInit = false;
       }
-      // can't default init a generic type
-      if (ts->hasFlag(FLAG_GENERIC))
-        canDefaultInit = false;
+      // TODO: check for a record without a default init
+ 
+      // can't default init a generic management/nilability
+      if (isClassLikeOrManaged(ts->type)) {
+        ClassTypeDecorator d = classTypeDecorator(ts->type);
+        if (isDecoratorUnknownManagement(d) ||
+            isDecoratorUnknownNilability(d))
+          canDefaultInit = false;
+      }
+
       // can't default init a non-nilable class type
-      if (isNonNilableClassType(ts->type))
+      // unless --legacy-classes is on
+      if (isNonNilableClassType(ts->type) && !fLegacyClasses) {
         canDefaultInit = false;
+        nonNilableType = ts->type;
+      }
     }
   }
 
   if (canDefaultInit == false) {
     const char* name = def->sym->name;
     USR_FATAL_CONT(def, "'%s' cannot be default initialized", name);
-    if (cur)
+    if (cur) {
       USR_PRINT(cur, "'%s' is before being initialized here", name);
+    } else if (nonNilableType != NULL) {
+      USR_PRINT("non-nil class types do not support default initialization");
+
+      Type* type = nonNilableType;
+      AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+      ClassTypeDecorator d = classTypeDecorator(type);
+      Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+      USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+    }
   }
 }
 
