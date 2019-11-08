@@ -86,9 +86,25 @@ writeln(b1.byte(3));
 
 // check casts
 param s1 = "some string";
-param bFromS = s1:bytes;
-writeln(bFromS , " as ", bFromS.type:string);
-
 param c1 = c"some C string";
+param i = 10;
+param r = 10.0;
+param b = true;
+param im = 10i;
+param com = 10+10i;
+
+param bFromS = s1:bytes;
 param bFromC = c1:bytes;
+param bFromI = i:bytes;
+param bFromR = r:bytes;
+param bFromB = b:bytes;
+param bFromIm = im:bytes;
+param bFromCom = com:bytes;
+
+writeln(bFromI , " as ", bFromC.type:string);
+writeln(bFromR , " as ", bFromR.type:string);
+writeln(bFromB , " as ", bFromB.type:string);
+writeln(bFromIm , " as ", bFromIm.type:string);
+writeln(bFromCom , " as ", bFromCom.type:string);
+writeln(bFromS , " as ", bFromS.type:string);
 writeln(bFromC , " as ", bFromC.type:string);

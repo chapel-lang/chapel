@@ -1569,6 +1569,7 @@ static Expr* preFoldNamed(CallExpr* call) {
           bool fromEnum = is_enum_type(oldType);
           bool fromString = (oldType == dtString || 
                              oldType == dtStringC);
+          bool fromBytes = oldType == dtBytes;
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
           bool fromRealEtc = is_real_type(oldType) ||
@@ -1649,8 +1650,15 @@ static Expr* preFoldNamed(CallExpr* call) {
 
             call->replace(retval);
 
+          // Handle bytes:c_string casts (bytes.c_str()) is used in IO
+          } else if (imm != NULL && fromBytes && newType == dtStringC) {
+
+            retval = new SymExpr(new_CStringSymbol(imm->v_string));
+
+            call->replace(retval);
+
           // Handle other casts to string
-          } else if (imm != NULL && fromIntEtc && toString) {
+          } else if (imm != NULL && fromIntEtc && (toString || toBytes)) {
             // special case because newType->defaultValue will
             // be null for dtString
 

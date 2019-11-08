@@ -18,5 +18,10 @@ false
 true
 false
 true
+10 as bytes
+10.0 as bytes
+true as bytes
+10.0i as bytes
+10.0 + 10.0i as bytes
 some string as bytes
 some C string as bytes
