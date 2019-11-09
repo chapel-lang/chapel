@@ -255,8 +255,8 @@ proc Grid.xValue (point_index: dimension*int) {
 
   var coord: dimension*real;
 
-  if dimension == 1 then {
-    coord(1) = x_low(1) + (point_index(1) - i_low(1)) * dx(1)/2.0;
+  if dimension == 0 then {
+    coord(0) = x_low(0) + (point_index(0) - i_low(0)) * dx(0)/2.0;
   }
   else {
     for d in dimensions do

@@ -140,18 +140,18 @@ class CandidateDomain {
     min_width = initMin_width;
 
     proc calculate_signatures(param d) {
-      if d == rank then return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,);
-      else              return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,
+      if d == rank-1 then return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,);
+      else                return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,
                                  ( ...calculate_signatures( d + 1 ) )      );
     }
-    signatures = calculate_signatures(1);
+    signatures = calculate_signatures(0);
 
     this.complete();
       
     for idx in D 
     {
       if flags(idx) then
-        for d in 1..rank do signatures(d).array(idx(d)) += 1;
+        for d in 0..rank-1 do signatures(d).array(idx(d)) += 1;
     }
 
 
@@ -171,7 +171,7 @@ class CandidateDomain {
 
   proc deinit ()
   { 
-    for i in 1..rank do delete signatures(i);
+    for i in 0..rank-1 do delete signatures(i);
   }
   // /|'''''''''''''''''''/|
   //< |  deinitializer   < |
@@ -209,7 +209,7 @@ proc CandidateDomain.trim()
   var trimmed_ranges:      rank*range(stridable=true);
   var trim_low, trim_high: int;
   
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     //---- Low bound ----
     
@@ -265,7 +265,7 @@ proc CandidateDomain.trim()
   //---- Resize domain and signatures ----
   
   D = trimmed_ranges;
-  for d in 1..rank do signatures(d).Domain = {D.dim(d)};
+  for d in 0..rank-1 do signatures(d).Domain = {D.dim(d)};
 
 }
 // /|"""""""""""""""""""""""""""""/|
@@ -324,11 +324,11 @@ proc CandidateDomain.removeHole()
 
   //===> Locate largest hole ===>
 
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     //---- ranges = D ----
-    for d2 in 1..d-1    do ranges(d2) = D.dim(d2);
-    for d2 in d+1..rank do ranges(d2) = D.dim(d2);
+    for d2 in 0..d-1      do ranges(d2) = D.dim(d2);
+    for d2 in d+1..rank-1 do ranges(d2) = D.dim(d2);
   
   
     //---- Allowable hole bounds ----
@@ -387,8 +387,8 @@ proc CandidateDomain.removeHole()
     
     stride = D.stride(d_cut);
     
-    for d in 1..d_cut-1    do ranges(d) = D.dim(d);
-    for d in d_cut+1..rank do ranges(d) = D.dim(d);
+    for d in 0..d_cut-1      do ranges(d) = D.dim(d);
+    for d in d_cut+1..rank-1 do ranges(d) = D.dim(d);
     
     ranges(d_cut) = D.low(d_cut) .. max_hole.low(d_cut)-stride by stride;
     D1 = ranges;
@@ -428,7 +428,7 @@ proc CandidateDomain.inflectionCut ()
 
   //===> Locate optimal cut ===>
   
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     //---- Must be at least 4 cells wide for an inflection cut ----
     
@@ -475,7 +475,7 @@ proc CandidateDomain.inflectionCut ()
   
   if cut_magnitude > 0 {
 
-    for d in 1..rank do ranges(d) = D.dim(d);
+    for d in 0..rank-1 do ranges(d) = D.dim(d);
 
     var stride = D.stride(cut_dimension);
     ranges(cut_dimension) = D.low(cut_dimension) .. D1_high by stride;

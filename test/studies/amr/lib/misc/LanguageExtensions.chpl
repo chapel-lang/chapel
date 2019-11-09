@@ -20,44 +20,44 @@ proc main {
 //|/________________________________|/
 
 proc =(ref T,a)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
-  for i in 1..T.size do
+  for i in 0..#T.size do
     T(i) = a;
 }
 
 proc +(a,T)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = a+T(i);
   return U;
 }
 
 proc +(T,a)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = T(i)+a;
   return U;
 }
 
 proc -(a,T)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = a-T(i);
   return U;
 }
 
 proc -(T,a)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = T(i)-a;
   return U;
 }
@@ -66,53 +66,53 @@ proc -(T)
   where isTuple(T) && isHomogeneousTuple(T)
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = -T(i);
   return U;
 }
 
 proc *(a, T)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = a*T(i);
   return U;;
 }
 
 proc *(T,a)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = T(i)*a;
   return U;;
 }
 
 proc /(a, T)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = a/T(i);
   return U;;
 }
 
 proc /(T,a)
-  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+  where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = T(i)/a;
   return U;;
 }
 
 proc abs(T)
   where isTuple(T) && isHomogeneousTuple(T) 
-    && (T(1).type==int || T(1).type==real)
+    && (T(0).type==int || T(0).type==real)
 {
   var U: T.type;
-  for i in 1..T.size do
+  for i in 0..#T.size do
     U(i) = abs(T(i));
   return U;
 }
@@ -129,7 +129,7 @@ proc abs(T)
 //==== Range exponentiation ====
 proc **(R: range(stridable=?s), param n: int) {
   var ranges: n*R.type;
-  for i in {1..n} do ranges(i) = R;
+  for i in 0..#n do ranges(i) = R;
 
   var D: domain(n,idxType=R.idxType,stridable=s) = ranges;
   return D;
@@ -141,8 +141,8 @@ proc *(R: range(stridable=?s), D: domain)
   param stridable = s || D.stridable;
 
   var ranges: (D.rank+1)*range(stridable=stridable);
-  ranges(1) = R;
-  for i in {1..D.rank} do ranges(i+1) = D.dim(i);
+  ranges(0) = R;
+  for i in 1..D.rank do ranges(i) = D.dim(i);
 
   var D_new: domain(D.rank+1,stridable=stridable) = ranges;
   return D_new;
@@ -154,8 +154,8 @@ proc *(D: domain, R: range(stridable=?s))
   param stridable = s || D.stridable;
 
   var ranges: (D.rank+1)*range(stridable=stridable);
-  for i in {1..D.rank} do ranges(i) = D.dim(i);
-  ranges(D.rank+1) = R;
+  for i in 0..#D.rank-1 do ranges(i) = D.dim(i);
+  ranges(D.rank) = R;
 
   var D_new: domain(D.rank+1,stridable=stridable) = ranges;
   return D_new;
@@ -168,9 +168,9 @@ proc *(D1: domain, D2: domain)
   param rank = D1.rank + D2.rank;
 
   var ranges: rank*range(stridable=stridable);
-  for i in 1..D1.rank do
+  for i in 0..#D1.rank do
     ranges(i) = D1.dim(i);
-  for i in 1..D2.rank do
+  for i in 0..#D2.rank do
     ranges(D1.rank+i) = D2.dim(i);
 
   var D_new: domain(rank,stridable=stridable) = ranges;
