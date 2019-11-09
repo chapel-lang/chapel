@@ -310,7 +310,7 @@ module ArrayViewRankChange {
     }
 
     // TODO: Is there something we can re-use here?
-    proc dsiSerialWrite(f) {
+    proc dsiSerialWrite(f) throws {
       var first = true;
       for d in 1..downrank do
         if !collapsedDim(d) {
