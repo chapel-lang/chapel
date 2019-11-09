@@ -1,1 +1,1 @@
-line-numbers-after-newline-in-string.chpl:3: error: 'x' cannot be default initialized
+line-numbers-after-newline-in-string.chpl:3: error: split initialization not supported for globals
