@@ -2364,8 +2364,6 @@ static bool findInitPoints(DefExpr* def,
   Expr* start = NULL;
   if (def && def->getStmtExpr())
     start = def->getStmtExpr()->next;
-  if (start == NULL)
-    return false;
 
   found_init_t found = doFindInitPoints(def, start, initAssigns);
   return (found == FOUND_INIT);
@@ -2376,6 +2374,9 @@ static found_init_t doFindInitPoints(DefExpr* def,
                                      std::vector<CallExpr*>& initAssigns) {
   // Regular initialization is not split initialization
   if (def->init != NULL && !isSplitInitExpr(def->init))
+    return FOUND_NOTHING;
+
+  if (start == NULL)
     return FOUND_NOTHING;
 
   // Scroll forward in the block containing DefExpr for x.
