@@ -187,7 +187,7 @@ void MLIContext::emit(ModuleSymbol* md) {
   const std::vector<FnSymbol*> fns = md->getTopLevelFunctions(true);
 
   for_vector(FnSymbol, fn, fns) {
-    if (not this->shouldEmit(fn)) { continue; }
+    if (!this->shouldEmit(fn)) { continue; }
 
     this->exps.push_back(fn);
     this->emit(fn);
@@ -197,7 +197,7 @@ void MLIContext::emit(ModuleSymbol* md) {
 }
 
 void MLIContext::emit(FnSymbol* fn) {
-  if (not this->shouldEmit(fn)) { return; }
+  if (!this->shouldEmit(fn)) { return; }
 
   this->verifyPrototype(fn); 
   this->emitClientWrapper(fn);
@@ -314,7 +314,7 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
   gen += this->genSocketCall("skt", target, out);
 
   // Generate a null frame in the opposite direction for the ACK.
-  gen += this->genSocketCall("skt", NULL, not out);
+  gen += this->genSocketCall("skt", NULL, !out);
 
   return gen;
 }
@@ -341,7 +341,7 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
 
   gen += this->genSocketCall("skt", "bytes", out);
 
-  if (not out) {
+  if (!out) {
     if (this->debugPrint) {
       gen += this->genDebugPrintCall1Arg("Received intended length: ", "bytes");
     }
@@ -353,7 +353,7 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
   }
 
   // Push/pull possible allocation error on ACK.
-  gen += this->genSocketCall("skt", "mem_err", not out);
+  gen += this->genSocketCall("skt", "mem_err", !out);
 
   // If error, terminate client/server.
   gen += "if (mem_err) chpl_mli_terminate(CHPL_MLI_CODE_EMEMORY);\n";
@@ -362,9 +362,9 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
   gen += this->genSocketCallBuffer("skt", target, "bytes", out);
 
   // Generate a null frame in the opposite direction for the ACK.
-  gen += this->genSocketCall("skt", NULL, not out);
+  gen += this->genSocketCall("skt", NULL, !out);
 
-  if (not out) {
+  if (!out) {
     // Null terminate the string we just received.
     gen += "((char*) buffer)[bytes] = '\\0';\n";
 
@@ -428,7 +428,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   gen += this->genNewDecl("int", "skt_err");
 
   // If unpacking, declare a temporary for the return value.
-  if (not out) {
+  if (!out) {
     gen += this->genNewDecl(t, "result");
   }
 
@@ -468,7 +468,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   }
 
   // If we are unpacking, return our temporary.
-  if (not out) { gen += "return result;\n"; }
+  if (!out) { gen += "return result;\n"; }
   
   gen += scope_end;
   gen += "\n";
@@ -667,7 +667,7 @@ bool MLIContext::isSupportedType(Type* t) {
 
 void MLIContext::verifyPrototype(FnSymbol* fn) {
 
-  if (fn->retType != dtVoid && not isSupportedType(fn->retType) &&
+  if (fn->retType != dtVoid && !isSupportedType(fn->retType) &&
       exportedStrRets.find(fn) == exportedStrRets.end()) {
     // We only allow c_ptr(int8) if it was originally a Chapel string return
     Type* t = fn->retType;
@@ -677,7 +677,7 @@ void MLIContext::verifyPrototype(FnSymbol* fn) {
 
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
-    if (not this->isSupportedType(as->type)) {
+    if (!this->isSupportedType(as->type)) {
       Type* t = as->type;
       USR_FATAL(fn, "Multi-locale libraries do not support formal type: %s",
                 t->name());
@@ -710,7 +710,7 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   gen += this->genNewDecl("int64_t", "st");
 
   // Declare a temporary for the return value, if necessary.
-  if (not hasVoidReturnType) {
+  if (!hasVoidReturnType) {
     gen += this->genNewDecl(fn->retType, "result");
   }
 
@@ -725,7 +725,7 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   gen += this->genSocketPullCall(client_main, "st");
 
   // If we are void/void, then there's nothing left to do.
-  if (hasVoidReturnType and not hasFormals) {
+  if (hasVoidReturnType and !hasFormals) {
     gen += this->genComment("Routine is void/void!");
     return gen;
   }
@@ -739,7 +739,7 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   }
 
   // Pull and return result if applicable.
-  if (not hasVoidReturnType) {
+  if (!hasVoidReturnType) {
     gen += "result = ";
     gen += this->genMarshalPullCall(client_res, "result", fn->retType);
     gen += "return result;\n";
@@ -755,14 +755,14 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   std::string gen;
 
   // Emit void/void calls immediately, then return.
-  if (hasVoidReturnType and not hasFormals) {
+  if (hasVoidReturnType and !hasFormals) {
     gen += fn->cname;
     gen += "();\n";
     return gen;
   }
 
   // Declare a temporary for the return value, if necessary.
-  if (not hasVoidReturnType) {
+  if (!hasVoidReturnType) {
     gen += this->genTypeName(fn->retType);
     gen += " result;\n";
   }
@@ -786,7 +786,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   }
 
   // Only generate LHS target if necessary.
-  if (not hasVoidReturnType) {
+  if (!hasVoidReturnType) {
     gen += "result=";
   }
 
@@ -806,7 +806,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   gen += ");\n";
 
   // If there is a result, issue a pack call for it.
-  if (not hasVoidReturnType) {
+  if (!hasVoidReturnType) {
     gen += this->genMarshalPushCall(server_res, "result", fn->retType);
   }
 
@@ -823,7 +823,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   //
   for (int i = 1; i <= fn->numFormals(); i++) {
     Type* t = this->getTypeFromFormal(fn, i);
-    if (not this->typeRequiresAllocation(t)) { continue; }
+    if (!this->typeRequiresAllocation(t)) { continue; }
     if (t == dtStringC) {
       gen += "mli_free(";
       gen += "((void*) ";
