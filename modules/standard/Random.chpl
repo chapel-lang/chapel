@@ -72,9 +72,9 @@
 */
 module Random {
 
-  use RandomSupport;
-  use NPBRandom;
-  use PCGRandom;
+  public use RandomSupport;
+  public use NPBRandom;
+  public use PCGRandom;
   private use HaltWrappers only;
 
 
