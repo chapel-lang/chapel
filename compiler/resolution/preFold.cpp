@@ -1836,7 +1836,7 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 //
 static Symbol* determineQueriedField(CallExpr* call) {
   AggregateType* at     =
-    toAggregateType(canonicalDecoratedClassType(call->get(1)->getValType()));
+    toAggregateType(canonicalClassType(call->get(1)->getValType()));
   SymExpr*       last   = toSymExpr(call->get(call->numActuals()));
   VarSymbol*     var    = toVarSymbol(last->symbol());
   Symbol*        retval = NULL;
