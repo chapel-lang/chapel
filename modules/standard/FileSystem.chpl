@@ -876,7 +876,8 @@ private module GlobWrappers {
   // glob_index wrapper that takes care of casting
   inline proc glob_index_w(glb: glob_t, idx: int): string {
     extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
-    return chpl_glob_index(glb, idx.safeCast(size_t)): string;
+    return createStringWithNewBuffer(chpl_glob_index(glb,
+                                                       idx.safeCast(size_t)));
   }
 
   // globfree wrapper that exists only for symmetry in the routine names
@@ -1181,7 +1182,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name():string;
+      const filename = createStringWithBorrowedBuffer(ent.d_name());
       if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;

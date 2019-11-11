@@ -28,9 +28,9 @@ proc main() {
     if s1c != s2c {
       writeln("Mismatched!");
       writeln("  s1  = ", s1);
-      writeln("  s1c = ", s1c :string);
+      writeln("  s1c = ", createStringWithNewBuffer(s1c));
       writeln("  s2  = ", s2);
-      writeln("  s2c = ", s2c :string);
+      writeln("  s2c = ", createStringWithNewBuffer(s2c));
     }
   }
 }

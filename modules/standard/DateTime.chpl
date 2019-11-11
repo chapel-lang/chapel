@@ -433,7 +433,8 @@ module DateTime {
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
+    var str = createStringWithNewBuffer( __primitive("cast",
+                                                     c_string, c_ptrTo(buf)));
 
     return str;
   }
@@ -681,7 +682,8 @@ module DateTime {
     }
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
+    var str = createStringWithNewBuffer(__primitive("cast",
+                                                    c_string, c_ptrTo(buf)));
 
     return str;
   }
@@ -1190,7 +1192,8 @@ module DateTime {
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
+    var str = createStringWithNewBuffer(__primitive("cast",
+                                                    c_string, c_ptrTo(buf)));
 
     return str;
   }
