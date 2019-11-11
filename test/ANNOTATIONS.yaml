@@ -1668,6 +1668,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Turn "array-as-vec" deprecation warnings on (#13999)
   10/30/19:
     - Switched test machine
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
 
 allTotalTime:
   <<: *compiler-perf-base
