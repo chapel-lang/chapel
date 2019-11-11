@@ -1,3 +1,5 @@
+use IO;
+
 var D = {1..10,1..10};
 var A: [D] real;
 var value: real;

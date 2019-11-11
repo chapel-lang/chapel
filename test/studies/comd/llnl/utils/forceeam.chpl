@@ -6,6 +6,8 @@ use force;
 use BlockDist;
 use VisualDebug;
 
+private use IO;
+
 class InterpolationObject {
   var n : int;
   var x0 : real;

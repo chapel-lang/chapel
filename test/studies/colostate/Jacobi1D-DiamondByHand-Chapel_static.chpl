@@ -24,6 +24,7 @@
  ******************************************************************************/
 use Time;
 use Random;
+use IO;
 
 config const printTime: bool = true; // print timer
 config const globalSeed = SeedGenerator.oddCurrentTime;

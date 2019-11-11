@@ -29,6 +29,8 @@ writeln("World!");
 writeln("There are ", 3, " commas (\",\") in this line of code");
 
 // Different output channels:
+use IO; // Required for accessing the alternative output channels
+
 stdout.writeln("This goes to standard output, just like plain writeln() does");
 stderr.writeln("This goes to standard error");
 

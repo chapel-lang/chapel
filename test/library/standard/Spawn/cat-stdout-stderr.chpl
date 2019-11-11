@@ -1,3 +1,5 @@
+use IO;
+
 var line:string;
 var i = 0;
 while stdin.readline(line) {

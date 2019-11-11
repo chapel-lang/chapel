@@ -304,12 +304,6 @@ module ChapelLocale {
       return this;
     }
 
-    // A useful default definition is provided (not pure virtual).
-    pragma "no doc"
-    override proc writeThis(f) throws {
-      f <~> name;
-    }
-
     pragma "no doc"
     proc getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();

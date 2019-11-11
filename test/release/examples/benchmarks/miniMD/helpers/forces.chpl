@@ -2,6 +2,7 @@
 
 use initMD;
 use Time;
+private use IO;
 
 // define the interface for a force object
 class Force {

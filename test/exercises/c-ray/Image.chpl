@@ -1,3 +1,6 @@
+// Allow access to stderr, stdout, iomode
+private use IO;
+
 //
 // Configuration params/types
 // (Override defaults on compiler line using -s<cfg>=<val>)

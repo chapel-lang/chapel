@@ -2,6 +2,7 @@
 use Grid_def;
 use MultiDomain_def;
 
+private use IO;
 
 //|\""""""""""""""""""""|\
 //| >    Level class    | >

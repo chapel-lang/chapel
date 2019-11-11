@@ -8025,6 +8025,8 @@ statement after the ``try``-``catch`` blocks.
 
    .. code-block:: chapel
 
+      use SysError;
+
       proc catchingErrors() throws {
         try {
           alwaysThrows(0);
@@ -8055,6 +8057,8 @@ clauses, if any, match that error, the program halts.
    
 
    .. code-block:: chapel
+
+      use SysError;
 
       proc catchingErrorsHalt() {
         try! {
@@ -8127,6 +8131,8 @@ error raised in a ``try`` block.
    
 
    .. code-block:: chapel
+
+      use SysError;
 
       proc catchingErrorsPropagate() throws {
         try {

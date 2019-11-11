@@ -1,3 +1,5 @@
+use IO;
+
 writeln("Words words words");
 var f = openmem();
 {

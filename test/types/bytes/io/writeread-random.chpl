@@ -1,4 +1,4 @@
-use Random;
+use Random, IO;
 
 config const nBytes = 1024;
 

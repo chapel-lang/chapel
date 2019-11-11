@@ -1,3 +1,5 @@
+use IO;
+
 config const n = 100;
 config const debug = false;
 

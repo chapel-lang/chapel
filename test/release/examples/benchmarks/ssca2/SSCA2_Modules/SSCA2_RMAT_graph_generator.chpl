@@ -112,7 +112,7 @@ proc Gen_RMAT_graph ( a : real,
                      MAX_EDGE_WEIGHT :int,
                      G )
 
-  { use Random;
+{ use Random, IO;
     use analyze_RMAT_graph_associative_array;
 
     if PRINT_TIMING_STATISTICS then stopwatch.start ();

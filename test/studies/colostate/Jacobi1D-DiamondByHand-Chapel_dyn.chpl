@@ -24,6 +24,7 @@
  ******************************************************************************/
 use Time;
 use Random;
+use IO;
 use DynamicIters;
 
 config const printTime: bool = true; // print timer

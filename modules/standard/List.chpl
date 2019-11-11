@@ -99,6 +99,8 @@ module List {
     }
   }
 
+  private use IO;
+
   /*
     A list is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. Unlike a stack, the

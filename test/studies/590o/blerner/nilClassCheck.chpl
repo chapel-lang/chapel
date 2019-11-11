@@ -1,3 +1,5 @@
+use IO;
+
 class C {
   var val: int;
 }

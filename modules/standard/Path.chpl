@@ -65,7 +65,7 @@
 module Path {
 
 private use List;
-use SysError;
+use SysError, IO;
 private use Sys;
 
 /* Represents generally the current directory. This starts as the directory

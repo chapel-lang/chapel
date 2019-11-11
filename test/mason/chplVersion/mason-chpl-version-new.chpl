@@ -1,6 +1,7 @@
 
 use MasonUtils;
 use MasonNew;
+use IO;
 
 proc main() {
   const args = ["a.out", "new", "newTest"];

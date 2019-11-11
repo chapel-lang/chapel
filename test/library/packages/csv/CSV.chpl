@@ -23,6 +23,7 @@
    CSV files.
  */
 module CSV {
+  use IO;
   /* The `CSVIO` record can be initialized with a reader or writer channel
      for reading or writing CSV files.
    */

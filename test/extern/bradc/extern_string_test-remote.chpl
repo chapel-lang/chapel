@@ -1,3 +1,5 @@
+use IO;
+
 extern proc return_string_test():c_string;
 extern proc return_string_arg_test(ref c_string);
 
