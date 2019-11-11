@@ -34,7 +34,7 @@ Creating :record:`bytes`
 
 - If you need to create :record:`bytes` using a specific buffer (i.e. data in
   another :record:`bytes`, a `c_string` or a C pointer) you can use the
-  factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
+  factory functions shown below, such as :proc:`bytes.createWithNewBuffer`.
 
 :record:`bytes` and :record:`~String.string`
 --------------------------------------------
@@ -122,8 +122,15 @@ module Bytes {
   pragma "no doc"
   type idxType = int; 
 
+  private proc factoryDeprWarning() {
+    if showStringBytesInitDeprWarnings {
+      compilerWarning("createBytesWith* functions are deprecated - "+
+                      "please use bytes.createWith* instead");
+    }
+  }
+
   //
-  // createBytes* functions
+  // bytes.create* functions
   //
 
   /*
@@ -135,10 +142,15 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(s: bytes) {
+  inline proc type bytes.createWithBorrowedBuffer(s: bytes) {
     var ret: bytes;
     initWithBorrowedBuffer(ret, s);
     return ret;
+  }
+
+  inline proc createBytesWithBorrowedBuffer(s: bytes) {
+    factoryDeprWarning();
+    return bytes.createWithBorrowedBuffer(s);
   }
 
   /*
@@ -154,13 +166,18 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+  proc type bytes.createWithBorrowedBuffer(s: c_string, length=s.length) {
     //NOTE: This function is heavily used by the compiler to create bytes
     //literals. So, inlining this causes some bloat in the AST that increases
     //the compilation time slightly. Therefore, currently we are keeping this
     //one non-inlined.
-    return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+    return bytes.createWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
+  }
+
+  proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+    factoryDeprWarning();
+    return bytes.createWithBorrowedBuffer(s, length);
   }
 
   /*
@@ -177,14 +194,26 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+  inline proc type bytes.createWithBorrowedBuffer(s: bufferType, length: int,
+                                                                 size: int) {
     var ret: bytes;
     initWithBorrowedBuffer(ret, s, length,size);
     return ret;
   }
 
+  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    factoryDeprWarning();
+    return bytes.createWithBorrowedBuffer(s, length, size);
+  }
+
   pragma "no doc"
+  inline proc type bytes.createWithOwnedBuffer(s: bytes) {
+    // should we allow stealing ownership?
+    compilerError("A bytes cannot be passed to bytes.createWithOwnedBuffer");
+  }
+
   inline proc createBytesWithOwnedBuffer(s: bytes) {
+    factoryDeprWarning();
     // should we allow stealing ownership?
     compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
   }
@@ -200,9 +229,14 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
-    return createBytesWithOwnedBuffer(s: bufferType, length=length,
+  inline proc type bytes.createWithOwnedBuffer(s: c_string, length=s.length) {
+    return bytes.createWithOwnedBuffer(s: bufferType, length=length,
                                                       size=length+1);
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
+    factoryDeprWarning();
+    return bytes.createWithOwnedBuffer(s, length);
   }
 
   /*
@@ -219,10 +253,16 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
+  inline proc type bytes.createWithOwnedBuffer(s: bufferType, length: int,
+                                                              size: int) {
     var ret: bytes;
     initWithOwnedBuffer(ret, s, length, size);
     return ret;
+  }
+
+  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    factoryDeprWarning();
+    return bytes.createWithOwnedBuffer(s, length, size);
   }
 
   /*
@@ -233,10 +273,15 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: bytes) {
+  inline proc type bytes.createWithNewBuffer(s: bytes) {
     var ret: bytes;
     initWithNewBuffer(ret, s);
     return ret;
+  }
+
+  inline proc createBytesWithNewBuffer(s: bytes) {
+    factoryDeprWarning();
+    return bytes.createWithNewBuffer(s);
   }
 
   /*
@@ -250,9 +295,13 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
-    return createBytesWithNewBuffer(s: bufferType, length=length,
+  inline proc type bytes.createWithNewBuffer(s: c_string, length=s.length) {
+    return bytes.createWithNewBuffer(s: bufferType, length=length,
                                                     size=length+1);
+  }
+  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
+    factoryDeprWarning();
+    return bytes.createWithNewBuffer(s, length);
   }
 
   /*
@@ -267,10 +316,16 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+  inline proc type bytes.createWithNewBuffer(s: bufferType, length: int,
+                                                            size: int) {
     var ret: bytes;
     initWithNewBuffer(ret, s, length, size);
     return ret;
+  }
+
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+    factoryDeprWarning();
+    return bytes.createWithNewBuffer(s, length, size);
   }
 
   record _bytes {
@@ -410,7 +465,7 @@ module Bytes {
     */
     inline proc localize() : bytes {
       if _local || this.locale_id == chpl_nodeID {
-        return createBytesWithBorrowedBuffer(this);
+        return bytes.createWithBorrowedBuffer(this);
       } else {
         const x:bytes = this; // assignment makes it local
         return x;
@@ -445,7 +500,7 @@ module Bytes {
         then halt("index out of bounds of bytes: ", i);
       var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
                                    loc=this.locale_id);
-      return createBytesWithOwnedBuffer(buf, length=1, size=size);
+      return bytes.createWithOwnedBuffer(buf, length=1, size=size);
     }
 
     /*
@@ -1307,7 +1362,7 @@ module Bytes {
 
   pragma "no doc"
   inline proc _cast(type t: bytes, x: string) {
-    return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
+    return bytes.createWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
 
   /*

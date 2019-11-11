@@ -2778,7 +2778,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_bytes(false, _channel_internal, tx, len, -1);
-    x = createBytesWithOwnedBuffer(tx, length=len);
+    x = bytes.createWithOwnedBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -2923,7 +2923,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = createBytesWithOwnedBuffer(tx, length=len);
+    x = bytes.createWithOwnedBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
@@ -3786,7 +3786,7 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
       out_var = string.createWithOwnedBuffer(tx, length=lenread);
     }
     else {
-      out_var = createBytesWithOwnedBuffer(tx, length=lenread);
+      out_var = bytes.createWithOwnedBuffer(tx, length=lenread);
     }
   }
 
