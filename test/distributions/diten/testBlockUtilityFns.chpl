@@ -2,10 +2,10 @@ use BlockDist;
 var rng = (1..10, 1..10);
 var D = {(...rng)};
 
-var BD1 = newBlockDom(D);
-var BA1 = newBlockArr(D, int);
-var BD2 = newBlockDom((...rng));
-var BA2 = newBlockArr((...rng), int);
+var BD1 = BlockDom.create(D);
+var BA1 = BlockArr.create(D, int);
+var BD2 = BlockDom.create((...rng));
+var BA2 = BlockArr.create((...rng), int);
 
 printLocales(BD1);
 writeln();

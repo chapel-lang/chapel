@@ -254,10 +254,10 @@ domain or array.
 
     use BlockDist;
 
-    var BlockDom1 = newBlockDom({1..5, 1..5});
-    var BlockArr1 = newBlockArr({1..5, 1..5}, real);
-    var BlockDom2 = newBlockDom(1..5, 1..5);
-    var BlockArr2 = newBlockArr(1..5, 1..5, real);
+    var BlockDom1 = BlockDom.create({1..5, 1..5});
+    var BlockArr1 = BlockArr.create({1..5, 1..5}, real);
+    var BlockDom2 = BlockDom.create(1..5, 1..5);
+    var BlockArr2 = BlockArr.create(1..5, 1..5, real);
 
 **Data-Parallel Iteration**
 
@@ -1627,20 +1627,45 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   return res;
 }
 
-proc newBlockDom(dom: domain) {
+
+proc type BlockDom.create(dom: domain) {
   return dom dmapped Block(dom);
 }
 
-proc newBlockArr(dom: domain, type eltType) {
-  var D = newBlockDom(dom);
+proc newBlockDom(dom: domain) {
+  compilerWarning("newBlockDom is deprecated - " +
+                  "please use BlockDom.create instead");
+  return BlockDom.create(dom);
+}
+
+proc type BlockArr.create(dom: domain, type eltType) {
+  var D = BlockDom.create(dom);
   var A: [D] eltType;
   return A;
 }
 
+proc newBlockArr(dom: domain, type eltType) {
+  compilerWarning("newBlockArr is deprecated - " +
+                  "please use BlockArr.create instead");
+  return BlockArr.create(dom, eltType);
+}
+
+proc type BlockDom.create(rng: range...) {
+  return BlockDom.create({(...rng)});
+}
+
 proc newBlockDom(rng: range...) {
-  return newBlockDom({(...rng)});
+  compilerWarning("newBlockDom is deprecated - " +
+                  "please use BlockDom.create instead");
+  return BlockDom.create({(...rng)});
+}
+
+proc type BlockArr.create(rng: range..., type eltType) {
+  return BlockArr.create({(...rng)}, eltType);
 }
 
 proc newBlockArr(rng: range..., type eltType) {
-  return newBlockArr({(...rng)}, eltType);
+  compilerWarning("newBlockArr is deprecated - " +
+                  "please use BlockArr.create instead");
+  return BlockArr.create({(...rng)}, eltType);
 }

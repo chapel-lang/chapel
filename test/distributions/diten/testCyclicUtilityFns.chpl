@@ -2,10 +2,10 @@ use CyclicDist;
 var rng = (1..10, 1..10);
 var D = {(...rng)};
 
-var CD1 = newCyclicDom(D);
-var CA1 = newCyclicArr(D, int);
-var CD2 = newCyclicDom((...rng));
-var CA2 = newCyclicArr((...rng), int);
+var CD1 = CyclicDom.create(D);
+var CA1 = CyclicArr.create(D, int);
+var CD2 = CyclicDom.create((...rng));
+var CA2 = CyclicArr.create((...rng), int);
 
 printLocales(CD1);
 writeln();

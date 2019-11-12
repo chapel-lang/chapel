@@ -1197,20 +1197,44 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   }
 }
 
-proc newCyclicDom(dom: domain) {
+proc type CyclicDom.create(dom: domain) {
   return dom dmapped Cyclic(startIdx=dom.low);
 }
 
-proc newCyclicArr(dom: domain, type eltType) {
-  var D = newCyclicDom(dom);
+proc newCyclicDom(dom: domain) {
+  compilerWarning("newCyclicDom is deprecated - " +
+                  "please use CyclicDom.create instead");
+  return CyclicDom.create(dom);
+}
+
+proc type CyclicArr.create(dom: domain, type eltType) {
+  var D = CyclicDom.create(dom);
   var A: [D] eltType;
   return A;
 }
 
+proc newCyclicArr(dom: domain, type eltType) {
+  compilerWarning("newCyclicArr is deprecated - " +
+                  "please use CyclicArr.create instead");
+  return CyclicArr.create(dom, eltType);
+}
+
+proc type CyclicDom.create(rng: range...) {
+  return CyclicDom.create({(...rng)});
+}
+
 proc newCyclicDom(rng: range...) {
-  return newCyclicDom({(...rng)});
+  compilerWarning("newCyclicDom is deprecated - " +
+                  "please use CyclicDom.create instead");
+  return CyclicDom.create(rng);
+}
+
+proc type CyclicArr.create(rng: range..., type eltType) {
+  return CyclicArr.create({(...rng)}, eltType);
 }
 
 proc newCyclicArr(rng: range..., type eltType) {
-  return newCyclicArr({(...rng)}, eltType);
+  compilerWarning("newCyclicArr is deprecated - " +
+                  "please use CyclicArr.create instead");
+  return CyclicArr.create(rng, eltType);
 }
