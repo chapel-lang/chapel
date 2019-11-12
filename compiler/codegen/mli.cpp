@@ -94,6 +94,7 @@ private:
   std::string genTodo(const char* msg);
   std::string genDefine(const char* val);
   std::string genHeaderInc(const char* header, bool system=false);
+  std::string genMarshalRoutineProto(Type* t, bool out);
   std::string genMarshalRoutine(Type* t, bool out);
   std::string genMarshalPushRoutine(Type* t);
   std::string genMarshalPullRoutine(Type* t);
@@ -391,11 +392,11 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
 std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
   std::string gen;
 
-
+  
   return gen;
 }
 
-std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
+std::string MLIContext::genMarshalRoutineProto(Type* t, bool out) {
   int64_t id = this->assignUniqueTypeID(t);
   std::string gen;
 
@@ -420,8 +421,22 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   }
 
   gen += ")";
-  // Give us a prototype for the routine, and then start the actual routine.
-  gen += ";\n" + gen;
+
+  return gen;
+}
+
+std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
+  int64_t id = this->assignUniqueTypeID(t);
+  std::string proto;
+  std::string gen;
+
+  // Generate a forward declaration.
+  proto = this->genMarshalRoutineProto(t, out);
+  gen += proto;
+  gen += ";\n";
+
+  // Followed by the actual definition.
+  gen += proto;
   gen += scope_begin;
 
   // Always declare a variable to catch socket errors.
@@ -462,6 +477,8 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     // A different strategy will be needed if we ever intend to support
     // c_ptr(int8)s that weren't originally Chapel strings.
     gen += this->genMarshalBodyStringC(t, out);
+  } else if (t->getValType() == exportTypeChplBytesWrapper) {
+    gen += this->genMarshalBodyChplBytesWrapper(t, out); 
   } else {
     USR_FATAL(t, "Multi-locale libraries do not support type: %s",
               t->name());
