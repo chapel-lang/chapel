@@ -2882,6 +2882,44 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                      elemSize, commID, ln, fn);
 }
 
+//
+// Directly initiate unordered comm, invalidate any pending updates to
+// overlapping regions beforehand.
+//
+void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
+
+}
+
+void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
+}
+
+
+void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                      c_nodeid_t srcnode, void* srcaddr,
+                                      size_t size, int32_t commID,
+                                      int ln, int32_t fn)
+{
+    struct rdcache_s* cache = tls_cache_remote_data();
+    cache_invalidate(cache, srcnode, (raddr_t)srcaddr, size);
+    cache_invalidate(cache, dstnode, (raddr_t)dstaddr, size);
+    chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+}
+
+void chpl_cache_comm_getput_unordered_task_fence(void)
+{
+  chpl_comm_getput_unordered_task_fence();
+}
+
 // This is for debugging.
 void chpl_cache_print(void)
 {
