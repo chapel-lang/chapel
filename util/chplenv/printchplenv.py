@@ -108,6 +108,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_THIRD_PARTY_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
 ]
 
@@ -190,6 +191,7 @@ def compute_internal_values():
     ENV_VALS['CHPL_TARGET_BIN_SUBDIR'] = chpl_bin_subdir.get('target')
     ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()
 
+    compile_args_3p = []
     link_args_3p = []
 
     ENV_VALS['  CHPL_GMP_UNIQ_CFG_PATH'] = chpl_3p_gmp_configs.get_uniq_cfg_path()
@@ -203,6 +205,7 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_3p_libfabric_configs.get_uniq_cfg_path()
     if chpl_comm.get() == 'ofi':
+      compile_args_3p.extend(chpl_3p_libfabric_configs.get_compile_args(chpl_libfabric.get()))
       link_args_3p.extend(chpl_3p_libfabric_configs.get_link_args(chpl_libfabric.get()))
 
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_3p_libunwind_configs.get_uniq_cfg_path()
@@ -218,6 +221,11 @@ def compute_internal_values():
 
     # Remove duplicates, keeping last occurrence and preserving order
     # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."
+    seen = set()
+    compile_args_3p_dedup = [arg for arg in reversed(compile_args_3p)
+                             if not (arg in seen or seen.add(arg))]
+    ENV_VALS['  CHPL_THIRD_PARTY_COMPILE_ARGS'] = ' '.join(reversed(compile_args_3p_dedup))
+
     seen = set()
     link_args_3p_dedup = [arg for arg in reversed(link_args_3p)
                           if not (arg in seen or seen.add(arg))]
