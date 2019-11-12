@@ -1,0 +1,2 @@
+renameSameNameConflict.chpl:11: In function 'main':
+renameSameNameConflict.chpl:12: error: 'L' is ambiguous

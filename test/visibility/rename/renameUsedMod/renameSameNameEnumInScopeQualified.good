@@ -1,0 +1,2 @@
+renameSameNameEnumInScopeQualified.chpl:9: In function 'main':
+renameSameNameEnumInScopeQualified.chpl:10: error: 'L' is ambiguous
