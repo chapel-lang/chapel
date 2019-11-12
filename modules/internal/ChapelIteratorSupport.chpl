@@ -163,10 +163,10 @@ module ChapelIteratorSupport {
   //
   proc chpl_buildStandInRTT(type irType: _iteratorRecord) type
   {
-    type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
+    type shapeType = chpl_iteratorShapeStaticTypeOrNothing(irType);
 
     proc standinType() type {
-      if shapeType == void {
+      if shapeType == nothing {
         // shapeless case
         return domain(1);
 
@@ -275,12 +275,12 @@ module ChapelIteratorSupport {
   }
 
   // This is the static type of chpl_computeIteratorShape(ir).
-  proc chpl_iteratorShapeStaticTypeOrVoid(type ir: _iteratorRecord) type
+  proc chpl_iteratorShapeStaticTypeOrNothing(type ir: _iteratorRecord) type
   {
     if hasField(ir, "_shape_") then
       return __primitive("static field type", ir, "_shape_");
     else
-      return void;
+      return nothing;
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
