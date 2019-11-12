@@ -2134,13 +2134,14 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
     ok = 0;
     // Assuming we have a request for raddr..raddr+len-1,
     // can we prefetch prefetch_addr..prefetch_addr+prefetch_len-1 ?
-    // Checks to see if the prefetch would move out of registered memory
+    // Checks to see if guard pages are enabled (which makes guarded paged
+    // un-gettable) if the prefetch would move out of registered memory
     //  (if chpl_comm_get_segment returns segment information)
     //  or to a new page (if segment information is not available)
 
     // Can we prefetch len bytes starting at prefetch_raddr?
     // If not, compute the smaller amount that we can prefetch.
-    if( chpl_comm_addr_gettable(node, (void*)prefetch_start, len) ) {
+    if( !chpl_task_guardPagesInUse() && chpl_comm_addr_gettable(node, (void*)prefetch_start, len) ) {
       ok = 1;
     }
 

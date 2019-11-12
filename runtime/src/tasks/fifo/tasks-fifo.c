@@ -842,6 +842,10 @@ size_t chpl_task_getCallStackSize(void) {
   return chpl_thread_getCallStackSize();
 }
 
+chpl_bool chpl_task_guardPagesInUse(void) {
+  return chpl_use_guard_page;
+}
+
 uint32_t chpl_task_getNumQueuedTasks(void) {
   return queued_task_cnt;
 }
