@@ -1,17 +1,17 @@
 use MPI, HDF5, HDF5.C_HDF5;
 
 module MPI_Constants {
-  extern const MPI_INFO_NULL: c_int;
+  extern type MPI_Info;
+  extern const MPI_INFO_NULL: MPI_Info;
 }
 
 module HDF5_Constants {
   extern const H5P_FILE_ACCESS: hid_t;
   extern const H5F_ACC_TRUNC: c_uint;
-  extern const H5P_DEFAULT: c_int;
-  extern const H5T_NATIVE_INT: c_int;
-  extern const H5S_SELECT_SET: c_int;
-  extern const H5P_DATASET_XFER: c_int;
-  extern const H5FD_MPIO_COLLECTIVE: c_int;
+  extern const H5P_DEFAULT: hid_t;
+  extern const H5S_SELECT_SET: H5S_seloper_t;
+  extern const H5P_DATASET_XFER: hid_t;
+  extern const H5FD_MPIO_COLLECTIVE: H5FD_mpio_xfer_t;
   const FAIL = -1;
   extern proc H5Pset_fapl_mpio(fapl_id: hid_t, comm: MPI_Comm, info): herr_t;
   extern proc H5Pset_dxpl_mpio(xferPlist: hid_t, flag: H5FD_mpio_xfer_t): herr_t;
@@ -25,6 +25,8 @@ proc writeArrayToFile(filename: string, dsetName: string, A: []) {
     const locFilename = filename;
     const jobSize = commSize(CHPL_COMM_WORLD),
           jobRank = commRank(CHPL_COMM_WORLD);
+
+    const hdf5Type = getHDF5Type(A.eltType);
 
     var info = MPI_INFO_NULL;
     const accessTemplate = H5Pcreate(H5P_FILE_ACCESS);
@@ -43,7 +45,7 @@ proc writeArrayToFile(filename: string, dsetName: string, A: []) {
     var sid = H5Screate_simple(A.rank, dims, nil);
     //assert(sid != FAIL);
 
-    var dataset = H5Dcreate1(fid, dsetName.c_str(), H5T_NATIVE_INT, sid, H5P_DEFAULT);
+    var dataset = H5Dcreate1(fid, dsetName.c_str(), hdf5Type, sid, H5P_DEFAULT);
 
     // create a file dataspace
     var fileDataspace = H5Dget_space(dataset);
@@ -73,7 +75,7 @@ proc writeArrayToFile(filename: string, dsetName: string, A: []) {
     assert(ret != FAIL);
 
     // write data
-    ret = H5Dwrite(dataset, H5T_NATIVE_INT, memDataspace, fileDataspace, xferPlist, c_ptrTo(A._value.myLocArr.myElems));
+    ret = H5Dwrite(dataset, hdf5Type, memDataspace, fileDataspace, xferPlist, c_ptrTo(A._value.myLocArr.myElems));
     assert(ret != FAIL);
 
     // release temporary handles
