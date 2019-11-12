@@ -653,7 +653,7 @@ module Random {
   module PCGRandom {
 
     use RandomSupport;
-    use PCGRandomLib;
+    public use PCGRandomLib;
     private use ChapelLocks;
 
     // How many generators do we need for this type?
