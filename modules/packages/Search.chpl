@@ -22,7 +22,7 @@
    arrays
  */
 module Search {
-  use Sort;
+  public use Sort;
 
 
 /*
