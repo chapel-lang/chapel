@@ -48,7 +48,7 @@ setSpace(c_ptrTo(space));
 
 var str:c_string;
 setString(c_ptrTo(str));
-writeln(str:string);
+writeln(createStringWithNewBuffer(str));
 
 module MyCModule {
   extern {

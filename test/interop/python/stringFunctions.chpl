@@ -1,6 +1,6 @@
 /* Tests accepting a c_string */
 export proc takesString(in x: c_string) {
-  writeln(x: string);
+  writeln(createStringWithNewBuffer(x));
 }
 
 /* Tests returning a c_string */
