@@ -1061,7 +1061,7 @@ module ChapelBase {
 
   inline proc _ddata_allocate(type eltType, size: integral,
                               subloc = c_sublocid_none,
-                              initElts: bool=true) {
+                              param initElts: bool=true) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
@@ -1350,7 +1350,7 @@ module ChapelBase {
     if isAtomicType(t) then
       compilerError("config variables of atomic type are not supported");
 
-    var str = x:string;
+    var str = createStringWithNewBuffer(x);
     if t == string {
       return str;
     } else {
@@ -2324,7 +2324,9 @@ module ChapelBase {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) throws {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
+    proc writeThis(ch) throws { 
+      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+    }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
 

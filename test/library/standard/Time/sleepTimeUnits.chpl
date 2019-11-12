@@ -1,4 +1,4 @@
-use Time;
+use Time, IO;
 
 config param printTime = false;
 

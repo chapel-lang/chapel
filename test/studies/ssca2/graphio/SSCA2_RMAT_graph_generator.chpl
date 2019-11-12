@@ -25,6 +25,7 @@
 // +=========================================================================+
 
 use SSCA2_compilation_config_params;
+private use IO;
 
 record directed_vertex_pair {
   var start = 1: int;

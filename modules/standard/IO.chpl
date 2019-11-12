@@ -22,8 +22,8 @@
 
 Support for a variety of kinds of input and output.
 
-.. note:: All Chapel programs automatically ``use`` this module by default.
-          An explicit ``use`` statement is not necessary.
+.. note:: All Chapel programs automatically include :proc:`~ChapelIO.write`,
+          :proc:`~ChapelIO.writeln` and :proc:`~ChapelIO.writef`.
 
 Input/output (I/O) facilities in Chapel include the types :record:`file` and
 :record:`channel`; the constants :record:`stdin`, :record:`stdout` and
@@ -3436,7 +3436,12 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
 
   for param i in 1..tup.size {
     if i != 1 then str += ", ";
-    str += tup[i]:string;
+    if tup[i].type == c_string {
+      str += createStringWithBorrowedBuffer(tup[i]);
+    }
+    else {
+      str += tup[i]:string;
+    }
   }
 
  str += ")";
@@ -3463,9 +3468,10 @@ proc stringify(const args ...?k):string {
     var str = "";
 
     for param i in 1..k {
-      if args[i].type == string ||
-         args[i].type == c_string {
-        str += args[i]:string;
+      if args[i].type == string {
+        str += args[i];
+      } else if args[i].type == c_string {
+        str += createStringWithBorrowedBuffer(args[i]);
       } else if args[i].type == bytes {
         //decodePolicy.replace never throws
         try! {
@@ -4248,26 +4254,11 @@ proc stderrInit() {
   }
 }
 
-/* Equivalent to try! stdout.write. See :proc:`channel.write` */
-proc write(const args ...?n) {
-  try! stdout.write((...args));
-}
-/* Equivalent to try! stdout.writeln. See :proc:`channel.writeln` */
-proc writeln(const args ...?n) {
-  try! stdout.writeln((...args));
-}
-
-// documented in the arguments version.
-pragma "no doc"
-proc writeln() {
-  try! stdout.writeln();
-}
-
-/* Equivalent to stdin.read. See :proc:`channel.read` */
+/* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
 }
-/* Equivalent to stdin.readln. See :proc:`channel.readln` */
+/* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
 proc readln(ref args ...?n):bool throws {
   return stdin.readln((...args));
 }
@@ -4277,11 +4268,11 @@ proc readln():bool throws {
   return stdin.readln();
 }
 
-/* Equivalent to stdin.readln. See :proc:`channel.readln` for types */
+/* Equivalent to ``stdin.readln``. See :proc:`channel.readln` for types */
 proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
 }
-/* Equivalent to stdin.read. See :proc:`channel.read` for types */
+/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
 proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }
@@ -6654,19 +6645,6 @@ proc channel.readf(fmtStr:string) throws {
   }
 }
 
-/* Call ``try! stdout.writef``; see :proc:`channel.writef`. */
-proc writef(fmt:string, const args ...?k):bool {
-  try! {
-    return stdout.writef(fmt, (...args));
-  }
-}
-// documented in string version
-pragma "no doc"
-proc writef(fmt:string):bool {
-  try! {
-    return stdout.writef(fmt);
-  }
-}
 /* Call ``stdin.readf``; see :proc:`channel.readf`. */
 proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));

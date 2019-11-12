@@ -2,6 +2,7 @@ use FileSystem;
 use BlockDist;
 use Spawn;
 use List;
+use IO;
 
 proc main(args:[] string)
 {

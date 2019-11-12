@@ -1,5 +1,6 @@
 use Random;
 use BlockDist;
+use IO;
 
 config const seed: int = 1;
 config const n: int = 8;

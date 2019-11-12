@@ -1,0 +1,2 @@
+revcomp.chpl:12: In function 'main':
+revcomp.chpl:43: error: 'QIO_CH_ALWAYS_UNBUFFERED' undeclared (first use this function)

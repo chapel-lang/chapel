@@ -824,6 +824,7 @@ class UserMapAssocArr: AbsBaseArr {
   // how to print out the whole array, sequentially
   //
   proc dsiSerialWrite(x) {
+    use IO;
 
     var first = true;
     for locArr in locArrs {

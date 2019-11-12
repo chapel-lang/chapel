@@ -1,3 +1,5 @@
+use IO;
+
 class C
 {
   proc writeThis(w) { w.write("C"); }

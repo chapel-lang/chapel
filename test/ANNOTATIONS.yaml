@@ -567,6 +567,8 @@ compSampler-timecomp: &timecomp-base
     - Fix compiler performance issues in nilChecking (#11396)
   08/30/19:
     - Add factory functions for string and bytes (#13914)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
 
 
 cg:
@@ -1426,6 +1428,8 @@ search:
     - Support the Chapel bytes type in single locale Python interop (#14310)
   11/01/19:
     - Avoid 'use'ing ByteBufferHelpers ExportWrappers (#14377)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
 
 spectralnorm:
   01/21/15:
@@ -1664,6 +1668,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Turn "array-as-vec" deprecation warnings on (#13999)
   10/30/19:
     - Switched test machine
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
 
 allTotalTime:
   <<: *compiler-perf-base

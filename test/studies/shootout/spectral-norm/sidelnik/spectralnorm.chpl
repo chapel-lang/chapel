@@ -5,6 +5,7 @@
  * Original C contributed by Sebastien Loisel
  * Conversion to Chapel by Albert Sidelnik
  */
+use IO;
 
 config const n = 500;
 

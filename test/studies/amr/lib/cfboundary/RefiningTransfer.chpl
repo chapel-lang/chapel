@@ -3,6 +3,7 @@ public use LevelSolution_def;
 public use CFUtilities;
 public use MultiArray_def;
 
+private use IO;
 
 //|\""""""""""""""""""""""""""""""""|\
 //| >    class: GridCFGhostRegion    | >

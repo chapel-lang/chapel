@@ -56,7 +56,7 @@ locking=false with printf_unlocked.
 that does not lock the FILE* so it's only safe to use in a serial context.]
 */
 
-use Time;
+use Time, IO;
 
 config const n = 3;
 config const tries = 2;

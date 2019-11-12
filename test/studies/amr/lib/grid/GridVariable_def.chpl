@@ -1,6 +1,6 @@
 public use Grid_def;
 
-
+private use IO;
 
 //|\"""""""""""""""""""""""""""|\
 //| >    GridVariable class    | >

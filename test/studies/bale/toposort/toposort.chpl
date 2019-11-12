@@ -5,6 +5,7 @@ use BlockDist;
 use CommDiagnostics;
 use Sort;
 use LinkedLists;
+use IO;
 
 config param enableRuntimeDebugging = true;
 config const debugAll : bool = false;

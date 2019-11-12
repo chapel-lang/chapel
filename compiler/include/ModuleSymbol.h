@@ -123,6 +123,7 @@ extern ModuleSymbol*      baseModule;
 extern ModuleSymbol*      stringLiteralModule;
 extern ModuleSymbol*      standardModule;
 extern ModuleSymbol*      printModuleInitModule;
+extern ModuleSymbol*      ioModule;
 
 extern Vec<ModuleSymbol*> allModules;
 extern Vec<ModuleSymbol*> userModules;

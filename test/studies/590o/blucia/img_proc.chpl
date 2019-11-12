@@ -1,3 +1,5 @@
+use IO;
+
 config const inputfile = "blockLU-Mat.dat";
 config const filterfile = "aafilter3x3.dat";
 

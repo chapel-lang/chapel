@@ -2,6 +2,7 @@ use Regexp;
 use Histogram;
 use Time;
 use Random;
+use IO;
 
 // Use the test/twopt code
 config const isTest=false;

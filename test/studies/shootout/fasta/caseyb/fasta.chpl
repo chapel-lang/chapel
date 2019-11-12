@@ -1,6 +1,8 @@
 //Fasta Shootout
 //http://benchmarksgame.alioth.debian.org
 //Casey Battaglino
+use IO;
+
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
