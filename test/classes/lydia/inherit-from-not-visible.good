@@ -1,1 +1,1 @@
-inherit-from-not-visible.chpl:8: error: Unable to find super class named 'Foo'
+inherit-from-not-visible.chpl:8: error: unable to find parent class named 'Foo'
