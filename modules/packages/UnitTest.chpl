@@ -1036,14 +1036,8 @@ module UnitTest {
         }
       }
       if !canRun {
-        var localesStr: string = this.dictDomain: string;
-        var tempLocales: list(string);
-        for loc in localesStr.split(" ") {
-          tempLocales.append(loc: string);
-        }
         var localesErrorStr= "Required Locales = ";
-        if tempLocales.size > 1 then localesErrorStr += ",".join(tempLocales.toArray()); 
-        else localesErrorStr += localesStr:string;
+        localesErrorStr += ",".join(this.dictDomain:string);
         throw new owned TestIncorrectNumLocales(localesErrorStr);
       }
     }
