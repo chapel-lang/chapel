@@ -360,7 +360,7 @@ checkFunction(FnSymbol* fn) {
 
   if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
     if (fn->thisTag == INTENT_TYPE) {
-      USR_FATAL_CONT(fn, "Missing type for type method");
+      USR_FATAL_CONT(fn, "Missing type for secondary type method");
     } else {
       USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
     }
