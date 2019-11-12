@@ -41,6 +41,7 @@ For example, the following program downloads a web-page from http://example.com 
  */
 
 module URL {
+  public use IO;
 
   /*
 
