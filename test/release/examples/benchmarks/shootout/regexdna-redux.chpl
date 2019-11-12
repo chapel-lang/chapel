@@ -7,6 +7,8 @@
    converted from regex-dna program
 */
 
+use Regexp;
+
 proc main(args: [] string) {
   var variants = [
     "agggtaaa|tttaccct",

@@ -1,3 +1,5 @@
+use Regexp;
+
 writeln("RE TESTS");
 var f = openmem();
 var w = f.writer();

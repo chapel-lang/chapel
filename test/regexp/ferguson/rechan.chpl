@@ -1,3 +1,5 @@
+use Regexp;
+
 writeln("Words words words");
 var f = openmem();
 {
