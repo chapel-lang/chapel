@@ -1,8 +1,8 @@
 /* Test helpers... */
 
-use Assert;
-use Random;
-use Time;
+public use Assert;
+public use Random;
+public use Time;
 
 // random seed for arrays
 config const randSeed = SeedGenerator.oddCurrentTime;

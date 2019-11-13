@@ -14,7 +14,7 @@ compilerWarning("got z: ", z.type:string); // error anyway
 // modules being used
 
 module M1 {
-  use M11;
+  public use M11;
 }
 
 module M11 {
@@ -24,12 +24,12 @@ module M11 {
 }
 
 module M2 {
-  use M22;
+  public use M22;
   var y: int;
 }
 
 module M22 {
-  use M222;
+  public use M222;
   var z: int;
 }
 

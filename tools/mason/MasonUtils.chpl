@@ -23,11 +23,11 @@
 private use List;
 private use Map;
 
-use Spawn;
-use FileSystem;
-use TOML;
-use Path;
-use MasonEnv;
+public use Spawn;
+public use FileSystem;
+public use TOML;
+public use Path;
+public use MasonEnv;
 
 
 /* Gets environment variables for spawn commands */

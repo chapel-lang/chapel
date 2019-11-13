@@ -2,7 +2,7 @@
  * Common mink() test utilities.
  */
 
-use Random;
+public use Random;
 
 config const randSeed = SeedGenerator.oddCurrentTime;
 

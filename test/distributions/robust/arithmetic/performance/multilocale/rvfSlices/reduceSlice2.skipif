@@ -1,0 +1,5 @@
+# for simplicity in managing .good files, only test for multilocale w/
+# no network atomics and the default (block) distribution
+CHPL_COMM==none
+CHPL_NETWORK_ATOMICS!=none
+COMPOPTS <= distType=DistType

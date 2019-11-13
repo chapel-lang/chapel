@@ -1,7 +1,7 @@
 // defines the computation for LJ and EAM style computations
 
-use initMD;
-use Time;
+public use initMD;
+public use Time;
 private use IO;
 
 // define the interface for a force object
