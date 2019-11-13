@@ -814,9 +814,6 @@ module String {
 
     pragma "no doc"
     inline proc param c_str() param : c_string {
-      inline proc _cast(type t:c_string, x:string) {
-        return __primitive("cast", t, x);
-      }
       return this:c_string; // folded out in resolution
     }
 
