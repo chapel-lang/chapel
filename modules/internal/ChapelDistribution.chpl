@@ -19,7 +19,7 @@
 
 module ChapelDistribution {
 
-  private use ChapelArray, ChapelRange;
+  private use ChapelArray, ChapelRange, ChapelBase;
   use ChapelLocks;
   use LinkedLists;
 
