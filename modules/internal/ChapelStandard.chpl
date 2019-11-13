@@ -21,7 +21,8 @@
 //
 pragma "export init"
 module ChapelStandard {
-  use startInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  private use startInitCommDiags;
+  // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
   use CString;
@@ -66,5 +67,5 @@ module ChapelStandard {
   use Types;
   use Math;
 
-  use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  private use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

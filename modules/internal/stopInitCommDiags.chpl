@@ -24,7 +24,7 @@
 //
 module stopInitCommDiags {
   private use ChapelBase;
-  use CommDiagnostics;
+  private use CommDiagnostics;
 
   if printInitVerboseComm {
     stopVerboseComm();
