@@ -77,6 +77,7 @@ var T: [TableSpace] elemType;
 // The program entry point
 //
 proc main() {
+  use CommDiagnostics;
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
