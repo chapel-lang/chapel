@@ -23,7 +23,7 @@ use Spawn;
 use FileSystem;
 use TOML;
 use MasonEnv;
-public use MasonNew;
+use MasonNew;
 use MasonModify;
 use Random;
 use MasonUpdate;
