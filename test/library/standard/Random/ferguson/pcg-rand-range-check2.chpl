@@ -33,7 +33,7 @@ for i in 0..#n {
   writeln();
 }
 
-var rs = makeRandomStream(seed=seed, parSafe=false, eltType=uint(32), algorithm=RNG.PCG);
+var rs = PCGRandomStream.create(seed=seed, parSafe=false, eltType=uint(32));
 
 var got:[0..#n] uint(32);
 
@@ -54,7 +54,7 @@ for i in 0..#n {
   assert(got[i] == num);
 }
 
-var rs2 = makeRandomStream(seed=seed, parSafe=false, eltType=uint(64), algorithm=RNG.PCG);
+var rs2 = PCGRandomStream.create(seed=seed, parSafe=false, eltType=uint(64));
 
 var max2:uint = (2**32 + max):uint;
 

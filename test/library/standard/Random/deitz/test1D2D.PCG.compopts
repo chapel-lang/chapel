@@ -1,1 +1,1 @@
--s algo=RNG.PCG
+-sdefaultRNG=RNG.PCG

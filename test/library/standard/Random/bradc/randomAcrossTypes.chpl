@@ -1,11 +1,17 @@
 use Random;
 
 config param useNPB = true;
-config param rtype = if useNPB then RNG.NPB else RNG.PCG;
 
 var A: [1..8] real;
 var B: [1..8] imag;
 var C: [1..4] complex;
+
+proc getRandomStream(seed: int, type eltType) {
+  if useNPB then
+    return NPBRandomStream.create(seed=seed, eltType=eltType);
+  else
+    return PCGRandomStream.create(seed=seed, eltType=eltType);
+}
 
 //
 // Check standalone routines
@@ -17,9 +23,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs1 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs2 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs3 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs1 = getRandomStream(seed=314159265, eltType=real);
+var rs2 = getRandomStream(seed=314159265, eltType=imag);
+var rs3 = getRandomStream(seed=314159265, eltType=complex);
 
 //
 // Check fillRandom method
@@ -31,9 +37,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs4 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs5 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs6 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs4 = getRandomStream(seed=314159265, eltType=real);
+var rs5 = getRandomStream(seed=314159265, eltType=imag);
+var rs6 = getRandomStream(seed=314159265, eltType=complex);
 
 //
 // Check consecutive implementations of fillRandom method()
@@ -79,9 +85,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs7 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs8 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs9 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs7 = getRandomStream(seed=314159265, eltType=real);
+var rs8 = getRandomStream(seed=314159265, eltType=imag);
+var rs9 = getRandomStream(seed=314159265, eltType=complex);
 //
 // Check getNext() method
 //

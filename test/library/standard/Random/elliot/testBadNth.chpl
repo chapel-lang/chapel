@@ -3,8 +3,8 @@ use Random;
 config const useNPB = true;
 config const getNth = true;
 
-var npbRand = makeRandomStream(real, 314159265, algorithm=RNG.NPB);
-var pcgRand = makeRandomStream(real, 314159265, algorithm=RNG.PCG);
+var npbRand = NPBRandomStream.create(real, 314159265);
+var pcgRand = PCGRandomStream.create(real, 314159265);
 
 if useNPB {
   if getNth {

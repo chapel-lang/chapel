@@ -3,9 +3,9 @@ use Random, Map;
 config const debug = false;
 
 proc main() {
-  var pcg = makeRandomStream(real, algorithm=RNG.PCG, seed=42);
+  var pcg = PCGRandomStream.create(real, seed=42);
   runTests(pcg);
-  var pcgInt = makeRandomStream(int, algorithm=RNG.PCG, seed=420);
+  var pcgInt = PCGRandomStream.create(int, seed=420);
   runTests(pcgInt);
 }
 

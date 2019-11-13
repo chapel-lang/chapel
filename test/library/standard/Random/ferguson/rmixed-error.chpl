@@ -1,7 +1,6 @@
 use Random;
 
-var rng = makeRandomStream(seed=17, parSafe=false,
-                           eltType=real(64), algorithm=RNG.PCG);
+var rng = PCGRandomStream.create(seed=17, parSafe=false, eltType=real(64));
 
 var v1 = rng.getNext();
 writeln(v1.type:string);

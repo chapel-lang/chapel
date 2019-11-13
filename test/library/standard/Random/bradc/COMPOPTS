@@ -1,2 +1,2 @@
--suseNPB=true
--suseNPB=false
+-sdefaultRNG=RNG.NPB
+-sdefaultRNG=RNG.PCG

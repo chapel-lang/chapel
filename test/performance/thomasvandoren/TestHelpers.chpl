@@ -15,7 +15,7 @@ config const printC = true,
 // matrices.
 config const scalingFactor = 1;
 
-var randStream = makeRandomStream(eltType=real, seed=randSeed, algorithm=RNG.NPB),
+var randStream = NPBRandomStream.create(eltType=real, seed=randSeed);
   timer: Timer;
 
 const inner = 1..5 * scalingFactor,

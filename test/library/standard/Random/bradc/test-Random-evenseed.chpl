@@ -14,12 +14,13 @@ proc main() {
   var Vec2 : [Vector1] real;
   var Vec3 : [Vector1] real;
 
-  var rng = makeRandomStream(real, 314159264, algorithm=rtype);
+  var rng = if useNPB then NPBRandomStream.create(real, 314159264)
+                      else RandomStream.create(real, 314159264);
 
   rng.fillRandom(Vec1);
 
-  fillRandom(Vec2,314159264, algorithm=rtype);
-  fillRandom(Vec3,314159264, algorithm=rtype);
+  fillRandom(Vec2,314159264);
+  fillRandom(Vec3,314159264);
 
   for (a,b,c) in zip(Vec1, Vec2, Vec3) {
     assert( a == b );
