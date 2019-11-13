@@ -31,7 +31,7 @@ module LocaleModel {
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
 
-  private use IO;
+  private use IO, ChapelRange, ChapelIteratorSupport, ChapelBase;
 
   //
   // The task layer calls these to convert between full sublocales and

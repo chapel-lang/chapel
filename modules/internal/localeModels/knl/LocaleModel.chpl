@@ -30,7 +30,7 @@ module LocaleModel {
 
   use LocaleModelHelpNUMA;
 
-  private use IO;
+  private use IO, ChapelBase;
 
   require "hbwmalloc.h", "-lmemkind";
 
