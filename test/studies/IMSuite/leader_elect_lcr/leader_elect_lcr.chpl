@@ -23,6 +23,7 @@
 
  pragma "error mode fatal"
  module leader_elect_lcr {
+     use IO;
 
      config const inputFile = "input/inputleader_elect_lcr_8.txt";
      config const outputFile = "outputleader_elect_lcr_8.txt";

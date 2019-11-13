@@ -2,9 +2,9 @@ use Map;
 
 // strMap - map string keys to string values
 var strMap = new map(string, string);
-const a: c_string = "a";
+const a: string = "a";
 
-strMap[a:string] = "123";
+strMap[a] = "123";
 
 for key in strMap do
   writeln(key, " = ", strMap[key]);

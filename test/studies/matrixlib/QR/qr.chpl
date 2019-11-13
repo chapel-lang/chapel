@@ -6,7 +6,9 @@
  * different input file can be specified on the command line using
  * --inputfile=<filename>.  
  *
- */ 
+ */
+// Enables file operations
+use IO;
 
 // configuration variables:
 //   inputfile: a string representing the file containing matrix data

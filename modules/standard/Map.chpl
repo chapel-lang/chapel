@@ -47,6 +47,8 @@ module Map {
     }
   }
 
+  private use IO;
+
   record map {
     type keyType, valType;
     param parSafe = false;

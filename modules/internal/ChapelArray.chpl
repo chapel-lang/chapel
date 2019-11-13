@@ -3601,6 +3601,7 @@ module ChapelArray {
   // How to cast arrays to strings
   pragma "no doc"
   proc _cast(type t:string, x: []) {
+    use IO;
     return stringify(x);
   }
 

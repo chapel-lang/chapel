@@ -22,7 +22,7 @@
 pragma "error mode fatal"
 module vertexColoring {
 
-    use Random;
+  use Random, IO;
     use VisualDebug;
 
     config const inputFile = "input/inputvertexColoring_64_-rn.txt";

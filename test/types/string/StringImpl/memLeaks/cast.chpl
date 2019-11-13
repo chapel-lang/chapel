@@ -92,40 +92,8 @@ module unitTest {
     fbool();
   }
 
-  proc cast_from_c_string(type t, useExpr=false) {
-    writeln("=== cast from c_string");
-    const m0 = allMemoryUsed();
-    {
-      const x: c_string = "cs";
-      if useExpr {
-        writeMe(x:t);
-      } else {
-        const s = x:t;
-        writeMe(s);
-      }
-    }
-    checkMemLeaks(m0);
-  }
-
-  proc cast_to_c_string(type t, useExpr=false) {
-    writeln("=== cast to c_string");
-    const m0 = allMemoryUsed();
-    {
-      const x: t = c"cs";
-      if useExpr {
-        writeMe(x.c_str():t);
-      } else {
-        const s = x.c_str();
-        writeMe(s:t);
-      }
-    }
-    checkMemLeaks(m0);
-  }
-
   proc doIt(type t) {
     castAll(t); castAll(t, true);
-    cast_from_c_string(t); cast_from_c_string(t, true);
-    cast_to_c_string(t); cast_to_c_string(t, true);
   }
 
 }

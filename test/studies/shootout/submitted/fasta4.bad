@@ -1,1 +1,4 @@
-fasta4.chpl:131: error: attempt to redefine reserved type 'bytes'
+fasta4.chpl:83: warning: openfd will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+fasta4.chpl:83: error: iokind is no longer available by default, please insert
+a use of the IO module to access it.

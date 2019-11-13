@@ -1,3 +1,5 @@
+use IO;
+
 config var inputfile = "smallHPL.dat";
 
 var infile = open(inputfile, iomode.r).reader();

@@ -1,3 +1,5 @@
+use IO;
+
 writef("%s\n", "boo");
 writef("%2.1s|\n", "boo");
 writef("%-2.1s|\n", "boo");

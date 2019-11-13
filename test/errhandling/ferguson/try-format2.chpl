@@ -1,3 +1,5 @@
+use IO;
+
 proc test() {
   var s: string;
 

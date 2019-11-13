@@ -1,3 +1,5 @@
+use IO;
+
 class mything {
   var x:int;
 

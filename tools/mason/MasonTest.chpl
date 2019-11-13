@@ -23,7 +23,7 @@ private use Map;
 use TOML;
 use Time;
 use Spawn;
-public use MasonUtils;
+use MasonUtils;
 use MasonHelp;
 use MasonUpdate;
 use MasonBuild;

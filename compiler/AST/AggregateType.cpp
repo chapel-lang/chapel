@@ -2662,7 +2662,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
     if (sym == NULL) {
-      USR_FATAL(se, "Unknown super class: %s", se->unresolved);
+      USR_FATAL(se, "unable to find parent class named '%s'", se->unresolved);
     }
     // Use AggregateType in class hierarchy rather than generic-management
     if (isDecoratedClassType(sym->type)) {

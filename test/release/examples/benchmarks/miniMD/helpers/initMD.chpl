@@ -6,6 +6,7 @@ use forces;
 use neighbor;
 public use StencilDist;
 public use BlockDist;
+private use IO;
 
 // used in testing system
 config param printOriginal = false;

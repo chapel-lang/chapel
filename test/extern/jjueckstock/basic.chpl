@@ -14,7 +14,7 @@ module C { extern {
   const char* greet_str = "Hello";
 } }
 
-writeln(C.greeting():string);
+writeln(createStringWithNewBuffer(C.greeting()));
 writeln(C.my_doub);
 writeln(C.my_int);
 writeln(C.add_one(1000));

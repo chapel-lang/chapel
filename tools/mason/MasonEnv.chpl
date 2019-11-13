@@ -18,7 +18,7 @@
  */
 
 private use List;
-public use MasonUtils;
+use MasonUtils;
 public use MasonHelp;
 
 proc MASON_HOME : string {

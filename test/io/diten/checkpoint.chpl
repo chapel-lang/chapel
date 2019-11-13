@@ -1,3 +1,5 @@
+private use IO;
+
 proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLocale) {
   var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().numElements});
   var offsetDom = targetLocs.domain;

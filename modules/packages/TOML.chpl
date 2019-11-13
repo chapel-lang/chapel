@@ -38,6 +38,7 @@ private use List;
 private use Map;
 public use TomlParser;
 private use TomlReader;
+use IO;
 
 
 /* Receives a TOML file as a parameter and outputs a Toml object.

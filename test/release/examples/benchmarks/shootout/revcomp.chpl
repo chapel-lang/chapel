@@ -4,6 +4,7 @@
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the GNU C version by Mr Ledrug
 */
+use IO;
 
 config param columns = 61;
 

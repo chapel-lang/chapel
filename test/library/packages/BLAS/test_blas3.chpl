@@ -1,6 +1,7 @@
 use Random;
 use BLAS;
 use blas_helpers;
+use IO;
 
 proc main() {
   test_gemm();

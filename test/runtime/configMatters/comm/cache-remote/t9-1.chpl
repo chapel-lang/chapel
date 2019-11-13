@@ -1,4 +1,5 @@
 // various utilites for testing
+use IO;
 
 extern proc chpl_cache_print();
 pragma "insert line file info"

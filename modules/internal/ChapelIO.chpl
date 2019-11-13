@@ -28,7 +28,7 @@ describes automatically included basic types and routines that support the
 Writing and Reading
 ~~~~~~~~~~~~~~~~~~~
 
-The :proc:`~IO.writeln` function allows for a simple implementation
+The :proc:`writeln` function allows for a simple implementation
 of a Hello World program:
 
 .. code-block:: chapel
@@ -84,7 +84,7 @@ Additionally, performing I/O on a global channel that is the same channel as the
 one ``readThis``, ``writeThis``, or ``readWriteThis`` is operating on can result
 in a deadlock. In particular, these methods should not refer to
 :var:`~IO.stdin`, :var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or
-implicitly (such as by calling the global :proc:`~IO.writeln` function).
+implicitly (such as by calling the global :proc:`writeln` function).
 Instead, these methods should only perform I/O on the channel passed as an
 argument.
 
@@ -201,6 +201,7 @@ module ChapelIO {
   use ChapelLocale;
   use SysBasic;
   use SysError;
+  use LastResortIO;
 
   // TODO -- this should probably be private
   pragma "no doc"
@@ -210,7 +211,7 @@ module ChapelIO {
     return helper(val);
   }
 
-  use IO;
+  private use IO;
 
     private
     proc isIoField(x, param i) param {
@@ -711,6 +712,11 @@ module ChapelIO {
   }
 
   pragma "no doc"
+  override proc locale.writeThis(f) throws {
+    f <~> name;
+  }
+
+  pragma "no doc"
   proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
     f <~> "<_ddata class cannot be printed>";
@@ -831,11 +837,52 @@ module ChapelIO {
     }
   }
 
+  pragma "no doc"
   override proc LocaleModel.writeThis(f) throws {
     // Most classes will define it like this:
     //      f <~> name;
     // but here it is defined thus for backward compatibility.
     f <~> new ioLiteral("LOCALE") <~> chpl_id();
+  }
+
+  /* Errors can be printed out. In that event, they will
+     show information about the error including the result
+     of calling :proc:`Error.message`.
+  */
+  pragma "no doc"
+  override proc Error.writeThis(f) throws {
+    var description = chpl_describe_error(this);
+    f <~> description;
+  }
+
+  /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
+  proc write(const args ...?n) {
+    try! stdout.write((...args));
+  }
+  /* Equivalent to ``try! stdout.writeln``. See :proc:`IO.channel.writeln` */
+  proc writeln(const args ...?n) {
+    try! stdout.writeln((...args));
+  }
+
+  // documented in the arguments version.
+  pragma "no doc"
+  proc writeln() {
+    try! stdout.writeln();
+  }
+
+  /* Equivalent to ``try! stdout.writef``. See
+     :proc:`FormattedIO.channel.writef`. */
+  proc writef(fmt:string, const args ...?k):bool {
+    try! {
+      return stdout.writef(fmt, (...args));
+    }
+  }
+  // documented in string version
+  pragma "no doc"
+  proc writef(fmt:string):bool {
+    try! {
+      return stdout.writef(fmt);
+    }
   }
 
   //

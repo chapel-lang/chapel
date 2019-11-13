@@ -12,6 +12,7 @@ import chpl_gmp
 import chpl_hwloc
 import chpl_jemalloc
 import chpl_launcher
+import chpl_libfabric
 import chpl_llvm
 import chpl_locale_model
 import chpl_arch
@@ -25,6 +26,7 @@ import chpl_lib_pic
 import chpl_3p_gmp_configs
 import chpl_3p_hwloc_configs
 import chpl_3p_jemalloc_configs
+import chpl_3p_libfabric_configs
 import chpl_3p_libunwind_configs
 import chpl_3p_qthreads_configs
 import chpl_3p_re2_configs

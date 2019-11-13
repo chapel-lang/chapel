@@ -336,6 +336,7 @@ symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference tempo
 symbolFlag( FLAG_REMOVABLE_ARRAY_ACCESS, ypr, "removable array access", "array access calls that can be replaced with a reference")
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
+symbolFlag( FLAG_COMPILER_ADDED_REMOTE_FENCE , ypr, "compiler added remote fence" , ncm )
 symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" )
 symbolFlag( FLAG_RETARG, npr, "symbol is a _retArg", ncm )
 symbolFlag( FLAG_RETURNS_ALIASING_ARRAY, ypr, "fn returns aliasing array", "array alias/slice/reindex/rank change function" )

@@ -52,6 +52,7 @@ config param distributed = false; // NOTE - could default to CHPL_COMM != none
 use FileSystem;
 use Spawn;
 use Time;
+use IO;
 use Graph;
 use Random;
 use HashedDist;

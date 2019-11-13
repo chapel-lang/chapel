@@ -1,4 +1,5 @@
 use Regexp;
+use IO;
 
 writeln("RE TESTS");
 var f = openmem();

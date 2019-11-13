@@ -312,6 +312,11 @@ uint32_t chpl_task_getMaxPar(void);
 size_t chpl_task_getCallStackSize(void);
 
 //
+// This returns whether guard pages (stack checks) are in use
+//
+chpl_bool chpl_task_guardPagesInUse(void);
+
+//
 // returns the number of tasks that are ready to run on the current locale,
 // not including any that have already started running.
 //

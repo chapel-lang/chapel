@@ -3,8 +3,8 @@
 //  https://github.com/chapel-lang/chapel/commit/bde150a476e
 
 module M1 {
-  public use M3;
-  public use M4;
+  use M3;
+  use M4;
   proc main {
     h(1);
   }

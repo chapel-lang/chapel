@@ -69,6 +69,14 @@
 
 ////////////////////////////////////////
 //
+// This is the libfabric API version we need.
+//
+
+#define COMM_OFI_FI_VERSION FI_VERSION(1, 8)
+
+
+////////////////////////////////////////
+//
 // Global types and data
 //
 
@@ -533,8 +541,7 @@ void init_ofiFabricDomain(void) {
   }
 
   int ret;
-  OFI_CHK_2(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
-                       NULL, NULL, 0, hints, &ofi_info),
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
             ret, -FI_ENODATA);
 
   if (chpl_nodeID == 0) {
@@ -548,8 +555,7 @@ void init_ofiFabricDomain(void) {
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
-                           NULL, NULL, 0, NULL, &info));
+        OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, NULL, &info));
         for ( ; info != NULL; info = info->next) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL

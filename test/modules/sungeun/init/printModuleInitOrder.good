@@ -19,6 +19,10 @@ Initializing Modules:
          Sort
           List
            ChapelLocks
+           IO
+            SysError
+            FormattedIO
+             Regexp
           MSBRadixSort
            RadixSortHelp
            ShellSort
@@ -31,10 +35,6 @@ Initializing Modules:
           SelectionSort
         ChapelDistribution
          LinkedLists
-        SysError
-        IO
-         FormattedIO
-          Regexp
         DefaultAssociative
         ExternalArray
         RangeChunk
@@ -44,6 +44,7 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelIO
+     LastResortIO
     LocaleTree
     ChapelTaskTable
     MemTracking

@@ -3,6 +3,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #2 version by Matt Brubeck
 */
+use IO;
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 

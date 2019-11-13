@@ -1,5 +1,6 @@
 use LinearAlgebra;
 use TestUtils;
+use IO;
 
 /* LinearAlgebra correctness tests that do not depend on BLAS/LAPACK
 
