@@ -3161,12 +3161,15 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     } else {
       x.writeThis(writer);
     }
+  } catch err: SystemError {
+    const code = err.err;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
     //
     // TODO: What to do with the caught error? Propagate back up?
     //
-    const chError: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, chError);
+    const code: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   }
 
   // Set the channel pointer to NULL to make the
