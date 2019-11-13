@@ -23,6 +23,7 @@ module LocaleModelHelpFlat {
 
   use LocaleModelHelpSetup;
   use LocaleModelHelpRuntime;
+  private use ChapelBase;
 
   //////////////////////////////////////////
   //

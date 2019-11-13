@@ -22,6 +22,7 @@ module LocaleModelHelpAPU {
 
   use LocaleModelHelpSetup;
   use LocaleModelHelpRuntime;
+  private use ChapelBase;
 
   pragma "no doc"
   config param debugAPULocale = false;

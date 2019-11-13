@@ -23,6 +23,7 @@ module LocaleModelHelpNUMA {
 
   use LocaleModelHelpSetup;
   use LocaleModelHelpRuntime;
+  private use ChapelBase;
 
   //////////////////////////////////////////
   //
