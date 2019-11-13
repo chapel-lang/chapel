@@ -3,7 +3,7 @@ use IO;
 extern proc return_string_test():c_string;
 extern proc return_string_arg_test(ref c_string);
 
-writeln("returned string ",createStringWithNewBuffer(return_string_test()));
+writeln("returned string ",string.createWithNewBuffer(return_string_test()));
 stdout.flush();
 
 var s:string;

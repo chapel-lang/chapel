@@ -222,7 +222,7 @@ module DataFrames {
       var idxWidth = 0;
       for idx in this {
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = string.createWithNewBuffer(idx: string);
         if idxStr.length > idxWidth then
           idxWidth = idxStr.length;
       }
@@ -234,7 +234,7 @@ module DataFrames {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s!._these()) {
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = string.createWithNewBuffer(idx: string);
         f <~> idx;
         for space in 1..idxWidth-idxStr.length do
           f <~> " ";
@@ -259,7 +259,7 @@ module DataFrames {
       for idx in this {
         f <~> "\n";
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = string.createWithNewBuffer(idx: string);
         f <~> idxStr;
         for space in 1..idxWidth-idxStr.length do
           f <~> " ";
@@ -280,7 +280,7 @@ module DataFrames {
       for idx in this {
         f <~> "\n";
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = string.createWithNewBuffer(idx: string);
         f <~> idxStr;
         for space in 1..idxWidth-idxStr.length do
           f <~> " ";
@@ -734,7 +734,7 @@ module DataFrames {
     proc writeElem(f, i, len: int) {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid(i)
-                   then createStringWithNewBuffer(this[i]: string)
+                   then string.createWithNewBuffer(this[i]: string)
                    else "None";
 
       for space in 1..len-output.length do
@@ -747,7 +747,7 @@ module DataFrames {
     proc writeElemNoIndex(f, i: int, len: int) {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid_at(i)
-                   then createStringWithNewBuffer(this.at(i): string)
+                   then string.createWithNewBuffer(this.at(i): string)
                    else "None";
 
       for space in 1..len-output.length do
@@ -830,7 +830,7 @@ module DataFrames {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {
         var n = nrows();
-        var nStr = createStringWithNewBuffer(n: string);
+        var nStr = string.createWithNewBuffer(n: string);
         var idxWidth = nStr.length + 1;
 
         for space in 1..idxWidth do
@@ -841,7 +841,7 @@ module DataFrames {
 
         for i in 1..n {
           f <~> "\n";
-          var iStr = createStringWithNewBuffer(i: string);
+          var iStr = string.createWithNewBuffer(i: string);
           f <~> iStr;
           for space in 1..idxWidth-iStr.length do
             f <~> " ";

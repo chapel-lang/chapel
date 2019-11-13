@@ -25,7 +25,7 @@ if timing then tCopy.start();
 var keepAlive: int;
 var copied = "copycat";
 for i in 1..n {
-  var copy = createStringWithNewBuffer(copied);
+  var copy = string.createWithNewBuffer(copied);
   keepAlive += copy.len;
 }
 if timing then tCopy.stop();

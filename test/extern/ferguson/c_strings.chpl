@@ -14,9 +14,9 @@ proc go() {
   var gotc = returns_c_string();
   print_c_string(gotc);
 
-  writeln(createStringWithNewBuffer(gotc));
+  writeln(string.createWithNewBuffer(gotc));
 
-  var gots = createStringWithNewBuffer(gotc);
+  var gots = string.createWithNewBuffer(gotc);
   writeln(gots);
 
   writeln("Should be returned_c_string_in_argument x3");
@@ -25,9 +25,9 @@ proc go() {
 
   print_c_string(argc);
 
-  writeln(createStringWithNewBuffer(argc));
+  writeln(string.createWithNewBuffer(argc));
 
-  var args = createStringWithNewBuffer(argc);
+  var args = string.createWithNewBuffer(argc);
   writeln(args);
 
   writeln("Should be returned_c_string_in_argument_with_length x3");
@@ -37,9 +37,9 @@ proc go() {
 
   print_c_string_len(arg2c, len);
 
-  writeln((createStringWithNewBuffer(arg2c))[1..len]);
+  writeln((string.createWithNewBuffer(arg2c))[1..len]);
 
-  var arg2s = (createStringWithNewBuffer(arg2c))[1..len];
+  var arg2s = (string.createWithNewBuffer(arg2c))[1..len];
   writeln(arg2s);
 }
 

@@ -4,7 +4,7 @@ var cs: c_string = "this is a c_string";
 
 writeln(b);
 writeln(s);
-writeln(createStringWithNewBuffer(cs));
+writeln(string.createWithNewBuffer(cs));
 writeln();
 
 // TEST INITIALIZERS

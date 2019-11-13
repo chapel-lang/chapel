@@ -204,9 +204,9 @@ module unitTest {
       const s: t = "s";
       const cs: c_string = "0";
       if useExpr {
-        writeMe(s+createStringWithNewBuffer(cs));
+        writeMe(s+string.createWithNewBuffer(cs));
       } else {
-        const scs = s+createStringWithNewBuffer(cs);
+        const scs = s+string.createWithNewBuffer(cs);
         writeMe(scs);
       }
     }
@@ -220,9 +220,9 @@ module unitTest {
       const cs: c_string = "s";
       const s: t = "0";
       if useExpr {
-        writeMe(createStringWithNewBuffer(cs)+s);
+        writeMe(string.createWithNewBuffer(cs)+s);
       } else {
-        const css = createStringWithNewBuffer(cs)+s;
+        const css = string.createWithNewBuffer(cs)+s;
         writeMe(css);
       }
     }
@@ -237,9 +237,9 @@ module unitTest {
       on Locales[numLocales-1] {
         const cs: c_string = "r";
         if useExpr {
-          writeMe(s+createStringWithNewBuffer(cs));
+          writeMe(s+string.createWithNewBuffer(cs));
         } else {
-          const scs = s+createStringWithNewBuffer(cs);
+          const scs = s+string.createWithNewBuffer(cs);
           writeMe(scs);
         }
       }
@@ -255,9 +255,9 @@ module unitTest {
       on Locales[numLocales-1] {
         const cs: c_string = "s";
         if useExpr {
-          writeMe(createStringWithNewBuffer(cs)+s);
+          writeMe(string.createWithNewBuffer(cs)+s);
         } else {
-          const css = createStringWithNewBuffer(cs)+s;
+          const css = string.createWithNewBuffer(cs)+s;
           writeMe(css);
         }
       }
