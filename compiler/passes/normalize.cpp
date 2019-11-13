@@ -3489,53 +3489,6 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
-  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-             call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
-    // Replace to-borrowed / to-unmanaged primitives with related class type
-
-    // TODO: remove this code
-
-    ClassTypeDecorator d = CLASS_TYPE_BORROWED;
-
-    if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
-      // e.g. borrowed MyGenericClass
-      d = CLASS_TYPE_BORROWED;
-    } else {
-      // e.g. unmanaged MyGenericClass
-      d = CLASS_TYPE_UNMANAGED;
-    }
-
-    if (call->numActuals() >= 1) {
-      Expr* sub = call->get(1);
-      if (SymExpr* se = toSymExpr(sub)) {
-        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          if (isClassLike(ts->type)) {
-            // e.g. unamanged MyGenericClass
-            Type* parentType = getDecoratedClass(ts->type, d);
-            call->replace(new SymExpr(parentType->symbol));
-            // This transformation is all that is required here
-            // since there is no nested call.
-            return;
-          }
-        }
-      } else if (CallExpr* subCall = toCallExpr(sub)) {
-        if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
-          if (TypeSymbol* ts = toTypeSymbol(subBase->symbol())) {
-            if (isClassLike(ts->type)) {
-              // e.g. unmanaged MyGenericClass(arg)
-              Type* parentType = getDecoratedClass(ts->type, d);
-              subCall->baseExpr->replace(new SymExpr(parentType->symbol));
-              call->replace(subCall->remove());
-              // Continue on using call for anything else
-              call = subCall;
-            }
-          }
-        }
-      }
-    }
   }
 
   // Fix type constructor calls to owned e.g.
