@@ -75,5 +75,13 @@ typedef struct _firehose_client_t {
 
 #define FIREHOSE_REMOTE_CALLBACK_IN_HANDLER
 
+// Check the validity of a client_t
+GASNETI_INLINE(gasneti_valid_client_t)
+int gasneti_valid_client_t(const firehose_client_t *client) {
+  return (NULL != client->handle[0]);
+}
+
+// Permit merge of a given region if and only if the client_t is "valid"
+#define FH_MAY_MERGE gasneti_valid_client_t
 
 #endif

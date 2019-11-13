@@ -1505,7 +1505,7 @@ static void gasneti_nodemap_dflt(gasneti_bootstrapExchangefn_t exchangefn) {
  * NOTE: may modify gasneti_nodemap[] if env var GASNET_SUPERNODE_MAXSIZE is set,
  *        or if gasneti_nodemap_local_count would exceed GASNETI_PSHM_MAX_NODES.
  * TODO: splitting by socket or other criteria for/with GASNET_SUPERNODE_MAXSIZE.
- * TODO: keep widths around for conduits to use? (ibv and gemini both use)
+ * TODO: keep widths around for conduits to use? (at least ibv and aries both use)
  */
 extern void gasneti_nodemapParse(void) {
   gex_Rank_t i,j,limit;
