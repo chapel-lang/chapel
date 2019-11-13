@@ -162,7 +162,7 @@ module Random {
    */
   proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = chpl_createStream(seed=seed,
-                                     eltType=arr.eltType,
+                                     eltType=arr.domain.idxType,
                                      parSafe=false,
                                      algorithm=algorithm);
     randNums.shuffle(arr);

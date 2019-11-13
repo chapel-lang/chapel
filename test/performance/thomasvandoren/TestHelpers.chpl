@@ -16,7 +16,7 @@ config const printC = true,
 config const scalingFactor = 1;
 
 var randStream = NPBRandomStream.create(eltType=real, seed=randSeed);
-  timer: Timer;
+var timer: Timer;
 
 const inner = 1..5 * scalingFactor,
   outerRows = 1..10 * scalingFactor,
