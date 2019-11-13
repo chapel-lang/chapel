@@ -239,7 +239,7 @@ am__libqthread_la_SOURCES_DIST = cacheline.c envariables.c feb.c \
 	mpool.c shepherds.c workers.c \
 	threadqueues/@with_scheduler@_threadqueues.c \
 	sincs/@with_sinc@.c alloc/@with_alloc@.c affinity/common.c \
-	affinity/@qthread_topo@.c touch.c teams.c lf_hashmap.c \
+	affinity/@qthread_topo@.c touch.c tls.c teams.c lf_hashmap.c \
 	hashmap.c spawncache.c eurekas.c compat_atomics.c \
 	qtimer/mach.c qtimer/gethrtime.c qtimer/gettimeofday.c \
 	qtimer/altix.c qtimer/gettime.c ds/qarray.c ds/qdqueue.c \
@@ -277,12 +277,12 @@ am_libqthread_la_OBJECTS = cacheline.lo envariables.lo feb.lo \
 	qthread.lo mpool.lo shepherds.lo workers.lo \
 	threadqueues/@with_scheduler@_threadqueues.lo \
 	sincs/@with_sinc@.lo alloc/@with_alloc@.lo affinity/common.lo \
-	affinity/@qthread_topo@.lo touch.lo teams.lo $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
-	$(am__objects_5) $(am__objects_6) $(am__objects_7) \
-	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
-	ds/qarray.lo ds/qdqueue.lo ds/qlfqueue.lo ds/qswsrqueue.lo \
-	ds/qpool.lo ds/dictionary/hash.lo \
+	affinity/@qthread_topo@.lo touch.lo tls.lo teams.lo \
+	$(am__objects_1) $(am__objects_2) $(am__objects_3) \
+	$(am__objects_4) $(am__objects_5) $(am__objects_6) \
+	$(am__objects_7) $(am__objects_8) $(am__objects_9) \
+	$(am__objects_10) ds/qarray.lo ds/qdqueue.lo ds/qlfqueue.lo \
+	ds/qswsrqueue.lo ds/qpool.lo ds/dictionary/hash.lo \
 	ds/dictionary/dictionary_@with_dict@.lo patterns/allpairs.lo \
 	patterns/wavefront.lo syscalls/accept.lo syscalls/connect.lo \
 	syscalls/nanosleep.lo syscalls/poll.lo syscalls/pread.lo \
@@ -324,8 +324,9 @@ am__depfiles_remade = ./$(DEPDIR)/cacheline.Plo \
 	./$(DEPDIR)/queue.Plo ./$(DEPDIR)/qutil.Plo \
 	./$(DEPDIR)/shepherds.Plo ./$(DEPDIR)/spawncache.Plo \
 	./$(DEPDIR)/spr.Plo ./$(DEPDIR)/syncvar.Plo \
-	./$(DEPDIR)/teams.Plo ./$(DEPDIR)/touch.Plo \
-	./$(DEPDIR)/workers.Plo affinity/$(DEPDIR)/@qthread_topo@.Plo \
+	./$(DEPDIR)/teams.Plo ./$(DEPDIR)/tls.Plo \
+	./$(DEPDIR)/touch.Plo ./$(DEPDIR)/workers.Plo \
+	affinity/$(DEPDIR)/@qthread_topo@.Plo \
 	affinity/$(DEPDIR)/common.Plo alloc/$(DEPDIR)/@with_alloc@.Plo \
 	barrier/$(DEPDIR)/@with_barrier@.Plo ds/$(DEPDIR)/qarray.Plo \
 	ds/$(DEPDIR)/qdqueue.Plo ds/$(DEPDIR)/qlfqueue.Plo \
@@ -602,18 +603,19 @@ libqthread_la_SOURCES = cacheline.c envariables.c feb.c hazardptrs.c \
 	shepherds.c workers.c \
 	threadqueues/@with_scheduler@_threadqueues.c \
 	sincs/@with_sinc@.c alloc/@with_alloc@.c affinity/common.c \
-	affinity/@qthread_topo@.c touch.c teams.c $(am__append_1) \
-	$(am__append_2) $(am__append_3) $(am__append_4) \
-	$(am__append_5) $(am__append_6) $(am__append_7) \
-	$(am__append_8) $(am__append_9) $(am__append_10) ds/qarray.c \
-	ds/qdqueue.c ds/qlfqueue.c ds/qswsrqueue.c ds/qpool.c \
-	ds/dictionary/hash.c ds/dictionary/dictionary_@with_dict@.c \
-	patterns/allpairs.c patterns/wavefront.c syscalls/accept.c \
-	syscalls/connect.c syscalls/nanosleep.c syscalls/poll.c \
-	syscalls/pread.c syscalls/pwrite.c syscalls/read.c \
-	syscalls/select.c syscalls/sleep.c syscalls/system.c \
-	syscalls/user_defined.c syscalls/usleep.c syscalls/wait4.c \
-	syscalls/write.c $(am__append_11) $(am__append_12)
+	affinity/@qthread_topo@.c touch.c tls.c teams.c \
+	$(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4) $(am__append_5) $(am__append_6) \
+	$(am__append_7) $(am__append_8) $(am__append_9) \
+	$(am__append_10) ds/qarray.c ds/qdqueue.c ds/qlfqueue.c \
+	ds/qswsrqueue.c ds/qpool.c ds/dictionary/hash.c \
+	ds/dictionary/dictionary_@with_dict@.c patterns/allpairs.c \
+	patterns/wavefront.c syscalls/accept.c syscalls/connect.c \
+	syscalls/nanosleep.c syscalls/poll.c syscalls/pread.c \
+	syscalls/pwrite.c syscalls/read.c syscalls/select.c \
+	syscalls/sleep.c syscalls/system.c syscalls/user_defined.c \
+	syscalls/usleep.c syscalls/wait4.c syscalls/write.c \
+	$(am__append_11) $(am__append_12)
 EXTRA_DIST = ds/dictionary/dictionary_shavit.c \
 	ds/dictionary/dictionary_trie.c \
 	ds/dictionary/dictionary_simple.c \
@@ -929,6 +931,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/syncvar.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/teams.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tls.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/touch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workers.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@affinity/$(DEPDIR)/@qthread_topo@.Plo@am__quote@ # am--include-marker
@@ -1294,6 +1297,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/spr.Plo
 	-rm -f ./$(DEPDIR)/syncvar.Plo
 	-rm -f ./$(DEPDIR)/teams.Plo
+	-rm -f ./$(DEPDIR)/tls.Plo
 	-rm -f ./$(DEPDIR)/touch.Plo
 	-rm -f ./$(DEPDIR)/workers.Plo
 	-rm -f affinity/$(DEPDIR)/@qthread_topo@.Plo
@@ -1402,6 +1406,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/spr.Plo
 	-rm -f ./$(DEPDIR)/syncvar.Plo
 	-rm -f ./$(DEPDIR)/teams.Plo
+	-rm -f ./$(DEPDIR)/tls.Plo
 	-rm -f ./$(DEPDIR)/touch.Plo
 	-rm -f ./$(DEPDIR)/workers.Plo
 	-rm -f affinity/$(DEPDIR)/@qthread_topo@.Plo
