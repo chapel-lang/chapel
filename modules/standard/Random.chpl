@@ -89,7 +89,7 @@ module Random {
   }
 
   /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
-  param defaultRNG = RNG.PCG;
+  config param defaultRNG = RNG.PCG;
 
   type RandomStream = if defaultRNG == RNG.PCG then PCGRandomStream
                                                else NPBRandomStream;

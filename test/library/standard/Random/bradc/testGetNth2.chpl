@@ -2,12 +2,9 @@ use Random;
 
 config var n = 100;
 
-config param useNPB = true;
-config param rtype = if useNPB then RNG.NPB else RNG.PCG;
-
-var randStr1 = RandomStream.create(real, 314159265, algorithm=rtype);
-var randStr2 = RandomStream.create(real, 314159265, algorithm=rtype);
-var randStr3 = RandomStream.create(real, 314159265, algorithm=rtype);
+var randStr1 = RandomStream.create(real, 314159265);
+var randStr2 = RandomStream.create(real, 314159265);
+var randStr3 = RandomStream.create(real, 314159265);
 
 var A, B: [1..n] real;
 
