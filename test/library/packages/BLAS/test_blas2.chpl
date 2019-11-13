@@ -1,6 +1,7 @@
 use Random;
 use BLAS;
 use blas_helpers;
+use IO;
 
 /* BLAS 2 Testing TODO:
     - [ ] Banded matrices (commented out)
