@@ -22,7 +22,7 @@
  */
 module ChapelLocks {
   private use Atomics, ChapelBase;
-  use MemConsistency;
+  private use MemConsistency;
   /*
    * Local processor atomic spinlock. Intended for situations with minimal
    * contention or very short critical sections.
