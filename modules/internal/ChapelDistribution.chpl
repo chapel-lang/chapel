@@ -626,7 +626,7 @@ module ChapelDistribution {
     proc dsiAlignedLow { return parentDom.alignedLow; }
     proc dsiAlignedHigh { return parentDom.alignedHigh; }
 
-    proc dsiMakeIndexBuffer(size) {
+    proc dsiCreateIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
     }
 

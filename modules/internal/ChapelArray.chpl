@@ -1466,7 +1466,7 @@ module ChapelArray {
        .. code-block:: chapel
 
           var spsDom: sparse subdomain(parentDom);
-          var idxBuf = spsDom.makeIndexBuffer(size=N);
+          var idxBuf = spsDom.createIndexBuffer(size=N);
           for i in someIndexIterator() do
             idxBuf.add(i);
           idxBuf.commit();
@@ -1483,8 +1483,14 @@ module ChapelArray {
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
+    inline proc createIndexBuffer(size: int) {
+      return _value.dsiCreateIndexBuffer(size);
+    }
+
     inline proc makeIndexBuffer(size: int) {
-      return _value.dsiMakeIndexBuffer(size);
+      compilerWarning("domain.makeIndexBuffer is deprecated - " +
+                      "please use domain.createIndexBuffer instead");
+      return dsiCreateIndexBuffer(size);
     }
 
     /*
