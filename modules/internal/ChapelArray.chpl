@@ -160,7 +160,8 @@
  */
 module ChapelArray {
 
-  use ChapelBase; // For opaque type.
+  private use ChapelBase;
+  private use ChapelReduce;
   use ChapelTuple;
   use ChapelLocale;
   use ArrayViewSlice;
