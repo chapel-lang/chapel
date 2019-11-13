@@ -3540,6 +3540,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   // Fix type constructor calls to owned e.g.
   // (call dtOwned SomeGenericClass( arg ))
+  // This is relant to test/functions/ferguson/query/owned-generic
   if (call->baseExpr != NULL) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
