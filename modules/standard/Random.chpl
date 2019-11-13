@@ -21,7 +21,7 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom numbers,
-   :class:`~RandomStreamInterface`. Use :proc:`makeRandomStream` to
+   :class:`~RandomStreamInterface`. Use :proc:`RandomStream.create` to
    create such an stream. Each stream supports methods to get the next
    random number in the stream (:proc:`~RandomStreamInterface.getNext`),
    to fast-forward to a specific value in the stream
@@ -45,24 +45,12 @@
    distributed in [0.0, 1.0] with the caveat that it currently depends on the
    RNG whether the boundary values 0.0 and 1.0 can be produced.
 
-   Use :proc:`makeRandomStream` or the constructor for a specific RNG
+   Use :proc:`RandomStream.create` or the constructor for a specific RNG
    implementation to get a RandomStream. See the documentation for
    each RNG implementation for more information:
 
      * :mod:`PCGRandom`
      * :mod:`NPBRandom`
-
-   .. note::
-
-      Right now, :class:`~NPBRandom.NPBRandomStream` and
-      :class:`~PCGRandom.RandomStream` are available (where
-      :class:`~PCGRandom.RandomStream` implements the PCG algorithm). In the
-      future, we expect that `PCGRandomStream` will be available as another name
-      for the PCG RNG stream.  At that point, `RandomStream` will change to a
-      type alias for the default RNG. The function :proc:`makeRandomStream` is
-      available to avoid compatibility problems from this naming change.
-      Programs that need to specifically request PCG should do so with
-      :proc:`makeRandomStream` until the name `PCGRandomStream` is available..
 
    .. note::
 
@@ -422,7 +410,7 @@ module Random {
     Models a stream of pseudorandom numbers.  This class is defined for
     documentation purposes and should not be instantiated. See
     :mod:`PCGRandom` and :mod:`NPBRandom` for RNGs that can be
-    instantiated. To create a random stream, use :proc:`makeRandomStream`.
+    instantiated. To create a random stream, use :proc:`RandomStream.create`.
 
     .. note::
 
@@ -764,14 +752,6 @@ module Random {
          had two values < 2**31, removing the top 0 bit, and then combining
          the top 16 bits into the value provided to TestU01).
 
-
-      .. note::
-
-         This class is currently called RandomStream, but at some point
-         we expect to rename it PCGRandomStream. At that point, RandomStream
-         will represent the default RNG and will initially refer to
-         PCGRandomStream.
-
     */
     class PCGRandomStream {
       /*
@@ -826,6 +806,22 @@ module Random {
         PCGRandomStreamPrivate_count = 1;
       }
 
+      /*
+        Constructs a new stream of random numbers using the specified seed
+        and parallel safety.
+
+        :arg eltType: The element type to be generated.
+        :type eltType: `type`
+
+        :arg seed: The seed to use for the PRNG.  Defaults to `oddCurrentTime` from
+         :type:`RandomSupport.SeedGenerator`.
+        :type seed: `int(64)`
+
+        :arg parSafe: The parallel safety setting.  Defaults to `true`.
+        :type parSafe: `bool`
+
+        :returns: an owned PCGRandomStream
+      */
       proc type create(type eltType,
                        seed: int(64) = SeedGenerator.oddCurrentTime,
                        param parSafe: bool = true) {
@@ -2384,6 +2380,22 @@ module Random {
         }
       }
 
+      /*
+        Constructs a new stream of random numbers using the specified seed
+        and parallel safety.  Halts if provided an even seed.
+
+        :arg eltType: The element type to be generated.
+        :type eltType: `type`
+
+        :arg seed: The seed to use for the PRNG.  Defaults to `oddCurrentTime` from
+         :type:`RandomSupport.SeedGenerator`.
+        :type seed: `int(64)`
+
+        :arg parSafe: The parallel safety setting.  Defaults to `true`.
+        :type parSafe: `bool`
+
+        :returns: an owned RandomStream
+      */
       proc type create(type eltType,
                        seed: int(64) = SeedGenerator.oddCurrentTime,
                        param parSafe: bool = true) {
