@@ -34,6 +34,8 @@ module LocaleModelHelpSetup {
   use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
+  public use Atomics;
+  private use ChapelBase;
 
   config param debugLocaleModel = false;
 
