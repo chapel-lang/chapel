@@ -468,7 +468,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.numBytes, opts, ret._regexp);
   if !qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
-    var err_msg = createStringWithNewBuffer(err_str) + 
+    var err_msg = string.createWithNewBuffer(err_str) + 
                   " when compiling regexp '" + pattern + "'";
     throw new owned BadRegexpError(err_msg);
   }
@@ -951,7 +951,7 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.numBytes, text.localize().c_str(), text.numBytes, pos:int, endpos:int, global, replaced, replaced_len);
     }
-    const ret = createStringWithOwnedBuffer(replaced);
+    const ret = string.createWithOwnedBuffer(replaced);
     return (ret, nreplaced);
   }
 
@@ -978,7 +978,7 @@ record regexp {
     on this.home {
       var patternTemp:c_string;
       qio_regexp_get_pattern(this._regexp, patternTemp);
-      pattern = createStringWithNewBuffer(patternTemp);
+      pattern = string.createWithNewBuffer(patternTemp);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -1043,7 +1043,7 @@ inline proc _cast(type t, x: regexp) where t == string {
   on x.home {
     var cs: c_string;
     qio_regexp_get_pattern(x._regexp, cs);
-    pattern = createStringWithOwnedBuffer(cs);
+    pattern = string.createWithOwnedBuffer(cs);
   }
   return pattern;
 }

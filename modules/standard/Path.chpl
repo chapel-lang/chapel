@@ -358,7 +358,7 @@ proc dirname(name: string): string {
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
-             value = createStringWithBorrowedBuffer(value_c);
+             value = string.createWithBorrowedBuffer(value_c);
            }
            res += value;
          }
@@ -375,7 +375,7 @@ proc dirname(name: string): string {
          if (h != 1) {
            value = "$" + env_var;
          } else {
-           value = createStringWithBorrowedBuffer(value_c);
+           value = string.createWithBorrowedBuffer(value_c);
          }
          res += value;
          if (ind <= path_p.numBytes) {
@@ -407,7 +407,7 @@ proc file.getParentName(): string throws {
   try check();
 
   try {
-    return dirname(createStringWithNewBuffer(this.realPath()));
+    return dirname(string.createWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
   }
@@ -575,7 +575,7 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(name.localize().c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithOwnedBuffer(res);
+  return string.createWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -613,7 +613,7 @@ proc file.realPath(): string throws {
   var res: c_string;
   var err = chpl_fs_realpath_file(_file_internal, res);
   if err then try ioerror(err, "in file.realPath");
-  return createStringWithOwnedBuffer(res);
+  return string.createWithOwnedBuffer(res);
 }
 
 pragma "no doc"

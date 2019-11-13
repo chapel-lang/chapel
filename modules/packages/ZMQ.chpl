@@ -493,7 +493,7 @@ module ZMQ {
       this.home = here;
       this.complete();
       if this.ctx == nil {
-        var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+        var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
         halt("Error in ContextClass.init(): %s\n", errmsg);
       }
     }
@@ -502,7 +502,7 @@ module ZMQ {
       on this.home {
         var ret = zmq_ctx_term(this.ctx):int;
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           halt("Error in ContextClass.deinit(): %s\n", errmsg);
         }
       }
@@ -579,7 +579,7 @@ module ZMQ {
       this.home = here;
       this.complete();
       if this.socket == nil {
-        var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+        var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
         halt("Error in SocketClass.init(): %s\n", errmsg);
       }
     }
@@ -588,7 +588,7 @@ module ZMQ {
       on this.home {
         var ret = zmq_close(socket):int;
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           halt("Error in SocketClass.deinit(): %s\n", errmsg);
         }
         socket = c_nil;
@@ -689,7 +689,7 @@ module ZMQ {
         var tmp = endpoint;
         var ret = zmq_bind(classRef.socket, tmp.c_str());
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           halt("Error in Socket.bind(): ", errmsg);
         }
       }
@@ -703,7 +703,7 @@ module ZMQ {
         var tmp = endpoint;
         var ret = zmq_connect(classRef.socket, tmp.c_str());
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           writef("Error in Socket.connect(): %s\n", errmsg);
         }
       }
@@ -734,7 +734,7 @@ module ZMQ {
                                  c_ptrTo(copy):c_void_ptr,
                                  numBytes(T)): int;
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           halt("Error in Socket.setsockopt(): ", errmsg);
         }
       }
@@ -772,13 +772,13 @@ module ZMQ {
         var err = zmq_getsockopt_string_helper(classRef.socket,
                                                ZMQ_LAST_ENDPOINT, str);
         if err == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
           throw new owned ZMQError("Error in Socket.getLastEndpoint(): " +
                                    errmsg);
         }
-        ret = createStringWithOwnedBuffer(str);
+        ret = string.createWithOwnedBuffer(str);
       }
       return ret;
     }
@@ -799,7 +799,7 @@ module ZMQ {
         var ret = zmq_getsockopt_int_helper(classRef.socket, ZMQ_LINGER,
                                             copy);
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
           throw new owned ZMQError("Error in Socket.getLinger(): " + errmsg);
@@ -825,7 +825,7 @@ module ZMQ {
                                  c_ptrTo(copy): c_void_ptr,
                                  numBytes(value.type)): int;
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
           throw new owned ZMQError("Error in Socket.setLinger(): " + errmsg);
@@ -849,7 +849,7 @@ module ZMQ {
                                  c_ptrTo(copy): c_void_ptr,
                                  numBytes(value.type)): int;
         if ret == -1 {
-          var errmsg = createStringWithBorrowedBuffer(zmq_strerror(errno));
+          var errmsg = string.createWithBorrowedBuffer(zmq_strerror(errno));
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
           throw new owned ZMQError("Error in Socket.setSubscribe(): " + errmsg);
@@ -948,7 +948,7 @@ module ZMQ {
         //
         // TODO: If *not crossing locales*, check for ownership and
         // conditionally have ZeroMQ free the memory.
-        var copy = createStringWithNewBuffer(s=data);
+        var copy = string.createWithNewBuffer(s=data);
         copy.isowned = false;
 
         // Create the ZeroMQ message from the string buffer
@@ -1049,7 +1049,7 @@ module ZMQ {
         // Construct the string on the current locale, copying the data buffer
         // from the message object; then, release the message object
         var len = zmq_msg_size(msg):int;
-        var str = createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
+        var str = string.createWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
                                             length=len, size=len+1);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
@@ -1104,7 +1104,7 @@ module ZMQ {
     pragma "no doc"
     proc throw_socket_error(socket_errno: c_int, err_fn: string) throws {
       var errmsg_zmq =
-        createStringWithBorrowedBuffer(zmq_strerror(socket_errno));
+        string.createWithBorrowedBuffer(zmq_strerror(socket_errno));
       var errmsg_fmt = "Error in Socket.%s(%s): %s\n";
       var errmsg_str = errmsg_fmt.format(err_fn, string:string, errmsg_zmq);
 

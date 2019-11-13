@@ -52,7 +52,7 @@ module ExportWrappers {
   }
 
   proc chpl__exportConv(val: c_string, type rt: string): rt {
-    return createStringWithBorrowedBuffer(val);
+    return string.createWithBorrowedBuffer(val);
   }
 
   //
@@ -80,7 +80,7 @@ module ExportWrappers {
   // the Chapel heap.
   //
   proc chpl__exportConv(val: chpl_bytes_wrapper, type rt: bytes): rt {
-    return createBytesWithNewBuffer(val.data:c_string, val.size.safeCast(int));
+    return string.createWithNewBuffer(val.data:c_string, val.size.safeCast(int));
   }
 
 } // End module "ExportWrappers".

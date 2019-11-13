@@ -195,7 +195,7 @@ module ChapelLocale {
       extern proc chpl_nodeName(): c_string;
       var hname: string;
       on this {
-        hname = createStringWithNewBuffer(chpl_nodeName());
+        hname = string.createWithNewBuffer(chpl_nodeName());
       }
       return hname;
     }

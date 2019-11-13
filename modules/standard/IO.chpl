@@ -3437,7 +3437,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
   for param i in 1..tup.size {
     if i != 1 then str += ", ";
     if tup[i].type == c_string {
-      str += createStringWithBorrowedBuffer(tup[i]);
+      str += string.createWithBorrowedBuffer(tup[i]);
     }
     else {
       str += tup[i]:string;
@@ -3471,7 +3471,7 @@ proc stringify(const args ...?k):string {
       if args[i].type == string {
         str += args[i];
       } else if args[i].type == c_string {
-        str += createStringWithBorrowedBuffer(args[i]);
+        str += string.createWithBorrowedBuffer(args[i]);
       } else if args[i].type == bytes {
         //decodePolicy.replace never throws
         try! {
