@@ -803,7 +803,7 @@ module DefaultAssociative {
       }
     }
 
-    proc readChapelStyleAssocArray(f) {
+    proc readChapelStyleAssocArray(f) throws {
       var first = true;
       var read_end = false;
 

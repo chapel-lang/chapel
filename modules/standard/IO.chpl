@@ -2144,7 +2144,7 @@ inline proc _cast(type t:string, x: ioBits) {
 
 
 pragma "no doc"
-proc channel._ch_ioerror(error:syserr, msg:string) throws {
+inline proc channel._ch_ioerror(error:syserr, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
@@ -3092,12 +3092,23 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 
   try {
     x.readThis(reader);
+  } catch err: SystemError {
+    //
+    // For now, if the error is a system error, stuff its code in the
+    // channel.
+    // 
+    // TODO: This does not solve the problem of what to do when a user throws
+    // a SystemError (ideally, we only want to stuff the error in the channel
+    // if it originated from within IO code).
+    //
+    const code = err.err;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
     //
     // TODO: What to do with the caught error? Propagate back up?
     //
-    const chError: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, chError);
+    const code: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   }
 
   // Set the channel pointer to NULL to make the
@@ -3168,35 +3179,49 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 pragma "no doc"
-proc channel.readIt(ref x) {
+proc channel.readIt(ref x) throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var error:syserr = ENOERR;
+
   on this.home {
     try! this.lock();
-    var error:syserr;
-    error = qio_channel_error(_channel_internal);
-    if ! error {
-      error = _read_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, error);
+    var etmp:syserr;
+    etmp = qio_channel_error(_channel_internal);
+    if !etmp {
+      etmp = _read_one_internal(_channel_internal, kind, x, origLocale);
+      _qio_channel_set_error_unlocked(_channel_internal, etmp);
     }
+    error = etmp;
     this.unlock();
   }
+
+  if !error then
+    try this._ch_ioerror(error, "in channel.readIt(" +
+                                _args_to_proto(x, preArg="ref ") + ")");
 }
 
 pragma "no doc"
-proc channel.writeIt(const x) {
+proc channel.writeIt(const x) throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var error:syserr = ENOERR;
+
   on this.home {
     try! this.lock();
-    var error:syserr;
-    error = qio_channel_error(_channel_internal);
-    if ! error {
-      error = _write_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, error);
+    var etmp:syserr;
+    etmp = qio_channel_error(_channel_internal);
+    if !etmp {
+      etmp = _write_one_internal(_channel_internal, kind, x, origLocale);
+      _qio_channel_set_error_unlocked(_channel_internal, etmp);
     }
+    error = etmp;
     this.unlock();
   }
+
+  if !error then
+    try this._ch_ioerror(error, "in channel.writeIt(" +
+                                _args_to_proto(x, preArg="ref ") + ")");
 }
 
 
@@ -3206,12 +3231,28 @@ proc channel.writeIt(const x) {
    Stores any error encountered in the channel. Does not return anything.
  */
 inline proc channel.readwrite(const x) where this.writing {
-  this.writeIt(x);
+  try {
+    this.writeIt(x);
+  } catch err {
+    //
+    // Do nothing with caught errors, for now, since this routine doesn't
+    // throw yet (and writeIt stuffs errors in the channel in addition to
+    // throwing).
+    //
+  }
 }
 // documented in the writing version.
 pragma "no doc"
 inline proc channel.readwrite(ref x) where !this.writing {
-  this.readIt(x);
+  try {
+    this.readIt(x);
+  } catch err {
+    //
+    // Do nothing with caught errors, for now, since this routine doesn't
+    // throw yet (and writeIt stuffs errors in the channel in addition to
+    // throwing).
+    //
+  }
 }
 
   /*
@@ -3228,7 +3269,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
    */
   inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
-    try ch.write(x);
+    try ch.writeIt(x);
     return ch;
   }
 
@@ -3236,23 +3277,17 @@ inline proc channel.readwrite(ref x) where !this.writing {
   pragma "no doc"
   inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    const success = try ch.read(x);
-    if !success {
-      //
-      // The `channel.read` routine does not throw on EEOF, opting to return
-      // false instead. In lieu of rewriting `channel.writeIt` or duplicating
-      // code, duplicate only the relevant part used to create an IO error.
-      // The `channel._ch_ioerror` routine creates a well formatted error
-      // that includes path and offset information.
-      //
-      // TODO: Stop stealing code private to channels.
-      // TODO: Refactor the `channel.read` routine so that both it and this
-      //       can call common code.
-      //
-      try ch._ch_ioerror(EEOF:syserr, "in channel.read(" +
-                                      _args_to_proto((x), preArg="ref ") + ")");
-    }
 
+    //
+    // TODO: Ideally, we would like to replace calls to `channel.readIt`
+    // entirely with calls to `channel.read`, however ioLiterals seem to
+    // expect the channel error state to be set _immediately_ after a call
+    // to `_read_one_internal`, and `channel.read` was throwing a EFORMAT
+    // error when called instead.
+    // So for now, I've adjusted `channel.readIt` (and `channel.writeIt`)
+    // to be throwing.
+    //
+    try ch.readIt(x);
     return ch;
   }
 
@@ -3274,13 +3309,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   inline proc <~>(const ref r: channel, lit:ioLiteral) const ref throws
   where !r.writing {
     var litCopy = lit;
-    const success = try r.read(litCopy);
-    if !success {
-      // TODO: Stop stealing code private to channels.
-      try r._ch_ioerror(EEOF:syserr, "in channel.read(" +
-                                     _args_to_proto((lit), preArg="ref ") + ")");
-    }
-
+    try r.readIt(litCopy);
     return r;
   }
 
@@ -3297,13 +3326,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   inline proc <~>(const ref r: channel, nl:ioNewline) const ref throws
   where !r.writing {
     var nlCopy = nl;
-    const success = try r.read(nlCopy);
-    if !success {
-      // TODO: Stop stealing code private to channels.
-      try r._ch_ioerror(EEOF:syserr, "in channel.read(" +
-                                     _args_to_proto((nl), preArg="ref ") + ")");
-    }
-
+    try r.readIt(nlCopy);
     return r;
   }
 
@@ -3557,7 +3580,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 
 /* returns true if read successfully, false if we encountered EOF */
 // better documented in the style= version
-inline proc channel.read(ref args ...?k):bool throws {
+proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
