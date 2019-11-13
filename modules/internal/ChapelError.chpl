@@ -81,6 +81,20 @@ module ChapelError {
     }
   }
 
+  /*
+   A `DecodeError` is thrown if an attempt to create a string with non-UTF8 byte
+   sequences are made at runtime. This includes calling the
+   `bytes.decode(decodePolicy.strict)` method on a bytes with non-UTF8 byte
+   sequences
+   */
+  class DecodeError: Error {
+    
+    pragma "no doc"
+    override proc message() {
+      return "Invalid UTF-8 character encountered.";
+    }
+  }
+
   class IllegalArgumentError : Error {
     var formal: string;
     var info: string;

@@ -21,18 +21,6 @@ module BytesStringCommon {
   use Bytes;
   private use ByteBufferHelpers;
 
-  /*
-   A `DecodeError` is thrown if the `decode` method is called on a non-UTF-8
-   string.
-   */
-  class DecodeError: Error {
-    
-    pragma "no doc"
-    override proc message() {
-      return "Invalid UTF-8 character encountered.";
-    }
-  }
-
   pragma "no doc"
   config param showStringBytesInitDeprWarnings = true;
 
