@@ -23,26 +23,6 @@ private use IO;
 private use ChapelBase;
 
 pragma "last resort"
-proc iomode type {
-  compilerError("iomode is no longer available by default, please insert\na use of the IO module to access it.");
-}
-
-pragma "last resort"
-proc iokind type {
-  compilerError("iokind is no longer available by default, please insert\na use of the IO module to access it.");
-}
-
-pragma "last resort"
-proc iostringstyle type {
-  compilerError("iostringstyle is no longer available by default, please insert\na use of the IO module to access it.");
-}
-
-pragma "last resort"
-proc iostringformat type {
-  compilerError("iostringformat is no longer available by default, please insert\na use of the IO module to access it.");
-}
-
-pragma "last resort"
 proc iodynamic param {
   compilerWarning("iodynamic will no longer be available by default, please\ninsert a use of the IO module to access it.");
   return IO.iodynamic;
