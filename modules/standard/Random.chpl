@@ -21,7 +21,7 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom numbers,
-   :class:`~RandomStreamInterface`. Use :proc:`RandomStream.create` to
+   :class:`~RandomStreamInterface`. Use ``RandomStream.create`` to
    create such an stream. Each stream supports methods to get the next
    random number in the stream (:proc:`~RandomStreamInterface.getNext`),
    to fast-forward to a specific value in the stream
@@ -45,7 +45,7 @@
    distributed in [0.0, 1.0] with the caveat that it currently depends on the
    RNG whether the boundary values 0.0 and 1.0 can be produced.
 
-   Use :proc:`RandomStream.create` or the constructor for a specific RNG
+   Use ``RandomStream.create`` or the constructor for a specific RNG
    implementation to get a RandomStream. See the documentation for
    each RNG implementation for more information:
 
@@ -410,11 +410,11 @@ module Random {
     Models a stream of pseudorandom numbers.  This class is defined for
     documentation purposes and should not be instantiated. See
     :mod:`PCGRandom` and :mod:`NPBRandom` for RNGs that can be
-    instantiated. To create a random stream, use :proc:`RandomStream.create`.
+    instantiated. To create a random stream, use ``RandomStream.create``.
 
     .. note::
 
-      This RandomStreamInterface is expected to change.
+      This RandomStreamInterface is expected to change`.
 
     .. note::
 
@@ -699,7 +699,7 @@ module Random {
       match the C PCG reference implementation and have specifically verified
       equal output given the same seed. However, this implementation differs
       from the C PCG reference implementation in how it produces random integers
-      within particular bounds (with :proc:`RandomStream.getNext` using `min`
+      within particular bounds (with :proc:`PCGRandomStream.getNext` using `min`
       and `max` arguments). In addition, this implementation directly supports
       the generation of random `real` values, unlike the C PCG implementation.
 
@@ -955,7 +955,7 @@ module Random {
         Fill the argument array with pseudorandom values.  This method is
         identical to the standalone :proc:`~Random.fillRandom` procedure,
         except that it consumes random values from the
-        :class:`RandomStream` object on which it's invoked rather
+        :class:`PCGRandomStream` object on which it's invoked rather
         than creating a new stream for the purpose of the call.
 
         :arg arr: The array to be filled
