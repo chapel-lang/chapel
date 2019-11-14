@@ -80,7 +80,7 @@ module ExportWrappers {
   // the Chapel heap.
   //
   proc chpl__exportConv(val: chpl_bytes_wrapper, type rt: bytes): rt {
-    return string.createWithNewBuffer(val.data:c_string, val.size.safeCast(int));
+    return bytes.createWithNewBuffer(val.data:c_string, val.size.safeCast(int));
   }
 
 } // End module "ExportWrappers".
