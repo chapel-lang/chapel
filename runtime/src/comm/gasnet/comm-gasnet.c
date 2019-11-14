@@ -784,7 +784,7 @@ static void set_max_segsize() {
 }
 
 static void set_num_comm_domains() {
-#if defined(GASNET_CONDUIT_GEMINI) || defined(GASNET_CONDUIT_ARIES)
+#if defined(GASNET_CONDUIT_ARIES)
   const int num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
   chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus, 0);
   chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "3", 0);
