@@ -1,6 +1,7 @@
-/*   $Source: bitbucket.org:berkeleylab/gasnet.git/gemini-conduit/gasnet_core.h $
- * Description: GASNet header for gemini conduit core
+/*   $Source: bitbucket.org:berkeleylab/gasnet.git/template-conduit/gasnet_core.h $
+ * Description: GASNet header for ucx conduit core
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
+ * Copyright 2019, Mellanox Technologies LTD. All rights reserved.
  * Terms of use are as specified in license.txt
  */
 
@@ -25,7 +26,11 @@ GASNETI_NORETURNP(gasnetc_exit)
 
 /* Some conduits permit gasnet_init(NULL,NULL).
    Define to 1 if this conduit supports this extension, or to 0 otherwise.  */
-#define GASNET_NULL_ARGV_OK 1
+#if !HAVE_MPI_SPAWNER || (GASNETI_MPI_VERSION >= 2)
+  #define GASNET_NULL_ARGV_OK 1
+#else
+  #define GASNET_NULL_ARGV_OK 0
+#endif
 /* ------------------------------------------------------------------------------------ */
 extern int gasnetc_Client_Init(
                 gex_Client_t           *client_p,
@@ -114,30 +119,63 @@ typedef struct {
   ==========================
 */
 
-#define GASNETC_MAX_ARGS   16
-#define gex_AM_MaxArgs() ((unsigned int)GASNETC_MAX_ARGS)
+size_t gasnetc_AMHeaderSize(void);
 
-#ifdef GASNET_CONDUIT_ARIES
-  #define GASNETC_LUB_LONG 0x800000
-#else
-  #define GASNETC_LUB_LONG 0x100000
+#define GASNETC_MAX_ARGS            16
+#define GASNETC_UCX_HDR_SIZE        gasnetc_AMHeaderSize()
+#define GASNETC_MAX_MED             4096
+#define GASNETC_MAX_LONG            INT_MAX
+
+#define GASNETC_MAX_MEDIUM_NBRHD    GASNETC_MAX_MED
+
+#define GASNETC_MAX_MED_(nargs)                                                \
+  (GASNETC_MAX_MED - GASNETI_ALIGNUP_NOASSERT(GASNETC_UCX_HDR_SIZE +           \
+                                              sizeof(gex_AM_Arg_t)*(nargs), 8))
+
+#define GASNETC_MAX_LONG_(nargs) \
+  (GASNETC_MAX_LONG - (GASNETC_UCX_HDR_SIZE +  sizeof(gex_AM_Arg_t)*(nargs) +  \
+                                               sizeof(void*)))
+
+#define gex_AM_MaxArgs()          ((unsigned int)GASNETC_MAX_ARGS)
+#define gex_AM_LUBRequestMedium() (GASNETC_MAX_MED_(GASNETC_MAX_ARGS))
+#define gex_AM_LUBReplyMedium()   (GASNETC_MAX_MED_(GASNETC_MAX_ARGS))
+#define gex_AM_LUBRequestLong()   (GASNETC_MAX_LONG_(GASNETC_MAX_ARGS))
+#define gex_AM_LUBReplyLong()     (GASNETC_MAX_LONG_(GASNETC_MAX_ARGS))
+
+#define gasnetc_AM_MaxRequestMedium(tm,rank,lc_opt,flags,nargs)  ((size_t)(GASNETC_MAX_MED_(nargs)))
+#define gasnetc_AM_MaxReplyMedium(tm,rank,lc_opt,flags,nargs)    ((size_t)(GASNETC_MAX_MED_(nargs)))
+#define gasnetc_AM_MaxRequestLong(tm,rank,lc_opt,flags,nargs)    ((size_t)(GASNETC_MAX_LONG_(nargs)))
+#define gasnetc_AM_MaxReplyLong(tm,rank,lc_opt,flags,nargs)      ((size_t)(GASNETC_MAX_LONG_(nargs)))
+#define gasnetc_Token_MaxReplyMedium(token,lc_opt,flags,nargs)   ((size_t)(GASNETC_MAX_MED_(nargs)))
+#define gasnetc_Token_MaxReplyLong(token,lc_opt,flags,nargs)     ((size_t)(GASNETC_MAX_LONG_(nargs)))
+
+/* Example for true functions: */
+#if 0
+extern GASNETI_PURE size_t gasnetc_AM_MaxRequestMedium(
+           gex_TM_t tm, gex_Rank_t rank,
+           const gex_Event_t *lc_opt, gex_Flags_t flags, unsigned int nargs);
+GASNETI_PUREP(gasnetc_AM_MaxRequestMedium)
+extern GASNETI_PURE size_t gasnetc_AM_MaxReplyMedium(
+           gex_TM_t tm, gex_Rank_t rank,
+           const gex_Event_t *lc_opt, gex_Flags_t flags, unsigned int nargs);
+GASNETI_PUREP(gasnetc_AM_MaxReplyMedium)
+extern GASNETI_PURE size_t gasnetc_AM_MaxRequestLong(
+           gex_TM_t tm, gex_Rank_t rank,
+           const gex_Event_t *lc_opt, gex_Flags_t flags, unsigned int nargs);
+GASNETI_PUREP(gasnetc_AM_MaxRequestLong)
+extern GASNETI_PURE size_t gasnetc_AM_MaxReplyLong(
+           gex_TM_t tm, gex_Rank_t rank,
+           const gex_Event_t *lc_opt, gex_Flags_t flags, unsigned int nargs);
+GASNETI_PUREP(gasnetc_AM_MaxReplyLong)
+extern GASNETI_PURE size_t gasnetc_Token_MaxReplyMedium(
+           gex_Token_t token,
+           const gex_Event_t *lc_opt, gex_Flags_t flags, unsigned int nargs);
+GASNETI_PUREP(gasnetc_Token_MaxReplyMedium)
+extern GASNETI_PURE size_t gasnetc_Token_MaxReplyLong(
+           const gex_Token_t token,
+           gex_Event_t *lc_opt, gex_Flags_t flags, unsigned int nargs);
+GASNETI_PUREP(gasnetc_Token_MaxReplyLong)
 #endif
-#define GASNETC_LUB_MEDIUM        ((size_t)GASNETC_GNI_MAX_MEDIUM)
-
-#define GASNETC_MAX_MEDIUM(nargs) (GASNETC_LUB_MEDIUM+8*((GASNETC_MAX_ARGS-(nargs))/2))
-
-#define gex_AM_LUBRequestMedium() ((size_t)GASNETC_LUB_MEDIUM)
-#define gex_AM_LUBReplyMedium()   ((size_t)GASNETC_LUB_MEDIUM)
-#define gex_AM_LUBRequestLong()   ((size_t)GASNETC_LUB_LONG)
-#define gex_AM_LUBReplyLong()     ((size_t)GASNETC_LUB_LONG)
-
-  // TODO-EX: Medium sizes can be improved upon for PSHM case
-#define gasnetc_AM_MaxRequestMedium(tm,rank,lc_opt,flags,nargs)  GASNETC_MAX_MEDIUM(nargs)
-#define gasnetc_AM_MaxReplyMedium(tm,rank,lc_opt,flags,nargs)    GASNETC_MAX_MEDIUM(nargs)
-#define gasnetc_AM_MaxRequestLong(tm,rank,lc_opt,flags,nargs)    ((size_t)GASNETC_LUB_LONG)
-#define gasnetc_AM_MaxReplyLong(tm,rank,lc_opt,flags,nargs)      ((size_t)GASNETC_LUB_LONG)
-#define gasnetc_Token_MaxReplyMedium(token,lc_opt,flags,nargs)   GASNETC_MAX_MEDIUM(nargs)
-#define gasnetc_Token_MaxReplyLong(token,lc_opt,flags,nargs)     ((size_t)GASNETC_LUB_LONG)
 
 /* ------------------------------------------------------------------------------------ */
 /*

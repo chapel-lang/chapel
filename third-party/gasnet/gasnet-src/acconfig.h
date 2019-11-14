@@ -448,7 +448,7 @@
 #undef GASNETC_HAVE_O_ASYNC
 #undef GASNETC_USE_SOCKETPAIR
 
-/* GASNet {gemini,aries}-conduit settings */
+/* GASNet aries-conduit settings */
 #undef GASNETC_GNI_MAX_MEDIUM
 #undef GASNETC_GNI_MULTI_DOMAIN
 #undef GASNETC_GNI_UDREG

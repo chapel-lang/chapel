@@ -1,5 +1,5 @@
-/*   $Source: bitbucket.org:berkeleylab/gasnet.git/gemini-conduit/gasnet_extended_fwd.h $
- * Description: GASNet Extended API Header for Gemin Conduit (forward decls)
+/*   $Source: bitbucket.org:berkeleylab/gasnet.git/aries-conduit/gasnet_extended_fwd.h $
+ * Description: GASNet Extended API Header for aries Conduit (forward decls)
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
  * Terms of use are as specified in license.txt
  */
@@ -13,13 +13,7 @@
 
 #define GASNET_EXTENDED_VERSION      2.2
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
-#if defined GASNET_CONDUIT_GEMINI
-  #define GASNET_EXTENDED_NAME       GEMINI
-#elif defined GASNET_CONDUIT_ARIES
-  #define GASNET_EXTENDED_NAME       ARIES
-#else
-  #error "Exactly one of GASNET_CONDUIT_GEMINI or GASNET_CONDUIT_ARIES must be defined"
-#endif
+#define GASNET_EXTENDED_NAME         ARIES
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
 
 
@@ -101,8 +95,6 @@
 #define GASNETE_VIS_GET_MAXCHUNK_DEFAULT 2028  // 2 strided chunks at 3d
 
 // Aries CE support definitions:
-#ifdef GASNET_CONDUIT_ARIES
 #define GASNETE_COLL_NEEDS_CORE 1
-#endif
 
 #endif

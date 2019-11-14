@@ -410,6 +410,13 @@ dnl all the inttypes goop required for portable_inttypes.h
 dnl second arg is optional prefix for defs
 AC_DEFUN([GASNET_SETUP_INTTYPES], [ 
   GASNET_FUN_BEGIN([$0($1,$2)])
+
+  AC_CHECK_HEADERS(stddef.h,[
+    dnl Some platforms define types like ptrdiff_t only in stddef.h
+    dnl so make sure that AC_CHECK_SIZEOF uses it
+    echo "#include <stddef.h>" >> confdefs.h
+  ])
+
   GASNET_CHECK_SIZEOF(char, $1)
   GASNET_CHECK_SIZEOF(short, $1)
   GASNET_CHECK_SIZEOF(int, $1)
@@ -2708,22 +2715,42 @@ if test "$$3" != "GNU" ; then
         GXX=""
     ;;
   esac
-  $2_SUBFAMILY='none'
-else
-  dnl GCC has sub-family too
-  $2_SUBFAMILY='GNU'
-  GASNET_TRY_CACHE_EXTRACT_STR([for gcc version string],$2_gcc_version_string,[
-      #ifndef __VERSION__
-        #define __VERSION__ "unknown"
-      #endif
-    ],[__VERSION__],[_gasnet_$2_gcc_version_string])
-  case "$_gasnet_$2_gcc_version_string" in
-    *gccfss*) $2_SUBFAMILY='GCCFSS';;
-    *) GASNET_IFDEF(__APPLE_CC__, [$2_SUBFAMILY='APPLE'])
-       GASNET_IFDEF(__NVCC__, [$2_SUBFAMILY='NVIDIA'])
-       ;;
-  esac
 fi
+dnl Compiler may have a sub-family too
+case "$$3" in
+  GNU)
+    $2_SUBFAMILY='GNU'
+    GASNET_TRY_CACHE_EXTRACT_STR([for gcc version string],$2_gcc_version_string,[
+        #ifndef __VERSION__
+          #define __VERSION__ "unknown"
+        #endif
+      ],[__VERSION__],[_gasnet_$2_gcc_version_string])
+    case "$_gasnet_$2_gcc_version_string" in
+      *gccfss*) $2_SUBFAMILY='GCCFSS';;
+      *) GASNET_IFDEF(__APPLE_CC__, [$2_SUBFAMILY='APPLE'])
+         GASNET_IFDEF(__NVCC__, [$2_SUBFAMILY='NVIDIA'])
+         ;;
+    esac
+    ;;
+  Clang)
+    $2_SUBFAMILY='LLVM'
+    GASNET_TRY_CACHE_EXTRACT_STR([for clang version string],$2_clang_version_string,[
+        #ifndef __VERSION__
+          #define __VERSION__ "unknown"
+        #endif
+      ],[__VERSION__],[_gasnet_$2_clang_version_string])
+    case "$_gasnet_$2_clang_version_string" in
+      *Apple*) $2_SUBFAMILY='APPLE';;
+      *Cray*) $2_SUBFAMILY='CRAY';;
+    esac
+    ;;
+  *)
+    $2_SUBFAMILY='none'
+    ;;
+esac
+AC_MSG_CHECKING([for $1 compiler sub-family])
+# real "checking" was done above
+AC_MSG_RESULT([$[]$2_SUBFAMILY])
 $2_FAMILY=$$3
 AC_SUBST($2_FAMILY)
 AC_SUBST($2_SUBFAMILY)

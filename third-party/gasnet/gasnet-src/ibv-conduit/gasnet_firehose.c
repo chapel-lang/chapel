@@ -26,6 +26,16 @@
   #define GASNETC_TRACE_UNPIN(_region) 	((void)0)
 #endif
 
+static int
+region_is_mapped(firehose_region_t *region)
+{
+  // Consider a region to be mapped unless msync() fails with ENOMEM
+  // Inspired by https://renatocunha.com/2015/12/msync-pointer-validity/
+  // TODO: any better method(s) available?
+  int ret = msync((void*)(uintptr_t)region->addr, region->len, MS_ASYNC);
+  return !(ret && (ENOMEM == errno));
+}
+
 extern int
 firehose_move_callback(gex_Rank_t node,
                        const firehose_region_t *unpin_list,
@@ -46,6 +56,10 @@ firehose_move_callback(gex_Rank_t node,
     /* Take care of any unpins first */
     for (i = 0; i < unpin_num; i++) {
       GASNETC_FOR_ALL_HCA_INDEX(h) {
+        if (!unpin_list[i].client.handle[h]) {
+          gasneti_assert(!h); // If this is not the first HCA then something is very wrong
+          break;
+        }
 	rc = ibv_dereg_mr(unpin_list[i].client.handle[h]);
         GASNETC_IBV_CHECK(rc, "from ibv_dereg_mr");
       }
@@ -62,9 +76,20 @@ firehose_move_callback(gex_Rank_t node,
     
       GASNETC_FOR_ALL_HCA_INDEX(h) {
         client->handle[h] = ibv_reg_mr(gasnetc_hca[h].pd, (void*)(uintptr_t)region->addr, region->len, access);
-	if_pf (client->handle[h] == NULL)
+	if_pf (NULL == client->handle[h]) {
+          if ((EFAULT == errno) && region_is_mapped(region)) {
+            // Appears to be a failure as would occur with read-only memory (Bug 3338).
+            // Continue with a NULL handle and zero lkey/rkey (should fail if used).
+            // This results in a cached firehose, to avoid repeated registration failures.
+            // Our conduit-specific defn of FH_MAY_MERGE prevents merging with valid regions.
+            gasneti_assert(!h); // If this is not the first HCA then something is very wrong
+	    GASNETI_TRACE_PRINTF(D, ("FIREHOSE_MOVE: read-only memory found at " GASNETI_LADDRFMT,
+				     GASNETI_LADDRSTR(region->addr)));
+	    client->lkey[h] = client->rkey[h] = 0;
+            break;
+          } // else fatal
 	  gasneti_fatalerror("ibv_reg_mr failed in firehose_move_callback errno=%d (%s)", errno, strerror(errno));
-    
+        }
 	client->lkey[h]     = client->handle[h]->lkey;
 	client->rkey[h]     = client->handle[h]->rkey;
       }

@@ -14,8 +14,8 @@
 
 @SET_MAKE@
 
-#   $Source: bitbucket.org:berkeleylab/gasnet.git/gemini-conduit/Makefile.am $
-# Description: Makefile for GASNet gemini conduit
+#   $Source: bitbucket.org:berkeleylab/gasnet.git/template-conduit/Makefile.am $
+# Description: Makefile for GASNet ucx conduit
 # Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
 # Terms of use are as specified in license.txt
 
@@ -94,7 +94,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = gemini-conduit
+subdir = ucx-conduit
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/other/plpa/config/acinclude.m4 \
 	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.in
@@ -139,19 +139,19 @@ AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
-libgasnet_gemini_par_a_AR = $(AR) $(ARFLAGS)
-libgasnet_gemini_par_a_LIBADD =
-am_libgasnet_gemini_par_a_OBJECTS =
-libgasnet_gemini_par_a_OBJECTS = $(am_libgasnet_gemini_par_a_OBJECTS)
-libgasnet_gemini_parsync_a_AR = $(AR) $(ARFLAGS)
-libgasnet_gemini_parsync_a_LIBADD =
-am_libgasnet_gemini_parsync_a_OBJECTS =
-libgasnet_gemini_parsync_a_OBJECTS =  \
-	$(am_libgasnet_gemini_parsync_a_OBJECTS)
-libgasnet_gemini_seq_a_AR = $(AR) $(ARFLAGS)
-libgasnet_gemini_seq_a_LIBADD =
-am_libgasnet_gemini_seq_a_OBJECTS =
-libgasnet_gemini_seq_a_OBJECTS = $(am_libgasnet_gemini_seq_a_OBJECTS)
+libgasnet_ucx_par_a_AR = $(AR) $(ARFLAGS)
+libgasnet_ucx_par_a_LIBADD =
+am_libgasnet_ucx_par_a_OBJECTS =
+libgasnet_ucx_par_a_OBJECTS = $(am_libgasnet_ucx_par_a_OBJECTS)
+libgasnet_ucx_parsync_a_AR = $(AR) $(ARFLAGS)
+libgasnet_ucx_parsync_a_LIBADD =
+am_libgasnet_ucx_parsync_a_OBJECTS =
+libgasnet_ucx_parsync_a_OBJECTS =  \
+	$(am_libgasnet_ucx_parsync_a_OBJECTS)
+libgasnet_ucx_seq_a_AR = $(AR) $(ARFLAGS)
+libgasnet_ucx_seq_a_LIBADD =
+am_libgasnet_ucx_seq_a_OBJECTS =
+libgasnet_ucx_seq_a_OBJECTS = $(am_libgasnet_ucx_seq_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -177,12 +177,12 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libgasnet_gemini_par_a_SOURCES) \
-	$(libgasnet_gemini_parsync_a_SOURCES) \
-	$(libgasnet_gemini_seq_a_SOURCES)
-DIST_SOURCES = $(libgasnet_gemini_par_a_SOURCES) \
-	$(libgasnet_gemini_parsync_a_SOURCES) \
-	$(libgasnet_gemini_seq_a_SOURCES)
+SOURCES = $(libgasnet_ucx_par_a_SOURCES) \
+	$(libgasnet_ucx_parsync_a_SOURCES) \
+	$(libgasnet_ucx_seq_a_SOURCES)
+DIST_SOURCES = $(libgasnet_ucx_par_a_SOURCES) \
+	$(libgasnet_ucx_parsync_a_SOURCES) \
+	$(libgasnet_ucx_seq_a_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -325,6 +325,7 @@ GASNET_PSHM_LDFLAGS = @GASNET_PSHM_LDFLAGS@
 GASNET_PSHM_LIBS = @GASNET_PSHM_LIBS@
 GASNET_THREAD_DEFINES = @GASNET_THREAD_DEFINES@
 GASNET_THREAD_LIBS = @GASNET_THREAD_LIBS@
+GASNET_UCX_SPAWNER_CONF = @GASNET_UCX_SPAWNER_CONF@
 GASNET_UDP_LIBS = @GASNET_UDP_LIBS@
 GDB_PATH = @GDB_PATH@
 GMAKE = @GMAKE@
@@ -424,6 +425,10 @@ TIMECMD = @TIMECMD@
 TOOL_PREFIX = @TOOL_PREFIX@
 TOP_BUILDDIR = @TOP_BUILDDIR@
 TOP_SRCDIR = @TOP_SRCDIR@
+UCX_CFLAGS = @UCX_CFLAGS@
+UCX_LDFLAGS = @UCX_LDFLAGS@
+UCX_LIBS = @UCX_LIBS@
+UCX_guess_prog = @UCX_guess_prog@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -491,11 +496,25 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign 1.4
-CONDUIT_NAME = gemini
-pmi_srcdir = $(top_srcdir)/other/pmi-spawner
+CONDUIT_NAME = ucx
+
+#
+@HAVE_BOOTSTRAP_SSH_TRUE@ssh_defines = -DHAVE_SSH_SPAWNER
+@HAVE_BOOTSTRAP_SSH_TRUE@ssh_srcdir = $(top_srcdir)/other/ssh-spawner
+@HAVE_BOOTSTRAP_SSH_TRUE@ssh_sources = $(ssh_srcdir)/gasnet_bootstrap_ssh.c
+@HAVE_BOOTSTRAP_SSH_TRUE@ssh_deps = $(ssh_srcdir)/*.[ch]
+@HAVE_BOOTSTRAP_MPI_TRUE@mpi_defines = -DHAVE_MPI_SPAWNER
+@HAVE_BOOTSTRAP_MPI_TRUE@mpi_srcdir = $(top_srcdir)/other/mpi-spawner
+@HAVE_BOOTSTRAP_MPI_TRUE@mpi_deps = $(mpi_srcdir)/*.[ch]
+# We must compile this one object with MPI_CC.
+@HAVE_BOOTSTRAP_MPI_TRUE@mpi_special_objs = $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o
+@HAVE_BOOTSTRAP_PMI_TRUE@pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_CFLAGS@
+@HAVE_BOOTSTRAP_PMI_TRUE@pmi_srcdir = $(top_srcdir)/other/pmi-spawner
+@HAVE_BOOTSTRAP_PMI_TRUE@pmi_sources = $(pmi_srcdir)/gasnet_bootstrap_pmi.c
+@HAVE_BOOTSTRAP_PMI_TRUE@pmi_deps = $(pmi_srcdir)/*.[ch]
 
 # any conduit-specific subdirectories containing Makefile.am's
-SUBDIRS = contrib
+SUBDIRS = .
 
 # complete list of files in the conduit directory
 # include all headers, documentation, etc. 
@@ -506,39 +525,37 @@ CONDUIT_FILELIST = \
       gasnet_core_fwd.h      \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
-      gasnet_extended.c      \
-      gasnet_extended_fwd.h  \
-      gasnet_gemini.h        \
-      gasnet_gemini.c
+      gasnet_core_sndrcv.c   \
+      gasnet_ucx_req.h
 
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST = \
       $(srcdir)/gasnet_core.c \
-      $(srcdir)/gasnet_gemini.c \
-      $(srcdir)/gasnet_extended.c \
-      $(pmi_srcdir)/gasnet_bootstrap_pmi.c
+      $(srcdir)/gasnet_core_sndrcv.c \
+      $(top_srcdir)/extended-ref/gasnet_extended.c \
+      $(ssh_sources) $(pmi_sources)
 
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -DGASNET_CONDUIT_GEMINI -DHAVE_PMI_SPAWNER
+CONDUIT_EXTRALIBCFLAGS = @UCX_CFLAGS@ $(ssh_defines) $(mpi_defines) $(pmi_cppflags)
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = 
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = gasnet_gemini.h
+CONDUIT_PRIVATEHEADERS = 
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(pmi_srcdir)/*.[ch]
+CONDUIT_EXTRADEPS = $(ssh_deps) $(mpi_deps) $(pmi_deps)
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS = 
+CONDUIT_SPECIAL_OBJS = $(mpi_special_objs)
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
@@ -548,21 +565,20 @@ CONDUIT_SPECIAL_OBJS =
 #   %Q = program arguments w/ an extra level of quotes
 #   %D = the current working directory
 #   %H = hostfile (if any)
-#CONDUIT_RUNCMD = aprun -N 1 -n %N %P %A
-CONDUIT_RUNCMD = @TOP_BUILDDIR@/gemini-conduit/contrib/gasnetrun_gemini -np %N -c 0 %P %A
+CONDUIT_RUNCMD = mpirun -np %N %P %A
 
 # conduit-specific tests in ../tests directory
 CONDUIT_TESTS = 
 
 # -------- Do not modify anything below this line --------
-@BUILD_SEQ_LIBS_TRUE@libgasnet_gemini_seq_a_SOURCES = 
-@BUILD_SEQ_LIBS_TRUE@libraries_seq = libgasnet-gemini-seq.a
-@BUILD_PAR_LIBS_TRUE@libgasnet_gemini_par_a_SOURCES = 
-@BUILD_PAR_LIBS_TRUE@libraries_par = libgasnet-gemini-par.a
-@BUILD_PARSYNC_LIBS_TRUE@libgasnet_gemini_parsync_a_SOURCES = 
-@BUILD_PARSYNC_LIBS_TRUE@libraries_parsync = libgasnet-gemini-parsync.a
+@BUILD_SEQ_LIBS_TRUE@libgasnet_ucx_seq_a_SOURCES = 
+@BUILD_SEQ_LIBS_TRUE@libraries_seq = libgasnet-ucx-seq.a
+@BUILD_PAR_LIBS_TRUE@libgasnet_ucx_par_a_SOURCES = 
+@BUILD_PAR_LIBS_TRUE@libraries_par = libgasnet-ucx-par.a
+@BUILD_PARSYNC_LIBS_TRUE@libgasnet_ucx_parsync_a_SOURCES = 
+@BUILD_PARSYNC_LIBS_TRUE@libraries_parsync = libgasnet-ucx-parsync.a
 libraries = $(libraries_seq) $(libraries_par) $(libraries_parsync)
-@USE_GEMINI_CONDUIT_TRUE@lib_LIBRARIES = $(libraries) 
+@USE_UCX_CONDUIT_TRUE@lib_LIBRARIES = $(libraries) 
 all: all-recursive
 
 .SUFFIXES:
@@ -575,9 +591,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign gemini-conduit/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign ucx-conduit/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign gemini-conduit/Makefile
+	  $(AUTOMAKE) --foreign ucx-conduit/Makefile
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -786,7 +802,7 @@ distdir-am: $(DISTFILES)
 	done
 check-am: all-am
 check: check-recursive
-@USE_GEMINI_CONDUIT_FALSE@all-local:
+@USE_UCX_CONDUIT_FALSE@all-local:
 all-am: Makefile $(LIBRARIES) all-local
 installdirs: installdirs-recursive
 installdirs-am:
@@ -823,9 +839,9 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@USE_GEMINI_CONDUIT_FALSE@uninstall-local:
-@USE_GEMINI_CONDUIT_FALSE@install-data-local:
-@USE_GEMINI_CONDUIT_FALSE@clean-local:
+@USE_UCX_CONDUIT_FALSE@uninstall-local:
+@USE_UCX_CONDUIT_FALSE@install-data-local:
+@USE_UCX_CONDUIT_FALSE@clean-local:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libLIBRARIES clean-local mostlyclean-am
@@ -912,22 +928,25 @@ uninstall-am: uninstall-libLIBRARIES uninstall-local
 
 .PRECIOUS: Makefile
 
+@HAVE_BOOTSTRAP_MPI_TRUE@$(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o: force
+@HAVE_BOOTSTRAP_MPI_TRUE@	@MPI_CC@ @MPI_CFLAGS@ $(LIBDEFINES) $(CONDUIT_EXTRALIBCFLAGS) $(LIBINCLUDES) \
+@HAVE_BOOTSTRAP_MPI_TRUE@		$(MANUAL_MPICFLAGS) -o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
 
 include $(top_builddir)/other/Makefile-conduit.mak
 
-libgasnet-gemini-seq.a: $(libgasnet_dependencies)
+libgasnet-ucx-seq.a: $(libgasnet_dependencies)
 	@$(MAKE) do-libgasnet-seq
 
-libgasnet-gemini-par.a: $(libgasnet_dependencies)
+libgasnet-ucx-par.a: $(libgasnet_dependencies)
 	@$(MAKE) do-libgasnet-par
 
-libgasnet-gemini-parsync.a: $(libgasnet_dependencies)
+libgasnet-ucx-parsync.a: $(libgasnet_dependencies)
 	@$(MAKE) do-libgasnet-parsync
-@USE_GEMINI_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(pkgconfig_files)
-@USE_GEMINI_CONDUIT_TRUE@clean-local: do-clean-local
-@USE_GEMINI_CONDUIT_TRUE@install-data-local: do-install-data-local
-@USE_GEMINI_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_GEMINI_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
+@USE_UCX_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(pkgconfig_files)
+@USE_UCX_CONDUIT_TRUE@clean-local: do-clean-local
+@USE_UCX_CONDUIT_TRUE@install-data-local: do-install-data-local
+@USE_UCX_CONDUIT_TRUE@uninstall-local: do-uninstall-local
+@USE_UCX_CONDUIT_FALSE@$(top_srcdir)/gasnetex.h: do-error
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

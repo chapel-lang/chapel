@@ -448,7 +448,7 @@
 #undef GASNETC_HAVE_O_ASYNC
 #undef GASNETC_USE_SOCKETPAIR
 
-/* GASNet {gemini,aries}-conduit settings */
+/* GASNet aries-conduit settings */
 #undef GASNETC_GNI_MAX_MEDIUM
 #undef GASNETC_GNI_MULTI_DOMAIN
 #undef GASNETC_GNI_UDREG
@@ -626,6 +626,9 @@
 
 /* Define to 1 if you have the `srand_deterministic' function. */
 #undef HAVE_SRAND_DETERMINISTIC
+
+/* Define to 1 if you have the <stddef.h> header file. */
+#undef HAVE_STDDEF_H
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

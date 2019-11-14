@@ -186,6 +186,32 @@ extern pthread_mutexattr_t _fastlock_attr;
 
 #include <pthread.h>
 #define QTHREAD_COND_DECL(c)   pthread_cond_t c; pthread_mutex_t c ## _lock
+#define QTHREAD_COND_INIT_SOLO(c) do { \
+    { \
+	pthread_mutexattr_t tmp_attr; \
+	qassert(pthread_mutexattr_init(&tmp_attr), 0); \
+	qassert(pthread_mutexattr_setpshared(&tmp_attr, PTHREAD_PROCESS_PRIVATE), 0); \
+	qassert(pthread_mutexattr_destroy(&tmp_attr), 0); \
+    } { \
+	pthread_condattr_t tmp_attr; \
+	qassert(pthread_condattr_setpshared(&tmp_attr, PTHREAD_PROCESS_PRIVATE), 0); \
+	qassert(pthread_cond_init(&(c), &tmp_attr), 0); \
+	qassert(pthread_condattr_destroy(&tmp_attr), 0); \
+    } \
+} while (0)
+#define QTHREAD_COND_INIT_SOLO_PTR(c) do { \
+    { \
+	pthread_mutexattr_t tmp_attr; \
+	qassert(pthread_mutexattr_init(&tmp_attr), 0); \
+	qassert(pthread_mutexattr_setpshared(&tmp_attr, PTHREAD_PROCESS_PRIVATE), 0); \
+	qassert(pthread_mutexattr_destroy(&tmp_attr), 0); \
+    } { \
+	pthread_condattr_t tmp_attr; \
+	qassert(pthread_condattr_setpshared(&tmp_attr, PTHREAD_PROCESS_PRIVATE), 0); \
+	qassert(pthread_cond_init((c), &tmp_attr), 0); \
+	qassert(pthread_condattr_destroy(&tmp_attr), 0); \
+    } \
+} while (0)
 #define QTHREAD_COND_INIT(c) do { \
     { \
 	pthread_mutexattr_t tmp_attr; \
@@ -222,7 +248,15 @@ extern pthread_mutexattr_t _fastlock_attr;
     t.tv_nsec -= ((t.tv_nsec >= 1000000000)?1000000000:0); \
     qassert(pthread_cond_timedwait(&(c), &(c ## _lock), &t), 0); \
 } while (0)
-
+#define QTHREAD_COND_WAIT_DUO(c, m) do { \
+    struct timespec t; \
+    struct timeval n; \
+    gettimeofday(&n, NULL); \
+    t.tv_nsec = (n.tv_usec * 1000) + 500000000; \
+    t.tv_sec = n.tv_sec + ((t.tv_nsec >= 1000000000)?1:0); \
+    t.tv_nsec -= ((t.tv_nsec >= 1000000000)?1000000000:0); \
+    qassert(pthread_cond_timedwait(&(c), &(m), &t), 0); \
+} while (0)
 #ifdef QTHREAD_MUTEX_INCREMENT
 # define QTHREAD_CASLOCK(var)                var; QTHREAD_FASTLOCK_TYPE var ## _caslock
 # define QTHREAD_CASLOCK_STATIC(var)         var; static QTHREAD_FASTLOCK_TYPE var ## _caslock

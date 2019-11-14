@@ -1,5 +1,5 @@
-#ifndef GASNET_GEMINI_H
-#define GASNET_GEMINI_H
+#ifndef GASNET_ARIES_H
+#define GASNET_ARIES_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -114,11 +114,24 @@ enum gc_notify_type {
 };
 
 #define gc_build_notify(_type, _initiator, _target)\
-  ((uint64_t)(_type) |  ((uint64_t)(_initiator) << 8) |  ((uint64_t)(_target)))
+  ((uint64_t)(_type) |  ((uint64_t)(_initiator)) |  ((uint64_t)(_target) << 26))
 
-#define gc_notify_get_type(n) ((n) & 0xff000000)
-#define gc_notify_get_target_slot(n) ((uint8_t)((n) & 255)) /* actual range 0..63 */
-#define gc_notify_get_initiator_slot(n) ((uint16_t)(((n) >> 8) & 65535))
+#define GASNETC_AM_INITIATOR_SLOTS 65536 // 16 bits
+#define GASNETC_AM_TARGET_SLOTS       64 //  6 bits
+
+#define gc_notify_get_type(n) ((n) & 0x03000000)
+#define gc_notify_get_target_slot(n) ((uint8_t)(((n) >> 26) & (GASNETC_AM_TARGET_SLOTS-1)))
+#define gc_notify_get_initiator_slot(n) ((uint16_t)((n) & (GASNETC_AM_INITIATOR_SLOTS-1)))
+#define gc_notify_get_nonce(n) ((n) & 0xff000000) // type and target slot
+
+// Bits 24 - 25 of REM_INST_ID, aligned to notify for case of long payloads
+enum gc_instid_type {
+  gc_instid_header    = 0x00000000,
+  gc_instid_long_req  = gc_notify_request,
+  gc_instid_long_rep  = gc_notify_reply,
+  gc_instid_ctrl      = 0x03000000
+};
+#define GC_INSTID_MASK 0x03000000
 
 typedef struct gasnetc_post_descriptor gasnetc_post_descriptor_t;
 
@@ -203,15 +216,12 @@ typedef union gasnetc_packet_u {
                                  + GASNETC_LUB_MEDIUM), GASNETC_CACHELINE_SIZE)
 
 /* max data one can pack into a message with a long header: */
-/* TODO: runtime control of cut-off via an env var */
-#if GASNET_CONDUIT_GEMINI
-/* On Gemini it doesn't pay to pack more than 128 bytes or so */
-#define GASNETC_MAX_PACKED_LONG(nargs) \
-        (128 - GASNETC_HEADLEN(long, (nargs)))
+extern size_t gasnetc_packedlong_cutover;
+#ifdef __CRAY_MIC_KNL
+  #define GASNETC_GNI_PACKEDLONG_CUTOVER_DEFAULT 2048
 #else
-/* On Aries is pays to pack as much as possible */
-#define GASNETC_MAX_PACKED_LONG(nargs) \
-        (GASNETC_MSG_MAXSIZE - GASNETC_HEADLEN(long, (nargs)))
+  // TODO: ARM64?
+  #define GASNETC_GNI_PACKEDLONG_CUTOVER_DEFAULT 3072
 #endif
 
 /* use the auxseg mechanism to allocate registered memory for bounce buffers */
@@ -229,22 +239,13 @@ typedef union gasnetc_packet_u {
 #endif
 #define GASNETC_GNI_BOUNCE_REGISTER_CUTOVER_MAX 32768
 /* a particular get or put <= this size goes via fma */
-#ifdef GASNET_CONDUIT_ARIES
 #define GASNETC_GNI_GET_FMA_RDMA_CUTOVER_DEFAULT 1023
 #define GASNETC_GNI_PUT_FMA_RDMA_CUTOVER_DEFAULT 1023
-#else
-#define GASNETC_GNI_GET_FMA_RDMA_CUTOVER_DEFAULT 4096
-#define GASNETC_GNI_PUT_FMA_RDMA_CUTOVER_DEFAULT 4096
-#endif
 #define GASNETC_GNI_FMA_RDMA_CUTOVER_MAX (4096*4)
 /* space for immediate bounce buffer in the post descriptor */
 #define GASNETC_GNI_IMMEDIATE_BOUNCE_SIZE 128
 /* how many concurrent dynamic memory registrations to allow */
-#if GASNET_CONDUIT_GEMINI
-#define GASNETC_GNI_MEMREG_DEFAULT 16 /* TODO: tune/probe? */
-#else
 #define GASNETC_GNI_MEMREG_DEFAULT 3072
-#endif
 /* Radix of inter-host CE tree */
 #define GASNETC_GNI_CE_RADIX_DEFAULT 2
 
@@ -267,11 +268,12 @@ enum {
   _gc_post_completion_flag,
   _gc_post_completion_cntr,
   _gc_post_completion_eop,
+  _gc_post_completion_eam,
+  _gc_post_completion_iam,
   _gc_post_completion_iput,
   _gc_post_completion_iget,
   _gc_post_completion_irmw,
   _gc_post_completion_amrv,
-  _gc_post_completion_send,
   /* local-completion variation(s) */
   _gc_post_lc_now,
   /* optionally suppress free of the gpd */
@@ -290,22 +292,24 @@ enum {
 #define GC_POST_COMPLETION_FLAG GC_POST(completion_flag)
 #define GC_POST_COMPLETION_CNTR GC_POST(completion_cntr)
 #define GC_POST_COMPLETION_EOP  GC_POST(completion_eop)
+#define GC_POST_COMPLETION_EAM  GC_POST(completion_eam)
+#define GC_POST_COMPLETION_IAM  GC_POST(completion_iam)
 #define GC_POST_COMPLETION_IPUT GC_POST(completion_iput)
 #define GC_POST_COMPLETION_IGET GC_POST(completion_iget)
 #define GC_POST_COMPLETION_IRMW GC_POST(completion_irmw)
 #define GC_POST_COMPLETION_AMRV GC_POST(completion_amrv)
-#define GC_POST_COMPLETION_SEND GC_POST(completion_send)
 #define GC_POST_LC_NOW          GC_POST(lc_now)
 #define GC_POST_KEEP_GPD        GC_POST(keep_gpd)
 
 #define GC_POST_COMPLETION_MASK (GC_POST_COMPLETION_FLAG | \
                                  GC_POST_COMPLETION_CNTR | \
                                  GC_POST_COMPLETION_EOP  | \
+                                 GC_POST_COMPLETION_EAM  | \
+                                 GC_POST_COMPLETION_IAM  | \
                                  GC_POST_COMPLETION_IPUT | \
                                  GC_POST_COMPLETION_IGET | \
                                  GC_POST_COMPLETION_IRMW | \
-                                 GC_POST_COMPLETION_AMRV | \
-                                 GC_POST_COMPLETION_SEND)
+                                 GC_POST_COMPLETION_AMRV)
 
 struct peer_struct_t_;
 typedef struct peer_struct_t_ peer_struct_t;
@@ -432,6 +436,14 @@ void gasnetc_rdma_put_buff(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
 
+void gasnetc_rdma_put_long(gex_Rank_t jobrank,
+                 void *dest_addr, void *source_addr,
+                 size_t nbytes,
+                 uint32_t gpd_flags,
+                 void *completion,
+                 uint32_t nonce
+                 GASNETC_DIDX_FARG);
+
 size_t gasnetc_rdma_get(gex_Rank_t node,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
@@ -503,6 +515,13 @@ gasnetc_post_descriptor_t *gasnetc_alloc_request_post_descriptor_np(gex_Rank_t d
                                                                     size_t max_length,
                                                                     gex_Flags_t flags
                                                                     GASNETI_THREAD_FARG);
+gasnetc_post_descriptor_t *
+gasnetc_alloc_request_post_descriptor_long(
+                        gex_Rank_t jobrank,
+                        size_t length,
+                        gex_Flags_t flags,
+                        int is_packed
+                        GASNETI_THREAD_FARG);
 
 /* Some common GPD idioms */
 
@@ -549,5 +568,5 @@ void gasnete_consume_eop(gasnete_eop_t *eop GASNETI_THREAD_FARG) {
 #define GASNETE_IOP_CNTRS(_iop,_putget) \
         GASNETE_IOP_CNTRS_##_putget(_iop)
 
-#endif /* GASNET_GEMINI_H */
+#endif /* GASNET_ARIES_H */
 

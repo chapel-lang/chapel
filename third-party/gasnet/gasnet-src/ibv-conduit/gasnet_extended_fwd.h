@@ -63,7 +63,12 @@
 #define GASNETE_BUILD_AMREF_PUT 1
 
 #if !defined(GASNET_DISABLE_MUNMAP_DEFAULT) && PLATFORM_ARCH_64
-#define GASNET_DISABLE_MUNMAP_DEFAULT 1 // default to disabling munmap for bug 955
+ // default to disabling munmap for bug 955 if firehose might be used
+ #if GASNET_SEGMENT_FAST && GASNETC_IBV_ODP
+   #define GASNET_DISABLE_MUNMAP_DEFAULT (!gasnetc_use_odp)
+ #else
+   #define GASNET_DISABLE_MUNMAP_DEFAULT 1
+ #endif
 #endif
 // this VIS algorithm uses put/get with local-side buffers that are dynamically malloced and freed, 
 // thus is only safe if we disabled malloc munmap to avoid running afowl of firehose bug3364/bug955
