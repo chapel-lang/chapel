@@ -164,7 +164,6 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 public:
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
-  virtual void visitVarSym   (VarSymbol* node);
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
   virtual void exitCatchStmt (CatchStmt* node);
@@ -212,13 +211,6 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
   deferDepth = 0;
   outError   = _outError;
   epilogue   = _epilogue;
-}
-
-void ErrorHandlingVisitor::visitVarSym(VarSymbol* node){
-  if (ShadowVarSymbol* svar = toShadowVarSymbol(node)) {
-    svar->initBlock()->accept(this);
-    svar->deinitBlock()->accept(this);
-  }
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
