@@ -1,4 +1,5 @@
 public use driver_domains;
+private use CommDiagnostics;
 
 const bigDom4D = Dom4D.expand((1,1,1,1));
 var A: [bigDom4D] int;
