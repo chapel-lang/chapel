@@ -3318,7 +3318,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                std::vector<SymExpr*>& symExprs,
                                                ArgSymbol* formal,
                                                CallExpr* call,
-                                               BaseAST* queried);
+                                               Expr* queried);
 
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call);
 
@@ -3333,7 +3333,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   collectSymExprs(fn, symExprs);
 
-  BaseAST* queried = formal;
+  Expr* queried = new SymExpr(formal);
 
   // Queries access the 1st tuple element for varargs functions
   if (formal->variableExpr) {
@@ -3433,7 +3433,7 @@ static void expandQueryForActual(FnSymbol*  fn,
         INT_ASSERT(ts);
         Expr* subtype = new SymExpr(ts);
         addToWhereClause(fn, formal,
-                         new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                         new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                       subtype, query->copy()));
       }
     } else {
@@ -3451,7 +3451,7 @@ static void expandQueryForActual(FnSymbol*  fn,
     }
     // Add check that actual type satisfies
     addToWhereClause(fn, formal,
-                     new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                     new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                   subtype, query->copy()));
     // Recurse to handle any nested DefExprs
     expandQueryForGenericTypeSpecifier(fn, symExprs, formal,
@@ -3464,12 +3464,13 @@ static void expandQueryForActual(FnSymbol*  fn,
 }
 
 // call - the type constructor or build tuple call currently being considered
-// queryToCopy - a PRIM_QUERY formal, ... recording the path to the current call
+// queried - a PRIM_QUERY formal, ... recording the path to the current call
+//           but not in the AST (it should be copied)
 static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                std::vector<SymExpr*>& symExprs,
                                                ArgSymbol* formal,
                                                CallExpr* call,
-                                               BaseAST* queried) {
+                                               Expr* queried) {
 
   int position = 1;
   bool isTuple = false;
@@ -3488,7 +3489,8 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
-    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
+    addToWhereClause(fn, formal,
+                     new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried->copy()));
   }
 
   // Fix type constructor calls to owned e.g.
@@ -3501,9 +3503,9 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
           Type* manager = getManagedPtrManagerType(ts->type);
 
           // Where clause checks that it has the right manager
-          CallExpr* subtype = new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
-                                           manager->symbol, queried);
-          addToWhereClause(fn, formal, subtype);
+          addToWhereClause(fn, formal,
+                           new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
+                                        manager->symbol, queried->copy()));
 
           if (call->numActuals() == 1) {
             if (SymExpr* se2 = toSymExpr(call->get(1))) {
@@ -3513,8 +3515,9 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                 if (isNilableClassType(ts2->type))
                   d = CLASS_TYPE_GENERIC_NILABLE;
                 Type* genericMgmt = getDecoratedClass(ts2->type, d);
-                subtype = new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
-                                       genericMgmt->symbol, queried);
+                CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
+                                           genericMgmt->symbol, queried);
+                addToWhereClause(fn, formal, c);
                 // Nothing else to do here since there is no nested call.
                 return;
               }

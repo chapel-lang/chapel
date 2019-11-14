@@ -800,9 +800,9 @@ initPrimitive() {
   // PRIM_IS_SUBTYPE arguments are (parent, sub) and it checks
   // if sub is a sub-type of parent.
   prim_def(PRIM_IS_SUBTYPE, "is_subtype", returnInfoBool);
-  // same as above but can apply to non-type
-  // this variant can be removed if normalization of type queries is updated
-  prim_def(PRIM_IS_SUBTYPE_ALLOW_VALUES, "is_subtype_allow_values", returnInfoBool);
+  // for arguments (generic, sub), checks if sub is an instantiation of generic
+  // sub can be a value as a convenience for normalization of type queries
+  prim_def(PRIM_IS_INSTANTIATION_ALLOW_VALUES, "is_instantiation_allow_values", returnInfoBool);
   // same as above but excludes same type
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // accepts two arguments: A class/record type expression and a param string for the field name
