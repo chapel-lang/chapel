@@ -3310,7 +3310,7 @@ static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal) {
   collectCallExprs(formal->typeExpr, calls);
 
   for_vector(CallExpr, call, calls) {
-    resolveUnmanagedBorrows(call, true);
+    resolveUnmanagedBorrows(call);
   }
 }
 

@@ -2277,7 +2277,7 @@ static bool isClassDecoratorPrimitive(CallExpr* call) {
 
 // Find 'unmanaged SomeClass' and 'borrowed SomeClass' and replace these
 // with the compiler's simpler representation (canonical type or unmanaged type)
-void resolveUnmanagedBorrows(CallExpr* call, bool handleTypeCtors) {
+void resolveUnmanagedBorrows(CallExpr* call) {
   if (isClassDecoratorPrimitive(call)) {
 
     // Give up now if the actual is missing.
@@ -2287,7 +2287,7 @@ void resolveUnmanagedBorrows(CallExpr* call, bool handleTypeCtors) {
     // Make sure to handle nested calls appropriately
     if (CallExpr* sub = toCallExpr(call->get(1))) {
       if (isClassDecoratorPrimitive(sub)) {
-        resolveUnmanagedBorrows(sub, handleTypeCtors);
+        resolveUnmanagedBorrows(sub);
       }
     }
 
@@ -2434,7 +2434,7 @@ void resolveUnmanagedBorrows(CallExpr* call, bool handleTypeCtors) {
 
 static void resolveUnmanagedBorrows() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    resolveUnmanagedBorrows(call, true);
+    resolveUnmanagedBorrows(call);
   }
 }
 

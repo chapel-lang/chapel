@@ -46,7 +46,7 @@ Symbol*  lookupAndCount(const char*           name,
 BaseAST* getScope(BaseAST* ast);
 
 void resolveUnresolvedSymExprs(BaseAST* ast);
-void resolveUnmanagedBorrows(CallExpr* call, bool handleTypeCtors);
+void resolveUnmanagedBorrows(CallExpr* call);
 
 void destroyModuleUsesCaches();
 
