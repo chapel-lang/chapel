@@ -1452,7 +1452,7 @@ void createInitStringLiterals() {
 }
 
 bool isValidString(std::string str) {
-  return validate_buf(str.c_str(), str.length()) == 0;
+  return chpl_enc_validate_buf(str.c_str(), str.length()) == 0;
 }
 
 // Note that string immediate values are stored

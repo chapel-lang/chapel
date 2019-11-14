@@ -449,9 +449,9 @@ module String {
   // End index arithmetic support
 
   private proc validateEncoding(buf, len) throws {
-    extern proc validate_buf(buf, len) : c_int;
+    extern proc chpl_enc_validate_buf(buf, len) : c_int;
 
-    if validate_buf(buf, len) != 0 {
+    if chpl_enc_validate_buf(buf, len) != 0 {
       throw new DecodeError();
     }
   }

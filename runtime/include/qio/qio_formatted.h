@@ -587,7 +587,7 @@ qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const ch
   // is stored in the buffers.
   if( qio_glocale_utf8 > 0 ) {
     if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      const int ret = decode_char_buf_utf8(chr, nbytes, buf, buflen);
+      const int ret = chpl_enc_decode_char_buf_utf8(chr, nbytes, buf, buflen);
       if (ret == 0) {
         return 0;
       }
@@ -595,7 +595,7 @@ qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const ch
         QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
       }
     } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
-      const int ret = decode_char_buf_ascii(chr, nbytes, buf, buflen);
+      const int ret = chpl_enc_decode_char_buf_ascii(chr, nbytes, buf, buflen);
       if (ret == 0) {
         return 0;
       }
@@ -604,7 +604,7 @@ qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const ch
       }
     }
   } else {
-    const int ret = decode_char_buf_wctype(chr, nbytes, buf, buflen);
+    const int ret = chpl_enc_decode_char_buf_wctype(chr, nbytes, buf, buflen);
     if (ret == 0) {
       return 0;
     }

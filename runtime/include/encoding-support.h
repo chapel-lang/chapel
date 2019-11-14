@@ -32,14 +32,14 @@
 /* Returns the difference between two pointers,
    but returns 0 if either pointer is NULL.
  */
-static inline intptr_t ptr_diff(void* a, void* b)
+static inline intptr_t chpl_enc_ptr_diff(void* a, void* b)
 {
   if( a == NULL || b == NULL ) return 0;
   return ((intptr_t)a) - ((intptr_t)b);
 }
 
 static inline
-int decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
+int chpl_enc_decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
                          const char* buf, ssize_t buflen)
 {
   const char* start = buf;
@@ -55,18 +55,18 @@ int decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
   }
   if( state == UTF8_ACCEPT ) {
     *chr = codepoint;
-    *nbytes = ptr_diff((void*) buf, (void*) start);
+    *nbytes = chpl_enc_ptr_diff((void*) buf, (void*) start);
     return 0;
   } else {
     *chr = 0xfffd; // replacement character
-    *nbytes = ptr_diff((void*) buf, (void*) start);
+    *nbytes = chpl_enc_ptr_diff((void*) buf, (void*) start);
     return -1; // -1: EILSEQ
   }
 }
 
 static inline
-int decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
-                          const char* buf, ssize_t buflen)
+int chpl_enc_decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
+                                   const char* buf, ssize_t buflen)
 {
   const char* start = buf;
   const char* end = start + buflen;
@@ -82,8 +82,8 @@ int decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
 }
 
 static inline
-int decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
-                           const char* buf, ssize_t buflen)
+int chpl_enc_decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
+                                    const char* buf, ssize_t buflen)
 {
 #ifdef HAS_WCTYPE_H
   mbstate_t ps;
@@ -120,14 +120,14 @@ int decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
 }
 
 static inline
-int validate_buf(const char *buf, ssize_t buflen) {
+int chpl_enc_validate_buf(const char *buf, ssize_t buflen) {
   int32_t cp;
   int nbytes;
 
   int offset = 0;
 
   while (offset<buflen) {
-    if (decode_char_buf_utf8(&cp, &nbytes, buf+offset, buflen-offset) != 0) {
+    if (chpl_enc_decode_char_buf_utf8(&cp, &nbytes, buf+offset, buflen-offset) != 0) {
       return -1;  // invalid : return EILSEQ
     }
     offset += nbytes;
