@@ -2266,13 +2266,12 @@ void amWrapExecOnLrgBody(void* p) {
     static __thread chpl_comm_amDone_t* myGotArg = NULL;
     if (myGotArg == NULL) {
       myGotArg = allocBounceBuf(1);
-      CHK_TRUE(mrGetDesc(NULL, myGotArg, 1) == 0);
       *myGotArg = 1;
     }
 
     chpl_comm_amDone_t* origGotArg = &reqOnOrig->comm.xol.gotArg;
-    CHK_TRUE(mrGetKey(NULL, NULL, node, origGotArg, sizeof(*origGotArg)) == 0);
-    (void) ofi_put(myGotArg, node, origGotArg, sizeof(*origGotArg));
+    ofi_put_ll(myGotArg, node, origGotArg, sizeof(*origGotArg),
+               txnTrkEncode(txnTrkNone, NULL));
   }
 
   //
