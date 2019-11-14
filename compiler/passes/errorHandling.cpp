@@ -164,6 +164,7 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 public:
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
+  virtual void visitVarSym   (VarSymbol* node);
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
   virtual void exitCatchStmt (CatchStmt* node);
@@ -211,6 +212,13 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
   deferDepth = 0;
   outError   = _outError;
   epilogue   = _epilogue;
+}
+
+void ErrorHandlingVisitor::visitVarSym(VarSymbol* node){
+  if (ShadowVarSymbol* svar = toShadowVarSymbol(node)) {
+    svar->initBlock()->accept(this);
+    svar->deinitBlock()->accept(this);
+  }
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
@@ -451,10 +459,42 @@ bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
   return true;
 }
 
+
+static bool canForallStmtThrow(ForallStmt* fs) {
+  // Do this first to check for throwing non-POD initializer exprs.
+  for_shadow_vars(svar, temp, fs) {
+    if (BlockStmt* IB = svar->initBlock()) {
+      if (canBlockStmtThrow(IB)) {
+        if (! isPOD(svar->type))
+          // The AST currently created by the compiler executes all TPVs'
+          // deinitializers when any of their initializing exprs throws.
+          // This will deinitialize at least one not-yet-initialized TPV. Bad.
+          USR_FATAL_CONT(IB, "the initialization expression of the task-private"
+            " variable '%s' throws - this is currently not supported"
+            " for variables of non-POD types", svar->name);
+        return true;
+      }
+    }
+    if (BlockStmt* DB = svar->deinitBlock()) {
+      if (canBlockStmtThrow(DB))
+        // Error handling for the deinit blocks may be unimplemented.
+        USR_FATAL_CONT(DB, "the deinitializer of the task-private variable '%s'"
+                       " throws - this is currently not supported");
+    }
+  }
+
+  // Now check the loop body.
+  if (canBlockStmtThrow(fs->loopBody()))
+    return true;
+
+  // Did not find anything that throws.
+  return false;
+}
+
 bool ErrorHandlingVisitor::enterForallStmt(ForallStmt* node) {
   // We assume that fRecIterGetIterator/fRecIterFreeIterator do not throw.
 
-  if (!canBlockStmtThrow(node->loopBody()))
+  if (!canForallStmtThrow(node))
     return true;
 
   SET_LINENO(node);
