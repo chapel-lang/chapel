@@ -480,6 +480,27 @@ void init_ofi(void) {
   init_ofiForMem();
   init_ofiForRma();
   init_ofiForAms();
+
+  DBG_PRINTF(DBG_CFG,
+             "AM config: recv buf size %zd MiB, %s, responses use %s",
+             ofi_iov_reqs.iov_len / (1L << 20),
+             (ofi_amhWaitSet == NULL) ? "polling" : "wait set",
+             (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
+  if (useScalableTxEp) {
+    DBG_PRINTF(DBG_CFG,
+               "per node config: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  } else {
+    DBG_PRINTF(DBG_CFG,
+               "per node config: %d regular tx ep+ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  }
 }
 
 
@@ -887,22 +908,6 @@ void init_ofiEpNumCtxs(void) {
   //
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
   numRxCtxs = numAmHandlers;
-
-  if (useScalableTxEp) {
-    DBG_PRINTF(DBG_CFG,
-               "per node: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
-               "%d rx ctx%s",
-               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? fixedNumThreads : 0,
-               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
-  } else {
-    DBG_PRINTF(DBG_CFG,
-               "per node: %d regular tx ep+ctx%s (%d fixed), "
-               "%d rx ctx%s",
-               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? fixedNumThreads : 0,
-               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
-  }
 }
 
 
