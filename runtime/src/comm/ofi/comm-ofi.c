@@ -169,6 +169,8 @@ static inline chpl_bool tciTryRealloc(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                                 void*, size_t);
+static /*inline*/ void ofi_put_ll(const void*, c_nodeid_t,
+                                  void*, size_t, void*);
 static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                                 void*, size_t);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
@@ -367,6 +369,7 @@ chpl_bool isInProviderName(const char* s) {
 static __thread chpl_bool isAmHandler = false;
 
 typedef enum {
+  txnTrkNone,  // no tracking, ptr is ignored
   txnTrkDone,  // *ptr is atomic bool 'done' flag
   txnTrkCntr,  // *ptr is plain int (caller responsible for de-conflict)
 } txnTrkType_t;
@@ -2403,14 +2406,13 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
   static __thread chpl_comm_amDone_t* amDone = NULL;
   if (amDone == NULL) {
     amDone = allocBounceBuf(1);
-    CHK_TRUE(mrGetDesc(NULL, amDone, 1) == 0);
     *amDone = 1;
   }
 
-  CHK_TRUE(mrGetKey(NULL, NULL, b->node, pAmDone, sizeof(*pAmDone)) == 0);
   DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone %p",
              (int) b->node, b->seq, pAmDone);
-  (void) ofi_put(amDone, b->node, pAmDone, sizeof(*pAmDone));
+  ofi_put_ll(amDone, b->node, pAmDone, sizeof(*pAmDone),
+             txnTrkEncode(txnTrkNone, NULL));
 }
 
 
@@ -2824,6 +2826,35 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 
 
 static /*inline*/
+void ofi_put_ll(const void* addr, c_nodeid_t node,
+                 void* raddr, size_t size, void* ctx) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "PUT %d:%p <= %p, size %zd",
+             (int) node, raddr, addr, size);
+
+  uint64_t mrKey = 0;
+  uint64_t mrRaddr = 0;
+  CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0);
+
+  void* myAddr = (void*) addr;
+  void* mrDesc = NULL;
+  CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
+             (int) node, raddr, myAddr, size, mrKey, ctx);
+  OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
+                               mrDesc, rxRmaAddr(tcip, node),
+                               mrRaddr, mrKey, ctx),
+                      checkTxCQ(tcip));
+  tciFree(tcip);
+}
+
+
+static /*inline*/
 chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
@@ -3068,6 +3099,8 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
       DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64, cqe->flags);
       const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
       switch (trk.typ) {
+      case txnTrkNone:
+        break;
       case txnTrkDone:
         atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
                                    memory_order_release);
