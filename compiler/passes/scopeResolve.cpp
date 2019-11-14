@@ -2304,15 +2304,10 @@ void resolveUnmanagedBorrows(CallExpr* call, bool handleTypeCtors) {
         ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
         if (isClassLike(ts->type)) {
           decorator = classTypeDecorator(ts->type);
-          if (ts->type == dtBorrowed || ts->type == dtUnmanaged)
-            USR_WARN(call, "Please use %s class? instead of %s?",
-                            ts->name, ts->name);
         } else if (isManagedPtrType(ts->type) &&
                    (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
           decorator = CLASS_TYPE_MANAGED;
-          USR_WARN(call, "Please use %s class? instead of %s?",
-                         ts->name, ts->name);
         } else {
           const char* type = NULL;
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
