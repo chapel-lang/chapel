@@ -54,18 +54,6 @@
 
    .. note::
 
-      Right now, :class:`~NPBRandom.NPBRandomStream` and
-      :class:`~PCGRandom.RandomStream` are available (where
-      :class:`~PCGRandom.RandomStream` implements the PCG algorithm). In the
-      future, we expect that `PCGRandomStream` will be available as another name
-      for the PCG RNG stream.  At that point, `RandomStream` will change to a
-      type alias for the default RNG. The function :proc:`makeRandomStream` is
-      available to avoid compatibility problems from this naming change.
-      Programs that need to specifically request PCG should do so with
-      :proc:`makeRandomStream` until the name `PCGRandomStream` is available..
-
-   .. note::
-
        The RandomStream API (:class:`RandomStreamInterface`) is expected to
        change.
 
@@ -426,7 +414,7 @@ module Random {
 
     .. note::
 
-      This RandomStreamInterface is expected to change.
+      This RandomStreamInterface is expected to change`.
 
     .. note::
 
@@ -711,7 +699,7 @@ module Random {
       match the C PCG reference implementation and have specifically verified
       equal output given the same seed. However, this implementation differs
       from the C PCG reference implementation in how it produces random integers
-      within particular bounds (with :proc:`RandomStream.getNext` using `min`
+      within particular bounds (with :proc:`PCGRandomStream.getNext` using `min`
       and `max` arguments). In addition, this implementation directly supports
       the generation of random `real` values, unlike the C PCG implementation.
 
@@ -950,7 +938,7 @@ module Random {
         Fill the argument array with pseudorandom values.  This method is
         identical to the standalone :proc:`~Random.fillRandom` procedure,
         except that it consumes random values from the
-        :class:`RandomStream` object on which it's invoked rather
+        :class:`PCGRandomStream` object on which it's invoked rather
         than creating a new stream for the purpose of the call.
 
         :arg arr: The array to be filled
