@@ -4,8 +4,8 @@ use Time;
 use thermo;
 use forces;
 use neighbor;
-use StencilDist;
-use BlockDist;
+public use StencilDist;
+public use BlockDist;
 private use IO;
 
 // used in testing system

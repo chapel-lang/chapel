@@ -1,5 +1,5 @@
-use impl;
-use memTrackSupport;
+public use impl;
+public use memTrackSupport;
 
 config const doCorrectnessTest = true;
 

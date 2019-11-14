@@ -1,5 +1,5 @@
-use Level_def;
-use GridVariable_def;
+public use Level_def;
+public use GridVariable_def;
 
 private use IO;
 

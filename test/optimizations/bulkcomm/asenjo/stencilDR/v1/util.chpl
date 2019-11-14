@@ -1,6 +1,6 @@
 //Helper functions for stencil.chpl
 
-use stencil;
+public use stencil;
 private use IO;
 
 // verboseness

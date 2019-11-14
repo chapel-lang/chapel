@@ -19,13 +19,13 @@ typedef filter_code (*qt_feb_taskfilter_f)(qt_key_t            addr,
 
 void INTERNAL qt_feb_subsystem_init(uint_fast8_t);
 
-int INTERNAL qthread_writeEF_nb(aligned_t *restrict const       dest,
+int API_FUNC qthread_writeEF_nb(aligned_t *restrict const       dest,
                                 const aligned_t *restrict const src);
-int INTERNAL qthread_writeEF_const_nb(aligned_t *const dest,
+int API_FUNC qthread_writeEF_const_nb(aligned_t *const dest,
                                       const aligned_t  src);
-int INTERNAL qthread_readFF_nb(aligned_t *restrict const       dest,
+int API_FUNC qthread_readFF_nb(aligned_t *restrict const       dest,
                                const aligned_t *restrict const src);
-int INTERNAL qthread_readFE_nb(aligned_t *restrict const       dest,
+int API_FUNC qthread_readFE_nb(aligned_t *restrict const       dest,
                                const aligned_t *restrict const src);
 int INTERNAL qthread_check_feb_preconds(qthread_t *t);
 

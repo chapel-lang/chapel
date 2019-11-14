@@ -1,9 +1,9 @@
 // All simulation properties and definitions should go here
 
-use MDTypes;
-use configs;
-use helpers;
-use force;
+public use MDTypes;
+public use configs;
+public use helpers;
+public use force;
 
 // Defines the problem space
 var simLow    : real3; // simulation lower bound

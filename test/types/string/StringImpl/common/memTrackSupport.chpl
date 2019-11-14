@@ -2,7 +2,7 @@ config const doMemLeaksTest = true;
 config const verboseMem = false;
 config const verboseMemLeaks = false;
 
-use Memory;
+public use Memory;
 var totalMemLeaked = 0:uint(64);
 
 proc computeMemTrackOverhead() {

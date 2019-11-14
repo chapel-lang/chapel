@@ -356,7 +356,8 @@ sub gasnet_encode($) {
     } elsif ($is_jsrun) {
 	$spawner_desc = "jsrun - IBM Job Step Manager";
 	%envfmt = ( 'pre' => '-E', 'inter' => '-E');
-	$encode_args = 1;
+	$encode_env = 1; # botches spaces in environment values
+	$encode_args = 1; # and in arguments
     } else {
 	$spawner_desc = "unknown program (using generic MPI spawner)";
 	# assume the OS will not propagate the environment
