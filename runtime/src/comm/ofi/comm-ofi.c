@@ -367,8 +367,8 @@ chpl_bool isInProviderName(const char* s) {
 static __thread chpl_bool isAmHandler = false;
 
 typedef enum {
-  txnTrkDone,        // *ptr is 'txnDone' flag
-  txnTrkTskprvCntr,  // *ptr is initiator's chpl_comm_taskPrvData_t.txnCntr
+  txnTrkDone,  // *ptr is atomic bool 'done' flag
+  txnTrkCntr,  // *ptr is plain int (caller responsible for de-conflict)
 } txnTrkType_t;
 
 typedef struct {
@@ -1878,7 +1878,7 @@ void amRequestCommon(c_nodeid_t node,
       atomic_init_bool(&txnDone, false);
       ctx = txnTrkEncode(txnTrkDone, &txnDone);
     } else {
-      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
       prvData->numTxnsOut++;  // count txn now, saving control flow later
     }
   } else {
@@ -2948,7 +2948,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
       waitForCQAllTxns(tcip, prvData);
       ctx = txnTrkEncode(txnTrkDone, &txnDone);
     } else {
-      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
       prvData->numTxnsOut++;  // counting txn now allows smaller prvData scope
     }
   } else {
@@ -3072,8 +3072,8 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
         atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
                                    memory_order_release);
         break;
-      case txnTrkTskprvCntr:
-        ((chpl_comm_taskPrvData_t*) trk.ptr)->numTxnsOut--;
+      case txnTrkCntr:
+        (*((int*) trk.ptr))--;
         break;
       default:
         INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
