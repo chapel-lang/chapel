@@ -211,9 +211,9 @@ module Random {
     :returns: an owned RandomStream
   */
   proc createRandomStream(type eltType,
-                                  seed: int(64) = SeedGenerator.oddCurrentTime,
-                                  param parSafe: bool = true,
-                                  param algorithm = defaultRNG) {
+                          seed: int(64) = SeedGenerator.oddCurrentTime,
+                          param parSafe: bool = true,
+                          param algorithm = defaultRNG) {
     if algorithm == RNG.PCG then
       return new owned PCGRandomStream(seed=seed,
                                        parSafe=parSafe,
@@ -751,14 +751,6 @@ module Random {
          TestU01 by requesting values in [0..,2**31+2**30+1) until we
          had two values < 2**31, removing the top 0 bit, and then combining
          the top 16 bits into the value provided to TestU01).
-
-
-      .. note::
-
-         This class is currently called RandomStream, but at some point
-         we expect to rename it PCGRandomStream. At that point, RandomStream
-         will represent the default RNG and will initially refer to
-         PCGRandomStream.
 
     */
     class PCGRandomStream {
