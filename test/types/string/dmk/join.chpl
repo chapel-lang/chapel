@@ -1,6 +1,6 @@
 // Credit goes to Bryant for this test of a former bug in string.join().
 
-use Random.PCGRandom only RandomStream;
+use Random.PCGRandom only PCGRandomStream;
 
 config const count = 100;
 
@@ -13,7 +13,7 @@ proc get_str_with_join(x: int, y: int): string {
 }
 
 proc main() {
-  var r = new owned RandomStream(int);
+  var r = new owned PCGRandomStream(int);
 
   for i in 1..count {
     var x = r.getNext(1, 20000);
