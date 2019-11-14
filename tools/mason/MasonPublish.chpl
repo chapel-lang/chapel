@@ -162,7 +162,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
 proc publishPackage(username: string, registryPath : string, isLocal : bool) throws {
   try! {
     const packageLocation = absPath(here.cwd());
-    var stream = makeRandomStream(int);
+    var stream = createRandomStream(int);
     var uniqueDir = stream.getNext(): string;
     const name = getPackageName();
     var safeDir = '';
