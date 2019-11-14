@@ -2280,10 +2280,15 @@ static bool isClassDecoratorPrimitive(CallExpr* call) {
 void resolveUnmanagedBorrows(CallExpr* call, bool handleTypeCtors) {
   if (isClassDecoratorPrimitive(call)) {
 
+    // Give up now if the actual is missing.
+    if (call->numActuals() < 1)
+      return;
+
     // Make sure to handle nested calls appropriately
     if (CallExpr* sub = toCallExpr(call->get(1))) {
-      if (isClassDecoratorPrimitive(sub))
-        resolveUnmanagedBorrows(call, handleTypeCtors);
+      if (isClassDecoratorPrimitive(sub)) {
+        resolveUnmanagedBorrows(sub, handleTypeCtors);
+      }
     }
 
     SymExpr* typeSymbolSe = NULL;
