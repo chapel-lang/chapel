@@ -32,7 +32,7 @@
 // Notes on implementation of GEX_FLAG_AD_{REL,ACQ}
 //
 // RELEASE:
-// We beleive that injection of a GNI-level operation must include at least one
+// We believe that injection of a GNI-level operation must include at least one
 // release fence.  Additionally we must obtain a "gpd" from a gasneti_lifo_t,
 // which in a multi-threaded build includes a full rel/acq on both x86-64 and
 // arm64.
@@ -43,7 +43,7 @@
 // a multi-threaded build, the conduit's processing of the CQ includes a full
 // mutex lock/unlock.
 
-#include <gasnet_gemini.h>
+#include <gasnet_aries.h>
 #include <gasnet_ratomic_internal.h>
 
 // Value intended to trigger GNI_RC_ILLEGAL_OP if used as amo_cmd
@@ -192,7 +192,8 @@ int gasnete_ratomic_inner(
     gpd->gpd_amo_len = length;
     gpd->gpd_amo_cmd = cmd;
     switch (op_cnt) {
-      case 2: gpd->gpd_amo_op2 = operand2; // fall through...
+      case 2: gpd->gpd_amo_op2 = operand2;
+              GASNETI_FALLTHROUGH
       case 1: gpd->gpd_amo_op1 = operand1;
               break;
       default: gasneti_unreachable();

@@ -10,9 +10,9 @@
 //
 //<=== Description <===
 
-use SpaceDimension;
-use LanguageExtensions;
-use BasicDataStructures;
+public use SpaceDimension;
+public use LanguageExtensions;
+public use BasicDataStructures;
 
 private use IO;
 

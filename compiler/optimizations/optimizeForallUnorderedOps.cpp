@@ -121,6 +121,13 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     }
   }
 
+  // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
+  // by the compiler. We will remove these if we optimize an atomic op.
+  if (CallExpr* call = toCallExpr(last))
+    if (FnSymbol* fn = call->resolvedFunction())
+      if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+        last = last->prev;
+
   // Otherwise, add what we got.
   stmts.push_back(last);
 }
@@ -433,7 +440,8 @@ static MayBlockState mayBlock(FnSymbol* fn) {
   MayBlockState& state = fnMayBlock[fn];
   if (state == STATE_UNKNOWN) {
     if (fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE) ||
-        fn->hasFlag(FLAG_FN_UNORDERED_SAFE)) {
+        fn->hasFlag(FLAG_FN_UNORDERED_SAFE) ||
+        fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) {
       state = STATE_COMPUTED;
     } else if (fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       // No need for such a function to impede optimization
@@ -753,6 +761,46 @@ static void transformAtomicStmt(Expr* stmt) {
   }
 
   SET_LINENO(call);
+
+  // Remove redundant remote-memory fences from --cache-remote.
+  if (fCacheRemote) {
+    // remove the chpl_rmem_consist_maybe_release added before the atomic
+    // This fence is redundant because we add a full fence immediately below.
+    for (Expr* cur = call->getStmtExpr()->prev; cur != NULL; cur = cur->prev) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+            cur->remove();
+          // if we encountered a function call, including the added fence, stop
+          break;
+        }
+      }
+    }
+    // remove the chpl_rmem_consist_maybe_acquire added after the atomic
+    // This fence is redundant because we add a full fence immediately below
+    // *and* because the optimization fired, we know that the atomic op
+    // we are making unordered is not being used to communicate to the current
+    // task.
+    for (Expr* cur = call->getStmtExpr()->next; cur != NULL; cur = cur->next) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+            cur->remove();
+          // if we encountered a function call, including the added fence, stop
+          break;
+        }
+      }
+    }
+  }
+
+  // TODO: This could just be a release fence (and then we could do an
+  // aquire fence at the end of the forall loop in addition to just
+  // completing the unordered ops). That could help in 2 cases:
+  //  1. If --cache-remote is used, we can still use cached GETs
+  //     during the unordered loop
+  //  2. If we improve the unordered ops the compiler is targeting to use
+  //     other methods that aggregate, within-thread performance might
+  //     matter & optimizing the fences could allow better compiler opt.
 
   // Add a fence call before the call.
   // First, gather the memory order argument from the call.

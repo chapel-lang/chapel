@@ -1,6 +1,6 @@
-use GridVariable_DiffusionBE;
-use LevelVariable_def;
-use LevelBC_def;
+public use GridVariable_DiffusionBE;
+public use LevelVariable_def;
+public use LevelBC_def;
 
 
 //|""""""""""""""""""""""""""""""""""\

@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.3
+#define GASNET_CORE_VERSION      2.4
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -109,6 +109,7 @@
         VAL(C, RDMA_PUT_INLINE, bytes)            \
         VAL(C, RDMA_PUT_BOUNCE, bytes)            \
         VAL(C, RDMA_PUT_ZEROCP, bytes)            \
+        VAL(C, RDMA_PUT_READONLY, bytes)          \
         VAL(C, RDMA_GET_BOUNCE, bytes)            \
         VAL(C, RDMA_GET_ZEROCP, bytes)            \
         CNT(C, ALLOC_AM_SPARE, cnt)	          \

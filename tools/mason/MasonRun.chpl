@@ -21,6 +21,7 @@ private use List;
 use MasonBuild;
 use MasonHelp;
 use MasonUtils;
+use MasonExample;
 use FileSystem;
 use TOML;
 

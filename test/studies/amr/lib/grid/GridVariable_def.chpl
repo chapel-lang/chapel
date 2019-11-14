@@ -1,4 +1,4 @@
-use Grid_def;
+public use Grid_def;
 
 private use IO;
 

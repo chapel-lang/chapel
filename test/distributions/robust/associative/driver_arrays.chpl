@@ -1,4 +1,4 @@
-use driver_domains;
+public use driver_domains;
 
 var AInt: [DomIntType] intType;
 var AUint: [DomUintType] uintType;

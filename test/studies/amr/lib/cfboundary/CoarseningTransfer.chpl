@@ -1,6 +1,6 @@
 
-use LevelSolution_def;
-use CFUtilities;
+public use LevelSolution_def;
+public use CFUtilities;
 
 
 

@@ -1,7 +1,7 @@
 
-use GridSolution_def;
-use GridBC_def;
-use GridVariable_AdvectionCTU;
+public use GridSolution_def;
+public use GridBC_def;
+public use GridVariable_AdvectionCTU;
 
 
 
