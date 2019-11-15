@@ -427,12 +427,12 @@ module ChapelError {
 
     const myFileC:c_string = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
-    const myFileS = createStringWithBorrowedBuffer(myFileC);
+    const myFileS = createStringWithNewBuffer(myFileC);
     const myLine = __primitive("_get_user_line");
 
     const thrownFileC:c_string = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
-    const thrownFileS = createStringWithBorrowedBuffer(thrownFileC);
+    const thrownFileS = createStringWithNewBuffer(thrownFileC);
     const thrownLine = err.thrownLine;
 
     var s = "uncaught " + chpl_describe_error(err) +

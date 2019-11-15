@@ -2277,8 +2277,6 @@ module String {
   // Cast from c_string to string
   pragma "no doc"
   proc _cast(type t, cs: c_string) where t == string {
-    compilerWarning("Cast from c_string to string is deprecated - "+
-                    "please use createString* functions instead");
     var ret: string;
     ret.len = cs.length;
     ret._size = ret.len+1;
