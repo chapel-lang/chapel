@@ -20,7 +20,7 @@
 #ifndef _ENCODING_SUPPORT_H_
 #define _ENCODING_SUPPORT_H_
 
-// WARNING: This header is used by both the compiler and the runtime.
+// Note: This header is used by both the compiler and the runtime.
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -38,6 +38,16 @@ static inline intptr_t chpl_enc_ptr_diff(void* a, void* b)
   return ((intptr_t)a) - ((intptr_t)b);
 }
 
+/*
+ * Decodes the char buffer `buf` using UTF8 encoding and writes the codepoint in
+ * `chr`
+ *
+ * :arg nbytes: An out argument that stores number of bytes read when function
+ *              returns
+ * :arg buflen: Upper limit for number of bytes to read
+ *
+ * :returns: 0 if successful, -1 if illegal byte sequence
+ */
 static inline
 int chpl_enc_decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
                          const char* buf, ssize_t buflen)
@@ -64,6 +74,16 @@ int chpl_enc_decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
   }
 }
 
+/*
+ * Decodes the char buffer `buf` using ASCII encoding and writes the codepoint
+ * in `chr`
+ *
+ * :arg nbytes: An out argument that stores number of bytes read when function
+ *              returns
+ * :arg buflen: Upper limit for number of bytes to read
+ *
+ * :returns: 0 if successful, -1 if illegal byte sequence
+ */
 static inline
 int chpl_enc_decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
                                    const char* buf, ssize_t buflen)
@@ -81,6 +101,17 @@ int chpl_enc_decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
   }
 }
 
+/*
+ * Decodes the char buffer `buf` using the system's wctype header and writes the
+ * codepoint * in `chr`
+ *
+ * :arg nbytes: An out argument that stores number of bytes read when function
+ *              returns
+ * :arg buflen: Upper limit for number of bytes to read
+ *
+ * :returns: 0 if successful, -1 if illegal byte sequence, -2 if the
+ * sytem does not have wctype.h
+ */
 static inline
 int chpl_enc_decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
                                     const char* buf, ssize_t buflen)
@@ -119,6 +150,13 @@ int chpl_enc_decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
 #endif
 }
 
+/*
+ * Check if the bytes in the char buffer form a valid UTF8 sequence
+ *
+ * :arg buflen: Upper limit for number of bytes to read
+ *
+ * :returns: 0 if valid, -1 if illegal byte sequence
+ */
 static inline
 int chpl_enc_validate_buf(const char *buf, ssize_t buflen) {
   int32_t cp;
