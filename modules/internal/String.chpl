@@ -471,8 +471,8 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithBorrowedBuffer(s: string) {
+    // we don't validate here because `s` must have been validated already
     var ret: string;
-    try! validateEncoding(s.buff, s.len);
     initWithBorrowedBuffer(ret, s);
     return ret;
   }
@@ -530,9 +530,10 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithBorrowedBuffer(s: bufferType,
+                                             length: int, size: int) throws {
     var ret: string;
-    try! validateEncoding(s, length);
+    validateEncoding(s, length);
     initWithBorrowedBuffer(ret, s, length,size);
     return ret;
   }
@@ -584,9 +585,10 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithOwnedBuffer(s: bufferType,
+                                          length: int, size: int) throws {
     var ret: string;
-    try! validateEncoding(s, length);
+    validateEncoding(s, length);
     initWithOwnedBuffer(ret, s, length, size);
     return ret;
   }
@@ -600,8 +602,8 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithNewBuffer(s: string) {
+    // we don't validate here because `s` must have been validated already
     var ret: string;
-    try! validateEncoding(s.buff, s.len);
     initWithNewBuffer(ret, s);
     return ret;
   }
@@ -638,9 +640,10 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithNewBuffer(s: bufferType,
+                                        length: int, size: int) throws {
     var ret: string;
-    try! validateEncoding(s, length);
+    validateEncoding(s, length);
     initWithNewBuffer(ret, s, length, size);
     return ret;
   }
