@@ -1,3 +1,1 @@
-anymanaged-member-no-given-value-no-writeln.chpl:2: error: Cannot default-initialize thing2: Thing2
-note: non-nil class types do not support default initialization
-note: Consider using the type Thing2? instead
+anymanaged-member-no-given-value-no-writeln.chpl:7: error: initialization requires an argument for thing2

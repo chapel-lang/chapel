@@ -525,3 +525,13 @@ void convertClassTypesToCanonical() {
     }
   }
 }
+
+bool isClassDecoratorPrimitive(CallExpr* call) {
+  return (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+          call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS));
+}
