@@ -18,10 +18,6 @@ important to you)
 endif
 endif
 
-ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xk))
-$(error CHPL_COMM=gasnet is no longer supported on cray-xe/xk, use CHPL_COMM=ugni)
-endif
-
 ifneq ($(CHPL_MAKE_COMM_SUBSTRATE),none)
 CHPL_GASNET_CFG_OPTIONS += --disable-auto-conduit-detect
 CHPL_GASNET_CFG_OPTIONS += --enable-$(CHPL_MAKE_COMM_SUBSTRATE)
