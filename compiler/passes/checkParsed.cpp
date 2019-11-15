@@ -195,6 +195,14 @@ static void checkManagedClassKinds(CallExpr* call) {
                        outer, inner);
       }
     }
+
+    if (call->numActuals() >= 1) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->symbol() == gUninstantiated) {
+          USR_FATAL(call, "Please use %s class? instead of %s?", outer, outer);
+        }
+      }
+    }
   }
 }
 

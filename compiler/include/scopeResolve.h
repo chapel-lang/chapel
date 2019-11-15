@@ -21,6 +21,7 @@
 #define _SCOPE_RESOLVE_H_
 
 class BaseAST;
+class CallExpr;
 class DefExpr;
 class FnSymbol;
 class Symbol;
@@ -45,6 +46,7 @@ Symbol*  lookupAndCount(const char*           name,
 BaseAST* getScope(BaseAST* ast);
 
 void resolveUnresolvedSymExprs(BaseAST* ast);
+void resolveUnmanagedBorrows(CallExpr* call);
 
 void destroyModuleUsesCaches();
 

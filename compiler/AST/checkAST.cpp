@@ -129,7 +129,7 @@ void checkPrimitives()
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_IS_SUBTYPE:
-     case PRIM_IS_SUBTYPE_ALLOW_VALUES:
+     case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
      case PRIM_IS_PROPER_SUBTYPE:
      case PRIM_NEW:                 // new keyword
      case PRIM_ERROR:
