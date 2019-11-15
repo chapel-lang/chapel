@@ -13,7 +13,7 @@ var expect32_2 = [0xff85ecc9, 0x4de4d2f6, 0x72eb3394,
 
 writeln("Checking 32-bit RNG seq 1");
 {
-  var rs = makeRandomStream(seed = seed, parSafe=false,
+  var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(32), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
@@ -41,7 +41,7 @@ writeln("Checking 32-bit RNG seq 1");
 }
 
 {
-  var rs = makeRandomStream(seed = seed, parSafe=false,
+  var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = int(32), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
@@ -69,7 +69,7 @@ writeln("Checking 32-bit RNG seq 1");
 
 // check 8 bit version
 {
-  var rs = makeRandomStream(seed = seed, parSafe=false,
+  var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(8), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
@@ -99,7 +99,7 @@ writeln("Checking 32-bit RNG seq 1");
 
 // check 16 bit version
 {
-  var rs = makeRandomStream(seed = seed, parSafe=false,
+  var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(16), algorithm=RNG.PCG);
 
   for i in 1..6 {
@@ -132,7 +132,7 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
 
 // check 64 bit version
 {
-  var rs = makeRandomStream(seed = seed, parSafe=false,
+  var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(64), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
@@ -168,7 +168,7 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
 
   fillRandom(expect, seed=seed, algorithm=RNG.PCG);
 
-  var rs = makeRandomStream(seed = seed, eltType = real(32), algorithm=RNG.PCG);
+  var rs = createRandomStream(seed = seed, eltType = real(32), algorithm=RNG.PCG);
 
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));

@@ -1,0 +1,7 @@
+bug: anymanaged class field used in a method -> Unhandled type in blankIntentForType()
+#14381
+
+Making thing2 non-nilable doesn't change the behavior.
+
+Alternately, giving thing2 a management class allows it to compile
+and run. (I tried only owned and unmanaged.)

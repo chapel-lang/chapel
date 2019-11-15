@@ -1,0 +1,1 @@
+example-pr-13203-a.chpl:4: error: the initialization expression of the task-private variable 'reader' throws - this is currently not supported for variables of non-POD types

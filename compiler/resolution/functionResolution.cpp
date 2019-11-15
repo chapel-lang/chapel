@@ -2573,6 +2573,8 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   resolveCall(typeCall);
   Type* ret = typeCall->typeInfo();
   typeCall->remove();
+
+  INT_ASSERT(ret && ret != dtUnknown);
   return ret;
 }
 
@@ -2902,12 +2904,28 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   Type* ret = NULL;
 
   SymExpr* ts = toSymExpr(call->baseExpr);
-  AggregateType* at = toAggregateType(canonicalClassType(ts->typeInfo()));
-  DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo());
+  Type* tsType = ts->typeInfo();
+  AggregateType* at = toAggregateType(canonicalClassType(tsType));
+  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  bool decorated = false;
+  if (DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo())) {
+    decorated = true;
+    decorator = dt->getDecorator();
+    // Convert 'managed' to 'generic' -
+    // type will be wrapped with 'owned' e.g. after borrowed type is computed.
+    if (isDecoratorManaged(decorator)) {
+      if (isDecoratorNonNilable(decorator))
+        decorator = CLASS_TYPE_GENERIC_NONNIL;
+      else if (isDecoratorNilable(decorator))
+        decorator = CLASS_TYPE_GENERIC_NILABLE;
+      else
+        decorator = CLASS_TYPE_GENERIC;
+    }
+  }
 
-  if (isPrimitiveType(ts->typeInfo())) {
+  if (isPrimitiveType(tsType)) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
-    USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", ts->typeInfo()->symbol->name);
+    USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", tsType->symbol->name);
     USR_STOP();
   } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
     SymbolMap subs;
@@ -2916,16 +2934,21 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     }
   } else {
     ret = at->generateType(info.call, info.toString());
-    if (ret && dt) {
-      ret = getDecoratedClass(ret, dt->getDecorator());
+    if (ret && decorated) {
+      // Include the decorator in the type
+      ret = getDecoratedClass(ret, decorator);
       INT_ASSERT(ret);
-    } else if (ret && isManagedPtrType(ts->typeInfo())) {
+    }
+
+    if (ret && isManagedPtrType(tsType)) {
       // For owned/shared types, resolve the canonical class type specifier and
       // re-wrap the resulting type in owned or shared.
-      AggregateType* managed = toAggregateType(ts->typeInfo());
-      if (managed->instantiatedFrom) {
-        AggregateType* root = managed->getRootInstantiation();
-        CallExpr* again = new CallExpr(root->symbol, ret->symbol);
+      AggregateType* manager = getManagedPtrManagerType(tsType);
+      if (isManagedPtrType(ret)) {
+        // It's already a managed pointer type
+        INT_ASSERT(manager == getManagedPtrManagerType(ret));
+      } else {
+        CallExpr* again = new CallExpr(manager->symbol, ret->symbol);
         info.call->getStmtExpr()->insertBefore(again);
         resolveCall(again);
         ret = again->typeInfo();

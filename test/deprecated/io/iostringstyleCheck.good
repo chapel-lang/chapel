@@ -1,2 +1,0 @@
-iostringstyleCheck.chpl:1: error: iostringstyle is no longer available by default, please insert
-a use of the IO module to access it.

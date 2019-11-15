@@ -26,23 +26,23 @@ proc getRNG() {
   if useNPB {
     // NPB
     if testRealBits == 64 then
-      return makeRandomStream(seed, eltType=real(64), parSafe=false, algorithm=RNG.NPB);
+      return createRandomStream(seed, eltType=real(64), parSafe=false, algorithm=RNG.NPB);
     else if testRealBits == 32 then
-      return makeRandomStream(seed, eltType=real(64), parSafe=false, algorithm=RNG.NPB);
+      return createRandomStream(seed, eltType=real(64), parSafe=false, algorithm=RNG.NPB);
   } else {
     // PCG
     if testReal && realTruncateBits == 0 {
       // Make native RNG with eltType=real(size)
       if testRealBits == 64 then
-        return makeRandomStream(seed, eltType=real(64), parSafe=false, algorithm=RNG.PCG);
+        return createRandomStream(seed, eltType=real(64), parSafe=false, algorithm=RNG.PCG);
       else if testRealBits == 32 then
-        return makeRandomStream(seed, eltType=real(32), parSafe=false, algorithm=RNG.PCG);
+        return createRandomStream(seed, eltType=real(32), parSafe=false, algorithm=RNG.PCG);
     } else {
       // Make an integer RNG
       if testUintBits == 64 then
-        return makeRandomStream(seed, eltType=uint(64), parSafe=false, algorithm=RNG.PCG);
+        return createRandomStream(seed, eltType=uint(64), parSafe=false, algorithm=RNG.PCG);
       else if testUintBits == 32 then
-        return makeRandomStream(seed, eltType=uint(32), parSafe=false, algorithm=RNG.PCG);
+        return createRandomStream(seed, eltType=uint(32), parSafe=false, algorithm=RNG.PCG);
     }
   }
 }

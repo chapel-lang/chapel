@@ -421,7 +421,7 @@ module OwnedObject {
   /*
     Swap two :record:`owned` objects.
   */
-  proc <=>(ref lhs:_owned(?t), ref rhs:_owned(t)) {
+  proc <=>(ref lhs:_owned, ref rhs:lhs.type) {
     lhs.chpl_p <=> rhs.chpl_p;
   }
 

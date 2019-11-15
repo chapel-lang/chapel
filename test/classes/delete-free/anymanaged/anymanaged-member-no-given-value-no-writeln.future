@@ -1,0 +1,11 @@
+bug: non-nilable anymanaged class member not given a value and not writeln()'d fails to compile generated source
+#14380
+
+If thing2 is declared nilable, it triggers #14378.
+
+If thing2 remains non-nilable but is given a management class, it
+correctly fails to compile due to thing2 not being
+default-initializable.
+
+If thing1 is initialized as new Thing1(new Thing2()), it compiles
+and runs fine.

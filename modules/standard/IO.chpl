@@ -1632,7 +1632,7 @@ file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
 :arg path: which file to open (for example, "some/file.txt").
-:arg iomode: specify whether to open the file for reading or writing and
+:arg mode: specify whether to open the file for reading or writing and
              whether or not to create the file if it doesn't exist.
              See :type:`iomode`.
 :arg hints: optional argument to specify any hints to the I/O system about

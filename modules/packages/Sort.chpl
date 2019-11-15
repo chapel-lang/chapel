@@ -1385,7 +1385,7 @@ module SampleSortHelp {
                                    seed=1) {
     private use Random;
     var Tmp:[1..1] A.eltType;
-    var randNums = makeRandomStream(seed=seed, eltType=int, parSafe=false);
+    var randNums = createRandomStream(seed=seed, eltType=int, parSafe=false);
     while numSamples > 0 {
       numSamples -= 1;
 
