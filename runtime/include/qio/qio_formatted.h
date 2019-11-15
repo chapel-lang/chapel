@@ -39,7 +39,7 @@
 #define HAS_WCTYPE_H
 
 #include "qio_style.h"
-#include "encoding-support.h"
+#include "encoding/encoding-support.h"
 
 extern int qio_glocale_utf8; // for testing use.
 #define QIO_GLOCALE_UTF8 1

@@ -21,7 +21,7 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include "../../runtime/include/encoding-support.h"
+#include "encoding-support.h"
 #include "symbol.h"
 
 #include "AstToText.h"
