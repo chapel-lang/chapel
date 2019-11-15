@@ -84,7 +84,7 @@ private:
   void verifyPrototype(FnSymbol* fn);
   Type* getTypeFromFormal(ArgSymbol* as);
   Type* getTypeFromFormal(FnSymbol* fn, int i);
-  bool typeRequiresAllocation(Type* t);
+  bool isTypeReqAlloc(Type* t);
 
   std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
   std::string genMarshalBodyStringC(Type* t, bool out);
@@ -106,6 +106,7 @@ private:
   std::string genServerWrapperCall(FnSymbol* fn);
   std::string genClientsideRPC(FnSymbol* fn);
   std::string genServersideRPC(FnSymbol* fn);
+  std::string genMemCleanup(Type* t, const char* var);
   std::string genMarshalCall(const char* skt, const char* var, Type* t,
                              bool out);
   std::string genMarshalPushCall(const char* skt, const char* var, Type* t);
@@ -331,6 +332,11 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
   const char* target = out ? "obj" : "buffer";
   std::string gen;
 
+  // Declare temporaries for bytecount, buffer, and memory errors.
+  gen += this->genNewDecl("uint64_t", "bytes");
+  gen += this->genNewDecl("void*", "buffer");
+  gen += this->genNewDecl("int64_t", "mem_err");
+
   if (out) {
     // Compute and push length of string.
     gen += "bytes = strlen(obj);\n";
@@ -390,9 +396,54 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
 }
 
 std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
+  const char* target = out ? "obj" : "result";
   std::string gen;
 
-  
+  // Create expressions for each "chpl_bytes_wrapper" struct field.
+  const char* fieldIsOwned = astr(target, ".isOwned");
+  const char* fieldSize = astr(target, ".size");
+  const char* fieldData = astr(target, ".data");
+
+  // Generate a temporary to hold memory errors.
+  gen += this->genNewDecl("int64_t", "mem_err");
+
+  // Push/pull the "isOwned" field.
+  gen += this->genSocketCall("skt", fieldIsOwned, out);
+
+  // Push/pull the "size" field.
+  gen += this->genSocketCall("skt", fieldSize, out);
+
+  if (!out) {
+    // Attempt to allocate buffer.
+    gen += fieldData;
+    gen += " = mli_malloc(";
+    gen += + fieldSize;
+    gen += " + 1);\n";
+
+    // Set ACK value (non-zero if memory allocation failed).
+    gen += "mem_err = (buffer == NULL);\n";
+  }
+
+  // Push/pull possible allocation error on ACK.
+  gen += this->genSocketCall("skt", "mem_err", !out);
+
+  // If error, terminate client/server.
+  gen += "if (mem_err) chpl_mli_terminate(CHPL_MLI_CODE_EMEMORY);\n";
+
+  // Move the bytes over the wire, using length.
+  gen += this->genSocketCallBuffer("skt", fieldData, fieldSize, out);
+
+  // Generate a null frame for the ACK.
+  gen += this->genSocketCall("skt", NULL, !out);
+
+  // Null terminate the bytes buffer if we are pulling.
+  if (!out) {
+    gen += fieldData;
+    gen += "[";
+    gen += fieldSize;
+    gen += "] = '\\0';\n";
+  }
+
   return gen;
 }
 
@@ -426,7 +477,6 @@ std::string MLIContext::genMarshalRoutineProto(Type* t, bool out) {
 }
 
 std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
-  int64_t id = this->assignUniqueTypeID(t);
   std::string proto;
   std::string gen;
 
@@ -443,16 +493,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   gen += this->genNewDecl("int", "skt_err");
 
   // If unpacking, declare a temporary for the return value.
-  if (!out) {
-    gen += this->genNewDecl(t, "result");
-  }
-
-  // If allocating, declare temporaries for bytecount, buffer, and error.
-  if (this->typeRequiresAllocation(t)) {
-    gen += this->genNewDecl("uint64_t", "bytes");
-    gen += this->genNewDecl("void*", "buffer");
-    gen += this->genNewDecl("int64_t", "mem_err");
-  }
+  if (!out) { gen += this->genNewDecl(t, "result"); }
 
   // Insert a debug message if appropriate.
   if (this->debugPrint) {
@@ -779,10 +820,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   }
 
   // Declare a temporary for the return value, if necessary.
-  if (!hasVoidReturnType) {
-    gen += this->genTypeName(fn->retType);
-    gen += " result;\n";
-  }
+  if (!hasVoidReturnType) { gen += genNewDecl(fn->retType, "result"); }
 
   // Declare temporaries, issue unpack call for each formal.
   for (int i = 1; i <= fn->numFormals(); i++) {
@@ -840,17 +878,33 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   //
   for (int i = 1; i <= fn->numFormals(); i++) {
     Type* t = this->getTypeFromFormal(fn, i);
-    if (!this->typeRequiresAllocation(t)) { continue; }
-    if (t == dtStringC) {
-      gen += "mli_free(";
-      gen += "((void*) ";
-      gen += formalTempNames[i];
-      gen += "));\n";
-    } else {
-      INT_FATAL("Unsupported type expects deallocation");
+    if (this->isTypeReqAlloc(t)) {
+      gen += this->genMemCleanup(t, formalTempNames[i].c_str());
     }
   }
 
+  // Also cleanup the return value if required.    
+  if (!hasVoidReturnType && this->isTypeReqAlloc(fn->retType)) {
+    gen += this->genMemCleanup(fn->retType, "result");
+  }
+
+  return gen;
+}
+
+std::string MLIContext::genMemCleanup(Type* t, const char* var) {
+  std::string gen;
+
+  if (t == dtStringC) {
+    gen += "mli_free(";
+    gen += "((void*) ";
+    gen += var;
+    gen += "));\n";
+  } else if (t == exportTypeChplBytesWrapper) {
+    USR_FATAL("Cleanup for exportTypeChplBytesWrapper not implemented yet");
+  } else {
+    INT_FATAL("Unsupported type expects deallocation");
+  }
+       
   return gen;
 }
 
@@ -976,8 +1030,12 @@ std::string MLIContext::genSizeof(std::string& var) {
   return this->genAddressOf(var.c_str());
 }
 
-bool MLIContext::typeRequiresAllocation(Type* t) {
-  return (t == dtStringC || t->symbol->hasFlag(FLAG_C_PTR_CLASS));
+bool MLIContext::isTypeReqAlloc(Type* t) {
+  return
+      // TODO: Do we just assume that all CPTRs require allocation?
+      t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+      t == dtStringC ||
+      t->getValType() == exportTypeChplBytesWrapper;
 }
 
 std::string MLIContext::genNewDecl(const char* t, const char* v) {

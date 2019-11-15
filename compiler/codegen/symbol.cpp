@@ -929,6 +929,13 @@ bool ArgSymbol::requiresCPtr(void) {
       if (is_complex_type(type))
         return true;
   }
+  FnSymbol* fn = toFnSymbol(this->defPoint->parentSymbol);
+
+  // Pass records to exported routines by value if possible. 
+  if (isRecord(type) && fn->hasFlag(FLAG_EXPORT)) {
+    return false;
+  }
+
   return argMustUseCPtr(type);
 }
 
@@ -1082,6 +1089,14 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
              t->getValType() == dtOpaqueArray &&
              (pxd == PYTHON_PYX || pxd == C_PYX)) {
     return "ChplOpaqueArray ";
+  } else if (pxd == C_PYX && t->getValType() == exportTypeChplBytesWrapper) {
+    //
+    // For now, bytes uses an arg check in the body of the routine to ensure
+    // that the argument is bytes.
+    //
+    // TODO: Better place to put this?
+    //
+    return "";
   } else {
     return getPythonTypeName(t, pxd) + " ";
   }
@@ -1106,8 +1121,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
     res += "\n";
     return res;
-  } else if (t->symbol->hasFlag(FLAG_REF) &&
-             t->getValType() == exportTypeChplBytesWrapper) {
+  } else if (t->getValType() == exportTypeChplBytesWrapper) {
     std::string res;
 
     // First, check to see if the input type is the Python "bytes" type.
@@ -1133,9 +1147,9 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += "\t" + wrapval + ".data = " + argdata + "\n";
     res += "\t" + wrapval + ".size = " + argsize + "\n";
 
-    // The final result is a reference to the stack allocated struct.
-    res += "\tcdef chpl_bytes_wrapper* chpl_" + strname;
-    res += " = &" + wrapval + "\n";
+    // The final result is a copy of the stack allocated struct.
+    res += "\tcdef chpl_bytes_wrapper chpl_" + strname;
+    res += " = " + wrapval + "\n";
 
     return res;
   } else if (t->symbol->hasFlag(FLAG_REF) &&
