@@ -3784,6 +3784,106 @@ module HDF5 {
     C_HDF5.H5Fclose(file_id);
   }
 
+  // This module provides extern declarations for symbols that should
+  // probably be defined in the MPI.C_MPI module.
+  pragma "no doc"
+  module Extra_MPI_Externs {
+    extern type MPI_Info;
+    extern const MPI_INFO_NULL: MPI_Info;
+  }
+
+  // This module provides extern declarations for symbols that should
+  // probably be defined in the HDF5.C_HDF5 module.
+  pragma "no doc"
+  module Extra_HDF5_Externs {
+    param FAIL = -1;
+    extern proc H5Pset_fapl_mpio(fapl_id: C_HDF5.hid_t, comm, info): C_HDF5.herr_t;
+    extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t, flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
+  }
+
+  /* Write the Block distributed Array `A` as an HDF5 dataset named `dsetName`
+     in the file `filename` using parallel collective IO. This requires the
+     hdf5-parallel library.
+   */
+  proc hdf5WriteDistributedArray(filename: string, dsetName: string, A: []) {
+    use MPI, C_HDF5, BlockDist;
+    use Extra_MPI_Externs, Extra_HDF5_Externs;
+
+    coforall loc in A.domain.targetLocales() do on loc {
+      const locFilename = filename;
+      const jobSize = commSize(CHPL_COMM_WORLD),
+            jobRank = commRank(CHPL_COMM_WORLD);
+
+      const hdf5Type = getHDF5Type(A.eltType);
+
+      var info = MPI_INFO_NULL;
+      const accessTemplate = H5Pcreate(H5P_FILE_ACCESS);
+      assert(accessTemplate != FAIL);
+
+      var ret = H5Pset_fapl_mpio(accessTemplate, CHPL_COMM_WORLD, info);
+      assert(ret != FAIL);
+
+      var fid = H5Fcreate(locFilename.c_str(), H5F_ACC_TRUNC,
+                          H5P_DEFAULT, accessTemplate);
+      assert(fid != FAIL);
+
+      const locDom = A.domain.localSubdomain();
+
+      ret = H5Pclose(accessTemplate);
+      assert(ret != FAIL);
+
+      var dims: c_array(uint, A.rank);
+      for param i in 0..A.rank-1 {
+        dims[i] = A.domain.dim(i+1).size: uint;
+      }
+
+      var sid = H5Screate_simple(A.rank, dims, nil);
+      assert(sid != FAIL);
+
+      var dataset = H5Dcreate1(fid, dsetName.c_str(), hdf5Type,
+                               sid, H5P_DEFAULT);
+      assert(dataset != FAIL);
+
+      // create a file dataspace
+      var fileDataspace = H5Dget_space(dataset);
+      assert(fileDataspace != FAIL);
+
+      var stride: c_array(uint, A.rank);
+      var count: c_array(uint, A.rank);
+      var start: c_array(uint, A.rank);
+
+      for i in 0..#A.rank {
+        stride[i] = 1;
+        count[i] = locDom.dim(i+1).size: uint;
+        start[i] = (locDom.dim(i+1).low - A.domain.dim(i+1).low): uint;
+      }
+
+      ret = H5Sselect_hyperslab(fileDataspace, H5S_SELECT_SET, start,
+                                stride, count, nil);
+      assert(ret != FAIL);
+
+      // create a memory dataspace
+      var memDataspace = H5Screate_simple(A.rank, count, nil);
+      assert(memDataspace != FAIL);
+
+      // set up the transfer properties list
+      var xferPlist = H5Pcreate(H5P_DATASET_XFER);
+      assert(xferPlist != FAIL);
+
+      ret = H5Pset_dxpl_mpio(xferPlist, H5FD_MPIO_COLLECTIVE);
+      assert(ret != FAIL);
+
+      // write data
+      ret = H5Dwrite(dataset, hdf5Type, memDataspace, fileDataspace,
+                     xferPlist, c_ptrTo(A._value.myLocArr!.myElems));
+      assert(ret != FAIL);
+
+      // release temporary handles
+      H5Sclose(fileDataspace);
+      H5Sclose(memDataspace);
+      H5Pclose(xferPlist);
+    }
+  }
 
     /* Read the HDF5 dataset named `dsetName` from the file `filename` into
        the distributed array `A`.  Each locale reads its local portion of
