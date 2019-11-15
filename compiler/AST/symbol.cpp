@@ -1435,7 +1435,10 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+
+// stringLiteralsHash should never contain any invalid string
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
+HashMap<Immediate *, ImmHashFns, VarSymbol *> bytesLiteralsHash;
 
 LabelSymbol* initStringLiteralsEpilogue = NULL;
 
@@ -1460,25 +1463,6 @@ bool isValidString(std::string str) {
 // so this function expects a string that could be in "" in C
 VarSymbol *new_StringSymbol(const char *str) {
 
-  // String (as record) literals are inserted from the very beginning on the
-  // parser all the way through resolution (postFold). Since resolution happens
-  // after normalization we need to insert everything in normalized form. We
-  // also need to disable parts of normalize from running on literals inserted
-  // at parse time.
-
-  // these are created first so that we can unescape string early for validation
-  VarSymbol* cstrTemp = newTemp("call_tmp");
-  CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
-
-  std::string unescapedString = unescapeString(str, cstrMove);
-
-  if (!isValidString(unescapedString)) {
-    USR_FATAL_CONT("Invalid string literal");
-  }
-  else {
-    // TODO: somehow flag that the buffer is validated to avoid revalidation
-  }
-
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
   Immediate imm;
@@ -1492,6 +1476,31 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   if (resolved) {
     INT_FATAL("new_StringSymbol called after function resolution.");
+  }
+
+  bool invalid = false;
+
+  // String (as record) literals are inserted from the very beginning on the
+  // parser all the way through resolution (postFold). Since resolution happens
+  // after normalization we need to insert everything in normalized form. We
+  // also need to disable parts of normalize from running on literals inserted
+  // at parse time.
+
+  VarSymbol* cstrTemp = newTemp("call_tmp");
+  CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
+
+  std::string unescapedString = unescapeString(str, cstrMove);
+
+  if (!isValidString(unescapedString)) {
+    USR_FATAL_CONT(cstrMove, "Invalid string literal");
+
+    // We want to keep the compilation going here so that we can catch other
+    // invalid string literals without having to compile again. However,
+    // returning `s` (i.e. NULL at this point) does not work well with the rest
+    // of the compilation. At the same time we should avoid adding invalid
+    // sequences to stringLiteralsHash. Therefore, set a flag to note that this
+    // string is invalid and should not be added to stringLiteralsHash.
+    invalid = true;
   }
 
   int strLength = unescapedString.length();
@@ -1531,7 +1540,9 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   s->immediate = new Immediate;
   *s->immediate = imm;
-  stringLiteralsHash.put(s->immediate, s);
+  if (!invalid) {
+    stringLiteralsHash.put(s->immediate, s);
+  }
   return s;
 }
 
@@ -1540,7 +1551,7 @@ VarSymbol *new_BytesSymbol(const char *str) {
   imm.const_kind = CONST_KIND_STRING;
   imm.string_kind = STRING_KIND_BYTES;
   imm.v_string = astr(str);
-  VarSymbol *s = stringLiteralsHash.get(&imm);
+  VarSymbol *s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
   }
@@ -1588,7 +1599,7 @@ VarSymbol *new_BytesSymbol(const char *str) {
 
   s->immediate = new Immediate;
   *s->immediate = imm;
-  stringLiteralsHash.put(s->immediate, s);
+  bytesLiteralsHash.put(s->immediate, s);
   return s;
 }
 
