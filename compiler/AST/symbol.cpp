@@ -1003,6 +1003,9 @@ void ShadowVarSymbol::accept(AstVisitor* visitor) {
     outerVarSE->accept(visitor);
   if (specBlock)
     specBlock->accept(visitor);
+
+  svInitBlock->accept(visitor);
+  svDeinitBlock->accept(visitor);
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
