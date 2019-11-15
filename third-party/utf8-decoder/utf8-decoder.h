@@ -1,12 +1,9 @@
-// FIXME: this check is probably too naive
-#if defined(__cplusplus)
-  #if __cplusplus >= 201103L
-    #define RESTRICT __restrict
-  #endif
+// use the restrict keyword only when included from C
+#ifdef __cplusplus
+  #define CHPL_ENC_RESTRICT
 #else
-    #define RESTRICT restrict
+  #define CHPL_ENC_RESTRICT restrict
 #endif
-
 
 /* BEGIN UTF-8 decoder from http://bjoern.hoehrmann.de/utf-8/decoder/dfa */
 // Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
@@ -32,9 +29,9 @@ static const uint8_t utf8d[] = {
 };
 
 static inline
-uint32_t qio_utf8_decode(uint32_t* RESTRICT state,
-                         uint32_t* RESTRICT codep,
-                         uint32_t byte) {
+uint32_t chpl_enc_utf8_decode(uint32_t* CHPL_ENC_RESTRICT state,
+                              uint32_t* CHPL_ENC_RESTRICT codep,
+                              uint32_t byte) {
   uint32_t type = utf8d[byte & 0xff];
 
   *codep = (*state != UTF8_ACCEPT) ?

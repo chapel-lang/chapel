@@ -49,15 +49,16 @@ static inline intptr_t chpl_enc_ptr_diff(void* a, void* b)
  * :returns: 0 if successful, -1 if illegal byte sequence
  */
 static inline
-int chpl_enc_decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
-                         const char* buf, ssize_t buflen)
+int chpl_enc_decode_char_buf_utf8(int32_t* CHPL_ENC_RESTRICT chr,
+                                  int* CHPL_ENC_RESTRICT nbytes,
+                                  const char* buf, ssize_t buflen)
 {
   const char* start = buf;
   const char* end = start + buflen;
   uint32_t codepoint=0, state;
   state = 0;
   while( buf != end ) {
-    qio_utf8_decode(&state, &codepoint, *(const unsigned char*)buf);
+    chpl_enc_utf8_decode(&state, &codepoint, *(const unsigned char*)buf);
     buf++;
     if (state <= 1) {
       break;
@@ -85,7 +86,8 @@ int chpl_enc_decode_char_buf_utf8(int32_t* RESTRICT chr, int* RESTRICT nbytes,
  * :returns: 0 if successful, -1 if illegal byte sequence
  */
 static inline
-int chpl_enc_decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
+int chpl_enc_decode_char_buf_ascii(int32_t* CHPL_ENC_RESTRICT chr,
+                                   int* CHPL_ENC_RESTRICT nbytes,
                                    const char* buf, ssize_t buflen)
 {
   const char* start = buf;
@@ -113,7 +115,8 @@ int chpl_enc_decode_char_buf_ascii(int32_t* RESTRICT chr, int* RESTRICT nbytes,
  * sytem does not have wctype.h
  */
 static inline
-int chpl_enc_decode_char_buf_wctype(int32_t* RESTRICT chr, int* RESTRICT nbytes,
+int chpl_enc_decode_char_buf_wctype(int32_t* CHPL_ENC_RESTRICT chr,
+                                    int* CHPL_ENC_RESTRICT nbytes,
                                     const char* buf, ssize_t buflen)
 {
 #ifdef HAS_WCTYPE_H

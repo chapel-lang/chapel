@@ -443,6 +443,9 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
 
   err = 0;
 
+  // TODO: This part can be refactored to use some of the functions in
+  // encoding/encoding-support.h
+
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.
   if( qio_glocale_utf8 > 0 &&
@@ -450,9 +453,9 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
     if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
       state = 0;
       while( 1 ) {
-        qio_utf8_decode(&state,
-                        &codepoint,
-                        *(unsigned char*)ch->cached_cur);
+        chpl_enc_utf8_decode(&state,
+                             &codepoint,
+                             *(unsigned char*)ch->cached_cur);
         ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
         if (state <= 1) {
           break;
