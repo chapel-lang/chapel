@@ -85,7 +85,7 @@ module ChapelError {
    A `DecodeError` is thrown if an attempt to create a string with non-UTF8 byte
    sequences are made at runtime. This includes calling the
    `bytes.decode(decodePolicy.strict)` method on a bytes with non-UTF8 byte
-   sequences
+   sequences.
    */
   class DecodeError: Error {
     
