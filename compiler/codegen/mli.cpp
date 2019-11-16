@@ -336,6 +336,7 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
   gen += this->genNewDecl("uint64_t", "bytes");
   gen += this->genNewDecl("void*", "buffer");
   gen += this->genNewDecl("int64_t", "mem_err");
+  gen += "mem_err = 0;\n";
 
   if (out) {
     // Compute and push length of string.
@@ -406,9 +407,13 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
 
   // Generate a temporary to hold memory errors.
   gen += this->genNewDecl("int64_t", "mem_err");
+  gen += "mem_err = 0;\n";
 
   // Push/pull the "isOwned" field.
   gen += this->genSocketCall("skt", fieldIsOwned, out);
+
+  // Generate a null frame for the ACK.
+  gen += this->genSocketCall("skt", NULL, !out);
 
   // Push/pull the "size" field.
   gen += this->genSocketCall("skt", fieldSize, out);
@@ -421,7 +426,9 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
     gen += " + 1);\n";
 
     // Set ACK value (non-zero if memory allocation failed).
-    gen += "mem_err = (buffer == NULL);\n";
+    gen += "mem_err = (";
+    gen += fieldData;
+    gen += " == NULL);\n";
   }
 
   // Push/pull possible allocation error on ACK.
@@ -894,15 +901,17 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
 std::string MLIContext::genMemCleanup(Type* t, const char* var) {
   std::string gen;
 
-  if (t == dtStringC) {
+  if (t == dtStringC || t == exportTypeCharPtr) {
     gen += "mli_free(";
     gen += "((void*) ";
     gen += var;
     gen += "));\n";
   } else if (t == exportTypeChplBytesWrapper) {
-    USR_FATAL("Cleanup for exportTypeChplBytesWrapper not implemented yet");
+    gen += "chpl_bytes_wrapper_free(";
+    gen += var;
+    gen += ");\n";
   } else {
-    INT_FATAL("Unsupported type expects deallocation");
+    INT_FATAL("Unsupported type %s expects deallocation", t->symbol->name);
   }
        
   return gen;

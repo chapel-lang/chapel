@@ -6,7 +6,7 @@ def getFirstNullBytePos(b):
       return i
   return -1
 
-test.chpl_setup()
+test.chpl_setup(2)
 
 b1 = test.noArgsRetBytes()
 
