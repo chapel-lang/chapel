@@ -320,12 +320,15 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
   if canResolveMethod(comparator, "key", a) {
+    writeln("Using the default comparator");
     // Use the default comparator to compare the integer keys
     return defaultComparator.compare(comparator.key(a), comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
+    writeln("Using the compare method");
     return comparator.compare(a ,b);
   } else if canResolveMethod(comparator, "keyPart", a, 1) {
+    writeln("Using the keypart method");
     return compareByPart(a, b, comparator);
   } else {
     compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method");
@@ -3016,7 +3019,7 @@ record DefaultComparator {
                                         isReal(x(0)) || isImag(x(0))) {
     // Re-use the keyPart for imag, real
     const (_,part) = this.keyPart(x(i-1), 1);
-    if i > x.size then
+    if i >= x.size then
       return (-1, 0:part.type);
     else
       return (0, part);
