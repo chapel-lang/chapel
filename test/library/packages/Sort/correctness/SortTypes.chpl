@@ -13,8 +13,8 @@ record UselessKeyPartComparator {
   proc keyPart(x, i:int) {
     if isTuple(x) {
       type tt = x(0).type;
-      if i < x.size then
-        return (0, x(i));
+      if i <= x.size then
+        return (0, x(i-1));  // JUST CHANGED THIS
       else
         return (-1, 0:tt);
 
@@ -57,8 +57,6 @@ proc checkSorts(arr, comparator) {
     writeln("default sort");
   var a = arr;
   sort(a, comparator);
-  if (!isSorted(a)) then
-    writeln(a);
   assert(isSorted(a, comparator));
   if !isTupleOfString(arr[1].type) {
     // check msbRadixSort
