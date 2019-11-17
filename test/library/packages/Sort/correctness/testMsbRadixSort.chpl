@@ -37,7 +37,7 @@ use BitOps;
  record uintCriterion64 {
    inline
    proc keyPart(x, start:int):(int(8), uint(64)) {
-     var section:int(8) = if start > 0 then -1:int(8) else 0;
+     var section:int(8) = if start > 1 then -1:int(8) else 0;
      var key:uint = x:uint;
      //writef("in keyPart64(%016xu, %u)\n", x, start);
      return (section, key);
