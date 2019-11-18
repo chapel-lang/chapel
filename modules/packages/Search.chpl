@@ -22,7 +22,8 @@
    arrays
  */
 module Search {
-  public use Sort;
+  public use Sort only defaultComparator;
+  private use Sort;
 
 
 /*
