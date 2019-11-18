@@ -1,8 +1,8 @@
 /* Test helpers... */
 
-use Assert;
-use Random;
-use Time;
+public use Assert;
+public use Random;
+public use Time;
 
 // random seed for arrays
 config const randSeed = SeedGenerator.oddCurrentTime;
@@ -15,7 +15,7 @@ config const printC = true,
 // matrices.
 config const scalingFactor = 1;
 
-var randStream = makeRandomStream(eltType=real, seed=randSeed, algorithm=RNG.NPB),
+var randStream = createRandomStream(eltType=real, seed=randSeed, algorithm=RNG.NPB),
   timer: Timer;
 
 const inner = 1..5 * scalingFactor,

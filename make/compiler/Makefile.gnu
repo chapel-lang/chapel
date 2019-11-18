@@ -162,6 +162,14 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 endif
 
 #
+# Don't warn/error for incompatible pointer types (see
+# https://github.com/chapel-lang/chapel/issues/7983)
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 5; echo "$$?"),1)
+SQUASH_WARN_GEN_CFLAGS += -Wno-incompatible-pointer-types
+endif
+
+#
 # Don't warn/error for tautological compares (ex. x == x)
 #
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 6; echo "$$?"),1)

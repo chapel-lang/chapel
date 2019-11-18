@@ -1,4 +1,6 @@
 
+use IO;
+
 var str = "hello\x00goodbye\n";
 
 var f = opentmp();

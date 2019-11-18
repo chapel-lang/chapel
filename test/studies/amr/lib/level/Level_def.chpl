@@ -1,7 +1,8 @@
 
-use Grid_def;
-use MultiDomain_def;
+public use Grid_def;
+public use MultiDomain_def;
 
+private use IO;
 
 //|\""""""""""""""""""""|\
 //| >    Level class    | >

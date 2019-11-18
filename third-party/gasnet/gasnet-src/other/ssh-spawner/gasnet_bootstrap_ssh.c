@@ -2861,9 +2861,8 @@ static void bootstrapExchange(void *src, size_t len, void *dest) {
   iov[2].iov_len  = len;
   do_writev(parent, iov, 3);
 
-  if ((uint8_t*)dest + len*myrank != (uint8_t*)src) {
-    memcpy((uint8_t*)dest + len*myrank, src, len);
-  }
+  GASNETI_MEMCPY_SAFE_IDENTICAL((uint8_t*)dest + len*myrank, src, len);
+
   iov[0].iov_base = dest;
   iov[0].iov_len  = len * myrank;
   iov[1].iov_base = (uint8_t*)dest + len * next;
@@ -2884,9 +2883,8 @@ static void bootstrapAlltoall(void *src, size_t len, void *dest) {
   build_all2all_iov(iov+2, src, len, myrank, 1);
   do_writev(parent, iov, 4);
 
-  if ((uint8_t*)dest + len*myrank != (uint8_t*)src) {
-    memcpy((uint8_t*)dest + len*myrank, src, len);
-  }
+  GASNETI_MEMCPY_SAFE_IDENTICAL((uint8_t*)dest + len*myrank, (uint8_t*)src + len*myrank, len);
+
   build_all2all_iov(iov, dest, len, myrank, 1);
   wait_cmd(cmd1);
   do_readv(parent, iov, 2);
@@ -2905,7 +2903,8 @@ static void bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode) 
     iov[2].iov_base = src;
     iov[2].iov_len  = len;
     do_writev(parent, iov, 3);
-    if (dest != src) memcpy(dest, src, len);
+
+    GASNETI_MEMCPY_SAFE_IDENTICAL(dest, src, len);
   } else {
     size_t bcast_len;
     wait_cmd(cmd1);

@@ -1567,7 +1567,9 @@ static Expr* preFoldNamed(CallExpr* call) {
           Type* newType = toSE->symbol()->type;
 
           bool fromEnum = is_enum_type(oldType);
-          bool fromString = (oldType == dtString || oldType == dtStringC);
+          bool fromString = (oldType == dtString || 
+                             oldType == dtStringC);
+          bool fromBytes = oldType == dtBytes;
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
           bool fromRealEtc = is_real_type(oldType) ||
@@ -1576,7 +1578,9 @@ static Expr* preFoldNamed(CallExpr* call) {
           bool fromIntEtc = fromIntUint || fromRealEtc || is_bool_type(oldType);
 
           bool toEnum = is_enum_type(newType);
-          bool toString = (newType == dtString || newType == dtStringC);
+          bool toString = (newType == dtString ||
+                           newType == dtStringC);
+          bool toBytes = newType == dtBytes;
           bool toIntUint = is_int_type(newType) ||
                            is_uint_type(newType);
           bool toRealEtc = is_real_type(newType) ||
@@ -1639,8 +1643,22 @@ static Expr* preFoldNamed(CallExpr* call) {
 
             call->replace(retval);
 
+          // Handle string:bytes and c_string:bytes casts
+          } else if (imm != NULL && fromString && toBytes) {
+
+            retval = new SymExpr(new_BytesSymbol(imm->v_string));
+
+            call->replace(retval);
+
+          // Handle bytes:c_string casts (bytes.c_str()) is used in IO
+          } else if (imm != NULL && fromBytes && newType == dtStringC) {
+
+            retval = new SymExpr(new_CStringSymbol(imm->v_string));
+
+            call->replace(retval);
+
           // Handle other casts to string
-          } else if (imm != NULL && fromIntEtc && toString) {
+          } else if (imm != NULL && fromIntEtc && (toString || toBytes)) {
             // special case because newType->defaultValue will
             // be null for dtString
 
@@ -1654,6 +1672,8 @@ static Expr* preFoldNamed(CallExpr* call) {
 
             if (newType == dtStringC)
               retval = new SymExpr(new_CStringSymbol(coerce.v_string));
+            else if (newType == dtBytes)
+              retval = new SymExpr(new_BytesSymbol(coerce.v_string));
             else
               retval = new SymExpr(new_StringSymbol(coerce.v_string));
 
@@ -1816,7 +1836,7 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 //
 static Symbol* determineQueriedField(CallExpr* call) {
   AggregateType* at     =
-    toAggregateType(canonicalDecoratedClassType(call->get(1)->getValType()));
+    toAggregateType(canonicalClassType(call->get(1)->getValType()));
   SymExpr*       last   = toSymExpr(call->get(call->numActuals()));
   VarSymbol*     var    = toVarSymbol(last->symbol());
   Symbol*        retval = NULL;
@@ -2174,6 +2194,11 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     fn->throwsErrorInit();
 
     // when printing out a FCF, print out the function's name
+    if (ioModule == NULL) {
+      INT_FATAL("never parsed IO module, this shouldn't be possible");
+    }
+    fn->body->useListAdd(new UseStmt(ioModule, false));
+    fn->getModule()->moduleUseAdd(ioModule);
     fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
                                                new_StringSymbol("writeIt")),
                                   new_StringSymbol(astr(flname, "()"))));

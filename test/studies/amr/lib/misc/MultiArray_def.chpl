@@ -1,4 +1,4 @@
-use MultiDomain_def;
+public use MultiDomain_def;
 
 
 

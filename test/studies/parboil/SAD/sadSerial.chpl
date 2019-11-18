@@ -1,3 +1,5 @@
+use IO;
+
 config param useConfigFiles = true;
 config param printTimers = 0;
 

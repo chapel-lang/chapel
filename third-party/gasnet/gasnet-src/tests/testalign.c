@@ -333,7 +333,7 @@ int main(int argc, char **argv)
       iamsender = (myproc < half);
       peerproc = myproc + (iamsender ? half : -half);
     } else {
-      peerproc = myproc ^ 1;
+      peerproc = (myproc + 1) % numprocs;
       iamsender = !(myproc % 2);
     }
     

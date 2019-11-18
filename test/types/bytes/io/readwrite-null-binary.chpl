@@ -1,3 +1,5 @@
+use IO;
+
 var b: bytes;
 readf("%|3s", b);
 if b.length != 3 then

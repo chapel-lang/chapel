@@ -2134,13 +2134,14 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
     ok = 0;
     // Assuming we have a request for raddr..raddr+len-1,
     // can we prefetch prefetch_addr..prefetch_addr+prefetch_len-1 ?
-    // Checks to see if the prefetch would move out of registered memory
+    // Checks to see if guard pages are enabled (which makes guarded paged
+    // un-gettable) if the prefetch would move out of registered memory
     //  (if chpl_comm_get_segment returns segment information)
     //  or to a new page (if segment information is not available)
 
     // Can we prefetch len bytes starting at prefetch_raddr?
     // If not, compute the smaller amount that we can prefetch.
-    if( chpl_comm_addr_gettable(node, (void*)prefetch_start, len) ) {
+    if( !chpl_task_guardPagesInUse() && chpl_comm_addr_gettable(node, (void*)prefetch_start, len) ) {
       ok = 1;
     }
 
@@ -2586,7 +2587,6 @@ void cache_get(struct rdcache_s* cache,
 }
 
 
-#if 0
 static
 void cache_invalidate(struct rdcache_s* cache,
                        c_nodeid_t node, raddr_t raddr, size_t size)
@@ -2634,7 +2634,6 @@ void cache_invalidate(struct rdcache_s* cache,
     }
   }
 }
-#endif
 
 static
 void cache_clean_dirty(struct rdcache_s* cache)
@@ -2773,11 +2772,24 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   // Do nothing if cache is not enabled.
 }
 
+// If a transfer is large enough we should directly initiate it to avoid
+// overheads of going through the cache
+static inline
+int size_merits_direct_comm(struct rdcache_s* cache, size_t size)
+{
+  return size > (cache->max_pages* CACHEPAGE_SIZE / 4);
+}
+
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t commID, int ln, int32_t fn)
 {
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  if (size_merits_direct_comm(cache, size)) {
+    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+    return;
+  }
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
                "from %p\n",
@@ -2801,6 +2813,11 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  if (size_merits_direct_comm(cache, size)) {
+    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+    return;
+  }
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
                "%d:%p to %p\n",
@@ -2864,6 +2881,44 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided put.
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
+}
+
+//
+// Directly initiate unordered comm, invalidate any pending updates to
+// overlapping regions beforehand.
+//
+void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
+
+}
+
+void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
+}
+
+
+void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                      c_nodeid_t srcnode, void* srcaddr,
+                                      size_t size, int32_t commID,
+                                      int ln, int32_t fn)
+{
+    struct rdcache_s* cache = tls_cache_remote_data();
+    cache_invalidate(cache, srcnode, (raddr_t)srcaddr, size);
+    cache_invalidate(cache, dstnode, (raddr_t)dstaddr, size);
+    chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+}
+
+void chpl_cache_comm_getput_unordered_task_fence(void)
+{
+  chpl_comm_getput_unordered_task_fence();
 }
 
 // This is for debugging.

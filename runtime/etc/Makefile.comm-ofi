@@ -15,18 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifneq ($(LIBFABRIC_DIR),)
-  ifneq ($(wildcard $(LIBFABRIC_DIR)/lib64),)
-    LIBFAB_LIB_DIR := $(LIBFABRIC_DIR)/lib64
-  else ifneq ($(wildcard $(LIBFABRIC_DIR)/lib),)
-    LIBFAB_LIB_DIR := $(LIBFABRIC_DIR)/lib
-  endif
-  ifneq ($(LIBFAB_LIB_DIR),)
-    GEN_LFLAGS += -L$(LIBFAB_LIB_DIR) -Wl,-rpath,$(LIBFAB_LIB_DIR)
-  endif
-endif
-LIBS += -lfabric -ldl
-
 #
 # Conservatively use CXX as the linker, in case regexp (or other C++
 # code) is being linked in.

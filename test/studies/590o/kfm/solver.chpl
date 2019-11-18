@@ -1,5 +1,8 @@
 //------------------  Sudoku Solver -----------------------------------
 //------------------ Step 1, read in the puzzle from a file ------------
+// the module defining file operations
+use IO;
+
 // the name of a file holding a 9x9 soduku puzzle
 config var infilename = "sudoku.txt";
 

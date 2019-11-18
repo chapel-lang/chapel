@@ -27,7 +27,7 @@ For example, the following program downloads a web-page from http://example.com 
 
   use URL;
   var urlreader = openUrlReader("http://example.com");
-  var str:string;
+  var str:bytes;
   // Output each line read from the URL to stdout
   while(urlreader.readline(str)) {
     write(str);
@@ -41,6 +41,7 @@ For example, the following program downloads a web-page from http://example.com 
  */
 
 module URL {
+  public use IO;
 
   /*
 

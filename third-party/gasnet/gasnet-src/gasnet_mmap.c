@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#if (GASNETI_PSHM_FILE || GASNETI_PSHM_POSIX) && HAVE_FSTATVFS
+#if GASNET_PSHM && (GASNETI_PSHM_FILE || GASNETI_PSHM_POSIX) && HAVE_FSTATVFS
   #include <sys/statvfs.h>
 #endif
 
@@ -1318,7 +1318,7 @@ uint64_t gasneti_sharedLimit(void) {
   }
 
 
-#if (GASNETI_PSHM_FILE || GASNETI_PSHM_POSIX) && HAVE_FSTATVFS
+#if GASNET_PSHM && (GASNETI_PSHM_FILE || GASNETI_PSHM_POSIX) && HAVE_FSTATVFS
   {
     // Apply limits appropriate to filesystem-backed allocation
     const int flags = O_RDWR | O_CREAT | O_EXCL;

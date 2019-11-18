@@ -1,3 +1,5 @@
+use IO;
+
 var infile = open("readTuple.dat", iomode.r);
 var reader = infile.reader();
 

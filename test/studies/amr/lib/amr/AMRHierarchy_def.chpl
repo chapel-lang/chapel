@@ -1,8 +1,8 @@
-use CoarseningTransfer;
-use RefiningTransfer;
-use BergerRigoutsosClustering;
+public use CoarseningTransfer;
+public use RefiningTransfer;
+public use BergerRigoutsosClustering;
 
-
+private use IO;
 
 
 //|\"""""""""""""""""""""""""""|\

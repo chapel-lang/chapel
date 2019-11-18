@@ -1,3 +1,5 @@
+use IO;
+
 var b = "bytes":bytes;
 
 try! {

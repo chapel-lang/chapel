@@ -6,7 +6,7 @@
  * Conversion to Chapel by Albert Sidelnik
  */
 
-use BlockDist;
+use BlockDist, IO;
 config const n = 500 : int(64);
 
 

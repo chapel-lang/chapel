@@ -1,6 +1,8 @@
 // tests convenience signatures for bit-I/O routines
 // these help avoid casting
 
+use IO;
+
 config const test=1;
 config const testfile="test.bin";
 var f = open(testfile, iomode.cwr);

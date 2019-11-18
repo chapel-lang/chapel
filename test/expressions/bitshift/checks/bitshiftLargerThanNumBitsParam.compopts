@@ -1,0 +1,4 @@
+-s op=0   # bitshiftLargerThanNumBitsParam.0.good
+-s op=1   # bitshiftLargerThanNumBitsParam.1.good
+-s op=2   # bitshiftLargerThanNumBitsParam.2.good
+-s op=3   # bitshiftLargerThanNumBitsParam.3.good

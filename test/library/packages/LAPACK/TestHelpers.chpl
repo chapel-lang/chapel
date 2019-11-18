@@ -1,5 +1,5 @@
 module TestHelpers {
-  use LAPACK;
+  public use LAPACK;
   param default_epsilon: real = 10.0e-14;  
 
   class LAPACK_Matrix {

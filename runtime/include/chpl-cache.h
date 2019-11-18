@@ -79,6 +79,15 @@ void  chpl_cache_comm_put_strd(
                       void *addr, void *dststr, c_nodeid_t node, void *raddr,
                       void *srcstr, void *count, int32_t strlevels,
                       size_t elemSize, int32_t commID, int ln, int32_t fn);
+void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn);
+void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn);
+void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                      c_nodeid_t srcnode, void* srcaddr,
+                                      size_t size, int32_t commID,
+                                      int ln, int32_t fn);
+void chpl_cache_comm_getput_unordered_task_fence(void);
 
 // For debugging.
 void chpl_cache_print(void);

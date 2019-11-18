@@ -1,3 +1,5 @@
+use IO;
+
 config const nRepeat = 10;
 
 proc test(byteRange) {

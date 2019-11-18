@@ -867,10 +867,9 @@ module ChapelArray {
   pragma "syntactic distribution"
   record dmap { }
 
-  pragma "unsafe"
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
-    var x: _to_unmanaged(t);
-    var y = new _distribution(x);
+    var x: _to_unmanaged(t)?;
+    var y = new _distribution(x!);
     return y.type;
   }
 
@@ -3601,6 +3600,7 @@ module ChapelArray {
   // How to cast arrays to strings
   pragma "no doc"
   proc _cast(type t:string, x: []) {
+    use IO;
     return stringify(x);
   }
 

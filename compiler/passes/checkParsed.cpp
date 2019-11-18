@@ -195,6 +195,14 @@ static void checkManagedClassKinds(CallExpr* call) {
                        outer, inner);
       }
     }
+
+    if (call->numActuals() >= 1) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->symbol() == gUninstantiated) {
+          USR_FATAL(call, "Please use %s class? instead of %s?", outer, outer);
+        }
+      }
+    }
   }
 }
 
@@ -359,7 +367,11 @@ checkFunction(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
   if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
-    USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    if (fn->thisTag == INTENT_TYPE) {
+      USR_FATAL_CONT(fn, "Missing type for secondary type method");
+    } else {
+      USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    }
   }
 
 #if 0 // Do not issue the warning yet.
