@@ -929,7 +929,6 @@ bool ArgSymbol::requiresCPtr(void) {
       if (is_complex_type(type))
         return true;
   }
-
   return argMustUseCPtr(type);
 }
 
