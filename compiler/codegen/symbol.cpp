@@ -929,12 +929,6 @@ bool ArgSymbol::requiresCPtr(void) {
       if (is_complex_type(type))
         return true;
   }
-  FnSymbol* fn = toFnSymbol(this->defPoint->parentSymbol);
-
-  // Pass records to exported routines by value if possible. 
-  if (isRecord(type) && fn->hasFlag(FLAG_EXPORT)) {
-    return false;
-  }
 
   return argMustUseCPtr(type);
 }
