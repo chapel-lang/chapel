@@ -21,7 +21,6 @@
 
 #include "library.h"
 
-#include "fixupExports.h"
 #include "FnSymbol.h"
 #include "beautify.h"
 #include "codegen.h"

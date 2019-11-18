@@ -84,10 +84,10 @@ private:
   void verifyPrototype(FnSymbol* fn);
   Type* getTypeFromFormal(ArgSymbol* as);
   Type* getTypeFromFormal(FnSymbol* fn, int i);
-  bool isTypeReqAlloc(Type* t);
+  bool isTypeRequiringAlloc(Type* t);
 
   std::string genMarshalBodyPrimitiveScalar(Type* t, bool out);
-  std::string genMarshalBodyStringC(Type* t, bool out);
+  std::string genMarshalBodyString(Type* t, bool out);
   std::string genMarshalBodyChplBytesWrapper(Type* t, bool out);
   std::string genComment(const char* msg, const char* pfx="");
   std::string genNote(const char* msg);
@@ -328,7 +328,7 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
 // This will help us later down the line when we have to support other types
 // that push variable width buffers (arrays).
 //
-std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
+std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
   const char* target = out ? "obj" : "buffer";
   std::string gen;
 
@@ -388,7 +388,7 @@ std::string MLIContext::genMarshalBodyStringC(Type* t, bool out) {
       gen += underlyingTypeName;
       gen += "*) buffer);\n";
     } else {
-      INT_FATAL("Unknown type passed to genMarshalBodyStringC, %s",
+      INT_FATAL("Unknown type passed to %s, %s", __FUNCTION__,
                 t->symbol->name);
     }
   }
@@ -519,12 +519,12 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   if (isPrimitiveScalar(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
   } else if (t == dtStringC) {
-    gen += this->genMarshalBodyStringC(t, out);
+    gen += this->genMarshalBodyString(t, out);
   } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
              getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
     // A different strategy will be needed if we ever intend to support
     // c_ptr(int8)s that weren't originally Chapel strings.
-    gen += this->genMarshalBodyStringC(t, out);
+    gen += this->genMarshalBodyString(t, out);
   } else if (t->getValType() == exportTypeChplBytesWrapper) {
     gen += this->genMarshalBodyChplBytesWrapper(t, out); 
   } else {
@@ -790,7 +790,7 @@ std::string MLIContext::genClientsideRPC(FnSymbol* fn) {
   gen += this->genSocketPullCall(client_main, "st");
 
   // If we are void/void, then there's nothing left to do.
-  if (hasVoidReturnType and !hasFormals) {
+  if (hasVoidReturnType && !hasFormals) {
     gen += this->genComment("Routine is void/void!");
     return gen;
   }
@@ -820,7 +820,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   std::string gen;
 
   // Emit void/void calls immediately, then return.
-  if (hasVoidReturnType and !hasFormals) {
+  if (hasVoidReturnType && !hasFormals) {
     gen += fn->cname;
     gen += "();\n";
     return gen;
@@ -885,13 +885,13 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
   //
   for (int i = 1; i <= fn->numFormals(); i++) {
     Type* t = this->getTypeFromFormal(fn, i);
-    if (this->isTypeReqAlloc(t)) {
+    if (this->isTypeRequiringAlloc(t)) {
       gen += this->genMemCleanup(t, formalTempNames[i].c_str());
     }
   }
 
   // Also cleanup the return value if required.    
-  if (!hasVoidReturnType && this->isTypeReqAlloc(fn->retType)) {
+  if (!hasVoidReturnType && this->isTypeRequiringAlloc(fn->retType)) {
     gen += this->genMemCleanup(fn->retType, "result");
   }
 
@@ -1039,7 +1039,7 @@ std::string MLIContext::genSizeof(std::string& var) {
   return this->genAddressOf(var.c_str());
 }
 
-bool MLIContext::isTypeReqAlloc(Type* t) {
+bool MLIContext::isTypeRequiringAlloc(Type* t) {
   return
       // TODO: Do we just assume that all CPTRs require allocation?
       t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
