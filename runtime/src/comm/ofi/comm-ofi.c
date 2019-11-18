@@ -167,12 +167,12 @@ static inline struct perTxCtxInfo_t* tciAlloc(void);
 static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static inline chpl_bool tciTryRealloc(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
-static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
-                                                void*, size_t);
-static /*inline*/ void ofi_put_ll(const void*, c_nodeid_t,
-                                  void*, size_t, void*);
-static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
-                                                void*, size_t);
+static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
+                                            void*, size_t);
+static inline void ofi_put_ll(const void*, c_nodeid_t,
+                              void*, size_t, void*);
+static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
+                                            void*, size_t);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
 static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
                                     chpl_comm_taskPrvData_t*);
@@ -2746,7 +2746,7 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
 }
 
 
-static /*inline*/
+static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
@@ -2824,7 +2824,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 }
 
 
-static /*inline*/
+static inline
 void ofi_put_ll(const void* addr, c_nodeid_t node,
                  void* raddr, size_t size, void* ctx) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
@@ -2853,7 +2853,7 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
 }
 
 
-static /*inline*/
+static inline
 chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
