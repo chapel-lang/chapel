@@ -314,21 +314,16 @@ static void getVisibleFunctions(const char*           name,
     // We've seen this block already, but we just found it again from going up
     // in scope from the call site.  That means that we may have skipped private
     // uses, so we should go through only the private uses.
-    bool moduleBlock = false;
-    bool fnBlock = false;
     ModuleSymbol* inMod = block->getModule();
     FnSymbol* inFn = block->getFunction();
     BlockStmt* instantiationPt = NULL;
-    if (block->parentExpr != NULL) {
-      // not a module or function level block
-    } else if (inMod && block == inMod->block) {
-      moduleBlock = true;
+    if (block->parentExpr != NULL || (inMod && block == inMod->block)) {
+      // only care about instantiations right now, all the rest is unnecessary
     } else if (inFn != NULL) {
       // TODO - probably remove this assert
       INT_ASSERT(block->parentSymbol == inFn ||
                  isArgSymbol(block->parentSymbol) ||
                  isShadowVarSymbol(block->parentSymbol));
-      fnBlock = true;
       BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
       if (inFnInstantiationPoint && !inFnInstantiationPoint->parentSymbol) {
         INT_FATAL(inFn, "instantiation point not in tree\n"
