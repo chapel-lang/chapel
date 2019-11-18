@@ -158,7 +158,8 @@ static void getVisibleFunctions(const char*           name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
-                                Vec<FnSymbol*>&       visibleFns);
+                                Vec<FnSymbol*>&       visibleFns,
+                                bool inUseChain);
 
 void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
@@ -166,14 +167,15 @@ void getVisibleFunctions(const char*      name,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
-  getVisibleFunctions(name, call, block, visited, visibleFns);
+  getVisibleFunctions(name, call, block, visited, visibleFns, false);
 }
 
 static void getVisibleFunctions(const char*           name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
-                                Vec<FnSymbol*>&       visibleFns) {
+                                Vec<FnSymbol*>&       visibleFns,
+                                bool inUseChain) {
 
   //
   // avoid infinite recursion due to modules with mutual uses
@@ -255,7 +257,10 @@ static void getVisibleFunctions(const char*           name,
 
         // Only traverse private use statements if we are in the scope that
         // defines them
-        if (use->isVisible(call)) {
+        // If we're not already in a use chain, by definition we can see private
+        // uses.  If we're in a use chain, assume that private uses are not
+        // available to us
+        if (!inUseChain || !use->isPrivate) {
 
           bool isMethodCall = false;
           if (call->numActuals() >= 2 &&
@@ -277,13 +282,14 @@ static void getVisibleFunctions(const char*           name,
                                       call,
                                       mod->block,
                                       visited,
-                                      visibleFns);
+                                      visibleFns,
+                                      true);
                 } else {
                   getVisibleFunctions(name,
                                       call,
                                       mod->block,
                                       visited,
-                                      visibleFns);
+                                      visibleFns, true);
                 }
               }
             }
@@ -296,11 +302,12 @@ static void getVisibleFunctions(const char*           name,
       BlockStmt* next  = getVisibilityScope(block);
 
       // Recurse in the enclosing block
-      getVisibleFunctions(name, call, next, visited, visibleFns);
+      getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
 
       if (instantiationPt != NULL) {
         // Also look at the instantiation point
-        getVisibleFunctions(name, call, instantiationPt, visited, visibleFns);
+        getVisibleFunctions(name, call, instantiationPt, visited, visibleFns,
+                            inUseChain);
       }
     }
   }
