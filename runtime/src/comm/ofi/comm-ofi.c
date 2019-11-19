@@ -2749,6 +2749,26 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
 static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
+  //
+  // Don't ask the provider to transfer more than it wants to.
+  //
+  if (size > ofi_info->ep_attr->max_msg_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "splitting large PUT %d:%p <= %p, size %zd",
+               (int) node, raddr, addr, size);
+
+    size_t chunkSize = ofi_info->ep_attr->max_msg_size;
+    for (size_t i = 0; i < size; i += chunkSize) {
+      if (chunkSize > size - i) {
+        chunkSize = size - i;
+      }
+      (void) ofi_put(&((const char*) addr)[i], node, &((char*) raddr)[i],
+                     chunkSize);
+    }
+
+    return NULL;
+  }
+
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
@@ -2856,6 +2876,26 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
 static inline
 chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
+  //
+  // Don't ask the provider to transfer more than it wants to.
+  //
+  if (size > ofi_info->ep_attr->max_msg_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "splitting large GET %p <= %d:%p, size %zd",
+               addr, (int) node, raddr, size);
+
+    size_t chunkSize = ofi_info->ep_attr->max_msg_size;
+    for (size_t i = 0; i < size; i += chunkSize) {
+      if (chunkSize > size - i) {
+        chunkSize = size - i;
+      }
+      (void) ofi_get(&((char*) addr)[i], node, &((char*) raddr)[i],
+                     chunkSize);
+    }
+
+    return NULL;
+  }
+
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
