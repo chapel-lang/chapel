@@ -1018,6 +1018,12 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     case RESOLUTION_CANDIDATE_OTHER:
     case RESOLUTION_CANDIDATE_MATCH:
+      if (c.reason == RESOLUTION_CANDIDATE_MATCH &&
+          call->methodTag == true                &&
+          ! fn->hasFlag(FLAG_NO_PARENS)          ) {
+        USR_PRINT(call, "because call is written without parentheses");
+        USR_PRINT(fn, "but candidate function has parentheses");
+      }
       // Print nothing else
       break;
     // No default -> compiler warning
