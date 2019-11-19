@@ -120,8 +120,10 @@ module ChapelUtil {
 
     for i in 0..#arg.argc {
       // FIX ME: leak c_string
-      array[i] = createStringWithNewBuffer(chpl_get_argument_i(local_arg,
+      try! {
+        array[i] = createStringWithNewBuffer(chpl_get_argument_i(local_arg,
                                                                i:int(32)));
+      }
     }
 
     return array;
@@ -134,7 +136,7 @@ module ChapelUtil {
     var flag: c_string = chpl_get_argument_i(local_arg,
                                              (local_arg.argc-2): int(32));
     if (flag != "--chpl-mli-socket-loc") {
-      halt("chpl_get_mli_connection called with unexpected arguments, missing "
+      try! halt("chpl_get_mli_connection called with unexpected arguments, missing "
            + "'--chpl-mli-socket-loc <connection>', instead got " +
            createStringWithNewBuffer(flag));
     }

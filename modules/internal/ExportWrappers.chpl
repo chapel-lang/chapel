@@ -53,7 +53,9 @@ module ExportWrappers {
   }
 
   proc chpl__exportConv(val: c_string, type rt: string): rt {
-    return createStringWithBorrowedBuffer(val);
+    try! {
+      return createStringWithBorrowedBuffer(val);
+    }
   }
 
   //

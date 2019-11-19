@@ -595,7 +595,9 @@ proc locale.cwd(): string throws {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = createStringWithOwnedBuffer(tmp);
+    try! {
+      ret = createStringWithOwnedBuffer(tmp);
+    }
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
@@ -878,8 +880,10 @@ private module GlobWrappers {
   // glob_index wrapper that takes care of casting
   inline proc glob_index_w(glb: glob_t, idx: int): string {
     extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
-    return createStringWithNewBuffer(chpl_glob_index(glb,
+    try! {
+      return createStringWithNewBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(size_t)));
+    }
   }
 
   // globfree wrapper that exists only for symmetry in the routine names
@@ -1184,7 +1188,10 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = createStringWithNewBuffer(ent.d_name());
+      var filename: string;
+      try! {
+        filename = createStringWithNewBuffer(ent.d_name());
+      }
       if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;

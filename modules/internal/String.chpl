@@ -564,7 +564,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) throws {
     return createStringWithOwnedBuffer(s: bufferType, length=length,
                                                       size=length+1);
   }
@@ -620,7 +620,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length) throws {
     return createStringWithNewBuffer(s: bufferType, length=length,
                                                     size=length+1);
   }
@@ -711,15 +711,21 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return createStringWithNewBuffer(
+          try! {
+            return createStringWithNewBuffer(
                   chpl__getInPlaceBufferData(data.shortData), data.len,
                   data.size);
+          }
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return createStringWithOwnedBuffer(localBuff, data.len, data.size);
+          try! {
+            return createStringWithOwnedBuffer(localBuff, data.len, data.size);
+          }
         }
       } else {
-        return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
+        try! {
+          return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
+        }
       }
     }
 
@@ -813,7 +819,9 @@ module String {
     */
     inline proc localize() : string {
       if _local || this.locale_id == chpl_nodeID {
-        return createStringWithBorrowedBuffer(this);
+        try! {
+          return createStringWithBorrowedBuffer(this);
+        }
       } else {
         const x:string = this; // assignment makes it local
         return x;
@@ -2284,8 +2292,9 @@ module String {
     var buffer = bufferAllocExact(2);
     buffer[0] = i;
     buffer[1] = 0;
-    var s = createStringWithOwnedBuffer(buffer, 1, 2);
-    return s;
+    try! {
+      return createStringWithOwnedBuffer(buffer, 1, 2);
+    }
   }
 
   /*
@@ -2297,8 +2306,9 @@ module String {
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
-    var s = createStringWithOwnedBuffer(buffer, mblength, mbsize);
-    return s;
+    try! {
+      return createStringWithOwnedBuffer(buffer, mblength, mbsize);
+    }
   }
 
   //
