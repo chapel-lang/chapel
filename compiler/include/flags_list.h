@@ -261,6 +261,7 @@ symbolFlag( FLAG_NO_INIT , ypr, "no init", "Do not initialize this variable" )
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
+symbolFlag( FLAG_NO_RENAME, npr, "no rename", ncm)
 symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 

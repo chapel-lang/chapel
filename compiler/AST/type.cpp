@@ -569,7 +569,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
-  dtVoid->symbol->addFlag(FLAG_EXTERN);
+  dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtNothing                            = createInternalType ("nothing",  "nothing");
 
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
@@ -622,9 +622,9 @@ void initPrimitiveTypes() {
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
 
   dtNil = createInternalType ("_nilType", "_nilType");
-  dtNil->symbol->addFlag(FLAG_EXTERN);
+  dtNil->symbol->addFlag(FLAG_NO_RENAME);
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
-  gNil->addFlag(FLAG_EXTERN);
+  gNil->addFlag(FLAG_NO_RENAME);
 
   // dtStringC defaults to nil
   dtStringC->defaultValue = gNil;
@@ -808,7 +808,7 @@ void initPrimitiveTypes() {
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
   PrimitiveType* newType = createType(name, cname, false);
-  newType->symbol->addFlag(FLAG_EXTERN);
+  newType->symbol->addFlag(FLAG_NO_RENAME);
   return newType;
 }
 

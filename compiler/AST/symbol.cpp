@@ -209,7 +209,19 @@ bool Symbol::isParameter() const {
 }
 
 bool Symbol::isRenameable() const {
-  return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
+  // we can't rename symbols that we're exporting or that are extern
+  // because the other language will require the name to be as specified.
+  // and we can't rename symbols that say not to.
+  if (hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN) || hasFlag(FLAG_NO_RENAME)) {
+    return false;
+  }
+  // There are some fields named "locale" and "addr" which, if renamed,
+  // broke some compiler-generated accesses to the fields; I couldn't
+  // sort out how to keep them working quickly, so am special-casing.
+  if (strcmp(name, "locale") == 0 || strcmp(name, "addr") == 0) {
+    return false;
+  }
+  return true;
 }
 
 bool Symbol::isRef() {
