@@ -275,7 +275,9 @@ void resolveArgIntent(ArgSymbol* arg) {
       // records/unions.
       bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
       FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-      if (fn->hasFlag(FLAG_EXTERN))
+      // TODO: Consider adding flag for export wrappers instead of this?
+      bool isExportAndLibrary = fLibraryCompile && fn->hasFlag(FLAG_EXPORT);
+      if (fn->hasFlag(FLAG_EXTERN) || isExportAndLibrary)
         // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
         addedTmp = false;
 

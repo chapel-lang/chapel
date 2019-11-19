@@ -23,9 +23,9 @@ module ExportWrappers {
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
   extern record chpl_bytes_wrapper {
-    var isOwned: c_int;
+    var isOwned: int(8);
     var data: c_ptr(c_char);
-    var size: size_t;
+    var size: uint(64);
   }
 
   // May need to call this in one of the conversion routines.
@@ -63,11 +63,11 @@ module ExportWrappers {
   //
   proc chpl__exportConv(ref val: bytes, type rt: chpl_bytes_wrapper): rt {
     var result: chpl_bytes_wrapper;
-    result.isOwned = val.isowned:c_int;
+    result.isOwned = val.isowned:int(8);
     result.data = val.buff:c_ptr(c_char);
     // Assume ownership of the bytes buffer.
     val.isowned = false;
-    result.size = val.size:size_t;
+    result.size = val.size:uint(64);
     return result;
   }
 
