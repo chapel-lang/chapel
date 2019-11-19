@@ -358,7 +358,7 @@ proc dirname(name: string): string {
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
-             value = createStringWithBorrowedBuffer(value_c);
+             value = createStringWithNewBuffer(value_c);
            }
            res += value;
          }
@@ -375,7 +375,7 @@ proc dirname(name: string): string {
          if (h != 1) {
            value = "$" + env_var;
          } else {
-           value = createStringWithBorrowedBuffer(value_c);
+           value = createStringWithNewBuffer(value_c);
          }
          res += value;
          if (ind <= path_p.numBytes) {

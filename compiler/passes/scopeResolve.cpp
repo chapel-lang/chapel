@@ -2265,16 +2265,6 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
 ************************************** | *************************************/
 
 
-static bool isClassDecoratorPrimitive(CallExpr* call) {
-  return (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
-          call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-          call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
-          call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-          call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
-          call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS));
-}
-
 // Find 'unmanaged SomeClass' and 'borrowed SomeClass' and replace these
 // with the compiler's simpler representation (canonical type or unmanaged type)
 void resolveUnmanagedBorrows(CallExpr* call) {

@@ -1,8 +1,0 @@
-bug: nilable anymanaged member with object passed to default initializer -> assertion failure in removeSymbolsWithRemovedTypes()
-#14378
-
-If the thing2 member is declared non-nilable, it compiles and runs fine.
-
-If thing2 is declared with a management class and the same management
-class is applied to the new Thing2() arg, it compiles and runs
-fine. So it seems specific to an anymanaged member.

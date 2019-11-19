@@ -104,4 +104,6 @@ bool isNilableClassType(Type* t);
 
 void convertClassTypesToCanonical();
 
+bool isClassDecoratorPrimitive(CallExpr* call);
+
 #endif

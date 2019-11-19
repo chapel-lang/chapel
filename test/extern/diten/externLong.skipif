@@ -1,0 +1,2 @@
+# This test uses a gnu specific compiler option, so skip for other compilers
+CHPL_TARGET_COMPILER!=gnu
