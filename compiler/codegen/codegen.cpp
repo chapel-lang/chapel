@@ -1237,9 +1237,11 @@ static void protectNameFromC(Symbol* sym) {
   // a TODO (currently in Brad's court).
   //
   ModuleSymbol* symMod = sym->getModule();
+  /*
   if (symMod->modTag == MOD_INTERNAL && isTypeSymbol(sym)) {
     return;
   }
+  */
 
   //
   // If this symbol is exported of an extern symbol then someone
