@@ -85,8 +85,9 @@ module ChapelDebugPrint {
       // yet defined).
       const file_cs : c_string = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
+      var file: string;
       try! {
-        const file = createStringWithNewBuffer(file_cs);
+        file = createStringWithNewBuffer(file_cs);
       }
       const line = __primitive("_get_user_line");
       var str = chpl_debug_stringify((...args));
@@ -99,8 +100,9 @@ module ChapelDebugPrint {
     if chpl__testParFlag && chpl__testParOn {
       const file_cs : c_string = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
+      var file: string;
       try! {
-        const file = createStringWithNewBuffer(file_cs);
+        file = createStringWithNewBuffer(file_cs);
       }
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
