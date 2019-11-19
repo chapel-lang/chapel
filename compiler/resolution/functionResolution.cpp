@@ -3822,7 +3822,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       if (i > nPrintDetails)
         break;
 
-      explainCandidateRejection(info, visibleFns.v[0]);
+      explainCandidateRejection(info, fn);
     }
 
     i = 0;
