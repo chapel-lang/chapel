@@ -622,6 +622,7 @@ void initPrimitiveTypes() {
 
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+  gNil->addFlag(FLAG_EXTERN);
 
   // dtStringC defaults to nil
   dtStringC->defaultValue = gNil;

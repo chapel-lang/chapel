@@ -1227,12 +1227,8 @@ static void protectNameFromC(Symbol* sym) {
   }
 
   //
-  // For now, we only rename our user and standard symbols.  Internal
-  // modules symbols should arguably similarly be protected, to ensure
-  // that we haven't inadvertently used a name that some user library
-  // will; most file-level symbols should be protected by 'chpl_' or
-  // somesuch, but of course local symbols may not be, and can cause
-  // conflicts (at present, a local variable named 'socket' would).
+  // For now, we don't rename internal module type symbols.  They
+  // should arguably similarly be protected.
   // The challenges to handling MOD_INTERNAL symbols in the same way
   // today is that things like chpl_string and uint64_t should not be
   // renamed, and should arguably have FLAG_EXTERN on them; however,
@@ -1241,7 +1237,7 @@ static void protectNameFromC(Symbol* sym) {
   // a TODO (currently in Brad's court).
   //
   ModuleSymbol* symMod = sym->getModule();
-  if (symMod->modTag == MOD_INTERNAL) {
+  if (symMod->modTag == MOD_INTERNAL && isTypeSymbol(sym)) {
     return;
   }
 
