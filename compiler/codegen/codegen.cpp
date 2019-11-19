@@ -2088,6 +2088,7 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
   return (shouldPassRef &&
           !alreadyRef &&
           !fn->hasFlag(FLAG_EXTERN) &&
+          // TODO: Consider flag for export wrappers instead of this.
           (fLibraryCompile && !fn->hasFlag(FLAG_EXPORT)) &&
           !arg->hasFlag(FLAG_NO_CODEGEN));
 }
