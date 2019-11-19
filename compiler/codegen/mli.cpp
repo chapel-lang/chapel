@@ -336,7 +336,6 @@ std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
   gen += this->genNewDecl("uint64_t", "bytes");
   gen += this->genNewDecl("void*", "buffer");
   gen += this->genNewDecl("int64_t", "mem_err");
-  gen += "mem_err = 0;\n";
 
   if (out) {
     // Compute and push length of string.
@@ -407,7 +406,6 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
 
   // Generate a temporary to hold memory errors.
   gen += this->genNewDecl("int64_t", "mem_err");
-  gen += "mem_err = 0;\n";
 
   // Push/pull the "isOwned" field.
   gen += this->genSocketCall("skt", fieldIsOwned, out);
@@ -890,10 +888,17 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
     }
   }
 
-  // Also cleanup the return value if required.    
+  //
+  // TODO: As it stands today, the server leaks memory allocated for return
+  // values. This is _obviously_ not ideal, however uncommenting the
+  // below code causes tests related to `c_string` to fail with a segfault.
+  // So for now, knowingly leak the memory.
+  //
+  /*
   if (!hasVoidReturnType && this->isTypeRequiringAlloc(fn->retType)) {
     gen += this->genMemCleanup(fn->retType, "result");
   }
+  */
 
   return gen;
 }
