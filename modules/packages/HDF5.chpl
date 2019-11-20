@@ -3790,7 +3790,7 @@ module HDF5 {
 
      The file written by this function can be read in parallel with the
      function `hdf5ReadDistributedArray`. The write and read operations
-      can use arrays distributed over different numbers of locales.
+     can use arrays distributed over different numbers of locales.
    */
   proc hdf5WriteDistributedArray(A: [], filename: string, dsetName: string) {
     use MPI, C_HDF5, BlockDist;
