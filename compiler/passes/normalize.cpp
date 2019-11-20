@@ -825,7 +825,9 @@ static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt*
   Expr* last = stmt->body.tail->remove();
   Symbol* localResult = NULL;
 
-  if (isCallExpr(last) || isIfExpr(last) || isUnresolvedSymExpr(last)) {
+  if (SymExpr* se = toSymExpr(last)) {
+    localResult = se->symbol();
+  } else {
     localResult = newTemp();
     localResult->addFlag(FLAG_MAYBE_TYPE);
     localResult->addFlag(FLAG_MAYBE_PARAM);
@@ -834,10 +836,6 @@ static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt*
 
     stmt->body.insertAtTail(new DefExpr(localResult));
     stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, localResult, last));
-  } else if (SymExpr* se = toSymExpr(last)) {
-    localResult = se->symbol();
-  } else {
-    INT_FATAL("Unexpected AST node at the end of IfExpr branch");
   }
 
   stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, result, new CallExpr(PRIM_LOGICAL_FOLDER, cond, localResult)));
