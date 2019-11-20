@@ -1252,6 +1252,13 @@ static void protectNameFromC(Symbol* sym) {
     return;
   }
 
+  // Don't rename fields
+  if (isVarSymbol(sym)) {
+    if (isAggregateType(sym->defPoint->parentSymbol->type)) {
+      return;
+    }
+  }
+
   //
   // Walk from the symbol up to its enclosing module.  If the symbol
   // is declared within an extern declaration, we should preserve its
