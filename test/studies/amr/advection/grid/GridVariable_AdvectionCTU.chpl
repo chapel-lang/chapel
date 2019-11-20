@@ -1,4 +1,4 @@
-use GridVariable_def;
+public use GridVariable_def;
 
 
 //|\""""""""""""""""""""""""""""""""""""""|\

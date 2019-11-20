@@ -23,6 +23,7 @@ use ChapelUtil;
 use CommDiagnostics;
 use ChapelLocks;
 use ChapelDebugPrint;
+private use HaltWrappers;
 
 //
 // These flags are used to output debug information and run extra

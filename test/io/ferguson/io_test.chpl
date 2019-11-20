@@ -1,5 +1,6 @@
 use IO;
 
+config type dataType = string;
 config const noisy = false;
 
 proc testio(param typ:iokind, style:iostyle, x)
@@ -65,14 +66,14 @@ proc test_readlines()
   // try reading it in a few ways.
   {
     var ch = f.reader();
-    var line:string;
+    var line:dataType;
     var got:bool;
     got = ch.readline(line);
     if noisy then writeln("got ", got, " line ", line);
-    assert( got && line == "a b\n" );
+    assert( got && line == "a b\n":dataType );
     got = ch.readline(line);
     if noisy then writeln("got ", got, " line ", line);
-    assert( got && line == "c d\n" );
+    assert( got && line == "c d\n":dataType );
     got = ch.readline(line);
     if noisy then writeln("got ", got, " line ", line);
     assert( !got );

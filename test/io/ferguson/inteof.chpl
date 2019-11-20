@@ -1,3 +1,5 @@
+use IO;
+
 config const filename = "inteof-test.nums";
 config const verbose = false;
 const sizes = ( 1, 100, 1000, 10000, 100000, 1000000 );

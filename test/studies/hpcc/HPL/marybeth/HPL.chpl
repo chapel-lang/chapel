@@ -1,6 +1,7 @@
 use Init;
 use FactorSolve;
 use Time;
+use IO;
 
 config var inputfile = "HPL.dat";
 config var writeTimingInfo = false;

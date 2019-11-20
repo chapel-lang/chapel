@@ -11,11 +11,6 @@
 #ifndef _GASNET_RATOMIC_FWD_H
 #define _GASNET_RATOMIC_FWD_H
 
-// gemini should be using amref version of this file
-#if !GASNET_CONDUIT_ARIES
-#error "Improper use of aries-conduit/gasnet_ratomic_fwd.h"
-#endif
-
 // GNI RMA of naturally aligned 4 and 8 byte values are "tools safe" (free of
 // word-tearing and intermediate values).  So long as the Tools have those same
 // properties, we allow the AM-based atomics to use RMA Put and Get for the

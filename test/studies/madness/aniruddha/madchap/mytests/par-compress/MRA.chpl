@@ -17,10 +17,10 @@
 
 use Math;
 use Tensor;
-use FTree;
+public use FTree;
 use Quadrature;
 use TwoScale;
-use AnalyticFcn;
+public use AnalyticFcn;
 
 config const verbose = false;
 config const debug   = false;

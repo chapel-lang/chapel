@@ -1,5 +1,6 @@
 // This program tests the blockLU routine in the MatrixOps module.
 use MatrixOps;
+use IO;
 
 config const inputfile = "Amagic10.dat";
 

@@ -1,6 +1,7 @@
 use Histogram;
 use Random;
 use Time;
+use IO;
 
 // Test flags
 config const isTest=false;

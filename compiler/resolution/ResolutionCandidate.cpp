@@ -58,12 +58,21 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 bool ResolutionCandidate::isApplicable(CallInfo& info) {
   bool retval = false;
 
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
+  TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
+  if (tagResult == TGR_TAGGING_ABORTED)
+    return false;
+
+  if (! fn->isGeneric()) {
     retval = isApplicableConcrete(info);
   } else {
     retval = isApplicableGeneric (info);
   }
 
+  // Note: for generic instantiations, this code will be executed twice.
+  // This is because by the time the generic branch returns, its function will
+  // have been replaced by the instantiation, which will have already had this
+  // function called on it.  However, reducing the scope for this operation does
+  // not seem to have a noticeable impact.
   if (retval && fn->retExprType != NULL && fn->retType == dtUnknown) {
     resolveSpecifiedReturnType(fn);
   }
@@ -183,7 +192,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       while (formal != NULL) {
         if (formal->variableExpr) {
-          return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
+          return fn->isGeneric();
         }
 
         if (formalIdxToActual[j] == NULL) {
@@ -202,7 +211,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       // Fail if there are too many unnamed actuals.
       if (match == false) {
-        if (fn->hasFlag(FLAG_GENERIC) == false) {
+        if (! fn->isGeneric()) {
           failingArgument = info.actuals.v[i];
           reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
           return false;
@@ -1009,6 +1018,12 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     case RESOLUTION_CANDIDATE_OTHER:
     case RESOLUTION_CANDIDATE_MATCH:
+      if (c.reason == RESOLUTION_CANDIDATE_MATCH &&
+          call->methodTag == true                &&
+          ! fn->hasFlag(FLAG_NO_PARENS)          ) {
+        USR_PRINT(call, "because call is written without parentheses");
+        USR_PRINT(fn, "but candidate function has parentheses");
+      }
       // Print nothing else
       break;
     // No default -> compiler warning

@@ -21,7 +21,8 @@
 //
 pragma "export init"
 module ChapelStandard {
-  use startInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  private use startInitCommDiags;
+  // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
   use CString;
@@ -52,7 +53,6 @@ module ChapelStandard {
   use LocaleTree;
   use DefaultAssociative;
   use DefaultSparse;
-  use DefaultOpaque;
   use ChapelTaskID;
   use ChapelTaskTable;
   use MemTracking;
@@ -60,12 +60,12 @@ module ChapelStandard {
   use ChapelError;
   use ChapelTaskData;
   use ChapelSerializedBroadcast;
-  use ExternalString;
+  use ExportWrappers;
 
   // Standard modules.
   use Assert;
   use Types;
   use Math;
 
-  use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  private use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

@@ -157,6 +157,22 @@ static const char* getClassKindSpecifier(CallExpr* call) {
   if (call->isNamed("_shared"))
     return "shared";
 
+  if (call->isPrimitive(PRIM_NEW) && call->numActuals() >= 1) {
+    if (NamedExpr* ne = toNamedExpr(call->get(1))) {
+      if (ne->name == astr_chpl_manager) {
+        Type* t = ne->actual->typeInfo();
+        if (t == dtBorrowed)
+          return "borrowed";
+        if (t == dtUnmanaged)
+          return "unmanaged";
+        if (t == dtOwned)
+          return "owned";
+        if (t == dtShared)
+          return "shared";
+      }
+    }
+  }
+
   return NULL;
 }
 
@@ -164,13 +180,27 @@ static void checkManagedClassKinds(CallExpr* call) {
   const char* outer = getClassKindSpecifier(call);
 
   if (outer != NULL) {
-    CallExpr* innerCall = toCallExpr(call->get(1));
+    Expr* inner = call->get(1);
+    // skip management decorator if present
+    if (NamedExpr* ne = toNamedExpr(inner))
+      if (ne->name == astr_chpl_manager)
+        inner = call->get(2);
+
+    CallExpr* innerCall = toCallExpr(inner);
     if (innerCall) {
       const char* inner = getClassKindSpecifier(innerCall);
       if (inner != NULL) {
         USR_FATAL_CONT(call,
                        "Type expression uses multiple class kinds: %s %s",
                        outer, inner);
+      }
+    }
+
+    if (call->numActuals() >= 1) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->symbol() == gUninstantiated) {
+          USR_FATAL(call, "Please use %s class? instead of %s?", outer, outer);
+        }
       }
     }
   }
@@ -337,7 +367,11 @@ checkFunction(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
   if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
-    USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    if (fn->thisTag == INTENT_TYPE) {
+      USR_FATAL_CONT(fn, "Missing type for secondary type method");
+    } else {
+      USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    }
   }
 
 #if 0 // Do not issue the warning yet.

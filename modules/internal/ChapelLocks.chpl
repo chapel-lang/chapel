@@ -21,7 +21,8 @@
  * Collection of mutexes/locks.
  */
 module ChapelLocks {
-  use MemConsistency;
+  private use Atomics, ChapelBase;
+  private use MemConsistency;
   /*
    * Local processor atomic spinlock. Intended for situations with minimal
    * contention or very short critical sections.

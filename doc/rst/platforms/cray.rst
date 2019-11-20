@@ -658,7 +658,7 @@ segments, though even then its performance will rarely match that of the
 ugni communication layer.  The relevant configurations are::
 
   CHPL_COMM=gasnet
-    CHPL_COMM_SUBSTRATE=gemini (for XE or XK) or aries (for XC)
+    CHPL_COMM_SUBSTRATE=aries (for XC)
     CHPL_GASNET_SEGMENT=fast or large
 
 In these configurations the heap is created with a fixed size at the
@@ -731,12 +731,12 @@ Known Constraints and Bugs
   running your Chapel program.
 
 * The amount of memory available to a Chapel program running over
-  GASNet with the gemini and aries conduits is allocated at program
-  start up.  The default memory segment size may be too high on some
-  platforms, resulting in an internal Chapel error or a GASNet
-  initialization error such as::
+  GASNet with the aries conduit is allocated at program start up.  The
+  default memory segment size may be too high on some platforms,
+  resulting in an internal Chapel error or a GASNet initialization
+  error such as::
 
-     node 1 log gasnetc_init_segment() at $CHPL_HOME/third-party/gasnet/gasnet-src/gemini-conduit/gasnet_gemini.c:<line#>: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
+     node 1 log gasnetc_init_segment() at $CHPL_HOME/third-party/gasnet/gasnet-src/aries-conduit/gasnet_aries.c:<line#>: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
 
   If your Chapel program exits with such an error, try setting the
   environment variable ``CHPL_RT_MAX_HEAP_SIZE`` or ``GASNET_MAX_SEGSIZE`` to a

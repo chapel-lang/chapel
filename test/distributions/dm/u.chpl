@@ -2,6 +2,8 @@
 
 use DimensionalDist2D;
 
+private use IO;
+
 
 /// label the output with "phases" //////////////////////////////////////////
 

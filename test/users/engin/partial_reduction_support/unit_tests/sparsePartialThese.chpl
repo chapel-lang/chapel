@@ -5,11 +5,20 @@ use templates;
 use LayoutCS;
 
 config const N = 10;
-config type layoutType = DefaultDist;
 
-const layout = new unmanaged layoutType();
 const ParentDom = {0..#N, 0..#2*N};
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
+
+enum layoutTypes {coo, csr, csc};
+config param layoutType = layoutTypes.coo;
+
+var csrDom: sparse subdomain(ParentDom) dmapped CS(compressRows=true);
+var cooDom: sparse subdomain(ParentDom);
+
+var SparseDom = if layoutType == layoutTypes.csr then 
+                  csrDom
+                else
+                  cooDom;
+
 var SparseMat: [SparseDom] int;
 
 // create cool set of sparse indices

@@ -33,6 +33,12 @@ enum RetTag {
   RET_TYPE
 };
 
+enum TagGenericResult {
+  TGR_ALREADY_TAGGED,
+  TGR_NEWLY_TAGGED,
+  TGR_TAGGING_ABORTED
+};
+
 class FnSymbol : public Symbol {
 public:
   // each formal is an ArgSymbol, but the elements are DefExprs
@@ -154,7 +160,7 @@ public:
 
   CallExpr*                  singleInvocation()                          const;
 
-  bool                       tagIfGeneric(SymbolMap* map = NULL);
+  TagGenericResult           tagIfGeneric(SymbolMap* map = NULL, bool abortOK = false);
 
   bool                       isNormalized()                              const;
   void                       setNormalized(bool value);
@@ -175,6 +181,11 @@ public:
   bool                       isPostInitializer()                         const;
   bool                       isDefaultInit()                             const;
   bool                       isCopyInit()                                const;
+
+  bool                       isGeneric();
+  bool                       isGenericIsValid();
+  void                       setGeneric(bool generic);
+  void                       clearGeneric();
 
   AggregateType*             getReceiver()                               const;
 
@@ -197,10 +208,12 @@ public:
 private:
   virtual std::string        docsDirective();
 
-  int                        hasGenericFormals(SymbolMap* map)           const;
+  bool                       hasGenericFormals(SymbolMap* map)           const;
 
   bool                       mIsNormalized;
   bool                       _throwsError;
+  bool                       mIsGeneric;
+  bool                       mIsGenericIsValid;
 };
 
 const char*                     toString(FnSymbol* fn);

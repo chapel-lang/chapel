@@ -90,10 +90,12 @@ module CPtr {
       return __primitive("array_get", this, 0);
     }
     /* Print this pointer */
-    inline proc writeThis(ch) {
+    inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
   }
+
+  private use IO;
 
   /*
   This class represents a C array with fixed size.  A variable of type c_array
@@ -183,7 +185,7 @@ module CPtr {
 
 
     /* Print the elements */
-    proc writeThis(ch) {
+    proc writeThis(ch) throws {
       ch <~> new ioLiteral("[");
       var first = true;
       for i in 0..#size {

@@ -4,6 +4,8 @@ use AccumStencilDist;
 use Util;
 use Simulation;
 
+private use IO;
+
 class InterpolationObject {
   var n      : int;           // number of values in table
   var x0     : real;          // starting ordinate range

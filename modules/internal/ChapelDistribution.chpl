@@ -19,8 +19,9 @@
 
 module ChapelDistribution {
 
-  private use ChapelArray, ChapelLocks, ChapelRange;
-  use LinkedLists;
+  private use ChapelArray, ChapelRange;
+  public use ChapelLocks; // maybe make private when fields can be private?
+  public use LinkedLists; // maybe make private when fields can be private?
 
   //
   // Abstract distribution class
@@ -116,10 +117,6 @@ module ChapelDistribution {
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
     where isEnumType(idxType) {
       compilerError("enumerated domains not supported by this distribution");
-    }
-
-    proc dsiNewOpaqueDom(type idxType, param parSafe: bool) {
-      compilerError("opaque domains not supported by this distribution");
     }
 
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
@@ -652,17 +649,6 @@ module ChapelDistribution {
 
   }
 
-  class BaseOpaqueDom : BaseDom {
-    proc deinit() {
-      // this is a bug workaround
-    }
-
-    proc dsiClear() {
-      halt("clear not implemented for this distribution");
-    }
-
-  }
-
   //
   // Abstract array class
   //
@@ -1057,8 +1043,7 @@ module ChapelDistribution {
 
   proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
     where isSubtype(_to_borrowed(t),BaseSparseDom) ||
-          isSubtype(_to_borrowed(t),BaseAssociativeDom) ||
-          isSubtype(_to_borrowed(t),BaseOpaqueDom)
+          isSubtype(_to_borrowed(t),BaseAssociativeDom)
   {
     //
     // BLC: It's tempting to do a clear + add here, but because

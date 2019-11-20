@@ -1,4 +1,5 @@
 module Histogram {
+  private use IO;
 
   // This allows us to turn off the atomic histogram add
   // to test the overhead we're getting from it.

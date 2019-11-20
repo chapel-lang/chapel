@@ -817,6 +817,8 @@ proc DimensionalDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 
 // not part of DSI
 proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
+  use IO;
+
   _traceddd(this, ".dsiSetIndices", newRanges);
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
@@ -972,6 +974,10 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
   const locAdesc = this.localAdescs[l1,l2];
 //writeln("locAdesc.myStorageArr on ", locAdesc.myStorageArr.locale.id);
   return locAdesc.myStorageArr(i1,i2);
+}
+
+proc DimensionalArr.dsiBoundsCheck(i: dom.indexT) {
+  return allocDom.dsiMember(i);
 }
 
 //== writing

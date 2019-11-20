@@ -34,6 +34,7 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
+#include "scopeResolve.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -970,7 +971,9 @@ static void processSyntacticDistributions(CallExpr* call) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
           if (isDistClass(canonicalClassType(ts->type)) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW,
-                new CallExpr(PRIM_TO_UNMANAGED_CLASS, distCall->remove()));
+                new NamedExpr(astr_chpl_manager,
+                              new SymExpr(dtUnmanaged->symbol)),
+                distCall->remove());
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
@@ -983,11 +986,13 @@ static void processSyntacticDistributions(CallExpr* call) {
 }
 
 /* Find patterns like
-     (new (call <manager> (call ClassType <init-args>)))
-     ... where <manager> might be _owned _to_unmanaged _shared
+     (new _chpl_manager=<manager> (call ClassType <init-args>))
+     ... where <manager> might be dtOwned, dtBorrowed, etc
 
    and replace them with
-     (new (call ClassType init-args _chpl_manager=<manager>)))
+     (new (call ClassType <init-args> _chpl_manager=<manager>)))
+
+   Also handles some patterns involving ? / PRIM_TO_NILABLE_CLASS.
 
    Here the "manager" indicates to function resolution whether
    the new pointer should be:
@@ -1002,108 +1007,96 @@ static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
   bool argListError = false;
 
-  bool nilable = false;
+  bool makeNilable = false;
+  NamedExpr* managerArg = NULL;
 
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
-    if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
-      if (callManager->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-          callManager->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
-        if (CallExpr* sub = toCallExpr(callManager->get(1))) {
-          nilable = true;
-          sub->remove();
-          CallExpr* c = new CallExpr(dtOwned->symbol, sub);
-          callManager->replace(c);
-          callManager = c;
+    // Transform (new _chpl_manager=_ (call _)) into
+    //           (new (call _ _chpl_manager=_))
+    // This also asserts that the call expr exists in this case.
+    if (NamedExpr* ne = toNamedExpr(newCall->get(1))) {
+      if (ne->name == astr_chpl_manager) {
+        managerArg = ne;
+
+        CallExpr* subCall = toCallExpr(newCall->get(2));
+        // Find inner call in the event of a to-nilable e.g. for
+        //   new owned C()?
+        if (subCall != NULL) {
+          CallExpr* callClass = NULL;
+          if (subCall->numActuals() >= 1)
+            callClass = toCallExpr(subCall->get(1));
+          if (subCall->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+              subCall->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+            makeNilable = true;
+            subCall->replace(callClass->remove());
+            subCall = callClass;
+          }
+        }
+
+        if (subCall != NULL) {
+          subCall->insertAtTail(ne->remove());
+        } else {
+          USR_FATAL_CONT(newCall,
+                         "type in 'new' expression is missing its argument list");
         }
       }
+    }
 
-      if (callManager->numActuals() == 1) {
-        if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
-          if (callClass->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-              callClass->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
-            if (CallExpr* sub = toCallExpr(callClass->get(1))) {
-              nilable = true;
-              sub->remove();
-              callClass->replace(sub);
-              callClass = sub;
-            }
-          }
-          if (!callClass->isPrimitive() &&
-              !isUnresolvedSymExpr(callClass->baseExpr)) {
-            bool isunmanaged = callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS)
-              || callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED);
-            bool isborrowed = callManager->isPrimitive(PRIM_TO_BORROWED_CLASS)
-              || callManager->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED);
-            bool isowned = false;
-            bool isshared = false;
-            if (SymExpr* se = toSymExpr(callManager->baseExpr)) {
-              if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-                Type* ct = canonicalDecoratedClassType(ts->type);
-                if (ct == dtOwned)
-                  isowned = true;
-                else if (ct == dtShared)
-                  isshared = true;
-                else
-                  INT_ASSERT(!callManager->isNamed("_owned"));
-              }
-            }
-
-            if (SymExpr* baseSe = toSymExpr(callClass->baseExpr))
-              if (TypeSymbol* ts = toTypeSymbol(baseSe->symbol()))
-                if (isNilableClassType(ts->type))
-                  nilable = true;
-
-            if (isunmanaged || isborrowed || isowned || isshared) {
-              callClass->remove();
-              callManager->remove();
-
-              Expr* replace = new CallExpr(PRIM_NEW, callClass);
-
-              Expr* manager = NULL;
-              if (isunmanaged) {
-                manager = new SymExpr(dtUnmanaged->symbol);
-              } else if (isborrowed) {
-                manager = new SymExpr(dtBorrowed->symbol);
-              } else {
-                manager = callManager->baseExpr->copy();
-              }
-              // Adjust the manager type for nilable
-              if (nilable) {
-                if (SymExpr* managerSe = toSymExpr(manager)) {
-                  if (TypeSymbol* ts = toTypeSymbol(managerSe->symbol())) {
-                    Type* t = ts->type;
-                    if (isManagedPtrType(t))
-                      t = getDecoratedClass(t, CLASS_TYPE_MANAGED_NILABLE);
-                    else if (t == dtBorrowed)
-                      t = dtBorrowedNilable;
-                    else if (t == dtUnmanaged)
-                      t = dtUnmanagedNilable;
-                    manager = new SymExpr(t->symbol);
-                  }
-                }
-              }
-
-              callClass->insertAtTail(new NamedExpr(astr_chpl_manager, manager));
-
-              newCall->replace(replace);
-            }
-          }
-        } else if (isSymExpr(callManager->get(1)) &&
-                   (callManager->isNamed("_owned") ||
-                    callManager->isNamed("_shared") ||
-                    callManager->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-                    callManager->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
-                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-                    callManager->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))) {
-          SymExpr* se = toSymExpr(callManager->get(1));
-          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-            argListError = true;
+    // Handle the case of e.g. new C(int)? aka (new (call to-nilable (call C)))
+    // In that event, we need to indicate to resolution to create
+    // a nilable class.
+    if (managerArg == NULL) {
+      if (CallExpr* callPrim = toCallExpr(newCall->get(1))) {
+        if (callPrim->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+            callPrim->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+          if (CallExpr* sub = toCallExpr(callPrim->get(1))) {
+            makeNilable = true;
+            sub->remove();
+            TypeSymbol* ts = dtAnyManagementNilable->symbol;
+            managerArg = new NamedExpr(astr_chpl_manager, new SymExpr(ts));
+            callPrim->replace(sub);
+            sub->insertAtTail(managerArg);
           }
         }
       }
-    } else {
-      if (newCall->numActuals() == 1) {
-        argListError = true;
+    }
+
+    if (makeNilable) {
+      INT_ASSERT(managerArg != NULL);
+      // Adjust the manager to the nilable variant
+      SymExpr* managerSe = toSymExpr(managerArg->actual);
+      INT_ASSERT(managerSe);
+      TypeSymbol* ts = toTypeSymbol(managerSe->symbol());
+      INT_ASSERT(ts);
+      Type* t = ts->type;
+      if (isManagedPtrType(t))
+        t = getDecoratedClass(t, CLASS_TYPE_MANAGED_NILABLE);
+      else if (t == dtBorrowed)
+        t = dtBorrowedNilable;
+      else if (t == dtUnmanaged)
+        t = dtUnmanagedNilable;
+      managerSe->setSymbol(t->symbol);
+    }
+
+    if (newCall->numActuals() == 1 && !isCallExpr(newCall->get(1))) {
+      argListError = true;
+    }
+    if (newCall->numActuals() >= 1) {
+      if (CallExpr* subCall = toCallExpr(newCall->get(1))) {
+        if (subCall->isNamedAstr(astrSdot)) {
+          USR_FATAL_CONT(newCall,
+                         "Please use parentheses to disambiguate "
+                         "dot expression after new");
+        } else {
+          UnresolvedSymExpr* baseSe = toUnresolvedSymExpr(subCall->baseExpr);
+          if (baseSe != NULL) {
+            // We should have SymExprs for types by now
+            // A call that is not resolved, as in new (t())(),
+            //  would appear as a nested CallExpr.
+            USR_FATAL_CONT(newCall,
+                           "Attempt to 'new' a function or undefined symbol");
+          }
+        }
       }
     }
   }
@@ -3186,6 +3179,8 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
 static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
 
+static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal);
+
 static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                ArgSymbol* formal);
 
@@ -3207,6 +3202,7 @@ static void fixupQueryFormals(FnSymbol* fn) {
         replaceUsesWithPrimTypeof(fn, formal);
 
       } else if (isQueryForGenericTypeSpecifier(formal) == true) {
+        fixDecoratedTypePrimitives(fn, formal);
         expandQueryForGenericTypeSpecifier(fn, formal);
       } else if (SymExpr* se = toSymExpr(tail)) {
         if (se->symbol() == gUninstantiated) {
@@ -3308,11 +3304,21 @@ static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
   return retval;
 }
 
+static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal) {
+  std::vector<CallExpr*> calls;
+
+  collectCallExprs(formal->typeExpr, calls);
+
+  for_vector(CallExpr, call, calls) {
+    resolveUnmanagedBorrows(call);
+  }
+}
+
 static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                std::vector<SymExpr*>& symExprs,
                                                ArgSymbol* formal,
                                                CallExpr* call,
-                                               BaseAST* queried);
+                                               Expr* queried);
 
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call);
 
@@ -3327,7 +3333,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   collectSymExprs(fn, symExprs);
 
-  BaseAST* queried = formal;
+  Expr* queried = new SymExpr(formal);
 
   // Queries access the 1st tuple element for varargs functions
   if (formal->variableExpr) {
@@ -3359,7 +3365,10 @@ static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
   if (call->isNamed("_build_tuple") || call->isNamed("*")) {
     INT_ASSERT(!call->isPrimitive(PRIM_MULT));
     return dtTuple->symbol;
-  } else if (call->isNamed("_to_unmanaged") ||
+  }
+
+  // TODO: remove the below code
+  else if (call->isNamed("_to_unmanaged") ||
              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
     return dtUnmanaged->symbol;
@@ -3399,8 +3408,12 @@ static CallExpr* makePrimQuery(BaseAST* a, BaseAST* b=NULL) {
     return new CallExpr(PRIM_QUERY, aExpr, bExpr);
 }
 
+// call - the call containing something
 // query - the just-created PRIM_QUERY to add to the ast somewhere
+//         (not yet in the AST)
 // actual - the actual argument to the nested type constructor
+//
+// symExprs are the symExprs referring to e.g. t for ?t we might replace
 static void expandQueryForActual(FnSymbol*  fn,
                                  std::vector<SymExpr*>& symExprs,
                                  ArgSymbol* formal,
@@ -3414,13 +3427,13 @@ static void expandQueryForActual(FnSymbol*  fn,
       replaceQueryUses(formal, def, query, symExprs);
     } else if (SymExpr* se = toSymExpr(actual)) {
       if (se->symbol() == gUninstantiated) {
-        se->replace(query->copy());
+        // No need for further action here
       } else {
         TypeSymbol* ts = toTypeSymbol(se->symbol());
         INT_ASSERT(ts);
         Expr* subtype = new SymExpr(ts);
         addToWhereClause(fn, formal,
-                         new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                         new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                       subtype, query->copy()));
       }
     } else {
@@ -3438,7 +3451,7 @@ static void expandQueryForActual(FnSymbol*  fn,
     }
     // Add check that actual type satisfies
     addToWhereClause(fn, formal,
-                     new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
+                     new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                   subtype, query->copy()));
     // Recurse to handle any nested DefExprs
     expandQueryForGenericTypeSpecifier(fn, symExprs, formal,
@@ -3451,12 +3464,13 @@ static void expandQueryForActual(FnSymbol*  fn,
 }
 
 // call - the type constructor or build tuple call currently being considered
-// queryToCopy - a PRIM_QUERY formal, ... recording the path to the current call
+// queried - a PRIM_QUERY formal, ... recording the path to the current call
+//           but not in the AST (it should be copied)
 static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                std::vector<SymExpr*>& symExprs,
                                                ArgSymbol* formal,
                                                CallExpr* call,
-                                               BaseAST* queried) {
+                                               Expr* queried) {
 
   int position = 1;
   bool isTuple = false;
@@ -3475,62 +3489,52 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   } else if (call->isNamed("*")) {
     // it happens to be that 1st actual == size so that will be checked below
-    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried));
-  } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-             call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
+    addToWhereClause(fn, formal,
+                     new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried->copy()));
+  }
 
+  // Fix type constructor calls to owned e.g.
+  // (call dtOwned SomeGenericClass( arg ))
+  // This is relant to test/functions/ferguson/query/owned-generic
+  if (call->baseExpr != NULL) {
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+        if (isManagedPtrType(ts->type)) {
+          Type* manager = getManagedPtrManagerType(ts->type);
 
-    bool borrowed = call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-                    call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED);
-    Type* parentType = borrowed?dtBorrowed:dtUnmanaged;
+          // Where clause checks that it has the right manager
+          addToWhereClause(fn, formal,
+                           new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
+                                        manager->symbol, queried->copy()));
 
-    // Check that whatever it has right borrow / unmanaged nature
-    addToWhereClause(fn, formal, new CallExpr(PRIM_IS_SUBTYPE_ALLOW_VALUES,
-                                              parentType->symbol, queried));
-
-    Type* theType = NULL;
-    // Match on an inner call to a TypeSymbol
-    CallExpr* subCall = toCallExpr(call->get(1));
-    if (subCall != NULL)
-      if (SymExpr* subBase = toSymExpr(subCall->baseExpr))
-        if (TypeSymbol* ts = toTypeSymbol(subBase->symbol()))
-          theType = ts->type;
-
-    if (theType == NULL)
-      // pattern of call to TypeSymbol not found, stop here
-      return;
-
-    // Only work with theType being unmanaged or class type
-    // e.g. if it's a record, we just ignore the PRIM_TO_...
-    if (borrowed || !isClassLike(theType)) {
-      // For nested calls in PRIM_TO_BORROWED_CLASS,
-      // proceed as if the PRIM_TO_BORROWED_CLASS wasn't
-      // there. That's because the borrowed class is the
-      // 'canonical' class representation used in the compiler.
-
-      // This branch also applies to say `unmanaged MyRecord(?t)`
-      call = toCallExpr(call->get(1));
-
-    } else {
-      // For nested calls in PRIM_TO_UNMANAGED_CLASS, where the
-      // called type is a class or an unmanaged class.
-      Type* t = canonicalDecoratedClassType(theType);
-      AggregateType* at = toAggregateType(t);
-      INT_ASSERT(at);
-
-      // Replace PRIM_TO_UNMANAGED( MyClass( Def ?t ) )
-      // with
-      // unmanaged MyClass ( Def ?t )
-
-      // This can't be applied generally in scopeResolve b/c
-      // of the way type constructors are currently normalized.
-
-      Type* unm = at->getDecoratedClass(CLASS_TYPE_UNMANAGED);
-      subCall->baseExpr->replace(new SymExpr(unm->symbol));
-      call->replace(subCall->remove());
-      call = subCall;
+          if (call->numActuals() == 1) {
+            if (SymExpr* se2 = toSymExpr(call->get(1))) {
+              if (TypeSymbol* ts2 = toTypeSymbol(se2->symbol())) {
+                // e.g. owned MyGenericClass
+                ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+                if (isNilableClassType(ts2->type))
+                  d = CLASS_TYPE_GENERIC_NILABLE;
+                Type* genericMgmt = getDecoratedClass(ts2->type, d);
+                CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
+                                           genericMgmt->symbol, queried);
+                addToWhereClause(fn, formal, c);
+                // Nothing else to do here since there is no nested call.
+                return;
+              }
+            } else if (CallExpr* subCall = toCallExpr(call->get(1))) {
+              if (SymExpr* subBase = toSymExpr(subCall->baseExpr)) {
+                if (TypeSymbol* ts = toTypeSymbol(subBase->symbol())) {
+                  if (isClassLike(ts->type)) {
+                    // e.g. owned SomeClass( arg )
+                    // Continue on using call for anything else
+                    call = subCall;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 

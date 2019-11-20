@@ -505,7 +505,7 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Stencil.writeThis(x) {
+proc Stencil.writeThis(x) throws {
   x <~> "Stencil\n";
   x <~> "-------\n";
   x <~> "distributes: " <~> boundingBox <~> "\n";
@@ -1086,11 +1086,6 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
       const myLocArr = this.myLocArr!; // indicate it is not nil
-      if boundsChecking {
-        if !dom.wholeFluff.contains(i) {
-          halt("array index out of bounds: ", i);
-        }
-      }
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableStencilLazyRAD {
         if myLocArr.locRAD == nil {
@@ -1151,6 +1146,9 @@ inline proc StencilArr.dsiAccess(i: idxType...rank) const ref
 where shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 
+inline proc StencilArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.wholeFluff.contains(i);
+}
 
 iter StencilArr.these() ref {
   for i in dom do

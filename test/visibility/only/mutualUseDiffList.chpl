@@ -1,7 +1,7 @@
-// Ensures that infinite recursion doesn't occur when two modules use each
-// other, one with an 'only' list and the other with an 'except' list.
+// Ensures that infinite recursion doesn't occur when two modules publicly use
+// each other, one with an 'only' list and the other with an 'except' list.
 module A {
-  use B only b;
+  public use B only b;
 
   var a = 15 + 3i;
 
@@ -11,7 +11,7 @@ module A {
 }
 
 module B {
-  use A except a;
+  public use A except a;
 
   proc b () {
     writeln("naw, man");
@@ -21,7 +21,7 @@ module B {
 }
 
 module M {
-  use A;
+  public use A;
 
   proc main() {
     c();

@@ -13,7 +13,7 @@ module test_fully_blocked_elemental_cholesky {
 
   use cholesky_execution_config_consts;
 
-  use elemental_cholesky_fully_blocked;
+  public use elemental_cholesky_fully_blocked;
 
   proc main {
 

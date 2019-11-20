@@ -6,7 +6,7 @@ module transposed_fully_blocked_triangular_solve {
   // Inner and Outer Product Cholesky codes
   // ============================================
 
-  use cholesky_execution_config_consts,
+  public use cholesky_execution_config_consts,
       fully_blocked_partition_iterators;
 
   proc transposed_fully_blocked_triangular_solve ( L_diag    : [],

@@ -1,4 +1,6 @@
 /////////////////////////////////
+use IO;
+
 var pfx = "# ";
 var phase = 0;
 var no_pfx = false;

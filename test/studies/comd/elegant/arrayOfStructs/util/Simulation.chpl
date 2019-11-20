@@ -3,7 +3,7 @@ use AccumStencilDist;
 
 use Configs;
 use Potential;
-use Util;
+public use Util;
 use EAM, LJ;
 
 record SpeciesData {

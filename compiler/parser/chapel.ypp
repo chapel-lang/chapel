@@ -79,6 +79,7 @@
   class EnumType;
   class Expr;
   class FnSymbol;
+  class NamedExpr;
   class Type;
 
   enum   ProcIter {
@@ -475,6 +476,7 @@
 %type <pdefexpr> formal enum_item
 %type <pexpr> query_expr
 
+%type <pcallexpr> new_maybe_decorated
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
 %type <pcallexpr> opt_task_intent_ls task_intent_ls task_intent_clause
@@ -650,8 +652,8 @@ except_ls:
 ;
 
 use_access_control:
-        { $$ = false; } // public
-| TPUBLIC { $$ = false; } // public
+           { $$ = (currentModuleType == MOD_USER ? true : false); } // private | public
+| TPUBLIC  { $$ = false; } // public
 | TPRIVATE { $$ = true; } // private
 ;
 
@@ -1926,9 +1928,66 @@ io_expr:
     { $$ = new CallExpr("<~>", $1, $3); }
 ;
 
+new_maybe_decorated:
+  TNEW         %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW); }
+| TNEW TOWNED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol))); }
+| TNEW TSHARED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol))); }
+| TNEW TUNMANAGED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtUnmanaged->symbol))); }
+| TNEW TBORROWED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtBorrowed->symbol))); }
+;
+
 new_expr:
-  TNEW expr
-    { $$ = new CallExpr(PRIM_NEW, $2); }
+  /* handles the typical new cases, e.g. new C(); new owned C() */
+  new_maybe_decorated expr %prec TNEW
+    { $1->insertAtTail($2);
+      $$ = $1; }
+
+  /* handles e.g. new (typefn())(initargs) */
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol)),
+                        new CallExpr($4, $7));
+    }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol)),
+                        new CallExpr($4, $7));
+    }
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol)),
+                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
+                                     new CallExpr($4, $7)));
+    }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol)),
+                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
+                                     new CallExpr($4, $7)));
+    }
+
+  /* handles e.g. new owned(myUnmanaged) */
+| TNEW TOWNED TLP expr TRP
+    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
+| TNEW TSHARED TLP expr TRP
+    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:

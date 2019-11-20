@@ -1,3 +1,5 @@
+use IO;
+
 
 proc testText(seeds: domain(int)) {
   writeln("in testText ", seeds.sorted());

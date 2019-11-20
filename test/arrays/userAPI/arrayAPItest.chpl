@@ -1,6 +1,8 @@
 config param testError = 0, testDisplayRepresentation = false;
 
 proc readArray(X) {
+  use IO;
+
   open("realValues.txt", iomode.r).reader().read(X);
 }
 

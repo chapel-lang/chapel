@@ -6,7 +6,7 @@
      and the Chapel version by Nelson et al.
 */
 
-use DynamicIters;
+use DynamicIters, IO;
 
 config const n = 200,             // image size in pixels (n x n)
              maxIter = 50,        // max # of iterations per pixel

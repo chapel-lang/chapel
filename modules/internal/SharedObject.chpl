@@ -100,7 +100,7 @@ See also :ref:`about-owned-intents-and-instantiation` which includes examples.
  */
 module SharedObject {
 
-  private use ChapelError;
+  private use ChapelError, Atomics, ChapelBase;
   use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for
@@ -242,7 +242,7 @@ module SharedObject {
     /* Private move-initializer for use in coercions,
        only makes sense when `src` was already copied in in intent. */
     pragma "no doc"
-    proc init(_private: bool, type t, ref src:_shared(?)) {
+    proc init(_private: bool, type t, ref src:_shared) {
       this.chpl_t = t;
       this.chpl_p = src.chpl_p:_to_nilable(_to_unmanaged(t));
       this.chpl_pn = src.chpl_pn;
@@ -288,7 +288,7 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc init=(pragma "nil from arg" const ref src:_shared(?)) {
+    proc init=(pragma "nil from arg" const ref src:_shared) {
       if isNonNilableClass(this.type) && isNilableClass(src) &&
          !chpl_legacyClasses
       then
@@ -456,7 +456,7 @@ module SharedObject {
 
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer
   pragma "no doc"
-  proc _shared.readWriteThis(f) {
+  proc _shared.readWriteThis(f) throws {
     f <~> this.chpl_p;
   }
 

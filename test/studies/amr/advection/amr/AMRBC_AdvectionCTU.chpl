@@ -1,4 +1,4 @@
-use AMRBC_def;
+public use AMRBC_def;
 
 class ZeroInflowBC: AMRBC {
 

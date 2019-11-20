@@ -29,7 +29,7 @@ use Random;
 {
   var B: [1..n] real;
 
-  var rs = makeRandomStream(real, seed=315, algorithm=RNG.NPB);
+  var rs = createRandomStream(real, seed=315, algorithm=RNG.NPB);
 
   forall (i, r) in zip({1..n}, rs.iterate({1..n})) do
     B(i) = r;
@@ -40,7 +40,7 @@ use Random;
 {
   var B: [1..n] real;
 
-  var rs = makeRandomStream(real, seed=315, algorithm=RNG.NPB);
+  var rs = createRandomStream(real, seed=315, algorithm=RNG.NPB);
 
   forall (f, r) in zip(foo(n), rs.iterate({1..n})) do
     B(f) = r;

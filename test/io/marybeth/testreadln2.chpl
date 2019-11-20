@@ -1,4 +1,6 @@
 
+use IO;
+
 var b: bool; 
 stdin.readln(b);
 var i: int; 

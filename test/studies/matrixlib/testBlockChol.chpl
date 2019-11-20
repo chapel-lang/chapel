@@ -1,3 +1,4 @@
+use IO;
 use MatrixOps;
 
 //Blocked Cholesky method.  Default test matrix is generated

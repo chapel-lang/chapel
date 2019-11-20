@@ -4232,13 +4232,6 @@ DEFINE_PRIM(PRIM_ASSIGN) {
   codegenAssign(lg, rg);
 }
 
-static bool commUnorderedOpsAvailable(Type* elementType) {
-  if (0 == strcmp(CHPL_COMM, "ugni")) {
-    return true;
-  }
-  return false;
-}
-
 DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   Expr* lhsExpr = call->get(1);
@@ -4246,9 +4239,8 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
   bool lhsWide = lhsExpr->isWideRef();
   bool rhsWide = rhsExpr->isWideRef();
 
-  // Unordered ops not supported or both sides are narrow, do a normal assign
-  Type* elementType = lhsExpr->getValType();
-  if (!commUnorderedOpsAvailable(elementType) || (!lhsWide && !rhsWide)) {
+  // Both sides are narrow, do a normal assign
+  if (!lhsWide && !rhsWide) {
     FORWARD_PRIM(PRIM_ASSIGN);
     return;
   }
@@ -4264,7 +4256,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   if (!lhsWide && rhsWide) {
     // do an unordered GET
-    // chpl_comm_get_unordered(void *dst,
+    // chpl_gen_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
@@ -4273,7 +4265,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     if (dstRef)
       dst = codegenDeref(dst);
 
-    codegenCall("chpl_comm_get_unordered",
+    codegenCall("chpl_gen_comm_get_unordered",
                 codegenCastToVoidStar(codegenAddrOf(dst)),
                 codegenRnode(src),
                 codegenRaddr(src),
@@ -4282,7 +4274,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 ln, fn);
   } else if (lhsWide && !rhsWide) {
     // do an unordered PUT
-    // chpl_comm_put_unordered(void *src,
+    // chpl_gen_comm_put_unordered(void *src,
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
@@ -4291,7 +4283,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     if (srcRef)
       src = codegenDeref(src);
 
-    codegenCall("chpl_comm_put_unordered",
+    codegenCall("chpl_gen_comm_put_unordered",
                 codegenCastToVoidStar(codegenAddrOf(src)),
                 codegenRnode(dst),
                 codegenRaddr(dst),
@@ -4305,7 +4297,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
-    codegenCall("chpl_comm_getput_unordered",
+    codegenCall("chpl_gen_comm_getput_unordered",
                 codegenRnode(dst),
                 codegenRaddr(dst),
                 codegenRnode(src),

@@ -1,4 +1,4 @@
-use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, StencilDist;
+public use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, StencilDist;
 
 enum DistType { default, block, cyclic, blockcyclic, replicated, stencil };
 

@@ -843,7 +843,14 @@ void GotoStmt::verify() {
       }
 
       if (se->symbol()->defPoint->parentSymbol != this->parentSymbol)
+      {
+       if (isShadowVarSymbol(this->parentSymbol)        &&
+           (se->symbol()->defPoint->parentSymbol ==
+            this->parentSymbol->defPoint->parentSymbol) )
+        ; // this goto is in a ShadowVarSymbol::initBlock() - ok
+       else
         INT_FATAL(this, "goto label is in a different function than the goto");
+      }
 
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
 

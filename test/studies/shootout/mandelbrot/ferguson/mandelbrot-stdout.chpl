@@ -1,4 +1,5 @@
 //use BlockDist;
+use IO;
 
 config const size = 200;
 config const iterations = 50;

@@ -51,7 +51,7 @@ allows a URL to be opened as a :record:`IO.channel`.
 
   use URL;
   var urlreader = openUrlReader("http://example.com");
-  var str:string;
+  var str:bytes;
   // Output each line read from the URL to stdout
   while(urlreader.readline(str)) {
     write(str);
@@ -95,13 +95,13 @@ Here is a full program enabling verbose output from Curl while downloading:
   use URL;
   use Curl;
   var reader = openUrlReader("https://example.com");
-  var str:string;
+  var str:bytes;
   // Set verbose output from curl
   extern const CURLOPT_VERBOSE:CURLoption;
   Curl.setopt(reader, CURLOPT_VERBOSE, true);
 
-  // now read into the string
-  reader.readstring(str);
+  // now read into the bytes
+  reader.readbytes(str);
   writeln(str);
   reader.close();
 
@@ -111,6 +111,7 @@ Curl Support Types and Functions
 
  */
 module Curl {
+  public use IO;
 
   require "curl/curl.h";
   require "-lcurl";
@@ -393,6 +394,7 @@ module Curl {
 
     use Sys only ;
     use Time only ;
+    private use IO;
 
     class CurlFile : QioPluginFile {
 

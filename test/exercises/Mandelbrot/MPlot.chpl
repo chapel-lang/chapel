@@ -35,6 +35,8 @@ config const maxColor = 15;
 // system to the output file specified by the filename config const.
 //
 proc plot(NumSteps:[]) where NumSteps.rank == 2 {
+  use IO;
+
   //
   // An array mapping from the image type enum to file extensions.
   //

@@ -4,9 +4,20 @@ config const N = 16;
 
 const FullDom = {0..#N, 0..#N};
 
-config type layoutType = DefaultDist;
-var layout = new unmanaged layoutType();
-var FullSparseDom: sparse subdomain(FullDom) dmapped new dmap(layout);
+enum layoutTypes {coo, csr, csc};
+config param layoutType = layoutTypes.coo;
+
+var csrDom: sparse subdomain(FullDom) dmapped CS(compressRows=true);
+var cscDom: sparse subdomain(FullDom) dmapped CS(compressRows=false);
+var cooDom: sparse subdomain(FullDom);
+
+var FullSparseDom = if layoutType == layoutTypes.csr then 
+                      csrDom
+                    else if layoutType == layoutTypes.csc then
+                      cscDom
+                    else
+                      cooDom;
+
 var FullSparseArr: [FullSparseDom] int;
 
 //define a hardcoded DefaultSparse subdomain for second quadrant

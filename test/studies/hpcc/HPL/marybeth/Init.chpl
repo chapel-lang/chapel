@@ -1,4 +1,5 @@
 use Random;
+private use IO;
 
 enum processmaptype {Row=0, Column};
 enum factortype {Left=0, Crout, Right};

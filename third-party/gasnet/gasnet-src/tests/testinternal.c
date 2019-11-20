@@ -52,8 +52,7 @@ int main(int argc, char **argv) {
 
   gex_Rank_t myrank = gex_TM_QueryRank(myteam);
   gex_Rank_t numrank = gex_TM_QuerySize(myteam);
-  gex_Rank_t peer = (myrank ^ 1);
-  if (peer == numrank) peer = myrank;
+  gex_Rank_t peer = (myrank + 1) % numrank;
 
   BARRIER();
   void *myseg = TEST_SEG(myrank);

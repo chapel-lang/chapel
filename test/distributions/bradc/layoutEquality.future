@@ -2,7 +2,7 @@ bug: default domain maps considered equal for distinct domain types
 
 Since the dawn of time, we've had a single default domain map for
 all domain types regardless of whether that domain was rectangular,
-associative, sparse, opaque, etc.  It's long seemed to me that
+associative, sparse, etc.  It's long seemed to me that
 we should instead have a default rectangular domain map and a 
 default associative domain map and so forth, but we've never
 made that switch.

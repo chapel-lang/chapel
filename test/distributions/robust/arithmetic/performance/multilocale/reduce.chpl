@@ -1,4 +1,5 @@
 use driver_domains;
+use CommDiagnostics;
 
 var A: [Dom4D] int;
 for e in A do e = next();

@@ -605,7 +605,7 @@ static CallExpr* hzsCallTrivialParIter(ForallStmt* fs) {
 
   if (trivialLeader == NULL) {
     result = new CallExpr("chpl_trivialLeader");
-    rootModule->block->insertAtTail(result);
+    fs->insertBefore(result);
     resolveCallAndCallee(result, false);
     result->remove();
 

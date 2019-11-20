@@ -311,6 +311,8 @@ proc main() {
   }
   writeln("Number of cycles: ", cycle);
 
+  use IO;
+
   if printCoords {
     var outfile = open("coords.out", iomode.cw);
     var writer = outfile.writer();

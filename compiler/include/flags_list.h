@@ -156,7 +156,7 @@ symbolFlag( FLAG_GET_FILE_NAME, ypr, "get file name", "replace calls to this fun
 symbolFlag( FLAG_GET_FUNCTION_NAME, ypr, "get function name", "replace calls to this function with the name of the function that called it" )
 symbolFlag( FLAG_GET_MODULE_NAME, ypr, "get module name", "replace calls to this function with the name of the module the call was in" )
 
-symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
+symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
 symbolFlag( FLAG_YVV, npr, "YVV", "variable is a yield value variable" )
@@ -269,7 +269,7 @@ symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
 
 symbolFlag( FLAG_NOT_FULLY_GENERIC , npr, "argument is not fully generic" , ncm)
 
-symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
+symbolFlag( FLAG_OBJECT_CLASS , ypr, "object class" , ncm )
 
 // FLAG_ON and FLAG_ON_BLOCK mark task functions and their wrappers,
 // respectively, that perform remote operations, i.e. corresponding to
@@ -336,6 +336,7 @@ symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference tempo
 symbolFlag( FLAG_REMOVABLE_ARRAY_ACCESS, ypr, "removable array access", "array access calls that can be replaced with a reference")
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
+symbolFlag( FLAG_COMPILER_ADDED_REMOTE_FENCE , ypr, "compiler added remote fence" , ncm )
 symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" )
 symbolFlag( FLAG_RETARG, npr, "symbol is a _retArg", ncm )
 symbolFlag( FLAG_RETURNS_ALIASING_ARRAY, ypr, "fn returns aliasing array", "array alias/slice/reindex/rank change function" )

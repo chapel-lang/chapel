@@ -24,6 +24,7 @@
  */
 
 use Image;    // use helper module related to writing out images
+use IO;       // allows access to stderr, stdin, iomode
 
 //
 // Configuration constants

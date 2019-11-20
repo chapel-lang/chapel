@@ -1,4 +1,5 @@
 module CSVtest {
+  use IO;
   use CSV;
   config const infile  = "csvdata.txt",
                outfile = "";

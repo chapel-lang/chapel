@@ -1,0 +1,4 @@
+--op=0    # bitshiftLargerThanNumBits.0.good
+--op=1    # bitshiftLargerThanNumBits.1.good
+--op=2    # bitshiftLargerThanNumBits.2.good
+--op=3    # bitshiftLargerThanNumBits.3.good

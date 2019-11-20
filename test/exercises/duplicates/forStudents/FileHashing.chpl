@@ -80,6 +80,7 @@ module FileHashing {
      May throw an error if the file could not be openned, for example.
    */
   proc computeFileHash(path: string): SHA256Hash throws {
+    use IO;
     use SHA256Implementation;
 
     var f = open(path, iomode.r);

@@ -63,6 +63,7 @@ Functions are presented as follows:
 
 The syntax to call a non-method function is given by:
 \begin{syntax}
+\begin{verbatim}
 call-expression:
   lvalue-expression ( named-expression-list )
   lvalue-expression [ named-expression-list ]
@@ -78,6 +79,7 @@ named-expression:
 
 parenthesesless-function-identifier:
   identifier
+\end{verbatim}
 \end{syntax}
 
 
@@ -116,6 +118,7 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 \index{proc@\chpl{proc}}
 Procedures are defined with the following syntax:
 \begin{syntax}
+\begin{verbatim}
 procedure-declaration-statement:
   privacy-specifier[OPT] procedure-kind[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
     function-body
@@ -131,8 +134,8 @@ function-name:
   operator-name
 
 operator-name: one of
-  + $ $ $ $ - $ $ $ $ * $ $ $ $ / $ $ $ $ % $ $ $ $ ** $ $ $ $ ! $ $ $ $ == $ $ $ $ != $ $ $ $ <= $ $ $ $ >= $ $ $ $ < $ $ $ $ > $ $ $ $ << $ $ $ $ >> $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ ~
-  = $ $ $ $ += $ $ $ $ -= $ $ $ $ *= $ $ $ $ /= $ $ $ $ %= $ $ $ $ **= $ $ $ $ &= $ $ $ $ |= $ $ $ $ ^= $ $ $ $ <<= $ $ $ $ >>= $ $ $ $ <=> $ $ $ $ <~>
+  + - * / % ** ! == != <= >= < > << >> & | ^ ~
+  = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~>
 
 argument-list:
   ( formals[OPT] )
@@ -186,6 +189,7 @@ where-clause:
 function-body:
   block-statement
   return-statement
+\end{verbatim}
 \end{syntax}
 
 %% This should be in the order that the sections appear in this
@@ -201,8 +205,8 @@ Default expressions allow for the omission of actual arguments at the
 call site, resulting in the implicit passing of a default value.
 Default values are discussed in~\rsec{Default_Values}.
 
-The intents \chpl{const}, \chpl{const in}, \chpl{const
-ref}, \chpl{in}, \chpl{out}, \chpl{inout} and \chpl{ref} are discussed
+The intents \chpl{const}, \chpl{const in}, \chpl{const ref},
+\chpl{in}, \chpl{out}, \chpl{inout} and \chpl{ref} are discussed
 in~\rsec{Argument_Intents}.  The intents \chpl{param} and \chpl{type} make a
 function generic and are discussed in~\rsec{Generic_Functions}.  If
 the formal argument's type is omitted, generic, or prefixed with a
@@ -263,16 +267,22 @@ lists must be called without parentheses.
 \begin{chapelexample}{function-no-parens.chpl}
 Given the definitions
 \begin{chapel}
+\begin{verbatim}
 proc foo { writeln("In foo"); }
 proc bar() { writeln("In bar"); }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 foo;
 bar();
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 In foo
 In bar
+\end{verbatim}
 \end{chapeloutput}
 the procedure \chpl{foo} can be called by writing \chpl{foo} and the
 procedure \chpl{bar} can be called by writing \chpl{bar()}.  It is an
@@ -305,17 +315,21 @@ actual argument to a formal argument.
 \begin{chapelexample}{named-args.chpl}
 Running the code
 \begin{chapel}
+\begin{verbatim}
 proc foo(x: int, y: int) { writeln(x); writeln(y); }
 
 foo(x=2, y=3);
 foo(y=3, x=2);
+\end{verbatim}
 \end{chapel}
 will produce the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 2
 3
 2
 3
+\end{verbatim}
 \end{chapelprintoutput}
 named argument passing is used to map the actual arguments to the
 formal arguments.  The two function calls are equivalent.
@@ -346,20 +360,24 @@ that are visible to the scope of the function definition.
 \begin{chapelexample}{default-values.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 proc foo(x: int = 5, y: int = 7) { writeln(x); writeln(y); }
 
 foo();
 foo(7);
 foo(y=5);
+\end{verbatim}
 \end{chapel}
 writes out
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 5
 7
 7
 7
 5
 5
+\end{verbatim}
 \end{chapelprintoutput}
 Default values are specified for the formal arguments \chpl{x}
 and \chpl{y}.  The three calls to \chpl{foo} are equivalent to the
@@ -602,8 +620,8 @@ apply the default intent to each component of the tuple independently.
 \index{intents!record \chpl{this} default}
 
 The default intent for arrays and for a \chpl{this} argument of record
-type~(see \rsec{Method_receiver_and_this}) is \chpl{ref} or \chpl{const
-ref}. It is \chpl{ref} if the formal argument is modified inside the
+type~(see \rsec{Method_receiver_and_this}) is \chpl{ref} or \chpl{const ref}.
+It is \chpl{ref} if the formal argument is modified inside the
 function, otherwise it is \chpl{const ref}.  Note that neither of these
 cause an array or record to be copied by default.  The choice between
 \chpl{ref} and \chpl{const ref} is similar to and interacts with return
@@ -621,6 +639,7 @@ to \chpl{owned} or \chpl{shared} types.
 
 \begin{chapelexample}{owned-any-intent.chpl}
 \begin{chapel}
+\begin{verbatim}
 proc defaultGeneric(arg) {
   writeln(arg.type:string);
 }
@@ -628,10 +647,13 @@ class SomeClass { }
 var own = new owned SomeClass();
 defaultGeneric(own);
 writeln(own != nil);
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 owned SomeClass
 true
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -662,22 +684,28 @@ arguments.
 \begin{chapelexample}{varargs.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 proc mywriteln(x ...?k) {
   for param i in 0..k-1 do
     writeln(x(i));
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 mywriteln("hi", "there");
 mywriteln(1, 2.0, 3, 4.0);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 hi
 there
 1
 2.0
 3
 4.0
+\end{verbatim}
 \end{chapeloutput}
 defines a generic procedure called \chpl{mywriteln} that takes a
 variable number of arguments of any type and then writes them out on
@@ -690,19 +718,26 @@ ensure that the actuals all have the same type.
 \end{chapelexample}
 
 \begin{chapelexample}{varargs-with-type.chpl}
+
 Either or both the number of variable arguments and their types can be
 specified.  For example, a basic procedure to sum the values of three
 integers can be written as
 \begin{chapel}
-proc sum(x: int...3) return x(0) + x(1) + x(2);
+\begin{verbatim}
+proc sum(x: int...3) return x(0) + x(1) + x(2); 
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(sum(1, 2, 3));
 writeln(sum(-1, -2, -3));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 6
 -6
+\end{verbatim}
 \end{chapeloutput}
 Specifying the type is useful if it is important that each argument
 have the same type.  Specifying the number is useful in, for example,
@@ -710,20 +745,28 @@ defining a method on a class that is instantiated over a rank
 parameter.
 \end{chapelexample}
 
+
 \begin{chapelexample}{varargs-returns-tuples.chpl}
+
 The code
 \begin{chapel}
+\begin{verbatim}
 proc tuple(x ...) return x;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(tuple(1));
 writeln(tuple("hi", "there"));
 writeln(tuple(tuple(1, 2), tuple(3, 4)));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (1)
 (hi, there)
 ((1, 2), (3, 4))
+\end{verbatim}
 \end{chapeloutput}
 defines a generic procedure that is equivalent to building a tuple.
 Therefore the expressions \chpl{tuple(1, 2)} and \chpl{(1,2)} are equivalent,
@@ -767,6 +810,7 @@ The following code defines a procedure that can be interpreted as a
 simple two-element array where the elements are actually module
 level variables:
 \begin{chapel}
+\begin{verbatim}
 var x, y = 0;
 
 proc A(i: int) ref {
@@ -777,21 +821,28 @@ proc A(i: int) ref {
   else
     return y;
 }
+\end{verbatim}
 \end{chapel}
 Calls to this procedure can be assigned to in order to write to the ``elements''
 of the array as in
 \begin{chapel}
+\begin{verbatim}
 A(0) = 1;
 A(1) = 2;
+\end{verbatim}
 \end{chapel}
 It can be called as an expression to access the ``elements'' as in
 \begin{chapel}
+\begin{verbatim}
 writeln(A(0) + A(1));
+\end{verbatim}
 \end{chapel}
 This code outputs the number \chpl{3}.
 
 \begin{chapeloutput}
+\begin{verbatim}
 3
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -831,6 +882,7 @@ example, that the second element in the pseudo-array is only assigned
 a value if the first argument is positive.  The following is an
 example:
 \begin{chapel}
+\begin{verbatim}
 var x, y = 0;
 
 proc doA(param setter, i: int) ref {
@@ -853,11 +905,13 @@ proc A(i: int) {
 }
 
 A(0) = 0;
-A(1) = 1;
-
+A(1) = 1; 
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 ref-return-intent-pair.chpl:8: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -880,16 +934,22 @@ during compilation and substituted for the call expression.
 \begin{chapelexample}{param-functions.chpl}
 In the code
 \begin{chapel}
+\begin{verbatim}
 proc sumOfSquares(param a: int, param b: int) param
   return a**2 + b**2;
 
 var x: sumOfSquares(2, 3)*int;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(x);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+\end{verbatim}
 \end{chapeloutput}
 \chpl{sumOfSquares} is a parameter procedure that takes
 two parameters as arguments.  Calls to this procedure can be used in
@@ -924,20 +984,26 @@ conditionals with a conditional expression that is not a parameter.
 \begin{chapelexample}{type-functions.chpl}
 In the code
 \begin{chapel}
+\begin{verbatim}
 proc myType(x) type {
   if numBits(x.type) <= 32 then return int(32);
   else return int(64);
 }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var a = 4: int(32),
     b = 4.0;
 var at: myType(a),
     bt: myType(b);
 writeln((numBits(at.type), numBits(bt.type)));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (32, 64)
+\end{verbatim}
 \end{chapeloutput}
 \chpl{myType} is a type procedure that takes a single
 argument \chpl{x} and returns \chpl{int(32)} if the number of bits used to
@@ -974,22 +1040,30 @@ A return statement of a variable procedure must contain an lvalue expression.
 
 The syntax of the return statement is given by
 \begin{syntax}
+\begin{verbatim}
 return-statement:
   `return' expression[OPT] ;
+\end{verbatim}
 \end{syntax}
 
 \begin{chapelexample}{return.chpl}
 The following code defines a procedure that returns the sum of three
 integers:
 \begin{chapel}
+\begin{verbatim}
 proc sum(i1: int, i2: int, i3: int)
   return i1 + i2 + i3;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(sum(1, 2, 3));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 6
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -1058,16 +1132,22 @@ thus is not a possible candidate for function resolution.
 \begin{chapelexample}{whereClause.chpl}
 Given two overloaded function definitions
 \begin{chapel}
+\begin{verbatim}
 proc foo(x) where x.type == int { writeln("int"); }
 proc foo(x) where x.type == real { writeln("real"); }
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 foo(3);
 foo(3.14);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 int
 real
+\end{verbatim}
 \end{chapeloutput}
 the call foo(3) resolves to the first definition because the where clause on
 the second function evaluates to false.

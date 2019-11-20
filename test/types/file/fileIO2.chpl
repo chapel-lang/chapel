@@ -1,3 +1,5 @@
+use IO;
+
 config var n = 10,
            filename = "arr2.out";
 config const epsilon = 10e-13;

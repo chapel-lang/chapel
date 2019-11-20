@@ -1,6 +1,7 @@
 use Random;
 use BLAS;
 use blas_helpers;
+use IO;
 
 /* BLAS 2 Testing TODO:
     - [ ] Banded matrices (commented out)
@@ -215,11 +216,11 @@ proc test_gbmv_helper(type t){
         Y : [{0.. #m}]t,
         R : [{0.. #m}]t; // Result
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var alpha = 1: t, //rng.getNext();
         beta = 2: t;//rng.getNext();
-    //var rngint = makeRandomStream(eltType=int,algorithm=RNG.PCG);
+    //var rngint = createRandomStream(eltType=int,algorithm=RNG.PCG);
     //var kl = rng.getNext(0, min(m, n)) ,
     //    ku = rng.getNext(0, min(m, n)) ;
     var kl = 3,
@@ -266,7 +267,7 @@ proc test_gemv_helper(type t){
         R : [{0.. #m}]t; // Result
 
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -295,7 +296,7 @@ proc test_gemv_helper(type t){
         R : [{0.. #m}]t; // Result
 
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -323,7 +324,7 @@ proc test_gemv_helper(type t){
         R : [{0.. #m}]t; // Result
 
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -355,7 +356,7 @@ proc test_gemv_helper(type t){
         R : [{0.. #m}]t; // Result
 
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -398,7 +399,7 @@ proc test_ger_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -428,7 +429,7 @@ proc test_ger_helper(type t){
         R : [{0.. #m, 0..#n}] t; // Result
 
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -468,7 +469,7 @@ proc test_gerc_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -499,7 +500,7 @@ proc test_gerc_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -538,7 +539,7 @@ proc test_geru_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -568,7 +569,7 @@ proc test_geru_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(X);
     rng.fillRandom(Y);
@@ -620,7 +621,7 @@ proc test_hemv_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t, algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t, algorithm=RNG.PCG);
 
     rng.fillRandom(A);
     rng.fillRandom(X);
@@ -653,7 +654,7 @@ proc test_hemv_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t, algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t, algorithm=RNG.PCG);
 
     rng.fillRandom(A);
     rng.fillRandom(X);
@@ -686,7 +687,7 @@ proc test_hemv_helper(type t){
 
 
     // Populate values
-    var rng = makeRandomStream(eltType=t, algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t, algorithm=RNG.PCG);
 
     rng.fillRandom(A);
     rng.fillRandom(X);
@@ -721,7 +722,7 @@ proc test_her_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}]t,
@@ -752,7 +753,7 @@ proc test_her_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}]t,
@@ -784,7 +785,7 @@ proc test_her_helper(type t){
     const m = 10 : c_int;
     const ld = 20;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #ld}] t,
         X : [{0.. #m}]t,
@@ -824,7 +825,7 @@ proc test_her2_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -856,7 +857,7 @@ proc test_her2_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -889,7 +890,7 @@ proc test_her2_helper(type t){
     const m = 10 : c_int;
     const ld = 20;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0..#m, 0..#ld}] t,
         X : [{0..#m}] t,
@@ -1028,7 +1029,7 @@ proc test_symv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1063,7 +1064,7 @@ proc test_symv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1097,7 +1098,7 @@ proc test_symv_helper(type t){
     const m = 10 : c_int;
     const ld = 20: c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #ld}] t,
         X : [{0.. #m}] t,
@@ -1139,7 +1140,7 @@ proc test_syr_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1169,7 +1170,7 @@ proc test_syr_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1200,7 +1201,7 @@ proc test_syr_helper(type t){
     const m = 10 : c_int;
     const ld = 20;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0..#m, 0..#ld}] t,
         X : [{0.. #m}] t,
@@ -1239,7 +1240,7 @@ proc test_syr2_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1272,7 +1273,7 @@ proc test_syr2_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1306,7 +1307,7 @@ proc test_syr2_helper(type t){
     const m = 10 : c_int;
     const ld = 20;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #ld}] t,
         X : [{0.. #m}] t,
@@ -1349,7 +1350,7 @@ proc test_tbmv_helper(type t){
   {
     const m = 5 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1405,7 +1406,7 @@ proc test_trmv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1430,7 +1431,7 @@ proc test_trmv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1455,7 +1456,7 @@ proc test_trmv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1480,7 +1481,7 @@ proc test_trmv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1510,7 +1511,7 @@ proc test_trmv_helper(type t){
     const m = 10 : c_int;
     const ld = 20;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #ld}] t,
         X : [{0.. #m}] t,
@@ -1545,7 +1546,7 @@ proc test_trsv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1574,7 +1575,7 @@ proc test_trsv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1603,7 +1604,7 @@ proc test_trsv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1632,7 +1633,7 @@ proc test_trsv_helper(type t){
   {
     const m = 10 : c_int;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #m}] t,
         X : [{0.. #m}] t,
@@ -1666,7 +1667,7 @@ proc test_trsv_helper(type t){
     const m = 10 : c_int;
     const ld = 20;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
 
     var A : [{0.. #m, 0.. #ld}] t,
         X : [{0.. #m}] t,

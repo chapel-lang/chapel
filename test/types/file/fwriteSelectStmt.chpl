@@ -1,3 +1,5 @@
+use IO;
+
 enum dessert {cake, cookie, pie, pudding};
 var favorite: dessert = dessert.pie;
 

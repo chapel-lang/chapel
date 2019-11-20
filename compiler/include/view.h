@@ -80,8 +80,10 @@ void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
-void        vec_view(std::vector<Symbol*>* vec);
-void        vec_view(std::vector<Symbol*>& vec);
+void        vec_view(std::vector<Symbol*>* syms);
+void        vec_view(std::vector<Symbol*>& syms);
+void        vec_view(std::vector<FnSymbol*>* syms);
+void        vec_view(std::vector<FnSymbol*>& syms);
 
 
 void        fnsWithName(const char* name);

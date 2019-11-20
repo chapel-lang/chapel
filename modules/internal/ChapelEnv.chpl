@@ -30,6 +30,7 @@
 
  */
 module ChapelEnv {
+  private use String;
   private use ChapelStandard;
 
   /* See :ref:`readme-chplenv.CHPL_HOME` for more information. */

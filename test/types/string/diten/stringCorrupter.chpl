@@ -1,3 +1,5 @@
+use IO;
+
 config const filename = "stringCorrupterText.txt";
 
 proc main {

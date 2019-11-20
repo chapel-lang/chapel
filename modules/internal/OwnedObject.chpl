@@ -421,7 +421,7 @@ module OwnedObject {
   /*
     Swap two :record:`owned` objects.
   */
-  proc <=>(ref lhs:_owned(?t), ref rhs:_owned(t)) {
+  proc <=>(ref lhs:_owned, ref rhs:lhs.type) {
     lhs.chpl_p <=> rhs.chpl_p;
   }
 
@@ -455,7 +455,7 @@ module OwnedObject {
 
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   pragma "no doc"
-  proc _owned.readWriteThis(f) {
+  proc _owned.readWriteThis(f) throws {
     f <~> this.chpl_p;
   }
 

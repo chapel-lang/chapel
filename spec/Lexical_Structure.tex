@@ -27,12 +27,14 @@ they do not start a comment but rather are part of the bytes or string literal.
 \begin{example}
 The following program makes use of both forms of comment:
 \begin{chapel}
+\begin{verbatim}
 /*
  *  main function
  */
 proc main() {
   writeln("hello, world"); // output greeting with new line
 }
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -75,6 +77,7 @@ followed by a sequence of lowercase or uppercase letters, digits,
 underscores, and dollar-signs.  Identifiers are designated by the
 following syntax:
 \begin{syntax}
+\begin{verbatim}
 identifier:
   letter-or-underscore legal-identifier-chars[OPT]
 
@@ -96,6 +99,7 @@ letter: one of
 
 digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7' `8' `9'
+\end{verbatim}
 \end{syntax}
 
 \begin{rationale}
@@ -109,7 +113,7 @@ deadlocks.
 
 \begin{example}
 The following are legal
-identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{\texttt{\$}}$},
+identifiers: \chpl{Cray1}, \chpl{syncvar$},
 \chpl{legalIdentifier}, and \chpl{legal_identifier}.
 \end{example}
 
@@ -120,9 +124,8 @@ identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{\texttt{\$}}$},
 
 The following identifiers are reserved as keywords:
 
-\begin{tabular}{llllll}
-&
 \begin{chapel}
+\begin{verbatim}
 _
 align
 as
@@ -142,7 +145,6 @@ config
 const
 continue
 defer
-\end{chapel} & \begin{chapel}
 delete
 dmapped
 do
@@ -162,7 +164,6 @@ in
 index
 inline
 inout
-\end{chapel} & \begin{chapel}
 int
 iter
 label
@@ -181,7 +182,6 @@ out
 override
 owned
 param
-\end{chapel} & \begin{chapel}
 private
 proc
 public
@@ -200,7 +200,6 @@ sparse
 string
 subdomain
 sync
-\end{chapel} & \begin{chapel}
 then
 this
 throw
@@ -219,34 +218,18 @@ while
 with
 yield
 zip
-\end{chapel} \\
-\begin{invisible}
-otherwise
-\end{invisible} & \begin{invisible}
-otherwise
-\end{invisible} & \begin{invisible}
-otherwise
-\end{invisible} & \begin{invisible}
-otherwise
-\end{invisible} & \begin{invisible}
-otherwise
-\end{invisible} & \begin{invisible}
-otherwise
-\end{invisible}
-\end{tabular}
+\end{verbatim}
+\end{chapel}
 
 The following identifiers are keywords reserved for future use:
 
-\begin{tabular}{l}
 \begin{chapel}
+\begin{verbatim}
 lambda
 pragma
 primitive
-\end{chapel} \\
-\begin{invisible}
-otherwise
-\end{invisible}
-\end{tabular}
+\end{verbatim}
+\end{chapel}
 
 \subsection{Literals}
 \label{Literals}
@@ -256,13 +239,16 @@ otherwise
 \index{literals!primitive type}
 Bool literals are designated by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 bool-literal: one of
-  `true' $ $ $ $ `false'
+  `true' `false'
+\end{verbatim}
 \end{syntax}
 
 Signed and unsigned integer literals are designated by the following
 syntax:
 \begin{syntax}
+\begin{verbatim}
 integer-literal:
   digits
   `0x' hexadecimal-digits
@@ -320,6 +306,7 @@ separator-binary-digits:
 
 binary-digit: one of
   `0' `1'
+\end{verbatim}
 \end{syntax}
 
 Integer literals in the range 0 to max(\chpl{int}), ~\rsec{Signed_and_Unsigned_Integral_Types},
@@ -335,13 +322,16 @@ another integer size.
 \begin{rationale}
 Underscores can be used to group the digits of numbers for legibility. For example:
 \begin{chapel}
+\begin{verbatim}
 var i = 1_234_567_890;
 var x = 0xFF_FF_12_34;
+\end{verbatim}
 \end{chapel}
 \end{rationale}
 
 Real literals are designated by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 real-literal:
   digits[OPT] . digits exponent-part[OPT]
   digits .[OPT] exponent-part
@@ -360,7 +350,8 @@ p-exponent-part:
 
 
 sign: one of
-  + $ $ $ $ -
+  + -
+\end{verbatim}
 \end{syntax}
 
 \begin{rationale}
@@ -382,9 +373,11 @@ necessary to change the size of the literal.
 Imaginary literals are designated by the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 imaginary-literal:
   real-literal `i'
   integer-literal `i'
+\end{verbatim}
 \end{syntax}
 
 The type of an imaginary literal is \chpl{imag}.  Explicit conversions
@@ -403,6 +396,7 @@ and \chpl{(1.0, 2.0):complex}.
 \pagebreak
 Interpreted string literals are designated by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 interpreted-string-literal:
   " double-quote-delimited-characters[OPT] "
   ' single-quote-delimited-characters[OPT] '
@@ -444,6 +438,7 @@ uninterpreted-double-quote-string-character:
 
 uninterpreted-single-quote-string-character:
   `any character except three single quotes in a row'
+\end{verbatim}
 \end{syntax}
 
 Uninterpreted string literals do not interpret their contents, so for
@@ -454,24 +449,30 @@ included in the string.
 
 A string literal can be either interpreted or uninterpreted.
 \begin{syntax}
+\begin{verbatim}
 string-literal:
   interpreted-string-literal
   uninterpreted-string-literal
+\end{verbatim}
 \end{syntax}
 
 \pagebreak
 Interpreted bytes literals are designated by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 interpreted-bytes-literal:
   b" double-quote-delimited-characters[OPT] "
   b' single-quote-delimited-characters[OPT] '
+\end{verbatim}
 \end{syntax}
 
 Uninterpreted bytes literals are designated by the following syntax:
 \begin{syntax}
+\begin{verbatim}
 uninterpreted-bytes-literal:
   b""" uninterpreted-double-quote-delimited-characters """
   b''' uninterpreted-single-quote-delimited-characters '''
+\end{verbatim}
 \end{syntax}
 
 Uninterpreted bytes literals do not interpret their contents, so for
@@ -482,9 +483,11 @@ included in the bytes.
 
 A bytes literal can be either interpreted or uninterpreted.
 \begin{syntax}
+\begin{verbatim}
 bytes-literal:
   interpreted-bytes-literal
   uninterpreted-bytes-literal
+\end{verbatim}
 \end{syntax}
 
 \subsection{Operators and Punctuation}
@@ -500,23 +503,34 @@ the language:
 \hline
 {\bf symbols} & {\bf use} \\
 \hline
-\verb@=@ & assignment \\
-\verb@+= -= *= /= **= %= &= |= ^= &&= ||= <<= >>=@ & compound assignment \\
-\verb@<=>@ & swap \\
-\verb@<~>@ & I/O \\
-\verb@..@ & range specifier \\
-\verb@by@ & range/domain stride specifier \\
-\verb@#@ & range count operator \\
-\verb@...@ & variable argument lists \\
-\verb@&& || ! & | ^ ~ << >>@ & logical/bitwise operators \\
-\verb@== != <= >= < >@ & relational operators \\
-\verb@+ - * / % **@ & arithmetic operators \\
-\verb@:@ & type specifier \\
-\verb@;@ & statement separator \\
-\verb@,@ & expression separator \\
-\verb@.@ & member access \\
-\verb@?@ & type query \\
-\verb@" '@ & string delimiters \\
+\chpl{=} &
+assignment
+\\
+\chpl{+=} \chpl{-=} \chpl{*=} \chpl{/=} \chpl{**=}
+\chpl{\%=} \chpl{\&=} \chpl{|=} \chpl{^=} \chpl{\&\&=} \chpl{||=} \chpl{<<=} \chpl{>>=}
+&
+compound assignment
+\\
+\chpl{<=>} & swap \\
+\chpl{<~>} & I/O \\
+\chpl{..} & range specifier \\
+\chpl{by} & range/domain stride specifier \\
+\chpl{#} & range count operator \\
+\chpl{...} & variable argument lists
+\\
+\chpl{\&\&} \chpl{||} \chpl{!} \chpl{\&} \chpl{|} \chpl{^} \chpl{~} \chpl{<<} \chpl{>>}
+&
+logical/bitwise operators \\
+\chpl{==} \chpl{!=} \chpl{<=} \chpl{>=} \chpl{<} \chpl{>}
+& relational operators \\
+\chpl{+} \chpl{-} \chpl{*} \chpl{/} \chpl{\%} \chpl{**}
+& arithmetic operators \\
+\chpl{:} & type specifier \\
+\chpl{;} & statement separator \\
+\chpl{,} & expression separator \\
+\chpl{.} & member access \\
+\chpl{?} & type query \\
+\chpl{" '} & string delimiters \\
 \hline
 \end{tabular}
 \end{center}
@@ -533,9 +547,9 @@ The following braces are part of the Chapel language:
 \hline
 {\bf braces} & {\bf use} \\
 \hline
-\verb@( )@ & parenthesization, function calls, and tuples \\
-\verb@[ ]@ & array literals, array types, forall expressions, and function calls \\
-\verb@{ }@ & domain literals, block statements \\
+\chpl{( )} & parenthesization, function calls, and tuples \\
+\chpl{[ ]} & array literals, array types, forall expressions, and function calls \\
+\chpl{{ }} & domain literals, block statements \\
 \hline
 \end{tabular}
 \end{center}

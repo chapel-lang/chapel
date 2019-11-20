@@ -1034,7 +1034,7 @@ int API_FUNC qthread_writeEF_const(aligned_t *dest,
     return qthread_writeEF(dest, &src);
 }                      /*}}} */
 
-int INTERNAL qthread_writeEF_nb(aligned_t *restrict       dest,
+int API_FUNC qthread_writeEF_nb(aligned_t *restrict       dest,
                                 const aligned_t *restrict src)
 {                      /*{{{ */
     aligned_t *alignedaddr;
@@ -1095,7 +1095,7 @@ int INTERNAL qthread_writeEF_nb(aligned_t *restrict       dest,
     return QTHREAD_SUCCESS;
 }                      /*}}} */
 
-int INTERNAL qthread_writeEF_const_nb(aligned_t *dest,
+int API_FUNC qthread_writeEF_const_nb(aligned_t *dest,
                                       aligned_t  src)
 {                      /*{{{ */
     return qthread_writeEF_nb(dest, &src);
@@ -1292,7 +1292,7 @@ int API_FUNC qthread_readFF(aligned_t *restrict       dest,
     return QTHREAD_SUCCESS;
 }                      /*}}} */
 
-int INTERNAL qthread_readFF_nb(aligned_t *restrict       dest,
+int API_FUNC qthread_readFF_nb(aligned_t *restrict       dest,
                                const aligned_t *restrict src)
 {                      /*{{{ */
     const aligned_t *alignedaddr;
@@ -1493,7 +1493,7 @@ int API_FUNC qthread_readXX(aligned_t *restrict       dest,
 }                      /*}}} */
 
 /* This is the non-blocking version of the previous one */
-int INTERNAL qthread_readFE_nb(aligned_t *restrict       dest,
+int API_FUNC qthread_readFE_nb(aligned_t *restrict       dest,
                                const aligned_t *restrict src)
 {                      /*{{{ */
     const aligned_t *alignedaddr;

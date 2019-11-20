@@ -1,4 +1,6 @@
 
+use IO;
+
 config const trywrite = false;
 
 var logFile: channel(true, kind=iokind.dynamic, locking=true);

@@ -1,3 +1,5 @@
+private use IO;
+
 config const debugInit = false;
 
 

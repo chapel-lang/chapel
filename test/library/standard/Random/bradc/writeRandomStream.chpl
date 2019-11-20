@@ -5,7 +5,7 @@ module A2 {
   config param rtype  = if useNPB then RNG.NPB else RNG.PCG;
 
   proc main() {
-    var rnd  = makeRandomStream(real, seed=314159265, algorithm=rtype);
+    var rnd  = createRandomStream(real, seed=314159265, algorithm=rtype);
 
     writeln(rnd);
   }

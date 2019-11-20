@@ -58,6 +58,36 @@ def handle_la(la_path):
     return args
 
 #
+# Return compiler arguments required to use a library known to
+# pkgconfig. The pkg can be a path to a .pc file or the name of a
+# system-installed package or the name of a third-party package.
+#
+# if system=True, searches for a system-instaled package.
+@memoize
+def pkgconfig_get_compile_args(pkg, ucp='', system=True):
+  havePcFile = pkg.endswith('.pc')
+  pcArg = pkg
+  if not havePcFile:
+    if system:
+      # check that pkg-config knows about the package in question
+      run_command(['pkg-config', '--exists', pkg])
+    else:
+      # look for a .pc file
+      if ucp == '':
+        ucp = default_uniq_cfg_path()
+      pcfile = pkg + '.pc' # maybe needs to be an argument later?
+
+      pcArg = os.path.join(get_cfg_install_path(pkg, ucp), 'lib',
+                           'pkgconfig', pcfile)
+
+      if not os.access(pcArg, os.R_OK):
+        error("Could not find '{0}'".format(pcArg), ValueError)
+
+  cflags_line = run_command(['pkg-config', '--cflags'] + [pcArg]);
+  cflags = cflags_line.split()
+  return cflags
+
+#
 # Return linker arguments required to link with a library
 # known to pkgconfig. The pkg can be a path to a .pc file or
 # the name of a system-installed package or the name of

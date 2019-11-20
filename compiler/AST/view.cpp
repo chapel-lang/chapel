@@ -442,7 +442,7 @@ static void view_sym(Symbol* sym, bool number, int mark) {
     if (number)
       printf("[%d]", sym->type->symbol->id);
   }
-  if (sym->hasFlag(FLAG_GENERIC))
+  if (sym->isKnownToBeGeneric())
     putchar('?');
   putchar('\'');
 }
@@ -708,7 +708,7 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
     log_ast_symbol(file, sym->type->symbol, false);
   }
 
-  if (sym->hasFlag(FLAG_GENERIC))
+  if (sym->isKnownToBeGeneric())
     log_write(file, false, "?", false);
 
   log_need_space = true;
@@ -871,8 +871,17 @@ void map_view(SymbolMap& map) {
 
 //
 // vec_view: print the contents of a Vec.
-// todo: add STL versions
 //
+
+static void showFnSymbol(FnSymbol* fn) {
+        printf("  %d  %c%c  %s\n", fn->id,
+               // "g"eneric, "r"esolved, "G"eneric+resolved, " " - neither
+               fn->isResolved() ? (fn->isKnownToBeGeneric() ? 'G' : 'r') :
+                                  (fn->isKnownToBeGeneric() ? 'g' : ' ') ,
+               fn->inTree() ? ' ' : '-',
+               debugLoc(fn));
+}
+
 void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>* v) {
   vec_view(*v);
 }
@@ -883,9 +892,9 @@ void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v)
   for (int i = 0; i < v.n; i++) {
     Symbol* elm = v.v[i];
     if (elm)
-      printf("%3d %8d  %s\n", i, elm->id, elm->name);
+      printf("%3d  %8d  %s\n", i, elm->id, elm->name);
     else
-      printf("%3d <null>\n", i);
+      printf("%3d  <null>\n", i);
   }
 }
 
@@ -897,26 +906,41 @@ void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
 {
   printf("Vec<FnSymbol> %d elm(s)\n", v.n);
   for (int i = 0; i < v.n; i++) {
-    Symbol* elm = v.v[i];
+    FnSymbol* elm = v.v[i];
     if (elm)
-      printf("%3d %8d  %s\n", i, elm->id, elm->name);
+      printf("%3d", i), showFnSymbol(elm);
     else
-      printf("%3d <null>\n", i);
+      printf("%3d  <null>\n", i);
   }
 }
 
-void vec_view(std::vector<Symbol*>* vec) {
-  vec_view(*vec);
+void vec_view(std::vector<Symbol*>* syms) {
+  vec_view(*syms);
 }
 
-void vec_view(std::vector<Symbol*>& vec) {
-  printf("vector<Symbol> %d elm(s)\n", (int)vec.size());
-  for (int i = 0; i < (int)vec.size(); i++) {
-    Symbol* elm = vec[i];
+void vec_view(std::vector<Symbol*>& syms) {
+  printf("vector<Symbol> %d elm(s)\n", (int)syms.size());
+  for (int i = 0; i < (int)syms.size(); i++) {
+    Symbol* elm = syms[i];
     if (elm)
-      printf("%3d %8d  %s\n", i, elm->id, elm->name);
+      printf("%3d  %8d  %s\n", i, elm->id, elm->name);
     else
-      printf("%3d <null>\n", i);
+      printf("%3d  <null>\n", i);
+  }
+}
+
+void vec_view(std::vector<FnSymbol*>* syms) {
+  vec_view(*syms);
+}
+
+void vec_view(std::vector<FnSymbol*>& syms) {
+  printf("vector<FnSymbol> %d elm(s)\n", (int)syms.size());
+  for (int i = 0; i < (int)syms.size(); i++) {
+    FnSymbol* elm = syms[i];
+    if (elm)
+      printf("%3d", i), showFnSymbol(elm);
+    else
+      printf("%3d  <null>\n", i);
   }
 }
 
@@ -935,12 +959,7 @@ void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
       countNonNull++;
       if (!strcmp(fn->name, name)) {
         count++;
-        printf("  %d  %c%c  %s\n", fn->id,
-               // "g"eneric, "r"esolved, "G"eneric+resolved, " " - neither
-               fn->isResolved() ? (fn->hasFlag(FLAG_GENERIC) ? 'G' : 'r') :
-                                  (fn->hasFlag(FLAG_GENERIC) ? 'g' : ' ') ,
-               fn->inTree() ? ' ' : '-',
-               debugLoc(fn));
+        showFnSymbol(fn);
       }
     }
   }

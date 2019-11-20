@@ -5,6 +5,7 @@
 */
 
 //use Math;
+private use IO;
 
 config const hg_inputfile = "hg_coeffs.dat";
 

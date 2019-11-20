@@ -1,3 +1,5 @@
+use IO;
+
 var f = open("binary-output.bin", iomode.cwr);
 
 var A = (1,2,3,4,5);

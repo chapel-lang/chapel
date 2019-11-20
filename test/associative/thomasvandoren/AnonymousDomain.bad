@@ -1,1 +1,1 @@
-AnonymousDomain.chpl:1: error: invalid use of 'new' on chpl__buildDomainRuntimeType
+AnonymousDomain.chpl:1: error: Attempt to 'new' a function or undefined symbol

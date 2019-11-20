@@ -1,6 +1,5 @@
 // This version uses an associative array instead of sorting
 // and works in parallel by + reducing the associative array.
-// Unfortunately it leaks memory.
 
 use FileHashing;
 use FileSystem;
