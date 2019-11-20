@@ -1,2 +1,2 @@
 hello
-string_bounds_checking.chpl:3: error: halt reached - index out of bounds of string: 100
+string_bounds_checking.chpl:3: error: halt reached - index 100 out of bounds for string with length 5

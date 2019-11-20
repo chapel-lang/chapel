@@ -1,1 +1,1 @@
-oobcodepoint.chpl:1: error: halt reached - index out of bounds of string: 1
+oobcodepoint.chpl:1: error: halt reached - index 1 out of bounds for string with length 0

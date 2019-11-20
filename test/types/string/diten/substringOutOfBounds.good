@@ -1,1 +1,1 @@
-substringOutOfBounds.chpl:3: error: halt reached - range out of bounds of string
+substringOutOfBounds.chpl:3: error: halt reached - range 21..27 out of bounds for string with length 26

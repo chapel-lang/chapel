@@ -38,9 +38,9 @@ writeln();
 
 // TEST ACCESSORS
 writeln("Accessor tests");
-for i in 1..b_from_c_ptr.length do
+for i in 0..#b_from_c_ptr.length do
   writeln(b_from_c_ptr[i], " as ", b_from_c_ptr[i].type:string);
-for i in 1..b_from_c_ptr.length do
+for i in 0..#b_from_c_ptr.length do
   writeln(b_from_c_ptr.byte(i), " as ", b_from_c_ptr[i].type:string);
 
 var singleByteBytes = b"A";
@@ -99,10 +99,10 @@ writeln();
 
 // TEST SLICE
 writeln("Slice tests");
-writeln(b[..4], " -- the type is ", b[1..4].type:string); // "this"
-writeln(b[6..], " -- the type is ", b[6..].type:string); // "is a bytes"
+writeln(b[..3], " -- the type is ", b[0..3].type:string); // "this"
+writeln(b[5..], " -- the type is ", b[5..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
-writeln(b[11..b.length], " -- the type is ", b[..].type:string); // "bytes"
+writeln(b[10..b.length-1], " -- the type is ", b[..].type:string); // "bytes"
 writeln();
 
 // TEST SEARCH ETC. -- this is getting too much without coercion
@@ -115,15 +115,15 @@ writeln(bytes_to_search.endsWith(b"start"));  //f
 writeln(bytes_to_search.endsWith(b"lorem", b"ipsum"));  //f
 writeln(bytes_to_search.endsWith(b"end"));   //t
 
-writeln(b.find(b"is")); //3
-writeln(b.rfind(b"is")); //6
+writeln(b.find(b"is")); //2
+writeln(b.rfind(b"is")); //5
 writeln(b.count(b"is")); //2
 
-writeln(b.find(b"is", region=4..)); //6
-writeln(b.rfind(b"is", region=..5)); //3
-writeln(b.count(b"is", region=..5)); //1
+writeln(b.find(b"is", region=3..)); //5
+writeln(b.rfind(b"is", region=..4)); //2
+writeln(b.count(b"is", region=..4)); //1
 
-writeln(b.find(b"is is")); //3
+writeln(b.find(b"is is")); //2
 writeln("Make it plural ", b.replace(b"is is a", b"ese are"));
 writeln();
 

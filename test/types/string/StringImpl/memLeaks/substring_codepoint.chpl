@@ -18,13 +18,13 @@ module unitTest {
       checkMemLeaks(m0);
     }
 
-    var idx = 3:codepointIndex;
+    var idx = 2:codepointIndex;
     substringHelp(idx);
 
     var slice = ..idx;
     substringHelp(slice);
 
-    var slice2 = idx..#(idx:int);
+    var slice2 = idx..#((idx+1):int);
     substringHelp(slice2);
 
     var slice3 = idx..;
@@ -59,13 +59,13 @@ module unitTest {
       checkMemLeaks(m0);
     }
 
-    var idx = 3:codepointIndex;
+    var idx = 2:codepointIndex;
     substringHelp(idx);
 
     var slice = ..idx;
     substringHelp(slice);
 
-    var slice2 = idx..#(idx:int);
+    var slice2 = idx..#((idx+1):int);
     substringHelp(slice2);
 
     var slice3 = idx..;
