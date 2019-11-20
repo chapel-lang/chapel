@@ -1071,8 +1071,7 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
 std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   Type* t = getArgSymbolCodegenType(this);
 
-  if (t->symbol->hasFlag(FLAG_REF) &&
-      t->getValType() == dtExternalArray &&
+  if (t->getValType() == dtExternalArray &&
       (pxd == PYTHON_PYX || pxd == C_PYX)
       && exportedArrayElementType[this] != NULL) {
     // Allow python declarations to accept anything iterable to translate to
@@ -1145,8 +1144,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += " = " + wrapval + "\n";
 
     return res;
-  } else if (t->symbol->hasFlag(FLAG_REF) &&
-             t->getValType() == dtExternalArray) {
+  } else if (t->getValType() == dtExternalArray) {
     // Handle arrays
     if (Symbol* eltType = exportedArrayElementType[this]) {
       // The element type will be recorded in the exportedArrayElementType map
@@ -2283,9 +2281,6 @@ GenRet FnSymbol::codegenPYXType() {
       if (curArgTranslate != "") {
         argTranslate += curArgTranslate;
         if (argType == "" && formal->type->getValType() == dtExternalArray) {
-          // Happens when the argument type is an array
-          // We need to send in the wrapper we created by reference
-          funcCall += "&";
           // And we need to clean it up when we are done with it
           std::string oldRetStmt = returnStmt;
           returnStmt = "\tchpl_free_external_array(chpl_";
