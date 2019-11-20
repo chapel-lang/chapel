@@ -1,5 +1,5 @@
 mix-type-val-args.chpl:6: error: unresolved call 'Reflection.canResolve("foo", type int(64), 3)'
 $CHPL_HOME/modules/standard/Reflection.chpl:201: note: this candidate did not match: canResolve(param fname: string, args ...)
 mix-type-val-args.chpl:6: note: because type call actual argument #2
-$CHPL_HOME/modules/standard/Reflection.chpl:201: note: is passed to non-type formal '_e1_args'
+$CHPL_HOME/modules/standard/Reflection.chpl:201: note: is passed to non-type formal '_e0_args'
 $CHPL_HOME/modules/standard/Reflection.chpl:195: note: candidates are: canResolve(param fname: string)

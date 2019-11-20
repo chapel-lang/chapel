@@ -20,4 +20,4 @@ A[<slice>] is:
 
 sliceStridedArray.chpl:17: error: halt reached - array slice out of bounds
 note: slice index was (1..10, 2..10) but array bounds are (1..10 by 2, 1..10 by 2)
-note: out of bounds in dimension 1 because slice index 1..10 is not in 1..10 by 2
+note: out of bounds in dimension 0 because slice index 1..10 is not in 1..10 by 2
