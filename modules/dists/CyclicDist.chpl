@@ -325,15 +325,35 @@ override proc Cyclic.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
+proc Cyclic.init(other: Cyclic, privateData,
+                 param rank = other.rank,
+                 type idxType = other.idxType) {
+  this.rank = rank;
+  this.idxType = idxType;
+  startIdx = privateData[1];
+  targetLocDom = {(...privateData[2])};
+  dataParTasksPerLocale = privateData[3];
+  dataParIgnoreRunningTasks = privateData[4];
+  dataParMinGranularity = privateData[5];
+
+  this.complete();
+
+  for i in targetLocDom {
+    targetLocs[i] = other.targetLocs[i];
+    locDist[i] = other.locDist[i];
+  }
+}
+                 
 proc Cyclic.dsiSupportsPrivatization() param return true;
 
-proc Cyclic.dsiGetPrivatizeData() return 0;
+proc Cyclic.dsiGetPrivatizeData() return (startIdx,
+                                          targetLocDom.dims(),
+                                          dataParTasksPerLocale,
+                                          dataParIgnoreRunningTasks,
+                                          dataParMinGranularity);
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  return new unmanaged Cyclic(startIdx, targetLocs,
-                    dataParTasksPerLocale,
-                    dataParIgnoreRunningTasks,
-                    dataParMinGranularity);
+  return new unmanaged Cyclic(_to_unmanaged(this), privatizeData);
 }
 
 proc Cyclic.dsiGetReprivatizeData() return 0;
