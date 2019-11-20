@@ -436,10 +436,8 @@ module DateTime {
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = createStringWithNewBuffer( __primitive("cast",
-                                                   c_string, c_ptrTo(buf)));
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
     }
-
     return str;
   }
 
@@ -688,8 +686,7 @@ module DateTime {
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = createStringWithNewBuffer(__primitive("cast",
-                                                  c_string, c_ptrTo(buf)));
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
     }
 
     return str;
@@ -1201,8 +1198,7 @@ module DateTime {
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = createStringWithNewBuffer(__primitive("cast",
-                                                  c_string, c_ptrTo(buf)));
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
     }
 
     return str;

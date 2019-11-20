@@ -711,21 +711,14 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          try! {
-            return createStringWithNewBuffer(
-                  chpl__getInPlaceBufferData(data.shortData), data.len,
-                  data.size);
-          }
+          return chpl_createString(chpl__getInPlaceBufferData(data.shortData),
+                                   data.len, data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          try! {
-            return createStringWithOwnedBuffer(localBuff, data.len, data.size);
-          }
+          return chpl_createString(localBuff, data.len, data.size);
         }
       } else {
-        try! {
-          return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
-        }
+        return chpl_createString(data.buff, data.len, data.size);
       }
     }
 
@@ -819,9 +812,7 @@ module String {
     */
     inline proc localize() : string {
       if _local || this.locale_id == chpl_nodeID {
-        try! {
-          return createStringWithBorrowedBuffer(this);
-        }
+        return createStringWithBorrowedBuffer(this);
       } else {
         const x:string = this; // assignment makes it local
         return x;
