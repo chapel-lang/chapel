@@ -179,7 +179,7 @@ proc PrivateArr.dsiAccess(i: 1*idxType) ref
   return dsiAccess(i(0));
 
 proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {
-  var idx = i(1);
+  var idx = i(0);
   return 0 <= idx && idx < numLocales;
 }
 

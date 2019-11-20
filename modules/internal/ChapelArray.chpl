@@ -2316,7 +2316,7 @@ module ChapelArray {
             var istr = "";
             var bstr = "";
             for param i in 0..rank-1 {
-              if i != 1 {
+              if i != 0 {
                 istr += ", ";
                 bstr += ", ";
               }
@@ -2633,7 +2633,7 @@ module ChapelArray {
     proc checkRankChange(args) {
       for param i in 0..args.size-1 do
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
-          halt("array slice out of bounds in dimension ", i+1, ": ", args(i));
+          halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
 
     // Special cases of local slices for DefaultRectangularArrs because
