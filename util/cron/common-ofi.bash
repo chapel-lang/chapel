@@ -39,7 +39,6 @@ if [ -z "$lch" ] ; then
   module load gnu-openmpi
 
   set -x
-  : confirm mpi module is loaded
   module list -l 2>&1 | grep -E -q '\bgnu-openmpi\b' || return $?
 
   export MPI_DIR=$(which mpicc | sed 's,/bin/mpicc$,,')
