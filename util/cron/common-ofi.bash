@@ -22,9 +22,9 @@ lchOK=
 
 if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-x* ] ; then
   lchOK=y
-else if [ "$lch" == slurm-srun ] && \
-        srun --mpi=list 2>&1 | grep -q pmix && \
-        module avail pmix 2>&1 | grep -q pmix ; then
+elif [ "$lch" == slurm-srun ] && \
+       srun --mpi=list 2>&1 | grep -q pmix && \
+       module avail pmix 2>&1 | grep -q pmix ; then
   module load pmix
   export CHPL_COMM_OFI_OOB=slurm-pmi2
   export SLURM_MPI_TYPE=pmix
