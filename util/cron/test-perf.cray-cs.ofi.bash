@@ -27,7 +27,7 @@ source /cray/css/users/chapelu/setup_libfabric.bash || return 1
 
 nightly_args="${nightly_args} -no-buildcheck"
 
-perf_args="-performance-description ofi -performance-configs gn-ibv-large,gn-ibv-fast:v,gn-mpi"
-perf_args="${perf_args} -performance -perflabel ml- -numtrials 1 -startdate 12/01/19"
+perf_args="-performance-description ofi -performance-configs gn-ibv-large,gn-ibv-fast:v,gn-mpi,ofi:v"
+perf_args="${perf_args} -performance -perflabel ml- -numtrials 1 -startdate 11/20/19"
 
 $CWD/nightly -cron ${perf_args} ${nightly_args}
