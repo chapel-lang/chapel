@@ -236,12 +236,34 @@ static void getVisibleFunctions(const char*           name,
       // the block defines functions
 
       if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+        // Optimization: only check visibility of one private function per scope
+        // searched.  The same answer should hold for all private symbols in the
+        // same scope.
+        bool privacyChecked = false;
+        bool privateOkay = false;
+
         forv_Vec(FnSymbol, fn, *fns) {
-          if (fn->isVisible(call) == true) {
-            // isVisible checks if the function is private to its defining
-            // module (and in that case, if we are under its defining module)
-            // This ensures that private functions will not be used outside
-            // of their proper scope.
+          if (fn->hasFlag(FLAG_PRIVATE)) {
+            // Ensure that private functions are not used outside of their
+            // proper scope
+            if (!privacyChecked) {
+              // We haven't checked the privacy of a function in this scope yet.
+              // Do so now, and remember the result
+              privacyChecked = true;
+              if (fn->isVisible(call) == true) {
+                // We've determined that this function, even though it is
+                // private, can be used
+                visibleFns.add(fn);
+                privateOkay = true;
+              }
+            } else if (privateOkay) {
+              // We've already checked that private symbols are accessible in
+              // this pass and they are, so it's okay to add this function to
+              // the visible functions list
+              visibleFns.add(fn);
+            }
+          } else {
+            // This was a public function, so always include it.
             visibleFns.add(fn);
           }
         }
