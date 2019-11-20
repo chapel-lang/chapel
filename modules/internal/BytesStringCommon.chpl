@@ -153,7 +153,7 @@ module BytesStringCommon {
       // from low to high then do a strided operation to put the data in the
       // buffer in the correct order.
       const copyLen = r2.high-r2.low+1;
-      var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low-1,
+      var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low,
                                           len=copyLen, loc=x.locale_id);
       if r2.stride == 1 {
         // TODO Engin: I'd like to call init or something that constructs a
@@ -190,13 +190,13 @@ module BytesStringCommon {
     type _idxt = getIndexType(t);
     var result: t = x;
     var found: int = 0;
-    var startIdx: _idxt = 1;
+    var startIdx: _idxt = 0;
     const localNeedle: t = needle.localize();
     const localReplacement: t = replacement.localize();
 
     while (count < 0) || (found < count) {
       const idx = result.find(localNeedle, startIdx..);
-      if !idx then break;
+      if idx == -1 then break;
 
       found += 1;
       result = result[..idx-1] + localReplacement +
@@ -222,11 +222,11 @@ module BytesStringCommon {
       var splitAll: bool = maxsplit <= 0;
       var splitCount: int = 0;
 
-      var start: _idxt = 1;
+      var start: _idxt = 0;
       var done: bool = false;
       while !done  {
         var chunk: t;
-        var end: _idxt;
+        var end: _idxt = -1;
 
         if (maxsplit == 0) {
           chunk = localThis;
@@ -235,7 +235,7 @@ module BytesStringCommon {
           if (splitAll || splitCount < maxsplit) then
             end = localThis.find(localSep, start..);
 
-          if(end == 0) {
+          if(end == -1) {
             // Separator not found
             chunk = localThis[start..];
             done = true;
@@ -373,7 +373,7 @@ module BytesStringCommon {
     assertArgType(t, "doPartition");
 
     const idx = x.find(sep);
-    if idx != 0 {
+    if idx != -1 {
       return (x[..idx-1], sep, x[idx+sep.numBytes..]);
     } else {
       return (x, "":t, "":t);

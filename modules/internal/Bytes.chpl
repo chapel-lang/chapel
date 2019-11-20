@@ -441,9 +441,9 @@ module Bytes {
       :returns: A 1-length :record:`bytes` 
      */
     proc this(i: int): bytes {
-      if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of bytes: ", i);
-      var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
+      if boundsChecking && (i < 0 || i >= this.len)
+        then halt("index ", i, " out of bounds for bytes with length ", this.len);
+      var (buf, size) = bufferCopy(buf=this.buff, off=i, len=1,
                                    loc=this.locale_id);
       return createBytesWithOwnedBuffer(buf, length=1, size=size);
     }
@@ -474,15 +474,15 @@ module Bytes {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): byteType {
-      if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of bytes: ", i);
-      return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
+      if boundsChecking && (i < 0 || i >= this.len)
+        then halt("index ", i, " out of bounds for bytes with length ", this.len);
+      return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
     }
 
     pragma "no doc"
     inline proc param byte(param i: int) param : uint(8) {
-      if i < 1 || i > this.numBytes then
-        compilerError("index out of bounds of bytes: " + i:string);
+      if i < 0 || i >= this.numBytes then
+        compilerError("index " + i: string + " out of bounds for bytes with length " + this.numBytes:string);
       return __primitive("ascii", this, i);
     }
 
@@ -493,7 +493,7 @@ module Bytes {
      */
     iter these(): bytes {
       if this.isEmpty() then return;
-      for i in 1..this.len do
+      for i in 0..#this.len do
         yield this[i];
     }
 
@@ -503,19 +503,19 @@ module Bytes {
       :yields: uint(8)
     */
     iter chpl_bytes(): byteType {
-      for i in 1..this.len do
+      for i in 0..#this.len do
         yield this.byte(i);
     }
 
     /*
       Slices the :record:`bytes`. Halts if r is non-empty and not completely
-      inside the range ``1..bytes.length`` when compiled with `--checks`.
+      inside the range ``0..#bytes.length`` when compiled with `--checks`.
       `--fast` disables this check.
 
       :arg r: The range of indices the new :record:`bytes` should be made from
 
       :returns: a new :record:`bytes` that is a slice within
-                ``1..bytes.length``. If the length of `r` is zero, an empty
+                ``0..#bytes.length``. If the length of `r` is zero, an empty
                 :record:`bytes` is returned.
      */
     inline proc this(r: range(?)) : bytes {
@@ -529,15 +529,15 @@ module Bytes {
     proc _getView(r:range(?)) where r.idxType == int {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low:int <= 0 then
-            halt("range out of bounds of bytes");
+          if r.low:int < 0 then
+            halt("range ", r, " out of bounds for bytes with length ", this.len);
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high:int < 0) || (r.high:int > this.len) then
-            halt("range out of bounds of bytes");
+          if (r.high:int < -1) || (r.high:int >= this.len) then
+            halt("range ", r, " out of bounds for bytes with length ", this.len);
         }
       }
-      const r1 = r[1:r.idxType..this.len:r.idxType];
+      const r1 = r[0:r.idxType..(this.len-1):r.idxType];
       if r1.stridable {
         const ret = r1.low:int..r1.high:int by r1.stride;
         return ret;
@@ -588,13 +588,13 @@ module Bytes {
 
       :arg region: an optional range defining the indices to search
                    within, default is the whole. Halts if the range is not
-                   within ``1..bytes.length``
+                   within ``0..#bytes.length``
 
       :returns: the index of the first occurrence from the left of `needle`
-                within the :record:`bytes`, or 0 if the `needle` is not in the
+                within the :record:`bytes`, or -1 if the `needle` is not in the
                 :record:`bytes`.
      */
-    inline proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
+    inline proc find(needle: bytes, region: range(?) = 0:idxType..) : idxType {
       return _search_helper(needle, region, count=false): idxType;
     }
 
@@ -605,13 +605,13 @@ module Bytes {
 
       :arg region: an optional range defining the indices to search within,
                    default is the whole. Halts if the range is not
-                   within ``1..bytes.length``
+                   within ``0..#bytes.length``
 
       :returns: the index of the first occurrence from the right of `needle`
-                within the :record:`bytes`, or 0 if the `needle` is not in the
+                within the :record:`bytes`, or -1 if the `needle` is not in the
                 :record:`bytes`.
      */
-    inline proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
+    inline proc rfind(needle: bytes, region: range(?) = 0:idxType..) : idxType {
       return _search_helper(needle, region, count=false,
                             fromLeft=false): idxType;
     }
@@ -623,11 +623,11 @@ module Bytes {
 
       :arg region: an optional range defining the substring to search within,
                    default is the whole. Halts if the range is not
-                   within ``1..bytes.length``
+                   within ``0..#bytes.length``
 
       :returns: the number of times `needle` occurs in the :record:`bytes`
      */
-    inline proc count(needle: bytes, region: range(?) = 1..) : int {
+    inline proc count(needle: bytes, region: range(?) = 0..) : int {
       return _search_helper(needle, region, count=true);
     }
 
@@ -639,12 +639,12 @@ module Bytes {
     inline proc _search_helper(needle: bytes, region: range(?),
                                param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.len, so go to the home locale
-      var ret: int = 0;
+      var ret: int = -1;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        // any value > 0 means we have a solution
+        // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
-        var localRet: int = -1;
+        var localRet: int = -2;
         const nLen = needle.len;
         const view = this._getView(region);
         const thisLen = view.size;
@@ -652,26 +652,26 @@ module Bytes {
         // Edge cases
         if count {
           if nLen == 0 { // Empty needle
-            localRet = view.size+1;
+            localRet = view.size;
           }
         } else { // find
           if nLen == 0 { // Empty needle
             if fromLeft {
-              localRet = 0;
+              localRet = -1;
             } else {
               localRet = if thisLen == 0
-                then 0
-                else thisLen+1;
+                then -1
+                else thisLen;
             }
           }
         }
 
         if nLen > thisLen {
-          localRet = 0;
+          localRet = -1;
         }
 
-        if localRet == -1 {
-          localRet = 0;
+        if localRet == -2 {
+          localRet = -1;
           const localNeedle = needle.localize();
           const needleLen = localNeedle.len;
 
@@ -683,7 +683,7 @@ module Bytes {
               else 0..#(numPossible) by -1;
           for i in searchSpace {
             const bufIdx = view.orderToIndex(i);
-            const found = bufferEqualsLocal(buf1=this.buff, off1=bufIdx-1,
+            const found = bufferEqualsLocal(buf1=this.buff, off1=bufIdx,
                                             buf2=localNeedle.buff, off2=0,
                                             len=needleLen);
             if found {
@@ -693,9 +693,10 @@ module Bytes {
                 localRet = view.orderToIndex(i);
               }
             }
-            if !count && localRet != 0 then break;
+            if !count && localRet != -1 then break;
           }
         }
+        if count then localRet += 1;
         ret = localRet;
       }
       return ret;
@@ -756,12 +757,12 @@ module Bytes {
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        const iEnd: idxType = localThis.len - 1;
+        const iEnd: idxType = localThis.len - 2;
 
         var inChunk : bool = false;
         var chunkStart : idxType;
 
-        for (i,c) in zip(1.., localThis.bytes()) {
+        for (i,c) in zip(0.., localThis.bytes()) {
           // emit whole string, unless all whitespace
           // TODO Engin: Why is this inside the loop?
           if noSplits {
@@ -892,11 +893,11 @@ module Bytes {
       const localThis: bytes = this.localize();
       const localChars: bytes = chars.localize();
 
-      var start: idxType = 1;
-      var end: idxType = localThis.len;
+      var start: idxType = 0;
+      var end: idxType = localThis.len-1;
 
       if leading {
-        label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
+        label outer for (i, thisChar) in zip(0.., localThis.bytes()) {
           for removeChar in localChars.bytes() {
             if thisChar == removeChar {
               start = i + 1;
@@ -913,7 +914,7 @@ module Bytes {
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
         end = 0;
-        label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
+        label outer for (i, thisChar) in zip(0.., localThis.bytes()) {
           for removeChar in localChars.bytes() {
             if thisChar == removeChar {
               continue outer;
