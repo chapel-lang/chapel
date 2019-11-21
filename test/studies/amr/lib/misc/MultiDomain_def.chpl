@@ -576,7 +576,7 @@ class MDNode
     var subranges: rank*range(stridable=stridable);
     
     for d in 0..rank-1          do subranges(d) = Domain.dim(d);
-    for d in bisect_dim-1..rank-1 do subranges(d) = Domain.dim(d);    
+    for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);    
     
     subranges(bisect_dim-1) = Domain.low(bisect_dim-1) .. right_low-Domain.stride(bisect_dim-1) by Domain.stride(bisect_dim-1);
     
@@ -595,7 +595,7 @@ class MDNode
     var subranges: rank*range(stridable=stridable);
     
     for d in 0..rank-1          do subranges(d) = Domain.dim(d);
-    for d in bisect_dim-1..rank-1 do subranges(d) = Domain.dim(d);
+    for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);
     
     subranges(bisect_dim-1) = right_low .. Domain.high(bisect_dim-1) by Domain.stride(bisect_dim-1);
     

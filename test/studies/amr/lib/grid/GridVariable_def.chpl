@@ -208,7 +208,7 @@ proc GridVariable.writeData (
     //------------------------------------------------------------
     var range_tuple: dimension*range(stridable=true);
     [d in dimensions with (ref range_tuple)] // could also be 'for param d'
-    range_tuple(d) = grid.cells.dim(dimension - (d+1));
+      range_tuple(d) = grid.cells.dim(dimension - (d+1));
 
     var cells_transposed: domain(dimension, stridable=true);
     cells_transposed = {(...range_tuple)};
