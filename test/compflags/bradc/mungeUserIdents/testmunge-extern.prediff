@@ -21,15 +21,19 @@ for line in open(actualGenCodeFile):
     for key in counts:
         if key in line:
             refkey = "_ref_" + key
+            heapkey = "heap_" + key
             if not refkey in line:
-                counts[key] += 1
+                if not heapkey in line:
+                    counts[key] += 1
 
 for line in open(genHeader):
     for key in counts:
         if key in line:
             refkey = "_ref_" + key
+            heapkey = "heap_" + key
             if not refkey in line:
-                counts[key] += 1
+                if not heapkey in line:
+                    counts[key] += 1
 
 with open(testOutputFile, 'a') as f:
     success = True
