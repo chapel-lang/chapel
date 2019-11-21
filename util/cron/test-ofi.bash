@@ -4,10 +4,12 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 
+source $CWD/common.bash
+source $CWD/common-cray-cs.bash
 source $CWD/common-ofi.bash || \
   ( echo "Could not set up comm=ofi testing." && exit 1 )
 
-if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-cs ] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-cs ]] ; then
   # Need fixed heap on CS systems.
   # As we test on more targets we might need to adjust this to be a
   # check against the expected libfabric provider.
