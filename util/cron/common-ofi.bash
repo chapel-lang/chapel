@@ -2,12 +2,7 @@
 #
 # Configure environment for CHPL_COMM=ofi testing.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-
-source $CWD/common.bash
-source $CWD/common-cs.bash
-
-if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
   source $CWD/common-oversubscribed.bash
 fi
 
@@ -22,9 +17,9 @@ export CHPL_COMM=ofi
 # stopgap mpirun4ofi launcher, in which case we also need MPI and the
 # MPI-based out-of-band support.
 lchOK=
-if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-x* ] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-x* ]] ; then
   lchOK=y
-elif [ "$($CHPL_HOME/util/chplenv/chpl_launcher.py)" == slurm-srun ] && \
+elif [[ "$($CHPL_HOME/util/chplenv/chpl_launcher.py)" == slurm-srun ]] && \
      srun --mpi=list 2>&1 | grep -q pmix && \
      module avail pmix 2>&1 | grep -q pmix ; then
   module load pmix
@@ -50,7 +45,7 @@ fi
 # Make sure we have a libfabric to use, with the required API version.
 source /cray/css/users/chapelu/setup_libfabric.bash || return 1
 
-if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
   # Bump the timeout slightly if we might be oversubscribed.
   export CHPL_TEST_TIMEOUT=500
 fi

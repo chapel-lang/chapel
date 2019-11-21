@@ -7,27 +7,23 @@ CWD=$(cd $(dirname $0) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-cs'
 
 source $CWD/common-perf.bash
+export CHPL_TEST_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-node-cs
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.ofi"
 
-module load gcc
-module load python/2.7.6
-module load pmix
+source $CWD/common-cray-cs.bash y
+source $CWD/common-perf-cray-cs.bash
+source $CWD/common-ofi.bash
 
-export CHPL_HOST_PLATFORM=cray-cs
-export CHPL_COMM=ofi
-export CHPL_COMM_OFI_OOB=slurm-pmi2
-export SLURM_MPI_TYPE=pmix
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-cs ]] || \
+   [[ "$CHPL_COMM_OFI_OOB" != slurm-pmi2 ]] || \
+   [[ "$SLURM_MPI_TYPE" != pmix ]] ; then
+  log_error "Unexpected environment for Cray CS comm=ofi testing.  Exiting."
+  exit 1
+fi
+
 export CHPL_RT_MAX_HEAP_SIZE=83G
-export CHPL_LAUNCHER=slurm-srun
-export CHPL_LAUNCHER_PARTITION=bdw18
-export CHPL_TARGET_CPU=broadwell
-
-source /cray/css/users/chapelu/setup_libfabric.bash || return 1
-
 nightly_args="${nightly_args} -no-buildcheck"
+perf_args="-performance-description ofi -numtrials 1"
 
-perf_args="-performance-description ofi -performance-configs gn-ibv-large,gn-ibv-fast:v,gn-mpi,ofi:v"
-perf_args="${perf_args} -performance -perflabel ml- -numtrials 1 -startdate 11/20/19"
-
-$CWD/nightly -cron ${perf_args} ${nightly_args}
+$CWD/nightly -cron ${perf_args} ${perf_cray_cs_args} ${nightly_args}
