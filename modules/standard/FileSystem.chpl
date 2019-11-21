@@ -1183,7 +1183,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
       const filename = createStringWithNewBuffer(ent.d_name());
-      if (hidden || filename[1] != '.') {
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 

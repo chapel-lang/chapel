@@ -559,7 +559,7 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:reMatch) {
-  if m.matched then return this[m.offset+1..#m.length];
+  if m.matched then return this[m.offset..#m.length];
   else return "";
 }
 
@@ -851,7 +851,7 @@ record regexp {
 
       if pos < splitstart {
         // Yield splitted value
-        yield text[pos+1..splitstart];
+        yield text[pos..splitstart-1];
       } else {
         yield "";
       }
