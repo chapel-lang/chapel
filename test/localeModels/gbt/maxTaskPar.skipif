@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# Skip the test if we're running with a synthetic NUMA domain count.
+# When we use that feature we don't end up with an entirely rational
+# topology and thus the program's output is somewhat bizarre.  Making
+# the .prediff match that would be hard.
+
+if [ -n "$CHPL_RT_NUM_NUMA_DOMAINS" ] ; then
+    echo "True"
+else
+    echo "False"
+fi

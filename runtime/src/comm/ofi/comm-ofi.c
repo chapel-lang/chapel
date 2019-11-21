@@ -24,7 +24,6 @@
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 
-// #include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
@@ -66,6 +65,14 @@
 #include <rdma/fi_endpoint.h>
 #include <rdma/fi_errno.h>
 #include <rdma/fi_rma.h>
+
+
+////////////////////////////////////////
+//
+// This is the libfabric API version we need.
+//
+
+#define COMM_OFI_FI_VERSION FI_VERSION(1, 8)
 
 
 ////////////////////////////////////////
@@ -160,10 +167,12 @@ static inline struct perTxCtxInfo_t* tciAlloc(void);
 static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static inline chpl_bool tciTryRealloc(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
-static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
-                                                void*, size_t);
-static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
-                                                void*, size_t);
+static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
+                                            void*, size_t);
+static inline void ofi_put_ll(const void*, c_nodeid_t,
+                              void*, size_t, void*);
+static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
+                                            void*, size_t);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
 static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
                                     chpl_comm_taskPrvData_t*);
@@ -360,8 +369,9 @@ chpl_bool isInProviderName(const char* s) {
 static __thread chpl_bool isAmHandler = false;
 
 typedef enum {
-  txnTrkDone,        // *ptr is 'txnDone' flag
-  txnTrkTskprvCntr,  // *ptr is initiator's chpl_comm_taskPrvData_t.txnCntr
+  txnTrkNone,  // no tracking, ptr is ignored
+  txnTrkDone,  // *ptr is atomic bool 'done' flag
+  txnTrkCntr,  // *ptr is plain int (caller responsible for de-conflict)
 } txnTrkType_t;
 
 typedef struct {
@@ -461,8 +471,6 @@ void chpl_comm_post_task_init(void) {
     return;
   init_ofi();
   init_bar();
-
-  // chpl_cache_init();
 }
 
 
@@ -475,6 +483,27 @@ void init_ofi(void) {
   init_ofiForMem();
   init_ofiForRma();
   init_ofiForAms();
+
+  DBG_PRINTF(DBG_CFG,
+             "AM config: recv buf size %zd MiB, %s, responses use %s",
+             ofi_iov_reqs.iov_len / (1L << 20),
+             (ofi_amhWaitSet == NULL) ? "polling" : "wait set",
+             (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
+  if (useScalableTxEp) {
+    DBG_PRINTF(DBG_CFG,
+               "per node config: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  } else {
+    DBG_PRINTF(DBG_CFG,
+               "per node config: %d regular tx ep+ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  }
 }
 
 
@@ -536,8 +565,7 @@ void init_ofiFabricDomain(void) {
   }
 
   int ret;
-  OFI_CHK_2(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
-                       NULL, NULL, 0, hints, &ofi_info),
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
             ret, -FI_ENODATA);
 
   if (chpl_nodeID == 0) {
@@ -551,8 +579,7 @@ void init_ofiFabricDomain(void) {
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
-                           NULL, NULL, 0, NULL, &info));
+        OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, NULL, &info));
         for ( ; info != NULL; info = info->next) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL
@@ -884,22 +911,6 @@ void init_ofiEpNumCtxs(void) {
   //
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
   numRxCtxs = numAmHandlers;
-
-  if (useScalableTxEp) {
-    DBG_PRINTF(DBG_CFG,
-               "per node: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
-               "%d rx ctx%s",
-               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? fixedNumThreads : 0,
-               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
-  } else {
-    DBG_PRINTF(DBG_CFG,
-               "per node: %d regular tx ep+ctx%s (%d fixed), "
-               "%d rx ctx%s",
-               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? fixedNumThreads : 0,
-               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
-  }
 }
 
 
@@ -1870,7 +1881,7 @@ void amRequestCommon(c_nodeid_t node,
       atomic_init_bool(&txnDone, false);
       ctx = txnTrkEncode(txnTrkDone, &txnDone);
     } else {
-      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
       prvData->numTxnsOut++;  // count txn now, saving control flow later
     }
   } else {
@@ -2255,13 +2266,12 @@ void amWrapExecOnLrgBody(void* p) {
     static __thread chpl_comm_amDone_t* myGotArg = NULL;
     if (myGotArg == NULL) {
       myGotArg = allocBounceBuf(1);
-      CHK_TRUE(mrGetDesc(NULL, myGotArg, 1) == 0);
       *myGotArg = 1;
     }
 
     chpl_comm_amDone_t* origGotArg = &reqOnOrig->comm.xol.gotArg;
-    CHK_TRUE(mrGetKey(NULL, NULL, node, origGotArg, sizeof(*origGotArg)) == 0);
-    (void) ofi_put(myGotArg, node, origGotArg, sizeof(*origGotArg));
+    ofi_put_ll(myGotArg, node, origGotArg, sizeof(*origGotArg),
+               txnTrkEncode(txnTrkNone, NULL));
   }
 
   //
@@ -2395,14 +2405,13 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
   static __thread chpl_comm_amDone_t* amDone = NULL;
   if (amDone == NULL) {
     amDone = allocBounceBuf(1);
-    CHK_TRUE(mrGetDesc(NULL, amDone, 1) == 0);
     *amDone = 1;
   }
 
-  CHK_TRUE(mrGetKey(NULL, NULL, b->node, pAmDone, sizeof(*pAmDone)) == 0);
   DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone %p",
              (int) b->node, b->seq, pAmDone);
-  (void) ofi_put(amDone, b->node, pAmDone, sizeof(*pAmDone));
+  ofi_put_ll(amDone, b->node, pAmDone, sizeof(*pAmDone),
+             txnTrkEncode(txnTrkNone, NULL));
 }
 
 
@@ -2549,6 +2558,54 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                   commID, ln, fn);
 }
 
+#define MAX_UNORDERED_TRANS_SZ 1024
+void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                c_nodeid_t srcnode, void* srcaddr,
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn) {
+  assert(dstaddr != NULL);
+  assert(srcaddr != NULL);
+
+  if (size == 0)
+    return;
+
+  if (dstnode == chpl_nodeID && srcnode == chpl_nodeID) {
+    memmove(dstaddr, srcaddr, size);
+    return;
+  }
+
+  if (dstnode == chpl_nodeID) {
+    chpl_comm_get(dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+  } else if (srcnode == chpl_nodeID) {
+    chpl_comm_put(srcaddr, dstnode, dstaddr, size, commID, ln, fn);
+  } else {
+    if (size <= MAX_UNORDERED_TRANS_SZ) {
+      char buf[MAX_UNORDERED_TRANS_SZ];
+      chpl_comm_get(buf, srcnode, srcaddr, size, commID, ln, fn);
+      chpl_comm_put(buf, dstnode, dstaddr, size, commID, ln, fn);
+    } else {
+      // Note, we do not expect this case to trigger, but if it does we may
+      // want to do on-stmt to src node and then transfer
+      char* buf = chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+      chpl_comm_get(buf, srcnode, srcaddr, size, commID, ln, fn);
+      chpl_comm_put(buf, dstnode, dstaddr, size, commID, ln, fn);
+      chpl_mem_free(buf, 0, 0);
+    }
+  }
+}
+
+void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn) {
+  chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+}
+
+void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn) {
+  chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+}
+
+void chpl_comm_getput_unordered_task_fence(void) { }
+
 
 ////////////////////////////////////////
 //
@@ -2689,9 +2746,29 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
 }
 
 
-static /*inline*/
+static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
+  //
+  // Don't ask the provider to transfer more than it wants to.
+  //
+  if (size > ofi_info->ep_attr->max_msg_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "splitting large PUT %d:%p <= %p, size %zd",
+               (int) node, raddr, addr, size);
+
+    size_t chunkSize = ofi_info->ep_attr->max_msg_size;
+    for (size_t i = 0; i < size; i += chunkSize) {
+      if (chunkSize > size - i) {
+        chunkSize = size - i;
+      }
+      (void) ofi_put(&((const char*) addr)[i], node, &((char*) raddr)[i],
+                     chunkSize);
+    }
+
+    return NULL;
+  }
+
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
@@ -2767,9 +2844,58 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 }
 
 
-static /*inline*/
+static inline
+void ofi_put_ll(const void* addr, c_nodeid_t node,
+                 void* raddr, size_t size, void* ctx) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "PUT %d:%p <= %p, size %zd",
+             (int) node, raddr, addr, size);
+
+  uint64_t mrKey = 0;
+  uint64_t mrRaddr = 0;
+  CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0);
+
+  void* myAddr = (void*) addr;
+  void* mrDesc = NULL;
+  CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
+             (int) node, raddr, myAddr, size, mrKey, ctx);
+  OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
+                               mrDesc, rxRmaAddr(tcip, node),
+                               mrRaddr, mrKey, ctx),
+                      checkTxCQ(tcip));
+  tciFree(tcip);
+}
+
+
+static inline
 chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
+  //
+  // Don't ask the provider to transfer more than it wants to.
+  //
+  if (size > ofi_info->ep_attr->max_msg_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "splitting large GET %p <= %d:%p, size %zd",
+               addr, (int) node, raddr, size);
+
+    size_t chunkSize = ofi_info->ep_attr->max_msg_size;
+    for (size_t i = 0; i < size; i += chunkSize) {
+      if (chunkSize > size - i) {
+        chunkSize = size - i;
+      }
+      (void) ofi_get(&((char*) addr)[i], node, &((char*) raddr)[i],
+                     chunkSize);
+    }
+
+    return NULL;
+  }
+
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
@@ -2892,7 +3018,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
       waitForCQAllTxns(tcip, prvData);
       ctx = txnTrkEncode(txnTrkDone, &txnDone);
     } else {
-      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
       prvData->numTxnsOut++;  // counting txn now allows smaller prvData scope
     }
   } else {
@@ -3012,12 +3138,14 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
       DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64, cqe->flags);
       const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
       switch (trk.typ) {
+      case txnTrkNone:
+        break;
       case txnTrkDone:
         atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
                                    memory_order_release);
         break;
-      case txnTrkTskprvCntr:
-        ((chpl_comm_taskPrvData_t*) trk.ptr)->numTxnsOut--;
+      case txnTrkCntr:
+        (*((int*) trk.ptr))--;
         break;
       default:
         INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);

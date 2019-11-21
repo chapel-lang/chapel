@@ -661,31 +661,9 @@ module DefaultAssociative {
       if found {
         return data[slotNum];
 
-      // if the element didn't exist, then this is either:
-      //
-      // - an error if the array does not own the domain (it's
-      //   trying to get a reference to an element that doesn't exist)
-      //
-      // - an indication that we should grow the domain + array to
-      //   include the element
-      } else if slotNum != -1 {
-
-        const arrOwnsDom = dom._arrs.length == 1;
-        if !arrOwnsDom {
-          // here's the error case
-          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
-          return data(0);
-        } else {
-          // grow the table
-          warning("growing associative domains by assigning to an array is deprecated");
-          const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
-
-          // and return the element
-          return data[newSlot];
-        }
+      // if the element didn't exist, then it is an error
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -1043,7 +1021,7 @@ module DefaultAssociative {
   
   // Is 'idxType' legal to create a default associative domain with?
   // Currently based on the availability of chpl__defaultHash().
-  // Enumerated, opaque, and sparse domains are handled separately.
+  // Enumerated and sparse domains are handled separately.
   // Tuples and records also work, somehow.
   proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
   

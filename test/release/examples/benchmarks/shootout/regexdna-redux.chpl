@@ -6,6 +6,7 @@
 
    converted from regex-dna program
 */
+use IO;
 
 proc main(args: [] string) {
   var variants = [

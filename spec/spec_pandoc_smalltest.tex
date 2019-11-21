@@ -1,0 +1,263 @@
+% Why is this hard?
+% see https://github.com/jgm/pandoc/issues/4770
+% https://github.com/jgm/pandoc/issues/4302
+
+\documentclass[10pt,oneside,titlepage]{spec}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{times}
+%\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage[nottoc]{tocbibind}
+\usepackage{multirow}
+%\usepackage{verbatim}
+\usepackage{fvextra}
+\input{chapel_testing}
+\input{chapel_listing_pandoc}
+\input{syntax_listing_pandoc}
+
+%% High section numbers require different number widths
+\usepackage[titles]{tocloft}
+\setlength{\cftchapnumwidth}{1.3em} % Wide enough for a chapter number.
+\setlength{\cftsecnumwidth}{3.2em}  % Same as cftsubsecnumwidth:
+\setlength{\cftsubsecnumwidth}{3.2em} % Wide enough for three digits and two dots.
+%\setlength{\cftsubsubsecnumwidth}{5.4em}
+\setlength{\cftsecindent}{1.3em}    % cftchapnumwidth
+\setlength{\cftsubsecindent}{1.3em} % cftchapnumwidth
+\setlength{\cftsubsubsecindent}{4.5em} % cftchapnumwidth + cftsecnumwidth
+
+% This can be re-enabled in order to aid in spec editing/reviewing.
+%% bring in todonotes and make sure we have enough space in the margins. Also
+%% note, even side margin is changed below since I couldn't figure out how to
+%% force notes to the right side.
+%\usepackage[paperwidth=9.5in, paperheight=11in]{geometry}
+%\setlength{\marginparwidth}{1.8in}
+%\usepackage[colorinlistoftodos, textwidth=1.8in, shadow]{todonotes}
+
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex,
+            bookmarks,
+            plainpages=false,
+            breaklinks,
+            pdftitle={Chapel Language Specification},
+            pdfauthor={Cray Inc, 901 Fifth Avenue Suite 1000, Seattle, WA 98164},
+            pdfsubject={Chapel High Productivity Language}
+           ]{hyperref}
+\else
+\usepackage[ps2pdf]{hyperref}
+\fi
+
+\newcommand{\ie}{\emph{i.e.}}
+\newcommand{\eg}{\emph{e.g.}}
+
+\newenvironment{TODO} {
+\begin{quote}
+{\it TODO:}
+}{
+\end{quote}
+}
+
+\newenvironment{example}{
+\begin{quote}
+{\it Example}.
+}{
+\end{quote}
+}
+
+\newenvironment{chapelexample}[1]{
+\begin{quote}
+{\it Example (#1)}.
+}{
+\end{quote}
+}
+
+\newenvironment{note}{
+\begin{quote}
+{\it Implementors' note}.
+}{
+\end{quote}
+}
+
+\newenvironment{rationale}{
+\begin{quote}
+{\it Rationale}.
+}{
+\end{quote}
+}
+
+\newenvironment{openissue}{
+\begin{quote}
+{\it Open issue}.
+}{
+\end{quote}
+}
+
+\newenvironment{future}{
+\begin{quote}
+{\it Future}.
+}{
+\end{quote}
+}
+
+\newenvironment{craychapel}{
+\begin{quote}
+{\it Cray's Chapel Implementation}.
+}{
+\end{quote}
+}
+
+\newenvironment{suggestionbox}{
+\begin{quote}
+{\it Suggestions?}
+}{
+\end{quote}
+}
+
+\newcommand{\rsec}[1]
+           {\S\ref{#1}}
+
+% courtesy: http://www.iam.ubc.ca/~newbury/tex/page-set-up.html
+\newcommand{\sekshun}[1]
+           {
+             \chapter{#1}
+             \markboth{Chapel Language Specification}{#1}
+           }
+
+\oddsidemargin 0.0in
+% not needed with onesided version \evensidemargin 0.5in
+\textwidth 6.5in
+\headheight 0.2in
+\topmargin 0in
+\headsep 0.3in
+\textheight 8.5in
+
+\makeindex
+\title{Chapel Language Specification\\Version 0.987}
+
+\author{Cray Inc\\
+901 Fifth Avenue, Suite 1000\\
+Seattle, WA 98164}
+
+\date{March 21, 2019}
+
+\setcounter{tocdepth}{3}
+
+\begin{document}
+
+\pagestyle{empty}
+%\pagenumbering{alph}
+
+\ifpdf
+\pdfbookmark[1]{Title}{titlepage}
+\fi
+\maketitle
+
+\setcounter{page}{2}
+\null\vfill
+\noindent
+\begin{center}
+\copyright 2019 Cray Inc.
+\end{center}
+
+\pagestyle{myheadings}
+\markboth{Chapel Language Specification}{Chapel Language Specification}
+%\pagenumbering{roman}
+
+\ifpdf
+\pdfbookmark[1]{Table of Contents}{tablecontents}
+\fi
+\tableofcontents
+
+\cleardoublepage
+
+\pagestyle{myheadings}
+%\pagenumbering{arabic}
+
+\setlength{\parindent}{0in}
+\setlength{\parskip}{4mm plus2mm minus1mm}
+
+\chpl{hello_there}
+
+\begin{invisible}
+otherwise
+\end{invisible}
+
+\begin{chapel}
+\begin{verbatim}
+_
+align
+as
+\end{verbatim}
+\end{chapel}
+
+\chpl{var_}
+
+\begin{chapel}
+\begin{verbatim}
+var x;
+\end{verbatim}
+\end{chapel}
+
+\begin{chapel}
+\begin{verbatim}
+proc test() { var x;
+}
+\end{verbatim}
+\end{chapel}
+
+\begin{chapel}
+\begin{verbatim}
+proc g() { writeln("side effect"); return "a string"; }
+var a, b = 1.0, c, d:int, e, f = g();
+\end{verbatim}
+\end{chapel}
+\begin{chapelpost}
+\begin{verbatim}
+writeln((a,b,c,d,e,f));
+\end{verbatim}
+\end{chapelpost}
+
+\begin{chapel}
+\begin{verbatim}
+var myInt = 51;
+ref refInt = myInt;                   // alias of a local or global variable
+myInt = 62;
+writeln("refInt = ", refInt);
+refInt = 73;
+writeln("myInt = ", myInt);
+
+var myArr: [1..3] int = 51;
+proc arrayElement(i) ref  return myArr[i];
+ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
+myArr[3] = 62;
+writeln("refToExpr = ", refToExpr);
+refToExpr = 73;
+writeln("myArr[3] = ", myArr[3]);
+
+const constArr: [1..3] int = 51..53;
+const ref myConstRef = constArr[2];   // would be an error without 'const'
+writeln("myConstRef = ", myConstRef);
+\end{verbatim}
+\end{chapel}
+
+
+\begin{tabular}{p{2in}p{2in}}
+\begin{chapel}
+\begin{verbatim}
+lambda
+pragma
+primitive
+\end{verbatim}
+\end{chapel}
+\\
+\begin{invisible}
+otherwise
+\end{invisible}
+\end{tabular}
+
+\end{document}

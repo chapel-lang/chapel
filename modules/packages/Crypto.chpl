@@ -83,6 +83,8 @@ module Crypto {
   use C_OpenSSL;
   use SysError;
 
+  private use IO;
+
   pragma "no doc"
   proc generateKeys(bits: int) {
    var localKeyPair: EVP_PKEY_PTR;

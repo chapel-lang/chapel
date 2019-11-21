@@ -31,6 +31,8 @@ module LocaleModel {
   use LocaleModelHelpNUMA;
   use LocaleModelHelpMem;
 
+  private use IO;
+
   //
   // The task layer calls these to convert between full sublocales and
   // execution sublocales.  Full sublocales may contain more information
@@ -72,7 +74,7 @@ module LocaleModel {
       ndName = "ND"+sid:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       if parent then
         parent!.writeThis(f);
       f <~> '.'+ndName;
@@ -197,7 +199,7 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      helpSetupLocaleNUMA(this, local_name, numSublocales);
+      helpSetupLocaleNUMA(this, local_name, numSublocales, NumaDomain);
     }
     //------------------------------------------------------------------------}
 
@@ -246,7 +248,7 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 

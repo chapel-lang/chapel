@@ -6,6 +6,7 @@
      as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
      and Preston Sahabu.
 */
+use IO;
 
 config param numSockets = 2;      // number of sockets on this numa node
 

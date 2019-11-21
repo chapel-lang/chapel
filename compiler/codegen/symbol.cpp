@@ -35,6 +35,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "fixupExports.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "LayeredValueTable.h"
@@ -1070,8 +1071,7 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
 std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   Type* t = getArgSymbolCodegenType(this);
 
-  if (t->symbol->hasFlag(FLAG_REF) &&
-      t->getValType() == dtExternalArray &&
+  if (t->getValType() == dtExternalArray &&
       (pxd == PYTHON_PYX || pxd == C_PYX)
       && exportedArrayElementType[this] != NULL) {
     // Allow python declarations to accept anything iterable to translate to
@@ -1081,6 +1081,14 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
              t->getValType() == dtOpaqueArray &&
              (pxd == PYTHON_PYX || pxd == C_PYX)) {
     return "ChplOpaqueArray ";
+  } else if (pxd == C_PYX && t->getValType() == exportTypeChplBytesWrapper) {
+    //
+    // For now, bytes uses an arg check in the body of the routine to ensure
+    // that the argument is bytes.
+    //
+    // TODO: Better place to put this?
+    //
+    return "";
   } else {
     return getPythonTypeName(t, pxd) + " ";
   }
@@ -1105,8 +1113,38 @@ std::string ArgSymbol::getPythonArgTranslation() {
     std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
     res += "\n";
     return res;
-  } else if (t->symbol->hasFlag(FLAG_REF) &&
-             t->getValType() == dtExternalArray) {
+  } else if (t->getValType() == exportTypeChplBytesWrapper) {
+    std::string res;
+
+    // First, check to see if the input type is the Python "bytes" type.
+    res += "\tif type(" + strname + ") != bytes:\n";
+    res += "\t\traise TypeError(\"Expected \'bytes\' in conversion to ";
+    res += " \'chpl_bytes_wrapper\', ";
+    res += "found \" + str(type(" + strname + ")))\n";
+
+    // Get the size of the bytes buffer.
+    std::string argsize = "size_" + strname;
+    res += "\tcdef size_t " + argsize + " = len(" + strname + ")\n";
+
+    // Get a handle to the bytes buffer.
+    std::string argdata = "data_" + strname;
+    res += "\tcdef char* " + argdata + " = " + strname + "\n";
+
+    // Declare a struct by value on the stack.
+    std::string wrapval = "chpl_" + strname + "_val";
+
+    // Create a chpl_bytes_wrapper struct that represents a shallow copy.
+    res += "\tcdef chpl_bytes_wrapper " + wrapval + "\n";
+    res += "\t" + wrapval + ".isOwned = 0\n";
+    res += "\t" + wrapval + ".data = " + argdata + "\n";
+    res += "\t" + wrapval + ".size = " + argsize + "\n";
+
+    // The final result is a copy of the stack allocated struct.
+    res += "\tcdef chpl_bytes_wrapper chpl_" + strname;
+    res += " = " + wrapval + "\n";
+
+    return res;
+  } else if (t->getValType() == dtExternalArray) {
     // Handle arrays
     if (Symbol* eltType = exportedArrayElementType[this]) {
       // The element type will be recorded in the exportedArrayElementType map
@@ -2187,8 +2225,24 @@ GenRet FnSymbol::codegenPYXType() {
   // Return statement, if applicable
   std::string returnStmt = "";
   if (retType != dtVoid) {
-    if (retType == dtExternalArray &&
-        exportedArrayElementType[this] != NULL) {
+    if (retType == exportTypeChplBytesWrapper) {
+
+      // The raw result of the routine call, a "chpl_bytes_wrapper".
+      funcCall += "cdef chpl_bytes_wrapper rdat = ";
+
+      // Convert the "chpl_bytes_wrapper" struct to a Python bytes.
+      returnStmt += "\tcdef char* rdata = rdat.data\n";
+      returnStmt += "\tcdef Py_ssize_t rsize = rdat.size\n";
+      returnStmt += "\tcdef char* v = rdat.data\n";
+
+      // Create a new Python bytes that is a copy of the Chapel string.
+      returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
+
+      // This will free the "chpl_bytes_wrapper" buffer if required.
+      returnStmt += "\tchpl_bytes_wrapper_free(rdat)\n";
+
+    } else if (retType == dtExternalArray &&
+             exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";
       returnStmt += getPythonArrayReturnStmts();
     } else if (retType == dtOpaqueArray) {
@@ -2227,9 +2281,6 @@ GenRet FnSymbol::codegenPYXType() {
       if (curArgTranslate != "") {
         argTranslate += curArgTranslate;
         if (argType == "" && formal->type->getValType() == dtExternalArray) {
-          // Happens when the argument type is an array
-          // We need to send in the wrapper we created by reference
-          funcCall += "&";
           // And we need to clean it up when we are done with it
           std::string oldRetStmt = returnStmt;
           returnStmt = "\tchpl_free_external_array(chpl_";

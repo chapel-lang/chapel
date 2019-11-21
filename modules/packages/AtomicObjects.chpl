@@ -375,7 +375,7 @@ prototype module AtomicObjects {
       return __ABA_cnt;
     }
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.getObject() <~> "}";
     }
 
@@ -603,7 +603,7 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> atomicVariable.read();
     }
   }

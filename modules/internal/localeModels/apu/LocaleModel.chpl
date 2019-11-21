@@ -30,6 +30,8 @@ module LocaleModel {
   use LocaleModelHelpAPU;
   use LocaleModelHelpMem;
 
+  private use IO;
+
   //
   // The task layer calls these to convert between full sublocales and
   // execution sublocales.  Full sublocales may contain more information
@@ -68,7 +70,7 @@ module LocaleModel {
       name = _parent.chpl_name() + "-CPU" + sid:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent.writeThis(f);
       f <~> '.'+name;
     }
@@ -112,7 +114,7 @@ module LocaleModel {
       name = _parent.chpl_name() + "-GPU" + sid:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent.writeThis(f);
       f <~> '.'+name;
     }
@@ -215,7 +217,7 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      helpSetupLocaleAPU(this, local_name, numSublocales);
+      helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
     }
     //------------------------------------------------------------------------}
 
@@ -267,7 +269,7 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 

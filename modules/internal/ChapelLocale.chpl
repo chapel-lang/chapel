@@ -186,7 +186,24 @@ module ChapelLocale {
     proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
 
     /*
-      Get the name of this locale.
+      Get the hostname of this locale.
+
+      :returns: the hostname of the compute node associated with the locale
+      :rtype: string
+    */
+    proc hostname: string {
+      extern proc chpl_nodeName(): c_string;
+      var hname: string;
+      on this {
+        hname = createStringWithNewBuffer(chpl_nodeName());
+      }
+      return hname;
+    }
+
+    /*
+      Get the name of this locale.  In practice, this is often the
+      same as the hostname, though in some cases (like when using
+      local launchers), it may be modified.
 
       :returns: locale name
       :rtype: string
@@ -285,12 +302,6 @@ module ChapelLocale {
     proc highBandwidthMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
       return this;
-    }
-
-    // A useful default definition is provided (not pure virtual).
-    pragma "no doc"
-    override proc writeThis(f) {
-      f <~> name;
     }
 
     pragma "no doc"

@@ -1,3 +1,5 @@
+use IO;
+
 config const inputfile = "easy.dat";
 
 var givenBoard: [1..9, 1..9] int;  // The given board

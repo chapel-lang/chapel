@@ -1,3 +1,5 @@
+use IO;
+
 var ff = openwriter("test.dat");
 var m,x,y,z,vx,vy,vz : real;
 m=0;

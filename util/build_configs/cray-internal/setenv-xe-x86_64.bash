@@ -126,9 +126,9 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         log_info "Building Chapel component: runtime"
 
         compilers=gnu,cray,intel
-        comms=gasnet,none,ugni
+        comms=none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
-        substrates=gemini,mpi,none
+        substrates=none
         auxfs=none,lustre
 
         log_info "Start build_configs $dry_run $verbose # no make target"

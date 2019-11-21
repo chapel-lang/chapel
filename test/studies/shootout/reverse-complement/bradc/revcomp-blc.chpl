@@ -4,6 +4,7 @@
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the Rust #2 version by Matt Brubeck
 */
+use IO;
 
 use IO;
 

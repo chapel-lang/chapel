@@ -99,6 +99,8 @@ module List {
     }
   }
 
+  private use IO;
+
   /*
     A list is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. Unlike a stack, the
@@ -1357,7 +1359,7 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) {
+    proc readWriteThis(ch: channel) throws {
       _enter();
       
       ch <~> "[";

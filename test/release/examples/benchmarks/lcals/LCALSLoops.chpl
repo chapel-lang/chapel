@@ -25,8 +25,7 @@ module LCALSLoops {
     ia = 0;
   }
 
-  proc initData(ra: LCALS_Overlapping_Array_3D, id: int) {
-    compilerAssert(ra.t == real);
+  proc initData(ra: LCALS_Overlapping_Array_3D(real), id: int) {
     const factor: Real_type = if id % 2 != 0 then 0.1 else 0.2;
     for (r,j) in zip(ra, 0..) {
       r = factor*(j + 1.1)/(j + 1.12345);

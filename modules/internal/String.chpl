@@ -216,7 +216,7 @@ module String {
     proc init(i: int) { _bindex = i; }
     proc init=(i: int) { _bindex = i; }
 
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> _bindex;
     }
   }
@@ -255,7 +255,7 @@ module String {
     proc init(i: int) { _cpindex = i; }
     proc init=(i: int) { _cpindex = i; }
 
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> _cpindex;
     }
   }
@@ -448,13 +448,6 @@ module String {
     return x != 0;
   // End index arithmetic support
 
-  private proc deprWarning() {
-    if showStringBytesInitDeprWarnings {
-      compilerWarning("string.init is deprecated - "+
-                      "please use createStringWith* instead");
-    }
-  }
-
   //
   // createString* functions
   //
@@ -646,104 +639,14 @@ module String {
       // Let compiler insert defaults
     }
 
-    /*
-      Initialize a new string from ``s``. If ``isowned`` is set to ``true`` then
-      ``s`` will be fully copied into the new instance. If it is ``false`` a
-      shallow copy will be made such that any in-place modifications to the new
-      string may appear in ``s``. It is the responsibility of the user to
-      ensure that the underlying buffer is not freed while being used as part
-      of a shallow copy.
-     
-      .. warning::
-
-          String initializers are deprecated. Use `createString*` functions,
-          instead.
-        
-     */
-    proc init(s: string, isowned: bool = true) {
-      deprWarning();
-      const sRemote = _local == false && s.locale_id != chpl_nodeID;
-      const sLen = s.len;
-      this.isowned = isowned;
-      this.complete();
-      // Don't need to do anything if s is an empty string
-      if sLen != 0 {
-        this.len = sLen;
-        if !_local && sRemote {
-          // ignore supplied value of isowned for remote strings so we don't leak
-          this.isowned = true;
-          this.buff = bufferCopyRemote(s.locale_id, s.buff, sLen);
-          this._size = sLen+1;
-        } else {
-          if this.isowned {
-            const (buf, allocSize) = bufferCopyLocal(s.buff, sLen);
-            this.buff = buf;
-            this.buff[sLen] = 0;
-            this._size = allocSize;
-          } else {
-            this.buff = s.buff;
-            this._size = s._size;
-          }
-        }
-      }
-    }
-
     proc init=(s: string) {
       this.complete();
       initWithNewBuffer(this, s);
     }
 
-    /*
-      Initialize a new string from the `c_string` `cs`. If `isowned` is set to
-      true, the backing buffer will be freed when the new record is destroyed.
-      If `needToCopy` is set to true, the `c_string` will be copied into the
-      record, otherwise it will be used directly. It is the responsibility of
-      the user to ensure that the underlying buffer is not freed if the
-      `c_string` is not copied in.
-     
-      .. warning::
-
-          String initializers are deprecated. Use `createString*` functions,
-          instead.
-        
-     */
-    proc init(cs: c_string, length: int = cs.length,
-                isowned: bool = true, needToCopy:  bool = true) {
-      deprWarning();
-      this.isowned = isowned;
-      this.complete();
-      const cs_len = length;
-      this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
-    }
-
     proc init=(cs: c_string) {
       this.complete();
       initWithNewBuffer(this, cs:bufferType, length=cs.length, size=cs.length+1);
-    }
-
-    /*
-      Initialize a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
-      the total size of the buffer available, while `len` indicates the current
-      length of the string in the buffer (the common case would be `size-1` for
-      a C-style string). If `isowned` is set to true, the backing buffer will be
-      freed when the new record is destroyed. If `needToCopy` is set to true,
-      the `c_string` will be copied into the record, otherwise it will be used
-      directly. It is the responsibility of the user to ensure that the
-      underlying buffer is not freed if the `c_string` is not copied in.
-     
-      .. warning::
-
-          String initializers are deprecated. Use `createString*` functions,
-          instead.
-        
-     */
-    // This initializer can cause a leak if isowned = false and needToCopy = true
-    proc init(buff: bufferType, length: int, size: int,
-                isowned: bool = true, needToCopy: bool = true) {
-      deprWarning();
-      this.isowned = isowned;
-      this.complete();
-      this.reinitString(buff, length, size, needToCopy);
     }
 
     pragma "no doc"
@@ -911,9 +814,6 @@ module String {
 
     pragma "no doc"
     inline proc param c_str() param : c_string {
-      inline proc _cast(type t:c_string, x:string) {
-        return __primitive("cast", t, x);
-      }
       return this:c_string; // folded out in resolution
     }
 
@@ -1253,11 +1153,11 @@ module String {
 
     // These should never be called (but are default functions for records)
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
 

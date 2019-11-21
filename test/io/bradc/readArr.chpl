@@ -1,3 +1,5 @@
+use IO;
+
 config const filename = "Arr.dat";
 
 var infile = open(filename, iomode.r);

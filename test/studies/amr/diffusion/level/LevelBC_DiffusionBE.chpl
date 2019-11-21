@@ -1,4 +1,4 @@
-use LevelBC_def;
+public use LevelBC_def;
 
 
 //|\""""""""""""""""""""""""""""""""""""""""""|\

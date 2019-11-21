@@ -163,7 +163,7 @@ module ChapelIteratorSupport {
   //
   proc chpl_buildStandInRTT(type irType: _iteratorRecord) type
   {
-    type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
+    type shapeType = chpl_iteratorShapeStaticTypeOrNothing(irType);
 
     proc standinType() type {
       if shapeType == nothing {
@@ -275,12 +275,12 @@ module ChapelIteratorSupport {
   }
 
   // This is the static type of chpl_computeIteratorShape(ir).
-  proc chpl_iteratorShapeStaticTypeOrVoid(type ir: _iteratorRecord) type
+  proc chpl_iteratorShapeStaticTypeOrNothing(type ir: _iteratorRecord) type
   {
     if hasField(ir, "_shape_") then
       return __primitive("static field type", ir, "_shape_");
     else
-      return none;
+      return nothing;
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
@@ -296,7 +296,7 @@ module ChapelIteratorSupport {
     return false;
   }
 
-  proc _iteratorRecord.writeThis(f) {
+  proc _iteratorRecord.writeThis(f) throws {
     var first: bool = true;
     for e in this {
       if !first then

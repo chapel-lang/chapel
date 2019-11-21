@@ -1,1 +1,1 @@
-../Image.chpl:34: error: pixelType must be an integral type
+../Image.chpl:37: error: pixelType must be an integral type

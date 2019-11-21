@@ -4,6 +4,9 @@
 # on linux64.
 
 CWD=$(cd $(dirname $0) ; pwd)
+
+export CHPL_TEST_PERF_CONFIG_NAME='comp-no-local'
+
 source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="no-local"

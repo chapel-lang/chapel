@@ -4,6 +4,7 @@
    expected.
 */
 use HDFS only;
+use IO;
 
 config const path = "/tmp/lots-of-numbers.txt";
 

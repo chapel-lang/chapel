@@ -38,10 +38,12 @@ represent sparse index subsets efficiently.  Simple subdomains are subdomains
 that are not sparse.  These relationships can be represented as follows:
 
 \begin{syntax}
+\begin{verbatim}
 domain-type:
   base-domain-type
   simple-subdomain-type
   sparse-subdomain-type
+\end{verbatim}
 \end{syntax}
 
 Domains can be further classified according to whether they are \emph{regular}
@@ -82,9 +84,11 @@ strided rectangular domains are regular domains.
 Irregular base domain types include all of the associative domain types.
 
 \begin{syntax}
+\begin{verbatim}
 base-domain-type:
   rectangular-domain-type
   associative-domain-type
+\end{verbatim}
 \end{syntax}
 
 These base domain types are discussed in turn in the following
@@ -128,8 +132,10 @@ would eliminate a lot of code currently used to support the special (rank == 1) 
 
 The syntax of a rectangular domain type is summarized as follows:
 \begin{syntax}
+\begin{verbatim}
 rectangular-domain-type:
   `domain' ( named-expression-list )
+\end{verbatim}
 \end{syntax}
 
 \noindent where \sntx{named-expression-list} permits the values of
@@ -139,16 +145,22 @@ using standard type signature.
 \begin{chapelexample}{typeFunctionDomain.chpl}
 The following declarations both create an uninitialized rectangular domain with three dimensions, with \chpl{int} indices:
 \begin{chapel}
+\begin{verbatim}
 var D1 : domain(rank=3, idxType=int, stridable=false);
 var D2 : domain(3);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(D1);
 writeln(D2);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 {1..0, 1..0, 1..0}
 {1..0, 1..0, 1..0}
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -158,8 +170,8 @@ writeln(D2);
 \index{domains!rectangular!values}
 
 Each dimension of a rectangular domain is a range of
-type \chpl{range(idxType,} \chpl{BoundedRangeType.bounded,} \chpl{
-stridable)}.  The index set for a rank~1 domain is the set of indices
+type \chpl{range(idxType, BoundedRangeType.bounded, stridable)}.
+The index set for a rank~1 domain is the set of indices
 described by its singleton range.  The index set for a rank~$n$
 domain is the set of all \chpl{n*idxType} tuples described by the
 tensor product of its ranges.  When expanded (as by an iterator), rectangular domain indices are ordered
@@ -188,12 +200,14 @@ curly braces:
 %% \end{future}
 
 \begin{syntax}
+\begin{verbatim}
 rectangular-domain-literal:
   { range-expression-list }
 
 range-expression-list:
   range-expression
   range-expression, range-expression-list
+\end{verbatim}
 \end{syntax}
 
 \noindent The type of a rectangular domain literal is defined as follows:
@@ -221,7 +235,9 @@ A domain expression may contain bounds which are evaluated at runtime.
 \begin{example}
 In the code
 \begin{chapel}
+\begin{verbatim}
 var D: domain(2) = {1..n, 1..n};
+\end{verbatim}
 \end{chapel}
 
 \chpl{D} is defined as a two-dimensional, nonstridable rectangular
@@ -246,17 +262,21 @@ some value.  Then the array is printed out.
 
 Thus, the code
 \begin{chapel}
+\begin{verbatim}
 var D : domain(2) = {1..2, 1..7};
 var A : [D] int;
 for i in D.dim(1) do
   for j in D.dim(2) do
     A[i,j] = 7 * i**2 + j;
 writeln(A);
+\end{verbatim}
 \end{chapel}
 produces
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 8 9 10 11 12 13 14
 29 30 31 32 33 34 35
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -279,33 +299,21 @@ An associative domain type is parameterized by \chpl{idxType}, the
 type of the indices that it stores.  The syntax is as follows:
 
 \begin{syntax}
+\begin{verbatim}
 associative-domain-type:
   `domain' ( associative-index-type )
-  `domain' ( `opaque' )
 
 associative-index-type:
   type-expression
+\end{verbatim}
 \end{syntax}
 
-\index{types!opaque domains}
-\index{opaque domains!types}
-\index{domains!opaque}
-The three expansions of \sntx{associative-domain-type} correspond to the three
-kinds of associative domain listed below.
-\begin{enumerate} 
-\item In general, \sntx{associative-index-type} determines \chpl{idxType}
+The \sntx{associative-index-type} determines the \chpl{idxType}
 of the associative domain type.
-\item Opaque domains are a special case, indicated by the type \chpl{opaque}.
-Anonymous values of the type \chpl{opaque} are used as index values
-in this case.
-% TODO: need to define and explain the 'opaque' type elsewhere.
-\end{enumerate}
 
 When an associative domain is used as the index set of an array, the relation
 between the indices and the array elements can be thought of as a map between
 the values of the index set and the elements stored in the array.
-Opaque domains can be used to build unstructured arrays that are similar to
-pointer-based data structures in conventional languages.
 
 \subsubsection{Associative Domain Values}
 \label{Associative_Domain_Values}
@@ -325,6 +333,7 @@ of expressions specified in the comma separated list.  Use of values of a
 type other than ranges will result in the construction of an associative domain.  
 
 \begin{syntax}
+\begin{verbatim}
 associative-domain-literal:
    { associative-expression-list }
 
@@ -334,6 +343,7 @@ associative-expression-list:
 
 non-range-expression:
    expression
+\end{verbatim}
 \end{syntax}
 
 It is required that the types of the values used in constructing an associative
@@ -360,15 +370,21 @@ is not the same as their specification order.
 
 This code
 \begin{chapel}
+\begin{verbatim}
 var D : domain(string) = {"bar", "foo"};
 writeln(D);
+\end{verbatim}
 \end{chapel}
 \begin{chapelcompopts}
+\begin{verbatim}
 --no-warnings
+\end{verbatim}
 \end{chapelcompopts}
 produces the output
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 {foo, bar}
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
@@ -421,8 +437,10 @@ away bounds checks for array accesses.
 
 A simple subdomain type is specified using the following syntax:
 \begin{syntax}
+\begin{verbatim}
 simple-subdomain-type:
   `subdomain' ( domain-expression )
+\end{verbatim}
 \end{syntax}
 
 This declares that \sntx{domain-expression} is the parent domain of
@@ -464,8 +482,10 @@ a member of the parent domain.
 \index{subdomains!sparse}
 
 \begin{syntax}
+\begin{verbatim}
 sparse-subdomain-type:
   `sparse' `subdomain'[OPT] ( domain-expression )
+\end{verbatim}
 \end{syntax}
 
 This declaration creates a sparse subdomain.
@@ -522,8 +542,10 @@ followed by a two dimensional sparse subdomain of \chpl{D}
 named \chpl{SpsD}.  Since \chpl{SpsD} is uninitialized, it will
 initially describe an empty set of indices from \chpl{D}.
 \begin{chapel}
+\begin{verbatim}
 const D: domain(2) = {1..n, 1..n};
 var SpsD: sparse subdomain(D);
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -536,8 +558,10 @@ type} which can be used to represent values belonging to that domain's
 index set.  Index types are described using the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 index-type:
   `index' ( domain-expression )
+\end{verbatim}
 \end{syntax}
 
 A variable with a given index type is constrained to take on only values
@@ -627,12 +651,16 @@ one-dimensional domain \chpl{D} with \chpl{idxType} \chpl{int}, the
 array elements can be assigned their corresponding index values by
 writing:
 \begin{chapel}
+\begin{verbatim}
 A = D;
+\end{verbatim}
 \end{chapel}
 This is equivalent to:
 \begin{chapel}
+\begin{verbatim}
 forall (a,i) in zip(A,D) do
   a = i;
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -651,6 +679,7 @@ any type, whether a base domain or a subdomain.
 All domain types support domain assignment.  
 
 \begin{syntax}
+\begin{verbatim}
 domain-expression:
   domain-literal
   domain-name
@@ -668,6 +697,7 @@ domain-assignment-expression:
 
 domain-name:
   identifier
+\end{verbatim}
 \end{syntax}
 
 Domain assignment is by
@@ -692,9 +722,11 @@ is written to \chpl{yield} indices read from a file named
 ``inds.dat''.  Each of these assignments has the effect of replacing
 the previous index set with a completely new set of values.
 \begin{chapel}
+\begin{verbatim}
 SpsD = ((1,1), (n,n));
 SpsD = [i in 1..n] (i,i);
 SpsD = readIndicesFromFile("inds.dat");
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -710,8 +742,10 @@ operand to the \chpl{by} operator can either be an integral value or
 an integral tuple whose size matches the domain's rank.
 
 \begin{syntax}
+\begin{verbatim}
 domain-striding-expression:
   domain-expression `by' expression
+\end{verbatim}
 \end{syntax}
 
 The type of the resulting domain is the same as the original domain
@@ -735,8 +769,10 @@ operand to the \chpl{align} operator can either be an integral value or
 an integral tuple whose size matches the domain's rank.
 
 \begin{syntax}
+\begin{verbatim}
 domain-alignment-expression:
   domain-expression `align' expression
+\end{verbatim}
 \end{syntax}
 
 The type of the resulting domain is the same as the original domain
@@ -759,6 +795,7 @@ It can be written using either parentheses or square brackets.
 The index set can be defined with either a domain or a list of ranges.
 
 \begin{syntax}
+\begin{verbatim}
 domain-slice-expression:
   domain-expression [ slicing-index-set ]
   domain-expression ( slicing-index-set )
@@ -766,6 +803,7 @@ domain-slice-expression:
 slicing-index-set:
   domain-expression
   range-expression-list
+\end{verbatim}
 \end{syntax}
 
 The result of slicing, or a \emph{slice}, is a new domain value
@@ -816,10 +854,12 @@ D, \chpl{Col2OfD} describes the 2nd column of
 for the last row.
 
 \begin{chapel}
+\begin{verbatim}
 const D: domain(2) = {1..n, 1..n},
       InnerD = D[2..n-1, 2..n-1],
       Col2OfD = D[.., 2..2],
       AllButLastRow = D[..n-1, ..];
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -846,13 +886,13 @@ ranges rather than integers.
 \subsection{Count Operator}
 \label{Count_Operator_Domains}
 \index{domains!count operator}
-\index{domains!#@\chpl{#}}
-\index{# (domain)@\chpl{#} (domain)}
-\index{operators!# (domain)@\chpl{#} (domain)}
-The \chpl{#} operator can be applied to dense rectangular domains with
+\index{domains!#@\chpl{\#}}
+\index{# (domain)@\chpl{\#} (domain)}
+\index{operators!# (domain)@\chpl{\#} (domain)}
+The \chpl{\#} operator can be applied to dense rectangular domains with
 a tuple argument whose size matches the rank of the domain (or
 optionally an integer in the case of a 1D domain).  The operator is
-equivalent to applying the \chpl{#} operator to the component ranges
+equivalent to applying the \chpl{\#} operator to the component ranges
 of the domain and then using them to slice the domain as in
 Section~\ref{Range_Based_Slicing}.
 
@@ -880,10 +920,6 @@ As with normal domain assignments, arrays declared in terms of a
 domain being modified in this way will be reallocated as discussed
 in~\rsec{Association_of_Arrays_to_Domains}.
 
-% TODO: describe operations on opaque domains, esp. domain.create().
-% Note that domain.add() (should) work as defined above on
-% opaque domains, taking values of the opaque type for its argument.
-
 
 \section{Predefined Methods on Domains}
 \index{domains!predefined functions}
@@ -902,7 +938,9 @@ The methods in this subsection can be applied to any domain.
 \index{domains!clear@\chpl{clear}}
 \index{predefined functions!clear@\chpl{clear}}
 \begin{protohead}
-proc $Domain$.clear()
+\begin{verbatim}
+proc domain.clear()
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Resets this domain's index set to the empty set.
@@ -913,23 +951,29 @@ This function provides a way to produce an empty associative domain.
 
 When run, the code
 \begin{chapel}
+\begin{verbatim}
 enum Counter { one, two, three };
 var D : domain ( Counter ) = {Counter.one, Counter.two};
 writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");
+\end{verbatim}
 \end{chapel}
 prints out
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 D has 2 indices.
 D has 0 indices.
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
 \index{domains!dist@\chpl{dist}}
 \index{predefined functions!dist@\chpl{dist}}
 \begin{protohead}
-proc $Domain$.dist : dmap
+\begin{verbatim}
+proc domain.dist : dmap
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the domain map that implements this domain
@@ -938,6 +982,7 @@ Returns the domain map that implements this domain
 \begin{chapelexample}{getDomainMap}
 In the code
 \begin{chapel}
+\begin{verbatim}
 use BlockDist;
 proc foo(d : domain) where isSubtype(d.dist.type, Block) {
   writeln("Block-distributed domain");
@@ -947,26 +992,32 @@ proc foo(d : domain) {
 }
 var D = {1..10} dmapped Block({1..10});
 foo(D);
+\end{verbatim}
 \end{chapel}
 \chpl{dist} is used in a where-clause to determine the type of the argument's
 distribution. The output is:
-\begin{chapelprintoutput}{}
+\begin{chapelprintoutput}
+\begin{verbatim}
 Block-distributed domain
+\end{verbatim}
 \end{chapelprintoutput}
 \end{chapelexample}
 
 \index{domains!idxType@\chpl{idxType}}
 \index{predefined functions!idxType@\chpl{idxType}}
 \begin{protohead}
-proc $Domain$.idxType type
+\begin{verbatim}
+proc domain.idxType type
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the domain type's \chpl{idxType}.
-This function is not available on opaque domains.
 \end{protobody}
 
 \begin{protohead}
-proc $Domain$.indexOrder(i: index($Domain$)): idxType
+\begin{verbatim}
+proc domain.indexOrder(i: index(domain)): idxType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 If \chpl{i} is a member of the domain, returns the ordinal value of
@@ -981,25 +1032,20 @@ removed from the domain.
 \index{domains!isIrregularDom@\chpl{isIrregularDom}}
 \index{predefined functions!isIrregularDom@\chpl{isIrregularDom}}
 \begin{protohead}
+\begin{verbatim}
 proc isIrregularDom(d: domain) param
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a param \chpl{true} if the given domain is irregular, false otherwise.
 \end{protobody}
 
-\index{domains!isOpaqueDom@\chpl{isOpaqueDom}}
-\index{predefined functions!isOpaqueDom@\chpl{isOpaqueDom}}
-\begin{protohead}
-proc isOpaqueDom(d: domain) param
-\end{protohead}
-\begin{protobody}
-Returns a param \chpl{true} if the given domain is opaque, false otherwise.
-\end{protobody}
-
 \index{domains!isRectangularDom@\chpl{isRectangularDom}}
 \index{predefined functions!isRectangularDom@\chpl{isRectangularDom}}
 \begin{protohead}
+\begin{verbatim}
 proc isRectangularDom(d: domain) param
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a param \chpl{true} if the given domain is rectangular, false otherwise.
@@ -1008,7 +1054,9 @@ Returns a param \chpl{true} if the given domain is rectangular, false otherwise.
 \index{domains!isSparseDom@\chpl{isSparseDom}}
 \index{predefined functions!isSparseDom@\chpl{isSparseDom}}
 \begin{protohead}
+\begin{verbatim}
 proc isSparseDom(d: domain) param
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a param \chpl{true} if the given domain is sparse, false otherwise.
@@ -1017,7 +1065,9 @@ Returns a param \chpl{true} if the given domain is sparse, false otherwise.
 \index{domains!member@\chpl{member}}
 \index{predefined functions!member (domain)@\chpl{member} (domain)}
 \begin{protohead}
-proc $Domain$.member(i)
+\begin{verbatim}
+proc domain.member(i)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns true if the given index \chpl{i} is a member of this domain's index set,
@@ -1034,7 +1084,9 @@ the behavior.
 \index{domains!numIndices@\chpl{numIndices}}
 \index{predefined functions!numIndices (domain)@\chpl{numIndices} (domain)}
 \begin{protohead}
-proc $Domain$.numIndices: capType
+\begin{verbatim}
+proc domain.numIndices: capType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the number of indices in the domain as a value of the capacity type.
@@ -1049,7 +1101,9 @@ The methods described in this subsection can be applied to regular domains only.
 \index{domains!dim@\chpl{dim}}
 \index{predefined functions!dim (domain)@\chpl{dim} (domain)}
 \begin{protohead}
-proc $Domain$.dim(d: int): range
+\begin{verbatim}
+proc domain.dim(d: int): range
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the range of indices described by dimension \chpl{d} of the
@@ -1059,9 +1113,11 @@ domain.
 \begin{example}
 In the code
 \begin{chapel}
+\begin{verbatim}
 for i in D.dim(1) do
   for j in D.dim(2) do
     writeln(A(i,j));
+\end{verbatim}
 \end{chapel}
 domain \chpl{D} is iterated over by two nested loops.  The first
 dimension of \chpl{D} is iterated over in the outer loop.  The second
@@ -1071,7 +1127,9 @@ dimension is iterated over in the inner loop.
 \index{domains!dims@\chpl{dims}}
 \index{predefined functions!dims (domain)@\chpl{dims} (domain)}
 \begin{protohead}
-proc $Domain$.dims(): rank*range
+\begin{verbatim}
+proc domain.dims(): rank*range
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a tuple of ranges describing the dimensions of the domain.
@@ -1084,8 +1142,10 @@ Returns a tuple of ranges describing the dimensions of the domain.
 \index{domains!expand@\chpl{expand}}
 \index{predefined functions!expand (domain)@\chpl{expand} (domain)}
 \begin{protohead}
-proc $Domain$.expand(off: integral): domain
-proc $Domain$.expand(off: rank*integral): domain
+\begin{verbatim}
+proc domain.expand(off: integral): domain
+proc domain.expand(off: rank*integral): domain
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the current domain expanded in
@@ -1097,8 +1157,10 @@ negative.
 \index{domains!exterior@\chpl{exterior}}
 \index{predefined functions!exterior (domain)@\chpl{exterior} (domain)}
 \begin{protohead}
-proc $Domain$.exterior(off: integral): domain
-proc $Domain$.exterior(off: rank*integral): domain
+\begin{verbatim}
+proc domain.exterior(off: integral): domain
+proc domain.exterior(off: rank*integral): domain
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the exterior portion of the current
@@ -1111,7 +1173,9 @@ compute the exterior from the high bound.
 \index{domains!high@\chpl{high}}
 \index{predefined functions!high (domain)@\chpl{high} (domain)}
 \begin{protohead}
-proc $Domain$.high: index($Domain$)
+\begin{verbatim}
+proc domain.high: index(domain)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the high index of the domain as a value of the domain's index
@@ -1121,8 +1185,10 @@ type.
 \index{domains!interior@\chpl{interior}}
 \index{predefined functions!interior (domain)@\chpl{interior} (domain)}
 \begin{protohead}
-proc $Domain$.interior(off: integral): domain
-proc $Domain$.interior(off: rank*integral): domain
+\begin{verbatim}
+proc domain.interior(off: integral): domain
+proc domain.interior(off: rank*integral): domain
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the interior portion of the current
@@ -1135,7 +1201,9 @@ compute the interior from the high bound.
 \index{domains!low@\chpl{low}}
 \index{predefined functions!low (domain)@\chpl{low} (domain)}
 \begin{protohead}
-proc $Domain$.low: index($Domain$)
+\begin{verbatim}
+proc domain.low: index(domain)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the low index of the domain as a value of the domain's index
@@ -1145,7 +1213,9 @@ type.
 \index{domains!rank@\chpl{rank}}
 \index{predefined functions!rank (domain)@\chpl{rank} (domain)}
 \begin{protohead}
-proc $Domain$.rank param : int
+\begin{verbatim}
+proc domain.rank param : int
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the rank of the domain.
@@ -1154,7 +1224,9 @@ Returns the rank of the domain.
 \index{domains!size@\chpl{size}}
 \index{predefined functions!size (domain)@\chpl{size} (domain)}
 \begin{protohead}
-proc $Domain$.size: capType
+\begin{verbatim}
+proc domain.size: capType
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Same as $Domain$.numIndices.
@@ -1163,7 +1235,9 @@ Same as $Domain$.numIndices.
 \index{domains!stridable@\chpl{stridable}}
 \index{predefined functions!stridable (domain)@\chpl{stridable} (domain)}
 \begin{protohead}
-proc $Domain$.stridable param : bool
+\begin{verbatim}
+proc domain.stridable param : bool
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns whether or not the domain is stridable.
@@ -1172,8 +1246,10 @@ Returns whether or not the domain is stridable.
 \index{domains!stride@\chpl{stride}}
 \index{predefined functions!stride (domain)@\chpl{stride} (domain)}
 \begin{protohead}
-proc $Domain$.stride: int(numBits(idxType)) where rank == 1
-proc $Domain$.stride: rank*int(numBits(idxType))
+\begin{verbatim}
+proc domain.stride: int(numBits(idxType)) where rank == 1
+proc domain.stride: rank*int(numBits(idxType))
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the stride of the domain as the domain's stride type (for 1D
@@ -1184,8 +1260,10 @@ domains).
 \index{domains!translate@\chpl{translate}}
 \index{predefined functions!translate (domain)@\chpl{translate} (domain)}
 \begin{protohead}
-proc $Domain$.translate(off: integral): domain
-proc $Domain$.translate(off: rank*integral): domain
+\begin{verbatim}
+proc domain.translate(off: integral): domain
+proc domain.translate(off: rank*integral): domain
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the current domain translated
@@ -1209,8 +1287,10 @@ The following methods are available only on irregular domain types.
 \index{domains!+@\chpl{+}}
 \index{predefined functions!+ (domain)@\chpl{+} (domain)}
 \begin{protohead}
+\begin{verbatim}
 proc +(d: domain, i: index(d))
 proc +(i, d: domain) where i: index(d)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Adds the given index to the given domain.  If the given index is already a
@@ -1220,7 +1300,9 @@ member of that domain, it is ignored.
 \index{domains!+@\chpl{+}}
 \index{predefined functions!+ (domain)@\chpl{+} (domain)}
 \begin{protohead}
+\begin{verbatim}
 proc +(d1: domain, d2: domain)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Merges the index sets of the two domain arguments.
@@ -1229,7 +1311,9 @@ Merges the index sets of the two domain arguments.
 \index{domains!-@\chpl{-}}
 \index{predefined functions!- (domain)@\chpl{-} (domain)}
 \begin{protohead}
+\begin{verbatim}
 proc -(d: domain, i: index(d))
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Removes the given index from the given domain.  It is an error if the domain
@@ -1239,7 +1323,9 @@ does not contain the given index.
 \index{domains!-@\chpl{-}}
 \index{predefined functions!- (domain)@\chpl{-} (domain)}
 \begin{protohead}
+\begin{verbatim}
 proc -(d1: domain, d2: domain)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Removes the indices in domain \chpl{d2} from those in \chpl{d1}.  It is an error
@@ -1249,7 +1335,9 @@ if \chpl{d2} contains indices which are not also in \chpl{d1}.
 \index{domains!requestCapacity@\chpl{requestCapacity}}
 \index{predefined functions!requestCapacity@\chpl{requestCapacity}}
 \begin{protohead}
+\begin{verbatim}
 proc requestCapacity(s: int)
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Resizes the domain internal storage to hold at least \chpl{s} indices.

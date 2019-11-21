@@ -14,6 +14,8 @@ use RunParallelRawLoops;
 use RunSPMDRawLoops;
 use RunVectorizeOnlyRawLoops;
 
+use IO;
+
 proc allocateLoopData() {
 /*  Currently unused:
   const num_aligned_segments =

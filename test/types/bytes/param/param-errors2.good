@@ -1,0 +1,1 @@
+param-errors2.chpl:3: error: illegal cast from bytes to string

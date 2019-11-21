@@ -194,6 +194,7 @@ tags
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 
+/test/library/packages/HDF5/mydata.h5
 /test/localeModels/gbt/maxTaskPar.good
 
 /test/memory/gbt/test-memLog.memLog.*
@@ -297,7 +298,6 @@ tags
 /test/release/examples/primers/genericClasses
 /test/release/examples/primers/iterators
 /test/release/examples/primers/locales
-/test/release/examples/primers/opaque
 /test/release/examples/primers/parIters
 /test/release/examples/primers/procedures
 /test/release/examples/primers/randomNumbers

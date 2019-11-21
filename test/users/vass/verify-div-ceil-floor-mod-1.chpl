@@ -32,6 +32,8 @@ proc launch(type ta, type tb) {
              divceil(a:ta, b:tb), divfloor(a:ta, b:tb), mod(a:ta, b:tb));
     }
 
+  use IO;
+
   if verbose then
     writeln("%{####}".format(vtestcount - tcv), " var tests ",
             ta:string, ",", tb:string, " -> ",

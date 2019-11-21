@@ -280,7 +280,7 @@ extern AggregateType* dtObject;
 extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
-
-DefExpr* defineObjectClass();
+extern AggregateType* dtOwned;
+extern AggregateType* dtShared;
 
 #endif

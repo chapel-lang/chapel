@@ -20,8 +20,10 @@ declared over and the element type of the array.  Array types are
 given by the following syntax:
 
 \begin{syntax}
+\begin{verbatim}
 array-type:
   [ domain-expression ] type-expression
+\end{verbatim}
 \end{syntax}
 The \sntx{domain-expression} must specify a domain that the array can
 be declared over.  If the \sntx{domain-expression} is a domain
@@ -30,14 +32,19 @@ literal, the curly braces around the literal may be omitted.
 \begin{chapelexample}{decls.chpl}
 In the code
 \begin{chapel}
+\begin{verbatim}
 const D: domain(2) = {1..10, 1..10};
 var A: [D] real;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(D);
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 {1..10, 1..10}
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -49,12 +56,13 @@ writeln(A);
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+\end{verbatim}
 \end{chapeloutput}
 \chpl{A} is declared to be an arithmetic array over rectangular
 domain \chpl{D} with elements of type \chpl{real}.  As a result, it
 represents a 2-dimensional $10 \times 10$ real floating point
-variables indexed using the indices $(1, 1), (1, 2), \ldots, (1, 10),
-(2, 1), \ldots, (10, 10)$.
+variables indexed using the indices
+$(1, 1), (1, 2), \ldots, (1, 10), (2, 1), \ldots, (10, 10)$.
 \end{chapelexample}
 
 %
@@ -70,19 +78,27 @@ An array's element type can be referred to using the member symbol
 In the following example, \chpl{x} is declared to be of type
 \chpl{real} since that is the element type of array \chpl{A}.
 \begin{chapelpre}
+\begin{verbatim}
 const D: domain(2) = {1..10, 1..10};
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var A: [D] real;
 var x: A.eltType;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(x.type:string);
 writeln(A.eltType:string);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 real(64)
 real(64)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -104,9 +120,11 @@ Array literal values can be either rectangular or associative, corresponding to
 the underlying domain which defines its indices. 
 
 \begin{syntax}
+\begin{verbatim}
 array-literal:
   rectangular-array-literal
   associative-array-literal
+\end{verbatim}
 \end{syntax}
 
 \subsection{Rectangular Array Literals}
@@ -121,26 +139,32 @@ values will be the type of the first element listed. A trailing comma is
 allowed.
 
 \begin{syntax}
+\begin{verbatim}
 rectangular-array-literal:
   [ expression-list ]
   [ expression-list , ]
+\end{verbatim}
 \end{syntax}
 
 \begin{chapelexample}{adecl-literal.chpl}
 The following example declares a 5 element rectangular array literal 
 containing strings, then subsequently prints each string element to the console.
 \begin{chapel}
+\begin{verbatim}
 var A = ["1", "2", "3", "4", "5"];
 
 for i in 0..#5 do
   writeln(A[i]);
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 1
 2
 3
 4
 5
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -158,13 +182,19 @@ type, rather than the first element's type.
 The following example declares a 2-element array \chpl{A} containing 3-element
 arrays of real numbers.  \chpl{A} is initialized using array literals.
 \begin{chapel}
+\begin{verbatim}
 var A: [1..2] [1..3] real = [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]];
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A.domain);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 {1..2}
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -188,6 +218,7 @@ in the listing match in type and, likewise, the types of values in the listing
 also match. A trailing comma is allowed.
 
 \begin{syntax}
+\begin{verbatim}
 associative-array-literal:
   [ associative-expr-list ]
   [ associative-expr-list , ]
@@ -201,6 +232,7 @@ index-expr:
 
 value-expr:
   expression
+\end{verbatim}
 \end{syntax}
 
 \begin{openissue}
@@ -213,23 +245,29 @@ The following example declares a 5 element associative array literal which maps
 integers to their corresponding string representation. The indices and their
 corresponding values are then printed. 
 \begin{chapel}
+\begin{verbatim}
 var A = [1 => "one", 10 => "ten", 3 => "three", 16 => "sixteen"];
 
 for da in zip (A.domain, A) do
   writeln(da);
+\end{verbatim}
 \end{chapel}
 \begin{chapelprediff}
-\#!/usr/bin/env sh
+\begin{verbatim}
+#!/usr/bin/env sh
 testname=$1
 outfile=$2
 sort $outfile > $outfile.2
 mv $outfile.2 $outfile
+\end{verbatim}
 \end{chapelprediff}
 \begin{chapeloutput}
+\begin{verbatim}
 (1, one)
 (10, ten)
 (16, sixteen)
 (3, three)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -259,21 +297,29 @@ element that corresponds to the index value.
 \begin{chapelexample}{array-indexing.chpl}
 Given:
 \begin{chapel}
+\begin{verbatim}
 var A: [1..10] real;
+\end{verbatim}
 \end{chapel}
 the first two elements of A can be assigned the value 1.2 and 3.4
 respectively using the assignment:
 \begin{chapel}
+\begin{verbatim}
 A(1) = 1.2;
 A[2] = 3.4;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A.domain);
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 {1..10}
 1.2 3.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -299,50 +345,64 @@ semantically equivalent to de-tupling the integral value from the
 \begin{chapelexample}{array-indexing-2.chpl}
 Given:
 \begin{chapel}
+\begin{verbatim}
 var A: [1..5, 1..5] real;
 var ij: 2*int = (1, 1);
+\end{verbatim}
 \end{chapel}
 the elements of array A can be indexed using any of the following
 idioms:
 \begin{chapel}
+\begin{verbatim}
 A(ij) = 1.1;
 A((1, 2)) = 1.2;
 A(1, 3) = 1.3;
 A[ij] = -1.1;
 A[(1, 4)] = 1.4;
 A[1, 5] = 1.5;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(ij);
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 (1, 1)
 -1.1 1.2 1.3 1.4 1.5
 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
 \begin{chapelexample}{index-using-var-arg-tuple.chpl}
 The code
 \begin{chapel}
+\begin{verbatim}
 proc f(A: [], is...)
   return A(is);
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 var B: [1..5] int;
 [i in 1..5] B(i) = i;
 var C: [1..5,1..5] int;
 [(i,j) in {1..5,1..5}] C(i,j) = i+i*j;
 writeln(f(B, 3));
 writeln(f(C, 3, 3));
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 3
 12
+\end{verbatim}
 \end{chapeloutput}
 defines a function that takes an array as the first argument and a
 variable-length argument list.  It then indexes into the array using
@@ -360,23 +420,29 @@ Indices can be added to associative arrays through the array's domain.
 \begin{chapelexample}{assoc-add-index.chpl}
 Given:
 \begin{chapel}
+\begin{verbatim}
 var D : domain(string);
 var A : [D] int;
+\end{verbatim}
 \end{chapel}
 
 the array A initially contains no elements. We can change that by adding
 indices to the domain D:
 \begin{chapel}
+\begin{verbatim}
 D.add("a");
 D.add("b");
+\end{verbatim}
 \end{chapel}
 
 The array A can now be indexed with indices "a" and "b":
 
 \begin{chapel}
+\begin{verbatim}
 A["a"] = 1;
 A["b"] = 2;
 var x = A["a"];
+\end{verbatim}
 \end{chapel}
 \end{chapelexample}
 
@@ -394,16 +460,20 @@ elements as described by its domain.  A loop of the form:
 
 % This is difficult to capture in a test program
 \begin{chapel}
+\begin{verbatim}
 [for|forall|coforall] a in A do
   ...a...
+\end{verbatim}
 \end{chapel}
 
 is semantically equivalent to:
 
 % This is difficult to capture in a test program
 \begin{chapel}
+\begin{verbatim}
 [for|forall|coforall] i in A.domain do
   ...A[i]...
+\end{verbatim}
 \end{chapel}
 
 The iterator variable for an array iteration is a reference to the
@@ -425,35 +495,48 @@ If \chpl{A} is an array variable and \chpl{B} is an expression
 of array, range, domain, or tuple type, or an iterator, then the
 assignment
 \begin{chapelpre}
+\begin{verbatim}
 var A: [1..3] int;
 var B: [1..3] int;
 A = -1;
 B = 1;
+\end{verbatim}
 \end{chapelpre}
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(A);
 writeln(B);
+\end{verbatim}
 \end{chapelnoprint}
 \begin{chapel}
+\begin{verbatim}
 A = B;
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(A);
 writeln(B);
 A = -2;
 B = 2;
 writeln(A);
 writeln(B);
+\end{verbatim}
 \end{chapelnoprint}
 is equivalent to
 \begin{chapel}
+\begin{verbatim}
 [(a,b) in zip(A,B)] a = b;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
 writeln(B);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 -1 -1 -1
 1 1 1
 1 1 1
@@ -462,6 +545,7 @@ writeln(B);
 2 2 2
 2 2 2
 2 2 2
+\end{verbatim}
 \end{chapeloutput}
 If the zipper iteration is illegal, then the assignment is illegal.
 This means, for example, that a range cannot be assigned to a
@@ -487,29 +571,41 @@ If \chpl{e} is an expression of the element type of the array or a
 type that can be implicitly converted to the element type of the
 array, then the assignment
 \begin{chapelpre}
+\begin{verbatim}
 var A: [1..4] uint;
 writeln(A);
 var e: uint = 77;
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 A = e;
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(A);
 e = 33;
+\end{verbatim}
 \end{chapelnoprint}
 is equivalent to
 \begin{chapel}
+\begin{verbatim}
 forall a in A do
   a = e;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 0 0 0 0
 77 77 77 77
 33 33 33 33
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -526,27 +622,38 @@ corresponding to the slicing domain's index set.
 \begin{chapelexample}{slicing.chpl}
 Given the definitions
 \begin{chapelpre}
+\begin{verbatim}
 config const n = 2;
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var OuterD: domain(2) = {0..n+1, 0..n+1};
 var InnerD: domain(2) = {1..n, 1..n};
 var A, B: [OuterD] real;
+\end{verbatim}
 \end{chapel}
 \begin{chapelnoprint}
+\begin{verbatim}
 writeln(OuterD);
 writeln(InnerD);
 B = 1;
+\end{verbatim}
 \end{chapelnoprint}
 the assignment given by
 \begin{chapel}
+\begin{verbatim}
 A[InnerD] = B[InnerD];
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
 writeln(B);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 {0..3, 0..3}
 {1..2, 1..2}
 0.0 0.0 0.0 0.0
@@ -557,6 +664,7 @@ writeln(B);
 1.0 1.0 1.0 1.0
 1.0 1.0 1.0 1.0
 1.0 1.0 1.0 1.0
+\end{verbatim}
 \end{chapeloutput}
 assigns the elements in the interior of \chpl{B} to the elements in
 the interior of \chpl{A}.
@@ -595,19 +703,27 @@ passed in to take the slice.
 \begin{chapelexample}{array-decl.chpl}
 Given an array
 \begin{chapelpre}
+\begin{verbatim}
 config const n = 4;
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var A: [1..n, 1..n] int;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 0 0 0 0
 0 0 0 0
 0 0 0 0
 0 0 0 0
+\end{verbatim}
 \end{chapeloutput}
 the slice \chpl{A[1..n, 1]} is a one-dimensional array whose elements
 are the first column of \chpl{A}.
@@ -617,11 +733,11 @@ are the first column of \chpl{A}.
 \section{Count Operator}
 \label{Count_Operator_Arrays}
 \index{arrays!count operator}
-\index{operators!# (on arrays)@\chpl{#} (on arrays)}
-The \chpl{#} operator can be applied to dense rectangular arrays with
+\index{operators!# (on arrays)@\chpl{\#} (on arrays)}
+The \chpl{\#} operator can be applied to dense rectangular arrays with
 a tuple argument whose size matches the rank of the array (or
 optionally an integer in the case of a 1D array).  The operator is
-equivalent to applying the \chpl{#} operator to the array's domain and
+equivalent to applying the \chpl{\#} operator to the array's domain and
 using the result to slice the array as described in
 Section~\ref{Rectangular_Array_Slicing}.
 
@@ -631,8 +747,8 @@ Section~\ref{Rectangular_Array_Slicing}.
 \index{arrays!actual arguments}
 \index{arguments!array}
 
-By default, arrays are passed to function by \chpl{ref} or \chpl{const
-ref} depending on whether or not the formal argument is modified. The
+By default, arrays are passed to function by \chpl{ref} or \chpl{const ref}
+depending on whether or not the formal argument is modified. The
 \chpl{in}, \chpl{inout}, and \chpl{out} intent can create copies of
 arrays.
 
@@ -660,19 +776,27 @@ scalar function as defined in~\rsec{Promotion}.
 Whole array operations is a special case of array promotion of scalar
 functions.  In the code
 \begin{chapelpre}
+\begin{verbatim}
 var A, B, C: [1..3] real;
 A = -1;
 B = 2;
 C = 3;
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 A = B + C;
+\end{verbatim}
 \end{chapel}
 \begin{chapelpost}
+\begin{verbatim}
 writeln(A);
+\end{verbatim}
 \end{chapelpost}
 \begin{chapeloutput}
+\begin{verbatim}
 5.0 5.0 5.0
+\end{verbatim}
 \end{chapeloutput}
 if \chpl{A}, \chpl{B}, and \chpl{C} are arrays, this code assigns each
 element in \chpl{A} the element-wise sum of the elements in \chpl{B}
@@ -735,10 +859,13 @@ assign to \chpl{SpsA} at an index not described by its domain,
 \chpl{SpsD}.
 
 \begin{chapelpre}
+\begin{verbatim}
 config const n = 5;
 const D = {1..n, 1..n};
+\end{verbatim}
 \end{chapelpre}
 \begin{chapel}
+\begin{verbatim}
 var SpsD: sparse subdomain(D);
 var SpsA: [SpsD] real;
 SpsD = ((1,1), (n,n));
@@ -746,9 +873,12 @@ SpsA(1,1) = 1.1;
 SpsA(n,n) = 9.9;
 SpsA.IRV = 5.5;
 SpsA(1,n) = 0.0;  // ERROR!
+\end{verbatim}
 \end{chapel}
 \begin{chapeloutput}
+\begin{verbatim}
 sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array: (1, 5)
+\end{verbatim}
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -823,7 +953,9 @@ There is an expectation that this list of predefined methods will grow.
 \index{arrays!eltType@\chpl{eltType}}
 \index{predefined functions!eltType (array)@\chpl{eltType} (array)}
 \begin{protohead}
-proc $Array$.eltType type
+\begin{verbatim}
+proc Array.eltType type
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the element type of the array.
@@ -832,7 +964,9 @@ Returns the element type of the array.
 \index{arrays!rank@\chpl{rank}}
 \index{predefined functions!rank (array)@\chpl{rank} (array)}
 \begin{protohead}
-proc $Array$.rank param
+\begin{verbatim}
+proc Array.rank param
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the rank of the array.
@@ -841,7 +975,9 @@ Returns the rank of the array.
 \index{arrays!domain@\chpl{domain}}
 \index{predefined functions!domain (array)@\chpl{domain} (array)}
 \begin{protohead}
-proc $Array$.domain: this.domain
+\begin{verbatim}
+proc Array.domain: this.domain
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the domain of the given array.  This domain is constant,
@@ -852,7 +988,9 @@ field, only by modifying the domain directly.
 \index{arrays!numElements@\chpl{numElements}}
 \index{predefined functions!numElements (array)@\chpl{numElements} (array)}
 \begin{protohead}
-proc $Array$.numElements: this.domain.dim_type
+\begin{verbatim}
+proc Array.numElements: this.domain.dim_type
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns the number of elements in the array.
@@ -861,7 +999,9 @@ Returns the number of elements in the array.
 \index{arrays!reshape@\chpl{reshape}}
 \index{predefined functions!reshape (array)@\chpl{reshape} (array)}
 \begin{protohead}
-proc reshape(A: $Array$, D: $Domain$): $Array$
+\begin{verbatim}
+proc reshape(A: Array, D: Domain): Array
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Returns a copy of the array containing the same values but in the
@@ -874,7 +1014,9 @@ both arrays.
 \index{arrays!size@\chpl{size}}
 \index{predefined functions!size (array)@\chpl{size} (array)}
 \begin{protohead}
-proc $Array$.size: this.domain.dim_type
+\begin{verbatim}
+proc Array.size: this.domain.dim_type
+\end{verbatim}
 \end{protohead}
 \begin{protobody}
 Same as $Array$.numElements.

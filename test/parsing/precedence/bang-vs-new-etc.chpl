@@ -68,7 +68,7 @@ proc main {
   var z05 = new owned (tm())();
   check("z05 = new owned (tm())()", z05, "owned C");
 
-  var z06 = new (/*owned*/ tm())()?; // workaround for #13950
+  var z06 = new (owned tm())()?;
   check("z06 = new (owned tm())()?", z06, "owned C?");
 
   var z11 = new owned (tm())()?;
@@ -83,11 +83,11 @@ proc main {
   var z12 = new (tm())?();
   check("z12 = new (tm())?()", z08, "owned C?");
 
-  var z09 = new owned (tm())?()!;   // get owned C, #13957
-  check("z09 = new owned (tm())?()!", z09, "borrowed C");
+  var z09 = new owned (tm()?)()!;   // get owned C, #13957
+  check("z09 = new owned (tm()?)()!", z09, "borrowed C");
 
-  var z10 = new owned (tm())?()?;
-  check("z10 = new owned (tm())?()?", z10, "owned C?");
+  var z10 = new owned (tm()?)()?;
+  check("z10 = new owned (tm()?)()?", z10, "owned C?");
 
   var z13a = (xx:CN)!;
   check("z13a = (xx:CN)!", z13a, "borrowed C");
@@ -156,16 +156,16 @@ proc main {
   // param z = new C().meth;  -- error: C.meth is not a type method
 
   // treated as new (C().tmeth) -- should parens after 'tmeth' be required? #13957
-  var z20a = new C().tmeth;
+  var z20a = new C().tmeth();
   check("z20a = new C().m", z20a, "owned D(int(64))");
 
   param z20b = new C()!.meth;  // '.' is applied last
   checkCm("z20b = new C()!.meth", z20b);
 
-  var z20c = new C()?.tmeth;
+  var z20c = new C()?.tmeth();
   check("z20c = new C()?.tmeth", z20c, "owned D(int(64))");
 
-  var z20d = new unmanaged C()?.tmeth;  // like z20a
+  var z20d = new unmanaged (C()?.tmeth)();  // like z20a
   check("z20d = new unmanaged C()?.tmeth", z20d, "unmanaged D(int(64))");
 
   // same as z20 series, with parens at end

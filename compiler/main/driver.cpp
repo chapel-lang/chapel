@@ -1448,6 +1448,15 @@ static void checkMLDebugAndLibmode(void) {
   return;
 }
 
+static void checkNotLibraryAndMinimalModules(void) {
+  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
+  if (isLibraryCompile && fMinimalModules) {
+    USR_FATAL("Libraries do not currently support \'--minimal-modules\'");
+  }
+
+  return;
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1464,6 +1473,8 @@ static void postprocess_args() {
   postStaticLink();
 
   checkMLDebugAndLibmode();
+
+  checkNotLibraryAndMinimalModules();
 
   setPrintCppLineno();
 
@@ -1503,9 +1514,7 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    DefExpr* objectClass = defineObjectClass();
-
-    initChplProgram(objectClass);
+    initChplProgram();
 
     initStringLiteralModule();
 

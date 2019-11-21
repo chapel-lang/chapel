@@ -1,1 +1,2 @@
+use IO;
 stdin.close();

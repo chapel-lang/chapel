@@ -2137,46 +2137,6 @@ bool Symbol::isVisible(BaseAST* scope) const {
 
 /************************************* | **************************************
 *                                                                             *
-* Returns true if this use statement is in the provided scope or capable of   *
-* being found in from the provided scope, false if the use statement is       *
-* private and the scope is not in its direct parent.                          *
-*                                                                             *
-************************************** | *************************************/
-bool UseStmt::isVisible(BaseAST* scope) const {
-  if (isPrivate) {
-    BaseAST* parentScope = getScope(this->parentExpr);
-    BaseAST* searchScope = scope;
-
-    INT_ASSERT(parentScope != NULL);
-
-    // We need to walk up scopes until we either find our parent scope (in
-    // which case, we're visible if it "use"s us) or we run out of scope to
-    // check against (in which case we are most certainly *not* visible)
-    while (searchScope != NULL) {
-      if (searchScope == parentScope) {
-        return true;
-      } else if (FnSymbol* fn = toFnSymbol(searchScope)) {
-        // Check instantiation points as well
-        if (BaseAST* inPt = fn->instantiationPoint()) {
-          if (isVisible(inPt)) {
-            return true;
-          }
-        }
-      }
-
-      searchScope = getScope(searchScope);
-    }
-
-    // We got to the top of the scope without finding the parent.
-    return false;
-  }
-
-  // If we got here, it's because the use statement was public
-  return true;
-}
-
-/************************************* | **************************************
-*                                                                             *
 * getScope returns the BaseAST that corresponds to the scope where 'ast'      *
 * exists; 'ast' must be an Expr or a Symbol.  Note that if you pass this a    *
 * BaseAST that defines a scope, the BaseAST that defines the scope where it   *
@@ -2265,189 +2225,166 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
 ************************************** | *************************************/
 
 
-
 // Find 'unmanaged SomeClass' and 'borrowed SomeClass' and replace these
 // with the compiler's simpler representation (canonical type or unmanaged type)
-static void resolveUnmanagedBorrows() {
+void resolveUnmanagedBorrows(CallExpr* call) {
+  if (isClassDecoratorPrimitive(call)) {
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-        call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
-        call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-        call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
-        call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-        call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
-        call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
+    // Give up now if the actual is missing.
+    if (call->numActuals() < 1)
+      return;
 
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type));
+    // Make sure to handle nested calls appropriately
+    if (CallExpr* sub = toCallExpr(call->get(1))) {
+      if (isClassDecoratorPrimitive(sub)) {
+        resolveUnmanagedBorrows(sub);
+      }
+    }
 
-          ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
-          if (isClassLike(ts->type)) {
-            decorator = classTypeDecorator(ts->type);
-            if (ts->type == dtBorrowed || ts->type == dtUnmanaged)
-              USR_WARN(call, "Please use %s class? instead of %s?",
-                              ts->name, ts->name);
-          } else if (isManagedPtrType(ts->type) &&
-                     (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-                      call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
-            decorator = CLASS_TYPE_MANAGED;
-            USR_WARN(call, "Please use %s class? instead of %s?",
-                           ts->name, ts->name);
-          } else {
-            const char* type = NULL;
-            if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-                call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
-              type = "unmanaged";
-            else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
-              type = "borrowed";
-            else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
-              type = "?";
-            else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
-              type = "nonnil";
+    SymExpr* typeSymbolSe = NULL;
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      typeSymbolSe = se;
+    } else if (CallExpr* sub = toCallExpr(call->get(1))) {
+      if (sub->baseExpr != NULL) {
+        if (SymExpr* se = toSymExpr(sub->baseExpr)) {
+          typeSymbolSe = se;
+        }
+      }
+    }
 
-            USR_FATAL_CONT(call, "%s can only apply to class types "
-                                 "(%s is not a class type)",
-                                 type, ts->name);
-            at = NULL;
-          }
+    if (typeSymbolSe != NULL) {
+      if (TypeSymbol* ts = toTypeSymbol(typeSymbolSe->symbol())) {
+        AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type));
 
-          // Compute the decorated class type
+        ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+        if (isClassLike(ts->type)) {
+          decorator = classTypeDecorator(ts->type);
+        } else if (isManagedPtrType(ts->type) &&
+                   (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                    call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
+          decorator = CLASS_TYPE_MANAGED;
+        } else {
+          const char* type = NULL;
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
-            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
-            tmp |= CLASS_TYPE_UNMANAGED;
-            decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-                     call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
-            int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
-            tmp |= CLASS_TYPE_BORROWED;
-            decorator = (ClassTypeDecorator) tmp;
-          } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
-            decorator = addNilableToDecorator(decorator);
-          } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
-            decorator = addNonNilToDecorator(decorator);
-          }
+              call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
+            type = "unmanaged";
+          else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                   call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
+            type = "borrowed";
+          else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                   call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
+            type = "?";
+          else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
+            type = "nonnil";
 
-          if (at) {
-            Type* dt = at->getDecoratedClass(decorator);
-            if (dt) {
-              // replace the call with a new symexpr pointing to ts
-              SET_LINENO(call);
-              call->replace(new SymExpr(dt->symbol));
-            }
-          } else {
-            // e.g. for borrowed?
-            Type* dt = NULL;
-            switch (decorator) {
-              case CLASS_TYPE_BORROWED:
-                dt = dtBorrowed;
-                break;
-              case CLASS_TYPE_BORROWED_NONNIL:
-                dt = dtBorrowedNonNilable;
-                break;
-              case CLASS_TYPE_BORROWED_NILABLE:
-                dt = dtBorrowedNilable;
-                break;
-              case CLASS_TYPE_UNMANAGED:
-                dt = dtUnmanaged;
-                break;
-              case CLASS_TYPE_UNMANAGED_NILABLE:
-                dt = dtUnmanagedNilable;
-                break;
-              case CLASS_TYPE_UNMANAGED_NONNIL:
-                dt = dtUnmanagedNonNilable;
-                break;
-              case CLASS_TYPE_MANAGED:
-              case CLASS_TYPE_MANAGED_NONNIL:
-              case CLASS_TYPE_MANAGED_NILABLE:
-                INT_FATAL("case not handled");
-                break;
-              case CLASS_TYPE_GENERIC:
-                dt = dtAnyManagementAnyNilable;
-                break;
-              case CLASS_TYPE_GENERIC_NONNIL:
-                dt = dtAnyManagementNonNilable;
-                break;
-              case CLASS_TYPE_GENERIC_NILABLE:
-                dt = dtAnyManagementNilable;
-                break;
-              // no default intentionally
-            }
-            INT_ASSERT(dt);
-            SET_LINENO(call);
-            call->replace(new SymExpr(dt->symbol));
-          }
+          USR_FATAL_CONT(call, "%s can only apply to class types "
+                               "(%s is not a class type)",
+                               type, ts->name);
+          at = NULL;
         }
-      }
-      // It's tempting to give type constructor calls the same treatment, but
-      // type constructors are handled separately later during resolution.
-    }
 
-    // fix e.g. unmanaged!
-    // TODO: remove this code
-    if (call->isNamedAstr(astrPostfixBang)) {
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-          Type* replace = NULL;
+        // Compute the decorated class type
+        if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+            call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
+          int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
+          tmp |= CLASS_TYPE_UNMANAGED;
+          decorator = (ClassTypeDecorator) tmp;
+        } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                   call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+          int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
+          tmp |= CLASS_TYPE_BORROWED;
+          decorator = (ClassTypeDecorator) tmp;
+        } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                   call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+          decorator = addNilableToDecorator(decorator);
+        } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
+          decorator = addNonNilToDecorator(decorator);
+        }
 
-          if (ts == dtBorrowed->symbol ||
-              ts == dtBorrowedNonNilable->symbol ||
-              ts == dtBorrowedNilable->symbol) {
-            replace = dtBorrowedNonNilable;
-            USR_WARN(call, "Please borrowed class and not borrowed!");
-          } else if (ts == dtUnmanaged->symbol ||
-                   ts == dtUnmanagedNonNilable->symbol ||
-                   ts == dtUnmanagedNilable->symbol) {
-            replace = dtUnmanagedNonNilable;
-            USR_WARN(call, "Please unmanaged class and not unmanaged!");
-          } else if (isManagedPtrType(ts->type)) {
-            AggregateType* at = toAggregateType(ts->type);
-            replace = at->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
-            USR_WARN(call, "Please use %s class instead of %s!",
-                     at->symbol->name, at->symbol->name);
+        Type* dt = NULL;
+        if (at) {
+          dt = at->getDecoratedClass(decorator);
+        } else {
+          // e.g. for borrowed?
+          switch (decorator) {
+            case CLASS_TYPE_BORROWED:
+              dt = dtBorrowed;
+              break;
+            case CLASS_TYPE_BORROWED_NONNIL:
+              dt = dtBorrowedNonNilable;
+              break;
+            case CLASS_TYPE_BORROWED_NILABLE:
+              dt = dtBorrowedNilable;
+              break;
+            case CLASS_TYPE_UNMANAGED:
+              dt = dtUnmanaged;
+              break;
+            case CLASS_TYPE_UNMANAGED_NILABLE:
+              dt = dtUnmanagedNilable;
+              break;
+            case CLASS_TYPE_UNMANAGED_NONNIL:
+              dt = dtUnmanagedNonNilable;
+              break;
+            case CLASS_TYPE_MANAGED:
+            case CLASS_TYPE_MANAGED_NONNIL:
+            case CLASS_TYPE_MANAGED_NILABLE:
+              INT_FATAL("case not handled");
+              break;
+            case CLASS_TYPE_GENERIC:
+              dt = dtAnyManagementAnyNilable;
+              break;
+            case CLASS_TYPE_GENERIC_NONNIL:
+              dt = dtAnyManagementNonNilable;
+              break;
+            case CLASS_TYPE_GENERIC_NILABLE:
+              dt = dtAnyManagementNilable;
+              break;
+            // no default intentionally
           }
+          INT_ASSERT(dt);
+        }
 
-          if (replace) {
-            SET_LINENO(call);
-            call->replace(new SymExpr(replace->symbol));
-          }
+        if (dt) {
+          // Change the symexpr to point to the fixed type
+          typeSymbolSe->setSymbol(dt->symbol);
+          // Remove the PRIM_TO_UNMANAGED_CLASS etc
+          Expr* sub = call->get(1)->remove();
+          call->replace(sub);
         }
       }
     }
+  }
 
-    // Fix e.g. call _owned class?
-    if (call->numActuals() == 1) {
-      SymExpr* se1 = toSymExpr(call->baseExpr);
-      SymExpr* se2 = toSymExpr(call->get(1));
-      if (se1 != NULL && se2 != NULL) {
-        TypeSymbol* ts1 = toTypeSymbol(se1->symbol());
-        TypeSymbol* ts2 = toTypeSymbol(se2->symbol());
-        if (ts1 != NULL && ts2 != NULL && isManagedPtrType(ts1->type)) {
-          AggregateType* mgmt = toAggregateType(ts1->type);
-          if (DecoratedClassType* mt = toDecoratedClassType(ts1->type))
-            mgmt = mt->getCanonicalClass();
+  // Fix e.g. call _owned class?
+  if (call->numActuals() == 1) {
+    SymExpr* se1 = toSymExpr(call->baseExpr);
+    SymExpr* se2 = toSymExpr(call->get(1));
+    if (se1 != NULL && se2 != NULL) {
+      TypeSymbol* ts1 = toTypeSymbol(se1->symbol());
+      TypeSymbol* ts2 = toTypeSymbol(se2->symbol());
+      if (ts1 != NULL && ts2 != NULL && isManagedPtrType(ts1->type)) {
+        AggregateType* mgmt = getManagedPtrManagerType(ts1->type);
+        Type* t2 = ts2->type;
+        Type* useType = NULL;
+        if (t2 == dtAnyManagementAnyNilable)
+          useType = mgmt; // e.g. just _owned
+        else if (t2 == dtAnyManagementNonNilable)
+          useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+        else if (t2 == dtAnyManagementNilable)
+          useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
 
-          Type* t2 = ts2->type;
-          Type* useType = NULL;
-          if (t2 == dtAnyManagementAnyNilable)
-            useType = mgmt; // e.g. just _owned
-          else if (t2 == dtAnyManagementNonNilable)
-            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
-          else if (t2 == dtAnyManagementNilable)
-            useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
-
-          if (useType != NULL) {
-            SET_LINENO(call);
-            call->replace(new SymExpr(useType->symbol));
-          }
+        if (useType != NULL) {
+          SET_LINENO(call);
+          call->replace(new SymExpr(useType->symbol));
         }
       }
     }
+  }
+}
+
+static void resolveUnmanagedBorrows() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    resolveUnmanagedBorrows(call);
   }
 }
 
@@ -2503,7 +2440,7 @@ static void detectUserDefinedBorrowMethods() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isMethod() && fn->name == astrBorrow) {
       Type *thisType = fn->_this->type;
-      if (isClassLike(thisType) && 
+      if (isClassLike(thisType) &&
           !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
         USR_FATAL("Classes cannot define a method named \"borrow\"");
       }

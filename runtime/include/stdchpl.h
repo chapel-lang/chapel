@@ -45,6 +45,7 @@
 #include "chpl-comm-diags.h"
 #include "chpldirent.h"
 #include "chplexit.h"
+#include "chpl-export-wrappers.h"
 #include "chpl-external-array.h"
 #include "chpl-file-utils.h"
 #include <chplfp.h>

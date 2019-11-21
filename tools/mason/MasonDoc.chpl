@@ -20,6 +20,8 @@
 
 private use FileSystem;
 private use MasonHelp;
+private use IO;
+private use MasonUtils;
 
 proc masonDoc(args) throws {
   try! {

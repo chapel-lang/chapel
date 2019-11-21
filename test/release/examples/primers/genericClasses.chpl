@@ -52,7 +52,7 @@ writeln("uf = ", uf, ", uf2 = ", uf2);
 //
 var taf3: borrowed TypeAliasField(real)?;
 var pf3: borrowed ParamField(3)?;
-var uf3: UntypedField(complex)?;
+var uf3: UntypedField(complex);
 
 taf3 = taf;
 pf3 = pf;

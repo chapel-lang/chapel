@@ -1,3 +1,5 @@
+use IO;
+
 config const infileName = "32x32x32.bin";
 config const outfileName = "output.bin";
 

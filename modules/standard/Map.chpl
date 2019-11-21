@@ -47,6 +47,8 @@ module Map {
     }
   }
 
+  private use IO;
+
   record map {
     type keyType, valType;
     param parSafe = false;
@@ -93,10 +95,10 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(const ref other: map(?kt, ?vt, ?ps), param parSafe=ps) {
+    proc init=(const ref other: map(?kt, ?vt, ?ps)) {
       this.keyType = kt;
       this.valType = vt;
-      this.parSafe = parSafe;
+      this.parSafe = ps;
 
       this.complete();
 
@@ -257,7 +259,7 @@ module Map {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) {
+    proc readWriteThis(ch: channel) throws {
       _enter();
       var first = true;
       //try! {

@@ -1,3 +1,5 @@
+use IO;
+
 proc write32u(w, u: uint(32)) {
   var tmp: uint(8);
   tmp =         (u & 0xff): uint(8); w.write(tmp);

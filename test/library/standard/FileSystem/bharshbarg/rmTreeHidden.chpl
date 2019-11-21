@@ -1,5 +1,5 @@
 
-use FileSystem;
+use FileSystem, IO;
 
 const dirName = "rmTree_test";
 

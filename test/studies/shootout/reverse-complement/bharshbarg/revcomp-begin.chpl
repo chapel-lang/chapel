@@ -4,6 +4,7 @@
    contributed by Ben Harshbarger
    derived from the GNU C version by Jeremy Zerfas
 */
+use IO;
 
 var table : [1..128] uint(8);
 

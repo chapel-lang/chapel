@@ -1,3 +1,5 @@
+use IO;
+
 iter file.split(hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
   open(this.path, iomode.r, hints, style);
   yield 1;

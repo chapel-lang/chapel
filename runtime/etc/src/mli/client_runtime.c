@@ -23,8 +23,8 @@
 #include "mli/common_code.c"
 
 #include "chpllaunch.h"
+#include "chpl-export-wrappers.h"
 #include "chpl-external-array.h"
-
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -37,6 +37,20 @@ void chpl_mli_terminate(enum chpl_mli_errors e);
 int chpl_mli_client_launch(int argc, char** argv);
 void chpl_library_init(int argc, char** argv);
 void chpl_library_finalize(void);
+
+//
+// The `mli_free` routine should resolve to a call to `free` on the client
+// side.
+//
+void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb) {
+  if (!cb.isOwned) { return; }
+
+  if (cb.data != NULL) {
+    mli_free(cb.data);
+  }
+
+  return;
+}
 
 void chpl_mli_client_init(struct chpl_mli_context* client) {
   if (client->context) { return; }

@@ -43,8 +43,6 @@ extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
 
-extern Vec<BlockStmt*>                  standardModuleSet;
-
 extern char                             arrayUnrefName[];
 extern char                             primCoerceTmpName[];
 
@@ -206,7 +204,6 @@ disambiguateForInit(CallInfo&                    info,
                     Vec<ResolutionCandidate*>&   candidates);
 
 // Regular resolve functions
-void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 

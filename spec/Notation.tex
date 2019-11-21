@@ -9,8 +9,10 @@ Chapel code is represented with a fixed-width font where keywords are
 bold and comments are italicized.
 \begin{example}
 \begin{chapel}
+\begin{verbatim}
 for i in D do   // iterate over domain D
   writeln(i);   // output indices in D
+\end{verbatim}
 \end{chapel}
 \end{example}
 
@@ -26,11 +28,13 @@ followed by a colon.  The next lines before an empty line define the
 alternative productions to define the non-terminal.
 \begin{example}
 The production
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
+\begin{verbatim}
 bool-literal:
   `true'
   `false'
-\end{syntax_donotcollect}
+\end{verbatim}
+\end{syntaxdonotcollect}
 defines \sntx{bool-literal} to be either the symbol \sntx{`true'} or
 \sntx{`false'}.
 \end{example}
@@ -44,34 +48,42 @@ non-terminal may be followed by ``one of'' to indicate that the single
 line in the production defines alternatives for each symbol.
 \begin{example}
 The production
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
+\begin{verbatim}
 unary-operator: one of
-  + $ $ $ $ - $ $ $ $ ~ $ $ $ $ !
-\end{syntax_donotcollect}
+  + - ~ !
+\end{verbatim}
+\end{syntaxdonotcollect}
 is equivalent to
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
+\begin{verbatim}
 unary-operator:
   +
   -
   ~
   !
-\end{syntax_donotcollect}
+\end{verbatim}
+\end{syntaxdonotcollect}
 \end{example}
 
 As a short-hand to indicate an optional symbol in the definition of a
 production, the subscript ``opt'' is suffixed to the symbol.
 \begin{example}
 The production
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
+\begin{verbatim}
 formal:
   formal-tag identifier formal-type[OPT] default-expression[OPT]
-\end{syntax_donotcollect}
+\end{verbatim}
+\end{syntaxdonotcollect}
 is equivalent to
-\begin{syntax_donotcollect}
+\begin{syntaxdonotcollect}
+\begin{verbatim}
 formal:
   formal-tag identifier formal-type default-expression
   formal-tag identifier formal-type
   formal-tag identifier default-expression
   formal-tag identifier
-\end{syntax_donotcollect}
+\end{verbatim}
+\end{syntaxdonotcollect}
 \end{example}

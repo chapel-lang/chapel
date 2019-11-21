@@ -46,6 +46,8 @@ AggregateType* dtObject = NULL;
 AggregateType* dtBytes  = NULL;
 AggregateType* dtString = NULL;
 AggregateType* dtLocale = NULL;
+AggregateType* dtOwned  = NULL;
+AggregateType* dtShared = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
@@ -203,12 +205,71 @@ int AggregateType::numFields() const {
   return fields.length;
 }
 
+struct DecoratorTypePair {
+  ClassTypeDecorator d;
+  Type* t;
+  DecoratorTypePair(ClassTypeDecorator d, Type* t) : d(d), t(t) { }
+};
+
+// Inspects a type expression and returns (class decorator, class type).
+// For non-class types, returns (CLASS_TYPE_UNMANAGED_NILABLE, NULL)
+static DecoratorTypePair getTypeExprDecorator(Expr* e) {
+  if (SymExpr* se = toSymExpr(e))
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
+      if (isClassLikeOrManaged(ts->type))
+        return DecoratorTypePair(classTypeDecorator(ts->type),
+                                 canonicalClassType(ts->type));
+
+  if (CallExpr* call = toCallExpr(e)) {
+    if (isClassDecoratorPrimitive(call) && call->numActuals() >= 1) {
+      DecoratorTypePair p = getTypeExprDecorator(call->get(1));
+      ClassTypeDecorator d = p.d;
+      if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
+        if (isDecoratorNonNilable(d))
+          d = CLASS_TYPE_UNMANAGED_NONNIL;
+        else if (isDecoratorNilable(d))
+          d = CLASS_TYPE_UNMANAGED_NILABLE;
+        else
+          d = CLASS_TYPE_UNMANAGED;
+      } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                 call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+        if (isDecoratorNonNilable(d))
+          d = CLASS_TYPE_BORROWED_NONNIL;
+        else if (isDecoratorNilable(d))
+          d = CLASS_TYPE_BORROWED_NILABLE;
+        else
+          d = CLASS_TYPE_BORROWED;
+      } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                 call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+        d = addNilableToDecorator(d);
+      } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
+        d = addNonNilToDecorator(d);
+      } else {
+        INT_FATAL("Case not handled");
+      }
+      p.d = d;
+      return p;
+    }
+  }
+
+  return DecoratorTypePair(CLASS_TYPE_UNMANAGED_NILABLE, NULL);
+}
+
 // Note that a field with generic type where that type has
 // default values for all of its generic fields is considered concrete
 // for the purposes of this function.
 static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   // Look in the field declaration for a concrete type
   Symbol* sym = NULL;
+
+  DecoratorTypePair pair = getTypeExprDecorator(typeExpr);
+  if (pair.t != NULL) {
+    sym = pair.t->symbol;
+    if (isDecoratorUnknownManagement(pair.d) ||
+        isDecoratorUnknownNilability(pair.d))
+      return true;
+  }
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
     sym = lookup(urse->unresolved, urse);
@@ -516,6 +577,13 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
 
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
+
+      if (fn->name == astrInitEquals) {
+        if (fn->numFormals() != 1) {
+          USR_FATAL_CONT(fn, "%s.init= must have exactly one argument",
+                         this->name());
+        }
+      }
 
       fn->_this = arg;
 
@@ -2652,6 +2720,9 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
+    if (sym == NULL) {
+      USR_FATAL(se, "unable to find parent class named '%s'", se->unresolved);
+    }
     // Use AggregateType in class hierarchy rather than generic-management
     if (isDecoratedClassType(sym->type)) {
       sym = canonicalClassType(sym->type)->symbol;
@@ -2750,47 +2821,6 @@ void AggregateType::addRootType() {
       fields.insertAtHead(new DefExpr(super));
     }
   }
-}
-
-DefExpr* defineObjectClass() {
-  // The base object class looks like this:
-  //
-  //   class object {
-  //     chpl__class_id chpl__cid;
-  //   }
-  //
-  // chpl__class_id is an int32_t field identifying the classes
-  //  in the program.  We never create the actual field within the
-  //  IR (it is directly generated in the C code).  It might
-  //  be the right thing to do, so I made an attempt at adding the
-  //  field.  Unfortunately, we would need some significant changes
-  //  throughout compilation, and it seemed to me that the it might result
-  //  in possibly more special case code.
-  //
-  // Because we never create the actual field, we have a special case
-  //  for it in TypeSymbol::codegenAggMetadata().  Remember to change
-  //  that special case if we ever change the contents of object or
-  //  if we start creating the field.
-  //
-  DefExpr* retval = buildClassDefExpr("object",
-                                      NULL,
-                                      AGGREGATE_CLASS,
-                                      NULL,
-                                      new BlockStmt(),
-                                      FLAG_UNKNOWN,
-                                      NULL);
-
-  retval->sym->addFlag(FLAG_OBJECT_CLASS);
-
-  // Prevents removal in pruneResolvedTree().
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
-  retval->sym->addFlag(FLAG_NO_OBJECT);
-
-  dtObject = toAggregateType(retval->sym->type);
-
-  INT_ASSERT(isAggregateType(dtObject));
-
-  return retval;
 }
 
 /************************************* | **************************************

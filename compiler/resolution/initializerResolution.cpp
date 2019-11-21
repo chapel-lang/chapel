@@ -281,6 +281,14 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
 
+  // Check for arguments where the type is not known.
+  // These arguments indicate that something needed to be provided
+  // at the initializer call site.
+  for_formals(arg, call->resolvedFunction()) {
+    if (arg->type == dtUnknown || arg->type == dtTypeDefaultToken)
+      USR_FATAL(call, "initialization requires an argument for %s", arg->name);
+  }
+
   return call;
 }
 
@@ -784,7 +792,7 @@ static void makeActualsVector(const CallInfo&          info,
       }
 
       // Fail if there are too many unnamed actuals.
-      if (!match && !(fn->hasFlag(FLAG_GENERIC) && fn->hasFlag(FLAG_INIT_TUPLE))) {
+      if (!match && !(fn->isGeneric() && fn->hasFlag(FLAG_INIT_TUPLE))) {
         INT_FATAL(call,
                   "Compilation should have verified this action was valid");
       }

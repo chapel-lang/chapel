@@ -1,2 +1,2 @@
-warning-about-missing-return-with-externs-result-unstored.chpl:3: In function 'foo':
-warning-about-missing-return-with-externs-result-unstored.chpl:3: error: control reaches end of function that returns a value
+warning-about-missing-return-with-externs-result-unstored.chpl:5: In function 'foo':
+warning-about-missing-return-with-externs-result-unstored.chpl:5: error: control reaches end of function that returns a value

@@ -6,7 +6,7 @@ config const table = false;
 use Time;
 use Random;
 
-var rng = makeRandomStream(eltType=int, seed=0, parSafe=false, algorithm=RNG.PCG);
+var rng = createRandomStream(eltType=int, seed=0, parSafe=false, algorithm=RNG.PCG);
 
 //var t2 = new Timer();
 //var t3 = new Timer();

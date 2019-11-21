@@ -8,13 +8,13 @@ module Order {
 }
 
 module Godsmoot {
-  use Order only durkon as durkula;
-  use Order except durkon;
+  public use Order only durkon as durkula;
+  public use Order except durkon;
 }
 
 module Future {
-  use Godsmoot except durkula;
-  use Godsmoot only durkula as durkon;
+  public use Godsmoot except durkula;
+  public use Godsmoot only durkula as durkon;
 
   proc main() {
     writeln("hail hail, the ", roy, haley, elan, durkon, vaar, belkar, " all here"); 

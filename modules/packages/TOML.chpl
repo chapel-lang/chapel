@@ -38,6 +38,7 @@ private use List;
 private use Map;
 use TomlParser;
 private use TomlReader;
+use IO;
 
 
 /* Receives a TOML file as a parameter and outputs a Toml object.
@@ -804,7 +805,7 @@ used to recursively hold tables and respective values
 
 
     /* Write a Table to channel f in TOML format */
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       writeTOML(f);
     }
 
@@ -1293,7 +1294,7 @@ module TomlReader {
       }
     }
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       // TODO: The `list` type currently doesn't support readWriteThis!
       f <~> this.A.toArray();
     }

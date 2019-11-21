@@ -1,6 +1,6 @@
 module LCALSDataTypes {
-  use LCALSParams;
-  use LCALSEnums;
+  public use LCALSParams;
+  public use LCALSEnums;
   use List;
 
   //

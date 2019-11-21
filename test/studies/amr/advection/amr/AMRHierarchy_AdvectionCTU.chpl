@@ -1,7 +1,9 @@
 
-use LevelSolution_AdvectionCTU;
-use AMRHierarchy_def;
-use AMRBC_def;
+public use LevelSolution_AdvectionCTU;
+public use AMRHierarchy_def;
+public use AMRBC_def;
+
+private use IO;
 
 
 

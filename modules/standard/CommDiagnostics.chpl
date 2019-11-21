@@ -232,7 +232,7 @@ module CommDiagnostics
      */
     var execute_on_nb: uint(64);
 
-    proc writeThis(c) {
+    proc writeThis(c) throws {
       use Reflection;
 
       var first = true;

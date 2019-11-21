@@ -22,6 +22,7 @@
 
 module ChapelBase {
   use ChapelStandard;
+  private use ChapelEnv;
 
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
@@ -76,6 +77,12 @@ module ChapelBase {
 
   proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
   { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
+
+
+  pragma "object class"
+  pragma "global type symbol"
+  pragma "no object"
+  class _object { }
 
 
   enum iterKind {leader, follower, standalone};
@@ -639,17 +646,76 @@ module ChapelBase {
   //
   // left and right shift on primitive types
   //
-  inline proc <<(a: int(?w), b: integral) return __primitive("<<", a, b);
-  inline proc <<(a: uint(?w), b: integral) return __primitive("<<", a, b);
 
-  inline proc >>(a: int(?w), b: integral) return __primitive(">>", a, b);
-  inline proc >>(a: uint(?w), b: integral) return __primitive(">>", a, b);
+  inline proc bitshiftChecks(a, b: integral) {
+    use HaltWrappers;
 
-  inline proc <<(param a: int(?w), param b: integral) param return __primitive("<<", a, b);
-  inline proc <<(param a: uint(?w), param b: integral) param return __primitive("<<", a, b);
+    if b < 0 {
+      var msg = "Cannot bitshift " + a:string + " by " + b:string +
+                " because " + b:string + " is less than 0";
+      HaltWrappers.boundsCheckHalt(msg);
+    } else if b >= numBits(a.type) {
+      var msg = "Cannot bitshift " + a:string + " by " + b:string +
+                " because " + b:string + " is >= the bitwidth of " +
+                a.type:string;
+      HaltWrappers.boundsCheckHalt(msg);
+    }
+  }
 
-  inline proc >>(param a: int(?w), param b: integral) param return __primitive(">>", a, b);
-  inline proc >>(param a: uint(?w), param b: integral) param return __primitive(">>", a, b);
+  inline proc bitshiftChecks(param a, param b: integral) {
+    if b < 0 {
+      param msg = "Cannot bitshift " + a:string + " by " + b:string +
+                  " because " + b:string + " is less than 0";
+      compilerError(msg);
+    } else if b >= numBits(a.type) {
+      param msg = "Cannot bitshift " + a:string + " by " + b:string +
+                  " because " + b:string + " is >= the bitwidth of " +
+                  a.type:string;
+      compilerError(msg);
+    }
+  }
+
+  inline proc <<(a: int(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    // Intentionally cast `a` to `uint(w)` for an unsigned left shift.
+    return __primitive("<<", a:uint(w), b):int(w);
+  }
+
+  inline proc <<(a: uint(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive("<<", a, b);
+  }
+
+  inline proc >>(a: int(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a, b);
+  }
+
+  inline proc >>(a: uint(?w), b: integral) {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a, b);
+  }
+
+  inline proc <<(param a: int(?w), param b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    // Intentionally cast `a` to `uint(w)` for an unsigned left shift.
+    return __primitive("<<", a:uint(w), b):int(w);
+  }
+
+  inline proc <<(param a: uint(?w), param b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive("<<", a, b);
+  }
+
+  inline proc >>(param a: int(?w), param b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a, b);
+  }
+
+  inline proc >>(param a: uint(?w), param b: integral) param {
+    if boundsChecking then bitshiftChecks(a, b);
+    return __primitive(">>", a, b);
+  }
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
@@ -998,7 +1064,7 @@ module ChapelBase {
 
   inline proc _ddata_allocate(type eltType, size: integral,
                               subloc = c_sublocid_none,
-                              initElts: bool=true) {
+                              param initElts: bool=true) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
@@ -1287,7 +1353,7 @@ module ChapelBase {
     if isAtomicType(t) then
       compilerError("config variables of atomic type are not supported");
 
-    var str = x:string;
+    var str = createStringWithNewBuffer(x);
     if t == string {
       return str;
     } else {
@@ -2261,7 +2327,9 @@ module ChapelBase {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
+    proc writeThis(ch) throws { 
+      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+    }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
 

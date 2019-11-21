@@ -3,7 +3,7 @@
  * or not.
  */
 
-use Sort;
+public use Sort;
 //
 // BLC: For some of the reasons noted below in comments, I don't
 // believe this test behaves as expected (nor do I think it could,

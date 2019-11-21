@@ -468,7 +468,8 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.numBytes, opts, ret._regexp);
   if !qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
-    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
+    var err_msg = createStringWithNewBuffer(err_str) + 
+                  " when compiling regexp '" + pattern + "'";
     throw new owned BadRegexpError(err_msg);
   }
   return ret;
@@ -561,6 +562,8 @@ proc string.this(m:reMatch) {
   if m.matched then return this[m.offset+1..#m.length];
   else return "";
 }
+
+ private use IO;
 
 /*  This class represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
@@ -970,7 +973,7 @@ record regexp {
   }
 
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     var pattern:string;
     on this.home {
       var patternTemp:c_string;
@@ -983,7 +986,7 @@ record regexp {
   }
 
   pragma "no doc"
-  proc readThis(f) {
+  proc readThis(f) throws {
     var pattern:string;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags

@@ -30,7 +30,7 @@ module DefaultRectangular {
   use DSIUtil, ChapelArray;
   private use ChapelDistribution, ChapelRange, SysBasic, SysError;
   private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
-  private use DefaultSparse, DefaultAssociative, DefaultOpaque;
+  private use DefaultSparse, DefaultAssociative;
   use ExternalArray;
 
   config param debugDefaultDist = false;
@@ -92,9 +92,6 @@ module DefaultRectangular {
 
     override proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
       return new unmanaged DefaultAssociativeDom(idxType, parSafe, _to_unmanaged(this));
-
-    override proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
-      return new unmanaged DefaultOpaqueDom(_to_unmanaged(this), parSafe);
 
     override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
@@ -1284,34 +1281,21 @@ module DefaultRectangular {
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind : rank*idxType) ref {
-      if boundsChecking then
-        if !dom.dsiMember(ind) {
-          // Note -- because of module load order dependency issues,
-          // the multiple-arguments implementation of halt cannot
-          // be called at this point. So we call a special routine
-          // that does the right thing here.
-          halt("array index out of bounds: " + _stringify_tuple(ind));
-        }
+      // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
     inline proc dsiAccess(ind : rank*idxType)
     where shouldReturnRvalueByValue(eltType) {
-      if boundsChecking then
-        if !dom.dsiMember(ind) {
-          halt("array index out of bounds: " + _stringify_tuple(ind));
-        }
+      // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
     inline proc dsiAccess(ind : rank*idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
-      if boundsChecking then
-        if !dom.dsiMember(ind) {
-          halt("array index out of bounds: " + _stringify_tuple(ind));
-        }
+      // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
@@ -1327,6 +1311,10 @@ module DefaultRectangular {
     inline proc dsiLocalAccess(i) const ref
     where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
+
+    inline proc dsiBoundsCheck(i) {
+      return dom.dsiMember(i);
+    }
 
     proc adjustBlkOffStrForNewDomain(d: unmanaged DefaultRectangularDom,
                                      alias: unmanaged DefaultRectangularArr)

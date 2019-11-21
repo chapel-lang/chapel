@@ -396,12 +396,15 @@ all:
     - Stop pinning the progress thread to the last CPU (#13423)
   07/16/19:
     - text: Use a blocking progress thread for gasnet-infiniband (#13473)
-      config: 16 node CS
+      config: 16-node-cs
   08/08/19:
     - text: Machine upgraded to CLE7
       config: 16 node XC
   10/02/19:
     - text: system update
+      config: 16 node XC
+  10/10/19:
+    - text: Optimize unorderedCopy for types larger than 8 bytes (#14255)
       config: 16 node XC
 
 
@@ -564,6 +567,8 @@ compSampler-timecomp: &timecomp-base
     - Fix compiler performance issues in nilChecking (#11396)
   08/30/19:
     - Add factory functions for string and bytes (#13914)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
 
 
 cg:
@@ -605,6 +610,12 @@ create-views:
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
+
+domainAssignment-similar: &domainAssign-base
+  10/26/19:
+    - Add optimized COO->CSR/CSC sparse domain assignment (#14272)
+domainAssignment-dissimilar:
+  <<: *domainAssign-base
 
 dgemm.128:
   09/06/13:
@@ -1124,6 +1135,12 @@ memleaksfull:
     - fix another deletion size mismatch error (introduced leaks) (#13671)
   09/26/19:
     - Fix memory leak caused by use of first class functions (#14163)
+  10/17/19:
+    - Rework several sparse tests (#14283)
+  10/22/19:
+    - Starting running mason as part of memleak testing
+  11/01/19:
+    - Fix a leak in masonModify (#14375)
 
 meteor:
   12/18/13:
@@ -1407,6 +1424,12 @@ search:
     - Tuple iteration yields (const) refs (#11866)
   09/04/19:
     - Inline small wrappers in string and bytes implementations (#13971)
+  10/25/19:
+    - Support the Chapel bytes type in single locale Python interop (#14310)
+  11/01/19:
+    - Avoid 'use'ing ByteBufferHelpers ExportWrappers (#14377)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
 
 spectralnorm:
   01/21/15:
@@ -1643,6 +1666,11 @@ compilerAndTestingStats: &compiler-perf-base
     - Require 'use' of top level modules rather than lexical scoping (#13930)
   09/06/19:
     - Turn "array-as-vec" deprecation warnings on (#13999)
+  10/30/19:
+    - Switched test machine
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+
 allTotalTime:
   <<: *compiler-perf-base
 allPasses:

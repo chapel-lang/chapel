@@ -6,6 +6,7 @@
      as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
      and Preston Sahabu.
 */
+use IO;                           // supports opening a file
 
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output

@@ -1,3 +1,4 @@
+use IO;
 
 config const size : uint = 200;
 

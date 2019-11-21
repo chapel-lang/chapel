@@ -62,7 +62,7 @@ foreach $rule (sort values %lexes) {
             $duplicate = 1;
         }
     }
-    if ($duplicate == 0) {
+    if ($duplicate == 0 && $rule ne "") {
         print FILE "\\begin{syntax}\n";
         print FILE "$rule";
         print FILE "\\end{syntax}\n\n";
@@ -84,7 +84,7 @@ foreach $rule (sort values %rules) {
             $duplicate = 1;
         }
     }
-    if ($duplicate == 0) {
+    if ($duplicate == 0 && $rule ne "") {
         print FILE "\\begin{syntax}\n";
         print FILE "$rule";
         print FILE "\\end{syntax}\n\n";

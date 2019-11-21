@@ -1,6 +1,7 @@
 use Random;
 use BLAS;
 use blas_helpers;
+use IO;
 
 proc main() {
   test_gemm();
@@ -89,7 +90,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(B);
     rng.fillRandom(C);
@@ -114,7 +115,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(B);
     rng.fillRandom(C);
@@ -139,7 +140,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(B);
     rng.fillRandom(C);
@@ -165,7 +166,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #ld}]t,
         D : [{0.. #m, 0.. #ld}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(B);
     rng.fillRandom(C);
@@ -201,7 +202,7 @@ proc test_symm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     makeSymm(A);
     rng.fillRandom(B);
@@ -235,7 +236,7 @@ proc test_symm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     makeSymm(A);
     rng.fillRandom(B);
@@ -279,7 +280,7 @@ proc test_hemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     makeHerm(A);
     rng.fillRandom(B);
@@ -313,7 +314,7 @@ proc test_hemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     makeHerm(A);
     rng.fillRandom(B);
@@ -354,7 +355,7 @@ proc test_syrk_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     var B = A;
     rng.fillRandom(C);
@@ -420,7 +421,7 @@ proc test_herk_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     var B = A;
     rng.fillRandom(C);
@@ -490,7 +491,7 @@ proc test_syr2k_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(B);
     rng.fillRandom(C);
@@ -562,7 +563,7 @@ proc test_her2k_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(A);
     rng.fillRandom(B);
     rng.fillRandom(C);
@@ -638,7 +639,7 @@ proc test_trmm_helper(type t) {
         B : [{0.. #n, 0.. #n}]t,
         C : [{0.. #n, 0.. #n}]t;
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(B);
     var saveB = B;
     const alpha = rng.getNext();
@@ -705,7 +706,7 @@ proc test_trsm_helper(type t) {
 
     makeUnit(Id, 5.0);
 
-    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
     rng.fillRandom(B);
     var saveB = B;
     const alpha = rng.getNext();

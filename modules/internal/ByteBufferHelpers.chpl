@@ -78,6 +78,13 @@ module ByteBufferHelpers {
     return (newBuff, allocSize);
   }
 
+  proc bufferEnsureSize(buf, currentSize, requestedSize) {
+    if currentSize < requestedSize then
+      return bufferRealloc(buf, requestedSize);
+    else
+      return (buf, currentSize);
+  }
+
   proc bufferCopyRemote(src_loc_id: int(64), src_addr: bufferType,
                         len: int): bufferType {
       const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;

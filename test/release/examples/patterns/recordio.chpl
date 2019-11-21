@@ -6,6 +6,8 @@
 /* MyRecord contains fields of various types in order to demonstrate
    functionality.
  */
+use IO;
+
 record MyRecord {
   var i: int;
   var r: real;

@@ -1,4 +1,6 @@
 
+use IO;
+
 config var testfile = "test.dat";
 var sz = 16777232;
 var n = sz / 8;

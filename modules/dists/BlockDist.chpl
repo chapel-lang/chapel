@@ -564,7 +564,7 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Block.writeThis(x) {
+proc Block.writeThis(x) throws {
   x <~> "Block" <~> "\n";
   x <~> "-------" <~> "\n";
   x <~> "distributes: " <~> boundingBox <~> "\n";
@@ -990,13 +990,14 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
+inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.dsiMember(i);
+}
+
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
-      if boundsChecking then
-        if !dom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableBlockLazyRAD {
         if myLocArr!.locRAD == nil {
@@ -1130,8 +1131,9 @@ pragma "no copy return"
 proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).alignedLow;
   }
+
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 

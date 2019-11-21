@@ -1,0 +1,51 @@
+There are two primary modes the qthreads library can run in: single-threaded
+shepherds and multi-threaded shepherds. When the library was first designed,
+shepherds were single-threaded, and so that is the mode that has been the most
+well-tested. In the future, multi-threaded shepherds (with work-stealing) will
+be the default, but it hasn't been as well tested. Single-threaded shepherds do
+not do any work-stealing, so their queues can be simpler: there is only ever
+one dequeuer.
+
+In single-threaded shepherd mode, the following schedulers are available:
+	nemesis, lifo, mutexfifo, mtsfifo
+In multi-threaded shepherd mode, the following schedulers are available:
+	sherwood
+
+Brief descriptions of each option follow:
+
+Distrib: Like sherwood, but creates a double ended queue for each worker within
+  a shepherd, and spread the work across those queues to reduce contention. Also
+  comes with condwait enabled by default.
+
+Nemesis: This is a lock-free FIFO queue based on the NEMESIS lock-free queue
+	design from the MPICH folks. It is extremely efficient, as long as FIFO is
+	the scheduling order that you want.
+
+Lifo: This is a lock-free LIFO stack. It's nearly identical to the LIFO stack
+	used in the qt_mpool code. It's quite efficient, as long as LIFO is the
+	scheduling order that you want.
+
+MutexFifo: This is a mutex-based FIFO queue. This only exists for compatibility
+	with systems that do not have sufficient atomic-operation support for
+	lock-free queue designs.
+
+MTSFifo: This is a lock-free FIFO queue based on the queue by Maged Michael of
+	IBM. Unlike the NEMESIS queue, it is safe for multiple dequeuer's. The
+	implementation is essentially identical to the implementation of
+	qt_lfqueue. This was the default queue implementation before qthreads 1.6.
+
+Sherwood: This is a scheduler policy designed by the MAESTRO project centered
+	around double-ended queue. This design uses mutexes to protect those
+	queues. The basic idea is that there is one queue per shepherd, shared
+	among the multiple workers within that shepherd. Among those workers
+	sharing the queue, a LIFO scheduling order is used. When doing
+	work-stealing between shepherds, a FIFO scheduling order is used. See
+	http://doi.acm.org/10.1145/1988796.1988804 for details.
+
+Nottingham: This is also a scheduler policy designed by the MAESTRO project,
+	but it is officially EXPERIMENTAL. It is a modification of the Sherwood
+	scheduler, designed to use a mostly-lock-free algorithm involving a
+	high-performance reader/writer lock. Worker threads within a single
+	shepherd act as "readers" and manipulate the deque in a lock-free fashion.
+	Stealing acts as a "writer": only one thread can steal at a time, and
+	worker threads cannot manipulate the queue while that is happening.

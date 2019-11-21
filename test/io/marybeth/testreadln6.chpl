@@ -1,4 +1,6 @@
 
+use IO;
+
 var b = readln(bool);
 var i = readln(int);
 var r = readln(real); 

@@ -381,7 +381,7 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(1);
 }
 
-proc Cyclic.writeThis(x) {
+proc Cyclic.writeThis(x) throws {
   x <~> this.type:string <~> "\n";
   x <~> "------\n";
   for locid in targetLocDom do
@@ -719,7 +719,7 @@ pragma "no copy return"
 proc CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).alignedLow;
   }
 
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -835,9 +835,6 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   }
   if doRADOpt && !stridable {
     if myLocArr {
-      if boundsChecking then
-        if !dom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
         if myLocArr!.locRAD == nil {
@@ -881,6 +878,11 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
 
 proc CyclicArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
+
+proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.dsiMember(i);
+}
+
 
 iter CyclicArr.these() ref {
   for i in dom do
