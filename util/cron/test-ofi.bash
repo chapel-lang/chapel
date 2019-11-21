@@ -14,10 +14,8 @@ if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-cs ] ; then
   export CHPL_RT_MAX_HEAP_SIZE=16g
 fi
 
-source $CWD/common-localnode-paratest.bash
-
-export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl"
+nightly_args="${nightly_args} -no-buildcheck"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="ofi"
 
-$CWD/nightly -cron -futures $(get_nightly_paratest_args 3)
+$CWD/nightly -cron -hellos ${nightly_args}
