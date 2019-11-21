@@ -167,7 +167,7 @@ Serialization
 +++++++++++++
 
 In Chapel, sending or receiving messages is supported for a variety of types.
-Primitive numeric types, along with ``string`` and ``bytes`` are supported as the
+Primitive numeric types, strings and bytes are supported as the
 foundation.  In addition, user-defined ``record`` types may be serialized
 automatically as `multipart messages
 <http://zguide.zeromq.org/page:all#Multipart-Messages>`_ by internal use of the

@@ -83,7 +83,7 @@ proc Master() {
   // Bytes
   {
     var val = socket.recv(bytes);
-    val += b"jumps over the lazy dog again.";
+    val += b"jumps over the \xff\xff\xff non-UTF8 bytes.";
     socket.send(val);
   }
 
@@ -130,7 +130,7 @@ proc Worker() {
 
   // Bytes
   {
-    var val = b"The quick brown fox...";
+    var val = b"The quick \xff\xff\xff brown fox...";
     socket.send(val);
     val = socket.recv(bytes);
     writeln("val = ", val);
