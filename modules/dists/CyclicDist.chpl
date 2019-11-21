@@ -862,6 +862,10 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           if myLocArr!.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
                 stridable=true, dom.dist.targetLocDom);
+            if myLocArr!.locCyclicRAD != nil {
+              delete myLocArr!.locCyclicRAD;
+              myLocArr!.locCyclicRAD = nil;
+            }
             myLocArr!.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr!.locRAD = tempLocRAD;
@@ -1011,6 +1015,8 @@ class LocCyclicArr {
   proc deinit() {
     if locRAD != nil then
       delete locRAD;
+    if locCyclicRAD != nil then
+      delete locCyclicRAD;
   }
 }
 
