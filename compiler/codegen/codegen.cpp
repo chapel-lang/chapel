@@ -1235,6 +1235,16 @@ static void protectNameFromC(Symbol* sym) {
     return;
   }
 
+  //
+  // For reasons not clear to me, renaming internal module symbols
+  // when LLVM is being used causes problems, so let's not do it for
+  // now.
+  //
+  ModuleSymbol* symMod = sym->getModule();
+  if (llvmCodegen && symMod->modTag == MOD_INTERNAL) {
+    return;
+  }
+
   // Don't rename fields
   if (isVarSymbol(sym)) {
     if (isAggregateType(sym->defPoint->parentSymbol->type)) {
@@ -1247,7 +1257,6 @@ static void protectNameFromC(Symbol* sym) {
   // is declared within an extern declaration, we should preserve its
   // name for similar reasons.
   //
-  ModuleSymbol* symMod = sym->getModule();
   if (sym != symMod) {
     Symbol* parentSym = sym->defPoint->parentSymbol;
     while (parentSym != symMod) {
