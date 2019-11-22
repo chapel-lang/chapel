@@ -21,6 +21,7 @@
 // that were included by default and will no longer be included.
 private use IO;
 private use ChapelBase;
+private use SysCTypes;
 
 pragma "last resort"
 proc iodynamic param {
