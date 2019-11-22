@@ -14956,7 +14956,7 @@ A trailing comma is allowed.
 
       var A = ["1", "2", "3", "4", "5"];
 
-      for i in 1..5 do
+      for i in 0..#5 do
         writeln(A[i]);
 
    
