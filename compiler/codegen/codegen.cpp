@@ -1227,9 +1227,9 @@ static void protectNameFromC(Symbol* sym) {
   }
 
   //
-  // If this symbol is exported of an extern symbol then someone
-  // outside of Chapel is relying on it to have a certain name and we
-  // need to respect that.
+  // Don't rename the symbol if it's not able to be (typically because
+  // it's exported, extern, or has otherwise been flagged as not being
+  // renameable).
   //
   if (!sym->isRenameable()) {
     return;
