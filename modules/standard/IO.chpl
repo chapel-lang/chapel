@@ -7195,6 +7195,6 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 
 } /* end of FormattedIO module */
 
-use FormattedIO;
+public use FormattedIO;
 
 } /* end of IO module */

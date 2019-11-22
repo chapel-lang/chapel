@@ -6,6 +6,8 @@
 */
 use IO;
 
+use Regexp;
+
 proc main(args: [] string) {
   var variants = [
     "agggtaaa|tttaccct",

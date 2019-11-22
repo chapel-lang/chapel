@@ -1,3 +1,4 @@
+use Regexp;
 use IO;
 
 writeln("Words words words");

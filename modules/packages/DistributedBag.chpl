@@ -122,7 +122,7 @@
 
 module DistributedBag {
 
-  use Collection;
+  public use Collection;
   use BlockDist;
 
   /*

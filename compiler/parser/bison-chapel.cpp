@@ -6671,7 +6671,7 @@ yyreduce:
   case 61:
 /* Line 1792 of yacc.c  */
 #line 655 "chapel.ypp"
-    { (yyval.b) = (currentModuleType == MOD_USER ? true : false); }
+    { (yyval.b) = (currentModuleType != MOD_INTERNAL ? true : false); }
     break;
 
   case 62:

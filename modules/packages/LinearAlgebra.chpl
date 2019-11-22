@@ -1769,7 +1769,7 @@ A common usage of this interface might look like this:
 */
 module Sparse {
 
-  use LayoutCS;
+  public use LayoutCS;
 
   /* Return an empty CSR domain over parent domain:
      ``{1..rows, 1..rows}``
