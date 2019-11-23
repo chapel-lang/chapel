@@ -3131,6 +3131,11 @@ module HDF5 {
     /* Default value for all property list classes */
     param H5P_DEFAULT = 0: hid_t;
 
+
+    // Definitions from H5Spublic.h
+    extern const H5S_ALL        : hid_t;
+    extern const H5S_UNLIMITED  : hid_t;
+
     /* Macros defined in H5Tpublic.h */
     /*
      * The predefined native types. These are the types detected by H5detect and
@@ -3241,6 +3246,86 @@ module HDF5 {
 
     proc H5T_NATIVE_HBOOL {
       return H5T_NATIVE_HBOOL_g;
+    }
+
+    /*
+      C9x types
+    */
+    proc H5T_NATIVE_INT8 {
+      return H5T_NATIVE_INT8_g;
+    }
+    proc H5T_NATIVE_UINT8 {
+      return H5T_NATIVE_UINT8_g;
+    }
+    proc H5T_NATIVE_INT_LEAST8 {
+      return H5T_NATIVE_INT_LEAST8_g;
+    }
+    proc H5T_NATIVE_UINT_LEAST8 {
+      return H5T_NATIVE_UINT_LEAST8_g;
+    }
+    proc H5T_NATIVE_INT_FAST8 {
+      return H5T_NATIVE_INT_FAST8_g;
+    }
+    proc H5T_NATIVE_UINT_FAST8 {
+      return H5T_NATIVE_UINT_FAST8_g;
+    }
+
+
+    proc H5T_NATIVE_INT16	{
+      return H5T_NATIVE_INT16_g;
+    }
+    proc H5T_NATIVE_UINT16 {
+      return H5T_NATIVE_UINT16_g;
+    }
+    proc H5T_NATIVE_INT_LEAST16 {
+      return H5T_NATIVE_INT_LEAST16_g;
+    }
+    proc H5T_NATIVE_UINT_LEAST16 {
+      return H5T_NATIVE_UINT_LEAST16_g;
+    }
+    proc H5T_NATIVE_INT_FAST16 {
+      return H5T_NATIVE_INT_FAST16_g;
+    }
+    proc H5T_NATIVE_UINT_FAST16 {
+      return H5T_NATIVE_UINT_FAST16_g;
+    }
+
+    proc H5T_NATIVE_INT32 {
+      return H5T_NATIVE_INT32_g;
+    }
+    proc H5T_NATIVE_UINT32 {
+      return H5T_NATIVE_UINT32_g;
+    }
+    proc H5T_NATIVE_INT_LEAST32 {
+      return H5T_NATIVE_INT_LEAST32_g;
+    }
+    proc H5T_NATIVE_UINT_LEAST32 {
+      return H5T_NATIVE_UINT_LEAST32_g;
+    }
+    proc H5T_NATIVE_INT_FAST32 {
+      return H5T_NATIVE_INT_FAST32_g;
+    }
+    proc H5T_NATIVE_UINT_FAST32 {
+      return H5T_NATIVE_UINT_FAST32_g;
+    }
+
+    proc H5T_NATIVE_INT64 {
+      return H5T_NATIVE_INT64_g;
+    }
+    proc H5T_NATIVE_UINT64 {
+      return H5T_NATIVE_UINT64_g;
+    }
+    proc H5T_NATIVE_INT_LEAST64 {
+      return H5T_NATIVE_INT_LEAST64_g;
+    }
+    proc H5T_NATIVE_UINT_LEAST64 {
+      return H5T_NATIVE_UINT_LEAST64_g;
+    }
+    proc H5T_NATIVE_INT_FAST64 {
+      return H5T_NATIVE_INT_FAST64_g;
+    }
+    proc H5T_NATIVE_UINT_FAST64 {
+      return H5T_NATIVE_UINT_FAST64_g;
     }
 
     /*
