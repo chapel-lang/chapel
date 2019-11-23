@@ -2087,16 +2087,16 @@ void FnSymbol::codegenFortran(int indent) {
     }
 
     // print "import <c_type_name>" for each required type
-    // Don't import anything for '_ref_CFI_cdesc_t' which is the Fortran
+    // Don't import anything for '_ref_CFI_cdesc_t_chpl' which is the Fortran
     // array type for array interoperability.
     if (!uniqueKindNames.empty() &&
         (uniqueKindNames.size() > 1 ||
-         uniqueKindNames.count("_ref_CFI_cdesc_t") == 0)) {
+         uniqueKindNames.count("_ref_CFI_cdesc_t_chpl") == 0)) {
       fprintf(outfile, "%*simport ", indent, "");
       first = true;
       for (std::set<std::string>::iterator kindName = uniqueKindNames.begin();
            kindName != uniqueKindNames.end(); ++kindName) {
-        if (!strcmp(kindName->c_str(), "_ref_CFI_cdesc_t")) continue;
+        if (!strcmp(kindName->c_str(), "_ref_CFI_cdesc_t_chpl")) continue;
         if (!first) {
           fprintf(outfile, ", ");
         }
@@ -2117,7 +2117,7 @@ void FnSymbol::codegenFortran(int indent) {
       std::string kindName = getFortranKindName(formal->type, formal);
 
       // declare arrays specially instead of just using the record type
-      if (kindName == "_ref_CFI_cdesc_t") {
+      if (kindName == "_ref_CFI_cdesc_t_chpl") {
         fprintf(outfile, "%*sTYPE(*) :: %s(..)\n", indent, "", formal->cname);
       } else {
         fprintf(outfile, "%*s%s(kind=%s)%s :: %s%s\n", indent, "",
