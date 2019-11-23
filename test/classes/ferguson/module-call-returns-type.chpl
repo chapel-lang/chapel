@@ -1,3 +1,5 @@
+use SysCTypes;
+
 module C {
   record my_struct {
     var my_field:c_int;
