@@ -3271,7 +3271,7 @@ module HDF5 {
     }
 
 
-    proc H5T_NATIVE_INT16	{
+    proc H5T_NATIVE_INT16 {
       return H5T_NATIVE_INT16_g;
     }
     proc H5T_NATIVE_UINT16 {
