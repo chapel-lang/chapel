@@ -498,6 +498,8 @@ proc loadScene() {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
+  use SysCTypes;
+
   if useCRand {
     // extern declarations of C's random number generators.
     extern const RAND_MAX: c_int;

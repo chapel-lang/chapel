@@ -1,4 +1,4 @@
-use SysBasic;
+use SysBasics, SysCTypes;
 
 extern var y : c_ptr(c_int);
 
