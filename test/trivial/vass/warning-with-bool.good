@@ -1,0 +1,5 @@
+warning-with-bool.chpl:2: error: bool arguments to compilerWarning() and compilerError() must be cast to string
+warning-with-bool.chpl:2: warning: hasField 1 false
+warning-with-bool.chpl:3: error: bool arguments to compilerWarning() and compilerError() must be cast to string
+warning-with-bool.chpl:3: warning: hasField 2 actually true
+warning-with-bool.chpl:4: warning: either way is fine
