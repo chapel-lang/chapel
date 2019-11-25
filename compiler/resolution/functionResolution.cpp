@@ -7887,14 +7887,10 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
        if         (var                        != NULL &&
                    var->immediate             != NULL &&
-                   var->immediate->const_kind != CONST_KIND_STRING) {
-        if (var->immediate->const_kind == NUM_KIND_BOOL) {
-          USR_FATAL_CONT(from, "bool arguments to compilerWarning()"
-            " and compilerError() must be cast to string");
-          str = astr(str, var->immediate->v_bool ? "true" : "false");
-        } else
-          INT_FATAL(call, "unexpected case");
-       } else
+                   var->immediate->const_kind != CONST_KIND_STRING)
+        USR_FATAL(from, "arguments to compilerWarning() and compilerError(),"
+          " except for the optional depth argument, must be cast to string");
+       else
         str = astr(str, var->immediate->v_string);
       }
     }
