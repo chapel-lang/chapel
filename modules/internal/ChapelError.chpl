@@ -41,7 +41,7 @@ module ChapelError {
     var thrownFileId:int(32);
 
     pragma "no doc"
-    var msg: string = "";
+    var _msg: string = "";
     
     /* Construct an Error */
     proc init() {
@@ -49,14 +49,14 @@ module ChapelError {
     }
 
     proc init(msg: string) {
-      this.msg = msg; 
+      this._msg = msg; 
     }
 
     /* Override this method to provide an error message
        in case the error is printed out or never caught.
      */
     proc message() {
-      return msg;
+      return _msg;
     }
   }
 
