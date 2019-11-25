@@ -40,16 +40,23 @@ module ChapelError {
     pragma "no doc"
     var thrownFileId:int(32);
 
+    pragma "no doc"
+    var msg: string = "";
+    
     /* Construct an Error */
     proc init() {
       _next = nil;
+    }
+
+    proc init(msg: string) {
+      this.msg = msg; 
     }
 
     /* Override this method to provide an error message
        in case the error is printed out or never caught.
      */
     proc message() {
-      return "";
+      return msg;
     }
   }
 
