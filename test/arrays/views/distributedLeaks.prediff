@@ -1,3 +1,7 @@
 #!/bin/bash
-grep "Allocated Now" $2 | cut -d" " -f4- > $2.tmp
+sed "/^.*Allocated Now: *[1-9][0-9]*$/!d" < $2 > $2.tmp
 mv $2.tmp $2
+
+# deletes everything except for lines that indicate a leak. .good file needs to
+# be empty. This seemed to be the cleanest way to make this work with both
+# gasnet and local tests
