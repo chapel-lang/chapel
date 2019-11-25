@@ -1,0 +1,3 @@
+#!/bin/bash
+grep "Allocated Now" $2 | cut -d" " -f4- > $2.tmp
+mv $2.tmp $2
