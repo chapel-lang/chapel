@@ -42,7 +42,6 @@ prototype module DistributedFFT {
   use FFTW.C_FFTW;
   use FFT_Locks;
   use FFT_Timers;
-  require "npFFTW.h";
 
   /*
     Compile time parameters for higher performance.
@@ -129,8 +128,7 @@ prototype module DistributedFFT {
     }
 
     proc isValid : bool {
-      extern proc isNullPlan(plan : fftw_plan) : c_int;
-      return isNullPlan(plan)==0;
+      return !is_c_nil(plan);
     }
   }
 

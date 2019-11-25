@@ -1,1 +1,1 @@
--lfftw3 -suseBulkTransfer -schpl_serializeSlices
+-lfftw3 -schpl_serializeSlices
