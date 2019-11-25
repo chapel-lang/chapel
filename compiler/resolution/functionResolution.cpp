@@ -8132,6 +8132,8 @@ void resolve() {
 
   clearPartialCopyDataFnMap();
 
+  clearCoercibleCache();
+
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->useListClear();
   }
