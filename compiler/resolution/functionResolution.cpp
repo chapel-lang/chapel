@@ -7899,10 +7899,12 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
       if (foundDepthVal == false || arg->defPoint != fn->formals.tail) {
         var = toVarSymbol(paramMap.get(arg));
 
-        INT_ASSERT(var                        != NULL &&
+       if         (var                        != NULL &&
                    var->immediate             != NULL &&
-                   var->immediate->const_kind == CONST_KIND_STRING);
-
+                   var->immediate->const_kind != CONST_KIND_STRING)
+        USR_FATAL(from, "arguments to compilerWarning() and compilerError(),"
+          " except for the optional depth argument, must be cast to string");
+       else
         str = astr(str, var->immediate->v_string);
       }
     }
