@@ -1,0 +1,5 @@
+perfkeys: MFLOPS :, MFLOPS :
+files: npb-ft-transposed-D.dat, npb-ft-transposed-prim-comm-D.dat
+graphkeys: ft MFlop/s - D, prim-comm ft MFlop/s - D
+graphtitle: NPB: FT Perf (Mflops/s) - size D
+ylabel: Mflops/s
