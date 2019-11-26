@@ -159,12 +159,6 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static BlockStmt* getParentBlock(Expr* expr);
-static bool
-isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
-                      Vec<BlockStmt*>& visited);
-static bool
-isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
-static void reissueCompilerWarning(const char* str, int offset, bool err);
 
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
@@ -1954,7 +1948,7 @@ static CallExpr* userCall(CallExpr* call) {
   return call;
 }
 
-static void reissueCompilerWarning(const char* str, int offset, bool err) {
+static CallExpr* reissueCompilerWarning(const char* str, int offset, bool err) {
   //
   // Disable compiler warnings in internal modules that are triggered
   // within a dynamic dispatch context because of potential user
@@ -1963,7 +1957,7 @@ static void reissueCompilerWarning(const char* str, int offset, bool err) {
   if (!err && inDynamicDispatchResolution)
     if (callStack.tail()->getModule()->modTag == MOD_INTERNAL &&
         callStack.head()->getModule()->modTag == MOD_INTERNAL)
-      return;
+      return NULL;
 
   CallExpr* from = NULL;
   for (int i = callStack.n-offset; i >= 0; i--) {
@@ -1975,6 +1969,10 @@ static void reissueCompilerWarning(const char* str, int offset, bool err) {
         !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
       break;
   }
+  return from;
+}
+
+static void reissueMsgHelp(CallExpr* from, const char* str, bool err) {
   if (err) {
     USR_FATAL(from, "%s", str);
   } else {
@@ -3506,10 +3504,13 @@ static void reissueMsgs(FnSymbol* resolvedFn,
                         std::map<FnSymbol*, const char*>& outerMap,
                         bool err) {
   std::map<FnSymbol*, const char*>::iterator it;
+  CallExpr *from1 = NULL, *from2 = NULL;
+  const char *str1 = NULL, *str2 = NULL;
 
   it = innerMap.find(resolvedFn);
   if (it != innerMap.end()) {
-    reissueCompilerWarning(it->second, 2, err);
+    str1 = it->second;
+    from1 = reissueCompilerWarning(it->second, 2, err);
 
     if (callStack.n >= 2) {
       if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
@@ -3520,7 +3521,20 @@ static void reissueMsgs(FnSymbol* resolvedFn,
 
   it = outerMap.find(resolvedFn);
   if (it != outerMap.end()) {
-    reissueCompilerWarning(it->second, 1, err);
+    str2 = it->second;
+    from2 = reissueCompilerWarning(it->second, 1, err);
+  }
+
+  // avoid duplicates and "This source location is a guess."
+  if (str1 || str2) {
+    if ((str1 == str2) && !err && (!from1 || !from2)) {
+      if (from1) reissueMsgHelp(from1, str1, err);
+      else       reissueMsgHelp(from2, str2, err);
+
+    } else {
+      if (str1) reissueMsgHelp(from1, str1, err);
+      if (str2) reissueMsgHelp(from2, str2, err);
+    }
   }
 }
 
