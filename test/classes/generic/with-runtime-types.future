@@ -1,0 +1,6 @@
+bug: memory corruption with record and class types with runtime types
+#11549
+
+If we remove the compile-time error, the executable will get:
+
+  with-runtime-types.chpl:12: error: attempt to dereference nil

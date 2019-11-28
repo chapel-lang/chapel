@@ -145,15 +145,15 @@ static bool isNestedNewOrDefault(FnSymbol* innerFn, CallExpr* innerCall) {
 
 /************************************* | **************************************
 *                                                                             *
-* The argument actualIdxToFormals[i] stores, for actual i (counting from 0),  *
-* the corresponding formal argument.                                          *
+* actualIdxToFormal[i] is the formal argument that corresponds to i-th actual *
+* (counting from 0). 'actualIdxToFormal' can be modified here.                *
 * (This mapping is nontrivial when named arguments are used)                  *
 *                                                                             *
 ************************************** | *************************************/
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
-                                std::vector<ArgSymbol*>  actualIdxToFormal,
+                                std::vector<ArgSymbol*>& actualIdxToFormal,
                                 bool                     fastFollowerChecks) {
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
