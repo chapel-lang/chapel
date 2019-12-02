@@ -642,7 +642,7 @@ module ZMQ {
     proc close(linger: int = unset) {
       on classRef.home {
         if linger != unset then
-          setsockopt(LINGER, linger:c_int);
+          setsockopt(ZMQ_LINGER, linger:c_int);
         var ret = zmq_close(classRef.socket):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
