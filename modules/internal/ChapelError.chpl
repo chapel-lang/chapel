@@ -48,12 +48,7 @@ module ChapelError {
       _next = nil;
     }
 
-    /*
-      Construct an :class:`Error` with a message :record:`string`.
-
-      :arg msg: A message for this :class:`Error` to print.
-      :type msg:`string` 
-    */
+    /* Construct an :class:`Error` with a message :record:`string`. */
     proc init(msg: string) {
       this._msg = msg; 
     }
