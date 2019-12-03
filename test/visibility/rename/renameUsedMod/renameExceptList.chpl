@@ -7,6 +7,6 @@ module User {
 
   proc main() {
     writeln(L.x);
-    writeln(L.y); // Was excluded, but ?
+    writeln(L.y); // Was excluded, so should only be findable with explicit name
   }
 }

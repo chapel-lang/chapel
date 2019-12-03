@@ -4,7 +4,7 @@ module User {
   use LongName as L;
 
   proc main() {
-    writeln(L.red);
-    writeln(red);
+    writeln(L.red); // Should work, as L is now a symbol in context
+    writeln(red); // Also should work, as we have used the enum
   }
 }
