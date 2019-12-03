@@ -465,12 +465,26 @@ module ChapelLocale {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
                                           c_sublocid_any)) {
+          warmupRuntime();
           chpl_defaultDistInitPrivate();
           yield locIdx;
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
         }
       }
+    }
+  }
+
+  // Warm up runtime components. For tasking layers that have a fixed number of
+  // threads, we create a task on each thread to warm it up (e.g. grab some
+  // initial call stacks.) We also warm up the memory layer, since allocators
+  // tend to have per thread pools/arenas.
+  private proc warmupRuntime() {
+    extern proc chpl_task_getFixedNumThreads(): uint(32);
+    coforall i in 0..#chpl_task_getFixedNumThreads() {
+      var p = c_malloc(int, 1);
+      p[0] = i;
+      c_free(p);
     }
   }
 
