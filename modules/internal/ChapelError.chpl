@@ -369,8 +369,8 @@ module ChapelError {
     const fileId = __primitive("_get_user_file");
 
     //
-    // TODO: Adjust/remove calls to this routine that are present in
-    // catch blocks rather than adding runtime information?
+    // TODO: Adjust/remove calls to this routine that are present in catch
+    // blocks rather than doing extra work at runtime?
     //
     if !fixErr!._hasThrowInfo {
       fixErr!._hasThrowInfo = true;
