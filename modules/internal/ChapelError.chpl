@@ -41,7 +41,7 @@ module ChapelError {
     var thrownFileId:int(32);
 
     pragma "no doc"
-    var hasThrowInfo: bool = false;
+    var _hasThrowInfo: bool = false;
 
     /* Construct an Error */
     proc init() {
@@ -372,8 +372,8 @@ module ChapelError {
     // TODO: Adjust/remove calls to this routine that are present in
     // catch blocks rather than adding runtime information?
     //
-    if !fixErr!.hasThrowInfo {
-      fixErr!.hasThrowInfo = true;
+    if !fixErr!._hasThrowInfo {
+      fixErr!._hasThrowInfo = true;
       fixErr!.thrownLine = line;
       fixErr!.thrownFileId = fileId;
     }
