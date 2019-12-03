@@ -123,8 +123,12 @@ static void viewSymbolFlags(Symbol* sym) {
       } else if (FnSymbol* fs = toFnSymbol(sym)) {
         printf("isGeneric %s\n", fs->isGenericIsValid() ?
                (fs->isGeneric() ? "yes" : "no") : "unset");
-        printf("fn %s(%d args) %s\n",
-               fs->_this ? intentDescrString(fs->thisTag) : "",
+        bool isMethod = fs->_this != NULL;
+        bool isTypeMethod = isMethod && fs->_this->hasFlag(FLAG_TYPE_VARIABLE);
+        printf("fn %s%s%s(%d args) %s\n",
+               isMethod ? intentDescrString(fs->thisTag) : "",
+               isTypeMethod ? ", type method" : "",
+               isMethod ? " " : "",
                fs->numFormals(),
                retTagDescrString(fs->retTag));
 
