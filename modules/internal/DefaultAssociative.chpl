@@ -1004,11 +1004,11 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(r : range): uint {
     use Reflection;
     var ret : uint;
-    for param i in 1..numFields(r.type) {
-      if isParam(getField(r, i)) == false &&
-         isType(getField(r, i)) == false &&
-         isNothingType(getField(r, i).type) == false {
-        const ref field = getField(r, i);
+    for param i in 1..numImplementationFields(r.type) {
+      if isParam(getImplementationField(r, i)) == false &&
+         isType(getImplementationField(r, i)) == false &&
+         isNothingType(getImplementationField(r, i).type) == false {
+        const ref field = getImplementationField(r, i);
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then
           ret = fieldHash;
