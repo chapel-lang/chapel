@@ -1,0 +1,2 @@
+renameExceptList2.chpl:8: In function 'main':
+renameExceptList2.chpl:10: error: 'y' undeclared (first use this function)
