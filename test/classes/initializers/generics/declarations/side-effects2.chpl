@@ -20,4 +20,4 @@ proc FooX(param p) type {
 }
 
 var foo: FooX(3)?;
-writeln(foo.type!:string);
+writeln(foo.type :class :string);
