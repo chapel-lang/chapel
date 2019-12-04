@@ -14,4 +14,4 @@ export GASNET_QUIET=Y
 # Test a GASNet compile using the default segment (everything for linux64)
 export CHPL_GASNET_SEGMENT=everything
 
-$CWD/nightly -cron -futures -multilocale -memleaks $(memleaks_log ml) $(get_nightly_paratest_args 3)
+$CWD/nightly -cron -futures -multilocale -memleaks $(memleaks_log ml)
