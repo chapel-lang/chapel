@@ -27,9 +27,11 @@
 
 #include <algorithm>
 
-UseStmt::UseStmt(BaseAST* source, bool isPrivate) : Stmt(E_UseStmt) {
+UseStmt::UseStmt(BaseAST* source, const char* modRename,
+                 bool isPrivate) : Stmt(E_UseStmt) {
   this->isPrivate = isPrivate;
   src    = NULL;
+  this->modRename = modRename;
   except = false;
 
   if (Symbol* b = toSymbol(source)) {
@@ -46,6 +48,7 @@ UseStmt::UseStmt(BaseAST* source, bool isPrivate) : Stmt(E_UseStmt) {
 }
 
 UseStmt::UseStmt(BaseAST*                            source,
+                 const char*                         modRename,
                  std::vector<const char*>*           args,
                  bool                                exclude,
                  std::map<const char*, const char*>* renames,
@@ -54,6 +57,7 @@ UseStmt::UseStmt(BaseAST*                            source,
 
   this->isPrivate = isPrivate;
   src    = NULL;
+  this->modRename = modRename;
   except = exclude;
 
   if (Symbol* b = toSymbol(source)) {
@@ -91,9 +95,10 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
 
   if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
-    _this = new UseStmt(COPY_INT(src), &named, except, &renamed, isPrivate);
+    _this = new UseStmt(COPY_INT(src), modRename, &named, except, &renamed,
+                        isPrivate);
   } else {
-    _this = new UseStmt(COPY_INT(src), isPrivate);
+    _this = new UseStmt(COPY_INT(src), modRename, isPrivate);
   }
 
   for_vector(const char, sym, methodsAndFields) {
@@ -150,6 +155,11 @@ bool UseStmt::isARename(const char* name) const {
   return renamed.count(name) == 1;
 }
 
+// Specifically for when the module being used is renamed
+bool UseStmt::isARename() const {
+  return strcmp(modRename, "") != 0;
+}
+
 const char* UseStmt::getRename(const char* name) const {
   std::map<const char*, const char*>::const_iterator it;
   const char*                                        retval = NULL;
@@ -161,6 +171,10 @@ const char* UseStmt::getRename(const char* name) const {
   }
 
   return retval;
+}
+
+const char* UseStmt::getRename() const {
+  return modRename;
 }
 
 /************************************* | **************************************
@@ -682,7 +696,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
 
-        return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
+        return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
+                           isPrivate);
       }
 
     } else {
@@ -739,7 +754,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // outer 'only' list)
           SET_LINENO(this);
 
-          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
+          return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
+                             isPrivate);
 
         } else {
           // all the 'only' identifiers were in the 'except'
@@ -795,7 +811,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
+          return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
+                             isPrivate);
 
         } else {
           // all of the 'only' identifiers in the outer use

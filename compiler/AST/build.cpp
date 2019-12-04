@@ -377,7 +377,7 @@ static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
 
 static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list,
                                bool privateUse) {
-  UseStmt* newUse = new UseStmt(module, privateUse);
+  UseStmt* newUse = new UseStmt(module, "", privateUse);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -485,7 +485,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
 
   }
 
-  UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap,
+  UseStmt* newUse = new UseStmt(mod, "", &namesList, except, &renameMap,
                                 privateUse);
   addModuleToSearchList(newUse, mod);
 
