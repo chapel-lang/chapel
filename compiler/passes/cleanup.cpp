@@ -118,7 +118,7 @@ static void cleanup(ModuleSymbol* module) {
     }
   }
 
-  if (module == stringLiteralModule) {
+  if (module == stringLiteralModule && !fMinimalModules) {
     // Fix calls to chpl_createStringWithLiteral to use resolved expression.
     // For compiler performance reasons, we'd like to have new_StringSymbol
     // emit calls to a resolved function; however new_StringSymbol might
