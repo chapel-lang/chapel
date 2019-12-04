@@ -970,17 +970,17 @@ pragma "no doc"
 module QuickSort {
 
   /*
-   Partition the array Data[lo..hi] using the pivot at Data[mid].
+   Partition the array Data[lo..hi] using the pivot at Data[pivIdx].
 
    This is the 3-way symmetric partition described
-   in Engineering a Sort Function (1993) by Jon L. Bentley , M. Douglas Mcilroy
+   in Engineering a Sort Function (1993) by Jon L. Bentley , M. Douglas McIlroy
 
    Returns the (eqStart,eqEnd) where eqStart..eqEnd elements are
    equal to the pivot (and elements less are before eqStart and elements
    greater are after eqEnd).
    */
   proc partition(Data: [?Dom] ?eltType,
-                 lo: int, mid: int, hi: int,
+                 lo: int, pivIdx: int, hi: int,
                  comparator)
   {
     // The following section categorizes array elements as follows:
@@ -1002,7 +1002,8 @@ module QuickSort {
 
     // Now put the pivot in Data[lo] so we can
     // avoid keeping track of its position.
-    ShallowCopy.shallowSwap(Data[lo], Data[mid]);
+    if lo != pivIdx then
+      ShallowCopy.shallowSwap(Data[lo], Data[pivIdx]);
 
     a += 1;
     b += 1;
@@ -1084,23 +1085,44 @@ module QuickSort {
   }
 
 
-  // Puts lo, mid, and hi in order by swapping.
+  // Returns the index of the median element
+  // of Data[lo], Data[mid], Data[hi]
+  // (in other words it returns lo, mid, or hi).
   proc order3(Data: [?Dom] ?eltType,
               lo: int, mid: int, hi: int,
-              comparator) {
-    if (chpl_compare(Data[mid], Data[lo], comparator) < 0) then
-      ShallowCopy.shallowSwap(Data[mid], Data[lo]);
-    if (chpl_compare(Data[hi], Data[lo], comparator) < 0) then
-      ShallowCopy.shallowSwap(Data[hi], Data[lo]);
-    if (chpl_compare(Data[hi], Data[mid], comparator) < 0) then
-      ShallowCopy.shallowSwap(Data[hi], Data[mid]);
+              comparator): int {
+
+    if chpl_compare(Data[lo], Data[mid], comparator) < 0 {
+      // lo < mid
+      if chpl_compare(Data[hi], Data[lo], comparator) < 0 {
+        // lo < mid, hi < lo -> hi < lo < mid
+        return lo;
+      } else if chpl_compare(Data[mid], Data[hi], comparator) < 0 {
+        // lo < mid, lo <= hi, mid < hi -> lo < mid < hi
+        return mid;
+      } else {
+        // lo < mid, lo <= hi, hi <= mid -> lo <= hi <= mid
+        return hi;
+      }
+    } else {
+      // mid <= lo
+      if chpl_compare(Data[lo], Data[hi], comparator) < 0 {
+        // mid <= lo, lo < hi -> mid <= lo < hi
+        return lo;
+      } else if chpl_compare(Data[hi], Data[mid], comparator) < 0 {
+        // mid <= lo, hi <= lo, hi < mid -> hi < mid <= lo
+        return mid;
+      } else {
+        // mid <= lo, hi <= lo, mid <= hi -> mid <= hi <= lo
+        return hi;
+      }
+    }
   }
 
-  /* Non-stridable quickSort to sort Data[start..end] */
-  proc quickSort(Data: [?Dom] ?eltType,
-                 minlen=16,
-                 comparator:?rec=defaultComparator,
-                 start:int = Dom.low, end:int = Dom.high) {
+ /* Use quickSort to sort Data */
+ proc quickSort(Data: [?Dom] ?eltType,
+                minlen=16,
+                comparator:?rec=defaultComparator) {
 
     chpl_check_comparator(comparator, eltType);
 
@@ -1108,16 +1130,29 @@ module QuickSort {
       compilerError("quickSort() requires 1-D array");
     }
 
-    if Dom.stridable {
+    if Dom.stridable && Dom.stride != 1 {
       ref reindexed = Data.reindex(Dom.alignedLow..#Dom.size);
-      quickSort(reindexed, minlen, comparator);
+      assert(reindexed.domain.stride == 1);
+      quickSortImpl(reindexed, minlen, comparator);
       return;
     }
+
+    assert(Dom.stride == 1);
+    quickSortImpl(Data, minlen, comparator);
+  }
+
+
+  /* Non-stridable quickSort to sort Data[start..end] */
+  proc quickSortImpl(Data: [?Dom] ?eltType,
+                     minlen=16,
+                     comparator:?rec=defaultComparator,
+                     start:int = Dom.low, end:int = Dom.high) {
 
     // grab obvious indices
     const lo = start,
           hi = end,
           mid = lo + (hi-lo+1)/2;
+    var piv = mid;
 
     if hi - lo < minlen {
       // base case -- use insertion sort
@@ -1129,33 +1164,34 @@ module QuickSort {
     }
 
     // find pivot using median-of-3 method for small arrays
-    // and a "ninther" for bigger arrays
+    // and a "ninther" for bigger arrays. Places the pivot in
+    // Data[lo].
     if hi - lo < 100 {
-      order3(Data, lo, mid, hi, comparator);
+      piv = order3(Data, lo, mid, hi, comparator);
     } else {
       // assumes array size > 9 at the very least
 
       // median of each group of 3
-      order3(Data, lo,    lo+1, lo+2,  comparator);
-      order3(Data, mid-1, mid,  mid+1, comparator);
-      order3(Data, hi-2,  hi-1, hi,    comparator);
+      const medLo  = order3(Data, lo,    lo+1, lo+2,  comparator);
+      const medMid = order3(Data, mid-1, mid,  mid+1, comparator);
+      const medHi  = order3(Data, hi-2,  hi-1, hi,    comparator);
       // median of the medians
-      order3(Data, lo+1,  mid,  hi-1,  comparator);
+      piv = order3(Data, medLo, medMid, medHi, comparator);
     }
 
-    var (eqStart, eqEnd) = partition(Data, lo, mid, hi, comparator);
+    var (eqStart, eqEnd) = partition(Data, lo, piv, hi, comparator);
 
     if hi-lo < 300 {
       // stay sequential
-      quickSort(Data, minlen, comparator, lo, eqStart-1);
-      quickSort(Data, minlen, comparator, eqEnd+1, hi);
+      quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+      quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
     } else {
       // do the subproblems in parallel
       forall i in 1..2 {
         if i == 1 then
-          quickSort(Data, minlen, comparator, lo, eqStart-1);
+          quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
         else
-          quickSort(Data, minlen, comparator, eqEnd+1, hi);
+          quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
       }
     }
   }
@@ -1687,9 +1723,10 @@ module ShallowCopy {
 
   // These shallow copy functions "move" a record around
   // (i.e. they neither swap nor call a copy initializer).
-
+  //
   // TODO: move these out of the Sort module and/or consider
-  // language support for it.
+  // language support for it. See issue #14576.
+
   inline proc shallowCopy(ref dst:?t, ref src:t) {
     if isPODType(t) {
       dst = src;
