@@ -482,11 +482,15 @@ module String {
 
     :returns: A new `string`
   */
-  proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+                                                            size=length+1);
+  }
+
+  pragma "no doc"
+  proc chpl_createStringWithLiteral(s: c_string, length:int) {
     //NOTE: This function is heavily used by the compiler to create string
-    //literals. So, inlining this causes some bloat in the AST that increases
-    //the compilation time slightly. Therefore, currently we are keeping this
-    //one non-inlined.
+    //literals.
     return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }

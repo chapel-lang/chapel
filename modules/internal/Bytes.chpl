@@ -39,7 +39,7 @@ Creating :record:`bytes`
 :record:`bytes` and :record:`~String.string`
 --------------------------------------------
 
-As :record:`bytes` can store arbitrary data, any :record:`String.string` can be
+As :record:`bytes` can store arbitrary data, any :record:`~String.string` can be
 cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
 character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
 to be decoded to be converted to string.
@@ -100,7 +100,7 @@ module Bytes {
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`String.string`.
+     when decoding a :record:`bytes` into a UTF-8 :record:`~String.string`.
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character

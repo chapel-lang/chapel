@@ -60,6 +60,7 @@ FnSymbol *gChplSaveTaskError;
 FnSymbol *gChplForallError;
 FnSymbol *gAtomicFenceFn;
 FnSymbol *gChplAfterForallFence;
+FnSymbol *gChplCreateStringWithLiteral;
 
 /************************************* | **************************************
 *                                                                             *
@@ -318,6 +319,13 @@ static WellKnownFn sWellKnownFns[] = {
     &gChplAfterForallFence,
     FLAG_UNKNOWN
   },
+
+  {
+    "chpl_createStringWithLiteral",
+    &gChplCreateStringWithLiteral,
+    FLAG_UNKNOWN
+  },
+
 };
 
 void gatherWellKnownFns() {

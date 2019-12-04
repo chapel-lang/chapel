@@ -364,26 +364,7 @@ module ZMQ {
   private extern const ZMQ_AFFINITY: c_int;
   private extern const ZMQ_IDENTITY: c_int;
 
-  /*
-    .. warning::
-       :proc:`Socket.setsockopt()` and SUBSCRIBE have been deprecated.  Please
-       use :proc:`Socket.setSubscribe()` instead.
-
-    The :proc:`Socket.setsockopt()` option value to specify the message filter
-    for a :const:`SUB`-type :record:`Socket`.
-   */
-  const SUBSCRIBE = ZMQ_SUBSCRIBE;
   private extern const ZMQ_SUBSCRIBE: c_int;
-
-  /*
-    .. warning::
-       :proc:`Socket.setsockopt()` and UNSUBSCRIBE have been deprecated.  Please
-       use :proc:`Socket.setUnsubscribe()` instead.
-
-    The :proc:`Socket.setsockopt()` option value to remote an existing message
-    filter for a :const:`SUB`-type :record:`Socket`.
-   */
-  const UNSUBSCRIBE = ZMQ_UNSUBSCRIBE;
   private extern const ZMQ_UNSUBSCRIBE: c_int;
 
   private extern const ZMQ_RATE: c_int;
@@ -395,15 +376,6 @@ module ZMQ {
   private extern const ZMQ_EVENTS: c_int;
   private extern const ZMQ_TYPE: c_int;
 
-  /*
-    .. warning::
-       :proc:`Socket.setsockopt()` and LINGER have been deprecated.  Please use
-       :proc:`Socket.setLinger()` instead.
-
-    The :proc:`Socket.setsockopt()` option value to specify the linger period
-    for the associated :record:`Socket` object.
-   */
-  const LINGER = ZMQ_LINGER;
   private extern const ZMQ_LINGER: c_int;
 
   private extern const ZMQ_RECONNECT_IVL: c_int;
@@ -671,7 +643,7 @@ module ZMQ {
     proc close(linger: int = unset) {
       on classRef.home {
         if linger != unset then
-          setsockopt(LINGER, linger:c_int);
+          setsockopt(ZMQ_LINGER, linger:c_int);
         var ret = zmq_close(classRef.socket):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
@@ -710,51 +682,6 @@ module ZMQ {
       }
     }
 
-    /*
-      .. warning::
-         setsockopt(), :const:`LINGER`, :const:`SUBSCRIBE`, and
-         :const:`UNSUBSCRIBE` have been deprecated.  Please use
-         :proc:`Socket.setLinger()`, :proc:`Socket.setSubscribe()` or
-         :proc:`Socket.setUnsubscribe()` instead.
-
-      Set socket options;
-      see `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_
-
-      :arg option: a socket option;
-          e.g., :const:`LINGER`, :const:`SUBSCRIBE`, :const:`UNSUBSCRIBE`
-      :type option: `int`
-
-      :arg value: the socket option value
-     */
-    proc setsockopt(option: int, value: ?T) where isPODType(T) {
-      compilerWarning("setsockopt is deprecated - please use e.g. setLinger " +
-                      "instead");
-      on classRef.home {
-        var copy: T = value;
-        var ret = zmq_setsockopt(classRef.socket, option:c_int,
-                                 c_ptrTo(copy):c_void_ptr,
-                                 numBytes(T)): int;
-        if ret == -1 {
-          var errmsg = createStringWithNewBuffer(zmq_strerror(errno));
-          halt("Error in Socket.setsockopt(): ", errmsg);
-        }
-      }
-    }
-
-    pragma "no doc"
-    proc setsockopt(option: int, value: string) {
-      compilerWarning("setsockopt is deprecated - please use e.g. setLinger " +
-                      "instead");
-      on classRef.home {
-        var ret = zmq_setsockopt(classRef.socket, option:c_int,
-                                 value.c_str():c_void_ptr,
-                                 value.numBytes:size_t): int;
-        if ret == -1 {
-          var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.setsockopt(): ", errmsg);
-        }
-      }
-    }
 
     /*
       Get the last endpoint for the specified socket; see
