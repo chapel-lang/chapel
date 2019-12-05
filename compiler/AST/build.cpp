@@ -375,9 +375,9 @@ static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
 }
 
 
-static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list,
-                               bool privateUse) {
-  UseStmt* newUse = new UseStmt(module, "", privateUse);
+static BlockStmt* buildUseList(BaseAST* module, const char* newName,
+                               BlockStmt* list, bool privateUse) {
+  UseStmt* newUse = new UseStmt(module, newName, privateUse);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -435,15 +435,15 @@ static void useListError(Expr* expr, bool except) {
 //
 // Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
-                        bool privateUse) {
+BlockStmt* buildUseStmt(Expr* mod, std::vector<PotentialRename*>* names,
+                        bool except, bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
   // Catch the 'except *' case and turn it into 'only <nothing>'.  This
   // case will have a single UnresolvedSymExpr named "".
   if (except && names->size() == 1) {
-    OnlyRename* listElem = (*names)[0];
+    PotentialRename* listElem = (*names)[0];
     if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
       if (name->unresolved[0] == '\0') {
         except = false;
@@ -452,9 +452,9 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
   }
 
   // Iterate through the list of names to exclude when using mod
-  for_vector(OnlyRename, listElem, *names) {
+  for_vector(PotentialRename, listElem, *names) {
     switch (listElem->tag) {
-      case OnlyRename::SINGLE:
+      case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
           namesList.push_back(name->unresolved);
         } else {
@@ -462,7 +462,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
           useListError(listElem->elem, except);
         }
         break;
-      case OnlyRename::DOUBLE:
+      case PotentialRename::DOUBLE:
         std::pair<Expr*, Expr*>* elem = listElem->renamed;
         // Need to check that we aren't renaming in an 'except' list
         if (except) {
@@ -497,15 +497,29 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
 //
 // Build a 'use' statement
 //
-BlockStmt* buildUseStmt(CallExpr* args, bool privateUse) {
+BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
   BlockStmt* list = NULL;
 
   //
   // Iterate over the expressions being 'use'd, processing them
   //
-  for_actuals(expr, args) {
-    Expr* useArg = expr->remove();
-    list = buildUseList(useArg, list, privateUse);
+  for_vector(PotentialRename, maybeRename, *args) {
+    Expr* useArg = NULL;
+    switch (maybeRename->tag) {
+      case PotentialRename::SINGLE:
+        useArg = maybeRename->elem;
+        list = buildUseList(useArg, "", list, privateUse);
+        break;
+      case PotentialRename::DOUBLE:
+        useArg = maybeRename->renamed->first;
+        Expr* newNameExpr = maybeRename->renamed->second;
+        UnresolvedSymExpr* newName = toUnresolvedSymExpr(newNameExpr);
+        if (newName != NULL)
+          list = buildUseList(useArg, newName->unresolved, list, privateUse);
+        else
+          USR_FATAL(newNameExpr, "incorrect expression in use statement rename, identifier expected");
+        break;
+    }
   }
 
   //
@@ -1822,14 +1836,14 @@ BlockStmt* buildForwardingStmt(Expr* expr) {
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance only foo;
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except) {
+BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
   // Catch the 'except *' case and turn it into 'only <nothing>'.  This
   // case will have a single UnresolvedSymExpr named "".
   if (except && names->size() == 1) {
-    OnlyRename* listElem = (*names)[0];
+    PotentialRename* listElem = (*names)[0];
     if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
       if (name->unresolved[0] == '\0') {
         except = false;
@@ -1838,9 +1852,9 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool
   }
 
   // Iterate through the list of names to exclude when using mod
-  for_vector(OnlyRename, listElem, *names) {
+  for_vector(PotentialRename, listElem, *names) {
     switch (listElem->tag) {
-      case OnlyRename::SINGLE:
+      case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
           namesSet.insert(name->unresolved);
         } else {
@@ -1848,7 +1862,7 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool
           useListError(listElem->elem, except);
         }
         break;
-      case OnlyRename::DOUBLE:
+      case PotentialRename::DOUBLE:
         std::pair<Expr*, Expr*>* elem = listElem->renamed;
         // Need to check that we aren't renaming in an 'except' list
         if (except) {
