@@ -2365,6 +2365,16 @@ static bool findInitPoints(DefExpr* def,
   if (def && def->getStmtExpr())
     start = def->getStmtExpr()->next;
 
+  // Check for mentions of this variable in other functions (inner functions)
+  {
+    Symbol* sym = def->sym;
+    FnSymbol* fn = def->getFunction();
+    for_SymbolSymExprs(se, sym) {
+      if (se->getFunction() != fn)
+        return false; // use in inner function detected; disable split init
+    }
+  }
+
   found_init_t found = doFindInitPoints(def, start, initAssigns);
   return (found == FOUND_INIT);
 }
