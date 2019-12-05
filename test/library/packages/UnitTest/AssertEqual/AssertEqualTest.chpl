@@ -20,6 +20,7 @@ proc main() {
   equalStrings();
   unequalHighArraySameType();
   equalHighArrayDiffType();
+  unequalOffsetArray();
   Unequal1DArray();
   UnequalComplex();
   UnequalPrimitive();
@@ -30,10 +31,17 @@ proc main() {
 proc equalArray() {
   var x1D = [1,2,5];
   var y1D = [1,2,5];
-  var xND : [1..5,1..7] real;
-  var yND : [{1..5,1..7}] real;
   testAssert(x1D,y1D,"Equal 1D Arrays");
+
+  var xND : [1..5,1..7] real;
+  var yND : [1..5,1..7] real;
   testAssert(xND,yND,"Equal High Dim Arrays");
+
+  // Arrays with offset
+  var xOff : [2..5,3..7] real;
+  var yOff : [2..5,3..7] real;
+  testAssert(xOff,yOff,"Equal Offset Arrays");
+
 }
 
 proc equalIntegers() {
@@ -56,13 +64,19 @@ proc equalStrings() {
 
 proc unequalHighArraySameType() {
   var x1 : [1..5,1..7,1..6] real;
-  var y1 : [{1..5,1..7}] real;
+  var y1 : [1..5,1..7] real;
   testAssert(x1,y1,"Unequal Array Same Type");
+}
+
+proc unequalOffsetArray() {
+  var x1: [0..2] int = [1,5,7];
+  var y1: [0..2] int  = [1,7,6];
+  testAssert(x1, y1, "Unequal Offset Array");
 }
 
 proc equalHighArrayDiffType() {
   var x2 : [1..5,1..7] real;
-  var y2 : [{1..5,1..7}] int;
+  var y2 : [1..5,1..7] int;
   testAssert(x2,y2,"Equal High Array Diff Type");
 }
 
@@ -126,5 +140,5 @@ proc UnequalTuples() {
   var x2 = (1,2,3);
   var y2 = (1,2,5);
   testAssert(x2,y2,"Unequal Tuples Type 2");
-  
+
 }
