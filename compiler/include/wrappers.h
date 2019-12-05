@@ -26,10 +26,10 @@ class ArgSymbol;
 class CallInfo;
 class FnSymbol;
 
-FnSymbol* wrapAndCleanUpActuals(FnSymbol*               fn,
-                                CallInfo&               info,
-                                std::vector<ArgSymbol*> actualIdxToFormal,
-                                bool                    fastFollowerChecks);
+FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
+                                CallInfo&                info,
+                                std::vector<ArgSymbol*>& actualIdxToFormal,
+                                bool                     fastFollowerChecks);
 
 const char* unwrapFnName(FnSymbol* fn);
 

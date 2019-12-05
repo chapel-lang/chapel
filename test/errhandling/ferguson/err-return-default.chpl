@@ -1,6 +1,6 @@
 require "err-return.h";
 
-use ExampleErrors;
+use ExampleErrors, SysCTypes;
 
 extern record my_struct {
   var x:c_int;

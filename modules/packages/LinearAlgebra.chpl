@@ -783,6 +783,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
       compiler error if ``lapackImpl`` is ``none``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+  use SysCTypes;
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
 

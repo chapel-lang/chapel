@@ -108,6 +108,7 @@ module GMP {
   use SysBasic;
   use SysError;
   use BigInteger;
+  private use SysCTypes;
 
   require "GMPHelper/chplgmp.h";
 

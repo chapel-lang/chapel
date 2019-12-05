@@ -48,6 +48,7 @@ exception will be generated.
 */
 module Math {
   private use HaltWrappers only;
+  private use SysCTypes;
 
   //////////////////////////////////////////////////////////////////////////
   // Constants (included in chpldocs)

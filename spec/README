@@ -1,3 +1,9 @@
+Please Note the spec has migrated from .tex files
+to .rst files and is now stored in $CHPL_HOME/doc/rst/language.
+
+
+
+
 Each chapter on a feature (e.g. a data type) should have this structure:
 
 * The first one or a couple of paragraphs are a high-level introduction

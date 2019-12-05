@@ -1,3 +1,5 @@
+use SysCTypes;
+
 proc doit(type t) {
   writeln(t:string, " : ", isPODType(t));
 }

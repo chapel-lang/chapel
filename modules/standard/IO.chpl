@@ -424,7 +424,7 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-private use SysBasic;
+private use SysBasic, SysCTypes;
 use SysError;
 
 /*
@@ -1662,13 +1662,6 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 
   return ret;
 }
-
-pragma "last resort"
-proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle(), url:string): file throws {
-  compilerError("open with url argument has been deprecated.");
-}
-
 
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {

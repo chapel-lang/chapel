@@ -1,0 +1,2 @@
+use-a-Math-function.chpl:6: error: 'use' of non-module/enum symbol fabs
+$CHPL_HOME/modules/standard/Math.chpl:: error: Definition of symbol fabs
