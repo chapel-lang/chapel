@@ -19,12 +19,12 @@
 
 #include "llvmUtil.h"
 
-#include "llvm/Support/Debug.h"
-
 #include <cstdio>
 #include <cassert>
 
 #ifdef HAVE_LLVM
+
+#include "llvm/Support/Debug.h"
 
 bool isArrayVecOrStruct(llvm::Type* t)
 {
