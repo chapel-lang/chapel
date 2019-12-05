@@ -842,12 +842,18 @@ if ($runtests == 0) {
         #  generate graphs for the memory leaks data
         #
         # This is not ideal (we may be a day behind depending on when
-        #  the tests finish), but it good enough for now.
+        #  the tests finish), but it is good enough for now.
+        $memleaksmode = "memleaks";
         if ($examples == 0) {
-            mysystem("cd $testdir && cp $memleaksdir/$memleaks ./memleaksfull.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaksfull $memleaksdir");
-        } else {
-            mysystem("cd $testdir && cp $memleaksdir/$memleaks ./memleaks.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaks $memleaksdir");
+            if ($multilocale == 0) {
+              $memleaksmode = "memleaksfull";
+            }
+            else {
+              $memleaksmode = "ml-memleaksfull";
+            }
         }
+
+        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir");
     }
 }
 
