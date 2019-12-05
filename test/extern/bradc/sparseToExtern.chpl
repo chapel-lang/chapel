@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc cprintarr(X: [] real, n: c_int);
 
 var D = {1..3};

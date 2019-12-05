@@ -124,6 +124,7 @@ module DistributedBag {
 
   public use Collection;
   use BlockDist;
+  private use SysCTypes;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the

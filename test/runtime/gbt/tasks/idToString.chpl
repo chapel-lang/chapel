@@ -1,3 +1,5 @@
+use SysCTypes;
+
 type buf_t = c_char;
 
 extern proc chpl_task_idToString(buf: c_void_ptr,
