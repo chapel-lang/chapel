@@ -1,72 +1,25 @@
 #!/usr/bin/env python
 
+import filecmp
 import optparse
 import os
+import shutil
 import sys
-#
-#script_dir = os.path.dirname(os.path.realpath(__file__))
-#chpl_home_dir = os.path.dirname(os.path.dirname(script_dir))
-#chplenv_dir = os.path.join(chpl_home_dir, "util", "chplenv")
-#sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-dst = ""
-src = ""
+parser = optparse.OptionParser(
+    usage = 'usage: %prog dst src',
+    description = 'Updates dst with src. If they differ, copies dst to src. '
+                  'Deletes src either way.')
 
-def parseArguments():
-    global dst
-    global src
+(options, args) = parser.parse_args()
 
-    parser = optparse.OptionParser(
-        usage='usage: %prog [dst] [src]',
-        description =
-          'Updates [dst] with [src]'
-          'If they differ, copies [dst] to [src]'
-          'Deletes [src] either way.')
+if len(args) != 2:
+    parser.error("Requires exactly 2 arguments")
 
-    (options, args) = parser.parse_args()
+(dst, src) = args
 
-    # Handle VAR=VAL environment variable setting
-    for arg in args:
-        if dst == "":
-            dst = arg
-        elif src == "":
-            src = arg
-        else:
-            parser.error("Accepts only 2 arguments")
+if not os.path.exists(dst) or not filecmp.cmp(src, dst):
+    sys.stdout.write("Copying {0} to {1}\n".format(src, dst))
+    shutil.copyfile(src, dst)
 
-    if dst == "":
-        parser.error("[dst] not set")
-
-    if src == "":
-        parser.error("[src] not set")
-
-def main():
-    global dst
-    global src
-
-    parseArguments()
-
-    replace = False
-    dst_content = None
-    src_content = None
-
-    with open(src, 'r') as src_file:
-        src_content = src_file.read()
-
-        try:
-            with open(dst, 'r') as dst_file:
-                dst_content = dst_file.read()
-                if dst_content != src_content:
-                    replace = True
-        except:
-            replace = True
-
-        if replace:
-            sys.stdout.write("Updating {0}\n".format(dst))
-            with open(dst, 'w') as dst_file:
-                dst_file.write(src_content)
-
-    os.remove(src)
-
-if __name__ == '__main__':
-    main()
+os.remove(src)
