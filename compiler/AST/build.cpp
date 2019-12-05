@@ -435,8 +435,9 @@ static void useListError(Expr* expr, bool except) {
 //
 // Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, std::vector<PotentialRename*>* names,
-                        bool except, bool privateUse) {
+BlockStmt* buildUseStmt(Expr* mod, const char * rename,
+                        std::vector<PotentialRename*>* names, bool except,
+                        bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
@@ -485,13 +486,24 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<PotentialRename*>* names,
 
   }
 
-  UseStmt* newUse = new UseStmt(mod, "", &namesList, except, &renameMap,
+  UseStmt* newUse = new UseStmt(mod, rename, &namesList, except, &renameMap,
                                 privateUse);
   addModuleToSearchList(newUse, mod);
 
   delete names;
 
   return buildChapelStmt(newUse);
+}
+
+BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
+                        std::vector<PotentialRename*>* names, bool except,
+                        bool privateUse) {
+  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(rename)) {
+    return buildUseStmt(mod, usym->unresolved, names, except, privateUse);
+  } else {
+    USR_FATAL(rename, "incorrect expression in use statement rename, identifier expected");
+    return NULL; // should never be reached, the USR_FATAL will halt execution
+  }
 }
 
 //

@@ -63,7 +63,11 @@ BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
 
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
-BlockStmt* buildUseStmt(Expr* mod, std::vector<PotentialRename*>* names, bool except,
+BlockStmt* buildUseStmt(Expr* mod, const char* rename,
+                        std::vector<PotentialRename*>* names, bool except,
+                        bool privateUse);
+BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
+                        std::vector<PotentialRename*>* names, bool except,
                         bool privateUse);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
