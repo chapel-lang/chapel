@@ -28,11 +28,6 @@ Initializing Modules:
           QuickSort
            ShallowCopy
            InsertionSort
-          BubbleSort
-          HeapSort
-          BinaryInsertionSort
-          MergeSort
-          SelectionSort
         ChapelDistribution
          LinkedLists
         DefaultAssociative
