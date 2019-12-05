@@ -58,7 +58,7 @@ def main():
                 dst_content = dst_file.read()
                 if dst_content != src_content:
                     replace = True
-        except FileNotFoundError:
+        except:
             replace = True
 
         if replace:
