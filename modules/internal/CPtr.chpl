@@ -26,7 +26,7 @@
  */
 module CPtr {
   private use ChapelStandard;
-  private use SysBasic, SysError;
+  private use SysBasic, SysError, SysCTypes;
   private use HaltWrappers only;
 
   /* A Chapel version of a C NULL pointer. */

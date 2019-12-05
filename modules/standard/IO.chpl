@@ -424,7 +424,7 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-private use SysBasic;
+private use SysBasic, SysCTypes;
 use SysError;
 
 /*

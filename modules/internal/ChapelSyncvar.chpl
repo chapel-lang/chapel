@@ -915,7 +915,7 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  private use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
   use AlignedTSupport;
 
   //

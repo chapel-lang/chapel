@@ -1226,6 +1226,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // compiler is currently producing this pattern for chpl__unref.
     // This is a workaround and a better solution would be preferred.
   } else if (argumentCanModifyActual(intent)) {
+   if (! inGenerousResolutionForErrors()) {
     // Error for coerce->value passed to ref / out / etc
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
@@ -1233,6 +1234,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     USR_FATAL_CONT(formal->getFunction(),
                    "to function '%s' defined here",
                    formal->getFunction()->name);
+   }
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
@@ -1244,7 +1246,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // visible).
     bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
 
-    if (formalIsRef) {
+    if (formalIsRef && ! inGenerousResolutionForErrors()) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);

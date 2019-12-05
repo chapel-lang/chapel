@@ -96,6 +96,7 @@ module Bytes {
   use BytesCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
+  private use SysCTypes;
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters

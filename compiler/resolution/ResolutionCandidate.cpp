@@ -1001,6 +1001,10 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
                     toString(failingActual->getValType()));
       USR_PRINT(failingFormal, "is passed to formal '%s'",
                                toString(failingFormal));
+      if (isNilableClassType(failingActual->getValType()) &&
+          isNonNilableClassType(failingFormal->getValType()))
+        USR_PRINT(call, "try to apply the postfix ! operator to %s",
+                  failingActualDesc);
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");

@@ -68,6 +68,7 @@ module ChapelLocale {
 
   use LocaleModel;
   private use HaltWrappers only;
+  private use SysCTypes;
 
   //
   // Node and sublocale types and special sublocale values.
@@ -465,11 +466,11 @@ module ChapelLocale {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
                                           c_sublocid_any)) {
-          warmupRuntime();
           chpl_defaultDistInitPrivate();
           yield locIdx;
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
+          warmupRuntime();
         }
       }
     }

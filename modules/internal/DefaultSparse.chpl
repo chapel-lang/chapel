@@ -21,7 +21,7 @@
 //
 module DefaultSparse {
   private use ChapelStandard;
-  use RangeChunk only ;
+  private use RangeChunk only ;
 
   config param debugDefaultSparse = false;
 

@@ -47,6 +47,7 @@
 module Buffers {
   use SysBasic;
   use SysError;
+  private use SysCTypes;
 
   pragma "no doc"
   extern type qbytes_ptr_t;

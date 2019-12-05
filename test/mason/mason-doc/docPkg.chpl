@@ -2,6 +2,7 @@ use FileSystem;
 
 use MasonUtils;
 use MasonDoc only;
+use SysCTypes;
 
 extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
 

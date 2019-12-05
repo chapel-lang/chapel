@@ -84,6 +84,7 @@ module Crypto {
   use SysError;
 
   private use IO;
+  private use SysCTypes;
 
   pragma "no doc"
   proc generateKeys(bits: int) {
