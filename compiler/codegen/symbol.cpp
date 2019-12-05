@@ -650,7 +650,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     if(isImmediate()) {
       ret.isLVPtr = GEN_VAL;
       if(immediate->const_kind == CONST_KIND_STRING) {
-        if(llvm::Value *value = info->module->getNamedGlobal(name)) {
+        if(llvm::Value *value = info->module->getNamedGlobal(cname)) {
           ret.val = value;
           ret.isLVPtr = GEN_PTR;
           return ret;
