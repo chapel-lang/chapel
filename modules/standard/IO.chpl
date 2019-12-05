@@ -6105,11 +6105,10 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 
 /*
 
-   Write arguments according to a format string. See
+   Write arguments according to a format. See
    :ref:`about-io-formatted-io`.
 
-   :arg fmt: the format string
-   :type fmt: string or bytes
+   :arg fmt: the format as string or bytes
 
    :arg args: 0 or more arguments to write
    :returns: true
@@ -6320,7 +6319,7 @@ proc channel.writef(fmtStr:?t): bool throws
 
 /*
 
-   Read arguments according to a format string. See
+   Read arguments according to a format. See
    :ref:`about-io-formatted-io`.
 
    .. note::
@@ -6330,9 +6329,7 @@ proc channel.writef(fmtStr:?t): bool throws
       `%*S`, then those arguments cannot be constants. Instead, store the value
       into a variable and pass that.
 
-   :arg fmt: the format string
-   :type fmt: string or bytes
-
+   :arg fmt: the format as string or bytes
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
              false on EOF or if the format did not match the input.
