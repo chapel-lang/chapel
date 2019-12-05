@@ -19,6 +19,8 @@
 
 #include "llvmUtil.h"
 
+#include "llvm/Support/Debug.h"
+
 #include <cstdio>
 #include <cassert>
 
@@ -397,6 +399,27 @@ uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64
 
   return doGetTypeFieldNext(layout, ty, offset, 0, sz);
 }
+
+void print_llvm(llvm::Type* t)
+{
+  if (t == NULL)
+    fprintf(stderr, "NULL");
+  else
+    t->print(llvm::dbgs(), true);
+
+  fprintf(stderr, "\n");
+}
+
+void print_llvm(llvm::Value* v)
+{
+  if (v == NULL)
+    fprintf(stderr, "NULL");
+  else
+    v->print(llvm::dbgs(), true);
+
+  fprintf(stderr, "\n");
+}
+
 
 #endif
 
