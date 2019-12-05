@@ -1,33 +1,41 @@
+private use List;
+
 class C { var x: int; }
- 
+
 proc bad1() {
-  var A:[1..0] borrowed C;
+  var L: list(borrowed C);
 
   {
     var own = new owned C();
     var bb = own.borrow();
-    A.push_back(bb);
+    L.append(bb);
   }
-} 
+
+  return;
+}
 bad1();
 
 proc bad2() {
-  var A:[1..0] borrowed C;
+  var L: list(borrowed C);
 
   {
     var own = new owned C();
-    A.push_back(own);
+    L.append(own);
   }
-} 
+
+  return;
+}
 bad2();
 
-
 proc ok() {
-  var A:[1..0] owned C;
+  var L: list(owned C);
 
   {
     var own = new owned C();
-    A.push_back(own);
+    L.append(own);
   }
+
+  return;
 }
 ok();
+
