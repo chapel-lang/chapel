@@ -11,7 +11,7 @@ proc badIteration1() {
   for x in yieldLoopTmpBorrow() {
     b = x; // expecting error
   }
-  var v = b.x; // uh-oh, use after free
+  var v = b!.x; // uh-oh, use after free
   writeln(v);
 }
 badIteration1();
@@ -27,7 +27,7 @@ proc badIteration2() {
   for x in yieldIteratorTmpBorrow() {
     b = x; // expecting error
   }
-  var v = b.x; // uh-oh, use after free
+  var v = b!.x; // uh-oh, use after free
   writeln(v);
 }
 badIteration2();
@@ -44,7 +44,7 @@ proc maybeOkGlobalBorrow() {
   for x in yieldGlobalBorrows() {
     b = x; // expecting error
   }
-  var v = b.x;
+  var v = b!.x;
   writeln(v);
 }
 maybeOkGlobalBorrow();

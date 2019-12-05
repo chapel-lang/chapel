@@ -2,7 +2,7 @@ use LinkedLists;
 use infer_field2_common;
 
 proc foo() {
-  var c: unmanaged C?  = new unmanaged C();
+  var c = new unmanaged C()?;
   var cc = c;
 
   var s : LinkedList(int);
@@ -10,7 +10,7 @@ proc foo() {
   c = next_foo(c!);
 
   while c != nil {
-    s.append(c.result);
+    s.append(c!.result);
     c = next_foo(c!);
   }
 
@@ -33,13 +33,13 @@ proc main {
   for i in bar() do
     writeln(i);
 
-  var c: unmanaged C?  = new unmanaged C();
+  var c = new unmanaged C()?;
   var cc = c;
 
   c = next_foo(c!);
 
   while c != nil {
-    writeln(c.result);
+    writeln(c!.result);
     c = next_foo(c!);
   }
 

@@ -10,8 +10,8 @@ proc main {
   var c:unmanaged C? = new unmanaged C();
   writeln(c);
   on Locales(1) {
-    delete c.d;
-    c.d = nil; 
+    delete c!.d;
+    c!.d = nil; 
   }
   writeln(c);
 
