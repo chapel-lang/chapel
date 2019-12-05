@@ -22,7 +22,9 @@
    arrays
  */
 module Search {
-  use Sort;
+  public use Sort only defaultComparator, DefaultComparator,
+                       reverseComparator, ReverseComparator;
+  private use Sort;
 
 
 /*

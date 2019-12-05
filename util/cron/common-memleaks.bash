@@ -4,7 +4,6 @@
 # other scripts that wish to make use of the variables set here.
 
 export CHPL_NIGHTLY_MEMLEAKS_DIR=${CHPL_NIGHTLY_MEMLEAKS_DIR:-$PERF_LOGDIR_PREFIX/NightlyMemLeaks}
-export CHPL_COMM=none
 export MEM_LEAKS_DATE_VAL=$(date '+%Y-%m-%d')
 
 function memleaks_log()
@@ -18,6 +17,9 @@ function memleaks_log()
             ;;
         full)
             local suffix=nightlyfull
+            ;;
+        ml)
+            local suffix=ml-nightlyfull
             ;;
         *)
             log_error "Unknown test suite: ${tests}"

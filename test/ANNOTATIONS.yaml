@@ -445,6 +445,10 @@ arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
+array-assign-get:
+  11/13/19:
+    - Improve performance for large transfers under --cache-remote (#14352)
+
 array-of-strings-read:
   04/14/16:
     - string changes to bounds checking, isUpper (#3718)
@@ -569,6 +573,8 @@ compSampler-timecomp: &timecomp-base
     - Add factory functions for string and bytes (#13914)
   11/05/19:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
 
 
 cg:

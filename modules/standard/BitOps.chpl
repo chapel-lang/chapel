@@ -158,6 +158,7 @@ module BitOps {
  * module to hide the extern procedures
  */
 private module BitOps_internal {
+  private use SysCTypes;
   extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
   extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
 

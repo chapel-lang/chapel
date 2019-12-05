@@ -547,9 +547,27 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
-  hints->domain_attr->mr_mode = FI_MR_LOCAL | FI_MR_VIRT_ADDR
-                                | FI_MR_ALLOCATED | FI_MR_PROV_KEY /*TODO*/
-                                | FI_MR_ENDPOINT;
+
+  //
+  // We can support all of the MR modes shown here, but we should only
+  // throw ALLOCATED if indeed the pages are known to exist, and that's
+  // only true with a fixed heap.
+  //
+  // PROV_KEY is marked TODO only because if the provider doesn't assert
+  // that mode we may be able to avoid broadcasting keys around the job.
+  //
+  int mr_mode;
+  if ((mr_mode = chpl_env_rt_get_int("COMM_MR_MODE", -1)) == -1) {
+    mr_mode = FI_MR_LOCAL
+              | FI_MR_VIRT_ADDR
+              | FI_MR_PROV_KEY /*TODO*/
+              | FI_MR_ENDPOINT;
+    if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
+      mr_mode |= FI_MR_ALLOCATED;
+    }
+  }
+  hints->domain_attr->mr_mode = mr_mode;
+
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
   //
@@ -1054,15 +1072,14 @@ void init_ofiForMem(void) {
   }
 
   for (int i = 0; i < numMemRegions; i++) {
+    DBG_PRINTF(DBG_MR, "[%d] fi_mr_reg(%p, %#zx, %#" PRIx64 ")",
+               i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
                       bufAcc, 0, 0, 0, &ofiMrTab[i], NULL));
     memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
     memTab[i].key  = fi_mr_key(ofiMrTab[i]);
-    DBG_PRINTF(DBG_MR,
-               "[%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
-               i, memTab[i].addr, memTab[i].size,
-               memTab[i].key);
+    DBG_PRINTF(DBG_MR, "[%d]     key %#" PRIx64, i, memTab[i].key);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
       OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEpRma->fid, 0));
       OFI_CHK(fi_mr_enable(ofiMrTab[i]));

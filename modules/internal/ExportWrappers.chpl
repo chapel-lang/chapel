@@ -20,6 +20,7 @@
 module ExportWrappers {
   use ChapelStandard;
   use CPtr;
+  private use SysCTypes;
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
   extern record chpl_bytes_wrapper {

@@ -36,6 +36,9 @@ static ResolutionCandidateFailureReason
 classifyTypeMismatch(Type* actualType, Type* formalType);
 static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
+static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
+
+std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
 
 /************************************* | **************************************
 *                                                                             *
@@ -414,28 +417,54 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
     // ... however, make an exception for class subtyping.
     Type* actualType = actual->getValType();
     Type* formalType = formal->getValType();
-    if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
-      Type* canonicalActual = canonicalClassType(actualType);
-      ClassTypeDecorator actualD = classTypeDecorator(actualType);
-
-      Type* canonicalFormal = canonicalClassType(formalType);
-      ClassTypeDecorator formalD = classTypeDecorator(formalType);
-
-      AggregateType* at = toAggregateType(canonicalActual);
-
-      if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
-        if (canonicalActual == canonicalFormal ||
-            isDispatchParent(canonicalActual, canonicalFormal) ||
-            (at && at->instantiatedFrom &&
-             canonicalFormal->symbol->hasFlag(FLAG_GENERIC) &&
-             getConcreteParentForGenericFormal(at, canonicalFormal) != NULL)) {
-          allowCoercions = true;
-        }
+    std::map<Type*,bool> *formalCoercible = actualFormalCoercible[actualType];
+    if (formalCoercible != NULL) {
+      if (formalCoercible->count(formalType) > 0) {
+        allowCoercions = (*formalCoercible)[formalType];
+      } else {
+        allowCoercions = shouldAllowCoercionsType(actualType, formalType);
+        (*formalCoercible)[formalType] = allowCoercions;
       }
+    } else {
+      std::map<Type*,bool> *formalCoercible = new std::map<Type*,bool>();
+      allowCoercions = shouldAllowCoercionsType(actualType, formalType);
+      (*formalCoercible)[formalType] = allowCoercions;
+      actualFormalCoercible[actualType] = formalCoercible;
     }
   }
 
   return allowCoercions;
+}
+
+static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
+  if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
+    Type* canonicalActual = canonicalClassType(actualType);
+    ClassTypeDecorator actualD = classTypeDecorator(actualType);
+
+    Type* canonicalFormal = canonicalClassType(formalType);
+    ClassTypeDecorator formalD = classTypeDecorator(formalType);
+
+    AggregateType* at = toAggregateType(canonicalActual);
+
+    if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
+      if (canonicalActual == canonicalFormal ||
+          isDispatchParent(canonicalActual, canonicalFormal) ||
+          (at && at->instantiatedFrom &&
+           canonicalFormal->symbol->hasFlag(FLAG_GENERIC) &&
+           getConcreteParentForGenericFormal(at, canonicalFormal) != NULL)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void clearCoercibleCache() {
+  std::map<Type*,std::map<Type*,bool>*>::iterator it;
+  for (it = actualFormalCoercible.begin(); it != actualFormalCoercible.end();
+       ++it) {
+    delete it->second;
+  }
 }
 
 // Uses formalSym and actualSym to compute allowCoercion and implicitBang
@@ -972,6 +1001,10 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
                     toString(failingActual->getValType()));
       USR_PRINT(failingFormal, "is passed to formal '%s'",
                                toString(failingFormal));
+      if (isNilableClassType(failingActual->getValType()) &&
+          isNonNilableClassType(failingFormal->getValType()))
+        USR_PRINT(call, "try to apply the postfix ! operator to %s",
+                  failingActualDesc);
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");

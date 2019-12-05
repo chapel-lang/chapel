@@ -1,4 +1,5 @@
 #include "lib/TestLibrary.h"
+#include <stdint.h>
 
 //
 // This test verifies some of the behavior of the `chpl_bytes` wrapper that
@@ -12,7 +13,7 @@ int main(int argc, char** argv) {
 
   printf("cb.isOwned: %s\n", (msg.isOwned ? "true" : "false"));
   printf("cb.data: %s\n", msg.data);
-  printf("cb.size: %zu\n", msg.size);
+  printf("cb.size: %" PRIu64 "\n", msg.size);
 
   chpl_bytes_wrapper_free(msg);
 

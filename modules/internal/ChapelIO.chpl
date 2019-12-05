@@ -200,6 +200,7 @@ module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
   use SysBasic;
+  use SysError;
   use LastResortIO;
 
   // TODO -- this should probably be private

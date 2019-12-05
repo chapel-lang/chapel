@@ -98,7 +98,7 @@ Declarations
 */
 module ReplicatedVar {
 
-use ReplicatedDist;
+public use ReplicatedDist;
 
 private const rcDomainIx   = 1; // todo convert to param
 /* Use this domain when replicating over a subset of locales,

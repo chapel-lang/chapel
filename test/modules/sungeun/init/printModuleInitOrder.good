@@ -27,6 +27,7 @@ Initializing Modules:
            RadixSortHelp
            ShellSort
           QuickSort
+           ShallowCopy
            InsertionSort
           BubbleSort
           HeapSort

@@ -168,6 +168,7 @@ module ChapelArray {
   use ArrayViewReindex;
   private use Reflection only;
   private use ChapelDebugPrint;
+  private use SysCTypes;
 
   pragma "no doc"
   config param showArrayAsVecWarnings = true;
@@ -3525,16 +3526,18 @@ module ChapelArray {
         // The dead code to access the fields of _instance are left in the
         // generated code with --baseline on. This means that these
         // statements cannot come after the _delete_arr call.
-        param domIsPrivatized  = _isPrivatized(domToRemove);
+        var domIsPrivatized = false;
         // Store the instance's dom class before the instance is destroyed
         const instanceDom = domToRemove;
         if domToRemove != nil {
           // remove that domain
           (domToFree, distToRemove) = domToRemove!.remove();
+          domIsPrivatized = domToRemove!.pid != nullPid;
         }
-        param distIsPrivatized = _isPrivatized(distToRemove);
+        var distIsPrivatized = false;
         if distToRemove != nil {
           distToFree = distToRemove!.remove();
+          distIsPrivatized = distToRemove!.pid != nullPid;
         }
         if arrToFree != nil then
           _delete_arr(_instance, _isPrivatized(_instance));
