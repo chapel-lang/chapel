@@ -1089,6 +1089,8 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
     // TODO: Better place to put this?
     //
     return "";
+  } else if (pxd == C_PYX && t == dtStringC) {
+    return ""; 
   } else {
     return getPythonTypeName(t, pxd) + " ";
   }
@@ -1110,8 +1112,21 @@ std::string ArgSymbol::getPythonArgTranslation() {
   std::string strname = cname;
 
   if (t == dtStringC) {
-    std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
+    std::string res;
+
+    // First, check to see if the input type is the Python "str" type.
+    res += "\tif type(" + strname + ") != str:\n";
+    res += "\t\traise TypeError(\"Expected \'str\' in conversion to ";
+    res += " \'const char*\', ";
+    res += "found \" + str(type(" + strname + ")))\n";
+
+    // Encode string as bytes.
+    res += "\t" + strname + " = " + strname + ".encode()\n";
+
+    // Cython will auto convert the bytes to "const char*".
+    res += "\tcdef const char* chpl_" + strname + " = " + strname;
     res += "\n";
+
     return res;
   } else if (t->getValType() == exportTypeChplBytesWrapper) {
     std::string res;
@@ -2235,11 +2250,34 @@ GenRet FnSymbol::codegenPYXType() {
       returnStmt += "\tcdef Py_ssize_t rsize = rdat.size\n";
       returnStmt += "\tcdef char* v = rdat.data\n";
 
-      // Create a new Python bytes that is a copy of the Chapel string.
+      // Create a new Python bytes that is a copy of the Chapel bytes.
       returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
 
       // This will free the "chpl_bytes_wrapper" buffer if required.
       returnStmt += "\tchpl_bytes_wrapper_free(rdat)\n";
+
+    } else if (retType == exportTypeCharPtr) {
+
+      //
+      // The result of the routine call is a "char*". Chapel likes to map
+      // `c_char` to the C `int8_t` type on most systems, but it makes
+      // sure the two have the same bitcount, so the cast to `char*` is
+      // safe.
+      //
+      funcCall += "cdef char* rdata = <char*> ";
+
+      // Get the length of the "char*" using strlen.
+      // TODO: Eventually we will do as above for chpl_bytes_wrapper.
+      returnStmt += "\tcdef Py_ssize_t rsize = strlen(rdata)\n";
+
+      // Create a new Python bytes that is a copy of the Chapel string.
+      returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
+
+      // Cast the bytes to a Python string.
+      returnStmt += "\tret = str(ret)\n";
+
+      // Free the "char*" buffer.
+      returnStmt += "\tchpl_free(rdata)\n";
 
     } else if (retType == dtExternalArray &&
              exportedArrayElementType[this] != NULL) {
