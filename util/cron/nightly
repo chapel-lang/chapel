@@ -862,7 +862,7 @@ if ($runtests == 0) {
             }
         }
 
-        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "computePerfStats", 1, 0, 0);
+        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
 
