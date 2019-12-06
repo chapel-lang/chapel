@@ -111,7 +111,7 @@ Curl Support Types and Functions
 
  */
 module Curl {
-  public use IO;
+  public use IO, SysCTypes;
 
   require "curl/curl.h";
   require "-lcurl";
