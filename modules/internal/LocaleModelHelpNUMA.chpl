@@ -18,6 +18,7 @@
  */
 
 module LocaleModelHelpNUMA {
+  private use SysCTypes;
 
   param localeModelHasSublocales = true;
 
