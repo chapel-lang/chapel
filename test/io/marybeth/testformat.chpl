@@ -1,8 +1,9 @@
 use IO;
 
-var s: string;
+config type t = string;
+var s: t;
 
-s = '%{###.###}';
+s = '%{###.###}':t;
 
 var i: uint = 1;
 var x = 33.44;
@@ -16,6 +17,6 @@ writeln(s.format(x));
 writeln(s.format(y));
 writeln(s.format(z));
 writeln(s.format(n));
-writeln("%{####}".format(n));
-writeln("%{###########.##}".format(c));
+writeln(("%{####}":t).format(n));
+writeln(("%{###########.##}":t).format(c));
 
