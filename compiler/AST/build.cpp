@@ -649,8 +649,11 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  BlockStmt* ret = NULL;
-  ret = buildChapelStmt(new ExternBlockStmt(c_code));
+  CallExpr* sysCTypes = new CallExpr(PRIM_ACTUALS_LIST,
+                                     new UnresolvedSymExpr("SysCTypes"));
+  BlockStmt* useSysCTypes = buildUseStmt(sysCTypes, /* private = */ false);
+  useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
+  BlockStmt* ret = buildChapelStmt(useSysCTypes);
 
   // Check that the compiler supports extern blocks
   // but skip these checks for chpldoc.
